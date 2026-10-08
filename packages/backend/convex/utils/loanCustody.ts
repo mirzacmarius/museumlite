@@ -5,6 +5,7 @@ import {
   markCollectionActive,
   markCollectionLoaned,
 } from "./collectionLifecycle";
+import { custodyConflict } from "./custodyErrors";
 import {
   allLoanItemsReturned,
   isLoanItemReturned,
@@ -13,6 +14,7 @@ import {
 import {
   moveCollectionToLocation,
   recordCustodyDeparture,
+  visibleLocationName,
 } from "./locationIntegrity";
 import type { MovementKind } from "./movementValidators";
 
@@ -44,16 +46,25 @@ async function assertAcceptedAssessment(
 ) {
   const assessment = await ctx.db.get(assessmentId);
   if (!assessment) {
-    throw new Error("Condition assessment not found");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Condition assessment not found",
+    );
   }
   if (
     assessment.collectionId !== collectionId ||
     assessment.organizationId !== organizationId
   ) {
-    throw new Error("Condition assessment does not belong to this object");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Condition assessment does not belong to this object",
+    );
   }
   if (assessment.status !== "accepted") {
-    throw new Error("Condition assessment must be accepted before linking");
+    throw custodyConflict(
+      "ASSESSMENT_NOT_ACCEPTED",
+      "Condition assessment must be accepted before linking",
+    );
   }
   return assessment;
 }
@@ -80,7 +91,10 @@ export async function dispatchLoanItemsWithEvidence(
   );
 
   if (itemsToDispatch.length === 0) {
-    throw new Error("No items available to dispatch");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "No items available to dispatch",
+    );
   }
 
   const dispatchedAt = Date.now();
@@ -161,13 +175,18 @@ async function resolveReturnDestination(
   input: ReceiveLoanItemInput,
 ): Promise<Id<"locations">> {
   if (loan.type === "incoming") {
-    throw new Error("Incoming loan items use lender exit, not internal location");
+    throw new Error(
+      "Incoming loan items use lender exit, not internal location",
+    );
   }
 
   if (input.destinationLocationId) {
     const location = await ctx.db.get(input.destinationLocationId);
     if (!location || location.organizationId !== loan.organizationId) {
-      throw new Error("Return destination not found in this organization");
+      throw custodyConflict(
+        "REFERENCE_NOT_FOUND",
+        "Return destination not found in this organization",
+      );
     }
     return input.destinationLocationId;
   }
@@ -177,12 +196,16 @@ async function resolveReturnDestination(
   }
 
   if (item.dispatchOriginLocationId && !item.dispatchOriginUnknown) {
-    throw new Error(
+    throw custodyConflict(
+      "DESTINATION_REQUIRED",
       "Confirm return to recorded origin or choose a different destination",
     );
   }
 
-  throw new Error("Return destination is required");
+  throw custodyConflict(
+    "DESTINATION_REQUIRED",
+    "Return destination is required",
+  );
 }
 
 async function assertLenderExitNotBlockedByExhibition(
@@ -200,7 +223,8 @@ async function assertLenderExitNotBlockedByExhibition(
       participant.returnException === undefined,
   );
   if (blocking) {
-    throw new Error(
+    throw custodyConflict(
+      "EXHIBITION_OUTCOME_UNRESOLVED",
       "Cannot return an object to the lender while its exhibition outcome is unresolved",
     );
   }
@@ -244,8 +268,15 @@ async function recordIncomingLenderExit(
       collection?.currentLocationId,
     )
   ) {
-    throw new Error(
+    const current = collection?.currentLocationId
+      ? await ctx.db.get(collection.currentLocationId)
+      : null;
+    throw custodyConflict(
+      "SOURCE_CHANGED",
       "Object is not at the source observed for this lender exit",
+      {
+        currentLocationName: visibleLocationName(current, loan.organizationId),
+      },
     );
   }
 
@@ -334,7 +365,10 @@ export async function receiveLoanItemsWithEvidence(
   }
 
   if (itemsToReturn.length === 0) {
-    throw new Error("No items selected to return");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "No items selected to return",
+    );
   }
 
   const returnedAt = Date.now();
@@ -366,7 +400,10 @@ export async function receiveLoanItemsWithEvidence(
       incomingAssessmentId === undefined &&
       (suppliedCondition === undefined || suppliedCondition.length === 0)
     ) {
-      throw new Error("Return condition evidence is required");
+      throw custodyConflict(
+        "CONDITION_EVIDENCE_REQUIRED",
+        "Return condition evidence is required",
+      );
     }
     const conditionInValue =
       suppliedCondition && suppliedCondition.length > 0

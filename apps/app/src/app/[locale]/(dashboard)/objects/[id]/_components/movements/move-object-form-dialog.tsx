@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { custodyConflictFromError } from "@v1/backend/convex/utils/custodyErrors";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import {
@@ -19,6 +20,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useReducer } from "react";
 import { toast } from "sonner";
 import { LocationSelector } from "@/components/location-selector";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useScopedI18n } from "@/locales/client";
 import { movementIssueLabel } from "./movement-labels";
 
@@ -89,6 +91,7 @@ export function MoveObjectFormDialog({
 }: MoveObjectFormDialogProps) {
   const t = useScopedI18n("locations.movements");
   const tCommon = useScopedI18n("common");
+  const custodyConflictMessage = useCustodyConflictMessage();
   const [state, dispatch] = useReducer(moveFormReducer, initialMoveFormState);
 
   const moveObject = useMutation(api.locations.moveObject);
@@ -150,8 +153,9 @@ export function MoveObjectFormDialog({
     } catch (submitError) {
       dispatch({
         type: "errorChanged",
-        value:
-          submitError instanceof Error
+        value: custodyConflictFromError(submitError)
+          ? custodyConflictMessage(submitError)
+          : submitError instanceof Error
             ? submitError.message
             : t("dialog.failed"),
       });

@@ -1,4 +1,6 @@
-const CSV_QUOTE_CHARS = new Set([",", '"', "\n"]);
+import { protectSpreadsheetText } from "@v1/backend/convex/utils/exportEncoding";
+
+const CSV_QUOTE_CHARS = new Set([",", '"', "\n", "\r"]);
 
 function csvValueNeedsQuoting(value: string) {
   for (const char of value) {
@@ -7,42 +9,33 @@ function csvValueNeedsQuoting(value: string) {
   return false;
 }
 
+export function formatCsvCell(value: unknown) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  if (value instanceof Date) return value.toISOString();
+  const raw = typeof value === "object" ? JSON.stringify(value) : String(value);
+  const text = protectSpreadsheetText(raw);
+  return text !== raw || csvValueNeedsQuoting(text)
+    ? `"${text.replace(/"/g, '""')}"`
+    : text;
+}
+
 /**
- * Converts an array of objects to CSV format
- * @param data Array of objects to convert
- * @returns CSV string representation
+ * Converts an array of objects to CSV. Cell handling depends on the value
+ * type, never on the column name: numbers and booleans stay unlocalized,
+ * Date values become UTC ISO timestamps, and text is formula-protected.
  */
 export function convertToCSV(data: Record<string, unknown>[]): string {
   if (data.length === 0) return "";
 
   const headers = Object.keys(data[0] ?? {});
-  const csvRows: string[] = [];
-
-  csvRows.push(headers.join(","));
-
-  for (const row of data) {
-    const values = headers.map((header) => {
-      const value = row[header];
-      if (value === null || value === undefined) return "";
-      if (typeof value === "number") {
-        if (
-          header.toLowerCase().includes("date") ||
-          header.toLowerCase().includes("at")
-        ) {
-          return new Date(value).toISOString();
-        }
-        return String(value);
-      }
-      const stringValue = String(value);
-      if (csvValueNeedsQuoting(stringValue)) {
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }
-      return stringValue;
-    });
-    csvRows.push(values.join(","));
-  }
-
-  return csvRows.join("\n");
+  return [
+    headers.join(","),
+    ...data.map((row) =>
+      headers.map((header) => formatCsvCell(row[header])).join(","),
+    ),
+  ].join("\n");
 }
 
 /**

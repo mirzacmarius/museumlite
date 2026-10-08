@@ -2,6 +2,7 @@
 
 import { Archive, Plus } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "../accessions/accessions-page-skeleton";
@@ -36,7 +37,9 @@ export default function DeaccessionsPage() {
 
   return (
     <div className="flex size-full flex-col bg-background">
-      <DeaccessionsPageClient organizationId={currentOrganizationId} />
+      <Suspense fallback={<AccessionsPageSkeleton />}>
+        <DeaccessionsPageClient organizationId={currentOrganizationId} />
+      </Suspense>
     </div>
   );
 }

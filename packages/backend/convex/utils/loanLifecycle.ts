@@ -2,15 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { requireLoansAccess } from "./loanAccess";
-import {
-  isLoanItemDispatched,
-  isLoanItemReturned,
-} from "./loanItemState";
+import { isLoanItemDispatched, isLoanItemReturned } from "./loanItemState";
 import {
   dispatchLoanItems,
+  type ReceiveLoanItemInput,
   restoreLoanCollections,
   returnLoanItems,
-  type ReceiveLoanItemInput,
 } from "./loanMovement";
 import { assertAllowedLoanTransition } from "./loanStatusTransitions";
 import {

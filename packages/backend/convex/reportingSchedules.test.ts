@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, expect, test, vi } from "vitest";
+import { rebuildProjection } from "../tests/testHarness";
 import { modules } from "../tests/testSetup";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
@@ -37,6 +38,7 @@ async function setup(
     }
     return { organizationId, userId, roleId };
   });
+  await rebuildProjection(t, fixture.organizationId);
   return { t, ...fixture, staff: t.withIdentity({ subject: fixture.userId }) };
 }
 afterEach(() => vi.useRealTimers());

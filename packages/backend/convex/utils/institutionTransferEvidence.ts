@@ -1,5 +1,9 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import {
+  moveCollectionToLocation,
+  requireCollectionInOrganization,
+} from "./locationIntegrity";
 
 export interface TransferScopeSnapshot {
   sourceOrganizationId: Id<"organizations">;
@@ -120,22 +124,32 @@ export async function recordTargetTransferArrival(
     reason: string;
   },
 ): Promise<Id<"locationHistory">> {
-  const movedAt = Date.now();
-  const movementId = await ctx.db.insert("locationHistory", {
-    collectionId: args.collectionId,
-    fromLocationId: undefined,
-    toLocationId: args.targetLocationId,
-    movedBy: args.userId,
-    movedAt,
-    reason: args.reason,
-    notes: `Institution transfer receipt (request ${args.moveRequestId})`,
-  });
-
-  await ctx.db.patch(args.collectionId, {
-    currentLocationId: args.targetLocationId,
-    lastModifiedBy: args.userId,
-    lastModifiedAt: movedAt,
-  });
-
+  const collection = await requireCollectionInOrganization(
+    ctx,
+    args.collectionId,
+    args.targetOrganizationId,
+  );
+  const destination = await requireTargetTransferLocation(
+    ctx,
+    args.targetOrganizationId,
+    args.targetLocationId,
+  );
+  const movementId = await moveCollectionToLocation(
+    ctx,
+    collection,
+    args.targetLocationId,
+    args.userId,
+    args.reason,
+    {
+      kind: "institution_transfer",
+      authorizedBy: args.userId,
+      expectedFromLocationId: null,
+      checkCapacity: true,
+      statusOverride: destination.status === "restricted",
+      notes: `Institution transfer receipt (request ${args.moveRequestId})`,
+    },
+  );
+  if (!movementId)
+    throw new Error("Transfer receipt requires a location change");
   return movementId;
 }

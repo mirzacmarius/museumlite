@@ -3,13 +3,11 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+  readWorkflowHistoryPage,
+  workflowHistoryPageValidator,
+} from "./auditLog";
 import {
   accessionListItemValidator,
   toAccessionListItems,
@@ -17,6 +15,7 @@ import {
 import { publishAccessionObjectDraft } from "./utils/accessionObjectDraftPublication";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { batchLookup } from "./utils/batchLookup";
+import { appendCaseHistory, recentCaseHistory } from "./utils/caseHistory";
 import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { enforceMediaQuota } from "./utils/featureGates";
@@ -28,6 +27,7 @@ import {
 import { countIndexedQuery } from "./utils/indexedCounts";
 import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import {
   accessionDraftMediaValidator,
@@ -982,9 +982,12 @@ export const get = query({
             approvedBy: v.id("users"),
             approvedAt: v.number(),
             comment: v.optional(v.string()),
+            approverName: v.optional(v.string()),
           }),
         ),
       ),
+      workflowHistoryIsPreview: v.literal(true),
+      workflowHistoryHasMore: v.boolean(),
     }),
     v.null(),
   ),
@@ -1029,7 +1032,7 @@ export const get = query({
     }
 
     // Ensure workflowHistory is always an array (even if empty)
-    const workflowHistory = accession.workflowHistory ?? [];
+    const historyPreview = await recentCaseHistory(ctx, accession, "accession");
     const draftMedia = accession.draftMedia
       ? await Promise.all(
           accession.draftMedia.map(async (mediaItem) => ({
@@ -1067,7 +1070,9 @@ export const get = query({
       workflowStep: accession.workflowStep,
       draftObjectData: accession.draftObjectData,
       draftMedia,
-      workflowHistory,
+      workflowHistory: historyPreview.entries,
+      workflowHistoryIsPreview: true as const,
+      workflowHistoryHasMore: historyPreview.hasMore,
     };
   },
 });
@@ -1386,7 +1391,7 @@ export const approve = mutation({
         return null;
       }
 
-      const history = accession.workflowHistory ?? [];
+      const history = [...(accession.workflowHistory ?? [])];
       if (!workflowState.isPastLastStep) {
         history.push({
           step: currentStep,
@@ -1405,7 +1410,7 @@ export const approve = mutation({
             status: "approved",
             approvedBy: userId,
             approvedAt: Date.now(),
-            workflowHistory: history,
+            ...(await appendCaseHistory(ctx, accession, "accession", history)),
           }),
           syncAccessionSearchDocument(ctx, args.accessionId),
           ctx.runMutation(internal.workflows.recordWorkflowHistory, {
@@ -1461,7 +1466,7 @@ export const approve = mutation({
 
         await ctx.db.patch(args.accessionId, {
           workflowStep: nextStep,
-          workflowHistory: history,
+          ...(await appendCaseHistory(ctx, accession, "accession", history)),
         });
 
         if (approvalMode !== "single") {
@@ -1617,7 +1622,7 @@ export const reject = mutation({
     ]);
 
     // Notify users who were involved in the workflow (from history)
-    const history = accession.workflowHistory ?? [];
+    const history = [...(accession.workflowHistory ?? [])];
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
     if (creatorId && creatorId !== userId) {
@@ -1662,16 +1667,10 @@ export const emptyRejected = mutation({
 export const getWorkflowHistory = query({
   args: {
     accessionId: v.id("accessions"),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      step: v.number(),
-      approvedBy: v.id("users"),
-      approvedAt: v.number(),
-      comment: v.optional(v.string()),
-      approverName: v.optional(v.string()),
-    }),
-  ),
+  returns: workflowHistoryPageValidator,
   handler: async (ctx, args) => {
     const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
@@ -1680,22 +1679,13 @@ export const getWorkflowHistory = query({
 
     await requirePermission(ctx, accession.organizationId, "collections.read");
 
-    const history = accession.workflowHistory ?? [];
-
-    // Batch fetch approver users to avoid N+1 queries
-    const approverIds = history.map((item) => item.approvedBy);
-    const approverMap = await batchLookup(ctx, approverIds, "users");
-
-    // Enrich with approver names using batch lookup map
-    const enrichedHistory = history.map((item) => {
-      const approver = approverMap.get(item.approvedBy);
-      return {
-        ...item,
-        approverName: approver?.name || approver?.email || undefined,
-      };
+    return await readWorkflowHistoryPage(ctx, {
+      organizationId: accession.organizationId,
+      caseType: "accession",
+      entityId: args.accessionId,
+      cursor: args.cursor,
+      limit: args.limit,
     });
-
-    return enrichedHistory;
   },
 });
 

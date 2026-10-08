@@ -9,7 +9,12 @@ import {
 async function createExhibitionFixture(t: ReturnType<typeof createConvexTest>) {
   const { organizationId, userId } = await createOrgUserWithPermissions(
     t,
-    ["collections.read", "collections.update", "collections.delete"],
+    [
+      "collections.read",
+      "collections.update",
+      "collections.delete",
+      "collections.accept_condition",
+    ],
     {
       subscriptionTier: "pro",
       slugPrefix: "loan-guards",
@@ -198,9 +203,24 @@ test("installObject succeeds for active objects", async () => {
     });
   });
 
+  const installationAssessment1 = await authed.mutation(
+    api.conditionAssessments.create,
+    {
+      collectionId: activeCollectionId,
+      assessedAt: Date.now(),
+      condition: "Good",
+      summary: "Installation check",
+      observations: [],
+      photos: [],
+    },
+  );
+  await authed.mutation(api.conditionAssessments.accept, {
+    assessmentId: installationAssessment1,
+  });
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
     observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: installationAssessment1,
   });
 
   const result = await t.run(async (ctx) => {
@@ -276,15 +296,46 @@ test("activateExhibition succeeds when pending objects are active", async () => 
   const anchorObject = exhibitionObjects.find(
     (row) => row.collectionId !== activeCollectionId,
   );
-  if (!activeObject || !anchorObject) throw new Error("Missing exhibition objects");
+  if (!activeObject || !anchorObject)
+    throw new Error("Missing exhibition objects");
 
+  const installationAssessment2 = await authed.mutation(
+    api.conditionAssessments.create,
+    {
+      collectionId: activeCollectionId,
+      assessedAt: Date.now(),
+      condition: "Good",
+      summary: "Installation check",
+      observations: [],
+      photos: [],
+    },
+  );
+  await authed.mutation(api.conditionAssessments.accept, {
+    assessmentId: installationAssessment2,
+  });
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId: activeObject._id,
     observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: installationAssessment2,
+  });
+  const installationAssessment3 = await authed.mutation(
+    api.conditionAssessments.create,
+    {
+      collectionId: anchorObject.collectionId,
+      assessedAt: Date.now(),
+      condition: "Good",
+      summary: "Installation check",
+      observations: [],
+      photos: [],
+    },
+  );
+  await authed.mutation(api.conditionAssessments.accept, {
+    assessmentId: installationAssessment3,
   });
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId: anchorObject._id,
     observedFromLocationId: null,
+    installationConditionAssessmentId: installationAssessment3,
   });
 
   await authed.mutation(api.exhibitions.activate, {

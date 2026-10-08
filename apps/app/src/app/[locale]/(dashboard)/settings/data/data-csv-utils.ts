@@ -1,4 +1,5 @@
 import { parseCsvRecords } from "@/lib/csv-parser";
+import { formatCsvCell } from "@/lib/format-converters";
 
 export type ImportType =
   | "objects"
@@ -20,17 +21,7 @@ export function convertToCSV(
 ): string {
   const headerLine = headers.join(",");
   const dataLines = rows.map((row) =>
-    headers
-      .map((h) => {
-        const value = row[h];
-        if (value === null || value === undefined) return "";
-        const str = String(value);
-        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      })
-      .join(","),
+    headers.map((h) => formatCsvCell(row[h])).join(","),
   );
   return [headerLine, ...dataLines].join("\n");
 }

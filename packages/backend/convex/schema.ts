@@ -2,6 +2,11 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  exportFormat,
+  exportSource,
+  exportStatus,
+} from "./utils/exportContract";
+import {
   collectionTypeValidator,
   enabledModuleValidator,
 } from "./utils/moduleValidators";
@@ -13,6 +18,14 @@ import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
+import {
+  projectionAvailability,
+  projectionDiscrepancyFields,
+  projectionFact,
+  projectionFanOutKind,
+  projectionGenerationFields,
+  projectionUnavailableReason,
+} from "./utils/projectionValidators";
 
 // Type-safe validators for flexible data structures
 
@@ -109,6 +122,80 @@ export const shippingLogEntry = v.object({
 });
 
 export default defineSchema({
+  organizationProjectionStates: defineTable({
+    organizationId: v.id("organizations"),
+    definitionVersion: v.number(),
+    revision: v.number(),
+    availability: projectionAvailability,
+    reason: v.optional(projectionUnavailableReason),
+    activeGenerationId: v.optional(v.id("projectionGenerations")),
+    buildingGenerationId: v.optional(v.id("projectionGenerations")),
+    reconcilingGenerationId: v.optional(v.id("projectionGenerations")),
+    lastReconciliationId: v.optional(v.id("projectionGenerations")),
+    lastBuiltAt: v.optional(v.number()),
+    lastVerifiedAt: v.optional(v.number()),
+    invalidatedAt: v.optional(v.number()),
+    metricSlotsInUse: v.optional(v.array(v.number())),
+  }).index("by_organizationId", ["organizationId"]),
+  // Wide relation refreshes deferred from a source write, processed in bounded pages.
+  projectionFanOuts: defineTable({
+    organizationId: v.id("organizations"),
+    generationId: v.id("projectionGenerations"),
+    kind: projectionFanOutKind,
+    sourceTable: v.optional(v.string()),
+    targetId: v.string(),
+    step: v.number(),
+    cursor: v.union(v.string(), v.null()),
+    enqueuedAt: v.number(),
+  })
+    .index("by_organizationId", ["organizationId"])
+    .index("by_generationId_and_kind_and_targetId", [
+      "generationId",
+      "kind",
+      "targetId",
+    ]),
+  projectionGenerations: defineTable(projectionGenerationFields).index(
+    "by_organizationId_and_startedAt",
+    ["organizationId", "startedAt"],
+  ),
+  projectionContributions: defineTable({
+    organizationId: v.id("organizations"),
+    generationId: v.id("projectionGenerations"),
+    sourceTable: v.string(),
+    sourceId: v.string(),
+    facts: v.array(projectionFact),
+  })
+    .index("by_generationId_and_sourceTable_and_sourceId", [
+      "generationId",
+      "sourceTable",
+      "sourceId",
+    ])
+    .index("by_sourceTable_and_sourceId", ["sourceTable", "sourceId"])
+    .index("by_generationId", ["generationId"]),
+  projectionTotals: defineTable({
+    organizationId: v.id("organizations"),
+    generationId: v.id("projectionGenerations"),
+    scope: v.string(),
+    partition: v.string(),
+    category: v.string(),
+    rank: v.number(),
+    counts: v.record(v.string(), v.number()),
+  })
+    .index("by_generationId_and_scope_and_partition", [
+      "generationId",
+      "scope",
+      "partition",
+    ])
+    .index("by_generationId_and_category_and_rank", [
+      "generationId",
+      "category",
+      "rank",
+    ])
+    .index("by_generationId", ["generationId"]),
+  projectionDiscrepancies: defineTable(projectionDiscrepancyFields).index(
+    "by_generationId",
+    ["generationId"],
+  ),
   ...authTables,
   users: defineTable({
     // Convex Auth fields
@@ -1383,6 +1470,7 @@ export default defineSchema({
       "status",
       "dateReceived",
     ])
+    .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_donor_account", ["donorAccountId"])
     .index("by_assigned_to", ["assignedTo"])
     .searchIndex("search_accessions", {
@@ -1560,6 +1648,7 @@ export default defineSchema({
       "status",
       "dateDeaccessioned",
     ])
+    .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_regulatory_token", ["regulatoryApprovalToken"])
     .index("by_assigned_to", ["assignedTo"]),
 
@@ -1790,9 +1879,7 @@ export default defineSchema({
     executedBy: v.optional(v.id("users")),
     executedAt: v.optional(v.number()),
     deaccessionId: v.optional(v.id("deaccessions")),
-    approvedSourceLocationId: v.optional(
-      v.union(v.id("locations"), v.null()),
-    ),
+    approvedSourceLocationId: v.optional(v.union(v.id("locations"), v.null())),
     acceptedTargetLocationId: v.optional(v.id("locations")),
     targetArrivalMovementId: v.optional(v.id("locationHistory")),
     transferScopeSnapshot: v.optional(
@@ -2060,6 +2147,11 @@ export default defineSchema({
     .index("by_organization_and_type", ["organizationId", "type"])
     .index("by_account", ["accountId"])
     .index("by_organization_and_endDate", ["organizationId", "endDate"])
+    .index("by_organization_and_status_and_endDate", [
+      "organizationId",
+      "status",
+      "endDate",
+    ])
     .index("by_assigned_to", ["assignedTo"])
     .searchIndex("search_loans", {
       searchField: "lenderBorrowerName",
@@ -2142,16 +2234,24 @@ export default defineSchema({
     recordedAt: v.number(),
     condition: v.string(),
     summary: v.string(),
-    observations: v.array(v.object({
-      area: v.string(),
-      description: v.string(),
-      severity: v.union(v.literal("minor"), v.literal("moderate"), v.literal("severe")),
-    })),
-    photos: v.array(v.object({
-      mediaId: v.id("mediaFiles"),
-      storageId: v.id("_storage"),
-      fileName: v.string(),
-    })),
+    observations: v.array(
+      v.object({
+        area: v.string(),
+        description: v.string(),
+        severity: v.union(
+          v.literal("minor"),
+          v.literal("moderate"),
+          v.literal("severe"),
+        ),
+      }),
+    ),
+    photos: v.array(
+      v.object({
+        mediaId: v.id("mediaFiles"),
+        storageId: v.id("_storage"),
+        fileName: v.string(),
+      }),
+    ),
     status: v.union(v.literal("draft"), v.literal("accepted")),
     acceptedBy: v.optional(v.id("users")),
     acceptedAt: v.optional(v.number()),
@@ -2330,11 +2430,7 @@ export default defineSchema({
     baselineAssessmentId: v.optional(v.id("conditionAssessments")),
     outcomeAssessmentId: v.optional(v.id("conditionAssessments")),
     followUpStatus: v.optional(
-      v.union(
-        v.literal("none"),
-        v.literal("pending"),
-        v.literal("completed"),
-      ),
+      v.union(v.literal("none"), v.literal("pending"), v.literal("completed")),
     ),
     followUpNotes: v.optional(v.string()),
     followUpDueAt: v.optional(v.number()),
@@ -2683,7 +2779,9 @@ export default defineSchema({
     deinstalledBy: v.optional(v.id("users")),
     deinstallationNotes: v.optional(v.string()),
     conditionAtDeinstallation: v.optional(v.string()),
-    deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    deinstallationConditionAssessmentId: v.optional(
+      v.id("conditionAssessments"),
+    ),
     returnedToOriginalLocation: v.optional(v.boolean()),
     returnedAt: v.optional(v.number()),
     returnMovementId: v.optional(v.id("locationHistory")),
@@ -2722,6 +2820,44 @@ export default defineSchema({
     uploadedAt: v.number(),
   }).index("by_exhibition", ["exhibitionId"]),
 
+  caseHistoryState: defineTable({
+    organizationId: v.id("organizations"),
+    caseType: v.string(),
+    entityId: v.string(),
+    sourceLength: v.number(),
+    // Retired legacy-copy progress; kept optional so existing rows validate.
+    migratedThrough: v.optional(v.number()),
+    nextOrdinal: v.number(),
+    cutoverAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_caseType_and_entityId", [
+      "organizationId",
+      "caseType",
+      "entityId",
+    ]),
+  caseHistoryEntries: defineTable({
+    organizationId: v.id("organizations"),
+    caseType: v.string(),
+    entityId: v.string(),
+    ordinal: v.number(),
+    entry: v.object({
+      step: v.number(),
+      approvedBy: v.id("users"),
+      approvedAt: v.number(),
+      comment: v.optional(v.string()),
+      approverName: v.optional(v.string()),
+    }),
+    evidenceStatus: v.union(v.literal("recorded"), v.literal("legacy")),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_caseType_and_entityId_and_ordinal", [
+      "organizationId",
+      "caseType",
+      "entityId",
+      "ordinal",
+    ]),
+
   // Activity tracking
   auditLog: defineTable({
     organizationId: v.id("organizations"),
@@ -2729,6 +2865,20 @@ export default defineSchema({
     action: v.string(),
     entityType: v.string(),
     entityId: v.string(),
+    actorSnapshot: v.optional(
+      v.object({ name: v.optional(v.string()), email: v.optional(v.string()) }),
+    ),
+    subjectSnapshot: v.optional(
+      v.object({
+        label: v.optional(v.string()),
+        identifier: v.optional(v.string()),
+      }),
+    ),
+    objectId: v.optional(v.id("collections")),
+    caseId: v.optional(v.string()),
+    correctionOf: v.optional(v.id("auditLog")),
+    correctionReason: v.optional(v.string()),
+    requestId: v.optional(v.string()),
     changes: v.optional(auditLogChanges),
     ipAddress: v.optional(v.string()),
     userAgent: v.optional(v.string()),
@@ -2736,6 +2886,38 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_timestamp", ["organizationId", "timestamp"])
+    .index("by_organization_and_requestId", ["organizationId", "requestId"])
+    .index("by_organization_and_userId_and_timestamp", [
+      "organizationId",
+      "userId",
+      "timestamp",
+    ])
+    .index("by_organization_and_entityType_and_timestamp", [
+      "organizationId",
+      "entityType",
+      "timestamp",
+    ])
+    .index("by_organization_and_entityType_and_entityId_and_timestamp", [
+      "organizationId",
+      "entityType",
+      "entityId",
+      "timestamp",
+    ])
+    .index("by_organization_and_action_and_timestamp", [
+      "organizationId",
+      "action",
+      "timestamp",
+    ])
+    .index("by_organization_and_objectId_and_timestamp", [
+      "organizationId",
+      "objectId",
+      "timestamp",
+    ])
+    .index("by_organization_and_caseId_and_timestamp", [
+      "organizationId",
+      "caseId",
+      "timestamp",
+    ])
     .index("by_user", ["userId"])
     .index("by_entity", ["entityType", "entityId"])
     .index("by_timestamp", ["timestamp"]),
@@ -4226,6 +4408,7 @@ export default defineSchema({
     installationMovementId: v.optional(v.id("locationHistory")),
     installedAt: v.optional(v.number()),
     installedBy: v.optional(v.id("users")),
+    installationTaskId: v.optional(v.id("installationTasks")),
     linkedExhibitionObjectId: v.optional(v.id("exhibitionObjects")),
 
     notes: v.optional(v.string()),
@@ -4693,6 +4876,72 @@ export default defineSchema({
   // ============================================
   // Batch Operations
   // ============================================
+
+  exportJobs: defineTable({
+    organizationId: v.id("organizations"),
+    creatorId: v.id("users"),
+    requestKey: v.string(),
+    source: exportSource,
+    format: exportFormat,
+    schemaVersion: v.literal(1),
+    asOf: v.number(),
+    captureStartedAt: v.number(),
+    captureCompletedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    status: exportStatus,
+    cursor: v.union(v.string(), v.null()),
+    checkpoint: v.number(),
+    chunksCommitted: v.number(),
+    finalizeLevel: v.number(),
+    finalizeAfter: v.number(),
+    finalizeInputCount: v.number(),
+    finalizeProduced: v.number(),
+    cleanupPartsCursor: v.optional(v.string()),
+    cleanupSequence: v.optional(v.number()),
+    rows: v.number(),
+    scanned: v.number(),
+    selected: v.number(),
+    selectedCount: v.optional(v.number()),
+    bytes: v.number(),
+    attempts: v.number(),
+    failedAttempts: v.number(),
+    generation: v.number(),
+    leaseUntil: v.optional(v.number()),
+    sourceDone: v.boolean(),
+    error: v.optional(v.string()),
+    expiresAt: v.number(),
+    storageId: v.optional(v.id("_storage")),
+    sha256: v.optional(v.string()),
+  })
+    .index("by_creatorId_and_requestKey", ["creatorId", "requestKey"])
+    .index("by_organizationId_and_creatorId", ["organizationId", "creatorId"])
+    .index("by_organizationId", ["organizationId"]),
+  exportSelections: defineTable({
+    jobId: v.id("exportJobs"),
+    objectId: v.id("collections"),
+  })
+    .index("by_jobId", ["jobId"])
+    .index("by_jobId_and_objectId", ["jobId", "objectId"]),
+  exportChunks: defineTable({
+    jobId: v.id("exportJobs"),
+    sequence: v.number(),
+    storageId: v.optional(v.id("_storage")),
+    rows: v.number(),
+    bytes: v.number(),
+    sha256: v.string(),
+    capturedAt: v.number(),
+  }).index("by_jobId_and_sequence", ["jobId", "sequence"]),
+
+  exportParts: defineTable({
+    jobId: v.id("exportJobs"),
+    level: v.number(),
+    sequence: v.number(),
+    storageId: v.optional(v.id("_storage")),
+    rows: v.number(),
+    bytes: v.number(),
+    sha256: v.string(),
+    leafChunks: v.number(),
+  }).index("by_jobId_and_level_and_sequence", ["jobId", "level", "sequence"]),
 
   // Batch job tracking for bulk operations
   batchJobs: defineTable({

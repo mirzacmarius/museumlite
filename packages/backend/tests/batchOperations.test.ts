@@ -335,9 +335,7 @@ describe("batchOperations schema", () => {
         collectionIds: [orgA.collectionId, orgB.collectionId],
         updates: { condition: "good" },
       }),
-    ).rejects.toThrow(
-      "Some collections do not belong to this organization",
-    );
+    ).rejects.toThrow("Some collections do not belong to this organization");
 
     const batchJobs = await t.run(async (ctx) => {
       return await ctx.db

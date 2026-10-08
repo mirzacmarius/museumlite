@@ -1,5 +1,54 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "This object is now at {location}. Refresh, confirm where it is, and record the handoff again.",
+    sourceChangedNoLocation:
+      "This object no longer has a recorded location. Refresh, confirm where it is, and record the handoff again.",
+    sourceChangedUnknown:
+      "This object has moved since this page loaded. Refresh, confirm where it is, and record the handoff again.",
+    alreadyAtDestination: "This object is already at the selected destination.",
+    destinationUnavailable:
+      "{location} is not available for moves. Choose another destination.",
+    destinationFull:
+      "{location} is at capacity ({capacity}). Choose another destination.",
+    destinationBlocked:
+      "The selected destination cannot receive this object. Choose another destination.",
+    destinationRequired: "Choose or confirm a destination for this object.",
+    externalCustody:
+      "This object is out on loan. Record its loan return first.",
+    assessmentRequired:
+      "Link an accepted condition assessment for this handoff.",
+    assessmentNotAccepted:
+      "The selected condition assessment has not been accepted yet.",
+    conditionEvidenceRequired:
+      "Add condition notes or link an accepted condition assessment.",
+    referenceNotFound:
+      "A linked record is no longer available. Refresh and try again.",
+    alreadyRecorded:
+      "This handoff has already been recorded. Refresh to see the latest state.",
+    outOfOrder:
+      "This step is not available yet. Record the earlier handoff steps first.",
+    exhibitionOutcomeUnresolved:
+      "Record the exhibition return or an authorized exception before returning this object to the lender.",
+    closureBlocked:
+      "Objects still awaiting a return or authorized exception: {count}.",
+    fallback: "The action could not be completed. Refresh and try again.",
+  },
   conditionAssessments: {
+    actorProfileUnavailable: "Recorded actor; current profile unavailable",
+    actorCurrentName: "Current profile name: {name}",
+    unknownLegacyActor: "Legacy actor identity unknown",
+
+    receiptRequirement:
+      "Enter condition notes or select an accepted assessment for every selected item, and confirm each required return destination.",
+    handoffTimeline: "Handoff timeline",
+    installationTask: "Complete linked installation task (optional)",
+
+    selectAccepted: "Select accepted condition assessment",
+    returnDestination: "Return destination",
+    conditionEvidence: "Condition evidence",
+    confirmOrigin: "Confirm return to recorded origin",
+
     title: "Condition assessments",
     description:
       "Dated observations and photos are retained. A reviewer accepts a draft to update current condition.",
@@ -46,6 +95,11 @@ export default {
     compareAfter: "After (current accepted)",
   },
   dashboard: {
+    inventoryDefinition:
+      "Operational inventory excludes open deaccessions and incoming or uncertain ownership.",
+    inventoryIncomingExcluded: "Incoming records excluded: {count}",
+    inventoryUnclassified: "Ownership unclassified: {count}",
+    pendingOutgoingTransferApprovals: "Outgoing transfer approvals",
     overviewTitle: "Overview",
     overviewDescription: "Your collections and work at a glance.",
     needsReview: "Needs review",
@@ -134,6 +188,7 @@ export default {
       activity: "Activity",
       developer: "Developer",
       data: "Data Import/Export",
+      metrics: "Metrics health",
     },
     roles: {
       title: "Role Management",
@@ -509,6 +564,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Export to CSV",
+      objectsCapNote:
+        "Import-ready CSV includes up to 1,000 objects with location and group names. For the complete catalog, use the export job below.",
+      objectsCapExceeded:
+        "This catalog has more than 1,000 objects. Use the complete catalog export below.",
     },
   },
   account: {
@@ -1013,6 +1072,40 @@ export default {
     cancel: "Cancel",
   },
   activityLog: {
+    historyPreview:
+      "Recent approval entries only. Open the case timeline for the complete history.",
+    nextPage: "Next page",
+    pageEntries: "entries on this page",
+    filterOptionsRecent:
+      "Actor and action options show the latest 1,000 events. Date and subject searches cover all history.",
+    invalidDateRange: "The start date must be before the end date.",
+    details: "Event details",
+    currentProfileActor: "{name} (current profile)",
+    actor: "Actor",
+    legacyEvidence:
+      "Legacy event: contemporaneous actor or subject snapshots were not recorded.",
+    recordedEvidence:
+      "Actor and subject evidence was recorded when this event was written.",
+    correctionOf: "Correction of",
+    subjectTimeline: "Subject timeline",
+    objectTimeline: "Object timeline",
+    caseTimeline: "Case timeline",
+    field: "Field",
+    before: "Before",
+    after: "After",
+    correctionReason: "Reason for correction",
+    correctionStatement: "Correction statement",
+    appendCorrection: "Append correction",
+    correctionFailed:
+      "The correction could not be saved. Your text is retained; retry to continue.",
+    correctionSaved: "Correction appended. The original event is retained.",
+    approvalHistory: "Case approval history",
+    legacy: "legacy evidence",
+    firstPage: "First page",
+    unavailable:
+      "History is unavailable or your role cannot view it. Retry, clear filters, or select an authorized organization.",
+    retry: "Retry",
+
     featureName: "Compliance & Audit Log",
     title: "Activity Log",
     description: "View and filter activity across your organization",
@@ -1326,6 +1419,8 @@ export default {
     },
     kpis: {
       activeLoans: "Active Loans",
+      loadedActiveLoans: "Active loans in loaded results",
+      loadedItems: "Items in loaded loans",
       objectsInTransit: "Objects in Transit",
       totalInsuredValue: "Total Insured Value",
       expiringAgreements: "Expiring Agreements",
@@ -1372,6 +1467,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Loaded results: {count}",
       showing: "Showing {start}-{end} of {total} loans",
       previous: "Previous",
       next: "Next",
@@ -3101,6 +3197,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Proposed",
+      approved: "Approved",
+      installing: "Installing",
+      active: "Active",
+      deinstalling: "Deinstalling",
+      closed: "Closed",
+      rejected: "Rejected",
+      unclassified: "Unclassified",
+    },
+    metricFilterApplied: "Metric filters applied at",
+    clearMetricFilter: "Clear metric filters",
     title: "Exhibitions",
     description: "Manage your exhibition history and planning",
     newExhibition: "New Exhibition",
@@ -3149,6 +3257,7 @@ export default {
       outstanding: "{count} of {total} outcomes outstanding",
       readyToClose: "All outcomes resolved",
       observedFrom: "Observed source location",
+      installationDestination: "Installation destination",
       install: "Record installation",
       deinstall: "Record deinstallation",
       confirmReturn: "Confirm physical return",
@@ -3852,6 +3961,11 @@ export default {
       proposed: "Proposed",
       closed: "Closed",
       activeNow: "Active Now",
+      currentBySchedule: "Current by schedule",
+      upcomingBySchedule: "Upcoming by schedule",
+      unclassified: "{count} unclassified",
+      loanExclusions: "{count} loan exhibitions excluded",
+      legacyContradictions: "{count} legacy date/flag contradictions",
       upcomingStarts: "Upcoming",
       startsIn: "Starts in",
       days: "days",
@@ -3897,7 +4011,10 @@ export default {
       noUpcoming: "No upcoming loan returns",
     },
     inventory: {
+      sourceCounts:
+        "Detail records / records with a recorded value; source currency is missing.",
       title: "Inventory Valuation",
+      unavailable: "Valuation data is unavailable for this organization.",
       totalValue: "Total Value",
       totalItems: "Total Items",
       valuedItems: "Valued Items",
@@ -3930,6 +4047,7 @@ export default {
       exportAllReports: "Export All Reports",
       csv: {
         generated: "Generated",
+        unavailable: "Unavailable",
         total: "TOTAL",
         upgradeToEnterprise: "Upgrade to Enterprise",
         inventory: {
@@ -4562,6 +4680,8 @@ export default {
     refineSearch: "More objects match. Refine the search to narrow the list.",
   },
   deaccessions: {
+    loadedResults: "Counts for loaded results",
+    loadMore: "Load more",
     title: "Deaccession Records",
     description: "Items permanently removed from collection.",
     noOrg: {
@@ -6176,6 +6296,7 @@ export default {
         outstandingInstallation: "{count} awaiting installation",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
+        installationDestination: "Installation destination",
         receiptDestination: "Receipt destination",
         conditionNotes: "Condition at receipt",
         conditionPlaceholder: "Condition summary or notes",
@@ -7668,6 +7789,170 @@ export default {
       userEmailNotFound: "User email not found",
       differentEmail: "This invitation is for a different email address",
       alreadyMember: "Already a member of this organization",
+    },
+  },
+  exportJobs: {
+    catalogFiltered: "Export full filtered results",
+    catalogComplete: "Export complete catalog",
+    auditComplete: "Export complete audit history",
+    auditFiltered: "Export complete filtered audit history",
+    selected: "Export {count} selected objects",
+    format: "Export format",
+    formatCsv: "CSV",
+    formatJsonl: "JSONL (typed JSON)",
+    create: "Create export",
+    retrySelection: "Retry selection upload",
+    policy:
+      "Each new request uses one monthly export allowance; retries and downloads reuse the same request. Reloaded incomplete selection uploads need a new request. Limits: 16 MiB per artifact, 512 KiB per page, 1,024 chunks, 10,000 source pages; inventory-scope filters support 32 loan links per object. Downloads expire after seven days. Object values and filter membership are captured during processing; the creation cutoff excludes later inserts. JSONL preserves types. CSV text uses formula protection; import with the manifest column schema to preserve literal text and leading zeros.",
+    sourceAudit: "Audit",
+    sourceSelected: "Selected objects",
+    sourceCatalog: "Filtered catalog",
+    statusSelecting: "Uploading selection",
+    statusQueued: "Queued",
+    statusRunning: "Running",
+    statusFinalizing: "Finalizing",
+    statusCompleted: "Completed",
+    statusCancelled: "Cancelled",
+    statusFailed: "Failed",
+    statusExpired: "Expired",
+    progress: "{rows} captured rows · {scanned} scanned · {pages} pages",
+    progressAudit: "{rows} captured rows · {scanned} matched · {pages} pages",
+    selectedCount: "{count} selected",
+    cutoff: "Creation cutoff: {asOf} · expires {expiresAt}",
+    cancel: "Cancel",
+    resume: "Resume",
+    retry: "Retry from checkpoint",
+    recover: "Recover stalled job",
+    download: "Download {count} rows",
+    downloadManifest: "Download manifest",
+    signIn: "Sign in to download",
+    checksumMismatch: "Artifact checksum mismatch; retry the download",
+    failed: "Export failed",
+    errorAccess:
+      "You no longer have access to this export. Check your role and plan.",
+    errorQuota: "Your plan's monthly export allowance is used up.",
+    errorExpired: "This export has expired. Create a new export.",
+    errorNotResumable: "This export cannot be resumed right now.",
+    errorSelection:
+      "The selection could not be exported. Retry the upload or create a new selection.",
+    errorTooLarge: "This export is too large. Narrow the filters or selection.",
+    errorInventoryLinks:
+      "An object has too many loan links for this inventory filter. Export selected objects instead.",
+    errorInvalidRequest:
+      "The export request is invalid. Check the filters and try again.",
+    errorInterrupted: "The export was interrupted. Retry from the checkpoint.",
+    errorUnavailable:
+      "The export file is not available. Retry or create a new export.",
+    reportsNote:
+      "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Metrics unavailable",
+      short: "Unavailable",
+      openHealth: "Open metrics health",
+      askAdministrator: "Ask an administrator to rebuild the metrics.",
+      storage: "Storage usage unavailable",
+      usage: "Usage counts are unavailable until metrics are rebuilt.",
+    },
+    reasons: {
+      not_built: "Metrics have not been built for this organization yet.",
+      building:
+        "Metrics are being rebuilt. Values appear when the rebuild completes.",
+      invalidated:
+        "A recent change affected more records than can be updated at once. A fresh rebuild is required.",
+      definition_changed:
+        "Metric definitions changed. A rebuild is required before values are shown.",
+      rebuild_failed:
+        "The last metrics rebuild failed. Retry or start a new rebuild.",
+    },
+    availability: {
+      ready: "Ready",
+      updating: "Ready, updating",
+      unavailable: "Unavailable",
+    },
+    status: {
+      building: "Running",
+      failed: "Failed",
+      cancelled: "Cancelled",
+      completed: "Completed",
+      superseded: "Superseded",
+    },
+    mode: {
+      rebuild: "Rebuild",
+      reconcile: "Reconciliation",
+    },
+    actions: {
+      rebuild: "Rebuild metrics",
+      reconcile: "Run reconciliation",
+      starting: "Starting...",
+      retry: "Retry",
+      retrying: "Retrying...",
+      cancel: "Cancel",
+      cancelling: "Cancelling...",
+      failed: "The action could not be completed. Try again.",
+    },
+    page: {
+      title: "Metrics health",
+      description:
+        "Readiness of dashboard, report and usage metrics, rebuild progress and reconciliation results.",
+      selectOrganization: "Select an organization to view metrics health.",
+      noPermission:
+        "You need permission to manage organization settings to view metrics health.",
+      statusTitle: "Status",
+      reconcileNeedsReady:
+        "Reconciliation is available once metrics are ready.",
+      definitionVersion: "Definition version",
+      definitionOutdated: "Stored {stored}, current {current}",
+      lastBuilt: "Last built",
+      lastVerified: "Last reconciled",
+      invalidated: "Invalidated",
+      limits: "Rebuild limits",
+      limitsValue:
+        "{pageSize} rows per page, {fanOut} related records per change",
+    },
+    job: {
+      step: "Step",
+      stepValue: "{index} of {count}",
+      processedRows: "Rows processed",
+      checkpoint: "Checkpoint",
+      attempts: "Attempts",
+      started: "Started",
+      requestedBy: "Requested by",
+      failure: "Failure: {message}",
+    },
+    reconciliation: {
+      title: "Last reconciliation",
+      clean: "No differences between the metrics and the source records.",
+      summary:
+        "{discrepancies} differences recorded ({mismatches} metric mismatches).",
+      incomplete: "Reconciliation did not complete: {status}.",
+      noRepair:
+        "Reconciliation only reports differences. It never changes source records or published metrics; rebuild to publish source-derived values.",
+    },
+    categories: {
+      contribution_mismatch: "Record contribution differs",
+      missing_from_projection: "Record missing from metrics",
+      stale_projection_entry: "Metrics contain a removed record",
+      counter_mismatch: "Total differs from source",
+      legacy_counter_mismatch: "Legacy usage counter differs",
+      source_quality: "Source data needs review",
+    },
+    discrepancies: {
+      counts: "Expected {expected}, found {actual}",
+      none: "none",
+      review: "Review {source}",
+      loadMore: "Load more",
+    },
+    quality: {
+      title: "Source data quality",
+      description:
+        "Records whose source data cannot be classified. They are counted here instead of being guessed.",
+    },
+    recent: {
+      title: "Recent jobs",
+      rows: "{rows} rows",
+      discrepancies: "{count} differences",
     },
   },
 } as const;

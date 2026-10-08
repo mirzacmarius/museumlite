@@ -1,15 +1,17 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalQuery } from "./_generated/server";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { ensureIdentifierAvailable } from "./utils/identifiers";
+import { internalMutation } from "./utils/mutationBuilders";
 import {
   applyUsageCounterDelta,
   createEmptyUsageCounter,
   getStorageBytes,
 } from "./utils/organizationUsageCounters";
+import { initializeEmptyProjection } from "./utils/projectionMaintenance";
 
 export const clearTableBatch = internalMutation({
   args: {
@@ -76,6 +78,7 @@ export const createOrganization = internalMutation({
         accessionNumberFormat: `${args.slug.toUpperCase().substring(0, 3)}-YYYY-###`,
       },
     });
+    await initializeEmptyProjection(ctx, orgId);
 
     await Promise.all([
       ctx.db.insert(
@@ -2144,13 +2147,22 @@ export const createExhibition = internalMutation({
       )
       .filter((q) => q.eq(q.field("title"), args.title))
       .collect();
-    let existing = candidates.find((candidate) => candidate.collectionId === args.collectionId);
+    let existing = candidates.find(
+      (candidate) => candidate.collectionId === args.collectionId,
+    );
     if (!existing) {
       for (const candidate of candidates) {
-        const member = await ctx.db.query("exhibitionObjects")
-          .withIndex("by_exhibition", (q) => q.eq("exhibitionId", candidate._id))
-          .filter((q) => q.eq(q.field("collectionId"), args.collectionId)).first();
-        if (member) { existing = candidate; break; }
+        const member = await ctx.db
+          .query("exhibitionObjects")
+          .withIndex("by_exhibition", (q) =>
+            q.eq("exhibitionId", candidate._id),
+          )
+          .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
+          .first();
+        if (member) {
+          existing = candidate;
+          break;
+        }
       }
     }
 
@@ -2250,7 +2262,14 @@ export const createExhibitionObject = internalMutation({
       organizationId: args.organizationId,
       collectionId: args.collectionId,
       role: "participant",
-      order: (await ctx.db.query("exhibitionObjects").withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId)).collect()).length,
+      order: (
+        await ctx.db
+          .query("exhibitionObjects")
+          .withIndex("by_exhibition", (q) =>
+            q.eq("exhibitionId", args.exhibitionId),
+          )
+          .collect()
+      ).length,
       originalLocationId: args.originalLocationId,
       exhibitionLocationId: args.exhibitionLocationId,
       installedAt: args.installedAt,

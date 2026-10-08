@@ -58,6 +58,10 @@ export function formatDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const intlLocale = locale === "no" ? "nb-NO" : locale;
+  // toLocaleDateString rejects timeStyle; date-and-time styles need toLocaleString.
+  if (options?.timeStyle) {
+    return date.toLocaleString(intlLocale, options);
+  }
   return date.toLocaleDateString(intlLocale, options);
 }
 
@@ -73,6 +77,10 @@ export function formatTime(
 export function formatDateTimeUtc(timestamp: number, locale: string): string {
   const supportedLocale = isDateLocale(locale) ? locale : "en";
   return UTC_DATE_TIME_FORMATTERS[supportedLocale].format(timestamp);
+}
+
+export function formatIsoTimestamp(timestamp: number): string {
+  return new Date(timestamp).toISOString();
 }
 
 export function formatDateFns(

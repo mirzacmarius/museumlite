@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import { custodyConflictFromError } from "@v1/backend/convex/utils/custodyErrors";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
@@ -11,6 +12,7 @@ import type { FunctionReturnType } from "convex/server";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { formatMovementTime, movementIssueLabel } from "./movement-labels";
 
@@ -27,6 +29,7 @@ interface MoveRequestCardProps {
 
 export function MoveRequestCard({ request, canManage }: MoveRequestCardProps) {
   const t = useScopedI18n("locations.movements");
+  const custodyConflictMessage = useCustodyConflictMessage();
   const locale = useCurrentLocale();
   const [notes, setNotes] = useState("");
   const [override, setOverride] = useState(false);
@@ -65,7 +68,11 @@ export function MoveRequestCard({ request, canManage }: MoveRequestCardProps) {
       toast.success(message);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t("requests.actionFailed"),
+        custodyConflictFromError(error)
+          ? custodyConflictMessage(error)
+          : error instanceof Error
+            ? error.message
+            : t("requests.actionFailed"),
       );
     } finally {
       setPending(null);

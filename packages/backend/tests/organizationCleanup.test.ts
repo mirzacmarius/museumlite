@@ -1,8 +1,10 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import { datedEntries, metricTree } from "../convex/utils/projectionStore";
+import { rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup";
 
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
@@ -395,5 +397,133 @@ describe("organizationCleanup", () => {
     );
     expect(organization?._id).toBe(organizationId);
     expect(auditEntry?.entityId).toBe("missing-historical-collection");
+  });
+
+  test("purging a library removes its export jobs, projection data and metric aggregate entries", async () => {
+    vi.useFakeTimers();
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId, userId } = await createAdminOrganization(
+      t,
+      "Cleanup Derived Data Org",
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.read",
+        category: "collections",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+      await ctx.db.insert("auditLog", {
+        organizationId,
+        userId,
+        action: "scheduled_organization_deletion",
+        entityType: "organization",
+        entityId: organizationId,
+        timestamp: 100,
+      });
+    });
+    const admin = authedForUser(t, userId);
+    const jobId = await admin.mutation(api.exports.create, {
+      organizationId,
+      requestKey: "purge-derived",
+      format: "jsonl",
+      source: { kind: "objects", mode: "filtered", filters: {} },
+    });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    await rebuildProjection(t, organizationId);
+    const namespaces = await t.run(async (ctx) => {
+      const generations = await ctx.db
+        .query("projectionGenerations")
+        .withIndex("by_organizationId_and_startedAt", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(10);
+      const found = new Set<string>();
+      for (const generation of generations) {
+        const contributions = await ctx.db
+          .query("projectionContributions")
+          .withIndex("by_generationId", (q) =>
+            q.eq("generationId", generation._id),
+          )
+          .take(100);
+        for (const contribution of contributions)
+          for (const entry of datedEntries(
+            generation,
+            contribution.sourceTable,
+            contribution.sourceId,
+            contribution.facts,
+          ).values())
+            found.add(entry.namespace);
+      }
+      return [...found];
+    });
+    expect(namespaces.length).toBeGreaterThan(0);
+    const dryRun = await admin.mutation(
+      api.organizationCleanup.purgeOrganizations,
+      { organizationIds: [organizationId], dryRun: true },
+    );
+    const countedTables = dryRun[0]!.tableCounts.map((entry) => entry.table);
+    expect(countedTables).toEqual(
+      expect.arrayContaining([
+        "exportJobs",
+        "organizationProjectionStates",
+        "projectionGenerations",
+        "projectionContributions",
+        "projectionTotals",
+      ]),
+    );
+
+    await t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+      organizationIds: [organizationId],
+      dryRun: false,
+    });
+
+    const remaining = await t.run(async (ctx) => {
+      const counts: Record<string, number> = {
+        exportJobs: (
+          await ctx.db
+            .query("exportJobs")
+            .withIndex("by_organizationId", (q) =>
+              q.eq("organizationId", organizationId),
+            )
+            .take(1)
+        ).length,
+        exportChunks: (
+          await ctx.db
+            .query("exportChunks")
+            .withIndex("by_jobId_and_sequence", (q) => q.eq("jobId", jobId))
+            .take(1)
+        ).length,
+        organizationProjectionStates: (
+          await ctx.db
+            .query("organizationProjectionStates")
+            .withIndex("by_organizationId", (q) =>
+              q.eq("organizationId", organizationId),
+            )
+            .take(1)
+        ).length,
+        projectionGenerations: (
+          await ctx.db
+            .query("projectionGenerations")
+            .withIndex("by_organizationId_and_startedAt", (q) =>
+              q.eq("organizationId", organizationId),
+            )
+            .take(1)
+        ).length,
+        projectionContributions: (
+          await ctx.db.query("projectionContributions").take(1)
+        ).length,
+        projectionTotals: (await ctx.db.query("projectionTotals").take(1))
+          .length,
+      };
+      for (const namespace of namespaces)
+        counts[namespace] = await metricTree.count(ctx, {
+          namespace,
+          bounds: {},
+        });
+      return counts;
+    });
+    expect(Object.values(remaining).every((count) => count === 0)).toBe(true);
+    vi.useRealTimers();
   });
 });

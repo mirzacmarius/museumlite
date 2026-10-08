@@ -3,13 +3,13 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import { type MutationCtx, query } from "./_generated/server";
 import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  query,
-} from "./_generated/server";
+  readWorkflowHistoryPage,
+  workflowHistoryPageValidator,
+} from "./auditLog";
 import { batchLookup } from "./utils/batchLookup";
+import { appendCaseHistory, recentCaseHistory } from "./utils/caseHistory";
 import {
   applyCollectionDisposition,
   canRestoreRejectedDisposition,
@@ -29,6 +29,7 @@ import {
   resolveProceedsState,
 } from "./utils/disposalPolicy";
 import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import {
@@ -990,6 +991,8 @@ export const get = query({
           }),
         ),
       ),
+      workflowHistoryIsPreview: v.literal(true),
+      workflowHistoryHasMore: v.boolean(),
       proceedsAmount: v.optional(v.number()),
       proceedsCurrency: v.optional(v.string()),
       proceedsRecipient: v.optional(v.string()),
@@ -1010,6 +1013,11 @@ export const get = query({
       "collections.read",
     );
 
+    const historyPreview = await recentCaseHistory(
+      ctx,
+      deaccession,
+      "deaccession",
+    );
     return {
       _id: deaccession._id,
       _creationTime: deaccession._creationTime,
@@ -1026,7 +1034,9 @@ export const get = query({
       status: deaccession.status,
       notes: deaccession.notes,
       workflowStep: deaccession.workflowStep,
-      workflowHistory: deaccession.workflowHistory ?? [],
+      workflowHistory: historyPreview.entries,
+      workflowHistoryIsPreview: true as const,
+      workflowHistoryHasMore: historyPreview.hasMore,
       proceedsAmount: deaccession.proceedsAmount,
       proceedsCurrency: deaccession.proceedsCurrency,
       proceedsRecipient: deaccession.proceedsRecipient,
@@ -1282,7 +1292,7 @@ export const approve = mutation({
       }
 
       // Add to workflow history
-      const history = deaccession.workflowHistory ?? [];
+      const history = [...(deaccession.workflowHistory ?? [])];
       if (!workflowState.isPastLastStep) {
         history.push({
           step: currentStep,
@@ -1298,7 +1308,12 @@ export const approve = mutation({
             status: "approved",
             approvedBy: userId,
             approvedAt: Date.now(),
-            workflowHistory: history,
+            ...(await appendCaseHistory(
+              ctx,
+              deaccession,
+              "deaccession",
+              history,
+            )),
             decisionReview,
           }),
           logDecisionException(ctx, deaccession, userId, decisionReview),
@@ -1338,7 +1353,12 @@ export const approve = mutation({
 
         await ctx.db.patch(args.deaccessionId, {
           workflowStep: nextStep,
-          workflowHistory: history,
+          ...(await appendCaseHistory(
+            ctx,
+            deaccession,
+            "deaccession",
+            history,
+          )),
         });
 
         if (approvalMode !== "single") {
@@ -1472,7 +1492,7 @@ export const reject = mutation({
     ] as const);
 
     // Notify users who were involved in the workflow (from history)
-    const history = deaccession.workflowHistory ?? [];
+    const history = [...(deaccession.workflowHistory ?? [])];
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
     if (creatorId && creatorId !== userId) {
@@ -1497,16 +1517,10 @@ export const reject = mutation({
 export const getWorkflowHistory = query({
   args: {
     deaccessionId: v.id("deaccessions"),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      step: v.number(),
-      approvedBy: v.id("users"),
-      approvedAt: v.number(),
-      comment: v.optional(v.string()),
-      approverName: v.optional(v.string()),
-    }),
-  ),
+  returns: workflowHistoryPageValidator,
   handler: async (ctx, args) => {
     const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
@@ -1519,20 +1533,13 @@ export const getWorkflowHistory = query({
       "collections.read",
     );
 
-    const history = deaccession.workflowHistory ?? [];
-
-    // Enrich with approver names
-    const enrichedHistory = await Promise.all(
-      history.map(async (item) => {
-        const approver = await ctx.db.get(item.approvedBy);
-        return {
-          ...item,
-          approverName: approver?.name || approver?.username || undefined,
-        };
-      }),
-    );
-
-    return enrichedHistory;
+    return await readWorkflowHistoryPage(ctx, {
+      organizationId: deaccession.organizationId,
+      caseType: "deaccession",
+      entityId: args.deaccessionId,
+      cursor: args.cursor,
+      limit: args.limit,
+    });
   },
 });
 
@@ -1580,6 +1587,8 @@ export const getExportData = query({
           comment: v.optional(v.string()),
         }),
       ),
+      workflowHistoryIsPreview: v.literal(true),
+      workflowHistoryHasMore: v.boolean(),
       approverName: v.optional(v.string()),
     }),
     v.null(),
@@ -1604,24 +1613,28 @@ export const getExportData = query({
       return null;
     }
 
-    const history = deaccession.workflowHistory ?? [];
+    const historyPreview = await recentCaseHistory(
+      ctx,
+      deaccession,
+      "deaccession",
+    );
+    const history = historyPreview.entries;
     const enrichedHistory = await Promise.all(
       history.map(async (item) => {
-        const approver = await ctx.db.get(item.approvedBy);
         return {
           step: item.step,
-          approverName: approver?.name || approver?.username || "Unknown",
+          approverName: item.approverName ?? "Unknown",
           approvedAt: item.approvedAt,
           comment: item.comment,
         };
       }),
     );
 
-    let approverName: string | undefined;
-    if (deaccession.approvedBy) {
-      const approver = await ctx.db.get(deaccession.approvedBy);
-      approverName = approver?.name || approver?.username || undefined;
-    }
+    const approverName = history.findLast(
+      (entry) =>
+        entry.approvedBy === deaccession.approvedBy &&
+        entry.approvedAt === deaccession.approvedAt,
+    )?.approverName;
 
     let primaryImageUrl: string | undefined;
     if (collection) {
@@ -1667,6 +1680,8 @@ export const getExportData = query({
         slug: organization.slug,
       },
       workflowHistory: enrichedHistory,
+      workflowHistoryIsPreview: true as const,
+      workflowHistoryHasMore: historyPreview.hasMore,
       approverName,
     };
   },

@@ -19,6 +19,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isActivityPath = pathname === "/settings/activity";
   const isDeveloperPath = pathname === "/settings/developer";
   const isDataPath = pathname === "/settings/data";
+  const isMetricsPath = pathname === "/settings/metrics";
   const navItems = [
     {
       href: "/settings/organization",
@@ -51,6 +52,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
       active: isDeveloperPath,
     },
     { href: "/settings/data", label: t("data"), active: isDataPath },
+    { href: "/settings/metrics", label: t("metrics"), active: isMetricsPath },
   ];
 
   return (
@@ -228,6 +230,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("data")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/metrics"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isMetricsPath && "bg-muted"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-foreground/80 ${isMetricsPath && "font-medium text-foreground"}`,
+              )}
+            >
+              {t("metrics")}
             </span>
           </Link>
         </div>

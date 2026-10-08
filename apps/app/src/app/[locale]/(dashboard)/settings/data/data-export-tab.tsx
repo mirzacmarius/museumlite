@@ -20,6 +20,7 @@ import {
 import { useMutation } from "convex/react";
 import { Download, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { ExportJobControl } from "@/components/export-job-control";
 import { useScopedI18n } from "@/locales/client";
 import { convertToCSV, downloadCsv, type ImportType } from "./data-csv-utils";
 
@@ -104,8 +105,10 @@ const EXPORT_HEADERS: Record<ImportType, string[]> = {
 export function DataExportTab({ organizationId }: DataExportTabProps) {
   const t = useScopedI18n("settings.data");
   const tDashboard = useScopedI18n("untranslatedDashboard.settings");
+  const tExport = useScopedI18n("exportJobs");
   const [exportType, setExportType] = useState<ImportType>("objects");
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string>();
 
   const exportObjects = useMutation(api.imports.exportObjects);
   const exportAccessions = useMutation(api.imports.exportAccessions);
@@ -115,6 +118,7 @@ export function DataExportTab({ organizationId }: DataExportTabProps) {
 
   const handleExport = useCallback(async () => {
     setExporting(true);
+    setExportError(undefined);
     try {
       let data: Record<string, unknown>[] = [];
 
@@ -144,6 +148,11 @@ export function DataExportTab({ organizationId }: DataExportTabProps) {
       );
     } catch (error) {
       console.error("Export error:", error);
+      setExportError(
+        error instanceof Error && /more than [\d,]+ objects/.test(error.message)
+          ? t("objectsCapExceeded")
+          : t("exportFailed"),
+      );
     } finally {
       setExporting(false);
     }
@@ -201,6 +210,23 @@ export function DataExportTab({ organizationId }: DataExportTabProps) {
               )}
             </Button>
           </div>
+          {exportError && (
+            <p role="alert" className="text-sm text-destructive">
+              {exportError}
+            </p>
+          )}
+          {exportType === "objects" && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {t("objectsCapNote")}
+              </p>
+              <ExportJobControl
+                organizationId={organizationId}
+                source={{ kind: "objects", mode: "filtered", filters: {} }}
+                label={tExport("catalogComplete")}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

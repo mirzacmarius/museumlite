@@ -204,7 +204,7 @@ test("exhibition installation observes the current source and invalid return lea
   const t = createConvexTest();
   const own = await createOrgUserCollectionWithPermissions(
     t,
-    ["collections.update", "collections.read"],
+    ["collections.update", "collections.read", "collections.accept_condition"],
     { subscriptionTier: "pro" },
   );
   const [original, observed, display] = await t.run(async (ctx) =>
@@ -244,9 +244,22 @@ test("exhibition installation observes the current source and invalid return lea
   await t.run((ctx) =>
     ctx.db.patch(own.collectionId, { currentLocationId: observed }),
   );
+  const assessmentId = await authorized.mutation(
+    api.conditionAssessments.create,
+    {
+      collectionId: own.collectionId,
+      assessedAt: Date.now(),
+      condition: "Good",
+      summary: "Observed before installation",
+      observations: [],
+      photos: [],
+    },
+  );
+  await authorized.mutation(api.conditionAssessments.accept, { assessmentId });
   await authorized.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
     observedFromLocationId: observed,
+    installationConditionAssessmentId: assessmentId,
   });
   expect(
     await authorized.query(api.locations.getCollectionLocationHistory, {

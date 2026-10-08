@@ -1,7 +1,51 @@
+import { ConvexError } from "convex/values";
 import type { Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 
 type CountCtx = Pick<QueryCtx, "db">;
+
+const MAX_INVENTORY_LOAN_LINKS = 32;
+
+/** Inventory classification evidence for one bounded page of catalog rows. */
+export async function getPageInventoryEvidence(
+  ctx: CountCtx,
+  organizationId: Id<"organizations">,
+  rows: Array<{ _id: Id<"collections"> }>,
+) {
+  const openDeaccessionCollectionIds = new Set<Id<"collections">>();
+  const inventoryLoanAssociations = {
+    incoming: new Set<Id<"collections">>(),
+    outgoing: new Set<Id<"collections">>(),
+  };
+  for (const row of rows) {
+    const links = await ctx.db
+      .query("loanItems")
+      .withIndex("by_collection", (q) => q.eq("collectionId", row._id))
+      .take(MAX_INVENTORY_LOAN_LINKS + 1);
+    if (links.length > MAX_INVENTORY_LOAN_LINKS)
+      throw new ConvexError(
+        `Inventory-scope views support at most ${MAX_INVENTORY_LOAN_LINKS} loan associations per object. Export explicit selected objects instead.`,
+      );
+    for (const link of links) {
+      const loan = await ctx.db.get(link.loanId);
+      if (loan?.organizationId === organizationId)
+        inventoryLoanAssociations[loan.type].add(row._id);
+    }
+    for (const status of ["pending", "approved"] as const) {
+      const deaccession = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_collection_and_status", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("collectionId", row._id)
+            .eq("status", status),
+        )
+        .first();
+      if (deaccession) openDeaccessionCollectionIds.add(row._id);
+    }
+  }
+  return { openDeaccessionCollectionIds, inventoryLoanAssociations };
+}
 
 /**
  * Count documents matching an indexed query without loading full documents.
@@ -102,39 +146,4 @@ export async function countOpenDeaccessionCollectionIds(
     }
   }
   return collectionIds;
-}
-
-export async function countCatalogObjects(
-  ctx: CountCtx,
-  organizationId: Id<"organizations">,
-  openDeaccessionCollectionIds: Set<Id<"collections">>,
-) {
-  let total = 0;
-  let active = 0;
-  let loaned = 0;
-  let onDisplay = 0;
-
-  for (const status of ["active", "loaned", "archived"] as const) {
-    const rows = ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", status),
-      );
-    for await (const collection of rows) {
-      if (openDeaccessionCollectionIds.has(collection._id)) {
-        continue;
-      }
-      total += 1;
-      if (collection.status === "active") {
-        active += 1;
-        if (collection.displayStatus === "on_display") {
-          onDisplay += 1;
-        }
-      } else if (collection.status === "loaned") {
-        loaned += 1;
-      }
-    }
-  }
-
-  return { total, active, loaned, onDisplay };
 }

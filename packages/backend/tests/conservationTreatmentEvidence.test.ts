@@ -80,12 +80,15 @@ describe("Conservation treatment assessment evidence", () => {
     const { t, authed, collectionId, userId } =
       await setupConservationWithAssessments();
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "cleaning",
-      title: "Surface cleaning",
-      description: "Remove grime",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "cleaning",
+        title: "Surface cleaning",
+        description: "Remove grime",
+      },
+    );
 
     await t.run(async (ctx) => {
       await ctx.db.patch(treatmentId, { baselineAssessmentId: undefined });
@@ -123,12 +126,15 @@ describe("Conservation treatment assessment evidence", () => {
   test("cannot complete without an accepted outcome assessment", async () => {
     const { authed, collectionId } = await setupConservationWithAssessments();
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "repair",
-      title: "Tear repair",
-      description: "Mend canvas tear",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "repair",
+        title: "Tear repair",
+        description: "Mend canvas tear",
+      },
+    );
 
     await authed.mutation(api.conservationTreatments.approve, { treatmentId });
     await authed.mutation(api.conservationTreatments.startProgress, {
@@ -188,12 +194,15 @@ describe("Conservation treatment assessment evidence", () => {
     const { authed, collectionId, baselineId } =
       await setupConservationWithAssessments();
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "stabilization",
-      title: "Climate stabilization",
-      description: "Stabilize RH",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "stabilization",
+        title: "Climate stabilization",
+        description: "Stabilize RH",
+      },
+    );
 
     const evidence = await authed.query(
       api.conservationTreatments.getTreatmentEvidence,
@@ -233,12 +242,15 @@ describe("Conservation treatment assessment evidence", () => {
       },
     );
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "cleaning",
-      title: "Clean",
-      description: "Clean object",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "cleaning",
+        title: "Clean",
+        description: "Clean object",
+      },
+    );
 
     await expect(
       authed.mutation(api.conservationTreatments.linkBaselineAssessment, {
@@ -251,12 +263,15 @@ describe("Conservation treatment assessment evidence", () => {
   test("follow-up status can be recorded after completion", async () => {
     const { authed, collectionId } = await setupConservationWithAssessments();
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "restoration",
-      title: "Inpainting",
-      description: "Retouch losses",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "restoration",
+        title: "Inpainting",
+        description: "Retouch losses",
+      },
+    );
     await authed.mutation(api.conservationTreatments.approve, { treatmentId });
     await authed.mutation(api.conservationTreatments.startProgress, {
       treatmentId,

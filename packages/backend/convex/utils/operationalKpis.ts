@@ -1,11 +1,24 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import {
+  EXHIBITION_METRIC_DEFINITION,
+  matchesExhibitionMetric,
+} from "./exhibitionMetrics";
 import { hasModuleEnabled } from "./featureGates";
+import {
+  before,
+  between,
+  metric,
+  openProjection,
+  type ProjectionReader,
+  type ProjectionUnavailable,
+  throughStartOf,
+} from "./projectionReads";
 
 interface ValuationSummary {
-  totalValue: number;
-  itemCount: number;
-  valuedCount: number;
+  totalValue: number | null;
+  itemCount: number | null;
+  valuedCount: number | null;
 }
 
 function startOfDay(date: Date): number {
@@ -20,13 +33,21 @@ function addDays(timestamp: number, days: number): number {
   return timestamp + days * 24 * 60 * 60 * 1000;
 }
 
-function createEmptyValuationSummary(): ValuationSummary {
-  return { totalValue: 0, itemCount: 0, valuedCount: 0 };
+function createEmptyValuationSummary(available: boolean): ValuationSummary {
+  return available
+    ? { totalValue: null, itemCount: 0, valuedCount: 0 }
+    : { totalValue: null, itemCount: null, valuedCount: null };
 }
 
 export interface OperationalKpisData {
+  availability: "ready";
+  updating: boolean;
+  definitionId: typeof EXHIBITION_METRIC_DEFINITION;
+  scope: { organizationId: Id<"organizations">; excludeExhibitionLoans: true };
   inventory: {
-    totalValue: number;
+    available: boolean;
+    unavailableReason?: string;
+    totalValue: number | null;
     fineArt: ValuationSummary;
     wine: ValuationSummary;
     vehicles: ValuationSummary;
@@ -49,9 +70,15 @@ export interface OperationalKpisData {
   exhibitions: {
     proposed: number;
     approved: number;
+    installing: number;
     active: number;
+    deinstalling: number;
     closed: number;
     rejected: number;
+    unclassified: number;
+    excludedLoans: number;
+    legacyContradictions: number;
+    bySchedule: { current: number; upcoming: number; past: number };
     upcomingStarts: Array<{
       id: string;
       title: string;
@@ -69,117 +96,45 @@ export interface OperationalKpisData {
       endDate?: number;
     }>;
   };
+  asOf: number;
   generatedAt: number;
 }
 
-export async function loadOperationalKpis(
+/** Rows inspected when building a schedule preview list. */
+const EXHIBITION_PREVIEW_SCAN_LIMIT = 200;
+
+function valuationFromTotals(
+  available: boolean,
+  totals: Record<string, number>,
+  kind: "fineArt" | "wine" | "vehicles",
+): ValuationSummary {
+  if (!available) return createEmptyValuationSummary(false);
+  return {
+    totalValue: null,
+    itemCount: metric(totals, `valuation.${kind}.count`),
+    valuedCount: metric(totals, `valuation.${kind}.valued`),
+  };
+}
+
+async function upcomingReturns(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
   now: number,
-): Promise<OperationalKpisData> {
-  const hasInventoryValuationModule = await hasModuleEnabled(
-    ctx,
-    organizationId,
-    "inventory_valuation",
+) {
+  const [active, dispatched] = await Promise.all(
+    (["active", "dispatched"] as const).map((status) =>
+      ctx.db
+        .query("loans")
+        .withIndex("by_organization_and_status_and_endDate", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("status", status)
+            .gte("endDate", Number.NEGATIVE_INFINITY),
+        )
+        .take(10),
+    ),
   );
-
-  const todayStart = startOfDay(new Date(now));
-  const todayEnd = addDays(todayStart, 1);
-  const next7Days = addDays(todayStart, 7);
-  const next30Days = addDays(todayStart, 30);
-
-  let fineArtValuation = createEmptyValuationSummary();
-  let wineValuation = createEmptyValuationSummary();
-  let vehicleValuation = createEmptyValuationSummary();
-
-  if (hasInventoryValuationModule) {
-    const fineArtDetails = await ctx.db
-      .query("fineArtDetails")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect();
-
-    fineArtValuation = fineArtDetails.reduce(
-      (acc, item) => {
-        acc.itemCount++;
-        if (item.appraisedValue != null && item.appraisedValue > 0) {
-          acc.valuedCount++;
-          acc.totalValue += item.appraisedValue;
-        }
-        return acc;
-      },
-      createEmptyValuationSummary(),
-    );
-
-    const wineDetails = await ctx.db
-      .query("wineDetails")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect();
-
-    wineValuation = wineDetails.reduce(
-      (acc, item) => {
-        acc.itemCount++;
-        if (item.currentValue != null && item.currentValue > 0) {
-          acc.valuedCount++;
-          const quantity = item.quantity ?? 1;
-          acc.totalValue += item.currentValue * quantity;
-        }
-        return acc;
-      },
-      createEmptyValuationSummary(),
-    );
-
-    const vehicleDetails = await ctx.db
-      .query("vehicleDetails")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect();
-
-    vehicleValuation = vehicleDetails.reduce(
-      (acc, item) => {
-        acc.itemCount++;
-        if (item.insuranceValue != null && item.insuranceValue > 0) {
-          acc.valuedCount++;
-          acc.totalValue += item.insuranceValue;
-        }
-        return acc;
-      },
-      createEmptyValuationSummary(),
-    );
-  }
-
-  const allLoans = await ctx.db
-    .query("loans")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .collect();
-
-  const activeLoans = allLoans.filter(
-    (l) => l.status === "active" || l.status === "dispatched",
-  );
-
-  const loanBuckets = activeLoans.reduce(
-    (acc, loan) => {
-      if (!loan.endDate) return acc;
-      if (loan.endDate < todayStart) {
-        acc.overdue++;
-      } else if (loan.endDate >= todayStart && loan.endDate < todayEnd) {
-        acc.dueToday++;
-      } else if (loan.endDate >= todayEnd && loan.endDate < next7Days) {
-        acc.dueNext7Days++;
-      } else if (loan.endDate >= next7Days && loan.endDate < next30Days) {
-        acc.dueNext30Days++;
-      }
-      return acc;
-    },
-    { overdue: 0, dueToday: 0, dueNext7Days: 0, dueNext30Days: 0 },
-  );
-
-  const upcomingReturns = activeLoans
-    .filter((l) => l.endDate != null)
+  return [...(active ?? []), ...(dispatched ?? [])]
     .sort((a, b) => (a.endDate ?? 0) - (b.endDate ?? 0))
     .slice(0, 10)
     .map((loan) => ({
@@ -193,78 +148,180 @@ export async function loadOperationalKpis(
       ),
       status: loan.status,
     }));
+}
 
-  const allExhibitions = await ctx.db
+async function exhibitionPreviews(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+) {
+  const upcomingStarts: OperationalKpisData["exhibitions"]["upcomingStarts"] =
+    [];
+  const upcoming = ctx.db
     .query("exhibitions")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .collect();
+    .withIndex("by_organization_and_startDate", (q) =>
+      q.eq("organizationId", organizationId).gt("startDate", now),
+    );
+  let inspected = 0;
+  for await (const exhibition of upcoming) {
+    if (
+      ++inspected > EXHIBITION_PREVIEW_SCAN_LIMIT ||
+      upcomingStarts.length === 10
+    )
+      break;
+    if (
+      !matchesExhibitionMetric(exhibition, { asOf: now, schedule: "upcoming" })
+    )
+      continue;
+    upcomingStarts.push({
+      id: exhibition._id,
+      title: exhibition.title,
+      location: exhibition.location,
+      startDate: exhibition.startDate,
+      endDate: exhibition.endDate,
+      status: exhibition.status,
+      daysUntilStart: Math.ceil(
+        (exhibition.startDate - now) / (24 * 60 * 60 * 1000),
+      ),
+    });
+  }
 
-  const exhibitionsByStatus = allExhibitions.reduce(
-    (acc, exhibition) => {
-      const status = exhibition.status ?? "proposed";
-      if (status === "proposed") acc.proposed++;
-      else if (status === "approved") acc.approved++;
-      else if (status === "active") acc.active++;
-      else if (status === "closed") acc.closed++;
-      else if (status === "rejected") acc.rejected++;
-      return acc;
+  const activeNow: OperationalKpisData["exhibitions"]["activeNow"] = [];
+  const started = ctx.db
+    .query("exhibitions")
+    .withIndex("by_organization_and_startDate", (q) =>
+      q.eq("organizationId", organizationId).lte("startDate", now),
+    )
+    .order("desc");
+  inspected = 0;
+  for await (const exhibition of started) {
+    if (++inspected > EXHIBITION_PREVIEW_SCAN_LIMIT || activeNow.length === 10)
+      break;
+    if (
+      !matchesExhibitionMetric(exhibition, { asOf: now, schedule: "current" })
+    )
+      continue;
+    activeNow.push({
+      id: exhibition._id,
+      title: exhibition.title,
+      location: exhibition.location,
+      startDate: exhibition.startDate,
+      endDate: exhibition.endDate,
+    });
+  }
+  return { upcomingStarts, activeNow };
+}
+
+/**
+ * Exhibition lifecycle counts come from maintained totals; schedule phase is
+ * evaluated at `asOf` from start/end interval series, so counts never freeze
+ * at the last rebuild.
+ */
+export async function exhibitionSummaryAt(
+  reader: ProjectionReader,
+  totals: Record<string, number>,
+  asOf: number,
+) {
+  const [[started = 0], [current = 0], [currentFlagged = 0]] =
+    await Promise.all([
+      reader.sums("exhibitions.started", [throughStartOf(asOf)]),
+      reader.sums("exhibitions.current", [throughStartOf(asOf)]),
+      reader.sums("exhibitions.currentFlagTrue", [throughStartOf(asOf)]),
+    ]);
+  const total = metric(totals, "exhibitions.total");
+  const flagged = metric(totals, "exhibitions.flagTrue");
+  return {
+    proposed: metric(totals, "exhibitions.proposed"),
+    approved: metric(totals, "exhibitions.approved"),
+    installing: metric(totals, "exhibitions.installing"),
+    active: metric(totals, "exhibitions.active"),
+    deinstalling: metric(totals, "exhibitions.deinstalling"),
+    closed: metric(totals, "exhibitions.closed"),
+    rejected: metric(totals, "exhibitions.rejected"),
+    unclassified: metric(totals, "exhibitions.unclassified"),
+    excludedLoans: metric(totals, "exhibitions.excludedLoans"),
+    legacyContradictions: flagged - currentFlagged + (current - currentFlagged),
+    bySchedule: {
+      current,
+      upcoming: total - started,
+      past: started - current,
     },
-    { proposed: 0, approved: 0, active: 0, closed: 0, rejected: 0 },
+  };
+}
+
+export async function loadOperationalKpis(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+): Promise<OperationalKpisData | ProjectionUnavailable> {
+  const opened = await openProjection(ctx, organizationId);
+  if (!opened.ok) return opened.unavailable;
+  const { reader } = opened;
+  const hasInventoryValuationModule = await hasModuleEnabled(
+    ctx,
+    organizationId,
+    "inventory_valuation",
   );
 
-  const upcomingExhibitions = allExhibitions
-    .filter(
-      (e) =>
-        e.startDate > now &&
-        (e.status === "proposed" || e.status === "approved"),
-    )
-    .sort((a, b) => a.startDate - b.startDate)
-    .slice(0, 10)
-    .map((e) => ({
-      id: e._id,
-      title: e.title,
-      location: e.location,
-      startDate: e.startDate,
-      endDate: e.endDate,
-      status: e.status,
-      daysUntilStart: Math.ceil((e.startDate - now) / (24 * 60 * 60 * 1000)),
-    }));
+  const todayStart = startOfDay(new Date(now));
+  const todayEnd = addDays(todayStart, 1);
+  const next7Days = addDays(todayStart, 7);
+  const next30Days = addDays(todayStart, 30);
 
-  const activeExhibitions = allExhibitions
-    .filter(
-      (e) =>
-        e.status === "active" ||
-        e.isCurrent ||
-        (e.startDate <= now && (e.endDate == null || e.endDate >= now)),
-    )
-    .slice(0, 10)
-    .map((e) => ({
-      id: e._id,
-      title: e.title,
-      location: e.location,
-      startDate: e.startDate,
-      endDate: e.endDate,
-    }));
+  const totals = await reader.totals();
+  const [
+    [overdue = 0, dueToday = 0, dueNext7Days = 0, dueNext30Days = 0],
+    exhibitions,
+    previews,
+    returns,
+  ] = await Promise.all([
+    reader.sums("loans.open.endDate", [
+      before(todayStart),
+      between(todayStart, todayEnd),
+      between(todayEnd, next7Days),
+      between(next7Days, next30Days),
+    ]),
+    exhibitionSummaryAt(reader, totals, now),
+    exhibitionPreviews(ctx, organizationId, now),
+    upcomingReturns(ctx, organizationId, now),
+  ]);
 
   return {
+    availability: "ready",
+    updating: opened.reader.updating,
+    definitionId: EXHIBITION_METRIC_DEFINITION,
+    scope: { organizationId, excludeExhibitionLoans: true },
     inventory: {
-      totalValue:
-        fineArtValuation.totalValue +
-        wineValuation.totalValue +
-        vehicleValuation.totalValue,
-      fineArt: fineArtValuation,
-      wine: wineValuation,
-      vehicles: vehicleValuation,
+      available: false,
+      unavailableReason: hasInventoryValuationModule
+        ? "valuation_currency_not_recorded"
+        : "inventory_valuation_module_disabled",
+      totalValue: null,
+      fineArt: valuationFromTotals(
+        hasInventoryValuationModule,
+        totals,
+        "fineArt",
+      ),
+      wine: valuationFromTotals(hasInventoryValuationModule, totals, "wine"),
+      vehicles: valuationFromTotals(
+        hasInventoryValuationModule,
+        totals,
+        "vehicles",
+      ),
     },
     loans: {
-      ...loanBuckets,
-      upcomingReturns,
+      overdue,
+      dueToday,
+      dueNext7Days,
+      dueNext30Days,
+      upcomingReturns: returns,
     },
     exhibitions: {
-      ...exhibitionsByStatus,
-      upcomingStarts: upcomingExhibitions,
-      activeNow: activeExhibitions,
+      ...exhibitions,
+      upcomingStarts: previews.upcomingStarts,
+      activeNow: previews.activeNow,
     },
+    asOf: now,
     generatedAt: now,
   };
 }

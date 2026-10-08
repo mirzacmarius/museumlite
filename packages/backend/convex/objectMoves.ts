@@ -2,12 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { NOTIFICATION_TYPES } from "./notifications";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
@@ -22,6 +17,7 @@ import {
   recordTransferCustodyEvent,
   requireTargetTransferLocation,
 } from "./utils/institutionTransferEvidence";
+import { mutation } from "./utils/mutationBuilders";
 import {
   getCurrentUserOrganization,
   hasPermission,

@@ -2,17 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
   isOrganizationEvidenceProtected,
   rejectPermanentEvidenceDeletion,
 } from "./utils/evidenceRetention";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   addMs,
   ORGANIZATION_DELETION_FINAL_NOTICE_DISPLAY_MS,

@@ -4,9 +4,10 @@ import {
   customQuery,
 } from "convex-helpers/server/customFunctions";
 import type { Id } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
+import { query, mutation as rawMutation } from "../_generated/server";
 import { requireAuthenticatedOrganization } from "./authorizationContext";
 import type { enabledModuleValidator } from "./moduleValidators";
+import { withProjectionTriggers } from "./mutationBuilders";
 
 export type OrganizationAuthCtx = {
   userId: Id<"users">;
@@ -68,10 +69,17 @@ export function createOrganizationMutation(
   permission: string,
   moduleId?: Infer<typeof enabledModuleValidator>,
 ) {
-  return customMutation(mutation, {
+  const authorize = buildOrganizationAuthInput({ permission, moduleId });
+  return customMutation(rawMutation, {
     args: {
       organizationId: v.id("organizations"),
     },
-    input: buildOrganizationAuthInput({ permission, moduleId }),
+    input: async (ctx, args) => {
+      const authorized = await authorize(ctx, args);
+      return {
+        ctx: { ...authorized.ctx, db: withProjectionTriggers(ctx).db },
+        args: {},
+      };
+    },
   });
 }

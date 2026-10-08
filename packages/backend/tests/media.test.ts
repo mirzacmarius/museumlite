@@ -191,7 +191,10 @@ describe("media listByOrganization storage URL batching", () => {
       "utf8",
     );
     const listStart = mediaSource.indexOf("export const listByOrganization");
-    const listEnd = mediaSource.indexOf("export const getStorageStats", listStart);
+    const listEnd = mediaSource.indexOf(
+      "export const getStorageStats",
+      listStart,
+    );
     const listHandler = mediaSource.slice(listStart, listEnd);
 
     expect(listHandler).not.toContain("ctx.storage.getUrl");

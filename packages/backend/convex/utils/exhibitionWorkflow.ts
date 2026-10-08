@@ -2,12 +2,15 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { readWorkflowHistoryPage } from "../auditLog";
+import { appendCaseHistory } from "./caseHistory";
+import { custodyConflict } from "./custodyErrors";
 import { requireExhibitionAccess } from "./exhibitionAccess";
-import { getExhibitionsForObject } from "./exhibitionParticipation";
-import { 
+import {
   requireExhibitionReadPermission,
   requireExhibitionUpdatePermission,
 } from "./exhibitionContext";
+import { getExhibitionsForObject } from "./exhibitionParticipation";
 import { isExhibitionObjectOutcomeResolved } from "./exhibitionPhysicalHandoff";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import {
@@ -70,7 +73,7 @@ export async function approveExhibitionHandler(
       throw new Error("Permission denied: cannot approve at this step");
     }
 
-    const history = exhibition.workflowHistory ?? [];
+    const history = [...(exhibition.workflowHistory ?? [])];
     if (!workflowState.isPastLastStep) {
       history.push({
         step: currentStep,
@@ -88,7 +91,7 @@ export async function approveExhibitionHandler(
           status: "approved",
           approvedBy: userId,
           approvedAt: Date.now(),
-          workflowHistory: history,
+          ...(await appendCaseHistory(ctx, exhibition, "exhibition", history)),
         }),
         ctx.runMutation(internal.audit.logAction, {
           organizationId: exhibition.organizationId,
@@ -122,7 +125,12 @@ export async function approveExhibitionHandler(
         Promise.all([
           ctx.db.patch(args.exhibitionId, {
             workflowStep: nextStep,
-            workflowHistory: history,
+            ...(await appendCaseHistory(
+              ctx,
+              exhibition,
+              "exhibition",
+              history,
+            )),
           }),
           ctx.runMutation(internal.audit.logAction, {
             organizationId: exhibition.organizationId,
@@ -225,7 +233,7 @@ export async function rejectExhibitionHandler(
     );
   }
 
-  const history = exhibition.workflowHistory ?? [];
+  const history = [...(exhibition.workflowHistory ?? [])];
   history.push({
     step: currentStep,
     approvedBy: userId,
@@ -236,7 +244,7 @@ export async function rejectExhibitionHandler(
   await Promise.all([
     ctx.db.patch(args.exhibitionId, {
       status: "rejected",
-      workflowHistory: history,
+      ...(await appendCaseHistory(ctx, exhibition, "exhibition", history)),
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,
@@ -411,8 +419,10 @@ export async function closeExhibitionHandler(
   }
 
   if (outstandingObjects.length > 0) {
-    throw new Error(
+    throw custodyConflict(
+      "CLOSURE_BLOCKED",
       `Cannot close: ${outstandingObjects.length} object(s) have outstanding returns or exceptions`,
+      { outstandingCount: outstandingObjects.length },
     );
   }
 
@@ -580,7 +590,7 @@ export async function checkScheduleConflictsForParticipantsHandler(
 
 export async function getWorkflowHistoryHandler(
   ctx: QueryCtx,
-  args: { exhibitionId: Id<"exhibitions"> },
+  args: { exhibitionId: Id<"exhibitions">; cursor?: number; limit?: number },
 ) {
   const exhibition = await ctx.db.get(args.exhibitionId);
   if (!exhibition) {
@@ -589,17 +599,11 @@ export async function getWorkflowHistoryHandler(
 
   await requireExhibitionReadPermission(ctx, exhibition.organizationId);
 
-  const history = exhibition.workflowHistory ?? [];
-
-  const enrichedHistory = await Promise.all(
-    history.map(async (item) => {
-      const approver = await ctx.db.get(item.approvedBy);
-      return {
-        ...item,
-        approverName: approver?.name || approver?.username || undefined,
-      };
-    }),
-  );
-
-  return enrichedHistory;
+  return await readWorkflowHistoryPage(ctx, {
+    organizationId: exhibition.organizationId,
+    caseType: "exhibition",
+    entityId: args.exhibitionId,
+    cursor: args.cursor,
+    limit: args.limit,
+  });
 }

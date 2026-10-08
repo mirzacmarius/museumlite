@@ -12,7 +12,9 @@ function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   });
 }
 
-async function createHierarchyTransferFixture(t: ReturnType<typeof convexTest>) {
+async function createHierarchyTransferFixture(
+  t: ReturnType<typeof convexTest>,
+) {
   const ownerUserId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
       name: "Source Owner",
@@ -56,26 +58,26 @@ async function createHierarchyTransferFixture(t: ReturnType<typeof convexTest>) 
   });
 
   const { superAdminRoleId, targetMemberRoleId } = await t.run(async (ctx) => {
-      const superAdminRoleId = await ctx.db.insert("roles", {
-        organizationId: sourceOrganizationId,
-        name: "super_admin",
-        isSystemRole: true,
-      });
-      const targetMemberRoleId = await ctx.db.insert("roles", {
-        organizationId: targetOrganizationId,
-        name: "admin",
-        isSystemRole: true,
-      });
-      const manageSettingsPermissionId = await ctx.db.insert("permissions", {
-        name: "organization.manage_settings",
-        category: "organization",
-      });
-      await ctx.db.insert("rolePermissions", {
-        roleId: superAdminRoleId,
-        permissionId: manageSettingsPermissionId,
-      });
-      return { superAdminRoleId, targetMemberRoleId, manageSettingsPermissionId };
+    const superAdminRoleId = await ctx.db.insert("roles", {
+      organizationId: sourceOrganizationId,
+      name: "super_admin",
+      isSystemRole: true,
     });
+    const targetMemberRoleId = await ctx.db.insert("roles", {
+      organizationId: targetOrganizationId,
+      name: "admin",
+      isSystemRole: true,
+    });
+    const manageSettingsPermissionId = await ctx.db.insert("permissions", {
+      name: "organization.manage_settings",
+      category: "organization",
+    });
+    await ctx.db.insert("rolePermissions", {
+      roleId: superAdminRoleId,
+      permissionId: manageSettingsPermissionId,
+    });
+    return { superAdminRoleId, targetMemberRoleId, manageSettingsPermissionId };
+  });
 
   await t.run(async (ctx) => {
     await ctx.db.insert("userOrganizations", {
@@ -165,7 +167,9 @@ describe("organizationOwnershipTransfer", () => {
       ctx.db.get(sourceOrganizationId),
     );
     expect(sourceAfterApproval?.ownerUserId).toBe(newOwnerUserId);
-    expect(sourceAfterApproval?.parentOrganizationId).toBe(targetOrganizationId);
+    expect(sourceAfterApproval?.parentOrganizationId).toBe(
+      targetOrganizationId,
+    );
     expect(sourceAfterApproval?.rootOrganizationId).toBe(targetOrganizationId);
   });
 

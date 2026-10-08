@@ -8,7 +8,7 @@ export type ExhibitionDetail = NonNullable<
 
 export type ExhibitionWorkflowHistoryEntry = FunctionReturnType<
   typeof api.exhibitions.getWorkflowHistory
->[number];
+>["entries"][number];
 
 export type ExhibitionDocumentRecord = FunctionReturnType<
   typeof api.exhibitions.listDocuments

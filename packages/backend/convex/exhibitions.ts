@@ -1,10 +1,9 @@
-import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { query } from "./_generated/server";
+import { workflowHistoryPageValidator } from "./auditLog";
 import { requireExhibitionAccess } from "./utils/exhibitionAccess";
-import { getExhibitionParticipants, getLegacyParticipationReview } from "./utils/exhibitionParticipation";
-import { requirePermission } from "./utils/permissions";
 import { loadExhibitionMutationContext } from "./utils/exhibitionContext";
 import {
   createExhibitionHandler,
@@ -31,7 +30,6 @@ import {
   startInstallationHandler,
   uncompleteInstallationTaskHandler,
 } from "./utils/exhibitionInstallation";
-import { getExhibitionPhysicalHandoffSummary } from "./utils/exhibitionPhysicalHandoff";
 import {
   addExhibitionObjectHandler,
   authorizeReturnExceptionHandler,
@@ -44,6 +42,11 @@ import {
   returnObjectToOriginalLocationHandler,
 } from "./utils/exhibitionObjectLocation";
 import {
+  getExhibitionParticipants,
+  getLegacyParticipationReview,
+} from "./utils/exhibitionParticipation";
+import { getExhibitionPhysicalHandoffSummary } from "./utils/exhibitionPhysicalHandoff";
+import {
   activateExhibitionHandler,
   approveExhibitionHandler,
   checkScheduleConflictsForParticipantsHandler,
@@ -52,6 +55,8 @@ import {
   getWorkflowHistoryHandler,
   rejectExhibitionHandler,
 } from "./utils/exhibitionWorkflow";
+import { mutation } from "./utils/mutationBuilders";
+import { requirePermission } from "./utils/permissions";
 import { createAuthorizedUploadUrl } from "./utils/uploadOwnership";
 
 const observedLocationValidator = v.union(v.id("locations"), v.null());
@@ -60,6 +65,31 @@ export const listByOrganization = query({
   args: {
     organizationId: v.id("organizations"),
     collectionId: v.optional(v.id("collections")),
+    metricFilters: v.optional(
+      v.object({
+        asOf: v.number(),
+        schedule: v.optional(
+          v.union(
+            v.literal("current"),
+            v.literal("upcoming"),
+            v.literal("past"),
+          ),
+        ),
+        lifecycle: v.optional(
+          v.union(
+            v.literal("proposed"),
+            v.literal("approved"),
+            v.literal("installing"),
+            v.literal("active"),
+            v.literal("deinstalling"),
+            v.literal("closed"),
+            v.literal("rejected"),
+            v.literal("unclassified"),
+          ),
+        ),
+        includeLoans: v.optional(v.boolean()),
+      }),
+    ),
   },
   returns: v.array(
     v.object({
@@ -70,6 +100,17 @@ export const listByOrganization = query({
       startDate: v.number(),
       endDate: v.optional(v.number()),
       isCurrent: v.boolean(),
+      status: v.optional(
+        v.union(
+          v.literal("proposed"),
+          v.literal("approved"),
+          v.literal("installing"),
+          v.literal("active"),
+          v.literal("deinstalling"),
+          v.literal("closed"),
+          v.literal("rejected"),
+        ),
+      ),
       isLoan: v.optional(v.boolean()),
       loanVenue: v.optional(v.string()),
       notes: v.optional(v.string()),
@@ -101,11 +142,17 @@ export const get = query({
       organizationId: v.id("organizations"),
       collectionTitle: v.optional(v.string()),
       participantCount: v.number(),
-      legacyParticipationReview: v.optional(v.object({
-        anchorCollectionId: v.id("collections"),
-        reason: v.union(v.literal("anchor_only"), v.literal("anchor_and_members"), v.literal("anchor_missing_from_members")),
-        memberCount: v.number(),
-      })),
+      legacyParticipationReview: v.optional(
+        v.object({
+          anchorCollectionId: v.id("collections"),
+          reason: v.union(
+            v.literal("anchor_only"),
+            v.literal("anchor_and_members"),
+            v.literal("anchor_missing_from_members"),
+          ),
+          memberCount: v.number(),
+        }),
+      ),
       status: v.optional(
         v.union(
           v.literal("proposed"),
@@ -141,10 +188,14 @@ export const update = mutation({
     isLoan: v.optional(v.boolean()),
     loanVenue: v.optional(v.string()),
     notes: v.optional(v.string()),
-    participants: v.optional(v.array(v.object({
-      collectionId: v.id("collections"),
-      role: v.union(v.literal("featured"), v.literal("participant")),
-    }))),
+    participants: v.optional(
+      v.array(
+        v.object({
+          collectionId: v.id("collections"),
+          role: v.union(v.literal("featured"), v.literal("participant")),
+        }),
+      ),
+    ),
   },
   returns: v.null(),
   handler: async (ctx, args) => updateExhibitionHandler(ctx, args),
@@ -182,10 +233,14 @@ export const create = mutation({
   args: {
     collectionId: v.optional(v.id("collections")),
     organizationId: v.optional(v.id("organizations")),
-    participants: v.optional(v.array(v.object({
-      collectionId: v.id("collections"),
-      role: v.union(v.literal("featured"), v.literal("participant")),
-    }))),
+    participants: v.optional(
+      v.array(
+        v.object({
+          collectionId: v.id("collections"),
+          role: v.union(v.literal("featured"), v.literal("participant")),
+        }),
+      ),
+    ),
     title: v.string(),
     location: v.optional(v.string()),
     startDate: v.number(),
@@ -201,25 +256,38 @@ export const create = mutation({
 
 export const reviewLegacyParticipation = query({
   args: { organizationId: v.id("organizations") },
-  returns: v.array(v.object({
-    exhibitionId: v.id("exhibitions"),
-    anchorCollectionId: v.id("collections"),
-    reason: v.union(v.literal("anchor_only"), v.literal("anchor_and_members"), v.literal("anchor_missing_from_members")),
-    memberCount: v.number(),
-  })),
+  returns: v.array(
+    v.object({
+      exhibitionId: v.id("exhibitions"),
+      anchorCollectionId: v.id("collections"),
+      reason: v.union(
+        v.literal("anchor_only"),
+        v.literal("anchor_and_members"),
+        v.literal("anchor_missing_from_members"),
+      ),
+      memberCount: v.number(),
+    }),
+  ),
   handler: async (ctx, args) => {
     await Promise.all([
       requireExhibitionAccess(ctx, args.organizationId),
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
-    const exhibitions = await ctx.db.query("exhibitions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+    const exhibitions = await ctx.db
+      .query("exhibitions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .collect();
-    const reviews = await Promise.all(exhibitions.map(async (exhibition) => {
-      const review = await getLegacyParticipationReview(ctx, exhibition);
-      return review ? { exhibitionId: exhibition._id, ...review } : null;
-    }));
-    return reviews.filter((review): review is NonNullable<typeof review> => review !== null);
+    const reviews = await Promise.all(
+      exhibitions.map(async (exhibition) => {
+        const review = await getLegacyParticipationReview(ctx, exhibition);
+        return review ? { exhibitionId: exhibition._id, ...review } : null;
+      }),
+    );
+    return reviews.filter(
+      (review): review is NonNullable<typeof review> => review !== null,
+    );
   },
 });
 
@@ -240,10 +308,16 @@ export const reconcileLegacyParticipation = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     const review = await getLegacyParticipationReview(ctx, exhibition);
-    if (!review) throw new Error("Exhibition participation has already been reconciled");
+    if (!review)
+      throw new Error("Exhibition participation has already been reconciled");
     const members = await getExhibitionParticipants(ctx, exhibition._id);
-    if (members.length !== args.expectedMemberCollectionIds.length ||
-      members.some((member, index) => member.collectionId !== args.expectedMemberCollectionIds[index])) {
+    if (
+      members.length !== args.expectedMemberCollectionIds.length ||
+      members.some(
+        (member, index) =>
+          member.collectionId !== args.expectedMemberCollectionIds[index],
+      )
+    ) {
       throw new Error("Exhibition membership changed; review it again");
     }
     if (!args.includeAnchor && members.length === 0) {
@@ -251,12 +325,22 @@ export const reconcileLegacyParticipation = mutation({
     }
     const anchor = await ctx.db.get(review.anchorCollectionId);
     if (!anchor || anchor.organizationId !== exhibition.organizationId) {
-      throw new Error("Historical anchor is missing or outside the organization");
+      throw new Error(
+        "Historical anchor is missing or outside the organization",
+      );
     }
     for (const [order, member] of members.entries()) {
-      await ctx.db.patch(member._id, { role: member.role ?? "participant", order });
+      await ctx.db.patch(member._id, {
+        role: member.role ?? "participant",
+        order,
+      });
     }
-    if (args.includeAnchor && !members.some((member) => member.collectionId === review.anchorCollectionId)) {
+    if (
+      args.includeAnchor &&
+      !members.some(
+        (member) => member.collectionId === review.anchorCollectionId,
+      )
+    ) {
       await ctx.db.insert("exhibitionObjects", {
         exhibitionId: exhibition._id,
         organizationId: exhibition.organizationId,
@@ -273,15 +357,26 @@ export const reconcileLegacyParticipation = mutation({
       action: "reconciled_exhibition_participation",
       entityType: "exhibition",
       entityId: exhibition._id,
-      changes: { historicalAnchorCollectionId: review.anchorCollectionId, includedAnchor: args.includeAnchor, memberCount: members.length },
+      changes: {
+        historicalAnchorCollectionId: review.anchorCollectionId,
+        includedAnchor: args.includeAnchor,
+        memberCount: members.length,
+      },
     });
     return null;
   },
 });
 
 export const backfillUnambiguousParticipation = mutation({
-  args: { organizationId: v.id("organizations"), limit: v.optional(v.number()) },
-  returns: v.object({ migrated: v.number(), requiresReview: v.number(), remaining: v.number() }),
+  args: {
+    organizationId: v.id("organizations"),
+    limit: v.optional(v.number()),
+  },
+  returns: v.object({
+    migrated: v.number(),
+    requiresReview: v.number(),
+    remaining: v.number(),
+  }),
   handler: async (ctx, args) => {
     await Promise.all([
       requireExhibitionAccess(ctx, args.organizationId),
@@ -290,9 +385,13 @@ export const backfillUnambiguousParticipation = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     const limit = args.limit ?? 50;
-    if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("Limit must be between 1 and 50");
-    const exhibitions = await ctx.db.query("exhibitions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50)
+      throw new Error("Limit must be between 1 and 50");
+    const exhibitions = await ctx.db
+      .query("exhibitions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .collect();
     let migrated = 0;
     let requiresReview = 0;
@@ -325,7 +424,10 @@ export const backfillUnambiguousParticipation = mutation({
         });
       } else {
         for (const [order, member] of members.entries()) {
-          await ctx.db.patch(member._id, { role: member.role ?? "participant", order });
+          await ctx.db.patch(member._id, {
+            role: member.role ?? "participant",
+            order,
+          });
         }
       }
       await ctx.db.patch(exhibition._id, { participationVersion: "members" });
@@ -335,7 +437,10 @@ export const backfillUnambiguousParticipation = mutation({
         action: "backfilled_exhibition_participation",
         entityType: "exhibition",
         entityId: exhibition._id,
-        changes: { historicalAnchorCollectionId: review.anchorCollectionId, memberCount: Math.max(1, members.length) },
+        changes: {
+          historicalAnchorCollectionId: review.anchorCollectionId,
+          memberCount: Math.max(1, members.length),
+        },
       });
       migrated++;
     }
@@ -432,16 +537,10 @@ export const checkScheduleConflictsForParticipants = query({
 export const getWorkflowHistory = query({
   args: {
     exhibitionId: v.id("exhibitions"),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      step: v.number(),
-      approvedBy: v.id("users"),
-      approvedAt: v.number(),
-      comment: v.optional(v.string()),
-      approverName: v.optional(v.string()),
-    }),
-  ),
+  returns: workflowHistoryPageValidator,
   handler: async (ctx, args) => getWorkflowHistoryHandler(ctx, args),
 });
 
@@ -702,7 +801,9 @@ export const deinstallObject = mutation({
   args: {
     exhibitionObjectId: v.id("exhibitionObjects"),
     conditionNotes: v.optional(v.string()),
-    deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    deinstallationConditionAssessmentId: v.optional(
+      v.id("conditionAssessments"),
+    ),
   },
   returns: v.null(),
   handler: async (ctx, args) => deinstallObjectHandler(ctx, args),
@@ -738,6 +839,24 @@ export const getPhysicalHandoffSummary = query({
     participantCount: v.number(),
     outstandingCount: v.number(),
     canClose: v.boolean(),
+    timeline: v.array(
+      v.object({
+        exhibitionObjectId: v.id("exhibitionObjects"),
+        collectionId: v.id("collections"),
+        phase: v.union(
+          v.literal("installed"),
+          v.literal("deinstalled"),
+          v.literal("returned"),
+          v.literal("exception"),
+        ),
+        recordedAt: v.number(),
+        actorId: v.optional(v.id("users")),
+        actorName: v.optional(v.string()),
+        conditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        movementId: v.optional(v.id("locationHistory")),
+        notes: v.optional(v.string()),
+      }),
+    ),
     participants: v.array(
       v.object({
         exhibitionObjectId: v.id("exhibitionObjects"),
@@ -755,12 +874,17 @@ export const getPhysicalHandoffSummary = query({
         hasReturnException: v.boolean(),
         installationMovementId: v.optional(v.id("locationHistory")),
         returnMovementId: v.optional(v.id("locationHistory")),
-        installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
-        deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        installationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
+        deinstallationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
         returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
         installedAt: v.optional(v.number()),
         deinstalledAt: v.optional(v.number()),
         returnedAt: v.optional(v.number()),
+        originalLocationId: v.optional(v.id("locations")),
       }),
     ),
     outstanding: v.array(
@@ -780,12 +904,17 @@ export const getPhysicalHandoffSummary = query({
         hasReturnException: v.boolean(),
         installationMovementId: v.optional(v.id("locationHistory")),
         returnMovementId: v.optional(v.id("locationHistory")),
-        installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
-        deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        installationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
+        deinstallationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
         returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
         installedAt: v.optional(v.number()),
         deinstalledAt: v.optional(v.number()),
         returnedAt: v.optional(v.number()),
+        originalLocationId: v.optional(v.id("locations")),
       }),
     ),
   }),
@@ -794,7 +923,11 @@ export const getPhysicalHandoffSummary = query({
     if (!exhibition) throw new Error("Exhibition not found");
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(ctx, exhibition.organizationId, "collections.read");
-    return await getExhibitionPhysicalHandoffSummary(ctx, args.exhibitionId);
+    return await getExhibitionPhysicalHandoffSummary(
+      ctx,
+      args.exhibitionId,
+      exhibition.organizationId,
+    );
   },
 });
 
@@ -830,8 +963,12 @@ export const listExhibitionObjects = query({
       deinstalledByName: v.optional(v.string()),
       conditionAtDeinstallation: v.optional(v.string()),
       returnedAt: v.optional(v.number()),
-      installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
-      deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+      installationConditionAssessmentId: v.optional(
+        v.id("conditionAssessments"),
+      ),
+      deinstallationConditionAssessmentId: v.optional(
+        v.id("conditionAssessments"),
+      ),
       returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
       returnExceptionReason: v.optional(v.string()),
     }),

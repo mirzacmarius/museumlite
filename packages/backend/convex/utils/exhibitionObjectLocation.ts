@@ -1,18 +1,19 @@
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { custodyConflict } from "./custodyErrors";
 import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import {
   loadExhibitionMutationContext,
   loadExhibitionObjectMutationContext,
   requireExhibitionReadPermission,
 } from "./exhibitionContext";
-import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { getExhibitionParticipants } from "./exhibitionParticipation";
 import {
   executeExhibitionMovement,
   requireAcceptedConditionAssessment,
 } from "./exhibitionPhysicalHandoff";
+import { assertCollectionNotOnLoan, isCollectionOnLoan } from "./loanOccupancy";
 import {
   requireCollectionInOrganization,
   requireUsableLocation,
@@ -40,7 +41,9 @@ export async function addExhibitionObjectHandler(
     throw new Error("Object does not belong to the same organization");
   }
   if (exhibition.participationVersion !== "members") {
-    throw new Error("Review legacy exhibition participation before adding objects");
+    throw new Error(
+      "Review legacy exhibition participation before adding objects",
+    );
   }
 
   await assertCollectionNotOnLoan(
@@ -60,7 +63,10 @@ export async function addExhibitionObjectHandler(
   }
 
   const members = await getExhibitionParticipants(ctx, args.exhibitionId);
-  if (args.role === "featured" && members.some((member) => member.role === "featured")) {
+  if (
+    args.role === "featured" &&
+    members.some((member) => member.role === "featured")
+  ) {
     throw new Error("Only one featured object is allowed");
   }
 
@@ -111,10 +117,13 @@ export async function removeExhibitionObjectHandler(
   const { userId, exhibitionObject, exhibition } =
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
   if (exhibition.participationVersion !== "members") {
-    throw new Error("Review legacy exhibition participation before removing objects");
+    throw new Error(
+      "Review legacy exhibition participation before removing objects",
+    );
   }
   const members = await getExhibitionParticipants(ctx, exhibition._id);
-  if (members.length <= 1) throw new Error("Exhibition must have at least one participant");
+  if (members.length <= 1)
+    throw new Error("Exhibition must have at least one participant");
 
   if (exhibitionObject.status !== "pending") {
     throw new Error("Cannot remove object that has been installed");
@@ -159,27 +168,35 @@ export async function installObjectHandler(
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "pending") {
-    throw new Error("Object is not in pending status");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Object is not in pending status",
+    );
   }
-
-  const collection = await requireCollectionInOrganization(
-    ctx,
-    exhibitionObject.collectionId,
-    exhibition.organizationId,
-  );
-  await assertCollectionNotOnLoan(
-    ctx,
-    exhibitionObject.collectionId,
-    "Cannot install an object that is currently on loan",
-  );
 
   const destinationId =
     args.exhibitionLocationId ??
     exhibitionObject.exhibitionLocationId ??
     exhibition.locationId;
   if (!destinationId) {
-    throw new Error("Exhibition installation requires a destination location");
+    throw custodyConflict(
+      "DESTINATION_REQUIRED",
+      "Exhibition installation requires a destination location",
+    );
   }
+
+  if (await isCollectionOnLoan(ctx, exhibitionObject.collectionId)) {
+    throw custodyConflict(
+      "EXTERNAL_CUSTODY",
+      "Cannot install an object that is currently on loan",
+    );
+  }
+  const collection = await requireCollectionInOrganization(
+    ctx,
+    exhibitionObject.collectionId,
+    exhibition.organizationId,
+  );
+
   await requireUsableLocation(ctx, exhibition.organizationId, destinationId);
 
   const installationConditionAssessmentId =
@@ -187,6 +204,7 @@ export async function installObjectHandler(
       ctx,
       args.installationConditionAssessmentId,
       exhibitionObject.collectionId,
+      true,
     );
 
   const movementId = await executeExhibitionMovement(
@@ -242,7 +260,12 @@ export async function deinstallObjectHandler(
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "installed") {
-    throw new Error("Object is not installed");
+    throw custodyConflict(
+      exhibitionObject.status === "pending"
+        ? "HANDOFF_OUT_OF_ORDER"
+        : "HANDOFF_ALREADY_RECORDED",
+      "Object is not installed",
+    );
   }
 
   const deinstallationConditionAssessmentId =
@@ -250,6 +273,7 @@ export async function deinstallObjectHandler(
       ctx,
       args.deinstallationConditionAssessmentId,
       exhibitionObject.collectionId,
+      true,
     );
 
   await Promise.all([
@@ -289,13 +313,21 @@ export async function returnObjectToOriginalLocationHandler(
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "deinstalled") {
-    throw new Error("Object must be deinstalled before physical return");
+    throw custodyConflict(
+      exhibitionObject.status === "returned"
+        ? "HANDOFF_ALREADY_RECORDED"
+        : "HANDOFF_OUT_OF_ORDER",
+      "Object must be deinstalled before physical return",
+    );
   }
 
   const returnLocation =
     args.overrideLocationId ?? exhibitionObject.originalLocationId;
   if (!returnLocation) {
-    throw new Error("Return requires a confirmed destination location");
+    throw custodyConflict(
+      "DESTINATION_REQUIRED",
+      "Return requires a confirmed destination location",
+    );
   }
   await requireUsableLocation(ctx, exhibition.organizationId, returnLocation);
 
@@ -309,6 +341,7 @@ export async function returnObjectToOriginalLocationHandler(
     ctx,
     args.returnConditionAssessmentId,
     exhibitionObject.collectionId,
+    true,
   );
 
   const movementId = await executeExhibitionMovement(
@@ -367,10 +400,16 @@ export async function authorizeReturnExceptionHandler(
     exhibitionObject.status !== "installed" &&
     exhibitionObject.status !== "deinstalled"
   ) {
-    throw new Error("Return exceptions apply only after deinstallation begins");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Return exceptions apply only after deinstallation begins",
+    );
   }
   if (exhibitionObject.returnException) {
-    throw new Error("Return exception is already recorded");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Return exception is already recorded",
+    );
   }
 
   const reason = args.reason.trim();
@@ -414,7 +453,10 @@ export async function listExhibitionObjectsHandler(
 
   await requireExhibitionReadPermission(ctx, exhibition.organizationId);
 
-  const exhibitionObjects = await getExhibitionParticipants(ctx, args.exhibitionId);
+  const exhibitionObjects = await getExhibitionParticipants(
+    ctx,
+    args.exhibitionId,
+  );
 
   return Promise.all(
     exhibitionObjects.map(async (obj) => {
@@ -464,7 +506,8 @@ export async function listExhibitionObjectsHandler(
           deinstaller?.name ?? deinstaller?.username ?? undefined,
         conditionAtDeinstallation: obj.conditionAtDeinstallation,
         returnedAt: obj.returnedAt,
-        installationConditionAssessmentId: obj.installationConditionAssessmentId,
+        installationConditionAssessmentId:
+          obj.installationConditionAssessmentId,
         deinstallationConditionAssessmentId:
           obj.deinstallationConditionAssessmentId,
         returnConditionAssessmentId: obj.returnConditionAssessmentId,

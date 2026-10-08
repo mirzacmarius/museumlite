@@ -3,14 +3,11 @@
 import { Button } from "@v1/ui/button";
 import { CheckCircle, Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { ClientDate } from "@/components/client-date";
+import { AuditCaseHistory } from "@/components/audit-case-history";
 import { PermissionGate } from "@/components/permission-gate";
 import { useI18n } from "@/locales/client";
 import { AccessionDetailReviewPanel } from "./accession-detail-review-panel";
-import type {
-  WorkflowHistoryEntry,
-  WorkflowStepInfo,
-} from "./accession-detail-types";
+import type { WorkflowStepInfo } from "./accession-detail-types";
 import {
   DetailField,
   formatWorkflowStepDetails,
@@ -21,7 +18,6 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
   const tRoot = useI18n();
   const {
     accession,
-    locale,
     isDraft,
     configuredWorkflowSteps,
     workflowSummary,
@@ -219,46 +215,10 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
             </SectionCard>
           ) : null}
 
-          {accession.workflowHistory && accession.workflowHistory.length > 0 ? (
-            <SectionCard
-              eyebrow={tRoot("untranslatedRecords.accessions.detail.history")}
-              title={tRoot(
-                "untranslatedRecords.accessions.detail.workflowHistory",
-              )}
-              description={tRoot(
-                "untranslatedRecords.accessions.detail.workflowHistoryDescription",
-              )}
-            >
-              <div className="space-y-3">
-                {accession.workflowHistory.map(
-                  (entry: WorkflowHistoryEntry) => (
-                    <div
-                      key={`${entry.step}-${entry.approvedBy}-${entry.approvedAt}`}
-                      className="rounded-lg border border-border bg-card p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">
-                            {tRoot("assignmentsPage.card.step")} {entry.step}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            <ClientDate
-                              timestamp={entry.approvedAt}
-                              locale={locale}
-                            />
-                          </p>
-                          {entry.comment ? (
-                            <p className="mt-1 text-sm">{entry.comment}</p>
-                          ) : null}
-                        </div>
-                        <CheckCircle className="size-5 text-green-500" />
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-            </SectionCard>
-          ) : null}
+          <AuditCaseHistory
+            organizationId={accession.organizationId}
+            caseId={`accession:${accession._id}`}
+          />
         </div>
       </div>
     </div>

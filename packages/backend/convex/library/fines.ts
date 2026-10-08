@@ -2,7 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
+import { query } from "../_generated/server";
+import { mutation } from "../utils/mutationBuilders";
 import { requireLibraryPermission } from "./utils/permissions";
 import { assertSameOrganization } from "./utils/tenantIntegrity";
 
@@ -54,7 +55,11 @@ export const create = mutation({
       throw new Error("Account not found");
     }
 
-    await requireLibraryPermission(ctx, account.organizationId, "accounts.write");
+    await requireLibraryPermission(
+      ctx,
+      account.organizationId,
+      "accounts.write",
+    );
 
     const now = Date.now();
 
@@ -106,7 +111,11 @@ export const recordPayment = mutation({
       throw new Error("Payment amount must be positive");
     }
 
-    await requireLibraryPermission(ctx, account.organizationId, "accounts.write");
+    await requireLibraryPermission(
+      ctx,
+      account.organizationId,
+      "accounts.write",
+    );
 
     const now = Date.now();
     let remainingPayment = args.amount;
@@ -402,7 +411,11 @@ export const getPaymentHistory = query({
       throw new Error("Account not found");
     }
 
-    await requireLibraryPermission(ctx, account.organizationId, "accounts.read");
+    await requireLibraryPermission(
+      ctx,
+      account.organizationId,
+      "accounts.read",
+    );
 
     const payments = await ctx.db
       .query("libraryPayments")
@@ -523,7 +536,11 @@ export const getReceipt = query({
       return null;
     }
 
-    await requireLibraryPermission(ctx, payment.organizationId, "accounts.read");
+    await requireLibraryPermission(
+      ctx,
+      payment.organizationId,
+      "accounts.read",
+    );
 
     const [account, receivedBy, fines, settings] = await Promise.all([
       ctx.db.get(payment.accountId),

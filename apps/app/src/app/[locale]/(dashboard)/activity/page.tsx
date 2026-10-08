@@ -1,21 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
+import { Suspense } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { ActivityFilters } from "./_components/activity-filters";
 import { ActivityList } from "./_components/activity-list";
 import { ActivityPageSkeleton } from "./activity-page-skeleton";
 
-export default function ActivityPage() {
+function ActivityPageContent() {
   const t = useScopedI18n("activity");
   const { currentOrganizationId, isLoading } = useOrganization();
-  const [selectedEntityType, setSelectedEntityType] = useState<
-    string | undefined
-  >();
-  const [dateRange, setDateRange] = useState<{ start?: number; end?: number }>(
-    {},
+  const [filters, setFilters] = useQueryStates(
+    { entityType: parseAsString, start: parseAsInteger, end: parseAsInteger },
+    { history: "push" },
   );
+  const selectedEntityType = filters.entityType ?? undefined;
+  const dateRange = {
+    start: filters.start ?? undefined,
+    end: filters.end ?? undefined,
+  };
+  const setSelectedEntityType = (type: string | undefined) => {
+    void setFilters({ entityType: type ?? null });
+  };
+  const setDateRange = (range: { start?: number; end?: number }) => {
+    void setFilters({ start: range.start ?? null, end: range.end ?? null });
+  };
 
   if (isLoading) {
     return <ActivityPageSkeleton />;
@@ -40,9 +50,9 @@ export default function ActivityPage() {
 
   return (
     <div className="flex size-full bg-zinc-950 px-6 py-8">
-      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 md:flex-row md:gap-12">
         {/* Left Filters Panel */}
-        <div className="flex w-64 flex-shrink-0 flex-col">
+        <div className="flex w-full flex-shrink-0 flex-col md:w-64">
           <ActivityFilters
             selectedEntityType={selectedEntityType}
             onEntityTypeChange={setSelectedEntityType}
@@ -62,5 +72,13 @@ export default function ActivityPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ActivityPage() {
+  return (
+    <Suspense fallback={<ActivityPageSkeleton />}>
+      <ActivityPageContent />
+    </Suspense>
   );
 }

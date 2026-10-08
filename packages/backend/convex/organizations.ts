@@ -2,12 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalQuery, query } from "./_generated/server";
 import { getNextCounterPreview } from "./utils/accessionCounter";
 import {
   AccessionNumberParser,
@@ -26,16 +21,17 @@ import {
 } from "./utils/featureGates";
 import type { ModuleId } from "./utils/moduleCatalog";
 import { enabledModuleValidator } from "./utils/moduleValidators";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
-import {
-  createEmptyUsageCounter,
-  getUsageCounter,
-} from "./utils/organizationUsageCounters";
+import { createEmptyUsageCounter } from "./utils/organizationUsageCounters";
 import {
   getCurrentUserOrganization,
   requirePermission,
 } from "./utils/permissions";
+import { initializeEmptyProjection } from "./utils/projectionMaintenance";
+import { loadProjectedUsage } from "./utils/projectionReports";
+import { projectionUnavailableResult } from "./utils/projectionValidators";
 import { findPublicPortalOrganization } from "./utils/publicPortal";
 import {
   assertCanRemoveSuperAdminMember,
@@ -216,6 +212,7 @@ export const create = mutation({
       parentOrganizationId: args.parentOrganizationId,
       rootOrganizationId: hierarchy?.rootOrganizationId,
     });
+    await initializeEmptyProjection(ctx, organizationId);
     await Promise.all([
       ctx.db.insert(
         "organizationUsageCounters",
@@ -809,12 +806,19 @@ export const getUsageStats = query({
   },
   returns: v.object({
     tier: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+    metrics: v.union(
+      v.object({
+        availability: v.literal("ready"),
+        updating: v.optional(v.boolean()),
+      }),
+      projectionUnavailableResult,
+    ),
     storage: v.object({
-      used: v.number(),
+      used: v.union(v.number(), v.null()),
       limit: v.union(v.number(), v.null()),
     }),
     objects: v.object({
-      used: v.number(),
+      used: v.union(v.number(), v.null()),
       limit: v.union(v.number(), v.null()),
     }),
     exports: v.object({
@@ -843,9 +847,8 @@ export const getUsageStats = query({
 
     const tier: SubscriptionTier = org.subscriptionTier ?? "free";
     const limits = getTierLimits(tier);
-    const usageCounter =
-      (await getUsageCounter(ctx, args.organizationId)) ??
-      createEmptyUsageCounter(args.organizationId);
+    const usage = await loadProjectedUsage(ctx, args.organizationId);
+    const ready = usage.availability === "ready" ? usage : null;
 
     // Get export count for current month
     function getMonthStart(timestamp: number) {
@@ -865,12 +868,15 @@ export const getUsageStats = query({
 
     return {
       tier,
+      metrics: ready
+        ? { availability: "ready" as const, updating: ready.updating }
+        : usage,
       storage: {
-        used: usageCounter.storageBytes,
+        used: ready?.storageBytes ?? null,
         limit: limits.mediaBytes,
       },
       objects: {
-        used: usageCounter.objectCount,
+        used: ready?.objectCount ?? null,
         limit: limits.objects,
       },
       exports: {

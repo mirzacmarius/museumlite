@@ -1,5 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
+import { modules } from "../tests/testSetup";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
@@ -7,8 +8,6 @@ import {
   buildTemplateCollectionSuggestions,
   parseCollectionSetupSuggestionJson,
 } from "./utils/onboardingCollectionSuggestions";
-
-import { modules } from "../tests/testSetup";
 
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
@@ -92,11 +91,14 @@ describe("onboarding collection suggestions", () => {
     });
     const authed = authedForUser(t, userId);
 
-    const result = await authed.action(api.onboardingAi.generateCollectionSuggestions, {
-      organizationName: "Harbor Gallery",
-      organizationType: "gallery",
-      description: "Contemporary painting and photography.",
-    });
+    const result = await authed.action(
+      api.onboardingAi.generateCollectionSuggestions,
+      {
+        organizationName: "Harbor Gallery",
+        organizationType: "gallery",
+        description: "Contemporary painting and photography.",
+      },
+    );
 
     expect(result.source).toBe("template");
     expect(result.collectionGroups.length).toBeGreaterThan(0);

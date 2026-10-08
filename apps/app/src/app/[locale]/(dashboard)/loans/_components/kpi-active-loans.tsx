@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
 import { useQuery } from "convex/react";
 import { ArrowRightLeft } from "lucide-react";
+import { UnavailableKpiCard } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -34,6 +35,10 @@ function KpiActiveLoansContent({
 
   if (analytics === undefined) {
     return <KpiCard title={t("activeLoans")} value="—" loading />;
+  }
+
+  if (analytics.availability === "unavailable") {
+    return <UnavailableKpiCard title={t("activeLoans")} />;
   }
 
   return (

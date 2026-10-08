@@ -3,17 +3,25 @@
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Calendar, MapPin, Presentation } from "lucide-react";
+import Link from "next/link";
 import { ClientDate } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { StackedBar } from "./stacked-bar";
 
 interface ExhibitionPipelineCardProps {
   data: {
+    asOf: number;
     proposed: number;
     approved: number;
     active: number;
     closed: number;
     rejected: number;
+    installing: number;
+    deinstalling: number;
+    unclassified: number;
+    excludedLoans: number;
+    legacyContradictions: number;
+    bySchedule: { current: number; upcoming: number; past: number };
     upcomingStarts: Array<{
       id: string;
       title: string;
@@ -73,26 +81,57 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
               className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1 hover:bg-emerald-500/20"
             >
               <div className="size-1.5 rounded-full bg-emerald-500" />
-              {data.active} {t("analytics.exhibitions.active")}
+              <Link
+                href={`/exhibitions?lifecycle=active&excludeLoans=true&asOf=${data.asOf}`}
+              >
+                {data.active} {t("analytics.exhibitions.active")}
+              </Link>
             </Badge>
             <Badge
               variant="outline"
               className="text-[10px] bg-blue-500/10 text-blue-500 border-blue-500/20 gap-1 hover:bg-blue-500/20"
             >
               <div className="size-1.5 rounded-full bg-blue-500" />
-              {data.approved} {t("analytics.exhibitions.approved")}
+              <Link
+                href={`/exhibitions?lifecycle=approved&excludeLoans=true&asOf=${data.asOf}`}
+              >
+                {data.approved} {t("analytics.exhibitions.approved")}
+              </Link>
             </Badge>
             <Badge
               variant="outline"
               className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/20 gap-1 hover:bg-amber-500/20"
             >
               <div className="size-1.5 rounded-full bg-amber-500" />
-              {data.proposed} {t("analytics.exhibitions.proposed")}
+              <Link
+                href={`/exhibitions?lifecycle=proposed&excludeLoans=true&asOf=${data.asOf}`}
+              >
+                {data.proposed} {t("analytics.exhibitions.proposed")}
+              </Link>
             </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-auto space-y-6">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <Link
+            href={`/exhibitions?lifecycle=unclassified&excludeLoans=true&asOf=${data.asOf}`}
+          >
+            {t("analytics.exhibitions.unclassified", {
+              count: data.unclassified,
+            })}
+          </Link>
+          <span>
+            {t("analytics.exhibitions.loanExclusions", {
+              count: data.excludedLoans,
+            })}
+          </span>
+          <span>
+            {t("analytics.exhibitions.legacyContradictions", {
+              count: data.legacyContradictions,
+            })}
+          </span>
+        </div>
         {data.activeNow.length > 0 && (
           <div>
             <h4 className="text-xs font-semibold text-emerald-500 mb-3 uppercase tracking-wider flex items-center gap-2">
@@ -100,7 +139,12 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
                 <span className="animate-ping absolute inline-flex size-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
               </span>
-              {t("analytics.exhibitions.activeNow")}
+              <Link
+                href={`/exhibitions?status=current&excludeLoans=true&asOf=${data.asOf}`}
+              >
+                {t("analytics.exhibitions.currentBySchedule")} (
+                {data.bySchedule.current})
+              </Link>
             </h4>
             <div className="space-y-3">
               {data.activeNow.map((exh) => (
@@ -126,7 +170,12 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
 
         <div>
           <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-            {t("analytics.exhibitions.upcomingStarts")}
+            <Link
+              href={`/exhibitions?status=upcoming&excludeLoans=true&asOf=${data.asOf}`}
+            >
+              {t("analytics.exhibitions.upcomingBySchedule")} (
+              {data.bySchedule.upcoming})
+            </Link>
           </h4>
           <div className="space-y-3">
             {data.upcomingStarts.length === 0 ? (

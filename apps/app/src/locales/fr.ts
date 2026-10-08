@@ -1,5 +1,55 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Cet objet se trouve maintenant à {location}. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
+    sourceChangedNoLocation:
+      "Cet objet n'a plus d'emplacement enregistré. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
+    sourceChangedUnknown:
+      "Cet objet a été déplacé depuis le chargement de la page. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
+    alreadyAtDestination:
+      "Cet objet se trouve déjà à la destination sélectionnée.",
+    destinationUnavailable:
+      "{location} n'est pas disponible pour les déplacements. Choisissez une autre destination.",
+    destinationFull:
+      "{location} a atteint sa capacité ({capacity}). Choisissez une autre destination.",
+    destinationBlocked:
+      "La destination sélectionnée ne peut pas recevoir cet objet. Choisissez une autre destination.",
+    destinationRequired:
+      "Choisissez ou confirmez une destination pour cet objet.",
+    externalCustody:
+      "Cet objet est en prêt. Enregistrez d'abord son retour de prêt.",
+    assessmentRequired: "Liez un constat d'état accepté à cette remise.",
+    assessmentNotAccepted:
+      "Le constat d'état sélectionné n'a pas encore été accepté.",
+    conditionEvidenceRequired:
+      "Ajoutez des notes d'état ou liez un constat d'état accepté.",
+    referenceNotFound:
+      "Un enregistrement lié n'est plus disponible. Actualisez et réessayez.",
+    alreadyRecorded:
+      "Cette remise a déjà été enregistrée. Actualisez pour voir l'état le plus récent.",
+    outOfOrder:
+      "Cette étape n'est pas encore disponible. Enregistrez d'abord les étapes précédentes de la remise.",
+    exhibitionOutcomeUnresolved:
+      "Enregistrez le retour d'exposition ou une exception autorisée avant de rendre cet objet au prêteur.",
+    closureBlocked:
+      "Objets en attente d'un retour ou d'une exception autorisée : {count}.",
+    fallback: "L'action n'a pas pu être effectuée. Actualisez et réessayez.",
+  },
   conditionAssessments: {
+    actorProfileUnavailable: "Acteur enregistré ; profil actuel indisponible",
+    actorCurrentName: "Nom du profil actuel : {name}",
+    unknownLegacyActor: "Identité historique de l’acteur inconnue",
+
+    receiptRequirement:
+      "Saisissez des notes d’état ou sélectionnez une évaluation acceptée pour chaque objet sélectionné, puis confirmez chaque destination de retour requise.",
+    handoffTimeline: "Chronologie des remises",
+    installationTask: "Terminer la tâche d’installation liée (facultatif)",
+
+    selectAccepted: "Sélectionner une évaluation de l’état acceptée",
+    returnDestination: "Destination du retour",
+    conditionEvidence: "Preuve de l’état",
+    confirmOrigin: "Confirmer le retour à l’origine enregistrée",
+
     title: "Évaluations de l'état",
     description:
       "Les observations datées et les photos sont conservées. Un responsable valide le brouillon pour actualiser l'état courant.",
@@ -46,6 +96,11 @@ export default {
     compareAfter: "Après (acceptation actuelle)",
   },
   dashboard: {
+    inventoryDefinition:
+      "L’inventaire opérationnel exclut les sorties ouvertes et la propriété entrante ou incertaine.",
+    inventoryIncomingExcluded: "Enregistrements entrants exclus : {count}",
+    inventoryUnclassified: "Propriété non classée : {count}",
+    pendingOutgoingTransferApprovals: "Approbations des transferts sortants",
     overviewTitle: "Vue d'ensemble",
     overviewDescription: "Vos collections et votre travail en un coup d'œil.",
     needsReview: "À examiner",
@@ -135,6 +190,7 @@ export default {
       activity: "Activité",
       developer: "Développeur",
       data: "Import/Export de données",
+      metrics: "État des indicateurs",
     },
     roles: {
       title: "Gestion des Rôles",
@@ -522,6 +578,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Exporter au format CSV",
+      objectsCapNote:
+        "Le CSV prêt à importer contient jusqu'à 1 000 objets avec les noms d'emplacement et de groupe. Pour le catalogue complet, utilisez l'export ci-dessous.",
+      objectsCapExceeded:
+        "Ce catalogue compte plus de 1 000 objets. Utilisez l'export du catalogue complet ci-dessous.",
     },
   },
   account: {
@@ -1043,6 +1103,40 @@ export default {
     cancelFailed: "Échec de l'annulation de l'invitation. Veuillez réessayer.",
   },
   activityLog: {
+    historyPreview:
+      "Approbations récentes uniquement. Ouvrez la chronologie du dossier pour consulter l’historique complet.",
+    nextPage: "Page suivante",
+    pageEntries: "entrées sur cette page",
+    filterOptionsRecent:
+      "Les options d’auteur et d’action proviennent des 1 000 derniers événements. Les recherches par date et sujet couvrent tout l’historique.",
+    invalidDateRange: "La date de début doit précéder la date de fin.",
+    details: "Détails de l’événement",
+    currentProfileActor: "{name} (profil actuel)",
+    actor: "Auteur",
+    legacyEvidence:
+      "Événement ancien : aucune identité de l’auteur ou du sujet n’a été conservée au moment de l’enregistrement.",
+    recordedEvidence:
+      "Les identités de l’auteur et du sujet ont été conservées lors de l’enregistrement.",
+    correctionOf: "Correction de",
+    subjectTimeline: "Historique du sujet",
+    objectTimeline: "Historique de l’objet",
+    caseTimeline: "Historique du dossier",
+    field: "Champ",
+    before: "Avant",
+    after: "Après",
+    correctionReason: "Motif de la correction",
+    correctionStatement: "Texte de la correction",
+    appendCorrection: "Ajouter une correction",
+    correctionFailed:
+      "La correction n’a pas pu être enregistrée. Votre texte est conservé ; réessayez.",
+    correctionSaved: "Correction ajoutée. L’événement original est conservé.",
+    approvalHistory: "Historique des approbations du dossier",
+    legacy: "preuve ancienne",
+    firstPage: "Première page",
+    unavailable:
+      "L’historique est indisponible ou votre rôle ne permet pas de le consulter. Réessayez, effacez les filtres ou sélectionnez une organisation autorisée.",
+    retry: "Réessayer",
+
     featureName: "Conformité et journal d'audit",
     title: "Journal d'activité",
     description: "Afficher et filtrer l'activité dans votre organisation",
@@ -1985,6 +2079,8 @@ export default {
     },
     kpis: {
       activeLoans: "Prêts Actifs",
+      loadedActiveLoans: "Prêts actifs dans les résultats chargés",
+      loadedItems: "Objets dans les prêts chargés",
       objectsInTransit: "Objets en Transit",
       totalInsuredValue: "Valeur Totale Assurée",
       expiringAgreements: "Accords Expirant",
@@ -2028,6 +2124,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Résultats chargés : {count}",
       showing: "Affichage de {start}-{end} sur {total} prêts",
       previous: "Précédent",
       next: "Suivant",
@@ -3804,6 +3901,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Proposée",
+      approved: "Approuvée",
+      installing: "En installation",
+      active: "Active",
+      deinstalling: "En désinstallation",
+      closed: "Clôturée",
+      rejected: "Rejetée",
+      unclassified: "Non classée",
+    },
+    metricFilterApplied: "Filtres de mesure appliqués au",
+    clearMetricFilter: "Effacer les filtres de mesure",
     title: "Expositions",
     description: "Gérez l'historique et la planification de vos expositions",
     newExhibition: "Nouvelle Exposition",
@@ -3854,6 +3963,7 @@ export default {
       outstanding: "{count} sur {total} résultats en attente",
       readyToClose: "Tous les résultats sont résolus",
       observedFrom: "Emplacement source observé",
+      installationDestination: "Emplacement d’installation",
       install: "Enregistrer l'installation",
       deinstall: "Enregistrer la désinstallation",
       confirmReturn: "Confirmer le retour physique",
@@ -4006,6 +4116,11 @@ export default {
       approved: "Approuvé",
       proposed: "Proposé",
       closed: "Fermé",
+      currentBySchedule: "En cours selon le calendrier",
+      upcomingBySchedule: "À venir selon le calendrier",
+      unclassified: "{count} non classées",
+      loanExclusions: "{count} expositions de prêt exclues",
+      legacyContradictions: "{count} contradictions entre dates et indicateur",
       activeNow: "Actif Maintenant",
       upcomingStarts: "À Venir",
       startsIn: "Commence dans",
@@ -4052,7 +4167,11 @@ export default {
       noUpcoming: "Aucun retour de prêt à venir",
     },
     inventory: {
+      sourceCounts:
+        "Fiches détaillées / avec valeur enregistrée ; devise source manquante.",
       title: "Évaluation de l'Inventaire",
+      unavailable:
+        "Les données d'évaluation ne sont pas disponibles pour cette organisation.",
       totalValue: "Valeur Totale",
       totalItems: "Articles Totaux",
       valuedItems: "Articles Évalués",
@@ -4085,6 +4204,7 @@ export default {
       exportAllReports: "Exporter Tous les Rapports",
       csv: {
         generated: "Généré le",
+        unavailable: "Indisponible",
         total: "TOTAL",
         upgradeToEnterprise: "Passer à Enterprise",
         inventory: {
@@ -4735,6 +4855,8 @@ export default {
       "D'autres objets correspondent. Affinez la recherche pour réduire la liste.",
   },
   deaccessions: {
+    loadedResults: "Nombre dans les résultats chargés",
+    loadMore: "Charger plus",
     title: "Registres de Désaccession",
     description: "Éléments définitivement retirés de la collection.",
     noOrg: {
@@ -6395,6 +6517,7 @@ export default {
         outstandingInstallation: "{count} awaiting installation",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
+        installationDestination: "Emplacement d’installation",
         receiptDestination: "Receipt destination",
         conditionNotes: "Condition at receipt",
         conditionPlaceholder: "Condition summary or notes",
@@ -7955,6 +8078,180 @@ export default {
       userEmailNotFound: "Adresse e-mail de l’utilisateur introuvable",
       differentEmail: "Cette invitation concerne une autre adresse e-mail",
       alreadyMember: "Déjà membre de cette organisation",
+    },
+  },
+  exportJobs: {
+    catalogFiltered: "Exporter tous les résultats filtrés",
+    catalogComplete: "Exporter le catalogue complet",
+    auditComplete: "Exporter l'historique d'audit complet",
+    auditFiltered: "Exporter l'historique d'audit filtré complet",
+    selected: "Exporter {count} objets sélectionnés",
+    format: "Format d'export",
+    formatCsv: "CSV",
+    formatJsonl: "JSONL (JSON typé)",
+    create: "Créer l'export",
+    retrySelection: "Réessayer l'envoi de la sélection",
+    policy:
+      "Chaque nouvelle demande utilise un export du quota mensuel ; les reprises et les téléchargements réutilisent la même demande. Après un rechargement avec un envoi de sélection incomplet, créez une nouvelle demande. Limites : 16 Mio par fichier, 512 Kio par page, 1 024 segments, 10 000 pages source ; les filtres de périmètre d'inventaire acceptent 32 liens de prêt par objet. Les téléchargements expirent après sept jours. Les valeurs des objets et l'appartenance au filtre sont capturées pendant le traitement ; la date limite de création exclut les insertions ultérieures. JSONL conserve les types. Le texte CSV est protégé contre les formules ; importez avec le schéma de colonnes du manifeste pour conserver le texte littéral et les zéros initiaux.",
+    sourceAudit: "Audit",
+    sourceSelected: "Objets sélectionnés",
+    sourceCatalog: "Catalogue filtré",
+    statusSelecting: "Envoi de la sélection",
+    statusQueued: "En file d'attente",
+    statusRunning: "En cours",
+    statusFinalizing: "Finalisation",
+    statusCompleted: "Terminé",
+    statusCancelled: "Annulé",
+    statusFailed: "Échec",
+    statusExpired: "Expiré",
+    progress: "{rows} lignes capturées · {scanned} examinées · {pages} pages",
+    progressAudit:
+      "{rows} lignes capturées · {scanned} correspondantes · {pages} pages",
+    selectedCount: "{count} sélectionnés",
+    cutoff: "Date limite de création : {asOf} · expire {expiresAt}",
+    cancel: "Annuler",
+    resume: "Reprendre",
+    retry: "Reprendre depuis le point de contrôle",
+    recover: "Récupérer l'export bloqué",
+    download: "Télécharger {count} lignes",
+    downloadManifest: "Télécharger le manifeste",
+    signIn: "Connectez-vous pour télécharger",
+    checksumMismatch:
+      "La somme de contrôle du fichier ne correspond pas ; relancez le téléchargement",
+    failed: "Échec de l'export",
+    errorAccess:
+      "Vous n'avez plus accès à cet export. Vérifiez votre rôle et votre offre.",
+    errorQuota: "Le quota mensuel d'exports de votre offre est épuisé.",
+    errorExpired: "Cet export a expiré. Créez un nouvel export.",
+    errorNotResumable: "Cet export ne peut pas être repris pour le moment.",
+    errorSelection:
+      "La sélection n'a pas pu être exportée. Relancez l'envoi ou créez une nouvelle sélection.",
+    errorTooLarge:
+      "Cet export est trop volumineux. Restreignez les filtres ou la sélection.",
+    errorInventoryLinks:
+      "Un objet a trop de liens de prêt pour ce filtre d'inventaire. Exportez plutôt les objets sélectionnés.",
+    errorInvalidRequest:
+      "La demande d'export n'est pas valide. Vérifiez les filtres et réessayez.",
+    errorInterrupted:
+      "L'export a été interrompu. Reprenez depuis le point de contrôle.",
+    errorUnavailable:
+      "Le fichier d'export n'est pas disponible. Réessayez ou créez un nouvel export.",
+    reportsNote:
+      "Les synthèses de rapports ci-dessous contiennent les réponses KPI actuelles et des listes limitées d'éléments récents ou à venir. Utilisez les exports complets du catalogue et de l'audit ci-dessus pour obtenir des jeux de données source rapprochés.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Indicateurs indisponibles",
+      short: "Indisponible",
+      openHealth: "Ouvrir l'état des indicateurs",
+      askAdministrator:
+        "Demandez à un administrateur de reconstruire les indicateurs.",
+      storage: "Utilisation du stockage indisponible",
+      usage:
+        "Les compteurs d'utilisation sont indisponibles jusqu'à la reconstruction des indicateurs.",
+    },
+    reasons: {
+      not_built:
+        "Les indicateurs n'ont pas encore été générés pour cette organisation.",
+      building:
+        "Les indicateurs sont en cours de reconstruction. Les valeurs apparaîtront à la fin.",
+      invalidated:
+        "Une modification récente a touché plus d'enregistrements que ce qui peut être mis à jour en une fois. Une nouvelle reconstruction est nécessaire.",
+      definition_changed:
+        "Les définitions des indicateurs ont changé. Une reconstruction est nécessaire avant d'afficher les valeurs.",
+      rebuild_failed:
+        "La dernière reconstruction a échoué. Réessayez ou lancez une nouvelle reconstruction.",
+    },
+    availability: {
+      ready: "Prêt",
+      updating: "Prêt, mise à jour en cours",
+      unavailable: "Indisponible",
+    },
+    status: {
+      building: "En cours",
+      failed: "Échec",
+      cancelled: "Annulée",
+      completed: "Terminée",
+      superseded: "Remplacée",
+    },
+    mode: {
+      rebuild: "Reconstruction",
+      reconcile: "Rapprochement",
+    },
+    actions: {
+      rebuild: "Reconstruire les indicateurs",
+      reconcile: "Lancer le rapprochement",
+      starting: "Démarrage...",
+      retry: "Réessayer",
+      retrying: "Nouvelle tentative...",
+      cancel: "Annuler",
+      cancelling: "Annulation...",
+      failed: "L'action n'a pas pu aboutir. Réessayez.",
+    },
+    page: {
+      title: "État des indicateurs",
+      description:
+        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation, progression des reconstructions et résultats des rapprochements.",
+      selectOrganization:
+        "Sélectionnez une organisation pour voir l'état des indicateurs.",
+      noPermission:
+        "Vous devez pouvoir gérer les paramètres de l'organisation pour voir l'état des indicateurs.",
+      statusTitle: "Statut",
+      reconcileNeedsReady:
+        "Le rapprochement est disponible une fois les indicateurs prêts.",
+      definitionVersion: "Version de définition",
+      definitionOutdated: "Enregistrée {stored}, actuelle {current}",
+      lastBuilt: "Dernière génération",
+      lastVerified: "Dernier rapprochement",
+      invalidated: "Invalidé",
+      limits: "Limites de reconstruction",
+      limitsValue:
+        "{pageSize} lignes par page, {fanOut} enregistrements liés par modification",
+    },
+    job: {
+      step: "Étape",
+      stepValue: "{index} sur {count}",
+      processedRows: "Lignes traitées",
+      checkpoint: "Point de reprise",
+      attempts: "Tentatives",
+      started: "Démarrée",
+      requestedBy: "Demandée par",
+      failure: "Échec : {message}",
+    },
+    reconciliation: {
+      title: "Dernier rapprochement",
+      clean:
+        "Aucune différence entre les indicateurs et les enregistrements source.",
+      summary:
+        "{discrepancies} différences enregistrées ({mismatches} écarts d'indicateurs).",
+      incomplete: "Le rapprochement n'a pas abouti : {status}.",
+      noRepair:
+        "Le rapprochement signale uniquement les différences. Il ne modifie jamais les enregistrements source ni les indicateurs publiés ; reconstruisez pour publier des valeurs issues des sources.",
+    },
+    categories: {
+      contribution_mismatch: "La contribution de l'enregistrement diffère",
+      missing_from_projection: "Enregistrement absent des indicateurs",
+      stale_projection_entry:
+        "Les indicateurs contiennent un enregistrement supprimé",
+      counter_mismatch: "Le total diffère de la source",
+      legacy_counter_mismatch: "L'ancien compteur d'utilisation diffère",
+      source_quality: "Les données source doivent être vérifiées",
+    },
+    discrepancies: {
+      counts: "Attendu {expected}, trouvé {actual}",
+      none: "aucun",
+      review: "Vérifier {source}",
+      loadMore: "Charger plus",
+    },
+    quality: {
+      title: "Qualité des données source",
+      description:
+        "Enregistrements dont les données source ne peuvent pas être classées. Ils sont comptés ici au lieu d'être devinés.",
+    },
+    recent: {
+      title: "Tâches récentes",
+      rows: "{rows} lignes",
+      discrepancies: "{count} différences",
     },
   },
 } as const;

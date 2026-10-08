@@ -3,11 +3,12 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { createOrganizationQuery } from "./utils/convexAuth";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { computeCoverageAlerts } from "./utils/insuranceCoverageAlerts";
 import { computeInsuranceStats } from "./utils/insuranceStats";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,

@@ -652,9 +652,9 @@ describe("fromDublinCoreXML", () => {
 
   test("should return empty array for malformed XML", () => {
     expect(fromDublinCoreXML("not xml at all")).toEqual([]);
-    expect(fromDublinCoreXML("<dc:title>Missing identifier</dc:title>")).toEqual(
-      [],
-    );
+    expect(
+      fromDublinCoreXML("<dc:title>Missing identifier</dc:title>"),
+    ).toEqual([]);
     expect(fromDublinCoreXML("")).toEqual([]);
   });
 

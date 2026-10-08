@@ -125,7 +125,11 @@ async function setup() {
 const relationOracles = [
   ["parent", api.collections.getParentObject, null],
   ["parent thumbnail", api.collections.getParentObjectWithThumbnail, null],
-  ["children", api.collections.getChildObjects, { children: [], truncated: false }],
+  [
+    "children",
+    api.collections.getChildObjects,
+    { children: [], truncated: false },
+  ],
   ["siblings", api.collections.getSiblingObjects, []],
 ] as const;
 

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation } from "./utils/mutationBuilders";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import { COLLECTION_MANAGER_ROLE_NAME } from "./utils/systemRoles";
 

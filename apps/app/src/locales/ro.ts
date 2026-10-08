@@ -1,5 +1,58 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Acest obiect se află acum la {location}. Reîmprospătați, confirmați unde se află și înregistrați din nou predarea.",
+    sourceChangedNoLocation:
+      "Acest obiect nu mai are o locație înregistrată. Reîmprospătați, confirmați unde se află și înregistrați din nou predarea.",
+    sourceChangedUnknown:
+      "Acest obiect a fost mutat de la încărcarea paginii. Reîmprospătați, confirmați unde se află și înregistrați din nou predarea.",
+    alreadyAtDestination: "Acest obiect se află deja la destinația selectată.",
+    destinationUnavailable:
+      "{location} nu este disponibilă pentru mutări. Alegeți altă destinație.",
+    destinationFull:
+      "{location} și-a atins capacitatea ({capacity}). Alegeți altă destinație.",
+    destinationBlocked:
+      "Destinația selectată nu poate primi acest obiect. Alegeți altă destinație.",
+    destinationRequired:
+      "Alegeți sau confirmați o destinație pentru acest obiect.",
+    externalCustody:
+      "Acest obiect este împrumutat. Înregistrați mai întâi returnarea împrumutului.",
+    assessmentRequired:
+      "Asociați o evaluare a stării acceptată pentru această predare.",
+    assessmentNotAccepted:
+      "Evaluarea stării selectată nu a fost încă acceptată.",
+    conditionEvidenceRequired:
+      "Adăugați note despre stare sau asociați o evaluare a stării acceptată.",
+    referenceNotFound:
+      "O înregistrare asociată nu mai este disponibilă. Reîmprospătați și încercați din nou.",
+    alreadyRecorded:
+      "Această predare a fost deja înregistrată. Reîmprospătați pentru a vedea starea actuală.",
+    outOfOrder:
+      "Acest pas nu este încă disponibil. Înregistrați mai întâi pașii anteriori ai predării.",
+    exhibitionOutcomeUnresolved:
+      "Înregistrați returnarea din expoziție sau o excepție autorizată înainte de a returna obiectul împrumutătorului.",
+    closureBlocked:
+      "Obiecte care așteaptă returnare sau o excepție autorizată: {count}.",
+    fallback:
+      "Acțiunea nu a putut fi finalizată. Reîmprospătați și încercați din nou.",
+  },
   conditionAssessments: {
+    actorProfileUnavailable:
+      "Responsabil înregistrat; profilul actual este indisponibil",
+    actorCurrentName: "Numele actual al profilului: {name}",
+    unknownLegacyActor:
+      "Identitatea istorică a responsabilului este necunoscută",
+
+    receiptRequirement:
+      "Introduceți note de stare sau selectați o evaluare acceptată pentru fiecare obiect selectat și confirmați fiecare destinație de retur necesară.",
+    handoffTimeline: "Cronologia predărilor",
+    installationTask: "Finalizați sarcina de instalare asociată (opțional)",
+
+    selectAccepted: "Selectați evaluarea de stare acceptată",
+    returnDestination: "Destinația returului",
+    conditionEvidence: "Dovada stării",
+    confirmOrigin: "Confirmați returul la originea înregistrată",
+
     title: "Evaluări ale stării",
     description:
       "Observațiile datate și fotografiile sunt păstrate. Un responsabil acceptă ciorna pentru a actualiza starea curentă.",
@@ -368,6 +421,11 @@ export default {
       "Identificatorul organizației este deja folosit. Alege unul diferit.",
   },
   dashboard: {
+    inventoryDefinition:
+      "Inventarul operațional exclude dezaccesiunile deschise și proprietatea împrumutată sau incertă.",
+    inventoryIncomingExcluded: "Înregistrări de intrare excluse: {count}",
+    inventoryUnclassified: "Proprietate neclasificată: {count}",
+    pendingOutgoingTransferApprovals: "Aprobări pentru transferuri de ieșire",
     overviewTitle: "Prezentare generală",
     overviewDescription: "Colecțiile și activitatea ta dintr-o privire.",
     needsReview: "De verificat",
@@ -457,6 +515,7 @@ export default {
       activity: "Activitate",
       developer: "Dezvoltator",
       data: "Import/Export Date",
+      metrics: "Starea indicatorilor",
     },
     roles: {
       title: "Gestionare Roluri",
@@ -1012,6 +1071,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Exportă în CSV",
+      objectsCapNote:
+        "CSV-ul pregătit pentru import include până la 1.000 de obiecte cu nume de locații și grupuri. Pentru catalogul complet, folosiți exportul de mai jos.",
+      objectsCapExceeded:
+        "Acest catalog are peste 1.000 de obiecte. Folosiți exportul catalogului complet de mai jos.",
     },
 
     errors: {
@@ -2356,6 +2419,8 @@ export default {
     },
     kpis: {
       activeLoans: "Împrumuturi active",
+      loadedActiveLoans: "Împrumuturi active în rezultatele încărcate",
+      loadedItems: "Obiecte în împrumuturile încărcate",
       objectsInTransit: "Obiecte în tranzit",
       totalInsuredValue: "Valoarea totală asigurată",
       expiringAgreements: "Acorduri care expiră",
@@ -2402,6 +2467,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Rezultate încărcate: {count}",
       showing: "Se afișează împrumuturile {start}-{end} din {total}",
       previous: "Anterior",
       next: "Următor",
@@ -2431,6 +2497,8 @@ export default {
       "Mai multe obiecte se potrivesc. Restrângeți căutarea pentru a reduce lista.",
   },
   deaccessions: {
+    loadedResults: "Număr pentru rezultatele încărcate",
+    loadMore: "Încarcă mai multe",
     title: "Dezaccesiuni",
     description: "Gestionează eliminările din colecție",
     newDeaccession: "Dezaccesiune Nouă",
@@ -3097,6 +3165,18 @@ export default {
     parentLocation: "Locație părinte",
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Propusă",
+      approved: "Aprobată",
+      installing: "În instalare",
+      active: "Activă",
+      deinstalling: "În dezinstalare",
+      closed: "Închisă",
+      rejected: "Respinsă",
+      unclassified: "Neclasificată",
+    },
+    metricFilterApplied: "Filtre de indicator aplicate la",
+    clearMetricFilter: "Șterge filtrele de indicator",
     title: "Expoziții",
     description: "Planifică și gestionează expozițiile",
     newExhibition: "Expoziție Nouă",
@@ -3164,6 +3244,7 @@ export default {
       outstanding: "{count} din {total} rezultate restante",
       readyToClose: "Toate rezultatele sunt rezolvate",
       observedFrom: "Locația sursă observată",
+      installationDestination: "Locația instalării",
       install: "Înregistrează instalarea",
       deinstall: "Înregistrează dezinstalarea",
       confirmReturn: "Confirmă returnarea fizică",
@@ -4166,6 +4247,7 @@ export default {
       format: "Format",
       csv: {
         generated: "Generat",
+        unavailable: "Indisponibil",
         total: "TOTAL",
         upgradeToEnterprise: "Treci la planul Enterprise",
         inventory: {
@@ -4386,6 +4468,11 @@ export default {
       proposed: "Propusă",
       closed: "Închisă",
       activeNow: "Active acum",
+      currentBySchedule: "În desfășurare conform calendarului",
+      upcomingBySchedule: "Viitoare conform calendarului",
+      unclassified: "{count} neclasificate",
+      loanExclusions: "{count} expoziții de împrumut excluse",
+      legacyContradictions: "{count} contradicții între date și indicator",
       upcomingStarts: "Viitoare",
       startsIn: "Începe peste",
       days: "zile",
@@ -4401,7 +4488,11 @@ export default {
       noUpcoming: "Nu există returnări de împrumuturi viitoare",
     },
     inventory: {
+      sourceCounts:
+        "Înregistrări detaliate / cu valoare înregistrată; moneda sursei lipsește.",
       title: "Evaluarea inventarului",
+      unavailable:
+        "Datele de evaluare nu sunt disponibile pentru această organizație.",
       totalValue: "Valoare totală",
       totalItems: "Număr total de obiecte",
       valuedItems: "Obiecte evaluate",
@@ -5055,6 +5146,42 @@ export default {
     resumeImport: "Reia importul",
   },
   activityLog: {
+    historyPreview:
+      "Doar aprobările recente. Deschideți cronologia dosarului pentru istoricul complet.",
+    nextPage: "Pagina următoare",
+    pageEntries: "înregistrări pe această pagină",
+    filterOptionsRecent:
+      "Opțiunile de autor și acțiune provin din ultimele 1.000 de evenimente. Căutările după dată și subiect acoperă întregul istoric.",
+    invalidDateRange:
+      "Data de început trebuie să fie înaintea datei de sfârșit.",
+    details: "Detalii eveniment",
+    currentProfileActor: "{name} (profil curent)",
+    actor: "Autor",
+    legacyEvidence:
+      "Eveniment vechi: identitatea autorului sau a subiectului nu a fost păstrată la momentul înregistrării.",
+    recordedEvidence:
+      "Identitatea autorului și a subiectului a fost păstrată la înregistrarea evenimentului.",
+    correctionOf: "Corectarea evenimentului",
+    subjectTimeline: "Istoricul subiectului",
+    objectTimeline: "Istoricul obiectului",
+    caseTimeline: "Istoricul cazului",
+    field: "Câmp",
+    before: "Înainte",
+    after: "După",
+    correctionReason: "Motivul corectării",
+    correctionStatement: "Textul corectării",
+    appendCorrection: "Adaugă corectare",
+    correctionFailed:
+      "Corectarea nu a putut fi salvată. Textul este păstrat; reîncercați.",
+    correctionSaved:
+      "Corectarea a fost adăugată. Evenimentul original este păstrat.",
+    approvalHistory: "Istoricul aprobărilor cazului",
+    legacy: "dovezi vechi",
+    firstPage: "Prima pagină",
+    unavailable:
+      "Istoricul nu este disponibil sau rolul dvs. nu permite accesul. Reîncercați, ștergeți filtrele sau selectați o organizație autorizată.",
+    retry: "Reîncearcă",
+
     featureName: "Conformitate și jurnal de audit",
     title: "Jurnal de activitate",
     description: "Vezi și filtrează activitatea din organizația ta",
@@ -7143,6 +7270,7 @@ export default {
         outstandingInstallation: "{count} awaiting installation",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
+        installationDestination: "Destinația instalării",
         receiptDestination: "Receipt destination",
         conditionNotes: "Condition at receipt",
         conditionPlaceholder: "Condition summary or notes",
@@ -8690,6 +8818,178 @@ export default {
       userEmailNotFound: "Adresa de e-mail a utilizatorului nu a fost găsită",
       differentEmail: "Această invitație este pentru o altă adresă de e-mail",
       alreadyMember: "Ești deja membru al acestei organizații",
+    },
+  },
+  exportJobs: {
+    catalogFiltered: "Exportă toate rezultatele filtrate",
+    catalogComplete: "Exportă catalogul complet",
+    auditComplete: "Exportă istoricul de audit complet",
+    auditFiltered: "Exportă istoricul de audit filtrat complet",
+    selected: "Exportă {count} obiecte selectate",
+    format: "Format export",
+    formatCsv: "CSV",
+    formatJsonl: "JSONL (JSON tipizat)",
+    create: "Creează exportul",
+    retrySelection: "Reîncearcă încărcarea selecției",
+    policy:
+      "Fiecare cerere nouă consumă un export din cota lunară; reîncercările și descărcările reutilizează aceeași cerere. Dacă pagina este reîncărcată în timpul unei încărcări incomplete a selecției, creați o cerere nouă. Limite: 16 MiB per fișier, 512 KiB per pagină, 1.024 fragmente, 10.000 de pagini sursă; filtrele de domeniu de inventar acceptă 32 de legături de împrumut per obiect. Descărcările expiră după șapte zile. Valorile obiectelor și apartenența la filtru sunt capturate în timpul procesării; limita de creare exclude inserările ulterioare. JSONL păstrează tipurile. Textul CSV are protecție împotriva formulelor; importați folosind schema de coloane din manifest pentru a păstra textul literal și zerourile inițiale.",
+    sourceAudit: "Audit",
+    sourceSelected: "Obiecte selectate",
+    sourceCatalog: "Catalog filtrat",
+    statusSelecting: "Se încarcă selecția",
+    statusQueued: "În coadă",
+    statusRunning: "În curs",
+    statusFinalizing: "Se finalizează",
+    statusCompleted: "Finalizat",
+    statusCancelled: "Anulat",
+    statusFailed: "Eșuat",
+    statusExpired: "Expirat",
+    progress: "{rows} rânduri capturate · {scanned} examinate · {pages} pagini",
+    progressAudit:
+      "{rows} rânduri capturate · {scanned} potriviri · {pages} pagini",
+    selectedCount: "{count} selectate",
+    cutoff: "Limită de creare: {asOf} · expiră {expiresAt}",
+    cancel: "Anulează",
+    resume: "Reia",
+    retry: "Reîncearcă de la punctul de control",
+    recover: "Recuperează exportul blocat",
+    download: "Descarcă {count} rânduri",
+    downloadManifest: "Descarcă manifestul",
+    signIn: "Autentificați-vă pentru a descărca",
+    checksumMismatch:
+      "Suma de control a fișierului nu corespunde; reîncercați descărcarea",
+    failed: "Exportul a eșuat",
+    errorAccess:
+      "Nu mai aveți acces la acest export. Verificați rolul și planul.",
+    errorQuota: "Cota lunară de exporturi a planului a fost epuizată.",
+    errorExpired: "Acest export a expirat. Creați un export nou.",
+    errorNotResumable: "Acest export nu poate fi reluat acum.",
+    errorSelection:
+      "Selecția nu a putut fi exportată. Reîncercați încărcarea sau creați o selecție nouă.",
+    errorTooLarge:
+      "Acest export este prea mare. Restrângeți filtrele sau selecția.",
+    errorInventoryLinks:
+      "Un obiect are prea multe legături de împrumut pentru acest filtru de inventar. Exportați în schimb obiectele selectate.",
+    errorInvalidRequest:
+      "Cererea de export nu este validă. Verificați filtrele și încercați din nou.",
+    errorInterrupted:
+      "Exportul a fost întrerupt. Reîncercați de la punctul de control.",
+    errorUnavailable:
+      "Fișierul de export nu este disponibil. Reîncercați sau creați un export nou.",
+    reportsNote:
+      "Rezumatele de rapoarte de mai jos conțin răspunsurile KPI curente și liste limitate de elemente recente sau viitoare. Folosiți exporturile complete ale catalogului și auditului de mai sus pentru seturi de date sursă reconciliate.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Indicatori indisponibili",
+      short: "Indisponibil",
+      openHealth: "Deschideți starea indicatorilor",
+      askAdministrator:
+        "Cereți unui administrator să reconstruiască indicatorii.",
+      storage: "Utilizarea stocării este indisponibilă",
+      usage:
+        "Contoarele de utilizare sunt indisponibile până la reconstruirea indicatorilor.",
+    },
+    reasons: {
+      not_built:
+        "Indicatorii nu au fost încă generați pentru această organizație.",
+      building:
+        "Indicatorii sunt în curs de reconstruire. Valorile apar la finalizare.",
+      invalidated:
+        "O modificare recentă a afectat mai multe înregistrări decât pot fi actualizate deodată. Este necesară o nouă reconstruire.",
+      definition_changed:
+        "Definițiile indicatorilor s-au schimbat. Este necesară o reconstruire înainte de afișarea valorilor.",
+      rebuild_failed:
+        "Ultima reconstruire a eșuat. Reîncercați sau porniți o nouă reconstruire.",
+    },
+    availability: {
+      ready: "Pregătit",
+      updating: "Pregătit, se actualizează",
+      unavailable: "Indisponibil",
+    },
+    status: {
+      building: "În desfășurare",
+      failed: "Eșuat",
+      cancelled: "Anulat",
+      completed: "Finalizat",
+      superseded: "Înlocuit",
+    },
+    mode: {
+      rebuild: "Reconstruire",
+      reconcile: "Reconciliere",
+    },
+    actions: {
+      rebuild: "Reconstruiți indicatorii",
+      reconcile: "Rulați reconcilierea",
+      starting: "Se pornește...",
+      retry: "Reîncercați",
+      retrying: "Se reîncearcă...",
+      cancel: "Anulați",
+      cancelling: "Se anulează...",
+      failed: "Acțiunea nu a putut fi finalizată. Încercați din nou.",
+    },
+    page: {
+      title: "Starea indicatorilor",
+      description:
+        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare, progresul reconstruirii și rezultatele reconcilierii.",
+      selectOrganization:
+        "Selectați o organizație pentru a vedea starea indicatorilor.",
+      noPermission:
+        "Aveți nevoie de permisiunea de a gestiona setările organizației pentru a vedea starea indicatorilor.",
+      statusTitle: "Stare",
+      reconcileNeedsReady:
+        "Reconcilierea este disponibilă după ce indicatorii sunt pregătiți.",
+      definitionVersion: "Versiunea definiției",
+      definitionOutdated: "Stocată {stored}, curentă {current}",
+      lastBuilt: "Ultima generare",
+      lastVerified: "Ultima reconciliere",
+      invalidated: "Invalidat",
+      limits: "Limite de reconstruire",
+      limitsValue:
+        "{pageSize} rânduri pe pagină, {fanOut} înregistrări asociate per modificare",
+    },
+    job: {
+      step: "Pas",
+      stepValue: "{index} din {count}",
+      processedRows: "Rânduri procesate",
+      checkpoint: "Punct de control",
+      attempts: "Încercări",
+      started: "Pornit",
+      requestedBy: "Solicitat de",
+      failure: "Eroare: {message}",
+    },
+    reconciliation: {
+      title: "Ultima reconciliere",
+      clean: "Nu există diferențe între indicatori și înregistrările sursă.",
+      summary:
+        "{discrepancies} diferențe înregistrate ({mismatches} nepotriviri de indicatori).",
+      incomplete: "Reconcilierea nu s-a finalizat: {status}.",
+      noRepair:
+        "Reconcilierea doar raportează diferențele. Nu modifică niciodată înregistrările sursă sau indicatorii publicați; reconstruiți pentru a publica valori derivate din sursă.",
+    },
+    categories: {
+      contribution_mismatch: "Contribuția înregistrării diferă",
+      missing_from_projection: "Înregistrare lipsă din indicatori",
+      stale_projection_entry: "Indicatorii conțin o înregistrare eliminată",
+      counter_mismatch: "Totalul diferă de sursă",
+      legacy_counter_mismatch: "Contorul vechi de utilizare diferă",
+      source_quality: "Datele sursă necesită verificare",
+    },
+    discrepancies: {
+      counts: "Așteptat {expected}, găsit {actual}",
+      none: "niciunul",
+      review: "Verificați {source}",
+      loadMore: "Încărcați mai multe",
+    },
+    quality: {
+      title: "Calitatea datelor sursă",
+      description:
+        "Înregistrări ale căror date sursă nu pot fi clasificate. Sunt numărate aici în loc să fie ghicite.",
+    },
+    recent: {
+      title: "Lucrări recente",
+      rows: "{rows} rânduri",
+      discrepancies: "{count} diferențe",
     },
   },
 };

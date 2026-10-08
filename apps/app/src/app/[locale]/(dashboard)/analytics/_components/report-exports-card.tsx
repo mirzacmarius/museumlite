@@ -1,5 +1,7 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { protectSpreadsheetText } from "@v1/backend/convex/utils/exportEncoding";
 import { Button } from "@v1/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -17,28 +19,33 @@ import {
   Package,
 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { ExportJobControl } from "@/components/export-job-control";
+import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
+import type { ProjectionUnavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
-interface ReportExportsCardProps {
+interface ReportData {
   kpis: {
     inventory: {
-      totalValue: number;
+      available: boolean;
+      unavailableReason?: string;
+      totalValue: number | null;
       fineArt: {
-        totalValue: number;
-        itemCount: number;
-        valuedCount: number;
+        totalValue: number | null;
+        itemCount: number | null;
+        valuedCount: number | null;
       };
       wine: {
-        totalValue: number;
-        itemCount: number;
-        valuedCount: number;
+        totalValue: number | null;
+        itemCount: number | null;
+        valuedCount: number | null;
       };
       vehicles: {
-        totalValue: number;
-        itemCount: number;
-        valuedCount: number;
+        totalValue: number | null;
+        itemCount: number | null;
+        valuedCount: number | null;
       };
     };
     loans: {
@@ -142,6 +149,12 @@ interface ReportExportsCardProps {
   hasInventoryValuation: boolean;
 }
 
+interface ReportExportsCardProps {
+  organizationId: Id<"organizations">;
+  reports: ReportData | null;
+  unavailableReason?: ProjectionUnavailableReason;
+}
+
 function formatDate(timestamp: number, locale: string): string {
   return formatDateUtil(new Date(timestamp), locale, {
     year: "numeric",
@@ -151,10 +164,13 @@ function formatDate(timestamp: number, locale: string): string {
 }
 
 function formatCurrency(
-  value: number,
+  value: number | null,
   locale: "en" | "fr" | "es" | "no" | "ro",
+  unavailableLabel = "Unavailable",
 ): string {
-  return formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
+  return value === null
+    ? unavailableLabel
+    : formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
 }
 
 function downloadCSV(filename: string, csvContent: string) {
@@ -167,15 +183,14 @@ function downloadCSV(filename: string, csvContent: string) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
-function escapeCSV(value: string | number | undefined): string {
+function escapeCSV(value: string | number | null | undefined): string {
   if (value === undefined || value === null) return "";
   const str = String(value);
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+  const safe = typeof value === "string" ? protectSpreadsheetText(str) : str;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 type ExportingReport =
@@ -202,7 +217,7 @@ function useReportExportActions({
   compliance,
   locationUtilization,
   hasInventoryValuation,
-}: ReportExportsCardProps): ReportExportActions {
+}: ReportData): ReportExportActions {
   const locale = useCurrentLocale();
   const csv = useScopedI18n("analytics.reportExports.csv");
   const [exporting, setExporting] = useState<ExportingReport | null>(null);
@@ -213,6 +228,7 @@ function useReportExportActions({
       const rows = [
         [csv("inventory.title")],
         [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("unavailable"), kpis.inventory.unavailableReason ?? ""],
         [],
         [
           csv("inventory.category"),
@@ -527,18 +543,30 @@ function useReportExportActions({
         [csv("board.category"), csv("board.items"), csv("board.totalValue")],
         [
           csv("board.fineArt"),
-          kpis.inventory.fineArt.itemCount.toString(),
-          formatCurrency(kpis.inventory.fineArt.totalValue, locale),
+          kpis.inventory.fineArt.itemCount?.toString() ?? csv("unavailable"),
+          formatCurrency(
+            kpis.inventory.fineArt.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("board.wine"),
-          kpis.inventory.wine.itemCount.toString(),
-          formatCurrency(kpis.inventory.wine.totalValue, locale),
+          kpis.inventory.wine.itemCount?.toString() ?? csv("unavailable"),
+          formatCurrency(
+            kpis.inventory.wine.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("board.vehicles"),
-          kpis.inventory.vehicles.itemCount.toString(),
-          formatCurrency(kpis.inventory.vehicles.totalValue, locale),
+          kpis.inventory.vehicles.itemCount?.toString() ?? csv("unavailable"),
+          formatCurrency(
+            kpis.inventory.vehicles.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [csv("total"), "", formatCurrency(kpis.inventory.totalValue, locale)],
         [],
@@ -604,26 +632,38 @@ function useReportExportActions({
           csv("insurance.fineArt"),
           kpis.inventory.fineArt.itemCount,
           kpis.inventory.fineArt.valuedCount,
-          formatCurrency(kpis.inventory.fineArt.totalValue, locale),
+          formatCurrency(
+            kpis.inventory.fineArt.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("insurance.wineSpirits"),
           kpis.inventory.wine.itemCount,
           kpis.inventory.wine.valuedCount,
-          formatCurrency(kpis.inventory.wine.totalValue, locale),
+          formatCurrency(
+            kpis.inventory.wine.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("insurance.vehicles"),
           kpis.inventory.vehicles.itemCount,
           kpis.inventory.vehicles.valuedCount,
-          formatCurrency(kpis.inventory.vehicles.totalValue, locale),
+          formatCurrency(
+            kpis.inventory.vehicles.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [],
         [
           csv("insurance.totalInsurableValue"),
           "",
           "",
-          formatCurrency(kpis.inventory.totalValue, locale),
+          formatCurrency(kpis.inventory.totalValue, locale, csv("unavailable")),
         ],
         [],
         [csv("insurance.itemsOnLoan")],
@@ -785,7 +825,7 @@ function IndividualReportsMenu({
   );
 }
 
-export function ReportExportsCard(props: ReportExportsCardProps) {
+function KpiReportMenus({ reports }: { reports: ReportData }) {
   const t = useScopedI18n("analytics.reportExports");
   const {
     exporting,
@@ -796,34 +836,63 @@ export function ReportExportsCard(props: ReportExportsCardProps) {
     exportAllReports,
     exportBoardReport,
     exportInsuranceReport,
-  } = useReportExportActions(props);
+  } = useReportExportActions(reports);
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <PrimaryReportMenu
+        report="board"
+        label={t("boardReport")}
+        exporting={exporting}
+        onExport={exportBoardReport}
+      />
+      <PrimaryReportMenu
+        report="insurance"
+        label={t("insuranceReport")}
+        exporting={exporting}
+        onExport={exportInsuranceReport}
+      />
+      <IndividualReportsMenu
+        hasInventoryValuation={reports.hasInventoryValuation}
+        onExportInventoryValuation={exportInventoryValuation}
+        onExportLoanReport={exportLoanReport}
+        onExportComplianceReport={exportComplianceReport}
+        onExportLocationReport={exportLocationReport}
+        onExportAllReports={exportAllReports}
+      />
+    </div>
+  );
+}
+
+export function ReportExportsCard({
+  organizationId,
+  reports,
+  unavailableReason,
+}: ReportExportsCardProps) {
+  const tExport = useScopedI18n("exportJobs");
 
   return (
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm">
       <ReportExportsHeader />
       <CardContent>
-        <div className="flex flex-wrap gap-2">
-          <PrimaryReportMenu
-            report="board"
-            label={t("boardReport")}
-            exporting={exporting}
-            onExport={exportBoardReport}
-          />
-          <PrimaryReportMenu
-            report="insurance"
-            label={t("insuranceReport")}
-            exporting={exporting}
-            onExport={exportInsuranceReport}
-          />
-          <IndividualReportsMenu
-            hasInventoryValuation={props.hasInventoryValuation}
-            onExportInventoryValuation={exportInventoryValuation}
-            onExportLoanReport={exportLoanReport}
-            onExportComplianceReport={exportComplianceReport}
-            onExportLocationReport={exportLocationReport}
-            onExportAllReports={exportAllReports}
-          />
-        </div>
+        <ExportJobControl
+          organizationId={organizationId}
+          source={{ kind: "objects", mode: "filtered", filters: {} }}
+          label={tExport("catalogComplete")}
+        />
+        <ExportJobControl
+          organizationId={organizationId}
+          source={{ kind: "audit", filters: {} }}
+          label={tExport("auditComplete")}
+        />
+        <p className="text-xs text-muted-foreground py-2">
+          {tExport("reportsNote")}
+        </p>
+        {reports ? (
+          <KpiReportMenus reports={reports} />
+        ) : unavailableReason ? (
+          <MetricsUnavailableNotice reason={unavailableReason} />
+        ) : null}
       </CardContent>
     </Card>
   );

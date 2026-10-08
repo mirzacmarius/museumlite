@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   Archive,
@@ -20,6 +20,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useDeferredValue, useState } from "react";
 import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
@@ -47,12 +48,21 @@ export function DeaccessionsPageClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [isReportOpen, setIsReportOpen] = useState(false);
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const deaccessions = useQuery(api.deaccessions.list, {
-    organizationId,
-    paginationOpts: { numItems: 100, cursor: null },
-  });
+  const [statusFilter] = useQueryState(
+    "status",
+    parseAsStringLiteral(["pending", "approved", "rejected"] as const),
+  );
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.deaccessions.list,
+    {
+      organizationId,
+      status: statusFilter ?? undefined,
+    },
+    { initialNumItems: 100 },
+  );
+  const deaccessions = { page: results };
 
-  if (deaccessions === undefined) {
+  if (status === "LoadingFirstPage") {
     return (
       <AccessionsPageSkeleton
         actionsCount={3}
@@ -73,7 +83,15 @@ export function DeaccessionsPageClient({
     <>
       <div className="flex h-full flex-col p-6">
         <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
-          <DeaccessionsStats deaccessioned={deaccessioned} pending={pending} />
+          <div>
+            <DeaccessionsStats
+              deaccessioned={deaccessioned}
+              pending={pending}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("loadedResults")}
+            </p>
+          </div>
 
           <div className="flex items-center gap-3">
             <div className="group relative">
@@ -137,6 +155,11 @@ export function DeaccessionsPageClient({
           organizationId={organizationId}
           searchQuery={deferredSearchQuery}
         />
+        {status === "CanLoadMore" && (
+          <Button variant="outline" onClick={() => loadMore(100)}>
+            {t("loadMore")}
+          </Button>
+        )}
       </div>
 
       <DeaccessionsReportDialog

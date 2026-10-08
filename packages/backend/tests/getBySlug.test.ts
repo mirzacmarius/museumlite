@@ -7,7 +7,9 @@ import { modules } from "./testSetup";
 test("getBySlug returns public-safe org projection", async () => {
   const t = convexTest(schema, modules);
   await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { email: "curator@example.com" });
+    const userId = await ctx.db.insert("users", {
+      email: "curator@example.com",
+    });
     await ctx.db.insert("organizations", {
       name: "Test Museum",
       slug: "test-museum",

@@ -5,9 +5,9 @@ import { v } from "convex/values";
 import { action } from "./_generated/server";
 import {
   buildTemplateCollectionSuggestions,
-  parseCollectionSetupSuggestionJson,
   type CollectionSetupSuggestion,
   type OrganizationType,
+  parseCollectionSetupSuggestionJson,
 } from "./utils/onboardingCollectionSuggestions";
 
 const organizationTypeValidator = v.union(

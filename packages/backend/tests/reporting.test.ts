@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import { internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
+import { rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup";
 
 /**
@@ -2201,6 +2202,7 @@ describe("report generation and cron processing", () => {
       });
     });
 
+    await rebuildProjection(t, orgId);
     await t.mutation(internal.reporting.generateReport, {
       runId,
       reportId,
@@ -2218,7 +2220,7 @@ describe("report generation and cron processing", () => {
     });
 
     const reportData = run?.reportData as {
-      inventory?: { totalValue: number };
+      inventory?: { totalValue: number | null; unavailableReason?: string };
       loans?: { overdue: number };
       exhibitions?: { active: number };
     };
@@ -2226,7 +2228,10 @@ describe("report generation and cron processing", () => {
     expect(reportData.inventory).toBeDefined();
     expect(reportData.loans).toBeDefined();
     expect(reportData.exhibitions).toBeDefined();
-    expect(typeof reportData.inventory?.totalValue).toBe("number");
+    expect(reportData.inventory?.totalValue).toBeNull();
+    expect(reportData.inventory?.unavailableReason).toBe(
+      "inventory_valuation_module_disabled",
+    );
     expect(typeof reportData.loans?.overdue).toBe("number");
     expect(typeof reportData.exhibitions?.active).toBe("number");
   });
@@ -2275,6 +2280,7 @@ describe("report generation and cron processing", () => {
         .collect();
     });
 
+    await rebuildProjection(t, orgId);
     vi.useFakeTimers();
     try {
       await t.mutation(internal.reporting.processDueReports, {});

@@ -16,10 +16,17 @@ interface ExhibitionFixture {
   authed: ReturnType<typeof authedForUser>;
 }
 
-async function setupExhibitionFixture(t: ConvexTest): Promise<ExhibitionFixture> {
+async function setupExhibitionFixture(
+  t: ConvexTest,
+): Promise<ExhibitionFixture> {
   const { organizationId, userId } = await createOrgUserWithPermissions(
     t,
-    ["collections.create", "collections.read", "collections.update"],
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.accept_condition",
+    ],
     {
       subscriptionTier: "pro",
       slugPrefix: "exhibition-test",
@@ -130,14 +137,25 @@ test("many-object creation makes every participant visible to object reads and o
   const members = await authed.query(api.exhibitions.listExhibitionObjects, {
     exhibitionId,
   });
-  expect(members.map((member) => [member.collectionId, member.role, member.order])).toEqual([
+  expect(
+    members.map((member) => [member.collectionId, member.role, member.order]),
+  ).toEqual([
     [secondCollectionId, "featured", 0],
     [collectionId, "participant", 1],
   ]);
-  const objectExhibitions = await authed.query(api.exhibitions.list, { collectionId });
-  expect(objectExhibitions.map((exhibition) => exhibition._id)).toContain(exhibitionId);
-  const filtered = await authed.query(api.exhibitions.listByOrganization, { organizationId, collectionId });
-  expect(filtered.map((exhibition) => [exhibition._id, exhibition.participantCount])).toEqual([[exhibitionId, 2]]);
+  const objectExhibitions = await authed.query(api.exhibitions.list, {
+    collectionId,
+  });
+  expect(objectExhibitions.map((exhibition) => exhibition._id)).toContain(
+    exhibitionId,
+  );
+  const filtered = await authed.query(api.exhibitions.listByOrganization, {
+    organizationId,
+    collectionId,
+  });
+  expect(
+    filtered.map((exhibition) => [exhibition._id, exhibition.participantCount]),
+  ).toEqual([[exhibitionId, 2]]);
 });
 
 test("legacy anchor disagreement is reported and requires an explicit reconciliation choice", async () => {
@@ -161,42 +179,113 @@ test("legacy anchor disagreement is reported and requires an explicit reconcilia
     return id;
   });
 
-  const review = await authed.query(api.exhibitions.reviewLegacyParticipation, { organizationId });
-  expect(review).toEqual([{ exhibitionId, anchorCollectionId: collectionId, reason: "anchor_missing_from_members", memberCount: 1 }]);
-  await expect(authed.mutation(api.exhibitions.update, { id: exhibitionId, participants: [{ collectionId: secondCollectionId, role: "participant" }] })).rejects.toThrow("Review legacy");
+  const review = await authed.query(api.exhibitions.reviewLegacyParticipation, {
+    organizationId,
+  });
+  expect(review).toEqual([
+    {
+      exhibitionId,
+      anchorCollectionId: collectionId,
+      reason: "anchor_missing_from_members",
+      memberCount: 1,
+    },
+  ]);
+  await expect(
+    authed.mutation(api.exhibitions.update, {
+      id: exhibitionId,
+      participants: [{ collectionId: secondCollectionId, role: "participant" }],
+    }),
+  ).rejects.toThrow("Review legacy");
   await authed.mutation(api.exhibitions.reconcileLegacyParticipation, {
     exhibitionId,
     includeAnchor: true,
     expectedMemberCollectionIds: [secondCollectionId],
   });
-  const members = await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId });
-  expect(members.map((member) => member.collectionId)).toEqual([secondCollectionId, collectionId]);
-  expect((await authed.query(api.exhibitions.get, { id: exhibitionId }))?.legacyParticipationReview).toBeUndefined();
+  const members = await authed.query(api.exhibitions.listExhibitionObjects, {
+    exhibitionId,
+  });
+  expect(members.map((member) => member.collectionId)).toEqual([
+    secondCollectionId,
+    collectionId,
+  ]);
+  expect(
+    (await authed.query(api.exhibitions.get, { id: exhibitionId }))
+      ?.legacyParticipationReview,
+  ).toBeUndefined();
 });
 
 test("safe legacy backfill adds the anchor once and leaves conflicting memberships for review", async () => {
   const t = createConvexTest();
-  const { organizationId, collectionId, secondCollectionId, authed } = await setupExhibitionFixture(t);
-  const singletonId = await t.run((ctx) => ctx.db.insert("exhibitions", { organizationId, collectionId, title: "Anchor only", startDate: Date.now(), isCurrent: false }));
+  const { organizationId, collectionId, secondCollectionId, authed } =
+    await setupExhibitionFixture(t);
+  const singletonId = await t.run((ctx) =>
+    ctx.db.insert("exhibitions", {
+      organizationId,
+      collectionId,
+      title: "Anchor only",
+      startDate: Date.now(),
+      isCurrent: false,
+    }),
+  );
   const ambiguousId = await t.run(async (ctx) => {
-    const id = await ctx.db.insert("exhibitions", { organizationId, collectionId, title: "Disagreement", startDate: Date.now(), isCurrent: false });
-    await ctx.db.insert("exhibitionObjects", { exhibitionId: id, organizationId, collectionId: secondCollectionId, status: "pending" });
+    const id = await ctx.db.insert("exhibitions", {
+      organizationId,
+      collectionId,
+      title: "Disagreement",
+      startDate: Date.now(),
+      isCurrent: false,
+    });
+    await ctx.db.insert("exhibitionObjects", {
+      exhibitionId: id,
+      organizationId,
+      collectionId: secondCollectionId,
+      status: "pending",
+    });
     return id;
   });
 
-  expect(await authed.mutation(api.exhibitions.backfillUnambiguousParticipation, { organizationId })).toEqual({ migrated: 1, requiresReview: 1, remaining: 0 });
-  expect(await authed.mutation(api.exhibitions.backfillUnambiguousParticipation, { organizationId })).toEqual({ migrated: 0, requiresReview: 1, remaining: 0 });
-  expect((await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId: singletonId })).map((member) => member.collectionId)).toEqual([collectionId]);
-  expect((await authed.query(api.exhibitions.reviewLegacyParticipation, { organizationId })).map((entry) => entry.exhibitionId)).toEqual([ambiguousId]);
+  expect(
+    await authed.mutation(api.exhibitions.backfillUnambiguousParticipation, {
+      organizationId,
+    }),
+  ).toEqual({ migrated: 1, requiresReview: 1, remaining: 0 });
+  expect(
+    await authed.mutation(api.exhibitions.backfillUnambiguousParticipation, {
+      organizationId,
+    }),
+  ).toEqual({ migrated: 0, requiresReview: 1, remaining: 0 });
+  expect(
+    (
+      await authed.query(api.exhibitions.listExhibitionObjects, {
+        exhibitionId: singletonId,
+      })
+    ).map((member) => member.collectionId),
+  ).toEqual([collectionId]);
+  expect(
+    (
+      await authed.query(api.exhibitions.reviewLegacyParticipation, {
+        organizationId,
+      })
+    ).map((entry) => entry.exhibitionId),
+  ).toEqual([ambiguousId]);
 });
 
 test("participant editing rejects duplicate objects and preserves installed evidence", async () => {
   const t = createConvexTest();
-  const { organizationId, collectionId, secondCollectionId, authed } = await setupExhibitionFixture(t);
-  await expect(authed.mutation(api.exhibitions.create, {
-    organizationId, title: "Invalid", startDate: Date.now(), isCurrent: false,
-    participants: [{ collectionId, role: "featured" }, { collectionId, role: "participant" }],
-  })).rejects.toThrow("only once");
+  const { organizationId, collectionId, secondCollectionId, authed } =
+    await setupExhibitionFixture(t);
+  await expect(
+    authed.mutation(api.exhibitions.create, {
+      organizationId,
+      title: "Invalid",
+      startDate: Date.now(),
+      isCurrent: false,
+      participants: [
+        { collectionId, role: "featured" },
+        { collectionId, role: "participant" },
+      ],
+    }),
+  ).rejects.toThrow("only once");
   const galleryLocationId = await t.run(async (ctx) =>
     ctx.db.insert("locations", {
       organizationId,
@@ -207,24 +296,62 @@ test("participant editing rejects duplicate objects and preserves installed evid
     }),
   );
   const exhibitionId = await authed.mutation(api.exhibitions.create, {
-    organizationId, title: "Editable", startDate: Date.now(), isCurrent: false,
-    participants: [{ collectionId, role: "participant" }, { collectionId: secondCollectionId, role: "featured" }],
+    organizationId,
+    title: "Editable",
+    startDate: Date.now(),
+    isCurrent: false,
+    participants: [
+      { collectionId, role: "participant" },
+      { collectionId: secondCollectionId, role: "featured" },
+    ],
   });
   await authed.mutation(api.exhibitions.update, {
     id: exhibitionId,
-    participants: [{ collectionId: secondCollectionId, role: "featured" }, { collectionId, role: "participant" }],
+    participants: [
+      { collectionId: secondCollectionId, role: "featured" },
+      { collectionId, role: "participant" },
+    ],
   });
-  const ordered = await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId });
-  expect(ordered.map((member) => member.collectionId)).toEqual([secondCollectionId, collectionId]);
+  const ordered = await authed.query(api.exhibitions.listExhibitionObjects, {
+    exhibitionId,
+  });
+  expect(ordered.map((member) => member.collectionId)).toEqual([
+    secondCollectionId,
+    collectionId,
+  ]);
+  const installationAssessment1 = await authed.mutation(
+    api.conditionAssessments.create,
+    {
+      collectionId: ordered[0]!.collectionId,
+      assessedAt: Date.now(),
+      condition: "Good",
+      summary: "Installation check",
+      observations: [],
+      photos: [],
+    },
+  );
+  await authed.mutation(api.conditionAssessments.accept, {
+    assessmentId: installationAssessment1,
+  });
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId: ordered[0]!._id,
     observedFromLocationId: null,
     exhibitionLocationId: galleryLocationId,
+    installationConditionAssessmentId: installationAssessment1,
   });
-  await expect(authed.mutation(api.exhibitions.update, {
-    id: exhibitionId, participants: [{ collectionId, role: "participant" }],
-  })).rejects.toThrow("installation or return evidence");
-  expect((await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId })).map((member) => member.collectionId)).toEqual([secondCollectionId, collectionId]);
+  await expect(
+    authed.mutation(api.exhibitions.update, {
+      id: exhibitionId,
+      participants: [{ collectionId, role: "participant" }],
+    }),
+  ).rejects.toThrow("installation or return evidence");
+  expect(
+    (
+      await authed.query(api.exhibitions.listExhibitionObjects, {
+        exhibitionId,
+      })
+    ).map((member) => member.collectionId),
+  ).toEqual([secondCollectionId, collectionId]);
 });
 
 test("schedule conflict checks union every selected participant", async () => {
@@ -253,9 +380,11 @@ test("schedule conflict checks union every selected participant", async () => {
   );
 
   expect(conflicts.hasConflicts).toBe(true);
-  expect(conflicts.conflicts.some((conflict) => conflict.title === "Second object show")).toBe(
-    true,
-  );
+  expect(
+    conflicts.conflicts.some(
+      (conflict) => conflict.title === "Second object show",
+    ),
+  ).toBe(true);
 });
 
 test("should detect venue conflicts", async () => {
@@ -322,7 +451,9 @@ test("should track exhibition status workflow", async () => {
     isCurrent: false,
   });
 
-  let exhibition = await authed.query(api.exhibitions.get, { id: exhibitionId });
+  let exhibition = await authed.query(api.exhibitions.get, {
+    id: exhibitionId,
+  });
   expect(exhibition?.status).toBe("proposed");
 
   await authed.mutation(api.exhibitions.approve, {
@@ -355,7 +486,10 @@ test("should calculate exhibition KPIs", async () => {
     exhibitionId,
   });
 
-  expect(objects.map((object) => object.collectionId)).toEqual([collectionId, secondCollectionId]);
+  expect(objects.map((object) => object.collectionId)).toEqual([
+    collectionId,
+    secondCollectionId,
+  ]);
 });
 
 test("should manage exhibition documents", async () => {

@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
+import { query } from "../_generated/server";
+import { mutation } from "../utils/mutationBuilders";
 import { requireLibraryPermission } from "./utils/permissions";
 
 /**
@@ -28,7 +29,11 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireLibraryPermission(ctx, args.organizationId, "collections.create");
+    await requireLibraryPermission(
+      ctx,
+      args.organizationId,
+      "collections.create",
+    );
 
     const vendorId = await ctx.db.insert("libraryVendors", {
       organizationId: args.organizationId,
@@ -81,7 +86,11 @@ export const update = mutation({
       throw new Error("Vendor not found");
     }
 
-    await requireLibraryPermission(ctx, vendor.organizationId, "collections.update");
+    await requireLibraryPermission(
+      ctx,
+      vendor.organizationId,
+      "collections.update",
+    );
 
     const updates: Record<string, unknown> = {};
 
@@ -126,7 +135,11 @@ export const deactivate = mutation({
       throw new Error("Vendor not found");
     }
 
-    await requireLibraryPermission(ctx, vendor.organizationId, "collections.update");
+    await requireLibraryPermission(
+      ctx,
+      vendor.organizationId,
+      "collections.update",
+    );
 
     await ctx.db.patch(args.vendorId, { isActive: false });
 
@@ -154,7 +167,11 @@ export const reactivate = mutation({
       throw new Error("Vendor not found");
     }
 
-    await requireLibraryPermission(ctx, vendor.organizationId, "collections.update");
+    await requireLibraryPermission(
+      ctx,
+      vendor.organizationId,
+      "collections.update",
+    );
 
     await ctx.db.patch(args.vendorId, { isActive: true });
 
@@ -182,7 +199,11 @@ export const remove = mutation({
       throw new Error("Vendor not found");
     }
 
-    await requireLibraryPermission(ctx, vendor.organizationId, "collections.delete");
+    await requireLibraryPermission(
+      ctx,
+      vendor.organizationId,
+      "collections.delete",
+    );
 
     // Check if vendor has any acquisition requests
     const requests = await ctx.db
@@ -211,7 +232,11 @@ export const getStatistics = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
+    await requireLibraryPermission(
+      ctx,
+      args.organizationId,
+      "collections.read",
+    );
     const vendors = await ctx.db
       .query("libraryVendors")
       .withIndex("by_organization", (q) =>

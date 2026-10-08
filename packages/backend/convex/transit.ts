@@ -3,13 +3,10 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, query } from "./_generated/server";
+import { custodyConflict } from "./utils/custodyErrors";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextTransitNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 import {
@@ -1730,8 +1727,14 @@ export const recordTransitItemReceipt = mutation({
     await requirePermission(ctx, transitRecord.organizationId, "loans.update");
 
     const conditionText = args.conditionIn?.trim() ?? "";
-    if (conditionText.length === 0 && args.conditionAssessmentId === undefined) {
-      throw new Error("Condition evidence is required for transit receipt");
+    if (
+      conditionText.length === 0 &&
+      args.conditionAssessmentId === undefined
+    ) {
+      throw custodyConflict(
+        "CONDITION_EVIDENCE_REQUIRED",
+        "Condition evidence is required for transit receipt",
+      );
     }
 
     return await recordTransitItemReceiptInternal(ctx, {
@@ -1754,6 +1757,7 @@ export const recordTransitItemInstallation = mutation({
     exhibitionLocationId: v.optional(v.id("locations")),
     installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
     conditionNotes: v.optional(v.string()),
+    installationTaskId: v.optional(v.id("installationTasks")),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1784,6 +1788,7 @@ export const recordTransitItemInstallation = mutation({
       exhibitionLocationId: args.exhibitionLocationId,
       installationConditionAssessmentId: args.installationConditionAssessmentId,
       conditionNotes: args.conditionNotes,
+      installationTaskId: args.installationTaskId,
     });
     return null;
   },
@@ -1809,6 +1814,7 @@ export const getTransitHandoffSummary = query({
         installedAt: v.optional(v.number()),
         receiptMovementId: v.optional(v.id("locationHistory")),
         installationMovementId: v.optional(v.id("locationHistory")),
+        installationTaskId: v.optional(v.id("installationTasks")),
       }),
     ),
     outstandingReceipt: v.array(
@@ -1823,6 +1829,7 @@ export const getTransitHandoffSummary = query({
         installedAt: v.optional(v.number()),
         receiptMovementId: v.optional(v.id("locationHistory")),
         installationMovementId: v.optional(v.id("locationHistory")),
+        installationTaskId: v.optional(v.id("installationTasks")),
       }),
     ),
     outstandingInstallation: v.array(
@@ -1837,6 +1844,7 @@ export const getTransitHandoffSummary = query({
         installedAt: v.optional(v.number()),
         receiptMovementId: v.optional(v.id("locationHistory")),
         installationMovementId: v.optional(v.id("locationHistory")),
+        installationTaskId: v.optional(v.id("installationTasks")),
       }),
     ),
   }),
@@ -1846,6 +1854,10 @@ export const getTransitHandoffSummary = query({
       throw new Error("Transit record not found");
     }
     await requirePermission(ctx, transitRecord.organizationId, "loans.read");
-    return await getTransitHandoffSummaryForRecord(ctx, args.transitRecordId);
+    return await getTransitHandoffSummaryForRecord(
+      ctx,
+      args.transitRecordId,
+      transitRecord.organizationId,
+    );
   },
 });

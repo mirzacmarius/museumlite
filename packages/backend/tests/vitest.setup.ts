@@ -1,3 +1,4 @@
+import aggregateTest from "@convex-dev/aggregate/test";
 import { vi } from "vitest";
 
 vi.stubEnv("CONVEX_SITE_URL", "https://example.convex.site");
@@ -14,6 +15,7 @@ vi.mock("convex-test", async (importOriginal) => {
 
   const convexTest: typeof actual.convexTest = ((schema, modules) => {
     const t = actual.convexTest(schema, modules);
+    aggregateTest.register(t, "metrics");
 
     const wrapAs =
       <TRef, TArgs extends unknown[], TResult>(

@@ -4,9 +4,11 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
+import { workflowHistoryPageValidator } from "./auditLog";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds } from "./utils/batchLookup";
+import { recentCaseHistory } from "./utils/caseHistory";
 import {
   markCollectionActive,
   markCollectionLoaned,
@@ -39,6 +41,7 @@ import {
   getLoanWorkflowHistoryHandler,
   rejectLoanHandler,
 } from "./utils/loanWorkflow";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import {
   getUsersToNotifyForWorkflowStep,
@@ -759,6 +762,8 @@ export const get = query({
           comment: v.optional(v.string()),
         }),
       ),
+      workflowHistoryIsPreview: v.literal(true),
+      workflowHistoryHasMore: v.boolean(),
       items: v.array(
         v.object({
           _id: v.id("loanItems"),
@@ -871,14 +876,14 @@ export const get = query({
       }),
     );
 
-    const rawHistory = loan.workflowHistory ?? [];
+    const historyPreview = await recentCaseHistory(ctx, loan, "loan");
+    const rawHistory = historyPreview.entries;
     const workflowHistoryWithNames = await Promise.all(
       rawHistory.map(async (entry) => {
-        const user = await ctx.db.get(entry.approvedBy);
         return {
           step: entry.step,
           approvedBy: entry.approvedBy,
-          approvedByName: user?.name || user?.username || undefined,
+          approvedByName: entry.approverName,
           approvedAt: entry.approvedAt,
           comment: entry.comment,
         };
@@ -905,6 +910,8 @@ export const get = query({
       useDetailedConditionReports: loan.useDetailedConditionReports,
       workflowStep: loan.workflowStep,
       workflowHistory: workflowHistoryWithNames,
+      workflowHistoryIsPreview: true as const,
+      workflowHistoryHasMore: historyPreview.hasMore,
       items,
     };
   },
@@ -1549,16 +1556,10 @@ export const getLoansForCollection = query({
 export const getWorkflowHistory = query({
   args: {
     loanId: v.id("loans"),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      step: v.number(),
-      approvedBy: v.id("users"),
-      approvedAt: v.number(),
-      comment: v.optional(v.string()),
-      approverName: v.optional(v.string()),
-    }),
-  ),
+  returns: workflowHistoryPageValidator,
   handler: async (ctx, args) => getLoanWorkflowHistoryHandler(ctx, args),
 });
 

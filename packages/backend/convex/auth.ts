@@ -5,7 +5,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, internalAction, internalMutation } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { sendLocalizedMagicLinkEmail } from "./email/authCopy";
 import { env } from "./env";
 import { ResendOTP } from "./otp/ResendOTP";
@@ -17,6 +17,7 @@ import {
 } from "./passwordRecovery/codeRequestLimit";
 import { NeutralPassword } from "./passwordRecovery/NeutralPassword";
 import { ResendOTPPasswordReset } from "./passwordReset/ResendOTPPasswordReset";
+import { internalMutation } from "./utils/mutationBuilders";
 
 const normalizedEmailProfile = (params: Record<string, unknown>) => {
   if (typeof params.email !== "string" || params.email.trim().length === 0) {

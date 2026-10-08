@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
 import { useI18n } from "@/locales/client";
@@ -50,5 +51,9 @@ export default function AccessionTransfersPage() {
     );
   }
 
-  return <TransfersBoard organizationId={currentOrganizationId} />;
+  return (
+    <Suspense fallback={<AccessionsPageSkeleton />}>
+      <TransfersBoard organizationId={currentOrganizationId} />
+    </Suspense>
+  );
 }

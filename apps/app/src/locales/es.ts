@@ -1,7 +1,57 @@
 // spanish translations
 
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Este objeto está ahora en {location}. Actualice, confirme dónde está y vuelva a registrar la entrega.",
+    sourceChangedNoLocation:
+      "Este objeto ya no tiene una ubicación registrada. Actualice, confirme dónde está y vuelva a registrar la entrega.",
+    sourceChangedUnknown:
+      "Este objeto se ha movido desde que se cargó la página. Actualice, confirme dónde está y vuelva a registrar la entrega.",
+    alreadyAtDestination: "Este objeto ya está en el destino seleccionado.",
+    destinationUnavailable:
+      "{location} no está disponible para movimientos. Elija otro destino.",
+    destinationFull:
+      "{location} está al límite de capacidad ({capacity}). Elija otro destino.",
+    destinationBlocked:
+      "El destino seleccionado no puede recibir este objeto. Elija otro destino.",
+    destinationRequired: "Elija o confirme un destino para este objeto.",
+    externalCustody:
+      "Este objeto está en préstamo. Registre primero su devolución.",
+    assessmentRequired:
+      "Vincule una evaluación del estado aceptada para esta entrega.",
+    assessmentNotAccepted:
+      "La evaluación del estado seleccionada aún no ha sido aceptada.",
+    conditionEvidenceRequired:
+      "Añada notas del estado o vincule una evaluación del estado aceptada.",
+    referenceNotFound:
+      "Un registro vinculado ya no está disponible. Actualice e inténtelo de nuevo.",
+    alreadyRecorded:
+      "Esta entrega ya se ha registrado. Actualice para ver el estado más reciente.",
+    outOfOrder:
+      "Este paso aún no está disponible. Registre primero los pasos anteriores de la entrega.",
+    exhibitionOutcomeUnresolved:
+      "Registre la devolución de la exposición o una excepción autorizada antes de devolver este objeto al prestador.",
+    closureBlocked:
+      "Objetos pendientes de devolución o excepción autorizada: {count}.",
+    fallback: "No se pudo completar la acción. Actualice e inténtelo de nuevo.",
+  },
   conditionAssessments: {
+    actorProfileUnavailable:
+      "Responsable registrado; perfil actual no disponible",
+    actorCurrentName: "Nombre del perfil actual: {name}",
+    unknownLegacyActor: "Identidad histórica del responsable desconocida",
+
+    receiptRequirement:
+      "Introduzca notas de estado o seleccione una evaluación aceptada para cada elemento seleccionado y confirme cada destino de devolución obligatorio.",
+    handoffTimeline: "Cronología de entregas",
+    installationTask: "Completar tarea de instalación vinculada (opcional)",
+
+    selectAccepted: "Seleccionar evaluación de estado aceptada",
+    returnDestination: "Destino de devolución",
+    conditionEvidence: "Evidencia del estado",
+    confirmOrigin: "Confirmar devolución al origen registrado",
+
     title: "Evaluaciones del estado",
     description:
       "Se conservan las observaciones fechadas y las fotos. Un responsable acepta el borrador para actualizar el estado actual.",
@@ -48,6 +98,12 @@ export default {
     compareAfter: "Después (aceptación actual)",
   },
   dashboard: {
+    inventoryDefinition:
+      "El inventario operativo excluye bajas abiertas y propiedad entrante o incierta.",
+    inventoryIncomingExcluded: "Registros entrantes excluidos: {count}",
+    inventoryUnclassified: "Propiedad sin clasificar: {count}",
+    pendingOutgoingTransferApprovals:
+      "Aprobaciones de transferencias salientes",
     overviewTitle: "Resumen",
     overviewDescription: "Tus colecciones y tareas de un vistazo.",
     needsReview: "Por revisar",
@@ -137,6 +193,7 @@ export default {
       activity: "Actividad",
       developer: "Desarrollador",
       data: "Importar/Exportar datos",
+      metrics: "Estado de métricas",
     },
     roles: {
       title: "Gestión de Roles",
@@ -522,6 +579,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Exportar a CSV",
+      objectsCapNote:
+        "El CSV listo para importar incluye hasta 1.000 objetos con nombres de ubicación y grupo. Para el catálogo completo, use la exportación de abajo.",
+      objectsCapExceeded:
+        "Este catálogo tiene más de 1.000 objetos. Use la exportación del catálogo completo de abajo.",
     },
   },
   account: {
@@ -1041,6 +1102,40 @@ export default {
       "Error al cancelar la invitación. Por favor, inténtelo de nuevo.",
   },
   activityLog: {
+    historyPreview:
+      "Solo las aprobaciones recientes. Abra la cronología del expediente para consultar el historial completo.",
+    nextPage: "Página siguiente",
+    pageEntries: "registros en esta página",
+    filterOptionsRecent:
+      "Las opciones de autor y acción proceden de los últimos 1.000 eventos. Las búsquedas por fecha y tema cubren todo el historial.",
+    invalidDateRange: "La fecha inicial debe preceder a la fecha final.",
+    details: "Detalles del evento",
+    currentProfileActor: "{name} (perfil actual)",
+    actor: "Autor",
+    legacyEvidence:
+      "Evento antiguo: no se conservaron los datos del autor o del tema en el momento del registro.",
+    recordedEvidence:
+      "Los datos del autor y del tema se conservaron al registrar el evento.",
+    correctionOf: "Corrección de",
+    subjectTimeline: "Historial del tema",
+    objectTimeline: "Historial del objeto",
+    caseTimeline: "Historial del expediente",
+    field: "Campo",
+    before: "Antes",
+    after: "Después",
+    correctionReason: "Motivo de la corrección",
+    correctionStatement: "Texto de la corrección",
+    appendCorrection: "Añadir corrección",
+    correctionFailed:
+      "No se pudo guardar la corrección. Su texto se conserva; vuelva a intentarlo.",
+    correctionSaved: "Corrección añadida. Se conserva el evento original.",
+    approvalHistory: "Historial de aprobaciones del expediente",
+    legacy: "evidencia antigua",
+    firstPage: "Primera página",
+    unavailable:
+      "El historial no está disponible o su rol no permite consultarlo. Reintente, borre los filtros o seleccione una organización autorizada.",
+    retry: "Reintentar",
+
     featureName: "Cumplimiento y registro de auditoría",
     title: "Registro de actividad",
     description: "Ver y filtrar actividad en su organización",
@@ -2207,6 +2302,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Resultados cargados: {count}",
       showing: "Mostrando {start}-{end} de {total} préstamos",
       previous: "Anterior",
       next: "Siguiente",
@@ -2243,6 +2339,8 @@ export default {
       overdueLoans: "Préstamos Vencidos",
       pendingApprovals: "Aprobaciones Pendientes",
       unavailable: "No disponible",
+      loadedActiveLoans: "Préstamos activos en resultados cargados",
+      loadedItems: "Objetos en préstamos cargados",
       objectsInTransit: "Objetos en tránsito",
       totalInsuredValue: "Valor total asegurado",
       expiringAgreements: "Acuerdos próximos a vencer",
@@ -3857,6 +3955,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Propuesta",
+      approved: "Aprobada",
+      installing: "En instalación",
+      active: "Activa",
+      deinstalling: "En desmontaje",
+      closed: "Cerrada",
+      rejected: "Rechazada",
+      unclassified: "Sin clasificar",
+    },
+    metricFilterApplied: "Filtros de métricas aplicados a",
+    clearMetricFilter: "Borrar filtros de métricas",
     title: "Exposiciones",
     description: "Gestiona el historial y la planificación de tus exposiciones",
     newExhibition: "Nueva Exposición",
@@ -3906,6 +4016,7 @@ export default {
       outstanding: "{count} de {total} resultados pendientes",
       readyToClose: "Todos los resultados resueltos",
       observedFrom: "Ubicación de origen observada",
+      installationDestination: "Ubicación de instalación",
       install: "Registrar instalación",
       deinstall: "Registrar desinstalación",
       confirmReturn: "Confirmar devolución física",
@@ -4058,6 +4169,11 @@ export default {
       approved: "Aprobado",
       proposed: "Propuesto",
       closed: "Cerrado",
+      currentBySchedule: "Actual según el calendario",
+      upcomingBySchedule: "Próximas según el calendario",
+      unclassified: "{count} sin clasificar",
+      loanExclusions: "{count} exposiciones de préstamo excluidas",
+      legacyContradictions: "{count} contradicciones entre fechas e indicador",
       activeNow: "Activo Ahora",
       upcomingStarts: "Próximas",
       startsIn: "Comienza en",
@@ -4104,7 +4220,11 @@ export default {
       noUpcoming: "Sin devoluciones próximas",
     },
     inventory: {
+      sourceCounts:
+        "Registros detallados / con valor registrado; falta la moneda de origen.",
       title: "Valoración de Inventario",
+      unavailable:
+        "Los datos de valoración no están disponibles para esta organización.",
       totalValue: "Valor Total",
       totalItems: "Total de Artículos",
       valuedItems: "Artículos Valorados",
@@ -4137,6 +4257,7 @@ export default {
       exportAllReports: "Exportar Todos los Informes",
       csv: {
         generated: "Generado",
+        unavailable: "No disponible",
         total: "TOTAL",
         upgradeToEnterprise: "Actualizar a Enterprise",
         inventory: {
@@ -4786,6 +4907,8 @@ export default {
       "Hay más objetos que coinciden. Afine la búsqueda para acotar la lista.",
   },
   deaccessions: {
+    loadedResults: "Recuentos de resultados cargados",
+    loadMore: "Cargar más",
     title: "Registros de Desaccesión",
     description: "Elementos permanentemente removidos de la colección.",
     noOrg: {
@@ -6436,6 +6559,7 @@ export default {
         outstandingInstallation: "{count} awaiting installation",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
+        installationDestination: "Destino de instalación",
         receiptDestination: "Receipt destination",
         conditionNotes: "Condition at receipt",
         conditionPlaceholder: "Condition summary or notes",
@@ -7998,6 +8122,177 @@ export default {
       differentEmail:
         "Esta invitación es para otra dirección de correo electrónico",
       alreadyMember: "Ya eres miembro de esta organización",
+    },
+  },
+  exportJobs: {
+    catalogFiltered: "Exportar todos los resultados filtrados",
+    catalogComplete: "Exportar catálogo completo",
+    auditComplete: "Exportar historial de auditoría completo",
+    auditFiltered: "Exportar historial de auditoría filtrado completo",
+    selected: "Exportar {count} objetos seleccionados",
+    format: "Formato de exportación",
+    formatCsv: "CSV",
+    formatJsonl: "JSONL (JSON tipado)",
+    create: "Crear exportación",
+    retrySelection: "Reintentar carga de la selección",
+    policy:
+      "Cada nueva solicitud consume una exportación de la cuota mensual; los reintentos y las descargas reutilizan la misma solicitud. Si se recarga la página con una carga de selección incompleta, cree una nueva solicitud. Límites: 16 MiB por archivo, 512 KiB por página, 1.024 fragmentos, 10.000 páginas de origen; los filtros de alcance de inventario admiten 32 vínculos de préstamo por objeto. Las descargas caducan a los siete días. Los valores de los objetos y la pertenencia al filtro se capturan durante el procesamiento; el corte de creación excluye inserciones posteriores. JSONL conserva los tipos. El texto CSV usa protección contra fórmulas; importe con el esquema de columnas del manifiesto para conservar texto literal y ceros iniciales.",
+    sourceAudit: "Auditoría",
+    sourceSelected: "Objetos seleccionados",
+    sourceCatalog: "Catálogo filtrado",
+    statusSelecting: "Cargando selección",
+    statusQueued: "En cola",
+    statusRunning: "En curso",
+    statusFinalizing: "Finalizando",
+    statusCompleted: "Completada",
+    statusCancelled: "Cancelada",
+    statusFailed: "Fallida",
+    statusExpired: "Caducada",
+    progress:
+      "{rows} filas capturadas · {scanned} examinadas · {pages} páginas",
+    progressAudit:
+      "{rows} filas capturadas · {scanned} coincidentes · {pages} páginas",
+    selectedCount: "{count} seleccionados",
+    cutoff: "Corte de creación: {asOf} · caduca {expiresAt}",
+    cancel: "Cancelar",
+    resume: "Reanudar",
+    retry: "Reintentar desde el punto de control",
+    recover: "Recuperar exportación detenida",
+    download: "Descargar {count} filas",
+    downloadManifest: "Descargar manifiesto",
+    signIn: "Inicie sesión para descargar",
+    checksumMismatch:
+      "La suma de verificación del archivo no coincide; vuelva a descargarlo",
+    failed: "La exportación falló",
+    errorAccess:
+      "Ya no tiene acceso a esta exportación. Revise su rol y su plan.",
+    errorQuota: "Se ha agotado la cuota mensual de exportaciones de su plan.",
+    errorExpired: "Esta exportación ha caducado. Cree una nueva exportación.",
+    errorNotResumable: "Esta exportación no se puede reanudar en este momento.",
+    errorSelection:
+      "No se pudo exportar la selección. Reintente la carga o cree una nueva selección.",
+    errorTooLarge:
+      "Esta exportación es demasiado grande. Acote los filtros o la selección.",
+    errorInventoryLinks:
+      "Un objeto tiene demasiados vínculos de préstamo para este filtro de inventario. Exporte los objetos seleccionados en su lugar.",
+    errorInvalidRequest:
+      "La solicitud de exportación no es válida. Revise los filtros e inténtelo de nuevo.",
+    errorInterrupted:
+      "La exportación se interrumpió. Reintente desde el punto de control.",
+    errorUnavailable:
+      "El archivo de exportación no está disponible. Reintente o cree una nueva exportación.",
+    reportsNote:
+      "Los resúmenes de informes siguientes contienen respuestas actuales de KPI y listas limitadas de elementos recientes o próximos. Use las exportaciones completas de catálogo y auditoría anteriores para obtener conjuntos de datos de origen conciliados.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Métricas no disponibles",
+      short: "No disponible",
+      openHealth: "Abrir estado de métricas",
+      askAdministrator: "Pida a un administrador que reconstruya las métricas.",
+      storage: "Uso de almacenamiento no disponible",
+      usage:
+        "Los recuentos de uso no están disponibles hasta que se reconstruyan las métricas.",
+    },
+    reasons: {
+      not_built: "Las métricas aún no se han generado para esta organización.",
+      building:
+        "Las métricas se están reconstruyendo. Los valores aparecerán cuando termine.",
+      invalidated:
+        "Un cambio reciente afectó a más registros de los que se pueden actualizar a la vez. Se requiere una nueva reconstrucción.",
+      definition_changed:
+        "Las definiciones de métricas cambiaron. Se requiere una reconstrucción antes de mostrar valores.",
+      rebuild_failed:
+        "La última reconstrucción de métricas falló. Reinténtela o inicie una nueva.",
+    },
+    availability: {
+      ready: "Lista",
+      updating: "Lista, actualizándose",
+      unavailable: "No disponible",
+    },
+    status: {
+      building: "En curso",
+      failed: "Fallida",
+      cancelled: "Cancelada",
+      completed: "Completada",
+      superseded: "Reemplazada",
+    },
+    mode: {
+      rebuild: "Reconstrucción",
+      reconcile: "Conciliación",
+    },
+    actions: {
+      rebuild: "Reconstruir métricas",
+      reconcile: "Ejecutar conciliación",
+      starting: "Iniciando...",
+      retry: "Reintentar",
+      retrying: "Reintentando...",
+      cancel: "Cancelar",
+      cancelling: "Cancelando...",
+      failed: "No se pudo completar la acción. Inténtelo de nuevo.",
+    },
+    page: {
+      title: "Estado de métricas",
+      description:
+        "Disponibilidad de las métricas del panel, informes y uso, progreso de reconstrucción y resultados de conciliación.",
+      selectOrganization:
+        "Seleccione una organización para ver el estado de las métricas.",
+      noPermission:
+        "Necesita permiso para gestionar la configuración de la organización para ver el estado de las métricas.",
+      statusTitle: "Estado",
+      reconcileNeedsReady:
+        "La conciliación está disponible cuando las métricas están listas.",
+      definitionVersion: "Versión de definición",
+      definitionOutdated: "Almacenada {stored}, actual {current}",
+      lastBuilt: "Última generación",
+      lastVerified: "Última conciliación",
+      invalidated: "Invalidada",
+      limits: "Límites de reconstrucción",
+      limitsValue:
+        "{pageSize} filas por página, {fanOut} registros relacionados por cambio",
+    },
+    job: {
+      step: "Paso",
+      stepValue: "{index} de {count}",
+      processedRows: "Filas procesadas",
+      checkpoint: "Punto de control",
+      attempts: "Intentos",
+      started: "Iniciada",
+      requestedBy: "Solicitada por",
+      failure: "Error: {message}",
+    },
+    reconciliation: {
+      title: "Última conciliación",
+      clean: "No hay diferencias entre las métricas y los registros de origen.",
+      summary:
+        "{discrepancies} diferencias registradas ({mismatches} discrepancias de métricas).",
+      incomplete: "La conciliación no se completó: {status}.",
+      noRepair:
+        "La conciliación solo informa diferencias. Nunca modifica los registros de origen ni las métricas publicadas; reconstruya para publicar valores derivados del origen.",
+    },
+    categories: {
+      contribution_mismatch: "La contribución del registro difiere",
+      missing_from_projection: "Registro ausente de las métricas",
+      stale_projection_entry: "Las métricas contienen un registro eliminado",
+      counter_mismatch: "El total difiere del origen",
+      legacy_counter_mismatch: "El contador de uso heredado difiere",
+      source_quality: "Los datos de origen requieren revisión",
+    },
+    discrepancies: {
+      counts: "Esperado {expected}, encontrado {actual}",
+      none: "ninguno",
+      review: "Revisar {source}",
+      loadMore: "Cargar más",
+    },
+    quality: {
+      title: "Calidad de los datos de origen",
+      description:
+        "Registros cuyos datos de origen no se pueden clasificar. Se cuentan aquí en lugar de suponerse.",
+    },
+    recent: {
+      title: "Trabajos recientes",
+      rows: "{rows} filas",
+      discrepancies: "{count} diferencias",
     },
   },
 } as const;

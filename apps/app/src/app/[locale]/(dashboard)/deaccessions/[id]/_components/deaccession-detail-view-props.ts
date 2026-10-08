@@ -53,6 +53,8 @@ export interface DeaccessionDetailViewProps {
           primaryImageUrl?: string;
         } | null;
         workflowHistory: DeaccessionWorkflowHistoryEntry[];
+        workflowHistoryIsPreview: true;
+        workflowHistoryHasMore: boolean;
         approverName?: string;
       }
     | null

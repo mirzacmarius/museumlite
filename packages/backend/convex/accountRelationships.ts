@@ -1,10 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { metadataRecord } from "./schema";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import { hasModuleEnabled, requireModuleEnabled } from "./utils/featureGates";
+import { mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
 import { getRelatedEntityOrganization } from "./utils/relatedEntityIntegrity";
 

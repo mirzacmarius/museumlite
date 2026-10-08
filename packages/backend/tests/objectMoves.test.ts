@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
+import { rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
@@ -834,6 +835,16 @@ describe("objectMoves", () => {
     );
     expect(request?.acceptedTargetLocationId).toBe(fixture.targetLocationId);
     expect(request?.approvedSourceLocationId).toBe(fixture.locationId);
+    const movementHistory = await fixture.targetAdmin.query(
+      api.locations.getCollectionLocationHistory,
+      { collectionId: fixture.collectionId },
+    );
+    const arrival = movementHistory.find(
+      (movement) => movement._id === request?.targetArrivalMovementId,
+    );
+    expect(arrival?.movementKind).toBe("institution_transfer");
+    expect(arrival?.authorizedBy).toBe(fixture.targetAdminId);
+    expect(arrival?.toLocationId).toBe(fixture.targetLocationId);
 
     const custodyEvents = await t.run(async (ctx) => {
       return await ctx.db
@@ -1028,6 +1039,49 @@ describe("objectMoves", () => {
         .collect(),
     );
     expect(custodyEvents).toHaveLength(2);
+  });
+
+  test("transfer acceptance rejects a full destination and retains source custody", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Transfer to capacity-limited storage",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.targetLocationId, { capacity: 1 });
+      await ctx.db.insert("collections", {
+        organizationId: fixture.targetOrganizationId,
+        accessionNumber: "TARGET-OCCUPIED",
+        title: "Destination occupant",
+        status: "active",
+        currentLocationId: fixture.targetLocationId,
+        catalogedBy: fixture.adminId,
+        catalogedAt: Date.now(),
+      });
+    });
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).rejects.toThrow(/capacity/i);
+    const request = await fixture.admin.query(api.objectMoves.get, {
+      requestId,
+    });
+    expect(request?.status).toBe("awaiting_acceptance");
+    expect(request?.targetArrivalMovementId).toBeUndefined();
+    const collection = await fixture.admin.query(api.collections.get, {
+      collectionId: fixture.collectionId,
+    });
+    expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
+    expect(collection?.currentLocationId).toBe(fixture.locationId);
   });
 
   test("acceptance retains condition assessments on the transferred object", async () => {
@@ -1529,5 +1583,44 @@ describe("organization transfer registry", () => {
     const after = await t.run(async (ctx) => ctx.db.get(legacyOrgId));
     expect(after?.accountNumber).toMatch(/^ORG-\d{5}$/);
     expect(after?.allowsIncomingTransferRequests).toBe(false);
+  });
+});
+
+describe("object move projections", () => {
+  test("an accepted organization transfer moves the object's usage contribution between organizations in the same transaction", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await rebuildProjection(t, fixture.sourceOrganizationId);
+    await rebuildProjection(t, fixture.targetOrganizationId);
+    const usage = async () => [
+      (
+        await fixture.admin.query(api.organizations.getUsageStats, {
+          organizationId: fixture.sourceOrganizationId,
+        })
+      ).objects.used,
+      (
+        await fixture.targetAdmin.query(api.organizations.getUsageStats, {
+          organizationId: fixture.targetOrganizationId,
+        })
+      ).objects.used,
+    ];
+    expect(await usage()).toEqual([1, 0]);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Projection parity",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    expect(await usage()).toEqual([0, 1]);
   });
 });

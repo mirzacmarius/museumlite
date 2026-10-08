@@ -5,12 +5,19 @@ import {
   getCollectionPrimaryImageUrls,
   getLocationPathStrings,
 } from "./collectionDisplayHelpers";
+import { classifyInventoryRecord } from "./collectionMetrics";
 import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 
 interface CollectionListFilters {
   organizationId: Id<"organizations">;
   status?: Doc<"collections">["status"];
   includeDeaccessioned?: boolean;
+  inventoryMetricScope?: "owned" | "incoming" | "unclassified";
+  openDeaccessionCollectionIds?: Set<Id<"collections">>;
+  inventoryLoanAssociations?: {
+    incoming: Set<Id<"collections">>;
+    outgoing: Set<Id<"collections">>;
+  };
   locationId?: Id<"locations">;
   locationIds?: Id<"locations">[];
   objectType?: string;
@@ -71,10 +78,30 @@ export async function filterCollectionListPage(
   );
   const matches = await Promise.all(
     page.map(async (collection) => {
+      const inventoryMetricScope = args.inventoryMetricScope;
+      if (
+        inventoryMetricScope &&
+        classifyInventoryRecord({
+          status: collection.status,
+          hasOpenDeaccession:
+            args.openDeaccessionCollectionIds?.has(collection._id) ?? false,
+          linkedToIncomingLoan:
+            args.inventoryLoanAssociations?.incoming.has(collection._id) ??
+            false,
+          linkedToOutgoingLoan:
+            args.inventoryLoanAssociations?.outgoing.has(collection._id) ??
+            false,
+        }) !== inventoryMetricScope
+      )
+        return false;
       if (args.status && collection.status !== args.status) return false;
       if (collection.status === "deleted" && args.status !== "deleted")
         return false;
-      if (collection.status === "archived" && args.status !== "archived")
+      if (
+        !inventoryMetricScope &&
+        collection.status === "archived" &&
+        args.status !== "archived"
+      )
         return false;
       if (
         collection.status === "deaccessioned" &&

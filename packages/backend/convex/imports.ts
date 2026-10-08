@@ -1,9 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, type QueryCtx, query } from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
@@ -20,6 +20,7 @@ import {
   fromDublinCoreXML,
   toDublinCoreXML,
 } from "./utils/dublinCore";
+import { protectSpreadsheetText } from "./utils/exportEncoding";
 import {
   enforceExportQuota,
   recordExportUsage,
@@ -48,6 +49,7 @@ import {
   parseImportDecimal,
 } from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
+import { mutation } from "./utils/mutationBuilders";
 import {
   generateNextAccountNumber,
   generateNextLoanNumber,
@@ -190,6 +192,10 @@ function getExportLocationCode(location: {
   locationCode?: string;
 }) {
   return location.locationCode ?? getFallbackLocationCode(location._id);
+}
+
+function csvTextCell(value: string) {
+  return `"${protectSpreadsheetText(value).replace(/"/g, '""')}"`;
 }
 
 export const createImportJob = mutation({
@@ -753,6 +759,9 @@ export const exportAccounts = mutation({
   },
 });
 
+/** Inline, import-ready CSV export; larger catalogs use the durable export job. */
+const MAX_IMPORT_READY_OBJECT_EXPORT = 1000;
+
 export const exportObjects = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -808,65 +817,75 @@ export const exportObjects = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    const objects = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+    const status = args.status;
+    if (status === "in_conservation") return [];
+    const filtered = await (status
+      ? ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          )
+      : ctx.db
+          .query("collections")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+    ).take(MAX_IMPORT_READY_OBJECT_EXPORT + 1);
+    if (filtered.length > MAX_IMPORT_READY_OBJECT_EXPORT)
+      throw new ConvexError(
+        `This catalog has more than ${MAX_IMPORT_READY_OBJECT_EXPORT.toLocaleString("en-US")} objects. Use the complete catalog export job instead.`,
+      );
+
+    const locationMap = new Map<Id<"locations">, string | undefined>();
+    const groupMap = new Map<Id<"collectionGroups">, string | undefined>();
+    for (const object of filtered) {
+      if (
+        object.currentLocationId &&
+        !locationMap.has(object.currentLocationId)
       )
-      .collect();
+        locationMap.set(
+          object.currentLocationId,
+          (await ctx.db.get(object.currentLocationId))?.name,
+        );
+    }
 
-    const filtered = args.status
-      ? objects.filter((o) => o.status === args.status)
-      : objects;
-
-    const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const locationMap = new Map(locations.map((l) => [l._id, l.name]));
-
-    const groups = await ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const groupMap = new Map(groups.map((g) => [g._id, g.name]));
-
-    const exportRows = await Promise.all(filtered.map(async (o) => {
-      const membership = await getCollectionGroupMembershipIds(ctx, o);
-      return {
-      accessionNumber: o.accessionNumber,
-      title: o.title,
-      alternativeTitle: o.alternativeTitle,
-      creator: o.creator,
-      objectType: o.objectType,
-      objectName: o.objectName,
-      culture: o.culture,
-      period: o.period,
-      dateCreated: o.dateCreated,
-      materials: o.materials,
-      technique: o.technique,
-      dimensions: o.dimensions,
-      description: o.description,
-      condition: o.condition,
-      provenance: o.provenance,
-      location: o.currentLocationId
-        ? locationMap.get(o.currentLocationId)
-        : undefined,
-      collectionGroup: membership.primaryGroupId
-        ? groupMap.get(membership.primaryGroupId)
-        : undefined,
-      collectionGroups: membership.groupIds.flatMap((id) => {
-        const name = groupMap.get(id);
-        return name ? [name] : [];
+    const exportRows = await Promise.all(
+      filtered.map(async (o) => {
+        const membership = await getCollectionGroupMembershipIds(ctx, o);
+        for (const groupId of membership.groupIds)
+          if (!groupMap.has(groupId))
+            groupMap.set(groupId, (await ctx.db.get(groupId))?.name);
+        return {
+          accessionNumber: o.accessionNumber,
+          title: o.title,
+          alternativeTitle: o.alternativeTitle,
+          creator: o.creator,
+          objectType: o.objectType,
+          objectName: o.objectName,
+          culture: o.culture,
+          period: o.period,
+          dateCreated: o.dateCreated,
+          materials: o.materials,
+          technique: o.technique,
+          dimensions: o.dimensions,
+          description: o.description,
+          condition: o.condition,
+          provenance: o.provenance,
+          location: o.currentLocationId
+            ? locationMap.get(o.currentLocationId)
+            : undefined,
+          collectionGroup: membership.primaryGroupId
+            ? groupMap.get(membership.primaryGroupId)
+            : undefined,
+          collectionGroups: membership.groupIds.flatMap((id) => {
+            const name = groupMap.get(id);
+            return name ? [name] : [];
+          }),
+          status: o.status,
+          createdAt: o._creationTime,
+        };
       }),
-      status: o.status,
-      createdAt: o._creationTime,
-      };
-    }));
+    );
 
     await recordExportUsage(ctx, args.organizationId);
 
@@ -1283,13 +1302,25 @@ export const importObjectsBatch = mutation({
             throw new Error("Collection groups must be a JSON array of names");
           }
           if (parsed.length > 0 && !collectionGroupId) {
-            throw new Error("A primary collection group is required when importing memberships");
+            throw new Error(
+              "A primary collection group is required when importing memberships",
+            );
           }
-          collectionGroupIds = [...new Set(parsed.map((name: string) =>
-            resolveUniqueName(groupsByName, name, "collection group")._id,
-          ))];
-          if (collectionGroupId && !collectionGroupIds.includes(collectionGroupId)) {
-            throw new Error("The primary collection group must be included in collectionGroups");
+          collectionGroupIds = [
+            ...new Set(
+              parsed.map(
+                (name: string) =>
+                  resolveUniqueName(groupsByName, name, "collection group")._id,
+              ),
+            ),
+          ];
+          if (
+            collectionGroupId &&
+            !collectionGroupIds.includes(collectionGroupId)
+          ) {
+            throw new Error(
+              "The primary collection group must be included in collectionGroups",
+            );
           }
         }
         const {
@@ -1689,38 +1720,40 @@ export const exportObjectsWithFormat = mutation({
       .collect();
     const groupMap = new Map(groups.map((g) => [g._id, g.name]));
 
-    const exportRows = await Promise.all(filtered.map(async (o) => {
-      const membership = await getCollectionGroupMembershipIds(ctx, o);
-      return {
-      accessionNumber: o.accessionNumber,
-      title: o.title,
-      alternativeTitle: o.alternativeTitle,
-      creator: o.creator,
-      objectType: o.objectType,
-      objectName: o.objectName,
-      culture: o.culture,
-      period: o.period,
-      dateCreated: o.dateCreated,
-      materials: o.materials,
-      technique: o.technique,
-      dimensions: o.dimensions,
-      description: o.description,
-      condition: o.condition,
-      provenance: o.provenance,
-      location: o.currentLocationId
-        ? locationMap.get(o.currentLocationId)
-        : undefined,
-      collectionGroup: membership.primaryGroupId
-        ? groupMap.get(membership.primaryGroupId)
-        : undefined,
-      collectionGroups: membership.groupIds.flatMap((id) => {
-        const name = groupMap.get(id);
-        return name ? [name] : [];
+    const exportRows = await Promise.all(
+      filtered.map(async (o) => {
+        const membership = await getCollectionGroupMembershipIds(ctx, o);
+        return {
+          accessionNumber: o.accessionNumber,
+          title: o.title,
+          alternativeTitle: o.alternativeTitle,
+          creator: o.creator,
+          objectType: o.objectType,
+          objectName: o.objectName,
+          culture: o.culture,
+          period: o.period,
+          dateCreated: o.dateCreated,
+          materials: o.materials,
+          technique: o.technique,
+          dimensions: o.dimensions,
+          description: o.description,
+          condition: o.condition,
+          provenance: o.provenance,
+          location: o.currentLocationId
+            ? locationMap.get(o.currentLocationId)
+            : undefined,
+          collectionGroup: membership.primaryGroupId
+            ? groupMap.get(membership.primaryGroupId)
+            : undefined,
+          collectionGroups: membership.groupIds.flatMap((id) => {
+            const name = groupMap.get(id);
+            return name ? [name] : [];
+          }),
+          status: o.status,
+          createdAt: o._creationTime,
+        };
       }),
-      status: o.status,
-      createdAt: o._creationTime,
-      };
-    }));
+    );
 
     await recordExportUsage(ctx, args.organizationId);
 
@@ -1802,7 +1835,7 @@ export const exportObjectsWithFormat = mutation({
         row.status || "",
         new Date(row.createdAt).toISOString(),
       ];
-      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+      csvRows.push(values.map(csvTextCell).join(","));
     }
     return csvRows.join("\n");
   },
@@ -1884,9 +1917,7 @@ export const exportLocationsWithFormat = mutation({
         row.isActive.toString(),
         row.notes || "",
       ];
-      csvRows.push(
-        values.map((value = "") => `"${value.replace(/"/g, '""')}"`).join(","),
-      );
+      csvRows.push(values.map((value = "") => csvTextCell(value)).join(","));
     }
     return csvRows.join("\n");
   },
@@ -1998,7 +2029,7 @@ export const exportAccountsWithFormat = mutation({
         row.notes || "",
         new Date(row.createdAt).toISOString(),
       ];
-      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+      csvRows.push(values.map(csvTextCell).join(","));
     }
     return csvRows.join("\n");
   },
@@ -2115,7 +2146,7 @@ export const exportLoansWithFormat = mutation({
         row.notes || "",
         new Date(row.createdAt).toISOString(),
       ];
-      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+      csvRows.push(values.map(csvTextCell).join(","));
     }
     return csvRows.join("\n");
   },

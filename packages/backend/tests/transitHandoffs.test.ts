@@ -4,6 +4,7 @@ import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
+  custodyConflictOf,
 } from "./testHarness";
 
 const transitHandoffPermissions = [
@@ -259,14 +260,16 @@ test("recordTransitItemReceipt rejects duplicate receipt", async () => {
     conditionIn: "Good",
   });
 
-  await expect(
-    authed.mutation(api.transit.recordTransitItemReceipt, {
-      transitItemId,
-      observedFromLocationId: null,
-      destinationLocationId: galleryId,
-      conditionIn: "Still good",
-    }),
-  ).rejects.toThrow(/already received/i);
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.transit.recordTransitItemReceipt, {
+        transitItemId,
+        observedFromLocationId: null,
+        destinationLocationId: galleryId,
+        conditionIn: "Still good",
+      }),
+    ),
+  ).toMatchObject({ code: "HANDOFF_ALREADY_RECORDED" });
 });
 
 test("recordTransitItemReceipt requires loans.update permission", async () => {
@@ -541,4 +544,298 @@ test("incoming return receipt stores the departure it wrote", async () => {
   expect(result.collection?.currentLocationId).toBeUndefined();
   expect(result.item?.custodyStatus).toBe("returned");
   expect(result.item?.conditionIn).toBe("Left in lender crate");
+});
+
+test("ordinary shipment receipt requires condition evidence without changing custody", async () => {
+  const t = createConvexTest();
+  const { authed, transitRecordId, galleryId, collectionId, storageId } =
+    await setupReturnTransitFixture(t);
+  await t.run(async (ctx) => {
+    await ctx.db.patch(transitRecordId, {
+      loanId: undefined,
+      transitType: "internal",
+    });
+    await ctx.db.patch(collectionId, {
+      status: "active",
+      currentLocationId: storageId,
+    });
+  });
+  const transit = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId,
+  });
+  const transitItemId = transit!.items[0]!._id;
+  await authed.mutation(api.transit.markTransitItemCarrierArrived, {
+    transitItemId,
+  });
+  await expect(
+    authed.mutation(api.transit.recordTransitItemReceipt, {
+      transitItemId,
+      observedFromLocationId: storageId,
+      destinationLocationId: galleryId,
+    }),
+  ).rejects.toThrow(/condition evidence/i);
+  const after = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId,
+  });
+  expect(after?.items[0]?.status).toBe("arrived");
+  expect(after?.items[0]?.receiptMovementId).toBeUndefined();
+});
+
+test("recorded installation completes only the explicitly selected task and retries preserve evidence", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...transitHandoffPermissions, "collections.read"],
+    { subscriptionTier: "pro", slugPrefix: "transit-installation-task" },
+  );
+  const fixture = await t.run(async (ctx) => {
+    const source = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Source",
+      type: "storage",
+      sortOrder: 0,
+      isActive: true,
+    });
+    const receiving = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Receiving",
+      type: "storage",
+      sortOrder: 1,
+      isActive: true,
+    });
+    const gallery = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Gallery",
+      type: "gallery",
+      sortOrder: 2,
+      isActive: true,
+    });
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "INSTALL-001",
+      title: "Installation object",
+      status: "active",
+      currentLocationId: source,
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+    const exhibitionId = await ctx.db.insert("exhibitions", {
+      organizationId,
+      title: "Installation show",
+      startDate: Date.now(),
+      isCurrent: false,
+      status: "approved",
+      locationId: gallery,
+      participationVersion: "members",
+    });
+    await ctx.db.insert("exhibitionObjects", {
+      organizationId,
+      exhibitionId,
+      collectionId,
+      role: "featured",
+      order: 0,
+      status: "pending",
+      exhibitionLocationId: gallery,
+      originalLocationId: source,
+    });
+    const transitRecordId = await ctx.db.insert("transitRecords", {
+      organizationId,
+      transitNumber: "TASK-001",
+      transitType: "incoming",
+      originName: "Source",
+      destinationName: "Museum",
+      carrier: "Carrier",
+      status: "in_transit",
+      exhibitionId,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+    const transitItemId = await ctx.db.insert("transitItems", {
+      transitRecordId,
+      collectionId,
+      status: "arrived",
+      createdAt: Date.now(),
+    });
+    const taskId = await ctx.db.insert("installationTasks", {
+      organizationId,
+      exhibitionId,
+      title: "Install selected object",
+      taskType: "mounts",
+      status: "todo",
+      priority: "medium",
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+    const otherTaskId = await ctx.db.insert("installationTasks", {
+      organizationId,
+      exhibitionId,
+      title: "Lighting",
+      taskType: "lighting",
+      status: "todo",
+      priority: "medium",
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+    return {
+      source,
+      receiving,
+      collectionId,
+      exhibitionId,
+      transitRecordId,
+      transitItemId,
+      taskId,
+      otherTaskId,
+    };
+  });
+  const authed = authedForUser(t, userId);
+  const assessmentId = await authed.mutation(api.conditionAssessments.create, {
+    collectionId: fixture.collectionId,
+    assessedAt: Date.now(),
+    condition: "Good",
+    summary: "Installation inspection",
+    observations: [],
+    photos: [],
+  });
+  await authed.mutation(api.conditionAssessments.accept, { assessmentId });
+  await expect(
+    authed.mutation(api.transit.recordTransitItemInstallation, {
+      transitItemId: fixture.transitItemId,
+      observedFromLocationId: fixture.source,
+      installationConditionAssessmentId: assessmentId,
+      installationTaskId: fixture.taskId,
+    }),
+  ).rejects.toThrow(/receipt/i);
+  expect(
+    (await authed.query(api.installations.getTask, { taskId: fixture.taskId }))
+      ?.status,
+  ).toBe("todo");
+  await authed.mutation(api.transit.recordTransitItemReceipt, {
+    transitItemId: fixture.transitItemId,
+    observedFromLocationId: fixture.source,
+    destinationLocationId: fixture.receiving,
+    conditionAssessmentId: assessmentId,
+  });
+  const { wrongTaskId, readerId } = await t.run(async (ctx) => {
+    const wrongExhibitionId = await ctx.db.insert("exhibitions", {
+      organizationId,
+      title: "Other exhibition",
+      startDate: Date.now(),
+      isCurrent: false,
+      status: "approved",
+    });
+    const wrongTaskId = await ctx.db.insert("installationTasks", {
+      organizationId,
+      exhibitionId: wrongExhibitionId,
+      title: "Unrelated task",
+      taskType: "other",
+      status: "todo",
+      priority: "medium",
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Shipment reader",
+      isSystemRole: false,
+    });
+    const readerId = await ctx.db.insert("users", {
+      name: "Reader",
+      email: "installation-reader@example.com",
+    });
+    await ctx.db.insert("userOrganizations", {
+      organizationId,
+      userId: readerId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+    return { wrongTaskId, readerId };
+  });
+  await expect(
+    authed.mutation(api.transit.recordTransitItemInstallation, {
+      transitItemId: fixture.transitItemId,
+      observedFromLocationId: fixture.receiving,
+      installationConditionAssessmentId: assessmentId,
+      installationTaskId: wrongTaskId,
+    }),
+  ).rejects.toThrow(/linked exhibition/i);
+  await expect(
+    authedForUser(t, readerId).mutation(
+      api.transit.recordTransitItemInstallation,
+      {
+        transitItemId: fixture.transitItemId,
+        observedFromLocationId: fixture.receiving,
+        installationConditionAssessmentId: assessmentId,
+        installationTaskId: fixture.taskId,
+      },
+    ),
+  ).rejects.toThrow(/permission/i);
+  expect(
+    (await authed.query(api.installations.getTask, { taskId: fixture.taskId }))
+      ?.status,
+  ).toBe("todo");
+  expect(
+    (
+      await authed.query(api.transit.getTransitHandoffSummary, {
+        transitRecordId: fixture.transitRecordId,
+      })
+    ).items[0]?.installationMovementId,
+  ).toBeUndefined();
+  await authed.mutation(api.transit.recordTransitItemInstallation, {
+    transitItemId: fixture.transitItemId,
+    observedFromLocationId: fixture.receiving,
+    installationConditionAssessmentId: assessmentId,
+    installationTaskId: fixture.taskId,
+  });
+  const task = await authed.query(api.installations.getTask, {
+    taskId: fixture.taskId,
+  });
+  expect(task?.status).toBe("completed");
+  expect(
+    (
+      await authed.query(api.installations.getTask, {
+        taskId: fixture.otherTaskId,
+      })
+    )?.status,
+  ).toBe("todo");
+  const summary = await authed.query(api.transit.getTransitHandoffSummary, {
+    transitRecordId: fixture.transitRecordId,
+  });
+  expect(summary.items[0]?.installationTaskId).toBe(fixture.taskId);
+  expect(summary.items[0]?.installationMovementId).toBeDefined();
+  await expect(
+    authed.mutation(api.transit.recordTransitItemInstallation, {
+      transitItemId: fixture.transitItemId,
+      observedFromLocationId: fixture.receiving,
+      installationConditionAssessmentId: assessmentId,
+      installationTaskId: fixture.taskId,
+    }),
+  ).rejects.toThrow(/already|pending/i);
+  expect(
+    (await authed.query(api.installations.getTask, { taskId: fixture.taskId }))
+      ?.completedAt,
+  ).toBe(task?.completedAt);
+});
+
+test("historical shipment summary does not expose transferred object metadata", async () => {
+  const t = createConvexTest();
+  const { authed, collectionId, transitRecordId } =
+    await setupReturnTransitFixture(t);
+  const { organizationId: receivingOrganizationId } =
+    await createOrgUserWithPermissions(t, ["collections.read"], {
+      subscriptionTier: "pro",
+      slugPrefix: "shipment-history-target",
+    });
+  await t.run(async (ctx) => {
+    await ctx.db.patch(collectionId, {
+      organizationId: receivingOrganizationId,
+      title: "Receiving private title",
+      accessionNumber: "PRIVATE-RECEIVING",
+    });
+  });
+  const summary = await authed.query(api.transit.getTransitHandoffSummary, {
+    transitRecordId,
+  });
+  expect(summary.items[0]?.title).toBeUndefined();
+  expect(summary.items[0]?.accessionNumber).toBeUndefined();
+  expect(summary.items[0]?.collectionId).toBe(collectionId);
 });

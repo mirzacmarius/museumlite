@@ -2,12 +2,21 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import schema from "./schema";
 import { requireFeatureAccess } from "./utils/featureGates";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { loadOperationalKpis } from "./utils/operationalKpis";
 import { requirePermission } from "./utils/permissions";
-import { loadCatalogGrowthSnapshot } from "./utils/reportingCatalogAnalytics";
+import { openProjection } from "./utils/projectionReads";
+import {
+  assertTrendRange,
+  buildCollectionHealth,
+  buildCollectionTrendSeries,
+  buildConservationTrendSeries,
+  buildLoanTrendSeries,
+} from "./utils/projectionReports";
+import { projectionUnavailableResult } from "./utils/projectionValidators";
 import { nextReportRun, validateReportSchedule } from "./utils/reportSchedule";
 
 // ============================================
@@ -849,10 +858,18 @@ export const generateReport = internalMutation({
         const kpis = await loadOperationalKpis(
           ctx,
           report.organizationId,
-          Date.now(),
+          generatedAt,
         );
+        if (kpis.availability === "unavailable") {
+          throw new Error(
+            `Organization metrics are unavailable (${kpis.reason}); rebuild projections in settings and retry`,
+          );
+        }
         reportData = {
-          generatedAt: Date.now(),
+          generatedAt: kpis.generatedAt,
+          asOf: kpis.asOf,
+          definitionId: kpis.definitionId,
+          scope: kpis.scope,
           reportType: report.reportType,
           organizationId: report.organizationId,
           generatorVersion: "v1",
@@ -926,35 +943,44 @@ export const getCollectionTrends = query({
     endDate: v.number(),
     includeComparison: v.optional(v.boolean()),
   },
-  returns: v.object({
-    current: v.array(
-      v.object({
-        date: v.string(),
-        timestamp: v.number(),
-        totalObjects: v.number(),
-        newAccessions: v.number(),
-        deaccessions: v.number(),
-        netChange: v.number(),
-      }),
-    ),
-    comparison: v.optional(
-      v.array(
+  returns: v.union(
+    projectionUnavailableResult,
+    v.object({
+      availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
+      current: v.array(
         v.object({
           date: v.string(),
           timestamp: v.number(),
-          totalObjects: v.number(),
+          totalObjects: v.union(v.number(), v.null()),
           newAccessions: v.number(),
           deaccessions: v.number(),
           netChange: v.number(),
         }),
       ),
-    ),
-    summary: v.object({
-      currentPeriodNet: v.number(),
-      comparisonPeriodNet: v.optional(v.number()),
-      percentChange: v.optional(v.number()),
+      comparison: v.optional(
+        v.array(
+          v.object({
+            date: v.string(),
+            timestamp: v.number(),
+            totalObjects: v.union(v.number(), v.null()),
+            newAccessions: v.number(),
+            deaccessions: v.number(),
+            netChange: v.number(),
+          }),
+        ),
+      ),
+      summary: v.object({
+        currentPeriodNet: v.number(),
+        comparisonPeriodNet: v.optional(v.number()),
+        percentChange: v.optional(v.number()),
+      }),
+      historicalTotalAvailability: v.literal("unavailable"),
+      historicalTotalUnavailableReason: v.literal(
+        "historical_inventory_evidence_not_recorded",
+      ),
     }),
-  }),
+  ),
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
@@ -964,86 +990,24 @@ export const getCollectionTrends = query({
         "organization.view_analytics",
       ),
     ]);
-
-    const snapshot = await loadCatalogGrowthSnapshot(ctx, args.organizationId);
-    const { collections, accessions, deaccessions } = snapshot;
-    // Generate date buckets
-    const buckets = generateDateBuckets(
-      args.startDate,
-      args.endDate,
-      args.period,
+    assertTrendRange(args.startDate, args.endDate, args.period);
+    const opened = await openProjection(ctx, args.organizationId);
+    if (!opened.ok) return opened.unavailable;
+    const currentData = await buildCollectionTrendSeries(
+      opened.reader,
+      generateDateBuckets(args.startDate, args.endDate, args.period),
     );
-    const currentData = buckets.map((bucket) => {
-      const bucketAccessions = accessions.filter(
-        (a) =>
-          a.approvedAt &&
-          a.approvedAt >= bucket.start &&
-          a.approvedAt < bucket.end,
-      ).length;
-
-      const bucketDeaccessions = deaccessions.filter(
-        (d) =>
-          d.approvedAt &&
-          d.approvedAt >= bucket.start &&
-          d.approvedAt < bucket.end,
-      ).length;
-
-      const totalAtEnd = collections.filter(
-        (c) => c._creationTime <= bucket.end && c.status !== "deaccessioned",
-      ).length;
-
-      return {
-        date: bucket.label,
-        timestamp: bucket.start,
-        totalObjects: totalAtEnd,
-        newAccessions: bucketAccessions,
-        deaccessions: bucketDeaccessions,
-        netChange: bucketAccessions - bucketDeaccessions,
-      };
-    });
-
-    // Calculate comparison period if requested
-    let comparisonData: typeof currentData | undefined;
-    if (args.includeComparison) {
-      const periodLength = args.endDate - args.startDate;
-      const comparisonStart = args.startDate - periodLength;
-      const comparisonEnd = args.startDate;
-
-      const comparisonBuckets = generateDateBuckets(
-        comparisonStart,
-        comparisonEnd,
-        args.period,
-      );
-
-      comparisonData = comparisonBuckets.map((bucket) => {
-        const bucketAccessions = accessions.filter(
-          (a) =>
-            a.approvedAt &&
-            a.approvedAt >= bucket.start &&
-            a.approvedAt < bucket.end,
-        ).length;
-
-        const bucketDeaccessions = deaccessions.filter(
-          (d) =>
-            d.approvedAt &&
-            d.approvedAt >= bucket.start &&
-            d.approvedAt < bucket.end,
-        ).length;
-
-        const totalAtEnd = collections.filter(
-          (c) => c._creationTime <= bucket.end && c.status !== "deaccessioned",
-        ).length;
-
-        return {
-          date: bucket.label,
-          timestamp: bucket.start,
-          totalObjects: totalAtEnd,
-          newAccessions: bucketAccessions,
-          deaccessions: bucketDeaccessions,
-          netChange: bucketAccessions - bucketDeaccessions,
-        };
-      });
-    }
+    const periodLength = args.endDate - args.startDate;
+    const comparisonData = args.includeComparison
+      ? await buildCollectionTrendSeries(
+          opened.reader,
+          generateDateBuckets(
+            args.startDate - periodLength,
+            args.startDate,
+            args.period,
+          ),
+        )
+      : undefined;
 
     const currentPeriodNet = currentData.reduce(
       (sum, d) => sum + d.netChange,
@@ -1063,6 +1027,8 @@ export const getCollectionTrends = query({
         : undefined;
 
     return {
+      availability: "ready" as const,
+      updating: opened.reader.updating,
       current: currentData,
       comparison: comparisonData,
       summary: {
@@ -1070,6 +1036,9 @@ export const getCollectionTrends = query({
         comparisonPeriodNet,
         percentChange,
       },
+      historicalTotalAvailability: "unavailable" as const,
+      historicalTotalUnavailableReason:
+        "historical_inventory_evidence_not_recorded" as const,
     };
   },
 });
@@ -1088,14 +1057,21 @@ export const getLoanTrends = query({
     startDate: v.number(),
     endDate: v.number(),
   },
-  returns: v.array(
+  returns: v.union(
+    projectionUnavailableResult,
     v.object({
-      date: v.string(),
-      timestamp: v.number(),
-      newLoans: v.number(),
-      returnedLoans: v.number(),
-      activeLoans: v.number(),
-      overdueLoans: v.number(),
+      availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
+      buckets: v.array(
+        v.object({
+          date: v.string(),
+          timestamp: v.number(),
+          newLoans: v.number(),
+          returnedLoans: v.number(),
+          activeLoans: v.number(),
+          overdueLoans: v.number(),
+        }),
+      ),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1107,56 +1083,17 @@ export const getLoanTrends = query({
         "organization.view_analytics",
       ),
     ]);
-    const loans = await ctx.db
-      .query("loans")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const buckets = generateDateBuckets(
-      args.startDate,
-      args.endDate,
-      args.period,
-    );
-
-    return buckets.map((bucket) => {
-      const newLoans = loans.filter(
-        (l) => l.startDate >= bucket.start && l.startDate < bucket.end,
-      ).length;
-
-      // Count loans that are currently returned and started within this bucket
-      // (We use status since there's no returnedDate timestamp)
-      const returnedLoans = loans.filter(
-        (l) =>
-          l.status === "returned" &&
-          l.startDate >= bucket.start &&
-          l.startDate < bucket.end,
-      ).length;
-
-      const activeLoans = loans.filter(
-        (l) =>
-          l.startDate <= bucket.end &&
-          (l.status === "active" || l.status === "dispatched"),
-      ).length;
-
-      const overdueLoans = loans.filter(
-        (l) =>
-          l.startDate <= bucket.end &&
-          l.endDate &&
-          l.endDate < bucket.end &&
-          (l.status === "active" || l.status === "dispatched"),
-      ).length;
-
-      return {
-        date: bucket.label,
-        timestamp: bucket.start,
-        newLoans,
-        returnedLoans,
-        activeLoans,
-        overdueLoans,
-      };
-    });
+    assertTrendRange(args.startDate, args.endDate, args.period);
+    const opened = await openProjection(ctx, args.organizationId);
+    if (!opened.ok) return opened.unavailable;
+    return {
+      availability: "ready" as const,
+      updating: opened.reader.updating,
+      buckets: await buildLoanTrendSeries(
+        opened.reader,
+        generateDateBuckets(args.startDate, args.endDate, args.period),
+      ),
+    };
   },
 });
 
@@ -1174,14 +1111,21 @@ export const getConservationTrends = query({
     startDate: v.number(),
     endDate: v.number(),
   },
-  returns: v.array(
+  returns: v.union(
+    projectionUnavailableResult,
     v.object({
-      date: v.string(),
-      timestamp: v.number(),
-      newTreatments: v.number(),
-      completedTreatments: v.number(),
-      totalCost: v.number(),
-      averageDuration: v.optional(v.number()),
+      availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
+      buckets: v.array(
+        v.object({
+          date: v.string(),
+          timestamp: v.number(),
+          newTreatments: v.number(),
+          completedTreatments: v.number(),
+          totalCost: v.number(),
+          averageDuration: v.optional(v.number()),
+        }),
+      ),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1193,54 +1137,17 @@ export const getConservationTrends = query({
         "organization.view_analytics",
       ),
     ]);
-    const treatments = await ctx.db
-      .query("conservationTreatments")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const buckets = generateDateBuckets(
-      args.startDate,
-      args.endDate,
-      args.period,
-    );
-
-    return buckets.map((bucket) => {
-      // Use performedAt as the treatment start date
-      const newTreatments = treatments.filter(
-        (t) => t.performedAt >= bucket.start && t.performedAt < bucket.end,
-      ).length;
-
-      // Use status === "completed" and performedAt within range for completed treatments
-      const completedInBucket = treatments.filter(
-        (t) =>
-          t.status === "completed" &&
-          t.performedAt >= bucket.start &&
-          t.performedAt < bucket.end,
-      );
-
-      const completedTreatments = completedInBucket.length;
-
-      const totalCost = completedInBucket.reduce((sum, t) => {
-        const materialsCost = t.materialsCost ?? 0;
-        const laborCost = (t.laborHours ?? 0) * (t.laborRate ?? 0);
-        return sum + materialsCost + laborCost;
-      }, 0);
-
-      // Duration calculation not possible without a completedDate field
-      // Return undefined since we only have performedAt (treatment date)
-      const averageDuration: number | undefined = undefined;
-
-      return {
-        date: bucket.label,
-        timestamp: bucket.start,
-        newTreatments,
-        completedTreatments,
-        totalCost,
-        averageDuration,
-      };
-    });
+    assertTrendRange(args.startDate, args.endDate, args.period);
+    const opened = await openProjection(ctx, args.organizationId);
+    if (!opened.ok) return opened.unavailable;
+    return {
+      availability: "ready" as const,
+      updating: opened.reader.updating,
+      buckets: await buildConservationTrendSeries(
+        opened.reader,
+        generateDateBuckets(args.startDate, args.endDate, args.period),
+      ),
+    };
   },
 });
 
@@ -1256,56 +1163,61 @@ export const getCollectionHealthDashboard = query({
     organizationId: v.id("organizations"),
     now: v.number(),
   },
-  returns: v.object({
-    conservation: v.object({
-      totalObjects: v.number(),
-      goodCondition: v.number(),
-      fairCondition: v.number(),
-      poorCondition: v.number(),
-      unknownCondition: v.number(),
-      pendingTreatments: v.number(),
-      activeTreatments: v.number(),
-      completedTreatmentsThisYear: v.number(),
-      overdueAssessments: v.number(),
+  returns: v.union(
+    projectionUnavailableResult,
+    v.object({
+      availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
+      conservation: v.object({
+        totalObjects: v.number(),
+        goodCondition: v.number(),
+        fairCondition: v.number(),
+        poorCondition: v.number(),
+        unknownCondition: v.number(),
+        pendingTreatments: v.number(),
+        activeTreatments: v.number(),
+        completedTreatmentsThisYear: v.number(),
+        overdueAssessments: v.number(),
+      }),
+      insurance: v.object({
+        totalCoveredValue: v.number(),
+        objectsWithCoverage: v.number(),
+        objectsWithoutCoverage: v.number(),
+        expiringPolicies: v.number(),
+        pendingClaims: v.number(),
+        staleAppraisals: v.number(),
+      }),
+      locations: v.object({
+        totalLocations: v.number(),
+        objectsWithLocation: v.number(),
+        objectsWithoutLocation: v.number(),
+        atCapacityLocations: v.number(),
+        overCapacityLocations: v.number(),
+        utilizationPercentage: v.number(),
+      }),
+      loans: v.object({
+        activeLoans: v.number(),
+        overdueLoans: v.number(),
+        dueSoon: v.number(),
+        returnRate: v.number(),
+        averageLoanDuration: v.number(),
+      }),
+      media: v.object({
+        totalMediaFiles: v.number(),
+        objectsWithMedia: v.number(),
+        objectsWithoutMedia: v.number(),
+        unknownRights: v.number(),
+        expiringLicenses: v.number(),
+      }),
+      overall: v.object({
+        healthScore: v.number(),
+        criticalIssues: v.number(),
+        warningIssues: v.number(),
+        recommendations: v.array(v.string()),
+      }),
+      generatedAt: v.number(),
     }),
-    insurance: v.object({
-      totalCoveredValue: v.number(),
-      objectsWithCoverage: v.number(),
-      objectsWithoutCoverage: v.number(),
-      expiringPolicies: v.number(),
-      pendingClaims: v.number(),
-      staleAppraisals: v.number(),
-    }),
-    locations: v.object({
-      totalLocations: v.number(),
-      objectsWithLocation: v.number(),
-      objectsWithoutLocation: v.number(),
-      atCapacityLocations: v.number(),
-      overCapacityLocations: v.number(),
-      utilizationPercentage: v.number(),
-    }),
-    loans: v.object({
-      activeLoans: v.number(),
-      overdueLoans: v.number(),
-      dueSoon: v.number(),
-      returnRate: v.number(),
-      averageLoanDuration: v.number(),
-    }),
-    media: v.object({
-      totalMediaFiles: v.number(),
-      objectsWithMedia: v.number(),
-      objectsWithoutMedia: v.number(),
-      unknownRights: v.number(),
-      expiringLicenses: v.number(),
-    }),
-    overall: v.object({
-      healthScore: v.number(),
-      criticalIssues: v.number(),
-      warningIssues: v.number(),
-      recommendations: v.array(v.string()),
-    }),
-    generatedAt: v.number(),
-  }),
+  ),
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
@@ -1315,380 +1227,7 @@ export const getCollectionHealthDashboard = query({
         "organization.view_analytics",
       ),
     ]);
-
-    const now = args.now;
-    const nowDate = new Date(now);
-    const yearStart = new Date(nowDate.getFullYear(), 0, 1).getTime();
-    const thirtyDaysFromNow = now + 30 * 24 * 60 * 60 * 1000;
-    const threeYearsAgo = now - 3 * 365 * 24 * 60 * 60 * 1000;
-
-    // Get all collections
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.neq(q.field("status"), "deaccessioned"))
-      .collect();
-
-    const totalObjects = collections.length;
-
-    // Conservation metrics
-    const treatments = await ctx.db
-      .query("conservationTreatments")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const conditionCounts = {
-      excellent: 0,
-      good: 0,
-      fair: 0,
-      poor: 0,
-      unknown: 0,
-    };
-
-    for (const c of collections) {
-      const condition = c.condition?.toLowerCase() || "unknown";
-      if (condition === "excellent" || condition === "good") {
-        conditionCounts.good++;
-      } else if (condition === "fair") {
-        conditionCounts.fair++;
-      } else if (condition === "poor" || condition === "critical") {
-        conditionCounts.poor++;
-      } else {
-        conditionCounts.unknown++;
-      }
-    }
-
-    const pendingTreatments = treatments.filter(
-      (t) => t.status === "proposed" || t.status === "approved",
-    ).length;
-    const activeTreatments = treatments.filter(
-      (t) => t.status === "in_progress",
-    ).length;
-    const completedTreatmentsThisYear = treatments.filter(
-      (t) => t.status === "completed" && t.performedAt >= yearStart,
-    ).length;
-
-    // Assessment schedules
-    const schedules = await ctx.db
-      .query("assessmentSchedules")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-
-    const overdueAssessments = schedules.filter(
-      (s) => s.nextDueDate && s.nextDueDate < now,
-    ).length;
-
-    // Insurance metrics
-    const [coverages, policies, claims, appraisals] = await Promise.all([
-      ctx.db
-        .query("insuranceCoverages")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .collect(),
-      ctx.db
-        .query("insurancePolicies")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .collect(),
-      ctx.db
-        .query("insuranceClaims")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-      ctx.db
-        .query("appraisals")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
-    const coveredCollectionIds = new Set(
-      coverages.flatMap((coverage) =>
-        coverage.collectionId ? [coverage.collectionId] : [],
-      ),
-    );
-    const totalCoveredValue = coverages.reduce(
-      (sum, c) => sum + (c.coveredValue || 0),
-      0,
-    );
-    const objectsWithCoverage = coveredCollectionIds.size;
-    const objectsWithoutCoverage = totalObjects - objectsWithCoverage;
-
-    const expiringPolicies = policies.filter(
-      (p) => p.expirationDate && p.expirationDate < thirtyDaysFromNow,
-    ).length;
-
-    const pendingClaims = claims.filter(
-      (c) => c.status === "submitted" || c.status === "under_review",
-    ).length;
-
-    const staleAppraisals = appraisals.filter(
-      (a) => a.appraisalDate < threeYearsAgo,
-    ).length;
-
-    // Location metrics
-    const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-
-    const objectsWithLocation = collections.filter(
-      (c) => c.currentLocationId,
-    ).length;
-    const objectsWithoutLocation = totalObjects - objectsWithLocation;
-
-    // Calculate occupancy
-    const occupancyMap = new Map<string, number>();
-    for (const c of collections) {
-      if (c.currentLocationId) {
-        occupancyMap.set(
-          c.currentLocationId,
-          (occupancyMap.get(c.currentLocationId) || 0) + 1,
-        );
-      }
-    }
-
-    const locationsWithCapacity = locations.filter(
-      (l) => l.capacity != null && l.capacity > 0,
-    );
-    let atCapacityLocations = 0;
-    let overCapacityLocations = 0;
-    let totalCapacity = 0;
-    let totalOccupied = 0;
-
-    for (const loc of locationsWithCapacity) {
-      const occupied = occupancyMap.get(loc._id) || 0;
-      const capacity = loc.capacity ?? 0;
-      totalCapacity += capacity;
-      totalOccupied += occupied;
-
-      if (occupied >= capacity && capacity > 0) {
-        atCapacityLocations++;
-      }
-      if (occupied > capacity && capacity > 0) {
-        overCapacityLocations++;
-      }
-    }
-
-    const utilizationPercentage =
-      totalCapacity > 0 ? Math.round((totalOccupied / totalCapacity) * 100) : 0;
-
-    // Loan metrics
-    const loans = await ctx.db
-      .query("loans")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const activeLoans = loans.filter(
-      (l) => l.status === "active" || l.status === "dispatched",
-    ).length;
-    const overdueLoans = loans.filter(
-      (l) =>
-        (l.status === "active" || l.status === "dispatched") &&
-        l.endDate &&
-        l.endDate < now,
-    ).length;
-    const dueSoon = loans.filter(
-      (l) =>
-        (l.status === "active" || l.status === "dispatched") &&
-        l.endDate &&
-        l.endDate >= now &&
-        l.endDate < thirtyDaysFromNow,
-    ).length;
-
-    const returnedLoans = loans.filter((l) => l.status === "returned");
-    const returnRate =
-      loans.length > 0
-        ? Math.round((returnedLoans.length / loans.length) * 100)
-        : 0;
-
-    // Calculate average loan duration using endDate as proxy for return date
-    // (since there's no returnedDate field, we use the scheduled endDate)
-    const completedLoans = returnedLoans.filter(
-      (l) => l.endDate && l.startDate,
-    );
-    const averageLoanDuration =
-      completedLoans.length > 0
-        ? Math.round(
-            completedLoans.reduce(
-              (sum, l) => sum + ((l.endDate ?? 0) - l.startDate),
-              0,
-            ) /
-              completedLoans.length /
-              (24 * 60 * 60 * 1000),
-          )
-        : 0;
-
-    // Media metrics
-    const mediaFiles = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const collectionsWithMedia = new Set(mediaFiles.map((m) => m.collectionId));
-    const objectsWithMedia = collectionsWithMedia.size;
-    const objectsWithoutMedia = totalObjects - objectsWithMedia;
-    const unknownRights = mediaFiles.filter(
-      (m) => !m.rightsStatus || m.rightsStatus === "unknown",
-    ).length;
-    const expiringLicenses = mediaFiles.filter(
-      (m) => m.licenseExpiry && m.licenseExpiry < thirtyDaysFromNow,
-    ).length;
-
-    // Calculate overall health score and recommendations
-    let healthScore = 100;
-    const criticalIssues: string[] = [];
-    const warningIssues: string[] = [];
-    const recommendations: string[] = [];
-
-    // Conservation health
-    const poorConditionPercent =
-      totalObjects > 0 ? (conditionCounts.poor / totalObjects) * 100 : 0;
-    if (poorConditionPercent > 20) {
-      healthScore -= 20;
-      criticalIssues.push("High percentage of objects in poor condition");
-      recommendations.push(
-        "Prioritize conservation treatments for objects in poor condition",
-      );
-    } else if (poorConditionPercent > 10) {
-      healthScore -= 10;
-      warningIssues.push("Elevated number of objects in poor condition");
-    }
-
-    if (overdueAssessments > 10) {
-      healthScore -= 10;
-      warningIssues.push("Multiple overdue conservation assessments");
-      recommendations.push("Schedule overdue conservation assessments");
-    }
-
-    // Insurance health
-    if (objectsWithoutCoverage > totalObjects * 0.3) {
-      healthScore -= 15;
-      criticalIssues.push("Many objects lack insurance coverage");
-      recommendations.push("Review insurance coverage for uncovered objects");
-    }
-
-    if (expiringPolicies > 0) {
-      healthScore -= 5;
-      warningIssues.push(
-        `${expiringPolicies} insurance policies expiring soon`,
-      );
-      recommendations.push("Renew expiring insurance policies");
-    }
-
-    if (staleAppraisals > totalObjects * 0.2) {
-      healthScore -= 5;
-      warningIssues.push("Many objects have stale appraisals");
-      recommendations.push("Update appraisals older than 3 years");
-    }
-
-    // Location health
-    if (objectsWithoutLocation > totalObjects * 0.1) {
-      healthScore -= 10;
-      warningIssues.push("Objects without assigned locations");
-      recommendations.push("Assign locations to unlocated objects");
-    }
-
-    if (overCapacityLocations > 0) {
-      healthScore -= 5;
-      warningIssues.push(
-        `${overCapacityLocations} locations are over capacity`,
-      );
-      recommendations.push("Redistribute objects from over-capacity locations");
-    }
-
-    // Loan health
-    if (overdueLoans > activeLoans * 0.2 && activeLoans > 0) {
-      healthScore -= 10;
-      criticalIssues.push("High percentage of overdue loans");
-      recommendations.push("Follow up on overdue loans");
-    }
-
-    // Media health
-    if (objectsWithoutMedia > totalObjects * 0.5) {
-      healthScore -= 5;
-      warningIssues.push("Many objects lack media documentation");
-      recommendations.push("Add photographs for undocumented objects");
-    }
-
-    if (unknownRights > mediaFiles.length * 0.3 && mediaFiles.length > 0) {
-      healthScore -= 5;
-      warningIssues.push("Many media files have unknown rights status");
-      recommendations.push("Review and update media rights information");
-    }
-
-    // Ensure score is between 0 and 100
-    healthScore = Math.max(0, Math.min(100, healthScore));
-
-    return {
-      conservation: {
-        totalObjects,
-        goodCondition: conditionCounts.good + conditionCounts.excellent,
-        fairCondition: conditionCounts.fair,
-        poorCondition: conditionCounts.poor,
-        unknownCondition: conditionCounts.unknown,
-        pendingTreatments,
-        activeTreatments,
-        completedTreatmentsThisYear,
-        overdueAssessments,
-      },
-      insurance: {
-        totalCoveredValue,
-        objectsWithCoverage,
-        objectsWithoutCoverage,
-        expiringPolicies,
-        pendingClaims,
-        staleAppraisals,
-      },
-      locations: {
-        totalLocations: locations.length,
-        objectsWithLocation,
-        objectsWithoutLocation,
-        atCapacityLocations,
-        overCapacityLocations,
-        utilizationPercentage,
-      },
-      loans: {
-        activeLoans,
-        overdueLoans,
-        dueSoon,
-        returnRate,
-        averageLoanDuration,
-      },
-      media: {
-        totalMediaFiles: mediaFiles.length,
-        objectsWithMedia,
-        objectsWithoutMedia,
-        unknownRights,
-        expiringLicenses,
-      },
-      overall: {
-        healthScore,
-        criticalIssues: criticalIssues.length,
-        warningIssues: warningIssues.length,
-        recommendations,
-      },
-      generatedAt: now,
-    };
+    return await buildCollectionHealth(ctx, args.organizationId, args.now);
   },
 });
 

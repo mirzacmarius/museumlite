@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { env } from "./env";
+import { manifest } from "./utils/exportEncoding";
 
 const http = httpRouter();
 
@@ -122,6 +123,115 @@ http.route({
     });
   }),
 });
+
+const exportCorsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+  "Access-Control-Expose-Headers": "Content-Disposition, X-Content-SHA256",
+  "Cache-Control": "private, no-store",
+};
+for (const path of ["/exports/download", "/exports/manifest"]) {
+  http.route({
+    path,
+    method: "OPTIONS",
+    handler: httpAction(
+      async () =>
+        new Response(null, { status: 204, headers: exportCorsHeaders }),
+    ),
+  });
+  http.route({
+    path,
+    method: "GET",
+    handler: httpAction(async (ctx, request) => {
+      const rawId = new URL(request.url).searchParams.get("jobId");
+      if (!rawId)
+        return new Response("Job ID required", {
+          status: 400,
+          headers: exportCorsHeaders,
+        });
+      try {
+        const job = await ctx.runQuery(internal.exports.downloadAccess, {
+          jobId: rawId,
+        });
+        if (!job)
+          return new Response("Invalid job ID", {
+            status: 400,
+            headers: exportCorsHeaders,
+          });
+        if (path.endsWith("manifest")) {
+          const metadata = manifest({
+            source: job.source,
+            format: job.format,
+            schemaVersion: job.schemaVersion,
+            asOf: job.asOf,
+            captureStartedAt: job.captureStartedAt,
+            captureCompletedAt: job.captureCompletedAt,
+            completedAt: job.completedAt,
+            rows: job.rows,
+            scanned: job.scanned,
+            selected: job.selected,
+            bytes: job.bytes,
+            sha256: job.sha256,
+            expiresAt: job.expiresAt,
+            failedAttempts: job.failedAttempts,
+          });
+          const chunks: Array<{
+            sequence: number;
+            rows: number;
+            bytes: number;
+            sha256: string;
+            capturedAt: number;
+          }> = [];
+          let after = -1;
+          while (chunks.length < 1024) {
+            const page = await ctx.runQuery(internal.exports.manifestChunks, {
+              jobId: job._id,
+              after,
+            });
+            if (!page.length) break;
+            chunks.push(...page);
+            after = page[page.length - 1]?.sequence ?? after;
+          }
+          return new Response(JSON.stringify({ ...metadata, chunks }), {
+            headers: {
+              ...exportCorsHeaders,
+              "Content-Type": "application/json",
+              "Content-Disposition": `attachment; filename="export-${job._id}-manifest.json"`,
+            },
+          });
+        }
+        if (!job.storageId)
+          return new Response("Export unavailable", {
+            status: 404,
+            headers: exportCorsHeaders,
+          });
+        const blob = await ctx.storage.get(job.storageId);
+        if (!blob || blob.size !== job.bytes)
+          return new Response("Artifact unavailable", {
+            status: 409,
+            headers: exportCorsHeaders,
+          });
+        return new Response(blob, {
+          headers: {
+            ...exportCorsHeaders,
+            "Content-Type":
+              job.format === "csv"
+                ? "text/csv;charset=utf-8"
+                : "application/x-ndjson",
+            "Content-Disposition": `attachment; filename="${job.source.kind}-${job._id}.${job.format}"`,
+            "X-Content-SHA256": job.sha256 ?? "",
+          },
+        });
+      } catch {
+        return new Response("Export unavailable or permission revoked", {
+          status: 403,
+          headers: exportCorsHeaders,
+        });
+      }
+    }),
+  });
+}
 
 function encodeBase64(value: string) {
   return btoa(value);

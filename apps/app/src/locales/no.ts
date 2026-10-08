@@ -1,5 +1,56 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Dette objektet er nå på {location}. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",
+    sourceChangedNoLocation:
+      "Dette objektet har ikke lenger en registrert plassering. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",
+    sourceChangedUnknown:
+      "Dette objektet er flyttet siden siden ble lastet. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",
+    alreadyAtDestination: "Dette objektet er allerede på valgt destinasjon.",
+    destinationUnavailable:
+      "{location} er ikke tilgjengelig for flyttinger. Velg en annen destinasjon.",
+    destinationFull:
+      "{location} har nådd kapasiteten ({capacity}). Velg en annen destinasjon.",
+    destinationBlocked:
+      "Valgt destinasjon kan ikke ta imot dette objektet. Velg en annen destinasjon.",
+    destinationRequired:
+      "Velg eller bekreft en destinasjon for dette objektet.",
+    externalCustody:
+      "Dette objektet er utlånt. Registrer først at lånet er returnert.",
+    assessmentRequired:
+      "Koble en godkjent tilstandsvurdering til denne overleveringen.",
+    assessmentNotAccepted:
+      "Den valgte tilstandsvurderingen er ikke godkjent ennå.",
+    conditionEvidenceRequired:
+      "Legg til tilstandsnotater eller koble en godkjent tilstandsvurdering.",
+    referenceNotFound:
+      "En koblet post er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+    alreadyRecorded:
+      "Denne overleveringen er allerede registrert. Oppdater for å se siste status.",
+    outOfOrder:
+      "Dette trinnet er ikke tilgjengelig ennå. Registrer de tidligere overleveringstrinnene først.",
+    exhibitionOutcomeUnresolved:
+      "Registrer utstillingsreturen eller et godkjent unntak før objektet returneres til utlåner.",
+    closureBlocked:
+      "Objekter som venter på retur eller godkjent unntak: {count}.",
+    fallback: "Handlingen kunne ikke fullføres. Oppdater og prøv igjen.",
+  },
   conditionAssessments: {
+    actorProfileUnavailable:
+      "Registrert aktør; nåværende profil er utilgjengelig",
+    actorCurrentName: "Nåværende profilnavn: {name}",
+    unknownLegacyActor: "Historisk aktøridentitet er ukjent",
+
+    receiptRequirement:
+      "Skriv tilstandsnotater eller velg en godkjent vurdering for hvert valgt objekt, og bekreft hvert påkrevd retursted.",
+    handoffTimeline: "Overleveringshistorikk",
+    installationTask: "Fullfør tilknyttet installasjonsoppgave (valgfritt)",
+
+    selectAccepted: "Velg godkjent tilstandsvurdering",
+    returnDestination: "Retursted",
+    conditionEvidence: "Tilstandsdokumentasjon",
+    confirmOrigin: "Bekreft retur til registrert opprinnelsessted",
+
     title: "Tilstandsvurderinger",
     description:
       "Daterte observasjoner og bilder beholdes. En kontrollør godkjenner utkastet for å oppdatere gjeldende tilstand.",
@@ -45,6 +96,11 @@ export default {
     compareAfter: "Etter (gjeldende godkjente)",
   },
   dashboard: {
+    inventoryDefinition:
+      "Driftsinventaret utelater åpne avhendinger og innlånte eller usikre eierskap.",
+    inventoryIncomingExcluded: "Innkommende poster utelatt: {count}",
+    inventoryUnclassified: "Uklassifisert eierskap: {count}",
+    pendingOutgoingTransferApprovals: "Godkjenninger av utgående overføringer",
     overviewTitle: "Oversikt",
     overviewDescription: "Samlingene og arbeidet ditt på et øyeblikk.",
     needsReview: "Til gjennomgang",
@@ -132,6 +188,7 @@ export default {
       activity: "Aktivitet",
       developer: "Utvikler",
       data: "Dataimport/-eksport",
+      metrics: "Målingsstatus",
     },
     roles: {
       title: "Rollehåndtering",
@@ -513,6 +570,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Eksporter til CSV",
+      objectsCapNote:
+        "Importklar CSV inneholder opptil 1 000 objekter med plasserings- og gruppenavn. Bruk eksporten nedenfor for hele katalogen.",
+      objectsCapExceeded:
+        "Denne katalogen har mer enn 1 000 objekter. Bruk eksporten av hele katalogen nedenfor.",
     },
   },
   account: {
@@ -1020,6 +1081,41 @@ export default {
     cancelFailed: "Kunne ikke avbryte invitasjonen. Prøv igjen.",
   },
   activityLog: {
+    historyPreview:
+      "Kun nylige godkjenninger. Åpne sakens tidslinje for hele historikken.",
+    nextPage: "Neste side",
+    pageEntries: "oppføringer på denne siden",
+    filterOptionsRecent:
+      "Valg for aktør og handling viser de siste 1 000 hendelsene. Søk etter dato og emne dekker hele historikken.",
+    invalidDateRange: "Startdatoen må være før sluttdatoen.",
+    details: "Hendelsesdetaljer",
+    currentProfileActor: "{name} (nåværende profil)",
+    actor: "Aktør",
+    legacyEvidence:
+      "Eldre hendelse: aktørens eller emnets identitet ble ikke bevart da hendelsen ble registrert.",
+    recordedEvidence:
+      "Aktørens og emnets identitet ble bevart da hendelsen ble registrert.",
+    correctionOf: "Korrigering av",
+    subjectTimeline: "Emnehistorikk",
+    objectTimeline: "Objekthistorikk",
+    caseTimeline: "Sakshistorikk",
+    field: "Felt",
+    before: "Før",
+    after: "Etter",
+    correctionReason: "Grunn til korrigering",
+    correctionStatement: "Korrigeringstekst",
+    appendCorrection: "Legg til korrigering",
+    correctionFailed:
+      "Korrigeringen kunne ikke lagres. Teksten er bevart; prøv igjen.",
+    correctionSaved:
+      "Korrigering lagt til. Den opprinnelige hendelsen er bevart.",
+    approvalHistory: "Sakens godkjenningshistorikk",
+    legacy: "eldre dokumentasjon",
+    firstPage: "Første side",
+    unavailable:
+      "Historikken er utilgjengelig eller rollen din tillater ikke innsyn. Prøv igjen, fjern filtre eller velg en autorisert organisasjon.",
+    retry: "Prøv igjen",
+
     featureName: "Samsvar og revisjonslogg",
     title: "Aktivitetslogg",
     description: "Vis og filtrer aktivitet i organisasjonen din",
@@ -1903,6 +1999,8 @@ export default {
     },
     kpis: {
       activeLoans: "Aktive Lån",
+      loadedActiveLoans: "Aktive lån i lastede resultater",
+      loadedItems: "Gjenstander i lastede lån",
       objectsInTransit: "Objekter under Transport",
       totalInsuredValue: "Total Forsikret Verdi",
       expiringAgreements: "Utløpende Avtaler",
@@ -1946,6 +2044,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Lastede resultater: {count}",
       showing: "Viser {start}-{end} av {total} lån",
       previous: "Forrige",
       next: "Neste",
@@ -3796,6 +3895,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Foreslått",
+      approved: "Godkjent",
+      installing: "Montering",
+      active: "Aktiv",
+      deinstalling: "Demontering",
+      closed: "Avsluttet",
+      rejected: "Avvist",
+      unclassified: "Uklassifisert",
+    },
+    metricFilterApplied: "Målefiltre brukt ved",
+    clearMetricFilter: "Fjern målefiltre",
     title: "Utstillinger",
     description: "Administrer utstillingshistorikk og planlegging",
     newExhibition: "Ny Utstilling",
@@ -3845,6 +3956,7 @@ export default {
       outstanding: "{count} av {total} utfall står utestående",
       readyToClose: "Alle utfall er løst",
       observedFrom: "Observert kildeplassering",
+      installationDestination: "Installasjonssted",
       install: "Registrer installasjon",
       deinstall: "Registrer demontering",
       confirmReturn: "Bekreft fysisk retur",
@@ -3993,6 +4105,11 @@ export default {
       approved: "Godkjent",
       proposed: "Foreslått",
       closed: "Stengt",
+      currentBySchedule: "Pågår etter kalenderen",
+      upcomingBySchedule: "Kommende etter kalenderen",
+      unclassified: "{count} uklassifiserte",
+      loanExclusions: "{count} låneutstillinger utelatt",
+      legacyContradictions: "{count} motstrid mellom dato og indikator",
       activeNow: "Aktiv Nå",
       upcomingStarts: "Kommende",
       startsIn: "Starter om",
@@ -4039,7 +4156,10 @@ export default {
       noUpcoming: "Ingen kommende lånereturer",
     },
     inventory: {
+      sourceCounts: "Detaljposter / med registrert verdi; kildevaluta mangler.",
       title: "Beholdningsvurdering",
+      unavailable:
+        "Vurderingsdata er ikke tilgjengelig for denne organisasjonen.",
       totalValue: "Total Verdi",
       totalItems: "Totalt Antall Gjenstander",
       valuedItems: "Vurderte Gjenstander",
@@ -4072,6 +4192,7 @@ export default {
       exportAllReports: "Eksporter Alle Rapporter",
       csv: {
         generated: "Generert",
+        unavailable: "Utilgjengelig",
         total: "TOTALT",
         upgradeToEnterprise: "Oppgrader til Enterprise",
         inventory: {
@@ -4714,6 +4835,8 @@ export default {
       "Flere objekter samsvarer. Avgrens søket for å snevre inn listen.",
   },
   deaccessions: {
+    loadedResults: "Antall i lastede resultater",
+    loadMore: "Last flere",
     title: "Deaksesjonsposter",
     description: "Elementer permanent fjernet fra samlingen.",
     noOrg: {
@@ -6337,6 +6460,7 @@ export default {
         outstandingInstallation: "{count} awaiting installation",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
+        installationDestination: "Installasjonssted",
         receiptDestination: "Receipt destination",
         conditionNotes: "Condition at receipt",
         conditionPlaceholder: "Condition summary or notes",
@@ -7852,6 +7976,171 @@ export default {
       userEmailNotFound: "Fant ikke brukerens e-postadresse",
       differentEmail: "Denne invitasjonen gjelder en annen e-postadresse",
       alreadyMember: "Er allerede medlem av denne organisasjonen",
+    },
+  },
+  exportJobs: {
+    catalogFiltered: "Eksporter alle filtrerte resultater",
+    catalogComplete: "Eksporter hele katalogen",
+    auditComplete: "Eksporter hele revisjonsloggen",
+    auditFiltered: "Eksporter hele den filtrerte revisjonsloggen",
+    selected: "Eksporter {count} valgte objekter",
+    format: "Eksportformat",
+    formatCsv: "CSV",
+    formatJsonl: "JSONL (typet JSON)",
+    create: "Opprett eksport",
+    retrySelection: "Prøv opplasting av utvalget på nytt",
+    policy:
+      "Hver nye forespørsel bruker én eksport av månedskvoten; nye forsøk og nedlastinger gjenbruker samme forespørsel. Hvis siden lastes inn på nytt under en ufullstendig opplasting av utvalget, må du opprette en ny forespørsel. Grenser: 16 MiB per fil, 512 KiB per side, 1 024 deler, 10 000 kildesider; filtre for beholdningsomfang støtter 32 lånekoblinger per objekt. Nedlastinger utløper etter sju dager. Objektverdier og filtertilhørighet fanges under behandlingen; opprettelsesgrensen utelater senere innsettinger. JSONL bevarer typer. CSV-tekst har formelbeskyttelse; importer med kolonneskjemaet i manifestet for å bevare bokstavelig tekst og innledende nuller.",
+    sourceAudit: "Revisjon",
+    sourceSelected: "Valgte objekter",
+    sourceCatalog: "Filtrert katalog",
+    statusSelecting: "Laster opp utvalg",
+    statusQueued: "I kø",
+    statusRunning: "Kjører",
+    statusFinalizing: "Ferdigstiller",
+    statusCompleted: "Fullført",
+    statusCancelled: "Avbrutt",
+    statusFailed: "Mislyktes",
+    statusExpired: "Utløpt",
+    progress: "{rows} fangede rader · {scanned} undersøkt · {pages} sider",
+    progressAudit: "{rows} fangede rader · {scanned} treff · {pages} sider",
+    selectedCount: "{count} valgt",
+    cutoff: "Opprettelsesgrense: {asOf} · utløper {expiresAt}",
+    cancel: "Avbryt",
+    resume: "Gjenoppta",
+    retry: "Prøv igjen fra kontrollpunkt",
+    recover: "Gjenopprett stanset eksport",
+    download: "Last ned {count} rader",
+    downloadManifest: "Last ned manifest",
+    signIn: "Logg inn for å laste ned",
+    checksumMismatch:
+      "Kontrollsummen for filen stemmer ikke; prøv nedlastingen på nytt",
+    failed: "Eksporten mislyktes",
+    errorAccess:
+      "Du har ikke lenger tilgang til denne eksporten. Kontroller rollen og abonnementet ditt.",
+    errorQuota: "Abonnementets månedlige eksportkvote er brukt opp.",
+    errorExpired: "Denne eksporten er utløpt. Opprett en ny eksport.",
+    errorNotResumable: "Denne eksporten kan ikke gjenopptas akkurat nå.",
+    errorSelection:
+      "Utvalget kunne ikke eksporteres. Prøv opplastingen på nytt eller opprett et nytt utvalg.",
+    errorTooLarge:
+      "Denne eksporten er for stor. Begrens filtrene eller utvalget.",
+    errorInventoryLinks:
+      "Et objekt har for mange lånekoblinger for dette beholdningsfilteret. Eksporter valgte objekter i stedet.",
+    errorInvalidRequest:
+      "Eksportforespørselen er ugyldig. Kontroller filtrene og prøv igjen.",
+    errorInterrupted: "Eksporten ble avbrutt. Prøv igjen fra sjekkpunktet.",
+    errorUnavailable:
+      "Eksportfilen er ikke tilgjengelig. Prøv igjen eller opprett en ny eksport.",
+    reportsNote:
+      "Rapportsammendragene nedenfor inneholder gjeldende KPI-svar og begrensede lister over nylige eller kommende elementer. Bruk de fullstendige katalog- og revisjonseksportene ovenfor for avstemte kildedatasett.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Målinger utilgjengelige",
+      short: "Utilgjengelig",
+      openHealth: "Åpne målingsstatus",
+      askAdministrator: "Be en administrator om å bygge målingene på nytt.",
+      storage: "Lagringsbruk utilgjengelig",
+      usage: "Brukstall er utilgjengelige til målingene er bygget på nytt.",
+    },
+    reasons: {
+      not_built: "Målingene er ikke bygget for denne organisasjonen ennå.",
+      building:
+        "Målingene bygges på nytt. Verdiene vises når gjenoppbyggingen er ferdig.",
+      invalidated:
+        "En nylig endring påvirket flere poster enn som kan oppdateres samtidig. En ny gjenoppbygging kreves.",
+      definition_changed:
+        "Målingsdefinisjonene er endret. En gjenoppbygging kreves før verdier vises.",
+      rebuild_failed:
+        "Siste gjenoppbygging mislyktes. Prøv igjen eller start en ny gjenoppbygging.",
+    },
+    availability: {
+      ready: "Klar",
+      updating: "Klar, oppdateres",
+      unavailable: "Utilgjengelig",
+    },
+    status: {
+      building: "Kjører",
+      failed: "Mislyktes",
+      cancelled: "Avbrutt",
+      completed: "Fullført",
+      superseded: "Erstattet",
+    },
+    mode: {
+      rebuild: "Gjenoppbygging",
+      reconcile: "Avstemming",
+    },
+    actions: {
+      rebuild: "Bygg målinger på nytt",
+      reconcile: "Kjør avstemming",
+      starting: "Starter...",
+      retry: "Prøv igjen",
+      retrying: "Prøver igjen...",
+      cancel: "Avbryt",
+      cancelling: "Avbryter...",
+      failed: "Handlingen kunne ikke fullføres. Prøv igjen.",
+    },
+    page: {
+      title: "Målingsstatus",
+      description:
+        "Tilgjengelighet for målinger i oversikt, rapporter og bruk, fremdrift for gjenoppbygging og resultater fra avstemming.",
+      selectOrganization: "Velg en organisasjon for å se målingsstatus.",
+      noPermission:
+        "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å se målingsstatus.",
+      statusTitle: "Status",
+      reconcileNeedsReady: "Avstemming er tilgjengelig når målingene er klare.",
+      definitionVersion: "Definisjonsversjon",
+      definitionOutdated: "Lagret {stored}, gjeldende {current}",
+      lastBuilt: "Sist bygget",
+      lastVerified: "Sist avstemt",
+      invalidated: "Ugyldiggjort",
+      limits: "Grenser for gjenoppbygging",
+      limitsValue:
+        "{pageSize} rader per side, {fanOut} relaterte poster per endring",
+    },
+    job: {
+      step: "Trinn",
+      stepValue: "{index} av {count}",
+      processedRows: "Behandlede rader",
+      checkpoint: "Kontrollpunkt",
+      attempts: "Forsøk",
+      started: "Startet",
+      requestedBy: "Bestilt av",
+      failure: "Feil: {message}",
+    },
+    reconciliation: {
+      title: "Siste avstemming",
+      clean: "Ingen forskjeller mellom målingene og kildepostene.",
+      summary:
+        "{discrepancies} forskjeller registrert ({mismatches} målingsavvik).",
+      incomplete: "Avstemmingen ble ikke fullført: {status}.",
+      noRepair:
+        "Avstemming rapporterer bare forskjeller. Den endrer aldri kildeposter eller publiserte målinger; bygg på nytt for å publisere kildebaserte verdier.",
+    },
+    categories: {
+      contribution_mismatch: "Postens bidrag avviker",
+      missing_from_projection: "Post mangler i målingene",
+      stale_projection_entry: "Målingene inneholder en fjernet post",
+      counter_mismatch: "Totalen avviker fra kilden",
+      legacy_counter_mismatch: "Eldre bruksteller avviker",
+      source_quality: "Kildedata må gjennomgås",
+    },
+    discrepancies: {
+      counts: "Forventet {expected}, funnet {actual}",
+      none: "ingen",
+      review: "Gjennomgå {source}",
+      loadMore: "Last inn flere",
+    },
+    quality: {
+      title: "Kvalitet på kildedata",
+      description:
+        "Poster der kildedata ikke kan klassifiseres. De telles her i stedet for å bli gjettet.",
+    },
+    recent: {
+      title: "Nylige jobber",
+      rows: "{rows} rader",
+      discrepancies: "{count} forskjeller",
     },
   },
 } as const;

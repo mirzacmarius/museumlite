@@ -1,8 +1,11 @@
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { receiveLoanItemsWithEvidence } from "./loanCustody";
-import { requireAcceptedConditionAssessment } from "./exhibitionPhysicalHandoff";
+import { custodyConflict } from "./custodyErrors";
 import { installObjectHandler } from "./exhibitionObjectLocation";
+import { requireAcceptedConditionAssessment } from "./exhibitionPhysicalHandoff";
+import { requireFeatureAccess } from "./featureGates";
+import { receiveLoanItemsWithEvidence } from "./loanCustody";
 import {
   moveCollectionToLocation,
   requireCollectionInOrganization,
@@ -16,7 +19,10 @@ export async function markTransitItemCarrierArrivedInternal(
   userId: Id<"users">,
 ): Promise<void> {
   if (transitItem.status === "received") {
-    throw new Error("Transit item already received");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Transit item already received",
+    );
   }
   if (transitItem.status === "arrived") {
     return;
@@ -26,7 +32,10 @@ export async function markTransitItemCarrierArrivedInternal(
     transitItem.status !== "in_transit" &&
     transitItem.status !== "delivered"
   ) {
-    throw new Error("Transit item cannot be marked as carrier arrived");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Transit item cannot be marked as carrier arrived",
+    );
   }
 
   const now = Date.now();
@@ -40,7 +49,10 @@ export async function markTransitItemCarrierArrivedInternal(
     transitRecord.status === "cancelled" ||
     transitRecord.status === "draft"
   ) {
-    throw new Error("Transit shipment must be active before carrier arrival");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Transit shipment must be active before carrier arrival",
+    );
   }
 }
 
@@ -66,14 +78,20 @@ export async function recordTransitItemReceiptInternal(
   } = args;
 
   if (transitItem.status === "received") {
-    throw new Error("Transit item already received");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Transit item already received",
+    );
   }
   if (
     transitItem.status !== "arrived" &&
     transitItem.status !== "in_transit" &&
     transitItem.status !== "delivered"
   ) {
-    throw new Error("Record carrier arrival before accountable receipt");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Record carrier arrival before accountable receipt",
+    );
   }
 
   const collection = await requireCollectionInOrganization(
@@ -87,19 +105,18 @@ export async function recordTransitItemReceiptInternal(
     destinationLocationId,
   );
 
-  const receiptConditionAssessmentId =
-    await requireAcceptedConditionAssessment(
-      ctx,
-      args.conditionAssessmentId,
-      transitItem.collectionId,
-    );
+  const receiptConditionAssessmentId = await requireAcceptedConditionAssessment(
+    ctx,
+    args.conditionAssessmentId,
+    transitItem.collectionId,
+  );
 
   let movementId: Id<"locationHistory">;
 
   if (transitRecord.loanId && transitRecord.transitType === "return") {
     const loan = await ctx.db.get(transitRecord.loanId);
     if (!loan || loan.organizationId !== transitRecord.organizationId) {
-      throw new Error("Linked loan not found");
+      throw custodyConflict("REFERENCE_NOT_FOUND", "Linked loan not found");
     }
     const loanItem = await ctx.db
       .query("loanItems")
@@ -107,7 +124,10 @@ export async function recordTransitItemReceiptInternal(
       .filter((q) => q.eq(q.field("collectionId"), transitItem.collectionId))
       .first();
     if (!loanItem) {
-      throw new Error("Loan item not found for transit collection");
+      throw custodyConflict(
+        "REFERENCE_NOT_FOUND",
+        "Loan item not found for transit collection",
+      );
     }
     const received = await receiveLoanItemsWithEvidence(ctx, {
       loanId: transitRecord.loanId,
@@ -149,7 +169,10 @@ export async function recordTransitItemReceiptInternal(
       },
     );
     if (!recorded) {
-      throw new Error("Transit receipt requires a location change");
+      throw custodyConflict(
+        "ALREADY_AT_DESTINATION",
+        "Transit receipt requires a location change",
+      );
     }
     movementId = recorded;
   }
@@ -177,14 +200,65 @@ export async function recordTransitItemInstallationInternal(
     observedFromLocationId: Id<"locations"> | null;
     exhibitionLocationId?: Id<"locations">;
     installationConditionAssessmentId?: Id<"conditionAssessments">;
+    installationTaskId?: Id<"installationTasks">;
     conditionNotes?: string;
   },
 ): Promise<void> {
   if (args.transitItem.status !== "received") {
-    throw new Error("Record accountable receipt before installation");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Record accountable receipt before installation",
+    );
   }
   if (!args.transitRecord.exhibitionId) {
-    throw new Error("Transit record is not linked to an exhibition");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Transit record is not linked to an exhibition",
+    );
+  }
+
+  if (args.transitItem.installedAt !== undefined) {
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Transit item installation already recorded",
+    );
+  }
+  if (args.installationTaskId) {
+    await requireFeatureAccess(
+      ctx,
+      args.transitRecord.organizationId,
+      "installations",
+    );
+    const task = await ctx.db.get(args.installationTaskId);
+    if (
+      !task ||
+      task.organizationId !== args.transitRecord.organizationId ||
+      task.exhibitionId !== args.transitRecord.exhibitionId
+    ) {
+      throw custodyConflict(
+        "REFERENCE_NOT_FOUND",
+        "Installation task must belong to the linked exhibition",
+      );
+    }
+    if (task.status === "completed")
+      throw custodyConflict(
+        "HANDOFF_ALREADY_RECORDED",
+        "Installation task already completed",
+      );
+    for (const dependencyId of task.dependsOnTaskIds ?? []) {
+      const dependency = await ctx.db.get(dependencyId);
+      if (
+        !dependency ||
+        dependency.organizationId !== task.organizationId ||
+        dependency.exhibitionId !== task.exhibitionId ||
+        dependency.status !== "completed"
+      ) {
+        throw custodyConflict(
+          "HANDOFF_OUT_OF_ORDER",
+          "Complete installation task dependencies before recording this handoff",
+        );
+      }
+    }
   }
 
   const exhibitionObject = await ctx.db
@@ -192,12 +266,13 @@ export async function recordTransitItemInstallationInternal(
     .withIndex("by_exhibition", (q) =>
       q.eq("exhibitionId", args.transitRecord.exhibitionId!),
     )
-    .filter((q) =>
-      q.eq(q.field("collectionId"), args.transitItem.collectionId),
-    )
+    .filter((q) => q.eq(q.field("collectionId"), args.transitItem.collectionId))
     .first();
   if (!exhibitionObject) {
-    throw new Error("Exhibition participant not found for this object");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Exhibition participant not found for this object",
+    );
   }
 
   await installObjectHandler(ctx, {
@@ -214,17 +289,41 @@ export async function recordTransitItemInstallationInternal(
     installedAt,
     installedBy: args.userId,
     linkedExhibitionObjectId: exhibitionObject._id,
+    installationTaskId: args.installationTaskId,
     installationMovementId: refreshed?.installationMovementId,
   });
+  if (args.installationTaskId) {
+    await ctx.db.patch(args.installationTaskId, {
+      status: "completed",
+      completedAt: installedAt,
+      completedBy: args.userId,
+      lastModifiedBy: args.userId,
+      lastModifiedAt: installedAt,
+    });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.transitRecord.organizationId,
+      userId: args.userId,
+      action: "completed",
+      entityType: "installationTask",
+      entityId: args.installationTaskId,
+      changes: {
+        transitItemId: args.transitItem._id,
+        installationMovementId: refreshed?.installationMovementId,
+      },
+    });
+  }
 }
 
 export async function getTransitHandoffSummaryForRecord(
   ctx: QueryCtx,
   transitRecordId: Id<"transitRecords">,
+  organizationId: Id<"organizations">,
 ) {
   const transitItems = await ctx.db
     .query("transitItems")
-    .withIndex("by_transitRecord", (q) => q.eq("transitRecordId", transitRecordId))
+    .withIndex("by_transitRecord", (q) =>
+      q.eq("transitRecordId", transitRecordId),
+    )
     .collect();
 
   const items = await Promise.all(
@@ -233,14 +332,21 @@ export async function getTransitHandoffSummaryForRecord(
       return {
         transitItemId: item._id,
         collectionId: item.collectionId,
-        accessionNumber: collection?.accessionNumber,
-        title: collection?.title,
+        accessionNumber:
+          collection?.organizationId === organizationId
+            ? collection.accessionNumber
+            : undefined,
+        title:
+          collection?.organizationId === organizationId
+            ? collection.title
+            : undefined,
         status: item.status,
         carrierArrivedAt: item.carrierArrivedAt,
         receivedAt: item.receivedAt,
         installedAt: item.installedAt,
         receiptMovementId: item.receiptMovementId,
         installationMovementId: item.installationMovementId,
+        installationTaskId: item.installationTaskId,
       };
     }),
   );

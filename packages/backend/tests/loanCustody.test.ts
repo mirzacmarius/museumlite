@@ -5,6 +5,7 @@ import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
+  custodyConflictOf,
 } from "./testHarness";
 
 async function setupLoanScenario(
@@ -86,10 +87,7 @@ async function setupLoanScenario(
 
 test("dispatch retains origin location on loan item", async () => {
   const t = createConvexTest();
-  const { authed, loanId, locationId } = await setupLoanScenario(
-    t,
-    "outgoing",
-  );
+  const { authed, loanId, locationId } = await setupLoanScenario(t, "outgoing");
 
   await authed.mutation(api.loans.dispatch, { loanId });
 
@@ -116,16 +114,18 @@ test("outgoing return requires destination and restores location", async () => {
 
   await authed.mutation(api.loans.dispatch, { loanId });
 
-  await expect(
-    authed.mutation(api.loans.returnLoan, { loanId }),
-  ).rejects.toThrow("Return condition evidence is required");
+  expect(
+    await custodyConflictOf(authed.mutation(api.loans.returnLoan, { loanId })),
+  ).toMatchObject({ code: "CONDITION_EVIDENCE_REQUIRED" });
 
-  await expect(
-    authed.mutation(api.loans.returnLoan, {
-      loanId,
-      conditionIn: "Stable on return",
-    }),
-  ).rejects.toThrow("Return destination is required");
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.loans.returnLoan, {
+        loanId,
+        conditionIn: "Stable on return",
+      }),
+    ),
+  ).toMatchObject({ code: "DESTINATION_REQUIRED" });
 
   await authed.mutation(api.loans.returnLoan, {
     loanId,
@@ -399,9 +399,24 @@ test("a partially returned item is not still on loan", async () => {
     });
   });
 
+  const installationAssessmentId = await authed.mutation(
+    api.conditionAssessments.create,
+    {
+      collectionId,
+      assessedAt: Date.now(),
+      condition: "Good",
+      summary: "Post-return installation check",
+      observations: [],
+      photos: [],
+    },
+  );
+  await authed.mutation(api.conditionAssessments.accept, {
+    assessmentId: installationAssessmentId,
+  });
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
     observedFromLocationId: returnLocationId,
+    installationConditionAssessmentId: installationAssessmentId,
   });
 
   const nextLoanId = await authed.mutation(api.loans.create, {

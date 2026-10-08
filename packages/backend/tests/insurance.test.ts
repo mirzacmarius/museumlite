@@ -415,44 +415,45 @@ test.each([
     appraisalValid: false,
     warning: "Appraisal is 3 years old and may be stale",
   },
-])(
-  "checkAppraisalForCoverage treats $ageDays days as the literal cutoff",
-  async ({ ageDays, appraisalValid, warning }) => {
-    const t = createConvexTest();
-    const { organizationId, userId } = await createOrgUserWithPermissions(
-      t,
-      ["collections.read"],
-      { subscriptionTier: "pro", slugPrefix: "appraisal-age" },
-    );
-    const authed = authedForUser(t, userId);
-    const collectionId = await t.run(async (ctx) => {
-      const id = await ctx.db.insert("collections", {
-        organizationId,
-        accessionNumber: `INS-AGE-${ageDays}`,
-        title: "Appraised Object",
-        status: "active",
-        catalogedBy: userId,
-        catalogedAt: COVERAGE_NOW,
-      });
-      await ctx.db.insert("appraisals", {
-        organizationId,
-        collectionId: id,
-        appraisalDate: COVERAGE_NOW - ageDays * DAY,
-        appraiserName: "Appraiser",
-        appraisalType: "insurance",
-        value: 1000,
-        currency: "EUR",
-        createdBy: userId,
-        createdAt: COVERAGE_NOW,
-      });
-      return id;
+])("checkAppraisalForCoverage treats $ageDays days as the literal cutoff", async ({
+  ageDays,
+  appraisalValid,
+  warning,
+}) => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.read"],
+    { subscriptionTier: "pro", slugPrefix: "appraisal-age" },
+  );
+  const authed = authedForUser(t, userId);
+  const collectionId = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `INS-AGE-${ageDays}`,
+      title: "Appraised Object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: COVERAGE_NOW,
     });
-    const coverage = await authed.query(
-      api.insurance.checkAppraisalForCoverage,
-      { collectionId, now: COVERAGE_NOW },
-    );
-    expect(coverage.appraisalAgeDays).toBe(ageDays);
-    expect(coverage.appraisalValid).toBe(appraisalValid);
-    expect(coverage.warning).toBe(warning);
-  },
-);
+    await ctx.db.insert("appraisals", {
+      organizationId,
+      collectionId: id,
+      appraisalDate: COVERAGE_NOW - ageDays * DAY,
+      appraiserName: "Appraiser",
+      appraisalType: "insurance",
+      value: 1000,
+      currency: "EUR",
+      createdBy: userId,
+      createdAt: COVERAGE_NOW,
+    });
+    return id;
+  });
+  const coverage = await authed.query(api.insurance.checkAppraisalForCoverage, {
+    collectionId,
+    now: COVERAGE_NOW,
+  });
+  expect(coverage.appraisalAgeDays).toBe(ageDays);
+  expect(coverage.appraisalValid).toBe(appraisalValid);
+  expect(coverage.warning).toBe(warning);
+});
