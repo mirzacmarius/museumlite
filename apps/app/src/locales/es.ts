@@ -3974,6 +3974,7 @@ export default {
       outstanding: "{count} de {total} resultados pendientes",
       readyToClose: "Todos los resultados resueltos",
       observedFrom: "Ubicación de origen observada",
+      installationDestination: "Ubicación de instalación",
       install: "Registrar instalación",
       deinstall: "Registrar desinstalación",
       confirmReturn: "Confirmar devolución física",

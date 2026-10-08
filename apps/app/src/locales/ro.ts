@@ -3202,6 +3202,7 @@ export default {
       outstanding: "{count} din {total} rezultate restante",
       readyToClose: "Toate rezultatele sunt rezolvate",
       observedFrom: "Locația sursă observată",
+      installationDestination: "Locația instalării",
       install: "Înregistrează instalarea",
       deinstall: "Înregistrează dezinstalarea",
       confirmReturn: "Confirmă returnarea fizică",

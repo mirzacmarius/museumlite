@@ -3215,6 +3215,7 @@ export default {
       outstanding: "{count} of {total} outcomes outstanding",
       readyToClose: "All outcomes resolved",
       observedFrom: "Observed source location",
+      installationDestination: "Installation destination",
       install: "Record installation",
       deinstall: "Record deinstallation",
       confirmReturn: "Confirm physical return",

@@ -3913,6 +3913,7 @@ export default {
       outstanding: "{count} av {total} utfall står utestående",
       readyToClose: "Alle utfall er løst",
       observedFrom: "Observert kildeplassering",
+      installationDestination: "Installasjonssted",
       install: "Registrer installasjon",
       deinstall: "Registrer demontering",
       confirmReturn: "Bekreft fysisk retur",
