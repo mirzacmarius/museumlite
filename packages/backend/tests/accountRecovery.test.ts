@@ -756,6 +756,41 @@ describe("account recovery without existence disclosure", () => {
     expect(emailsTo(ownerEmail)).toHaveLength(11);
   });
 
+  test("expiry of an older request does not reset an active email's quota", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    await t.action(api.auth.signIn, {
+      provider,
+      params: { email: strangerEmail, flow: "reset" },
+    });
+    await vi.advanceTimersByTimeAsync(29 * 60 * 1000);
+    await t.finishInProgressScheduledFunctions();
+    for (let request = 0; request < 10; request += 1) {
+      await t.action(api.auth.signIn, {
+        provider,
+        params: { email: strangerEmail, flow: "reset" },
+      });
+    }
+    await vi.advanceTimersByTimeAsync(60 * 1000);
+    await t.finishInProgressScheduledFunctions();
+    expect(
+      await publicErrorCode(
+        t.action(api.auth.signIn, {
+          provider,
+          params: { email: strangerEmail, flow: "reset" },
+        }),
+      ),
+    ).toEqual({ code: "TooManyCodeRequests" });
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(
+      await t.action(api.auth.signIn, {
+        provider,
+        params: { email: strangerEmail, flow: "reset" },
+      }),
+    ).toEqual({ tokens: null });
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+  });
+
   test("password providers without email verification refuse sign-up uniformly", async () => {
     const t = createConvexTestWithRateLimiter();
     for (const email of [ownerEmail, strangerEmail]) {
