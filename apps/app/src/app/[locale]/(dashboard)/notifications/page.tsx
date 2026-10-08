@@ -28,8 +28,9 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useI18n } from "@/locales/client";
 import { getNotificationCopy } from "@/lib/notification-copy";
+import { notificationEntityHref } from "@/lib/notification-links";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { NotificationsPageSkeleton } from "./notifications-page-skeleton";
 
 type FilterType = "all" | "unread";
@@ -155,16 +156,6 @@ const NOTIFICATION_ICONS: Record<string, LucideIcon> = {
   location: MapPin,
 };
 
-const ENTITY_PATHS: Record<string, string> = {
-  collection: "/collections",
-  object: "/objects",
-  accession: "/accessions",
-  deaccession: "/deaccessions",
-  loan: "/loans",
-  location: "/locations",
-  move_request: "/objects/move-requests",
-};
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DAY_FORMAT_OPTIONS = {
   weekday: "short",
@@ -192,15 +183,6 @@ function getCategoryTone(category?: string): CategoryTone {
 
 function getNotificationIcon(type: string): LucideIcon {
   return NOTIFICATION_ICONS[type] ?? Bell;
-}
-
-function getNotificationLink(
-  entityType?: string,
-  entityId?: string,
-): string | null {
-  if (!entityType || !entityId) return null;
-  const basePath = ENTITY_PATHS[entityType];
-  return basePath ? `${basePath}/${entityId}` : null;
 }
 
 function startOfLocalDay(timestamp: number) {
@@ -400,7 +382,7 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
   const copy = getNotificationCopy(notification, t);
   const Icon = getNotificationIcon(notification.type);
   const tone = getCategoryTone(notification.category);
-  const link = getNotificationLink(
+  const link = notificationEntityHref(
     notification.relatedEntityType,
     notification.relatedEntityId,
   );

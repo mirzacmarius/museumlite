@@ -4,10 +4,12 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internalQuery } from "../_generated/server";
 import { batchGetByIds } from "./batchLookup";
+import { type CapabilityId, capabilityUnavailable } from "./capabilities";
 import {
   type FeatureId,
   hasFeatureAccess,
   type ModuleId,
+  requireCapabilityEntitlement,
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./featureGates";
@@ -195,8 +197,35 @@ export async function requirePermission(
   }
   const has = await hasPermission(ctx, organizationId, permissionName);
   if (!has) {
-    throw new Error(`Permission denied: ${permissionName}`);
+    throw permissionDenied(permissionName);
   }
+}
+
+function permissionDenied(permissionName: string) {
+  return capabilityUnavailable({
+    reason: "permission_missing",
+    message: `Permission denied: ${permissionName}`,
+  });
+}
+
+/**
+ * Gate for a command that belongs to a capability in the capability matrix.
+ * Membership comes first so non-members learn nothing about the
+ * organization's modules or plan; then the module and plan; then the
+ * command's own permission.
+ */
+export async function requireCapability(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  capability: CapabilityId,
+  permissionName: string,
+): Promise<void> {
+  const membership = await getCurrentUserOrganization(ctx, organizationId);
+  if (!membership) {
+    throw permissionDenied(permissionName);
+  }
+  await requireCapabilityEntitlement(ctx, organizationId, capability);
+  await requirePermission(ctx, organizationId, permissionName);
 }
 
 /**

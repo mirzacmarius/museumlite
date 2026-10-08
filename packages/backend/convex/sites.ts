@@ -1,9 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { requireFeatureAccess } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
-import { requirePermission } from "./utils/permissions";
+import { requireCapability, requirePermission } from "./utils/permissions";
 
 /**
  * Create site
@@ -21,10 +20,10 @@ export const create = mutation({
     const [userId] = await Promise.all([
       getAuthUserId(ctx),
 
-      requireFeatureAccess(ctx, args.organizationId, "public_portal"),
-      requirePermission(
+      requireCapability(
         ctx,
         args.organizationId,
+        "sites",
         "organization.manage_settings",
       ),
       requirePermission(ctx, args.organizationId, "sites.create"),
@@ -91,10 +90,7 @@ export const get = query({
       return null;
     }
 
-    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
-
-    // Check permission
-    await requirePermission(ctx, site.organizationId, "sites.read");
+    await requireCapability(ctx, site.organizationId, "sites", "sites.read");
 
     return site;
   },
@@ -121,10 +117,7 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "public_portal");
-
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "sites.read");
+    await requireCapability(ctx, args.organizationId, "sites", "sites.read");
 
     let query = ctx.db
       .query("sites")
@@ -172,13 +165,11 @@ export const update = mutation({
       throw new Error("Site not found");
     }
 
-    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
-
-    // Check permission
     await Promise.all([
-      requirePermission(
+      requireCapability(
         ctx,
         site.organizationId,
+        "sites",
         "organization.manage_settings",
       ),
       requirePermission(ctx, site.organizationId, "sites.update"),
@@ -243,10 +234,10 @@ export const archive = mutation({
     }
 
     await Promise.all([
-      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
-      requirePermission(
+      requireCapability(
         ctx,
         site.organizationId,
+        "sites",
         "organization.manage_settings",
       ),
       requirePermission(ctx, site.organizationId, "sites.delete"),
@@ -281,10 +272,10 @@ export const grantUserSiteAccess = mutation({
       throw new Error("Site not found");
     }
     await Promise.all([
-      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
-      requirePermission(
+      requireCapability(
         ctx,
         site.organizationId,
+        "sites",
         "organization.manage_settings",
       ),
       requirePermission(ctx, site.organizationId, "sites.update"),
@@ -352,10 +343,10 @@ export const revokeUserSiteAccess = mutation({
       throw new Error("Site not found");
     }
     await Promise.all([
-      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
-      requirePermission(
+      requireCapability(
         ctx,
         site.organizationId,
+        "sites",
         "organization.manage_settings",
       ),
       requirePermission(ctx, site.organizationId, "sites.update"),

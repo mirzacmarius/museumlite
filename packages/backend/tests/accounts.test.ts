@@ -4,6 +4,7 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
+import { capabilityFailureOf } from "./testHarness";
 import { modules } from "./testSetup";
 
 type TestSetup = {
@@ -418,12 +419,18 @@ describe("Accounts CRUD", () => {
       });
     });
 
-    await expect(
-      authed.query(api.accounts.list, {
-        organizationId: orgWithoutModule,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Module not enabled: accounts");
+    expect(
+      await capabilityFailureOf(
+        authed.query(api.accounts.list, {
+          organizationId: orgWithoutModule,
+          paginationOpts: { numItems: 10, cursor: null },
+        }),
+      ),
+    ).toMatchObject({
+      code: "CAPABILITY_UNAVAILABLE",
+      reason: "module_disabled",
+      module: "accounts",
+    });
   });
 
   test("should enforce multi-tenant isolation", async () => {

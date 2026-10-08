@@ -1,4 +1,16 @@
 export default {
+  capabilities: {
+    moduleDisabled:
+      "Ce module est désactivé pour votre organisation. Un administrateur peut l’activer dans Paramètres › Modules.",
+    tierRequired:
+      "Cette action nécessite l’offre {tier}. Un administrateur peut changer d’offre dans Paramètres › Facturation.",
+    permissionMissing:
+      "Votre rôle ne permet pas cette action. Demandez à un administrateur de mettre à jour votre rôle.",
+    tiers: {
+      pro: "Pro",
+      enterprise: "Entreprise",
+    },
+  },
   custodyConflicts: {
     sourceChanged:
       "Cet objet se trouve maintenant à {location}. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
@@ -7162,10 +7174,15 @@ export default {
       saveAndNew: "Enregistrer et en ajouter un autre",
     },
     featureGuard: {
-      unavailable:
-        "Cette fonctionnalité n’est pas disponible avec votre offre.",
+      tierRequired:
+        "L’offre de votre organisation n’inclut pas cette fonctionnalité. Elle fait partie de l’offre {tier} ; un administrateur peut changer d’offre dans Paramètres › Facturation.",
+      moduleDisabled:
+        "Ce module est désactivé pour votre organisation. Un administrateur peut l’activer dans Paramètres › Modules.",
+      permissionMissing:
+        "Votre rôle ne donne pas accès à cette fonctionnalité. Demandez à un administrateur de mettre à jour votre rôle.",
       locked: "{featureName} est verrouillé",
       upgradeTo: "Passer à {tier}",
+      openModules: "Ouvrir Paramètres › Modules",
       tiers: {
         pro: "Pro",
         enterprise: "Entreprise",
@@ -7746,7 +7763,8 @@ export default {
         "Un donateur avec cette adresse e-mail existe déjà : {donor}",
     },
     navigation: {
-      patronManagement: "gestion des usagers",
+      patronManagement: "Gestion des usagers",
+      locked: "Indisponible",
       overview: "Vue d’ensemble",
       objectCatalog: "Catalogue des objets",
       locationTracking: "Emplacements et suivi",

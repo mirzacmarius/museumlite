@@ -75,7 +75,7 @@ export function AccessionDetailHeroBanner({
           ) : null}
           {accession.collectionId ? (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/collections/${accession.collectionId}`}>
+              <Link href={`/objects/${accession.collectionId}`}>
                 <ExternalLink className="mr-2 size-4" />
                 {tRoot("accessions.detail.viewCollection")}
               </Link>

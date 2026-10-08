@@ -98,9 +98,12 @@ export function AppUiLocaleProvider({ children }: { children: ReactNode }) {
       saveAndNew: translate("ui.status.saveAndNew"),
     },
     featureGuard: {
-      unavailable: translate("ui.featureGuard.unavailable"),
       locked: translate("ui.featureGuard.locked"),
+      tierRequired: translate("ui.featureGuard.tierRequired"),
+      moduleDisabled: translate("ui.featureGuard.moduleDisabled"),
+      permissionMissing: translate("ui.featureGuard.permissionMissing"),
       upgradeTo: translate("ui.featureGuard.upgradeTo"),
+      openModules: translate("ui.featureGuard.openModules"),
       tiers: {
         pro: translate("ui.featureGuard.tiers.pro"),
         enterprise: translate("ui.featureGuard.tiers.enterprise"),

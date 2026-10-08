@@ -11,17 +11,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@v1/ui/dialog";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Plus, Shield } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCapabilities } from "@/hooks/use-capabilities";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ClaimForm } from "./claim-form";
 import { InsuranceClaimsTab } from "./insurance-claims-tab";
@@ -89,7 +90,8 @@ export function InsurancePageClient() {
   const t = useScopedI18n("untranslatedDashboard.insurance");
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
+  const canUseInsurance = useCapabilities().isAvailable("insurance");
+  const capabilityErrorMessage = useCapabilityErrorMessage();
   const [state, dispatch] = useReducer(
     insurancePageReducer,
     initialInsurancePageState,
@@ -97,7 +99,7 @@ export function InsurancePageClient() {
 
   const listPolicies = useQuery(
     api.insurance.listPolicies,
-    currentOrganizationId
+    currentOrganizationId && canUseInsurance
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
@@ -110,7 +112,7 @@ export function InsurancePageClient() {
 
   const listClaims = useQuery(
     api.insurance.listClaims,
-    currentOrganizationId
+    currentOrganizationId && canUseInsurance
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
@@ -168,11 +170,7 @@ export function InsurancePageClient() {
   }
 
   return (
-    <FeatureGuard
-      featureName={t("title")}
-      isLocked={!hasFeature("conservation")}
-      tierNeeded="pro"
-    >
+    <CapabilityGuard capability="insurance" featureName={t("title")}>
       <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -217,9 +215,10 @@ export function InsurancePageClient() {
                           });
                         } catch (err) {
                           toast.error(
-                            err instanceof Error
-                              ? err.message
-                              : t("policyCreateFailed"),
+                            capabilityErrorMessage(err) ??
+                              (err instanceof Error
+                                ? err.message
+                                : t("policyCreateFailed")),
                           );
                         }
                       }}
@@ -262,9 +261,10 @@ export function InsurancePageClient() {
                           });
                         } catch (err) {
                           toast.error(
-                            err instanceof Error
-                              ? err.message
-                              : t("claimCreateFailed"),
+                            capabilityErrorMessage(err) ??
+                              (err instanceof Error
+                                ? err.message
+                                : t("claimCreateFailed")),
                           );
                         }
                       }}
@@ -329,6 +329,6 @@ export function InsurancePageClient() {
           </div>
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }

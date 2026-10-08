@@ -1,4 +1,16 @@
 export default {
+  capabilities: {
+    moduleDisabled:
+      "This module is turned off for your organization. An administrator can turn it on in Settings › Modules.",
+    tierRequired:
+      "This needs the {tier} plan. An administrator can upgrade in Settings › Billing.",
+    permissionMissing:
+      "Your role does not allow this. Ask an administrator to update your role.",
+    tiers: {
+      pro: "Pro",
+      enterprise: "Enterprise",
+    },
+  },
   custodyConflicts: {
     sourceChanged:
       "This object is now at {location}. Refresh, confirm where it is, and record the handoff again.",
@@ -6918,9 +6930,15 @@ export default {
       saveAndNew: "Save & Add Another",
     },
     featureGuard: {
-      unavailable: "This feature is not available on your plan.",
+      tierRequired:
+        "Your organization's plan does not include this. It is part of the {tier} plan; an administrator can upgrade in Settings › Billing.",
+      moduleDisabled:
+        "This module is turned off for your organization. An administrator can turn it on in Settings › Modules.",
+      permissionMissing:
+        "Your role does not include access to this. Ask an administrator to update your role.",
       locked: "{featureName} is locked",
       upgradeTo: "Upgrade to {tier}",
+      openModules: "Open Settings › Modules",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -7472,7 +7490,8 @@ export default {
       duplicateEmail: "A donor with this email already exists: {donor}",
     },
     navigation: {
-      patronManagement: "patron management",
+      patronManagement: "Patron Management",
+      locked: "Unavailable",
       overview: "Overview",
       objectCatalog: "Object Catalog",
       locationTracking: "Location & Tracking",

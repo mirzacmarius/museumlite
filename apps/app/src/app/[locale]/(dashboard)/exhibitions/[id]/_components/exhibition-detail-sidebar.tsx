@@ -31,7 +31,7 @@ export function ExhibitionDetailSidebar({
           {members?.map((member) => (
             <Link
               key={member._id}
-              href={`/collections/${member.collectionId}`}
+              href={`/objects/${member.collectionId}`}
               className="block rounded-lg border border-white/10 bg-background/50 p-3 hover:bg-muted/50"
             >
               <span className="font-medium text-foreground">
@@ -49,7 +49,7 @@ export function ExhibitionDetailSidebar({
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
               <p>{t("form.legacyReviewDescription")}</p>
               <Link
-                href={`/collections/${exhibition.legacyParticipationReview.anchorCollectionId}`}
+                href={`/objects/${exhibition.legacyParticipationReview.anchorCollectionId}`}
                 className="mt-2 inline-flex items-center gap-1 underline"
               >
                 {t("form.includeHistoricalAnchor")}{" "}

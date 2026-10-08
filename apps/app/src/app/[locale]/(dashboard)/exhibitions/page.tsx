@@ -4,7 +4,6 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { EmptyState } from "@v1/ui/empty-state";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
 import {
   Select,
@@ -27,6 +26,7 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { ClientDate } from "@/components/client-date";
 import { CollectionSelector } from "@/components/collection-selector";
 import {
@@ -36,7 +36,6 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import {
   type ExhibitionScheduleStatus,
   getExhibitionScheduleStatus,
@@ -54,7 +53,6 @@ type ExhibitionStatus = "all" | "current" | "upcoming" | "past";
 export default function ExhibitionsPage() {
   const t = useScopedI18n("exhibitions");
   const { currentOrganizationId, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ExhibitionStatus>("all");
   const [selectedObjectId, setSelectedObjectId] = useState<
@@ -120,11 +118,7 @@ export default function ExhibitionsPage() {
   };
 
   return (
-    <FeatureGuard
-      featureName={t("title")}
-      isLocked={!hasFeature("exhibitions")}
-      tierNeeded="pro"
-    >
+    <CapabilityGuard capability="exhibitions" featureName={t("title")}>
       <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -238,7 +232,7 @@ export default function ExhibitionsPage() {
           </div>
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }
 

@@ -40,9 +40,8 @@ export function ExhibitionsTab({
     return (
       <FeatureGuard
         featureName={tObjects("tabs.exhibitions")}
-        isLocked={true}
-        tierNeeded="pro"
-        showUpgrade={false}
+        reason={{ kind: "tier_required", tier: "pro" }}
+        showAction={false}
       >
         <div />
       </FeatureGuard>

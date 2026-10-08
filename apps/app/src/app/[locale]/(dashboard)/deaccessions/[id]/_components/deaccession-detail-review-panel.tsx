@@ -104,7 +104,7 @@ export function DeaccessionDetailReviewPanel({
               </div>
             </div>
             <Link
-              href={`/collections/${collection._id}`}
+              href={`/objects/${collection._id}`}
               className="mt-3 flex items-center gap-3 rounded-xl border border-border/60 bg-background/60 p-3 transition-colors hover:bg-accent/60"
             >
               <div className="relative flex size-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background">

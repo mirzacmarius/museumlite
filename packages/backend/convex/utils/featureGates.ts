@@ -1,6 +1,12 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
+  type CapabilityId,
+  capabilityUnavailable,
+  evaluateCapabilityEntitlement,
+  isOrganizationModuleEnabled,
+} from "./capabilities";
+import {
   type FeatureId,
   getFeatureRequiredTier,
   getTierLimits as getPolicyTierLimits,
@@ -24,17 +30,19 @@ function hasOrganizationFeatureAccess(
   return hasFeatureTierAccess(getTier(org), featureId);
 }
 
+function organizationAccess(org: Doc<"organizations">) {
+  return {
+    subscriptionTier: org.subscriptionTier,
+    enabledModules: org.settings?.enabledModules,
+    enabledIntegrations: org.settings?.enabledIntegrations,
+  };
+}
+
 function hasOrganizationModuleEnabled(
   org: Doc<"organizations">,
   moduleId: ModuleId,
 ): boolean {
-  const enabledModules = org.settings?.enabledModules ?? [];
-  if (enabledModules.includes(moduleId)) {
-    return true;
-  }
-
-  const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
-  return moduleId === "library" && enabledIntegrations.includes("library");
+  return isOrganizationModuleEnabled(organizationAccess(org), moduleId);
 }
 
 async function getOrganization(
@@ -65,7 +73,43 @@ export async function requireFeatureAccess(
   const org = await getOrganization(ctx, organizationId);
   if (!hasOrganizationFeatureAccess(org, featureId)) {
     const requiredTier = getFeatureRequiredTier(featureId);
-    throw new Error(`Feature requires ${requiredTier} tier`);
+    throw capabilityUnavailable({
+      reason: "tier_required",
+      requiredTier,
+      message: `Feature requires ${requiredTier} tier`,
+    });
+  }
+}
+
+/**
+ * Enforces a capability's organization-level dimensions (module, then plan)
+ * from the capability matrix. Callers still check the command's permission.
+ */
+export async function requireCapabilityEntitlement(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  capability: CapabilityId,
+) {
+  const org = await getOrganization(ctx, organizationId);
+  const state = evaluateCapabilityEntitlement(
+    capability,
+    organizationAccess(org),
+  );
+  if (state.status === "module_disabled") {
+    throw capabilityUnavailable({
+      reason: "module_disabled",
+      capability,
+      module: state.module,
+      message: `Module not enabled: ${state.module}`,
+    });
+  }
+  if (state.status === "tier_required") {
+    throw capabilityUnavailable({
+      reason: "tier_required",
+      capability,
+      requiredTier: state.requiredTier,
+      message: `Feature requires ${state.requiredTier} tier`,
+    });
   }
 }
 
@@ -85,7 +129,11 @@ export async function requireModuleEnabled(
 ) {
   const org = await getOrganization(ctx, organizationId);
   if (!hasOrganizationModuleEnabled(org, moduleId)) {
-    throw new Error(`Module not enabled: ${moduleId}`);
+    throw capabilityUnavailable({
+      reason: "module_disabled",
+      module: moduleId,
+      message: `Module not enabled: ${moduleId}`,
+    });
   }
 }
 
@@ -107,7 +155,11 @@ export async function requireIntegrationEnabled(
   const org = await getOrganization(ctx, organizationId);
   const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
   if (!enabledIntegrations.includes(integrationId)) {
-    throw new Error(`Integration not enabled: ${integrationId}`);
+    throw capabilityUnavailable({
+      reason: "module_disabled",
+      module: integrationId,
+      message: `Integration not enabled: ${integrationId}`,
+    });
   }
 }
 

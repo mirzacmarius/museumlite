@@ -1,4 +1,16 @@
 export default {
+  capabilities: {
+    moduleDisabled:
+      "Denne modulen er slått av for organisasjonen din. En administrator kan slå den på under Innstillinger › Moduler.",
+    tierRequired:
+      "Dette krever {tier}-abonnementet. En administrator kan oppgradere under Innstillinger › Fakturering.",
+    permissionMissing:
+      "Rollen din tillater ikke dette. Be en administrator om å oppdatere rollen din.",
+    tiers: {
+      pro: "Pro",
+      enterprise: "Enterprise",
+    },
+  },
   custodyConflicts: {
     sourceChanged:
       "Dette objektet er nå på {location}. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",
@@ -7089,9 +7101,15 @@ export default {
       saveAndNew: "Lagre og legg til en til",
     },
     featureGuard: {
-      unavailable: "Denne funksjonen er ikke tilgjengelig i abonnementet ditt.",
+      tierRequired:
+        "Organisasjonens abonnement inkluderer ikke dette. Det er en del av {tier}-abonnementet; en administrator kan oppgradere under Innstillinger › Fakturering.",
+      moduleDisabled:
+        "Denne modulen er slått av for organisasjonen din. En administrator kan slå den på under Innstillinger › Moduler.",
+      permissionMissing:
+        "Rollen din gir ikke tilgang til dette. Be en administrator om å oppdatere rollen din.",
       locked: "{featureName} er låst",
       upgradeTo: "Oppgrader til {tier}",
+      openModules: "Åpne Innstillinger › Moduler",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -7660,7 +7678,8 @@ export default {
         "Det finnes allerede en giver med denne e-postadressen: {donor}",
     },
     navigation: {
-      patronManagement: "låneradministrasjon",
+      patronManagement: "Låneradministrasjon",
+      locked: "Utilgjengelig",
       overview: "Oversikt",
       objectCatalog: "Objektkatalog",
       locationTracking: "Plassering og sporing",

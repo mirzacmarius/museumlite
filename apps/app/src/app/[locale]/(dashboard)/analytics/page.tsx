@@ -2,14 +2,15 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import { BarChart3 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { ClientTime } from "@/components/client-date";
 import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
@@ -93,7 +94,7 @@ export default function AnalyticsPage() {
   const t = useI18n();
   const { currentOrganizationId } = useOrganization();
   const { hasFeature, hasModule } = useFeatureAccess();
-  const hasReporting = hasFeature("reporting");
+  const hasReporting = useCapabilities().isAvailable("reporting");
   const hasCompliance = hasFeature("compliance");
   const hasInventoryValuation = hasModule("inventory_valuation");
   const now = useClientNow();
@@ -131,13 +132,12 @@ export default function AnalyticsPage() {
 
   if (!hasReporting) {
     return (
-      <FeatureGuard
+      <CapabilityGuard
+        capability="reporting"
         featureName={t("analytics.featureName")}
-        isLocked={true}
-        tierNeeded="pro"
       >
         <div className="p-6" />
-      </FeatureGuard>
+      </CapabilityGuard>
     );
   }
 
@@ -192,10 +192,9 @@ export default function AnalyticsPage() {
       : null;
 
   return (
-    <FeatureGuard
+    <CapabilityGuard
+      capability="reporting"
       featureName={t("analytics.featureName")}
-      isLocked={!hasFeature("reporting")}
-      tierNeeded="pro"
     >
       <div className="flex flex-col h-full gap-y-6 p-6 overflow-y-auto">
         <div className="flex items-center justify-between">
@@ -259,6 +258,6 @@ export default function AnalyticsPage() {
           />
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }

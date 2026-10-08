@@ -9,7 +9,14 @@ import {
   MODULE_IDS,
 } from "../convex/utils/featurePolicy";
 
+import { capabilityFailureOf } from "./testHarness";
 import { modules } from "./testSetup";
+
+const proPlanRequired = {
+  code: "CAPABILITY_UNAVAILABLE",
+  reason: "tier_required",
+  requiredTier: "pro",
+};
 
 const createOrg = (
   name: string,
@@ -55,12 +62,14 @@ describe("Feature Gates - Tier Access", () => {
       );
     });
 
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    expect(
+      await capabilityFailureOf(
+        t.query(api.loans.list, {
+          organizationId: orgId,
+          paginationOpts: { numItems: 10, cursor: null },
+        }),
+      ),
+    ).toMatchObject(proPlanRequired);
   });
 
   test("pro tier should access pro features (loans)", async () => {
@@ -136,12 +145,14 @@ describe("Feature Gates - Billing Transitions", () => {
       await ctx.db.patch(orgId, { subscriptionTier: "free" });
     });
 
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    expect(
+      await capabilityFailureOf(
+        t.query(api.loans.list, {
+          organizationId: orgId,
+          paginationOpts: { numItems: 10, cursor: null },
+        }),
+      ),
+    ).toMatchObject(proPlanRequired);
   });
 
   test("upgrade from free to pro should enable pro features", async () => {
@@ -154,12 +165,14 @@ describe("Feature Gates - Billing Transitions", () => {
       );
     });
 
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    expect(
+      await capabilityFailureOf(
+        t.query(api.loans.list, {
+          organizationId: orgId,
+          paginationOpts: { numItems: 10, cursor: null },
+        }),
+      ),
+    ).toMatchObject(proPlanRequired);
 
     await t.run(async (ctx) => {
       await ctx.db.patch(orgId, { subscriptionTier: "pro" });
@@ -188,12 +201,14 @@ describe("Feature Gates - Billing Transitions", () => {
       });
     });
 
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    expect(
+      await capabilityFailureOf(
+        t.query(api.loans.list, {
+          organizationId: orgId,
+          paginationOpts: { numItems: 10, cursor: null },
+        }),
+      ),
+    ).toMatchObject(proPlanRequired);
   });
 });
 

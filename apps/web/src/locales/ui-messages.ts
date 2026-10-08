@@ -83,9 +83,15 @@ export const webUiMessages: Record<UiLocale, UiMessages> = {
       saveAndNew: "Save & Add Another",
     },
     featureGuard: {
-      unavailable: "This feature is not available on your plan.",
+      tierRequired:
+        "Your organization's plan does not include this. It is part of the {tier} plan; an administrator can upgrade in Settings › Billing.",
+      moduleDisabled:
+        "This module is turned off for your organization. An administrator can turn it on in Settings › Modules.",
+      permissionMissing:
+        "Your role does not include access to this. Ask an administrator to update your role.",
       locked: "{featureName} is locked",
       upgradeTo: "Upgrade to {tier}",
+      openModules: "Open Settings › Modules",
       tiers: { pro: "Pro", enterprise: "Enterprise" },
     },
   },
@@ -173,9 +179,15 @@ export const webUiMessages: Record<UiLocale, UiMessages> = {
       saveAndNew: "Enregistrer et en ajouter un autre",
     },
     featureGuard: {
-      unavailable: "Cette fonctionnalité n’est pas incluse dans votre offre.",
+      tierRequired:
+        "L’offre de votre organisation n’inclut pas cette fonctionnalité. Elle fait partie de l’offre {tier} ; un administrateur peut changer d’offre dans Paramètres › Facturation.",
+      moduleDisabled:
+        "Ce module est désactivé pour votre organisation. Un administrateur peut l’activer dans Paramètres › Modules.",
+      permissionMissing:
+        "Votre rôle ne donne pas accès à cette fonctionnalité. Demandez à un administrateur de mettre à jour votre rôle.",
       locked: "{featureName} est verrouillé",
       upgradeTo: "Passer à l’offre {tier}",
+      openModules: "Ouvrir Paramètres › Modules",
       tiers: { pro: "Pro", enterprise: "Entreprise" },
     },
   },
@@ -261,9 +273,15 @@ export const webUiMessages: Record<UiLocale, UiMessages> = {
       saveAndNew: "Guardar y añadir otro",
     },
     featureGuard: {
-      unavailable: "Esta función no está disponible en tu plan.",
+      tierRequired:
+        "El plan de tu organización no incluye esta función. Forma parte del plan {tier}; un administrador puede mejorarlo en Configuración › Facturación.",
+      moduleDisabled:
+        "Este módulo está desactivado para tu organización. Un administrador puede activarlo en Configuración › Módulos.",
+      permissionMissing:
+        "Tu rol no incluye acceso a esta función. Pide a un administrador que actualice tu rol.",
       locked: "{featureName} está bloqueado",
       upgradeTo: "Mejorar al plan {tier}",
+      openModules: "Abrir Configuración › Módulos",
       tiers: { pro: "Pro", enterprise: "Enterprise" },
     },
   },
@@ -349,9 +367,15 @@ export const webUiMessages: Record<UiLocale, UiMessages> = {
       saveAndNew: "Lagre og legg til en til",
     },
     featureGuard: {
-      unavailable: "Denne funksjonen er ikke tilgjengelig i abonnementet ditt.",
+      tierRequired:
+        "Organisasjonens abonnement inkluderer ikke dette. Det er en del av {tier}-abonnementet; en administrator kan oppgradere under Innstillinger › Fakturering.",
+      moduleDisabled:
+        "Denne modulen er slått av for organisasjonen din. En administrator kan slå den på under Innstillinger › Moduler.",
+      permissionMissing:
+        "Rollen din gir ikke tilgang til dette. Be en administrator om å oppdatere rollen din.",
       locked: "{featureName} er låst",
       upgradeTo: "Oppgrader til {tier}",
+      openModules: "Åpne Innstillinger › Moduler",
       tiers: { pro: "Pro", enterprise: "Enterprise" },
     },
   },
@@ -438,10 +462,15 @@ export const webUiMessages: Record<UiLocale, UiMessages> = {
       saveAndNew: "Salvează și adaugă încă unul",
     },
     featureGuard: {
-      unavailable:
-        "Această funcționalitate nu este disponibilă în planul dumneavoastră.",
+      tierRequired:
+        "Planul organizației tale nu include această funcție. Face parte din planul {tier}; un administrator poate face upgrade din Setări › Facturare.",
+      moduleDisabled:
+        "Acest modul este dezactivat pentru organizația ta. Un administrator îl poate activa din Setări › Module.",
+      permissionMissing:
+        "Rolul tău nu include acces la această funcție. Cere unui administrator să îți actualizeze rolul.",
       locked: "{featureName} este blocat",
       upgradeTo: "Treceți la planul {tier}",
+      openModules: "Deschide Setări › Module",
       tiers: { pro: "Pro", enterprise: "Enterprise" },
     },
   },
