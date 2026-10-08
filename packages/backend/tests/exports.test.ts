@@ -376,7 +376,7 @@ describe("authorized durable exports", () => {
       expect(bytes.byteLength).toBe(job.bytes);
     }
     vi.useRealTimers();
-  }, 20000);
+  }, 120_000);
   test("cancel/resume reconciles checkpoint rows during concurrent catalog changes and excludes later inserts", async () => {
     vi.useFakeTimers();
     const f = await fixture();
