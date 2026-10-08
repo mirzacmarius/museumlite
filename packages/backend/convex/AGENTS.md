@@ -15,4 +15,4 @@ All data, authentication, storage, and scheduled work lives in Convex.
 | Accession number generation | `utils/accessionCounter.ts` |
 | Backend tests | Tests in this directory and `../tests/` |
 
-Run backend tests from `packages/backend/` using `bun test`; see the root `AGENTS.md` for other checks and commands.
+Run backend tests from `packages/backend/` using `bun test`. Other checks and env notes are in `docs/agents/dev-environment.md`.
