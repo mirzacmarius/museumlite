@@ -391,6 +391,7 @@ export const list = query({
     return visibleJobs;
   },
 });
+const EXPIRY_BATCH_SIZE = 50;
 export const expire = internalMutation({
   args: { jobId: v.id("exportJobs") },
   returns: v.null(),
@@ -400,35 +401,34 @@ export const expire = internalMutation({
     if (job.storageId) await ctx.storage.delete(job.storageId);
     const chunks = await ctx.db
       .query("exportChunks")
-      .withIndex("by_jobId_and_sequence", (q) =>
-        q.eq("jobId", job._id).gt("sequence", job.cleanupSequence ?? -1),
-      )
-      .take(50);
-    for (const chunk of chunks) {
-      if (chunk.storageId) {
-        await ctx.storage.delete(chunk.storageId);
-        await ctx.db.patch(chunk._id, { storageId: undefined });
-      }
-    }
+      .withIndex("by_jobId_and_sequence", (q) => q.eq("jobId", job._id))
+      .take(EXPIRY_BATCH_SIZE);
     const parts = await ctx.db
       .query("exportParts")
       .withIndex("by_jobId_and_level_and_sequence", (q) =>
         q.eq("jobId", job._id),
       )
-      .paginate({ numItems: 50, cursor: job.cleanupPartsCursor ?? null });
-    for (const part of parts.page)
-      if (part.storageId) {
-        await ctx.storage.delete(part.storageId);
-        await ctx.db.patch(part._id, { storageId: undefined });
-      }
-    await ctx.db.patch(job._id, {
-      status: "expired",
-      storageId: undefined,
-      generation: job.generation + 1,
-      cleanupSequence: chunks.at(-1)?.sequence ?? job.cleanupSequence,
-      cleanupPartsCursor: parts.continueCursor,
-    });
-    if (chunks.length || !parts.isDone)
+      .take(EXPIRY_BATCH_SIZE);
+    const selections = await ctx.db
+      .query("exportSelections")
+      .withIndex("by_jobId", (q) => q.eq("jobId", job._id))
+      .take(EXPIRY_BATCH_SIZE);
+    for (const record of [...chunks, ...parts]) {
+      if (record.storageId) await ctx.storage.delete(record.storageId);
+      await ctx.db.delete(record._id);
+    }
+    for (const selection of selections) await ctx.db.delete(selection._id);
+    if (job.status !== "expired" || job.storageId)
+      await ctx.db.patch(job._id, {
+        status: "expired",
+        storageId: undefined,
+        generation: job.generation + 1,
+      });
+    if (
+      chunks.length === EXPIRY_BATCH_SIZE ||
+      parts.length === EXPIRY_BATCH_SIZE ||
+      selections.length === EXPIRY_BATCH_SIZE
+    )
       await ctx.scheduler.runAfter(0, internal.exports.expire, args);
     return null;
   },

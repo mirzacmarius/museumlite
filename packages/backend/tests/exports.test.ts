@@ -544,6 +544,67 @@ describe("authorized durable exports", () => {
     ).toBe(403);
     vi.useRealTimers();
   });
+  test("expired exports leave no captured selection, chunk or part records behind", async () => {
+    vi.useFakeTimers();
+    const f = await fixture();
+    const objectIds = await f.t.run(async (ctx) =>
+      Promise.all(
+        Array.from({ length: 3 }, (_, i) =>
+          ctx.db.insert("collections", {
+            organizationId: f.organizationId,
+            title: `Expiring ${i}`,
+            accessionNumber: `EXP-${i}`,
+            status: "active",
+            catalogedBy: f.userId,
+            catalogedAt: 1,
+          }),
+        ),
+      ),
+    );
+    vi.advanceTimersByTime(100);
+    const jobId = await f.user.mutation(api.exports.create, {
+      organizationId: f.organizationId,
+      requestKey: "expiring",
+      format: "jsonl",
+      selectedCount: objectIds.length,
+      source: { kind: "objects", mode: "selected", filters: {} },
+    });
+    await f.user.mutation(api.exports.appendSelection, { jobId, objectIds });
+    await f.user.mutation(api.exports.start, { jobId });
+    await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+    expect((await f.user.query(api.exports.status, { jobId })).status).toBe(
+      "completed",
+    );
+    vi.advanceTimersByTime(7 * 24 * 60 * 60 * 1000);
+    await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+    expect((await f.user.query(api.exports.status, { jobId })).status).toBe(
+      "expired",
+    );
+    const remaining = await f.t.run(async (ctx) => ({
+      selections: (
+        await ctx.db
+          .query("exportSelections")
+          .withIndex("by_jobId", (q) => q.eq("jobId", jobId))
+          .take(1)
+      ).length,
+      chunks: (
+        await ctx.db
+          .query("exportChunks")
+          .withIndex("by_jobId_and_sequence", (q) => q.eq("jobId", jobId))
+          .take(1)
+      ).length,
+      parts: (
+        await ctx.db
+          .query("exportParts")
+          .withIndex("by_jobId_and_level_and_sequence", (q) =>
+            q.eq("jobId", jobId),
+          )
+          .take(1)
+      ).length,
+    }));
+    expect(remaining).toEqual({ selections: 0, chunks: 0, parts: 0 });
+    vi.useRealTimers();
+  });
   test("cancellation during artifact consolidation resumes without losing or duplicating chunks", async () => {
     vi.useFakeTimers();
     const f = await fixture();
