@@ -270,3 +270,39 @@ test("batches are bounded, row numbers are validated, and other organizations ca
     }),
   ).rejects.toThrow();
 });
+
+test("an unrecognized acquisition method is kept in the notes instead of being lost to other", async () => {
+  const { t, own, user } = await setup();
+  const jobId = await user.mutation(api.imports.createImportJob, {
+    organizationId: own.organizationId,
+    type: "csv",
+    entityType: "accessions",
+    totalItems: 1,
+  });
+  const result = await user.mutation(api.imports.importAccessionsBatch, {
+    organizationId: own.organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        ...goodRow(2, "METHOD-001"),
+        method: "Field collection",
+        notes: "Box 4",
+      },
+    ],
+  });
+
+  expect(result.results).toMatchObject([{ status: "accepted" }]);
+  const accession = await t.run((ctx) =>
+    ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", own.organizationId),
+      )
+      .unique(),
+  );
+  expect(accession).toMatchObject({
+    method: "other",
+    notes: "Box 4\nSource acquisition method: Field collection",
+  });
+});

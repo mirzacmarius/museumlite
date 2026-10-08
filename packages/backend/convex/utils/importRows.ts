@@ -119,6 +119,7 @@ export function normalizeAccessionImportRow(
 
   const trimmedMethod = row.method.trim();
   let method: AccessionImportMethod | undefined;
+  let unrecognizedMethod: string | undefined;
   if (!trimmedMethod) {
     issues.push({
       row: rowNumber,
@@ -133,6 +134,7 @@ export function normalizeAccessionImportRow(
       method = normalizedMethod;
     } else {
       method = "other";
+      unrecognizedMethod = trimmedMethod;
       issues.push({
         row: rowNumber,
         field: "method",
@@ -193,9 +195,16 @@ export function normalizeAccessionImportRow(
       source,
       method,
       cost: cost ?? undefined,
-      notes: trimOptional(row.notes),
+      notes: withSourceMethod(trimOptional(row.notes), unrecognizedMethod),
     },
   };
+}
+
+/** Keeps an unrecognized source method instead of losing it to "other". */
+function withSourceMethod(notes: string | undefined, method?: string) {
+  if (!method) return notes;
+  const sourceMethod = `Source acquisition method: ${method}`;
+  return notes ? `${notes}\n${sourceMethod}` : sourceMethod;
 }
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;

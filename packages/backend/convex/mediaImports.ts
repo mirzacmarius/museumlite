@@ -523,6 +523,10 @@ export const recordUploadedFile = mutation({
 
     if (!file) {
       try {
+        // A refused file must stay unclaimed, so check its type first.
+        if (!isSupportedMediaMimeType(args.mimeType)) {
+          throw new Error(`Unsupported file type: ${args.mimeType}`);
+        }
         // Validates organization, uploader and metadata before any write.
         await claimStorageOwnership(ctx, {
           storageId: args.storageId,
@@ -533,9 +537,6 @@ export const recordUploadedFile = mutation({
           expectedFileSize: args.fileSize,
           expectedMimeType: args.mimeType,
         });
-        if (!isSupportedMediaMimeType(args.mimeType)) {
-          throw new Error(`Unsupported file type: ${args.mimeType}`);
-        }
         file = {
           itemNumber,
           fileName: args.fileName,
