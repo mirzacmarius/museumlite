@@ -1661,6 +1661,17 @@ export default defineSchema({
         observedSourceLocationId: v.union(v.id("locations"), v.null()),
         legacyCollectionGroupId: v.optional(v.id("collectionGroups")),
         collectionGroupIds: v.array(v.id("collectionGroups")),
+        // Canonical membership rows at departure; role is absent for rows not yet backfilled.
+        collectionGroupMemberships: v.optional(
+          v.array(
+            v.object({
+              collectionGroupId: v.id("collectionGroups"),
+              role: v.optional(
+                v.union(v.literal("primary"), v.literal("secondary")),
+              ),
+            }),
+          ),
+        ),
         accessionNumberAtTransfer: v.string(),
       }),
     ),
