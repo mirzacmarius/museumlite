@@ -47,7 +47,9 @@ export type SnapshotManifest = {
   references: { checked: number; dangling: DanglingReference[] };
 };
 
-const BASE32 = "0123456789abcdefghjkmnpqrstvwxyz";
+const BASE32_DIGITS = new Map(
+  [..."0123456789abcdefghjkmnpqrstvwxyz"].map((char, digit) => [char, digit]),
+);
 const DOCUMENTS_SUFFIX = "/documents.jsonl";
 
 /**
@@ -61,8 +63,8 @@ export function decodeDocumentId(value: string): number | null {
   let buffer = 0;
   let bits = 0;
   for (const char of value) {
-    const digit = BASE32.indexOf(char);
-    if (digit < 0) return null;
+    const digit = BASE32_DIGITS.get(char);
+    if (digit === undefined) return null;
     buffer = ((buffer << 5) | digit) & 0xfff;
     bits += 5;
     if (bits >= 8) {
@@ -92,11 +94,10 @@ export function decodeDocumentId(value: string): number | null {
 const decoder = new TextDecoder();
 
 function parseJsonLines(bytes: Uint8Array): Record<string, unknown>[] {
-  return decoder
-    .decode(bytes)
-    .split("\n")
-    .filter((line) => line.trim() !== "")
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
+  const rows: Record<string, unknown>[] = [];
+  for (const line of decoder.decode(bytes).split("\n"))
+    if (line.trim() !== "") rows.push(JSON.parse(line));
+  return rows;
 }
 
 /** Table key for a documents path: `locations`, `_components/polar/products`. */
@@ -153,7 +154,7 @@ export function buildSnapshotManifest(
     references: { checked: 0, dangling: [] },
   };
   verifyStoredFiles(entries, tables, manifest);
-  for (const [table, documents] of [...tables].sort(([a], [b]) =>
+  for (const [table, documents] of Array.from(tables).toSorted(([a], [b]) =>
     a.localeCompare(b),
   )) {
     manifest.tables[table] = {
@@ -284,29 +285,30 @@ export function compareSnapshotManifests(
     blocking: [],
     compared: { tables: 0, documents: 0, files: 0 },
   };
+  const { compared, blocking } = result;
   for (const [table, expectedTable] of Object.entries(expected.tables)) {
     if (ignored.has(table)) continue;
-    result.compared.tables++;
+    compared.tables++;
     const actualTable = actual.tables[table];
     if (!actualTable) {
-      result.blocking.push({ category: "table_missing", table });
+      blocking.push({ category: "table_missing", table });
       continue;
     }
     for (const [id, digest] of Object.entries(expectedTable.documents)) {
-      result.compared.documents++;
+      compared.documents++;
       const actualDigest = actualTable.documents[id];
       if (actualDigest === undefined)
-        result.blocking.push({ category: "document_missing", table, id });
+        blocking.push({ category: "document_missing", table, id });
       else if (actualDigest !== digest)
-        result.blocking.push({ category: "document_changed", table, id });
+        blocking.push({ category: "document_changed", table, id });
     }
   }
   for (const [id, file] of Object.entries(expected.files)) {
-    result.compared.files++;
+    compared.files++;
     const actualFile = actual.files[id];
-    if (!actualFile) result.blocking.push({ category: "file_missing", id });
+    if (!actualFile) blocking.push({ category: "file_missing", id });
     else if (actualFile.sha256 !== file.sha256)
-      result.blocking.push({ category: "file_changed", id });
+      blocking.push({ category: "file_changed", id });
   }
   const alreadyDangling = new Set(
     expected.references.dangling.map(referenceKey),
@@ -314,7 +316,7 @@ export function compareSnapshotManifests(
   for (const reference of actual.references.dangling) {
     if (ignored.has(reference.table)) continue;
     if (alreadyDangling.has(referenceKey(reference))) continue;
-    result.blocking.push({
+    blocking.push({
       category: "reference_broken",
       table: reference.table,
       id: reference.documentId,

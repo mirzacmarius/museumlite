@@ -14,14 +14,18 @@ type ExportedTable = {
 test("every table declares each index name at most once, so the schema can be pushed", () => {
   const { tables } = JSON.parse(schema.export()) as { tables: ExportedTable[] };
   const duplicates = tables.flatMap((table) => {
-    const names = [
+    const seen = new Set<string>();
+    const repeated: string[] = [];
+    for (const { indexDescriptor } of [
       ...table.indexes,
       ...table.searchIndexes,
       ...(table.vectorIndexes ?? []),
-    ].map((index) => index.indexDescriptor);
-    return names
-      .filter((name, position) => names.indexOf(name) !== position)
-      .map((name) => `${table.tableName}.${name}`);
+    ]) {
+      if (seen.has(indexDescriptor))
+        repeated.push(`${table.tableName}.${indexDescriptor}`);
+      seen.add(indexDescriptor);
+    }
+    return repeated;
   });
   expect(duplicates).toEqual([]);
 });
