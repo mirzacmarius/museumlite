@@ -66,4 +66,11 @@ crons.interval(
   internal.reporting.processDueReports,
 );
 
+crons.interval(
+  "sweep-webhook-deliveries",
+  { minutes: 5 },
+  internal.webhookDeliveries.sweep,
+  {},
+);
+
 export default crons;

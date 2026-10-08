@@ -26,6 +26,11 @@ import {
   projectionGenerationFields,
   projectionUnavailableReason,
 } from "./utils/projectionValidators";
+import {
+  webhookDeliveryAttemptFields,
+  webhookDeliveryFields,
+  webhookEventFields,
+} from "./utils/webhookValidators";
 
 // Type-safe validators for flexible data structures
 
@@ -3190,6 +3195,24 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_organization", ["organizationId"]),
+
+  // Outgoing webhook events captured at emit time, one delivery per endpoint
+  webhookEvents: defineTable(webhookEventFields),
+  webhookDeliveries: defineTable(webhookDeliveryFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_organizationId_and_status", ["organizationId", "status"])
+    .index("by_organizationId_and_webhookId", ["organizationId", "webhookId"])
+    .index("by_organizationId_and_webhookId_and_status", [
+      "organizationId",
+      "webhookId",
+      "status",
+    ])
+    .index("by_eventId", ["eventId"])
+    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"]),
+  webhookDeliveryAttempts: defineTable(webhookDeliveryAttemptFields).index(
+    "by_deliveryId_and_attemptNumber",
+    ["deliveryId", "attemptNumber"],
+  ),
 
   // API keys for external integrations
   apiKeys: defineTable({
