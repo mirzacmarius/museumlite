@@ -1,4 +1,41 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Acest obiect se află acum la {location}. Reîmprospătați, confirmați unde se află și înregistrați din nou predarea.",
+    sourceChangedNoLocation:
+      "Acest obiect nu mai are o locație înregistrată. Reîmprospătați, confirmați unde se află și înregistrați din nou predarea.",
+    sourceChangedUnknown:
+      "Acest obiect a fost mutat de la încărcarea paginii. Reîmprospătați, confirmați unde se află și înregistrați din nou predarea.",
+    alreadyAtDestination: "Acest obiect se află deja la destinația selectată.",
+    destinationUnavailable:
+      "{location} nu este disponibilă pentru mutări. Alegeți altă destinație.",
+    destinationFull:
+      "{location} și-a atins capacitatea ({capacity}). Alegeți altă destinație.",
+    destinationBlocked:
+      "Destinația selectată nu poate primi acest obiect. Alegeți altă destinație.",
+    destinationRequired:
+      "Alegeți sau confirmați o destinație pentru acest obiect.",
+    externalCustody:
+      "Acest obiect este împrumutat. Înregistrați mai întâi returnarea împrumutului.",
+    assessmentRequired:
+      "Asociați o evaluare a stării acceptată pentru această predare.",
+    assessmentNotAccepted:
+      "Evaluarea stării selectată nu a fost încă acceptată.",
+    conditionEvidenceRequired:
+      "Adăugați note despre stare sau asociați o evaluare a stării acceptată.",
+    referenceNotFound:
+      "O înregistrare asociată nu mai este disponibilă. Reîmprospătați și încercați din nou.",
+    alreadyRecorded:
+      "Această predare a fost deja înregistrată. Reîmprospătați pentru a vedea starea actuală.",
+    outOfOrder:
+      "Acest pas nu este încă disponibil. Înregistrați mai întâi pașii anteriori ai predării.",
+    exhibitionOutcomeUnresolved:
+      "Înregistrați returnarea din expoziție sau o excepție autorizată înainte de a returna obiectul împrumutătorului.",
+    closureBlocked:
+      "Obiecte care așteaptă returnare sau o excepție autorizată: {count}.",
+    fallback:
+      "Acțiunea nu a putut fi finalizată. Reîmprospătați și încercați din nou.",
+  },
   conditionAssessments: {
     actorProfileUnavailable:
       "Responsabil înregistrat; profilul actual este indisponibil",

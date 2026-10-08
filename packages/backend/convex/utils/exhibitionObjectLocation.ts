@@ -1,6 +1,7 @@
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { custodyConflict } from "./custodyErrors";
 import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import {
   loadExhibitionMutationContext,
@@ -12,7 +13,7 @@ import {
   executeExhibitionMovement,
   requireAcceptedConditionAssessment,
 } from "./exhibitionPhysicalHandoff";
-import { assertCollectionNotOnLoan } from "./loanOccupancy";
+import { assertCollectionNotOnLoan, isCollectionOnLoan } from "./loanOccupancy";
 import {
   requireCollectionInOrganization,
   requireUsableLocation,
@@ -167,7 +168,10 @@ export async function installObjectHandler(
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "pending") {
-    throw new Error("Object is not in pending status");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Object is not in pending status",
+    );
   }
 
   const collection = await requireCollectionInOrganization(
@@ -175,18 +179,22 @@ export async function installObjectHandler(
     exhibitionObject.collectionId,
     exhibition.organizationId,
   );
-  await assertCollectionNotOnLoan(
-    ctx,
-    exhibitionObject.collectionId,
-    "Cannot install an object that is currently on loan",
-  );
+  if (await isCollectionOnLoan(ctx, exhibitionObject.collectionId)) {
+    throw custodyConflict(
+      "EXTERNAL_CUSTODY",
+      "Cannot install an object that is currently on loan",
+    );
+  }
 
   const destinationId =
     args.exhibitionLocationId ??
     exhibitionObject.exhibitionLocationId ??
     exhibition.locationId;
   if (!destinationId) {
-    throw new Error("Exhibition installation requires a destination location");
+    throw custodyConflict(
+      "DESTINATION_REQUIRED",
+      "Exhibition installation requires a destination location",
+    );
   }
   await requireUsableLocation(ctx, exhibition.organizationId, destinationId);
 
@@ -251,7 +259,12 @@ export async function deinstallObjectHandler(
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "installed") {
-    throw new Error("Object is not installed");
+    throw custodyConflict(
+      exhibitionObject.status === "pending"
+        ? "HANDOFF_OUT_OF_ORDER"
+        : "HANDOFF_ALREADY_RECORDED",
+      "Object is not installed",
+    );
   }
 
   const deinstallationConditionAssessmentId =
@@ -299,13 +312,21 @@ export async function returnObjectToOriginalLocationHandler(
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "deinstalled") {
-    throw new Error("Object must be deinstalled before physical return");
+    throw custodyConflict(
+      exhibitionObject.status === "returned"
+        ? "HANDOFF_ALREADY_RECORDED"
+        : "HANDOFF_OUT_OF_ORDER",
+      "Object must be deinstalled before physical return",
+    );
   }
 
   const returnLocation =
     args.overrideLocationId ?? exhibitionObject.originalLocationId;
   if (!returnLocation) {
-    throw new Error("Return requires a confirmed destination location");
+    throw custodyConflict(
+      "DESTINATION_REQUIRED",
+      "Return requires a confirmed destination location",
+    );
   }
   await requireUsableLocation(ctx, exhibition.organizationId, returnLocation);
 
@@ -378,10 +399,16 @@ export async function authorizeReturnExceptionHandler(
     exhibitionObject.status !== "installed" &&
     exhibitionObject.status !== "deinstalled"
   ) {
-    throw new Error("Return exceptions apply only after deinstallation begins");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Return exceptions apply only after deinstallation begins",
+    );
   }
   if (exhibitionObject.returnException) {
-    throw new Error("Return exception is already recorded");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Return exception is already recorded",
+    );
   }
 
   const reason = args.reason.trim();

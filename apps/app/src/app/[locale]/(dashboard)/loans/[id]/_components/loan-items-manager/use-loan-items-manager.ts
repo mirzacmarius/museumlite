@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useMemo, useState } from "react";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import {
   type SelectableObject,
   useObjectSearchSelection,
@@ -25,6 +26,7 @@ export function useLoanItemsManager({
   loanStatus,
 }: UseLoanItemsManagerOptions) {
   const tActions = useScopedI18n("loans.actions");
+  const custodyConflictMessage = useCustodyConflictMessage();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [selectedItemToReturn, setSelectedItemToReturn] =
@@ -145,9 +147,7 @@ export function useLoanItemsManager({
       setIsReturnDialogOpen(false);
       setSelectedItemToReturn(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : tActions("failedToReturnItem"),
-      );
+      setError(custodyConflictMessage(err, tActions("failedToReturnItem")));
     }
   };
 

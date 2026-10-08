@@ -13,6 +13,7 @@ import { useReducer, useState } from "react";
 import { AcceptedConditionAssessmentSelector } from "@/components/accepted-condition-assessment-selector";
 import { LocationSelector } from "@/components/location-selector";
 import { usePermissions } from "@/components/permission-gate";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -97,6 +98,7 @@ export function TransitPhysicalHandoffsPanel({
 
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const custodyConflictMessage = useCustodyConflictMessage();
 
   if (summary === undefined) {
     return (
@@ -119,7 +121,7 @@ export function TransitPhysicalHandoffsPanel({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("actionFailed"));
+      setError(custodyConflictMessage(cause));
     } finally {
       setBusyItemId(null);
     }

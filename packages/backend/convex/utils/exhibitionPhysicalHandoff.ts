@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { custodyConflict } from "./custodyErrors";
 import { moveCollectionToLocation } from "./locationIntegrity";
 
 export async function requireAcceptedConditionAssessment(
@@ -10,15 +11,24 @@ export async function requireAcceptedConditionAssessment(
 ): Promise<Id<"conditionAssessments"> | undefined> {
   if (assessmentId === undefined) {
     if (required)
-      throw new Error("Link an accepted condition assessment for this handoff");
+      throw custodyConflict(
+        "ASSESSMENT_REQUIRED",
+        "Link an accepted condition assessment for this handoff",
+      );
     return undefined;
   }
   const assessment = await ctx.db.get(assessmentId);
   if (!assessment || assessment.collectionId !== collectionId) {
-    throw new Error("Condition assessment not found for this object");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Condition assessment not found for this object",
+    );
   }
   if (assessment.status !== "accepted") {
-    throw new Error("Link an accepted condition assessment");
+    throw custodyConflict(
+      "ASSESSMENT_NOT_ACCEPTED",
+      "Link an accepted condition assessment",
+    );
   }
   return assessmentId;
 }
@@ -49,7 +59,10 @@ export async function executeExhibitionMovement(
     },
   );
   if (!movementId) {
-    throw new Error("Exhibition handoff requires a location change");
+    throw custodyConflict(
+      "ALREADY_AT_DESTINATION",
+      "Exhibition handoff requires a location change",
+    );
   }
   return movementId;
 }

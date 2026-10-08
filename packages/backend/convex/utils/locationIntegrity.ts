@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { type CustodyConflictCode, custodyConflict } from "./custodyErrors";
 import { isLoanItemDispatched, isLoanItemReturned } from "./loanItemState";
 import type { MovementIssue, MovementKind } from "./movementValidators";
 
@@ -11,7 +12,10 @@ export async function requireUsableLocation(
 ): Promise<Doc<"locations">> {
   const location = await ctx.db.get(locationId);
   if (!location || location.organizationId !== organizationId) {
-    throw new Error("Location not found in this organization");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Location not found in this organization",
+    );
   }
   if (
     !location.isActive ||
@@ -19,7 +23,11 @@ export async function requireUsableLocation(
       location.status !== "active" &&
       !(options?.allowRestricted && location.status === "restricted"))
   ) {
-    throw new Error(`Location ${location.name} is unavailable for moves`);
+    throw custodyConflict(
+      "DESTINATION_UNAVAILABLE",
+      `Location ${location.name} is unavailable for moves`,
+      { locationName: location.name },
+    );
   }
   return location;
 }
@@ -195,6 +203,57 @@ export async function assessCollectionMovement(
   return { issues, toLocation };
 }
 
+/** Null when there is no recorded location; omitted when it is not visible. */
+export function visibleLocationName(
+  location: Doc<"locations"> | null,
+  organizationId: Id<"organizations">,
+): string | null | undefined {
+  if (!location) return null;
+  return location.organizationId === organizationId ? location.name : undefined;
+}
+
+const MOVEMENT_ISSUE_CODES: Record<MovementIssue["type"], CustodyConflictCode> =
+  {
+    location_missing: "REFERENCE_NOT_FOUND",
+    status_closed: "DESTINATION_UNAVAILABLE",
+    status_renovation: "DESTINATION_UNAVAILABLE",
+    status_restricted: "DESTINATION_UNAVAILABLE",
+    capacity_exceeded: "DESTINATION_FULL",
+    source_changed: "SOURCE_CHANGED",
+    external_custody: "EXTERNAL_CUSTODY",
+    already_at_destination: "ALREADY_AT_DESTINATION",
+  };
+
+async function movementIssueConflict(
+  ctx: QueryCtx,
+  issue: MovementIssue,
+  collection: Doc<"collections">,
+  toLocation: Doc<"locations"> | null,
+) {
+  const code = MOVEMENT_ISSUE_CODES[issue.type];
+  if (code === "SOURCE_CHANGED") {
+    const current = collection.currentLocationId
+      ? await ctx.db.get(collection.currentLocationId)
+      : null;
+    return custodyConflict(code, issue.message, {
+      currentLocationName: visibleLocationName(
+        current,
+        collection.organizationId,
+      ),
+    });
+  }
+  if (
+    code === "REFERENCE_NOT_FOUND" ||
+    code === "EXTERNAL_CUSTODY" ||
+    !toLocation
+  )
+    return custodyConflict(code, issue.message);
+  return custodyConflict(code, issue.message, {
+    locationName: toLocation.name,
+    capacity: code === "DESTINATION_FULL" ? toLocation.capacity : undefined,
+  });
+}
+
 /**
  * The single accountable movement command: records actor, observed source,
  * destination, time, reason and authorizing case in the same transaction as
@@ -219,7 +278,7 @@ export async function moveCollectionToLocation(
       options.expectedFromLocationId === undefined &&
       collection.currentLocationId === toLocationId;
     if (isUnobservedNoOp) return null;
-    const { issues } = await assessCollectionMovement(
+    const { issues, toLocation } = await assessCollectionMovement(
       ctx,
       collection,
       toLocationId,
@@ -229,7 +288,8 @@ export async function moveCollectionToLocation(
       },
     );
     const [blocking] = issues;
-    if (blocking) throw new Error(blocking.message);
+    if (blocking)
+      throw await movementIssueConflict(ctx, blocking, collection, toLocation);
   } else {
     await requireUsableLocation(ctx, collection.organizationId, toLocationId);
   }
@@ -303,7 +363,10 @@ export async function requireCollectionInOrganization(
 ): Promise<Doc<"collections">> {
   const collection = await ctx.db.get(collectionId);
   if (!collection || collection.organizationId !== organizationId)
-    throw new Error("Collection not found in this organization");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Collection not found in this organization",
+    );
   return collection;
 }
 

@@ -1,4 +1,40 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Dette objektet er nå på {location}. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",
+    sourceChangedNoLocation:
+      "Dette objektet har ikke lenger en registrert plassering. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",
+    sourceChangedUnknown:
+      "Dette objektet er flyttet siden siden ble lastet. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",
+    alreadyAtDestination: "Dette objektet er allerede på valgt destinasjon.",
+    destinationUnavailable:
+      "{location} er ikke tilgjengelig for flyttinger. Velg en annen destinasjon.",
+    destinationFull:
+      "{location} har nådd kapasiteten ({capacity}). Velg en annen destinasjon.",
+    destinationBlocked:
+      "Valgt destinasjon kan ikke ta imot dette objektet. Velg en annen destinasjon.",
+    destinationRequired:
+      "Velg eller bekreft en destinasjon for dette objektet.",
+    externalCustody:
+      "Dette objektet er utlånt. Registrer først at lånet er returnert.",
+    assessmentRequired:
+      "Koble en godkjent tilstandsvurdering til denne overleveringen.",
+    assessmentNotAccepted:
+      "Den valgte tilstandsvurderingen er ikke godkjent ennå.",
+    conditionEvidenceRequired:
+      "Legg til tilstandsnotater eller koble en godkjent tilstandsvurdering.",
+    referenceNotFound:
+      "En koblet post er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+    alreadyRecorded:
+      "Denne overleveringen er allerede registrert. Oppdater for å se siste status.",
+    outOfOrder:
+      "Dette trinnet er ikke tilgjengelig ennå. Registrer de tidligere overleveringstrinnene først.",
+    exhibitionOutcomeUnresolved:
+      "Registrer utstillingsreturen eller et godkjent unntak før objektet returneres til utlåner.",
+    closureBlocked:
+      "Objekter som venter på retur eller godkjent unntak: {count}.",
+    fallback: "Handlingen kunne ikke fullføres. Oppdater og prøv igjen.",
+  },
   conditionAssessments: {
     actorProfileUnavailable:
       "Registrert aktør; nåværende profil er utilgjengelig",

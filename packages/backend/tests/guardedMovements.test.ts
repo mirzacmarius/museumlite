@@ -7,6 +7,7 @@ import {
   createConvexTest,
   createOrgUserCollectionWithPermissions,
   createOrgUserWithPermissions,
+  custodyConflictOf,
 } from "./testHarness";
 
 const MOVER_PERMISSIONS = [
@@ -159,13 +160,15 @@ describe("direct movement command", () => {
   test("refuses a stale observed source without changing location or history", async () => {
     const f = await setupMovementFixture();
 
-    await expect(
-      f.user.mutation(api.locations.moveObject, {
-        collectionId: f.collectionId,
-        toLocationId: f.galleryId,
-        expectedFromLocationId: f.studioId,
-      }),
-    ).rejects.toThrow("not the source observed");
+    expect(
+      await custodyConflictOf(
+        f.user.mutation(api.locations.moveObject, {
+          collectionId: f.collectionId,
+          toLocationId: f.galleryId,
+          expectedFromLocationId: f.studioId,
+        }),
+      ),
+    ).toMatchObject({ code: "SOURCE_CHANGED" });
 
     const collection = await f.user.query(api.collections.get, {
       collectionId: f.collectionId,
@@ -187,12 +190,14 @@ describe("direct movement command", () => {
       f.userId,
     );
 
-    await expect(
-      f.user.mutation(api.locations.moveObject, {
-        collectionId: f.collectionId,
-        toLocationId: f.galleryId,
-      }),
-    ).rejects.toThrow("out on loan");
+    expect(
+      await custodyConflictOf(
+        f.user.mutation(api.locations.moveObject, {
+          collectionId: f.collectionId,
+          toLocationId: f.galleryId,
+        }),
+      ),
+    ).toMatchObject({ code: "EXTERNAL_CUSTODY" });
     expect(
       await f.user.query(api.locations.checkMoveAllowed, {
         collectionId: f.collectionId,

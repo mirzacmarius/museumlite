@@ -4,6 +4,7 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { readWorkflowHistoryPage } from "../auditLog";
 import { appendCaseHistory } from "./caseHistory";
+import { custodyConflict } from "./custodyErrors";
 import { requireExhibitionAccess } from "./exhibitionAccess";
 import {
   requireExhibitionReadPermission,
@@ -418,8 +419,10 @@ export async function closeExhibitionHandler(
   }
 
   if (outstandingObjects.length > 0) {
-    throw new Error(
+    throw custodyConflict(
+      "CLOSURE_BLOCKED",
       `Cannot close: ${outstandingObjects.length} object(s) have outstanding returns or exceptions`,
+      { outstandingCount: outstandingObjects.length },
     );
   }
 

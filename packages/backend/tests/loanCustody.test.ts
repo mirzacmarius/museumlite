@@ -5,6 +5,7 @@ import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
+  custodyConflictOf,
 } from "./testHarness";
 
 async function setupLoanScenario(
@@ -113,16 +114,18 @@ test("outgoing return requires destination and restores location", async () => {
 
   await authed.mutation(api.loans.dispatch, { loanId });
 
-  await expect(
-    authed.mutation(api.loans.returnLoan, { loanId }),
-  ).rejects.toThrow("Return condition evidence is required");
+  expect(
+    await custodyConflictOf(authed.mutation(api.loans.returnLoan, { loanId })),
+  ).toMatchObject({ code: "CONDITION_EVIDENCE_REQUIRED" });
 
-  await expect(
-    authed.mutation(api.loans.returnLoan, {
-      loanId,
-      conditionIn: "Stable on return",
-    }),
-  ).rejects.toThrow("Return destination is required");
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.loans.returnLoan, {
+        loanId,
+        conditionIn: "Stable on return",
+      }),
+    ),
+  ).toMatchObject({ code: "DESTINATION_REQUIRED" });
 
   await authed.mutation(api.loans.returnLoan, {
     loanId,
