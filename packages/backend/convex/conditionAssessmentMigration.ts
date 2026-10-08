@@ -1,7 +1,24 @@
 import { v } from "convex/values";
 import { internalMutation } from "./utils/mutationBuilders";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
-import { COLLECTION_MANAGER_ROLE_NAME } from "./utils/systemRoles";
+import {
+  ADMIN_ROLE_NAME,
+  COLLECTION_MANAGER_ROLE_NAME,
+  CURATOR_ROLE_NAME,
+  SYSTEM_ROLE_DEFINITIONS,
+} from "./utils/systemRoles";
+
+// Current and legacy names (e.g. "registrar") of the roles that review condition.
+const REVIEWER_ROLE_NAMES = new Set([
+  SUPER_ADMIN_ROLE_NAME,
+  ...SYSTEM_ROLE_DEFINITIONS.flatMap((definition) =>
+    [ADMIN_ROLE_NAME, CURATOR_ROLE_NAME, COLLECTION_MANAGER_ROLE_NAME].includes(
+      definition.name,
+    )
+      ? definition.recognizedNames
+      : [],
+  ),
+]);
 
 export const grantReviewPermission = internalMutation({
   args: { organizationId: v.id("organizations") },
@@ -10,11 +27,13 @@ export const grantReviewPermission = internalMutation({
     const organization = await ctx.db.get(args.organizationId);
     if (!organization) throw new Error("Organization not found");
     const name = "collections.accept_condition";
-    const existing = await ctx.db
+    const collectionPermissions = await ctx.db
       .query("permissions")
       .withIndex("by_category", (q) => q.eq("category", "collections"))
-      .filter((q) => q.eq(q.field("name"), name))
-      .first();
+      .take(100);
+    const existing = collectionPermissions.find(
+      (permission) => permission.name === name,
+    );
     const permissionId =
       existing?._id ??
       (await ctx.db.insert("permissions", {
@@ -32,14 +51,8 @@ export const grantReviewPermission = internalMutation({
       throw new Error(
         "Too many roles; migrate this organization in smaller batches",
       );
-    const privilegedRoleNames = new Set([
-      SUPER_ADMIN_ROLE_NAME,
-      "admin",
-      "curator",
-      COLLECTION_MANAGER_ROLE_NAME,
-    ]);
     for (const role of roles) {
-      if (!role.isSystemRole || !privilegedRoleNames.has(role.name)) continue;
+      if (!role.isSystemRole || !REVIEWER_ROLE_NAMES.has(role.name)) continue;
       const grants = await ctx.db
         .query("rolePermissions")
         .withIndex("by_role", (q) => q.eq("roleId", role._id))
