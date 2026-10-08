@@ -55,6 +55,10 @@ export function ExportJobControl({
   const token = useAuthToken();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [pendingRequest, setPendingRequest] = useState<{
+    scope: string;
+    requestKey: string;
+  }>();
   const [format, setFormat] = useState<"csv" | "jsonl">("csv");
   const [selectionRequest, setSelectionRequest] = useState<{
     jobId: Id<"exportJobs">;
@@ -84,16 +88,26 @@ export function ExportJobControl({
     setSelectionRequest(undefined);
   }
   async function request() {
+    const selectedCount =
+      source.kind === "objects" && source.mode === "selected"
+        ? selectedIds?.length
+        : undefined;
+    const scope = JSON.stringify({ source, format, selectedCount });
+    // A lost response must retry with the same key so the server returns the
+    // existing job instead of charging a second export.
+    const requestKey =
+      pendingRequest?.scope === scope
+        ? pendingRequest.requestKey
+        : crypto.randomUUID();
+    setPendingRequest({ scope, requestKey });
     const jobId = await create({
       organizationId,
       source,
       format,
-      selectedCount:
-        source.kind === "objects" && source.mode === "selected"
-          ? selectedIds?.length
-          : undefined,
-      requestKey: crypto.randomUUID(),
+      selectedCount,
+      requestKey,
     });
+    setPendingRequest(undefined);
     if (source.kind === "objects" && source.mode === "selected") {
       const pending = { jobId, ids: [...(selectedIds ?? [])] };
       setSelectionRequest(pending);
