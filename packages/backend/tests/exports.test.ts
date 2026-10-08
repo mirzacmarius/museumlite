@@ -1,3 +1,4 @@
+import type { FunctionArgs } from "convex/server";
 import { convexTest } from "convex-test";
 import { describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
@@ -791,6 +792,219 @@ describe("authorized durable exports", () => {
         ).trim(),
       ).title,
     ).toBe("Borrowed");
+    vi.useRealTimers();
+  });
+});
+
+describe("export tenant isolation", () => {
+  async function tenantFixture() {
+    const f = await fixture("enterprise", ["organization.view_analytics"]);
+    const foreign = await f.t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Other museum",
+        slug: "other-exports",
+        type: "museum",
+        subscriptionTier: "enterprise",
+      });
+      const userId = await ctx.db.insert("users", {
+        email: "outsider@example.test",
+      });
+      const locationId = await ctx.db.insert("locations", {
+        organizationId,
+        name: "Foreign store",
+        type: "room",
+        sortOrder: 0,
+        isActive: true,
+      });
+      const collectionGroupId = await ctx.db.insert("collectionGroups", {
+        organizationId,
+        name: "Foreign group",
+        createdAt: 1,
+        createdBy: userId,
+      });
+      const objectId = await ctx.db.insert("collections", {
+        organizationId,
+        title: "Foreign object",
+        accessionNumber: "F-1",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: 1,
+      });
+      return {
+        organizationId,
+        userId,
+        locationId,
+        collectionGroupId,
+        objectId,
+      };
+    });
+    const ownIds = await f.t.run(async (ctx) =>
+      Promise.all(
+        Array.from({ length: 3 }, (_, i) =>
+          ctx.db.insert("collections", {
+            organizationId: f.organizationId,
+            title: `Own ${i}`,
+            accessionNumber: `O-${i}`,
+            status: "active",
+            catalogedBy: f.userId,
+            catalogedAt: 1,
+          }),
+        ),
+      ),
+    );
+    const missingId = await f.t.run(async (ctx) => {
+      const id = await ctx.db.insert("collections", {
+        organizationId: f.organizationId,
+        title: "Deleted",
+        accessionNumber: "D-1",
+        status: "active",
+        catalogedBy: f.userId,
+        catalogedAt: 1,
+      });
+      await ctx.db.delete(id);
+      return id;
+    });
+    vi.advanceTimersByTime(100);
+    return { f, foreign, ownIds, missingId };
+  }
+
+  test("selection uploads reject foreign or missing objects in any position without recording any of the batch", async () => {
+    vi.useFakeTimers();
+    const { f, foreign, ownIds, missingId } = await tenantFixture();
+    const [first, second, third] = ownIds as [
+      (typeof ownIds)[number],
+      (typeof ownIds)[number],
+      (typeof ownIds)[number],
+    ];
+    const jobId = await f.user.mutation(api.exports.create, {
+      organizationId: f.organizationId,
+      requestKey: "tenant-selection",
+      format: "jsonl",
+      selectedCount: 3,
+      source: { kind: "objects", mode: "selected", filters: {} },
+    });
+    for (const objectIds of [
+      [foreign.objectId, first, second],
+      [first, foreign.objectId, second],
+      [first, second, foreign.objectId],
+      [first, missingId, foreign.objectId],
+      [missingId, first, second],
+    ])
+      await expect(
+        f.user.mutation(api.exports.appendSelection, { jobId, objectIds }),
+      ).rejects.toThrow("Object outside export scope");
+    expect((await f.user.query(api.exports.status, { jobId })).selected).toBe(
+      0,
+    );
+    await f.user.mutation(api.exports.appendSelection, {
+      jobId,
+      objectIds: [first, second, third],
+    });
+    await f.user.mutation(api.exports.start, { jobId });
+    await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+    const artifact = await (
+      await f.user.fetch(`/exports/download?jobId=${jobId}`)
+    ).text();
+    expect(artifact).not.toContain("Foreign object");
+    expect(artifact.trim().split("\n")).toHaveLength(3);
+    vi.useRealTimers();
+  });
+
+  test("filters naming another organization's locations, groups or objects are refused", async () => {
+    vi.useFakeTimers();
+    const { f, foreign } = await tenantFixture();
+    const create = (
+      requestKey: string,
+      source: FunctionArgs<typeof api.exports.create>["source"],
+    ) =>
+      f.user.mutation(api.exports.create, {
+        organizationId: f.organizationId,
+        requestKey,
+        format: "csv",
+        source,
+      });
+    await expect(
+      create("foreign-location", {
+        kind: "objects",
+        mode: "filtered",
+        filters: { locationIds: [foreign.locationId] },
+      }),
+    ).rejects.toThrow("Filter outside organization");
+    await expect(
+      create("foreign-group", {
+        kind: "objects",
+        mode: "filtered",
+        filters: { collectionGroupId: foreign.collectionGroupId },
+      }),
+    ).rejects.toThrow("Filter outside organization");
+    await expect(
+      create("foreign-object", {
+        kind: "audit",
+        filters: { objectId: foreign.objectId },
+      }),
+    ).rejects.toThrow("Filter outside organization");
+    expect(
+      await f.user.query(api.exports.list, {
+        organizationId: f.organizationId,
+      }),
+    ).toEqual([]);
+    vi.useRealTimers();
+  });
+
+  test("non-members and members without catalog read access cannot create or list exports", async () => {
+    vi.useFakeTimers();
+    const { f, foreign } = await tenantFixture();
+    const args = {
+      organizationId: f.organizationId,
+      requestKey: "tenant-role",
+      format: "csv" as const,
+      source: {
+        kind: "objects" as const,
+        mode: "filtered" as const,
+        filters: {},
+      },
+    };
+    const outsider = f.t.withIdentity({ subject: `${foreign.userId}|test` });
+    await expect(outsider.mutation(api.exports.create, args)).rejects.toThrow();
+    await expect(
+      outsider.query(api.exports.list, { organizationId: f.organizationId }),
+    ).rejects.toThrow();
+    const jobId = await f.user.mutation(api.exports.create, args);
+    await expect(outsider.query(api.exports.status, { jobId })).rejects.toThrow(
+      "Export unavailable",
+    );
+    const viewer = await f.t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", {
+        email: "viewer@example.test",
+      });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId: f.organizationId,
+        name: "Loans only",
+        isSystemRole: false,
+      });
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "loans.read",
+        category: "loans",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId: f.organizationId,
+        roleId,
+        joinedAt: 1,
+      });
+      return userId;
+    });
+    const wrongRole = f.t.withIdentity({ subject: `${viewer}|test` });
+    await expect(
+      wrongRole.mutation(api.exports.create, { ...args, requestKey: "viewer" }),
+    ).rejects.toThrow("Permission denied: collections.read");
+    await expect(
+      wrongRole.query(api.exports.list, { organizationId: f.organizationId }),
+    ).rejects.toThrow("Permission denied: collections.read");
+    await expect(
+      wrongRole.query(api.exports.status, { jobId }),
+    ).rejects.toThrow("Export unavailable");
     vi.useRealTimers();
   });
 });
