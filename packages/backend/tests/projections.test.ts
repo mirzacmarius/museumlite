@@ -611,8 +611,11 @@ describe("reconciliation", () => {
     });
     expect(
       discrepancies
-        .filter((row) => row.sourceTable === "collections")
-        .map((row) => [row.category, row.sourceId])
+        .flatMap((row) =>
+          row.sourceTable === "collections"
+            ? [[row.category, row.sourceId]]
+            : [],
+        )
         .sort(),
     ).toEqual(
       [

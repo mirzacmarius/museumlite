@@ -644,9 +644,9 @@ async function scanRow(
   stats.writes += result.writes;
   if (generation.mode !== "reconcile") return;
   for (const metric of new Set(
-    result.facts
-      .filter((fact) => fact.metric.startsWith("quality."))
-      .map((fact) => fact.metric),
+    result.facts.flatMap((fact) =>
+      fact.metric.startsWith("quality.") ? [fact.metric] : [],
+    ),
   )) {
     await recordDiscrepancy(ctx, generation, stats, {
       category: "source_quality",

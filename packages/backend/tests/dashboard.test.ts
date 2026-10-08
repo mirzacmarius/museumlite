@@ -479,12 +479,12 @@ describe("Dashboard: getAnalytics", () => {
     });
     expect(
       board
-        .filter(
-          (request) =>
-            request.direction === "outgoing" &&
-            request.status === "pending_source_approval",
+        .flatMap((request) =>
+          request.direction === "outgoing" &&
+          request.status === "pending_source_approval"
+            ? [request.reason]
+            : [],
         )
-        .map((request) => request.reason)
         .sort(),
     ).toEqual(["Canonical source approval", "Pending transfer"]);
     expect(analytics.transfers.executed).toBe(1);

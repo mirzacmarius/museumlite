@@ -72,8 +72,10 @@ async function auditBreakdown(
   return {
     complete,
     entries: rows
-      .map((row, index) => ({ id: row.id, count: counts[index] ?? 0 }))
-      .filter((entry) => entry.count > 0)
+      .flatMap((row, index) => {
+        const count = counts[index] ?? 0;
+        return count > 0 ? [{ id: row.id, count }] : [];
+      })
       .sort((a, b) => b.count - a.count)
       .slice(0, 10),
   };

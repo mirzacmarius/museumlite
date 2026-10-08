@@ -300,9 +300,8 @@ export async function replaceContribution(
   totalsDeltas(sourceTable, previousFacts, -1, deltas);
   totalsDeltas(sourceTable, facts, 1, deltas);
   for (const [key, delta] of deltas) {
-    const separator = key.indexOf("\u0000");
-    const partition = key.slice(0, separator);
-    const scope = key.slice(separator + 1);
+    const [partition = "", ...scopeParts] = key.split("\u0000");
+    const scope = scopeParts.join("\u0000");
     if (Object.values(delta).every((value) => value === 0)) continue;
     writes += await applyTotalsDelta(ctx, generation, scope, partition, delta);
   }

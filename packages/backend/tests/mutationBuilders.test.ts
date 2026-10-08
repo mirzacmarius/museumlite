@@ -23,27 +23,25 @@ function rawMutationImports(source: string) {
     /import\s*\{([^}]*)\}\s*from\s*"[^"]*_generated\/server"/g,
   );
   return [...imports].flatMap((match) =>
-    (match[1] ?? "")
-      .split(",")
-      .map((name) => name.trim())
-      .filter((name) => /^(mutation|internalMutation)\b/.test(name)),
+    (match[1] ?? "").split(",").flatMap((part) => {
+      const name = part.trim();
+      return /^(mutation|internalMutation)\b/.test(name) ? [name] : [];
+    }),
   );
 }
 
 describe("projection writer coverage", () => {
   test("production mutations register through the projection-triggered builders", () => {
-    const offenders = productionSources(convexRoot)
-      .map((path) => relative(convexRoot, path))
-      .filter((path) => path !== builderModule)
-      .filter((path) => {
-        const names = rawMutationImports(
-          readFileSync(join(convexRoot, path), "utf8"),
-        );
-        if (path === authFactoryModule) {
-          return names.some((name) => name !== "mutation as rawMutation");
-        }
-        return names.length > 0;
-      });
+    const offenders = productionSources(convexRoot).flatMap((absolute) => {
+      const path = relative(convexRoot, absolute);
+      if (path === builderModule) return [];
+      const names = rawMutationImports(readFileSync(absolute, "utf8"));
+      const offending =
+        path === authFactoryModule
+          ? names.some((name) => name !== "mutation as rawMutation")
+          : names.length > 0;
+      return offending ? [path] : [];
+    });
 
     expect(offenders).toEqual([]);
   });

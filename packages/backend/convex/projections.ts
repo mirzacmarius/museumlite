@@ -184,9 +184,9 @@ export const getHealth = query({
           return summary;
         }),
       ),
-      sourceQuality: Object.entries(quality)
-        .filter(([metric]) => metric.startsWith("quality."))
-        .map(([metric, count]) => ({ metric, count })),
+      sourceQuality: Object.entries(quality).flatMap(([metric, count]) =>
+        metric.startsWith("quality.") ? [{ metric, count }] : [],
+      ),
       steps: [...PROJECTION_STEPS],
       limits: {
         pageSize: PROJECTION_PAGE_SIZE,

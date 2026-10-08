@@ -8,6 +8,7 @@ import type { ProjectionUnavailableReason } from "@/lib/projection-availability"
 import { useScopedI18n } from "@/locales/client";
 
 export const METRICS_HEALTH_PATH = "/settings/metrics";
+const EMPTY_VALUE = "\u2014";
 
 type Translate = ReturnType<typeof useScopedI18n<"projectionHealth">>;
 
@@ -100,7 +101,9 @@ export function UnavailableKpiCard({ title }: { title: string }) {
         <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           {title}
         </div>
-        <div className="text-lg font-semibold text-foreground">—</div>
+        <div className="text-lg font-semibold text-foreground">
+          {EMPTY_VALUE}
+        </div>
         <div className="text-xs text-muted-foreground">
           {t("unavailable.short")} · <RecoveryGuidance t={t} />
         </div>
