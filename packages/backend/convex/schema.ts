@@ -2806,7 +2806,8 @@ export default defineSchema({
     caseType: v.string(),
     entityId: v.string(),
     sourceLength: v.number(),
-    migratedThrough: v.number(),
+    // Retired legacy-copy progress; kept optional so existing rows validate.
+    migratedThrough: v.optional(v.number()),
     nextOrdinal: v.number(),
     cutoverAt: v.number(),
   })

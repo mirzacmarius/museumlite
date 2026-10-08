@@ -192,7 +192,7 @@ test("recorded actor and subject evidence survives renames and corrections appen
   expect(deletedSubjects?.subjectSnapshot?.label).toBe("Stable condition");
 });
 
-test("case history preserves legacy order during bounded normalization and cursor retries", async () => {
+test("case history pages legacy approvals in order with stable cursor retries", async () => {
   const { t, staff, organizationId, userId } = await setup();
   const entityId = await t.run(async (ctx) =>
     ctx.db.insert("accessions", {
@@ -216,12 +216,6 @@ test("case history preserves legacy order during bounded normalization and curso
     entityId,
     limit: 100,
   });
-  const migration = await staff.mutation(api.auditLog.normalizeCaseHistory, {
-    organizationId,
-    caseType: "accession",
-    entityId,
-  });
-  expect(migration.migratedThrough).toBe(100);
   expect(
     await staff.query(api.auditLog.listCaseHistory, {
       organizationId,
@@ -248,29 +242,6 @@ test("case history preserves legacy order during bounded normalization and curso
   expect(last.entries.map((row) => row.entry.step)).toEqual([
     200, 201, 202, 203, 204,
   ]);
-  await staff.mutation(api.auditLog.normalizeCaseHistory, {
-    organizationId,
-    caseType: "accession",
-    entityId,
-  });
-  expect(
-    (
-      await staff.mutation(api.auditLog.normalizeCaseHistory, {
-        organizationId,
-        caseType: "accession",
-        entityId,
-      })
-    ).isDone,
-  ).toBe(true);
-  expect(
-    (
-      await staff.mutation(api.auditLog.normalizeCaseHistory, {
-        organizationId,
-        caseType: "accession",
-        entityId,
-      })
-    ).migratedThrough,
-  ).toBe(205);
 });
 
 test("new case approvals append child evidence and remain in the public case timeline", async () => {
@@ -300,15 +271,6 @@ test("new case approvals append child evidence and remain in the public case tim
     "Created",
     "Rejected: Not ready",
   ]);
-  expect(
-    (
-      await staff.mutation(api.auditLog.normalizeCaseHistory, {
-        organizationId,
-        caseType: "exhibition",
-        entityId: exhibitionId,
-      })
-    ).sourceLength,
-  ).toBe(1);
   await t.run(async (ctx) => {
     await ctx.db.patch(userId, { name: "Changed" });
   });
@@ -486,7 +448,7 @@ test("native audit cursors preserve tied timestamp order without repeating event
   expect(new Set(seen).size).toBe(155);
 });
 
-test("public workflow history retrieves every approval across partial migration and cutover without duplicated legacy entries", async () => {
+test("public workflow history retrieves every legacy and post-cutover approval without duplicates", async () => {
   const { t, staff, organizationId, userId } = await setup();
   const exhibitionId = await t.run(async (ctx) =>
     ctx.db.insert("exhibitions", {
@@ -525,22 +487,6 @@ test("public workflow history retrieves every approval across partial migration 
     ...Array.from({ length: 1105 }, (_, i) => `Approval ${i}`),
     "Rejected: Recorded after cutover",
   ];
-  expect(await readAll()).toEqual(expected);
-  await staff.mutation(api.auditLog.normalizeCaseHistory, {
-    organizationId,
-    caseType: "exhibition",
-    entityId: exhibitionId,
-  });
-  expect(await readAll()).toEqual(expected);
-  let isDone = false;
-  while (!isDone) {
-    const result = await staff.mutation(api.auditLog.normalizeCaseHistory, {
-      organizationId,
-      caseType: "exhibition",
-      entityId: exhibitionId,
-    });
-    isDone = result.isDone;
-  }
   expect(await readAll()).toEqual(expected);
   await expect(
     t.query(api.exhibitions.getWorkflowHistory, { exhibitionId }),

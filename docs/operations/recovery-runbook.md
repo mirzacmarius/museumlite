@@ -41,7 +41,7 @@ Run these against the target (`bunx convex run --env-file <target.env> ...`).
 | Projection jobs | `--inline-query 'return await ctx.db.query("projectionGenerations").collect()'` | No `status: "failed"`; the latest reconcile has `discrepancyCount: 0`, `mismatchCount: 0` |
 | Discrepancy rows | `--inline-query 'return await ctx.db.query("projectionDiscrepancies").collect()'` | Empty for the latest reconcile, or only `legacy_counter_mismatch` (evidence only) |
 | Health through the public API | `projections:getHealth '{"organizationId":"<org>"}' --identity '<admin identity>'` | `availability: "ready"`, `lastReconciliation.status: "completed"` |
-| Case history normalization | `--inline-query 'return await ctx.db.query("caseHistoryState").collect()'` | `migratedThrough === sourceLength` for each normalized case |
+| Case history | `auditLog:listCaseHistory '{"organizationId":"<org>","caseType":"<type>","entityId":"<id>"}' --identity '<reader identity>'` | Pages legacy approvals, then post-cutover approvals, without gaps or duplicates |
 | UI | Settings > Metrics health (`/settings/metrics`, needs `organization.manage_settings`) | Ready, last reconciliation without blocking discrepancies |
 
 Calling `getHealth` without an identity must fail with `Permission denied`.
@@ -56,10 +56,7 @@ The schema change is additive. Existing documents are not rewritten. Pre-Batch 4
    - It walks organizations 20 at a time, in pages of 25 rows, and skips organizations that are already ready or building.
    - Rerunning it is safe. The second run returned `0`.
    - To force a fresh rebuild for one organization, run `projections:startRebuildForOrganization '{"organizationId":"<org>"}'`. The previous generation becomes `superseded`.
-4. **Normalize legacy case history** for each case that has a legacy `workflowHistory` array: `auditLog:normalizeCaseHistory '{"organizationId":"<org>","caseType":"accession","entityId":"<id>"}'`.
-   - Run it with an identity that has `organization.manage_settings`.
-   - Each call copies at most 100 entries. Repeat until `isDone: true`.
-   - Repeating after completion is a no-op. Original arrays are kept, and readers work before, during and after normalization.
+4. **Legacy case history needs no migration.** Original `workflowHistory` arrays stay the source for ordinals below their cutover length (`caseHistoryState.sourceLength`). Approvals recorded after cutover are appended to `caseHistoryEntries` from that ordinal on. Readers page the array first, then the child rows. Nothing is copied, so there is no duplicate legacy data.
 5. **Reconcile:** `projections:startReconcileForOrganization '{"organizationId":"<org>"}'`. A `counter_mismatch` or `contribution_mismatch` blocks sign-off. Reconcile never repairs data.
 6. **Verify additivity** (optional, on a rehearsal copy). Export before and after, then run `compare before.zip after.zip`. Every pre-migration document must remain unchanged.
 
@@ -116,7 +113,6 @@ Code: integration `219ab8b8` plus the schema fix `36b53f71`. Pre-Batch 4 baselin
 | Offline compare | 0.14 s |
 | Projection rebuild, 35–39 source rows, max 25 rows per page | 0.37–0.47 s job, about 1.8 s wall including polling |
 | Reconcile, 147–161 rows | 0.45–0.50 s job, about 1.8 s wall |
-| Case history normalization, 250 entries | 3 calls of about 0.25 s (100 / 200 / 250) |
 | End-to-end restore (fresh target to reconciled) | about 15 s |
 
 Outcomes:
@@ -143,8 +139,6 @@ Outcomes:
   - in-flight rebuild continuations, export jobs and scheduled reports do not resume, so rerun them;
   - sign-in on the restored target was not tested.
 - Previously distributed file URLs point at the old deployment. Restored storage IDs are preserved, but URLs are not.
-- `normalizeCaseHistory`:
-  - runs per case only; there is no bulk driver;
-  - it is subject to plan feature gates. On a `free` tier organization, exhibition, loan and conservation cases are refused (`Feature requires pro tier`), so their legacy history stays in the original arrays. Readers still show it.
+- The rehearsal also ran a per-case legacy-history copy (`normalizeCaseHistory`). That mutation was removed afterwards because readers never used the copied rows. Copies made during a rehearsal are inert; leave them in place.
 - The `metrics` aggregate keeps B-tree nodes of superseded generations. Nodes grew from 10 to 20 after a second rebuild, and to 33 on the source after three generations. This does not affect correctness, but storage grows with every rebuild until a cleanup is built.
 - The rehearsal checked behavior through the CLI and the public Convex API, not through the browser.
