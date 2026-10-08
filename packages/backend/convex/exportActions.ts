@@ -72,7 +72,9 @@ export const process = internalAction({
             `An export page exceeds ${MAX_CHUNK_BYTES / 1024} KiB. Reduce selection or shorten oversized record fields.`,
           );
         const storageId = bytes.length
-          ? await ctx.storage.store(new Blob([bytes]))
+          ? await ctx.storage.store(
+              new Blob([bytes], { type: "application/octet-stream" }),
+            )
           : undefined;
         let committed = false;
         try {
