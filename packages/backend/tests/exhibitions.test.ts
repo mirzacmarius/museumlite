@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
   authedForUser,
@@ -268,6 +268,116 @@ test("safe legacy backfill adds the anchor once and leaves conflicting membershi
       })
     ).map((entry) => entry.exhibitionId),
   ).toEqual([ambiguousId]);
+});
+
+test("operator rollout converts every legacy exhibition and keeps its historical anchor as a participant once", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, collectionId, secondCollectionId, authed } =
+    await setupExhibitionFixture(t);
+  const legacy = (title: string) =>
+    t.run((ctx) =>
+      ctx.db.insert("exhibitions", {
+        organizationId,
+        collectionId,
+        title,
+        startDate: Date.now(),
+        isCurrent: false,
+      }),
+    );
+  const anchorOnlyId = await legacy("Anchor only");
+  const anchorAndMembersId = await legacy("Anchor and members");
+  const missingAnchorId = await legacy("Anchor missing from members");
+  await t.run(async (ctx) => {
+    for (const [exhibitionId, memberIds] of [
+      [anchorAndMembersId, [collectionId, secondCollectionId]],
+      [missingAnchorId, [secondCollectionId]],
+    ] as const) {
+      for (const memberId of memberIds) {
+        await ctx.db.insert("exhibitionObjects", {
+          exhibitionId,
+          organizationId,
+          collectionId: memberId,
+          status: "pending",
+        });
+      }
+    }
+  });
+  const foreignAnchorId = await t.run(async (ctx) => {
+    const otherOrganizationId = await ctx.db.insert("organizations", {
+      name: "Other museum",
+      slug: `other-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+    const foreignObjectId = await ctx.db.insert("collections", {
+      organizationId: otherOrganizationId,
+      title: "Foreign object",
+      accessionNumber: "FOREIGN-1",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+    return await ctx.db.insert("exhibitions", {
+      organizationId,
+      collectionId: foreignObjectId,
+      title: "Foreign anchor",
+      startDate: Date.now(),
+      isCurrent: false,
+    });
+  });
+
+  // Follow the cursor in two-row pages, as the production driver does.
+  const runAll = async () => {
+    let cursor: string | null = null;
+    const totals = {
+      converted: 0,
+      includedAnchor: 0,
+      skipped: [] as Array<{ exhibitionId: Id<"exhibitions">; code: string }>,
+    };
+    for (;;) {
+      const page = await t.mutation(
+        internal.exhibitions.convertLegacyParticipationForOrganization,
+        { organizationId, cursor, limit: 2 },
+      );
+      totals.converted += page.converted;
+      totals.includedAnchor += page.includedAnchor;
+      totals.skipped.push(...page.skipped);
+      if (page.isDone) return totals;
+      cursor = page.cursor;
+    }
+  };
+  expect(await runAll()).toEqual({
+    converted: 3,
+    includedAnchor: 2,
+    skipped: [{ exhibitionId: foreignAnchorId, code: "invalid_anchor" }],
+  });
+  expect(await runAll()).toEqual({
+    converted: 0,
+    includedAnchor: 0,
+    skipped: [{ exhibitionId: foreignAnchorId, code: "invalid_anchor" }],
+  });
+
+  const memberIds = async (exhibitionId: Id<"exhibitions">) =>
+    (
+      await authed.query(api.exhibitions.listExhibitionObjects, {
+        exhibitionId,
+      })
+    ).map((member) => member.collectionId);
+  expect(await memberIds(anchorOnlyId)).toEqual([collectionId]);
+  expect(await memberIds(anchorAndMembersId)).toEqual([
+    collectionId,
+    secondCollectionId,
+  ]);
+  expect(await memberIds(missingAnchorId)).toEqual([
+    secondCollectionId,
+    collectionId,
+  ]);
+  expect(
+    (
+      await authed.query(api.exhibitions.reviewLegacyParticipation, {
+        organizationId,
+      })
+    ).map((entry) => entry.exhibitionId),
+  ).toEqual([foreignAnchorId]);
 });
 
 test("participant editing rejects duplicate objects and preserves installed evidence", async () => {

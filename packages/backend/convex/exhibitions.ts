@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { workflowHistoryPageValidator } from "./auditLog";
 import { requireExhibitionAccess } from "./utils/exhibitionAccess";
@@ -55,7 +56,7 @@ import {
   getWorkflowHistoryHandler,
   rejectExhibitionHandler,
 } from "./utils/exhibitionWorkflow";
-import { mutation } from "./utils/mutationBuilders";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 import { createAuthorizedUploadUrl } from "./utils/uploadOwnership";
 
@@ -445,6 +446,92 @@ export const backfillUnambiguousParticipation = mutation({
       migrated++;
     }
     return { migrated, requiresReview, remaining };
+  },
+});
+
+/**
+ * Operator rollout for legacy single-anchor exhibitions: converts each one to
+ * canonical participation and keeps the historical anchor object as a
+ * participant (appended once if it is not already a member). An anchor that is
+ * missing or belongs to another organization is skipped and reported.
+ * No audit row is written because no staff member performed the change; the
+ * exhibition keeps its legacy collectionId as the historical anchor.
+ *
+ * Run per organization, following the returned cursor until isDone.
+ */
+export const convertLegacyParticipationForOrganization = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    cursor: v.union(v.string(), v.null()),
+    limit: v.number(),
+  },
+  returns: v.object({
+    converted: v.number(),
+    includedAnchor: v.number(),
+    skipped: v.array(
+      v.object({
+        exhibitionId: v.id("exhibitions"),
+        code: v.literal("invalid_anchor"),
+      }),
+    ),
+    cursor: v.string(),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    if (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 50)
+      throw new Error("Limit must be between 1 and 50");
+    const page = await ctx.db
+      .query("exhibitions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .paginate({ numItems: args.limit, cursor: args.cursor });
+    let converted = 0;
+    let includedAnchor = 0;
+    const skipped: Array<{
+      exhibitionId: Id<"exhibitions">;
+      code: "invalid_anchor";
+    }> = [];
+    for (const exhibition of page.page) {
+      const review = await getLegacyParticipationReview(ctx, exhibition);
+      if (!review) continue;
+      const anchor = await ctx.db.get(review.anchorCollectionId);
+      if (!anchor || anchor.organizationId !== args.organizationId) {
+        skipped.push({ exhibitionId: exhibition._id, code: "invalid_anchor" });
+        continue;
+      }
+      const members = await getExhibitionParticipants(ctx, exhibition._id);
+      for (const [order, member] of members.entries()) {
+        await ctx.db.patch(member._id, {
+          role: member.role ?? "participant",
+          order,
+        });
+      }
+      if (
+        !members.some(
+          (member) => member.collectionId === review.anchorCollectionId,
+        )
+      ) {
+        await ctx.db.insert("exhibitionObjects", {
+          exhibitionId: exhibition._id,
+          organizationId: args.organizationId,
+          collectionId: review.anchorCollectionId,
+          role: "participant",
+          order: members.length,
+          status: "pending",
+        });
+        includedAnchor++;
+      }
+      await ctx.db.patch(exhibition._id, { participationVersion: "members" });
+      converted++;
+    }
+    return {
+      converted,
+      includedAnchor,
+      skipped,
+      cursor: page.continueCursor,
+      isDone: page.isDone,
+    };
   },
 });
 
