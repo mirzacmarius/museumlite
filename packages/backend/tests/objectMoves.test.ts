@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
+import { rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
@@ -1582,5 +1583,44 @@ describe("organization transfer registry", () => {
     const after = await t.run(async (ctx) => ctx.db.get(legacyOrgId));
     expect(after?.accountNumber).toMatch(/^ORG-\d{5}$/);
     expect(after?.allowsIncomingTransferRequests).toBe(false);
+  });
+});
+
+describe("object move projections", () => {
+  test("an accepted organization transfer moves the object's usage contribution between organizations in the same transaction", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await rebuildProjection(t, fixture.sourceOrganizationId);
+    await rebuildProjection(t, fixture.targetOrganizationId);
+    const usage = async () => [
+      (
+        await fixture.admin.query(api.organizations.getUsageStats, {
+          organizationId: fixture.sourceOrganizationId,
+        })
+      ).objects.used,
+      (
+        await fixture.targetAdmin.query(api.organizations.getUsageStats, {
+          organizationId: fixture.targetOrganizationId,
+        })
+      ).objects.used,
+    ];
+    expect(await usage()).toEqual([1, 0]);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Projection parity",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    expect(await usage()).toEqual([0, 1]);
   });
 });

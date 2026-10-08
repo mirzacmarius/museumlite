@@ -1,56 +1,86 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api } from "../convex/_generated/api";
-import schema from "../convex/schema";
+import { api, internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import {
   authedForUser,
+  type ConvexTest,
   createConvexTest,
   createOrgUserWithPermissions,
+  expectReady,
   rebuildProjection,
 } from "./testHarness";
-import { modules } from "./testSetup";
 
-async function fixture(
-  permissions: string[] = [
-    "organization.manage_settings",
-    "organization.view_analytics",
-  ],
-) {
-  const t = convexTest(schema, modules);
-  const ids = await t.run(async (ctx) => {
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Projection Museum",
-      slug: "projection-museum",
-      type: "museum",
-      subscriptionTier: "enterprise",
-    });
-    const userId = await ctx.db.insert("users", { name: "Registrar" });
-    const roleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "Administrator",
-      isSystemRole: false,
-    });
-    for (const name of permissions) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name,
-        category: "organization",
-      });
-      await ctx.db.insert("rolePermissions", { roleId, permissionId });
-    }
-    await ctx.db.insert("userOrganizations", {
-      organizationId,
-      userId,
-      roleId,
-      joinedAt: 1,
-    });
-    return { organizationId, userId };
+const ADMIN_PERMISSIONS = [
+  "organization.manage_settings",
+  "organization.view_analytics",
+  "collections.create",
+  "collections.read",
+  "collections.update",
+  "collections.delete",
+  "loans.create",
+  "loans.read",
+  "loans.update",
+  "loans.approve",
+  "media.upload",
+  "media.read",
+  "media.delete",
+];
+
+async function fixture(permissions: string[] = ADMIN_PERMISSIONS) {
+  const t = createConvexTest();
+  const setup = await createOrgUserWithPermissions(t, permissions, {
+    organizationName: "Projection Museum",
+    slugPrefix: "projection-museum",
+    subscriptionTier: "enterprise",
   });
-  const staff = t.withIdentity({
-    subject: `${ids.userId}|session`,
-    issuer: "https://example.test",
-  });
+  const staff = authedForUser(t, setup.userId);
   const settle = () => t.finishAllScheduledFunctions(vi.runAllTimers);
-  return { t, staff, settle, ...ids };
+  return { t, staff, settle, ...setup };
+}
+
+async function insertObjects(
+  t: ConvexTest,
+  organizationId: Id<"organizations">,
+  userId: Id<"users">,
+  count: number,
+  prefix = "OBJ",
+) {
+  return await t.run(async (ctx) => {
+    const ids: Id<"collections">[] = [];
+    for (let index = 0; index < count; index++) {
+      ids.push(
+        await ctx.db.insert("collections", {
+          organizationId,
+          accessionNumber: `${prefix}-${index}`,
+          title: `${prefix} ${index}`,
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: 1_000 + index,
+        }),
+      );
+    }
+    return ids;
+  });
+}
+
+async function reconcile(
+  staff: ReturnType<typeof authedForUser>,
+  settle: () => Promise<void>,
+  organizationId: Id<"organizations">,
+) {
+  const generationId = await staff.mutation(api.projections.startReconcile, {
+    organizationId,
+  });
+  await settle();
+  const health = await staff.query(api.projections.getHealth, {
+    organizationId,
+  });
+  const discrepancies = await staff.query(api.projections.listDiscrepancies, {
+    organizationId,
+    generationId,
+    paginationOpts: { numItems: 50, cursor: null },
+  });
+  return { generationId, health, discrepancies: discrepancies.page };
 }
 
 beforeEach(() => {
@@ -69,6 +99,8 @@ describe("projection health and rebuild", () => {
     ).toMatchObject({
       availability: "unavailable",
       reason: "not_built",
+      definitionVersion: 1,
+      stateDefinitionVersion: null,
       active: null,
     });
 
@@ -78,53 +110,273 @@ describe("projection health and rebuild", () => {
     ).toMatchObject({
       availability: "unavailable",
       reason: "building",
-      building: { status: "building", mode: "rebuild" },
+      building: { status: "building", mode: "rebuild", checkpoint: 0 },
     });
+    await expect(
+      staff.mutation(api.projections.startRebuild, { organizationId }),
+    ).rejects.toThrow("already running");
 
     await settle();
     expect(
       await staff.query(api.projections.getHealth, { organizationId }),
     ).toMatchObject({
       availability: "ready",
+      stateDefinitionVersion: 1,
       active: { status: "completed", processedRows: 1 },
       building: null,
     });
   });
+
+  test("dashboard, report and usage readers are unavailable before the first build instead of reporting zeros", async () => {
+    const { staff, organizationId } = await fixture();
+    const unavailable = {
+      availability: "unavailable",
+      reason: "not_built",
+      definitionVersion: 1,
+    };
+
+    expect(
+      await staff.query(api.dashboard.getAnalytics, { organizationId }),
+    ).toEqual(unavailable);
+    expect(
+      await staff.query(api.media.getStorageStats, { organizationId }),
+    ).toEqual(unavailable);
+    expect(
+      await staff.query(api.organizations.getUsageStats, { organizationId }),
+    ).toMatchObject({
+      metrics: unavailable,
+      storage: { used: null },
+      objects: { used: null },
+    });
+  });
+
+  test("cancelling a rebuild stops it, keeps readers unavailable and ignores its pending continuation", async () => {
+    const { t, staff, settle, organizationId, userId } = await fixture();
+    await insertObjects(t, organizationId, userId, 3);
+    const generationId = await staff.mutation(api.projections.startRebuild, {
+      organizationId,
+    });
+
+    await staff.mutation(api.projections.cancelRebuild, {
+      organizationId,
+      generationId,
+    });
+    await settle();
+
+    const health = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(health).toMatchObject({
+      availability: "unavailable",
+      reason: "not_built",
+      building: null,
+      active: null,
+    });
+    expect(health.recentGenerations[0]).toMatchObject({
+      _id: generationId,
+      status: "cancelled",
+      checkpoint: 0,
+      processedRows: 0,
+      failure: "Cancelled by an administrator",
+    });
+    await expect(
+      staff.mutation(api.projections.cancelRebuild, {
+        organizationId,
+        generationId,
+      }),
+    ).rejects.toThrow("Only a running or failed projection job");
+  });
 });
 
-describe("maintained inventory projection", () => {
-  test("dashboard analytics are unavailable before the first build instead of reporting zeros", async () => {
-    const { staff, organizationId } = await fixture();
+describe("checkpointed rebuild", () => {
+  test("a replayed or stale continuation is a no-op and a failed page resumes from its checkpoint without double counting", async () => {
+    const { t, staff, settle, organizationId, userId } = await fixture();
+    await insertObjects(t, organizationId, userId, 30);
+    const generationId = await staff.mutation(api.projections.startRebuild, {
+      organizationId,
+    });
 
+    const first = await t.mutation(internal.projections.applyGenerationPage, {
+      generationId,
+      expectedCheckpoint: 0,
+    });
+    const replay = await t.mutation(internal.projections.applyGenerationPage, {
+      generationId,
+      expectedCheckpoint: 0,
+    });
+    expect([first, replay]).toEqual(["continue", "noop"]);
+
+    await t.mutation(internal.projections.markGenerationPageFailed, {
+      generationId,
+      expectedCheckpoint: 1,
+      failure: "Simulated page failure",
+    });
+    const failed = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(failed).toMatchObject({
+      availability: "unavailable",
+      reason: "rebuild_failed",
+      building: {
+        status: "failed",
+        checkpoint: 1,
+        failure: "Simulated page failure",
+      },
+    });
+    expect(
+      await t.mutation(internal.projections.applyGenerationPage, {
+        generationId,
+        expectedCheckpoint: 1,
+      }),
+    ).toBe("noop");
+
+    await staff.mutation(api.projections.retryRebuild, {
+      organizationId,
+      generationId,
+    });
+    await settle();
+
+    const health = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(health).toMatchObject({
+      availability: "ready",
+      active: { _id: generationId, attempts: 2, processedRows: 31 },
+    });
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 30, active: 30 });
+    await expect(
+      staff.mutation(api.projections.retryRebuild, {
+        organizationId,
+        generationId,
+      }),
+    ).rejects.toThrow("Only the current failed projection job");
+  });
+
+  test("public writes before and after the scan cursor converge to the source-derived totals", async () => {
+    const { t, staff, settle, organizationId, userId } = await fixture();
+    const ids = await insertObjects(t, organizationId, userId, 30);
+    const generationId = await staff.mutation(api.projections.startRebuild, {
+      organizationId,
+    });
+
+    const health = () =>
+      staff.query(api.projections.getHealth, { organizationId });
+    let current = await health();
+    while (current.building?.step !== "collections") {
+      await t.mutation(internal.projections.applyGenerationPage, {
+        generationId,
+        expectedCheckpoint: current.building?.checkpoint ?? -1,
+      });
+      current = await health();
+    }
+    await t.mutation(internal.projections.applyGenerationPage, {
+      generationId,
+      expectedCheckpoint: current.building.checkpoint,
+    });
+    expect((await health()).building).toMatchObject({
+      step: "collections",
+      processedRows: 25,
+    });
+
+    const [beforeCursor, afterCursor] = [ids[0], ids[28]];
+    if (!beforeCursor || !afterCursor) throw new Error("fixture missing");
+    await staff.mutation(api.collections.archiveCollection, {
+      collectionId: beforeCursor,
+      reason: "Scanned before the write",
+    });
+    await staff.mutation(api.collections.archiveCollection, {
+      collectionId: afterCursor,
+      reason: "Scanned after the write",
+    });
+    await staff.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "NEW-1",
+      title: "Created during rebuild",
+    });
     expect(
       await staff.query(api.dashboard.getAnalytics, { organizationId }),
     ).toEqual({
       availability: "unavailable",
-      reason: "not_built",
+      reason: "building",
       definitionVersion: 1,
     });
+
+    await settle();
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 31, active: 29 });
+
+    const { health: reconciled } = await reconcile(
+      staff,
+      settle,
+      organizationId,
+    );
+    expect(reconciled.lastReconciliation).toMatchObject({
+      status: "completed",
+      mismatchCount: 0,
+    });
+  });
+});
+
+describe("writer parity", () => {
+  test("catalog create, update, archive and restore keep metrics current and match a source-derived reconciliation", async () => {
+    const { staff, settle, organizationId, t } = await fixture();
+    await rebuildProjection(t, organizationId);
+
+    const vaseId = await staff.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "W-1",
+      title: "Vase",
+    });
+    await staff.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "W-2",
+      title: "Bowl",
+    });
+    await staff.mutation(api.collections.update, {
+      collectionId: vaseId,
+      condition: "Poor",
+    });
+    await staff.mutation(api.collections.archiveCollection, {
+      collectionId: vaseId,
+      reason: "Stored",
+    });
+
+    const archived = expectReady(
+      await staff.query(api.dashboard.getAnalytics, { organizationId }),
+    );
+    expect(archived.objects).toMatchObject({ total: 2, active: 1 });
+
+    await staff.mutation(api.collections.restoreCollection, {
+      collectionId: vaseId,
+    });
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 2, active: 2 });
+    expect(
+      await staff.query(api.organizations.getUsageStats, { organizationId }),
+    ).toMatchObject({
+      metrics: { availability: "ready" },
+      objects: { used: 2 },
+    });
+
+    const { health } = await reconcile(staff, settle, organizationId);
+    expect(health.lastReconciliation).toMatchObject({ mismatchCount: 0 });
   });
 
-  test("public catalog and loan writers keep owned inventory current without another rebuild", async () => {
-    const t = createConvexTest();
-    const setup = await createOrgUserWithPermissions(
-      t,
-      [
-        "organization.view_analytics",
-        "collections.create",
-        "collections.read",
-        "collections.update",
-        "loans.create",
-        "loans.read",
-        "loans.update",
-      ],
-      { subscriptionTier: "enterprise" },
-    );
-    const { organizationId } = setup;
+  test("loan association changes reclassify inventory without a rebuild", async () => {
+    const { staff, settle, organizationId, t } = await fixture();
     await rebuildProjection(t, organizationId);
-    const staff = authedForUser(t, setup.userId);
 
-    const ownedId = await staff.mutation(api.collections.create, {
+    await staff.mutation(api.collections.create, {
       organizationId,
       accessionNumber: "OWN-1",
       title: "Owned vase",
@@ -155,7 +407,7 @@ describe("maintained inventory projection", () => {
       ctx.db
         .query("loanItems")
         .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-        .collect(),
+        .take(1),
     );
     if (!item) throw new Error("loan item missing");
     await staff.mutation(api.loans.removeItems, {
@@ -168,6 +420,283 @@ describe("maintained inventory projection", () => {
     ).toMatchObject({
       objects: { total: 2, incomingLoanExcluded: 0 },
     });
-    expect(ownedId).not.toEqual(borrowedId);
+    const { health } = await reconcile(staff, settle, organizationId);
+    expect(health.lastReconciliation).toMatchObject({ mismatchCount: 0 });
+  });
+
+  test("media uploads update storage usage exactly once per file", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture();
+    await rebuildProjection(t, organizationId);
+    const collectionId = await staff.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "M-1",
+      title: "Photographed object",
+    });
+    const upload = (contents: string) =>
+      t.run(async (ctx) => {
+        const id = await ctx.storage.store(new Blob([contents]));
+        await ctx.db.insert("storageOwnership", {
+          storageId: id,
+          uploadedBy: userId,
+          organizationId,
+          uploadedAt: 1_000,
+        });
+        return id;
+      });
+
+    await staff.mutation(api.media.create, {
+      organizationId,
+      collectionId,
+      storageId: await upload("0123456789"),
+      fileName: "report.pdf",
+      fileSize: 10,
+      mimeType: "application/pdf",
+    });
+    expect(
+      await staff.query(api.media.getStorageStats, { organizationId }),
+    ).toMatchObject({
+      availability: "ready",
+      totalFiles: 1,
+      totalSize: 10,
+      byType: [{ count: 1, size: 10 }],
+    });
+
+    await staff.mutation(api.media.create, {
+      organizationId,
+      collectionId,
+      storageId: await upload("01234"),
+      fileName: "notes.pdf",
+      fileSize: 5,
+      mimeType: "application/pdf",
+    });
+    expect(
+      await staff.query(api.media.getStorageStats, { organizationId }),
+    ).toMatchObject({
+      totalFiles: 2,
+      totalSize: 15,
+      byType: [{ count: 2, size: 15 }],
+    });
+    expect(
+      await staff.query(api.organizations.getUsageStats, { organizationId }),
+    ).toMatchObject({ storage: { used: 15 }, objects: { used: 1 } });
+
+    const { health } = await reconcile(staff, settle, organizationId);
+    expect(health.lastReconciliation).toMatchObject({ mismatchCount: 0 });
+  });
+});
+
+describe("fan-out invalidation", () => {
+  test("a loan status change wider than the fan-out limit invalidates readers and schedules a fresh rebuild", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture();
+    const objectIds = await insertObjects(t, organizationId, userId, 101);
+    const loanId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "WIDE-1",
+        type: "outgoing",
+        status: "pending",
+        lenderBorrowerName: "Partner",
+        startDate: 1_000,
+      });
+      for (const collectionId of objectIds) {
+        await ctx.db.insert("loanItems", { loanId: id, collectionId });
+      }
+      return id;
+    });
+    await rebuildProjection(t, organizationId);
+    const before = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(before.availability).toBe("ready");
+
+    await staff.mutation(api.loans.approve, { loanId });
+
+    const invalidated = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(invalidated).toMatchObject({
+      availability: "unavailable",
+      reason: "invalidated",
+      revision: before.revision + 1,
+      active: { _id: before.active?._id },
+      building: { status: "building", checkpoint: 0 },
+    });
+    expect(
+      await staff.query(api.dashboard.getAnalytics, { organizationId }),
+    ).toEqual({
+      availability: "unavailable",
+      reason: "invalidated",
+      definitionVersion: 1,
+    });
+
+    await settle();
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).loans,
+    ).toMatchObject({ total: 1, pending: 0, active: 1, outgoing: 1 });
+  });
+});
+
+describe("reconciliation", () => {
+  test("reconcile records categorized discrepancies without repairing source or the published projection", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture();
+    const [patchedId] = await insertObjects(t, organizationId, userId, 2);
+    if (!patchedId) throw new Error("fixture missing");
+    await rebuildProjection(t, organizationId);
+
+    const insertedId = await t.run(async (ctx) => {
+      await ctx.db.patch(patchedId, { status: "archived" });
+      return await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "RESTORED-1",
+        title: "Imported outside the app",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: 9_000,
+      });
+    });
+
+    const { health, discrepancies } = await reconcile(
+      staff,
+      settle,
+      organizationId,
+    );
+    expect(health).toMatchObject({
+      availability: "ready",
+      lastReconciliation: { status: "completed", mode: "reconcile" },
+    });
+    expect(
+      discrepancies
+        .filter((row) => row.sourceTable === "collections")
+        .map((row) => [row.category, row.sourceId])
+        .sort(),
+    ).toEqual(
+      [
+        ["contribution_mismatch", patchedId],
+        ["missing_from_projection", insertedId],
+      ].sort(),
+    );
+    expect(
+      discrepancies.find(
+        (row) =>
+          row.category === "counter_mismatch" &&
+          row.metric === "inventory.owned" &&
+          row.scope === "all",
+      ),
+    ).toMatchObject({ expected: 3, actual: 2 });
+
+    const sourceRows = await t.run(async (ctx) => {
+      const patched = await ctx.db.get(patchedId);
+      const inserted = await ctx.db.get(insertedId);
+      return [patched?.status, inserted?.status];
+    });
+    expect(sourceRows).toEqual(["archived", "active"]);
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 2, active: 2 });
+
+    await staff.mutation(api.projections.startRebuild, { organizationId });
+    await settle();
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 3, active: 2 });
+  });
+
+  test("reconcile requires a ready projection", async () => {
+    const { staff, organizationId } = await fixture();
+    await expect(
+      staff.mutation(api.projections.startReconcile, { organizationId }),
+    ).rejects.toThrow("Reconciliation needs a ready projection");
+  });
+});
+
+describe("authorization", () => {
+  test("anonymous callers and members without organization.manage_settings cannot read health or control jobs", async () => {
+    const { t, organizationId } = await fixture();
+    const viewerId = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { name: "Viewer" });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Viewer",
+        isSystemRole: false,
+      });
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "organization.view_analytics",
+        category: "organization",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+      await ctx.db.insert("userOrganizations", {
+        organizationId,
+        userId,
+        roleId,
+        joinedAt: 1,
+      });
+      return userId;
+    });
+
+    for (const caller of [t, authedForUser(t, viewerId)]) {
+      await expect(
+        caller.query(api.projections.getHealth, { organizationId }),
+      ).rejects.toThrow();
+      await expect(
+        caller.mutation(api.projections.startRebuild, { organizationId }),
+      ).rejects.toThrow();
+      await expect(
+        caller.mutation(api.projections.startReconcile, { organizationId }),
+      ).rejects.toThrow();
+    }
+    const states = await t.run((ctx) =>
+      ctx.db.query("organizationProjectionStates").take(5),
+    );
+    expect(states).toEqual([]);
+  });
+
+  test("an administrator of another organization cannot read or control this organization's jobs, even with its IDs", async () => {
+    const { t, staff, organizationId } = await fixture();
+    const other = await createOrgUserWithPermissions(
+      t,
+      ["organization.manage_settings"],
+      { subscriptionTier: "enterprise", slugPrefix: "other-museum" },
+    );
+    const otherAdmin = authedForUser(t, other.userId);
+    const generationId = await staff.mutation(api.projections.startRebuild, {
+      organizationId,
+    });
+
+    await expect(
+      otherAdmin.query(api.projections.getHealth, { organizationId }),
+    ).rejects.toThrow();
+    await expect(
+      otherAdmin.mutation(api.projections.cancelRebuild, {
+        organizationId,
+        generationId,
+      }),
+    ).rejects.toThrow();
+    for (const call of [
+      otherAdmin.mutation(api.projections.cancelRebuild, {
+        organizationId: other.organizationId,
+        generationId,
+      }),
+      otherAdmin.mutation(api.projections.retryRebuild, {
+        organizationId: other.organizationId,
+        generationId,
+      }),
+      otherAdmin.query(api.projections.listDiscrepancies, {
+        organizationId: other.organizationId,
+        generationId,
+        paginationOpts: { numItems: 10, cursor: null },
+      }),
+    ]) {
+      await expect(call).rejects.toThrow("Projection job not found");
+    }
+    expect(
+      (await staff.query(api.projections.getHealth, { organizationId }))
+        .building,
+    ).toMatchObject({ _id: generationId, status: "building" });
   });
 });
