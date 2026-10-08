@@ -27,16 +27,23 @@ export async function collectionHasOccupyingLoan(
   return false;
 }
 
+export async function isCollectionOnLoan(
+  ctx: MutationCtx | QueryCtx,
+  collectionId: Id<"collections">,
+): Promise<boolean> {
+  const collection = await ctx.db.get(collectionId);
+  return (
+    collection?.status === "loaned" ||
+    (await collectionHasOccupyingLoan(ctx, collectionId))
+  );
+}
+
 export async function assertCollectionNotOnLoan(
   ctx: MutationCtx | QueryCtx,
   collectionId: Id<"collections">,
   message: string,
 ): Promise<void> {
-  const collection = await ctx.db.get(collectionId);
-  if (
-    collection?.status === "loaned" ||
-    (await collectionHasOccupyingLoan(ctx, collectionId))
-  ) {
+  if (await isCollectionOnLoan(ctx, collectionId)) {
     throw new Error(message);
   }
 }

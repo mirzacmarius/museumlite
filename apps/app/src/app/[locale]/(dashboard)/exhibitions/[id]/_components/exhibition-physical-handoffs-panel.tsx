@@ -14,6 +14,7 @@ import { AcceptedConditionAssessmentSelector } from "@/components/accepted-condi
 import { ClientDate } from "@/components/client-date";
 import { LocationSelector } from "@/components/location-selector";
 import { usePermissions } from "@/components/permission-gate";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ExhibitionScheduleConflictsAlert } from "../../_components/exhibition-schedule-conflicts-alert";
 
@@ -101,6 +102,7 @@ export function ExhibitionPhysicalHandoffsPanel({
 
   const [busyObjectId, setBusyObjectId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const custodyConflictMessage = useCustodyConflictMessage();
 
   if (summary === undefined) {
     return (
@@ -124,7 +126,7 @@ export function ExhibitionPhysicalHandoffsPanel({
       await action();
       return true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("actionFailed"));
+      setError(custodyConflictMessage(cause, t("actionFailed")));
       return false;
     } finally {
       setBusyObjectId(null);

@@ -4,6 +4,10 @@ import rateLimiterSchema from "../../../node_modules/@convex-dev/rate-limiter/sr
 import { internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import {
+  type CustodyConflictData,
+  custodyConflictFromError,
+} from "../convex/utils/custodyErrors";
 import type { ModuleId } from "../convex/utils/moduleCatalog";
 
 import { modules } from "./testSetup";
@@ -160,4 +164,16 @@ export async function rebuildProjection(
   } finally {
     if (!fakeTimers) vi.useRealTimers();
   }
+}
+
+/** Awaits a call expected to fail and returns its custody conflict payload. */
+export async function custodyConflictOf(
+  call: Promise<unknown>,
+): Promise<CustodyConflictData | null> {
+  try {
+    await call;
+  } catch (error) {
+    return custodyConflictFromError(error);
+  }
+  throw new Error("Expected the call to be rejected");
 }

@@ -1,4 +1,39 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "This object is now at {location}. Refresh, confirm where it is, and record the handoff again.",
+    sourceChangedNoLocation:
+      "This object no longer has a recorded location. Refresh, confirm where it is, and record the handoff again.",
+    sourceChangedUnknown:
+      "This object has moved since this page loaded. Refresh, confirm where it is, and record the handoff again.",
+    alreadyAtDestination: "This object is already at the selected destination.",
+    destinationUnavailable:
+      "{location} is not available for moves. Choose another destination.",
+    destinationFull:
+      "{location} is at capacity ({capacity}). Choose another destination.",
+    destinationBlocked:
+      "The selected destination cannot receive this object. Choose another destination.",
+    destinationRequired: "Choose or confirm a destination for this object.",
+    externalCustody:
+      "This object is out on loan. Record its loan return first.",
+    assessmentRequired:
+      "Link an accepted condition assessment for this handoff.",
+    assessmentNotAccepted:
+      "The selected condition assessment has not been accepted yet.",
+    conditionEvidenceRequired:
+      "Add condition notes or link an accepted condition assessment.",
+    referenceNotFound:
+      "A linked record is no longer available. Refresh and try again.",
+    alreadyRecorded:
+      "This handoff has already been recorded. Refresh to see the latest state.",
+    outOfOrder:
+      "This step is not available yet. Record the earlier handoff steps first.",
+    exhibitionOutcomeUnresolved:
+      "Record the exhibition return or an authorized exception before returning this object to the lender.",
+    closureBlocked:
+      "Objects still awaiting a return or authorized exception: {count}.",
+    fallback: "The action could not be completed. Refresh and try again.",
+  },
   conditionAssessments: {
     actorProfileUnavailable: "Recorded actor; current profile unavailable",
     actorCurrentName: "Current profile name: {name}",

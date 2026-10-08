@@ -1,4 +1,40 @@
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Cet objet se trouve maintenant à {location}. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
+    sourceChangedNoLocation:
+      "Cet objet n'a plus d'emplacement enregistré. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
+    sourceChangedUnknown:
+      "Cet objet a été déplacé depuis le chargement de la page. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
+    alreadyAtDestination:
+      "Cet objet se trouve déjà à la destination sélectionnée.",
+    destinationUnavailable:
+      "{location} n'est pas disponible pour les déplacements. Choisissez une autre destination.",
+    destinationFull:
+      "{location} a atteint sa capacité ({capacity}). Choisissez une autre destination.",
+    destinationBlocked:
+      "La destination sélectionnée ne peut pas recevoir cet objet. Choisissez une autre destination.",
+    destinationRequired:
+      "Choisissez ou confirmez une destination pour cet objet.",
+    externalCustody:
+      "Cet objet est en prêt. Enregistrez d'abord son retour de prêt.",
+    assessmentRequired: "Liez un constat d'état accepté à cette remise.",
+    assessmentNotAccepted:
+      "Le constat d'état sélectionné n'a pas encore été accepté.",
+    conditionEvidenceRequired:
+      "Ajoutez des notes d'état ou liez un constat d'état accepté.",
+    referenceNotFound:
+      "Un enregistrement lié n'est plus disponible. Actualisez et réessayez.",
+    alreadyRecorded:
+      "Cette remise a déjà été enregistrée. Actualisez pour voir l'état le plus récent.",
+    outOfOrder:
+      "Cette étape n'est pas encore disponible. Enregistrez d'abord les étapes précédentes de la remise.",
+    exhibitionOutcomeUnresolved:
+      "Enregistrez le retour d'exposition ou une exception autorisée avant de rendre cet objet au prêteur.",
+    closureBlocked:
+      "Objets en attente d'un retour ou d'une exception autorisée : {count}.",
+    fallback: "L'action n'a pas pu être effectuée. Actualisez et réessayez.",
+  },
   conditionAssessments: {
     actorProfileUnavailable: "Acteur enregistré ; profil actuel indisponible",
     actorCurrentName: "Nom du profil actuel : {name}",

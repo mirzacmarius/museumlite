@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, query } from "./_generated/server";
+import { custodyConflict } from "./utils/custodyErrors";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextTransitNumber } from "./utils/numberGenerator";
@@ -1730,7 +1731,10 @@ export const recordTransitItemReceipt = mutation({
       conditionText.length === 0 &&
       args.conditionAssessmentId === undefined
     ) {
-      throw new Error("Condition evidence is required for transit receipt");
+      throw custodyConflict(
+        "CONDITION_EVIDENCE_REQUIRED",
+        "Condition evidence is required for transit receipt",
+      );
     }
 
     return await recordTransitItemReceiptInternal(ctx, {

@@ -6,6 +6,7 @@ import { type MutationCtx, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { syncCollectionGroupMemberships } from "./utils/catalogObjects";
 import { replaceCollectionOptionUsages } from "./utils/collectionOptionUsages";
+import { errorMessageForRecord } from "./utils/custodyErrors";
 import {
   assessCollectionMovement,
   moveCollectionToLocation,
@@ -553,9 +554,10 @@ export const processBatchJob = internalMutation({
           }
           return { success: true as const };
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
-          return { itemId: collectionId, error: errorMessage };
+          return {
+            itemId: collectionId,
+            error: errorMessageForRecord(error),
+          };
         }
       }),
     );
@@ -985,9 +987,10 @@ export const quickBulkStatusChange = mutation({
           await ctx.db.patch(collectionId, updates);
           return { success: true as const };
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
-          return { itemId: collectionId, error: errorMessage };
+          return {
+            itemId: collectionId,
+            error: errorMessageForRecord(error),
+          };
         }
       }),
     );

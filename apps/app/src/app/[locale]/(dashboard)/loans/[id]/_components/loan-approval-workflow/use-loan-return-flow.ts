@@ -2,6 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useEffect, useReducer, useState } from "react";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useScopedI18n } from "@/locales/client";
 import type { LoanItem } from "../types";
 import { isLoanItemReturned } from "./loan-item-utils";
@@ -135,6 +136,7 @@ export function useLoanReturnFlow({
   setError,
 }: UseLoanReturnFlowOptions) {
   const t = useScopedI18n("loans.actions");
+  const custodyConflictMessage = useCustodyConflictMessage();
   const [state, dispatch] = useReducer(
     returnFlowReducer,
     initialReturnFlowState,
@@ -190,7 +192,7 @@ export function useLoanReturnFlow({
       });
       dispatch({ type: "resetAfterReturn" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("failedToReturn"));
+      setError(custodyConflictMessage(err, t("failedToReturn")));
       dispatch({ type: "closeConfirmOnError" });
     } finally {
       setIsSubmitting(false);

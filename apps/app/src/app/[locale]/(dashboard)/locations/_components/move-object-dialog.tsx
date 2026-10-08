@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { custodyConflictFromError } from "@v1/backend/convex/utils/custodyErrors";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -24,6 +25,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useScopedI18n } from "@/locales/client";
 
 interface MoveObjectDialogProps {
@@ -89,6 +91,7 @@ export function MoveObjectDialog({
   const tDashboard = useScopedI18n("untranslatedDashboard.locationViews");
   const tForm = useScopedI18n("locations.form");
   const tCommon = useScopedI18n("common");
+  const custodyConflictMessage = useCustodyConflictMessage();
   const { currentOrganizationId } = useOrganization();
   const [state, dispatch] = useReducer(
     moveObjectDialogReducer,
@@ -129,7 +132,11 @@ export function MoveObjectDialog({
     } catch (err) {
       dispatch({
         type: "setError",
-        value: err instanceof Error ? err.message : t("moveFailed"),
+        value: custodyConflictFromError(err)
+          ? custodyConflictMessage(err)
+          : err instanceof Error
+            ? err.message
+            : t("moveFailed"),
       });
       dispatch({ type: "setIsSubmitting", value: false });
     }

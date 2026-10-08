@@ -1,6 +1,7 @@
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { custodyConflict } from "./custodyErrors";
 import { installObjectHandler } from "./exhibitionObjectLocation";
 import { requireAcceptedConditionAssessment } from "./exhibitionPhysicalHandoff";
 import { requireFeatureAccess } from "./featureGates";
@@ -18,7 +19,10 @@ export async function markTransitItemCarrierArrivedInternal(
   userId: Id<"users">,
 ): Promise<void> {
   if (transitItem.status === "received") {
-    throw new Error("Transit item already received");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Transit item already received",
+    );
   }
   if (transitItem.status === "arrived") {
     return;
@@ -28,7 +32,10 @@ export async function markTransitItemCarrierArrivedInternal(
     transitItem.status !== "in_transit" &&
     transitItem.status !== "delivered"
   ) {
-    throw new Error("Transit item cannot be marked as carrier arrived");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Transit item cannot be marked as carrier arrived",
+    );
   }
 
   const now = Date.now();
@@ -42,7 +49,10 @@ export async function markTransitItemCarrierArrivedInternal(
     transitRecord.status === "cancelled" ||
     transitRecord.status === "draft"
   ) {
-    throw new Error("Transit shipment must be active before carrier arrival");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Transit shipment must be active before carrier arrival",
+    );
   }
 }
 
@@ -68,14 +78,20 @@ export async function recordTransitItemReceiptInternal(
   } = args;
 
   if (transitItem.status === "received") {
-    throw new Error("Transit item already received");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Transit item already received",
+    );
   }
   if (
     transitItem.status !== "arrived" &&
     transitItem.status !== "in_transit" &&
     transitItem.status !== "delivered"
   ) {
-    throw new Error("Record carrier arrival before accountable receipt");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Record carrier arrival before accountable receipt",
+    );
   }
 
   const collection = await requireCollectionInOrganization(
@@ -100,7 +116,7 @@ export async function recordTransitItemReceiptInternal(
   if (transitRecord.loanId && transitRecord.transitType === "return") {
     const loan = await ctx.db.get(transitRecord.loanId);
     if (!loan || loan.organizationId !== transitRecord.organizationId) {
-      throw new Error("Linked loan not found");
+      throw custodyConflict("REFERENCE_NOT_FOUND", "Linked loan not found");
     }
     const loanItem = await ctx.db
       .query("loanItems")
@@ -108,7 +124,10 @@ export async function recordTransitItemReceiptInternal(
       .filter((q) => q.eq(q.field("collectionId"), transitItem.collectionId))
       .first();
     if (!loanItem) {
-      throw new Error("Loan item not found for transit collection");
+      throw custodyConflict(
+        "REFERENCE_NOT_FOUND",
+        "Loan item not found for transit collection",
+      );
     }
     const received = await receiveLoanItemsWithEvidence(ctx, {
       loanId: transitRecord.loanId,
@@ -150,7 +169,10 @@ export async function recordTransitItemReceiptInternal(
       },
     );
     if (!recorded) {
-      throw new Error("Transit receipt requires a location change");
+      throw custodyConflict(
+        "ALREADY_AT_DESTINATION",
+        "Transit receipt requires a location change",
+      );
     }
     movementId = recorded;
   }
@@ -183,14 +205,23 @@ export async function recordTransitItemInstallationInternal(
   },
 ): Promise<void> {
   if (args.transitItem.status !== "received") {
-    throw new Error("Record accountable receipt before installation");
+    throw custodyConflict(
+      "HANDOFF_OUT_OF_ORDER",
+      "Record accountable receipt before installation",
+    );
   }
   if (!args.transitRecord.exhibitionId) {
-    throw new Error("Transit record is not linked to an exhibition");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Transit record is not linked to an exhibition",
+    );
   }
 
   if (args.transitItem.installedAt !== undefined) {
-    throw new Error("Transit item installation already recorded");
+    throw custodyConflict(
+      "HANDOFF_ALREADY_RECORDED",
+      "Transit item installation already recorded",
+    );
   }
   if (args.installationTaskId) {
     await requireFeatureAccess(
@@ -204,10 +235,16 @@ export async function recordTransitItemInstallationInternal(
       task.organizationId !== args.transitRecord.organizationId ||
       task.exhibitionId !== args.transitRecord.exhibitionId
     ) {
-      throw new Error("Installation task must belong to the linked exhibition");
+      throw custodyConflict(
+        "REFERENCE_NOT_FOUND",
+        "Installation task must belong to the linked exhibition",
+      );
     }
     if (task.status === "completed")
-      throw new Error("Installation task already completed");
+      throw custodyConflict(
+        "HANDOFF_ALREADY_RECORDED",
+        "Installation task already completed",
+      );
     for (const dependencyId of task.dependsOnTaskIds ?? []) {
       const dependency = await ctx.db.get(dependencyId);
       if (
@@ -216,7 +253,8 @@ export async function recordTransitItemInstallationInternal(
         dependency.exhibitionId !== task.exhibitionId ||
         dependency.status !== "completed"
       ) {
-        throw new Error(
+        throw custodyConflict(
+          "HANDOFF_OUT_OF_ORDER",
           "Complete installation task dependencies before recording this handoff",
         );
       }
@@ -231,7 +269,10 @@ export async function recordTransitItemInstallationInternal(
     .filter((q) => q.eq(q.field("collectionId"), args.transitItem.collectionId))
     .first();
   if (!exhibitionObject) {
-    throw new Error("Exhibition participant not found for this object");
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
+      "Exhibition participant not found for this object",
+    );
   }
 
   await installObjectHandler(ctx, {

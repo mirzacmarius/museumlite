@@ -6,6 +6,7 @@ import { Truck } from "lucide-react";
 import { useState } from "react";
 import { AcceptedConditionAssessmentSelector } from "@/components/accepted-condition-assessment-selector";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { LoanReturnControls } from "./loan-return-controls";
 import type { LoanApprovalWorkflowState } from "./use-loan-approval-workflow";
 import { WorkflowErrorBanner } from "./workflow-error-banner";
@@ -31,6 +32,7 @@ export function ActiveLoanStep({ loanId, workflow }: ActiveLoanStepProps) {
     Record<string, string>
   >({});
   const { hasPermission } = usePermissions();
+  const custodyConflictMessage = useCustodyConflictMessage();
 
   const handleDispatch = async () => {
     setIsSubmitting(true);
@@ -52,7 +54,7 @@ export function ActiveLoanStep({ loanId, workflow }: ActiveLoanStepProps) {
         ),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("failedToDispatch"));
+      setError(custodyConflictMessage(err, t("failedToDispatch")));
     } finally {
       setIsSubmitting(false);
     }

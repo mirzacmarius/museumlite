@@ -5,6 +5,7 @@ import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
+  custodyConflictOf,
 } from "./testHarness";
 
 interface HandoffFixture {
@@ -183,19 +184,97 @@ test("install rejects stale observed source", async () => {
     });
   });
 
-  await expect(
-    authed.mutation(api.exhibitions.installObject, {
-      exhibitionObjectId,
-      observedFromLocationId: galleryLocationId,
-      installationConditionAssessmentId: acceptedAssessmentId,
-    }),
-  ).rejects.toThrow("not the source observed");
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.exhibitions.installObject, {
+        exhibitionObjectId,
+        observedFromLocationId: galleryLocationId,
+        installationConditionAssessmentId: acceptedAssessmentId,
+      }),
+    ),
+  ).toMatchObject({ code: "SOURCE_CHANGED", currentLocationName: "Storage" });
 
   const stillPending = await t.run(async (ctx) =>
     ctx.db.get(exhibitionObjectId),
   );
   expect(stillPending?.status).toBe("pending");
   expect(stillPending?.installedAt).toBeUndefined();
+});
+
+test("install into a full destination reports the location and capacity", async () => {
+  const t = createConvexTest();
+  const {
+    authed,
+    acceptedAssessmentId,
+    exhibitionObjectId,
+    organizationId,
+    userId,
+    storageLocationId,
+    galleryLocationId,
+  } = await createHandoffFixture(t);
+  await t.run(async (ctx) => {
+    await ctx.db.patch(galleryLocationId, { capacity: 1 });
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "EXH-OCCUPANT",
+      title: "Occupant",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+      currentLocationId: galleryLocationId,
+    });
+  });
+
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.exhibitions.installObject, {
+        exhibitionObjectId,
+        observedFromLocationId: storageLocationId,
+        installationConditionAssessmentId: acceptedAssessmentId,
+      }),
+    ),
+  ).toMatchObject({
+    code: "DESTINATION_FULL",
+    locationName: "Gallery A",
+    capacity: 1,
+  });
+});
+
+test("install without an accepted assessment asks for one", async () => {
+  const t = createConvexTest();
+  const { authed, exhibitionObjectId, storageLocationId } =
+    await createHandoffFixture(t);
+
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.exhibitions.installObject, {
+        exhibitionObjectId,
+        observedFromLocationId: storageLocationId,
+      }),
+    ),
+  ).toMatchObject({ code: "ASSESSMENT_REQUIRED" });
+});
+
+test("replayed install reports the handoff as already recorded", async () => {
+  const t = createConvexTest();
+  const {
+    authed,
+    acceptedAssessmentId,
+    exhibitionObjectId,
+    storageLocationId,
+  } = await createHandoffFixture(t);
+  const install = {
+    exhibitionObjectId,
+    observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: acceptedAssessmentId,
+  };
+  await authed.mutation(api.exhibitions.installObject, install);
+
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.exhibitions.installObject, install),
+    ),
+  ).toMatchObject({ code: "HANDOFF_ALREADY_RECORDED" });
 });
 
 test("activate does not auto-install pending participants", async () => {
@@ -229,9 +308,11 @@ test("close blocks outstanding returns and does not invent them", async () => {
 
   await authed.mutation(api.exhibitions.activate, { exhibitionId });
 
-  await expect(
-    authed.mutation(api.exhibitions.close, { exhibitionId }),
-  ).rejects.toThrow("outstanding");
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.exhibitions.close, { exhibitionId }),
+    ),
+  ).toMatchObject({ code: "CLOSURE_BLOCKED", outstandingCount: 1 });
 
   const afterFailedClose = await t.run(async (ctx) => {
     const [exhibition, exhibitionObject] = await Promise.all([

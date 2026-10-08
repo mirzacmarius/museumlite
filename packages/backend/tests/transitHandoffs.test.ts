@@ -4,6 +4,7 @@ import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
+  custodyConflictOf,
 } from "./testHarness";
 
 const transitHandoffPermissions = [
@@ -259,14 +260,16 @@ test("recordTransitItemReceipt rejects duplicate receipt", async () => {
     conditionIn: "Good",
   });
 
-  await expect(
-    authed.mutation(api.transit.recordTransitItemReceipt, {
-      transitItemId,
-      observedFromLocationId: null,
-      destinationLocationId: galleryId,
-      conditionIn: "Still good",
-    }),
-  ).rejects.toThrow(/already received/i);
+  expect(
+    await custodyConflictOf(
+      authed.mutation(api.transit.recordTransitItemReceipt, {
+        transitItemId,
+        observedFromLocationId: null,
+        destinationLocationId: galleryId,
+        conditionIn: "Still good",
+      }),
+    ),
+  ).toMatchObject({ code: "HANDOFF_ALREADY_RECORDED" });
 });
 
 test("recordTransitItemReceipt requires loans.update permission", async () => {

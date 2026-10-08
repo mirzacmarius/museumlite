@@ -1,6 +1,41 @@
 // spanish translations
 
 export default {
+  custodyConflicts: {
+    sourceChanged:
+      "Este objeto está ahora en {location}. Actualice, confirme dónde está y vuelva a registrar la entrega.",
+    sourceChangedNoLocation:
+      "Este objeto ya no tiene una ubicación registrada. Actualice, confirme dónde está y vuelva a registrar la entrega.",
+    sourceChangedUnknown:
+      "Este objeto se ha movido desde que se cargó la página. Actualice, confirme dónde está y vuelva a registrar la entrega.",
+    alreadyAtDestination: "Este objeto ya está en el destino seleccionado.",
+    destinationUnavailable:
+      "{location} no está disponible para movimientos. Elija otro destino.",
+    destinationFull:
+      "{location} está al límite de capacidad ({capacity}). Elija otro destino.",
+    destinationBlocked:
+      "El destino seleccionado no puede recibir este objeto. Elija otro destino.",
+    destinationRequired: "Elija o confirme un destino para este objeto.",
+    externalCustody:
+      "Este objeto está en préstamo. Registre primero su devolución.",
+    assessmentRequired:
+      "Vincule una evaluación del estado aceptada para esta entrega.",
+    assessmentNotAccepted:
+      "La evaluación del estado seleccionada aún no ha sido aceptada.",
+    conditionEvidenceRequired:
+      "Añada notas del estado o vincule una evaluación del estado aceptada.",
+    referenceNotFound:
+      "Un registro vinculado ya no está disponible. Actualice e inténtelo de nuevo.",
+    alreadyRecorded:
+      "Esta entrega ya se ha registrado. Actualice para ver el estado más reciente.",
+    outOfOrder:
+      "Este paso aún no está disponible. Registre primero los pasos anteriores de la entrega.",
+    exhibitionOutcomeUnresolved:
+      "Registre la devolución de la exposición o una excepción autorizada antes de devolver este objeto al prestador.",
+    closureBlocked:
+      "Objetos pendientes de devolución o excepción autorizada: {count}.",
+    fallback: "No se pudo completar la acción. Actualice e inténtelo de nuevo.",
+  },
   conditionAssessments: {
     actorProfileUnavailable:
       "Responsable registrado; perfil actual no disponible",
