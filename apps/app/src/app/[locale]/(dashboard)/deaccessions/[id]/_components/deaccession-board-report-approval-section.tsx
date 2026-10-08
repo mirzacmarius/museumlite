@@ -26,6 +26,11 @@ export function DeaccessionBoardReportApprovalSection({
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
             {tRoot("deaccessions.report.approvalHistory")}
           </h2>
+          {exportData.workflowHistoryHasMore && (
+            <p className="mb-2 text-xs text-zinc-500">
+              {tRoot("activityLog.historyPreview")}
+            </p>
+          )}
           <div className="space-y-2">
             {exportData.workflowHistory.map((entry) => (
               <div
@@ -42,7 +47,7 @@ export function DeaccessionBoardReportApprovalSection({
                       : t("detail.step", { step: entry.step })}
                   </p>
                   <p className="text-xs text-zinc-500">
-                    {entry.approverName} •{" "}
+                    {entry.approverName ?? tRoot("activityLog.unknownUser")} •{" "}
                     <ClientDateFns
                       timestamp={entry.approvedAt}
                       format="MMM d, yyyy 'at' h:mm a"

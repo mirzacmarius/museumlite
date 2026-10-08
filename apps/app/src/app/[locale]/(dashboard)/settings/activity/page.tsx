@@ -2,7 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
+import { Avatar, AvatarFallback } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
 import { DatePickerInput } from "@v1/ui/date-picker";
 import { FeatureGuard } from "@v1/ui/feature-guard";
@@ -15,61 +15,16 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Calendar, Filter, RotateCcw, X } from "lucide-react";
-import { useReducer } from "react";
+import { parseAsString, useQueryStates } from "nuqs";
+import { Suspense } from "react";
+import { AuditCaseHistory } from "@/components/audit-case-history";
+import { AuditEventDetails } from "@/components/audit-event-details";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-
-interface ActivityPageState {
-  selectedUserId: string;
-  selectedEntityType: string;
-  actionFilter: string;
-  fromDate: string;
-  toDate: string;
-  cursor: string | undefined;
-}
-
-type ActivityPageAction =
-  | { type: "setSelectedUserId"; value: string }
-  | { type: "setSelectedEntityType"; value: string }
-  | { type: "setActionFilter"; value: string }
-  | { type: "setFromDate"; value: string }
-  | { type: "setToDate"; value: string }
-  | { type: "setCursor"; value: string | undefined }
-  | { type: "clearFilters" };
-
-const initialActivityPageState: ActivityPageState = {
-  selectedUserId: "",
-  selectedEntityType: "",
-  actionFilter: "",
-  fromDate: "",
-  toDate: "",
-  cursor: undefined,
-};
-
-function activityPageReducer(
-  state: ActivityPageState,
-  action: ActivityPageAction,
-): ActivityPageState {
-  switch (action.type) {
-    case "setSelectedUserId":
-      return { ...state, selectedUserId: action.value, cursor: undefined };
-    case "setSelectedEntityType":
-      return { ...state, selectedEntityType: action.value, cursor: undefined };
-    case "setActionFilter":
-      return { ...state, actionFilter: action.value, cursor: undefined };
-    case "setFromDate":
-      return { ...state, fromDate: action.value, cursor: undefined };
-    case "setToDate":
-      return { ...state, toDate: action.value, cursor: undefined };
-    case "setCursor":
-      return { ...state, cursor: action.value };
-    case "clearFilters":
-      return initialActivityPageState;
-  }
-}
 
 function ActivityTimestamp({ timestamp }: { timestamp: number }) {
   const locale = useCurrentLocale();
@@ -82,16 +37,9 @@ interface ActivityUser {
   email?: string | null;
 }
 
-interface ActivityEntry {
-  _id: string;
-  action: string;
-  entityId: string;
-  entityType: string;
-  timestamp: number;
-  userEmail?: string | null;
-  userImage?: string | null;
-  userName?: string | null;
-}
+type ActivityEntry = FunctionReturnType<
+  typeof api.auditLog.list
+>["entries"][number];
 
 function ActivityPageHeader({
   description,
@@ -301,7 +249,16 @@ function ActivityResultCount({
 function ActivityEntryRow({
   entry,
   unknownUserLabel,
+  organizationId,
+  onCorrelate,
 }: {
+  organizationId: Id<"organizations">;
+  onCorrelate: (filter: {
+    entityType?: string;
+    entityId?: string;
+    objectId?: string;
+    caseId?: string;
+  }) => void;
   entry: ActivityEntry;
   unknownUserLabel: string;
 }) {
@@ -317,9 +274,6 @@ function ActivityEntryRow({
   return (
     <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
       <Avatar className="size-9">
-        {entry.userImage ? (
-          <AvatarImage src={entry.userImage} alt={entry.userName ?? ""} />
-        ) : null}
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
 
@@ -335,9 +289,16 @@ function ActivityEntryRow({
             {entry.entityType}
           </span>
           <span className="truncate font-mono text-xs text-muted-foreground">
-            {entry.entityId}
+            {entry.subjectSnapshot?.label ??
+              entry.subjectSnapshot?.identifier ??
+              entry.entityId}
           </span>
         </div>
+        <AuditEventDetails
+          entry={entry}
+          organizationId={organizationId}
+          onCorrelate={onCorrelate}
+        />
       </div>
 
       <span className="whitespace-nowrap text-xs text-muted-foreground">
@@ -355,7 +316,16 @@ function ActivityList({
   nextCursor,
   onClearFilters,
   onLoadMore,
+  organizationId,
+  onCorrelate,
 }: {
+  organizationId: Id<"organizations">;
+  onCorrelate: (filter: {
+    entityType?: string;
+    entityId?: string;
+    objectId?: string;
+    caseId?: string;
+  }) => void;
   entries: ActivityEntry[] | undefined;
   hasFilters: boolean;
   isLoading: boolean;
@@ -392,6 +362,11 @@ function ActivityList({
             {hasFilters ? labels.tryAdjustFilters : labels.activityAppears}
           </p>
         </div>
+        {nextCursor && (
+          <Button variant="outline" onClick={onLoadMore}>
+            {labels.loadMore}
+          </Button>
+        )}
         {hasFilters ? (
           <Button variant="outline" size="sm" onClick={onClearFilters}>
             <X className="mr-2 size-3" />
@@ -409,6 +384,8 @@ function ActivityList({
           <ActivityEntryRow
             key={entry._id}
             entry={entry}
+            organizationId={organizationId}
+            onCorrelate={onCorrelate}
             unknownUserLabel={labels.unknownUser}
           />
         ))}
@@ -425,14 +402,81 @@ function ActivityList({
   );
 }
 
-export default function ActivityPage() {
+function ActivityPageContent() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const t = useScopedI18n("activityLog");
 
-  const [state, dispatch] = useReducer(
-    activityPageReducer,
-    initialActivityPageState,
+  const [state, setState] = useQueryStates(
+    {
+      selectedUserId: parseAsString.withDefault(""),
+      selectedEntityType: parseAsString.withDefault(""),
+      actionFilter: parseAsString.withDefault(""),
+      fromDate: parseAsString.withDefault(""),
+      toDate: parseAsString.withDefault(""),
+      cursor: parseAsString,
+      historyOrg: parseAsString,
+      entityId: parseAsString,
+      objectId: parseAsString,
+      caseId: parseAsString,
+      caseCursor: parseAsString,
+    },
+    { history: "push" },
+  );
+  const dispatch = (action: { type: string; value?: string }) => {
+    if (action.type === "clearFilters") {
+      void setState({
+        selectedUserId: null,
+        selectedEntityType: null,
+        actionFilter: null,
+        fromDate: null,
+        toDate: null,
+        cursor: null,
+        entityId: null,
+        objectId: null,
+        caseId: null,
+        caseCursor: null,
+      });
+      return;
+    }
+    const fields = {
+      setSelectedUserId: "selectedUserId",
+      setSelectedEntityType: "selectedEntityType",
+      setActionFilter: "actionFilter",
+      setFromDate: "fromDate",
+      setToDate: "toDate",
+      setCursor: "cursor",
+    } as const;
+    const field = fields[action.type as keyof typeof fields];
+    if (field)
+      void setState({
+        [field]: action.value ?? null,
+        ...(field === "cursor" ? {} : { cursor: null }),
+        historyOrg: currentOrganizationId,
+      });
+  };
+  const onCorrelate = (filter: {
+    entityType?: string;
+    entityId?: string;
+    objectId?: string;
+    caseId?: string;
+  }) => {
+    void setState({
+      selectedEntityType: filter.entityType ?? "",
+      entityId: filter.entityId ?? null,
+      objectId: filter.objectId ?? null,
+      caseId: filter.caseId ?? null,
+      cursor: null,
+      caseCursor: null,
+      historyOrg: currentOrganizationId,
+      selectedUserId: "",
+      actionFilter: "",
+    });
+  };
+  const invalidDates = Boolean(
+    (state.fromDate && !Number.isFinite(new Date(state.fromDate).getTime())) ||
+      (state.toDate && !Number.isFinite(new Date(state.toDate).getTime())) ||
+      (state.fromDate && state.toDate && state.fromDate > state.toDate),
   );
 
   const entityTypes = useQuery(api.auditLog.getEntityTypes, {});
@@ -451,24 +495,34 @@ export default function ActivityPage() {
       : "skip",
   );
 
-  const queryArgs = currentOrganizationId
-    ? {
-        organizationId: currentOrganizationId as Id<"organizations">,
-        userId: state.selectedUserId
-          ? (state.selectedUserId as Id<"users">)
-          : undefined,
-        entityType: state.selectedEntityType || undefined,
-        action: state.actionFilter || undefined,
-        fromDate: state.fromDate
-          ? new Date(state.fromDate).getTime()
-          : undefined,
-        toDate: state.toDate
-          ? new Date(state.toDate).setHours(23, 59, 59, 999)
-          : undefined,
-        limit: 50,
-        cursor: state.cursor,
-      }
-    : "skip";
+  const queryArgs =
+    currentOrganizationId && !invalidDates
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          userId: state.selectedUserId
+            ? (state.selectedUserId as Id<"users">)
+            : undefined,
+          entityType: state.selectedEntityType || undefined,
+          action: state.actionFilter || undefined,
+          actionMatch: "exact" as const,
+          entityId: state.entityId || undefined,
+          objectId: state.objectId
+            ? (state.objectId as Id<"collections">)
+            : undefined,
+          caseId: state.caseId || undefined,
+          fromDate: state.fromDate
+            ? new Date(`${state.fromDate}T00:00:00`).getTime()
+            : undefined,
+          toDate: state.toDate
+            ? new Date(`${state.toDate}T23:59:59.999`).getTime()
+            : undefined,
+          limit: 50,
+          cursor:
+            state.historyOrg === currentOrganizationId
+              ? (state.cursor ?? undefined)
+              : undefined,
+        }
+      : "skip";
 
   const auditLogData = useQuery(api.auditLog.list, queryArgs);
 
@@ -477,7 +531,10 @@ export default function ActivityPage() {
     state.selectedEntityType ||
     state.actionFilter ||
     state.fromDate ||
-    state.toDate;
+    state.toDate ||
+    state.entityId ||
+    state.objectId ||
+    state.caseId;
 
   const clearFilters = () => {
     dispatch({ type: "clearFilters" });
@@ -555,27 +612,51 @@ export default function ActivityPage() {
           toDate={state.toDate}
         />
 
+        {(state.entityId || state.objectId || state.caseId) && (
+          <p className="break-all font-mono text-xs">
+            {state.entityId ?? state.objectId ?? state.caseId}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {t("filterOptionsRecent")}
+        </p>
+        {invalidDates && <p role="alert">{t("invalidDateRange")}</p>}
+        {state.caseId && (
+          <AuditCaseHistory
+            organizationId={currentOrganizationId}
+            caseId={state.caseId}
+            key={`${currentOrganizationId}:${state.caseId}`}
+          />
+        )}
         <ActivityResultCount
-          isLoading={auditLogData === undefined}
+          isLoading={!invalidDates && auditLogData === undefined}
           labels={{
-            entriesFound: t("entriesFound", {
-              count: auditLogData?.totalCount ?? 0,
-              plural: auditLogData?.totalCount === 1 ? "" : "s",
-            }),
+            entriesFound: t("pageEntries"),
             loading: t("loading"),
           }}
           totalCount={auditLogData?.totalCount}
         />
 
+        {state.cursor && state.historyOrg === currentOrganizationId && (
+          <Button
+            className="self-start"
+            variant="outline"
+            onClick={() => dispatch({ type: "setCursor" })}
+          >
+            {t("firstPage")}
+          </Button>
+        )}
         <div className="flex-1 space-y-2">
           <ActivityList
-            entries={auditLogData?.entries}
+            organizationId={currentOrganizationId}
+            onCorrelate={onCorrelate}
+            entries={invalidDates ? [] : auditLogData?.entries}
             hasFilters={Boolean(hasFilters)}
-            isLoading={auditLogData === undefined}
+            isLoading={!invalidDates && auditLogData === undefined}
             labels={{
               activityAppears: t("activityAppears"),
               clearFilters: t("clearFilters"),
-              loadMore: t("loadMore"),
+              loadMore: t("nextPage"),
               loadingActivity: t("loadingActivity"),
               noActivity: t("noActivity"),
               tryAdjustFilters: t("tryAdjustFilters"),
@@ -588,5 +669,13 @@ export default function ActivityPage() {
         </div>
       </div>
     </FeatureGuard>
+  );
+}
+
+export default function ActivityPage() {
+  return (
+    <Suspense>
+      <ActivityPageContent />
+    </Suspense>
   );
 }

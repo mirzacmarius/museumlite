@@ -1054,6 +1054,38 @@ export default {
       "Error al cancelar la invitación. Por favor, inténtelo de nuevo.",
   },
   activityLog: {
+    historyPreview:
+      "Solo las aprobaciones recientes. Abra la cronología del expediente para consultar el historial completo.",
+    nextPage: "Página siguiente",
+    pageEntries: "registros en esta página",
+    filterOptionsRecent:
+      "Las opciones de autor y acción proceden de los últimos 1.000 eventos. Las búsquedas por fecha y tema cubren todo el historial.",
+    invalidDateRange: "La fecha inicial debe preceder a la fecha final.",
+    details: "Detalles del evento",
+    legacyEvidence:
+      "Evento antiguo: no se conservaron los datos del autor o del tema en el momento del registro.",
+    recordedEvidence:
+      "Los datos del autor y del tema se conservaron al registrar el evento.",
+    correctionOf: "Corrección de",
+    subjectTimeline: "Historial del tema",
+    objectTimeline: "Historial del objeto",
+    caseTimeline: "Historial del expediente",
+    field: "Campo",
+    before: "Antes",
+    after: "Después",
+    correctionReason: "Motivo de la corrección",
+    correctionStatement: "Texto de la corrección",
+    appendCorrection: "Añadir corrección",
+    correctionFailed:
+      "No se pudo guardar la corrección. Su texto se conserva; vuelva a intentarlo.",
+    correctionSaved: "Corrección añadida. Se conserva el evento original.",
+    approvalHistory: "Historial de aprobaciones del expediente",
+    legacy: "evidencia antigua",
+    firstPage: "Primera página",
+    unavailable:
+      "El historial no está disponible o su rol no permite consultarlo. Reintente, borre los filtros o seleccione una organización autorizada.",
+    retry: "Reintentar",
+
     featureName: "Cumplimiento y registro de auditoría",
     title: "Registro de actividad",
     description: "Ver y filtrar actividad en su organización",

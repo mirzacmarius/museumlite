@@ -2,6 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { readWorkflowHistoryPage } from "../auditLog";
+import { appendCaseHistory } from "./caseHistory";
 import { markCollectionActive } from "./collectionLifecycle";
 import { requireLoansAccess } from "./loanAccess";
 import {
@@ -115,7 +117,7 @@ export async function approveLoanHandler(
       return null;
     }
 
-    const history = loan.workflowHistory ?? [];
+    const history = [...(loan.workflowHistory ?? [])];
     if (!workflowState.isPastLastStep) {
       history.push({
         step: currentStep,
@@ -133,7 +135,7 @@ export async function approveLoanHandler(
           status: "active",
           approvedBy: userId,
           approvedAt: Date.now(),
-          workflowHistory: history,
+          ...(await appendCaseHistory(ctx, loan, "loan", history)),
         }),
         ctx.runMutation(internal.audit.logAction, {
           organizationId: loan.organizationId,
@@ -184,7 +186,7 @@ export async function approveLoanHandler(
 
       await ctx.db.patch(args.loanId, {
         workflowStep: nextStep,
-        workflowHistory: history,
+        ...(await appendCaseHistory(ctx, loan, "loan", history)),
       });
 
       if (approvalMode !== "single") {
@@ -303,7 +305,7 @@ export async function rejectLoanHandler(
     await requirePermission(ctx, loan.organizationId, "loans.approve");
   }
 
-  const history = loan.workflowHistory ?? [];
+  const history = [...(loan.workflowHistory ?? [])];
   history.push({
     step: currentStep,
     approvedBy: userId,
@@ -318,7 +320,7 @@ export async function rejectLoanHandler(
   await Promise.all([
     ctx.db.patch(args.loanId, {
       status: "cancelled",
-      workflowHistory: history,
+      ...(await appendCaseHistory(ctx, loan, "loan", history)),
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: loan.organizationId,
@@ -362,7 +364,7 @@ export async function rejectLoanHandler(
 
 export async function getLoanWorkflowHistoryHandler(
   ctx: QueryCtx,
-  args: { loanId: Id<"loans"> },
+  args: { loanId: Id<"loans">; cursor?: number; limit?: number },
 ) {
   const loan = await ctx.db.get(args.loanId);
   if (!loan) {
@@ -371,19 +373,13 @@ export async function getLoanWorkflowHistoryHandler(
 
   await requirePermission(ctx, loan.organizationId, "loans.read");
 
-  const history = loan.workflowHistory ?? [];
-
-  const enrichedHistory = await Promise.all(
-    history.map(async (item) => {
-      const approver = await ctx.db.get(item.approvedBy);
-      return {
-        ...item,
-        approverName: approver?.name || approver?.username || undefined,
-      };
-    }),
-  );
-
-  return enrichedHistory;
+  return await readWorkflowHistoryPage(ctx, {
+    organizationId: loan.organizationId,
+    caseType: "loan",
+    entityId: args.loanId,
+    cursor: args.cursor,
+    limit: args.limit,
+  });
 }
 
 export async function bulkApproveLoansHandler(
@@ -501,7 +497,7 @@ export async function bulkApproveLoansHandler(
           return;
         }
 
-        const history = loan.workflowHistory ?? [];
+        const history = [...(loan.workflowHistory ?? [])];
         if (!workflowState.isPastLastStep) {
           history.push({
             step: currentStep,
@@ -519,7 +515,7 @@ export async function bulkApproveLoansHandler(
             status: "active",
             approvedBy: userId,
             approvedAt: Date.now(),
-            workflowHistory: history,
+            ...(await appendCaseHistory(ctx, loan, "loan", history)),
           });
         } else {
           const nextStep = workflowState.nextStep;
@@ -533,7 +529,7 @@ export async function bulkApproveLoansHandler(
 
           await ctx.db.patch(loanId, {
             workflowStep: nextStep,
-            workflowHistory: history,
+            ...(await appendCaseHistory(ctx, loan, "loan", history)),
           });
 
           if (approvalMode !== "single") {

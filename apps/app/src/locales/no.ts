@@ -1033,6 +1033,39 @@ export default {
     cancelFailed: "Kunne ikke avbryte invitasjonen. Prøv igjen.",
   },
   activityLog: {
+    historyPreview:
+      "Kun nylige godkjenninger. Åpne sakens tidslinje for hele historikken.",
+    nextPage: "Neste side",
+    pageEntries: "oppføringer på denne siden",
+    filterOptionsRecent:
+      "Valg for aktør og handling viser de siste 1 000 hendelsene. Søk etter dato og emne dekker hele historikken.",
+    invalidDateRange: "Startdatoen må være før sluttdatoen.",
+    details: "Hendelsesdetaljer",
+    legacyEvidence:
+      "Eldre hendelse: aktørens eller emnets identitet ble ikke bevart da hendelsen ble registrert.",
+    recordedEvidence:
+      "Aktørens og emnets identitet ble bevart da hendelsen ble registrert.",
+    correctionOf: "Korrigering av",
+    subjectTimeline: "Emnehistorikk",
+    objectTimeline: "Objekthistorikk",
+    caseTimeline: "Sakshistorikk",
+    field: "Felt",
+    before: "Før",
+    after: "Etter",
+    correctionReason: "Grunn til korrigering",
+    correctionStatement: "Korrigeringstekst",
+    appendCorrection: "Legg til korrigering",
+    correctionFailed:
+      "Korrigeringen kunne ikke lagres. Teksten er bevart; prøv igjen.",
+    correctionSaved:
+      "Korrigering lagt til. Den opprinnelige hendelsen er bevart.",
+    approvalHistory: "Sakens godkjenningshistorikk",
+    legacy: "eldre dokumentasjon",
+    firstPage: "Første side",
+    unavailable:
+      "Historikken er utilgjengelig eller rollen din tillater ikke innsyn. Prøv igjen, fjern filtre eller velg en autorisert organisasjon.",
+    retry: "Prøv igjen",
+
     featureName: "Samsvar og revisjonslogg",
     title: "Aktivitetslogg",
     description: "Vis og filtrer aktivitet i organisasjonen din",

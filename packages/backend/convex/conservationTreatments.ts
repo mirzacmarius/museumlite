@@ -9,6 +9,11 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import {
+  readWorkflowHistoryPage,
+  workflowHistoryPageValidator,
+} from "./auditLog";
+import { appendCaseHistory } from "./utils/caseHistory";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
@@ -55,7 +60,10 @@ const assessmentEvidenceSummary = v.object({
 
 async function loadTreatmentAssessment(
   ctx: QueryCtx | MutationCtx,
-  treatment: { collectionId: Id<"collections">; organizationId: Id<"organizations"> },
+  treatment: {
+    collectionId: Id<"collections">;
+    organizationId: Id<"organizations">;
+  },
   assessmentId: Id<"conditionAssessments">,
   options: { requireAccepted?: boolean } = {},
 ) {
@@ -365,7 +373,9 @@ export const setFollowUp = mutation({
     );
 
     if (args.status !== "none" && treatment.status !== "completed") {
-      throw new Error("Follow-up can only be scheduled after treatment completion");
+      throw new Error(
+        "Follow-up can only be scheduled after treatment completion",
+      );
     }
     if (args.dueAt !== undefined && !Number.isFinite(args.dueAt)) {
       throw new Error("Follow-up due date must be valid");
@@ -616,7 +626,9 @@ export const create = mutation({
 
     let baselineAssessmentId: Id<"conditionAssessments"> | undefined;
     if (collection.currentConditionAssessmentId) {
-      const baseline = await ctx.db.get(collection.currentConditionAssessmentId);
+      const baseline = await ctx.db.get(
+        collection.currentConditionAssessmentId,
+      );
       if (
         baseline?.status === "accepted" &&
         baseline.collectionId === args.collectionId
@@ -748,7 +760,7 @@ export const approve = mutation({
         throw new Error("Permission denied: cannot approve at this step");
       }
 
-      const history = treatment.workflowHistory ?? [];
+      const history = [...(treatment.workflowHistory ?? [])];
       if (!workflowState.isPastLastStep) {
         history.push({
           step: currentStep,
@@ -767,7 +779,12 @@ export const approve = mutation({
             status: "approved",
             approvedBy: userId,
             approvedAt: Date.now(),
-            workflowHistory: history,
+            ...(await appendCaseHistory(
+              ctx,
+              treatment,
+              "conservation",
+              history,
+            )),
           }),
           ctx.runMutation(internal.audit.logAction, {
             organizationId: treatment.organizationId,
@@ -801,7 +818,12 @@ export const approve = mutation({
           Promise.all([
             ctx.db.patch(args.treatmentId, {
               workflowStep: nextStep,
-              workflowHistory: history,
+              ...(await appendCaseHistory(
+                ctx,
+                treatment,
+                "conservation",
+                history,
+              )),
             }),
             ctx.runMutation(internal.audit.logAction, {
               organizationId: treatment.organizationId,
@@ -907,7 +929,7 @@ export const reject = mutation({
       );
     }
 
-    const history = treatment.workflowHistory ?? [];
+    const history = [...(treatment.workflowHistory ?? [])];
     history.push({
       step: currentStep,
       approvedBy: userId,
@@ -918,7 +940,7 @@ export const reject = mutation({
     await Promise.all([
       ctx.db.patch(args.treatmentId, {
         status: "rejected",
-        workflowHistory: history,
+        ...(await appendCaseHistory(ctx, treatment, "conservation", history)),
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: treatment.organizationId,
@@ -1020,15 +1042,24 @@ export const complete = mutation({
         "Outcome condition assessment is required before completion",
       );
     }
-    await loadTreatmentAssessment(ctx, treatment, treatment.outcomeAssessmentId, {
-      requireAccepted: true,
-    });
+    await loadTreatmentAssessment(
+      ctx,
+      treatment,
+      treatment.outcomeAssessmentId,
+      {
+        requireAccepted: true,
+      },
+    );
     if (!treatment.baselineAssessmentId) {
       throw new Error(
         "Baseline condition assessment is required before completion",
       );
     }
-    await loadTreatmentAssessment(ctx, treatment, treatment.baselineAssessmentId);
+    await loadTreatmentAssessment(
+      ctx,
+      treatment,
+      treatment.baselineAssessmentId,
+    );
 
     const updates: {
       status: "completed";
@@ -1064,16 +1095,10 @@ export const complete = mutation({
 export const getWorkflowHistory = query({
   args: {
     treatmentId: v.id("conservationTreatments"),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      step: v.number(),
-      approvedBy: v.id("users"),
-      approvedAt: v.number(),
-      comment: v.optional(v.string()),
-      approverName: v.optional(v.string()),
-    }),
-  ),
+  returns: workflowHistoryPageValidator,
   handler: async (ctx, args) => {
     const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
@@ -1085,19 +1110,13 @@ export const getWorkflowHistory = query({
       requirePermission(ctx, treatment.organizationId, "collections.read"),
     ]);
 
-    const history = treatment.workflowHistory ?? [];
-
-    const enrichedHistory = await Promise.all(
-      history.map(async (item) => {
-        const approver = await ctx.db.get(item.approvedBy);
-        return {
-          ...item,
-          approverName: approver?.name || approver?.username || undefined,
-        };
-      }),
-    );
-
-    return enrichedHistory;
+    return await readWorkflowHistoryPage(ctx, {
+      organizationId: treatment.organizationId,
+      caseType: "conservation",
+      entityId: args.treatmentId,
+      cursor: args.cursor,
+      limit: args.limit,
+    });
   },
 });
 

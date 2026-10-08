@@ -1056,6 +1056,38 @@ export default {
     cancelFailed: "Échec de l'annulation de l'invitation. Veuillez réessayer.",
   },
   activityLog: {
+    historyPreview:
+      "Approbations récentes uniquement. Ouvrez la chronologie du dossier pour consulter l’historique complet.",
+    nextPage: "Page suivante",
+    pageEntries: "entrées sur cette page",
+    filterOptionsRecent:
+      "Les options d’auteur et d’action proviennent des 1 000 derniers événements. Les recherches par date et sujet couvrent tout l’historique.",
+    invalidDateRange: "La date de début doit précéder la date de fin.",
+    details: "Détails de l’événement",
+    legacyEvidence:
+      "Événement ancien : aucune identité de l’auteur ou du sujet n’a été conservée au moment de l’enregistrement.",
+    recordedEvidence:
+      "Les identités de l’auteur et du sujet ont été conservées lors de l’enregistrement.",
+    correctionOf: "Correction de",
+    subjectTimeline: "Historique du sujet",
+    objectTimeline: "Historique de l’objet",
+    caseTimeline: "Historique du dossier",
+    field: "Champ",
+    before: "Avant",
+    after: "Après",
+    correctionReason: "Motif de la correction",
+    correctionStatement: "Texte de la correction",
+    appendCorrection: "Ajouter une correction",
+    correctionFailed:
+      "La correction n’a pas pu être enregistrée. Votre texte est conservé ; réessayez.",
+    correctionSaved: "Correction ajoutée. L’événement original est conservé.",
+    approvalHistory: "Historique des approbations du dossier",
+    legacy: "preuve ancienne",
+    firstPage: "Première page",
+    unavailable:
+      "L’historique est indisponible ou votre rôle ne permet pas de le consulter. Réessayez, effacez les filtres ou sélectionnez une organisation autorisée.",
+    retry: "Réessayer",
+
     featureName: "Conformité et journal d'audit",
     title: "Journal d'activité",
     description: "Afficher et filtrer l'activité dans votre organisation",
