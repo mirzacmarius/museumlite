@@ -252,6 +252,7 @@ export const store = internalMutation({
           });
         }
       } else if (
+        code.provider === "resend-otp-password-reset" &&
         !account.emailVerified &&
         account.provider.startsWith("password")
       ) {

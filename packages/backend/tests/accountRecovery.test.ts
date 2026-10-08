@@ -791,6 +791,50 @@ describe("account recovery without existence disclosure", () => {
     await t.finishAllScheduledFunctions(() => vi.runAllTimers());
   });
 
+  test("legacy unverified password accounts retain password sign-in after verification", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const secret = await new Scrypt().hash(ownerPassword);
+    await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: ownerEmail });
+      await ctx.db.insert("authAccounts", {
+        userId,
+        provider,
+        providerAccountId: ownerEmail,
+        secret,
+      });
+    });
+    expect(
+      await authRequest(t, {
+        provider,
+        params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
+      }),
+    ).toEqual({ tokens: null });
+    expect(
+      (
+        await authRequest(t, {
+          provider,
+          params: {
+            email: ownerEmail,
+            code: latestCode(ownerEmail),
+            flow: "email-verification",
+          },
+        })
+      ).tokens?.token,
+    ).toEqual(expect.any(String));
+    expect(
+      (
+        await authRequest(t, {
+          provider,
+          params: {
+            email: ownerEmail,
+            password: ownerPassword,
+            flow: "signIn",
+          },
+        })
+      ).tokens?.token,
+    ).toEqual(expect.any(String));
+  });
+
   test("password providers without email verification refuse sign-up uniformly", async () => {
     const t = createConvexTestWithRateLimiter();
     for (const email of [ownerEmail, strangerEmail]) {
