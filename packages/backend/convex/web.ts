@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalMutation } from "./_generated/server";
+import { action } from "./_generated/server";
 import { env } from "./env";
+import { internalMutation } from "./utils/mutationBuilders";
 
 export const subscribe = action({
   args: {

@@ -3,10 +3,8 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
-  internalMutation,
   internalQuery,
   type MutationCtx,
-  mutation,
   type QueryCtx,
   query,
 } from "./_generated/server";
@@ -25,6 +23,7 @@ import {
   recordExportUsage,
   requireFeatureAccess,
 } from "./utils/featureGates";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 const exportJobDoc = v.object({

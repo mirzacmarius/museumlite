@@ -781,9 +781,7 @@ describe("Import E2E Verification (manual)", () => {
     const collections = await asUser.run(async (ctx) => {
       return ctx.db
         .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", orgId),
-        )
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
         .collect();
     });
 
@@ -795,9 +793,7 @@ describe("Import E2E Verification (manual)", () => {
     const otherOrgCollections = await asUser.run(async (ctx) => {
       return ctx.db
         .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", otherOrg),
-        )
+        .withIndex("by_organization", (q) => q.eq("organizationId", otherOrg))
         .collect();
     });
 

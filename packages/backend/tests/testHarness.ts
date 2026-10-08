@@ -1,5 +1,7 @@
 import { convexTest } from "convex-test";
+import { vi } from "vitest";
 import rateLimiterSchema from "../../../node_modules/@convex-dev/rate-limiter/src/component/schema";
+import { internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import type { ModuleId } from "../convex/utils/moduleCatalog";
@@ -127,4 +129,35 @@ export async function createOrgUserCollectionWithPermissions(
   });
 
   return { ...setup, collectionId };
+}
+
+/** Narrows a projection-backed metric result, failing the test when unavailable. */
+export function expectReady<T extends { availability: string }>(
+  result: T,
+): Extract<T, { availability: "ready" }> {
+  if (result.availability !== "ready") {
+    throw new Error(`Metrics unavailable: ${JSON.stringify(result)}`);
+  }
+  return result as Extract<T, { availability: "ready" }>;
+}
+
+/**
+ * Fixture rows inserted with `t.run` bypass mutation triggers, exactly like a
+ * restore or dashboard import. Rebuild the organization's projection from its
+ * source rows before asserting maintained metrics.
+ */
+export async function rebuildProjection(
+  t: ConvexTest,
+  organizationId: Id<"organizations">,
+) {
+  const fakeTimers = vi.isFakeTimers();
+  if (!fakeTimers) vi.useFakeTimers();
+  try {
+    await t.mutation(internal.projections.startRebuildForOrganization, {
+      organizationId,
+    });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  } finally {
+    if (!fakeTimers) vi.useRealTimers();
+  }
 }

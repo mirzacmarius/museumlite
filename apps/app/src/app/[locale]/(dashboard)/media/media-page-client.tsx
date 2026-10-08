@@ -9,6 +9,7 @@ import { Image as ImageIcon, Search, Star } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { MetricsUnavailableInline } from "@/components/metrics-unavailable-notice";
 import { useCursorStackPagination } from "@/hooks/use-cursor-stack-pagination";
 import type { MediaFileType } from "@/hooks/use-url-filters";
 import { useMediaFilters } from "@/hooks/use-url-filters";
@@ -165,7 +166,12 @@ export function MediaPageClient({
             {tRoot("untranslatedDashboard.media.digitalAssets")}
           </h2>
           <div className="flex items-center gap-3">
-            {stats && usage && (
+            {stats?.availability === "unavailable" ? (
+              <MetricsUnavailableInline
+                label={tRoot("projectionHealth.unavailable.storage")}
+              />
+            ) : null}
+            {stats?.availability === "ready" && usage && (
               <div className="flex items-center gap-2 text-xs text-zinc-500">
                 <span className="size-2 rounded-full bg-emerald-500" />
                 <span>{formatFileSize(stats.totalSize)} {tRoot("untranslatedRecords.objects.forms.used")}</span>

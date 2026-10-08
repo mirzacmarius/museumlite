@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, query } from "./_generated/server";
+import { type MutationCtx, query } from "./_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import {
   applyImportJobProgress,
@@ -18,6 +18,7 @@ import {
   isSupportedMediaMimeType,
   MAX_SMALL_MEDIA_FILE_SIZE,
 } from "./utils/mediaAssets";
+import { mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
 import {
   claimStorageOwnership,

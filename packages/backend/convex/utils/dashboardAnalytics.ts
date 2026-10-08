@@ -1,108 +1,22 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { classifyInventoryRecord } from "./collectionMetrics";
 import {
-  countAccessionsByStatus,
-  countCatalogObjects,
-  countCollectionsByStatus,
-  countDeaccessionsByStatus,
-  countIndexedQuery,
-  countLoansByStatus,
-  countLoansByType,
-  countOpenDeaccessionCollectionIds,
-  getInventoryLoanAssociations,
-} from "./indexedCounts";
+  metric,
+  openProjection,
+  type ProjectionReader,
+} from "./projectionReads";
+import { groupScope, siteScope } from "./projectionSources";
+import { distinctScope, readTotals } from "./projectionStore";
 
-type AnalyticsCtx = Pick<QueryCtx, "db" | "storage">;
+type AnalyticsCtx = Pick<QueryCtx, "db" | "storage" | "runQuery">;
 
 function isValidConvexId(id: string): boolean {
   return id.length >= 20 && /^[a-zA-Z0-9_-]+$/.test(id);
 }
 
-async function countTransfersByStatus(
-  ctx: AnalyticsCtx,
-  organizationId: Id<"organizations">,
-  status: Doc<"organizationMoveRequests">["status"],
-) {
-  return countIndexedQuery(
-    ctx.db
-      .query("organizationMoveRequests")
-      .withIndex("by_source_organization_and_status", (q) =>
-        q.eq("sourceOrganizationId", organizationId).eq("status", status),
-      ),
-  );
-}
-
-async function countCollectionGroups(
-  ctx: AnalyticsCtx,
-  organizationId: Id<"organizations">,
-) {
-  return countIndexedQuery(
-    ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      ),
-  );
-}
-
-async function countLocations(
-  ctx: AnalyticsCtx,
-  organizationId: Id<"organizations">,
-  siteId?: Id<"sites">,
-) {
-  if (siteId === undefined) {
-    return countIndexedQuery(
-      ctx.db
-        .query("locations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organizationId),
-        ),
-    );
-  }
-
-  return countIndexedQuery(
-    ctx.db
-      .query("locations")
-      .withIndex("by_organization_and_site", (q) =>
-        q.eq("organizationId", organizationId).eq("siteId", siteId),
-      ),
-  );
-}
-
-async function loadSiteCollections(
-  ctx: AnalyticsCtx,
-  organizationId: Id<"organizations">,
-  siteId: Id<"sites">,
-) {
-  const locations = await ctx.db
-    .query("locations")
-    .withIndex("by_organization_and_site", (q) =>
-      q.eq("organizationId", organizationId).eq("siteId", siteId),
-    )
-    .collect();
-
-  const locationIds = locations.map((loc) => loc._id);
-  const collectionsByLocation = await Promise.all(
-    locationIds.map((locationId) =>
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization_and_location", (q) =>
-          q
-            .eq("organizationId", organizationId)
-            .eq("currentLocationId", locationId),
-        )
-        .collect(),
-    ),
-  );
-  const collections = collectionsByLocation.flat();
-
-  const uniqueById = new Map(collections.map((c) => [c._id, c]));
-  return [...uniqueById.values()];
-}
-
 export async function buildRecentCollectionGroups(
   ctx: AnalyticsCtx,
+  reader: ProjectionReader,
   collectionGroups: Array<Doc<"collectionGroups">>,
 ) {
   return Promise.all(
@@ -180,7 +94,10 @@ export async function buildRecentCollectionGroups(
           id: group._id,
           name: group.name,
           description: group.description,
-          itemsCount: group.itemsCount ?? 0,
+          itemsCount: metric(
+            await reader.totals(groupScope(group._id)),
+            "items",
+          ),
           imageUrl,
           storageLocation: group.storageLocation,
           valuation: group.valuation,
@@ -225,13 +142,7 @@ export async function buildRecentObjects(
 export async function buildRecentActivity(
   ctx: AnalyticsCtx,
   organizationId: Id<"organizations">,
-  scope?: {
-    collectionIds: Set<Id<"collections">>;
-    loanIds: Set<Id<"loans">>;
-    accessionIds: Set<Id<"accessions">>;
-    deaccessionIds: Set<Id<"deaccessions">>;
-    collectionGroupIds: Set<Id<"collectionGroups">>;
-  },
+  inScope?: (entityType: string, entityId: string) => Promise<boolean>,
 ) {
   const auditLogEntries = await ctx.db
     .query("auditLog")
@@ -239,36 +150,15 @@ export async function buildRecentActivity(
       q.eq("organizationId", organizationId),
     )
     .order("desc")
-    .take(scope ? 100 : 12);
+    .take(inScope ? 100 : 12);
 
-  const filteredEntries = scope
-    ? auditLogEntries.filter((event) => {
-        if (event.entityType.includes("collection")) {
-          return (
-            scope.collectionIds.has(
-              event.entityId as unknown as Id<"collections">,
-            ) ||
-            scope.collectionGroupIds.has(
-              event.entityId as unknown as Id<"collectionGroups">,
-            )
-          );
-        }
-        if (event.entityType.includes("loan")) {
-          return scope.loanIds.has(event.entityId as unknown as Id<"loans">);
-        }
-        if (event.entityType.includes("accession")) {
-          return scope.accessionIds.has(
-            event.entityId as unknown as Id<"accessions">,
-          );
-        }
-        if (event.entityType.includes("deaccession")) {
-          return scope.deaccessionIds.has(
-            event.entityId as unknown as Id<"deaccessions">,
-          );
-        }
-        return false;
-      })
-    : auditLogEntries;
+  const filteredEntries: Array<Doc<"auditLog">> = [];
+  for (const event of auditLogEntries) {
+    if (!inScope || (await inScope(event.entityType, event.entityId))) {
+      filteredEntries.push(event);
+      if (filteredEntries.length === 12) break;
+    }
+  }
 
   return Promise.all(
     filteredEntries.slice(0, 12).map(async (event) => {
@@ -348,328 +238,236 @@ export async function buildRecentActivity(
   );
 }
 
+/** Rows inspected when building a site-scoped preview list. */
+const SITE_PREVIEW_SCAN_LIMIT = 200;
+
+function analyticsFromTotals(
+  totals: Record<string, number>,
+  organizationTotals: Record<string, number>,
+) {
+  return {
+    collections: { total: metric(totals, "collections.total") },
+    objects: {
+      total: metric(totals, "inventory.owned"),
+      active: metric(totals, "inventory.status.active"),
+      loaned: metric(totals, "inventory.status.loaned"),
+      incomingLoanExcluded: metric(totals, "inventory.incoming"),
+      ownershipUnclassified: metric(totals, "inventory.unclassified"),
+      deaccessioned: metric(totals, "objects.deaccessioned"),
+      onDisplay: metric(totals, "inventory.onDisplay"),
+    },
+    loans: {
+      total:
+        metric(totals, "loans.pending") +
+        metric(totals, "loans.active") +
+        metric(totals, "loans.dispatched") +
+        metric(totals, "loans.returned") +
+        metric(totals, "loans.cancelled"),
+      pending: metric(totals, "loans.pending"),
+      active: metric(totals, "loans.active"),
+      returned: metric(totals, "loans.returned"),
+      incoming: metric(totals, "loans.incoming"),
+      outgoing: metric(totals, "loans.outgoing"),
+    },
+    accessions: {
+      pending: metric(totals, "accessions.pending"),
+      approved: metric(totals, "accessions.approved"),
+      rejected: metric(totals, "accessions.rejected"),
+    },
+    deaccessions: {
+      pending: metric(totals, "deaccessions.pending"),
+      approved: metric(totals, "deaccessions.approved"),
+      rejected: metric(totals, "deaccessions.rejected"),
+    },
+    transfers: {
+      pending:
+        metric(organizationTotals, "transfers.pending") +
+        metric(organizationTotals, "transfers.pending_source_approval"),
+      executed: metric(organizationTotals, "transfers.executed"),
+      rejected: metric(organizationTotals, "transfers.rejected"),
+      cancelled: metric(organizationTotals, "transfers.cancelled"),
+    },
+    locations: { total: metric(totals, "locations.total") },
+  };
+}
+
+async function objectSite(
+  ctx: AnalyticsCtx,
+  organizationId: Id<"organizations">,
+  collection: Doc<"collections"> | null,
+) {
+  if (!collection?.currentLocationId) return undefined;
+  if (collection.organizationId !== organizationId) return undefined;
+  const location = await ctx.db.get(collection.currentLocationId);
+  return location?.organizationId === organizationId
+    ? location.siteId
+    : undefined;
+}
+
+async function loadSitePreviewObjects(
+  ctx: AnalyticsCtx,
+  organizationId: Id<"organizations">,
+  siteId: Id<"sites">,
+) {
+  const recent = await ctx.db
+    .query("collections")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .order("desc")
+    .take(SITE_PREVIEW_SCAN_LIMIT);
+  const atSite: Array<Doc<"collections">> = [];
+  for (const collection of recent) {
+    if ((await objectSite(ctx, organizationId, collection)) === siteId) {
+      atSite.push(collection);
+      if (atSite.length === 6) break;
+    }
+  }
+  return atSite;
+}
+
+async function loadSitePreviewGroups(
+  ctx: AnalyticsCtx,
+  reader: ProjectionReader,
+  organizationId: Id<"organizations">,
+  siteId: Id<"sites">,
+) {
+  const recent = await ctx.db
+    .query("collectionGroups")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .order("desc")
+    .take(SITE_PREVIEW_SCAN_LIMIT);
+  const atSite: Array<Doc<"collectionGroups">> = [];
+  for (const group of recent) {
+    const membership = await readTotals(
+      ctx,
+      reader.generationId,
+      distinctScope(siteScope(siteId), { "collections.total": 1 }, group._id),
+    );
+    if (metric(membership, "refs") > 0) {
+      atSite.push(group);
+      if (atSite.length === 4) break;
+    }
+  }
+  return atSite;
+}
+
+function siteActivityFilter(
+  ctx: AnalyticsCtx,
+  reader: ProjectionReader,
+  organizationId: Id<"organizations">,
+  siteId: Id<"sites">,
+) {
+  const objectAtSite = async (id: string) => {
+    const collectionId = ctx.db.normalizeId("collections", id);
+    if (!collectionId) return false;
+    return (
+      (await objectSite(
+        ctx,
+        organizationId,
+        await ctx.db.get(collectionId),
+      )) === siteId
+    );
+  };
+  return async (entityType: string, entityId: string) => {
+    if (entityType.includes("loan")) {
+      const loanId = ctx.db.normalizeId("loans", entityId);
+      if (!loanId) return false;
+      const items = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+        .take(20);
+      for (const item of items) {
+        if (await objectAtSite(item.collectionId)) return true;
+      }
+      return false;
+    }
+    if (entityType.includes("deaccession")) {
+      const id = ctx.db.normalizeId("deaccessions", entityId);
+      const deaccession = id ? await ctx.db.get(id) : null;
+      return deaccession ? await objectAtSite(deaccession.collectionId) : false;
+    }
+    if (entityType.includes("accession")) {
+      const id = ctx.db.normalizeId("accessions", entityId);
+      const accession = id ? await ctx.db.get(id) : null;
+      return accession?.collectionId
+        ? await objectAtSite(accession.collectionId)
+        : false;
+    }
+    if (entityType.includes("collection")) {
+      if (await objectAtSite(entityId)) return true;
+      const groupId = ctx.db.normalizeId("collectionGroups", entityId);
+      if (!groupId) return false;
+      const membership = await readTotals(
+        ctx,
+        reader.generationId,
+        distinctScope(siteScope(siteId), { "collections.total": 1 }, groupId),
+      );
+      return metric(membership, "refs") > 0;
+    }
+    return false;
+  };
+}
+
+export type OrganizationAnalytics = Awaited<
+  ReturnType<typeof buildOrganizationAnalytics>
+>;
+
+/**
+ * Dashboard counts come from the maintained projection. Preview lists are
+ * bounded recent samples and never stand in for totals.
+ */
 export async function buildOrganizationAnalytics(
   ctx: AnalyticsCtx,
   organizationId: Id<"organizations">,
   siteId?: Id<"sites">,
 ) {
-  if (siteId !== undefined) {
-    return buildSiteScopedAnalytics(ctx, organizationId, siteId);
-  }
+  const opened = await openProjection(ctx, organizationId);
+  if (!opened.ok) return opened.unavailable;
+  const { reader } = opened;
+  const organizationTotals = await reader.totals();
+  const totals =
+    siteId === undefined
+      ? organizationTotals
+      : await reader.totals(siteScope(siteId));
 
-  const [
-    collectionGroupTotal,
-    openDeaccessionCollectionIds,
-    inventoryLoanAssociations,
-    deaccessioned,
-    loanPending,
-    loanActive,
-    loanDispatched,
-    loanReturned,
-    loanCancelled,
-    loanIncoming,
-    loanOutgoing,
-    accessionPending,
-    accessionApproved,
-    accessionRejected,
-    deaccessionPending,
-    deaccessionApproved,
-    deaccessionRejected,
-    transferPending,
-    transferAwaitingSourceApproval,
-    transferExecuted,
-    transferRejected,
-    transferCancelled,
-    locationTotal,
-    recentCollectionGroupDocs,
-    recentCollectionDocs,
-  ] = await Promise.all([
-    countCollectionGroups(ctx, organizationId),
-    countOpenDeaccessionCollectionIds(ctx, organizationId),
-    getInventoryLoanAssociations(ctx, organizationId),
-    countCollectionsByStatus(ctx, organizationId, "deaccessioned"),
-    countLoansByStatus(ctx, organizationId, "pending"),
-    countLoansByStatus(ctx, organizationId, "active"),
-    countLoansByStatus(ctx, organizationId, "dispatched"),
-    countLoansByStatus(ctx, organizationId, "returned"),
-    countLoansByStatus(ctx, organizationId, "cancelled"),
-    countLoansByType(ctx, organizationId, "incoming"),
-    countLoansByType(ctx, organizationId, "outgoing"),
-    countAccessionsByStatus(ctx, organizationId, "pending"),
-    countAccessionsByStatus(ctx, organizationId, "approved"),
-    countAccessionsByStatus(ctx, organizationId, "rejected"),
-    countDeaccessionsByStatus(ctx, organizationId, "pending"),
-    countDeaccessionsByStatus(ctx, organizationId, "approved"),
-    countDeaccessionsByStatus(ctx, organizationId, "rejected"),
-    countTransfersByStatus(ctx, organizationId, "pending"),
-    countTransfersByStatus(ctx, organizationId, "pending_source_approval"),
-    countTransfersByStatus(ctx, organizationId, "executed"),
-    countTransfersByStatus(ctx, organizationId, "rejected"),
-    countTransfersByStatus(ctx, organizationId, "cancelled"),
-    countLocations(ctx, organizationId),
-    ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .order("desc")
-      .take(4),
-    ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .order("desc")
-      .take(6),
-  ]);
+  const [groupDocs, objectDocs] =
+    siteId === undefined
+      ? await Promise.all([
+          ctx.db
+            .query("collectionGroups")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", organizationId),
+            )
+            .order("desc")
+            .take(4),
+          ctx.db
+            .query("collections")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", organizationId),
+            )
+            .order("desc")
+            .take(6),
+        ])
+      : await Promise.all([
+          loadSitePreviewGroups(ctx, reader, organizationId, siteId),
+          loadSitePreviewObjects(ctx, organizationId, siteId),
+        ]);
 
-  const [
-    catalogWithDeaccessionExclusion,
-    recentCollectionGroups,
-    recentObjects,
-    recentActivity,
-  ] = await Promise.all([
-    countCatalogObjects(
-      ctx,
-      organizationId,
-      openDeaccessionCollectionIds,
-      inventoryLoanAssociations,
-    ),
-    buildRecentCollectionGroups(ctx, recentCollectionGroupDocs),
-    buildRecentObjects(ctx, recentCollectionDocs),
-    buildRecentActivity(ctx, organizationId),
-  ]);
-
-  const loanTotal =
-    loanPending + loanActive + loanDispatched + loanReturned + loanCancelled;
-
-  return {
-    collections: {
-      total: collectionGroupTotal,
-    },
-    objects: {
-      total: catalogWithDeaccessionExclusion.total,
-      active: catalogWithDeaccessionExclusion.active,
-      loaned: catalogWithDeaccessionExclusion.loaned,
-      incomingLoanExcluded:
-        catalogWithDeaccessionExclusion.incomingLoanExcluded,
-      ownershipUnclassified:
-        catalogWithDeaccessionExclusion.ownershipUnclassified,
-      deaccessioned,
-      onDisplay: catalogWithDeaccessionExclusion.onDisplay,
-    },
-    loans: {
-      total: loanTotal,
-      pending: loanPending,
-      active: loanActive,
-      returned: loanReturned,
-      incoming: loanIncoming,
-      outgoing: loanOutgoing,
-    },
-    accessions: {
-      pending: accessionPending,
-      approved: accessionApproved,
-      rejected: accessionRejected,
-    },
-    deaccessions: {
-      pending: deaccessionPending,
-      approved: deaccessionApproved,
-      rejected: deaccessionRejected,
-    },
-    transfers: {
-      pending: transferPending + transferAwaitingSourceApproval,
-      executed: transferExecuted,
-      rejected: transferRejected,
-      cancelled: transferCancelled,
-    },
-    locations: {
-      total: locationTotal,
-    },
-    recentCollectionGroups,
-    recentObjects,
-    recentActivity,
-  };
-}
-
-async function buildSiteScopedAnalytics(
-  ctx: AnalyticsCtx,
-  organizationId: Id<"organizations">,
-  siteId: Id<"sites">,
-) {
-  const [locations, collections, allCollectionGroups] = await Promise.all([
-    ctx.db
-      .query("locations")
-      .withIndex("by_organization_and_site", (q) =>
-        q.eq("organizationId", organizationId).eq("siteId", siteId),
-      )
-      .collect(),
-    loadSiteCollections(ctx, organizationId, siteId),
-    ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect(),
-  ] as const);
-  const collectionIds = new Set(collections.map((c) => c._id));
-
-  const groupIdsForSite = new Set<Id<"collectionGroups">>();
-  const groupItemsByCollection = await Promise.all(
-    [...collectionIds].map((collectionId) =>
-      ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect(),
-    ),
-  );
-  for (const items of groupItemsByCollection) {
-    for (const item of items) {
-      groupIdsForSite.add(item.collectionGroupId);
-    }
-  }
-
-  const collectionGroups = allCollectionGroups.filter((g) =>
-    groupIdsForSite.has(g._id),
-  );
-
-  const [allLoans, allAccessions, allDeaccessions] = await Promise.all([
-    ctx.db
-      .query("loans")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect(),
-    ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect(),
-    ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect(),
-  ]);
-
-  const accessions = allAccessions.filter(
-    (a) => a.collectionId && collectionIds.has(a.collectionId),
-  );
-  const deaccessions = allDeaccessions.filter((d) =>
-    collectionIds.has(d.collectionId),
-  );
-
-  const loanIdsForSite = new Set<Id<"loans">>();
-  const loanItemsByCollection = await Promise.all(
-    [...collectionIds].map((collectionId) =>
-      ctx.db
-        .query("loanItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect(),
-    ),
-  );
-  for (const items of loanItemsByCollection) {
-    for (const item of items) {
-      loanIdsForSite.add(item.loanId);
-    }
-  }
-  const loans = allLoans.filter((l) => loanIdsForSite.has(l._id));
-  const inventoryLoanAssociations = await getInventoryLoanAssociations(
-    ctx,
-    organizationId,
-  );
-
-  const collectionIdsWithOpenDeaccessions = new Set(
-    deaccessions.flatMap((deaccession) =>
-      deaccession.status === "pending" || deaccession.status === "approved"
-        ? [deaccession.collectionId]
-        : [],
-    ),
-  );
-  const ownershipForCollection = (collection: Doc<"collections">) =>
-    classifyInventoryRecord({
-      status: collection.status,
-      hasOpenDeaccession: collectionIdsWithOpenDeaccessions.has(collection._id),
-      linkedToIncomingLoan: inventoryLoanAssociations.incoming.has(
-        collection._id,
-      ),
-      linkedToOutgoingLoan: inventoryLoanAssociations.outgoing.has(
-        collection._id,
-      ),
-    });
-  const catalogObjects = collections.filter(
-    (collection) => ownershipForCollection(collection) === "owned",
-  );
-
-  const [recentCollectionGroups, recentObjects, recentActivity, transfers] =
+  const [recentCollectionGroups, recentObjects, recentActivity] =
     await Promise.all([
-      buildRecentCollectionGroups(ctx, collectionGroups),
-      buildRecentObjects(ctx, collections),
-      buildRecentActivity(ctx, organizationId, {
-        collectionIds,
-        loanIds: loanIdsForSite,
-        accessionIds: new Set(accessions.map((a) => a._id)),
-        deaccessionIds: new Set(deaccessions.map((d) => d._id)),
-        collectionGroupIds: groupIdsForSite,
-      }),
-      ctx.db
-        .query("organizationMoveRequests")
-        .withIndex("by_source_organization", (q) =>
-          q.eq("sourceOrganizationId", organizationId),
-        )
-        .collect(),
-    ] as const);
+      buildRecentCollectionGroups(ctx, reader, groupDocs),
+      buildRecentObjects(ctx, objectDocs),
+      buildRecentActivity(
+        ctx,
+        organizationId,
+        siteId === undefined
+          ? undefined
+          : siteActivityFilter(ctx, reader, organizationId, siteId),
+      ),
+    ]);
 
   return {
-    collections: {
-      total: collectionGroups.length,
-    },
-    objects: {
-      total: catalogObjects.length,
-      active: catalogObjects.filter((c) => c.status === "active").length,
-      loaned: catalogObjects.filter((c) => c.status === "loaned").length,
-      incomingLoanExcluded: collections.filter(
-        (c) => ownershipForCollection(c) === "incoming",
-      ).length,
-      ownershipUnclassified: collections.filter(
-        (c) => ownershipForCollection(c) === "unclassified",
-      ).length,
-      deaccessioned: collections.filter((c) => c.status === "deaccessioned")
-        .length,
-      onDisplay: catalogObjects.filter(
-        (c) => c.status === "active" && c.displayStatus === "on_display",
-      ).length,
-    },
-    loans: {
-      total: loans.length,
-      pending: loans.filter((l) => l.status === "pending").length,
-      active: loans.filter((l) => l.status === "active").length,
-      returned: loans.filter((l) => l.status === "returned").length,
-      incoming: loans.filter((l) => l.type === "incoming").length,
-      outgoing: loans.filter((l) => l.type === "outgoing").length,
-    },
-    accessions: {
-      pending: accessions.filter((a) => a.status === "pending").length,
-      approved: accessions.filter((a) => a.status === "approved").length,
-      rejected: accessions.filter((a) => a.status === "rejected").length,
-    },
-    deaccessions: {
-      pending: deaccessions.filter((d) => d.status === "pending").length,
-      approved: deaccessions.filter((d) => d.status === "approved").length,
-      rejected: deaccessions.filter((d) => d.status === "rejected").length,
-    },
-    transfers: {
-      pending: transfers.filter(
-        (t) => t.status === "pending" || t.status === "pending_source_approval",
-      ).length,
-      executed: transfers.filter((t) => t.status === "executed").length,
-      rejected: transfers.filter((t) => t.status === "rejected").length,
-      cancelled: transfers.filter((t) => t.status === "cancelled").length,
-    },
-    locations: {
-      total: locations.length,
-    },
+    availability: "ready" as const,
+    ...analyticsFromTotals(totals, organizationTotals),
     recentCollectionGroups,
     recentObjects,
     recentActivity,

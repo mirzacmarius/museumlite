@@ -518,52 +518,50 @@ describe("notification CRUD operations", () => {
   test("bulkDelete returns accurate count for multiple owned notifications", async () => {
     const t = convexTest(schema, modules);
 
-    const { ownerId, notificationIds } = await t.run(
-      async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Bulk Delete Org",
-          slug: "bulk-delete-org",
-          type: "museum",
-        });
-        const ownerId = await ctx.db.insert("users", {
-          name: "Owner",
-          email: "owner@example.com",
-        });
-        const otherUserId = await ctx.db.insert("users", {
-          name: "Other User",
-          email: "other@example.com",
-        });
+    const { ownerId, notificationIds } = await t.run(async (ctx) => {
+      const orgId = await ctx.db.insert("organizations", {
+        name: "Bulk Delete Org",
+        slug: "bulk-delete-org",
+        type: "museum",
+      });
+      const ownerId = await ctx.db.insert("users", {
+        name: "Owner",
+        email: "owner@example.com",
+      });
+      const otherUserId = await ctx.db.insert("users", {
+        name: "Other User",
+        email: "other@example.com",
+      });
 
-        const notificationIds = await Promise.all(
-          Array.from({ length: 4 }, (_, i) =>
-            ctx.db.insert("notifications", {
-              organizationId: orgId,
-              userId: ownerId,
-              type: "task_assigned",
-              title: `Owned ${i}`,
-              message: `Message ${i}`,
-              read: false,
-              createdAt: Date.now() + i,
-            }),
-          ),
-        );
+      const notificationIds = await Promise.all(
+        Array.from({ length: 4 }, (_, i) =>
+          ctx.db.insert("notifications", {
+            organizationId: orgId,
+            userId: ownerId,
+            type: "task_assigned",
+            title: `Owned ${i}`,
+            message: `Message ${i}`,
+            read: false,
+            createdAt: Date.now() + i,
+          }),
+        ),
+      );
 
-        const otherUserNotificationId = await ctx.db.insert("notifications", {
-          organizationId: orgId,
-          userId: otherUserId,
-          type: "task_assigned",
-          title: "Other user notification",
-          message: "Should not be deleted",
-          read: false,
-          createdAt: Date.now(),
-        });
+      const otherUserNotificationId = await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId: otherUserId,
+        type: "task_assigned",
+        title: "Other user notification",
+        message: "Should not be deleted",
+        read: false,
+        createdAt: Date.now(),
+      });
 
-        return {
-          ownerId,
-          notificationIds: [...notificationIds, otherUserNotificationId],
-        };
-      },
-    );
+      return {
+        ownerId,
+        notificationIds: [...notificationIds, otherUserNotificationId],
+      };
+    });
 
     const authed = authedForUser(t, ownerId);
     const deletedCount = await authed.mutation(api.notifications.bulkDelete, {
@@ -577,7 +575,9 @@ describe("notification CRUD operations", () => {
     });
 
     expect(remaining.filter((n) => n?.userId === ownerId)).toHaveLength(0);
-    expect(remaining.find((n) => n !== null && n.userId !== ownerId)).toBeDefined();
+    expect(
+      remaining.find((n) => n !== null && n.userId !== ownerId),
+    ).toBeDefined();
   });
 
   test("should bulk delete notifications", async () => {

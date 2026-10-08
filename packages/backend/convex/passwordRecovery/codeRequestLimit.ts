@@ -2,7 +2,8 @@ import type { RunMutationCtx } from "@convex-dev/rate-limiter";
 import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { v } from "convex/values";
 import { components, internal } from "../_generated/api";
-import { internalMutation, type MutationCtx } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
+import { internalMutation } from "../utils/mutationBuilders";
 import { authRecoveryError } from "./authRecoveryErrors";
 
 export const codeRequestReserved = Symbol("codeRequestReserved");

@@ -2,13 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
   readWorkflowHistoryPage,
   workflowHistoryPageValidator,
@@ -16,6 +10,7 @@ import {
 import { appendCaseHistory } from "./utils/caseHistory";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   canApproveAtStep,
   canInitiateWorkflow,

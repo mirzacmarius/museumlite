@@ -8,9 +8,11 @@ import { useQuery } from "convex/react";
 import { BarChart3 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ClientTime } from "@/components/client-date";
+import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useI18n } from "@/locales/client";
 
 const chartFallback = () => (
@@ -172,7 +174,22 @@ export default function AnalyticsPage() {
     return null;
   }
 
-  const complianceData = hasCompliance ? compliance : undefined;
+  const kpiData = readyResult(kpis);
+  const locationData = readyResult(locationUtilization);
+  const complianceData = hasCompliance ? readyResult(compliance) : undefined;
+  const metricsUnavailableReason =
+    unavailableReason(kpis) ??
+    unavailableReason(locationUtilization) ??
+    (hasCompliance ? unavailableReason(compliance) : undefined);
+  const reports =
+    kpiData && locationData && (!hasCompliance || complianceData)
+      ? {
+          kpis: kpiData,
+          compliance: complianceData,
+          locationUtilization: locationData,
+          hasInventoryValuation,
+        }
+      : null;
 
   return (
     <FeatureGuard
@@ -191,21 +208,29 @@ export default function AnalyticsPage() {
               {t("analytics.description")}
             </p>
           </div>
-          <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
-            {t("analytics.updatedAt")}{" "}
-            <ClientTime timestamp={kpis.generatedAt} />
-          </div>
+          {kpiData ? (
+            <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
+              {t("analytics.updatedAt")}{" "}
+              <ClientTime timestamp={kpiData.generatedAt} />
+            </div>
+          ) : null}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {hasInventoryValuation && (
-            <InventoryValuationCard data={kpis.inventory} />
-          )}
-          <LoanCalendarCard data={kpis.loans} />
-          <ExhibitionPipelineCard
-            data={{ ...kpis.exhibitions, asOf: kpis.asOf }}
-          />
-        </div>
+        {metricsUnavailableReason ? (
+          <MetricsUnavailableNotice reason={metricsUnavailableReason} />
+        ) : null}
+
+        {kpiData ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {hasInventoryValuation && (
+              <InventoryValuationCard data={kpiData.inventory} />
+            )}
+            <LoanCalendarCard data={kpiData.loans} />
+            <ExhibitionPipelineCard
+              data={{ ...kpiData.exhibitions, asOf: kpiData.asOf }}
+            />
+          </div>
+        ) : null}
 
         {complianceData && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -219,18 +244,18 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <LocationUtilizationCard data={locationUtilization} />
-        </div>
+        {locationData ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <LocationUtilizationCard data={locationData} />
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ScheduledReportsCard organizationId={currentOrganizationId} />
           <ReportExportsCard
             organizationId={currentOrganizationId}
-            kpis={kpis}
-            compliance={complianceData}
-            locationUtilization={locationUtilization}
-            hasInventoryValuation={hasInventoryValuation}
+            reports={reports}
+            unavailableReason={metricsUnavailableReason}
           />
         </div>
       </div>

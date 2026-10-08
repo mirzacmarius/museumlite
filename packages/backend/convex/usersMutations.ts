@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation } from "./utils/mutationBuilders";
 
 /**
  * Internal mutation to delete a user account and its associated auth data.

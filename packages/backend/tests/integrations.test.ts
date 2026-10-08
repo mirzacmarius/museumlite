@@ -3,13 +3,12 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
-
-import { modules } from "./testSetup";
 import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
 } from "./testHarness";
+import { modules } from "./testSetup";
 
 type TestSetup = {
   organizationId: Id<"organizations">;

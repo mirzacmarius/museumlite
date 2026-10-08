@@ -161,7 +161,9 @@ async function resolveReturnDestination(
   input: ReceiveLoanItemInput,
 ): Promise<Id<"locations">> {
   if (loan.type === "incoming") {
-    throw new Error("Incoming loan items use lender exit, not internal location");
+    throw new Error(
+      "Incoming loan items use lender exit, not internal location",
+    );
   }
 
   if (input.destinationLocationId) {

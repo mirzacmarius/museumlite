@@ -14,7 +14,11 @@ export interface CollectionSetupSuggestion {
 
 const TEMPLATE_BY_TYPE: Record<
   OrganizationType,
-  { summary: string; collectionGroups: SuggestedCollectionGroup[]; objectTypes: string[] }
+  {
+    summary: string;
+    collectionGroups: SuggestedCollectionGroup[];
+    objectTypes: string[];
+  }
 > = {
   museum: {
     summary:
@@ -22,7 +26,8 @@ const TEMPLATE_BY_TYPE: Record<
     collectionGroups: [
       {
         name: "Fine Art",
-        description: "Paintings, works on paper, and contemporary art holdings.",
+        description:
+          "Paintings, works on paper, and contemporary art holdings.",
       },
       {
         name: "Decorative Arts",
@@ -52,7 +57,13 @@ const TEMPLATE_BY_TYPE: Record<
         description: "Works shown in previous gallery programs.",
       },
     ],
-    objectTypes: ["Painting", "Print", "Photograph", "Mixed Media", "Installation"],
+    objectTypes: [
+      "Painting",
+      "Print",
+      "Photograph",
+      "Mixed Media",
+      "Installation",
+    ],
   },
   library: {
     summary:

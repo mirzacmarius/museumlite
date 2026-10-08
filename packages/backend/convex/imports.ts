@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, type QueryCtx, query } from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
@@ -20,12 +20,12 @@ import {
   fromDublinCoreXML,
   toDublinCoreXML,
 } from "./utils/dublinCore";
+import { protectSpreadsheetText } from "./utils/exportEncoding";
 import {
   enforceExportQuota,
   recordExportUsage,
   requireModuleEnabled,
 } from "./utils/featureGates";
-import { protectSpreadsheetText } from "./utils/exportEncoding";
 import { toJSON, toXML } from "./utils/formatConverters";
 import {
   ensureIdentifierAvailable,
@@ -49,6 +49,7 @@ import {
   parseImportDecimal,
 } from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
+import { mutation } from "./utils/mutationBuilders";
 import {
   generateNextAccountNumber,
   generateNextLoanNumber,
@@ -840,38 +841,40 @@ export const exportObjects = mutation({
       .collect();
     const groupMap = new Map(groups.map((g) => [g._id, g.name]));
 
-    const exportRows = await Promise.all(filtered.map(async (o) => {
-      const membership = await getCollectionGroupMembershipIds(ctx, o);
-      return {
-      accessionNumber: o.accessionNumber,
-      title: o.title,
-      alternativeTitle: o.alternativeTitle,
-      creator: o.creator,
-      objectType: o.objectType,
-      objectName: o.objectName,
-      culture: o.culture,
-      period: o.period,
-      dateCreated: o.dateCreated,
-      materials: o.materials,
-      technique: o.technique,
-      dimensions: o.dimensions,
-      description: o.description,
-      condition: o.condition,
-      provenance: o.provenance,
-      location: o.currentLocationId
-        ? locationMap.get(o.currentLocationId)
-        : undefined,
-      collectionGroup: membership.primaryGroupId
-        ? groupMap.get(membership.primaryGroupId)
-        : undefined,
-      collectionGroups: membership.groupIds.flatMap((id) => {
-        const name = groupMap.get(id);
-        return name ? [name] : [];
+    const exportRows = await Promise.all(
+      filtered.map(async (o) => {
+        const membership = await getCollectionGroupMembershipIds(ctx, o);
+        return {
+          accessionNumber: o.accessionNumber,
+          title: o.title,
+          alternativeTitle: o.alternativeTitle,
+          creator: o.creator,
+          objectType: o.objectType,
+          objectName: o.objectName,
+          culture: o.culture,
+          period: o.period,
+          dateCreated: o.dateCreated,
+          materials: o.materials,
+          technique: o.technique,
+          dimensions: o.dimensions,
+          description: o.description,
+          condition: o.condition,
+          provenance: o.provenance,
+          location: o.currentLocationId
+            ? locationMap.get(o.currentLocationId)
+            : undefined,
+          collectionGroup: membership.primaryGroupId
+            ? groupMap.get(membership.primaryGroupId)
+            : undefined,
+          collectionGroups: membership.groupIds.flatMap((id) => {
+            const name = groupMap.get(id);
+            return name ? [name] : [];
+          }),
+          status: o.status,
+          createdAt: o._creationTime,
+        };
       }),
-      status: o.status,
-      createdAt: o._creationTime,
-      };
-    }));
+    );
 
     await recordExportUsage(ctx, args.organizationId);
 
@@ -1288,13 +1291,25 @@ export const importObjectsBatch = mutation({
             throw new Error("Collection groups must be a JSON array of names");
           }
           if (parsed.length > 0 && !collectionGroupId) {
-            throw new Error("A primary collection group is required when importing memberships");
+            throw new Error(
+              "A primary collection group is required when importing memberships",
+            );
           }
-          collectionGroupIds = [...new Set(parsed.map((name: string) =>
-            resolveUniqueName(groupsByName, name, "collection group")._id,
-          ))];
-          if (collectionGroupId && !collectionGroupIds.includes(collectionGroupId)) {
-            throw new Error("The primary collection group must be included in collectionGroups");
+          collectionGroupIds = [
+            ...new Set(
+              parsed.map(
+                (name: string) =>
+                  resolveUniqueName(groupsByName, name, "collection group")._id,
+              ),
+            ),
+          ];
+          if (
+            collectionGroupId &&
+            !collectionGroupIds.includes(collectionGroupId)
+          ) {
+            throw new Error(
+              "The primary collection group must be included in collectionGroups",
+            );
           }
         }
         const {
@@ -1694,38 +1709,40 @@ export const exportObjectsWithFormat = mutation({
       .collect();
     const groupMap = new Map(groups.map((g) => [g._id, g.name]));
 
-    const exportRows = await Promise.all(filtered.map(async (o) => {
-      const membership = await getCollectionGroupMembershipIds(ctx, o);
-      return {
-      accessionNumber: o.accessionNumber,
-      title: o.title,
-      alternativeTitle: o.alternativeTitle,
-      creator: o.creator,
-      objectType: o.objectType,
-      objectName: o.objectName,
-      culture: o.culture,
-      period: o.period,
-      dateCreated: o.dateCreated,
-      materials: o.materials,
-      technique: o.technique,
-      dimensions: o.dimensions,
-      description: o.description,
-      condition: o.condition,
-      provenance: o.provenance,
-      location: o.currentLocationId
-        ? locationMap.get(o.currentLocationId)
-        : undefined,
-      collectionGroup: membership.primaryGroupId
-        ? groupMap.get(membership.primaryGroupId)
-        : undefined,
-      collectionGroups: membership.groupIds.flatMap((id) => {
-        const name = groupMap.get(id);
-        return name ? [name] : [];
+    const exportRows = await Promise.all(
+      filtered.map(async (o) => {
+        const membership = await getCollectionGroupMembershipIds(ctx, o);
+        return {
+          accessionNumber: o.accessionNumber,
+          title: o.title,
+          alternativeTitle: o.alternativeTitle,
+          creator: o.creator,
+          objectType: o.objectType,
+          objectName: o.objectName,
+          culture: o.culture,
+          period: o.period,
+          dateCreated: o.dateCreated,
+          materials: o.materials,
+          technique: o.technique,
+          dimensions: o.dimensions,
+          description: o.description,
+          condition: o.condition,
+          provenance: o.provenance,
+          location: o.currentLocationId
+            ? locationMap.get(o.currentLocationId)
+            : undefined,
+          collectionGroup: membership.primaryGroupId
+            ? groupMap.get(membership.primaryGroupId)
+            : undefined,
+          collectionGroups: membership.groupIds.flatMap((id) => {
+            const name = groupMap.get(id);
+            return name ? [name] : [];
+          }),
+          status: o.status,
+          createdAt: o._creationTime,
+        };
       }),
-      status: o.status,
-      createdAt: o._creationTime,
-      };
-    }));
+    );
 
     await recordExportUsage(ctx, args.organizationId);
 
@@ -1889,9 +1906,7 @@ export const exportLocationsWithFormat = mutation({
         row.isActive.toString(),
         row.notes || "",
       ];
-      csvRows.push(
-        values.map((value = "") => csvTextCell(value)).join(","),
-      );
+      csvRows.push(values.map((value = "") => csvTextCell(value)).join(","));
     }
     return csvRows.join("\n");
   },

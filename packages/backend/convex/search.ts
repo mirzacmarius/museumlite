@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { searchIdentifierPrefix } from "./utils/identifiers";
+import { internalMutation } from "./utils/mutationBuilders";
 import { OBJECT_SEARCH_INDEXES, searchObjects } from "./utils/objectSearch";
 import { hasPermission } from "./utils/permissions";
 

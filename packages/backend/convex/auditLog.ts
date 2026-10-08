@@ -8,12 +8,13 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
-import { internalQuery, mutation, query } from "./_generated/server";
+import { internalQuery, query } from "./_generated/server";
 import { auditLogChanges } from "./schema";
 import {
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./utils/featureGates";
+import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 /** Max recent audit rows scanned for filter dropdown options. */

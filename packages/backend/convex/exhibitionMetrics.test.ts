@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 
+import { expectReady, rebuildProjection } from "../tests/testHarness";
 import { modules } from "../tests/testSetup";
 import { api } from "./_generated/api";
 import schema from "./schema";
@@ -138,6 +139,7 @@ test("exhibition metric drilldown applies schedule, lifecycle, and loan filters 
     });
     return { organizationId, userId, asOf };
   });
+  await rebuildProjection(t, fixture.organizationId);
 
   const result = await t
     .withIdentity({ subject: fixture.userId })
@@ -152,12 +154,14 @@ test("exhibition metric drilldown applies schedule, lifecycle, and loan filters 
 
   expect(result.map((row) => row.title)).toEqual(["Legacy current"]);
 
-  const kpis = await t
-    .withIdentity({ subject: fixture.userId })
-    .query(api.dashboard.getOperationalKpis, {
-      organizationId: fixture.organizationId,
-      asOf: fixture.asOf,
-    });
+  const kpis = expectReady(
+    await t
+      .withIdentity({ subject: fixture.userId })
+      .query(api.dashboard.getOperationalKpis, {
+        organizationId: fixture.organizationId,
+        asOf: fixture.asOf,
+      }),
+  );
 
   expect(kpis.asOf).toBe(fixture.asOf);
   expect(kpis.inventory).toMatchObject({
@@ -213,22 +217,26 @@ test("exhibition metric drilldown applies schedule, lifecycle, and loan filters 
     }),
   ).rejects.toThrow();
 
-  const overview = await t
-    .withIdentity({ subject: fixture.userId })
-    .query(api.dashboard.getAnalytics, {
-      organizationId: fixture.organizationId,
-    });
+  const overview = expectReady(
+    await t
+      .withIdentity({ subject: fixture.userId })
+      .query(api.dashboard.getAnalytics, {
+        organizationId: fixture.organizationId,
+      }),
+  );
   expect(overview.objects.total).toBe(1);
   expect(overview.objects.incomingLoanExcluded).toBe(1);
 
-  const catalogTrends = await t
-    .withIdentity({ subject: fixture.userId })
-    .query(api.reporting.getCollectionTrends, {
-      organizationId: fixture.organizationId,
-      period: "monthly",
-      startDate: 0,
-      endDate: 60 * 60 * 1000,
-    });
+  const catalogTrends = expectReady(
+    await t
+      .withIdentity({ subject: fixture.userId })
+      .query(api.reporting.getCollectionTrends, {
+        organizationId: fixture.organizationId,
+        period: "monthly",
+        startDate: 0,
+        endDate: 60 * 60 * 1000,
+      }),
+  );
   expect(catalogTrends.historicalTotalAvailability).toBe("unavailable");
   expect(catalogTrends.current[0]?.totalObjects).toBeNull();
 });

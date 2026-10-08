@@ -18,11 +18,7 @@ async function setupLibraryAuthFixture(
 ): Promise<LibraryAuthFixture> {
   const orgA = await createOrgUserWithPermissions(
     t,
-    [
-      "collections.read",
-      "collections.create",
-      "organization.manage_settings",
-    ],
+    ["collections.read", "collections.create", "organization.manage_settings"],
     {
       organizationName: "Library A",
       slugPrefix: "library-a",
@@ -34,11 +30,7 @@ async function setupLibraryAuthFixture(
 
   const orgB = await createOrgUserWithPermissions(
     t,
-    [
-      "collections.read",
-      "collections.create",
-      "organization.manage_settings",
-    ],
+    ["collections.read", "collections.create", "organization.manage_settings"],
     {
       organizationName: "Library B",
       slugPrefix: "library-b",

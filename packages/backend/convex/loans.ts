@@ -4,7 +4,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { workflowHistoryPageValidator } from "./auditLog";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds } from "./utils/batchLookup";
@@ -41,6 +41,7 @@ import {
   getLoanWorkflowHistoryHandler,
   rejectLoanHandler,
 } from "./utils/loanWorkflow";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import {
   getUsersToNotifyForWorkflowStep,

@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, query } from "./_generated/server";
+import { type MutationCtx, query } from "./_generated/server";
+import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 import {
   hasUnanimousSuperAdminApproval,
@@ -162,7 +163,9 @@ export const requestOwnershipTransfer = mutation({
     }
 
     if (args.organizationId === args.targetOrganizationId) {
-      throw new ConvexError("Cannot transfer ownership to the same organization");
+      throw new ConvexError(
+        "Cannot transfer ownership to the same organization",
+      );
     }
 
     await requireOrganizationSuperAdmin(ctx, args.organizationId, userId);

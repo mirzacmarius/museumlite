@@ -3,12 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
@@ -22,15 +17,14 @@ import {
   MAX_SMALL_MEDIA_FILE_SIZE,
   shouldGenerateMediaThumbnail,
 } from "./utils/mediaAssets";
-import {
-  applyUsageCounterDelta,
-  createEmptyUsageCounter,
-  getUsageCounter,
-} from "./utils/organizationUsageCounters";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import {
   requireModuleAndPermission,
   requirePermission,
 } from "./utils/permissions";
+import { buildStorageStats } from "./utils/projectionReports";
+import { projectionUnavailableResult } from "./utils/projectionValidators";
 import { revokePublicRendition } from "./utils/publicMedia";
 import { getRelatedEntityOrganization } from "./utils/relatedEntityIntegrity";
 import {
@@ -825,48 +819,29 @@ export const getStorageStats = query({
   args: {
     organizationId: v.id("organizations"),
   },
-  returns: v.object({
-    totalFiles: v.number(),
-    totalSize: v.number(),
-    byType: v.array(
-      v.object({
-        type: v.string(),
-        count: v.number(),
-        size: v.number(),
-      }),
-    ),
-    recentUploads: v.number(),
-  }),
+  returns: v.union(
+    projectionUnavailableResult,
+    v.object({
+      availability: v.literal("ready"),
+      totalFiles: v.number(),
+      totalSize: v.number(),
+      byType: v.array(
+        v.object({
+          type: v.string(),
+          count: v.number(),
+          size: v.number(),
+        }),
+      ),
+      recentUploads: v.number(),
+    }),
+  ),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "media.read");
-
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const [usageCounter, recentUploads] = await Promise.all([
-      getUsageCounter(ctx, args.organizationId),
-      ctx.db
-        .query("mediaFiles")
-        .withIndex("by_organization_and_uploadedAt", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .gte("uploadedAt", sevenDaysAgo),
-        )
-        .collect(),
-    ]);
-
-    const counter =
-      usageCounter ?? createEmptyUsageCounter(args.organizationId);
-    const byType = Object.entries(counter.mediaByType).map(([type, usage]) => ({
-      type,
-      count: usage.count,
-      size: usage.bytes,
-    }));
-
-    return {
-      totalFiles: counter.mediaFileCount,
-      totalSize: counter.storageBytes,
-      byType,
-      recentUploads: recentUploads.length,
-    };
+    return await buildStorageStats(
+      ctx,
+      args.organizationId,
+      Date.now() - 7 * 24 * 60 * 60 * 1000,
+    );
   },
 });
 

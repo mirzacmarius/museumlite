@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 
 import { convexTest } from "convex-test";
-import polarSchema from "../../../node_modules/@convex-dev/polar/src/component/schema";
 import { describe, expect, test } from "vitest";
+import polarSchema from "../../../node_modules/@convex-dev/polar/src/component/schema";
+import { modules } from "../tests/testSetup";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules } from "../tests/testSetup";
 import { hasActiveSubscriptionAccess } from "./utils/polarBilling";
 
 const polarModules = Object.fromEntries(
@@ -35,8 +35,7 @@ function buildApplyBillingSubscriptionEventPayload(
 
   return {
     webhookId:
-      overrides.webhookId ??
-      `evt_${Math.random().toString(36).slice(2, 10)}`,
+      overrides.webhookId ?? `evt_${Math.random().toString(36).slice(2, 10)}`,
     eventType: overrides.eventType ?? "subscription.updated",
     id: overrides.subscriptionId ?? "sub_apply_billing_test",
     customerId: "cus_apply_billing_test",
@@ -262,20 +261,23 @@ describe("applyBillingSubscriptionEvent", () => {
 
     expect(result).toEqual({ processed: true });
 
-    const [organization, subscription, webhookEvent] = await t.run(async (ctx) =>
-      Promise.all([
-        ctx.db.get(organizationId),
-        ctx.db
-          .query("organizationSubscriptions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", organizationId),
-          )
-          .first(),
-        ctx.db
-          .query("polarWebhookEvents")
-          .withIndex("by_webhook_id", (q) => q.eq("webhookId", payload.webhookId))
-          .unique(),
-      ] as const),
+    const [organization, subscription, webhookEvent] = await t.run(
+      async (ctx) =>
+        Promise.all([
+          ctx.db.get(organizationId),
+          ctx.db
+            .query("organizationSubscriptions")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", organizationId),
+            )
+            .first(),
+          ctx.db
+            .query("polarWebhookEvents")
+            .withIndex("by_webhook_id", (q) =>
+              q.eq("webhookId", payload.webhookId),
+            )
+            .unique(),
+        ] as const),
     );
 
     expect(organization?.subscriptionTier).toBe("pro");

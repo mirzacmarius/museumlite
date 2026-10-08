@@ -7,12 +7,12 @@ import {
   loadExhibitionObjectMutationContext,
   requireExhibitionReadPermission,
 } from "./exhibitionContext";
-import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { getExhibitionParticipants } from "./exhibitionParticipation";
 import {
   executeExhibitionMovement,
   requireAcceptedConditionAssessment,
 } from "./exhibitionPhysicalHandoff";
+import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import {
   requireCollectionInOrganization,
   requireUsableLocation,
@@ -40,7 +40,9 @@ export async function addExhibitionObjectHandler(
     throw new Error("Object does not belong to the same organization");
   }
   if (exhibition.participationVersion !== "members") {
-    throw new Error("Review legacy exhibition participation before adding objects");
+    throw new Error(
+      "Review legacy exhibition participation before adding objects",
+    );
   }
 
   await assertCollectionNotOnLoan(
@@ -60,7 +62,10 @@ export async function addExhibitionObjectHandler(
   }
 
   const members = await getExhibitionParticipants(ctx, args.exhibitionId);
-  if (args.role === "featured" && members.some((member) => member.role === "featured")) {
+  if (
+    args.role === "featured" &&
+    members.some((member) => member.role === "featured")
+  ) {
     throw new Error("Only one featured object is allowed");
   }
 
@@ -111,10 +116,13 @@ export async function removeExhibitionObjectHandler(
   const { userId, exhibitionObject, exhibition } =
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
   if (exhibition.participationVersion !== "members") {
-    throw new Error("Review legacy exhibition participation before removing objects");
+    throw new Error(
+      "Review legacy exhibition participation before removing objects",
+    );
   }
   const members = await getExhibitionParticipants(ctx, exhibition._id);
-  if (members.length <= 1) throw new Error("Exhibition must have at least one participant");
+  if (members.length <= 1)
+    throw new Error("Exhibition must have at least one participant");
 
   if (exhibitionObject.status !== "pending") {
     throw new Error("Cannot remove object that has been installed");
@@ -417,7 +425,10 @@ export async function listExhibitionObjectsHandler(
 
   await requireExhibitionReadPermission(ctx, exhibition.organizationId);
 
-  const exhibitionObjects = await getExhibitionParticipants(ctx, args.exhibitionId);
+  const exhibitionObjects = await getExhibitionParticipants(
+    ctx,
+    args.exhibitionId,
+  );
 
   return Promise.all(
     exhibitionObjects.map(async (obj) => {
@@ -467,7 +478,8 @@ export async function listExhibitionObjectsHandler(
           deinstaller?.name ?? deinstaller?.username ?? undefined,
         conditionAtDeinstallation: obj.conditionAtDeinstallation,
         returnedAt: obj.returnedAt,
-        installationConditionAssessmentId: obj.installationConditionAssessmentId,
+        installationConditionAssessmentId:
+          obj.installationConditionAssessmentId,
         deinstallationConditionAssessmentId:
           obj.deinstallationConditionAssessmentId,
         returnConditionAssessmentId: obj.returnConditionAssessmentId,

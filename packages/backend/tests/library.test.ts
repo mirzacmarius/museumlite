@@ -119,10 +119,13 @@ test("should checkout and return library item", async () => {
     condition: "good",
   });
 
-  const circulationId = await authed.mutation(api.library.circulation.checkout, {
-    accountId: patronId,
-    copyId,
-  });
+  const circulationId = await authed.mutation(
+    api.library.circulation.checkout,
+    {
+      accountId: patronId,
+      copyId,
+    },
+  );
 
   const circ = await authed.query(api.library.circulation.get, {
     circulationId,

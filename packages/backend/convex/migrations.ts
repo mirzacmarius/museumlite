@@ -1,13 +1,13 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation } from "./_generated/server";
 import { upsertAccessionSearchDocument } from "./utils/accessionSearch";
 import { processOptionUsageBackfillPage } from "./utils/collectionOptionUsages";
 import {
   assignCustomerNumberIfMissing,
   parseCustomerNumber,
 } from "./utils/customerNumber";
+import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {

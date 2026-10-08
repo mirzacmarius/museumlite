@@ -287,9 +287,7 @@ describe("library tenant integrity", () => {
       }),
     ).rejects.toThrow(/belongs to a different organization/);
 
-    const orgAAccount = await t.run(async (ctx) =>
-      ctx.db.get(orgAPatronId),
-    );
+    const orgAAccount = await t.run(async (ctx) => ctx.db.get(orgAPatronId));
     expect(orgAAccount?.fineBalance).toBe(10);
   });
 

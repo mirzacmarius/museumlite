@@ -226,9 +226,12 @@ describe("library holds lifecycle", () => {
 
   test("check-in without holds leaves copy available", async () => {
     const t = createConvexTest();
-    const { userId, copyId, circulationId } = await setupLibraryHoldsFixture(t, {
-      checkedOutTo: "patron1",
-    });
+    const { userId, copyId, circulationId } = await setupLibraryHoldsFixture(
+      t,
+      {
+        checkedOutTo: "patron1",
+      },
+    );
     const authed = authedForUser(t, userId);
 
     await authed.mutation(api.library.circulation.checkin, {
@@ -283,7 +286,9 @@ describe("library holds lifecycle", () => {
     });
     await authed.mutation(api.library.holds.cancel, { holdId: hold1Id });
 
-    const hold2 = await authed.query(api.library.holds.get, { holdId: hold2Id });
+    const hold2 = await authed.query(api.library.holds.get, {
+      holdId: hold2Id,
+    });
     expect(hold2?.queuePosition).toBe(1);
     expect(hold2?.status).toBe("pending");
   });

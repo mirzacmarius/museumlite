@@ -318,7 +318,9 @@ test("should enforce permissions", async () => {
     endDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
   });
 
-  await expect(authed.mutation(api.loans.approve, { loanId })).rejects.toThrow();
+  await expect(
+    authed.mutation(api.loans.approve, { loanId }),
+  ).rejects.toThrow();
 });
 
 // ---------------------------------------------------------------------------
@@ -357,12 +359,18 @@ async function setupOrgWithLoanPermissions(t: ConvexTest) {
     });
   }
 
-  return { organizationId, userId, authed: authedForUser(t, userId), makeCollection };
+  return {
+    organizationId,
+    userId,
+    authed: authedForUser(t, userId),
+    makeCollection,
+  };
 }
 
 test("(integrity) duplicate collectionId in create → throws, not two loanItems rows", async () => {
   const t = createConvexTest();
-  const { organizationId, authed, makeCollection } = await setupOrgWithLoanPermissions(t);
+  const { organizationId, authed, makeCollection } =
+    await setupOrgWithLoanPermissions(t);
   const collectionId = await makeCollection("dup-create");
 
   await expect(
@@ -389,7 +397,8 @@ test("(integrity) duplicate collectionId in create → throws, not two loanItems
 
 test("(integrity) duplicate collectionId in addItems → throws", async () => {
   const t = createConvexTest();
-  const { organizationId, authed, makeCollection } = await setupOrgWithLoanPermissions(t);
+  const { organizationId, authed, makeCollection } =
+    await setupOrgWithLoanPermissions(t);
   const collectionA = await makeCollection("dup-addItems-A");
   const collectionB = await makeCollection("dup-addItems-B");
 
@@ -505,7 +514,8 @@ test("(integrity) duplicate manual loanNumber within org → throws", async () =
 
 test("(integrity) happy path: distinct collections, valid dates, unique number → correct item count", async () => {
   const t = createConvexTest();
-  const { organizationId, authed, makeCollection } = await setupOrgWithLoanPermissions(t);
+  const { organizationId, authed, makeCollection } =
+    await setupOrgWithLoanPermissions(t);
   const now = Date.now();
   const [colA, colB, colC] = await Promise.all([
     makeCollection("happy-A"),

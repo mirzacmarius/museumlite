@@ -1,8 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import QRCode from "qrcode";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { env } from "./env";
+import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 /**

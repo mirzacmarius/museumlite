@@ -18,6 +18,13 @@ import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
+import {
+  projectionAvailability,
+  projectionDiscrepancyFields,
+  projectionFact,
+  projectionGenerationFields,
+  projectionUnavailableReason,
+} from "./utils/projectionValidators";
 
 // Type-safe validators for flexible data structures
 
@@ -114,6 +121,62 @@ export const shippingLogEntry = v.object({
 });
 
 export default defineSchema({
+  organizationProjectionStates: defineTable({
+    organizationId: v.id("organizations"),
+    definitionVersion: v.number(),
+    revision: v.number(),
+    availability: projectionAvailability,
+    reason: v.optional(projectionUnavailableReason),
+    activeGenerationId: v.optional(v.id("projectionGenerations")),
+    buildingGenerationId: v.optional(v.id("projectionGenerations")),
+    reconcilingGenerationId: v.optional(v.id("projectionGenerations")),
+    lastReconciliationId: v.optional(v.id("projectionGenerations")),
+    lastBuiltAt: v.optional(v.number()),
+    lastVerifiedAt: v.optional(v.number()),
+    invalidatedAt: v.optional(v.number()),
+  }).index("by_organizationId", ["organizationId"]),
+  projectionGenerations: defineTable(projectionGenerationFields).index(
+    "by_organizationId_and_startedAt",
+    ["organizationId", "startedAt"],
+  ),
+  projectionContributions: defineTable({
+    organizationId: v.id("organizations"),
+    generationId: v.id("projectionGenerations"),
+    sourceTable: v.string(),
+    sourceId: v.string(),
+    facts: v.array(projectionFact),
+  })
+    .index("by_generationId_and_sourceTable_and_sourceId", [
+      "generationId",
+      "sourceTable",
+      "sourceId",
+    ])
+    .index("by_sourceTable_and_sourceId", ["sourceTable", "sourceId"])
+    .index("by_generationId", ["generationId"]),
+  projectionTotals: defineTable({
+    organizationId: v.id("organizations"),
+    generationId: v.id("projectionGenerations"),
+    scope: v.string(),
+    partition: v.string(),
+    category: v.string(),
+    rank: v.number(),
+    counts: v.record(v.string(), v.number()),
+  })
+    .index("by_generationId_and_scope_and_partition", [
+      "generationId",
+      "scope",
+      "partition",
+    ])
+    .index("by_generationId_and_category_and_rank", [
+      "generationId",
+      "category",
+      "rank",
+    ])
+    .index("by_generationId", ["generationId"]),
+  projectionDiscrepancies: defineTable(projectionDiscrepancyFields).index(
+    "by_generationId",
+    ["generationId"],
+  ),
   ...authTables,
   users: defineTable({
     // Convex Auth fields
@@ -1388,6 +1451,7 @@ export default defineSchema({
       "status",
       "dateReceived",
     ])
+    .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_donor_account", ["donorAccountId"])
     .index("by_assigned_to", ["assignedTo"])
     .searchIndex("search_accessions", {
@@ -1560,6 +1624,12 @@ export default defineSchema({
       "organizationId",
       "dateDeaccessioned",
     ])
+    .index("by_organization_and_status_and_dateDeaccessioned", [
+      "organizationId",
+      "status",
+      "dateDeaccessioned",
+    ])
+    .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_organization_and_status_and_dateDeaccessioned", [
       "organizationId",
       "status",
@@ -2063,6 +2133,11 @@ export default defineSchema({
     .index("by_organization_and_type", ["organizationId", "type"])
     .index("by_account", ["accountId"])
     .index("by_organization_and_endDate", ["organizationId", "endDate"])
+    .index("by_organization_and_status_and_endDate", [
+      "organizationId",
+      "status",
+      "endDate",
+    ])
     .index("by_assigned_to", ["assignedTo"])
     .searchIndex("search_loans", {
       searchField: "lenderBorrowerName",
@@ -4824,7 +4899,8 @@ export default defineSchema({
     sha256: v.optional(v.string()),
   })
     .index("by_creatorId_and_requestKey", ["creatorId", "requestKey"])
-    .index("by_organizationId_and_creatorId", ["organizationId", "creatorId"]),
+    .index("by_organizationId_and_creatorId", ["organizationId", "creatorId"])
+    .index("by_organizationId", ["organizationId"]),
   exportSelections: defineTable({
     jobId: v.id("exportJobs"),
     objectId: v.id("collections"),

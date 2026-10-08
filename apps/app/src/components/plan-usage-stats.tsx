@@ -6,6 +6,7 @@ import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { MetricsUnavailableInline } from "@/components/metrics-unavailable-notice";
 import { useI18n } from "@/locales/client";
 
 function formatBytes(bytes: number): string {
@@ -25,8 +26,11 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-function calculatePercentage(used: number, limit: number | null): number {
-  if (limit === null) return 0;
+function calculatePercentage(
+  used: number | null,
+  limit: number | null,
+): number {
+  if (limit === null || used === null) return 0;
   return Math.min((used / limit) * 100, 100);
 }
 
@@ -95,6 +99,8 @@ export function PlanUsageStats({
   }
 
   const isEnterprise = stats.tier === "enterprise";
+  const metricsUnavailable = stats.metrics.availability === "unavailable";
+  const unavailableLabel = translate("projectionHealth.unavailable.short");
 
   return (
     <div className={containerClassName}>
@@ -128,7 +134,9 @@ export function PlanUsageStats({
               </span>
             ) : (
               <span className="text-xs font-mono text-zinc-400">
-                {formatBytes(stats.storage.used)}{" "}
+                {stats.storage.used === null
+                  ? unavailableLabel
+                  : formatBytes(stats.storage.used)}{" "}
                 <span className="text-zinc-600">
                   / {formatBytes(stats.storage.limit)}
                 </span>
@@ -140,7 +148,9 @@ export function PlanUsageStats({
             stats.storage.used,
             stats.storage.limit,
           )}
-          showProgress={stats.storage.limit !== null}
+          showProgress={
+            stats.storage.limit !== null && stats.storage.used !== null
+          }
         />
         <UsageRow
           layout={layout}
@@ -152,7 +162,9 @@ export function PlanUsageStats({
               </span>
             ) : (
               <span className="text-xs font-mono text-zinc-400">
-                {formatNumber(stats.objects.used)}{" "}
+                {stats.objects.used === null
+                  ? unavailableLabel
+                  : formatNumber(stats.objects.used)}{" "}
                 <span className="text-zinc-600">
                   / {formatNumber(stats.objects.limit)}
                 </span>
@@ -164,7 +176,9 @@ export function PlanUsageStats({
             stats.objects.used,
             stats.objects.limit,
           )}
-          showProgress={stats.objects.limit !== null}
+          showProgress={
+            stats.objects.limit !== null && stats.objects.used !== null
+          }
         />
         <UsageRow
           layout={layout}
@@ -191,6 +205,12 @@ export function PlanUsageStats({
           showProgress={stats.exports.limit !== null}
         />
       </div>
+      {metricsUnavailable ? (
+        <MetricsUnavailableInline
+          className="mt-3 block"
+          label={translate("projectionHealth.unavailable.usage")}
+        />
+      ) : null}
     </div>
   );
 }
