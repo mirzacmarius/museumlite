@@ -1,6 +1,7 @@
 import { generateKeyPairSync } from "node:crypto";
 import { anyApi } from "convex/server";
 import { ConvexError } from "convex/values";
+import { Scrypt } from "lucia";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import {
@@ -31,6 +32,7 @@ const ownerPassword = "original-password-123";
 interface SentEmail {
   to: string[];
   html: string;
+  subject: string;
 }
 
 let sentEmails: SentEmail[] = [];
@@ -55,7 +57,9 @@ beforeEach(() => {
         body === null ||
         !("to" in body) ||
         !("html" in body) ||
-        typeof body.html !== "string"
+        typeof body.html !== "string" ||
+        !("subject" in body) ||
+        typeof body.subject !== "string"
       ) {
         throw new Error("Invalid email body");
       }
@@ -64,13 +68,14 @@ beforeEach(() => {
         : typeof body.to === "string"
           ? [body.to]
           : [];
-      sentEmails.push({ to, html: body.html });
+      sentEmails.push({ to, html: body.html, subject: body.subject });
       return Response.json({ id: "test-email-id" });
     }),
   );
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -186,6 +191,40 @@ describe("account recovery without existence disclosure", () => {
     ).toEqual({ code: "InvalidCredentials" });
   });
 
+  test("locked-out and unknown emails both perform password verification work", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await createVerifiedPasswordOwner(t);
+    for (let attempt = 0; attempt < 11; attempt += 1) {
+      await rejection(
+        t.action(api.auth.signIn, {
+          provider,
+          params: { email: ownerEmail, password: "guess-1234", flow: "signIn" },
+        }),
+      );
+    }
+    const work = vi.spyOn(Scrypt.prototype, "verify");
+    await rejection(
+      t.action(api.auth.signIn, {
+        provider,
+        params: { email: ownerEmail, password: "guess-1234", flow: "signIn" },
+      }),
+    );
+    const lockedOutWork = work.mock.calls.length;
+    work.mockClear();
+    await rejection(
+      t.action(api.auth.signIn, {
+        provider,
+        params: {
+          email: strangerEmail,
+          password: "guess-1234",
+          flow: "signIn",
+        },
+      }),
+    );
+    expect(work.mock.calls.length).toBe(1);
+    expect(lockedOutWork).toBe(1);
+  });
+
   test("reset requests answer the same for existing, unknown and other-provider emails", async () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
@@ -249,6 +288,46 @@ describe("account recovery without existence disclosure", () => {
       },
     });
     expect(reset.tokens?.token).toEqual(expect.any(String));
+  });
+
+  test("a /fr reset request delivers French password-reset copy", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await createVerifiedPasswordOwner(t);
+    await t.action(api.auth.signIn, {
+      provider,
+      params: { email: ownerEmail, flow: "reset", redirectTo: "/fr" },
+    });
+    expect(emailsTo(ownerEmail).at(-1)?.html).toContain('lang="fr"');
+    expect(emailsTo(ownerEmail).at(-1)?.subject).toBe(
+      "Réinitialisez votre mot de passe MuseumLite",
+    );
+  });
+
+  test.each([
+    "password-with-reset",
+    "password-link",
+  ])("%s preserves /fr on existing-account sign-up and verification resend", async (passwordProvider) => {
+    const t = createConvexTestWithRateLimiter();
+    await t.action(api.auth.signIn, {
+      provider: passwordProvider,
+      params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
+    });
+    for (const flow of ["signUp", "email-verification"]) {
+      await t.action(api.auth.signIn, {
+        provider: passwordProvider,
+        params: {
+          email: ownerEmail,
+          password: ownerPassword,
+          flow,
+          redirectTo: "/fr",
+        },
+      });
+      expect(emailsTo(ownerEmail).at(-1)?.html).toContain('lang="fr"');
+      if (passwordProvider === "password-link")
+        expect(emailsTo(ownerEmail).at(-1)?.html).toContain(
+          "https://museum.example.test/fr?code=",
+        );
+    }
   });
 
   test("sign-up for a registered email looks like a new sign-up and cannot replace the password before verification", async () => {

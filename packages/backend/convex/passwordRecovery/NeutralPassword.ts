@@ -52,6 +52,15 @@ function isLibraryFailure(error: unknown, reasons: Set<string>) {
   return error instanceof Error && reasons.has(error.message);
 }
 
+function emailRequestParams(params: Params, email: string): Params {
+  return {
+    email,
+    ...(params.redirectTo === undefined
+      ? {}
+      : { redirectTo: params.redirectTo }),
+  };
+}
+
 function requirePasswordParam(params: Params, key: string): string {
   const value = params[key];
   if (typeof value !== "string" || value.length < 8 || value.length > 1024) {
@@ -153,7 +162,12 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     const existing = await findPasswordAccount(ctx, provider, email);
     if (existing) {
       const passwordHash = await new Scrypt().hash(secret);
-      await sendVerification(ctx, existing, { email }, passwordHash);
+      await sendVerification(
+        ctx,
+        existing,
+        emailRequestParams(params, email),
+        passwordHash,
+      );
       return null;
     }
     let created: Doc<"authAccounts">;
@@ -171,7 +185,7 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       await sendVerification(
         ctx,
         raced,
-        { email },
+        emailRequestParams(params, email),
         await new Scrypt().hash(secret),
       );
       return null;
@@ -179,7 +193,7 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     return await sendVerification(
       ctx,
       created,
-      { ...params, email },
+      emailRequestParams(params, email),
       created.secret,
     );
   }
@@ -196,7 +210,11 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       }));
     } catch (error) {
       if (isLibraryFailure(error, failedCredentialReasons)) {
-        if (error instanceof Error && error.message === "InvalidAccountId") {
+        if (
+          error instanceof Error &&
+          (error.message === "InvalidAccountId" ||
+            error.message === "TooManyFailedAttempts")
+        ) {
           await padUnknownPassword(secret);
         }
         throw authRecoveryError("InvalidCredentials");
@@ -204,12 +222,16 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       throw error;
     }
     if (verify && !account.emailVerified) {
-      return await sendVerification(ctx, account, { ...params, email });
+      return await sendVerification(
+        ctx,
+        account,
+        emailRequestParams(params, email),
+      );
     }
     return { userId: account.userId };
   }
 
-  async function requestReset(ctx: Ctx, email: string) {
+  async function requestReset(ctx: Ctx, params: Params, email: string) {
     if (!reset)
       throw new Error(`Password reset is not enabled for ${provider}`);
     const account = await findPasswordAccount(ctx, provider, email);
@@ -219,7 +241,7 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     }
     return await signInViaProvider(ctx, reset, {
       accountId: account._id,
-      params: { email },
+      params: emailRequestParams(params, email),
     });
   }
 
@@ -258,7 +280,11 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
         );
         return null;
       }
-      return await sendVerification(ctx, account, { email });
+      return await sendVerification(
+        ctx,
+        account,
+        emailRequestParams(params, email),
+      );
     }
     if (!account) throw authRecoveryError("InvalidCode");
     return await verifyCode(() =>
@@ -279,7 +305,7 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
         case "signIn":
           return await signIn(ctx, params, email);
         case "reset":
-          return await requestReset(ctx, email);
+          return await requestReset(ctx, params, email);
         case "reset-verification":
           return await completeReset(ctx, params, email);
         case "email-verification":
