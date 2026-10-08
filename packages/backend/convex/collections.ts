@@ -37,6 +37,10 @@ import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
+import {
+  countOpenDeaccessionCollectionIds,
+  getInventoryLoanAssociations,
+} from "./utils/indexedCounts";
 import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
   moveCollectionToLocation,
@@ -527,7 +531,8 @@ export const create = mutation({
         ]
       : undefined;
 
-    const primaryGroupId = args.collectionGroupId ?? args.collectionGroupIds?.[0];
+    const primaryGroupId =
+      args.collectionGroupId ?? args.collectionGroupIds?.[0];
 
     // Create collection object
     const collectionId = await ctx.db.insert("collections", {
@@ -1323,6 +1328,13 @@ export const list = query({
     paginationOpts: paginationOptsValidator,
     collectionGroupId: v.optional(v.id("collectionGroups")),
     includeDeaccessioned: v.optional(v.boolean()),
+    inventoryMetricScope: v.optional(
+      v.union(
+        v.literal("owned"),
+        v.literal("incoming"),
+        v.literal("unclassified"),
+      ),
+    ),
     status: v.optional(
       v.union(
         v.literal("active"),
@@ -1415,6 +1427,13 @@ export const list = query({
 
     // Filters may yield short or empty pages. The native cursor still advances,
     // and split metadata keeps reactive pages contiguous as records change.
+    const [openDeaccessionCollectionIds, inventoryLoanAssociations] =
+      args.inventoryMetricScope
+        ? await Promise.all([
+            countOpenDeaccessionCollectionIds(ctx, args.organizationId),
+            getInventoryLoanAssociations(ctx, args.organizationId),
+          ])
+        : [undefined, undefined];
     const result = await source.order("desc").paginate({
       ...args.paginationOpts,
       maximumRowsRead: Math.min(
@@ -1431,6 +1450,8 @@ export const list = query({
       page: await filterCollectionListPage(ctx, result.page, {
         ...args,
         locationIds,
+        openDeaccessionCollectionIds,
+        inventoryLoanAssociations,
       }),
     });
   },
@@ -1747,7 +1768,9 @@ export const update = mutation({
       const conditionChanged = previousCondition !== nextCondition;
 
       if (collection.currentConditionAssessmentId && conditionChanged) {
-        throw new Error("Current condition is based on an accepted assessment. Record another assessment to change it.");
+        throw new Error(
+          "Current condition is based on an accepted assessment. Record another assessment to change it.",
+        );
       }
 
       updates.condition = nextCondition;

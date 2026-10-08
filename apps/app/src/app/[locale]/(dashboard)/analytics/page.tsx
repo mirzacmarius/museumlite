@@ -9,8 +9,8 @@ import { BarChart3 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ClientTime } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useClientNow } from "@/hooks/use-client-date-format";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useI18n } from "@/locales/client";
 
 const chartFallback = () => (
@@ -98,10 +98,9 @@ export default function AnalyticsPage() {
 
   const kpis = useQuery(
     api.dashboard.getOperationalKpis,
-    currentOrganizationId && hasReporting && now !== undefined
+    currentOrganizationId && hasReporting
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
-          now,
         }
       : "skip",
   );
@@ -203,7 +202,9 @@ export default function AnalyticsPage() {
             <InventoryValuationCard data={kpis.inventory} />
           )}
           <LoanCalendarCard data={kpis.loans} />
-          <ExhibitionPipelineCard data={kpis.exhibitions} />
+          <ExhibitionPipelineCard
+            data={{ ...kpis.exhibitions, asOf: kpis.asOf }}
+          />
         </div>
 
         {complianceData && (

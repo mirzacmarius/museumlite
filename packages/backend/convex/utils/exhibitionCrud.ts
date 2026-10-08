@@ -5,6 +5,10 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import { requireExhibitionAccess } from "./exhibitionAccess";
 import {
+  type ExhibitionMetricFilters,
+  matchesExhibitionMetric,
+} from "./exhibitionMetrics";
+import {
   type ExhibitionParticipantInput,
   getExhibitionParticipants,
   getExhibitionsForObject,
@@ -27,12 +31,15 @@ export async function listExhibitionsByOrganizationHandler(
   args: {
     organizationId: Id<"organizations">;
     collectionId?: Id<"collections">;
+    metricFilters?: ExhibitionMetricFilters;
   },
 ) {
   await Promise.all([
     requireExhibitionAccess(ctx, args.organizationId),
     requirePermission(ctx, args.organizationId, "collections.read"),
   ]);
+  if (args.metricFilters && !Number.isFinite(args.metricFilters.asOf))
+    throw new Error("asOf must be a finite timestamp");
   const exhibitions = await ctx.db
     .query("exhibitions")
     .withIndex("by_organization", (q) =>
@@ -51,8 +58,14 @@ export async function listExhibitionsByOrganizationHandler(
   const filteredExhibitions = matchingIds
     ? exhibitions.filter((exhibition) => matchingIds.has(exhibition._id))
     : exhibitions;
+  const metricFilters = args.metricFilters;
+  const metricExhibitions = metricFilters
+    ? filteredExhibitions.filter((exhibition) =>
+        matchesExhibitionMetric(exhibition, metricFilters),
+      )
+    : filteredExhibitions;
   const results = await Promise.all(
-    filteredExhibitions.map(async (exhibition) => {
+    metricExhibitions.map(async (exhibition) => {
       const members = await getExhibitionParticipants(ctx, exhibition._id);
       const review = await getLegacyParticipationReview(ctx, exhibition);
       const firstId = members[0]?.collectionId ?? review?.anchorCollectionId;
@@ -65,6 +78,7 @@ export async function listExhibitionsByOrganizationHandler(
         startDate: exhibition.startDate,
         endDate: exhibition.endDate,
         isCurrent: exhibition.isCurrent,
+        status: exhibition.status,
         isLoan: exhibition.isLoan,
         loanVenue: exhibition.loanVenue,
         notes: exhibition.notes,

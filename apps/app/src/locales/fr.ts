@@ -4,7 +4,8 @@ export default {
     actorCurrentName: "Nom du profil actuel : {name}",
     unknownLegacyActor: "Identité historique de l’acteur inconnue",
 
-    receiptRequirement: "Saisissez des notes d’état ou sélectionnez une évaluation acceptée pour chaque objet sélectionné, puis confirmez chaque destination de retour requise.",
+    receiptRequirement:
+      "Saisissez des notes d’état ou sélectionnez une évaluation acceptée pour chaque objet sélectionné, puis confirmez chaque destination de retour requise.",
     handoffTimeline: "Chronologie des remises",
     installationTask: "Terminer la tâche d’installation liée (facultatif)",
 
@@ -59,6 +60,11 @@ export default {
     compareAfter: "Après (acceptation actuelle)",
   },
   dashboard: {
+    inventoryDefinition:
+      "L’inventaire opérationnel exclut les sorties ouvertes et la propriété entrante ou incertaine.",
+    inventoryIncomingExcluded: "Enregistrements entrants exclus : {count}",
+    inventoryUnclassified: "Propriété non classée : {count}",
+    pendingOutgoingTransferApprovals: "Approbations des transferts sortants",
     overviewTitle: "Vue d'ensemble",
     overviewDescription: "Vos collections et votre travail en un coup d'œil.",
     needsReview: "À examiner",
@@ -2030,6 +2036,8 @@ export default {
     },
     kpis: {
       activeLoans: "Prêts Actifs",
+      loadedActiveLoans: "Prêts actifs dans les résultats chargés",
+      loadedItems: "Objets dans les prêts chargés",
       objectsInTransit: "Objets en Transit",
       totalInsuredValue: "Valeur Totale Assurée",
       expiringAgreements: "Accords Expirant",
@@ -2073,6 +2081,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Résultats chargés : {count}",
       showing: "Affichage de {start}-{end} sur {total} prêts",
       previous: "Précédent",
       next: "Suivant",
@@ -3849,6 +3858,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Proposée",
+      approved: "Approuvée",
+      installing: "En installation",
+      active: "Active",
+      deinstalling: "En désinstallation",
+      closed: "Clôturée",
+      rejected: "Rejetée",
+      unclassified: "Non classée",
+    },
+    metricFilterApplied: "Filtres de mesure appliqués au",
+    clearMetricFilter: "Effacer les filtres de mesure",
     title: "Expositions",
     description: "Gérez l'historique et la planification de vos expositions",
     newExhibition: "Nouvelle Exposition",
@@ -4051,6 +4072,11 @@ export default {
       approved: "Approuvé",
       proposed: "Proposé",
       closed: "Fermé",
+      currentBySchedule: "En cours selon le calendrier",
+      upcomingBySchedule: "À venir selon le calendrier",
+      unclassified: "{count} non classées",
+      loanExclusions: "{count} expositions de prêt exclues",
+      legacyContradictions: "{count} contradictions entre dates et indicateur",
       activeNow: "Actif Maintenant",
       upcomingStarts: "À Venir",
       startsIn: "Commence dans",
@@ -4097,7 +4123,11 @@ export default {
       noUpcoming: "Aucun retour de prêt à venir",
     },
     inventory: {
+      sourceCounts:
+        "Fiches détaillées / avec valeur enregistrée ; devise source manquante.",
       title: "Évaluation de l'Inventaire",
+      unavailable:
+        "Les données d'évaluation ne sont pas disponibles pour cette organisation.",
       totalValue: "Valeur Totale",
       totalItems: "Articles Totaux",
       valuedItems: "Articles Évalués",
@@ -4130,6 +4160,7 @@ export default {
       exportAllReports: "Exporter Tous les Rapports",
       csv: {
         generated: "Généré le",
+        unavailable: "Indisponible",
         total: "TOTAL",
         upgradeToEnterprise: "Passer à Enterprise",
         inventory: {
@@ -4780,6 +4811,8 @@ export default {
       "D'autres objets correspondent. Affinez la recherche pour réduire la liste.",
   },
   deaccessions: {
+    loadedResults: "Nombre dans les résultats chargés",
+    loadMore: "Charger plus",
     title: "Registres de Désaccession",
     description: "Éléments définitivement retirés de la collection.",
     noOrg: {

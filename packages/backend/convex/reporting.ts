@@ -849,10 +849,13 @@ export const generateReport = internalMutation({
         const kpis = await loadOperationalKpis(
           ctx,
           report.organizationId,
-          Date.now(),
+          generatedAt,
         );
         reportData = {
-          generatedAt: Date.now(),
+          generatedAt: kpis.generatedAt,
+          asOf: kpis.asOf,
+          definitionId: kpis.definitionId,
+          scope: kpis.scope,
           reportType: report.reportType,
           organizationId: report.organizationId,
           generatorVersion: "v1",
@@ -931,7 +934,7 @@ export const getCollectionTrends = query({
       v.object({
         date: v.string(),
         timestamp: v.number(),
-        totalObjects: v.number(),
+        totalObjects: v.union(v.number(), v.null()),
         newAccessions: v.number(),
         deaccessions: v.number(),
         netChange: v.number(),
@@ -942,7 +945,7 @@ export const getCollectionTrends = query({
         v.object({
           date: v.string(),
           timestamp: v.number(),
-          totalObjects: v.number(),
+          totalObjects: v.union(v.number(), v.null()),
           newAccessions: v.number(),
           deaccessions: v.number(),
           netChange: v.number(),
@@ -954,6 +957,10 @@ export const getCollectionTrends = query({
       comparisonPeriodNet: v.optional(v.number()),
       percentChange: v.optional(v.number()),
     }),
+    historicalTotalAvailability: v.literal("unavailable"),
+    historicalTotalUnavailableReason: v.literal(
+      "historical_inventory_evidence_not_recorded",
+    ),
   }),
   handler: async (ctx, args) => {
     await Promise.all([
@@ -966,7 +973,7 @@ export const getCollectionTrends = query({
     ]);
 
     const snapshot = await loadCatalogGrowthSnapshot(ctx, args.organizationId);
-    const { collections, accessions, deaccessions } = snapshot;
+    const { accessions, deaccessions } = snapshot;
     // Generate date buckets
     const buckets = generateDateBuckets(
       args.startDate,
@@ -988,14 +995,10 @@ export const getCollectionTrends = query({
           d.approvedAt < bucket.end,
       ).length;
 
-      const totalAtEnd = collections.filter(
-        (c) => c._creationTime <= bucket.end && c.status !== "deaccessioned",
-      ).length;
-
       return {
         date: bucket.label,
         timestamp: bucket.start,
-        totalObjects: totalAtEnd,
+        totalObjects: null,
         newAccessions: bucketAccessions,
         deaccessions: bucketDeaccessions,
         netChange: bucketAccessions - bucketDeaccessions,
@@ -1030,14 +1033,10 @@ export const getCollectionTrends = query({
             d.approvedAt < bucket.end,
         ).length;
 
-        const totalAtEnd = collections.filter(
-          (c) => c._creationTime <= bucket.end && c.status !== "deaccessioned",
-        ).length;
-
         return {
           date: bucket.label,
           timestamp: bucket.start,
-          totalObjects: totalAtEnd,
+          totalObjects: null,
           newAccessions: bucketAccessions,
           deaccessions: bucketDeaccessions,
           netChange: bucketAccessions - bucketDeaccessions,
@@ -1070,6 +1069,9 @@ export const getCollectionTrends = query({
         comparisonPeriodNet,
         percentChange,
       },
+      historicalTotalAvailability: "unavailable" as const,
+      historicalTotalUnavailableReason:
+        "historical_inventory_evidence_not_recorded" as const,
     };
   },
 });

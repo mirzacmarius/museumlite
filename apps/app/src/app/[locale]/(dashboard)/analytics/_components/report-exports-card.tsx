@@ -24,21 +24,23 @@ import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 interface ReportExportsCardProps {
   kpis: {
     inventory: {
-      totalValue: number;
+      available: boolean;
+      unavailableReason?: string;
+      totalValue: number | null;
       fineArt: {
-        totalValue: number;
-        itemCount: number;
-        valuedCount: number;
+        totalValue: number | null;
+        itemCount: number | null;
+        valuedCount: number | null;
       };
       wine: {
-        totalValue: number;
-        itemCount: number;
-        valuedCount: number;
+        totalValue: number | null;
+        itemCount: number | null;
+        valuedCount: number | null;
       };
       vehicles: {
-        totalValue: number;
-        itemCount: number;
-        valuedCount: number;
+        totalValue: number | null;
+        itemCount: number | null;
+        valuedCount: number | null;
       };
     };
     loans: {
@@ -151,10 +153,13 @@ function formatDate(timestamp: number, locale: string): string {
 }
 
 function formatCurrency(
-  value: number,
+  value: number | null,
   locale: "en" | "fr" | "es" | "no" | "ro",
+  unavailableLabel = "Unavailable",
 ): string {
-  return formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
+  return value === null
+    ? unavailableLabel
+    : formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
 }
 
 function downloadCSV(filename: string, csvContent: string) {
@@ -169,7 +174,7 @@ function downloadCSV(filename: string, csvContent: string) {
   document.body.removeChild(link);
 }
 
-function escapeCSV(value: string | number | undefined): string {
+function escapeCSV(value: string | number | null | undefined): string {
   if (value === undefined || value === null) return "";
   const str = String(value);
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
@@ -213,6 +218,7 @@ function useReportExportActions({
       const rows = [
         [csv("inventory.title")],
         [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("unavailable"), kpis.inventory.unavailableReason ?? ""],
         [],
         [
           csv("inventory.category"),
@@ -527,18 +533,30 @@ function useReportExportActions({
         [csv("board.category"), csv("board.items"), csv("board.totalValue")],
         [
           csv("board.fineArt"),
-          kpis.inventory.fineArt.itemCount.toString(),
-          formatCurrency(kpis.inventory.fineArt.totalValue, locale),
+          kpis.inventory.fineArt.itemCount?.toString() ?? csv("unavailable"),
+          formatCurrency(
+            kpis.inventory.fineArt.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("board.wine"),
-          kpis.inventory.wine.itemCount.toString(),
-          formatCurrency(kpis.inventory.wine.totalValue, locale),
+          kpis.inventory.wine.itemCount?.toString() ?? csv("unavailable"),
+          formatCurrency(
+            kpis.inventory.wine.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("board.vehicles"),
-          kpis.inventory.vehicles.itemCount.toString(),
-          formatCurrency(kpis.inventory.vehicles.totalValue, locale),
+          kpis.inventory.vehicles.itemCount?.toString() ?? csv("unavailable"),
+          formatCurrency(
+            kpis.inventory.vehicles.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [csv("total"), "", formatCurrency(kpis.inventory.totalValue, locale)],
         [],
@@ -604,26 +622,38 @@ function useReportExportActions({
           csv("insurance.fineArt"),
           kpis.inventory.fineArt.itemCount,
           kpis.inventory.fineArt.valuedCount,
-          formatCurrency(kpis.inventory.fineArt.totalValue, locale),
+          formatCurrency(
+            kpis.inventory.fineArt.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("insurance.wineSpirits"),
           kpis.inventory.wine.itemCount,
           kpis.inventory.wine.valuedCount,
-          formatCurrency(kpis.inventory.wine.totalValue, locale),
+          formatCurrency(
+            kpis.inventory.wine.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [
           csv("insurance.vehicles"),
           kpis.inventory.vehicles.itemCount,
           kpis.inventory.vehicles.valuedCount,
-          formatCurrency(kpis.inventory.vehicles.totalValue, locale),
+          formatCurrency(
+            kpis.inventory.vehicles.totalValue,
+            locale,
+            csv("unavailable"),
+          ),
         ],
         [],
         [
           csv("insurance.totalInsurableValue"),
           "",
           "",
-          formatCurrency(kpis.inventory.totalValue, locale),
+          formatCurrency(kpis.inventory.totalValue, locale, csv("unavailable")),
         ],
         [],
         [csv("insurance.itemsOnLoan")],

@@ -452,21 +452,21 @@ export default function DashboardPage() {
 
   const liveMetrics: MetricLinkCardProps[] = [
     {
-      href: "/objects",
+      href: "/objects?inventory=owned",
       title: kpi("totalObjects"),
       value: formatMetricValue(analyticsData?.objects.total, locale),
       icon: Package,
       accentColor: "indigo",
     },
     {
-      href: "/objects?status=active&displayStatus=on_display",
+      href: "/objects?inventory=owned&status=active&displayStatus=on_display",
       title: kpi("itemsOnDisplay"),
       value: formatMetricValue(analyticsData?.objects.onDisplay, locale),
       icon: Eye,
       accentColor: "emerald",
     },
     {
-      href: "/loans",
+      href: "/loans?status=active",
       title: kpi("activeLoans"),
       value: formatMetricValue(analyticsData?.loans.active, locale),
       icon: ArrowLeftRight,
@@ -483,23 +483,21 @@ export default function DashboardPage() {
 
   const operationalMetrics: MetricLinkCardProps[] = [
     {
-      href: "/accessions/transfers",
-      title: tRoot(
-        "untranslatedDashboard.dashboardBilling.pendingTransferApprovals",
-      ),
+      href: "/accessions/transfers?status=pending_source_approval",
+      title: tRoot("dashboard.pendingOutgoingTransferApprovals"),
       value: formatMetricValue(analyticsData?.transfers.pending, locale),
       icon: ArrowLeftRight,
       accentColor: "blue",
     },
     {
-      href: "/accessions",
+      href: "/accessions?status=pending",
       title: tRoot("untranslatedDashboard.dashboardBilling.pendingAccessions"),
       value: formatMetricValue(analyticsData?.accessions.pending, locale),
       icon: FileClock,
       accentColor: "amber",
     },
     {
-      href: "/deaccessions",
+      href: "/deaccessions?status=pending",
       title: tRoot(
         "untranslatedDashboard.dashboardBilling.pendingDeaccessions",
       ),
@@ -508,7 +506,7 @@ export default function DashboardPage() {
       accentColor: "indigo",
     },
     {
-      href: "/loans",
+      href: "/loans?status=pending",
       title: tRoot("untranslatedDashboard.dashboardBilling.pendingLoans"),
       value: formatMetricValue(analyticsData?.loans.pending, locale),
       icon: ArrowLeftRight,
@@ -568,6 +566,23 @@ export default function DashboardPage() {
             <MetricLinkCard key={metric.title} {...metric} />
           ))}
         </section>
+
+        {analyticsData && (
+          <p className="text-xs text-muted-foreground">
+            {tRoot("dashboard.inventoryDefinition")}{" "}
+            <Link href="/objects?inventory=incoming">
+              {tRoot("dashboard.inventoryIncomingExcluded", {
+                count: analyticsData.objects.incomingLoanExcluded,
+              })}
+            </Link>
+            {" · "}
+            <Link href="/objects?inventory=unclassified">
+              {tRoot("dashboard.inventoryUnclassified", {
+                count: analyticsData.objects.ownershipUnclassified,
+              })}
+            </Link>
+          </p>
+        )}
 
         <PendingReviewsSection
           metrics={operationalMetrics}

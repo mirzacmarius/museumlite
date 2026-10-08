@@ -1,10 +1,12 @@
 export default {
   conditionAssessments: {
-    actorProfileUnavailable: "Registrert aktør; nåværende profil er utilgjengelig",
+    actorProfileUnavailable:
+      "Registrert aktør; nåværende profil er utilgjengelig",
     actorCurrentName: "Nåværende profilnavn: {name}",
     unknownLegacyActor: "Historisk aktøridentitet er ukjent",
 
-    receiptRequirement: "Skriv tilstandsnotater eller velg en godkjent vurdering for hvert valgt objekt, og bekreft hvert påkrevd retursted.",
+    receiptRequirement:
+      "Skriv tilstandsnotater eller velg en godkjent vurdering for hvert valgt objekt, og bekreft hvert påkrevd retursted.",
     handoffTimeline: "Overleveringshistorikk",
     installationTask: "Fullfør tilknyttet installasjonsoppgave (valgfritt)",
 
@@ -58,6 +60,11 @@ export default {
     compareAfter: "Etter (gjeldende godkjente)",
   },
   dashboard: {
+    inventoryDefinition:
+      "Driftsinventaret utelater åpne avhendinger og innlånte eller usikre eierskap.",
+    inventoryIncomingExcluded: "Innkommende poster utelatt: {count}",
+    inventoryUnclassified: "Uklassifisert eierskap: {count}",
+    pendingOutgoingTransferApprovals: "Godkjenninger av utgående overføringer",
     overviewTitle: "Oversikt",
     overviewDescription: "Samlingene og arbeidet ditt på et øyeblikk.",
     needsReview: "Til gjennomgang",
@@ -1949,6 +1956,8 @@ export default {
     },
     kpis: {
       activeLoans: "Aktive Lån",
+      loadedActiveLoans: "Aktive lån i lastede resultater",
+      loadedItems: "Gjenstander i lastede lån",
       objectsInTransit: "Objekter under Transport",
       totalInsuredValue: "Total Forsikret Verdi",
       expiringAgreements: "Utløpende Avtaler",
@@ -1992,6 +2001,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Lastede resultater: {count}",
       showing: "Viser {start}-{end} av {total} lån",
       previous: "Forrige",
       next: "Neste",
@@ -3842,6 +3852,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Foreslått",
+      approved: "Godkjent",
+      installing: "Montering",
+      active: "Aktiv",
+      deinstalling: "Demontering",
+      closed: "Avsluttet",
+      rejected: "Avvist",
+      unclassified: "Uklassifisert",
+    },
+    metricFilterApplied: "Målefiltre brukt ved",
+    clearMetricFilter: "Fjern målefiltre",
     title: "Utstillinger",
     description: "Administrer utstillingshistorikk og planlegging",
     newExhibition: "Ny Utstilling",
@@ -4039,6 +4061,11 @@ export default {
       approved: "Godkjent",
       proposed: "Foreslått",
       closed: "Stengt",
+      currentBySchedule: "Pågår etter kalenderen",
+      upcomingBySchedule: "Kommende etter kalenderen",
+      unclassified: "{count} uklassifiserte",
+      loanExclusions: "{count} låneutstillinger utelatt",
+      legacyContradictions: "{count} motstrid mellom dato og indikator",
       activeNow: "Aktiv Nå",
       upcomingStarts: "Kommende",
       startsIn: "Starter om",
@@ -4085,7 +4112,10 @@ export default {
       noUpcoming: "Ingen kommende lånereturer",
     },
     inventory: {
+      sourceCounts: "Detaljposter / med registrert verdi; kildevaluta mangler.",
       title: "Beholdningsvurdering",
+      unavailable:
+        "Vurderingsdata er ikke tilgjengelig for denne organisasjonen.",
       totalValue: "Total Verdi",
       totalItems: "Totalt Antall Gjenstander",
       valuedItems: "Vurderte Gjenstander",
@@ -4118,6 +4148,7 @@ export default {
       exportAllReports: "Eksporter Alle Rapporter",
       csv: {
         generated: "Generert",
+        unavailable: "Utilgjengelig",
         total: "TOTALT",
         upgradeToEnterprise: "Oppgrader til Enterprise",
         inventory: {
@@ -4760,6 +4791,8 @@ export default {
       "Flere objekter samsvarer. Avgrens søket for å snevre inn listen.",
   },
   deaccessions: {
+    loadedResults: "Antall i lastede resultater",
+    loadMore: "Last flere",
     title: "Deaksesjonsposter",
     description: "Elementer permanent fjernet fra samlingen.",
     noOrg: {

@@ -1,10 +1,13 @@
 export default {
   conditionAssessments: {
-    actorProfileUnavailable: "Responsabil înregistrat; profilul actual este indisponibil",
+    actorProfileUnavailable:
+      "Responsabil înregistrat; profilul actual este indisponibil",
     actorCurrentName: "Numele actual al profilului: {name}",
-    unknownLegacyActor: "Identitatea istorică a responsabilului este necunoscută",
+    unknownLegacyActor:
+      "Identitatea istorică a responsabilului este necunoscută",
 
-    receiptRequirement: "Introduceți note de stare sau selectați o evaluare acceptată pentru fiecare obiect selectat și confirmați fiecare destinație de retur necesară.",
+    receiptRequirement:
+      "Introduceți note de stare sau selectați o evaluare acceptată pentru fiecare obiect selectat și confirmați fiecare destinație de retur necesară.",
     handoffTimeline: "Cronologia predărilor",
     installationTask: "Finalizați sarcina de instalare asociată (opțional)",
 
@@ -381,6 +384,11 @@ export default {
       "Identificatorul organizației este deja folosit. Alege unul diferit.",
   },
   dashboard: {
+    inventoryDefinition:
+      "Inventarul operațional exclude dezaccesiunile deschise și proprietatea împrumutată sau incertă.",
+    inventoryIncomingExcluded: "Înregistrări de intrare excluse: {count}",
+    inventoryUnclassified: "Proprietate neclasificată: {count}",
+    pendingOutgoingTransferApprovals: "Aprobări pentru transferuri de ieșire",
     overviewTitle: "Prezentare generală",
     overviewDescription: "Colecțiile și activitatea ta dintr-o privire.",
     needsReview: "De verificat",
@@ -2369,6 +2377,8 @@ export default {
     },
     kpis: {
       activeLoans: "Împrumuturi active",
+      loadedActiveLoans: "Împrumuturi active în rezultatele încărcate",
+      loadedItems: "Obiecte în împrumuturile încărcate",
       objectsInTransit: "Obiecte în tranzit",
       totalInsuredValue: "Valoarea totală asigurată",
       expiringAgreements: "Acorduri care expiră",
@@ -2415,6 +2425,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Rezultate încărcate: {count}",
       showing: "Se afișează împrumuturile {start}-{end} din {total}",
       previous: "Anterior",
       next: "Următor",
@@ -2444,6 +2455,8 @@ export default {
       "Mai multe obiecte se potrivesc. Restrângeți căutarea pentru a reduce lista.",
   },
   deaccessions: {
+    loadedResults: "Număr pentru rezultatele încărcate",
+    loadMore: "Încarcă mai multe",
     title: "Dezaccesiuni",
     description: "Gestionează eliminările din colecție",
     newDeaccession: "Dezaccesiune Nouă",
@@ -3110,6 +3123,18 @@ export default {
     parentLocation: "Locație părinte",
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Propusă",
+      approved: "Aprobată",
+      installing: "În instalare",
+      active: "Activă",
+      deinstalling: "În dezinstalare",
+      closed: "Închisă",
+      rejected: "Respinsă",
+      unclassified: "Neclasificată",
+    },
+    metricFilterApplied: "Filtre de indicator aplicate la",
+    clearMetricFilter: "Șterge filtrele de indicator",
     title: "Expoziții",
     description: "Planifică și gestionează expozițiile",
     newExhibition: "Expoziție Nouă",
@@ -4179,6 +4204,7 @@ export default {
       format: "Format",
       csv: {
         generated: "Generat",
+        unavailable: "Indisponibil",
         total: "TOTAL",
         upgradeToEnterprise: "Treci la planul Enterprise",
         inventory: {
@@ -4399,6 +4425,11 @@ export default {
       proposed: "Propusă",
       closed: "Închisă",
       activeNow: "Active acum",
+      currentBySchedule: "În desfășurare conform calendarului",
+      upcomingBySchedule: "Viitoare conform calendarului",
+      unclassified: "{count} neclasificate",
+      loanExclusions: "{count} expoziții de împrumut excluse",
+      legacyContradictions: "{count} contradicții între date și indicator",
       upcomingStarts: "Viitoare",
       startsIn: "Începe peste",
       days: "zile",
@@ -4414,7 +4445,11 @@ export default {
       noUpcoming: "Nu există returnări de împrumuturi viitoare",
     },
     inventory: {
+      sourceCounts:
+        "Înregistrări detaliate / cu valoare înregistrată; moneda sursei lipsește.",
       title: "Evaluarea inventarului",
+      unavailable:
+        "Datele de evaluare nu sunt disponibile pentru această organizație.",
       totalValue: "Valoare totală",
       totalItems: "Număr total de obiecte",
       valuedItems: "Obiecte evaluate",

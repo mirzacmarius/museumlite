@@ -1,4 +1,4 @@
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 
 type CatalogAnalyticsCtx = Pick<QueryCtx, "db">;
@@ -10,10 +10,7 @@ export type CatalogGrowthSnapshot = {
   deaccessions: Array<{
     approvedAt?: number;
   }>;
-  collections: Array<{
-    _creationTime: number;
-    status: Doc<"collections">["status"];
-  }>;
+  historicalTotalsAvailable: false;
 };
 
 /**
@@ -23,7 +20,7 @@ export async function loadCatalogGrowthSnapshot(
   ctx: CatalogAnalyticsCtx,
   organizationId: Id<"organizations">,
 ): Promise<CatalogGrowthSnapshot> {
-  const [accessions, deaccessions, collections] = await Promise.all([
+  const [accessions, deaccessions] = await Promise.all([
     (async () => {
       const rows: CatalogGrowthSnapshot["accessions"] = [];
       const approved = ctx.db
@@ -48,29 +45,7 @@ export async function loadCatalogGrowthSnapshot(
       }
       return rows;
     })(),
-    (async () => {
-      const rows: CatalogGrowthSnapshot["collections"] = [];
-      for (const status of [
-        "active",
-        "loaned",
-        "archived",
-        "deaccessioned",
-      ] as const) {
-        const catalogRows = ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", organizationId).eq("status", status),
-          );
-        for await (const collection of catalogRows) {
-          rows.push({
-            _creationTime: collection._creationTime,
-            status: collection.status,
-          });
-        }
-      }
-      return rows;
-    })(),
   ] as const);
 
-  return { accessions, deaccessions, collections };
+  return { accessions, deaccessions, historicalTotalsAvailable: false };
 }
