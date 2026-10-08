@@ -288,6 +288,47 @@ describe("checkpointed rebuild", () => {
     ).toMatchObject({ total: 30, active: 30 });
   });
 
+  test("an operator resumes a failed rebuild from its checkpoint when the start command would refuse", async () => {
+    const { t, staff, settle, organizationId, userId } = await fixture();
+    await insertObjects(t, organizationId, userId, 30);
+    const generationId = await staff.mutation(api.projections.startRebuild, {
+      organizationId,
+    });
+    await t.mutation(internal.projections.applyGenerationPage, {
+      generationId,
+      expectedCheckpoint: 0,
+    });
+    await t.mutation(internal.projections.markGenerationPageFailed, {
+      generationId,
+      expectedCheckpoint: 1,
+      failure: "Simulated page failure",
+    });
+
+    expect(
+      await t.mutation(internal.projections.startRebuildForOrganization, {
+        organizationId,
+      }),
+    ).toBeNull();
+    expect(
+      await t.mutation(internal.projections.retryFailedForOrganization, {
+        organizationId,
+      }),
+    ).toBe(generationId);
+    await settle();
+
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({
+      availability: "ready",
+      active: { _id: generationId, attempts: 2 },
+    });
+    expect(
+      await t.mutation(internal.projections.retryFailedForOrganization, {
+        organizationId,
+      }),
+    ).toBeNull();
+  });
+
   test("public writes before and after the scan cursor converge to the source-derived totals", async () => {
     const { t, staff, settle, organizationId, userId } = await fixture();
     const ids = await insertObjects(t, organizationId, userId, 30);

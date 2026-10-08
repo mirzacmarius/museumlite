@@ -60,6 +60,7 @@ The schema change is additive. Existing documents are not rewritten. Pre-Batch 4
    - It walks organizations 20 at a time, in pages of 25 rows, and skips organizations that are already ready or building.
    - Rerunning it is safe. The second run returned `0`.
    - To force a fresh rebuild for one organization, run `projections:startRebuildForOrganization '{"organizationId":"<org>"}'`. The previous generation becomes `superseded`.
+   - A failed rebuild or reconcile keeps its checkpoint and blocks the start commands (they return `null`). Resume it with `projections:retryFailedForOrganization '{"organizationId":"<org>"}'`, or Retry on Settings › Metrics health.
 4. **Legacy case history needs no migration.** Original `workflowHistory` arrays stay the source for ordinals below their cutover length (`caseHistoryState.sourceLength`). Approvals recorded after cutover are appended to `caseHistoryEntries` from that ordinal on. Readers page the array first, then the child rows. Nothing is copied, so there is no duplicate legacy data.
 5. **Reconcile:** `projections:startReconcileForOrganization '{"organizationId":"<org>"}'`. A `counter_mismatch` or `contribution_mismatch` blocks sign-off. Reconcile never repairs data.
 6. **Verify additivity** (optional, on a rehearsal copy). Export before and after, then run `compare before.zip after.zip`. Every pre-migration document must remain unchanged.
