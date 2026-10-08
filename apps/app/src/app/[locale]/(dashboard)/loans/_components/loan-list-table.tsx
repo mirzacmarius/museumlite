@@ -20,6 +20,7 @@ interface LoanListTableProps {
   loansPage: LoanListRow[];
   isLoading: boolean;
   hasMore: boolean;
+  onLoadMore: () => void;
   statusFilter: LoanStatus;
   typeFilter: LoanType;
   searchQuery: string;
@@ -31,6 +32,7 @@ export function LoanListTable({
   loansPage,
   isLoading,
   hasMore,
+  onLoadMore,
   statusFilter,
   typeFilter,
   searchQuery,
@@ -194,15 +196,9 @@ export function LoanListTable({
         }
       />
 
-      {!isLoading && loansPage.length > 0 && (
+      {!isLoading && (loansPage.length > 0 || hasMore) && (
         <div className="flex items-center justify-between px-2 pt-2 text-xs text-muted-foreground">
-          <span>
-            {t("pagination.showing", {
-              start: "1",
-              end: loansPage.length.toString(),
-              total: loansPage.length.toString(),
-            })}
-          </span>
+          <span>{t("pagination.loaded", { count: loansPage.length })}</span>
           <div className="flex gap-2">
             <button
               type="button"
@@ -215,6 +211,7 @@ export function LoanListTable({
               type="button"
               className="rounded border border-border/60 px-2 py-1 hover:bg-card/50"
               disabled={!hasMore}
+              onClick={onLoadMore}
             >
               {t("pagination.next")}
             </button>

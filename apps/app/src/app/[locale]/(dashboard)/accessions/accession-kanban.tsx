@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
+import { parseAsString, useQueryState } from "nuqs";
 import { Suspense } from "react";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanColumnSkeleton } from "./kanban-column-skeleton";
@@ -27,6 +28,7 @@ export function AccessionKanban({
   searchQuery,
   columnCounts,
 }: AccessionKanbanProps) {
+  const [statusFilter] = useQueryState("status", parseAsString.withDefault(""));
   const workflowSteps = useQuery(api.accessions.getWorkflowSteps, {
     organizationId,
   });
@@ -46,25 +48,30 @@ export function AccessionKanban({
   return (
     <div className="flex-1 overflow-x-auto custom-scrollbar">
       <div className="flex h-full min-w-max gap-6 pb-4">
-        {workflowSteps.steps.map((step: WorkflowStep) => (
-          <Suspense
-            key={`${step.stepNumber}-${step.name}`}
-            fallback={<KanbanColumnSkeleton />}
-          >
-            <KanbanColumn
-              organizationId={organizationId}
-              stepNumber={step.stepNumber}
-              stepName={step.name}
-              roleName={step.roleName}
-              searchQuery={searchQuery}
-              total={
-                columnCounts?.find(
-                  (column) => column.stepNumber === step.stepNumber,
-                )?.count
-              }
-            />
-          </Suspense>
-        ))}
+        {workflowSteps.steps
+          .filter(
+            (step: WorkflowStep) =>
+              statusFilter !== "pending" || step.stepNumber !== -1,
+          )
+          .map((step: WorkflowStep) => (
+            <Suspense
+              key={`${step.stepNumber}-${step.name}`}
+              fallback={<KanbanColumnSkeleton />}
+            >
+              <KanbanColumn
+                organizationId={organizationId}
+                stepNumber={step.stepNumber}
+                stepName={step.name}
+                roleName={step.roleName}
+                searchQuery={searchQuery}
+                total={
+                  columnCounts?.find(
+                    (column) => column.stepNumber === step.stepNumber,
+                  )?.count
+                }
+              />
+            </Suspense>
+          ))}
       </div>
     </div>
   );

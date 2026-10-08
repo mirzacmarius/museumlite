@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import { Search } from "lucide-react";
+import { parseAsString, useQueryState } from "nuqs";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
@@ -17,6 +18,7 @@ type TransfersBoardProps = {
 
 export function TransfersBoard({ organizationId }: TransfersBoardProps) {
   const tRoot = useI18n();
+  const [statusFilter] = useQueryState("status", parseAsString.withDefault(""));
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const transferRequests = useQuery(api.objectMoves.listForOrganization, {
@@ -132,7 +134,15 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.pendingApproval",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={transferRequests}
+            transferRequests={
+              statusFilter
+                ? transferRequests.filter(
+                    (request) =>
+                      request.status === statusFilter &&
+                      request.direction === "outgoing",
+                  )
+                : transferRequests
+            }
           />
           <TransferKanbanColumn
             status="awaiting_acceptance"
@@ -141,7 +151,15 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.incomingRequests",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={transferRequests}
+            transferRequests={
+              statusFilter
+                ? transferRequests.filter(
+                    (request) =>
+                      request.status === statusFilter &&
+                      request.direction === "outgoing",
+                  )
+                : transferRequests
+            }
           />
           <TransferKanbanColumn
             status="executed"
@@ -150,7 +168,15 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.executedTransfers",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={transferRequests}
+            transferRequests={
+              statusFilter
+                ? transferRequests.filter(
+                    (request) =>
+                      request.status === statusFilter &&
+                      request.direction === "outgoing",
+                  )
+                : transferRequests
+            }
           />
           <TransferKanbanColumn
             status="rejected"
@@ -159,7 +185,15 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.rejectedTransfers",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={transferRequests}
+            transferRequests={
+              statusFilter
+                ? transferRequests.filter(
+                    (request) =>
+                      request.status === statusFilter &&
+                      request.direction === "outgoing",
+                  )
+                : transferRequests
+            }
           />
           <TransferKanbanColumn
             status="cancelled"
@@ -168,7 +202,15 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.cancelledTransfers",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={transferRequests}
+            transferRequests={
+              statusFilter
+                ? transferRequests.filter(
+                    (request) =>
+                      request.status === statusFilter &&
+                      request.direction === "outgoing",
+                  )
+                : transferRequests
+            }
           />
         </div>
       </div>

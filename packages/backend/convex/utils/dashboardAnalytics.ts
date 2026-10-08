@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { classifyInventoryRecord } from "./collectionMetrics";
 import {
   countAccessionsByStatus,
   countCatalogObjects,
@@ -9,6 +10,7 @@ import {
   countLoansByStatus,
   countLoansByType,
   countOpenDeaccessionCollectionIds,
+  getInventoryLoanAssociations,
 } from "./indexedCounts";
 
 type AnalyticsCtx = Pick<QueryCtx, "db" | "storage">;
@@ -358,6 +360,7 @@ export async function buildOrganizationAnalytics(
   const [
     collectionGroupTotal,
     openDeaccessionCollectionIds,
+    inventoryLoanAssociations,
     deaccessioned,
     loanPending,
     loanActive,
@@ -373,6 +376,7 @@ export async function buildOrganizationAnalytics(
     deaccessionApproved,
     deaccessionRejected,
     transferPending,
+    transferAwaitingSourceApproval,
     transferExecuted,
     transferRejected,
     transferCancelled,
@@ -382,6 +386,7 @@ export async function buildOrganizationAnalytics(
   ] = await Promise.all([
     countCollectionGroups(ctx, organizationId),
     countOpenDeaccessionCollectionIds(ctx, organizationId),
+    getInventoryLoanAssociations(ctx, organizationId),
     countCollectionsByStatus(ctx, organizationId, "deaccessioned"),
     countLoansByStatus(ctx, organizationId, "pending"),
     countLoansByStatus(ctx, organizationId, "active"),
@@ -397,6 +402,7 @@ export async function buildOrganizationAnalytics(
     countDeaccessionsByStatus(ctx, organizationId, "approved"),
     countDeaccessionsByStatus(ctx, organizationId, "rejected"),
     countTransfersByStatus(ctx, organizationId, "pending"),
+    countTransfersByStatus(ctx, organizationId, "pending_source_approval"),
     countTransfersByStatus(ctx, organizationId, "executed"),
     countTransfersByStatus(ctx, organizationId, "rejected"),
     countTransfersByStatus(ctx, organizationId, "cancelled"),
@@ -423,7 +429,12 @@ export async function buildOrganizationAnalytics(
     recentObjects,
     recentActivity,
   ] = await Promise.all([
-    countCatalogObjects(ctx, organizationId, openDeaccessionCollectionIds),
+    countCatalogObjects(
+      ctx,
+      organizationId,
+      openDeaccessionCollectionIds,
+      inventoryLoanAssociations,
+    ),
     buildRecentCollectionGroups(ctx, recentCollectionGroupDocs),
     buildRecentObjects(ctx, recentCollectionDocs),
     buildRecentActivity(ctx, organizationId),
@@ -440,6 +451,10 @@ export async function buildOrganizationAnalytics(
       total: catalogWithDeaccessionExclusion.total,
       active: catalogWithDeaccessionExclusion.active,
       loaned: catalogWithDeaccessionExclusion.loaned,
+      incomingLoanExcluded:
+        catalogWithDeaccessionExclusion.incomingLoanExcluded,
+      ownershipUnclassified:
+        catalogWithDeaccessionExclusion.ownershipUnclassified,
       deaccessioned,
       onDisplay: catalogWithDeaccessionExclusion.onDisplay,
     },
@@ -462,7 +477,7 @@ export async function buildOrganizationAnalytics(
       rejected: deaccessionRejected,
     },
     transfers: {
-      pending: transferPending,
+      pending: transferPending + transferAwaitingSourceApproval,
       executed: transferExecuted,
       rejected: transferRejected,
       cancelled: transferCancelled,
@@ -560,6 +575,10 @@ async function buildSiteScopedAnalytics(
     }
   }
   const loans = allLoans.filter((l) => loanIdsForSite.has(l._id));
+  const inventoryLoanAssociations = await getInventoryLoanAssociations(
+    ctx,
+    organizationId,
+  );
 
   const collectionIdsWithOpenDeaccessions = new Set(
     deaccessions.flatMap((deaccession) =>
@@ -568,11 +587,19 @@ async function buildSiteScopedAnalytics(
         : [],
     ),
   );
+  const ownershipForCollection = (collection: Doc<"collections">) =>
+    classifyInventoryRecord({
+      status: collection.status,
+      hasOpenDeaccession: collectionIdsWithOpenDeaccessions.has(collection._id),
+      linkedToIncomingLoan: inventoryLoanAssociations.incoming.has(
+        collection._id,
+      ),
+      linkedToOutgoingLoan: inventoryLoanAssociations.outgoing.has(
+        collection._id,
+      ),
+    });
   const catalogObjects = collections.filter(
-    (collection) =>
-      collection.status !== "deleted" &&
-      collection.status !== "deaccessioned" &&
-      !collectionIdsWithOpenDeaccessions.has(collection._id),
+    (collection) => ownershipForCollection(collection) === "owned",
   );
 
   const [recentCollectionGroups, recentObjects, recentActivity, transfers] =
@@ -602,10 +629,17 @@ async function buildSiteScopedAnalytics(
       total: catalogObjects.length,
       active: catalogObjects.filter((c) => c.status === "active").length,
       loaned: catalogObjects.filter((c) => c.status === "loaned").length,
+      incomingLoanExcluded: collections.filter(
+        (c) => ownershipForCollection(c) === "incoming",
+      ).length,
+      ownershipUnclassified: collections.filter(
+        (c) => ownershipForCollection(c) === "unclassified",
+      ).length,
       deaccessioned: collections.filter((c) => c.status === "deaccessioned")
         .length,
-      onDisplay: catalogObjects.filter((c) => c.displayStatus === "on_display")
-        .length,
+      onDisplay: catalogObjects.filter(
+        (c) => c.status === "active" && c.displayStatus === "on_display",
+      ).length,
     },
     loans: {
       total: loans.length,
@@ -626,7 +660,9 @@ async function buildSiteScopedAnalytics(
       rejected: deaccessions.filter((d) => d.status === "rejected").length,
     },
     transfers: {
-      pending: transfers.filter((t) => t.status === "pending").length,
+      pending: transfers.filter(
+        (t) => t.status === "pending" || t.status === "pending_source_approval",
+      ).length,
       executed: transfers.filter((t) => t.status === "executed").length,
       rejected: transfers.filter((t) => t.status === "rejected").length,
       cancelled: transfers.filter((t) => t.status === "cancelled").length,

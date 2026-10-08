@@ -22,7 +22,11 @@ export function LoanList({
 }: LoanListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
 
-  const { results: loansPage, status } = usePaginatedQuery(
+  const {
+    results: loansPage,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
     api.loans.list,
     organizationId
       ? {
@@ -41,7 +45,7 @@ export function LoanList({
   const activeLoansCount = typedLoansPage.filter(
     (loan) => loan.status === "active",
   ).length;
-  const totalItemsInTransit = typedLoansPage.reduce(
+  const loadedItemCount = typedLoansPage.reduce(
     (sum, loan) => sum + (loan.itemCount || 0),
     0,
   );
@@ -73,7 +77,7 @@ export function LoanList({
     <div className="space-y-6">
       <LoanListKpis
         activeLoansCount={activeLoansCount}
-        totalItemsInTransit={totalItemsInTransit}
+        loadedItemCount={loadedItemCount}
       />
 
       <div className="space-y-4">
@@ -90,6 +94,7 @@ export function LoanList({
           loansPage={typedLoansPage}
           isLoading={isLoading}
           hasMore={status === "CanLoadMore"}
+          onLoadMore={() => loadMore(50)}
           statusFilter={statusFilter}
           typeFilter={typeFilter}
           searchQuery={searchQuery}

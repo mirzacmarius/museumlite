@@ -5,12 +5,12 @@ import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface LoanListKpisProps {
   activeLoansCount: number;
-  totalItemsInTransit: number;
+  loadedItemCount: number;
 }
 
 export function LoanListKpis({
   activeLoansCount,
-  totalItemsInTransit,
+  loadedItemCount,
 }: LoanListKpisProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("loans");
@@ -23,12 +23,12 @@ export function LoanListKpis({
             <ArrowRightLeft className="size-4" />
           </div>
           <span className="rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
-            +{activeLoansCount}{" "}
+            {activeLoansCount}{" "}
             {tRoot("untranslatedRecords.objects.status.active")}
           </span>
         </div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {t("kpis.activeLoans")}
+          {t("kpis.loadedActiveLoans")}
         </p>
         <p className="mt-1 text-2xl font-bold tracking-tight">
           {activeLoansCount}
@@ -42,10 +42,10 @@ export function LoanListKpis({
           </div>
         </div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {t("kpis.objectsInTransit")}
+          {t("kpis.loadedItems")}
         </p>
         <p className="mt-1 text-2xl font-bold tracking-tight">
-          {totalItemsInTransit}
+          {loadedItemCount}
         </p>
       </div>
 

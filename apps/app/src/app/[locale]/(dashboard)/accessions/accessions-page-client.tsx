@@ -5,7 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { FileUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
-import { useDeferredValue, useState } from "react";
+import { Suspense, useDeferredValue, useState } from "react";
 import {
   ExportButtonWithFormat,
   type ExportFormat,
@@ -135,11 +135,13 @@ export function AccessionsPageClient({
         pendingTransfers={pendingTransfers}
       />
 
-      <AccessionKanban
-        organizationId={organizationId}
-        searchQuery={deferredSearchQuery}
-        columnCounts={counts.columns}
-      />
+      <Suspense fallback={<AccessionsPageSkeleton />}>
+        <AccessionKanban
+          organizationId={organizationId}
+          searchQuery={deferredSearchQuery}
+          columnCounts={counts.columns}
+        />
+      </Suspense>
     </div>
   );
 }

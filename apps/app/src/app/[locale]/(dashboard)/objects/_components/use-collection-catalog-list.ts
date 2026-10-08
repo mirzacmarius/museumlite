@@ -193,6 +193,12 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     api.collections.list,
     {
       organizationId,
+      inventoryMetricScope:
+        filters.inventoryScope === "owned" ||
+        filters.inventoryScope === "incoming" ||
+        filters.inventoryScope === "unclassified"
+          ? filters.inventoryScope
+          : undefined,
       search: filters.search || undefined,
       status: statusFilter,
       objectType: filters.objectType || undefined,

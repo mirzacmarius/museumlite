@@ -46,6 +46,11 @@ export default {
     compareAfter: "After (current accepted)",
   },
   dashboard: {
+    inventoryDefinition:
+      "Operational inventory excludes open deaccessions and incoming or uncertain ownership.",
+    inventoryIncomingExcluded: "Incoming records excluded: {count}",
+    inventoryUnclassified: "Ownership unclassified: {count}",
+    pendingOutgoingTransferApprovals: "Outgoing transfer approvals",
     overviewTitle: "Overview",
     overviewDescription: "Your collections and work at a glance.",
     needsReview: "Needs review",
@@ -1326,6 +1331,8 @@ export default {
     },
     kpis: {
       activeLoans: "Active Loans",
+      loadedActiveLoans: "Active loans in loaded results",
+      loadedItems: "Items in loaded loans",
       objectsInTransit: "Objects in Transit",
       totalInsuredValue: "Total Insured Value",
       expiringAgreements: "Expiring Agreements",
@@ -1372,6 +1379,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Loaded results: {count}",
       showing: "Showing {start}-{end} of {total} loans",
       previous: "Previous",
       next: "Next",
@@ -3101,6 +3109,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Proposed",
+      approved: "Approved",
+      installing: "Installing",
+      active: "Active",
+      deinstalling: "Deinstalling",
+      closed: "Closed",
+      rejected: "Rejected",
+      unclassified: "Unclassified",
+    },
+    metricFilterApplied: "Metric filters applied at",
+    clearMetricFilter: "Clear metric filters",
     title: "Exhibitions",
     description: "Manage your exhibition history and planning",
     newExhibition: "New Exhibition",
@@ -3852,6 +3872,11 @@ export default {
       proposed: "Proposed",
       closed: "Closed",
       activeNow: "Active Now",
+      currentBySchedule: "Current by schedule",
+      upcomingBySchedule: "Upcoming by schedule",
+      unclassified: "{count} unclassified",
+      loanExclusions: "{count} loan exhibitions excluded",
+      legacyContradictions: "{count} legacy date/flag contradictions",
       upcomingStarts: "Upcoming",
       startsIn: "Starts in",
       days: "days",
@@ -3897,7 +3922,10 @@ export default {
       noUpcoming: "No upcoming loan returns",
     },
     inventory: {
+      sourceCounts:
+        "Detail records / records with a recorded value; source currency is missing.",
       title: "Inventory Valuation",
+      unavailable: "Valuation data is unavailable for this organization.",
       totalValue: "Total Value",
       totalItems: "Total Items",
       valuedItems: "Valued Items",
@@ -3930,6 +3958,7 @@ export default {
       exportAllReports: "Export All Reports",
       csv: {
         generated: "Generated",
+        unavailable: "Unavailable",
         total: "TOTAL",
         upgradeToEnterprise: "Upgrade to Enterprise",
         inventory: {
@@ -4562,6 +4591,8 @@ export default {
     refineSearch: "More objects match. Refine the search to narrow the list.",
   },
   deaccessions: {
+    loadedResults: "Counts for loaded results",
+    loadMore: "Load more",
     title: "Deaccession Records",
     description: "Items permanently removed from collection.",
     noOrg: {

@@ -1,7 +1,30 @@
 import type { Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { classifyInventoryRecord } from "./collectionMetrics";
 
 type CountCtx = Pick<QueryCtx, "db">;
+
+export async function getInventoryLoanAssociations(
+  ctx: CountCtx,
+  organizationId: Id<"organizations">,
+) {
+  const incoming = new Set<Id<"collections">>();
+  const outgoing = new Set<Id<"collections">>();
+  const loans = ctx.db
+    .query("loans")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", organizationId),
+    );
+  for await (const loan of loans) {
+    const items = ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", loan._id));
+    for await (const item of items) {
+      (loan.type === "incoming" ? incoming : outgoing).add(item.collectionId);
+    }
+  }
+  return { incoming, outgoing };
+}
 
 /**
  * Count documents matching an indexed query without loading full documents.
@@ -108,11 +131,14 @@ export async function countCatalogObjects(
   ctx: CountCtx,
   organizationId: Id<"organizations">,
   openDeaccessionCollectionIds: Set<Id<"collections">>,
+  loanAssociations: Awaited<ReturnType<typeof getInventoryLoanAssociations>>,
 ) {
   let total = 0;
   let active = 0;
   let loaned = 0;
   let onDisplay = 0;
+  let incomingLoanExcluded = 0;
+  let ownershipUnclassified = 0;
 
   for (const status of ["active", "loaned", "archived"] as const) {
     const rows = ctx.db
@@ -121,9 +147,15 @@ export async function countCatalogObjects(
         q.eq("organizationId", organizationId).eq("status", status),
       );
     for await (const collection of rows) {
-      if (openDeaccessionCollectionIds.has(collection._id)) {
-        continue;
-      }
+      const ownership = classifyInventoryRecord({
+        status: collection.status,
+        hasOpenDeaccession: openDeaccessionCollectionIds.has(collection._id),
+        linkedToIncomingLoan: loanAssociations.incoming.has(collection._id),
+        linkedToOutgoingLoan: loanAssociations.outgoing.has(collection._id),
+      });
+      if (ownership === "incoming") incomingLoanExcluded += 1;
+      if (ownership === "unclassified") ownershipUnclassified += 1;
+      if (ownership !== "owned") continue;
       total += 1;
       if (collection.status === "active") {
         active += 1;
@@ -136,5 +168,12 @@ export async function countCatalogObjects(
     }
   }
 
-  return { total, active, loaned, onDisplay };
+  return {
+    total,
+    active,
+    loaned,
+    onDisplay,
+    incomingLoanExcluded,
+    ownershipUnclassified,
+  };
 }

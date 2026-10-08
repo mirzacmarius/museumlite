@@ -1,7 +1,9 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
+import { INVENTORY_METRIC_DEFINITION } from "./utils/collectionMetrics";
 import { buildOrganizationAnalytics } from "./utils/dashboardAnalytics";
+import { EXHIBITION_METRIC_DEFINITION } from "./utils/exhibitionMetrics";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { loadOperationalKpis } from "./utils/operationalKpis";
 import { requirePermission } from "./utils/permissions";
@@ -12,6 +14,14 @@ export const getAnalytics = query({
     siteId: v.optional(v.id("sites")),
   },
   returns: v.object({
+    asOf: v.number(),
+    definitionId: v.literal(INVENTORY_METRIC_DEFINITION),
+    scope: v.object({
+      organizationId: v.id("organizations"),
+      siteId: v.optional(v.id("sites")),
+      inventory: v.literal("owned"),
+      transferApprovals: v.literal("outgoing_source"),
+    }),
     collections: v.object({
       total: v.number(),
     }),
@@ -19,6 +29,8 @@ export const getAnalytics = query({
       total: v.number(),
       active: v.number(),
       loaned: v.number(),
+      incomingLoanExcluded: v.number(),
+      ownershipUnclassified: v.number(),
       deaccessioned: v.number(),
       onDisplay: v.number(),
     }),
@@ -88,6 +100,7 @@ export const getAnalytics = query({
     ),
   }),
   handler: async (ctx, args) => {
+    const asOf = Date.now();
     const [, analytics] = await Promise.all([
       requirePermission(
         ctx,
@@ -97,7 +110,17 @@ export const getAnalytics = query({
       buildOrganizationAnalytics(ctx, args.organizationId, args.siteId),
     ] as const);
 
-    return analytics;
+    return {
+      ...analytics,
+      asOf,
+      definitionId: INVENTORY_METRIC_DEFINITION,
+      scope: {
+        organizationId: args.organizationId,
+        siteId: args.siteId,
+        inventory: "owned" as const,
+        transferApprovals: "outgoing_source" as const,
+      },
+    };
   },
 });
 
@@ -788,25 +811,33 @@ export const getKpiTrends = query({
 export const getOperationalKpis = query({
   args: {
     organizationId: v.id("organizations"),
-    now: v.number(),
+    now: v.optional(v.number()),
+    asOf: v.optional(v.number()),
   },
   returns: v.object({
+    definitionId: v.literal(EXHIBITION_METRIC_DEFINITION),
+    scope: v.object({
+      organizationId: v.id("organizations"),
+      excludeExhibitionLoans: v.literal(true),
+    }),
     inventory: v.object({
-      totalValue: v.number(),
+      available: v.boolean(),
+      unavailableReason: v.optional(v.string()),
+      totalValue: v.union(v.number(), v.null()),
       fineArt: v.object({
-        totalValue: v.number(),
-        itemCount: v.number(),
-        valuedCount: v.number(),
+        totalValue: v.union(v.number(), v.null()),
+        itemCount: v.union(v.number(), v.null()),
+        valuedCount: v.union(v.number(), v.null()),
       }),
       wine: v.object({
-        totalValue: v.number(),
-        itemCount: v.number(),
-        valuedCount: v.number(),
+        totalValue: v.union(v.number(), v.null()),
+        itemCount: v.union(v.number(), v.null()),
+        valuedCount: v.union(v.number(), v.null()),
       }),
       vehicles: v.object({
-        totalValue: v.number(),
-        itemCount: v.number(),
-        valuedCount: v.number(),
+        totalValue: v.union(v.number(), v.null()),
+        itemCount: v.union(v.number(), v.null()),
+        valuedCount: v.union(v.number(), v.null()),
       }),
     }),
     loans: v.object({
@@ -829,9 +860,19 @@ export const getOperationalKpis = query({
     exhibitions: v.object({
       proposed: v.number(),
       approved: v.number(),
+      installing: v.number(),
       active: v.number(),
+      deinstalling: v.number(),
       closed: v.number(),
       rejected: v.number(),
+      unclassified: v.number(),
+      excludedLoans: v.number(),
+      legacyContradictions: v.number(),
+      bySchedule: v.object({
+        current: v.number(),
+        upcoming: v.number(),
+        past: v.number(),
+      }),
       upcomingStarts: v.array(
         v.object({
           id: v.string(),
@@ -853,6 +894,7 @@ export const getOperationalKpis = query({
         }),
       ),
     }),
+    asOf: v.number(),
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
@@ -861,6 +903,9 @@ export const getOperationalKpis = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
-    return await loadOperationalKpis(ctx, args.organizationId, args.now);
+    const asOf = args.asOf ?? args.now ?? Date.now();
+    if (!Number.isFinite(asOf))
+      throw new Error("asOf must be a finite timestamp");
+    return await loadOperationalKpis(ctx, args.organizationId, asOf);
   },
 });

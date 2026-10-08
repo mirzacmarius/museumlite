@@ -228,9 +228,10 @@ describe("Dashboard: getAnalytics", () => {
     });
 
     // #then
-    expect(analytics.objects.total).toBe(3);
+    expect(analytics.objects.total).toBe(2);
     expect(analytics.objects.active).toBe(2);
-    expect(analytics.objects.loaned).toBe(1);
+    expect(analytics.objects.loaned).toBe(0);
+    expect(analytics.objects.ownershipUnclassified).toBe(1);
     expect(analytics.objects.deaccessioned).toBe(1);
   });
 
@@ -327,7 +328,14 @@ describe("Dashboard: getAnalytics", () => {
 
   test("counts transfer requests by status for the source organization only", async () => {
     const t = convexTest(schema, modules);
-    const { organizationId, userId } = await createTestOrg(t);
+    const { organizationId, userId, roleId } = await createTestOrg(t);
+
+    await grantPermission(
+      t,
+      roleId,
+      "organization.manage_settings",
+      "organization",
+    );
 
     const [targetOrganizationId, otherSourceOrganizationId, collectionId] =
       await Promise.all([
@@ -372,6 +380,17 @@ describe("Dashboard: getAnalytics", () => {
     });
 
     await t.run(async (ctx) => {
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Canonical source approval",
+        status: "pending_source_approval",
+        requestedBy: userId,
+        requestedAt: 1000,
+      });
       await ctx.db.insert("organizationMoveRequests", {
         collectionId,
         sourceOrganizationId: organizationId,
@@ -438,7 +457,20 @@ describe("Dashboard: getAnalytics", () => {
       organizationId,
     });
 
-    expect(analytics.transfers.pending).toBe(1);
+    expect(analytics.transfers.pending).toBe(2);
+    const board = await authed.query(api.objectMoves.listForOrganization, {
+      organizationId,
+    });
+    expect(
+      board
+        .filter(
+          (request) =>
+            request.direction === "outgoing" &&
+            request.status === "pending_source_approval",
+        )
+        .map((request) => request.reason)
+        .sort(),
+    ).toEqual(["Canonical source approval", "Pending transfer"]);
     expect(analytics.transfers.executed).toBe(1);
     expect(analytics.transfers.rejected).toBe(1);
     expect(analytics.transfers.cancelled).toBe(1);
@@ -586,7 +618,7 @@ describe("Dashboard: getAnalytics", () => {
 describe("Dashboard: getOperationalKpis", () => {
   const fixedNow = 1_700_000_000_000;
 
-  test("returns zero inventory valuation when the module is disabled by default", async () => {
+  test("reports inventory valuation unavailable when its module is disabled", async () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createTestOrg(t, {
@@ -624,12 +656,15 @@ describe("Dashboard: getOperationalKpis", () => {
     });
 
     // #then
-    expect(kpis.inventory.totalValue).toBe(0);
-    expect(kpis.inventory.fineArt.itemCount).toBe(0);
-    expect(kpis.inventory.fineArt.valuedCount).toBe(0);
+    expect(kpis.inventory).toMatchObject({
+      available: false,
+      unavailableReason: "inventory_valuation_module_disabled",
+      totalValue: null,
+      fineArt: { itemCount: null, valuedCount: null },
+    });
   });
 
-  test("returns inventory valuation when the module is enabled", async () => {
+  test("does not aggregate valuation amounts without source currency", async () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createTestOrg(t, {
@@ -652,7 +687,7 @@ describe("Dashboard: getOperationalKpis", () => {
       await ctx.db.insert("fineArtDetails", {
         collectionId,
         organizationId,
-        appraisedValue: 75_000,
+        appraisedValue: 0,
         createdAt: Date.now(),
       });
     });
@@ -668,9 +703,19 @@ describe("Dashboard: getOperationalKpis", () => {
     });
 
     // #then
-    expect(kpis.inventory.totalValue).toBe(75_000);
+    expect(kpis.inventory).toMatchObject({
+      available: false,
+      unavailableReason: "valuation_currency_not_recorded",
+      totalValue: null,
+      fineArt: { totalValue: null },
+    });
     expect(kpis.inventory.fineArt.itemCount).toBe(1);
     expect(kpis.inventory.fineArt.valuedCount).toBe(1);
+    expect(kpis.inventory.wine).toMatchObject({
+      itemCount: 0,
+      valuedCount: 0,
+      totalValue: null,
+    });
   });
 });
 
@@ -744,5 +789,207 @@ describe("Dashboard: getComplianceReport", () => {
         { entityType: "loan", count: 1 },
       ]),
     );
+  });
+});
+
+describe("Dashboard metric drilldowns", () => {
+  test("owned inventory and display counts match paginated catalog without inventing legacy ownership", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createTestOrg(t);
+    await grantPermission(t, roleId, "collections.read");
+    await t.run(async (ctx) => {
+      const ownedId = await ctx.db.insert("collections", {
+        ...createCollection(
+          organizationId,
+          userId,
+          "Owned on display",
+          "OWN-1",
+          "active",
+        ),
+        displayStatus: "on_display",
+      });
+      await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Archived owned",
+          "OWN-2",
+          "archived",
+        ),
+      );
+      const outgoingId = await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Outgoing owned",
+          "OUT-1",
+          "loaned",
+        ),
+      );
+      const incomingId = await ctx.db.insert("collections", {
+        ...createCollection(
+          organizationId,
+          userId,
+          "Incoming displayed",
+          "IN-1",
+          "active",
+        ),
+        displayStatus: "on_display",
+      });
+      const ambiguousId = await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Contradictory ownership",
+          "UNKNOWN-1",
+          "active",
+        ),
+      );
+      await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Unlinked loaned legacy",
+          "UNKNOWN-2",
+          "loaned",
+        ),
+      );
+      const deaccessionId = await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Open deaccession",
+          "DEA-1",
+          "active",
+        ),
+      );
+      await ctx.db.insert("deaccessions", {
+        organizationId,
+        collectionId: deaccessionId,
+        deaccessionNumber: "DEA-1",
+        dateDeaccessioned: 1000,
+        reason: "Review",
+        method: "donation",
+        targetCollectionStatus: "deaccessioned",
+        status: "pending",
+      });
+      for (const [type, collectionId] of [
+        ["incoming", incomingId],
+        ["outgoing", outgoingId],
+        ["incoming", ambiguousId],
+        ["outgoing", ambiguousId],
+      ] as const) {
+        const loanId = await ctx.db.insert("loans", {
+          organizationId,
+          loanNumber: `${type}-${collectionId}`,
+          type,
+          lenderBorrowerName: "Partner",
+          startDate: 1000,
+          status: "returned",
+        });
+        await ctx.db.insert("loanItems", {
+          loanId,
+          collectionId,
+          custodyStatus: "returned",
+        });
+      }
+      const otherOrg = await ctx.db.insert("organizations", {
+        name: "Other",
+        slug: "other-metric-drilldown",
+        type: "museum",
+      });
+      await ctx.db.insert(
+        "collections",
+        createCollection(otherOrg, userId, "Other tenant", "FOREIGN", "active"),
+      );
+      const foreignLoan = await ctx.db.insert("loans", {
+        organizationId: otherOrg,
+        loanNumber: "FOREIGN",
+        type: "incoming",
+        lenderBorrowerName: "Partner",
+        startDate: 1000,
+        status: "active",
+      });
+      await ctx.db.insert("loanItems", {
+        loanId: foreignLoan,
+        collectionId: ownedId,
+      });
+    });
+    const reader = t.withIdentity({ subject: `${userId}|metrics` });
+    const analytics = await reader.query(api.dashboard.getAnalytics, {
+      organizationId,
+    });
+    const names: string[] = [];
+    let cursor: string | null = null;
+    for (;;) {
+      const page = await reader.query(api.collections.list, {
+        organizationId,
+        inventoryMetricScope: "owned",
+        paginationOpts: { numItems: 1, cursor },
+      });
+      names.push(...page.page.map((item) => item.title));
+      if (page.isDone) break;
+      cursor = page.continueCursor;
+    }
+    expect(names.sort()).toEqual([
+      "Archived owned",
+      "Outgoing owned",
+      "Owned on display",
+    ]);
+    expect(analytics.objects).toMatchObject({
+      total: 3,
+      active: 1,
+      loaned: 1,
+      onDisplay: 1,
+      incomingLoanExcluded: 1,
+      ownershipUnclassified: 2,
+    });
+    const incoming = await reader.query(api.collections.list, {
+      organizationId,
+      inventoryMetricScope: "incoming",
+      paginationOpts: { numItems: 100, cursor: null },
+    });
+    expect(incoming.page.map((item) => item.title)).toEqual([
+      "Incoming displayed",
+    ]);
+    const unclassified = await reader.query(api.collections.list, {
+      organizationId,
+      inventoryMetricScope: "unclassified",
+      paginationOpts: { numItems: 100, cursor: null },
+    });
+    expect(unclassified.page.map((item) => item.title).sort()).toEqual([
+      "Contradictory ownership",
+      "Unlinked loaned legacy",
+    ]);
+    const display = await reader.query(api.collections.list, {
+      organizationId,
+      inventoryMetricScope: "owned",
+      status: "active",
+      displayStatus: "on_display",
+      paginationOpts: { numItems: 100, cursor: null },
+    });
+    expect(display.page.map((item) => item.title)).toEqual([
+      "Owned on display",
+    ]);
+    await expect(
+      t.query(api.collections.list, {
+        organizationId,
+        inventoryMetricScope: "owned",
+        paginationOpts: { numItems: 1, cursor: null },
+      }),
+    ).rejects.toThrow();
+    const outsider = await createTestOrg(t);
+    await expect(
+      t.withIdentity({ subject: outsider.userId }).query(api.collections.list, {
+        organizationId,
+        inventoryMetricScope: "owned",
+        paginationOpts: { numItems: 1, cursor: null },
+      }),
+    ).rejects.toThrow();
   });
 });

@@ -48,6 +48,12 @@ export default {
     compareAfter: "Después (aceptación actual)",
   },
   dashboard: {
+    inventoryDefinition:
+      "El inventario operativo excluye bajas abiertas y propiedad entrante o incierta.",
+    inventoryIncomingExcluded: "Registros entrantes excluidos: {count}",
+    inventoryUnclassified: "Propiedad sin clasificar: {count}",
+    pendingOutgoingTransferApprovals:
+      "Aprobaciones de transferencias salientes",
     overviewTitle: "Resumen",
     overviewDescription: "Tus colecciones y tareas de un vistazo.",
     needsReview: "Por revisar",
@@ -2207,6 +2213,7 @@ export default {
       },
     },
     pagination: {
+      loaded: "Resultados cargados: {count}",
       showing: "Mostrando {start}-{end} de {total} préstamos",
       previous: "Anterior",
       next: "Siguiente",
@@ -2243,6 +2250,8 @@ export default {
       overdueLoans: "Préstamos Vencidos",
       pendingApprovals: "Aprobaciones Pendientes",
       unavailable: "No disponible",
+      loadedActiveLoans: "Préstamos activos en resultados cargados",
+      loadedItems: "Objetos en préstamos cargados",
       objectsInTransit: "Objetos en tránsito",
       totalInsuredValue: "Valor total asegurado",
       expiringAgreements: "Acuerdos próximos a vencer",
@@ -3857,6 +3866,18 @@ export default {
     },
   },
   exhibitions: {
+    lifecycle: {
+      proposed: "Propuesta",
+      approved: "Aprobada",
+      installing: "En instalación",
+      active: "Activa",
+      deinstalling: "En desmontaje",
+      closed: "Cerrada",
+      rejected: "Rechazada",
+      unclassified: "Sin clasificar",
+    },
+    metricFilterApplied: "Filtros de métricas aplicados a",
+    clearMetricFilter: "Borrar filtros de métricas",
     title: "Exposiciones",
     description: "Gestiona el historial y la planificación de tus exposiciones",
     newExhibition: "Nueva Exposición",
@@ -4058,6 +4079,11 @@ export default {
       approved: "Aprobado",
       proposed: "Propuesto",
       closed: "Cerrado",
+      currentBySchedule: "Actual según el calendario",
+      upcomingBySchedule: "Próximas según el calendario",
+      unclassified: "{count} sin clasificar",
+      loanExclusions: "{count} exposiciones de préstamo excluidas",
+      legacyContradictions: "{count} contradicciones entre fechas e indicador",
       activeNow: "Activo Ahora",
       upcomingStarts: "Próximas",
       startsIn: "Comienza en",
@@ -4104,7 +4130,11 @@ export default {
       noUpcoming: "Sin devoluciones próximas",
     },
     inventory: {
+      sourceCounts:
+        "Registros detallados / con valor registrado; falta la moneda de origen.",
       title: "Valoración de Inventario",
+      unavailable:
+        "Los datos de valoración no están disponibles para esta organización.",
       totalValue: "Valor Total",
       totalItems: "Total de Artículos",
       valuedItems: "Artículos Valorados",
@@ -4137,6 +4167,7 @@ export default {
       exportAllReports: "Exportar Todos los Informes",
       csv: {
         generated: "Generado",
+        unavailable: "No disponible",
         total: "TOTAL",
         upgradeToEnterprise: "Actualizar a Enterprise",
         inventory: {
@@ -4786,6 +4817,8 @@ export default {
       "Hay más objetos que coinciden. Afine la búsqueda para acotar la lista.",
   },
   deaccessions: {
+    loadedResults: "Recuentos de resultados cargados",
+    loadMore: "Cargar más",
     title: "Registros de Desaccesión",
     description: "Elementos permanentemente removidos de la colección.",
     noOrg: {

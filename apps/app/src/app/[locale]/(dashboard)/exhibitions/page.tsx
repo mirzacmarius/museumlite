@@ -25,7 +25,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { ClientDate } from "@/components/client-date";
 import { CollectionSelector } from "@/components/collection-selector";
 import {
@@ -56,7 +57,9 @@ export default function ExhibitionsPage() {
   const { hasFeature } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ExhibitionStatus>("all");
-  const [selectedObjectId, setSelectedObjectId] = useState<string | undefined>();
+  const [selectedObjectId, setSelectedObjectId] = useState<
+    string | undefined
+  >();
   const [showFilters, setShowFilters] = useState(false);
 
   const savedViewMode = useQuery(
@@ -107,7 +110,8 @@ export default function ExhibitionsPage() {
     );
   }
 
-  const hasActiveFilters = searchQuery || statusFilter !== "all" || selectedObjectId;
+  const hasActiveFilters =
+    searchQuery || statusFilter !== "all" || selectedObjectId;
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -210,20 +214,27 @@ export default function ExhibitionsPage() {
                       </Select>
                     </div>
                     <div className="min-w-60">
-                      <CollectionSelector organizationId={currentOrganizationId} value={selectedObjectId} onValueChange={setSelectedObjectId} label={t("filters.object")} />
+                      <CollectionSelector
+                        organizationId={currentOrganizationId}
+                        value={selectedObjectId}
+                        onValueChange={setSelectedObjectId}
+                        label={t("filters.object")}
+                      />
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            <ExhibitionList
-              organizationId={currentOrganizationId}
-              searchQuery={searchQuery}
-              statusFilter={statusFilter}
-              selectedObjectId={selectedObjectId}
-              viewMode={viewMode}
-            />
+            <Suspense fallback={<GridCardsSkeleton count={6} />}>
+              <ExhibitionList
+                organizationId={currentOrganizationId}
+                searchQuery={searchQuery}
+                statusFilter={statusFilter}
+                selectedObjectId={selectedObjectId}
+                viewMode={viewMode}
+              />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -246,10 +257,45 @@ function ExhibitionList({
 }) {
   const t = useScopedI18n("exhibitions");
   const now = useClientNow();
+  const locale = useCurrentLocale();
+  const searchParams = useSearchParams();
+  const requestedAsOf = Number(searchParams.get("asOf"));
+  const requestedSchedule = searchParams.get("status");
+  const requestedLifecycle = searchParams.get("lifecycle");
+  const metricSchedule =
+    requestedSchedule === "current" ||
+    requestedSchedule === "upcoming" ||
+    requestedSchedule === "past"
+      ? requestedSchedule
+      : undefined;
+  const metricLifecycle =
+    requestedLifecycle === "proposed" ||
+    requestedLifecycle === "approved" ||
+    requestedLifecycle === "installing" ||
+    requestedLifecycle === "active" ||
+    requestedLifecycle === "deinstalling" ||
+    requestedLifecycle === "closed" ||
+    requestedLifecycle === "rejected" ||
+    requestedLifecycle === "unclassified"
+      ? requestedLifecycle
+      : undefined;
+  const isMetricDrilldown =
+    searchParams.has("asOf") &&
+    Number.isFinite(requestedAsOf) &&
+    (metricSchedule !== undefined || metricLifecycle !== undefined);
   const exhibitions = useQuery(api.exhibitions.listByOrganization, {
     organizationId: organizationId as Id<"organizations">,
     collectionId: selectedObjectId as Id<"collections"> | undefined,
+    metricFilters: isMetricDrilldown
+      ? {
+          asOf: requestedAsOf,
+          schedule: metricSchedule,
+          lifecycle: metricLifecycle,
+          includeLoans: searchParams.get("excludeLoans") !== "true",
+        }
+      : undefined,
   });
+  const displayAsOf = isMetricDrilldown ? requestedAsOf : now;
 
   if (exhibitions === undefined) {
     return <GridCardsSkeleton count={6} />;
@@ -266,41 +312,69 @@ function ExhibitionList({
     if (!matchesSearch) return false;
 
     return matchesScheduleFilter(
-      getExhibitionScheduleStatus(ex, now),
+      getExhibitionScheduleStatus(ex, displayAsOf),
       statusFilter,
     );
   });
 
+  const metricNotice = isMetricDrilldown ? (
+    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <span>
+        {t("metricFilterApplied")}{" "}
+        <ClientDate timestamp={requestedAsOf} locale={locale} />
+      </span>
+      {metricSchedule && <span>{t(`status.${metricSchedule}`)}</span>}
+      {metricLifecycle && <span>{t(`lifecycle.${metricLifecycle}`)}</span>}
+      <Link href="/exhibitions" className="underline">
+        {t("clearMetricFilter")}
+      </Link>
+    </div>
+  ) : null;
+
   if (filteredExhibitions.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <EmptyState
-          icon={GalleryVerticalEnd}
-          title={t("emptyState.noExhibitions")}
-          description={
-            searchQuery || statusFilter !== "all" || selectedObjectId
-              ? t("emptyState.adjustFilters")
-              : t("emptyState.createFirst")
-          }
-        />
+      <div className="space-y-3">
+        {metricNotice}
+        <div className="flex h-64 items-center justify-center">
+          <EmptyState
+            icon={GalleryVerticalEnd}
+            title={t("emptyState.noExhibitions")}
+            description={
+              searchQuery || statusFilter !== "all" || selectedObjectId
+                ? t("emptyState.adjustFilters")
+                : t("emptyState.createFirst")
+            }
+          />
+        </div>
       </div>
     );
   }
 
   if (viewMode === "timeline") {
-    return <ExhibitionTimeline exhibitions={filteredExhibitions} now={now} />;
+    return (
+      <div className="space-y-3">
+        {metricNotice}
+        <ExhibitionTimeline
+          exhibitions={filteredExhibitions}
+          now={displayAsOf}
+        />
+      </div>
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-      {filteredExhibitions.map((ex) => (
-        <div key={ex._id}>
-          <ExhibitionCard
-            exhibition={ex}
-            scheduleStatus={getExhibitionScheduleStatus(ex, now)}
-          />
-        </div>
-      ))}
+    <div className="space-y-3">
+      {metricNotice}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+        {filteredExhibitions.map((ex) => (
+          <div key={ex._id}>
+            <ExhibitionCard
+              exhibition={ex}
+              scheduleStatus={getExhibitionScheduleStatus(ex, displayAsOf)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -397,7 +471,9 @@ function ExhibitionCard({
       {exhibition.participantCount > 0 && (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground group-hover:text-muted-foreground transition-colors">
           <Box className="size-3.5" />
-          <span className="truncate">{exhibition.participantCount} {t("form.participantsLabel")}</span>
+          <span className="truncate">
+            {exhibition.participantCount} {t("form.participantsLabel")}
+          </span>
         </div>
       )}
     </Link>

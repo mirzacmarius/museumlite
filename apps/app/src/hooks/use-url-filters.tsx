@@ -82,6 +82,10 @@ export function useObjectFilters() {
       "deleted",
     ] as const).withDefault("any"),
   );
+  const [inventoryScope, setInventoryScope] = useQueryState(
+    "inventory",
+    parseAsString.withDefault(""),
+  );
   const [objectType, setObjectType] = useQueryState(
     "objectType",
     parseAsString.withDefault(""),
@@ -137,12 +141,18 @@ export function useObjectFilters() {
     if (!legacyLocationId || locationIds.length > 0) return;
     void setLocationIds([legacyLocationId]);
     void setLegacyLocationId(null);
-  }, [legacyLocationId, locationIds.length, setLegacyLocationId, setLocationIds]);
+  }, [
+    legacyLocationId,
+    locationIds.length,
+    setLegacyLocationId,
+    setLocationIds,
+  ]);
 
   const filters = useMemo(
     () => ({
       search,
       status: status as ObjectStatus,
+      inventoryScope,
       objectType,
       displayStatus: displayStatus as ObjectDisplayStatus,
       culture,
@@ -158,6 +168,7 @@ export function useObjectFilters() {
     [
       search,
       status,
+      inventoryScope,
       objectType,
       displayStatus,
       culture,
@@ -227,6 +238,7 @@ export function useObjectFilters() {
   const resetFilters = useCallback(() => {
     setSearch(null);
     setStatus(null);
+    setInventoryScope(null);
     setObjectType(null);
     setDisplayStatus(null);
     setCulture(null);
@@ -242,6 +254,7 @@ export function useObjectFilters() {
   }, [
     setSearch,
     setStatus,
+    setInventoryScope,
     setObjectType,
     setDisplayStatus,
     setCulture,
@@ -264,6 +277,7 @@ export function useObjectFilters() {
     return (
       search !== "" ||
       status !== "any" ||
+      inventoryScope !== "" ||
       objectType !== "" ||
       displayStatus !== "" ||
       culture !== "" ||
@@ -278,6 +292,7 @@ export function useObjectFilters() {
   }, [
     search,
     status,
+    inventoryScope,
     objectType,
     displayStatus,
     culture,
