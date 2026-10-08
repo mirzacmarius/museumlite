@@ -8816,6 +8816,23 @@ export default {
     checksumMismatch:
       "Suma de control a fișierului nu corespunde; reîncercați descărcarea",
     failed: "Exportul a eșuat",
+    errorAccess:
+      "Nu mai aveți acces la acest export. Verificați rolul și planul.",
+    errorQuota: "Cota lunară de exporturi a planului a fost epuizată.",
+    errorExpired: "Acest export a expirat. Creați un export nou.",
+    errorNotResumable: "Acest export nu poate fi reluat acum.",
+    errorSelection:
+      "Selecția nu a putut fi exportată. Reîncercați încărcarea sau creați o selecție nouă.",
+    errorTooLarge:
+      "Acest export este prea mare. Restrângeți filtrele sau selecția.",
+    errorInventoryLinks:
+      "Un obiect are prea multe legături de împrumut pentru acest filtru de inventar. Exportați în schimb obiectele selectate.",
+    errorInvalidRequest:
+      "Cererea de export nu este validă. Verificați filtrele și încercați din nou.",
+    errorInterrupted:
+      "Exportul a fost întrerupt. Reîncercați de la punctul de control.",
+    errorUnavailable:
+      "Fișierul de export nu este disponibil. Reîncercați sau creați un export nou.",
     reportsNote:
       "Rezumatele de rapoarte de mai jos conțin răspunsurile KPI curente și liste limitate de elemente recente sau viitoare. Folosiți exporturile complete ale catalogului și auditului de mai sus pentru seturi de date sursă reconciliate.",
   },
