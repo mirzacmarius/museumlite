@@ -33,7 +33,26 @@ const exportJobDoc = v.object({
   _id: v.id("exportJobs"),
   _creationTime: v.number(),
 });
-async function owned(ctx: QueryCtx | MutationCtx, jobId: Id<"exportJobs">) {
+function requiredExportPermissions(kind: Doc<"exportJobs">["source"]["kind"]) {
+  return kind === "audit"
+    ? ["collections.read", AUDIT_READ_PERMISSION]
+    : ["collections.read"];
+}
+async function requireExportAccess(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  kind: Doc<"exportJobs">["source"]["kind"],
+  requireMemberPermission: (permission: string) => Promise<unknown>,
+) {
+  for (const permission of requiredExportPermissions(kind))
+    await requireMemberPermission(permission);
+  if (kind === "audit")
+    await requireFeatureAccess(ctx, organizationId, "compliance");
+}
+async function requireOwnJob(
+  ctx: QueryCtx | MutationCtx,
+  jobId: Id<"exportJobs">,
+) {
   const userId = await getAuthUserId(ctx);
   const job = await ctx.db.get(jobId);
   const organization = job ? await ctx.db.get(job.organizationId) : null;
@@ -46,14 +65,15 @@ async function owned(ctx: QueryCtx | MutationCtx, jobId: Id<"exportJobs">) {
     job.creatorId !== userId
   )
     throw new ConvexError("Export unavailable");
-  await requirePermission(ctx, job.organizationId, "collections.read");
-  if (job.source.kind === "audit") {
-    await requirePermission(ctx, job.organizationId, AUDIT_READ_PERMISSION);
-    await requireFeatureAccess(ctx, job.organizationId, "compliance");
-  }
+  await requireExportAccess(
+    ctx,
+    job.organizationId,
+    job.source.kind,
+    (permission) => requirePermission(ctx, job.organizationId, permission),
+  );
   return job;
 }
-async function enqueue(ctx: MutationCtx, job: Doc<"exportJobs">) {
+async function requeueJob(ctx: MutationCtx, job: Doc<"exportJobs">) {
   const generation = job.generation + 1;
   await ctx.db.patch(job._id, {
     status: "queued",
@@ -76,11 +96,12 @@ export const create = mutation({
   },
   returns: v.id("exportJobs"),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
-    if (args.source.kind === "audit") {
-      await requirePermission(ctx, args.organizationId, AUDIT_READ_PERMISSION);
-      await requireFeatureAccess(ctx, args.organizationId, "compliance");
-    }
+    await requireExportAccess(
+      ctx,
+      args.organizationId,
+      args.source.kind,
+      (permission) => requirePermission(ctx, args.organizationId, permission),
+    );
     const creatorId = await getAuthUserId(ctx);
     if (!creatorId) throw new ConvexError("Authentication required");
     if (!args.requestKey || args.requestKey.length > 100)
@@ -104,38 +125,41 @@ export const create = mutation({
       return existing._id;
     }
     if (args.source.kind === "objects") {
-      const f = args.source.filters;
+      const filters = args.source.filters;
       if (
-        [f.catalogedFrom, f.catalogedTo].some(
-          (n) => n !== undefined && (!Number.isFinite(n) || n < 0),
+        [filters.catalogedFrom, filters.catalogedTo].some(
+          (date) => date !== undefined && (!Number.isFinite(date) || date < 0),
         )
       )
         throw new ConvexError("Invalid catalog date");
-      if ((f.search?.length ?? 0) > 200 || (f.locationIds?.length ?? 0) > 100)
+      if (
+        (filters.search?.length ?? 0) > 200 ||
+        (filters.locationIds?.length ?? 0) > 100
+      )
         throw new ConvexError("Export filters exceed limits");
       for (const id of [
-        ...(f.locationIds ?? []),
-        ...(f.collectionGroupId ? [f.collectionGroupId] : []),
+        ...(filters.locationIds ?? []),
+        ...(filters.collectionGroupId ? [filters.collectionGroupId] : []),
       ]) {
         const record = await ctx.db.get(id);
         if (!record || record.organizationId !== args.organizationId)
           throw new ConvexError("Filter outside organization");
       }
     } else {
-      const f = args.source.filters;
-      if (f.entityId && !f.entityType)
+      const filters = args.source.filters;
+      if (filters.entityId && !filters.entityType)
         throw new ConvexError("Entity type required");
       if (
-        [f.fromDate, f.toDate].some(
-          (n) => n !== undefined && (!Number.isFinite(n) || n < 0),
+        [filters.fromDate, filters.toDate].some(
+          (date) => date !== undefined && (!Number.isFinite(date) || date < 0),
         ) ||
-        (f.fromDate !== undefined &&
-          f.toDate !== undefined &&
-          f.fromDate > f.toDate)
+        (filters.fromDate !== undefined &&
+          filters.toDate !== undefined &&
+          filters.fromDate > filters.toDate)
       )
         throw new ConvexError("Invalid date range");
-      if (f.objectId) {
-        const object = await ctx.db.get(f.objectId);
+      if (filters.objectId) {
+        const object = await ctx.db.get(filters.objectId);
         if (!object || object.organizationId !== args.organizationId)
           throw new ConvexError("Filter outside organization");
       }
@@ -160,8 +184,6 @@ export const create = mutation({
     await enforceExportQuota(ctx, args.organizationId);
     await recordExportUsage(ctx, args.organizationId);
     const now = Date.now();
-    const selecting =
-      args.source.kind === "objects" && args.source.mode === "selected";
     const jobId = await ctx.db.insert("exportJobs", {
       ...args,
       creatorId,
@@ -169,7 +191,7 @@ export const create = mutation({
       asOf: now,
       captureStartedAt: now,
       expiresAt: now + RETENTION_MS,
-      status: selecting ? "selecting" : "queued",
+      status: isSelected ? "selecting" : "queued",
       cursor: null,
       checkpoint: 0,
       chunksCommitted: 0,
@@ -186,7 +208,7 @@ export const create = mutation({
       generation: 1,
       sourceDone: false,
     });
-    if (!selecting)
+    if (!isSelected)
       await ctx.scheduler.runAfter(0, internal.exportActions.process, {
         jobId,
         generation: 1,
@@ -201,7 +223,7 @@ export const appendSelection = mutation({
   args: { jobId: v.id("exportJobs"), objectIds: v.array(v.id("collections")) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const job = await owned(ctx, args.jobId);
+    const job = await requireOwnJob(ctx, args.jobId);
     if (job.status !== "selecting" || args.objectIds.length > 100)
       throw new ConvexError("Selection closed or batch exceeds 100 objects");
     let added = 0;
@@ -234,13 +256,13 @@ export const start = mutation({
   args: { jobId: v.id("exportJobs") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const job = await owned(ctx, args.jobId);
+    const job = await requireOwnJob(ctx, args.jobId);
     if (job.status === "selecting") {
       if (job.selected !== job.selectedCount)
         throw new ConvexError(
           "Selection upload incomplete; retry upload or create a new request",
         );
-      await enqueue(ctx, job);
+      await requeueJob(ctx, job);
     }
     return null;
   },
@@ -249,7 +271,7 @@ export const cancel = mutation({
   args: { jobId: v.id("exportJobs") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const job = await owned(ctx, args.jobId);
+    const job = await requireOwnJob(ctx, args.jobId);
     if (!["completed", "expired"].includes(job.status))
       await ctx.db.patch(job._id, {
         status: "cancelled",
@@ -263,7 +285,7 @@ export const resume = mutation({
   args: { jobId: v.id("exportJobs") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const job = await owned(ctx, args.jobId);
+    const job = await requireOwnJob(ctx, args.jobId);
     if (Date.now() >= job.expiresAt)
       throw new ConvexError("Export expired; create a new request");
     if (
@@ -283,7 +305,7 @@ export const resume = mutation({
         status: "selecting",
         generation: job.generation + 1,
       });
-    } else await enqueue(ctx, job);
+    } else await requeueJob(ctx, job);
     return null;
   },
 });
@@ -311,7 +333,7 @@ const publicStatus = v.object({
   error: v.optional(v.string()),
   leaseUntil: v.optional(v.number()),
 });
-function present(job: Doc<"exportJobs">) {
+function toPublicStatus(job: Doc<"exportJobs">) {
   return {
     jobId: job._id,
     source: job.source,
@@ -340,7 +362,8 @@ function present(job: Doc<"exportJobs">) {
 export const status = query({
   args: { jobId: v.id("exportJobs") },
   returns: publicStatus,
-  handler: async (ctx, args) => present(await owned(ctx, args.jobId)),
+  handler: async (ctx, args) =>
+    toPublicStatus(await requireOwnJob(ctx, args.jobId)),
 });
 export const list = query({
   args: { organizationId: v.id("organizations") },
@@ -359,10 +382,10 @@ export const list = query({
       )
       .order("desc")
       .take(20);
-    const visibleJobs: ReturnType<typeof present>[] = [];
+    const visibleJobs: ReturnType<typeof toPublicStatus>[] = [];
     for (const job of jobs) {
       if (job.source.kind !== "audit" || auditAllowed) {
-        visibleJobs.push(present(job));
+        visibleJobs.push(toPublicStatus(job));
       }
     }
     return visibleJobs;
@@ -411,28 +434,30 @@ export const expire = internalMutation({
   },
 });
 
-async function permittedCreator(
+async function requireCreatorStillPermitted(
   ctx: QueryCtx | MutationCtx,
   job: Doc<"exportJobs">,
 ) {
   const user = await ctx.db.get(job.creatorId);
   const organization = await ctx.db.get(job.organizationId);
-  const required =
-    job.source.kind === "audit"
-      ? ["collections.read", AUDIT_READ_PERMISSION]
-      : ["collections.read"];
-  let allowed = !!user && !!organization;
-  for (const permissionName of required)
-    allowed =
-      allowed &&
-      (await ctx.runQuery(internal.utils.permissions.checkOrgPermission, {
-        userId: job.creatorId,
-        organizationId: job.organizationId,
-        permissionName,
-      }));
-  if (!allowed) throw new ConvexError("Export permission revoked");
-  if (job.source.kind === "audit")
-    await requireFeatureAccess(ctx, job.organizationId, "compliance");
+  if (!user || !organization)
+    throw new ConvexError("Export permission revoked");
+  await requireExportAccess(
+    ctx,
+    job.organizationId,
+    job.source.kind,
+    async (permissionName) => {
+      const permitted: boolean = await ctx.runQuery(
+        internal.utils.permissions.checkOrgPermission,
+        {
+          userId: job.creatorId,
+          organizationId: job.organizationId,
+          permissionName,
+        },
+      );
+      if (!permitted) throw new ConvexError("Export permission revoked");
+    },
+  );
 }
 export const claim = internalMutation({
   args: { jobId: v.id("exportJobs"), generation: v.number() },
@@ -447,7 +472,7 @@ export const claim = internalMutation({
     )
       return null;
     if (Date.now() >= job.expiresAt) return null;
-    await permittedCreator(ctx, job);
+    await requireCreatorStillPermitted(ctx, job);
     await ctx.db.patch(job._id, {
       status: job.sourceDone ? "finalizing" : "running",
       attempts: job.attempts + 1,
@@ -468,7 +493,7 @@ export const sourcePage = internalQuery({
     const job = await ctx.db.get(args.jobId);
     if (!job || job.generation !== args.generation || job.status !== "running")
       throw new ConvexError("Export interrupted");
-    await permittedCreator(ctx, job);
+    await requireCreatorStillPermitted(ctx, job);
     if (job.source.kind !== "objects") throw new ConvexError("Invalid source");
     const opts = {
       numItems:
@@ -553,10 +578,10 @@ export const commitChunk = internalMutation({
       job.status !== "running"
     )
       return false;
-    await permittedCreator(ctx, job);
+    await requireCreatorStillPermitted(ctx, job);
     if (job.bytes + args.bytes > MAX_EXPORT_BYTES)
       throw new ConvexError(
-        "Export exceeds 16 MiB. Reduce the filter or selection and create a new export.",
+        `Export exceeds ${MAX_EXPORT_BYTES / 1024 / 1024} MiB. Reduce the filter or selection and create a new export.`,
       );
     if (
       args.done &&
@@ -621,7 +646,7 @@ export const finalizePage = internalQuery({
       job.status !== "finalizing"
     )
       throw new ConvexError("Export interrupted");
-    await permittedCreator(ctx, job);
+    await requireCreatorStillPermitted(ctx, job);
     if (job.finalizeLevel === 0)
       return (
         await ctx.db
@@ -680,7 +705,7 @@ export const complete = internalMutation({
       job.status !== "finalizing"
     )
       return false;
-    await permittedCreator(ctx, job);
+    await requireCreatorStillPermitted(ctx, job);
     if (job.finalizeLevel !== args.level || job.finalizeAfter !== args.after)
       return false;
     if (args.bytes > MAX_EXPORT_BYTES || args.chunks > job.chunksCommitted)
@@ -778,7 +803,7 @@ export const downloadAccess = internalQuery({
   handler: async (ctx, args) => {
     const jobId = ctx.db.normalizeId("exportJobs", args.jobId);
     if (!jobId) return null;
-    const job = await owned(ctx, jobId);
+    const job = await requireOwnJob(ctx, jobId);
     if (
       job.status !== "completed" ||
       !job.storageId ||
@@ -801,7 +826,7 @@ export const manifestChunks = internalQuery({
     }),
   ),
   handler: async (ctx, args) => {
-    await owned(ctx, args.jobId);
+    await requireOwnJob(ctx, args.jobId);
     const chunks = await ctx.db
       .query("exportChunks")
       .withIndex("by_jobId_and_sequence", (q) =>

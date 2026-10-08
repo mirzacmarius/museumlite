@@ -69,7 +69,7 @@ export const process = internalAction({
         );
         if (bytes.length > MAX_CHUNK_BYTES)
           throw new Error(
-            "An export page exceeds 512 KiB. Reduce selection or shorten oversized record fields.",
+            `An export page exceeds ${MAX_CHUNK_BYTES / 1024} KiB. Reduce selection or shorten oversized record fields.`,
           );
         const storageId = bytes.length
           ? await ctx.storage.store(new Blob([bytes]))
@@ -121,7 +121,7 @@ export const process = internalAction({
         totalBytes += bytes.length;
         if (totalBytes > MAX_EXPORT_BYTES)
           throw new Error(
-            "Export exceeds 16 MiB. Reduce selection and create a new export.",
+            `Export exceeds ${MAX_EXPORT_BYTES / 1024 / 1024} MiB. Reduce selection and create a new export.`,
           );
         totalRows += chunk.rows;
         leafChunks += chunk.leafChunks;
