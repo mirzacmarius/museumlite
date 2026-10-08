@@ -198,7 +198,7 @@ test("exhibition metric drilldown applies schedule, lifecycle, and loan filters 
       organizationId: fixture.organizationId,
       metricFilters: { asOf: fixture.asOf, schedule },
     });
-    expect(rows.map((row) => row.title).sort()).toEqual([...expected].sort());
+    expect(rows.map((row) => row.title).sort()).toEqual(expected.toSorted());
     expect(rows.length).toBe(kpis.exhibitions.bySchedule[schedule]);
   }
   const active = await reader.query(api.exhibitions.listByOrganization, {

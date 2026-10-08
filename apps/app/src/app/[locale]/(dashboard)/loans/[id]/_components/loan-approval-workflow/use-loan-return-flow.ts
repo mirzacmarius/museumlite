@@ -158,12 +158,14 @@ export function useLoanReturnFlow({
     setIsSubmitting(true);
     setError(null);
     try {
-      const targetIds =
-        itemIdsToReturn.length > 0
-          ? itemIdsToReturn
-          : loanItems
-              .filter((item) => !isLoanItemReturned(item))
-              .map((item) => item._id);
+      const targetIds: string[] = [...itemIdsToReturn];
+      if (targetIds.length === 0) {
+        for (const item of loanItems) {
+          if (!isLoanItemReturned(item)) {
+            targetIds.push(item._id);
+          }
+        }
+      }
       const receipts = targetIds.map((loanItemId) => {
         const evidence = evidenceByItem[loanItemId] ?? {};
         return {

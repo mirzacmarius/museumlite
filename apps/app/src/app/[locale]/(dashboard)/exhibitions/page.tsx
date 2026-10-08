@@ -259,9 +259,11 @@ function ExhibitionList({
   const now = useClientNow();
   const locale = useCurrentLocale();
   const searchParams = useSearchParams();
-  const requestedAsOf = Number(searchParams.get("asOf"));
-  const requestedSchedule = searchParams.get("status");
-  const requestedLifecycle = searchParams.get("lifecycle");
+  const getSearchParam = searchParams.get.bind(searchParams);
+  const hasSearchParam = searchParams.has.bind(searchParams);
+  const requestedAsOf = Number(getSearchParam("asOf"));
+  const requestedSchedule = getSearchParam("status");
+  const requestedLifecycle = getSearchParam("lifecycle");
   const metricSchedule =
     requestedSchedule === "current" ||
     requestedSchedule === "upcoming" ||
@@ -280,7 +282,7 @@ function ExhibitionList({
       ? requestedLifecycle
       : undefined;
   const isMetricDrilldown =
-    searchParams.has("asOf") &&
+    hasSearchParam("asOf") &&
     Number.isFinite(requestedAsOf) &&
     (metricSchedule !== undefined || metricLifecycle !== undefined);
   const exhibitions = useQuery(api.exhibitions.listByOrganization, {
@@ -291,7 +293,7 @@ function ExhibitionList({
           asOf: requestedAsOf,
           schedule: metricSchedule,
           lifecycle: metricLifecycle,
-          includeLoans: searchParams.get("excludeLoans") !== "true",
+          includeLoans: getSearchParam("excludeLoans") !== "true",
         }
       : undefined,
   });

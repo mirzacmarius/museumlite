@@ -36,7 +36,9 @@
           "packages/backend/convex/conservationTreatments.ts",
           "packages/backend/convex/objectMoves.ts",
           "packages/backend/convex/utils/exhibitionWorkflow.ts",
-          "packages/backend/convex/utils/transitPhysicalHandoff.ts"
+          "packages/backend/convex/utils/transitPhysicalHandoff.ts",
+          "packages/backend/convex/exports.ts",
+          "packages/backend/convex/utils/exhibitionCrud.ts"
         ],
         "rules": ["react-doctor/async-defer-await"]
       },
@@ -47,7 +49,9 @@
           "src/hooks/use-tracked-import-runner.ts",
           "src/app/**/settings/data/use-data-import.ts",
           "apps/app/src/app/**/collections/media-import/_components/use-media-import.ts",
-          "src/app/**/collections/media-import/_components/use-media-import.ts"
+          "src/app/**/collections/media-import/_components/use-media-import.ts",
+          "apps/app/src/components/export-job-control.tsx",
+          "src/components/export-job-control.tsx"
         ],
         "rules": ["react-doctor/async-await-in-loop"]
       },
@@ -77,9 +81,7 @@
       {
         "files": [
           "apps/app/src/app/**/exhibitions/page.tsx",
-          "src/app/**/exhibitions/page.tsx",
-          "apps/app/src/app/**/transit/[id]/_components/transit-physical-handoffs-panel.tsx",
-          "src/app/**/transit/[id]/_components/transit-physical-handoffs-panel.tsx"
+          "src/app/**/exhibitions/page.tsx"
         ],
         "rules": ["react-doctor/prefer-useReducer"]
       }
