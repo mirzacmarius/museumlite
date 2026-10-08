@@ -9,8 +9,10 @@ import { useMutation, useQuery } from "convex/react";
 import { PackageCheck, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { AcceptedConditionAssessmentSelector } from "@/components/accepted-condition-assessment-selector";
 import { LocationSelector } from "@/components/location-selector";
 import { usePermissions } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface TransitPhysicalHandoffsPanelProps {
@@ -35,6 +37,8 @@ export function TransitPhysicalHandoffsPanel({
 }: TransitPhysicalHandoffsPanelProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("untranslatedDashboard.transit.handoffs");
+  const evidenceT = useScopedI18n("conditionAssessments");
+  const { hasFeature } = useFeatureAccess();
   const { hasPermission } = usePermissions();
   const canUpdateTransit = hasPermission("loans.update");
   const canInstall = hasPermission("collections.update");
@@ -43,9 +47,20 @@ export function TransitPhysicalHandoffsPanel({
     transitRecordId,
   });
 
+  const tasks = useQuery(
+    api.installations.listTasks,
+    linkedExhibitionId &&
+      canInstall &&
+      hasPermission("collections.read") &&
+      hasFeature("installations")
+      ? { organizationId, exhibitionId: linkedExhibitionId }
+      : "skip",
+  );
   const markArrived = useMutation(api.transit.markTransitItemCarrierArrived);
   const recordReceipt = useMutation(api.transit.recordTransitItemReceipt);
-  const recordInstallation = useMutation(api.transit.recordTransitItemInstallation);
+  const recordInstallation = useMutation(
+    api.transit.recordTransitItemInstallation,
+  );
 
   const [observedFromByItem, setObservedFromByItem] = useState<
     Record<string, string>
@@ -53,9 +68,13 @@ export function TransitPhysicalHandoffsPanel({
   const [destinationByItem, setDestinationByItem] = useState<
     Record<string, string>
   >({});
-  const [conditionByItem, setConditionByItem] = useState<Record<string, string>>(
-    {},
-  );
+  const [conditionByItem, setConditionByItem] = useState<
+    Record<string, string>
+  >({});
+  const [assessmentByItem, setAssessmentByItem] = useState<
+    Record<string, string>
+  >({});
+  const [taskByItem, setTaskByItem] = useState<Record<string, string>>({});
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -112,15 +131,11 @@ export function TransitPhysicalHandoffsPanel({
       <ul className="space-y-4">
         {summary.items.map((item) => {
           const itemKey = item.transitItemId;
-          const observedFrom =
-            observedFromByItem[itemKey] ??
-            (item.status === "received" || item.status === "arrived"
-              ? "__none__"
-              : "__none__");
+          const observedFrom = observedFromByItem[itemKey] ?? "__none__";
           const destination =
-            destinationByItem[itemKey] ??
-            defaultDestinationLocationId ??
-            "";
+            destinationByItem[itemKey] ?? defaultDestinationLocationId ?? "";
+          const assessmentId = assessmentByItem[itemKey] ?? "";
+          const taskId = taskByItem[itemKey] ?? "";
           const condition = conditionByItem[itemKey] ?? "";
           const label = item.accessionNumber ?? item.title ?? item.collectionId;
           const busy = busyItemId === itemKey;
@@ -149,9 +164,10 @@ export function TransitPhysicalHandoffsPanel({
                 </div>
               </div>
 
-              {canUpdateTransit ? (
+              {canUpdateTransit || canInstall ? (
                 <div className="mt-4 space-y-3 border-t border-border/40 pt-4">
-                  {item.status !== "arrived" &&
+                  {canUpdateTransit &&
+                  item.status !== "arrived" &&
                   item.status !== "received" &&
                   item.status !== "missing" &&
                   item.status !== "damaged" ? (
@@ -172,9 +188,10 @@ export function TransitPhysicalHandoffsPanel({
                     </Button>
                   ) : null}
 
-                  {item.status === "arrived" ||
-                  item.status === "in_transit" ||
-                  item.status === "delivered" ? (
+                  {canUpdateTransit &&
+                  (item.status === "arrived" ||
+                    item.status === "in_transit" ||
+                    item.status === "delivered") ? (
                     <div className="space-y-3">
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">
@@ -223,9 +240,26 @@ export function TransitPhysicalHandoffsPanel({
                           className="text-xs"
                         />
                       </div>
+                      {hasPermission("collections.read") ? (
+                        <AcceptedConditionAssessmentSelector
+                          collectionId={item.collectionId}
+                          value={assessmentId}
+                          onValueChange={(value) =>
+                            setAssessmentByItem((previous) => ({
+                              ...previous,
+                              [itemKey]: value,
+                            }))
+                          }
+                          disabled={busy}
+                        />
+                      ) : null}
                       <Button
                         size="sm"
-                        disabled={busy || !destination}
+                        disabled={
+                          busy ||
+                          !destination ||
+                          (!condition.trim() && !assessmentId)
+                        }
                         onClick={() =>
                           runAction(item.transitItemId, () =>
                             recordReceipt({
@@ -235,6 +269,9 @@ export function TransitPhysicalHandoffsPanel({
                               destinationLocationId:
                                 destination as Id<"locations">,
                               conditionIn: condition || undefined,
+                              conditionAssessmentId: assessmentId
+                                ? (assessmentId as Id<"conditionAssessments">)
+                                : undefined,
                             }),
                           )
                         }
@@ -251,25 +288,80 @@ export function TransitPhysicalHandoffsPanel({
                   canInstall &&
                   item.status === "received" &&
                   !item.installedAt ? (
-                    <Button
-                      size="sm"
-                      className="mt-2"
-                      disabled={busy}
-                      onClick={() =>
-                        runAction(item.transitItemId, () =>
-                          recordInstallation({
-                            transitItemId: item.transitItemId,
-                            observedFromLocationId:
-                              toObservedLocationId(observedFrom),
-                          }),
-                        )
-                      }
-                    >
-                      {busy ? (
-                        <RefreshCw className="mr-2 size-3 animate-spin" />
+                    <div className="space-y-3">
+                      <Label>{t("observedFrom")}</Label>
+                      <LocationSelector
+                        organizationId={organizationId}
+                        value={observedFrom}
+                        onValueChange={(value) =>
+                          setObservedFromByItem((previous) => ({
+                            ...previous,
+                            [itemKey]: value,
+                          }))
+                        }
+                        allowNone
+                      />
+                      <AcceptedConditionAssessmentSelector
+                        collectionId={item.collectionId}
+                        value={assessmentId}
+                        onValueChange={(value) =>
+                          setAssessmentByItem((previous) => ({
+                            ...previous,
+                            [itemKey]: value,
+                          }))
+                        }
+                        disabled={busy}
+                      />
+                      {tasks ? (
+                        <select
+                          aria-label={evidenceT("installationTask")}
+                          value={taskId}
+                          onChange={(event) =>
+                            setTaskByItem((previous) => ({
+                              ...previous,
+                              [itemKey]: event.target.value,
+                            }))
+                          }
+                          className="w-full rounded-md border border-border bg-background p-2 text-sm"
+                          disabled={busy}
+                        >
+                          <option value="">
+                            {evidenceT("installationTask")}
+                          </option>
+                          {tasks
+                            .filter((task) => task.status !== "completed")
+                            .map((task) => (
+                              <option key={task._id} value={task._id}>
+                                {task.title}
+                              </option>
+                            ))}
+                        </select>
                       ) : null}
-                      {t("recordInstallation")}
-                    </Button>
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        disabled={busy || !assessmentId}
+                        onClick={() =>
+                          runAction(item.transitItemId, () =>
+                            recordInstallation({
+                              installationConditionAssessmentId:
+                                assessmentId as Id<"conditionAssessments">,
+                              installationTaskId: taskId
+                                ? (taskId as Id<"installationTasks">)
+                                : undefined,
+                              transitItemId: item.transitItemId,
+                              observedFromLocationId:
+                                toObservedLocationId(observedFrom),
+                            }),
+                          )
+                        }
+                      >
+                        {busy ? (
+                          <RefreshCw className="mr-2 size-3 animate-spin" />
+                        ) : null}
+                        {t("recordInstallation")}
+                      </Button>
+                    </div>
                   ) : null}
                 </div>
               ) : null}

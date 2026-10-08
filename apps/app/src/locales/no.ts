@@ -1,5 +1,18 @@
 export default {
   conditionAssessments: {
+    actorProfileUnavailable: "Registrert aktør; nåværende profil er utilgjengelig",
+    actorCurrentName: "Nåværende profilnavn: {name}",
+    unknownLegacyActor: "Historisk aktøridentitet er ukjent",
+
+    receiptRequirement: "Skriv tilstandsnotater eller velg en godkjent vurdering for hvert valgt objekt, og bekreft hvert påkrevd retursted.",
+    handoffTimeline: "Overleveringshistorikk",
+    installationTask: "Fullfør tilknyttet installasjonsoppgave (valgfritt)",
+
+    selectAccepted: "Velg godkjent tilstandsvurdering",
+    returnDestination: "Retursted",
+    conditionEvidence: "Tilstandsdokumentasjon",
+    confirmOrigin: "Bekreft retur til registrert opprinnelsessted",
+
     title: "Tilstandsvurderinger",
     description:
       "Daterte observasjoner og bilder beholdes. En kontrollør godkjenner utkastet for å oppdatere gjeldende tilstand.",

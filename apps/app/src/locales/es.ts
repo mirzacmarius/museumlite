@@ -2,6 +2,19 @@
 
 export default {
   conditionAssessments: {
+    actorProfileUnavailable: "Responsable registrado; perfil actual no disponible",
+    actorCurrentName: "Nombre del perfil actual: {name}",
+    unknownLegacyActor: "Identidad histórica del responsable desconocida",
+
+    receiptRequirement: "Introduzca notas de estado o seleccione una evaluación aceptada para cada elemento seleccionado y confirme cada destino de devolución obligatorio.",
+    handoffTimeline: "Cronología de entregas",
+    installationTask: "Completar tarea de instalación vinculada (opcional)",
+
+    selectAccepted: "Seleccionar evaluación de estado aceptada",
+    returnDestination: "Destino de devolución",
+    conditionEvidence: "Evidencia del estado",
+    confirmOrigin: "Confirmar devolución al origen registrado",
+
     title: "Evaluaciones del estado",
     description:
       "Se conservan las observaciones fechadas y las fotos. Un responsable acepta el borrador para actualizar el estado actual.",

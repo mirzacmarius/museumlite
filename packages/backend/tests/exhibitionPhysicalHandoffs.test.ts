@@ -10,6 +10,7 @@ import {
 interface HandoffFixture {
   organizationId: Id<"organizations">;
   userId: Id<"users">;
+  acceptedAssessmentId: Id<"conditionAssessments">;
   authed: ReturnType<typeof authedForUser>;
   exhibitionId: Id<"exhibitions">;
   exhibitionObjectId: Id<"exhibitionObjects">;
@@ -88,7 +89,13 @@ async function createHandoffFixture(
     };
   });
 
+  const acceptedAssessmentId = await acceptAssessment(
+    t,
+    authedForUser(t, userId),
+    collectionId,
+  );
   return {
+    acceptedAssessmentId,
     organizationId,
     userId,
     authed: authedForUser(t, userId),
@@ -117,7 +124,7 @@ async function acceptAssessment(
   return assessmentId;
 }
 
-test("install records guarded movement and optional accepted assessment", async () => {
+test("install records guarded movement and accepted assessment", async () => {
   const t = createConvexTest();
   const {
     authed,
@@ -159,8 +166,12 @@ test("install records guarded movement and optional accepted assessment", async 
 
 test("install rejects stale observed source", async () => {
   const t = createConvexTest();
-  const { authed, exhibitionObjectId, galleryLocationId } =
-    await createHandoffFixture(t);
+  const {
+    authed,
+    acceptedAssessmentId,
+    exhibitionObjectId,
+    galleryLocationId,
+  } = await createHandoffFixture(t);
 
   await t.run(async (ctx) => {
     await ctx.db.insert("locations", {
@@ -176,6 +187,7 @@ test("install rejects stale observed source", async () => {
     authed.mutation(api.exhibitions.installObject, {
       exhibitionObjectId,
       observedFromLocationId: galleryLocationId,
+      installationConditionAssessmentId: acceptedAssessmentId,
     }),
   ).rejects.toThrow("not the source observed");
 
@@ -273,6 +285,7 @@ test("authorizeReturnException documents outcome without moving the object", asy
   const t = createConvexTest();
   const {
     authed,
+    acceptedAssessmentId,
     exhibitionId,
     exhibitionObjectId,
     collectionId,
@@ -290,6 +303,7 @@ test("authorizeReturnException documents outcome without moving the object", asy
   await authed.mutation(api.exhibitions.startDeinstallation, { exhibitionId });
   await authed.mutation(api.exhibitions.deinstallObject, {
     exhibitionObjectId,
+    deinstallationConditionAssessmentId: acceptedAssessmentId,
   });
 
   await authed.mutation(api.exhibitions.authorizeReturnException, {
@@ -347,8 +361,13 @@ test("activate ignores skipInstallationCheck for participants", async () => {
 
 test("skipInstallationCheck still skips the checklist once participants are installed", async () => {
   const t = createConvexTest();
-  const { authed, exhibitionId, exhibitionObjectId, storageLocationId } =
-    await createHandoffFixture(t);
+  const {
+    authed,
+    acceptedAssessmentId,
+    exhibitionId,
+    exhibitionObjectId,
+    storageLocationId,
+  } = await createHandoffFixture(t);
 
   await t.run(async (ctx) => {
     await ctx.db.patch(exhibitionId, {
@@ -366,6 +385,7 @@ test("skipInstallationCheck still skips the checklist once participants are inst
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
     observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: acceptedAssessmentId,
   });
 
   await authed.mutation(api.exhibitions.activate, {
@@ -379,12 +399,18 @@ test("skipInstallationCheck still skips the checklist once participants are inst
 
 test("close ignores skipDeinstallationCheck while a participant is installed", async () => {
   const t = createConvexTest();
-  const { authed, exhibitionId, exhibitionObjectId, storageLocationId } =
-    await createHandoffFixture(t);
+  const {
+    authed,
+    acceptedAssessmentId,
+    exhibitionId,
+    exhibitionObjectId,
+    storageLocationId,
+  } = await createHandoffFixture(t);
 
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
     observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: acceptedAssessmentId,
   });
   await authed.mutation(api.exhibitions.activate, { exhibitionId });
 
@@ -425,6 +451,7 @@ test("exhibition return to another location does not claim the original location
   const t = createConvexTest();
   const {
     authed,
+    acceptedAssessmentId,
     organizationId,
     exhibitionId,
     exhibitionObjectId,
@@ -446,16 +473,19 @@ test("exhibition return to another location does not claim the original location
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
     observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: acceptedAssessmentId,
   });
   await authed.mutation(api.exhibitions.activate, { exhibitionId });
   await authed.mutation(api.exhibitions.startDeinstallation, { exhibitionId });
   await authed.mutation(api.exhibitions.deinstallObject, {
     exhibitionObjectId,
+    deinstallationConditionAssessmentId: acceptedAssessmentId,
   });
   await authed.mutation(api.exhibitions.returnObjectToOriginalLocation, {
     exhibitionObjectId,
     observedFromLocationId: galleryLocationId,
     overrideLocationId: labLocationId,
+    returnConditionAssessmentId: acceptedAssessmentId,
   });
 
   const result = await t.run(async (ctx) => {
@@ -471,4 +501,124 @@ test("exhibition return to another location does not claim the original location
   expect(result.collection?.currentLocationId).toBe(labLocationId);
   expect(result.collection?.currentLocationId).not.toBe(storageLocationId);
   expect(result.exhibitionObject?.returnMovementId).toBeDefined();
+});
+
+test("each exhibition handoff requires an accepted object assessment", async () => {
+  const t = createConvexTest();
+  const {
+    authed,
+    exhibitionObjectId,
+    exhibitionId,
+    collectionId,
+    storageLocationId,
+    galleryLocationId,
+  } = await createHandoffFixture(t);
+  await expect(
+    authed.mutation(api.exhibitions.installObject, {
+      exhibitionObjectId,
+      observedFromLocationId: storageLocationId,
+    }),
+  ).rejects.toThrow(/accepted condition assessment/i);
+  const assessmentId = await acceptAssessment(t, authed, collectionId);
+  await authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId,
+    observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: assessmentId,
+  });
+  await authed.mutation(api.exhibitions.activate, { exhibitionId });
+  await authed.mutation(api.exhibitions.startDeinstallation, { exhibitionId });
+  await expect(
+    authed.mutation(api.exhibitions.deinstallObject, {
+      exhibitionObjectId,
+    }),
+  ).rejects.toThrow(/accepted condition assessment/i);
+  await authed.mutation(api.exhibitions.deinstallObject, {
+    exhibitionObjectId,
+    deinstallationConditionAssessmentId: assessmentId,
+  });
+  await expect(
+    authed.mutation(api.exhibitions.returnObjectToOriginalLocation, {
+      exhibitionObjectId,
+      observedFromLocationId: galleryLocationId,
+    }),
+  ).rejects.toThrow(/accepted condition assessment/i);
+  const summary = await authed.query(
+    api.exhibitions.getPhysicalHandoffSummary,
+    { exhibitionId },
+  );
+  expect(summary.participants[0]?.status).toBe("deinstalled");
+  expect(summary.participants[0]?.returnMovementId).toBeUndefined();
+});
+
+test("handoff summary retains a chronological assessment and movement timeline", async () => {
+  const t = createConvexTest();
+  const {
+    authed,
+    exhibitionId,
+    exhibitionObjectId,
+    acceptedAssessmentId,
+    storageLocationId,
+    galleryLocationId,
+  } = await createHandoffFixture(t);
+  await authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId,
+    observedFromLocationId: storageLocationId,
+    installationConditionAssessmentId: acceptedAssessmentId,
+  });
+  await authed.mutation(api.exhibitions.deinstallObject, {
+    exhibitionObjectId,
+    deinstallationConditionAssessmentId: acceptedAssessmentId,
+  });
+  await authed.mutation(api.exhibitions.returnObjectToOriginalLocation, {
+    exhibitionObjectId,
+    observedFromLocationId: galleryLocationId,
+    returnConditionAssessmentId: acceptedAssessmentId,
+  });
+  const summary = await authed.query(
+    api.exhibitions.getPhysicalHandoffSummary,
+    { exhibitionId },
+  );
+  expect(summary.timeline.map((event) => event.phase)).toEqual([
+    "installed",
+    "deinstalled",
+    "returned",
+  ]);
+  expect(
+    summary.timeline.every(
+      (event) => event.conditionAssessmentId === acceptedAssessmentId,
+    ),
+  ).toBe(true);
+  expect(summary.timeline.every((event) => event.actorId !== undefined)).toBe(
+    true,
+  );
+  expect(summary.timeline[0]?.movementId).toBe(
+    summary.participants[0]?.installationMovementId,
+  );
+  expect(summary.timeline[2]?.movementId).toBe(
+    summary.participants[0]?.returnMovementId,
+  );
+});
+
+test("historical exhibition summary retains handoff evidence without exposing another institution's object metadata", async () => {
+  const t = createConvexTest();
+  const fixture = await createHandoffFixture(t);
+  const { organizationId: targetOrganizationId } =
+    await createOrgUserWithPermissions(t, ["collections.read"], {
+      subscriptionTier: "pro",
+      slugPrefix: "exhibition-history-target",
+    });
+  await t.run(async (ctx) => {
+    await ctx.db.patch(fixture.collectionId, {
+      organizationId: targetOrganizationId,
+      title: "Receiving institution private title",
+      accessionNumber: "TARGET-PRIVATE",
+    });
+  });
+  const summary = await fixture.authed.query(
+    api.exhibitions.getPhysicalHandoffSummary,
+    { exhibitionId: fixture.exhibitionId },
+  );
+  expect(summary.participants[0]?.collectionTitle).toBeUndefined();
+  expect(summary.participants[0]?.collectionAccessionNumber).toBeUndefined();
+  expect(summary.participants[0]?.collectionId).toBe(fixture.collectionId);
 });

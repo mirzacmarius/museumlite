@@ -1754,6 +1754,7 @@ export const recordTransitItemInstallation = mutation({
     exhibitionLocationId: v.optional(v.id("locations")),
     installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
     conditionNotes: v.optional(v.string()),
+    installationTaskId: v.optional(v.id("installationTasks")),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1784,6 +1785,7 @@ export const recordTransitItemInstallation = mutation({
       exhibitionLocationId: args.exhibitionLocationId,
       installationConditionAssessmentId: args.installationConditionAssessmentId,
       conditionNotes: args.conditionNotes,
+      installationTaskId: args.installationTaskId,
     });
     return null;
   },
@@ -1809,6 +1811,7 @@ export const getTransitHandoffSummary = query({
         installedAt: v.optional(v.number()),
         receiptMovementId: v.optional(v.id("locationHistory")),
         installationMovementId: v.optional(v.id("locationHistory")),
+        installationTaskId: v.optional(v.id("installationTasks")),
       }),
     ),
     outstandingReceipt: v.array(
@@ -1823,6 +1826,7 @@ export const getTransitHandoffSummary = query({
         installedAt: v.optional(v.number()),
         receiptMovementId: v.optional(v.id("locationHistory")),
         installationMovementId: v.optional(v.id("locationHistory")),
+        installationTaskId: v.optional(v.id("installationTasks")),
       }),
     ),
     outstandingInstallation: v.array(
@@ -1837,6 +1841,7 @@ export const getTransitHandoffSummary = query({
         installedAt: v.optional(v.number()),
         receiptMovementId: v.optional(v.id("locationHistory")),
         installationMovementId: v.optional(v.id("locationHistory")),
+        installationTaskId: v.optional(v.id("installationTasks")),
       }),
     ),
   }),
@@ -1846,6 +1851,6 @@ export const getTransitHandoffSummary = query({
       throw new Error("Transit record not found");
     }
     await requirePermission(ctx, transitRecord.organizationId, "loans.read");
-    return await getTransitHandoffSummaryForRecord(ctx, args.transitRecordId);
+    return await getTransitHandoffSummaryForRecord(ctx, args.transitRecordId, transitRecord.organizationId);
   },
 });

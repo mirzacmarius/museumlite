@@ -738,6 +738,24 @@ export const getPhysicalHandoffSummary = query({
     participantCount: v.number(),
     outstandingCount: v.number(),
     canClose: v.boolean(),
+    timeline: v.array(
+      v.object({
+        exhibitionObjectId: v.id("exhibitionObjects"),
+        collectionId: v.id("collections"),
+        phase: v.union(
+          v.literal("installed"),
+          v.literal("deinstalled"),
+          v.literal("returned"),
+          v.literal("exception"),
+        ),
+        recordedAt: v.number(),
+        actorId: v.optional(v.id("users")),
+        actorName: v.optional(v.string()),
+        conditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        movementId: v.optional(v.id("locationHistory")),
+        notes: v.optional(v.string()),
+      }),
+    ),
     participants: v.array(
       v.object({
         exhibitionObjectId: v.id("exhibitionObjects"),
@@ -755,12 +773,17 @@ export const getPhysicalHandoffSummary = query({
         hasReturnException: v.boolean(),
         installationMovementId: v.optional(v.id("locationHistory")),
         returnMovementId: v.optional(v.id("locationHistory")),
-        installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
-        deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        installationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
+        deinstallationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
         returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
         installedAt: v.optional(v.number()),
         deinstalledAt: v.optional(v.number()),
         returnedAt: v.optional(v.number()),
+        originalLocationId: v.optional(v.id("locations")),
       }),
     ),
     outstanding: v.array(
@@ -780,12 +803,17 @@ export const getPhysicalHandoffSummary = query({
         hasReturnException: v.boolean(),
         installationMovementId: v.optional(v.id("locationHistory")),
         returnMovementId: v.optional(v.id("locationHistory")),
-        installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
-        deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        installationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
+        deinstallationConditionAssessmentId: v.optional(
+          v.id("conditionAssessments"),
+        ),
         returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
         installedAt: v.optional(v.number()),
         deinstalledAt: v.optional(v.number()),
         returnedAt: v.optional(v.number()),
+        originalLocationId: v.optional(v.id("locations")),
       }),
     ),
   }),
@@ -794,7 +822,7 @@ export const getPhysicalHandoffSummary = query({
     if (!exhibition) throw new Error("Exhibition not found");
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(ctx, exhibition.organizationId, "collections.read");
-    return await getExhibitionPhysicalHandoffSummary(ctx, args.exhibitionId);
+    return await getExhibitionPhysicalHandoffSummary(ctx, args.exhibitionId, exhibition.organizationId);
   },
 });
 
