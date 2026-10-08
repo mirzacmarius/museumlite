@@ -97,6 +97,7 @@ const organizationScopedTables = [
   "accountCounters",
   "loanCounters",
   "loans",
+  "loanAgreementTemplates",
   "loanExtensionRequests",
   "loanReminders",
   "conditionDisputes",

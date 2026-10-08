@@ -2,15 +2,20 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { loanAgreementTemplateErrorFromError } from "@v1/backend/convex/utils/loanAgreementErrors";
+import { isLoanCurrencyCode } from "@v1/backend/convex/utils/loanCurrency";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useLoanAgreementTemplateErrorMessage } from "@/hooks/use-loan-agreement-template-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { EMPTY_NEW_LOAN_FORM, type NewLoanFormData } from "./types";
 
 export function useNewLoanForm() {
   const tActions = useScopedI18n("loans.actions");
+  const tAgreementErrors = useScopedI18n("loanAgreementTemplates.errors");
+  const agreementErrorMessage = useLoanAgreementTemplateErrorMessage();
   const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createLoan = useMutation(api.loans.create);
@@ -116,6 +121,12 @@ export function useNewLoanForm() {
       return;
     }
 
+    const currency = formData.currency.trim();
+    if (currency && !isLoanCurrencyCode(currency)) {
+      setError(tAgreementErrors("invalidCurrency"));
+      return;
+    }
+
     if (validCollectionIds.length !== selectedCollectionIds.length) {
       const invalidIds = selectedCollectionIds.filter(
         (id) => !validCollectionIds.includes(id),
@@ -167,6 +178,7 @@ export function useNewLoanForm() {
         insuranceValue: formData.insuranceValue
           ? Number.parseFloat(formData.insuranceValue)
           : undefined,
+        currency: currency || undefined,
         notes: formData.notes || undefined,
         itemsWithConditions:
           validCollectionIds.length > 0
@@ -179,9 +191,12 @@ export function useNewLoanForm() {
       push("/loans");
     } catch (err) {
       console.error("Error creating loan:", err);
-      let errorMessage = tActions("failedToCreateLoan");
+      let errorMessage = agreementErrorMessage(
+        err,
+        tActions("failedToCreateLoan"),
+      );
 
-      if (err instanceof Error) {
+      if (!loanAgreementTemplateErrorFromError(err) && err instanceof Error) {
         if (err.message.includes("already in an active loan")) {
           errorMessage = tActions("alreadyInActiveLoan");
         } else if (err.message.includes("does not belong to organization")) {

@@ -16,6 +16,7 @@ import {
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess } from "./utils/featureGates";
 import { requireLoansAccess } from "./utils/loanAccess";
+import { normalizeLoanCurrency } from "./utils/loanCurrency";
 import {
   deleteLoanDocumentHandler,
   listLoanDocumentsHandler,
@@ -68,6 +69,7 @@ export const create = mutation({
     endDate: v.optional(v.number()),
     terms: v.optional(v.string()),
     insuranceValue: v.optional(v.number()),
+    currency: v.optional(v.string()),
     notes: v.optional(v.string()),
     useDetailedConditionReports: v.optional(v.boolean()),
     collectionIds: v.optional(v.array(v.id("collections"))),
@@ -108,6 +110,10 @@ export const create = mutation({
     if (args.endDate !== undefined && args.endDate < args.startDate) {
       throw new Error("Loan end date cannot be before start date");
     }
+    const currency =
+      args.currency === undefined
+        ? undefined
+        : normalizeLoanCurrency(args.currency);
 
     // Generate or use provided loan number
     let loanNumber: string;
@@ -168,6 +174,7 @@ export const create = mutation({
       status: "pending",
       terms: args.terms,
       insuranceValue: args.insuranceValue,
+      currency,
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
       workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
@@ -748,6 +755,7 @@ export const get = query({
       ),
       terms: v.optional(v.string()),
       insuranceValue: v.optional(v.number()),
+      currency: v.optional(v.string()),
       approvedBy: v.optional(v.id("users")),
       approvedAt: v.optional(v.number()),
       notes: v.optional(v.string()),
@@ -904,6 +912,7 @@ export const get = query({
       status: loan.status,
       terms: loan.terms,
       insuranceValue: loan.insuranceValue,
+      currency: loan.currency,
       approvedBy: loan.approvedBy,
       approvedAt: loan.approvedAt,
       notes: loan.notes,
@@ -929,6 +938,8 @@ export const update = mutation({
     endDate: v.optional(v.number()),
     terms: v.optional(v.string()),
     insuranceValue: v.optional(v.number()),
+    /** ISO 4217 code; an empty string clears it. */
+    currency: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   returns: v.null(),
@@ -960,6 +971,7 @@ export const update = mutation({
       endDate?: number;
       terms?: string;
       insuranceValue?: number;
+      currency?: string;
       notes?: string;
     } = {};
 
@@ -972,6 +984,8 @@ export const update = mutation({
     if (args.terms !== undefined) updates.terms = args.terms;
     if (args.insuranceValue !== undefined)
       updates.insuranceValue = args.insuranceValue;
+    if (args.currency !== undefined)
+      updates.currency = normalizeLoanCurrency(args.currency);
     if (args.notes !== undefined) updates.notes = args.notes;
 
     // Validate date ordering using effective (post-update) values

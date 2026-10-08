@@ -4,6 +4,7 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { LoanCurrencyInput } from "@/components/loan-currency-input";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
@@ -60,23 +61,32 @@ export function NewLoanScheduleSection({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="insuranceValue">
-            {tRoot("untranslatedRecords.loans.detail.totalInsuranceValue")}
-          </Label>
-          <Input
-            id="insuranceValue"
-            type="number"
-            step="0.01"
-            value={formData.insuranceValue}
-            onChange={(e) =>
-              onFormDataChange((prev) => ({
-                ...prev,
-                insuranceValue: e.target.value,
-              }))
+        <div className="grid grid-cols-[1fr_8rem] items-start gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="insuranceValue">
+              {tRoot("untranslatedRecords.loans.detail.totalInsuranceValue")}
+            </Label>
+            <Input
+              id="insuranceValue"
+              type="number"
+              step="0.01"
+              value={formData.insuranceValue}
+              onChange={(e) =>
+                onFormDataChange((prev) => ({
+                  ...prev,
+                  insuranceValue: e.target.value,
+                }))
+              }
+              placeholder={t("placeholders.insuranceValue")}
+              className="bg-background"
+            />
+          </div>
+          <LoanCurrencyInput
+            id="currency"
+            value={formData.currency}
+            onChange={(currency) =>
+              onFormDataChange((prev) => ({ ...prev, currency }))
             }
-            placeholder={t("placeholders.insuranceValue")}
-            className="bg-background"
           />
         </div>
 

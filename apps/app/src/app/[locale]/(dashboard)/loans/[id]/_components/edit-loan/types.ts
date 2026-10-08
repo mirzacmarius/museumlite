@@ -5,6 +5,7 @@ export interface EditLoanFormData {
   endDate: Date | undefined;
   terms: string;
   insuranceValue: string;
+  currency: string;
   notes: string;
 }
 
@@ -15,5 +16,6 @@ export const EMPTY_EDIT_LOAN_FORM: EditLoanFormData = {
   endDate: undefined,
   terms: "",
   insuranceValue: "",
+  currency: "",
   notes: "",
 };

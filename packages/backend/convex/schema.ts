@@ -6,6 +6,7 @@ import {
   exportSource,
   exportStatus,
 } from "./utils/exportContract";
+import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
 import {
   collectionTypeValidator,
   enabledModuleValidator,
@@ -2121,6 +2122,8 @@ export default defineSchema({
     ),
     terms: v.optional(v.string()),
     insuranceValue: v.optional(v.number()),
+    // ISO 4217 code of insuranceValue (MUS-674); absent on older loans.
+    currency: v.optional(v.string()),
     approvedBy: v.optional(v.id("users")),
     approvedAt: v.optional(v.number()),
     notes: v.optional(v.string()),
@@ -2262,6 +2265,15 @@ export default defineSchema({
       "collectionId",
       "status",
       "acceptedAt",
+    ]),
+
+  // Administrator-managed loan agreement templates (MUS-674). Archived, never deleted.
+  loanAgreementTemplates: defineTable(loanAgreementTemplateFields)
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_loanType_and_isDefault", [
+      "organizationId",
+      "loanType",
+      "isDefault",
     ]),
 
   // Documents attached to loans

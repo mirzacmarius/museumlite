@@ -191,6 +191,7 @@ export default {
       developer: "Développeur",
       data: "Import/Export de données",
       metrics: "État des indicateurs",
+      loanAgreements: "Contrats de prêt",
     },
     roles: {
       title: "Gestion des Rôles",
@@ -2404,6 +2405,124 @@ export default {
 
     charts: {
       statusDistribution: "Répartition par statut",
+    },
+  },
+  loanAgreementTemplates: {
+    title: "Contrats de prêt",
+    description:
+      "Rédigez les contrats que votre organisation émet pour les prêts. Les variables sont remplacées par les informations de chaque prêt lors de la génération d'un contrat.",
+    newTemplate: "Nouveau modèle",
+    empty:
+      "Aucun modèle pour l'instant. Les prêts utilisent le contrat standard jusqu'à ce que vous en créiez un.",
+    standardAgreement: "Contrat standard",
+    standardAgreementDescription:
+      "Intégré. Utilisé pour les prêts lorsqu'aucun modèle n'est défini par défaut.",
+    defaultBadge: "Par défaut",
+    archivedBadge: "Archivé",
+    archivedHeading: "Modèles archivés",
+    sectionCount: "Sections : {count}",
+    appliesTo: {
+      any: "Tous les prêts",
+      incoming: "Prêts entrants",
+      outgoing: "Prêts sortants",
+    },
+    actions: {
+      edit: "Modifier",
+      setDefault: "Définir par défaut",
+      archive: "Archiver",
+      restore: "Restaurer",
+    },
+    toasts: {
+      created: "Modèle créé.",
+      saved: "Modèle enregistré.",
+      defaultSet: "Modèle par défaut mis à jour.",
+      archived: "Modèle archivé.",
+      restored: "Modèle restauré.",
+    },
+    editor: {
+      createTitle: "Nouveau modèle de contrat de prêt",
+      editTitle: "Modifier le modèle de contrat de prêt",
+      description:
+        "Les sections apparaissent dans l'ordre après les parties. Une ligne dont les variables n'ont aucune valeur pour un prêt est omise.",
+      name: "Nom",
+      namePlaceholder: "Prêt sortant standard",
+      language: "Langue",
+      appliesTo: "S'applique à",
+      sections: "Sections",
+      sectionHeading: "Titre",
+      sectionBody: "Texte",
+      addSection: "Ajouter une section",
+      removeSection: "Supprimer la section",
+      moveUp: "Monter la section",
+      moveDown: "Descendre la section",
+      startFromStandard: "Partir du contrat standard",
+      placeholders: "Variables",
+      placeholdersHint: "Copiez une variable dans un titre ou un texte.",
+      copied: "{placeholder} copié",
+      preview: "Aperçu avec un prêt d'exemple",
+      save: "Enregistrer le modèle",
+      saving: "Enregistrement…",
+      cancel: "Annuler",
+    },
+    placeholders: {
+      loanNumber: "Numéro du prêt",
+      loanStartDate: "Date de début",
+      loanEndDate: "Date de fin",
+      loanCurrency: "Code de devise de la valeur assurée",
+      loanTerms: "Conditions enregistrées sur le prêt",
+      lenderName: "Prêteur",
+      borrowerName: "Emprunteur",
+      organizationName: "Votre organisation",
+      objectList: "Tableau des objets prêtés",
+      objectCount: "Nombre d'objets",
+      insuranceValue: "Valeur assurée avec la devise",
+    },
+    sample: {
+      partnerName: "Galerie du Port",
+      terms: "Les objets voyagent avec un convoyeur de l'institution prêteuse.",
+      firstObject: "Port au crépuscule",
+      secondObject: "Maquette de bateau de pêche",
+      condition: "Bon",
+    },
+    errors: {
+      templateNotFound: "Ce modèle n'existe plus. Actualisez la page.",
+      templateArchived:
+        "Ce modèle est archivé. Restaurez-le avant de le modifier.",
+      nameRequired: "Donnez un nom au modèle.",
+      sectionsRequired:
+        "Ajoutez au moins une section et saisissez du texte dans chaque section.",
+      templateTooLarge:
+        "Le modèle est trop long. Raccourcissez le texte ou supprimez des sections.",
+      unknownPlaceholder:
+        "{placeholder} n'est pas une variable connue. Utilisez-en une de la liste.",
+      malformedPlaceholder:
+        "Une variable est mal écrite. Chacune commence par deux accolades ouvrantes et se termine par deux accolades fermantes.",
+      invalidCurrency:
+        "Saisissez un code de devise à trois lettres, par exemple EUR.",
+      fallback: "La modification n'a pas pu être enregistrée. Réessayez.",
+    },
+    agreement: {
+      template: "Modèle",
+      printTitle: "Contrat de prêt {loanNumber}",
+      email: {
+        subject: "Contrat de prêt {loanNumber}",
+        greeting: "Bonjour {name},",
+        intro: "Veuillez trouver ci-joint le contrat de prêt {loanNumber}.",
+        details: "Détails du prêt :",
+        loanNumber: "Numéro du prêt : {loanNumber}",
+        incoming: "Type : prêt entrant",
+        outgoing: "Type : prêt sortant",
+        startDate: "Date de début : {date}",
+        endDate: "Date de fin : {date}",
+        objects: "Objets :",
+        review: "Merci de relire et de signer le contrat.",
+        signOff: "Cordialement,",
+      },
+    },
+    currency: {
+      label: "Devise",
+      placeholder: "EUR",
+      hint: "Code à trois lettres, par exemple EUR ou NOK.",
     },
   },
   transit: {
@@ -5221,16 +5340,16 @@ export default {
       agreement: {
         title: "CONTRAT DE PRÊT",
         number: "Numéro du contrat :",
-        period: "2. DURÉE DU PRÊT",
+        period: "DURÉE DU PRÊT",
         startDate: "Date de début :",
         endDate: "Date de fin :",
-        objectsOnLoan: "3. OBJETS PRÊTÉS",
+        objectsOnLoan: "OBJETS PRÊTÉS",
         accessionNumber: "N° d’inventaire",
         titleDescription: "Titre / Description",
-        insurance: "4. ASSURANCE",
+        insurance: "ASSURANCE",
         totalInsuranceValue: "Valeur totale assurée :",
-        termsConditions: "5. CONDITIONS GÉNÉRALES",
-        standardConditions: ". CONDITIONS STANDARD",
+        termsConditions: "CONDITIONS GÉNÉRALES",
+        standardConditions: "CONDITIONS STANDARD",
         borrowerCare:
           "L’emprunteur s’engage à prendre soin des objets prêtés avec la même diligence que celle qu’il applique à la conservation de ses propres biens comparables.",
         noTreatment:

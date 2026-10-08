@@ -189,6 +189,7 @@ export default {
       developer: "Utvikler",
       data: "Dataimport/-eksport",
       metrics: "Målingsstatus",
+      loanAgreements: "Låneavtaler",
     },
     roles: {
       title: "Rollehåndtering",
@@ -2319,6 +2320,124 @@ export default {
 
     charts: {
       statusDistribution: "Statusfordeling",
+    },
+  },
+  loanAgreementTemplates: {
+    title: "Låneavtaler",
+    description:
+      "Skriv avtalene organisasjonen din utsteder for lån. Plassholderne fylles ut med opplysningene for hvert lån når en avtale lages.",
+    newTemplate: "Ny mal",
+    empty: "Ingen maler ennå. Lån bruker standardavtalen til du oppretter en.",
+    standardAgreement: "Standardavtale",
+    standardAgreementDescription:
+      "Innebygd. Brukes for lån når ingen mal er satt som standard.",
+    defaultBadge: "Standard",
+    archivedBadge: "Arkivert",
+    archivedHeading: "Arkiverte maler",
+    sectionCount: "Seksjoner: {count}",
+    appliesTo: {
+      any: "Alle lån",
+      incoming: "Innlån",
+      outgoing: "Utlån",
+    },
+    actions: {
+      edit: "Rediger",
+      setDefault: "Gjør til standard",
+      archive: "Arkiver",
+      restore: "Gjenopprett",
+    },
+    toasts: {
+      created: "Malen er opprettet.",
+      saved: "Malen er lagret.",
+      defaultSet: "Standardmalen er oppdatert.",
+      archived: "Malen er arkivert.",
+      restored: "Malen er gjenopprettet.",
+    },
+    editor: {
+      createTitle: "Ny mal for låneavtale",
+      editTitle: "Rediger mal for låneavtale",
+      description:
+        "Seksjonene vises i rekkefølge etter partene. En linje der plassholderne ikke har noen verdi for et lån, utelates.",
+      name: "Navn",
+      namePlaceholder: "Standard utlån",
+      language: "Språk",
+      appliesTo: "Gjelder for",
+      sections: "Seksjoner",
+      sectionHeading: "Overskrift",
+      sectionBody: "Tekst",
+      addSection: "Legg til seksjon",
+      removeSection: "Fjern seksjon",
+      moveUp: "Flytt seksjonen opp",
+      moveDown: "Flytt seksjonen ned",
+      startFromStandard: "Start fra standardavtalen",
+      placeholders: "Plassholdere",
+      placeholdersHint:
+        "Kopier en plassholder inn i en overskrift eller tekst.",
+      copied: "Kopierte {placeholder}",
+      preview: "Forhåndsvisning med et eksempellån",
+      save: "Lagre malen",
+      saving: "Lagrer…",
+      cancel: "Avbryt",
+    },
+    placeholders: {
+      loanNumber: "Lånenummer",
+      loanStartDate: "Startdato",
+      loanEndDate: "Sluttdato",
+      loanCurrency: "Valutakode for forsikringsverdien",
+      loanTerms: "Vilkår registrert på lånet",
+      lenderName: "Utlåner",
+      borrowerName: "Låntaker",
+      organizationName: "Organisasjonen din",
+      objectList: "Tabell over gjenstandene på lån",
+      objectCount: "Antall gjenstander",
+      insuranceValue: "Forsikringsverdi med valuta",
+    },
+    sample: {
+      partnerName: "Havnegalleriet",
+      terms: "Gjenstandene fraktes med kurér fra den utlånende institusjonen.",
+      firstObject: "Havn i skumringen",
+      secondObject: "Modell av fiskebåt",
+      condition: "God",
+    },
+    errors: {
+      templateNotFound: "Denne malen finnes ikke lenger. Oppdater siden.",
+      templateArchived:
+        "Denne malen er arkivert. Gjenopprett den før du endrer den.",
+      nameRequired: "Gi malen et navn.",
+      sectionsRequired:
+        "Legg til minst én seksjon, og skriv tekst i hver seksjon.",
+      templateTooLarge:
+        "Malen er for lang. Kort ned teksten eller fjern seksjoner.",
+      unknownPlaceholder:
+        "{placeholder} er ikke en kjent plassholder. Bruk en fra listen.",
+      malformedPlaceholder:
+        "En plassholder er skrevet feil. Hver plassholder starter med to åpne krøllparenteser og slutter med to lukkede.",
+      invalidCurrency:
+        "Skriv inn en valutakode på tre bokstaver, for eksempel NOK.",
+      fallback: "Endringen kunne ikke lagres. Prøv igjen.",
+    },
+    agreement: {
+      template: "Mal",
+      printTitle: "Låneavtale {loanNumber}",
+      email: {
+        subject: "Låneavtale {loanNumber}",
+        greeting: "Hei {name},",
+        intro: "Vedlagt er låneavtalen for {loanNumber}.",
+        details: "Lånedetaljer:",
+        loanNumber: "Lånenummer: {loanNumber}",
+        incoming: "Type: innlån",
+        outgoing: "Type: utlån",
+        startDate: "Startdato: {date}",
+        endDate: "Sluttdato: {date}",
+        objects: "Gjenstander:",
+        review: "Vennligst se gjennom og signer avtalen.",
+        signOff: "Med vennlig hilsen",
+      },
+    },
+    currency: {
+      label: "Valuta",
+      placeholder: "NOK",
+      hint: "Kode på tre bokstaver, for eksempel NOK eller EUR.",
     },
   },
   transit: {
@@ -5195,16 +5314,16 @@ export default {
       agreement: {
         title: "UTLÅNSAVTALE",
         number: "Avtalenummer:",
-        period: "2. LÅNEPERIODE",
+        period: "LÅNEPERIODE",
         startDate: "Startdato:",
         endDate: "Sluttdato:",
-        objectsOnLoan: "3. GJENSTANDER PÅ UTLÅN",
+        objectsOnLoan: "GJENSTANDER PÅ UTLÅN",
         accessionNumber: "Tilvekstnr.",
         titleDescription: "Tittel/beskrivelse",
-        insurance: "4. FORSIKRING",
+        insurance: "FORSIKRING",
         totalInsuranceValue: "Samlet forsikringsverdi:",
-        termsConditions: "5. VILKÅR OG BETINGELSER",
-        standardConditions: ". STANDARDVILKÅR",
+        termsConditions: "VILKÅR OG BETINGELSER",
+        standardConditions: "STANDARDVILKÅR",
         borrowerCare:
           "Låntakeren forplikter seg til å behandle de utlånte gjenstandene med samme aktsomhet som ved oppbevaring av tilsvarende eiendeler som tilhører låntakeren.",
         noTreatment:

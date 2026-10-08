@@ -50,6 +50,7 @@ export function LoanDetailHeader({
         </div>
         <div className="h-4 w-px bg-border" />
         <LoanAgreement
+          loanId={loan._id}
           loan={{
             loanNumber: loan.loanNumber,
             type: loan.type,
@@ -57,7 +58,10 @@ export function LoanDetailHeader({
             lenderBorrowerContact: loan.lenderBorrowerContact,
             startDate: loan.startDate,
             endDate: loan.endDate,
+            terms: loan.terms,
             insuranceValue: loan.insuranceValue,
+            currency: loan.currency,
+            account: loan.account,
           }}
           items={loan.items.map((item) => ({
             accessionNumber: item.accessionNumber,

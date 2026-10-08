@@ -72,6 +72,7 @@ import type * as library_utils_circulationRules from "../library/utils/circulati
 import type * as library_utils_permissions from "../library/utils/permissions.js";
 import type * as library_utils_tenantIntegrity from "../library/utils/tenantIntegrity.js";
 import type * as library_vendors from "../library/vendors.js";
+import type * as loanAgreementTemplates from "../loanAgreementTemplates.js";
 import type * as loans from "../loans.js";
 import type * as locations from "../locations.js";
 import type * as materialOptions from "../materialOptions.js";
@@ -169,6 +170,10 @@ import type * as utils_insuranceCoverageAlerts from "../utils/insuranceCoverageA
 import type * as utils_insuranceStats from "../utils/insuranceStats.js";
 import type * as utils_legacyTemplates from "../utils/legacyTemplates.js";
 import type * as utils_loanAccess from "../utils/loanAccess.js";
+import type * as utils_loanAgreementErrors from "../utils/loanAgreementErrors.js";
+import type * as utils_loanAgreementPlaceholders from "../utils/loanAgreementPlaceholders.js";
+import type * as utils_loanAgreementValidators from "../utils/loanAgreementValidators.js";
+import type * as utils_loanCurrency from "../utils/loanCurrency.js";
 import type * as utils_loanCustody from "../utils/loanCustody.js";
 import type * as utils_loanDocuments from "../utils/loanDocuments.js";
 import type * as utils_loanExtensions from "../utils/loanExtensions.js";
@@ -298,6 +303,7 @@ declare const fullApi: ApiFromModules<{
   "library/utils/permissions": typeof library_utils_permissions;
   "library/utils/tenantIntegrity": typeof library_utils_tenantIntegrity;
   "library/vendors": typeof library_vendors;
+  loanAgreementTemplates: typeof loanAgreementTemplates;
   loans: typeof loans;
   locations: typeof locations;
   materialOptions: typeof materialOptions;
@@ -395,6 +401,10 @@ declare const fullApi: ApiFromModules<{
   "utils/insuranceStats": typeof utils_insuranceStats;
   "utils/legacyTemplates": typeof utils_legacyTemplates;
   "utils/loanAccess": typeof utils_loanAccess;
+  "utils/loanAgreementErrors": typeof utils_loanAgreementErrors;
+  "utils/loanAgreementPlaceholders": typeof utils_loanAgreementPlaceholders;
+  "utils/loanAgreementValidators": typeof utils_loanAgreementValidators;
+  "utils/loanCurrency": typeof utils_loanCurrency;
   "utils/loanCustody": typeof utils_loanCustody;
   "utils/loanDocuments": typeof utils_loanDocuments;
   "utils/loanExtensions": typeof utils_loanExtensions;
