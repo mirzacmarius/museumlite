@@ -925,6 +925,111 @@ describe("objectMoves", () => {
     expect(custodyEvents).toHaveLength(2);
   });
 
+  test("in-flight acceptance rejects a missing observed source after the object moves", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "In-flight observed source",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+
+    const otherLocationId = await t.run(async (ctx) => {
+      await ctx.db.patch(requestId, { approvedSourceLocationId: undefined });
+      return await ctx.db.insert("locations", {
+        organizationId: fixture.sourceOrganizationId,
+        name: "Moved shelf",
+        locationCode: "MOV-001",
+        locationCodeNormalized: "mov-001",
+        type: "shelf",
+        sortOrder: 2,
+        isActive: true,
+      });
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.collectionId, {
+        currentLocationId: otherLocationId,
+      });
+    });
+
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).rejects.toThrow(/observed source location/);
+
+    const [collection, request] = await Promise.all([
+      t.run(async (ctx) => ctx.db.get(fixture.collectionId)),
+      t.run(async (ctx) => ctx.db.get(requestId)),
+    ]);
+    expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
+    expect(collection?.currentLocationId).toBe(otherLocationId);
+    expect(request?.status).toBe("awaiting_acceptance");
+    expect(request?.approvedSourceLocationId).toBeUndefined();
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    const rebound = await t.run(async (ctx) => ctx.db.get(requestId));
+    expect(rebound?.approvedSourceLocationId).toBe(otherLocationId);
+    expect(rebound?.status).toBe("awaiting_acceptance");
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+    const moved = await t.run(async (ctx) => ctx.db.get(fixture.collectionId));
+    expect(moved?.organizationId).toBe(fixture.targetOrganizationId);
+    expect(moved?.currentLocationId).toBe(fixture.targetLocationId);
+  });
+
+  test("executed accept requires target manage_settings before the idempotent success", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Permission before replay",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    await expect(
+      fixture.admin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).rejects.toThrow(/Permission denied: organization.manage_settings/);
+
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).resolves.toBeNull();
+
+    const custodyEvents = await t.run(async (ctx) =>
+      ctx.db
+        .query("organizationTransferCustodyEvents")
+        .withIndex("by_moveRequest", (q) => q.eq("moveRequestId", requestId))
+        .collect(),
+    );
+    expect(custodyEvents).toHaveLength(2);
+  });
+
   test("acceptance retains condition assessments on the transferred object", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);

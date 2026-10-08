@@ -32,7 +32,9 @@ export function assertObservedSourceLocationMatches(
   approvedSourceLocationId: Id<"locations"> | null | undefined,
 ) {
   if (approvedSourceLocationId === undefined) {
-    return;
+    throw new Error(
+      "Transfer has no observed source location. The source organization must re-approve before acceptance.",
+    );
   }
   const observed = collection.currentLocationId ?? null;
   const expected = approvedSourceLocationId ?? null;

@@ -1028,7 +1028,9 @@ async function searchPublicTransferTargets(
   const searchResults = await ctx.db
     .query("organizations")
     .withSearchIndex("search_transfer_destinations", (q) =>
-      q.search("name", normalizedQuery).eq("allowsIncomingTransferRequests", true),
+      q
+        .search("name", normalizedQuery)
+        .eq("allowsIncomingTransferRequests", true),
     )
     .take(20);
 
@@ -1203,7 +1205,11 @@ export const listEligibleTargetOrganizations = query({
       return [];
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.update");
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.update",
+    );
     return await listMembershipTransferTargets(ctx, userId, collection);
   },
 });
@@ -1336,7 +1342,11 @@ export const createRequest = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-    await requirePermission(ctx, collection.organizationId, "collections.update");
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.update",
+    );
 
     const isPublicDestination = await isPublicTransferDestination(
       ctx,
@@ -1758,6 +1768,51 @@ export const approve = mutation({
       throw new Error("Move request not found");
     }
 
+    if (
+      request.status === "awaiting_acceptance" &&
+      request.approvedSourceLocationId === undefined
+    ) {
+      await requirePermission(
+        ctx,
+        request.sourceOrganizationId,
+        "organization.manage_settings",
+      );
+      const collection = await ctx.db.get(request.collectionId);
+      if (!collection) {
+        throw new Error("Collection not found");
+      }
+      if (collection.organizationId !== request.sourceOrganizationId) {
+        throw new Error(
+          "This transfer request no longer matches the object's organization.",
+        );
+      }
+      const now = Date.now();
+      const approvedSourceLocationId = collection.currentLocationId ?? null;
+      await Promise.all([
+        ctx.db.patch(args.requestId, {
+          approvedSourceLocationId,
+          sourceReviewedBy: userId,
+          sourceReviewedAt: now,
+          sourceReviewNotes:
+            args.reviewNotes?.trim() || request.sourceReviewNotes,
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: request.sourceOrganizationId,
+          userId,
+          action: "approved_organization_move_request_for_transfer",
+          entityType: "organizationMoveRequest",
+          entityId: args.requestId,
+          changes: {
+            collectionId: request.collectionId,
+            targetOrganizationId: request.targetOrganizationId,
+            approvedSourceLocationId,
+            reboundObservedSource: true,
+          },
+        }),
+      ]);
+      return null;
+    }
+
     if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
       throw new Error(`Move request is already ${request.status}.`);
     }
@@ -1856,6 +1911,12 @@ export const accept = mutation({
       throw new Error("Move request not found");
     }
 
+    await requirePermission(
+      ctx,
+      request.targetOrganizationId,
+      "organization.manage_settings",
+    );
+
     if (request.status === "executed") {
       return null;
     }
@@ -1863,12 +1924,6 @@ export const accept = mutation({
     if (request.status !== "awaiting_acceptance") {
       throw new Error(`Move request is already ${request.status}.`);
     }
-
-    await requirePermission(
-      ctx,
-      request.targetOrganizationId,
-      "organization.manage_settings",
-    );
 
     const collection = await ctx.db.get(request.collectionId);
     if (!collection) {
