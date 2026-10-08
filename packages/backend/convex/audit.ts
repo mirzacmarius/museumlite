@@ -1,7 +1,13 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { auditEntryValidator, readHistoryPage } from "./auditLog";
 import { auditLogChanges } from "./schema";
+import { captureAuditEvidence } from "./utils/auditEvidence";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -17,20 +23,7 @@ export const listOrganizationActivity = query({
     cursor: v.optional(v.string()),
   },
   returns: v.object({
-    activities: v.array(
-      v.object({
-        _id: v.id("auditLog"),
-        userId: v.id("users"),
-        userName: v.optional(v.string()),
-        userEmail: v.optional(v.string()),
-        userImage: v.optional(v.string()),
-        action: v.string(),
-        entityType: v.string(),
-        entityId: v.string(),
-        changes: v.optional(auditLogChanges),
-        timestamp: v.number(),
-      }),
-    ),
+    activities: v.array(auditEntryValidator),
     isDone: v.boolean(),
     continueCursor: v.optional(v.string()),
   }),
@@ -47,67 +40,21 @@ export const listOrganizationActivity = query({
       "organization.view_analytics",
     );
 
-    const limit = args.limit ?? 50;
-
-    // Build query
-    let auditQuery = ctx.db
-      .query("auditLog")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      );
-
-    // Apply filters
-    if (args.startDate) {
-      auditQuery = auditQuery.filter((q) =>
-        q.gte(q.field("timestamp"), args.startDate!),
-      );
-    }
-    if (args.endDate) {
-      auditQuery = auditQuery.filter((q) =>
-        q.lte(q.field("timestamp"), args.endDate!),
-      );
-    }
-    if (args.entityType) {
-      auditQuery = auditQuery.filter((q) =>
-        q.eq(q.field("entityType"), args.entityType!),
-      );
-    }
-
-    // Order by timestamp descending (most recent first)
-    const logs = await auditQuery.order("desc").take(limit);
-
-    // Fetch user information for each log entry
-    const activities = await Promise.all(
-      logs.map(async (log) => {
-        const user = await ctx.db.get(log.userId);
-        const userImage = user?.imageId
-          ? ((await ctx.storage.getUrl(user.imageId)) ?? undefined)
-          : undefined;
-
-        return {
-          _id: log._id,
-          userId: log.userId,
-          userName: user?.name || user?.username || undefined,
-          userEmail: user?.email || undefined,
-          userImage,
-          action: log.action,
-          entityType: log.entityType,
-          entityId: log.entityId,
-          changes: log.changes,
-          timestamp: log.timestamp,
-        };
-      }),
+    const result = await readHistoryPage(
+      ctx,
+      {
+        organizationId: args.organizationId,
+        entityType: args.entityType,
+        fromDate: args.startDate,
+        toDate: args.endDate,
+      },
+      { numItems: args.limit ?? 50, cursor: args.cursor ?? null },
+      "organization.view_analytics",
     );
-
-    // Simple pagination - if we got less than limit, we're done
-    const isDone = activities.length < limit;
-
     return {
-      activities,
-      isDone,
-      continueCursor: isDone
-        ? undefined
-        : activities[activities.length - 1]?._id,
+      activities: result.entries,
+      isDone: result.isDone,
+      continueCursor: result.nextCursor,
     };
   },
 });
@@ -131,7 +78,9 @@ export const logAction = internalMutation({
       throw new Error("Not authenticated");
     }
 
+    const evidence = await captureAuditEvidence(ctx, { ...args, userId });
     await ctx.db.insert("auditLog", {
+      ...evidence,
       organizationId: args.organizationId,
       userId,
       action: args.action,
@@ -347,6 +296,37 @@ export const listNotifications = query({
     return {
       notifications,
       unreadCount: unreadNotifications.length,
+    };
+  },
+});
+
+export const activityPage = query({
+  args: {
+    organizationId: v.id("organizations"),
+    entityType: v.optional(v.string()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(auditEntryValidator),
+  handler: async (ctx, args) => {
+    const result = await readHistoryPage(
+      ctx,
+      {
+        organizationId: args.organizationId,
+        entityType: args.entityType,
+        fromDate: args.startDate,
+        toDate: args.endDate,
+      },
+      args.paginationOpts,
+      "organization.view_analytics",
+    );
+    return {
+      page: result.entries,
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+      splitCursor: result.splitCursor,
+      pageStatus: result.pageStatus,
     };
   },
 });

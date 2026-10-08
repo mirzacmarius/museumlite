@@ -96,7 +96,7 @@ export function LoanDetailTabs({
           <LogisticsTab />
         </TabsContent>
         <TabsContent value="activity" className="mt-0 focus-visible:ring-0">
-          <ActivityTab workflowHistory={loan.workflowHistory} />
+          <ActivityTab organizationId={loan.organizationId} loanId={loan._id} />
         </TabsContent>
       </div>
     </Tabs>

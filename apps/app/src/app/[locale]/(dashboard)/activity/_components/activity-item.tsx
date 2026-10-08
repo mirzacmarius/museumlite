@@ -7,6 +7,7 @@ interface ActivityItemProps {
   action: string;
   entityType: string;
   entityId: string;
+  subjectLabel?: string;
   userName?: string;
   userImage?: string;
   timestamp: number;
@@ -26,10 +27,11 @@ function formatActionDescription(
   action: string,
   entityType: string,
   entityId: string,
-  t: ReturnType<typeof useScopedI18n<"activity">>,
   changes?: Record<string, unknown>,
+  actor = "—",
+  subjectLabel?: string,
 ): React.ReactNode {
-  const parts: React.ReactNode[] = [t("you"), " "];
+  const parts: React.ReactNode[] = [actor, " "];
 
   // Format action verb
   const actionVerb = action.toLowerCase();
@@ -41,6 +43,7 @@ function formatActionDescription(
 
   // Add entity identifier if available
   if (
+    subjectLabel ||
     changes?.name ||
     changes?.title ||
     changes?.accessionNumber ||
@@ -48,10 +51,11 @@ function formatActionDescription(
   ) {
     parts.push(" ");
     const identifier =
-      changes.name ||
-      changes.title ||
-      changes.accessionNumber ||
-      changes.method;
+      subjectLabel ||
+      changes?.name ||
+      changes?.title ||
+      changes?.accessionNumber ||
+      changes?.method;
     parts.push(<strong key="identifier">{String(identifier)}</strong>);
   } else {
     parts.push(" ");
@@ -90,6 +94,8 @@ export function ActivityItem({
   entityId,
   timestamp,
   changes,
+  userName,
+  subjectLabel,
 }: ActivityItemProps) {
   const t = useScopedI18n("activity");
   const relativeTime = formatRelativeTime(timestamp, t);
@@ -99,7 +105,14 @@ export function ActivityItem({
       <div className="mt-0.5 flex-shrink-0">{getActionIcon(entityType)}</div>
       <div className="flex flex-1 items-start justify-between gap-4">
         <div className="flex-1 text-sm">
-          {formatActionDescription(action, entityType, entityId, t, changes)}
+          {formatActionDescription(
+            action,
+            entityType,
+            entityId,
+            changes,
+            userName,
+            subjectLabel,
+          )}
         </div>
         <div className="text-sm text-muted-foreground">{relativeTime}</div>
       </div>

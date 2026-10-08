@@ -1,3 +1,4 @@
+import { workflowHistoryPageValidator } from "./auditLog";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
@@ -432,16 +433,10 @@ export const checkScheduleConflictsForParticipants = query({
 export const getWorkflowHistory = query({
   args: {
     exhibitionId: v.id("exhibitions"),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      step: v.number(),
-      approvedBy: v.id("users"),
-      approvedAt: v.number(),
-      comment: v.optional(v.string()),
-      approverName: v.optional(v.string()),
-    }),
-  ),
+  returns: workflowHistoryPageValidator,
   handler: async (ctx, args) => getWorkflowHistoryHandler(ctx, args),
 });
 

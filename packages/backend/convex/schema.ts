@@ -1790,9 +1790,7 @@ export default defineSchema({
     executedBy: v.optional(v.id("users")),
     executedAt: v.optional(v.number()),
     deaccessionId: v.optional(v.id("deaccessions")),
-    approvedSourceLocationId: v.optional(
-      v.union(v.id("locations"), v.null()),
-    ),
+    approvedSourceLocationId: v.optional(v.union(v.id("locations"), v.null())),
     acceptedTargetLocationId: v.optional(v.id("locations")),
     targetArrivalMovementId: v.optional(v.id("locationHistory")),
     transferScopeSnapshot: v.optional(
@@ -2142,16 +2140,24 @@ export default defineSchema({
     recordedAt: v.number(),
     condition: v.string(),
     summary: v.string(),
-    observations: v.array(v.object({
-      area: v.string(),
-      description: v.string(),
-      severity: v.union(v.literal("minor"), v.literal("moderate"), v.literal("severe")),
-    })),
-    photos: v.array(v.object({
-      mediaId: v.id("mediaFiles"),
-      storageId: v.id("_storage"),
-      fileName: v.string(),
-    })),
+    observations: v.array(
+      v.object({
+        area: v.string(),
+        description: v.string(),
+        severity: v.union(
+          v.literal("minor"),
+          v.literal("moderate"),
+          v.literal("severe"),
+        ),
+      }),
+    ),
+    photos: v.array(
+      v.object({
+        mediaId: v.id("mediaFiles"),
+        storageId: v.id("_storage"),
+        fileName: v.string(),
+      }),
+    ),
     status: v.union(v.literal("draft"), v.literal("accepted")),
     acceptedBy: v.optional(v.id("users")),
     acceptedAt: v.optional(v.number()),
@@ -2330,11 +2336,7 @@ export default defineSchema({
     baselineAssessmentId: v.optional(v.id("conditionAssessments")),
     outcomeAssessmentId: v.optional(v.id("conditionAssessments")),
     followUpStatus: v.optional(
-      v.union(
-        v.literal("none"),
-        v.literal("pending"),
-        v.literal("completed"),
-      ),
+      v.union(v.literal("none"), v.literal("pending"), v.literal("completed")),
     ),
     followUpNotes: v.optional(v.string()),
     followUpDueAt: v.optional(v.number()),
@@ -2683,7 +2685,9 @@ export default defineSchema({
     deinstalledBy: v.optional(v.id("users")),
     deinstallationNotes: v.optional(v.string()),
     conditionAtDeinstallation: v.optional(v.string()),
-    deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    deinstallationConditionAssessmentId: v.optional(
+      v.id("conditionAssessments"),
+    ),
     returnedToOriginalLocation: v.optional(v.boolean()),
     returnedAt: v.optional(v.number()),
     returnMovementId: v.optional(v.id("locationHistory")),
@@ -2722,6 +2726,43 @@ export default defineSchema({
     uploadedAt: v.number(),
   }).index("by_exhibition", ["exhibitionId"]),
 
+  caseHistoryState: defineTable({
+    organizationId: v.id("organizations"),
+    caseType: v.string(),
+    entityId: v.string(),
+    sourceLength: v.number(),
+    migratedThrough: v.number(),
+    nextOrdinal: v.number(),
+    cutoverAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_caseType_and_entityId", [
+      "organizationId",
+      "caseType",
+      "entityId",
+    ]),
+  caseHistoryEntries: defineTable({
+    organizationId: v.id("organizations"),
+    caseType: v.string(),
+    entityId: v.string(),
+    ordinal: v.number(),
+    entry: v.object({
+      step: v.number(),
+      approvedBy: v.id("users"),
+      approvedAt: v.number(),
+      comment: v.optional(v.string()),
+      approverName: v.optional(v.string()),
+    }),
+    evidenceStatus: v.union(v.literal("recorded"), v.literal("legacy")),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_caseType_and_entityId_and_ordinal", [
+      "organizationId",
+      "caseType",
+      "entityId",
+      "ordinal",
+    ]),
+
   // Activity tracking
   auditLog: defineTable({
     organizationId: v.id("organizations"),
@@ -2729,6 +2770,20 @@ export default defineSchema({
     action: v.string(),
     entityType: v.string(),
     entityId: v.string(),
+    actorSnapshot: v.optional(
+      v.object({ name: v.optional(v.string()), email: v.optional(v.string()) }),
+    ),
+    subjectSnapshot: v.optional(
+      v.object({
+        label: v.optional(v.string()),
+        identifier: v.optional(v.string()),
+      }),
+    ),
+    objectId: v.optional(v.id("collections")),
+    caseId: v.optional(v.string()),
+    correctionOf: v.optional(v.id("auditLog")),
+    correctionReason: v.optional(v.string()),
+    requestId: v.optional(v.string()),
     changes: v.optional(auditLogChanges),
     ipAddress: v.optional(v.string()),
     userAgent: v.optional(v.string()),
@@ -2736,6 +2791,38 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_timestamp", ["organizationId", "timestamp"])
+    .index("by_organization_and_requestId", ["organizationId", "requestId"])
+    .index("by_organization_and_userId_and_timestamp", [
+      "organizationId",
+      "userId",
+      "timestamp",
+    ])
+    .index("by_organization_and_entityType_and_timestamp", [
+      "organizationId",
+      "entityType",
+      "timestamp",
+    ])
+    .index("by_organization_and_entityType_and_entityId_and_timestamp", [
+      "organizationId",
+      "entityType",
+      "entityId",
+      "timestamp",
+    ])
+    .index("by_organization_and_action_and_timestamp", [
+      "organizationId",
+      "action",
+      "timestamp",
+    ])
+    .index("by_organization_and_objectId_and_timestamp", [
+      "organizationId",
+      "objectId",
+      "timestamp",
+    ])
+    .index("by_organization_and_caseId_and_timestamp", [
+      "organizationId",
+      "caseId",
+      "timestamp",
+    ])
     .index("by_user", ["userId"])
     .index("by_entity", ["entityType", "entityId"])
     .index("by_timestamp", ["timestamp"]),

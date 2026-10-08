@@ -79,12 +79,14 @@ export function ExhibitionDetailPageClient() {
     id: exhibitionId as Id<"exhibitions">,
   });
 
-  const workflowHistory = useQuery(
+  const workflowHistoryPage = useQuery(
     api.exhibitions.getWorkflowHistory,
     exhibition?.status === "proposed" || exhibition?.workflowStep
       ? { exhibitionId: exhibitionId as Id<"exhibitions"> }
       : "skip",
   );
+
+  const workflowHistory = workflowHistoryPage?.entries;
 
   const documents = useQuery(api.exhibitions.listDocuments, {
     exhibitionId: exhibitionId as Id<"exhibitions">,
