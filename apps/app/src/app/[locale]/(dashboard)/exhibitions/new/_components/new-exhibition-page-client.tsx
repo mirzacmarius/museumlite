@@ -3,7 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { ArrowLeft, Info, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,9 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { ExhibitionFormSections } from "../../_components/exhibition-form-sections";
 import type { ExhibitionFormData } from "../../_components/exhibition-form-types";
+import { exhibitionParticipantSchema } from "../../_components/exhibition-form-types";
 import { ExhibitionScheduleConflictsAlert } from "../../_components/exhibition-schedule-conflicts-alert";
+import { useExhibitionParticipantScheduleConflicts } from "../../_components/use-exhibition-participant-schedule-conflicts";
 
 export function NewExhibitionPageClient() {
   const { push, back } = useRouter();
@@ -32,18 +34,13 @@ export function NewExhibitionPageClient() {
     isLoan: false,
     loanVenue: "",
     notes: "",
-    collectionId: undefined,
+    participants: [{ role: "participant" }],
   });
 
-  const conflicts = useQuery(
-    api.exhibitions.checkScheduleConflicts,
-    formData.collectionId
-      ? {
-          collectionId: formData.collectionId as Id<"collections">,
-          startDate: formData.startDate.getTime(),
-          endDate: formData.endDate?.getTime(),
-        }
-      : "skip",
+  const conflicts = useExhibitionParticipantScheduleConflicts(
+    formData.participants,
+    formData.startDate,
+    formData.endDate,
   );
 
   if (!currentOrganizationId) {
@@ -62,15 +59,20 @@ export function NewExhibitionPageClient() {
       setError(t("form.titleRequired"));
       return;
     }
-    if (!formData.collectionId) {
-      setError(t("form.selectObject"));
+    const parsedParticipants = exhibitionParticipantSchema.safeParse(formData.participants);
+    if (!parsedParticipants.success) {
+      setError(t("form.invalidParticipants"));
       return;
     }
 
     setIsSubmitting(true);
     try {
       await createExhibition({
-        collectionId: formData.collectionId as Id<"collections">,
+        organizationId: currentOrganizationId,
+        participants: parsedParticipants.data.map((participant) => ({
+          collectionId: participant.collectionId as Id<"collections">,
+          role: participant.role,
+        })),
         title: formData.title,
         location: formData.location || undefined,
         startDate: formData.startDate.getTime(),
@@ -134,7 +136,6 @@ export function NewExhibitionPageClient() {
               formData={formData}
               onFormDataChange={setFormData}
               organizationId={currentOrganizationId}
-              mode="create"
             />
 
             <div className="flex justify-end gap-4">

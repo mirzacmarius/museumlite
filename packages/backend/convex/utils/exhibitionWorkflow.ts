@@ -3,15 +3,13 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireExhibitionAccess } from "./exhibitionAccess";
-import {
+import { getExhibitionsForObject } from "./exhibitionParticipation";
+import { 
   requireExhibitionReadPermission,
   requireExhibitionUpdatePermission,
 } from "./exhibitionContext";
+import { isExhibitionObjectOutcomeResolved } from "./exhibitionPhysicalHandoff";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
-import {
-  moveCollectionToLocation,
-  requireCollectionInOrganization,
-} from "./locationIntegrity";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
@@ -309,7 +307,6 @@ export async function activateExhibitionHandler(
       .withIndex("by_exhibition", (q) =>
         q.eq("exhibitionId", args.exhibitionId),
       )
-      .filter((q) => q.eq(q.field("status"), "pending"))
       .collect(),
   ] as const);
 
@@ -324,37 +321,16 @@ export async function activateExhibitionHandler(
     }
   }
 
+  const notInstalled = exhibitionObjects.filter(
+    (obj) => obj.status !== "installed",
+  );
+  if (notInstalled.length > 0) {
+    throw new Error(
+      `Cannot activate exhibition: ${notInstalled.length} object(s) are not installed`,
+    );
+  }
+
   await Promise.all([
-    Promise.all(
-      Array.from(exhibitionObjects).map(async (obj) => {
-        if (obj.organizationId !== exhibition.organizationId)
-          throw new Error(
-            "Exhibition object belongs to a different organization",
-          );
-        const collection = await requireCollectionInOrganization(
-          ctx,
-          obj.collectionId,
-          exhibition.organizationId,
-        );
-        const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
-        return Promise.all([
-          ctx.db.patch(obj._id, {
-            status: "installed",
-            installedAt: Date.now(),
-            installedBy: userId,
-          }),
-          newLocationId
-            ? moveCollectionToLocation(
-                ctx,
-                collection,
-                newLocationId,
-                userId,
-                "Exhibition activation",
-              )
-            : Promise.resolve(),
-        ]);
-      }),
-    ),
     ctx.db.patch(args.exhibitionId, {
       status: "active",
       isCurrent: true,
@@ -370,7 +346,7 @@ export async function activateExhibitionHandler(
       entityId: args.exhibitionId,
       changes: {
         status: "active",
-        objectsInstalled: exhibitionObjects.length,
+        participantCount: exhibitionObjects.length,
       },
     }),
   ] as const);
@@ -424,50 +400,19 @@ export async function closeExhibitionHandler(
       .collect(),
   ] as const);
 
-  const notReturnedObjects = exhibitionObjects.filter(
-    (obj) => obj.status !== "returned",
+  const outstandingObjects = exhibitionObjects.filter(
+    (obj) => !isExhibitionObjectOutcomeResolved(obj),
   );
 
-  if (args.returnObjectsToOriginalLocations !== false) {
-    await Promise.all(
-      Array.from(notReturnedObjects).map(async (obj) => {
-        if (obj.organizationId !== exhibition.organizationId)
-          throw new Error(
-            "Exhibition object belongs to a different organization",
-          );
-        const collection = await requireCollectionInOrganization(
-          ctx,
-          obj.collectionId,
-          exhibition.organizationId,
-        );
-        if (obj.status === "installed") {
-          await ctx.db.patch(obj._id, {
-            status: "deinstalled",
-            deinstalledAt: Date.now(),
-            deinstalledBy: userId,
-          });
-        }
-
-        if (obj.originalLocationId) {
-          await moveCollectionToLocation(
-            ctx,
-            collection,
-            obj.originalLocationId,
-            userId,
-            "Exhibition closure return",
-          );
-        }
-
-        await ctx.db.patch(obj._id, {
-          status: "returned",
-          returnedToOriginalLocation: true,
-          returnedAt: Date.now(),
-        });
-      }),
-    );
-  } else if (notReturnedObjects.length > 0 && !args.skipDeinstallationCheck) {
+  if (args.returnObjectsToOriginalLocations === true) {
     throw new Error(
-      `Cannot close: ${notReturnedObjects.length} objects have not been returned`,
+      "Automatic returns on close are disabled; record each return or authorize an exception",
+    );
+  }
+
+  if (outstandingObjects.length > 0) {
+    throw new Error(
+      `Cannot close: ${outstandingObjects.length} object(s) have outstanding returns or exceptions`,
     );
   }
 
@@ -488,7 +433,7 @@ export async function closeExhibitionHandler(
       entityId: args.exhibitionId,
       changes: {
         status: "closed",
-        objectsReturned: notReturnedObjects.length,
+        outstandingAtClose: outstandingObjects.length,
       },
     }),
   ]);
@@ -531,10 +476,7 @@ export async function checkScheduleConflictsHandler(
     end2: number,
   ) => start1 < end2 && start2 < end1;
 
-  const exhibitions = await ctx.db
-    .query("exhibitions")
-    .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
-    .collect();
+  const exhibitions = await getExhibitionsForObject(ctx, args.collectionId);
 
   for (const ex of exhibitions) {
     if (args.excludeExhibitionId && ex._id === args.excludeExhibitionId) {
@@ -587,6 +529,48 @@ export async function checkScheduleConflictsHandler(
       }
     }),
   );
+
+  return {
+    hasConflicts: conflicts.length > 0,
+    conflicts,
+  };
+}
+
+type ScheduleConflictEntry = {
+  type: "exhibition" | "loan";
+  id: string;
+  title: string;
+  startDate: number;
+  endDate?: number;
+  status: string;
+};
+
+export async function checkScheduleConflictsForParticipantsHandler(
+  ctx: QueryCtx,
+  args: {
+    collectionIds: Id<"collections">[];
+    startDate: number;
+    endDate?: number;
+    excludeExhibitionId?: Id<"exhibitions">;
+  },
+) {
+  const seen = new Set<string>();
+  const conflicts: ScheduleConflictEntry[] = [];
+
+  for (const collectionId of args.collectionIds) {
+    const result = await checkScheduleConflictsHandler(ctx, {
+      collectionId,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      excludeExhibitionId: args.excludeExhibitionId,
+    });
+    for (const conflict of result.conflicts) {
+      const key = `${conflict.type}:${conflict.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      conflicts.push(conflict);
+    }
+  }
 
   return {
     hasConflicts: conflicts.length > 0,

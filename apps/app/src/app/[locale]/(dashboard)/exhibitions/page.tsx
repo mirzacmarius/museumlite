@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ClientDate } from "@/components/client-date";
+import { CollectionSelector } from "@/components/collection-selector";
 import {
   DashboardListPageSkeleton,
   GridCardsSkeleton,
@@ -55,6 +56,7 @@ export default function ExhibitionsPage() {
   const { hasFeature } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ExhibitionStatus>("all");
+  const [selectedObjectId, setSelectedObjectId] = useState<string | undefined>();
   const [showFilters, setShowFilters] = useState(false);
 
   const savedViewMode = useQuery(
@@ -105,11 +107,12 @@ export default function ExhibitionsPage() {
     );
   }
 
-  const hasActiveFilters = searchQuery || statusFilter !== "all";
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || selectedObjectId;
 
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
+    setSelectedObjectId(undefined);
   };
 
   return (
@@ -206,6 +209,9 @@ export default function ExhibitionsPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="min-w-60">
+                      <CollectionSelector organizationId={currentOrganizationId} value={selectedObjectId} onValueChange={setSelectedObjectId} label={t("filters.object")} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -215,6 +221,7 @@ export default function ExhibitionsPage() {
               organizationId={currentOrganizationId}
               searchQuery={searchQuery}
               statusFilter={statusFilter}
+              selectedObjectId={selectedObjectId}
               viewMode={viewMode}
             />
           </div>
@@ -228,17 +235,20 @@ function ExhibitionList({
   organizationId,
   searchQuery,
   statusFilter,
+  selectedObjectId,
   viewMode,
 }: {
   organizationId: string;
   searchQuery: string;
   statusFilter: ExhibitionStatus;
+  selectedObjectId?: string;
   viewMode: ExhibitionViewMode;
 }) {
   const t = useScopedI18n("exhibitions");
   const now = useClientNow();
   const exhibitions = useQuery(api.exhibitions.listByOrganization, {
     organizationId: organizationId as Id<"organizations">,
+    collectionId: selectedObjectId as Id<"collections"> | undefined,
   });
 
   if (exhibitions === undefined) {
@@ -268,7 +278,7 @@ function ExhibitionList({
           icon={GalleryVerticalEnd}
           title={t("emptyState.noExhibitions")}
           description={
-            searchQuery || statusFilter !== "all"
+            searchQuery || statusFilter !== "all" || selectedObjectId
               ? t("emptyState.adjustFilters")
               : t("emptyState.createFirst")
           }
@@ -301,6 +311,7 @@ interface Exhibition {
   location?: string;
   notes?: string;
   collectionTitle?: string;
+  participantCount: number;
   startDate: number;
   endDate?: number;
   isLoan?: boolean;
@@ -383,10 +394,10 @@ function ExhibitionCard({
         </div>
       </div>
 
-      {exhibition.collectionTitle && (
+      {exhibition.participantCount > 0 && (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground group-hover:text-muted-foreground transition-colors">
           <Box className="size-3.5" />
-          <span className="truncate">{exhibition.collectionTitle}</span>
+          <span className="truncate">{exhibition.participantCount} {t("form.participantsLabel")}</span>
         </div>
       )}
     </Link>

@@ -8,10 +8,17 @@ import { isLoanItemReturned } from "./loan-item-utils";
 
 interface UseLoanReturnFlowOptions {
   loanId: string;
+  loanType: "incoming" | "outgoing";
   loanItems: LoanItem[];
   returnLoan: (args: {
     loanId: Id<"loans">;
     loanItemIds?: Id<"loanItems">[];
+    receipts?: Array<{
+      loanItemId: Id<"loanItems">;
+      confirmReturnToOrigin?: boolean;
+      destinationLocationId?: Id<"locations">;
+      conditionIn?: string;
+    }>;
   }) => Promise<unknown>;
   isSubmitting: boolean;
   setIsSubmitting: (value: boolean) => void;
@@ -116,8 +123,34 @@ function returnFlowReducer(
   }
 }
 
+function buildReceiptsForItems(
+  loanType: "incoming" | "outgoing",
+  loanItems: LoanItem[],
+  itemIdsToReturn: string[],
+) {
+  return itemIdsToReturn.flatMap((itemId) => {
+    const item = loanItems.find((entry) => entry._id === itemId);
+    if (!item) {
+      return [];
+    }
+    if (loanType === "incoming") {
+      return [{ loanItemId: item._id as Id<"loanItems"> }];
+    }
+    if (item.dispatchOriginLocationId && !item.dispatchOriginUnknown) {
+      return [
+        {
+          loanItemId: item._id as Id<"loanItems">,
+          confirmReturnToOrigin: true,
+        },
+      ];
+    }
+    return [{ loanItemId: item._id as Id<"loanItems"> }];
+  });
+}
+
 export function useLoanReturnFlow({
   loanId,
+  loanType,
   loanItems,
   returnLoan,
   isSubmitting,
@@ -144,12 +177,22 @@ export function useLoanReturnFlow({
     setIsSubmitting(true);
     setError(null);
     try {
+      const targetIds =
+        itemIdsToReturn.length > 0
+          ? itemIdsToReturn
+          : loanItems.map((item) => item._id);
+      const receipts = buildReceiptsForItems(
+        loanType,
+        loanItems,
+        targetIds,
+      );
       await returnLoan({
         loanId: loanId as Id<"loans">,
         loanItemIds:
           itemIdsToReturn.length > 0
             ? (itemIdsToReturn as Id<"loanItems">[])
             : undefined,
+        receipts: receipts.length > 0 ? receipts : undefined,
       });
       dispatch({ type: "resetAfterReturn" });
     } catch (err) {

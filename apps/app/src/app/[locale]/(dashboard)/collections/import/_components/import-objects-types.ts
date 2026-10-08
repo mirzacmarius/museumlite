@@ -21,6 +21,7 @@ export interface ParsedRow {
   provenance?: string;
   location?: string;
   collectionGroup?: string;
+  collectionGroups?: string;
 }
 
 export interface ImportState {
@@ -71,6 +72,7 @@ export const OPTIONAL_COLUMNS = [
   "provenance",
   "location",
   "collectionGroup",
+  "collectionGroups",
 ];
 export const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
@@ -193,6 +195,13 @@ export const TARGET_FIELDS = [
     required: false,
     description:
       "untranslatedRecords.collections.import.fieldDescriptions.collectionGroup",
+  },
+  {
+    id: "collectionGroups",
+    label: "untranslatedRecords.collections.import.fields.collectionGroups",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.collectionGroups",
   },
 ];
 

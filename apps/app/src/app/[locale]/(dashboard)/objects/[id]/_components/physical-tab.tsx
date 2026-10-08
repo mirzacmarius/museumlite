@@ -7,6 +7,7 @@ import { getConditionIcon } from "@/components/condition-combobox";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n } from "@/locales/client";
 import { formatConditionLabel } from "./condition-display";
+import { ConditionAssessmentPanel } from "./condition-assessment-panel";
 import type { CollectionData } from "./types";
 
 interface PhysicalTabProps {
@@ -61,6 +62,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
 
   return (
     <div className="space-y-8">
+      <ConditionAssessmentPanel collectionId={collection._id} />
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
@@ -167,7 +169,9 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
         {/* Condition */}
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            {tRoot("untranslatedRecords.objects.detail.overallCondition")}
+            {conditionHistory.length > 0
+              ? tRoot("conditionAssessments.legacyHistory")
+              : tRoot("untranslatedRecords.objects.detail.overallCondition")}
           </span>
           <div className="space-y-3">
             {conditionHistory.length > 0 ? (
@@ -209,13 +213,6 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                           >
                             {formatConditionLabel(entry.condition, tRoot)}
                           </h4>
-                          {index === 0 ? (
-                            <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
-                              {tRoot(
-                                "untranslatedRecords.objects.status.current",
-                              )}
-                            </span>
-                          ) : null}
                         </div>
                         <p className="text-[10px] text-zinc-500">
                           <ClientDate

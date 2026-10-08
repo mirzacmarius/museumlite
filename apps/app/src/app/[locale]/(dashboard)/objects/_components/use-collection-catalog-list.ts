@@ -314,6 +314,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
         tRoot("common.status"),
         tRoot("objects.form.currentLocation"),
         tRoot("objects.form.collectionGroup"),
+        tRoot("untranslatedRecords.collections.import.fields.collectionGroups"),
         tRoot("untranslatedRecords.objects.export.catalogedDate"),
       ],
       tRoot("untranslatedRecords.objects.bulk.exported", {

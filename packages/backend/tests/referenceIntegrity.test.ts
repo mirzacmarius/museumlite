@@ -229,6 +229,7 @@ test("exhibition installation observes the current source and invalid return lea
       isCurrent: false,
       status: "approved",
       locationId: display,
+      participationVersion: "members",
     }),
   );
   const authorized = authedForUser(t, own.userId);
@@ -245,6 +246,7 @@ test("exhibition installation observes the current source and invalid return lea
   );
   await authorized.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
+    observedFromLocationId: observed,
   });
   expect(
     await authorized.query(api.locations.getCollectionLocationHistory, {

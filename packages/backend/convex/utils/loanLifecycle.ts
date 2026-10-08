@@ -1,15 +1,16 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import {
-  markCollectionActive,
-  markCollectionDeaccessioned,
-} from "./collectionLifecycle";
 import { requireLoansAccess } from "./loanAccess";
+import {
+  isLoanItemDispatched,
+  isLoanItemReturned,
+} from "./loanItemState";
 import {
   dispatchLoanItems,
   restoreLoanCollections,
   returnLoanItems,
+  type ReceiveLoanItemInput,
 } from "./loanMovement";
 import { assertAllowedLoanTransition } from "./loanStatusTransitions";
 import {
@@ -24,6 +25,7 @@ export async function returnLoanHandler(
     loanId: Id<"loans">;
     conditionIn?: string;
     loanItemIds?: Array<Id<"loanItems">>;
+    receipts?: ReceiveLoanItemInput[];
   },
 ) {
   const [userId, loan] = await Promise.all([
@@ -54,13 +56,16 @@ export async function returnLoanHandler(
     changedBy: userId,
     conditionIn: args.conditionIn,
     selectedLoanItemIds: args.loanItemIds,
+    receipts: args.receipts,
   });
+
+  if (movement.nextLoanStatus !== loan.status) {
+    await ctx.db.patch(args.loanId, { status: movement.nextLoanStatus });
+  }
 
   if (movement.allItemsNowReturned) {
     const [, recipients] = await Promise.all([
-      ctx.db.patch(args.loanId, {
-        status: "returned",
-      }),
+      Promise.resolve(),
       logActionAndGetRecipients(ctx, {
         organizationId: loan.organizationId,
         userId,
@@ -114,7 +119,11 @@ export async function returnLoanHandler(
 
 export async function dispatchLoanHandler(
   ctx: MutationCtx,
-  args: { loanId: Id<"loans"> },
+  args: {
+    loanId: Id<"loans">;
+    loanItemIds?: Array<Id<"loanItems">>;
+    itemAssessments?: Record<string, Id<"conditionAssessments">>;
+  },
 ) {
   const [userId, loan] = await Promise.all([
     getAuthUserId(ctx),
@@ -138,23 +147,25 @@ export async function dispatchLoanHandler(
     requirePermission(ctx, loan.organizationId, "loans.update"),
   ]);
 
+  const dispatchResult = await dispatchLoanItems(ctx, {
+    loanId: args.loanId,
+    changedBy: userId,
+    selectedLoanItemIds: args.loanItemIds,
+    itemAssessments: args.itemAssessments,
+  });
+
   const [, recipients] = await Promise.all([
-    Promise.all([
-      dispatchLoanItems(ctx, {
-        loanId: args.loanId,
-        changedBy: userId,
-      }),
-      ctx.db.patch(args.loanId, {
-        status: "dispatched",
-      }),
-    ]),
+    Promise.resolve(),
     logActionAndGetRecipients(ctx, {
       organizationId: loan.organizationId,
       userId,
       action: "dispatched",
       entityType: "loan",
       entityId: args.loanId,
-      changes: { status: "dispatched" },
+      changes: {
+        status: dispatchResult.loanStatus,
+        dispatchedItemIds: dispatchResult.dispatchedItemIds,
+      },
     }),
   ] as const);
 
@@ -197,6 +208,20 @@ export async function cancelLoanHandler(
     requirePermission(ctx, loan.organizationId, "loans.update"),
   ]);
 
+  const loanItems = await ctx.db
+    .query("loanItems")
+    .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+    .collect();
+  const dispatchedItems = loanItems.filter(
+    (item) =>
+      !isLoanItemReturned(item) && isLoanItemDispatched(item, loan.status),
+  );
+  if (dispatchedItems.length > 0) {
+    throw new Error(
+      "Cannot cancel a loan after an item has been dispatched; record its return first",
+    );
+  }
+
   const [, recipients] = await Promise.all([
     Promise.all([
       ctx.db.patch(args.loanId, {
@@ -237,6 +262,9 @@ export async function returnLoanItemHandler(
     collectionId: Id<"collections">;
     conditionIn?: string;
     notes?: string;
+    destinationLocationId?: Id<"locations">;
+    confirmReturnToOrigin?: boolean;
+    incomingConditionAssessmentId?: Id<"conditionAssessments">;
   },
 ) {
   const [userId, loan] = await Promise.all([
@@ -250,8 +278,8 @@ export async function returnLoanItemHandler(
     throw new Error("Loan not found");
   }
 
-  if (loan.status !== "active") {
-    throw new Error("Loan is not active");
+  if (loan.status !== "active" && loan.status !== "dispatched") {
+    throw new Error("Loan is not open for returns");
   }
 
   await Promise.all([
@@ -269,45 +297,20 @@ export async function returnLoanItemHandler(
     throw new Error("Item not found in this loan");
   }
 
-  await ctx.db.patch(loanItem._id, {
-    conditionIn: args.conditionIn,
-    notes: args.notes
-      ? loanItem.notes
-        ? `${loanItem.notes}\n${args.notes}`
-        : args.notes
-      : loanItem.notes,
+  await returnLoanHandler(ctx, {
+    loanId: args.loanId,
+    loanItemIds: [loanItem._id],
+    receipts: [
+      {
+        loanItemId: loanItem._id,
+        destinationLocationId: args.destinationLocationId,
+        confirmReturnToOrigin: args.confirmReturnToOrigin,
+        incomingConditionAssessmentId: args.incomingConditionAssessmentId,
+        conditionIn: args.conditionIn,
+        notes: args.notes,
+      },
+    ],
   });
-
-  if (loan.type === "incoming") {
-    const collection = await ctx.db.get(args.collectionId);
-    if (collection) {
-      if (collection.status !== "deaccessioned") {
-        await ctx.db.insert("deaccessions", {
-          organizationId: loan.organizationId,
-          collectionId: args.collectionId,
-          deaccessionNumber: `RET-${collection.accessionNumber}`,
-          dateDeaccessioned: Date.now(),
-          reason: "Returned to lender",
-          method: "transfer",
-          disposition: `Returned to ${loan.lenderBorrowerName}`,
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowStep: 0,
-        });
-
-        await markCollectionDeaccessioned(ctx, {
-          collectionId: args.collectionId,
-          changedBy: userId,
-        });
-      }
-    }
-  } else {
-    await markCollectionActive(ctx, {
-      collectionId: args.collectionId,
-      changedBy: userId,
-    });
-  }
 
   return null;
 }

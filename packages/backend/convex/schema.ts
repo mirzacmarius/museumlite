@@ -432,6 +432,7 @@ export default defineSchema({
   collectionGroupItems: defineTable({
     collectionGroupId: v.id("collectionGroups"),
     collectionId: v.id("collections"),
+    role: v.optional(v.union(v.literal("primary"), v.literal("secondary"))),
     addedAt: v.number(),
     addedBy: v.id("users"),
   })
@@ -479,6 +480,8 @@ export default defineSchema({
     weightUnit: v.optional(v.string()), // "kg", "lb", etc.
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    currentConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    legacyConditionSnapshot: v.optional(v.string()),
     conditionHistory: v.optional(
       v.array(
         v.object({
@@ -1672,7 +1675,7 @@ export default defineSchema({
   locationHistory: defineTable({
     collectionId: v.id("collections"),
     fromLocationId: v.optional(v.id("locations")),
-    toLocationId: v.id("locations"),
+    toLocationId: v.optional(v.id("locations")),
     movedBy: v.id("users"),
     movedAt: v.number(),
     reason: v.optional(v.string()),
@@ -1682,8 +1685,12 @@ export default defineSchema({
     authorizedBy: v.optional(v.id("users")),
     moveRequestId: v.optional(v.id("locationMoveRequests")),
     batchJobId: v.optional(v.id("batchJobs")),
+    exhibitionObjectId: v.optional(v.id("exhibitionObjects")),
+    transitItemId: v.optional(v.id("transitItems")),
   })
     .index("by_collection", ["collectionId"])
+    .index("by_exhibition_object", ["exhibitionObjectId"])
+    .index("by_transit_item", ["transitItemId"])
     .index("by_moveRequest", ["moveRequestId"])
     .index("by_toLocation", ["toLocationId"])
     .index("by_fromLocation", ["fromLocationId"])
@@ -1783,6 +1790,20 @@ export default defineSchema({
     executedBy: v.optional(v.id("users")),
     executedAt: v.optional(v.number()),
     deaccessionId: v.optional(v.id("deaccessions")),
+    approvedSourceLocationId: v.optional(
+      v.union(v.id("locations"), v.null()),
+    ),
+    acceptedTargetLocationId: v.optional(v.id("locations")),
+    targetArrivalMovementId: v.optional(v.id("locationHistory")),
+    transferScopeSnapshot: v.optional(
+      v.object({
+        sourceOrganizationId: v.id("organizations"),
+        observedSourceLocationId: v.union(v.id("locations"), v.null()),
+        legacyCollectionGroupId: v.optional(v.id("collectionGroups")),
+        collectionGroupIds: v.array(v.id("collectionGroups")),
+        accessionNumberAtTransfer: v.string(),
+      }),
+    ),
   })
     .index("by_source_organization", ["sourceOrganizationId"])
     .index("by_target_organization", ["targetOrganizationId"])
@@ -1795,6 +1816,19 @@ export default defineSchema({
       "targetOrganizationId",
       "status",
     ]),
+
+  organizationTransferCustodyEvents: defineTable({
+    moveRequestId: v.id("organizationMoveRequests"),
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    phase: v.union(v.literal("source_departure"), v.literal("target_arrival")),
+    observedLocationId: v.optional(v.id("locations")),
+    actorId: v.id("users"),
+    recordedAt: v.number(),
+    notes: v.optional(v.string()),
+  })
+    .index("by_moveRequest", ["moveRequestId"])
+    .index("by_collection", ["collectionId"]),
 
   // Unified accounts (museum lenders/borrowers + library patrons)
   accounts: defineTable({
@@ -2040,9 +2074,45 @@ export default defineSchema({
     conditionIn: v.optional(v.string()),
     notes: v.optional(v.string()),
     conditionReportId: v.optional(v.id("conditionReports")),
+    custodyStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("dispatched"),
+        v.literal("returned"),
+      ),
+    ),
+    dispatchOriginLocationId: v.optional(v.id("locations")),
+    dispatchOriginUnknown: v.optional(v.boolean()),
+    dispatchedAt: v.optional(v.number()),
+    dispatchedBy: v.optional(v.id("users")),
+    returnDestinationLocationId: v.optional(v.id("locations")),
+    returnedAt: v.optional(v.number()),
+    returnedBy: v.optional(v.id("users")),
+    outgoingConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    incomingConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    lenderExitId: v.optional(v.id("loanCustodyExits")),
   })
     .index("by_loan", ["loanId"])
     .index("by_collection", ["collectionId"]),
+
+  // Incoming loan return-to-lender exits (not deaccessions)
+  loanCustodyExits: defineTable({
+    organizationId: v.id("organizations"),
+    loanId: v.id("loans"),
+    loanItemId: v.id("loanItems"),
+    collectionId: v.id("collections"),
+    exitType: v.literal("return_to_lender"),
+    recipientName: v.string(),
+    accountId: v.optional(v.id("accounts")),
+    recordedBy: v.id("users"),
+    recordedAt: v.number(),
+    fromLocationId: v.optional(v.id("locations")),
+    notes: v.optional(v.string()),
+    legacySyntheticDeaccessionId: v.optional(v.id("deaccessions")),
+  })
+    .index("by_loan", ["loanId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_loanItem", ["loanItemId"]),
 
   // Detailed condition reports (when enabled)
   conditionReports: defineTable({
@@ -2063,6 +2133,36 @@ export default defineSchema({
     assessedBy: v.id("users"),
     assessedAt: v.number(),
   }).index("by_loanItem", ["loanItemId"]),
+
+  conditionAssessments: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    assessedBy: v.id("users"),
+    assessedAt: v.number(),
+    recordedAt: v.number(),
+    condition: v.string(),
+    summary: v.string(),
+    observations: v.array(v.object({
+      area: v.string(),
+      description: v.string(),
+      severity: v.union(v.literal("minor"), v.literal("moderate"), v.literal("severe")),
+    })),
+    photos: v.array(v.object({
+      mediaId: v.id("mediaFiles"),
+      storageId: v.id("_storage"),
+      fileName: v.string(),
+    })),
+    status: v.union(v.literal("draft"), v.literal("accepted")),
+    acceptedBy: v.optional(v.id("users")),
+    acceptedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_collection_and_status_and_acceptedAt", [
+      "collectionId",
+      "status",
+      "acceptedAt",
+    ]),
 
   // Documents attached to loans
   loanDocuments: defineTable({
@@ -2227,6 +2327,17 @@ export default defineSchema({
     currency: v.optional(v.string()),
     estimatedCost: v.optional(v.number()), // Initial estimate for budgeting
     costNotes: v.optional(v.string()),
+    baselineAssessmentId: v.optional(v.id("conditionAssessments")),
+    outcomeAssessmentId: v.optional(v.id("conditionAssessments")),
+    followUpStatus: v.optional(
+      v.union(
+        v.literal("none"),
+        v.literal("pending"),
+        v.literal("completed"),
+      ),
+    ),
+    followUpNotes: v.optional(v.string()),
+    followUpDueAt: v.optional(v.number()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -2469,7 +2580,8 @@ export default defineSchema({
 
   // Exhibition records for objects
   exhibitions: defineTable({
-    collectionId: v.id("collections"),
+    collectionId: v.optional(v.id("collections")), // Historical anchor; new writes use exhibitionObjects
+    participationVersion: v.optional(v.literal("members")),
     organizationId: v.id("organizations"),
     title: v.string(),
     location: v.optional(v.string()),
@@ -2555,6 +2667,8 @@ export default defineSchema({
     exhibitionId: v.id("exhibitions"),
     organizationId: v.id("organizations"),
     collectionId: v.id("collections"), // The object being exhibited
+    role: v.optional(v.union(v.literal("featured"), v.literal("participant"))),
+    order: v.optional(v.number()),
     originalLocationId: v.optional(v.id("locations")), // Where the object was before
     exhibitionLocationId: v.optional(v.id("locations")), // Where it is in the exhibition
     // Installation tracking
@@ -2562,13 +2676,25 @@ export default defineSchema({
     installedBy: v.optional(v.id("users")),
     installationNotes: v.optional(v.string()),
     conditionAtInstallation: v.optional(v.string()),
+    installationMovementId: v.optional(v.id("locationHistory")),
+    installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
     // Deinstallation tracking
     deinstalledAt: v.optional(v.number()),
     deinstalledBy: v.optional(v.id("users")),
     deinstallationNotes: v.optional(v.string()),
     conditionAtDeinstallation: v.optional(v.string()),
+    deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
     returnedToOriginalLocation: v.optional(v.boolean()),
     returnedAt: v.optional(v.number()),
+    returnMovementId: v.optional(v.id("locationHistory")),
+    returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    returnException: v.optional(
+      v.object({
+        reason: v.string(),
+        authorizedBy: v.id("users"),
+        authorizedAt: v.number(),
+      }),
+    ),
     // Status
     status: v.union(
       v.literal("pending"),
@@ -4083,10 +4209,24 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"), // Not yet picked up
       v.literal("in_transit"), // Being transported
-      v.literal("delivered"), // Successfully delivered
+      v.literal("delivered"), // Legacy carrier flag; prefer arrived
+      v.literal("arrived"), // Carrier delivery recorded, not yet accepted
+      v.literal("received"), // Accountable receipt recorded
       v.literal("damaged"), // Damaged during transit
       v.literal("missing"), // Missing/lost
     ),
+
+    carrierArrivedAt: v.optional(v.number()),
+    carrierArrivedBy: v.optional(v.id("users")),
+    receiptMovementId: v.optional(v.id("locationHistory")),
+    receiptDestinationLocationId: v.optional(v.id("locations")),
+    receiptConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    receivedAt: v.optional(v.number()),
+    receivedBy: v.optional(v.id("users")),
+    installationMovementId: v.optional(v.id("locationHistory")),
+    installedAt: v.optional(v.number()),
+    installedBy: v.optional(v.id("users")),
+    linkedExhibitionObjectId: v.optional(v.id("exhibitionObjects")),
 
     notes: v.optional(v.string()),
     createdAt: v.number(),

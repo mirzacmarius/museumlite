@@ -12,6 +12,12 @@ import {
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { generateNextTransitNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
+import {
+  getTransitHandoffSummaryForRecord,
+  markTransitItemCarrierArrivedInternal,
+  recordTransitItemInstallationInternal,
+  recordTransitItemReceiptInternal,
+} from "./utils/transitPhysicalHandoff";
 
 const transitTypeValidator = v.union(
   v.literal("outgoing"),
@@ -47,6 +53,8 @@ const transitItemStatusValidator = v.union(
   v.literal("pending"),
   v.literal("in_transit"),
   v.literal("delivered"),
+  v.literal("arrived"),
+  v.literal("received"),
   v.literal("damaged"),
   v.literal("missing"),
 );
@@ -415,23 +423,6 @@ export const updateTransitStatus = mutation({
       );
     }
 
-    if (args.status === "delivered") {
-      const transitItems = await ctx.db
-        .query("transitItems")
-        .withIndex("by_transitRecord", (q) =>
-          q.eq("transitRecordId", args.transitRecordId),
-        )
-        .collect();
-
-      await Promise.all(
-        Array.from(transitItems).map(async (item) => {
-          if (item.status === "in_transit" || item.status === "pending") {
-            await ctx.db.patch(item._id, { status: "delivered" });
-          }
-        }),
-      );
-    }
-
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: transitRecord.organizationId,
       userId,
@@ -614,6 +605,12 @@ export const getTransitRecord = query({
           conditionAtDelivery: v.optional(v.string()),
           status: transitItemStatusValidator,
           notes: v.optional(v.string()),
+          carrierArrivedAt: v.optional(v.number()),
+          receivedAt: v.optional(v.number()),
+          receiptMovementId: v.optional(v.id("locationHistory")),
+          receiptDestinationLocationId: v.optional(v.id("locations")),
+          installedAt: v.optional(v.number()),
+          installationMovementId: v.optional(v.id("locationHistory")),
         }),
       ),
       statusHistory: v.array(
@@ -696,6 +693,12 @@ export const getTransitRecord = query({
             conditionAtDelivery: item.conditionAtDelivery,
             status: item.status,
             notes: item.notes,
+            carrierArrivedAt: item.carrierArrivedAt,
+            receivedAt: item.receivedAt,
+            receiptMovementId: item.receiptMovementId,
+            receiptDestinationLocationId: item.receiptDestinationLocationId,
+            installedAt: item.installedAt,
+            installationMovementId: item.installationMovementId,
           };
         }),
       ),
@@ -1665,5 +1668,184 @@ export const checkDelayedTransitsInternal = internalMutation({
     );
 
     return null;
+  },
+});
+
+export const markTransitItemCarrierArrived = mutation({
+  args: {
+    transitItemId: v.id("transitItems"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, transitItem] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitItemId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    if (!transitItem) {
+      throw new Error("Transit item not found");
+    }
+    const transitRecord = await ctx.db.get(transitItem.transitRecordId);
+    if (!transitRecord) {
+      throw new Error("Transit record not found");
+    }
+    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
+    await markTransitItemCarrierArrivedInternal(
+      ctx,
+      transitItem,
+      transitRecord,
+      userId,
+    );
+    return null;
+  },
+});
+
+export const recordTransitItemReceipt = mutation({
+  args: {
+    transitItemId: v.id("transitItems"),
+    observedFromLocationId: v.union(v.id("locations"), v.null()),
+    destinationLocationId: v.id("locations"),
+    conditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    conditionIn: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.id("locationHistory"),
+  handler: async (ctx, args) => {
+    const [userId, transitItem] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitItemId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    if (!transitItem) {
+      throw new Error("Transit item not found");
+    }
+    const transitRecord = await ctx.db.get(transitItem.transitRecordId);
+    if (!transitRecord) {
+      throw new Error("Transit record not found");
+    }
+    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
+
+    const conditionText = args.conditionIn?.trim() ?? "";
+    if (conditionText.length === 0 && args.conditionAssessmentId === undefined) {
+      throw new Error("Condition evidence is required for transit receipt");
+    }
+
+    return await recordTransitItemReceiptInternal(ctx, {
+      transitItem,
+      transitRecord,
+      userId,
+      observedFromLocationId: args.observedFromLocationId,
+      destinationLocationId: args.destinationLocationId,
+      conditionAssessmentId: args.conditionAssessmentId,
+      conditionIn: args.conditionIn,
+      notes: args.notes,
+    });
+  },
+});
+
+export const recordTransitItemInstallation = mutation({
+  args: {
+    transitItemId: v.id("transitItems"),
+    observedFromLocationId: v.union(v.id("locations"), v.null()),
+    exhibitionLocationId: v.optional(v.id("locations")),
+    installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    conditionNotes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, transitItem] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitItemId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    if (!transitItem) {
+      throw new Error("Transit item not found");
+    }
+    const transitRecord = await ctx.db.get(transitItem.transitRecordId);
+    if (!transitRecord) {
+      throw new Error("Transit record not found");
+    }
+    await requirePermission(
+      ctx,
+      transitRecord.organizationId,
+      "collections.update",
+    );
+    await recordTransitItemInstallationInternal(ctx, {
+      transitItem,
+      transitRecord,
+      userId,
+      observedFromLocationId: args.observedFromLocationId,
+      exhibitionLocationId: args.exhibitionLocationId,
+      installationConditionAssessmentId: args.installationConditionAssessmentId,
+      conditionNotes: args.conditionNotes,
+    });
+    return null;
+  },
+});
+
+export const getTransitHandoffSummary = query({
+  args: {
+    transitRecordId: v.id("transitRecords"),
+  },
+  returns: v.object({
+    itemCount: v.number(),
+    outstandingReceiptCount: v.number(),
+    outstandingInstallationCount: v.number(),
+    items: v.array(
+      v.object({
+        transitItemId: v.id("transitItems"),
+        collectionId: v.id("collections"),
+        accessionNumber: v.optional(v.string()),
+        title: v.optional(v.string()),
+        status: transitItemStatusValidator,
+        carrierArrivedAt: v.optional(v.number()),
+        receivedAt: v.optional(v.number()),
+        installedAt: v.optional(v.number()),
+        receiptMovementId: v.optional(v.id("locationHistory")),
+        installationMovementId: v.optional(v.id("locationHistory")),
+      }),
+    ),
+    outstandingReceipt: v.array(
+      v.object({
+        transitItemId: v.id("transitItems"),
+        collectionId: v.id("collections"),
+        accessionNumber: v.optional(v.string()),
+        title: v.optional(v.string()),
+        status: transitItemStatusValidator,
+        carrierArrivedAt: v.optional(v.number()),
+        receivedAt: v.optional(v.number()),
+        installedAt: v.optional(v.number()),
+        receiptMovementId: v.optional(v.id("locationHistory")),
+        installationMovementId: v.optional(v.id("locationHistory")),
+      }),
+    ),
+    outstandingInstallation: v.array(
+      v.object({
+        transitItemId: v.id("transitItems"),
+        collectionId: v.id("collections"),
+        accessionNumber: v.optional(v.string()),
+        title: v.optional(v.string()),
+        status: transitItemStatusValidator,
+        carrierArrivedAt: v.optional(v.number()),
+        receivedAt: v.optional(v.number()),
+        installedAt: v.optional(v.number()),
+        receiptMovementId: v.optional(v.id("locationHistory")),
+        installationMovementId: v.optional(v.id("locationHistory")),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const transitRecord = await ctx.db.get(args.transitRecordId);
+    if (!transitRecord) {
+      throw new Error("Transit record not found");
+    }
+    await requirePermission(ctx, transitRecord.organizationId, "loans.read");
+    return await getTransitHandoffSummaryForRecord(ctx, args.transitRecordId);
   },
 });

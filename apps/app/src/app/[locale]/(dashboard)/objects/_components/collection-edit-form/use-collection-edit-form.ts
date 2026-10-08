@@ -251,11 +251,7 @@ export function useCollectionEditForm() {
     currentLocationPath?.map((location) => location.name).join(" / ") ||
     tRoot("untranslatedRecords.objects.location.noneAssigned");
   const collectionSummary =
-    collectionGroups
-      ?.flatMap((group) =>
-        formData.collectionGroupIds?.includes(group._id) ? [group.name] : [],
-      )
-      .join(", ") ||
+    collectionGroupsForCollection?.map((group) => group.name).join(", ") ||
     tRoot("untranslatedRecords.objects.collection.noneAssigned");
 
   return {

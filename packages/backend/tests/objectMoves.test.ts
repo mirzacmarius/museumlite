@@ -294,9 +294,20 @@ async function createMoveFixture(
     targetAdminRoleId,
   );
 
-  const [collectionGroupId, locationId] = await Promise.all([
+  const [collectionGroupId, locationId, targetLocationId] = await Promise.all([
     createCollectionGroup(t, sourceOrganizationId, requesterId),
     createLocation(t, sourceOrganizationId),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("locations", {
+        organizationId: targetOrganizationId,
+        name: "Receiving Bay",
+        locationCode: "RCV-001",
+        locationCodeNormalized: "rcv-001",
+        type: "room",
+        sortOrder: 0,
+        isActive: true,
+      });
+    }),
   ]);
   const collectionId = await createCollection(t, {
     organizationId: sourceOrganizationId,
@@ -344,6 +355,7 @@ async function createMoveFixture(
     collectionId,
     collectionGroupId,
     locationId,
+    targetLocationId,
     requester: authedForUser(t, requesterId),
     admin: authedForUser(t, adminId),
     targetAdmin: authedForUser(t, targetAdminId),
@@ -709,6 +721,7 @@ describe("objectMoves", () => {
     });
     await fixture.targetAdmin.mutation(api.objectMoves.accept, {
       requestId,
+      targetLocationId: fixture.targetLocationId,
       reviewNotes: "Accepted by target admin",
     });
 
@@ -788,7 +801,7 @@ describe("objectMoves", () => {
     expect(collection?.organizationId).toBe(fixture.targetOrganizationId);
     expect(collection?.accessionNumber).toBe("SRC-001");
     expect(collection?.collectionGroupId).toBeUndefined();
-    expect(collection?.currentLocationId).toBeUndefined();
+    expect(collection?.currentLocationId).toBe(fixture.targetLocationId);
     expect(remainingGroupLinks).toHaveLength(0);
     expect(movedComments[0]?.organizationId).toBe(fixture.targetOrganizationId);
     expect(movedAppraisals[0]?.organizationId).toBe(
@@ -813,6 +826,249 @@ describe("objectMoves", () => {
           entry.action === "received_collection_from_organization_move",
       ),
     ).toBe(true);
+    expect(request?.transferScopeSnapshot?.accessionNumberAtTransfer).toBe(
+      "SRC-001",
+    );
+    expect(request?.transferScopeSnapshot?.collectionGroupIds).toContain(
+      fixture.collectionGroupId,
+    );
+    expect(request?.acceptedTargetLocationId).toBe(fixture.targetLocationId);
+    expect(request?.approvedSourceLocationId).toBe(fixture.locationId);
+
+    const custodyEvents = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("organizationTransferCustodyEvents")
+        .withIndex("by_moveRequest", (q) => q.eq("moveRequestId", requestId))
+        .collect();
+    });
+    expect(custodyEvents.map((event) => event.phase).sort()).toEqual([
+      "source_departure",
+      "target_arrival",
+    ]);
+  });
+
+  test("acceptance rejects a stale observed source location", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Stale source check",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+
+    const otherLocationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("locations", {
+        organizationId: fixture.sourceOrganizationId,
+        name: "Other shelf",
+        locationCode: "OTH-001",
+        locationCodeNormalized: "oth-001",
+        type: "shelf",
+        sortOrder: 1,
+        isActive: true,
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.collectionId, {
+        currentLocationId: otherLocationId,
+      });
+    });
+
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).rejects.toThrow(/source location observed/);
+  });
+
+  test("replaying accept on an executed transfer is a no-op", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Idempotent accept",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).resolves.toBeNull();
+
+    const custodyEvents = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("organizationTransferCustodyEvents")
+        .withIndex("by_moveRequest", (q) => q.eq("moveRequestId", requestId))
+        .collect();
+    });
+    expect(custodyEvents).toHaveLength(2);
+  });
+
+  test("in-flight acceptance rejects a missing observed source after the object moves", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "In-flight observed source",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+
+    const otherLocationId = await t.run(async (ctx) => {
+      await ctx.db.patch(requestId, { approvedSourceLocationId: undefined });
+      return await ctx.db.insert("locations", {
+        organizationId: fixture.sourceOrganizationId,
+        name: "Moved shelf",
+        locationCode: "MOV-001",
+        locationCodeNormalized: "mov-001",
+        type: "shelf",
+        sortOrder: 2,
+        isActive: true,
+      });
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.collectionId, {
+        currentLocationId: otherLocationId,
+      });
+    });
+
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).rejects.toThrow(/observed source location/);
+
+    const [collection, request] = await Promise.all([
+      t.run(async (ctx) => ctx.db.get(fixture.collectionId)),
+      t.run(async (ctx) => ctx.db.get(requestId)),
+    ]);
+    expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
+    expect(collection?.currentLocationId).toBe(otherLocationId);
+    expect(request?.status).toBe("awaiting_acceptance");
+    expect(request?.approvedSourceLocationId).toBeUndefined();
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    const rebound = await t.run(async (ctx) => ctx.db.get(requestId));
+    expect(rebound?.approvedSourceLocationId).toBe(otherLocationId);
+    expect(rebound?.status).toBe("awaiting_acceptance");
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+    const moved = await t.run(async (ctx) => ctx.db.get(fixture.collectionId));
+    expect(moved?.organizationId).toBe(fixture.targetOrganizationId);
+    expect(moved?.currentLocationId).toBe(fixture.targetLocationId);
+  });
+
+  test("executed accept requires target manage_settings before the idempotent success", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Permission before replay",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    await expect(
+      fixture.admin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).rejects.toThrow(/Permission denied: organization.manage_settings/);
+
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).resolves.toBeNull();
+
+    const custodyEvents = await t.run(async (ctx) =>
+      ctx.db
+        .query("organizationTransferCustodyEvents")
+        .withIndex("by_moveRequest", (q) => q.eq("moveRequestId", requestId))
+        .collect(),
+    );
+    expect(custodyEvents).toHaveLength(2);
+  });
+
+  test("acceptance retains condition assessments on the transferred object", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const assessmentId = await t.run(async (ctx) => {
+      return await ctx.db.insert("conditionAssessments", {
+        organizationId: fixture.sourceOrganizationId,
+        collectionId: fixture.collectionId,
+        assessedBy: fixture.requesterId,
+        assessedAt: Date.now(),
+        recordedAt: Date.now(),
+        condition: "good",
+        summary: "Stable before transfer",
+        observations: [],
+        photos: [],
+        status: "accepted",
+      });
+    });
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Assessment retention",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    const assessment = await t.run(async (ctx) => {
+      return await ctx.db.get(assessmentId);
+    });
+    expect(assessment?.organizationId).toBe(fixture.targetOrganizationId);
   });
 
   test("approving a manual accession request updates accession fields and history", async () => {
@@ -836,6 +1092,7 @@ describe("objectMoves", () => {
     });
     await fixture.targetAdmin.mutation(api.objectMoves.accept, {
       requestId,
+      targetLocationId: fixture.targetLocationId,
       reviewNotes: "Manual accession accepted",
     });
 
@@ -883,6 +1140,7 @@ describe("objectMoves", () => {
     });
     await fixture.targetAdmin.mutation(api.objectMoves.accept, {
       requestId,
+      targetLocationId: fixture.targetLocationId,
       reviewNotes: "Auto accession accepted",
     });
 
@@ -933,6 +1191,7 @@ describe("objectMoves", () => {
 
     await fixture.targetAdmin.mutation(api.objectMoves.accept, {
       requestId,
+      targetLocationId: fixture.targetLocationId,
       reviewNotes: "Accepted during lifecycle test",
     });
 

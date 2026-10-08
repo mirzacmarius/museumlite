@@ -1,12 +1,12 @@
-import { internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { markCollectionActive } from "./collectionLifecycle";
 import {
-  markCollectionActive,
-  markCollectionLoaned,
-} from "./collectionLifecycle";
-
-type LoanItem = Doc<"loanItems">;
+  dispatchLoanItemsWithEvidence,
+  type ReceiveLoanItemInput,
+  receiveLoanItemsWithEvidence,
+} from "./loanCustody";
+import { allLoanItemsReturned } from "./loanItemState";
 
 async function getLoanItems(ctx: MutationCtx, loanId: Id<"loans">) {
   return await ctx.db
@@ -20,38 +20,27 @@ export async function dispatchLoanItems(
   {
     changedBy,
     loanId,
+    selectedLoanItemIds,
+    itemAssessments,
   }: {
     loanId: Id<"loans">;
     changedBy: Id<"users">;
+    selectedLoanItemIds?: Id<"loanItems">[];
+    itemAssessments?: Record<string, Id<"conditionAssessments">>;
   },
 ) {
-  const loanItems = await getLoanItems(ctx, loanId);
-
-  await Promise.all(
-    loanItems.map((item) =>
-      markCollectionLoaned(ctx, {
-        collectionId: item.collectionId,
-        changedBy,
-        clearLocation: true,
-      }),
-    ),
-  );
-
-  return {
-    dispatchedItemIds: loanItems.map((item) => item._id),
-  };
-}
-
-function selectLoanItems(
-  allLoanItems: LoanItem[],
-  selectedLoanItemIds: Id<"loanItems">[] | undefined,
-) {
-  if (!selectedLoanItemIds) {
-    return allLoanItems;
+  const loan = await ctx.db.get(loanId);
+  if (!loan) {
+    throw new Error("Loan not found");
   }
 
-  const selected = new Set(selectedLoanItemIds);
-  return allLoanItems.filter((item) => selected.has(item._id));
+  return await dispatchLoanItemsWithEvidence(ctx, {
+    loanId,
+    loan,
+    changedBy,
+    selectedLoanItemIds,
+    itemAssessments,
+  });
 }
 
 export async function returnLoanItems(
@@ -61,6 +50,7 @@ export async function returnLoanItems(
     conditionIn,
     loanId,
     organizationId,
+    receipts,
     selectedLoanItemIds,
   }: {
     loanId: Id<"loans">;
@@ -68,57 +58,23 @@ export async function returnLoanItems(
     changedBy: Id<"users">;
     conditionIn?: string;
     selectedLoanItemIds?: Id<"loanItems">[];
+    receipts?: ReceiveLoanItemInput[];
   },
 ) {
-  const allLoanItems = await getLoanItems(ctx, loanId);
-  const itemsToReturn = selectLoanItems(allLoanItems, selectedLoanItemIds);
-
-  if (itemsToReturn.length === 0) {
-    throw new Error("No items selected to return");
+  const loan = await ctx.db.get(loanId);
+  if (!loan) {
+    throw new Error("Loan not found");
   }
 
-  const returnedItemIds: Id<"loanItems">[] = [];
-  await Promise.all(
-    Array.from(itemsToReturn).map(async (item) => {
-      await markCollectionActive(ctx, {
-        collectionId: item.collectionId,
-        changedBy,
-      });
-
-      const conditionInValue = conditionIn || item.conditionIn || "Returned";
-      await Promise.all([
-        ctx.db.patch(item._id, {
-          conditionIn: conditionInValue,
-        }),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId,
-          userId: changedBy,
-          action: "item_returned",
-          entityType: "loanItem",
-          entityId: item._id,
-          changes: {
-            loanId,
-            collectionId: item.collectionId,
-            conditionIn: conditionInValue,
-          },
-        }),
-      ]);
-      returnedItemIds.push(item._id);
-    }),
-  );
-
-  const updatedLoanItems = await getLoanItems(ctx, loanId);
-  const allItemsNowReturned = updatedLoanItems.every(
-    (item) =>
-      item.conditionIn != null && String(item.conditionIn).trim().length > 0,
-  );
-
-  return {
-    allItemsNowReturned,
-    returnedItemIds,
-    returnedItemCount: returnedItemIds.length,
-    totalItemCount: allLoanItems.length,
-  };
+  return await receiveLoanItemsWithEvidence(ctx, {
+    loanId,
+    organizationId,
+    loan,
+    changedBy,
+    conditionIn,
+    selectedLoanItemIds,
+    receipts,
+  });
 }
 
 export async function restoreLoanCollections(
@@ -146,3 +102,7 @@ export async function restoreLoanCollections(
     restoredItemIds: loanItems.map((item) => item._id),
   };
 }
+
+export type { ReceiveLoanItemInput };
+
+export { allLoanItemsReturned };

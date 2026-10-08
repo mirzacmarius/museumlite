@@ -207,6 +207,19 @@ test("should return dispatched loan and change status to returned", async () => 
   await authed.mutation(api.loans.returnLoan, {
     loanId,
     conditionIn: "Returned stable",
+    receipts: [
+      {
+        loanItemId: (await t.run(async (ctx) => {
+          const row = await ctx.db
+            .query("loanItems")
+            .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+            .first();
+          return row!._id;
+        })) as import("../convex/_generated/dataModel").Id<"loanItems">,
+        confirmReturnToOrigin: true,
+        conditionIn: "Returned stable",
+      },
+    ],
   });
 
   const result = await t.run(async (ctx) => {
@@ -233,7 +246,30 @@ test("should return active loan directly (without dispatch)", async () => {
     { loanNumber: "LOAN-RETURN-002" },
   );
 
-  await authed.mutation(api.loans.returnLoan, { loanId });
+  const returnLocationId = await t.run(async (ctx) => {
+    const collection = await ctx.db.get(collectionId);
+    return collection?.currentLocationId;
+  });
+  await authed.mutation(api.loans.returnLoan, {
+    loanId,
+    receipts: returnLocationId
+      ? [
+          {
+            loanItemId: (await t.run(async (ctx) => {
+              const row = await ctx.db
+                .query("loanItems")
+                .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+                .first();
+              return row!._id;
+            })) as import("../convex/_generated/dataModel").Id<"loanItems">,
+            destinationLocationId:
+              returnLocationId as import("../convex/_generated/dataModel").Id<"locations">,
+            conditionIn: "Stable without dispatch",
+          },
+        ]
+      : undefined,
+    conditionIn: "Stable without dispatch",
+  });
 
   const result = await t.run(async (ctx) => {
     const [loan, collection, loanItem] = await Promise.all([
@@ -249,7 +285,7 @@ test("should return active loan directly (without dispatch)", async () => {
 
   expect(result.loan?.status).toBe("returned");
   expect(result.collection?.status).toBe("active");
-  expect(result.loanItem?.conditionIn).toBe("Returned");
+  expect(result.loanItem?.conditionIn).toBe("Stable without dispatch");
 });
 
 test("should prevent invalid status transitions", async () => {

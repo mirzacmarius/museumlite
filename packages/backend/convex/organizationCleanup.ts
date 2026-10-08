@@ -507,7 +507,8 @@ async function collectPurgeSnapshot(
             collectionIds.includes(doc.collectionId) ||
             (doc.fromLocationId !== undefined &&
               locationIds.includes(doc.fromLocationId)) ||
-            locationIds.includes(doc.toLocationId),
+            (doc.toLocationId !== undefined &&
+              locationIds.includes(doc.toLocationId)),
         ),
       ),
     ctx.db

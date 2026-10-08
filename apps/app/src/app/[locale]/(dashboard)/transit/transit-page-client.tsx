@@ -252,9 +252,12 @@ export function TransitPageClient() {
                   label: t("transitNumber"),
                   className: "min-w-0 flex-[1.25]",
                   render: (record) => (
-                    <span className="truncate font-semibold text-foreground">
+                    <Link
+                      href={`/${locale}/transit/${record._id}`}
+                      className="truncate font-semibold text-foreground hover:text-primary hover:underline"
+                    >
                       {record.transitNumber}
-                    </span>
+                    </Link>
                   ),
                 },
                 {

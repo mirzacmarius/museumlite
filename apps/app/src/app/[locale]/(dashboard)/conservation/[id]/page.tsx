@@ -11,6 +11,8 @@ import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
+import { TreatmentEvidencePanel } from "./_components/treatment-evidence-panel";
+
 const TREATMENT_TYPE_STYLES: Record<string, string> = {
   routine: "bg-muted text-muted-foreground border-border",
   stabilization: "bg-amber-500/10 text-amber-400 border-amber-500/20",
@@ -81,6 +83,11 @@ export default function TreatmentDetailPage({
                 >
                   {treatment.treatmentType}
                 </span>
+                {treatment.status && (
+                  <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-white/80">
+                    {treatment.status.replace("_", " ")}
+                  </span>
+                )}
                 <span className="text-sm text-muted-foreground">
                   {t("detail.created")}{" "}
                   <ClientDate
@@ -132,6 +139,12 @@ export default function TreatmentDetailPage({
                 </div>
               </div>
             )}
+
+            <TreatmentEvidencePanel
+              treatmentId={treatment._id}
+              collectionId={treatment.collectionId}
+              status={treatment.status}
+            />
           </div>
 
           <div className="space-y-6">
