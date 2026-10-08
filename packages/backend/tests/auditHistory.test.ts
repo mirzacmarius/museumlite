@@ -180,6 +180,16 @@ test("recorded actor and subject evidence survives renames and corrections appen
   });
   expect(correction?.correctionOf).toBe(first._id);
   expect(correction?.userName).toBe("Renamed registrar");
+  await t.run(async (ctx) => {
+    await ctx.db.delete(userId);
+    await ctx.db.delete(optionId);
+  });
+  const deletedSubjects = await staff.query(api.auditLog.getEntry, {
+    organizationId,
+    eventId: first._id,
+  });
+  expect(deletedSubjects?.userName).toBe("Original registrar");
+  expect(deletedSubjects?.subjectSnapshot?.label).toBe("Stable condition");
 });
 
 test("case history preserves legacy order during bounded normalization and cursor retries", async () => {
