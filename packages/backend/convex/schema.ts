@@ -1630,11 +1630,6 @@ export default defineSchema({
       "dateDeaccessioned",
     ])
     .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
-    .index("by_organization_and_status_and_dateDeaccessioned", [
-      "organizationId",
-      "status",
-      "dateDeaccessioned",
-    ])
     .index("by_regulatory_token", ["regulatoryApprovalToken"])
     .index("by_assigned_to", ["assignedTo"]),
 
