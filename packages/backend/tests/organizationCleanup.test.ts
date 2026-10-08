@@ -448,7 +448,7 @@ describe("organizationCleanup", () => {
           .take(100);
         for (const contribution of contributions)
           for (const entry of datedEntries(
-            generation._id,
+            generation,
             contribution.sourceTable,
             contribution.sourceId,
             contribution.facts,

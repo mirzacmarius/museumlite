@@ -14,6 +14,7 @@ import {
   sourceOrganization,
 } from "./projectionSources";
 import {
+  claimMetricSlot,
   datedEntries,
   getContribution,
   metricNamespace,
@@ -125,13 +126,16 @@ export async function initializeEmptyProjection(
   const state = await ensureProjectionState(ctx, organizationId);
   if (state.activeGenerationId || state.buildingGenerationId) return;
   const now = Date.now();
+  const { slot, slotsInUse } = claimMetricSlot(state.metricSlotsInUse);
   const generationId = await ctx.db.insert("projectionGenerations", {
     ...emptyGeneration(organizationId, "rebuild", state.revision, now),
     status: "completed",
     phaseIndex: PROJECTION_PHASES.length,
     finishedAt: now,
+    metricSlot: slot,
   });
   await ctx.db.patch(state._id, {
+    metricSlotsInUse: slotsInUse,
     activeGenerationId: generationId,
     availability: "ready",
     reason: undefined,
@@ -147,8 +151,11 @@ export async function startGeneration(
 ) {
   const state = await ensureProjectionState(ctx, organizationId);
   const now = Date.now();
+  const { slot, slotsInUse } = claimMetricSlot(state.metricSlotsInUse);
+  await ctx.db.patch(state._id, { metricSlotsInUse: slotsInUse });
   const generationId = await ctx.db.insert("projectionGenerations", {
     ...emptyGeneration(organizationId, mode, state.revision, now),
+    metricSlot: slot,
     ...(requestedBy ? { requestedBy } : {}),
     ...(mode === "reconcile" && state.activeGenerationId
       ? { baselineGenerationId: state.activeGenerationId }
@@ -884,9 +891,16 @@ async function compareStep(
           const expected = row.counts[key] ?? 0;
           let actual = projected?.counts[key] ?? 0;
           if (key.startsWith("@") && expected === actual) {
-            actual = await metricTree.sum(ctx, {
-              namespace: metricNamespace(baselineId, row.scope, key.slice(1)),
-            });
+            const baselineGeneration = await ctx.db.get(baselineId);
+            actual = baselineGeneration
+              ? await metricTree.sum(ctx, {
+                  namespace: metricNamespace(
+                    baselineGeneration,
+                    row.scope,
+                    key.slice(1),
+                  ),
+                })
+              : 0;
           }
           if (expected === actual) continue;
           await recordDiscrepancy(ctx, generation, stats, {
@@ -1202,7 +1216,7 @@ export async function collectGenerationPage(
     .take(PROJECTION_PAGE_SIZE);
   for (const contribution of contributions) {
     for (const entry of datedEntries(
-      generationId,
+      generation,
       contribution.sourceTable,
       contribution.sourceId,
       contribution.facts,
@@ -1224,5 +1238,11 @@ export async function collectGenerationPage(
   for (const row of totals) await ctx.db.delete(row._id);
   if (totals.length > 0) return "continue" as const;
   await ctx.db.patch(generationId, { collectedAt: Date.now() });
+  if (state && generation.metricSlot !== undefined)
+    await ctx.db.patch(state._id, {
+      metricSlotsInUse: (state.metricSlotsInUse ?? []).filter(
+        (slot) => slot !== generation.metricSlot,
+      ),
+    });
   return "done" as const;
 }

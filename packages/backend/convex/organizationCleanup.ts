@@ -512,9 +512,17 @@ async function deleteDerivedDocuments(
   derived: DerivedDocuments,
 ) {
   await deleteDocuments(ctx, derived.organizationProjectionStates);
+  const generations = new Map(
+    derived.projectionGenerations.map((generation) => [
+      generation._id,
+      generation,
+    ]),
+  );
   for (const contribution of derived.projectionContributions) {
+    const generation = generations.get(contribution.generationId);
+    if (!generation) continue;
     for (const entry of datedEntries(
-      contribution.generationId,
+      generation,
       contribution.sourceTable,
       contribution.sourceId,
       contribution.facts,

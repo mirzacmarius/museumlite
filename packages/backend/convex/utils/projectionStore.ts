@@ -20,12 +20,32 @@ export const metricTree = new DirectAggregate<{
   Namespace: string;
 }>(components.metrics);
 
+export type MetricGeneration = Pick<
+  ProjectionGeneration,
+  "_id" | "organizationId" | "metricSlot"
+>;
+
+/**
+ * Generations with a metric slot share a small, reused set of aggregate
+ * namespaces per organization; a slot is reused only after its previous
+ * generation was collected. Generations created before slots use their ID.
+ */
 export function metricNamespace(
-  generationId: Id<"projectionGenerations">,
+  generation: MetricGeneration,
   scope: string,
   metric: string,
 ) {
-  return `${generationId}|${scope}|${metric}`;
+  const key =
+    generation.metricSlot === undefined
+      ? generation._id
+      : `${generation.organizationId}#${generation.metricSlot}`;
+  return `${key}|${scope}|${metric}`;
+}
+
+export function claimMetricSlot(slotsInUse: number[] = []) {
+  let slot = 0;
+  while (slotsInUse.includes(slot)) slot += 1;
+  return { slot, slotsInUse: [...slotsInUse, slot] };
 }
 
 /**
@@ -178,7 +198,7 @@ interface DatedEntry {
 }
 
 export function datedEntries(
-  generationId: Id<"projectionGenerations">,
+  generation: MetricGeneration,
   sourceTable: string,
   sourceId: string,
   facts: ProjectionFact[],
@@ -187,7 +207,7 @@ export function datedEntries(
   const occurrences = new Map<string, number>();
   for (const fact of facts) {
     if (fact.at === undefined) continue;
-    const namespace = metricNamespace(generationId, fact.scope, fact.metric);
+    const namespace = metricNamespace(generation, fact.scope, fact.metric);
     const occurrence = occurrences.get(namespace) ?? 0;
     occurrences.set(namespace, occurrence + 1);
     const id = `${sourceTable}:${sourceId}:${occurrence}`;
@@ -262,12 +282,12 @@ export async function replaceContribution(
 
   let writes = 1;
   const oldEntries = datedEntries(
-    generation._id,
+    generation,
     sourceTable,
     sourceId,
     previousFacts,
   );
-  const newEntries = datedEntries(generation._id, sourceTable, sourceId, facts);
+  const newEntries = datedEntries(generation, sourceTable, sourceId, facts);
   for (const [entryKey, entry] of oldEntries) {
     const replacement = newEntries.get(entryKey);
     if (
@@ -329,13 +349,13 @@ export interface MetricRange {
 
 export async function sumMetricRanges(
   ctx: ReadCtx,
-  generationId: Id<"projectionGenerations">,
+  generation: MetricGeneration,
   scope: string,
   metric: string,
   ranges: MetricRange[],
 ) {
   if (ranges.length === 0) return [];
-  const namespace = metricNamespace(generationId, scope, metric);
+  const namespace = metricNamespace(generation, scope, metric);
   return await metricTree.sumBatch(
     ctx,
     ranges.map((bounds) => ({ namespace, bounds })),

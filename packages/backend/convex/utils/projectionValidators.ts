@@ -58,6 +58,7 @@ export const projectionGenerationFields = {
   discrepancyCount: v.number(),
   mismatchCount: v.number(),
   collectedAt: v.optional(v.number()),
+  metricSlot: v.optional(v.number()),
 };
 
 export const projectionDiscrepancyCategory = v.union(

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import { metricTree } from "../convex/utils/projectionStore";
 import {
   authedForUser,
   type ConvexTest,
@@ -578,6 +579,44 @@ describe("fan-out invalidation", () => {
         await staff.query(api.dashboard.getAnalytics, { organizationId }),
       ).loans,
     ).toMatchObject({ total: 1, pending: 0, active: 1, outgoing: 1 });
+  });
+});
+
+describe("metric aggregate storage", () => {
+  test("repeated rebuilds reuse metric aggregate namespaces instead of accumulating them", async () => {
+    const { settle, organizationId, userId, t } = await fixture();
+    await insertObjects(t, organizationId, userId, 3);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "NS-1",
+        type: "outgoing",
+        status: "active",
+        lenderBorrowerName: "Partner",
+        startDate: 1_000,
+      });
+    });
+    const namespaceCount = () =>
+      t.run(async (ctx) => {
+        let count = 0;
+        for await (const _ of metricTree.iterNamespaces(ctx)) count += 1;
+        return count;
+      });
+    await rebuildProjection(t, organizationId);
+    const afterFirst = await namespaceCount();
+    expect(afterFirst).toBeGreaterThan(0);
+    for (let rebuild = 0; rebuild < 3; rebuild++) {
+      await t.mutation(internal.projections.startRebuildForOrganization, {
+        organizationId,
+      });
+      await settle();
+    }
+    expect(await namespaceCount()).toBeLessThanOrEqual(afterFirst * 2);
+    await t.mutation(internal.projections.startRebuildForOrganization, {
+      organizationId,
+    });
+    await settle();
+    expect(await namespaceCount()).toBeLessThanOrEqual(afterFirst * 2);
   });
 });
 

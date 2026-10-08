@@ -134,6 +134,7 @@ export default defineSchema({
     lastBuiltAt: v.optional(v.number()),
     lastVerifiedAt: v.optional(v.number()),
     invalidatedAt: v.optional(v.number()),
+    metricSlotsInUse: v.optional(v.array(v.number())),
   }).index("by_organizationId", ["organizationId"]),
   projectionGenerations: defineTable(projectionGenerationFields).index(
     "by_organizationId_and_startedAt",
