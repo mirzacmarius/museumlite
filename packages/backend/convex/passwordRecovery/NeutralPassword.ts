@@ -14,7 +14,11 @@ import { internal } from "../_generated/api";
 import type { DataModel, Doc } from "../_generated/dataModel";
 import { env } from "../env";
 import { authRecoveryError } from "./authRecoveryErrors";
-import { codeRequestFlow, enforceCodeRequestLimit } from "./codeRequestLimit";
+import {
+  codeRequestFlow,
+  enforceCodeRequestLimit,
+  hasCodeRequestReservation,
+} from "./codeRequestLimit";
 
 type Params = Partial<Record<string, Value | undefined>>;
 type Ctx = GenericActionCtxWithAuthConfig<DataModel>;
@@ -115,13 +119,14 @@ async function verifyCode<T>(check: () => Promise<T | null>): Promise<T> {
 export function NeutralPassword(config: NeutralPasswordConfig) {
   const { id: provider, reset, verify } = config;
 
-  async function sendVerification(
+  async function sendEmailCode(
     ctx: Ctx,
     account: Doc<"authAccounts">,
     params: Params,
+    verify: EmailConfig,
     passwordHash?: string,
+    preservePassword = true,
   ) {
-    if (!verify) return { userId: account.userId };
     const code = verify.generateVerificationToken
       ? await verify.generateVerificationToken()
       : Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) =>
@@ -142,6 +147,8 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       email: String(params.email),
       code,
       expirationTime: expires.getTime(),
+      isReserved: hasCodeRequestReservation(ctx),
+      preservePassword,
       ...(passwordHash === undefined ? {} : { passwordHash }),
     });
     await verify.sendVerificationRequest({
@@ -154,6 +161,16 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       theme: ctx.auth.config.theme,
     });
     return null;
+  }
+
+  async function sendVerification(
+    ctx: Ctx,
+    account: Doc<"authAccounts">,
+    params: Params,
+    passwordHash?: string,
+  ) {
+    if (!verify) return { userId: account.userId };
+    return await sendEmailCode(ctx, account, params, verify, passwordHash);
   }
 
   async function signUp(ctx: Ctx, params: Params, email: string) {
@@ -236,13 +253,18 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       throw new Error(`Password reset is not enabled for ${provider}`);
     const account = await findPasswordAccount(ctx, provider, email);
     if (!account) {
-      await enforceCodeRequestLimit(ctx, email, "reset");
+      if (!hasCodeRequestReservation(ctx))
+        await enforceCodeRequestLimit(ctx, email, "reset");
       return null;
     }
-    return await signInViaProvider(ctx, reset, {
-      accountId: account._id,
-      params: emailRequestParams(params, email),
-    });
+    return await sendEmailCode(
+      ctx,
+      account,
+      emailRequestParams(params, email),
+      reset,
+      undefined,
+      false,
+    );
   }
 
   async function completeReset(ctx: Ctx, params: Params, email: string) {
@@ -273,11 +295,12 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     const account = await findPasswordAccount(ctx, provider, email);
     if (typeof code !== "string") {
       if (!account) {
-        await enforceCodeRequestLimit(
-          ctx,
-          email,
-          codeRequestFlow(verify.id, true),
-        );
+        if (!hasCodeRequestReservation(ctx))
+          await enforceCodeRequestLimit(
+            ctx,
+            email,
+            codeRequestFlow(verify.id, true),
+          );
         return null;
       }
       return await sendVerification(

@@ -11,9 +11,14 @@ export const createCode = internalMutation({
     code: v.string(),
     expirationTime: v.number(),
     passwordHash: v.optional(v.string()),
+    isReserved: v.boolean(),
+    preservePassword: v.boolean(),
   },
   returns: v.null(),
-  handler: async (ctx, { passwordHash, ...args }) => {
+  handler: async (
+    ctx,
+    { passwordHash, isReserved, preservePassword, ...args },
+  ) => {
     const previous = await ctx.db
       .query("authVerificationCodes")
       .withIndex("accountId", (q) => q.eq("accountId", args.accountId))
@@ -23,6 +28,7 @@ export const createCode = internalMutation({
         type: "createVerificationCode",
         ...args,
         allowExtraProviders: true,
+        codeRequestReserved: isReserved,
       },
     });
     const code = await ctx.db
@@ -31,7 +37,9 @@ export const createCode = internalMutation({
       .unique();
     if (!code) throw new Error("Verification code was not created");
     await ctx.db.patch(code._id, {
-      pendingPasswordHash: passwordHash ?? previous?.pendingPasswordHash,
+      pendingPasswordHash:
+        passwordHash ??
+        (preservePassword ? previous?.pendingPasswordHash : undefined),
     });
     return null;
   },

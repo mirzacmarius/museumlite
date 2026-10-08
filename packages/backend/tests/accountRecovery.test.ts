@@ -1,5 +1,5 @@
 import { generateKeyPairSync } from "node:crypto";
-import { anyApi } from "convex/server";
+import { anyApi, type FunctionArgs } from "convex/server";
 import { ConvexError } from "convex/values";
 import { Scrypt } from "lucia";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -110,12 +110,22 @@ async function publicErrorCode(promise: Promise<unknown>) {
   return typeof error.data === "string" ? JSON.parse(error.data) : error.data;
 }
 
+async function authRequest(
+  t: ConvexTest,
+  args: FunctionArgs<typeof api.auth.signIn>,
+) {
+  const response = await t.action(api.auth.signIn, args);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await t.finishInProgressScheduledFunctions();
+  return response;
+}
+
 async function createVerifiedPasswordOwner(t: ConvexTest) {
-  await t.action(api.auth.signIn, {
+  await authRequest(t, {
     provider,
     params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
   });
-  await t.action(api.auth.signIn, {
+  await authRequest(t, {
     provider,
     params: {
       email: ownerEmail,
@@ -141,13 +151,13 @@ describe("account recovery without existence disclosure", () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
     const wrongPassword = await publicErrorCode(
-      t.action(api.auth.signIn, {
+      authRequest(t, {
         provider,
         params: { email: ownerEmail, password: "not-it-123", flow: "signIn" },
       }),
     );
     const unknownEmail = await publicErrorCode(
-      t.action(api.auth.signIn, {
+      authRequest(t, {
         provider,
         params: {
           email: strangerEmail,
@@ -159,7 +169,7 @@ describe("account recovery without existence disclosure", () => {
     expect(wrongPassword).toEqual({ code: "InvalidCredentials" });
     expect(unknownEmail).toEqual(wrongPassword);
 
-    const signedIn = await t.action(api.auth.signIn, {
+    const signedIn = await authRequest(t, {
       provider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
     });
@@ -171,7 +181,7 @@ describe("account recovery without existence disclosure", () => {
     await createVerifiedPasswordOwner(t);
     for (let attempt = 0; attempt < 11; attempt += 1) {
       await rejection(
-        t.action(api.auth.signIn, {
+        authRequest(t, {
           provider,
           params: { email: ownerEmail, password: "guess-1234", flow: "signIn" },
         }),
@@ -179,7 +189,7 @@ describe("account recovery without existence disclosure", () => {
     }
     expect(
       await publicErrorCode(
-        t.action(api.auth.signIn, {
+        authRequest(t, {
           provider,
           params: {
             email: ownerEmail,
@@ -196,7 +206,7 @@ describe("account recovery without existence disclosure", () => {
     await createVerifiedPasswordOwner(t);
     for (let attempt = 0; attempt < 11; attempt += 1) {
       await rejection(
-        t.action(api.auth.signIn, {
+        authRequest(t, {
           provider,
           params: { email: ownerEmail, password: "guess-1234", flow: "signIn" },
         }),
@@ -204,7 +214,7 @@ describe("account recovery without existence disclosure", () => {
     }
     const work = vi.spyOn(Scrypt.prototype, "verify");
     await rejection(
-      t.action(api.auth.signIn, {
+      authRequest(t, {
         provider,
         params: { email: ownerEmail, password: "guess-1234", flow: "signIn" },
       }),
@@ -212,7 +222,7 @@ describe("account recovery without existence disclosure", () => {
     const lockedOutWork = work.mock.calls.length;
     work.mockClear();
     await rejection(
-      t.action(api.auth.signIn, {
+      authRequest(t, {
         provider,
         params: {
           email: strangerEmail,
@@ -225,11 +235,44 @@ describe("account recovery without existence disclosure", () => {
     expect(lockedOutWork).toBe(1);
   });
 
+  test.each([
+    "reset",
+    "email-verification",
+  ])("%s acknowledges existing and unknown requests without waiting for email", async (flow) => {
+    const t = createConvexTestWithRateLimiter();
+    await createVerifiedPasswordOwner(t);
+    let releaseEmail: (() => void) | undefined;
+    const mailResponse = new Promise<Response>((resolve) => {
+      releaseEmail = () => resolve(Response.json({ id: "deferred-mail" }));
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => mailResponse),
+    );
+    try {
+      for (const email of [ownerEmail, strangerEmail]) {
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        const response = await Promise.race([
+          t.action(api.auth.signIn, { provider, params: { email, flow } }),
+          new Promise<string>((resolve) => {
+            timeout = setTimeout(() => resolve("waited for email"), 100);
+          }),
+        ]);
+        clearTimeout(timeout);
+        expect(response).toEqual({ tokens: null });
+      }
+    } finally {
+      releaseEmail?.();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await t.finishInProgressScheduledFunctions();
+    }
+  });
+
   test("reset requests answer the same for existing, unknown and other-provider emails", async () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
     const otpOnlyEmail = "otp-only@example.test";
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider: "resend-otp",
       params: { email: otpOnlyEmail },
     });
@@ -238,7 +281,7 @@ describe("account recovery without existence disclosure", () => {
     const responses = [];
     for (const email of [ownerEmail, strangerEmail, otpOnlyEmail]) {
       responses.push(
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider,
           params: { email, flow: "reset" },
         }),
@@ -254,7 +297,7 @@ describe("account recovery without existence disclosure", () => {
     expect(emailsTo(otpOnlyEmail)).toHaveLength(0);
 
     const badCodeForOwner = await publicErrorCode(
-      t.action(api.auth.signIn, {
+      authRequest(t, {
         provider,
         params: {
           email: ownerEmail,
@@ -265,7 +308,7 @@ describe("account recovery without existence disclosure", () => {
       }),
     );
     const badCodeForStranger = await publicErrorCode(
-      t.action(api.auth.signIn, {
+      authRequest(t, {
         provider,
         params: {
           email: strangerEmail,
@@ -278,7 +321,7 @@ describe("account recovery without existence disclosure", () => {
     expect(badCodeForOwner).toEqual({ code: "InvalidCode" });
     expect(badCodeForStranger).toEqual(badCodeForOwner);
 
-    const reset = await t.action(api.auth.signIn, {
+    const reset = await authRequest(t, {
       provider,
       params: {
         email: ownerEmail,
@@ -293,7 +336,7 @@ describe("account recovery without existence disclosure", () => {
   test("a /fr reset request delivers French password-reset copy", async () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider,
       params: { email: ownerEmail, flow: "reset", redirectTo: "/fr" },
     });
@@ -308,12 +351,12 @@ describe("account recovery without existence disclosure", () => {
     "password-link",
   ])("%s preserves /fr on existing-account sign-up and verification resend", async (passwordProvider) => {
     const t = createConvexTestWithRateLimiter();
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider: passwordProvider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
     });
     for (const flow of ["signUp", "email-verification"]) {
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider: passwordProvider,
         params: {
           email: ownerEmail,
@@ -333,7 +376,7 @@ describe("account recovery without existence disclosure", () => {
   test("sign-up for a registered email looks like a new sign-up and cannot replace the password before verification", async () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
-    const existing = await t.action(api.auth.signIn, {
+    const existing = await authRequest(t, {
       provider,
       params: {
         email: ownerEmail,
@@ -341,7 +384,7 @@ describe("account recovery without existence disclosure", () => {
         flow: "signUp",
       },
     });
-    const fresh = await t.action(api.auth.signIn, {
+    const fresh = await authRequest(t, {
       provider,
       params: {
         email: "fresh@example.test",
@@ -354,7 +397,7 @@ describe("account recovery without existence disclosure", () => {
     expect(emailsTo(ownerEmail)).toHaveLength(1);
 
     await rejection(
-      t.action(api.auth.signIn, {
+      authRequest(t, {
         provider,
         params: {
           email: ownerEmail,
@@ -363,7 +406,7 @@ describe("account recovery without existence disclosure", () => {
         },
       }),
     );
-    const ownerSignIn = await t.action(api.auth.signIn, {
+    const ownerSignIn = await authRequest(t, {
       provider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
     });
@@ -376,16 +419,16 @@ describe("account recovery without existence disclosure", () => {
   ])("victim verification replaces a pre-registered attacker's password (linked user: %s)", async (hasVerifiedUser) => {
     const t = createConvexTestWithRateLimiter();
     if (hasVerifiedUser) {
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider: "resend-otp",
         params: { email: ownerEmail },
       });
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider: "resend-otp",
         params: { email: ownerEmail, code: latestCode(ownerEmail) },
       });
     }
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider,
       params: {
         email: ownerEmail,
@@ -393,11 +436,11 @@ describe("account recovery without existence disclosure", () => {
         flow: "signUp",
       },
     });
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
     });
-    const verified = await t.action(api.auth.signIn, {
+    const verified = await authRequest(t, {
       provider,
       params: {
         email: ownerEmail,
@@ -408,7 +451,7 @@ describe("account recovery without existence disclosure", () => {
     expect(verified.tokens?.token).toEqual(expect.any(String));
     expect(
       await publicErrorCode(
-        t.action(api.auth.signIn, {
+        authRequest(t, {
           provider,
           params: {
             email: ownerEmail,
@@ -418,7 +461,7 @@ describe("account recovery without existence disclosure", () => {
         }),
       ),
     ).toEqual({ code: "InvalidCredentials" });
-    const signedIn = await t.action(api.auth.signIn, {
+    const signedIn = await authRequest(t, {
       provider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
     });
@@ -429,13 +472,13 @@ describe("account recovery without existence disclosure", () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
     const replacement = "owner-replacement-password-123";
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider,
       params: { email: ownerEmail, password: replacement, flow: "signUp" },
     });
     expect(
       (
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider,
           params: {
             email: ownerEmail,
@@ -445,7 +488,7 @@ describe("account recovery without existence disclosure", () => {
         })
       ).tokens?.token,
     ).toEqual(expect.any(String));
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider,
       params: {
         email: ownerEmail,
@@ -455,7 +498,7 @@ describe("account recovery without existence disclosure", () => {
     });
     expect(
       await publicErrorCode(
-        t.action(api.auth.signIn, {
+        authRequest(t, {
           provider,
           params: {
             email: ownerEmail,
@@ -467,7 +510,7 @@ describe("account recovery without existence disclosure", () => {
     ).toEqual({ code: "InvalidCredentials" });
     expect(
       (
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider,
           params: { email: ownerEmail, password: replacement, flow: "signIn" },
         })
@@ -478,7 +521,7 @@ describe("account recovery without existence disclosure", () => {
   test("a code-only password-link callback activates the password bound to that link", async () => {
     const t = createConvexTestWithRateLimiter();
     const linkProvider = "password-link";
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider: linkProvider,
       params: {
         email: ownerEmail,
@@ -486,7 +529,7 @@ describe("account recovery without existence disclosure", () => {
         flow: "signUp",
       },
     });
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider: linkProvider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
     });
@@ -494,12 +537,12 @@ describe("account recovery without existence disclosure", () => {
       .at(-1)
       ?.html.match(/code=([^"&\s]+)/)?.[1];
     if (!code) throw new Error("No password link sent");
-    expect(
-      (await t.action(api.auth.signIn, { params: { code } })).tokens?.token,
-    ).toEqual(expect.any(String));
+    expect((await authRequest(t, { params: { code } })).tokens?.token).toEqual(
+      expect.any(String),
+    );
     expect(
       await publicErrorCode(
-        t.action(api.auth.signIn, {
+        authRequest(t, {
           provider: linkProvider,
           params: {
             email: ownerEmail,
@@ -511,7 +554,7 @@ describe("account recovery without existence disclosure", () => {
     ).toEqual({ code: "InvalidCredentials" });
     expect(
       (
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider: linkProvider,
           params: {
             email: ownerEmail,
@@ -525,7 +568,7 @@ describe("account recovery without existence disclosure", () => {
 
   test("a code-only reset cannot activate a pre-registered password", async () => {
     const t = createConvexTestWithRateLimiter();
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider,
       params: {
         email: ownerEmail,
@@ -533,18 +576,18 @@ describe("account recovery without existence disclosure", () => {
         flow: "signUp",
       },
     });
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider,
       params: { email: ownerEmail, flow: "reset" },
     });
     expect(
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         params: { email: ownerEmail, code: latestCode(ownerEmail) },
       }),
     ).toEqual({ tokens: null });
     expect(
       (
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider,
           params: {
             email: ownerEmail,
@@ -561,14 +604,14 @@ describe("account recovery without existence disclosure", () => {
     await createVerifiedPasswordOwner(t);
     for (const email of [ownerEmail, strangerEmail]) {
       expect(
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider,
           params: { email, flow: "email-verification" },
         }),
       ).toEqual({ tokens: null });
       expect(
         await publicErrorCode(
-          t.action(api.auth.signIn, {
+          authRequest(t, {
             provider,
             params: { email, code: "00000000", flow: "email-verification" },
           }),
@@ -584,7 +627,7 @@ describe("account recovery without existence disclosure", () => {
     let wasThrottled = false;
     for (let request = 0; request < 20; request += 1) {
       try {
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider,
           params: { email: ownerEmail, flow: "reset" },
         });
@@ -595,7 +638,7 @@ describe("account recovery without existence disclosure", () => {
       }
     }
     expect(wasThrottled).toBe(true);
-    const reset = await t.action(api.auth.signIn, {
+    const reset = await authRequest(t, {
       provider,
       params: {
         email: ownerEmail,
@@ -614,14 +657,14 @@ describe("account recovery without existence disclosure", () => {
     vi.setSystemTime(Date.now() + 16 * 60 * 1000);
     for (const email of [ownerEmail, strangerEmail]) {
       for (let request = 0; request < 10; request += 1) {
-        await t.action(api.auth.signIn, {
+        await authRequest(t, {
           provider,
           params: { email, flow: "reset" },
         });
       }
       expect(
         await publicErrorCode(
-          t.action(api.auth.signIn, {
+          authRequest(t, {
             provider,
             params: { email, flow: "reset" },
           }),
@@ -629,19 +672,19 @@ describe("account recovery without existence disclosure", () => {
       ).toEqual({ code: "TooManyCodeRequests" });
     }
     expect(
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider: "resend-otp",
         params: { email: ownerEmail },
       }),
     ).toEqual({ started: true });
     expect(
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider,
         params: { email: ownerEmail, flow: "email-verification" },
       }),
     ).toEqual({ tokens: null });
     expect(
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider: "resend-otp",
         params: { email: "someone-else@example.test" },
       }),
@@ -649,7 +692,7 @@ describe("account recovery without existence disclosure", () => {
 
     vi.setSystemTime(Date.now() + 16 * 60 * 1000);
     expect(
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider,
         params: { email: ownerEmail, flow: "reset" },
       }),
@@ -664,7 +707,7 @@ describe("account recovery without existence disclosure", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const t = createConvexTestWithRateLimiter();
     for (let request = 0; request < 10; request += 1) {
-      await t.action(api.auth.signIn, {
+      await authRequest(t, {
         provider: codeProvider,
         params: {
           email: ownerEmail,
@@ -684,7 +727,7 @@ describe("account recovery without existence disclosure", () => {
     if (!code) throw new Error("No sign-in code sent");
     expect(
       await publicErrorCode(
-        t.action(api.auth.signIn, {
+        authRequest(t, {
           provider: codeProvider,
           params: {
             email: ownerEmail,
@@ -697,11 +740,11 @@ describe("account recovery without existence disclosure", () => {
     ).toEqual({ code: "TooManyCodeRequests" });
     expect(emailsTo(ownerEmail)).toHaveLength(10);
     expect(
-      (await t.action(api.auth.signIn, { params: { email: ownerEmail, code } }))
-        .tokens?.token,
+      (await authRequest(t, { params: { email: ownerEmail, code } })).tokens
+        ?.token,
     ).toEqual(expect.any(String));
     vi.setSystemTime(Date.now() + 3 * 60 * 1000);
-    await t.action(api.auth.signIn, {
+    await authRequest(t, {
       provider: codeProvider,
       params: {
         email: ownerEmail,
@@ -718,7 +761,7 @@ describe("account recovery without existence disclosure", () => {
     for (const email of [ownerEmail, strangerEmail]) {
       expect(
         await publicErrorCode(
-          t.action(api.auth.signIn, {
+          authRequest(t, {
             provider: "password",
             params: { email, password: ownerPassword, flow: "signUp" },
           }),

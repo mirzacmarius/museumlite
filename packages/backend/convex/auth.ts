@@ -4,14 +4,16 @@ import { Email } from "@convex-dev/auth/providers/Email";
 import { convexAuth } from "@convex-dev/auth/server";
 import { sha256 } from "@oslojs/crypto/sha2";
 import { type Infer, v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, internalMutation } from "./_generated/server";
+import { action, internalAction, internalMutation } from "./_generated/server";
 import { sendLocalizedMagicLinkEmail } from "./email/authCopy";
 import { env } from "./env";
 import { ResendOTP } from "./otp/ResendOTP";
 import { normalizeAuthRecoveryError } from "./passwordRecovery/authRecoveryErrors";
 import {
   codeRequestFlow,
+  codeRequestReserved,
   enforceCodeRequestLimit,
 } from "./passwordRecovery/codeRequestLimit";
 import { NeutralPassword } from "./passwordRecovery/NeutralPassword";
@@ -124,6 +126,36 @@ export const signIn = action({
     )
       throw new Error("Unsupported Convex Auth sign-in handler");
     try {
+      const isReset =
+        args.params?.flow === "reset" &&
+        (args.provider === "password-with-reset" ||
+          args.provider === "password-code");
+      const isVerificationResend =
+        args.params?.flow === "email-verification" &&
+        typeof args.params?.code !== "string" &&
+        (args.provider === "password-with-reset" ||
+          args.provider === "password-code" ||
+          args.provider === "password-link");
+      if (isReset || isVerificationResend) {
+        const { email } = normalizedEmailProfile(args.params);
+        const flow = isReset
+          ? "reset"
+          : args.provider === "password-link"
+            ? "password-link"
+            : "password-verification";
+        await enforceCodeRequestLimit(ctx, email, flow);
+        await ctx.scheduler.runAfter(0, internal.auth.deliverCodeRequest, {
+          provider: args.provider,
+          params: {
+            email,
+            flow: args.params.flow,
+            ...(args.params.redirectTo === undefined
+              ? {}
+              : { redirectTo: args.params.redirectTo }),
+          },
+        });
+        return { tokens: null };
+      }
       const result: Infer<typeof signInReturns> =
         await configuredAuth.signIn._handler(ctx, args);
       return result;
@@ -133,13 +165,33 @@ export const signIn = action({
   },
 });
 
+export const deliverCodeRequest = internalAction({
+  args: signInArgs,
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (
+      !("_handler" in configuredAuth.signIn) ||
+      typeof configuredAuth.signIn._handler !== "function"
+    )
+      throw new Error("Unsupported Convex Auth sign-in handler");
+    await configuredAuth.signIn._handler(
+      { ...ctx, [codeRequestReserved]: true },
+      args,
+    );
+    return null;
+  },
+});
+
 // Keep credential activation inside the same transaction as code redemption,
 // including code-only magic-link callbacks handled directly by Convex Auth.
 export const store = internalMutation({
   args: { args: v.any() },
   returns: v.any(),
   handler: async (ctx, args) => {
-    if (args.args.type === "createVerificationCode") {
+    if (
+      args.args.type === "createVerificationCode" &&
+      args.args.codeRequestReserved !== true
+    ) {
       const accountId: Id<"authAccounts"> | undefined = args.args.accountId;
       const account = accountId ? await ctx.db.get(accountId) : null;
       const email = args.args.email;

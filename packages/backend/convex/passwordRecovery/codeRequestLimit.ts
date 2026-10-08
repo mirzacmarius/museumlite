@@ -3,6 +3,12 @@ import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { components } from "../_generated/api";
 import { authRecoveryError } from "./authRecoveryErrors";
 
+export const codeRequestReserved = Symbol("codeRequestReserved");
+
+export function hasCodeRequestReservation(ctx: object): boolean {
+  return codeRequestReserved in ctx && ctx[codeRequestReserved] === true;
+}
+
 export const CODE_REQUESTS_PER_WINDOW = 5;
 export const CODE_REQUEST_BURST = 10;
 export const CODE_REQUEST_WINDOW_MS = 15 * MINUTE;

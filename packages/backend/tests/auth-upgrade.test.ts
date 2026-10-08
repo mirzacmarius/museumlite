@@ -167,6 +167,8 @@ describe("stable Convex Auth upgrade", () => {
       provider,
       params: { email: owner, flow: "reset" },
     });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await t.finishInProgressScheduledFunctions();
     const code = latestCode(owner);
     const before = await t.run((ctx) => ctx.db.query("authAccounts").collect());
     await expect(
