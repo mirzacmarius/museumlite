@@ -100,6 +100,7 @@ import type * as passwordRecovery_NeutralPassword from "../passwordRecovery/Neut
 import type * as passwordRecovery_authRecoveryErrors from "../passwordRecovery/authRecoveryErrors.js";
 import type * as passwordRecovery_codeRequestLimit from "../passwordRecovery/codeRequestLimit.js";
 import type * as passwordReset_ResendOTPPasswordReset from "../passwordReset/ResendOTPPasswordReset.js";
+import type * as projections from "../projections.js";
 import type * as qrCodes from "../qrCodes.js";
 import type * as reporting from "../reporting.js";
 import type * as roles from "../roles.js";
@@ -308,6 +309,7 @@ declare const fullApi: ApiFromModules<{
   "passwordRecovery/authRecoveryErrors": typeof passwordRecovery_authRecoveryErrors;
   "passwordRecovery/codeRequestLimit": typeof passwordRecovery_codeRequestLimit;
   "passwordReset/ResendOTPPasswordReset": typeof passwordReset_ResendOTPPasswordReset;
+  projections: typeof projections;
   qrCodes: typeof qrCodes;
   reporting: typeof reporting;
   roles: typeof roles;
@@ -445,6 +447,7 @@ export declare const internal: FilterApi<
 >;
 
 export declare const components: {
+  metrics: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"metrics">;
   polar: import("@convex-dev/polar/_generated/component.js").ComponentApi<"polar">;
   rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
 };

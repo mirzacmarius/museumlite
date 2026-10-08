@@ -3,13 +3,9 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, query } from "./_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextTransitNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 import {
@@ -1730,7 +1726,10 @@ export const recordTransitItemReceipt = mutation({
     await requirePermission(ctx, transitRecord.organizationId, "loans.update");
 
     const conditionText = args.conditionIn?.trim() ?? "";
-    if (conditionText.length === 0 && args.conditionAssessmentId === undefined) {
+    if (
+      conditionText.length === 0 &&
+      args.conditionAssessmentId === undefined
+    ) {
       throw new Error("Condition evidence is required for transit receipt");
     }
 
@@ -1851,6 +1850,10 @@ export const getTransitHandoffSummary = query({
       throw new Error("Transit record not found");
     }
     await requirePermission(ctx, transitRecord.organizationId, "loans.read");
-    return await getTransitHandoffSummaryForRecord(ctx, args.transitRecordId, transitRecord.organizationId);
+    return await getTransitHandoffSummaryForRecord(
+      ctx,
+      args.transitRecordId,
+      transitRecord.organizationId,
+    );
   },
 });

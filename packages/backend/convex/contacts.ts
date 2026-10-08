@@ -1,12 +1,13 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
   requireAuthenticatedUser,
   requireAuthorizedOrganization,
 } from "./utils/authorizationContext";
 import { assertMuseumEvidenceDeletionAllowed } from "./utils/evidenceRetention";
+import { mutation } from "./utils/mutationBuilders";
 
 const roleValidator = v.union(
   v.literal("primary"),

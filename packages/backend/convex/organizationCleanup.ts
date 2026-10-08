@@ -4,10 +4,8 @@ import { ConvexError, type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
 import {
-  internalMutation,
   internalQuery,
   type MutationCtx,
-  mutation,
   type QueryCtx,
   query,
 } from "./_generated/server";
@@ -15,6 +13,7 @@ import {
   isOrganizationEvidenceProtected,
   rejectPermanentEvidenceDeletion,
 } from "./utils/evidenceRetention";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   createEmptyUsageCounter,
   getUsageCounter,

@@ -2,19 +2,14 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import {
-  action,
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { action, internalQuery, query } from "./_generated/server";
 import { PASSWORD_PROVIDERS } from "./accountConstants";
 import {
   type AccountErrorResult,
   accountErrorResultValidator,
 } from "./accountErrors";
 import { polar } from "./subscriptions";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,

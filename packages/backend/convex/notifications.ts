@@ -2,12 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getUserIdsWithPermission } from "./utils/permissions";
 
 // ============================================

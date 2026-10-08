@@ -119,9 +119,7 @@ export async function listSuperAdminUserIds(
 
   const memberships = await ctx.db
     .query("userOrganizations")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .collect();
 
   const adminUserIds: Array<Id<"users">> = [];

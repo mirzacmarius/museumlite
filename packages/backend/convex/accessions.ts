@@ -3,13 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
   readWorkflowHistoryPage,
   workflowHistoryPageValidator,
@@ -33,6 +27,7 @@ import {
 import { countIndexedQuery } from "./utils/indexedCounts";
 import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import {
   accessionDraftMediaValidator,

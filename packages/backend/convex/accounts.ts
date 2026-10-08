@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
   buildAccountCreateDocument,
@@ -15,6 +15,7 @@ import {
   isOrganizationEvidenceProtected,
 } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
+import { mutation } from "./utils/mutationBuilders";
 import { generateNextAccountNumber } from "./utils/numberGenerator";
 import { hasPermission, requirePermission } from "./utils/permissions";
 

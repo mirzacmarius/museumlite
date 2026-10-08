@@ -2,12 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import {
-  type MutationCtx,
-  internalMutation,
-  mutation,
-  query,
-} from "../_generated/server";
+import { type MutationCtx, query } from "../_generated/server";
+import { internalMutation, mutation } from "../utils/mutationBuilders";
 import { requireLibraryPermission } from "./utils/permissions";
 import {
   loadLibraryItemForOrg,
@@ -50,7 +46,11 @@ export const place = mutation({
       throw new Error(`Cannot place hold: Account status is ${account.status}`);
     }
 
-    await requireLibraryPermission(ctx, account.organizationId, "accounts.write");
+    await requireLibraryPermission(
+      ctx,
+      account.organizationId,
+      "accounts.write",
+    );
 
     const item = await loadLibraryItemForOrg(
       ctx,
@@ -116,11 +116,7 @@ export const place = mutation({
 
     const pickupLocationId = args.pickupLocationId ?? account.preferredBranch;
     if (pickupLocationId) {
-      await loadLocationForOrg(
-        ctx,
-        pickupLocationId,
-        account.organizationId,
-      );
+      await loadLocationForOrg(ctx, pickupLocationId, account.organizationId);
     }
 
     const holdId = await ctx.db.insert("libraryHolds", {
@@ -240,11 +236,7 @@ export const updatePickupLocation = mutation({
 
     await requireLibraryPermission(ctx, hold.organizationId, "accounts.write");
 
-    await loadLocationForOrg(
-      ctx,
-      args.pickupLocationId,
-      hold.organizationId,
-    );
+    await loadLocationForOrg(ctx, args.pickupLocationId, hold.organizationId);
 
     await ctx.db.patch(args.holdId, {
       pickupLocationId: args.pickupLocationId,

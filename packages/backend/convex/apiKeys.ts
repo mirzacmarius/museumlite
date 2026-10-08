@@ -1,8 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalMutation, mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
+import { query } from "./_generated/server";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 function generateApiKey(): string {
@@ -56,7 +57,10 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
-function compareHashDigests(storedHash: string, candidateHash: string): boolean {
+function compareHashDigests(
+  storedHash: string,
+  candidateHash: string,
+): boolean {
   if (storedHash.length !== candidateHash.length) {
     return false;
   }

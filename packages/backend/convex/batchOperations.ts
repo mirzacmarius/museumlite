@@ -2,12 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { syncCollectionGroupMemberships } from "./utils/catalogObjects";
 import { replaceCollectionOptionUsages } from "./utils/collectionOptionUsages";
@@ -16,6 +11,7 @@ import {
   moveCollectionToLocation,
   requireUsableLocation,
 } from "./utils/locationIntegrity";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 // ============================================
@@ -689,16 +685,16 @@ async function processBulkEdit(
   if (payload.collectionGroupId !== undefined) {
     const existingMemberships = await ctx.db
       .query("collectionGroupItems")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", collection._id),
-      )
+      .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
       .collect();
     await syncCollectionGroupMemberships(
       ctx,
       collection._id,
       collection.organizationId,
       [
-        ...existingMemberships.map((membership) => membership.collectionGroupId),
+        ...existingMemberships.map(
+          (membership) => membership.collectionGroupId,
+        ),
         ...(collection.collectionGroupId ? [collection.collectionGroupId] : []),
         payload.collectionGroupId,
       ],

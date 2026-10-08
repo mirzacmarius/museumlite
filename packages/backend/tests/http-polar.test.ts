@@ -1,7 +1,7 @@
 import { convexTest } from "convex-test";
-import polarSchema from "../../../node_modules/@convex-dev/polar/src/component/schema";
 import { Webhook } from "standardwebhooks";
 import { beforeAll, describe, expect, test, vi } from "vitest";
+import polarSchema from "../../../node_modules/@convex-dev/polar/src/component/schema";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";

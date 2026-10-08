@@ -3,12 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
@@ -22,6 +17,7 @@ import {
   MAX_SMALL_MEDIA_FILE_SIZE,
   shouldGenerateMediaThumbnail,
 } from "./utils/mediaAssets";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   applyUsageCounterDelta,
   createEmptyUsageCounter,

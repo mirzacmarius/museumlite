@@ -2,13 +2,12 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
-
-import { modules } from "./testSetup";
 import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
 } from "./testHarness";
+import { modules } from "./testSetup";
 
 describe("organizations.get security (IDOR fix)", () => {
   test("member can read their own org", async () => {

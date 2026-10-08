@@ -4,10 +4,11 @@ import {
   paginationResultValidator,
 } from "convex/server";
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { auditEntryValidator, readHistoryPage } from "./auditLog";
 import { auditLogChanges } from "./schema";
 import { captureAuditEvidence } from "./utils/auditEvidence";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 /**

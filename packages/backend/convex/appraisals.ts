@@ -3,8 +3,9 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { mutation, type QueryCtx, query } from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
+import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 const appraisalTypeValidator = v.union(

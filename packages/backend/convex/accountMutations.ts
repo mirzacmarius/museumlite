@@ -2,15 +2,12 @@ import { getAuthSessionId, getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  internalQuery,
-  type MutationCtx,
-} from "./_generated/server";
+import { internalQuery, type MutationCtx } from "./_generated/server";
 import {
   EMAIL_ACCOUNT_PROVIDERS,
   PASSWORD_PROVIDERS,
 } from "./accountConstants";
+import { internalMutation } from "./utils/mutationBuilders";
 
 const passwordAccountValidator = v.object({
   accountId: v.id("authAccounts"),

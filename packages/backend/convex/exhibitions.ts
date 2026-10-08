@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { workflowHistoryPageValidator } from "./auditLog";
 import { requireExhibitionAccess } from "./utils/exhibitionAccess";
 import { loadExhibitionMutationContext } from "./utils/exhibitionContext";
@@ -55,6 +55,7 @@ import {
   getWorkflowHistoryHandler,
   rejectExhibitionHandler,
 } from "./utils/exhibitionWorkflow";
+import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 import { createAuthorizedUploadUrl } from "./utils/uploadOwnership";
 

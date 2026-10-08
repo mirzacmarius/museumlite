@@ -3,12 +3,13 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import {
   ensureIdentifierAvailable,
   findIdentifierMatches,
   normalizeIdentifier,
 } from "./utils/identifiers";
+import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 const registerValidator = v.union(v.literal("catalog"), v.literal("accession"));

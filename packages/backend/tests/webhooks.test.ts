@@ -3,10 +3,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
-import {
-  authedForUser,
-  createOrgUserWithPermissions,
-} from "./testHarness";
+import { authedForUser, createOrgUserWithPermissions } from "./testHarness";
 import { modules } from "./testSetup";
 
 describe("webhook secret generation", () => {

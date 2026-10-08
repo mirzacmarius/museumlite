@@ -3,10 +3,10 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   internalAction,
-  internalMutation,
   internalQuery,
   type QueryCtx,
 } from "./_generated/server";
+import { internalMutation } from "./utils/mutationBuilders";
 import {
   createEmptyUsageCounter,
   getMediaStorageBytes,

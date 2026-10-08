@@ -3,8 +3,9 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { syncCollectionGroupMemberships } from "./utils/catalogObjects";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getUserRole, requirePermission } from "./utils/permissions";
 
 async function listCollectionMemberships(

@@ -78,12 +78,15 @@ describe("Conservation treatment lifecycle", () => {
     const { collectionId, userId } = await setupConservationWorkflow(t);
     const authed = authedForUser(t, userId);
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "restoration",
-      title: "Frame restoration",
-      description: "Restore damaged frame corners",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "restoration",
+        title: "Frame restoration",
+        description: "Restore damaged frame corners",
+      },
+    );
 
     expect(await getTreatmentStatus(t, treatmentId)).toBe("proposed");
 
@@ -114,12 +117,15 @@ describe("Conservation treatment lifecycle", () => {
       assessmentId: baselineId,
     });
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "cleaning",
-      title: "Surface cleaning",
-      description: "Remove surface grime",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "cleaning",
+        title: "Surface cleaning",
+        description: "Remove surface grime",
+      },
+    );
 
     expect(await getTreatmentStatus(t, treatmentId)).toBe("proposed");
 
@@ -145,12 +151,15 @@ describe("Conservation treatment lifecycle", () => {
     const { collectionId, userId } = await setupConservationWorkflow(t);
     const authed = authedForUser(t, userId);
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "assessment",
-      title: "Condition assessment",
-      description: "Document condition before treatment",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "assessment",
+        title: "Condition assessment",
+        description: "Document condition before treatment",
+      },
+    );
 
     const storageId = await t.run(async (ctx) => {
       return await ctx.storage.store(
@@ -185,21 +194,28 @@ describe("Conservation treatment lifecycle", () => {
       await setupConservationWorkflow(t);
     const authed = authedForUser(t, userId);
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "repair",
-      title: "Canvas repair",
-      description: "Repair small tear",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "repair",
+        title: "Canvas repair",
+        description: "Repair small tear",
+      },
+    );
 
-    const alertId = await authed.mutation(api.conservationTreatments.createAlert, {
-      organizationId,
-      treatmentId,
-      alertType: "urgent_treatment",
-      title: "Urgent: Water damage detected",
-      description: "Water damage found on canvas requires immediate attention",
-      priority: "critical",
-    });
+    const alertId = await authed.mutation(
+      api.conservationTreatments.createAlert,
+      {
+        organizationId,
+        treatmentId,
+        alertType: "urgent_treatment",
+        title: "Urgent: Water damage detected",
+        description:
+          "Water damage found on canvas requires immediate attention",
+        priority: "critical",
+      },
+    );
     expect(alertId).toBeDefined();
 
     await authed.mutation(api.conservationTreatments.acknowledgeAlert, {
@@ -232,12 +248,15 @@ describe("Conservation treatment lifecycle", () => {
       await setupConservationWorkflow(t);
     const authed = authedForUser(t, userId);
 
-    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
-      collectionId,
-      treatmentType: "stabilization",
-      title: "Climate stabilization",
-      description: "Stabilize environmental conditions",
-    });
+    const treatmentId = await authed.mutation(
+      api.conservationTreatments.create,
+      {
+        collectionId,
+        treatmentType: "stabilization",
+        title: "Climate stabilization",
+        description: "Stabilize environmental conditions",
+      },
+    );
 
     await Promise.all([
       authed.mutation(api.conservationTreatments.createAlert, {

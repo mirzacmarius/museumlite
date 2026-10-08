@@ -60,11 +60,13 @@ async function setupTransitFixture(t: ConvexTest): Promise<TransitFixture> {
 
 test("paginates transit records for an organization", async () => {
   const t = createConvexTest();
-  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
-    "loans.read",
-  ], {
-    subscriptionTier: "pro",
-  });
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["loans.read"],
+    {
+      subscriptionTier: "pro",
+    },
+  );
   const authed = authedForUser(t, userId);
 
   await t.run(async (ctx) => {
@@ -222,8 +224,7 @@ test("should add and remove items from transit", async () => {
 
 test("should update transit item status on delivery", async () => {
   const t = createConvexTest();
-  const { organizationId, collectionId, authed } =
-    await setupTransitFixture(t);
+  const { organizationId, collectionId, authed } = await setupTransitFixture(t);
 
   const transitId = await authed.mutation(api.transit.createTransitRecord, {
     organizationId,
@@ -272,7 +273,9 @@ test("should prevent deletion of in-transit records", async () => {
   });
 
   await expect(
-    authed.mutation(api.transit.deleteTransitRecord, { transitRecordId: transitId }),
+    authed.mutation(api.transit.deleteTransitRecord, {
+      transitRecordId: transitId,
+    }),
   ).rejects.toThrow("Can only delete draft or cancelled transit records");
 });
 
@@ -309,7 +312,9 @@ test("should return empty array when no transit records exist", async () => {
   const t = createConvexTest();
   const { loanId, authed } = await setupTransitFixture(t);
 
-  const transits = await authed.query(api.transit.getTransitForLoan, { loanId });
+  const transits = await authed.query(api.transit.getTransitForLoan, {
+    loanId,
+  });
 
   expect(transits).toEqual([]);
 });

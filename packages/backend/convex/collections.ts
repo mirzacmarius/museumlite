@@ -6,7 +6,6 @@ import type { Doc, Id } from "./_generated/dataModel";
 import {
   internalQuery,
   type MutationCtx,
-  mutation,
   type QueryCtx,
   query,
 } from "./_generated/server";
@@ -51,6 +50,7 @@ import {
   getCollectionTypeModuleRequirement,
 } from "./utils/moduleCatalog";
 import { collectionTypeValidator } from "./utils/moduleValidators";
+import { mutation } from "./utils/mutationBuilders";
 import { searchObjects } from "./utils/objectSearch";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";

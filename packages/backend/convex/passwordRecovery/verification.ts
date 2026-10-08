@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../utils/mutationBuilders";
 
 // Runs inside a mutation so the quota charge and the code replacement commit together.
 export const createCode = internalMutation({

@@ -2,16 +2,11 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { env } from "./env";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireFeatureAccess } from "./utils/featureGates";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
 const taskTypeValidator = v.union(

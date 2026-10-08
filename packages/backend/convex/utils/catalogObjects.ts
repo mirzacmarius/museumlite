@@ -49,7 +49,9 @@ export async function getCollectionGroupMembershipIds(
       }),
     )
   ).filter((membership) => membership !== null);
-  const ids = [...new Set(valid.map((membership) => membership.collectionGroupId))];
+  const ids = [
+    ...new Set(valid.map((membership) => membership.collectionGroupId)),
+  ];
   const pointerGroup = collection.collectionGroupId
     ? await ctx.db.get(collection.collectionGroupId)
     : null;
@@ -114,7 +116,8 @@ export async function syncCollectionGroupMemberships(
       });
     } else {
       for (const membership of existing) {
-        if (membership.role !== role) await ctx.db.patch(membership._id, { role });
+        if (membership.role !== role)
+          await ctx.db.patch(membership._id, { role });
       }
     }
   }
@@ -249,7 +252,8 @@ export async function createImportedCatalogObject(
     ctx,
     collectionId,
     organizationId,
-    args.collectionGroupIds ?? (args.collectionGroupId ? [args.collectionGroupId] : []),
+    args.collectionGroupIds ??
+      (args.collectionGroupId ? [args.collectionGroupId] : []),
     userId,
     args.collectionGroupId,
   );

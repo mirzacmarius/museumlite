@@ -8,19 +8,19 @@ import {
   type ActionCtx,
   action,
   internalAction,
-  internalMutation,
   internalQuery,
   query,
 } from "./_generated/server";
-import {
-  syncPolarProduct,
-  syncPolarSubscription,
-} from "./utils/polarComponentSync";
+import { internalMutation } from "./utils/mutationBuilders";
 import {
   hasActiveSubscriptionAccess,
   inferSubscriptionTierFromProductName,
   type SubscriptionRecordSource,
 } from "./utils/polarBilling";
+import {
+  syncPolarProduct,
+  syncPolarSubscription,
+} from "./utils/polarComponentSync";
 
 export const polar = new Polar(components.polar, {
   getUserInfo: async (ctx): Promise<{ userId: Id<"users">; email: string }> => {

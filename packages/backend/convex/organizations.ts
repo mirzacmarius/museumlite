@@ -2,12 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalQuery, query } from "./_generated/server";
 import { getNextCounterPreview } from "./utils/accessionCounter";
 import {
   AccessionNumberParser,
@@ -26,6 +21,7 @@ import {
 } from "./utils/featureGates";
 import type { ModuleId } from "./utils/moduleCatalog";
 import { enabledModuleValidator } from "./utils/moduleValidators";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import {
