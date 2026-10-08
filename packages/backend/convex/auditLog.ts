@@ -50,6 +50,8 @@ export const auditEntryValidator = v.object({
   userName: v.optional(v.string()),
   userEmail: v.optional(v.string()),
   userImage: v.optional(v.string()),
+  /** Legacy entries only: the actor's profile name today, never contemporaneous evidence. */
+  currentActorName: v.optional(v.string()),
   changes: v.optional(auditLogChanges),
   actorSnapshot: v.optional(
     v.object({ name: v.optional(v.string()), email: v.optional(v.string()) }),
@@ -97,8 +99,26 @@ export const historyPageValidator = v.object({
   countKind: v.literal("page"),
 });
 
-export async function presentEntry(_ctx: QueryCtx, entry: Doc<"auditLog">) {
-  // Legacy events have no contemporaneous evidence: never invent it from today's profile.
+function profileName(user: Doc<"users"> | null) {
+  return user?.name || user?.username || user?.email || undefined;
+}
+
+/** Resolves today's profile name once per actor for legacy rows lacking recorded evidence. */
+export async function currentProfileNames(
+  ctx: QueryCtx,
+  userIds: Iterable<Id<"users">>,
+) {
+  const ids = [...new Set(userIds)];
+  const users = await Promise.all(ids.map((id) => ctx.db.get(id)));
+  return new Map(ids.map((id, i) => [id, profileName(users[i] ?? null)]));
+}
+
+export function presentEntry(
+  entry: Doc<"auditLog">,
+  currentActorName?: string,
+) {
+  // Legacy events have no contemporaneous evidence: today's profile is exposed
+  // only as `currentActorName`, never as the snapshot `userName`/`userEmail`.
   return {
     _id: entry._id,
     action: entry.action,
@@ -109,6 +129,7 @@ export async function presentEntry(_ctx: QueryCtx, entry: Doc<"auditLog">) {
     changes: entry.changes,
     userName: entry.actorSnapshot?.name,
     userEmail: entry.actorSnapshot?.email,
+    currentActorName: entry.actorSnapshot ? undefined : currentActorName,
     actorSnapshot: entry.actorSnapshot,
     subjectSnapshot: entry.subjectSnapshot,
     evidenceStatus: entry.actorSnapshot
@@ -119,6 +140,20 @@ export async function presentEntry(_ctx: QueryCtx, entry: Doc<"auditLog">) {
     correctionOf: entry.correctionOf,
     correctionReason: entry.correctionReason,
   };
+}
+
+async function presentEntries(
+  ctx: QueryCtx,
+  entries: Doc<"auditLog">[],
+  resolveCurrentActor: boolean,
+) {
+  const names = resolveCurrentActor
+    ? await currentProfileNames(
+        ctx,
+        entries.flatMap((e) => (e.actorSnapshot ? [] : [e.userId])),
+      )
+    : new Map<Id<"users">, string | undefined>();
+  return entries.map((entry) => presentEntry(entry, names.get(entry.userId)));
 }
 
 interface HistoryFilters {
@@ -201,13 +236,14 @@ export async function readHistoryPage(
   await requireHistoryAccess(ctx, args, (permission) =>
     requirePermission(ctx, args.organizationId, permission),
   );
-  return readAuthorizedHistoryPage(ctx, args, paginationOpts);
+  return readAuthorizedHistoryPage(ctx, args, paginationOpts, true);
 }
 
 async function readAuthorizedHistoryPage(
   ctx: QueryCtx,
   args: HistoryFilters,
   paginationOpts: PaginationOptions,
+  resolveCurrentActor: boolean,
 ) {
   for (const value of [args.fromDate, args.toDate, args.asOf]) {
     if (value !== undefined && (!Number.isFinite(value) || value < 0))
@@ -344,9 +380,7 @@ async function readAuthorizedHistoryPage(
           entry.action.toLowerCase().includes(args.action!.toLowerCase()),
         )
       : result.page;
-  const entries = await Promise.all(
-    matched.map((entry) => presentEntry(ctx, entry)),
-  );
+  const entries = await presentEntries(ctx, matched, resolveCurrentActor);
   return {
     entries,
     continueCursor: result.continueCursor,
@@ -400,7 +434,8 @@ export const exportPageForJob = internalQuery({
       );
       if (!permitted) throw new Error(`Permission denied: ${permission}`);
     });
-    return readAuthorizedHistoryPage(ctx, args, args.paginationOpts);
+    // Exports are evidence artefacts: snapshot columns only, no current-profile lookup.
+    return readAuthorizedHistoryPage(ctx, args, args.paginationOpts, false);
   },
 });
 
@@ -593,9 +628,9 @@ export const getEntry = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
     const entry = await ctx.db.get(args.eventId);
-    return entry && entry.organizationId === args.organizationId
-      ? presentEntry(ctx, entry)
-      : null;
+    if (!entry || entry.organizationId !== args.organizationId) return null;
+    const [presented] = await presentEntries(ctx, [entry], true);
+    return presented ?? null;
   },
 });
 
@@ -742,6 +777,8 @@ export const casePageValidator = v.object({
       ordinal: v.number(),
       entry: approvalValidator,
       evidenceStatus: v.union(v.literal("recorded"), v.literal("legacy")),
+      /** Legacy approvals without a recorded name: the approver's profile name today. */
+      currentApproverName: v.optional(v.string()),
     }),
   ),
   nextCursor: v.optional(v.number()),
@@ -806,8 +843,20 @@ export async function readCaseHistory(
     );
   }
   const isDone = entries.length <= limit;
+  const page = entries.slice(0, limit);
+  const unnamed = (row: (typeof page)[number]) =>
+    row.evidenceStatus === "legacy" && !row.entry.approverName;
+  const names = await currentProfileNames(
+    ctx,
+    page.flatMap((row) => (unnamed(row) ? [row.entry.approvedBy] : [])),
+  );
   return {
-    entries: entries.slice(0, limit),
+    entries: page.map((row) => ({
+      ...row,
+      currentApproverName: unnamed(row)
+        ? names.get(row.entry.approvedBy)
+        : undefined,
+    })),
     nextCursor: isDone ? undefined : entries[limit - 1]!.ordinal + 1,
     isDone,
   };

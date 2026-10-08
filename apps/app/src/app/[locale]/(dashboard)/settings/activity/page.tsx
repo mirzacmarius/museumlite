@@ -119,8 +119,8 @@ function ActivityFilters({
         ) : null}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <div className="space-y-2">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] items-end gap-4">
+        <div className="min-w-0 space-y-2">
           <Label
             htmlFor="user-filter"
             className="text-xs text-muted-foreground"
@@ -147,7 +147,7 @@ function ActivityFilters({
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <Label
             htmlFor="entity-filter"
             className="text-xs text-muted-foreground"
@@ -174,7 +174,7 @@ function ActivityFilters({
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <Label
             htmlFor="action-filter"
             className="text-xs text-muted-foreground"
@@ -204,6 +204,7 @@ function ActivityFilters({
         <DatePickerInput
           label={labels.fromDate}
           id="from-date"
+          className="mx-0 w-full min-w-0"
           value={fromDate}
           onChange={onFromDateChange}
         />
@@ -211,6 +212,7 @@ function ActivityFilters({
         <DatePickerInput
           label={labels.toDate}
           id="to-date"
+          className="mx-0 w-full min-w-0"
           value={toDate}
           onChange={onToDateChange}
         />
@@ -263,8 +265,10 @@ function ActivityEntryRow({
   entry: ActivityEntry;
   unknownUserLabel: string;
 }) {
-  const initials = entry.userName
-    ? entry.userName
+  const t = useScopedI18n("activityLog");
+  const avatarName = entry.userName ?? entry.currentActorName;
+  const initials = avatarName
+    ? avatarName
         .split(" ")
         .map((namePart) => namePart[0])
         .join("")
@@ -279,9 +283,13 @@ function ActivityEntryRow({
       </Avatar>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2">
           <span className="font-medium text-sm">
-            {entry.userName || entry.userEmail || unknownUserLabel}
+            {entry.userName ||
+              entry.userEmail ||
+              (entry.currentActorName
+                ? t("currentProfileActor", { name: entry.currentActorName })
+                : unknownUserLabel)}
           </span>
           <span className="text-muted-foreground text-sm">{entry.action}</span>
         </div>

@@ -81,6 +81,14 @@ export function AuditEventDetails({
           {entry._id} · {formatIsoTimestamp(entry.timestamp)}
         </p>
         <p>
+          {t("actor")}:{" "}
+          {entry.userName ??
+            entry.userEmail ??
+            (entry.currentActorName
+              ? t("currentProfileActor", { name: entry.currentActorName })
+              : t("unknownUser"))}
+        </p>
+        <p>
           {entry.evidenceStatus === "legacy"
             ? t("legacyEvidence")
             : t("recordedEvidence")}

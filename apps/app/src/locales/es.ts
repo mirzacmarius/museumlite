@@ -1075,6 +1075,8 @@ export default {
       "Las opciones de autor y acción proceden de los últimos 1.000 eventos. Las búsquedas por fecha y tema cubren todo el historial.",
     invalidDateRange: "La fecha inicial debe preceder a la fecha final.",
     details: "Detalles del evento",
+    currentProfileActor: "{name} (perfil actual)",
+    actor: "Autor",
     legacyEvidence:
       "Evento antiguo: no se conservaron los datos del autor o del tema en el momento del registro.",
     recordedEvidence:

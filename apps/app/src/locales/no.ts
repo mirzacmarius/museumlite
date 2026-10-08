@@ -1053,6 +1053,8 @@ export default {
       "Valg for aktør og handling viser de siste 1 000 hendelsene. Søk etter dato og emne dekker hele historikken.",
     invalidDateRange: "Startdatoen må være før sluttdatoen.",
     details: "Hendelsesdetaljer",
+    currentProfileActor: "{name} (nåværende profil)",
+    actor: "Aktør",
     legacyEvidence:
       "Eldre hendelse: aktørens eller emnets identitet ble ikke bevart da hendelsen ble registrert.",
     recordedEvidence:

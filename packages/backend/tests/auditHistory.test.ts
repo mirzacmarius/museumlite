@@ -611,3 +611,70 @@ test("case history filters enforce the case's own permission and plan feature", 
     }),
   ).rejects.toThrow("Feature requires pro tier");
 });
+
+test("legacy events name the actor's current profile separately from recorded evidence", async () => {
+  const { t, staff, organizationId, userId } = await setup();
+  await staff.mutation(api.conditionOptions.create, {
+    organizationId,
+    name: "Recorded condition",
+    description: "Original",
+  });
+  const accessionId = await t.run(async (ctx) => {
+    await ctx.db.insert("auditLog", {
+      organizationId,
+      userId,
+      action: "updated",
+      entityType: "collection",
+      entityId: "legacy-object",
+      timestamp: 0,
+    });
+    await ctx.db.patch(userId, { name: "Jane Doe" });
+    return ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: "A-LEGACY",
+      dateReceived: 1,
+      source: "Donor",
+      method: "gift",
+      status: "pending",
+      workflowHistory: [{ step: 0, approvedBy: userId, approvedAt: 1 }],
+    });
+  });
+  const { entries } = await staff.query(api.auditLog.list, { organizationId });
+  const legacy = entries.find((entry) => entry.entityId === "legacy-object")!;
+  expect(legacy).toMatchObject({
+    evidenceStatus: "legacy",
+    currentActorName: "Jane Doe",
+  });
+  expect(legacy.userName).toBeUndefined();
+  expect(legacy.userEmail).toBeUndefined();
+  const recorded = entries.find((entry) => entry.entityId !== "legacy-object")!;
+  expect(recorded.evidenceStatus).toBe("recorded");
+  expect(recorded.userName).toBe("Original registrar");
+  expect(recorded.currentActorName).toBeUndefined();
+  const activity = await staff.query(api.audit.listOrganizationActivity, {
+    organizationId,
+  });
+  expect(
+    activity.activities.find((entry) => entry.entityId === "legacy-object")
+      ?.currentActorName,
+  ).toBe("Jane Doe");
+  const exported = await t.query(internal.auditLog.exportPageForJob, {
+    organizationId,
+    creatorId: userId,
+    asOf: Date.now() + 1000,
+    paginationOpts: { numItems: 50, cursor: null },
+  });
+  expect(
+    exported.entries.every((entry) => entry.currentActorName === undefined),
+  ).toBe(true);
+  const caseHistory = await staff.query(api.auditLog.listCaseHistory, {
+    organizationId,
+    caseType: "accession",
+    entityId: accessionId,
+  });
+  expect(caseHistory.entries[0]).toMatchObject({
+    evidenceStatus: "legacy",
+    currentApproverName: "Jane Doe",
+  });
+  expect(caseHistory.entries[0]?.entry.approverName).toBeUndefined();
+});

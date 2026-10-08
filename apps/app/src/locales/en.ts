@@ -1045,6 +1045,8 @@ export default {
       "Actor and action options show the latest 1,000 events. Date and subject searches cover all history.",
     invalidDateRange: "The start date must be before the end date.",
     details: "Event details",
+    currentProfileActor: "{name} (current profile)",
+    actor: "Actor",
     legacyEvidence:
       "Legacy event: contemporaneous actor or subject snapshots were not recorded.",
     recordedEvidence:

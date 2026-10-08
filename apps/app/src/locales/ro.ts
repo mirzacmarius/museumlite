@@ -5118,6 +5118,8 @@ export default {
     invalidDateRange:
       "Data de început trebuie să fie înaintea datei de sfârșit.",
     details: "Detalii eveniment",
+    currentProfileActor: "{name} (profil curent)",
+    actor: "Autor",
     legacyEvidence:
       "Eveniment vechi: identitatea autorului sau a subiectului nu a fost păstrată la momentul înregistrării.",
     recordedEvidence:
