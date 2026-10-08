@@ -340,10 +340,16 @@ export const applyGenerationPage = internalMutation({
   args: {
     generationId: v.id("projectionGenerations"),
     expectedCheckpoint: v.number(),
+    pageSize: v.optional(v.number()),
   },
   returns: v.union(v.literal("noop"), v.literal("continue"), v.literal("done")),
   handler: async (ctx, args) =>
-    await applyPage(ctx, args.generationId, args.expectedCheckpoint),
+    await applyPage(
+      ctx,
+      args.generationId,
+      args.expectedCheckpoint,
+      args.pageSize,
+    ),
 });
 
 export const markGenerationPageFailed = internalMutation({
@@ -365,7 +371,9 @@ export const markGenerationPageFailed = internalMutation({
 });
 
 /**
- * Runs one checkpoint page. A failed page rolls back entirely and is recorded
+ * Runs one checkpoint page. A failed page rolls back entirely, so it is
+ * retried with fewer rows (dense rows can exceed per-transaction platform
+ * limits at the default size). Only a failure at a single row is recorded
  * as a failed job that keeps its last committed checkpoint for retry.
  */
 export const advanceGeneration = internalAction({
@@ -375,15 +383,26 @@ export const advanceGeneration = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    try {
-      await ctx.runMutation(internal.projections.applyGenerationPage, args);
-    } catch (error) {
-      await ctx.runMutation(internal.projections.markGenerationPageFailed, {
-        ...args,
-        failure: error instanceof Error ? error.message : String(error),
-      });
+    let pageSize = PROJECTION_PAGE_SIZE;
+    for (;;) {
+      try {
+        await ctx.runMutation(internal.projections.applyGenerationPage, {
+          ...args,
+          pageSize,
+        });
+        return null;
+      } catch (error) {
+        if (pageSize > 1) {
+          pageSize = Math.max(1, Math.floor(pageSize / 2));
+          continue;
+        }
+        await ctx.runMutation(internal.projections.markGenerationPageFailed, {
+          ...args,
+          failure: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+      }
     }
-    return null;
   },
 });
 

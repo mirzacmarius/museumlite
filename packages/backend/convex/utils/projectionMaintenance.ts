@@ -817,6 +817,8 @@ async function scanChildren(
 }
 
 interface PageStats {
+  /** Source rows this page may scan; shrinks when a page hits a platform limit. */
+  pageSize: number;
   rows: number;
   writes: number;
   discrepancies: number;
@@ -904,16 +906,16 @@ async function scanPhase(
       ctx,
       generation.organizationId,
       generation.cursor,
-      PROJECTION_PAGE_SIZE,
+      stats.pageSize,
     );
     for (const row of rows) await scanRow(ctx, generation, table, row, stats);
     const last = rows.at(-1);
-    return rows.length < PROJECTION_PAGE_SIZE || !last
+    return rows.length < stats.pageSize || !last
       ? nextPhase
       : { phaseIndex: generation.phaseIndex, cursor: last._creationTime };
   }
 
-  let remaining = PROJECTION_PAGE_SIZE;
+  let remaining = stats.pageSize;
   let cursor = generation.cursor;
   let parentId = generation.childParentId;
   let childCursor = generation.childCursor ?? null;
@@ -1009,7 +1011,7 @@ async function compareStep(
         const base = q.eq("generationId", generationId);
         return after === null ? base : base.gt("_creationTime", after);
       })
-      .take(PROJECTION_PAGE_SIZE);
+      .take(stats.pageSize);
   const totalsPage = async (generationId: Id<"projectionGenerations">) =>
     await ctx.db
       .query("projectionTotals")
@@ -1017,10 +1019,10 @@ async function compareStep(
         const base = q.eq("generationId", generationId);
         return after === null ? base : base.gt("_creationTime", after);
       })
-      .take(PROJECTION_PAGE_SIZE);
+      .take(stats.pageSize);
   const advance = (rows: ScanRow[]): Progress => {
     const last = rows.at(-1);
-    return rows.length < PROJECTION_PAGE_SIZE || !last
+    return rows.length < stats.pageSize || !last
       ? nextStep
       : { phaseIndex: generation.phaseIndex, cursor: last._creationTime };
   };
@@ -1247,6 +1249,7 @@ export async function applyGenerationPage(
   ctx: Ctx,
   generationId: Id<"projectionGenerations">,
   expectedCheckpoint: number,
+  pageSize = PROJECTION_PAGE_SIZE,
 ) {
   const generation = await ctx.db.get(generationId);
   if (
@@ -1311,6 +1314,7 @@ export async function applyGenerationPage(
     return "continue" as const;
   }
   const stats: PageStats = {
+    pageSize,
     rows: 0,
     writes: 0,
     discrepancies: 0,
