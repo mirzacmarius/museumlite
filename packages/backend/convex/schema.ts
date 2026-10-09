@@ -1353,10 +1353,12 @@ export default defineSchema({
       "status",
       "dateDeaccessioned",
     ])
-    .index(
-      "by_organization_and_status_and_workflowStep_and_dateDeaccessioned",
-      ["organizationId", "status", "workflowStep", "dateDeaccessioned"],
-    )
+    .index("by_organization_status_workflowStep_dateDeaccessioned", [
+      "organizationId",
+      "status",
+      "workflowStep",
+      "dateDeaccessioned",
+    ])
     .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_regulatory_token", ["regulatoryApprovalToken"])
     .index("by_assigned_to", ["assignedTo"]),

@@ -643,24 +643,21 @@ function pendingStepQuery(
 ) {
   return ctx.db
     .query("deaccessions")
-    .withIndex(
-      "by_organization_and_status_and_workflowStep_and_dateDeaccessioned",
-      (q) => {
-        const pending = q
-          .eq("organizationId", organizationId)
-          .eq("status", "pending");
-        if (range.from !== undefined && range.to !== undefined) {
-          return pending
-            .gte("workflowStep", range.from)
-            .lt("workflowStep", range.to);
-        }
-        if (range.from !== undefined) {
-          return pending.gte("workflowStep", range.from);
-        }
-        if (range.to !== undefined) return pending.lt("workflowStep", range.to);
-        return pending;
-      },
-    );
+    .withIndex("by_organization_status_workflowStep_dateDeaccessioned", (q) => {
+      const pending = q
+        .eq("organizationId", organizationId)
+        .eq("status", "pending");
+      if (range.from !== undefined && range.to !== undefined) {
+        return pending
+          .gte("workflowStep", range.from)
+          .lt("workflowStep", range.to);
+      }
+      if (range.from !== undefined) {
+        return pending.gte("workflowStep", range.from);
+      }
+      if (range.to !== undefined) return pending.lt("workflowStep", range.to);
+      return pending;
+    });
 }
 
 function isInStepColumn(row: Doc<"deaccessions">, range: StepColumnRange) {

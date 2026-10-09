@@ -226,6 +226,7 @@ import type * as utils_projectionStore from "../utils/projectionStore.js";
 import type * as utils_projectionValidators from "../utils/projectionValidators.js";
 import type * as utils_publicMedia from "../utils/publicMedia.js";
 import type * as utils_publicPortal from "../utils/publicPortal.js";
+import type * as utils_recordAccess from "../utils/recordAccess.js";
 import type * as utils_registerProfiles from "../utils/registerProfiles.js";
 import type * as utils_registerSources from "../utils/registerSources.js";
 import type * as utils_relatedEntityIntegrity from "../utils/relatedEntityIntegrity.js";
@@ -479,6 +480,7 @@ declare const fullApi: ApiFromModules<{
   "utils/projectionValidators": typeof utils_projectionValidators;
   "utils/publicMedia": typeof utils_publicMedia;
   "utils/publicPortal": typeof utils_publicPortal;
+  "utils/recordAccess": typeof utils_recordAccess;
   "utils/registerProfiles": typeof utils_registerProfiles;
   "utils/registerSources": typeof utils_registerSources;
   "utils/relatedEntityIntegrity": typeof utils_relatedEntityIntegrity;
