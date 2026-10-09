@@ -357,7 +357,12 @@ export function TargetPartyLinks({
                 </SelectContent>
               </Select>
             </div>
-          ) : null}
+          ) : (
+            <p className="text-sm">
+              <span className="text-muted-foreground">{t("links.role")}: </span>
+              {t(`roles.${role}`)}
+            </p>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="party-link-party">{t("links.party")}</Label>
             <PartyPicker

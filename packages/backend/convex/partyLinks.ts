@@ -141,7 +141,7 @@ export const listForTarget = query({
           effectiveTo: link.effectiveTo,
           origin: link.origin,
           createdAt: link.createdAt,
-          createdByName: creator?.name ?? undefined,
+          createdByName: creator?.name ?? creator?.username ?? undefined,
           supersededAt: link.supersededAt,
           supersessionReason: link.supersessionReason,
           isCurrent: link.supersededAt === undefined,

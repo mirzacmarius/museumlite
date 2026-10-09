@@ -111,7 +111,7 @@ export const list = query({
           second: summary(second),
           suggestedAt: review.suggestedAt,
           reviewedAt: review.reviewedAt,
-          reviewedByName: reviewer?.name ?? undefined,
+          reviewedByName: reviewer?.name ?? reviewer?.username ?? undefined,
           note: review.note,
         };
       }),
