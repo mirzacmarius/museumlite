@@ -197,6 +197,7 @@ import type * as utils_organizationUsageCounters from "../utils/organizationUsag
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_polarBilling from "../utils/polarBilling.js";
 import type * as utils_polarComponentSync from "../utils/polarComponentSync.js";
+import type * as utils_primaryMedia from "../utils/primaryMedia.js";
 import type * as utils_projectionMaintenance from "../utils/projectionMaintenance.js";
 import type * as utils_projectionReads from "../utils/projectionReads.js";
 import type * as utils_projectionReports from "../utils/projectionReports.js";
@@ -423,6 +424,7 @@ declare const fullApi: ApiFromModules<{
   "utils/permissions": typeof utils_permissions;
   "utils/polarBilling": typeof utils_polarBilling;
   "utils/polarComponentSync": typeof utils_polarComponentSync;
+  "utils/primaryMedia": typeof utils_primaryMedia;
   "utils/projectionMaintenance": typeof utils_projectionMaintenance;
   "utils/projectionReads": typeof utils_projectionReads;
   "utils/projectionReports": typeof utils_projectionReports;
