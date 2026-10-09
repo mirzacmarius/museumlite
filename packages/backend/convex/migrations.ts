@@ -1673,3 +1673,26 @@ export const grantConditionAssessmentReviewPermissions = internalMutation({
     return { organizationsProcessed: organizations.length };
   },
 });
+
+/**
+ * Migration: grant collections.review_provenance on existing system roles
+ * (owner, administrator, curator, collection manager / registrar).
+ *
+ * Run: bunx convex run migrations:grantProvenanceReviewPermissions
+ */
+export const grantProvenanceReviewPermissions = internalMutation({
+  args: {},
+  returns: v.object({ organizationsProcessed: v.number() }),
+  handler: async (ctx) => {
+    const organizations = await ctx.db.query("organizations").collect();
+    for (const organization of organizations) {
+      await ctx.runMutation(
+        internal.provenanceMigration.grantReviewPermission,
+        {
+          organizationId: organization._id,
+        },
+      );
+    }
+    return { organizationsProcessed: organizations.length };
+  },
+});

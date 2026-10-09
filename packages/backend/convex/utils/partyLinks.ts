@@ -3,15 +3,16 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { isDisposalDecision } from "./disposalPolicy";
 import { requireLoansAccess } from "./loanAccess";
+import { isOpenEntryStatus } from "./objectEntryValidators";
 import {
   normalizePartyName,
   partyContactSnapshot,
   partyDisplayName,
 } from "./parties";
 import { partyError } from "./partyErrors";
-import { isOpenEntryStatus } from "./objectEntryValidators";
 import type { PartyRole, PartyTarget } from "./partyValidators";
 import { hasPermission, requirePermission } from "./permissions";
+import { isWithdrawnObject, provenanceObjectLabel } from "./provenance";
 
 /** History rows read per target; supersession history stays small. */
 export const PARTY_LINKS_PER_TARGET_LIMIT = 100;
@@ -23,17 +24,6 @@ const LINKED_SOURCE_PLACEHOLDER = "See linked account";
 export function accessionSourceAssertion(source: string): string | undefined {
   const text = source.trim();
   return text && text !== LINKED_SOURCE_PLACEHOLDER ? text : undefined;
-}
-
-/** How a provenance claim's Object is named in party role history. */
-export function provenanceObjectLabel(
-  object: Pick<Doc<"collections">, "accessionNumber" | "title">,
-): string {
-  return `${object.accessionNumber} ${object.title}`.trim();
-}
-
-function isWithdrawnObject(object: Doc<"collections"> | null) {
-  return object?.status === "archived" || object?.status === "deleted";
 }
 
 /** Roles a Party may hold on each kind of record, primary role first. */
