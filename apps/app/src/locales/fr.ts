@@ -1464,6 +1464,119 @@ export default {
       failedToDeleteWebhook: "Échec de la suppression du webhook",
     },
   },
+  webhookDeliveries: {
+    noPermission:
+      "Vous devez avoir l'autorisation de gérer les paramètres de l'organisation pour gérer les webhooks.",
+    log: {
+      title: "Journal des livraisons",
+      description:
+        "Chaque événement envoyé à vos points de terminaison, avec chaque tentative et réponse. Les entrées sont conservées 30 jours.",
+      endpointFilter: "Point de terminaison",
+      statusFilter: "Statut",
+      allEndpoints: "Tous les points de terminaison",
+      allStatuses: "Tous les statuts",
+      empty: "Aucune livraison ne correspond à ces filtres.",
+      loadMore: "Charger plus",
+      details: "Détails",
+      deletedEndpoint: "Point de terminaison supprimé",
+      testEvent: "Événement de test",
+      attempts: "Tentatives : {count}",
+      nextAttempt: "Prochaine tentative {time}",
+      sending: "Envoi en cours",
+    },
+    status: {
+      pending: "En attente",
+      retrying: "Nouvelle tentative",
+      succeeded: "Livré",
+      failed_transient: "Échec",
+      failed_permanent: "Échec définitif",
+      cancelled: "Annulé",
+    },
+    outcome: {
+      succeeded: "Livré",
+      failed_transient: "Échec temporaire",
+      failed_permanent: "Échec définitif",
+    },
+    reasons: {
+      http_error: "Le destinataire a répondu HTTP {status}",
+      timeout: "Aucune réponse en 10 secondes",
+      network_error: "Connexion au point de terminaison impossible",
+      attempt_lost: "La tentative n'a pas transmis son résultat",
+      event_expired: "L'événement n'est plus conservé",
+      endpoint_deleted: "Le point de terminaison a été supprimé",
+      endpoint_disabled: "Le point de terminaison a été désactivé",
+      endpoint_insecure: "L'URL du point de terminaison n'utilise pas HTTPS",
+      endpoint_unsubscribed:
+        "Le point de terminaison n'est plus abonné à cet événement",
+    },
+    detail: {
+      title: "Détails de la livraison",
+      deliveryId: "ID de livraison",
+      eventId: "ID d'événement",
+      event: "Événement",
+      endpoint: "Point de terminaison",
+      created: "Créé",
+      payload: "Contenu (version {version})",
+      attemptsTitle: "Tentatives",
+      noAttempts: "Aucune requête n'a été envoyée pour cette livraison.",
+      attempt: "Tentative {number}",
+      duration: "{ms} ms",
+      retry: "Relancer la livraison",
+      retrying: "Relance...",
+      retryHelp:
+        "Une relance renvoie le même contenu avec le même ID de livraison, afin que votre destinataire puisse ignorer les doublons.",
+      notFound: "Cette livraison n'est plus disponible.",
+      close: "Fermer",
+    },
+    endpoint: {
+      lastDelivery: "Dernière livraison {time}",
+      neverDelivered: "Pas encore livré",
+      viewDeliveries: "Livraisons",
+      sendTest: "Envoyer un test",
+      testQueued:
+        "Événement de test en file d'attente. Son résultat apparaît dans le journal des livraisons.",
+      rotateSecret: "Renouveler le secret",
+    },
+    rotate: {
+      title: "Renouveler le secret de signature ?",
+      description:
+        "Le secret actuel cesse de fonctionner immédiatement. Chaque tentative ultérieure, y compris les relances, est signée avec le nouveau secret : mettez à jour votre destinataire.",
+      confirm: "Renouveler le secret",
+      cancel: "Annuler",
+      rotatedTitle: "Nouveau secret de signature",
+      rotatedDescription:
+        "Copiez ce secret maintenant. Vous ne pourrez plus le revoir.",
+      done: "Terminé",
+    },
+    signing: {
+      title: "Vérifier les livraisons",
+      signature:
+        "X-ML-Signature vaut sha256= suivi du HMAC-SHA256 hexadécimal du corps brut de la requête, calculé avec votre secret de signature.",
+      signatureV2:
+        "X-ML-Signature-V2 vaut v2= suivi du HMAC-SHA256 de la valeur X-ML-Delivery, d'un point, de la valeur X-ML-Timestamp, d'un point et du corps. X-ML-Timestamp est l'heure d'envoi en secondes Unix ; rejetez les valeurs hors de votre marge de tolérance.",
+      duplicates:
+        "Les relances réutilisent X-ML-Delivery et le même corps. Considérez un ID de livraison répété comme déjà traité.",
+      retries:
+        "Toute réponse 2xx compte comme livrée. Après un délai dépassé, une erreur réseau ou une réponse 408, 429 ou 5xx, l'événement est renvoyé, jusqu'à 6 envois au total sur environ 3 heures. Les redirections ne sont pas suivies et les autres réponses ne sont pas relancées.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Saisissez un nom pour le point de terminaison.",
+      WEBHOOK_URL_INVALID: "Saisissez une URL HTTPS valide.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "L'un des événements sélectionnés n'est pas disponible.",
+      WEBHOOK_LIMIT_REACHED:
+        "Cette organisation a déjà le nombre maximal de points de terminaison webhook.",
+      WEBHOOK_NOT_FOUND: "Ce point de terminaison n'existe plus.",
+      WEBHOOK_DISABLED:
+        "Activez le point de terminaison avant de lui envoyer des événements.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "Le point de terminaison n'est plus abonné à cet événement. Réabonnez-le avant de relancer.",
+      DELIVERY_NOT_FOUND: "Cette livraison n'existe plus.",
+      DELIVERY_NOT_RETRYABLE:
+        "Seules les livraisons en échec ou annulées peuvent être relancées.",
+      fallback: "L'action n'a pas pu être effectuée. Réessayez.",
+    },
+  },
   activity: {
     title: "Activité",
     headerTitle: "Activité",

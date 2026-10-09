@@ -1368,6 +1368,115 @@ export default {
       failedToDeleteWebhook: "Failed to delete webhook",
     },
   },
+  webhookDeliveries: {
+    noPermission:
+      "You need permission to manage organization settings to manage webhooks.",
+    log: {
+      title: "Delivery log",
+      description:
+        "Every event sent to your endpoints, with each attempt and response. Entries are kept for 30 days.",
+      endpointFilter: "Endpoint",
+      statusFilter: "Status",
+      allEndpoints: "All endpoints",
+      allStatuses: "All statuses",
+      empty: "No deliveries match these filters.",
+      loadMore: "Load more",
+      details: "Details",
+      deletedEndpoint: "Deleted endpoint",
+      testEvent: "Test event",
+      attempts: "Attempts: {count}",
+      nextAttempt: "Next attempt {time}",
+      sending: "Sending now",
+    },
+    status: {
+      pending: "Pending",
+      retrying: "Retrying",
+      succeeded: "Delivered",
+      failed_transient: "Failed",
+      failed_permanent: "Failed permanently",
+      cancelled: "Cancelled",
+    },
+    outcome: {
+      succeeded: "Delivered",
+      failed_transient: "Retryable failure",
+      failed_permanent: "Permanent failure",
+    },
+    reasons: {
+      http_error: "Receiver answered HTTP {status}",
+      timeout: "No response within 10 seconds",
+      network_error: "Could not connect to the endpoint",
+      attempt_lost: "The attempt did not report back",
+      event_expired: "The event is no longer stored",
+      endpoint_deleted: "The endpoint was deleted",
+      endpoint_disabled: "The endpoint was disabled",
+      endpoint_insecure: "The endpoint URL is not HTTPS",
+      endpoint_unsubscribed: "The endpoint no longer subscribes to this event",
+    },
+    detail: {
+      title: "Delivery details",
+      deliveryId: "Delivery ID",
+      eventId: "Event ID",
+      event: "Event",
+      endpoint: "Endpoint",
+      created: "Created",
+      payload: "Payload (version {version})",
+      attemptsTitle: "Attempts",
+      noAttempts: "No request has been sent for this delivery.",
+      attempt: "Attempt {number}",
+      duration: "{ms} ms",
+      retry: "Retry delivery",
+      retrying: "Retrying...",
+      retryHelp:
+        "A retry resends the same payload with the same delivery ID, so your receiver can ignore duplicates.",
+      notFound: "This delivery is no longer available.",
+      close: "Close",
+    },
+    endpoint: {
+      lastDelivery: "Last delivered {time}",
+      neverDelivered: "Not delivered yet",
+      viewDeliveries: "Deliveries",
+      sendTest: "Send test",
+      testQueued: "Test event queued. Its result appears in the delivery log.",
+      rotateSecret: "Rotate secret",
+    },
+    rotate: {
+      title: "Rotate signing secret?",
+      description:
+        "The current secret stops working immediately. Every later attempt, including retries, is signed with the new secret, so update your receiver.",
+      confirm: "Rotate secret",
+      cancel: "Cancel",
+      rotatedTitle: "New signing secret",
+      rotatedDescription:
+        "Copy this secret now. You won't be able to see it again.",
+      done: "Done",
+    },
+    signing: {
+      title: "Verifying deliveries",
+      signature:
+        "X-ML-Signature is sha256= followed by the hex HMAC-SHA256 of the raw request body, keyed with your signing secret.",
+      signatureV2:
+        "X-ML-Signature-V2 is v2= followed by the HMAC-SHA256 of the X-ML-Delivery value, a period, the X-ML-Timestamp value, a period and the body. X-ML-Timestamp is the send time in Unix seconds; reject values outside your tolerance window.",
+      duplicates:
+        "Retries reuse X-ML-Delivery and the same body. Treat a repeated delivery ID as already processed.",
+      retries:
+        "Any 2xx response counts as delivered. After timeouts, network errors, 408, 429 and 5xx responses an event is sent again, up to 6 sends in total over about 3 hours. Redirects are not followed, and other responses are not retried.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Enter a name for the endpoint.",
+      WEBHOOK_URL_INVALID: "Enter a valid HTTPS URL.",
+      WEBHOOK_EVENT_UNSUPPORTED: "One of the selected events is not available.",
+      WEBHOOK_LIMIT_REACHED:
+        "This organization already has the maximum number of webhook endpoints.",
+      WEBHOOK_NOT_FOUND: "This endpoint no longer exists.",
+      WEBHOOK_DISABLED: "Enable the endpoint before sending to it.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "The endpoint no longer subscribes to this event. Subscribe it again before retrying.",
+      DELIVERY_NOT_FOUND: "This delivery no longer exists.",
+      DELIVERY_NOT_RETRYABLE:
+        "Only failed or cancelled deliveries can be retried.",
+      fallback: "The action could not be completed. Try again.",
+    },
+  },
   activity: {
     title: "Activity",
     headerTitle: "Activity",

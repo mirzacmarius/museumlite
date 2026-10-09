@@ -78,7 +78,7 @@ describe("Webhook integrations", () => {
       organizationId,
       name: "Collection Events",
       url: "https://example.com/webhooks/collections",
-      events: ["collection.created", "collection.updated"],
+      events: ["collection.created", "media.uploaded"],
     });
 
     expect(result.id).toBeDefined();
@@ -91,7 +91,7 @@ describe("Webhook integrations", () => {
     expect(webhooks[0]?.url).toBe("https://example.com/webhooks/collections");
     expect(webhooks[0]?.events).toEqual([
       "collection.created",
-      "collection.updated",
+      "media.uploaded",
     ]);
     expect(webhooks[0]?.isActive).toBe(true);
   });
@@ -105,14 +105,14 @@ describe("Webhook integrations", () => {
       organizationId,
       name: "Loan Events",
       url: "https://example.com/webhooks/loans",
-      events: ["loan.created"],
+      events: ["loan.approved"],
     });
 
     const webhook = await authed.query(api.webhooks.get, { webhookId: id });
 
     expect(webhook).not.toBeNull();
     expect(webhook?.secret).toBe(secret);
-    expect(webhook?.events).toEqual(["loan.created"]);
+    expect(webhook?.events).toEqual(["loan.approved"]);
   });
 
   test("should update webhook event subscriptions", async () => {
@@ -129,16 +129,12 @@ describe("Webhook integrations", () => {
 
     await authed.mutation(api.webhooks.update, {
       webhookId: id,
-      events: ["media.uploaded", "accession.created", "accession.approved"],
+      events: ["media.uploaded", "loan.approved"],
       isActive: false,
     });
 
     const webhook = await authed.query(api.webhooks.get, { webhookId: id });
-    expect(webhook?.events).toEqual([
-      "media.uploaded",
-      "accession.created",
-      "accession.approved",
-    ]);
+    expect(webhook?.events).toEqual(["media.uploaded", "loan.approved"]);
     expect(webhook?.isActive).toBe(false);
   });
 
@@ -151,7 +147,7 @@ describe("Webhook integrations", () => {
       organizationId,
       name: "Temporary Webhook",
       url: "https://example.com/webhooks/temp",
-      events: ["loan.returned"],
+      events: ["loan.approved"],
     });
 
     await authed.mutation(api.webhooks.deleteWebhook, { webhookId: id });
@@ -173,10 +169,12 @@ describe("Webhook integrations", () => {
       events: ["collection.created"],
     });
 
-    const result = await t.action(api.webhooksActions.test, { webhookId: id });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Not authenticated");
+    await expect(
+      t.mutation(api.webhookDeliveries.sendTest, {
+        organizationId,
+        webhookId: id,
+      }),
+    ).rejects.toThrow("Not authenticated");
   });
 });
 

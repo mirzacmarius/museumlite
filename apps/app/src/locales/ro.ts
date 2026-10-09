@@ -5507,6 +5507,118 @@ export default {
       failedToDeleteWebhook: "Ștergerea webhookului a eșuat",
     },
   },
+  webhookDeliveries: {
+    noPermission:
+      "Ai nevoie de permisiunea de a gestiona setările organizației pentru a administra webhook-urile.",
+    log: {
+      title: "Jurnal de livrări",
+      description:
+        "Fiecare eveniment trimis către endpoint-urile tale, cu fiecare încercare și răspuns. Înregistrările se păstrează 30 de zile.",
+      endpointFilter: "Endpoint",
+      statusFilter: "Stare",
+      allEndpoints: "Toate endpoint-urile",
+      allStatuses: "Toate stările",
+      empty: "Nicio livrare nu corespunde acestor filtre.",
+      loadMore: "Încarcă mai multe",
+      details: "Detalii",
+      deletedEndpoint: "Endpoint șters",
+      testEvent: "Eveniment de test",
+      attempts: "Încercări: {count}",
+      nextAttempt: "Următoarea încercare {time}",
+      sending: "Se trimite acum",
+    },
+    status: {
+      pending: "În așteptare",
+      retrying: "Se reîncearcă",
+      succeeded: "Livrat",
+      failed_transient: "Eșuat",
+      failed_permanent: "Eșuat definitiv",
+      cancelled: "Anulat",
+    },
+    outcome: {
+      succeeded: "Livrat",
+      failed_transient: "Eșec temporar",
+      failed_permanent: "Eșec definitiv",
+    },
+    reasons: {
+      http_error: "Destinatarul a răspuns HTTP {status}",
+      timeout: "Niciun răspuns în 10 secunde",
+      network_error: "Nu s-a putut realiza conexiunea cu endpoint-ul",
+      attempt_lost: "Încercarea nu și-a raportat rezultatul",
+      event_expired: "Evenimentul nu mai este stocat",
+      endpoint_deleted: "Endpoint-ul a fost șters",
+      endpoint_disabled: "Endpoint-ul a fost dezactivat",
+      endpoint_insecure: "URL-ul endpoint-ului nu folosește HTTPS",
+      endpoint_unsubscribed:
+        "Endpoint-ul nu mai este abonat la acest eveniment",
+    },
+    detail: {
+      title: "Detaliile livrării",
+      deliveryId: "ID livrare",
+      eventId: "ID eveniment",
+      event: "Eveniment",
+      endpoint: "Endpoint",
+      created: "Creat",
+      payload: "Conținut (versiunea {version})",
+      attemptsTitle: "Încercări",
+      noAttempts: "Nu a fost trimisă nicio cerere pentru această livrare.",
+      attempt: "Încercarea {number}",
+      duration: "{ms} ms",
+      retry: "Reîncearcă livrarea",
+      retrying: "Se reîncearcă...",
+      retryHelp:
+        "O reîncercare retrimite același conținut cu același ID de livrare, astfel încât destinatarul să poată ignora duplicatele.",
+      notFound: "Această livrare nu mai este disponibilă.",
+      close: "Închide",
+    },
+    endpoint: {
+      lastDelivery: "Ultima livrare {time}",
+      neverDelivered: "Nelivrat încă",
+      viewDeliveries: "Livrări",
+      sendTest: "Trimite test",
+      testQueued:
+        "Evenimentul de test a fost pus în coadă. Rezultatul apare în jurnalul de livrări.",
+      rotateSecret: "Schimbă secretul",
+    },
+    rotate: {
+      title: "Schimbi secretul de semnare?",
+      description:
+        "Secretul actual nu mai funcționează imediat. Fiecare încercare ulterioară, inclusiv reîncercările, este semnată cu noul secret, așa că actualizează destinatarul.",
+      confirm: "Schimbă secretul",
+      cancel: "Anulează",
+      rotatedTitle: "Secret de semnare nou",
+      rotatedDescription:
+        "Copiază acest secret acum. Nu îl vei mai putea vedea.",
+      done: "Gata",
+    },
+    signing: {
+      title: "Verificarea livrărilor",
+      signature:
+        "X-ML-Signature este sha256= urmat de HMAC-SHA256 în hexazecimal al corpului brut al cererii, calculat cu secretul tău de semnare.",
+      signatureV2:
+        "X-ML-Signature-V2 este v2= urmat de HMAC-SHA256 al valorii X-ML-Delivery, un punct, valoarea X-ML-Timestamp, un punct și corpul. X-ML-Timestamp este ora trimiterii în secunde Unix; respinge valorile din afara intervalului tău de toleranță.",
+      duplicates:
+        "Reîncercările refolosesc X-ML-Delivery și același corp. Tratează un ID de livrare repetat ca deja procesat.",
+      retries:
+        "Orice răspuns 2xx contează ca livrat. După expirări, erori de rețea și răspunsuri 408, 429 și 5xx evenimentul este retrimis, până la 6 trimiteri în total pe parcursul a aproximativ 3 ore. Redirecționările nu sunt urmate, iar celelalte răspunsuri nu se reîncearcă.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Introdu un nume pentru endpoint.",
+      WEBHOOK_URL_INVALID: "Introdu un URL HTTPS valid.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "Unul dintre evenimentele selectate nu este disponibil.",
+      WEBHOOK_LIMIT_REACHED:
+        "Această organizație are deja numărul maxim de endpoint-uri webhook.",
+      WEBHOOK_NOT_FOUND: "Acest endpoint nu mai există.",
+      WEBHOOK_DISABLED: "Activează endpoint-ul înainte de a trimite către el.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "Endpoint-ul nu mai este abonat la acest eveniment. Abonează-l din nou înainte de a reîncerca.",
+      DELIVERY_NOT_FOUND: "Această livrare nu mai există.",
+      DELIVERY_NOT_RETRYABLE:
+        "Doar livrările eșuate sau anulate pot fi reîncercate.",
+      fallback: "Acțiunea nu a putut fi finalizată. Încearcă din nou.",
+    },
+  },
   activity: {
     title: "Activitate",
     headerTitle: "Activitate",

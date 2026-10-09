@@ -395,9 +395,12 @@ interface DerivedDocuments {
   exportParts: Array<Doc<"exportParts">>;
   caseHistoryState: Array<Doc<"caseHistoryState">>;
   caseHistoryEntries: Array<Doc<"caseHistoryEntries">>;
+  webhookEvents: Array<Doc<"webhookEvents">>;
+  webhookDeliveries: Array<Doc<"webhookDeliveries">>;
+  webhookDeliveryAttempts: Array<Doc<"webhookDeliveryAttempts">>;
 }
 
-/** Export, projection and case-history rows, read through organization or parent indexes. */
+/** Export, projection, case-history and webhook delivery rows, read through organization or parent indexes. */
 async function collectDerivedDocuments(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
@@ -409,6 +412,9 @@ async function collectDerivedDocuments(
     exportJobs,
     caseHistoryState,
     caseHistoryEntries,
+    webhookEvents,
+    webhookDeliveries,
+    webhookDeliveryAttempts,
   ] = await Promise.all([
     ctx.db
       .query("organizationProjectionStates")
@@ -443,6 +449,24 @@ async function collectDerivedDocuments(
     ctx.db
       .query("caseHistoryEntries")
       .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("webhookEvents")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("webhookDeliveries")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("webhookDeliveryAttempts")
+      .withIndex("by_organizationId", (q) =>
         q.eq("organizationId", organizationId),
       )
       .collect(),
@@ -510,6 +534,9 @@ async function collectDerivedDocuments(
     exportParts: perJob.flatMap((entry) => entry.parts),
     caseHistoryState,
     caseHistoryEntries,
+    webhookEvents,
+    webhookDeliveries,
+    webhookDeliveryAttempts,
   };
 }
 

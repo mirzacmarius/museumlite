@@ -1389,6 +1389,118 @@ export default {
 
     testError: "Testen mislyktes",
   },
+  webhookDeliveries: {
+    noPermission:
+      "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å administrere webhooks.",
+    log: {
+      title: "Leveringslogg",
+      description:
+        "Alle hendelser sendt til endepunktene dine, med hvert forsøk og svar. Oppføringer beholdes i 30 dager.",
+      endpointFilter: "Endepunkt",
+      statusFilter: "Status",
+      allEndpoints: "Alle endepunkter",
+      allStatuses: "Alle statuser",
+      empty: "Ingen leveringer samsvarer med disse filtrene.",
+      loadMore: "Last inn flere",
+      details: "Detaljer",
+      deletedEndpoint: "Slettet endepunkt",
+      testEvent: "Testhendelse",
+      attempts: "Forsøk: {count}",
+      nextAttempt: "Neste forsøk {time}",
+      sending: "Sender nå",
+    },
+    status: {
+      pending: "Venter",
+      retrying: "Prøver igjen",
+      succeeded: "Levert",
+      failed_transient: "Mislyktes",
+      failed_permanent: "Mislyktes permanent",
+      cancelled: "Avbrutt",
+    },
+    outcome: {
+      succeeded: "Levert",
+      failed_transient: "Midlertidig feil",
+      failed_permanent: "Permanent feil",
+    },
+    reasons: {
+      http_error: "Mottakeren svarte HTTP {status}",
+      timeout: "Ingen svar innen 10 sekunder",
+      network_error: "Kunne ikke koble til endepunktet",
+      attempt_lost: "Forsøket rapporterte ikke tilbake",
+      event_expired: "Hendelsen er ikke lenger lagret",
+      endpoint_deleted: "Endepunktet ble slettet",
+      endpoint_disabled: "Endepunktet ble deaktivert",
+      endpoint_insecure: "Endepunktets URL bruker ikke HTTPS",
+      endpoint_unsubscribed:
+        "Endepunktet abonnerer ikke lenger på denne hendelsen",
+    },
+    detail: {
+      title: "Leveringsdetaljer",
+      deliveryId: "Leverings-ID",
+      eventId: "Hendelses-ID",
+      event: "Hendelse",
+      endpoint: "Endepunkt",
+      created: "Opprettet",
+      payload: "Innhold (versjon {version})",
+      attemptsTitle: "Forsøk",
+      noAttempts: "Ingen forespørsel er sendt for denne leveringen.",
+      attempt: "Forsøk {number}",
+      duration: "{ms} ms",
+      retry: "Prøv leveringen igjen",
+      retrying: "Prøver igjen...",
+      retryHelp:
+        "Et nytt forsøk sender det samme innholdet med samme leverings-ID, slik at mottakeren kan se bort fra duplikater.",
+      notFound: "Denne leveringen er ikke lenger tilgjengelig.",
+      close: "Lukk",
+    },
+    endpoint: {
+      lastDelivery: "Sist levert {time}",
+      neverDelivered: "Ikke levert ennå",
+      viewDeliveries: "Leveringer",
+      sendTest: "Send test",
+      testQueued:
+        "Testhendelsen er lagt i kø. Resultatet vises i leveringsloggen.",
+      rotateSecret: "Bytt hemmelighet",
+    },
+    rotate: {
+      title: "Bytte signeringshemmelighet?",
+      description:
+        "Den nåværende hemmeligheten slutter å virke umiddelbart. Alle senere forsøk, også nye forsøk, signeres med den nye hemmeligheten, så oppdater mottakeren.",
+      confirm: "Bytt hemmelighet",
+      cancel: "Avbryt",
+      rotatedTitle: "Ny signeringshemmelighet",
+      rotatedDescription:
+        "Kopier denne hemmeligheten nå. Du vil ikke kunne se den igjen.",
+      done: "Ferdig",
+    },
+    signing: {
+      title: "Verifisere leveringer",
+      signature:
+        "X-ML-Signature er sha256= etterfulgt av heksadesimal HMAC-SHA256 av den rå forespørselsteksten, med signeringshemmeligheten som nøkkel.",
+      signatureV2:
+        "X-ML-Signature-V2 er v2= etterfulgt av HMAC-SHA256 av X-ML-Delivery-verdien, et punktum, X-ML-Timestamp-verdien, et punktum og teksten. X-ML-Timestamp er sendetidspunktet i Unix-sekunder; avvis verdier utenfor toleransevinduet ditt.",
+      duplicates:
+        "Nye forsøk gjenbruker X-ML-Delivery og samme tekst. Behandle en gjentatt leverings-ID som allerede behandlet.",
+      retries:
+        "Alle 2xx-svar regnes som levert. Etter tidsavbrudd, nettverksfeil og svarene 408, 429 og 5xx sendes hendelsen på nytt, opptil 6 sendinger totalt over omtrent 3 timer. Omdirigeringer følges ikke, og andre svar prøves ikke på nytt.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Skriv inn et navn på endepunktet.",
+      WEBHOOK_URL_INVALID: "Skriv inn en gyldig HTTPS-URL.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "En av de valgte hendelsene er ikke tilgjengelig.",
+      WEBHOOK_LIMIT_REACHED:
+        "Denne organisasjonen har allerede maksimalt antall webhook-endepunkter.",
+      WEBHOOK_NOT_FOUND: "Dette endepunktet finnes ikke lenger.",
+      WEBHOOK_DISABLED: "Aktiver endepunktet før du sender til det.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "Endepunktet abonnerer ikke lenger på denne hendelsen. Abonner på nytt før du prøver igjen.",
+      DELIVERY_NOT_FOUND: "Denne leveringen finnes ikke lenger.",
+      DELIVERY_NOT_RETRYABLE:
+        "Bare mislykkede eller avbrutte leveringer kan prøves på nytt.",
+      fallback: "Handlingen kunne ikke fullføres. Prøv igjen.",
+    },
+  },
   activity: {
     title: "Aktivitet",
     headerTitle: "Aktivitet",

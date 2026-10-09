@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { errorData } from "./custodyErrors";
+import { convexErrorData as errorData } from "./convexErrorData";
 
 /**
  * Accession lifecycle. `withdrawn` is an intake a reviewer took out of active

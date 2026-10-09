@@ -1,4 +1,5 @@
 import { ConvexError } from "convex/values";
+import { convexErrorData } from "./convexErrorData";
 
 /**
  * Stable codes for custody and movement conflicts that staff can resolve.
@@ -53,27 +54,6 @@ export function custodyConflict(
   return new ConvexError(data);
 }
 
-/** Payload of a ConvexError, whether thrown in-process or received by a client. */
-export function errorData(error: unknown): unknown {
-  if (
-    typeof error !== "object" ||
-    error === null ||
-    !(
-      error instanceof ConvexError ||
-      ("name" in error && error.name === "ConvexError")
-    ) ||
-    !("data" in error)
-  ) {
-    return undefined;
-  }
-  if (typeof error.data !== "string") return error.data;
-  try {
-    return JSON.parse(error.data);
-  } catch {
-    return undefined;
-  }
-}
-
 function optionalString(value: unknown) {
   return typeof value === "string" ? value : undefined;
 }
@@ -86,7 +66,7 @@ function optionalNumber(value: unknown) {
 export function custodyConflictFromError(
   error: unknown,
 ): CustodyConflictData | null {
-  const data = errorData(error);
+  const data = convexErrorData(error);
   if (typeof data !== "object" || data === null || !("code" in data)) {
     return null;
   }
