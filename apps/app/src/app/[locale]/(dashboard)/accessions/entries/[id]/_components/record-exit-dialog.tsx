@@ -22,6 +22,7 @@ import { PartyPicker, usePartyPickerAccess } from "@/components/party-picker";
 import { useEntryErrorMessage } from "@/hooks/use-entry-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { handoffTime } from "../../_components/entry-dates";
+import { recordExitSchema } from "../../_components/entry-form-schemas";
 
 interface ExitForm {
   recipient: string;
@@ -64,9 +65,10 @@ export function RecordExitDialog({
     value: ExitForm[Field],
   ) => setForm((current) => ({ ...current, [field]: value }));
   const { isSaving, exitedAt } = form;
-  const isValid =
-    exitedAt !== undefined &&
-    (form.recipient.trim().length > 0 || form.recipientAccountId !== undefined);
+  const isValid = recordExitSchema.safeParse({
+    recipient: { name: form.recipient, accountId: form.recipientAccountId },
+    exitedAt,
+  }).success;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

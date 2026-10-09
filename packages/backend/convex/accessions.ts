@@ -1783,7 +1783,7 @@ const intakeReviewDecisionRecords = {
  * Applies a reviewer decision to an intake and records it in the case
  * history, workflow history and audit log, and tells the submitter why.
  */
-async function recordIntakeReviewDecision(
+export async function recordIntakeReviewDecision(
   ctx: MutationCtx,
   accession: Doc<"accessions">,
   {

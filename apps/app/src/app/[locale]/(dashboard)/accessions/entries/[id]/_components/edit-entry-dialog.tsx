@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { EntryStatus } from "@v1/backend/convex/utils/objectEntryValidators";
 import { Button } from "@v1/ui/button";
 import { DatePicker } from "@v1/ui/date-picker";
 import {
@@ -25,6 +26,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PartyPicker, usePartyPickerAccess } from "@/components/party-picker";
 import { useEntryErrorMessage } from "@/hooks/use-entry-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { endOfDay } from "../../_components/entry-dates";
@@ -32,6 +34,9 @@ import { endOfDay } from "../../_components/entry-dates";
 interface EditableEntry {
   _id: Id<"objectEntries">;
   organizationId: Id<"organizations">;
+  status: EntryStatus;
+  ownerName?: string;
+  ownerAccountId?: Id<"accounts">;
   purposeNote?: string;
   responsibleUserId: Id<"users">;
   responsibilityTerms?: string;
@@ -41,6 +46,8 @@ interface EditableEntry {
 }
 
 interface EditForm {
+  ownerName: string;
+  ownerAccountId: Id<"accounts"> | undefined;
   responsibleUserId: string;
   responsibilityTerms: string;
   decisionDueAt: Date | undefined;
@@ -57,6 +64,8 @@ function dateOrUndefined(timestamp: number | undefined) {
 /** The dialog is mounted when opened, so it starts from the entry's values. */
 function initialForm(entry: EditableEntry): EditForm {
   return {
+    ownerName: entry.ownerName ?? "",
+    ownerAccountId: entry.ownerAccountId,
     responsibleUserId: entry.responsibleUserId,
     responsibilityTerms: entry.responsibilityTerms ?? "",
     decisionDueAt: dateOrUndefined(entry.decisionDueAt),
@@ -86,6 +95,12 @@ export function EditEntryDialog({
     value: EditForm[Field],
   ) => setForm((current) => ({ ...current, [field]: value }));
   const { isSaving } = form;
+  // The owner is the source of title, so it is fixed once an acquisition opens.
+  const canChangeOwner = entry.status === "in_custody";
+  const { canPick } = usePartyPickerAccess();
+  const ownerChanged =
+    form.ownerAccountId !== entry.ownerAccountId ||
+    form.ownerName.trim() !== (entry.ownerName ?? "");
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -93,6 +108,15 @@ export function EditEntryDialog({
     try {
       await update({
         entryId: entry._id,
+        ...(canChangeOwner && ownerChanged
+          ? {
+              ownerName: form.ownerName,
+              ownerAccountId:
+                form.ownerAccountId === entry.ownerAccountId
+                  ? undefined
+                  : form.ownerAccountId,
+            }
+          : {}),
         responsibleUserId: form.responsibleUserId as Id<"users">,
         responsibilityTerms: form.responsibilityTerms,
         decisionDueAt: form.decisionDueAt ? endOfDay(form.decisionDueAt) : null,
@@ -116,6 +140,50 @@ export function EditEntryDialog({
             <DialogTitle>{t("editDialog.title")}</DialogTitle>
             <DialogDescription>{t("editDialog.description")}</DialogDescription>
           </DialogHeader>
+          {canChangeOwner ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {canPick ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="entry-edit-owner-party">
+                    {t("fields.ownerParty")}
+                  </Label>
+                  <PartyPicker
+                    id="entry-edit-owner-party"
+                    organizationId={entry.organizationId}
+                    value={form.ownerAccountId}
+                    onChange={(party) =>
+                      setForm((current) => ({
+                        ...current,
+                        ownerAccountId: party?._id,
+                        ownerName: party
+                          ? party.displayName
+                          : current.ownerName,
+                      }))
+                    }
+                    disabled={isSaving}
+                  />
+                </div>
+              ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="entry-edit-owner">{t("fields.owner")}</Label>
+                <Input
+                  id="entry-edit-owner"
+                  value={form.ownerName}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      ownerName: event.target.value,
+                      ownerAccountId: undefined,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("fields.ownerHint")}
+                </p>
+              </div>
+            </div>
+          ) : null}
           <div className="space-y-1.5">
             <Label htmlFor="entry-edit-responsible">
               {t("fields.responsible")}

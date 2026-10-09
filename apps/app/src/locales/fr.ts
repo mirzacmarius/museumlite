@@ -5472,11 +5472,13 @@ export default {
       noLocation: "Aucun emplacement enregistré",
       notRecorded: "Non enregistré",
       ownerNotRecorded: "Non établi",
+      ownerNeeded:
+        "Aucun propriétaire n’est enregistré. Enregistrez-le dans Modifier les détails avant d’engager une acquisition.",
       acquisition: "Acquisition",
       noAcquisition: "Aucune acquisition n’a été engagée.",
       openAccession: "Ouvrir l’inscription {number}",
       acquisitionDraft:
-        "Brouillon : joignez les preuves de propriété, puis soumettez-le à approbation.",
+        "Brouillon : joignez les preuves de propriété et soumettez-le à approbation, ou retirez-le.",
       acquisitionPending:
         "En attente d’approbation selon la politique d’inscription.",
       acquisitionWithdrawn:
@@ -5490,6 +5492,7 @@ export default {
     },
     actions: {
       beginAcquisition: "Engager l’acquisition",
+      withdrawAcquisition: "Retirer l’acquisition",
       recordExit: "Enregistrer la sortie",
       edit: "Modifier les détails",
       cancel: "Annuler",
@@ -5529,6 +5532,14 @@ export default {
       observedAt: "Le personnel a confirmé que l’objet se trouve à {location}",
       submit: "Enregistrer la sortie",
       success: "Sortie enregistrée",
+    },
+    withdrawDialog: {
+      title: "Retirer l’acquisition",
+      description:
+        "L’inscription en brouillon est retirée avec votre motif et conservée dans son historique. Le bien reste en dépôt au titre de cette entrée.",
+      reason: "Motif",
+      submit: "Retirer l’acquisition",
+      success: "Acquisition retirée",
     },
     editDialog: {
       title: "Modifier les détails de l’entrée",
@@ -5575,6 +5586,13 @@ export default {
         "Le bien a déjà quitté la garde ; cette acquisition ne peut donc pas être restaurée.",
       objectRecordedOnEntry:
         "Cet objet a été enregistré à l’entrée. Modifiez plutôt la fiche de l’objet.",
+      numberInvalid:
+        "Un numéro d’entrée doit compter de 1 à 256 caractères visibles.",
+      acquisitionInReview:
+        "Cette acquisition est à l’examen ; ses examinateurs décident de son retrait.",
+      reasonRequired: "Indiquez un motif.",
+      exitRequired:
+        "Cet objet est conservé au titre d’une entrée. Enregistrez sa sortie sur l’entrée au lieu de le retirer.",
       fallback: "L’entrée n’a pas pu être enregistrée. Réessayez.",
     },
   },

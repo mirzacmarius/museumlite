@@ -30,7 +30,7 @@ import {
   readablePartyTargetLabel,
   recordPartyLink,
   resolvePartyTarget,
-  syncPrimaryPartyField,
+  syncRecordPartyField,
 } from "./utils/partyLinks";
 import {
   type PartyRole,
@@ -307,8 +307,12 @@ export const link = mutation({
       userId,
       origin: "staff",
     });
-    if (created && isPrimary && resolved.policy === "open") {
-      await syncPrimaryPartyField(ctx, args.target, account);
+    if (
+      created &&
+      resolved.policy === "open" &&
+      resolved.mirroredRoles?.includes(args.role)
+    ) {
+      await syncRecordPartyField(ctx, args.target, args.role, account);
     }
     return linkId;
   },
@@ -348,8 +352,8 @@ export const supersede = mutation({
     }
     if (resolved.policy !== "open") partyRecordLocked();
     await endPartyLink(ctx, existing, userId, args.reason);
-    if (existing.role === resolved.primaryRole) {
-      await syncPrimaryPartyField(ctx, target, null);
+    if (resolved.mirroredRoles?.includes(existing.role)) {
+      await syncRecordPartyField(ctx, target, existing.role, null);
     }
     return null;
   },

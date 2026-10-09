@@ -13,14 +13,14 @@ type AccessionsWorkbenchNavProps = {
   pendingTransfers: number | string;
 };
 
-type WorkbenchNavItem = {
+interface WorkbenchNavItem {
   view: AccessionsWorkbenchView;
   href: string;
   label: string;
   description: string;
   icon: typeof LayoutGrid;
   metric?: number | string;
-};
+}
 
 export function AccessionsWorkbenchNav({
   activeView,

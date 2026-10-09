@@ -200,7 +200,7 @@ describe("receiving property into temporary custody", () => {
           }),
         )
       ).code,
-    ).toBe("NUMBER_IN_USE");
+    ).toBe("ENTRY_NUMBER_IN_USE");
   });
 });
 
@@ -234,13 +234,13 @@ describe("entry validation and access", () => {
       codes.push((await entryErrorOf(receive(museum, overrides))).code);
     }
     expect(codes).toEqual([
-      "DEPOSITOR_REQUIRED",
-      "CONDITION_REQUIRED",
-      "TITLE_REQUIRED",
-      "DATES_INVALID",
-      "DATES_INVALID",
-      "DATES_INVALID",
-      "RESPONSIBLE_NOT_MEMBER",
+      "ENTRY_DEPOSITOR_REQUIRED",
+      "ENTRY_CONDITION_REQUIRED",
+      "ENTRY_TITLE_REQUIRED",
+      "ENTRY_DATES_INVALID",
+      "ENTRY_DATES_INVALID",
+      "ENTRY_DATES_INVALID",
+      "ENTRY_RESPONSIBLE_NOT_MEMBER",
     ]);
     expect(
       (
@@ -453,7 +453,7 @@ describe("exit to a recorded recipient", () => {
           }),
         )
       ).code,
-    ).toBe("RECIPIENT_REQUIRED");
+    ).toBe("ENTRY_RECIPIENT_REQUIRED");
     expect(
       (
         await entryErrorOf(
@@ -463,7 +463,7 @@ describe("exit to a recorded recipient", () => {
           }),
         )
       ).code,
-    ).toBe("DATES_INVALID");
+    ).toBe("ENTRY_DATES_INVALID");
 
     const shelf = await t.run(async (ctx) => {
       const shelfId = await ctx.db.insert("locations", {
@@ -666,11 +666,11 @@ describe("acquisition branch", () => {
 
     expect(
       (await entryErrorOf(beginAcquisition(museum, unknownOwner.entryId))).code,
-    ).toBe("OWNER_REQUIRED");
+    ).toBe("ENTRY_OWNER_REQUIRED");
     await beginAcquisition(museum, entryId);
     expect(
       (await entryErrorOf(beginAcquisition(museum, entryId, "2026.15"))).code,
-    ).toBe("NOT_IN_CUSTODY");
+    ).toBe("ENTRY_NOT_IN_CUSTODY");
     vi.setSystemTime(T0 + DAY);
     expect(
       (
@@ -682,7 +682,7 @@ describe("acquisition branch", () => {
           }),
         )
       ).code,
-    ).toBe("ACQUISITION_OPEN");
+    ).toBe("ENTRY_ACQUISITION_OPEN");
   });
 
   test("object details of an entry acquisition stay on the object record", async () => {
@@ -703,7 +703,7 @@ describe("acquisition branch", () => {
           }),
         )
       ).code,
-    ).toBe("OBJECT_RECORDED_ON_ENTRY");
+    ).toBe("ENTRY_OBJECT_RECORDED");
   });
 
   test("a withdrawn acquisition reopens the entry for exit, after which it cannot be restored", async () => {
@@ -823,7 +823,7 @@ describe("property held under an entry is not part of the collection", () => {
             }),
           )
         ).code,
-      ).toBe("TEMPORARY_CUSTODY");
+      ).toBe("ENTRY_TEMPORARY_CUSTODY");
     }
     const emptyLoan = await museum.staff.mutation(api.loans.create, {
       organizationId: museum.organizationId,
@@ -841,8 +841,8 @@ describe("property held under an entry is not part of the collection", () => {
           }),
         )
       ).code,
-    ).toBe("TEMPORARY_CUSTODY");
-    expect((await entryErrorOf(deaccession())).code).toBe("TEMPORARY_CUSTODY");
+    ).toBe("ENTRY_TEMPORARY_CUSTODY");
+    expect((await entryErrorOf(deaccession())).code).toBe("ENTRY_TEMPORARY_CUSTODY");
     const eligibility = await museum.staff.query(
       api.objectMoves.getEligibility,
       {
@@ -1125,7 +1125,7 @@ describe("working with entries", () => {
           }),
         )
       ).code,
-    ).toBe("DATES_INVALID");
+    ).toBe("ENTRY_DATES_INVALID");
 
     vi.setSystemTime(T0 + DAY);
     await museum.staff.mutation(api.objectEntries.recordExit, {
@@ -1180,4 +1180,193 @@ test("offers the organization's members as accountable staff", async () => {
       { organizationId: museum.organizationId },
     ),
   ).rejects.toThrow();
+});
+
+describe("review follow-ups", () => {
+  test("records the owner after receipt so the acquisition branch opens", async () => {
+    const t = createConvexTest();
+    const museum = await createMuseum(t);
+    const ownerId = await insertParty(t, museum, "Popescu Estate");
+    const { entryId } = await receive(museum, { ownerName: undefined });
+    expect((await getEntry(museum.staff, entryId)).ownerName).toBeUndefined();
+
+    await museum.staff.mutation(api.objectEntries.update, {
+      entryId,
+      ownerName: "Ana Popescu",
+    });
+    expect((await getEntry(museum.staff, entryId)).ownerName).toBe(
+      "Ana Popescu",
+    );
+    await museum.staff.mutation(api.partyLinks.link, {
+      target: { type: "entry", id: entryId },
+      accountId: ownerId,
+      role: "owner",
+    });
+    expect(await getEntry(museum.staff, entryId)).toMatchObject({
+      ownerName: "Popescu Estate",
+      ownerAccountId: ownerId,
+    });
+    await expect(beginAcquisition(museum, entryId)).resolves.toBeDefined();
+  });
+
+  test("withdraws a draft acquisition from its entry with a reason", async () => {
+    const t = createConvexTest();
+    const museum = await createMuseum(t);
+    await requireAccessionApproval(t, museum);
+    const { entryId } = await receive(museum);
+    const accessionId = await beginAcquisition(museum, entryId);
+    vi.setSystemTime(T0 + DAY);
+
+    expect(
+      (
+        await entryErrorOf(
+          museum.staff.mutation(api.objectEntries.withdrawAcquisition, {
+            entryId,
+            reason: " ",
+          }),
+        )
+      ).code,
+    ).toBe("ENTRY_REASON_REQUIRED");
+    await museum.staff.mutation(api.objectEntries.withdrawAcquisition, {
+      entryId,
+      reason: "Owner decided to keep it",
+    });
+
+    expect(await getEntry(museum.staff, entryId)).toMatchObject({
+      status: "in_custody",
+      acquisitionDeclinedAt: T0 + DAY,
+      accession: { _id: accessionId, status: "withdrawn" },
+    });
+    const accession = await museum.staff.query(api.accessions.get, {
+      accessionId,
+    });
+    expect(accession?.reviewDecision).toMatchObject({
+      decision: "withdrawn",
+      reason: "Owner decided to keep it",
+    });
+    await museum.staff.mutation(api.objectEntries.recordExit, {
+      entryId,
+      recipientName: "Ana Popescu",
+      exitedAt: T0 + DAY,
+    });
+    expect((await getEntry(museum.staff, entryId)).status).toBe("exited");
+  });
+
+  test("leaves an acquisition under review to its reviewers", async () => {
+    const t = createConvexTest();
+    const museum = await createMuseum(t);
+    await requireAccessionApproval(t, museum);
+    const { entryId } = await receive(museum);
+    const accessionId = await beginAcquisition(museum, entryId);
+    await museum.staff.mutation(api.accessions.submitForApproval, {
+      accessionId,
+    });
+
+    expect(
+      (
+        await entryErrorOf(
+          museum.staff.mutation(api.objectEntries.withdrawAcquisition, {
+            entryId,
+            reason: "Changed mind",
+          }),
+        )
+      ).code,
+    ).toBe("ENTRY_ACQUISITION_IN_REVIEW");
+  });
+
+  test("an entered object leaves custody only through its entry and is not restored after exit", async () => {
+    const t = createConvexTest();
+    const museum = await createMuseum(t, [
+      ...REGISTRAR_PERMISSIONS,
+      "collections.delete",
+    ]);
+    const { entryId, collectionId } = await receive(museum);
+
+    expect(
+      (
+        await entryErrorOf(
+          museum.staff.mutation(api.collections.archiveCollection, {
+            collectionId,
+            reason: "Not ours",
+          }),
+        )
+      ).code,
+    ).toBe("ENTRY_EXIT_REQUIRED");
+    const bulk = await museum.staff.mutation(
+      api.batchOperations.quickBulkStatusChange,
+      {
+      organizationId: museum.organizationId,
+      collectionIds: [collectionId],
+      newStatus: "archived",
+        reason: "Bulk clean-up",
+      },
+    );
+    expect(bulk.failureCount).toBe(1);
+    expect(bulk.errors[0]?.error).toContain("Record the exit");
+    expect((await t.run((ctx) => ctx.db.get(collectionId)))?.status).toBe(
+      "active",
+    );
+
+    vi.setSystemTime(T0 + DAY);
+    await museum.staff.mutation(api.objectEntries.recordExit, {
+      entryId,
+      recipientName: "Ana Popescu",
+      exitedAt: T0 + DAY,
+    });
+    expect(
+      (
+        await entryErrorOf(
+          museum.staff.mutation(api.collections.restoreCollection, {
+            collectionId,
+          }),
+        )
+      ).code,
+    ).toBe("ENTRY_EXITED");
+  });
+
+  test("reports whether the caller may begin the acquisition", async () => {
+    const t = createConvexTest();
+    const museum = await createMuseum(t);
+    const { entryId } = await receive(museum);
+    expect(
+      (await getEntry(museum.staff, entryId)).canInitiateAcquisition,
+    ).toBe(true);
+    await t.run(async (ctx) => {
+      const otherRole = await ctx.db.insert("roles", {
+        organizationId: museum.organizationId,
+        name: "Acquisitions",
+        isSystemRole: false,
+      });
+      await ctx.db.insert("workflowConfigs", {
+        organizationId: museum.organizationId,
+        workflowType: "accession",
+        steps: [{ stepNumber: 1, roleId: otherRole, name: "Committee" }],
+        canInitiateRoles: [otherRole],
+      });
+    });
+    expect(
+      (await getEntry(museum.staff, entryId)).canInitiateAcquisition,
+    ).toBe(false);
+  });
+
+  test("does not announce entered property as a new collection object", async () => {
+    const t = createConvexTest();
+    const museum = await createMuseum(t);
+    await t.run((ctx) =>
+      ctx.db.insert("webhooks", {
+        organizationId: museum.organizationId,
+        name: "Catalogue sync",
+        url: "https://example.test/hook",
+        events: ["collection.created"],
+        secret: "secret",
+        isActive: true,
+        createdBy: museum.userId,
+        createdAt: T0,
+      }),
+    );
+    await receive(museum);
+    expect(
+      await t.run((ctx) => ctx.db.query("webhookEvents").collect()),
+    ).toEqual([]);
+  });
 });

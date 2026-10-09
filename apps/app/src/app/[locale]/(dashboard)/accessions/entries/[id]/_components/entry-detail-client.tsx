@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { isOpenEntryStatus } from "@v1/backend/convex/utils/objectEntryValidators";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -17,9 +18,10 @@ import { EntryStatusBadge } from "../../_components/entry-status-badge";
 import { BeginAcquisitionDialog } from "./begin-acquisition-dialog";
 import { EditEntryDialog } from "./edit-entry-dialog";
 import { RecordExitDialog } from "./record-exit-dialog";
+import { WithdrawAcquisitionDialog } from "./withdraw-acquisition-dialog";
 
 type EntryView = NonNullable<FunctionReturnType<typeof api.objectEntries.get>>;
-type OpenDialog = "acquisition" | "exit" | "edit" | null;
+type OpenDialog = "acquisition" | "withdraw" | "exit" | "edit" | null;
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -60,11 +62,14 @@ function EntryDetail({ entry }: { entry: EntryView }) {
   const locale = useCurrentLocale();
   const { hasPermission } = usePermissions();
   const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
-  const isOpen =
-    entry.status === "in_custody" || entry.status === "acquisition_review";
-  const canUpdate = isOpen && hasPermission("collections.update");
+  const canUpdate =
+    isOpenEntryStatus(entry.status) && hasPermission("collections.update");
   const canBeginAcquisition =
-    entry.status === "in_custody" && hasPermission("collections.create");
+    entry.status === "in_custody" && entry.canInitiateAcquisition;
+  const canWithdrawAcquisition =
+    entry.status === "acquisition_review" &&
+    entry.accession?.isDraft === true &&
+    entry.canInitiateAcquisition;
   const canRecordExit =
     entry.status === "in_custody" && hasPermission("collections.update");
   const date = (timestamp: number | undefined) =>
@@ -93,7 +98,7 @@ function EntryDetail({ entry }: { entry: EntryView }) {
           href="/accessions/entries"
           className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-4" />
           {t("detail.back")}
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -134,7 +139,7 @@ function EntryDetail({ entry }: { entry: EntryView }) {
         </div>
         {canBeginAcquisition && !entry.ownerName ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            {t("errors.ownerRequired")}
+            {t("detail.ownerNeeded")}
           </p>
         ) : null}
       </div>
@@ -215,6 +220,16 @@ function EntryDetail({ entry }: { entry: EntryView }) {
                     ? t("detail.acquisitionDraft")
                     : t("detail.acquisitionPending")}
             </p>
+            {canWithdrawAcquisition ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setOpenDialog("withdraw")}
+              >
+                {t("actions.withdrawAcquisition")}
+              </Button>
+            ) : null}
           </div>
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">
@@ -262,6 +277,12 @@ function EntryDetail({ entry }: { entry: EntryView }) {
         <BeginAcquisitionDialog
           entryId={entry._id}
           ownerName={entry.ownerName}
+          onOpenChange={closeDialog}
+        />
+      ) : null}
+      {canWithdrawAcquisition && openDialog === "withdraw" ? (
+        <WithdrawAcquisitionDialog
+          entryId={entry._id}
           onOpenChange={closeDialog}
         />
       ) : null}

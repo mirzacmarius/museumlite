@@ -7,6 +7,7 @@ import {
   markCollectionActive,
 } from "./collectionLifecycle";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
+import { assertEntryAllowsStatus } from "./objectEntryLifecycle";
 import { requirePermission } from "./permissions";
 
 export async function archiveCollectionHandler(
@@ -48,6 +49,7 @@ export async function archiveCollectionHandler(
     args.collectionId,
     "Cannot archive an object that is currently on loan",
   );
+  await assertEntryAllowsStatus(ctx, args.collectionId, "archived");
 
   await Promise.all([
     applyCollectionDisposition(ctx, {
@@ -99,6 +101,7 @@ export async function restoreCollectionHandler(
     args.collectionId,
     "An object with an active loan cannot be restored",
   );
+  await assertEntryAllowsStatus(ctx, args.collectionId, "active");
 
   const [activeIdentity, pendingDeaccession, conflictingApprovedDeaccession] =
     await Promise.all([

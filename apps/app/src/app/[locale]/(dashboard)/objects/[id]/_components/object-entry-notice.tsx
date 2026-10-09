@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { isOpenEntryStatus } from "@v1/backend/convex/utils/objectEntryValidators";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useScopedI18n } from "@/locales/client";
@@ -24,7 +25,7 @@ export function ObjectEntryNotice({
     </Link>
   );
 
-  if (entry.status === "in_custody" || entry.status === "acquisition_review") {
+  if (isOpenEntryStatus(entry.status)) {
     return (
       <section
         aria-label={t("objectNotice.temporary")}

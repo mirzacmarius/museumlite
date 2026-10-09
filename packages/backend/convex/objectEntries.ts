@@ -1,13 +1,14 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { recordIntakeReviewDecision } from "./accessions";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
+import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { custodyConflict } from "./utils/custodyErrors";
 import { enforceObjectQuota } from "./utils/featureGates";
@@ -28,29 +29,37 @@ import {
   visibleLocationName,
 } from "./utils/locationIntegrity";
 import { mutation } from "./utils/mutationBuilders";
+import { getNextYearBasedValue, padNumber } from "./utils/numberGenerator";
 import { entryError } from "./utils/objectEntryErrors";
 import { entryForObject } from "./utils/objectEntryLifecycle";
 import {
+  acquisitionMethodValidator,
+  entryExitValidator,
   entryPurposeValidator,
   entryStatusValidator,
+  isOpenEntryStatus,
+  objectEntryFields,
 } from "./utils/objectEntryValidators";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { partyDisplayName, requireLinkableParty } from "./utils/parties";
-import { ENTRY_PARTY_ROLES, recordPartyLink } from "./utils/partyLinks";
-import { canInitiateWorkflow, requirePermission } from "./utils/permissions";
-import { emitWebhookEvent } from "./utils/webhookEvents";
+import {
+  currentPartyLink,
+  ENTRY_PARTY_ROLES,
+  endPartyLink,
+  recordPartyLink,
+} from "./utils/partyLinks";
+import {
+  canInitiateWorkflow,
+  hasPermission,
+  requirePermission,
+} from "./utils/permissions";
 
 const MAX_NAME_LENGTH = 300;
 const MAX_TEXT_LENGTH = 4000;
+const MAX_REASON_LENGTH = 2000;
 /** Receipt times may run slightly ahead of the server clock. */
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
 const NUMBERING_ATTEMPTS = 25;
-
-async function requireUserId(ctx: QueryCtx | MutationCtx) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Not authenticated");
-  return userId;
-}
 
 /** Trimmed text, or undefined when blank; refuses text over `max`. */
 function optionalText(
@@ -60,13 +69,13 @@ function optionalText(
   const text = value?.trim();
   if (!text) return undefined;
   if (text.length > max)
-    throw entryError("TEXT_TOO_LONG", `Text must be at most ${max} characters`);
+    throw entryError("ENTRY_TEXT_TOO_LONG", `Text must be at most ${max} characters`);
   return text;
 }
 
 function requireValidDate(value: number | undefined) {
   if (value !== undefined && (!Number.isFinite(value) || value < 0))
-    throw entryError("DATES_INVALID", "Dates must be valid");
+    throw entryError("ENTRY_DATES_INVALID", "Dates must be valid");
 }
 
 /** Due dates cannot fall before the property was received. */
@@ -78,7 +87,7 @@ function requireDueDates(
     requireValidDate(due);
     if (due !== undefined && due < receivedAt)
       throw entryError(
-        "DATES_INVALID",
+        "ENTRY_DATES_INVALID",
         "Due dates cannot be earlier than the receipt",
       );
   }
@@ -97,7 +106,7 @@ async function requireMember(
     .first();
   if (!membership)
     throw entryError(
-      "RESPONSIBLE_NOT_MEMBER",
+      "ENTRY_RESPONSIBLE_NOT_MEMBER",
       "The responsible staff member must belong to this organization",
     );
 }
@@ -131,7 +140,7 @@ function requireIdentifierText(entryNumber: string) {
     )
   )
     throw entryError(
-      "TEXT_TOO_LONG",
+      "ENTRY_NUMBER_INVALID",
       "An entry number must contain 1-256 visible characters",
     );
 }
@@ -147,19 +156,11 @@ async function nextEntryCounterValue(
       q.eq("organizationId", organizationId).eq("year", year),
     )
     .unique();
-  const now = Date.now();
-  if (counter) {
-    const currentValue = counter.currentValue + 1;
-    await ctx.db.patch(counter._id, { currentValue, lastGeneratedAt: now });
-    return currentValue;
-  }
-  await ctx.db.insert("objectEntryCounters", {
+  return await getNextYearBasedValue(ctx, counter, {
+    tableName: "objectEntryCounters",
     organizationId,
     year,
-    currentValue: 1,
-    lastGeneratedAt: now,
   });
-  return 1;
 }
 
 /**
@@ -178,7 +179,7 @@ async function assignEntryNumber(
     requireIdentifierText(entryNumber);
     if (await entryNumberTaken(ctx, organizationId, entryNumber))
       throw entryError(
-        "NUMBER_IN_USE",
+        "ENTRY_NUMBER_IN_USE",
         `Identifier '${entryNumber}' is already in use`,
       );
     return entryNumber;
@@ -186,12 +187,12 @@ async function assignEntryNumber(
   const year = new Date(receivedAt).getUTCFullYear();
   for (let attempt = 0; attempt < NUMBERING_ATTEMPTS; attempt++) {
     const value = await nextEntryCounterValue(ctx, organizationId, year);
-    const entryNumber = `TE-${year}-${String(value).padStart(4, "0")}`;
+    const entryNumber = `TE-${year}-${padNumber(value, 4)}`;
     if (!(await entryNumberTaken(ctx, organizationId, entryNumber)))
       return entryNumber;
   }
   throw entryError(
-    "NUMBERING_EXHAUSTED",
+    "ENTRY_NUMBERING_EXHAUSTED",
     "Entry numbering found only occupied identifiers; supply an entry number",
   );
 }
@@ -242,21 +243,21 @@ export const receive = mutation({
     entryNumber: v.string(),
   }),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const { organizationId } = args;
     await requirePermission(ctx, organizationId, "collections.create");
 
     const now = Date.now();
     requireValidDate(args.receivedAt);
     if (args.receivedAt > now + CLOCK_SKEW_MS)
-      throw entryError("DATES_INVALID", "Receipt cannot be in the future");
+      throw entryError("ENTRY_DATES_INVALID", "Receipt cannot be in the future");
     requireDueDates(args.receivedAt, args);
     const title = optionalText(args.object.title, MAX_NAME_LENGTH);
-    if (!title) throw entryError("TITLE_REQUIRED", "A title is required");
+    if (!title) throw entryError("ENTRY_TITLE_REQUIRED", "A title is required");
     const conditionAtEntry = optionalText(args.conditionAtEntry);
     if (!conditionAtEntry)
       throw entryError(
-        "CONDITION_REQUIRED",
+        "ENTRY_CONDITION_REQUIRED",
         "Condition at receipt is required",
       );
     const [depositor, owner] = await Promise.all([
@@ -271,7 +272,7 @@ export const receive = mutation({
       (depositor ? partyDisplayName(depositor) : undefined);
     if (!depositorName)
       throw entryError(
-        "DEPOSITOR_REQUIRED",
+        "ENTRY_DEPOSITOR_REQUIRED",
         "Record who deposited the property",
       );
     const ownerName =
@@ -368,7 +369,7 @@ export const receive = mutation({
         entityType: "collection",
         entityId: collectionId,
         changes: {
-          accessionNumber: entryNumber,
+          entryNumber,
           title,
           source: `Entry ${entryNumber}`,
         },
@@ -386,10 +387,6 @@ export const receive = mutation({
           depositorName,
           locationId: args.locationId,
         },
-      }),
-      emitWebhookEvent(ctx, organizationId, "collection.created", {
-        collectionId,
-        title,
       }),
     ]);
     return { entryId, collectionId, entryNumber };
@@ -412,45 +409,36 @@ const entryAccessionValidator = v.object({
   isDraft: v.boolean(),
 });
 
-const entryExitViewValidator = v.object({
-  recipientName: v.string(),
-  recipientAccountId: v.optional(v.id("accounts")),
-  exitedAt: v.number(),
-  reference: v.optional(v.string()),
-  notes: v.optional(v.string()),
-  fromLocationName: v.union(v.string(), v.null()),
-  recordedByName: v.union(v.string(), v.null()),
-  recordedAt: v.number(),
-});
+const nullableName = v.union(v.string(), v.null());
 
-const entryViewValidator = v.object({
-  _id: v.id("objectEntries"),
-  _creationTime: v.number(),
-  organizationId: v.id("organizations"),
-  entryNumber: v.string(),
-  status: entryStatusValidator,
-  purpose: entryPurposeValidator,
-  purposeNote: v.optional(v.string()),
-  depositorName: v.string(),
-  depositorAccountId: v.optional(v.id("accounts")),
-  ownerName: v.optional(v.string()),
-  ownerAccountId: v.optional(v.id("accounts")),
-  receivedAt: v.number(),
-  receivedByName: v.union(v.string(), v.null()),
-  receivedLocationName: v.union(v.string(), v.null()),
-  conditionAtEntry: v.string(),
-  responsibleUserId: v.id("users"),
-  responsibleName: v.union(v.string(), v.null()),
-  responsibilityTerms: v.optional(v.string()),
-  decisionDueAt: v.optional(v.number()),
-  returnDueAt: v.optional(v.number()),
-  notes: v.optional(v.string()),
-  acquisitionDeclinedAt: v.optional(v.number()),
-  accessionedAt: v.optional(v.number()),
-  object: v.union(entryObjectValidator, v.null()),
-  accession: v.union(entryAccessionValidator, v.null()),
-  exit: v.union(entryExitViewValidator, v.null()),
-});
+/** The stored exit with people and places resolved to names. */
+const entryExitViewValidator = entryExitValidator
+  .omit("fromLocationId", "movementId", "recordedBy")
+  .extend({ fromLocationName: nullableName, recordedByName: nullableName });
+
+/** The stored entry with references resolved for display. */
+const entryViewValidator = v
+  .object(objectEntryFields)
+  .omit(
+    "normalizedEntryNumber",
+    "collectionId",
+    "receivedBy",
+    "receivedLocationId",
+    "accessionId",
+    "exit",
+  )
+  .extend({
+    _id: v.id("objectEntries"),
+    _creationTime: v.number(),
+    receivedByName: nullableName,
+    receivedLocationName: nullableName,
+    responsibleName: nullableName,
+    /** Whether the caller may start an acquisition under the accession policy. */
+    canInitiateAcquisition: v.boolean(),
+    object: v.union(entryObjectValidator, v.null()),
+    accession: v.union(entryAccessionValidator, v.null()),
+    exit: v.union(entryExitViewValidator, v.null()),
+  });
 
 function userName(user: Doc<"users"> | null) {
   return user?.name ?? user?.username ?? user?.email ?? null;
@@ -465,6 +453,17 @@ async function locationName(
   return (
     visibleLocationName(await ctx.db.get(locationId), organizationId) ?? null
   );
+}
+
+/** The accession initiation rule, exactly as for intakes started elsewhere. */
+async function mayInitiateAcquisition(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const organization = await ctx.db.get(organizationId);
+  return organization?.settings?.accessionWorkflowEnabled ?? true
+    ? await canInitiateWorkflow(ctx, organizationId, "accession")
+    : await hasPermission(ctx, organizationId, "collections.create");
 }
 
 async function toEntryView(ctx: QueryCtx, entry: Doc<"objectEntries">) {
@@ -503,6 +502,7 @@ async function toEntryView(ctx: QueryCtx, entry: Doc<"objectEntries">) {
     notes: entry.notes,
     acquisitionDeclinedAt: entry.acquisitionDeclinedAt,
     accessionedAt: entry.accessionedAt,
+    canInitiateAcquisition: await mayInitiateAcquisition(ctx, organizationId),
     object: heldObject
       ? {
           _id: heldObject._id,
@@ -551,7 +551,7 @@ export const get = query({
   args: { entryId: v.id("objectEntries") },
   returns: v.union(entryViewValidator, v.null()),
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    await requireAuthenticatedUser(ctx);
     const entry = await ctx.db.get(args.entryId);
     if (!entry) return null;
     await requirePermission(ctx, entry.organizationId, "collections.read");
@@ -566,7 +566,7 @@ async function requireEntry(ctx: QueryCtx, entryId: Id<"objectEntries">) {
 }
 
 function requireOpenEntry(entry: Doc<"objectEntries">) {
-  if (entry.status === "accessioned" || entry.status === "exited")
+  if (!isOpenEntryStatus(entry.status))
     throw entryError(
       "ENTRY_CLOSED",
       `Entry ${entry.entryNumber} is already closed`,
@@ -592,21 +592,21 @@ export const recordExit = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const entry = await requireEntry(ctx, args.entryId);
     const { organizationId } = entry;
     await requirePermission(ctx, organizationId, "collections.update");
     requireOpenEntry(entry);
     if (entry.status === "acquisition_review")
       throw entryError(
-        "ACQUISITION_OPEN",
+        "ENTRY_ACQUISITION_OPEN",
         "Withdraw the open acquisition before recording an exit",
       );
     const now = Date.now();
     requireValidDate(args.exitedAt);
     if (args.exitedAt < entry.receivedAt || args.exitedAt > now + CLOCK_SKEW_MS)
       throw entryError(
-        "DATES_INVALID",
+        "ENTRY_DATES_INVALID",
         "The exit must fall between the receipt and now",
       );
     const recipient = await linkableParty(
@@ -619,7 +619,7 @@ export const recordExit = mutation({
       (recipient ? partyDisplayName(recipient) : undefined);
     if (!recipientName)
       throw entryError(
-        "RECIPIENT_REQUIRED",
+        "ENTRY_RECIPIENT_REQUIRED",
         "Record who received the property",
       );
     const reference = optionalText(args.reference, MAX_NAME_LENGTH);
@@ -715,27 +715,12 @@ export const recordExit = mutation({
   },
 });
 
-const acquisitionMethodValidator = v.union(
-  v.literal("purchase"),
-  v.literal("gift"),
-  v.literal("transfer"),
-  v.literal("donation"),
-  v.literal("bequest"),
-  v.literal("other"),
-);
-
-/** The accession initiation rule, exactly as for intakes started elsewhere. */
 async function requireAcquisitionInitiator(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  const organization = await ctx.db.get(organizationId);
-  if (organization?.settings?.accessionWorkflowEnabled ?? true) {
-    if (!(await canInitiateWorkflow(ctx, organizationId, "accession")))
-      throw new Error("Permission denied: cannot initiate accession workflow");
-    return;
-  }
-  await requirePermission(ctx, organizationId, "collections.create");
+  if (!(await mayInitiateAcquisition(ctx, organizationId)))
+    throw new Error("Permission denied: cannot initiate accession workflow");
 }
 
 /**
@@ -754,19 +739,19 @@ export const beginAcquisition = mutation({
   },
   returns: v.id("accessions"),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const entry = await requireEntry(ctx, args.entryId);
     const { organizationId } = entry;
     await requireAcquisitionInitiator(ctx, organizationId);
     requireOpenEntry(entry);
     if (entry.status !== "in_custody")
       throw entryError(
-        "NOT_IN_CUSTODY",
+        "ENTRY_NOT_IN_CUSTODY",
         `Entry ${entry.entryNumber} already has an open acquisition`,
       );
     if (!entry.ownerName)
       throw entryError(
-        "OWNER_REQUIRED",
+        "ENTRY_OWNER_REQUIRED",
         "Record the owner before beginning an acquisition",
       );
     if (
@@ -896,7 +881,7 @@ export const list = query({
   },
   returns: paginationResultValidator(entryListItemValidator),
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    await requireAuthenticatedUser(ctx);
     const { organizationId, status } = args;
     await requirePermission(ctx, organizationId, "collections.read");
     const result = status
@@ -959,7 +944,7 @@ export const getForObject = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    await requireAuthenticatedUser(ctx);
     const object = await ctx.db.get(args.collectionId);
     if (!object) return null;
     await requirePermission(ctx, object.organizationId, "collections.read");
@@ -982,11 +967,14 @@ export const getForObject = query({
 /**
  * Corrects the working details of an open entry. Receipt facts (who
  * deposited what, when, where and in what condition) are evidence and stay
- * as recorded; parties change through party links.
+ * as recorded. The owner may be established after receipt, until an
+ * acquisition is begun; an empty owner name means not established.
  */
 export const update = mutation({
   args: {
     entryId: v.id("objectEntries"),
+    ownerName: v.optional(v.string()),
+    ownerAccountId: v.optional(v.id("accounts")),
     purposeNote: v.optional(v.string()),
     responsibleUserId: v.optional(v.id("users")),
     responsibilityTerms: v.optional(v.string()),
@@ -996,13 +984,14 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const entry = await requireEntry(ctx, args.entryId);
     const { organizationId } = entry;
     await requirePermission(ctx, organizationId, "collections.update");
     requireOpenEntry(entry);
     if (args.responsibleUserId)
       await requireMember(ctx, organizationId, args.responsibleUserId);
+    const owner = await updatedOwner(ctx, entry, args, userId);
     const dueDate = (value: number | null | undefined, current?: number) =>
       value === undefined ? current : (value ?? undefined);
     const decisionDueAt = dueDate(args.decisionDueAt, entry.decisionDueAt);
@@ -1011,6 +1000,7 @@ export const update = mutation({
     const text = (value: string | undefined, current?: string) =>
       value === undefined ? current : optionalText(value);
     const changes = {
+      ...owner,
       purposeNote: text(args.purposeNote, entry.purposeNote),
       responsibleUserId: args.responsibleUserId ?? entry.responsibleUserId,
       responsibilityTerms: text(
@@ -1038,6 +1028,68 @@ export const update = mutation({
   },
 });
 
+/**
+ * The owner fields after an update, recording an owner Party link when one
+ * is chosen and ending the current one when the owner is cleared.
+ */
+async function updatedOwner(
+  ctx: MutationCtx,
+  entry: Doc<"objectEntries">,
+  args: { ownerName?: string; ownerAccountId?: Id<"accounts"> },
+  userId: Id<"users">,
+) {
+  const current = {
+    ownerName: entry.ownerName,
+    ownerAccountId: entry.ownerAccountId,
+  };
+  if (args.ownerName === undefined && args.ownerAccountId === undefined)
+    return current;
+  if (entry.status !== "in_custody")
+    throw entryError(
+      "ENTRY_ACQUISITION_OPEN",
+      "The owner cannot change while an acquisition is open",
+    );
+  const target = { type: "entry" as const, id: entry._id };
+  const party = await linkableParty(
+    ctx,
+    entry.organizationId,
+    args.ownerAccountId,
+  );
+  const ownerName =
+    optionalText(args.ownerName, MAX_NAME_LENGTH) ??
+    (party ? partyDisplayName(party) : undefined);
+  if (party) {
+    await recordPartyLink(ctx, {
+      organizationId: entry.organizationId,
+      target,
+      account: party,
+      role: "owner",
+      allowedRoles: ENTRY_PARTY_ROLES,
+      effectiveFrom: entry.receivedAt,
+      assertedName: args.ownerName,
+      userId,
+      origin: "staff",
+    });
+    return { ownerName, ownerAccountId: party._id };
+  }
+  if (ownerName === entry.ownerName) return current;
+  // A typed owner replaces a linked one; the earlier link stays in history.
+  const link = await currentPartyLink(
+    ctx,
+    entry.organizationId,
+    target,
+    "owner",
+  );
+  if (link)
+    await endPartyLink(
+      ctx,
+      link,
+      userId,
+      ownerName ? "Owner restated" : "Owner no longer established",
+    );
+  return { ownerName, ownerAccountId: undefined };
+}
+
 const MEMBER_SCAN = 200;
 
 /** Staff who can be made accountable for property held under an entry. */
@@ -1045,7 +1097,7 @@ export const listResponsibleMembers = query({
   args: { organizationId: v.id("organizations") },
   returns: v.array(v.object({ userId: v.id("users"), name: v.string() })),
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    await requireAuthenticatedUser(ctx);
     await requirePermission(ctx, args.organizationId, "collections.read");
     const memberships = await ctx.db
       .query("userOrganizations")
@@ -1062,5 +1114,55 @@ export const listResponsibleMembers = query({
     return members
       .flatMap((member) => (member ? [member] : []))
       .sort((a, b) => a.name.localeCompare(b.name));
+  },
+});
+
+/**
+ * Withdraws an acquisition that is still a draft, for example when the owner
+ * changes their mind before it is submitted. The accession case keeps the
+ * decision and reason; the entry returns to plain custody so the property
+ * can be returned. Acquisitions under review are decided by reviewers.
+ */
+export const withdrawAcquisition = mutation({
+  args: { entryId: v.id("objectEntries"), reason: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await requireAuthenticatedUser(ctx);
+    const entry = await requireEntry(ctx, args.entryId);
+    const { organizationId } = entry;
+    await requireAcquisitionInitiator(ctx, organizationId);
+    requireOpenEntry(entry);
+    if (entry.status === "in_custody" || !entry.accessionId) return null;
+    const accession = await ctx.db.get(entry.accessionId);
+    if (!accession || accession.organizationId !== organizationId)
+      throw entryError("ENTRY_NOT_FOUND", "Acquisition not found");
+    if (accession.status !== "pending" || accession.workflowStep !== 0)
+      throw entryError(
+        "ENTRY_ACQUISITION_IN_REVIEW",
+        "Reviewers decide on an acquisition once it is submitted",
+      );
+    const reason = optionalText(args.reason, MAX_REASON_LENGTH);
+    if (!reason)
+      throw entryError("ENTRY_REASON_REQUIRED", "A reason is required");
+    await recordIntakeReviewDecision(ctx, accession, {
+      decision: "withdrawn",
+      reason,
+      decidedBy: userId,
+      fromStep: 0,
+    });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId,
+      userId,
+      action: "entry_acquisition_withdrawn",
+      entityType: "objectEntry",
+      entityId: entry._id,
+      changes: {
+        entryNumber: entry.entryNumber,
+        collectionId: entry.collectionId,
+        accessionId: accession._id,
+        reason,
+      },
+    });
+    return null;
   },
 });

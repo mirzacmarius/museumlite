@@ -19,10 +19,7 @@ import {
   requireTargetTransferLocation,
 } from "./utils/institutionTransferEvidence";
 import { mutation } from "./utils/mutationBuilders";
-import {
-  entryForObject,
-  isTemporaryCustody,
-} from "./utils/objectEntryLifecycle";
+import { isUnaccessionedEntryObject } from "./utils/objectEntryLifecycle";
 import {
   getCurrentUserOrganization,
   hasPermission,
@@ -440,7 +437,7 @@ async function buildEligibilityBlockers(
     });
   }
 
-  if (isTemporaryCustody(await entryForObject(ctx, collection._id))) {
+  if (await isUnaccessionedEntryObject(ctx, collection._id)) {
     blockers.push({
       code: "temporary_custody",
       message:

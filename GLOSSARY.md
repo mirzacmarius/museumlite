@@ -29,7 +29,7 @@ A curatorial grouping of Objects.
 _Avoid_: Collection (ambiguous with the whole holdings)
 
 **Party**:
-A person or institution in a contextual relationship to the museum, such as donor, lender or staff member.
+A person or institution in a contextual relationship to the museum, such as donor, lender, depositor or staff member.
 _Avoid_: Contact, donor (as an identity)
 
 ### Intake and permanence

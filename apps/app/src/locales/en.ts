@@ -5286,11 +5286,13 @@ export default {
       noLocation: "No recorded location",
       notRecorded: "Not recorded",
       ownerNotRecorded: "Not established",
+      ownerNeeded:
+        "No owner is recorded. Record one in Edit details before beginning an acquisition.",
       acquisition: "Acquisition",
       noAcquisition: "No acquisition has been started.",
       openAccession: "Open accession {number}",
       acquisitionDraft:
-        "Draft: attach title evidence, then submit it for approval.",
+        "Draft: attach title evidence and submit it for approval, or withdraw it.",
       acquisitionPending: "Awaiting approval under the accession policy.",
       acquisitionWithdrawn:
         "Withdrawn. Return the property to its recipient, or begin a new acquisition.",
@@ -5303,6 +5305,7 @@ export default {
     },
     actions: {
       beginAcquisition: "Begin acquisition",
+      withdrawAcquisition: "Withdraw acquisition",
       recordExit: "Record exit",
       edit: "Edit details",
       cancel: "Cancel",
@@ -5341,6 +5344,14 @@ export default {
       observedAt: "Staff confirmed the object is at {location}",
       submit: "Record exit",
       success: "Exit recorded",
+    },
+    withdrawDialog: {
+      title: "Withdraw acquisition",
+      description:
+        "The draft accession is withdrawn with your reason and kept in its history. The property stays in custody under this entry.",
+      reason: "Reason",
+      submit: "Withdraw acquisition",
+      success: "Acquisition withdrawn",
     },
     editDialog: {
       title: "Edit entry details",
@@ -5386,6 +5397,12 @@ export default {
         "The property has already left custody, so this acquisition cannot be restored.",
       objectRecordedOnEntry:
         "This object was recorded at entry. Edit the object record instead.",
+      numberInvalid: "An entry number needs 1 to 256 visible characters.",
+      acquisitionInReview:
+        "This acquisition is under review; its reviewers decide whether to withdraw it.",
+      reasonRequired: "Give a reason.",
+      exitRequired:
+        "This object is held under an entry. Record its exit on the entry instead of withdrawing it.",
       fallback: "The entry could not be saved. Try again.",
     },
   },

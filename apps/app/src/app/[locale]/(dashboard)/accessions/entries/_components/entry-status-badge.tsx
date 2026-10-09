@@ -1,6 +1,9 @@
 "use client";
 
-import type { EntryStatus } from "@v1/backend/convex/utils/objectEntryValidators";
+import {
+  type EntryStatus,
+  isOpenEntryStatus,
+} from "@v1/backend/convex/utils/objectEntryValidators";
 import { Badge } from "@v1/ui/badge";
 import { cn } from "@v1/ui/utils";
 import { useScopedI18n } from "@/locales/client";
@@ -32,8 +35,7 @@ export function entryDueAt(entry: {
   decisionDueAt?: number;
   returnDueAt?: number;
 }) {
-  if (entry.status === "accessioned" || entry.status === "exited")
-    return undefined;
+  if (!isOpenEntryStatus(entry.status)) return undefined;
   const dates = [entry.decisionDueAt, entry.returnDueAt].filter(
     (date): date is number => date !== undefined,
   );

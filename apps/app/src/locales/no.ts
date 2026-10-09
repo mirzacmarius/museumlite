@@ -5449,11 +5449,13 @@ export default {
       noLocation: "Ingen registrert plassering",
       notRecorded: "Ikke registrert",
       ownerNotRecorded: "Ikke fastslått",
+      ownerNeeded:
+        "Ingen eier er registrert. Registrer eieren under Rediger detaljer før du starter et erverv.",
       acquisition: "Erverv",
       noAcquisition: "Ingen erverv er startet.",
       openAccession: "Åpne aksesjon {number}",
       acquisitionDraft:
-        "Utkast: legg ved dokumentasjon på eiendomsrett og send det til godkjenning.",
+        "Utkast: legg ved dokumentasjon på eiendomsrett og send det til godkjenning, eller trekk det tilbake.",
       acquisitionPending: "Venter på godkjenning etter aksesjonspolicyen.",
       acquisitionWithdrawn:
         "Trukket tilbake. Lever gjenstanden til mottakeren, eller start et nytt erverv.",
@@ -5466,6 +5468,7 @@ export default {
     },
     actions: {
       beginAcquisition: "Start erverv",
+      withdrawAcquisition: "Trekk tilbake erverv",
       recordExit: "Registrer utlevering",
       edit: "Rediger detaljer",
       cancel: "Avbryt",
@@ -5505,6 +5508,14 @@ export default {
       observedAt: "Ansatte har bekreftet at gjenstanden er i {location}",
       submit: "Registrer utlevering",
       success: "Utlevering registrert",
+    },
+    withdrawDialog: {
+      title: "Trekk tilbake erverv",
+      description:
+        "Aksesjonsutkastet trekkes tilbake med begrunnelsen din og beholdes i historikken. Gjenstanden blir værende i forvaring under denne innleveringen.",
+      reason: "Begrunnelse",
+      submit: "Trekk tilbake erverv",
+      success: "Ervervet er trukket tilbake",
     },
     editDialog: {
       title: "Rediger innleveringsdetaljer",
@@ -5551,6 +5562,12 @@ export default {
         "Gjenstanden har allerede forlatt forvaringen, så dette ervervet kan ikke gjenopprettes.",
       objectRecordedOnEntry:
         "Denne gjenstanden ble registrert ved innlevering. Rediger gjenstandsposten i stedet.",
+      numberInvalid: "Et innleveringsnummer må ha 1 til 256 synlige tegn.",
+      acquisitionInReview:
+        "Dette ervervet er til vurdering; de som vurderer det, avgjør om det skal trekkes tilbake.",
+      reasonRequired: "Oppgi en begrunnelse.",
+      exitRequired:
+        "Denne gjenstanden oppbevares under en innlevering. Registrer utleveringen på innleveringen i stedet for å fjerne den.",
       fallback: "Innleveringen kunne ikke lagres. Prøv igjen.",
     },
   },

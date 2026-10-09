@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useEntryErrorMessage } from "@/hooks/use-entry-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { endOfDay, handoffTime } from "../_components/entry-dates";
+import { receiveEntrySchema } from "../_components/entry-form-schemas";
 import {
   CustodySection,
   DatesSection,
@@ -20,8 +21,6 @@ import {
   type ReceiveForm,
   type UpdateReceiveForm,
 } from "./receive-entry-sections";
-
-const NO_LOCATION = "__none__";
 
 function trimmedOrUndefined(value: string) {
   const text = value.trim();
@@ -67,15 +66,10 @@ export function ReceiveEntryForm({
   // Staff receiving the property are accountable unless they choose someone.
   const responsibleUserId = form.responsibleUserId || user?._id || "";
   const owner = form.ownerSameAsDepositor ? form.depositor : form.owner;
-  const isValid =
-    form.title.trim().length > 0 &&
-    (form.depositor.name.trim().length > 0 ||
-      form.depositor.accountId !== undefined) &&
-    form.receivedAt !== undefined &&
-    form.locationId !== "" &&
-    form.locationId !== NO_LOCATION &&
-    form.conditionAtEntry.trim().length > 0 &&
-    responsibleUserId !== "";
+  const isValid = receiveEntrySchema.safeParse({
+    ...form,
+    responsibleUserId,
+  }).success;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -126,7 +120,7 @@ export function ReceiveEntryForm({
           href="/accessions/entries"
           className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-4" />
           {t("detail.back")}
         </Link>
         <h1 className="text-lg font-semibold">{t("receiveForm.title")}</h1>

@@ -4,6 +4,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { buildUpdatedAccessionState } from "./identifierHistory";
 import { ensureIdentifierAvailable } from "./identifiers";
 import { entryError } from "./objectEntryErrors";
+import { isOpenEntryStatus } from "./objectEntryValidators";
 
 type Ctx = Pick<QueryCtx, "db">;
 
@@ -18,25 +19,59 @@ export async function entryForObject(
     .first();
 }
 
-/** True while the object is held under an entry that has not been accessioned. */
-export function isTemporaryCustody(entry: Doc<"objectEntries"> | null) {
+/**
+ * True when the object came in under an entry that was never accessioned,
+ * whether it is still held or was returned. Such property is not part of
+ * the collection.
+ */
+export async function isUnaccessionedEntryObject(
+  ctx: Ctx,
+  collectionId: Id<"collections">,
+) {
+  const entry = await entryForObject(ctx, collectionId);
   return entry !== null && entry.status !== "accessioned";
 }
 
 /**
  * Refuses actions that only the institution's own collection may undergo,
- * such as deaccession, lending or institution transfer, for property held
- * under an entry that was never accessioned.
+ * such as deaccession, lending or institution transfer, for property
+ * received under an entry that was never accessioned.
  */
-export async function assertNotInTemporaryCustody(
+export async function assertAccessionedIfEntered(
   ctx: Ctx,
   collectionId: Id<"collections">,
 ) {
   const entry = await entryForObject(ctx, collectionId);
-  if (entry && isTemporaryCustody(entry))
+  if (entry && entry.status !== "accessioned")
     throw entryError(
-      "TEMPORARY_CUSTODY",
+      "ENTRY_TEMPORARY_CUSTODY",
       `Object is held under entry ${entry.entryNumber} and is not part of the collection`,
+    );
+}
+
+/**
+ * Property held under an open entry leaves custody only through the entry's
+ * exit, and property that exited is not restored to the catalog.
+ */
+export async function assertEntryAllowsStatus(
+  ctx: Ctx,
+  collectionId: Id<"collections">,
+  nextStatus: Doc<"collections">["status"],
+) {
+  const entry = await entryForObject(ctx, collectionId);
+  if (!entry) return;
+  if (
+    isOpenEntryStatus(entry.status) &&
+    (nextStatus === "archived" || nextStatus === "deleted")
+  )
+    throw entryError(
+      "ENTRY_EXIT_REQUIRED",
+      `Record the exit on entry ${entry.entryNumber} instead of withdrawing the object`,
+    );
+  if (entry.status === "exited" && nextStatus === "active")
+    throw entryError(
+      "ENTRY_EXITED",
+      `The property received under entry ${entry.entryNumber} has left custody`,
     );
 }
 
@@ -57,7 +92,7 @@ async function linkedEntry(ctx: Ctx, accession: Doc<"accessions">) {
 export function assertNoEntryObjectDraft(accession: Doc<"accessions">) {
   if (accession.entryId)
     throw entryError(
-      "OBJECT_RECORDED_ON_ENTRY",
+      "ENTRY_OBJECT_RECORDED",
       "This acquisition's object was recorded at entry; edit the object record instead",
     );
 }
@@ -127,7 +162,7 @@ export async function assertEntryAcquisitionRestorable(
     );
   if (entry.status !== "in_custody" || entry.accessionId !== accession._id)
     throw entryError(
-      "ACQUISITION_OPEN",
+      "ENTRY_ACQUISITION_OPEN",
       `Entry ${entry.entryNumber} has another acquisition`,
     );
 }

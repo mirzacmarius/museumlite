@@ -2640,11 +2640,13 @@ export default {
       noLocation: "Nicio locație înregistrată",
       notRecorded: "Neînregistrat",
       ownerNotRecorded: "Nestabilit",
+      ownerNeeded:
+        "Nu este înregistrat niciun proprietar. Înregistrează-l în Editează detaliile înainte de a începe o achiziție.",
       acquisition: "Achiziție",
       noAcquisition: "Nu a fost începută nicio achiziție.",
       openAccession: "Deschide înregistrarea {number}",
       acquisitionDraft:
-        "Ciornă: atașează dovezile privind dreptul de proprietate, apoi trimite-o spre aprobare.",
+        "Ciornă: atașează dovezile privind dreptul de proprietate și trimite-o spre aprobare sau retrage-o.",
       acquisitionPending:
         "În așteptarea aprobării conform politicii de înregistrare.",
       acquisitionWithdrawn:
@@ -2658,6 +2660,7 @@ export default {
     },
     actions: {
       beginAcquisition: "Începe achiziția",
+      withdrawAcquisition: "Retrage achiziția",
       recordExit: "Înregistrează ieșirea",
       edit: "Editează detaliile",
       cancel: "Anulează",
@@ -2696,6 +2699,14 @@ export default {
       observedAt: "Personalul a confirmat că obiectul se află la {location}",
       submit: "Înregistrează ieșirea",
       success: "Ieșirea a fost înregistrată",
+    },
+    withdrawDialog: {
+      title: "Retrage achiziția",
+      description:
+        "Înregistrarea ciornă este retrasă cu motivul tău și păstrată în istoric. Bunul rămâne în custodie în baza acestei intrări.",
+      reason: "Motiv",
+      submit: "Retrage achiziția",
+      success: "Achiziția a fost retrasă",
     },
     editDialog: {
       title: "Editează detaliile intrării",
@@ -2743,6 +2754,13 @@ export default {
         "Bunul a ieșit deja din custodie, așa că această achiziție nu mai poate fi restaurată.",
       objectRecordedOnEntry:
         "Acest obiect a fost înregistrat la intrare. Editează în schimb fișa obiectului.",
+      numberInvalid:
+        "Un număr de intrare trebuie să aibă între 1 și 256 de caractere vizibile.",
+      acquisitionInReview:
+        "Această achiziție este în analiză; evaluatorii ei decid dacă este retrasă.",
+      reasonRequired: "Indică un motiv.",
+      exitRequired:
+        "Acest obiect este păstrat în baza unei intrări. Înregistrează ieșirea pe intrare în loc să-l retragi.",
       fallback: "Intrarea nu a putut fi salvată. Încearcă din nou.",
     },
   },

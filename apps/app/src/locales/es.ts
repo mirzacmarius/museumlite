@@ -5520,11 +5520,13 @@ export default {
       noLocation: "Sin ubicación registrada",
       notRecorded: "No registrado",
       ownerNotRecorded: "No acreditado",
+      ownerNeeded:
+        "No hay propietario registrado. Regístralo en Editar detalles antes de iniciar una adquisición.",
       acquisition: "Adquisición",
       noAcquisition: "No se ha iniciado ninguna adquisición.",
       openAccession: "Abrir registro {number}",
       acquisitionDraft:
-        "Borrador: adjunta las pruebas de titularidad y envíalo a aprobación.",
+        "Borrador: adjunta las pruebas de titularidad y envíalo a aprobación, o retíralo.",
       acquisitionPending:
         "Pendiente de aprobación según la política de registro.",
       acquisitionWithdrawn:
@@ -5538,6 +5540,7 @@ export default {
     },
     actions: {
       beginAcquisition: "Iniciar adquisición",
+      withdrawAcquisition: "Retirar adquisición",
       recordExit: "Registrar salida",
       edit: "Editar detalles",
       cancel: "Cancelar",
@@ -5576,6 +5579,14 @@ export default {
       observedAt: "El personal confirmó que el objeto está en {location}",
       submit: "Registrar salida",
       success: "Salida registrada",
+    },
+    withdrawDialog: {
+      title: "Retirar adquisición",
+      description:
+        "El registro en borrador se retira con tu motivo y se conserva en su historial. El bien sigue en custodia con esta entrada.",
+      reason: "Motivo",
+      submit: "Retirar adquisición",
+      success: "Adquisición retirada",
     },
     editDialog: {
       title: "Editar detalles de la entrada",
@@ -5621,6 +5632,13 @@ export default {
         "El bien ya ha salido de la custodia, así que esta adquisición no se puede restaurar.",
       objectRecordedOnEntry:
         "Este objeto se registró en la entrada. Edita la ficha del objeto.",
+      numberInvalid:
+        "Un número de entrada necesita entre 1 y 256 caracteres visibles.",
+      acquisitionInReview:
+        "Esta adquisición está en revisión; sus revisores deciden si se retira.",
+      reasonRequired: "Indica un motivo.",
+      exitRequired:
+        "Este objeto se guarda con una entrada. Registra su salida en la entrada en lugar de retirarlo.",
       fallback: "No se pudo guardar la entrada. Inténtalo de nuevo.",
     },
   },

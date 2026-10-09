@@ -20,37 +20,45 @@ export function useEntryErrorMessage() {
     switch (code) {
       case "ENTRY_NOT_FOUND":
         return t("entryNotFound");
-      case "DEPOSITOR_REQUIRED":
+      case "ENTRY_DEPOSITOR_REQUIRED":
         return t("depositorRequired");
-      case "TITLE_REQUIRED":
+      case "ENTRY_TITLE_REQUIRED":
         return t("titleRequired");
-      case "CONDITION_REQUIRED":
+      case "ENTRY_CONDITION_REQUIRED":
         return t("conditionRequired");
-      case "TEXT_TOO_LONG":
+      case "ENTRY_TEXT_TOO_LONG":
         return t("textTooLong");
-      case "DATES_INVALID":
+      case "ENTRY_DATES_INVALID":
         return t("datesInvalid");
-      case "RESPONSIBLE_NOT_MEMBER":
+      case "ENTRY_RESPONSIBLE_NOT_MEMBER":
         return t("responsibleNotMember");
-      case "NUMBER_IN_USE":
+      case "ENTRY_NUMBER_IN_USE":
         return t("numberInUse");
-      case "NUMBERING_EXHAUSTED":
+      case "ENTRY_NUMBER_INVALID":
+        return t("numberInvalid");
+      case "ENTRY_ACQUISITION_IN_REVIEW":
+        return t("acquisitionInReview");
+      case "ENTRY_REASON_REQUIRED":
+        return t("reasonRequired");
+      case "ENTRY_EXIT_REQUIRED":
+        return t("exitRequired");
+      case "ENTRY_NUMBERING_EXHAUSTED":
         return t("numberingExhausted");
-      case "NOT_IN_CUSTODY":
+      case "ENTRY_NOT_IN_CUSTODY":
         return t("notInCustody");
-      case "ACQUISITION_OPEN":
+      case "ENTRY_ACQUISITION_OPEN":
         return t("acquisitionOpen");
       case "ENTRY_CLOSED":
         return t("entryClosed");
-      case "OWNER_REQUIRED":
+      case "ENTRY_OWNER_REQUIRED":
         return t("ownerRequired");
-      case "RECIPIENT_REQUIRED":
+      case "ENTRY_RECIPIENT_REQUIRED":
         return t("recipientRequired");
-      case "TEMPORARY_CUSTODY":
+      case "ENTRY_TEMPORARY_CUSTODY":
         return t("temporaryCustody");
       case "ENTRY_EXITED":
         return t("entryExited");
-      case "OBJECT_RECORDED_ON_ENTRY":
+      case "ENTRY_OBJECT_RECORDED":
         return t("objectRecordedOnEntry");
     }
   }

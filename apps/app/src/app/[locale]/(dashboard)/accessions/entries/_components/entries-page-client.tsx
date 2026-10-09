@@ -95,7 +95,7 @@ export function EntriesPageClient({
           <PermissionGate permission="collections.create">
             <Button asChild size="sm" className="h-8">
               <Link href="/accessions/entries/new">
-                <Plus className="size-3.5" />
+                <Plus className="size-4" />
                 {t("receive")}
               </Link>
             </Button>

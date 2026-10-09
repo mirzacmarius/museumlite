@@ -9,6 +9,7 @@ import {
   partyDisplayName,
 } from "./parties";
 import { partyError } from "./partyErrors";
+import { isOpenEntryStatus } from "./objectEntryValidators";
 import type { PartyRole, PartyTarget } from "./partyValidators";
 import { hasPermission, requirePermission } from "./permissions";
 
@@ -60,6 +61,8 @@ export interface ResolvedPartyTarget {
   policy: PartyLinkPolicy;
   /** The role the record itself names a party for. */
   primaryRole?: PartyRole;
+  /** Roles whose current party the record's own fields mirror. */
+  mirroredRoles?: readonly PartyRole[];
   /** How the record names that party. */
   recordAssertedName?: string;
   /** The account the record already references for that role. */
@@ -99,6 +102,7 @@ export async function resolvePartyTarget(
         allowedRoles: ACCESSION_PARTY_ROLES,
         policy: accession.status === "pending" ? "open" : "firstLinkOnly",
         primaryRole: "donor",
+        mirroredRoles: ["donor"],
         recordAssertedName: accessionSourceAssertion(accession.source),
         recordAccountId: accession.donorAccountId,
       };
@@ -119,6 +123,7 @@ export async function resolvePartyTarget(
         allowedRoles: loanPartyRoles(loan.type),
         policy: loan.status === "pending" ? "open" : "firstLinkOnly",
         primaryRole: loanPrimaryRole(loan.type),
+        mirroredRoles: [loanPrimaryRole(loan.type)],
         recordAssertedName: loan.lenderBorrowerName.trim() || undefined,
         recordAccountId: loan.accountId,
       };
@@ -184,15 +189,14 @@ export async function resolvePartyTarget(
       const entry = await ctx.db.get(target.id);
       if (!entry) targetNotFound();
       await requirePermission(ctx, entry.organizationId, collectionsPermission);
-      const open =
-        entry.status === "in_custody" || entry.status === "acquisition_review";
       return {
         organizationId: entry.organizationId,
         label: entry.entryNumber,
         defaultEffectiveFrom: entry.receivedAt,
         allowedRoles: ENTRY_PARTY_ROLES,
-        policy: open ? "open" : "firstLinkOnly",
+        policy: isOpenEntryStatus(entry.status) ? "open" : "firstLinkOnly",
         primaryRole: "depositor",
+        mirroredRoles: ["depositor", "owner"],
         recordAssertedName: entry.depositorName.trim() || undefined,
         recordAccountId: entry.depositorAccountId,
       };
@@ -362,12 +366,14 @@ export async function hasPartyLinkHistory(
 }
 
 /**
- * Keeps the record's own party reference in step with its primary-role
- * link on records that are still open for edits.
+ * Keeps the record's own party reference in step with a mirrored role's
+ * link on records that are still open for edits. Ending a link clears the
+ * reference but keeps the name the record states.
  */
-export async function syncPrimaryPartyField(
+export async function syncRecordPartyField(
   ctx: MutationCtx,
   target: PartyTarget,
+  role: PartyRole,
   account: Doc<"accounts"> | null,
 ) {
   if (target.type === "accession") {
@@ -382,6 +388,13 @@ export async function syncPrimaryPartyField(
             lenderBorrowerContact: partyContactSnapshot(account),
           }
         : { accountId: undefined },
+    );
+  } else if (target.type === "entry" && role === "owner") {
+    await ctx.db.patch(
+      target.id,
+      account
+        ? { ownerAccountId: account._id, ownerName: partyDisplayName(account) }
+        : { ownerAccountId: undefined },
     );
   } else if (target.type === "entry") {
     await ctx.db.patch(

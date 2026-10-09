@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { AcquisitionMethod } from "@v1/backend/convex/utils/objectEntryValidators";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -27,6 +28,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useEntryErrorMessage } from "@/hooks/use-entry-error-message";
 import { useScopedI18n } from "@/locales/client";
+import { beginAcquisitionSchema } from "../../_components/entry-form-schemas";
 
 const METHODS = [
   "gift",
@@ -35,8 +37,7 @@ const METHODS = [
   "purchase",
   "transfer",
   "other",
-] as const;
-type AcquisitionMethod = (typeof METHODS)[number];
+] as const satisfies readonly AcquisitionMethod[];
 
 interface AcquisitionForm {
   method: AcquisitionMethod;
@@ -72,9 +73,7 @@ export function BeginAcquisitionDialog({
   ) => setForm((current) => ({ ...current, [field]: value }));
   const { isSaving } = form;
   const parsedCost = form.cost.trim() ? Number(form.cost) : undefined;
-  const isValid =
-    parsedCost === undefined ||
-    (Number.isFinite(parsedCost) && parsedCost >= 0);
+  const isValid = beginAcquisitionSchema.safeParse(form).success;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

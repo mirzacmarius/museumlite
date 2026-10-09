@@ -25,6 +25,23 @@ export const entryStatusValidator = v.union(
 
 export type EntryStatus = Infer<typeof entryStatusValidator>;
 
+/** Held now: no accession has closed the entry and no exit was recorded. */
+export function isOpenEntryStatus(status: EntryStatus) {
+  return status === "in_custody" || status === "acquisition_review";
+}
+
+/** Accession methods that pass title; a loan is not an acquisition. */
+export const acquisitionMethodValidator = v.union(
+  v.literal("purchase"),
+  v.literal("gift"),
+  v.literal("transfer"),
+  v.literal("donation"),
+  v.literal("bequest"),
+  v.literal("other"),
+);
+
+export type AcquisitionMethod = Infer<typeof acquisitionMethodValidator>;
+
 /** Handoff of unaccessioned property to a recorded recipient. */
 export const entryExitValidator = v.object({
   recipientName: v.string(),
