@@ -176,7 +176,7 @@ export function AccessionDetailPageClient() {
       case "rejected":
         return "bg-red-500/10 text-red-600 dark:text-red-400";
       case "withdrawn":
-        return "bg-zinc-500/10 text-zinc-300";
+        return "bg-zinc-500/10 text-zinc-600 dark:text-zinc-300";
       default:
         return "bg-muted text-muted-foreground";
     }
