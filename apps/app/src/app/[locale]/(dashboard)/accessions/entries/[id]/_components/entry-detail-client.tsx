@@ -250,14 +250,11 @@ function EntryDetail({ entry }: { entry: EntryView }) {
         </section>
       ) : null}
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">{t("detail.parties")}</h2>
-        <TargetPartyLinks
-          target={{ type: "entry", id: entry._id }}
-          organizationId={entry.organizationId}
-          writePermission="collections.update"
-        />
-      </section>
+      <TargetPartyLinks
+        target={{ type: "entry", id: entry._id }}
+        organizationId={entry.organizationId}
+        writePermission="collections.update"
+      />
 
       {canBeginAcquisition &&
       entry.ownerName &&

@@ -38,6 +38,10 @@ _Avoid_: Contact, donor (as an identity)
 Receipt of an Object into institutional custody for a stated purpose. It may never result in an Acquisition.
 _Avoid_: Check-in
 
+**Entry number**:
+The temporary identifier an Object carries from Entry until Accession; afterwards it stays in the Object's identifier history.
+_Avoid_: Accession number (for unaccessioned property)
+
 **Acquisition**:
 The decision, with evidence, that establishes the institution's interest or title in an Object. Physical possession alone is not an Acquisition.
 _Avoid_: Donation (one method among several)

@@ -2655,7 +2655,6 @@ export default {
       exitedOn: "Predat la {date}",
       reference: "Referință",
       recordedBy: "Înregistrat de {name}",
-      parties: "Părți",
     },
     actions: {
       beginAcquisition: "Începe achiziția",
@@ -2713,6 +2712,8 @@ export default {
       openEntry: "Deschide intrarea",
     },
     accessionLink: "Primit în baza intrării {entryNumber}",
+    accessionObject:
+      "Obiectul a fost înregistrat la primirea bunului. Intră în colecție când această înregistrare este aprobată.",
     errors: {
       entryNotFound: "Această intrare nu mai există.",
       depositorRequired: "Înregistrează cine a depus bunul.",

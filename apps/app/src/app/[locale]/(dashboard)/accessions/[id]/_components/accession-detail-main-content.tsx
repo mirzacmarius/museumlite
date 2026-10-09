@@ -128,9 +128,13 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
           <SectionCard
             eyebrow={tRoot("untranslatedRecords.objects.attributes.collection")}
             title={tRoot("untranslatedRecords.accessions.detail.linkedObject")}
-            description={tRoot(
-              "untranslatedRecords.accessions.detail.linkedObjectDescription",
-            )}
+            description={
+              accession.entry
+                ? tRoot("objectEntries.accessionObject")
+                : tRoot(
+                    "untranslatedRecords.accessions.detail.linkedObjectDescription",
+                  )
+            }
           >
             <Button
               variant="outline"
@@ -139,9 +143,11 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
               asChild
             >
               <Link href={`/objects/${accession.collectionId}`}>
-                {tRoot(
-                  "untranslatedRecords.accessions.detail.openCreatedObject",
-                )}
+                {accession.entry
+                  ? tRoot("objectEntries.detail.openObject")
+                  : tRoot(
+                      "untranslatedRecords.accessions.detail.openCreatedObject",
+                    )}
                 <ExternalLink className="size-4" />
               </Link>
             </Button>

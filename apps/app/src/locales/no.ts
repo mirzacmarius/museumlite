@@ -5463,7 +5463,6 @@ export default {
       exitedOn: "Overlevert {date}",
       reference: "Referanse",
       recordedBy: "Registrert av {name}",
-      parties: "Parter",
     },
     actions: {
       beginAcquisition: "Start erverv",
@@ -5522,6 +5521,8 @@ export default {
       openEntry: "Åpne innlevering",
     },
     accessionLink: "Mottatt under innlevering {entryNumber}",
+    accessionObject:
+      "Gjenstanden ble registrert da den ble mottatt. Den blir en del av samlingen når denne aksesjonen godkjennes.",
     errors: {
       entryNotFound: "Denne innleveringen finnes ikke lenger.",
       depositorRequired: "Registrer hvem som leverte inn gjenstanden.",

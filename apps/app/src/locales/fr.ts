@@ -5487,7 +5487,6 @@ export default {
       exitedOn: "Remis le {date}",
       reference: "Référence",
       recordedBy: "Enregistré par {name}",
-      parties: "Parties",
     },
     actions: {
       beginAcquisition: "Engager l’acquisition",
@@ -5546,6 +5545,8 @@ export default {
       openEntry: "Ouvrir l’entrée",
     },
     accessionLink: "Reçu au titre de l’entrée {entryNumber}",
+    accessionObject:
+      "L’objet a été enregistré à la réception du bien. Il entre dans la collection lorsque cette inscription est approuvée.",
     errors: {
       entryNotFound: "Cette entrée n’existe plus.",
       depositorRequired: "Indiquez qui a déposé le bien.",

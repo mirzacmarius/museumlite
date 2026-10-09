@@ -5535,7 +5535,6 @@ export default {
       exitedOn: "Entregado el {date}",
       reference: "Referencia",
       recordedBy: "Registrado por {name}",
-      parties: "Partes",
     },
     actions: {
       beginAcquisition: "Iniciar adquisición",
@@ -5593,6 +5592,8 @@ export default {
       openEntry: "Abrir entrada",
     },
     accessionLink: "Recibido con la entrada {entryNumber}",
+    accessionObject:
+      "El objeto se registró al recibir el bien. Pasa a la colección cuando se apruebe este registro.",
     errors: {
       entryNotFound: "Esta entrada ya no existe.",
       depositorRequired: "Indica quién depositó el bien.",

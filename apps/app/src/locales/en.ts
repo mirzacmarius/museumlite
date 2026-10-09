@@ -5300,7 +5300,6 @@ export default {
       exitedOn: "Handed over on {date}",
       reference: "Reference",
       recordedBy: "Recorded by {name}",
-      parties: "Parties",
     },
     actions: {
       beginAcquisition: "Begin acquisition",
@@ -5358,6 +5357,8 @@ export default {
       openEntry: "Open entry",
     },
     accessionLink: "Received under entry {entryNumber}",
+    accessionObject:
+      "The object was recorded when the property was received. It joins the collection when this accession is approved.",
     errors: {
       entryNotFound: "This entry no longer exists.",
       depositorRequired: "Record who deposited the property.",
