@@ -7,6 +7,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { requireAuthenticatedUser } from "./utils/authorizationContext";
+import { objectLabel } from "./utils/collectionDisplayHelpers";
 import { hasModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { partyDisplayName, requireLinkableParty } from "./utils/parties";
@@ -19,6 +20,7 @@ import type { PartyTarget } from "./utils/partyValidators";
 import { hasPermission, requirePermission } from "./utils/permissions";
 import {
   assertCurrentClaim,
+  currentClaimVersion,
   historicalDateEdtf,
   isWithdrawnObject,
   loadClaimEvidence,
@@ -26,32 +28,29 @@ import {
   MAX_CLAIMS_PER_OBJECT,
   MAX_EVIDENCE_PER_CLAIM,
   MAX_EVIDENCE_PER_OBJECT,
+  MAX_REVIEWS_PER_OBJECT,
   optionalProvenanceText,
   PROVENANCE_REVIEW_PERMISSION,
-  type ProvenanceAssertionInput,
   provenanceClaimSortKey,
-  provenanceObjectLabel,
   requireContradictedClaim,
   requiredProvenanceReason,
   requireProvenanceClaim,
   requireProvenanceObject,
+  retractionNeedsReviewer,
   type ValidatedEvidence,
   validatedEvidence,
   validatedProvenanceAssertion,
 } from "./utils/provenance";
 import { provenanceError } from "./utils/provenanceErrors";
 import {
-  historicalDateValidator,
+  type ProvenanceAssertion,
   type ProvenanceEvidenceInput,
   provenanceAssertionFields,
-  provenanceConfidenceValidator,
+  provenanceAssertionValidator,
   provenanceEvidenceInputValidator,
   provenanceEvidenceSourceValidator,
-  provenanceMethodValidator,
-  provenancePartyKindValidator,
   provenanceReviewDecisionValidator,
   provenanceReviewStatusValidator,
-  provenanceRoleValidator,
 } from "./utils/provenanceValidators";
 
 const evidenceCommonFields = {
@@ -100,18 +99,29 @@ const claimPartyViewValidator = v.object({
   nameSnapshot: v.string(),
 });
 
+const reviewViewValidator = v.object({
+  _id: v.id("provenanceReviews"),
+  decision: provenanceReviewDecisionValidator,
+  note: v.optional(v.string()),
+  reviewedByName: v.optional(v.string()),
+  reviewedAt: v.number(),
+});
+
 const claimViewValidator = v.object({
   _id: v.id("provenanceClaims"),
-  statement: v.string(),
-  role: provenanceRoleValidator,
-  partyKind: provenancePartyKindValidator,
-  partyText: v.optional(v.string()),
-  method: v.optional(provenanceMethodValidator),
-  place: v.optional(v.string()),
-  startDate: v.optional(historicalDateValidator),
-  endDate: v.optional(historicalDateValidator),
-  confidence: provenanceConfidenceValidator,
+  ...provenanceAssertionFields,
   contradictsClaimId: v.optional(v.id("provenanceClaims")),
+  /**
+   * The current version of the contradicted claim; `earlierVersion` when
+   * the claim recorded against it has since been corrected.
+   */
+  contradicts: v.optional(
+    v.object({
+      claimId: v.id("provenanceClaims"),
+      earlierVersion: v.boolean(),
+    }),
+  ),
+  /** Claims that contradict this claim or an earlier version of it. */
   contradictedByClaimIds: v.array(v.id("provenanceClaims")),
   supersedesClaimId: v.optional(v.id("provenanceClaims")),
   createdAt: v.number(),
@@ -125,9 +135,13 @@ const claimViewValidator = v.object({
   supersededByName: v.optional(v.string()),
   supersededByClaimId: v.optional(v.id("provenanceClaims")),
   supersessionReason: v.optional(v.string()),
+  /** Retracting it needs a reviewer: it was reviewed or is contested. */
+  retractNeedsReview: v.boolean(),
   /** The Party the holder is identified as; null when none or not visible. */
   party: v.union(claimPartyViewValidator, v.null()),
   evidence: v.array(evidenceViewValidator),
+  /** Every review decision, newest first. */
+  reviews: v.array(reviewViewValidator),
 });
 
 function claimTarget(claimId: Id<"provenanceClaims">): PartyTarget {
@@ -205,7 +219,7 @@ async function claimPartyView(
   ctx: QueryCtx,
   claim: Doc<"provenanceClaims">,
 ): Promise<Infer<typeof claimPartyViewValidator> | null> {
-  if (claim.partyKind !== "named") return null;
+  if (claim.partyKind !== "named" || !claim.role) return null;
   const link = await currentPartyLink(
     ctx,
     claim.organizationId,
@@ -257,12 +271,21 @@ export const listForObject = query({
         canReadParties(ctx, organizationId),
         loadObjectClaims(ctx, object),
       ]);
-    const evidenceRows = await ctx.db
-      .query("provenanceEvidence")
-      .withIndex("by_organization_and_objectId", (q) =>
-        q.eq("organizationId", organizationId).eq("objectId", object._id),
-      )
-      .take(MAX_EVIDENCE_PER_OBJECT);
+    const [evidenceRows, reviewRows] = await Promise.all([
+      ctx.db
+        .query("provenanceEvidence")
+        .withIndex("by_organization_and_objectId", (q) =>
+          q.eq("organizationId", organizationId).eq("objectId", object._id),
+        )
+        .take(MAX_EVIDENCE_PER_OBJECT),
+      ctx.db
+        .query("provenanceReviews")
+        .withIndex("by_organization_and_objectId", (q) =>
+          q.eq("organizationId", organizationId).eq("objectId", object._id),
+        )
+        .order("desc")
+        .take(MAX_REVIEWS_PER_OBJECT),
+    ]);
     const names = await userNames(ctx, [
       ...claims.flatMap((claim) => [
         claim.createdBy,
@@ -270,9 +293,46 @@ export const listForObject = query({
         claim.supersededBy,
       ]),
       ...evidenceRows.map((row) => row.linkedBy),
+      ...reviewRows.map((row) => row.reviewedBy),
     ]);
+    const claimsById = new Map(claims.map((claim) => [claim._id, claim]));
+    // Contradictions follow corrections to the claim that is current now.
+    const contradictionTargets = new Map(
+      claims.flatMap((claim) =>
+        claim.contradictsClaimId
+          ? [
+              [
+                claim._id,
+                currentClaimVersion(claimsById, claim.contradictsClaimId),
+              ] as const,
+            ]
+          : [],
+      ),
+    );
+    const reviewsByClaim = new Map<
+      Id<"provenanceClaims">,
+      Array<Infer<typeof reviewViewValidator>>
+    >();
+    for (const row of reviewRows) {
+      reviewsByClaim.set(row.claimId, [
+        ...(reviewsByClaim.get(row.claimId) ?? []),
+        {
+          _id: row._id,
+          decision: row.decision,
+          note: row.note,
+          reviewedByName: names.get(row.reviewedBy),
+          reviewedAt: row.reviewedAt,
+        },
+      ]);
+    }
     const evidenceByClaim = new Map<Id<"provenanceClaims">, EvidenceView[]>();
-    for (const row of evidenceRows) {
+    // Oldest citation first; rows saved together keep their insertion order.
+    const orderedEvidence = evidenceRows.toSorted(
+      (left, right) =>
+        left.linkedAt - right.linkedAt ||
+        left._creationTime - right._creationTime,
+    );
+    for (const row of orderedEvidence) {
       const view = await toEvidenceView(ctx, row, names, canReadMedia);
       evidenceByClaim.set(row.claimId, [
         ...(evidenceByClaim.get(row.claimId) ?? []),
@@ -292,8 +352,20 @@ export const listForObject = query({
         endDate: claim.endDate,
         confidence: claim.confidence,
         contradictsClaimId: claim.contradictsClaimId,
+        contradicts: claim.contradictsClaimId
+          ? {
+              claimId:
+                contradictionTargets.get(claim._id) ?? claim.contradictsClaimId,
+              earlierVersion:
+                contradictionTargets.get(claim._id) !==
+                claim.contradictsClaimId,
+            }
+          : undefined,
         contradictedByClaimIds: claims.flatMap((other) =>
-          other.contradictsClaimId === claim._id ? [other._id] : [],
+          other.contradictsClaimId === claim._id ||
+          contradictionTargets.get(other._id) === claim._id
+            ? [other._id]
+            : [],
         ),
         supersedesClaimId: claim.supersedesClaimId,
         createdAt: claim.createdAt,
@@ -311,10 +383,10 @@ export const listForObject = query({
           : undefined,
         supersededByClaimId: claim.supersededByClaimId,
         supersessionReason: claim.supersessionReason,
+        retractNeedsReview: retractionNeedsReviewer(claim, claimsById),
         party: partiesVisible ? await claimPartyView(ctx, claim) : null,
-        evidence: (evidenceByClaim.get(claim._id) ?? []).sort(
-          (left, right) => left.linkedAt - right.linkedAt,
-        ),
+        evidence: evidenceByClaim.get(claim._id) ?? [],
+        reviews: reviewsByClaim.get(claim._id) ?? [],
       })),
     );
     const withdrawn = isWithdrawnObject(object);
@@ -328,33 +400,44 @@ export const listForObject = query({
       claims: views.sort((left, right) => {
         if (left.isCurrent !== right.isCurrent) return left.isCurrent ? -1 : 1;
         if (!left.isCurrent) {
-          return (right.supersededAt ?? 0) - (left.supersededAt ?? 0);
+          return (
+            (right.supersededAt ?? 0) - (left.supersededAt ?? 0) ||
+            right.createdAt - left.createdAt ||
+            left._id.localeCompare(right._id)
+          );
         }
         return (
           provenanceClaimSortKey(left) - provenanceClaimSortKey(right) ||
-          left.createdAt - right.createdAt
+          left.createdAt - right.createdAt ||
+          left._id.localeCompare(right._id)
         );
       }),
-      truncated: claims.length >= MAX_CLAIMS_PER_OBJECT,
+      truncated:
+        claims.length >= MAX_CLAIMS_PER_OBJECT ||
+        evidenceRows.length >= MAX_EVIDENCE_PER_OBJECT ||
+        reviewRows.length >= MAX_REVIEWS_PER_OBJECT,
     };
   },
 });
 
-const reviewQueueItemValidator = v.object({
-  claimId: v.id("provenanceClaims"),
-  objectId: v.id("collections"),
-  objectLabel: v.string(),
-  statement: v.string(),
-  role: provenanceRoleValidator,
-  partyKind: provenancePartyKindValidator,
-  partyText: v.optional(v.string()),
-  confidence: provenanceConfidenceValidator,
-  startDate: v.optional(historicalDateValidator),
-  endDate: v.optional(historicalDateValidator),
-  contradictsClaimId: v.optional(v.id("provenanceClaims")),
-  reviewNote: v.optional(v.string()),
-  createdAt: v.number(),
-});
+const reviewQueueItemValidator = provenanceAssertionValidator
+  .pick(
+    "statement",
+    "role",
+    "partyKind",
+    "partyText",
+    "confidence",
+    "startDate",
+    "endDate",
+  )
+  .extend({
+    claimId: v.id("provenanceClaims"),
+    objectId: v.id("collections"),
+    objectLabel: v.string(),
+    contradictsClaimId: v.optional(v.id("provenanceClaims")),
+    reviewNote: v.optional(v.string()),
+    createdAt: v.number(),
+  });
 
 /**
  * Current claims awaiting a reviewer, newest first: unreviewed, or disputed
@@ -396,7 +479,7 @@ export const reviewQueue = query({
         return {
           claimId: claim._id,
           objectId: claim.objectId,
-          objectLabel: provenanceObjectLabel(object),
+          objectLabel: objectLabel(object),
           statement: claim.statement,
           role: claim.role,
           partyKind: claim.partyKind,
@@ -420,7 +503,7 @@ export const reviewQueue = query({
 interface ClaimInsert {
   object: Doc<"collections">;
   userId: Id<"users">;
-  assertion: ProvenanceAssertionInput;
+  assertion: ProvenanceAssertion;
   partyAccountId?: Id<"accounts">;
   /** The Party the corrected claim already names; it may be archived. */
   keptAccountId?: Id<"accounts">;
@@ -459,10 +542,11 @@ async function insertClaim(ctx: MutationCtx, input: ClaimInsert) {
       "A documented claim needs at least one evidence item",
     );
   }
-  if (input.partyAccountId && assertion.partyKind !== "named") {
+  const linkRole = assertion.partyKind === "named" ? assertion.role : undefined;
+  if (input.partyAccountId && !linkRole) {
     throw provenanceError(
       "PROVENANCE_PARTY_INVALID",
-      "Only a named holder can be identified as a Party",
+      "Only a named holder with a stated role can be identified as a Party",
     );
   }
   const account = input.partyAccountId
@@ -522,13 +606,13 @@ async function insertClaim(ctx: MutationCtx, input: ClaimInsert) {
       linkedAt: now,
     });
   }
-  if (account) {
+  if (account && linkRole) {
     await recordPartyLink(ctx, {
       organizationId,
       target: claimTarget(claimId),
       account,
-      role: assertion.role,
-      allowedRoles: [assertion.role],
+      role: linkRole,
+      allowedRoles: [linkRole],
       assertedName: assertion.partyText,
       userId,
       origin: "staff",
@@ -541,7 +625,7 @@ async function insertClaim(ctx: MutationCtx, input: ClaimInsert) {
   };
 }
 
-function auditClaim(assertion: ProvenanceAssertionInput) {
+function auditClaim(assertion: ProvenanceAssertion) {
   return {
     statement: assertion.statement,
     role: assertion.role,
@@ -566,13 +650,22 @@ async function endClaimPartyLink(
   userId: Id<"users">,
   reason: string,
 ) {
-  const link = await currentPartyLink(
+  const link = await claimPartyLink(ctx, claim);
+  if (link) await endPartyLink(ctx, link, userId, reason);
+}
+
+/** The current Party link of a named holder with a stated role. */
+async function claimPartyLink(
+  ctx: MutationCtx,
+  claim: Doc<"provenanceClaims">,
+) {
+  if (!claim.role) return null;
+  return await currentPartyLink(
     ctx,
     claim.organizationId,
     claimTarget(claim._id),
     claim.role,
   );
-  if (link) await endPartyLink(ctx, link, userId, reason);
 }
 
 const claimInputArgs = {
@@ -639,6 +732,12 @@ export const correctClaim = mutation({
     claimId: v.id("provenanceClaims"),
     reason: v.string(),
     ...claimInputArgs,
+    /**
+     * The Party the corrected holder is identified as. Omitted keeps the
+     * current identification while the holder stays named with a role;
+     * null removes it.
+     */
+    partyAccountId: v.optional(v.union(v.id("accounts"), v.null())),
     evidence: v.optional(v.array(provenanceEvidenceInputValidator)),
   },
   returns: v.id("provenanceClaims"),
@@ -661,18 +760,19 @@ export const correctClaim = mutation({
     } = args;
     const [evidenceRows, currentLink] = await Promise.all([
       loadClaimEvidence(ctx, claim),
-      currentPartyLink(
-        ctx,
-        claim.organizationId,
-        claimTarget(claim._id),
-        claim.role,
-      ),
+      claimPartyLink(ctx, claim),
     ]);
+    const keepsIdentification =
+      partyAccountId === undefined &&
+      assertion.partyKind === "named" &&
+      assertion.role !== undefined;
     const recorded = await insertClaim(ctx, {
       object,
       userId,
       assertion,
-      partyAccountId,
+      partyAccountId: keepsIdentification
+        ? currentLink?.accountId
+        : (partyAccountId ?? undefined),
       keptAccountId: currentLink?.accountId,
       contradictsClaimId,
       evidence: evidence ?? [],
@@ -708,7 +808,8 @@ export const correctClaim = mutation({
 
 /**
  * Retracts a current claim without a replacement, for example one recorded
- * on the wrong Object. It stays in the Object's provenance history.
+ * on the wrong Object. It stays in the Object's provenance history. A claim
+ * that was reviewed or is contested leaves review only through a reviewer.
  */
 export const retractClaim = mutation({
   args: { claimId: v.id("provenanceClaims"), reason: v.string() },
@@ -722,6 +823,15 @@ export const retractClaim = mutation({
     );
     assertCurrentClaim(claim);
     const reason = requiredProvenanceReason(args.reason);
+    const claims = await loadObjectClaims(ctx, object);
+    const claimsById = new Map(claims.map((row) => [row._id, row]));
+    if (retractionNeedsReviewer(claim, claimsById)) {
+      await requirePermission(
+        ctx,
+        object.organizationId,
+        PROVENANCE_REVIEW_PERMISSION,
+      );
+    }
     await ctx.db.patch(claim._id, {
       supersededAt: Date.now(),
       supersededBy: userId,
@@ -742,8 +852,9 @@ export const retractClaim = mutation({
 
 /**
  * Records a reviewer's decision on a current claim. Disputing or rejecting
- * needs a note. The claim itself is never changed; repeating the same
- * decision is a no-op.
+ * needs a note. Each decision is appended to the claim's review history and
+ * the claim's own wording never changes; repeating the latest decision is a
+ * no-op.
  */
 export const reviewClaim = mutation({
   args: {
@@ -770,10 +881,21 @@ export const reviewClaim = mutation({
     if (claim.reviewStatus === args.decision && claim.reviewNote === note) {
       return null;
     }
+    const reviewedAt = Date.now();
+    await ctx.db.insert("provenanceReviews", {
+      organizationId: claim.organizationId,
+      objectId: claim.objectId,
+      claimId: claim._id,
+      decision: args.decision,
+      previousStatus: claim.reviewStatus,
+      note,
+      reviewedBy: userId,
+      reviewedAt,
+    });
     await ctx.db.patch(claim._id, {
       reviewStatus: args.decision,
       reviewedBy: userId,
-      reviewedAt: Date.now(),
+      reviewedAt,
       reviewNote: note,
     });
     await ctx.runMutation(internal.audit.logAction, {

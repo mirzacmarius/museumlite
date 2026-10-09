@@ -3,6 +3,7 @@ import type {
   HistoricalDatePrecision,
   HistoricalDateQualifier,
 } from "@v1/backend/convex/utils/provenanceValidators";
+import type { useCurrentLocale } from "@/locales/client";
 
 export interface HistoricalDateLabels {
   decade: (year: string) => string;
@@ -32,8 +33,9 @@ const MONTH: Intl.DateTimeFormatOptions = {
   month: "long",
   timeZone: "UTC",
 };
-const APP_LOCALES = ["en", "es", "fr", "no", "ro"] as const;
-type AppLocale = (typeof APP_LOCALES)[number];
+/** The app's locales, as the locale hooks report them. */
+type AppLocale = ReturnType<typeof useCurrentLocale>;
+
 const calendarFormatters: Record<
   AppLocale,
   { day: Intl.DateTimeFormat; month: Intl.DateTimeFormat }
@@ -60,13 +62,6 @@ const calendarFormatters: Record<
   },
 };
 
-function calendarFormatter(locale: string, precision: "day" | "month") {
-  const appLocale = (APP_LOCALES as readonly string[]).includes(locale)
-    ? (locale as AppLocale)
-    : "en";
-  return calendarFormatters[appLocale][precision];
-}
-
 /** A UTC calendar day, including years before 100. */
 function calendarDay(year: number, month: number, day: number) {
   const date = new Date(Date.UTC(2000, month - 1, day));
@@ -80,18 +75,18 @@ function calendarDay(year: number, month: number, day: number) {
  */
 export function formatHistoricalDate(
   date: HistoricalDate,
-  locale: string,
+  locale: AppLocale,
   labels: HistoricalDateLabels,
 ): string {
   let text: string;
   switch (date.precision) {
     case "day":
-      text = calendarFormatter(locale, "day").format(
+      text = calendarFormatters[locale].day.format(
         calendarDay(date.year, date.month ?? 1, date.day ?? 1),
       );
       break;
     case "month":
-      text = calendarFormatter(locale, "month").format(
+      text = calendarFormatters[locale].month.format(
         calendarDay(date.year, date.month ?? 1, 1),
       );
       break;
@@ -122,7 +117,7 @@ export function formatHistoricalDate(
 export function formatHistoricalPeriod(
   startDate: HistoricalDate | undefined,
   endDate: HistoricalDate | undefined,
-  locale: string,
+  locale: AppLocale,
   labels: HistoricalPeriodLabels,
 ): string {
   const start = startDate

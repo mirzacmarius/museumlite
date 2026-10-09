@@ -1,16 +1,15 @@
 "use client";
 
+import type { Doc } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { History } from "lucide-react";
 import { useScopedI18n } from "@/locales/client";
 import type { ClaimDefaults } from "./claim-form-state";
+import { EMPTY_EVIDENCE } from "./evidence-fields";
 
-export interface LegacyOwnershipEntry {
-  owner: string;
-  startYear?: string;
-  endYear?: string;
-  description?: string;
-}
+export type LegacyOwnershipEntry = NonNullable<
+  Doc<"collections">["ownershipHistory"]
+>[number];
 
 function plainYear(text: string | undefined) {
   const value = text?.trim();
@@ -37,6 +36,9 @@ export function claimDefaultsFromOwnership(
     partyText: entry.owner,
     startDate: plainYear(entry.startYear),
     endDate: plainYear(entry.endYear),
+    evidence: entry.verificationSource?.trim()
+      ? [{ ...EMPTY_EVIDENCE, citation: entry.verificationSource.trim() }]
+      : undefined,
   };
 }
 
@@ -102,6 +104,11 @@ export function ProvenanceLegacyText({
                 ) : null}
                 {entry.description ? (
                   <p className="text-muted-foreground">{entry.description}</p>
+                ) : null}
+                {entry.verified && entry.verificationSource ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("verifiedBy", { source: entry.verificationSource })}
+                  </p>
                 ) : null}
               </div>
               {canRecord ? (

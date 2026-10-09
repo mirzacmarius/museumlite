@@ -188,6 +188,8 @@ async function toRoleHistoryItem(
       isCurrent,
     };
   }
+  // The label check already read and tenant-checked this claim; reading it
+  // again keeps that helper's string contract for every target type.
   const claim =
     link.targetType === "provenanceClaim"
       ? await ctx.db.get(link.targetId)

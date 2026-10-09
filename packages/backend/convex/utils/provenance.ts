@@ -4,11 +4,8 @@ import { requirePermission } from "./permissions";
 import { provenanceError } from "./provenanceErrors";
 import type {
   HistoricalDate,
-  ProvenanceConfidence,
+  ProvenanceAssertion,
   ProvenanceEvidenceInput,
-  ProvenanceMethod,
-  ProvenancePartyKind,
-  ProvenanceRole,
 } from "./provenanceValidators";
 
 export const PROVENANCE_REVIEW_PERMISSION = "collections.review_provenance";
@@ -18,9 +15,12 @@ export const MAX_CLAIMS_PER_OBJECT = 200;
 /** Evidence rows read per Object or per claim. */
 export const MAX_EVIDENCE_PER_OBJECT = 500;
 export const MAX_EVIDENCE_PER_CLAIM = 50;
+/** Review decisions read per Object. */
+export const MAX_REVIEWS_PER_OBJECT = 500;
 
 const TEXT_LIMITS = {
-  statement: 4000,
+  // Legacy provenance text can be long; it is turned into a claim whole.
+  statement: 10000,
   partyText: 500,
   place: 200,
   citation: 2000,
@@ -53,13 +53,6 @@ export function isWithdrawnObject(
   object: Pick<Doc<"collections">, "status"> | null,
 ) {
   return object?.status === "archived" || object?.status === "deleted";
-}
-
-/** How a provenance claim's Object is named outside the Object's page. */
-export function provenanceObjectLabel(
-  object: Pick<Doc<"collections">, "accessionNumber" | "title">,
-): string {
-  return `${object.accessionNumber} ${object.title}`.trim();
 }
 
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -210,25 +203,13 @@ export function historicalDateEdtf(date: HistoricalDate): string {
   return value;
 }
 
-export interface ProvenanceAssertionInput {
-  statement: string;
-  role: ProvenanceRole;
-  partyKind: ProvenancePartyKind;
-  partyText?: string;
-  method?: ProvenanceMethod;
-  place?: string;
-  startDate?: HistoricalDate;
-  endDate?: HistoricalDate;
-  confidence: ProvenanceConfidence;
-}
-
 /**
  * Validates an assertion as entered. Nothing is filled in: a holder, date,
  * method or place the source does not give stays absent.
  */
 export function validatedProvenanceAssertion(
-  input: ProvenanceAssertionInput,
-): ProvenanceAssertionInput {
+  input: ProvenanceAssertion,
+): ProvenanceAssertion {
   const statement = optionalProvenanceText(input.statement, "statement");
   if (!statement) {
     throw provenanceError(
@@ -362,6 +343,61 @@ export async function loadClaimEvidence(
     .take(MAX_EVIDENCE_PER_CLAIM);
 }
 
+type ClaimLineage = Pick<
+  Doc<"provenanceClaims">,
+  "_id" | "contradictsClaimId" | "supersededByClaimId"
+>;
+
+/**
+ * The current version of a claim: corrections are followed to their latest
+ * replacement. A retracted claim is its own last version.
+ */
+export function currentClaimVersion<T extends ClaimLineage>(
+  claimsById: ReadonlyMap<Id<"provenanceClaims">, T>,
+  claimId: Id<"provenanceClaims">,
+): Id<"provenanceClaims"> {
+  let id = claimId;
+  for (let step = 0; step < MAX_CLAIMS_PER_OBJECT; step++) {
+    const next = claimsById.get(id)?.supersededByClaimId;
+    if (!next) break;
+    id = next;
+  }
+  return id;
+}
+
+/**
+ * Whether a claim takes part in a contradiction with another claim of its
+ * Object, counting corrections of either side.
+ */
+export function isContestedClaim<T extends ClaimLineage>(
+  claim: T,
+  claimsById: ReadonlyMap<Id<"provenanceClaims">, T>,
+): boolean {
+  if (claim.contradictsClaimId) return true;
+  for (const other of claimsById.values()) {
+    if (
+      other.contradictsClaimId &&
+      currentClaimVersion(claimsById, other.contradictsClaimId) === claim._id
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Retracting a reviewed or contested claim takes it out of review, so it
+ * needs a reviewer; a researcher may retract an unreviewed, uncontested one.
+ */
+export function retractionNeedsReviewer<T extends ClaimLineage>(
+  claim: T & Pick<Doc<"provenanceClaims">, "reviewStatus">,
+  claimsById: ReadonlyMap<Id<"provenanceClaims">, T>,
+): boolean {
+  return (
+    claim.reviewStatus !== "unreviewed" || isContestedClaim(claim, claimsById)
+  );
+}
+
 /**
  * A claim a new claim may be recorded against: current and about the same
  * Object.
@@ -386,21 +422,27 @@ export async function requireContradictedClaim(
   return claim;
 }
 
+/** Fields of a stored evidence row that the server, not the input, sets. */
+type EvidenceRecordFields =
+  | "_id"
+  | "_creationTime"
+  | "organizationId"
+  | "objectId"
+  | "claimId"
+  | "carriedFromEvidenceId"
+  | "linkedBy"
+  | "linkedAt"
+  | "retractedAt"
+  | "retractedBy"
+  | "retractionReason";
+
+/** Evidence as validated from input: a stored row without its record fields. */
 export type ValidatedEvidence =
-  | {
-      kind: "citation";
-      citation: string;
-      url?: string;
-      excerpt?: string;
-      locator?: string;
-    }
-  | {
-      kind: "media";
-      mediaId: Id<"mediaFiles">;
-      fileNameSnapshot: string;
-      excerpt?: string;
-      locator?: string;
-    };
+  Doc<"provenanceEvidence"> extends infer Row
+    ? Row extends unknown
+      ? Omit<Row, EvidenceRecordFields>
+      : never
+    : never;
 
 function invalidEvidence(message: string): never {
   throw provenanceError("PROVENANCE_EVIDENCE_INVALID", message);

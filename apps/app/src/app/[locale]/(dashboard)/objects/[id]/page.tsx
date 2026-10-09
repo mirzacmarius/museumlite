@@ -78,19 +78,11 @@ async function fetchObjectDetailFallback(
 
 export default async function ObjectDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const [token, { id }, { tab }] = await Promise.all([
-    convexAuthNextjsToken(),
-    params,
-    searchParams,
-  ]);
+  const [token, { id }] = await Promise.all([convexAuthNextjsToken(), params]);
   const collectionId = id as Id<"collections">;
-  // A `?tab=` link opens that tab; unknown tabs fall back on the client.
-  const initialTab = typeof tab === "string" ? tab : undefined;
   try {
     const preloadedObjectDetail = await preloadQuery(
       api.collections.getObjectDetail,
@@ -102,7 +94,6 @@ export default async function ObjectDetailPage({
       <ObjectDetailClient
         collectionId={collectionId}
         preloadedObjectDetail={preloadedObjectDetail}
-        initialTab={initialTab}
       />
     );
   } catch (error) {
@@ -119,7 +110,6 @@ export default async function ObjectDetailPage({
       <ObjectDetailClient
         collectionId={collectionId}
         initialObjectDetail={initialObjectDetail}
-        initialTab={initialTab}
       />
     );
   }

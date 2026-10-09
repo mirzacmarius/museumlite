@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { LightboxImage } from "@v1/ui/image-lightbox";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import dynamic from "next/dynamic";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useMemo, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -15,6 +16,7 @@ import { ObjectDetailTabPanel } from "./_components/object-detail/object-detail-
 import { ObjectEntryNotice } from "./_components/object-entry-notice";
 import {
   getObjectViewTabs,
+  OBJECT_TAB_IDS,
   type ObjectTabId as TabId,
 } from "./_components/object-tab-config";
 import type { ObjectDetailData } from "./_components/types";
@@ -42,8 +44,6 @@ interface ObjectDetailClientProps {
   collectionId: Id<"collections">;
   preloadedObjectDetail?: Preloaded<typeof api.collections.getObjectDetail>;
   initialObjectDetail?: ObjectDetailData | null;
-  /** Tab requested by a `?tab=` link. */
-  initialTab?: string;
 }
 
 export function ObjectDetailClient(props: ObjectDetailClientProps) {
@@ -52,7 +52,6 @@ export function ObjectDetailClient(props: ObjectDetailClientProps) {
       <PreloadedObjectDetailClient
         collectionId={props.collectionId}
         preloadedObjectDetail={props.preloadedObjectDetail}
-        initialTab={props.initialTab}
       />
     );
   }
@@ -61,7 +60,6 @@ export function ObjectDetailClient(props: ObjectDetailClientProps) {
     <ObjectDetailView
       collectionId={props.collectionId}
       objectDetail={props.initialObjectDetail ?? null}
-      initialTab={props.initialTab}
     />
   );
 }
@@ -120,30 +118,22 @@ function objectDetailViewReducer(
 function PreloadedObjectDetailClient({
   collectionId,
   preloadedObjectDetail,
-  initialTab,
 }: {
   collectionId: Id<"collections">;
   preloadedObjectDetail: Preloaded<typeof api.collections.getObjectDetail>;
-  initialTab?: string;
 }) {
   const objectDetail = usePreloadedQuery(preloadedObjectDetail);
   return (
-    <ObjectDetailView
-      collectionId={collectionId}
-      objectDetail={objectDetail}
-      initialTab={initialTab}
-    />
+    <ObjectDetailView collectionId={collectionId} objectDetail={objectDetail} />
   );
 }
 
 function ObjectDetailView({
   collectionId,
   objectDetail,
-  initialTab,
 }: {
   collectionId: Id<"collections">;
   objectDetail: ObjectDetailData | null;
-  initialTab?: string;
 }) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
@@ -154,13 +144,17 @@ function ObjectDetailView({
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
   const heroImage = objectDetail?.heroImage ?? null;
-  // Unknown requested tabs fall back to the first tab below.
+  // A `?tab=` link opens that tab when the object has it.
+  const [requestedTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(OBJECT_TAB_IDS),
+  );
   const [state, dispatch] = useReducer(
     objectDetailViewReducer,
-    initialTab,
+    requestedTab,
     (tab): ObjectDetailViewState => ({
       ...initialObjectDetailViewState,
-      activeTab: (tab ?? initialObjectDetailViewState.activeTab) as TabId,
+      activeTab: tab ?? initialObjectDetailViewState.activeTab,
     }),
   );
   const featureOrganizationId =

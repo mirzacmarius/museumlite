@@ -117,3 +117,10 @@ export async function getLocationPathStrings(
 
   return pathMap;
 }
+
+/** How an Object is named outside its own page: accession number and title. */
+export function objectLabel(
+  object: Pick<Doc<"collections">, "accessionNumber" | "title">,
+): string {
+  return `${object.accessionNumber} ${object.title}`.trim();
+}

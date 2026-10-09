@@ -185,8 +185,8 @@ export function ProvenanceClaimCard({
   const dates = useHistoricalDateFormat();
   const current = claim.isCurrent;
   const party = claim.party;
-  const contradicts = claim.contradictsClaimId
-    ? statements.get(claim.contradictsClaimId)
+  const contradicts = claim.contradicts
+    ? statements.get(claim.contradicts.claimId)
     : undefined;
 
   return (
@@ -214,7 +214,9 @@ export function ProvenanceClaimCard({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant="outline">{t(`roles.${claim.role}`)}</Badge>
+          {claim.role ? (
+            <Badge variant="outline">{t(`roles.${claim.role}`)}</Badge>
+          ) : null}
           <Badge variant="secondary">
             {t(`confidence.${claim.confidence}`)}
           </Badge>
@@ -261,7 +263,11 @@ export function ProvenanceClaimCard({
       {contradicts || claim.contradictedByClaimIds.length > 0 ? (
         <ul className="space-y-1 text-xs text-rose-700 dark:text-rose-300">
           {contradicts ? (
-            <li>{t("card.contradicts", { statement: contradicts })}</li>
+            <li>
+              {claim.contradicts?.earlierVersion
+                ? t("card.contradictsEarlier", { statement: contradicts })
+                : t("card.contradicts", { statement: contradicts })}
+            </li>
           ) : null}
           {claim.contradictedByClaimIds.map((id) => (
             <li key={id}>
@@ -319,75 +325,136 @@ export function ProvenanceClaimCard({
         ) : null}
       </div>
 
-      {current && (canRecord || canReview || canLinkParties) ? (
-        <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
-          {canReview ? (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onAction({ kind: "review", claim })}
-            >
-              {t("card.review")}
-            </Button>
-          ) : null}
-          {canRecord ? (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onAction({ kind: "correct", claim })}
-              >
-                {t("card.correct")}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  onAction({ kind: "addEvidence", claimId: claim._id })
-                }
-              >
-                {t("card.addEvidence")}
-              </Button>
-            </>
-          ) : null}
-          {canLinkParties && claim.partyKind === "named" ? (
-            party ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  onAction({ kind: "unidentify", linkId: party.linkId })
-                }
-              >
-                {t("identify.remove")}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => onAction({ kind: "identify", claim })}
-              >
-                {t("identify.title")}
-              </Button>
-            )
-          ) : null}
-          {canRecord ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="text-destructive"
-              onClick={() => onAction({ kind: "retract", claimId: claim._id })}
-            >
-              {t("card.retract")}
-            </Button>
-          ) : null}
-        </div>
+      <ReviewHistory claim={claim} />
+
+      {current ? (
+        <ClaimActions
+          claim={claim}
+          canRecord={canRecord}
+          canReview={canReview}
+          canLinkParties={canLinkParties}
+          onAction={onAction}
+        />
       ) : null}
     </li>
+  );
+}
+
+/** Earlier review decisions, when the claim has been reviewed more than once. */
+function ReviewHistory({ claim }: { claim: ProvenanceClaimView }) {
+  const t = useScopedI18n("provenance");
+  const locale = useCurrentLocale();
+  if (claim.reviews.length < 2) return null;
+  return (
+    <details className="text-xs text-muted-foreground">
+      <summary className="cursor-pointer">
+        {t("card.reviewHistory", { count: claim.reviews.length })}
+      </summary>
+      <ol className="mt-2 space-y-1">
+        {claim.reviews.map((review) => (
+          <li key={review._id}>
+            {t("card.reviewEntry", {
+              decision: t(`reviewStatus.${review.decision}`),
+              name: review.reviewedByName ?? t("card.someone"),
+            })}
+            {" · "}
+            <ClientDate timestamp={review.reviewedAt} locale={locale} />
+            {review.note ? ` · ${review.note}` : ""}
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+}
+
+/** What the viewer may do with a current claim. */
+function ClaimActions({
+  claim,
+  canRecord,
+  canReview,
+  canLinkParties,
+  onAction,
+}: {
+  claim: ProvenanceClaimView;
+  canRecord: boolean;
+  canReview: boolean;
+  canLinkParties: boolean;
+  onAction: (action: ClaimAction) => void;
+}) {
+  const t = useScopedI18n("provenance");
+  const party = claim.party;
+  const canIdentify =
+    canLinkParties && claim.partyKind === "named" && claim.role !== undefined;
+  // Retracting a reviewed or contested claim takes it out of review.
+  const canRetract = canRecord && (!claim.retractNeedsReview || canReview);
+  if (!canRecord && !canReview && !canIdentify) return null;
+  return (
+    <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
+      {canReview ? (
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => onAction({ kind: "review", claim })}
+        >
+          {t("card.review")}
+        </Button>
+      ) : null}
+      {canRecord ? (
+        <>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onAction({ kind: "correct", claim })}
+          >
+            {t("card.correct")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              onAction({ kind: "addEvidence", claimId: claim._id })
+            }
+          >
+            {t("card.addEvidence")}
+          </Button>
+        </>
+      ) : null}
+      {canIdentify ? (
+        party ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              onAction({ kind: "unidentify", linkId: party.linkId })
+            }
+          >
+            {t("identify.remove")}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => onAction({ kind: "identify", claim })}
+          >
+            {t("identify.title")}
+          </Button>
+        )
+      ) : null}
+      {canRetract ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="text-destructive"
+          onClick={() => onAction({ kind: "retract", claimId: claim._id })}
+        >
+          {t("card.retract")}
+        </Button>
+      ) : null}
+    </div>
   );
 }

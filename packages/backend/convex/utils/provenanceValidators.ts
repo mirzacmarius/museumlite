@@ -139,7 +139,8 @@ export type ProvenanceReviewDecision = Infer<
 /** The assertion as recorded; shared by capture and correction. */
 export const provenanceAssertionFields = {
   statement: v.string(),
-  role: provenanceRoleValidator,
+  /** Absent when the source does not say whether the holder had title. */
+  role: v.optional(provenanceRoleValidator),
   partyKind: provenancePartyKindValidator,
   /** The holder as the source names or describes them. */
   partyText: v.optional(v.string()),
@@ -149,6 +150,10 @@ export const provenanceAssertionFields = {
   endDate: v.optional(historicalDateValidator),
   confidence: provenanceConfidenceValidator,
 };
+
+export const provenanceAssertionValidator = v.object(provenanceAssertionFields);
+
+export type ProvenanceAssertion = Infer<typeof provenanceAssertionValidator>;
 
 export const provenanceClaimDocumentValidator = v.object({
   organizationId: v.id("organizations"),
@@ -169,6 +174,21 @@ export const provenanceClaimDocumentValidator = v.object({
   /** Absent when the claim was retracted without a replacement. */
   supersededByClaimId: v.optional(v.id("provenanceClaims")),
   supersessionReason: v.optional(v.string()),
+});
+
+/**
+ * One review decision on a claim. Appended, never edited; the claim keeps
+ * the latest decision for queues and reports.
+ */
+export const provenanceReviewDocumentValidator = v.object({
+  organizationId: v.id("organizations"),
+  objectId: v.id("collections"),
+  claimId: v.id("provenanceClaims"),
+  decision: provenanceReviewDecisionValidator,
+  previousStatus: provenanceReviewStatusValidator,
+  note: v.optional(v.string()),
+  reviewedBy: v.id("users"),
+  reviewedAt: v.number(),
 });
 
 /** A source cited for a claim, as entered by staff. */

@@ -43,11 +43,11 @@ function correctionDefaults(
     startDate: claim.startDate,
     endDate: claim.endDate,
     confidence: claim.confidence,
-    // Only a claim that is still current can be contradicted again.
+    // Re-target the current version of the contradicted claim, if any.
     contradictsClaimId: current.some(
-      (other) => other._id === claim.contradictsClaimId,
+      (other) => other._id === claim.contradicts?.claimId,
     )
-      ? claim.contradictsClaimId
+      ? claim.contradicts?.claimId
       : undefined,
   };
 }
@@ -209,7 +209,7 @@ export function ProvenanceClaimsPanel({
           onClose={close}
         />
       ) : null}
-      {dialog?.kind === "identify" ? (
+      {dialog?.kind === "identify" && dialog.claim.role ? (
         <IdentifyHolderDialog
           claimId={dialog.claim._id}
           role={dialog.claim.role}

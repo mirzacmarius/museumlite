@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { partyErrorFromError } from "../convex/utils/partyErrors";
@@ -1107,5 +1107,302 @@ describe("review permission rollout", () => {
       viewer: 0,
       custom: 0,
     });
+  });
+});
+
+describe("review findings", () => {
+  test("a holder's role may be left unstated, and only a stated role can be identified as a Party", async () => {
+    const t = createConvexTest();
+    const { staff, objectId, organizationId, userId } = await createMuseum(t);
+    const partyId = await insertParty(t, organizationId, userId, "Rosenberg");
+    const { role: _role, ...withoutRole } = rosenbergClaim;
+    const claimId = await staff.mutation(api.provenance.recordClaim, {
+      objectId,
+      ...withoutRole,
+    });
+    const [claim] = await claimsOf(staff, objectId);
+    expect(claim?.role).toBeUndefined();
+    expect(
+      await provenanceErrorOf(
+        staff.mutation(api.provenance.recordClaim, {
+          objectId,
+          ...withoutRole,
+          partyAccountId: partyId,
+        }),
+      ),
+    ).toMatchObject({ code: "PROVENANCE_PARTY_INVALID" });
+    const links = await staff.query(api.partyLinks.listForTarget, {
+      target: { type: "provenanceClaim", id: claimId },
+    });
+    expect(links.allowedRoles).toEqual([]);
+  });
+
+  test("a contradiction follows the contradicted claim through its correction", async () => {
+    const t = createConvexTest();
+    const { staff, objectId, organizationId } = await createMuseum(t);
+    const firstId = await staff.mutation(api.provenance.recordClaim, {
+      objectId,
+      ...rosenbergClaim,
+    });
+    const secondId = await staff.mutation(api.provenance.recordClaim, {
+      objectId,
+      ...rosenbergClaim,
+      statement: "Galerie Wildenstein, 1935 to 1938.",
+      partyText: "Galerie Wildenstein",
+      contradictsClaimId: firstId,
+    });
+    const correctedId = await staff.mutation(api.provenance.correctClaim, {
+      claimId: firstId,
+      reason: "Stock book gives 1936",
+      ...rosenbergAssertion,
+      statement: "Paul Rosenberg, Paris, by 1936.",
+    });
+
+    const claims = await claimsOf(staff, objectId);
+    expect(claims.find((claim) => claim._id === secondId)?.contradicts).toEqual(
+      { claimId: correctedId, earlierVersion: true },
+    );
+    expect(
+      claims.find((claim) => claim._id === correctedId)?.contradictedByClaimIds,
+    ).toEqual([secondId]);
+    const queue = await staff.query(api.provenance.reviewQueue, {
+      organizationId,
+      status: "unreviewed",
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(queue.page.map((item) => item.claimId)).toContain(correctedId);
+  });
+
+  test("only a reviewer may retract a claim that was reviewed or is contested", async () => {
+    const t = createConvexTest();
+    const { staff, objectId, organizationId } = await createMuseum(t);
+    const researcher = await addMember(t, organizationId, RESEARCHER);
+    const reviewedId = await staff.mutation(api.provenance.recordClaim, {
+      objectId,
+      ...rosenbergClaim,
+    });
+    await staff.mutation(api.provenance.reviewClaim, {
+      claimId: reviewedId,
+      decision: "accepted",
+    });
+    const contestedId = await researcher.client.mutation(
+      api.provenance.recordClaim,
+      {
+        objectId,
+        ...rosenbergClaim,
+        statement: "Contradicting claim",
+        contradictsClaimId: reviewedId,
+      },
+    );
+    const plainId = await researcher.client.mutation(
+      api.provenance.recordClaim,
+      { objectId, ...rosenbergClaim, statement: "Typo claim" },
+    );
+
+    for (const claimId of [reviewedId, contestedId]) {
+      expect(
+        await capabilityFailureOf(
+          researcher.client.mutation(api.provenance.retractClaim, {
+            claimId,
+            reason: "Not needed",
+          }),
+        ),
+      ).toMatchObject({ reason: "permission_missing" });
+    }
+    await researcher.client.mutation(api.provenance.retractClaim, {
+      claimId: plainId,
+      reason: "Entered twice",
+    });
+    await staff.mutation(api.provenance.retractClaim, {
+      claimId: contestedId,
+      reason: "Reviewer confirms the duplicate",
+    });
+    const claims = await claimsOf(staff, objectId);
+    expect(
+      claims.flatMap((claim) => (claim.isCurrent ? [claim._id] : [])),
+    ).toEqual([reviewedId]);
+  });
+
+  test("every review decision is kept, newest first", async () => {
+    const t = createConvexTest();
+    const { staff, objectId } = await createMuseum(t);
+    const claimId = await staff.mutation(api.provenance.recordClaim, {
+      objectId,
+      ...rosenbergClaim,
+    });
+    await staff.mutation(api.provenance.reviewClaim, {
+      claimId,
+      decision: "disputed",
+      note: "Dealer invoice is for another portrait",
+    });
+    await staff.mutation(api.provenance.reviewClaim, {
+      claimId,
+      decision: "accepted",
+      note: "Stock book confirms the portrait",
+    });
+    const [claim] = await claimsOf(staff, objectId);
+    expect(claim?.reviewStatus).toBe("accepted");
+    expect(
+      claim?.reviews.map((review) => [review.decision, review.note]),
+    ).toEqual([
+      ["accepted", "Stock book confirms the portrait"],
+      ["disputed", "Dealer invoice is for another portrait"],
+    ]);
+  });
+
+  test("a correction keeps the holder's identification unless it is removed", async () => {
+    const t = createConvexTest();
+    const { staff, objectId, organizationId, userId } = await createMuseum(t);
+    const partyId = await insertParty(t, organizationId, userId, "Rosenberg");
+    const originalId = await staff.mutation(api.provenance.recordClaim, {
+      objectId,
+      ...rosenbergClaim,
+      partyAccountId: partyId,
+    });
+    const keptId = await staff.mutation(api.provenance.correctClaim, {
+      claimId: originalId,
+      reason: "Date typo",
+      ...rosenbergAssertion,
+    });
+    const removedId = await staff.mutation(api.provenance.correctClaim, {
+      claimId: keptId,
+      reason: "Not the same dealer",
+      ...rosenbergAssertion,
+      partyAccountId: null,
+    });
+    const claims = await claimsOf(staff, objectId);
+    expect(claims.find((claim) => claim._id === keptId)?.isCurrent).toBe(false);
+    const history = await staff.query(api.partyLinks.listForAccount, {
+      accountId: partyId,
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(
+      history.page.map((entry) => [entry.targetId, entry.isCurrent]),
+    ).toEqual(
+      expect.arrayContaining([
+        [originalId, false],
+        [keptId, false],
+      ]),
+    );
+    expect(claims.find((claim) => claim._id === removedId)?.party).toBeNull();
+  });
+
+  test("identifiers from another organization are refused everywhere", async () => {
+    const t = createConvexTest();
+    const { staff, objectId } = await createMuseum(t);
+    const other = await createMuseum(t);
+    const foreignDocument = await insertDocument(
+      t,
+      other.organizationId,
+      other.objectId,
+      other.userId,
+    );
+    const foreignClaimId = await other.staff.mutation(
+      api.provenance.recordClaim,
+      { objectId: other.objectId, ...rosenbergClaim },
+    );
+    const [foreignClaim] = await claimsOf(other.staff, other.objectId);
+    const foreignEvidenceId = foreignClaim?.evidence[0]?._id;
+    if (!foreignEvidenceId) throw new Error("Expected evidence");
+
+    expect(
+      await provenanceErrorOf(
+        staff.mutation(api.provenance.recordClaim, {
+          objectId,
+          ...rosenbergClaim,
+          evidence: [{ source: { kind: "media", mediaId: foreignDocument } }],
+        }),
+      ),
+    ).toMatchObject({ code: "PROVENANCE_EVIDENCE_INVALID" });
+    expect(
+      await provenanceErrorOf(
+        staff.mutation(api.provenance.recordClaim, {
+          objectId,
+          ...rosenbergClaim,
+          contradictsClaimId: foreignClaimId,
+        }),
+      ),
+    ).toMatchObject({ code: "PROVENANCE_CONTRADICTION_INVALID" });
+    for (const call of [
+      staff.mutation(api.provenance.addEvidence, {
+        claimId: foreignClaimId,
+        source: { kind: "citation", citation: "Probe" },
+      }),
+      staff.mutation(api.provenance.retractEvidence, {
+        evidenceId: foreignEvidenceId,
+        reason: "Probe",
+      }),
+      staff.mutation(api.provenance.correctClaim, {
+        claimId: foreignClaimId,
+        reason: "Probe",
+        ...rosenbergAssertion,
+      }),
+      staff.mutation(api.provenance.retractClaim, {
+        claimId: foreignClaimId,
+        reason: "Probe",
+      }),
+    ]) {
+      await expect(call).rejects.toThrow();
+    }
+    const [unchanged] = await claimsOf(other.staff, other.objectId);
+    expect(unchanged).toMatchObject({
+      isCurrent: true,
+      evidence: [expect.objectContaining({ isActive: true })],
+    });
+    expect(await claimsOf(staff, objectId)).toEqual([]);
+  });
+
+  test("the review permission migration works through organizations page by page", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = createConvexTest();
+      const organizationIds = await t.run(async (ctx) => {
+        const ids = [];
+        for (let index = 0; index < 30; index++) {
+          const organizationId = await ctx.db.insert("organizations", {
+            name: `Museum ${index}`,
+            slug: `museum-${index}-${Math.random().toString(36).slice(2, 7)}`,
+            type: "museum",
+          });
+          await ctx.db.insert("roles", {
+            organizationId,
+            name: ADMIN_ROLE_NAME,
+            isSystemRole: true,
+          });
+          ids.push(organizationId);
+        }
+        return ids;
+      });
+      await t.mutation(
+        internal.migrations.grantProvenanceReviewPermissions,
+        {},
+      );
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      const granted = await t.run(async (ctx) => {
+        const permission = (await ctx.db.query("permissions").collect()).find(
+          (row) => row.name === "collections.review_provenance",
+        );
+        let count = 0;
+        for (const organizationId of organizationIds) {
+          const [role] = await ctx.db
+            .query("roles")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", organizationId),
+            )
+            .collect();
+          if (!role) continue;
+          const grants = await ctx.db
+            .query("rolePermissions")
+            .withIndex("by_role", (q) => q.eq("roleId", role._id))
+            .collect();
+          if (grants.some((grant) => grant.permissionId === permission?._id))
+            count++;
+        }
+        return count;
+      });
+      expect(granted).toBe(30);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -1,12 +1,14 @@
+import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type {
-  HistoricalDate,
+  ProvenanceAssertion,
   ProvenanceConfidence,
   ProvenanceEvidenceInput,
   ProvenanceMethod,
   ProvenancePartyKind,
   ProvenanceRole,
 } from "@v1/backend/convex/utils/provenanceValidators";
+import type { FunctionArgs } from "convex/server";
 import {
   EMPTY_EVIDENCE,
   type EvidenceDraft,
@@ -19,23 +21,17 @@ import {
 } from "./historical-date";
 
 /** What a new or corrected claim starts from. */
-export interface ClaimDefaults {
-  statement?: string;
-  role?: ProvenanceRole;
-  partyKind?: ProvenancePartyKind;
-  partyText?: string;
+export type ClaimDefaults = Partial<ProvenanceAssertion> & {
   partyId?: Id<"accounts">;
-  method?: ProvenanceMethod;
-  place?: string;
-  startDate?: HistoricalDate;
-  endDate?: HistoricalDate;
-  confidence?: ProvenanceConfidence;
   contradictsClaimId?: Id<"provenanceClaims">;
-}
+  /** Sources to start from, such as a legacy verification source. */
+  evidence?: EvidenceDraft[];
+};
 
 export interface ClaimFormState {
   statement: string;
-  role: ProvenanceRole;
+  /** "none" when the source does not state the holder's role. */
+  role: ProvenanceRole | "none";
   partyKind: ProvenancePartyKind;
   partyText: string;
   partyId: Id<"accounts"> | undefined;
@@ -48,7 +44,6 @@ export interface ClaimFormState {
   evidence: Array<{ key: number; draft: EvidenceDraft }>;
   nextEvidenceKey: number;
   reason: string;
-  isSaving: boolean;
 }
 
 export type ClaimFormAction =
@@ -93,7 +88,7 @@ export function initialClaimFormState(
 ): ClaimFormState {
   return {
     statement: defaults?.statement ?? "",
-    role: defaults?.role ?? "owner",
+    role: defaults?.role ?? "none",
     partyKind: defaults?.partyKind ?? "named",
     partyText: defaults?.partyText ?? "",
     partyId: defaults?.partyId,
@@ -103,10 +98,9 @@ export function initialClaimFormState(
     endDate: draftFromHistoricalDate(defaults?.endDate),
     confidence: defaults?.confidence ?? "unassessed",
     contradictsClaimId: defaults?.contradictsClaimId ?? "none",
-    evidence: [],
-    nextEvidenceKey: 0,
+    evidence: (defaults?.evidence ?? []).map((draft, key) => ({ key, draft })),
+    nextEvidenceKey: defaults?.evidence?.length ?? 0,
     reason: "",
-    isSaving: false,
   };
 }
 
@@ -120,20 +114,14 @@ function isBlankEvidence(draft: EvidenceDraft) {
   );
 }
 
-export interface ClaimInput {
-  statement: string;
-  role: ProvenanceRole;
-  partyKind: ProvenancePartyKind;
-  partyText?: string;
-  partyAccountId?: Id<"accounts">;
-  method?: ProvenanceMethod;
-  place?: string;
-  startDate?: HistoricalDate;
-  endDate?: HistoricalDate;
-  confidence: ProvenanceConfidence;
-  contradictsClaimId?: Id<"provenanceClaims">;
-  evidence: ProvenanceEvidenceInput[];
-}
+/** The claim fields both capture and correction send. */
+export type ClaimInput = Omit<
+  FunctionArgs<typeof api.provenance.recordClaim>,
+  "objectId" | "partyAccountId"
+> & {
+  /** null clears an identification; undefined leaves it to the server. */
+  partyAccountId?: Id<"accounts"> | null;
+};
 
 /**
  * The claim the form states, or why it cannot be sent. Fields that do not
@@ -144,6 +132,7 @@ export function claimInputFromForm(
   options: { canLinkParties: boolean; isCorrection: boolean },
 ): { claim: ClaimInput } | { problem: "requiredFields" | "invalidDate" } {
   const named = state.partyKind === "named";
+  const role = state.role === "none" ? undefined : state.role;
   if (
     !state.statement.trim() ||
     (named && !state.partyText.trim()) ||
@@ -166,14 +155,18 @@ export function claimInputFromForm(
   return {
     claim: {
       statement: state.statement.trim(),
-      role: state.role,
+      role,
       partyKind: state.partyKind,
       partyText:
         state.partyKind === "unknown"
           ? undefined
           : state.partyText.trim() || undefined,
-      partyAccountId:
-        named && options.canLinkParties ? state.partyId : undefined,
+      // Without party access the server keeps a correction's identification.
+      partyAccountId: options.canLinkParties
+        ? named && role
+          ? (state.partyId ?? null)
+          : null
+        : undefined,
       method: state.method === "none" ? undefined : state.method,
       place: state.place.trim() || undefined,
       startDate,

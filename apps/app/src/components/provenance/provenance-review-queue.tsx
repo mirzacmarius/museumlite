@@ -71,7 +71,9 @@ export function ProvenanceReviewQueue({
                   <ExternalLink className="size-3" />
                 </Link>
                 <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="outline">{t(`roles.${item.role}`)}</Badge>
+                  {item.role ? (
+                    <Badge variant="outline">{t(`roles.${item.role}`)}</Badge>
+                  ) : null}
                   <Badge variant="secondary">
                     {t(`confidence.${item.confidence}`)}
                   </Badge>

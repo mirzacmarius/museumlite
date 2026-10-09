@@ -1,19 +1,21 @@
-import { capabilityUnavailableFromError } from "@v1/backend/convex/utils/capabilities";
 import { partyErrorFromError } from "@v1/backend/convex/utils/partyErrors";
 import {
   type ProvenanceErrorCode,
   provenanceErrorFromError,
 } from "@v1/backend/convex/utils/provenanceErrors";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { usePartyErrorMessage } from "@/hooks/use-party-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 /**
  * Translates provenance failures, including Party link refusals raised while
- * identifying a holder. Server error text is never shown.
+ * identifying a holder and capability refusals, which name the missing
+ * Module, Permission or plan. Server error text is never shown.
  */
 export function useProvenanceErrorMessage() {
   const t = useScopedI18n("provenance.errors");
   const partyErrorMessage = usePartyErrorMessage();
+  const capabilityErrorMessage = useCapabilityErrorMessage();
   function codeMessage(code: ProvenanceErrorCode) {
     switch (code) {
       case "PROVENANCE_OBJECT_NOT_FOUND":
@@ -59,7 +61,6 @@ export function useProvenanceErrorMessage() {
     const provenanceError = provenanceErrorFromError(error);
     if (provenanceError) return codeMessage(provenanceError.code);
     if (partyErrorFromError(error)) return partyErrorMessage(error);
-    if (capabilityUnavailableFromError(error)) return t("permission");
-    return t("fallback");
+    return capabilityErrorMessage(error) ?? t("fallback");
   };
 }

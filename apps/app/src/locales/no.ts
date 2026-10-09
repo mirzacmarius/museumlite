@@ -6161,7 +6161,10 @@ export default {
       recordedBy: "Registrert av {name}",
       reviewedBy: "Vurdert av {name}",
       reviewNote: "Vurderingsnotat: {note}",
+      reviewHistory: "Vurderingshistorikk ({count})",
+      reviewEntry: "{decision} av {name}",
       contradicts: "Motsier: {statement}",
+      contradictsEarlier: "Motsier en tidligere versjon av: {statement}",
       contradictedBy: "Motsagt av: {statement}",
       corrects: "Retter en tidligere påstand",
       corrected: "Rettet",
@@ -6227,11 +6230,14 @@ export default {
       statementPlaceholder:
         "For eksempel: Paul Rosenberg, Paris, senest 1937; solgt til …",
       role: "Innehaverens rolle",
+      roleNotStated: "Ikke oppgitt",
       partyKind: "Innehaver",
       partyText: "Navn slik kilden oppgir det",
       partyDescription: "Beskrivelse (valgfritt)",
       partyDescriptionPlaceholder: "For eksempel: privat samling, Sveits",
       identifyParty: "Identifiser som part (valgfritt)",
+      identifyNeedsRole:
+        "Oppgi innehaverens rolle for å identifisere vedkommende som part.",
       method: "Hvordan innehaveren fikk objektet",
       methodNotStated: "Ikke oppgitt",
       place: "Sted (valgfritt)",
@@ -6326,6 +6332,7 @@ export default {
       title: "Tidligere proveniensstekst",
       description:
         "Ustrukturert proveniens fra før påstandene, beholdt slik den ble skrevet. Registrer påstander fra den etter hvert som forskningen tillater.",
+      verifiedBy: "Verifisert av {source}",
       recordFrom: "Registrer som påstand",
     },
     errors: {
@@ -6340,7 +6347,7 @@ export default {
       statementRequired: "Skriv påstanden slik den er uttrykt.",
       partyNameRequired: "Oppgi innehaverens navn slik kilden gir det.",
       partyInvalid:
-        "Bare en navngitt innehaver kan identifiseres som part, og en ukjent innehaver har ingen beskrivelse.",
+        "Bare en navngitt innehaver med oppgitt rolle kan identifiseres som part, og en ukjent innehaver har ingen beskrivelse.",
       dateInvalid:
         "En dato er ugyldig. Kontroller delene presisjonen krever og kalenderen.",
       dateOrderInvalid: "Sluttdatoen er før startdatoen.",
@@ -6358,7 +6365,6 @@ export default {
       reasonRequired: "Oppgi en begrunnelse.",
       reviewNoteRequired:
         "Legg til et notat for å bestride eller avvise en påstand.",
-      permission: "Du har ikke tillatelse til å gjøre dette.",
       fallback: "Handlingen kunne ikke fullføres. Oppdater og prøv igjen.",
     },
   },
@@ -6968,11 +6974,7 @@ export default {
         actionDetailsColumn: "Handlingsdetaljer",
         noAuditLogs: "Fant ingen revisjonslogger",
         loadOlderLogs: "Last inn eldre logger …",
-        provenanceHistory: "Proveniens og historikk",
-        noProvenance:
-          "Ingen proveniens- eller utstillingshistorikk registrert.",
         provenanceAndHistory: "Proveniens og historikk",
-        verifiedBy: "Verifisert av",
         placement: "Plassering",
         noParent: "Ingen overordnet objekt er tilordnet.",
         childObjects: "Underordnede objekter",

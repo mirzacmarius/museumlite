@@ -53,6 +53,7 @@ import {
 import {
   provenanceClaimDocumentValidator,
   provenanceEvidenceDocumentValidator,
+  provenanceReviewDocumentValidator,
 } from "./utils/provenanceValidators";
 import {
   webhookDeliveryAttemptFields,
@@ -4614,6 +4615,11 @@ export default defineSchema({
 
   // Sources cited for provenance claims; retracted, never deleted.
   provenanceEvidence: defineTable(provenanceEvidenceDocumentValidator)
+    .index("by_organization_and_objectId", ["organizationId", "objectId"])
+    .index("by_organization_and_claimId", ["organizationId", "claimId"]),
+
+  // Every review decision on a provenance claim, appended in order.
+  provenanceReviews: defineTable(provenanceReviewDocumentValidator)
     .index("by_organization_and_objectId", ["organizationId", "objectId"])
     .index("by_organization_and_claimId", ["organizationId", "claimId"]),
 

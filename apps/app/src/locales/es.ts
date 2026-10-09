@@ -6235,7 +6235,10 @@ export default {
       recordedBy: "Registrada por {name}",
       reviewedBy: "Revisada por {name}",
       reviewNote: "Nota de revisión: {note}",
+      reviewHistory: "Historial de revisión ({count})",
+      reviewEntry: "{decision} por {name}",
       contradicts: "Contradice: {statement}",
+      contradictsEarlier: "Contradice una versión anterior de: {statement}",
       contradictedBy: "Contradicha por: {statement}",
       corrects: "Corrige una afirmación anterior",
       corrected: "Corregida",
@@ -6301,11 +6304,14 @@ export default {
       statementPlaceholder:
         "Por ejemplo: Paul Rosenberg, París, a más tardar en 1937; vendido a …",
       role: "Función del poseedor",
+      roleNotStated: "No indicada",
       partyKind: "Poseedor",
       partyText: "Nombre tal como figura en la fuente",
       partyDescription: "Descripción (opcional)",
       partyDescriptionPlaceholder: "Por ejemplo: colección privada, Suiza",
       identifyParty: "Identificar como parte (opcional)",
+      identifyNeedsRole:
+        "Indica la función del poseedor para identificarlo como parte.",
       method: "Cómo lo adquirió el poseedor",
       methodNotStated: "No indicado",
       place: "Lugar (opcional)",
@@ -6401,6 +6407,7 @@ export default {
       title: "Texto de procedencia anterior",
       description:
         "Procedencia no estructurada anterior a las afirmaciones, conservada tal como se escribió. Registra afirmaciones a partir de ella según lo permita tu investigación.",
+      verifiedBy: "Verificado por {source}",
       recordFrom: "Registrar como afirmación",
     },
     errors: {
@@ -6416,7 +6423,7 @@ export default {
       partyNameRequired:
         "Indica el nombre del poseedor tal como figura en la fuente.",
       partyInvalid:
-        "Solo un poseedor nombrado puede identificarse como parte, y un poseedor desconocido no lleva descripción.",
+        "Solo un poseedor nombrado con una función indicada puede identificarse como parte, y un poseedor desconocido no lleva descripción.",
       dateInvalid:
         "Una fecha no es válida. Revisa las partes que exige su precisión y el calendario.",
       dateOrderInvalid: "La fecha final es anterior a la inicial.",
@@ -6435,7 +6442,6 @@ export default {
       reasonRequired: "Indica un motivo.",
       reviewNoteRequired:
         "Añade una nota para cuestionar o rechazar una afirmación.",
-      permission: "No tienes permiso para hacer esto.",
       fallback:
         "No se pudo completar la acción. Actualiza e inténtalo de nuevo.",
     },
@@ -7055,11 +7061,7 @@ export default {
         actionDetailsColumn: "Detalles de la acción",
         noAuditLogs: "No se encontraron registros de auditoría",
         loadOlderLogs: "Cargar registros anteriores…",
-        provenanceHistory: "Procedencia e historial",
-        noProvenance:
-          "No hay historial de procedencia ni de exposiciones registrado.",
         provenanceAndHistory: "Procedencia e historial",
-        verifiedBy: "Verificado por",
         placement: "Ubicación",
         noParent: "No hay ningún objeto principal asignado.",
         childObjects: "Objetos secundarios",

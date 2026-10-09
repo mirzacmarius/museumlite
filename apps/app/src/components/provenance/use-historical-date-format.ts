@@ -1,12 +1,11 @@
 import type { HistoricalDate } from "@v1/backend/convex/utils/provenanceValidators";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import {
-  formatHistoricalDate,
   formatHistoricalPeriod,
   type HistoricalPeriodLabels,
 } from "./historical-date";
 
-/** Formats partial dates and claim periods in the current locale. */
+/** Formats claim periods in the current locale. */
 export function useHistoricalDateFormat() {
   const t = useScopedI18n("provenance.dates");
   const locale = useCurrentLocale();
@@ -23,7 +22,6 @@ export function useHistoricalDateFormat() {
     undated: t("undated"),
   };
   return {
-    date: (date: HistoricalDate) => formatHistoricalDate(date, locale, labels),
     period: (start?: HistoricalDate, end?: HistoricalDate) =>
       formatHistoricalPeriod(start, end, locale, labels),
   };

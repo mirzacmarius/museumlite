@@ -18,6 +18,7 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { Textarea } from "@v1/ui/textarea";
+import { cn } from "@v1/ui/utils";
 import { useMutation } from "convex/react";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { toast } from "sonner";
@@ -33,6 +34,8 @@ import {
 
 interface DialogFormProps {
   title: string;
+  /** Wider dialog for the claim form. */
+  wide?: boolean;
   description: string;
   submitLabel: string;
   submitVariant?: "default" | "destructive";
@@ -43,9 +46,10 @@ interface DialogFormProps {
   children: ReactNode;
 }
 
-/** A small provenance dialog: its fields, then cancel and submit. */
-function DialogForm({
+/** A provenance dialog: its fields, then cancel and submit. */
+export function DialogForm({
   title,
+  wide = false,
   description,
   submitLabel,
   submitVariant = "default",
@@ -62,7 +66,12 @@ function DialogForm({
   }
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[520px]">
+      <DialogContent
+        className={cn(
+          "max-h-[90vh] overflow-y-auto",
+          wide ? "sm:max-w-[640px]" : "sm:max-w-[520px]",
+        )}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -93,7 +102,7 @@ function DialogForm({
 }
 
 /** Runs a mutation, reporting success or a translated failure. */
-function useSubmit(onClose: () => void) {
+export function useSubmit(onClose: () => void) {
   const errorMessage = useProvenanceErrorMessage();
   const [isSaving, setIsSaving] = useState(false);
   const submit = async (action: () => Promise<unknown>, success: string) => {

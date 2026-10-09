@@ -6033,7 +6033,10 @@ export default {
       recordedBy: "Recorded by {name}",
       reviewedBy: "Reviewed by {name}",
       reviewNote: "Review note: {note}",
+      reviewHistory: "Review history ({count})",
+      reviewEntry: "{decision} by {name}",
       contradicts: "Contradicts: {statement}",
+      contradictsEarlier: "Contradicts an earlier version of: {statement}",
       contradictedBy: "Contradicted by: {statement}",
       corrects: "Corrects an earlier claim",
       corrected: "Corrected",
@@ -6099,12 +6102,14 @@ export default {
       statementPlaceholder:
         "For example: Paul Rosenberg, Paris, by 1937; sold to …",
       role: "Holder's role",
+      roleNotStated: "Not stated",
       partyKind: "Holder",
       partyText: "Name as given in the source",
       partyDescription: "Description (optional)",
       partyDescriptionPlaceholder:
         "For example: Private collection, Switzerland",
       identifyParty: "Identify as a party (optional)",
+      identifyNeedsRole: "State the holder's role to identify them as a party.",
       method: "How the holder acquired it",
       methodNotStated: "Not stated",
       place: "Place (optional)",
@@ -6199,6 +6204,7 @@ export default {
       title: "Earlier provenance text",
       description:
         "Unstructured provenance from before claims, kept as written. Record claims from it as your research allows.",
+      verifiedBy: "Verified by {source}",
       recordFrom: "Record as claim",
     },
     errors: {
@@ -6213,7 +6219,7 @@ export default {
       statementRequired: "Write the claim as stated.",
       partyNameRequired: "Enter the holder's name as the source gives it.",
       partyInvalid:
-        "Only a named holder can be identified as a party, and an unknown holder has no description.",
+        "Only a named holder with a stated role can be identified as a party, and an unknown holder has no description.",
       dateInvalid:
         "A date is not valid. Check the parts its precision needs and the calendar.",
       dateOrderInvalid: "The end date is before the start date.",
@@ -6231,7 +6237,6 @@ export default {
       evidenceRetracted: "That evidence was already retracted.",
       reasonRequired: "Give a reason.",
       reviewNoteRequired: "Add a note to dispute or reject a claim.",
-      permission: "You do not have permission to do this.",
       fallback: "The action could not be completed. Refresh and try again.",
     },
   },
@@ -6789,10 +6794,7 @@ export default {
         actionDetailsColumn: "Action Details",
         noAuditLogs: "No audit logs found",
         loadOlderLogs: "Load older logs…",
-        provenanceHistory: "Provenance and History",
-        noProvenance: "No provenance or exhibition history recorded.",
         provenanceAndHistory: "Provenance and History",
-        verifiedBy: "Verified by",
         placement: "Placement",
         noParent: "No parent object assigned.",
         childObjects: "Child Objects",

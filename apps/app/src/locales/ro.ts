@@ -5763,7 +5763,10 @@ export default {
       recordedBy: "Înregistrată de {name}",
       reviewedBy: "Analizată de {name}",
       reviewNote: "Notă de analiză: {note}",
+      reviewHistory: "Istoricul analizelor ({count})",
+      reviewEntry: "{decision} de {name}",
       contradicts: "Contrazice: {statement}",
+      contradictsEarlier: "Contrazice o versiune anterioară a: {statement}",
       contradictedBy: "Contrazisă de: {statement}",
       corrects: "Corectează o afirmație anterioară",
       corrected: "Corectată",
@@ -5829,11 +5832,14 @@ export default {
       statementPlaceholder:
         "De exemplu: Paul Rosenberg, Paris, cel târziu în 1937; vândut către …",
       role: "Rolul deținătorului",
+      roleNotStated: "Neprecizat",
       partyKind: "Deținător",
       partyText: "Numele așa cum apare în sursă",
       partyDescription: "Descriere (opțional)",
       partyDescriptionPlaceholder: "De exemplu: colecție privată, Elveția",
       identifyParty: "Identifică drept parte (opțional)",
+      identifyNeedsRole:
+        "Precizează rolul deținătorului pentru a-l identifica drept parte.",
       method: "Cum a dobândit deținătorul obiectul",
       methodNotStated: "Neprecizat",
       place: "Loc (opțional)",
@@ -5929,6 +5935,7 @@ export default {
       title: "Text de proveniență anterior",
       description:
         "Proveniență nestructurată de dinaintea afirmațiilor, păstrată așa cum a fost scrisă. Înregistrează afirmații din ea pe măsură ce cercetarea permite.",
+      verifiedBy: "Verificat de {source}",
       recordFrom: "Înregistrează ca afirmație",
     },
     errors: {
@@ -5943,7 +5950,7 @@ export default {
       statementRequired: "Scrie afirmația așa cum este formulată.",
       partyNameRequired: "Introdu numele deținătorului așa cum îl dă sursa.",
       partyInvalid:
-        "Doar un deținător numit poate fi identificat drept parte, iar un deținător necunoscut nu are descriere.",
+        "Doar un deținător numit cu rol precizat poate fi identificat drept parte, iar un deținător necunoscut nu are descriere.",
       dateInvalid:
         "O dată nu este validă. Verifică părțile cerute de precizia ei și calendarul.",
       dateOrderInvalid: "Data de final este înaintea datei de început.",
@@ -5962,7 +5969,6 @@ export default {
       reasonRequired: "Indică un motiv.",
       reviewNoteRequired:
         "Adaugă o notă pentru a contesta sau respinge o afirmație.",
-      permission: "Nu ai permisiunea să faci asta.",
       fallback:
         "Acțiunea nu a putut fi finalizată. Reîmprospătează și încearcă din nou.",
     },
@@ -7766,11 +7772,7 @@ export default {
         actionDetailsColumn: "Detalii despre acțiune",
         noAuditLogs: "Nu s-au găsit jurnale de audit",
         loadOlderLogs: "Încarcă jurnalele mai vechi…",
-        provenanceHistory: "Proveniență și istoric",
-        noProvenance:
-          "Nu este înregistrat niciun istoric al provenienței sau al expozițiilor.",
         provenanceAndHistory: "Proveniență și istoric",
-        verifiedBy: "Verificat de",
         placement: "Amplasare",
         noParent: "Nu este atribuit niciun obiect părinte.",
         childObjects: "Obiecte copil",

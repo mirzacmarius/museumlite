@@ -6193,7 +6193,10 @@ export default {
       recordedBy: "Enregistrée par {name}",
       reviewedBy: "Examinée par {name}",
       reviewNote: "Note d'examen : {note}",
+      reviewHistory: "Historique des examens ({count})",
+      reviewEntry: "{decision} par {name}",
       contradicts: "Contredit : {statement}",
+      contradictsEarlier: "Contredit une version antérieure de : {statement}",
       contradictedBy: "Contredite par : {statement}",
       corrects: "Corrige une assertion antérieure",
       corrected: "Corrigée",
@@ -6259,12 +6262,15 @@ export default {
       statementPlaceholder:
         "Par exemple : Paul Rosenberg, Paris, au plus tard en 1937 ; vendu à …",
       role: "Rôle du détenteur",
+      roleNotStated: "Non indiqué",
       partyKind: "Détenteur",
       partyText: "Nom tel que donné par la source",
       partyDescription: "Description (facultatif)",
       partyDescriptionPlaceholder:
         "Par exemple : collection particulière, Suisse",
       identifyParty: "Identifier comme partie (facultatif)",
+      identifyNeedsRole:
+        "Indiquez le rôle du détenteur pour l'identifier comme partie.",
       method: "Mode d'acquisition par le détenteur",
       methodNotStated: "Non indiqué",
       place: "Lieu (facultatif)",
@@ -6360,6 +6366,7 @@ export default {
       title: "Texte de provenance antérieur",
       description:
         "Provenance non structurée antérieure aux assertions, conservée telle qu'écrite. Enregistrez-en des assertions au fil de votre recherche.",
+      verifiedBy: "Vérifié par {source}",
       recordFrom: "Enregistrer comme assertion",
     },
     errors: {
@@ -6375,7 +6382,7 @@ export default {
       partyNameRequired:
         "Saisissez le nom du détenteur tel que la source le donne.",
       partyInvalid:
-        "Seul un détenteur nommé peut être identifié comme partie, et un détenteur inconnu n'a pas de description.",
+        "Seul un détenteur nommé dont le rôle est indiqué peut être identifié comme partie, et un détenteur inconnu n'a pas de description.",
       dateInvalid:
         "Une date n'est pas valide. Vérifiez les éléments exigés par sa précision et le calendrier.",
       dateOrderInvalid: "La date de fin précède la date de début.",
@@ -6394,7 +6401,6 @@ export default {
       reasonRequired: "Indiquez un motif.",
       reviewNoteRequired:
         "Ajoutez une note pour contester ou rejeter une assertion.",
-      permission: "Vous n'avez pas l'autorisation de faire cela.",
       fallback: "L'action n'a pas pu être effectuée. Actualisez et réessayez.",
     },
   },
@@ -7011,11 +7017,7 @@ export default {
         actionDetailsColumn: "Détails de l’action",
         noAuditLogs: "Aucun journal d’audit trouvé",
         loadOlderLogs: "Charger les journaux plus anciens…",
-        provenanceHistory: "Provenance et historique",
-        noProvenance:
-          "Aucun historique de provenance ou d’exposition enregistré.",
         provenanceAndHistory: "Provenance et historique",
-        verifiedBy: "Vérifié par",
         placement: "Emplacement",
         noParent: "Aucun objet parent associé.",
         childObjects: "Objets enfants",

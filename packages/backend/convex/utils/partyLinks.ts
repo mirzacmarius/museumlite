@@ -1,6 +1,7 @@
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { objectLabel } from "./collectionDisplayHelpers";
 import { isDisposalDecision } from "./disposalPolicy";
 import { requireLoansAccess } from "./loanAccess";
 import { isOpenEntryStatus } from "./objectEntryValidators";
@@ -12,7 +13,7 @@ import {
 import { partyError } from "./partyErrors";
 import type { PartyRole, PartyTarget } from "./partyValidators";
 import { hasPermission, requirePermission } from "./permissions";
-import { isWithdrawnObject, provenanceObjectLabel } from "./provenance";
+import { isWithdrawnObject } from "./provenance";
 
 /** History rows read per target; supersession history stays small. */
 export const PARTY_LINKS_PER_TARGET_LIMIT = 100;
@@ -167,9 +168,10 @@ export async function resolvePartyTarget(
       const object = await ctx.db.get(claim.objectId);
       return {
         organizationId: claim.organizationId,
-        label: object ? provenanceObjectLabel(object) : "",
-        // Only a holder the source names can be identified as a Party.
-        allowedRoles: claim.partyKind === "named" ? [claim.role] : [],
+        label: object ? objectLabel(object) : "",
+        // Only a named holder whose role the claim states can be a Party.
+        allowedRoles:
+          claim.partyKind === "named" && claim.role ? [claim.role] : [],
         policy:
           claim.supersededAt === undefined && !isWithdrawnObject(object)
             ? "open"
@@ -208,7 +210,7 @@ export async function resolvePartyTarget(
       );
       return {
         organizationId: collection.organizationId,
-        label: `${collection.accessionNumber} ${collection.title}`.trim(),
+        label: objectLabel(collection),
         allowedRoles: ["owner"],
         policy: "open",
       };
@@ -266,7 +268,7 @@ export async function readablePartyTargetLabel(
       if (claim?.organizationId !== link.organizationId) return null;
       const object = await ctx.db.get(claim.objectId);
       return object?.organizationId === link.organizationId
-        ? provenanceObjectLabel(object)
+        ? objectLabel(object)
         : null;
     }
     case "appraisal": {
@@ -278,7 +280,7 @@ export async function readablePartyTargetLabel(
     case "collection": {
       const record = await ctx.db.get(link.targetId);
       return record?.organizationId === link.organizationId
-        ? `${record.accessionNumber} ${record.title}`.trim()
+        ? objectLabel(record)
         : null;
     }
     case "entry": {

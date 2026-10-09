@@ -2,21 +2,12 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
-import { type FormEvent, useReducer } from "react";
+import { useReducer } from "react";
 import { toast } from "sonner";
-import { useProvenanceErrorMessage } from "@/hooks/use-provenance-error-message";
 import { useScopedI18n } from "@/locales/client";
 import {
   ClaimDetailFields,
@@ -31,6 +22,7 @@ import {
   initialClaimFormState,
 } from "./claim-form-state";
 import type { EvidenceFile } from "./evidence-fields";
+import { DialogForm, useSubmit } from "./provenance-claim-dialogs";
 
 interface ProvenanceClaimDialogProps {
   onClose: () => void;
@@ -60,9 +52,9 @@ export function ProvenanceClaimDialog({
   corrects,
 }: ProvenanceClaimDialogProps) {
   const t = useScopedI18n("provenance");
-  const errorMessage = useProvenanceErrorMessage();
   const recordClaim = useMutation(api.provenance.recordClaim);
   const correctClaim = useMutation(api.provenance.correctClaim);
+  const { isSaving, submit } = useSubmit(onClose);
   const [state, dispatch] = useReducer(
     claimFormReducer,
     defaults,
@@ -71,8 +63,7 @@ export function ProvenanceClaimDialog({
   const update = (patch: Partial<ClaimFormState>) =>
     dispatch({ type: "update", patch });
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const save = () => {
     const result = claimInputFromForm(state, {
       canLinkParties,
       isCorrection: corrects !== undefined,
@@ -81,97 +72,79 @@ export function ProvenanceClaimDialog({
       toast.error(t(`form.${result.problem}`));
       return;
     }
-    update({ isSaving: true });
-    try {
-      if (corrects) {
-        await correctClaim({
-          claimId: corrects,
-          reason: state.reason.trim(),
-          ...result.claim,
-        });
-        toast.success(t("form.corrected"));
-      } else {
-        await recordClaim({ objectId, ...result.claim });
-        toast.success(t("form.recorded"));
-      }
-      onClose();
-    } catch (error) {
-      toast.error(errorMessage(error));
-      update({ isSaving: false });
-    }
-  }
+    const { claim } = result;
+    void submit(
+      () =>
+        corrects
+          ? correctClaim({
+              claimId: corrects,
+              reason: state.reason.trim(),
+              ...claim,
+            })
+          : recordClaim({
+              objectId,
+              ...claim,
+              partyAccountId: claim.partyAccountId ?? undefined,
+            }),
+      corrects ? t("form.corrected") : t("form.recorded"),
+    );
+  };
 
   return (
-    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[640px]">
-        <DialogHeader>
-          <DialogTitle>
-            {corrects ? t("form.correctTitle") : t("form.recordTitle")}
-          </DialogTitle>
-          <DialogDescription>
-            {corrects
-              ? t("form.correctDescription")
-              : t("form.recordDescription")}
-          </DialogDescription>
-        </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          {corrects ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="claim-reason">{t("form.reason")}</Label>
-              <Input
-                id="claim-reason"
-                value={state.reason}
-                placeholder={t("form.reasonPlaceholder")}
-                disabled={state.isSaving}
-                onChange={(event) => update({ reason: event.target.value })}
-              />
-            </div>
-          ) : null}
-          <div className="space-y-1.5">
-            <Label htmlFor="claim-statement">{t("form.statement")}</Label>
-            <Textarea
-              id="claim-statement"
-              value={state.statement}
-              placeholder={t("form.statementPlaceholder")}
-              disabled={state.isSaving}
-              rows={3}
-              onChange={(event) => update({ statement: event.target.value })}
-            />
-          </div>
-          <ClaimHolderFields
-            state={state}
-            update={update}
-            organizationId={organizationId}
-            canLinkParties={canLinkParties}
+    <DialogForm
+      wide
+      title={corrects ? t("form.correctTitle") : t("form.recordTitle")}
+      description={
+        corrects ? t("form.correctDescription") : t("form.recordDescription")
+      }
+      submitLabel={isSaving ? t("form.saving") : t("form.save")}
+      isSaving={isSaving}
+      onSubmit={save}
+      onClose={onClose}
+    >
+      {corrects ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="claim-reason">{t("form.reason")}</Label>
+          <Input
+            id="claim-reason"
+            value={state.reason}
+            placeholder={t("form.reasonPlaceholder")}
+            disabled={isSaving}
+            onChange={(event) => update({ reason: event.target.value })}
           />
-          <ClaimDetailFields
-            state={state}
-            update={update}
-            contradictable={currentClaims.filter(
-              (claim) => claim._id !== corrects,
-            )}
-          />
-          <ClaimEvidenceList
-            state={state}
-            dispatch={dispatch}
-            files={files}
-            isCorrection={corrects !== undefined}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={state.isSaving}
-              onClick={onClose}
-            >
-              {t("form.cancel")}
-            </Button>
-            <Button type="submit" disabled={state.isSaving}>
-              {state.isSaving ? t("form.saving") : t("form.save")}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      ) : null}
+      <div className="space-y-1.5">
+        <Label htmlFor="claim-statement">{t("form.statement")}</Label>
+        <Textarea
+          id="claim-statement"
+          value={state.statement}
+          placeholder={t("form.statementPlaceholder")}
+          disabled={isSaving}
+          rows={3}
+          onChange={(event) => update({ statement: event.target.value })}
+        />
+      </div>
+      <ClaimHolderFields
+        state={state}
+        update={update}
+        disabled={isSaving}
+        organizationId={organizationId}
+        canLinkParties={canLinkParties}
+      />
+      <ClaimDetailFields
+        state={state}
+        update={update}
+        disabled={isSaving}
+        contradictable={currentClaims.filter((claim) => claim._id !== corrects)}
+      />
+      <ClaimEvidenceList
+        state={state}
+        dispatch={dispatch}
+        files={files}
+        isCorrection={corrects !== undefined}
+        disabled={isSaving}
+      />
+    </DialogForm>
   );
 }

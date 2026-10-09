@@ -7,7 +7,6 @@ import {
   PROVENANCE_ROLES,
   type ProvenanceConfidence,
   type ProvenancePartyKind,
-  type ProvenanceRole,
 } from "@v1/backend/convex/utils/provenanceValidators";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -32,12 +31,14 @@ const PARTY_KINDS: ProvenancePartyKind[] = ["named", "anonymous", "unknown"];
 interface SectionProps {
   state: ClaimFormState;
   update: (patch: Partial<ClaimFormState>) => void;
+  disabled: boolean;
 }
 
 /** Who held the Object: named, anonymous or unknown, and in what role. */
 export function ClaimHolderFields({
   state,
   update,
+  disabled,
   organizationId,
   canLinkParties,
 }: SectionProps & {
@@ -52,7 +53,7 @@ export function ClaimHolderFields({
           <Label htmlFor="claim-party-kind">{t("form.partyKind")}</Label>
           <Select
             value={state.partyKind}
-            disabled={state.isSaving}
+            disabled={disabled}
             onValueChange={(partyKind) =>
               update({ partyKind: partyKind as ProvenancePartyKind })
             }
@@ -73,13 +74,16 @@ export function ClaimHolderFields({
           <Label htmlFor="claim-role">{t("form.role")}</Label>
           <Select
             value={state.role}
-            disabled={state.isSaving}
-            onValueChange={(role) => update({ role: role as ProvenanceRole })}
+            disabled={disabled}
+            onValueChange={(role) =>
+              update({ role: role as ClaimFormState["role"] })
+            }
           >
             <SelectTrigger id="claim-role">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">{t("form.roleNotStated")}</SelectItem>
               {PROVENANCE_ROLES.map((role) => (
                 <SelectItem key={role} value={role}>
                   {t(`roles.${role}`)}
@@ -104,19 +108,28 @@ export function ClaimHolderFields({
                 ? t("form.partyDescriptionPlaceholder")
                 : undefined
             }
-            disabled={state.isSaving}
+            disabled={disabled}
             onChange={(event) => update({ partyText: event.target.value })}
           />
         </div>
       )}
-      {state.partyKind === "named" && canLinkParties ? (
+      {state.partyKind === "named" &&
+      canLinkParties &&
+      state.role === "none" ? (
+        <p className="text-xs text-muted-foreground">
+          {t("form.identifyNeedsRole")}
+        </p>
+      ) : null}
+      {state.partyKind === "named" &&
+      canLinkParties &&
+      state.role !== "none" ? (
         <div className="space-y-1.5">
           <Label htmlFor="claim-party">{t("form.identifyParty")}</Label>
           <PartyPicker
             id="claim-party"
             organizationId={organizationId}
             value={state.partyId}
-            disabled={state.isSaving}
+            disabled={disabled}
             onChange={(party) => update({ partyId: party?._id })}
           />
         </div>
@@ -129,6 +142,7 @@ export function ClaimHolderFields({
 export function ClaimDetailFields({
   state,
   update,
+  disabled,
   contradictable,
 }: SectionProps & {
   contradictable: Array<{ _id: Id<"provenanceClaims">; statement: string }>;
@@ -141,7 +155,7 @@ export function ClaimDetailFields({
           <Label htmlFor="claim-method">{t("form.method")}</Label>
           <Select
             value={state.method}
-            disabled={state.isSaving}
+            disabled={disabled}
             onValueChange={(method) =>
               update({ method: method as ClaimFormState["method"] })
             }
@@ -164,7 +178,7 @@ export function ClaimDetailFields({
           <Input
             id="claim-place"
             value={state.place}
-            disabled={state.isSaving}
+            disabled={disabled}
             onChange={(event) => update({ place: event.target.value })}
           />
         </div>
@@ -174,14 +188,14 @@ export function ClaimDetailFields({
           id="claim-start"
           label={t("form.startDate")}
           value={state.startDate}
-          disabled={state.isSaving}
+          disabled={disabled}
           onChange={(startDate) => update({ startDate })}
         />
         <PartialDateFields
           id="claim-end"
           label={t("form.endDate")}
           value={state.endDate}
-          disabled={state.isSaving}
+          disabled={disabled}
           onChange={(endDate) => update({ endDate })}
         />
       </div>
@@ -190,7 +204,7 @@ export function ClaimDetailFields({
           <Label htmlFor="claim-confidence">{t("form.confidence")}</Label>
           <Select
             value={state.confidence}
-            disabled={state.isSaving}
+            disabled={disabled}
             onValueChange={(confidence) =>
               update({ confidence: confidence as ProvenanceConfidence })
             }
@@ -215,7 +229,7 @@ export function ClaimDetailFields({
             <Label htmlFor="claim-contradicts">{t("form.contradicts")}</Label>
             <Select
               value={state.contradictsClaimId}
-              disabled={state.isSaving}
+              disabled={disabled}
               onValueChange={(value) =>
                 update({
                   contradictsClaimId:
@@ -252,8 +266,10 @@ export function ClaimEvidenceList({
   dispatch,
   files,
   isCorrection,
+  disabled,
 }: {
   state: ClaimFormState;
+  disabled: boolean;
   dispatch: Dispatch<ClaimFormAction>;
   files: EvidenceFile[] | undefined;
   isCorrection: boolean;
@@ -276,7 +292,7 @@ export function ClaimEvidenceList({
             id={`claim-evidence-${key}`}
             value={draft}
             files={files}
-            disabled={state.isSaving}
+            disabled={disabled}
             onChange={(next) =>
               dispatch({ type: "updateEvidence", key, draft: next })
             }
@@ -285,7 +301,7 @@ export function ClaimEvidenceList({
             type="button"
             size="sm"
             variant="ghost"
-            disabled={state.isSaving}
+            disabled={disabled}
             onClick={() => dispatch({ type: "removeEvidence", key })}
           >
             <Trash2 className="size-4" />
@@ -297,7 +313,7 @@ export function ClaimEvidenceList({
         type="button"
         size="sm"
         variant="outline"
-        disabled={state.isSaving}
+        disabled={disabled}
         onClick={() => dispatch({ type: "addEvidence" })}
       >
         <Plus className="size-4" />
