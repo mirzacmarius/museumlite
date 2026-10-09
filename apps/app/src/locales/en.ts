@@ -189,6 +189,7 @@ export default {
       developer: "Developer",
       data: "Data Import/Export",
       metrics: "Metrics health",
+      loanAgreements: "Loan agreements",
     },
     roles: {
       title: "Role Management",
@@ -1804,6 +1805,131 @@ export default {
       partialReturnDesc:
         'This is a partial return. The loan will remain "{status}" and only the selected items will be marked as returned. The remaining {remaining} {items} will stay on loan.',
       areYouSureYouWantToProceed: "Are you sure you want to proceed?",
+    },
+  },
+  loanAgreementTemplates: {
+    title: "Loan agreements",
+    description:
+      "Write the agreements your organization issues for loans. Placeholders are filled in with each loan's details when an agreement is generated.",
+    newTemplate: "New template",
+    empty:
+      "No templates yet. Loans use the standard agreement until you create one.",
+    standardAgreement: "Standard agreement",
+    standardAgreementDescription:
+      "Built in. Used for loans when no template is set as the default.",
+    defaultBadge: "Default",
+    archivedBadge: "Archived",
+    archivedHeading: "Archived templates",
+    sectionCount: "Sections: {count}",
+    appliesTo: {
+      any: "All loans",
+      incoming: "Incoming loans",
+      outgoing: "Outgoing loans",
+    },
+    actions: {
+      edit: "Edit",
+      setDefault: "Make default",
+      archive: "Archive",
+      restore: "Restore",
+    },
+    toasts: {
+      created: "Template created.",
+      saved: "Template saved.",
+      defaultSet: "Default template updated.",
+      archived: "Template archived.",
+      restored: "Template restored.",
+    },
+    editor: {
+      createTitle: "New loan agreement template",
+      editTitle: "Edit loan agreement template",
+      description:
+        "Sections appear in order after the parties. A line whose placeholders have no value for a loan is left out.",
+      name: "Name",
+      namePlaceholder: "Standard outgoing loan",
+      language: "Language",
+      appliesTo: "Applies to",
+      sections: "Sections",
+      sectionHeading: "Heading",
+      sectionBody: "Text",
+      addSection: "Add section",
+      removeSection: "Remove section",
+      moveUp: "Move section up",
+      moveDown: "Move section down",
+      startFromStandard: "Start from the standard agreement",
+      placeholders: "Placeholders",
+      placeholdersHint: "Copy a placeholder into a heading or text.",
+      copied: "Copied {placeholder}",
+      preview: "Preview with a sample loan",
+      save: "Save template",
+      saving: "Saving…",
+      cancel: "Cancel",
+    },
+    placeholders: {
+      loanNumber: "Loan number",
+      loanStartDate: "Start date",
+      loanEndDate: "End date",
+      loanCurrency: "Currency code of the insurance value",
+      loanTerms: "Terms recorded on the loan",
+      lenderName: "Lender",
+      borrowerName: "Borrower",
+      organizationName: "Your organization",
+      objectList: "Table of the objects on loan",
+      objectCount: "Number of objects",
+      insuranceValue: "Insurance value with currency",
+    },
+    sample: {
+      partnerName: "Harbour Gallery",
+      terms: "Objects travel with a courier from the lending institution.",
+      firstObject: "Harbour at dusk",
+      secondObject: "Fishing boat model",
+      condition: "Good",
+    },
+    errors: {
+      templateNotFound: "This template no longer exists. Refresh the page.",
+      templateArchived:
+        "This template is archived. Restore it before changing it.",
+      nameRequired: "Give the template a name.",
+      sectionsRequired:
+        "Add at least one section, and give every section some text.",
+      templateTooLarge:
+        "The template is too long. Shorten the text or remove sections.",
+      unknownPlaceholder:
+        "{placeholder} is not a known placeholder. Use one from the list.",
+      malformedPlaceholder:
+        "A placeholder is not written correctly. Each one starts with two opening braces and ends with two closing braces.",
+      templateLimitReached:
+        "You can keep at most {limit} active templates. Archive one before adding another.",
+      invalidCurrency: "Enter a three-letter currency code, such as EUR.",
+      currencyAlreadyRecorded:
+        "This loan already has a currency recorded. Refresh the page.",
+      fallback: "The change could not be saved. Try again.",
+    },
+    agreement: {
+      template: "Template",
+      printTitle: "Loan agreement {loanNumber}",
+      email: {
+        subject: "Loan agreement {loanNumber}",
+        greeting: "Dear {name},",
+        intro: "Please find attached the loan agreement for {loanNumber}.",
+        details: "Loan details:",
+        loanNumber: "Loan number: {loanNumber}",
+        incoming: "Type: Incoming loan",
+        outgoing: "Type: Outgoing loan",
+        startDate: "Start date: {date}",
+        endDate: "End date: {date}",
+        objects: "Objects:",
+        review: "Please review and sign the agreement.",
+        signOff: "Best regards,",
+      },
+    },
+    currency: {
+      label: "Currency",
+      placeholder: "EUR",
+      hint: "Three-letter code, such as EUR or NOK.",
+      missing:
+        "No currency is recorded for this loan's insurance value, so the agreement shows it as a plain number.",
+      record: "Record currency",
+      recorded: "Currency recorded.",
     },
   },
   transit: {
@@ -5157,16 +5283,16 @@ export default {
       agreement: {
         title: "LOAN AGREEMENT",
         number: "Agreement Number:",
-        period: "2. LOAN PERIOD",
+        period: "LOAN PERIOD",
         startDate: "Start Date:",
         endDate: "End Date:",
-        objectsOnLoan: "3. OBJECTS ON LOAN",
+        objectsOnLoan: "OBJECTS ON LOAN",
         accessionNumber: "Accession No.",
         titleDescription: "Title/Description",
-        insurance: "4. INSURANCE",
+        insurance: "INSURANCE",
         totalInsuranceValue: "Total Insurance Value:",
-        termsConditions: "5. TERMS AND CONDITIONS",
-        standardConditions: ". STANDARD CONDITIONS",
+        termsConditions: "TERMS AND CONDITIONS",
+        standardConditions: "STANDARD CONDITIONS",
         borrowerCare:
           "The Borrower agrees to exercise the same care with respect to the loaned objects as it does in the safekeeping of comparable property of its own.",
         noTreatment:

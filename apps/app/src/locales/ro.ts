@@ -516,6 +516,7 @@ export default {
       developer: "Dezvoltator",
       data: "Import/Export Date",
       metrics: "Starea indicatorilor",
+      loanAgreements: "Contracte de împrumut",
     },
     roles: {
       title: "Gestionare Roluri",
@@ -5564,6 +5565,134 @@ export default {
     statusCataloged: "Catalogat",
     statusRejected: "Respins",
   },
+  loanAgreementTemplates: {
+    title: "Contracte de împrumut",
+    description:
+      "Redactați contractele pe care organizația dvs. le emite pentru împrumuturi. Câmpurile variabile sunt completate cu datele fiecărui împrumut atunci când se generează un contract.",
+    newTemplate: "Șablon nou",
+    empty:
+      "Nu există încă șabloane. Împrumuturile folosesc contractul standard până când creați unul.",
+    standardAgreement: "Contract standard",
+    standardAgreementDescription:
+      "Integrat. Se folosește pentru împrumuturi când niciun șablon nu este setat ca implicit.",
+    defaultBadge: "Implicit",
+    archivedBadge: "Arhivat",
+    archivedHeading: "Șabloane arhivate",
+    sectionCount: "Secțiuni: {count}",
+    appliesTo: {
+      any: "Toate împrumuturile",
+      incoming: "Împrumuturi primite",
+      outgoing: "Împrumuturi acordate",
+    },
+    actions: {
+      edit: "Editează",
+      setDefault: "Setează ca implicit",
+      archive: "Arhivează",
+      restore: "Restaurează",
+    },
+    toasts: {
+      created: "Șablonul a fost creat.",
+      saved: "Șablonul a fost salvat.",
+      defaultSet: "Șablonul implicit a fost actualizat.",
+      archived: "Șablonul a fost arhivat.",
+      restored: "Șablonul a fost restaurat.",
+    },
+    editor: {
+      createTitle: "Șablon nou de contract de împrumut",
+      editTitle: "Editează șablonul de contract de împrumut",
+      description:
+        "Secțiunile apar în ordine după părți. O linie ale cărei câmpuri variabile nu au valoare pentru un împrumut este omisă.",
+      name: "Nume",
+      namePlaceholder: "Împrumut acordat standard",
+      language: "Limbă",
+      appliesTo: "Se aplică pentru",
+      sections: "Secțiuni",
+      sectionHeading: "Titlu",
+      sectionBody: "Text",
+      addSection: "Adaugă secțiune",
+      removeSection: "Elimină secțiunea",
+      moveUp: "Mută secțiunea în sus",
+      moveDown: "Mută secțiunea în jos",
+      startFromStandard: "Pornește de la contractul standard",
+      placeholders: "Câmpuri variabile",
+      placeholdersHint: "Copiați un câmp variabil într-un titlu sau text.",
+      copied: "S-a copiat {placeholder}",
+      preview: "Previzualizare cu un împrumut exemplu",
+      save: "Salvează șablonul",
+      saving: "Se salvează…",
+      cancel: "Anulează",
+    },
+    placeholders: {
+      loanNumber: "Numărul împrumutului",
+      loanStartDate: "Data începerii",
+      loanEndDate: "Data încheierii",
+      loanCurrency: "Codul monedei valorii asigurate",
+      loanTerms: "Termenii înregistrați pe împrumut",
+      lenderName: "Împrumutător",
+      borrowerName: "Împrumutat",
+      organizationName: "Organizația dvs.",
+      objectList: "Tabelul obiectelor împrumutate",
+      objectCount: "Numărul de obiecte",
+      insuranceValue: "Valoarea asigurată cu moneda",
+    },
+    sample: {
+      partnerName: "Galeria Portului",
+      terms:
+        "Obiectele sunt transportate cu un curier al instituției care împrumută.",
+      firstObject: "Port la apus",
+      secondObject: "Machetă de barcă de pescuit",
+      condition: "Bună",
+    },
+    errors: {
+      templateNotFound: "Acest șablon nu mai există. Reîmprospătați pagina.",
+      templateArchived:
+        "Acest șablon este arhivat. Restaurați-l înainte de a-l modifica.",
+      nameRequired: "Dați un nume șablonului.",
+      sectionsRequired:
+        "Adăugați cel puțin o secțiune și scrieți text în fiecare secțiune.",
+      templateTooLarge:
+        "Șablonul este prea lung. Scurtați textul sau eliminați secțiuni.",
+      unknownPlaceholder:
+        "{placeholder} nu este un câmp variabil cunoscut. Folosiți unul din listă.",
+      malformedPlaceholder:
+        "Un câmp variabil nu este scris corect. Fiecare începe cu două acolade deschise și se termină cu două acolade închise.",
+      invalidCurrency:
+        "Introduceți un cod de monedă din trei litere, de exemplu EUR.",
+      templateLimitReached:
+        "Puteți păstra cel mult {limit} șabloane active. Arhivați unul înainte de a adăuga altul.",
+      currencyAlreadyRecorded:
+        "Acest împrumut are deja o monedă înregistrată. Reîmprospătați pagina.",
+      fallback: "Modificarea nu a putut fi salvată. Încercați din nou.",
+    },
+    agreement: {
+      template: "Șablon",
+      printTitle: "Contract de împrumut {loanNumber}",
+      email: {
+        subject: "Contract de împrumut {loanNumber}",
+        greeting: "Stimate/Stimată {name},",
+        intro:
+          "Vă transmitem atașat contractul de împrumut pentru {loanNumber}.",
+        details: "Detaliile împrumutului:",
+        loanNumber: "Numărul împrumutului: {loanNumber}",
+        incoming: "Tip: împrumut primit",
+        outgoing: "Tip: împrumut acordat",
+        startDate: "Data începerii: {date}",
+        endDate: "Data încheierii: {date}",
+        objects: "Obiecte:",
+        review: "Vă rugăm să verificați și să semnați contractul.",
+        signOff: "Cu stimă,",
+      },
+    },
+    currency: {
+      label: "Monedă",
+      placeholder: "EUR",
+      hint: "Cod din trei litere, de exemplu EUR sau RON.",
+      missing:
+        "Nu este înregistrată nicio monedă pentru valoarea asigurată a acestui împrumut, așa că în contract apare ca un simplu număr.",
+      record: "Înregistrează moneda",
+      recorded: "Moneda a fost înregistrată.",
+    },
+  },
   transit: {
     status: "Starea transportului",
     noTransportRecords: "Nu există înregistrări de transport",
@@ -6110,16 +6239,16 @@ export default {
       agreement: {
         title: "CONTRACT DE ÎMPRUMUT",
         number: "Numărul contractului:",
-        period: "2. PERIOADA ÎMPRUMUTULUI",
+        period: "PERIOADA ÎMPRUMUTULUI",
         startDate: "Data începerii:",
         endDate: "Data încheierii:",
-        objectsOnLoan: "3. OBIECTE ÎMPRUMUTATE",
+        objectsOnLoan: "OBIECTE ÎMPRUMUTATE",
         accessionNumber: "Nr. de inventar",
         titleDescription: "Titlu/descriere",
-        insurance: "4. ASIGURARE",
+        insurance: "ASIGURARE",
         totalInsuranceValue: "Valoarea totală asigurată:",
-        termsConditions: "5. TERMENI ȘI CONDIȚII",
-        standardConditions: ". CONDIȚII STANDARD",
+        termsConditions: "TERMENI ȘI CONDIȚII",
+        standardConditions: "CONDIȚII STANDARD",
         borrowerCare:
           "Împrumutatul se angajează să îngrijească obiectele împrumutate cu aceeași atenție ca bunurile proprii comparabile aflate în păstrarea sa.",
         noTreatment:

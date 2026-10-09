@@ -1,4 +1,5 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { LoanAgreementAccount } from "./loan-agreement/types";
 
 export type LoanStatus =
   | "pending"
@@ -38,6 +39,9 @@ export interface Loan {
   startDate: number;
   endDate?: number;
   insuranceValue?: number;
+  /** ISO 4217 code of the insurance value; absent on older loans. */
+  currency?: string;
+  account?: LoanAgreementAccount;
   terms?: string;
   notes?: string;
   status: LoanStatus;
