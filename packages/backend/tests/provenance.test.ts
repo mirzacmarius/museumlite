@@ -623,6 +623,45 @@ describe("corrections and contradictions", () => {
     expect(links.policy).toBe("closed");
   });
 
+  test("a correction may keep a holder whose Party was archived since, but not pick another archived Party", async () => {
+    const t = createConvexTest();
+    const { staff, objectId, organizationId, userId } = await createMuseum(t);
+    const partyId = await insertParty(t, organizationId, userId, "Rosenberg");
+    const otherId = await insertParty(t, organizationId, userId, "Other");
+    const claimId = await staff.mutation(api.provenance.recordClaim, {
+      objectId,
+      ...rosenbergClaim,
+      partyAccountId: partyId,
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(partyId, { status: "archived" });
+      await ctx.db.patch(otherId, { status: "archived" });
+    });
+
+    const refused = staff.mutation(api.provenance.correctClaim, {
+      claimId,
+      reason: "Wrong dealer",
+      ...rosenbergAssertion,
+      partyAccountId: otherId,
+    });
+    expect(partyErrorFromError(await refused.catch((e) => e))).toMatchObject({
+      code: "PARTY_ARCHIVED",
+    });
+    const correctedId = await staff.mutation(api.provenance.correctClaim, {
+      claimId,
+      reason: "Stock book gives 1936",
+      ...rosenbergAssertion,
+      partyAccountId: partyId,
+    });
+    const corrected = (await claimsOf(staff, objectId)).find(
+      (claim) => claim._id === correctedId,
+    );
+    expect(corrected?.party).toMatchObject({
+      accountId: partyId,
+      partyArchived: true,
+    });
+  });
+
   test("contradictory claims are both kept for review, and a reviewer's decision changes neither", async () => {
     const t = createConvexTest();
     const { staff, objectId, organizationId, userId } = await createMuseum(t);

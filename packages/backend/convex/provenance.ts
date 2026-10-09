@@ -422,6 +422,8 @@ interface ClaimInsert {
   userId: Id<"users">;
   assertion: ProvenanceAssertionInput;
   partyAccountId?: Id<"accounts">;
+  /** The Party the corrected claim already names; it may be archived. */
+  keptAccountId?: Id<"accounts">;
   contradictsClaimId?: Id<"provenanceClaims">;
   evidence: ProvenanceEvidenceInput[];
   /** Active evidence of the claim being corrected, copied forward. */
@@ -464,7 +466,9 @@ async function insertClaim(ctx: MutationCtx, input: ClaimInsert) {
     );
   }
   const account = input.partyAccountId
-    ? await requireLinkableParty(ctx, organizationId, input.partyAccountId)
+    ? await requireLinkableParty(ctx, organizationId, input.partyAccountId, {
+        allowArchived: input.partyAccountId === input.keptAccountId,
+      })
     : null;
   if (input.contradictsClaimId) {
     if (input.contradictsClaimId === input.supersedesClaimId) {
@@ -655,17 +659,26 @@ export const correctClaim = mutation({
       evidence,
       ...assertion
     } = args;
-    const activeEvidence = (await loadClaimEvidence(ctx, claim)).filter(
-      (row) => row.retractedAt === undefined,
-    );
+    const [evidenceRows, currentLink] = await Promise.all([
+      loadClaimEvidence(ctx, claim),
+      currentPartyLink(
+        ctx,
+        claim.organizationId,
+        claimTarget(claim._id),
+        claim.role,
+      ),
+    ]);
     const recorded = await insertClaim(ctx, {
       object,
       userId,
       assertion,
       partyAccountId,
+      keptAccountId: currentLink?.accountId,
       contradictsClaimId,
       evidence: evidence ?? [],
-      carriedEvidence: activeEvidence,
+      carriedEvidence: evidenceRows.filter(
+        (row) => row.retractedAt === undefined,
+      ),
       supersedesClaimId: claim._id,
     });
     await ctx.db.patch(claim._id, {

@@ -28,7 +28,10 @@ import {
 
 type OpenDialog = ClaimAction | { kind: "record"; defaults?: ClaimDefaults };
 
-function correctionDefaults(claim: ProvenanceClaimView): ClaimDefaults {
+function correctionDefaults(
+  claim: ProvenanceClaimView,
+  current: ProvenanceClaimView[],
+): ClaimDefaults {
   return {
     statement: claim.statement,
     role: claim.role,
@@ -40,7 +43,12 @@ function correctionDefaults(claim: ProvenanceClaimView): ClaimDefaults {
     startDate: claim.startDate,
     endDate: claim.endDate,
     confidence: claim.confidence,
-    contradictsClaimId: claim.contradictsClaimId,
+    // Only a claim that is still current can be contradicted again.
+    contradictsClaimId: current.some(
+      (other) => other._id === claim.contradictsClaimId,
+    )
+      ? claim.contradictsClaimId
+      : undefined,
   };
 }
 
@@ -183,7 +191,7 @@ export function ProvenanceClaimsPanel({
           files={files}
           defaults={
             dialog.kind === "correct"
-              ? correctionDefaults(dialog.claim)
+              ? correctionDefaults(dialog.claim, current)
               : dialog.defaults
           }
           corrects={dialog.kind === "correct" ? dialog.claim._id : undefined}
