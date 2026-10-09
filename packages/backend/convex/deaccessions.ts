@@ -32,6 +32,8 @@ import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
+import { requireLinkableParty } from "./utils/parties";
+import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
@@ -1779,6 +1781,8 @@ export const recordExit = mutation({
     deaccessionId: v.id("deaccessions"),
     exitDate: v.number(),
     recipient: v.string(),
+    /** Optional Party the recipient text names; linked in the recipient role. */
+    recipientAccountId: v.optional(v.id("accounts")),
     reference: v.optional(v.string()),
     notes: v.optional(v.string()),
     correctionReason: v.optional(v.string()),
@@ -1796,6 +1800,13 @@ export const recordExit = mutation({
     if (!Number.isFinite(args.exitDate) || args.exitDate <= 0) {
       throw new ConvexError("Exit date is required");
     }
+    const recipientParty = args.recipientAccountId
+      ? await requireLinkableParty(
+          ctx,
+          deaccession.organizationId,
+          args.recipientAccountId,
+        )
+      : null;
     const now = Date.now();
     const exitRecord = {
       exitDate: args.exitDate,
@@ -1807,6 +1818,16 @@ export const recordExit = mutation({
     };
     const previous = deaccession.exitRecord;
     const correctionReason = args.correctionReason?.trim();
+    const linkRecipient = () =>
+      syncExitRecipientLink(ctx, {
+        deaccession,
+        previousExit: previous,
+        exitDate: args.exitDate,
+        recipient,
+        recipientParty,
+        correctionReason,
+        userId,
+      });
 
     if (previous) {
       if (
@@ -1815,6 +1836,7 @@ export const recordExit = mutation({
         previous.reference === exitRecord.reference &&
         previous.notes === exitRecord.notes
       ) {
+        await linkRecipient();
         return null;
       }
       if (!correctionReason) {
@@ -1846,6 +1868,7 @@ export const recordExit = mutation({
         },
       }),
     ] as const);
+    await linkRecipient();
 
     return null;
   },

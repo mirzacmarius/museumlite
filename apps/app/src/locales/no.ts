@@ -5466,6 +5466,162 @@ export default {
       addNotes: "Tilleggsnotater om denne deaksesjonen...",
     },
   },
+  parties: {
+    roles: {
+      donor: "Giver / kilde",
+      lender: "Långiver",
+      borrower: "Låntaker",
+      owner: "Eier",
+      appraiser: "Takstmann",
+      recipient: "Mottaker",
+    },
+    holderTypes: {
+      privatePerson: "Person",
+      organization: "Institusjon",
+    },
+    reasons: {
+      name: "Samme navn",
+      email: "Samme e-post",
+      phone: "Samme telefon",
+    },
+    targetTypes: {
+      accession: "Aksesjon",
+      loan: "Lån",
+      deaccession: "Deaksesjon",
+      appraisal: "Taksering",
+      collection: "Objekt",
+    },
+    picker: {
+      placeholder: "Velg eller opprett en person eller institusjon",
+      searchPlaceholder: "Søk etter personer og institusjoner",
+      heading: "Parter",
+      empty: "Ingen samsvarende personer eller institusjoner",
+      searching: "Søker…",
+      create: "Opprett ny part",
+      clear: "Fjern valget",
+    },
+    create: {
+      title: "Opprett part",
+      description:
+        "Legg til en person eller institusjon én gang og bruk den igjen i aksesjoner, lån og deaksesjoner.",
+      submit: "Opprett part",
+      creating: "Oppretter…",
+      created: "Part opprettet",
+      duplicateRecorded:
+        "Part opprettet. Et mulig duplikat ble registrert for gjennomgang.",
+      similarTitle: "Lignende parter finnes allerede",
+      similarDescription:
+        "Bruk en eksisterende post i stedet for å opprette et duplikat.",
+      useExisting: "Bruk denne parten",
+    },
+    links: {
+      title: "Parter",
+      description:
+        "Personer og institusjoner knyttet til denne posten. Navn og kontaktopplysninger beholdes slik de var da koblingen ble laget.",
+      empty: "Ingen part er koblet ennå.",
+      partyUnavailable: "Partsposten er ikke tilgjengelig",
+      archived: "Arkivert",
+      recordedAs: "Registrert som {name}",
+      namedOnRecord: "Navngitt i posten som {name}",
+      contactAtLink: "Kontakt ved kobling: {contact}",
+      from: "Fra {date}",
+      linkedBy: "Koblet av {name}",
+      backfilled: "Koblet fra en eksisterende kontoreferanse",
+      earlier: "Tidligere parter ({count})",
+      replacedOn: "Erstattet eller avsluttet {date}",
+      reason: "Begrunnelse: {reason}",
+      role: "Rolle",
+      party: "Part",
+      changeReason: "Begrunnelse for endringen",
+      changeReasonPlaceholder: "For eksempel: gavebrevet nevner stiftelsen",
+      link: "Koble part",
+      linking: "Kobler…",
+      linked: "Part koblet",
+      end: "Avslutt kobling",
+      endTitle: "Avslutte denne partskoblingen?",
+      endDescription:
+        "Koblingen blir stående i postens historikk sammen med begrunnelsen din.",
+      endReason: "Begrunnelse",
+      endConfirm: "Avslutt kobling",
+      ended: "Partskobling avsluttet",
+      cancel: "Avbryt",
+    },
+    history: {
+      tab: "Roller",
+      title: "Rollehistorikk",
+      description:
+        "Prosedyrer denne parten har deltatt i. Navnene viser det som ble registrert den gangen.",
+      empty: "Ingen roller er registrert for denne parten ennå.",
+      restricted: "Posten er ikke tilgjengelig for deg",
+      current: "Gjeldende",
+      superseded: "Erstattet",
+      loadMore: "Last inn flere",
+      legacyTitle: "Tidligere kontorelasjoner",
+    },
+    review: {
+      title: "Gjennomgang av parter",
+      description:
+        "Gå gjennom mulige duplikate parter og poster som bare nevner en part i tekst. Ingenting slås sammen eller kobles automatisk.",
+      duplicatesTab: "Mulige duplikater",
+      legacyTab: "Ukoblede poster",
+      status: "Status",
+      statuses: {
+        pending: "Til gjennomgang",
+        dismissed: "Avvist",
+        confirmed_distinct: "Ikke samme part",
+      },
+      scan: "Finn mulige duplikater",
+      scanning: "Sammenligner…",
+      scanResult: "Nye forslag registrert: {count}.",
+      scanLimit: "Bare de {count} nyeste partene ble sammenlignet.",
+      noDuplicates: "Ingen forslag med denne statusen.",
+      notSame: "Ikke samme part",
+      dismiss: "Avvis",
+      note: "Notat (valgfritt)",
+      resolved: "Gjennomgang registrert",
+      reviewedBy: "Gjennomgått av {name}",
+      unavailable: "Posten er ikke lenger tilgjengelig",
+      mergeHint:
+        "For å samle et ekte duplikat kobler du nye poster til parten du beholder og arkiverer den andre. Begge historikkene forblir intakte.",
+      legacyDescription:
+        "Poster som bare nevner en part i tekst, eller som viser til en konto uten en typet kobling. Bekreft hver kobling; den opprinnelige ordlyden beholdes.",
+      recordType: "Posttype",
+      kinds: {
+        accession: "Aksesjoner",
+        loan: "Lån",
+        deaccession: "Deaksesjoner",
+      },
+      legacyEmpty: "Ingen ukoblede poster på denne siden.",
+      checked: "Poster kontrollert på denne siden: {count}.",
+      referencesParty: "Viser til {name} uten en typet kobling",
+      confirmLink: "Bekreft kobling",
+      link: "Koble",
+      previous: "Forrige side",
+      next: "Neste side",
+    },
+    errors: {
+      partyNotFound:
+        "Den parten er ikke tilgjengelig i denne organisasjonen. Velg en annen.",
+      partyArchived:
+        "Den parten er arkivert. Gjenopprett den eller velg en annen.",
+      roleNotAllowed: "Den rollen gjelder ikke for denne posten.",
+      recordLocked:
+        "Denne posten er lukket, så partene kan bare bekreftes, ikke endres. Bruk postens egen korrigeringsflyt.",
+      targetNotFound:
+        "Denne posten er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+      nameRequired: "Skriv inn et navn på parten.",
+      datesInvalid: "Rollen kan ikke slutte før den begynner.",
+      linkNotFound:
+        "Den koblingen er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+      linkAlreadySuperseded:
+        "Den koblingen er allerede avsluttet eller erstattet. Oppdater for å se det siste.",
+      reviewNotFound:
+        "Det forslaget er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+      reviewAlreadyResolved:
+        "Noen har allerede gjennomgått dette forslaget. Oppdater for å se avgjørelsen.",
+      fallback: "Handlingen kunne ikke fullføres. Oppdater og prøv igjen.",
+    },
+  },
   trackedImport: {
     validationTitle: "Valideringsrapport",
     validationSummary: "{valid} gyldige rader, {errors} med feil",

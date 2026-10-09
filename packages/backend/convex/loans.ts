@@ -45,6 +45,8 @@ import {
 } from "./utils/loanWorkflow";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
+import { requireLinkableParty } from "./utils/parties";
+import { loanPrimaryRole, recordPartyLink } from "./utils/partyLinks";
 import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
@@ -96,17 +98,6 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Validate account if provided
-    if (args.accountId) {
-      const account = await ctx.db.get(args.accountId);
-      if (!account) {
-        throw new Error("Account not found");
-      }
-      if (account.organizationId !== args.organizationId) {
-        throw new Error("Account does not belong to this organization");
-      }
-    }
-
     // Validate date ordering
     if (args.endDate !== undefined && args.endDate < args.startDate) {
       throw new Error("Loan end date cannot be before start date");
@@ -115,6 +106,10 @@ export const create = mutation({
       args.currency === undefined
         ? undefined
         : normalizeLoanCurrency(args.currency);
+
+    const party = args.accountId
+      ? await requireLinkableParty(ctx, args.organizationId, args.accountId)
+      : null;
 
     // Generate or use provided loan number
     let loanNumber: string;
@@ -181,6 +176,21 @@ export const create = mutation({
       workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
+    if (party) {
+      const role = loanPrimaryRole(args.type);
+      await recordPartyLink(ctx, {
+        organizationId: args.organizationId,
+        target: { type: "loan", id: loanId },
+        account: party,
+        role,
+        allowedRoles: [role],
+        effectiveFrom: args.startDate,
+        effectiveTo: args.endDate,
+        assertedName: args.lenderBorrowerName,
+        userId,
+        origin: "staff",
+      });
+    }
 
     // Add items if provided
     // Support both old format (collectionIds + conditionOut) and new format (itemsWithConditions)

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -9,12 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { AccountCombobox } from "@/components/account-combobox";
+import {
+  PartyPicker,
+  partyContactLine,
+  usePartyPickerAccess,
+} from "@/components/party-picker";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
 interface NewLoanBasicsSectionProps {
-  organizationId: string;
+  organizationId: Id<"organizations">;
   formData: NewLoanFormData;
   onFormDataChange: (
     updater: (prev: NewLoanFormData) => NewLoanFormData,
@@ -29,6 +34,7 @@ export function NewLoanBasicsSection({
   const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
   const t = useScopedI18n("loans");
+  const { canPick } = usePartyPickerAccess();
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -98,30 +104,25 @@ export function NewLoanBasicsSection({
                 ? tActions("lenderName")
                 : tActions("borrowerName")}
             </Label>
-            <AccountCombobox
-              organizationId={organizationId}
-              value={formData.accountId}
-              onValueChange={(accountId) =>
-                onFormDataChange((prev) => ({ ...prev, accountId }))
-              }
-              onAccountSelect={(account) => {
-                if (account) {
-                  onFormDataChange((prev) => ({
-                    ...prev,
-                    accountId: account._id,
-                    lenderBorrowerName: account.businessName ?? "",
-                    lenderBorrowerContact: [
-                      account.contactPerson,
-                      account.email,
-                      account.phone,
-                    ]
-                      .filter(Boolean)
-                      .join(", "),
-                  }));
+            {canPick ? (
+              <PartyPicker
+                organizationId={organizationId}
+                value={formData.accountId}
+                onChange={(party) =>
+                  onFormDataChange((prev) =>
+                    party
+                      ? {
+                          ...prev,
+                          accountId: party._id,
+                          lenderBorrowerName: party.displayName,
+                          lenderBorrowerContact: partyContactLine(party),
+                        }
+                      : { ...prev, accountId: undefined },
+                  )
                 }
-              }}
-              placeholder={t("placeholders.lenderBorrower")}
-            />
+                placeholder={t("placeholders.lenderBorrower")}
+              />
+            ) : null}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

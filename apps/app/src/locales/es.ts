@@ -5539,6 +5539,163 @@ export default {
       addNotes: "Notas adicionales sobre esta desaccesión...",
     },
   },
+  parties: {
+    roles: {
+      donor: "Donante / procedencia",
+      lender: "Prestamista",
+      borrower: "Prestatario",
+      owner: "Propietario",
+      appraiser: "Tasador",
+      recipient: "Destinatario",
+    },
+    holderTypes: {
+      privatePerson: "Persona",
+      organization: "Institución",
+    },
+    reasons: {
+      name: "Mismo nombre",
+      email: "Mismo correo electrónico",
+      phone: "Mismo teléfono",
+    },
+    targetTypes: {
+      accession: "Adquisición",
+      loan: "Préstamo",
+      deaccession: "Desaccesión",
+      appraisal: "Tasación",
+      collection: "Objeto",
+    },
+    picker: {
+      placeholder: "Seleccionar o crear una persona o institución",
+      searchPlaceholder: "Buscar personas e instituciones",
+      heading: "Partes",
+      empty: "No hay personas ni instituciones coincidentes",
+      searching: "Buscando…",
+      create: "Crear nueva parte",
+      clear: "Quitar selección",
+    },
+    create: {
+      title: "Crear parte",
+      description:
+        "Añada una persona o institución una sola vez y reutilícela en adquisiciones, préstamos y desaccesiones.",
+      submit: "Crear parte",
+      creating: "Creando…",
+      created: "Parte creada",
+      duplicateRecorded:
+        "Parte creada. Se registró un posible duplicado para su revisión.",
+      similarTitle: "Ya existen partes similares",
+      similarDescription:
+        "Reutilice un registro existente en lugar de crear un duplicado.",
+      useExisting: "Usar esta parte",
+    },
+    links: {
+      title: "Partes",
+      description:
+        "Personas e instituciones vinculadas a este registro. Los nombres y datos de contacto se conservan tal como estaban al vincularse.",
+      empty: "Todavía no hay ninguna parte vinculada.",
+      partyUnavailable: "Registro de la parte no disponible",
+      archived: "Archivada",
+      recordedAs: "Registrada como {name}",
+      namedOnRecord: "Nombrada en el registro como {name}",
+      contactAtLink: "Contacto al vincular: {contact}",
+      from: "Desde {date}",
+      linkedBy: "Vinculada por {name}",
+      backfilled: "Vinculada a partir de una referencia de cuenta existente",
+      earlier: "Partes anteriores ({count})",
+      replacedOn: "Sustituida o finalizada el {date}",
+      reason: "Motivo: {reason}",
+      role: "Función",
+      party: "Parte",
+      changeReason: "Motivo del cambio",
+      changeReasonPlaceholder:
+        "Por ejemplo: la escritura de donación nombra a la fundación",
+      link: "Vincular parte",
+      linking: "Vinculando…",
+      linked: "Parte vinculada",
+      end: "Finalizar vínculo",
+      endTitle: "¿Finalizar este vínculo con la parte?",
+      endDescription:
+        "El vínculo permanece en el historial del registro junto con su motivo.",
+      endReason: "Motivo",
+      endConfirm: "Finalizar vínculo",
+      ended: "Vínculo con la parte finalizado",
+      cancel: "Cancelar",
+    },
+    history: {
+      tab: "Funciones",
+      title: "Historial de funciones",
+      description:
+        "Procedimientos en los que ha participado esta parte. Los nombres muestran lo que se registró en su momento.",
+      empty: "Todavía no hay funciones registradas para esta parte.",
+      restricted: "Registro no disponible para usted",
+      current: "Actual",
+      superseded: "Sustituida",
+      loadMore: "Cargar más",
+      legacyTitle: "Relaciones de cuenta anteriores",
+    },
+    review: {
+      title: "Revisión de partes",
+      description:
+        "Revise posibles partes duplicadas y registros que nombran a una parte solo en texto. Nada se fusiona ni se vincula automáticamente.",
+      duplicatesTab: "Posibles duplicados",
+      legacyTab: "Registros sin vincular",
+      status: "Estado",
+      statuses: {
+        pending: "Por revisar",
+        dismissed: "Descartada",
+        confirmed_distinct: "No es la misma parte",
+      },
+      scan: "Buscar posibles duplicados",
+      scanning: "Comparando…",
+      scanResult: "Nuevas sugerencias registradas: {count}.",
+      scanLimit: "Solo se compararon las {count} partes más recientes.",
+      noDuplicates: "No hay sugerencias con este estado.",
+      notSame: "No es la misma parte",
+      dismiss: "Descartar",
+      note: "Nota (opcional)",
+      resolved: "Revisión registrada",
+      reviewedBy: "Revisada por {name}",
+      unavailable: "El registro ya no está disponible",
+      mergeHint:
+        "Para consolidar un duplicado real, vincule los nuevos registros a la parte que conserve y archive la otra. Ambos historiales se mantienen intactos.",
+      legacyDescription:
+        "Registros que nombran a una parte solo en texto o que hacen referencia a una cuenta sin un vínculo tipificado. Confirme cada vínculo; se conserva la redacción original.",
+      recordType: "Tipo de registro",
+      kinds: {
+        accession: "Adquisiciones",
+        loan: "Préstamos",
+        deaccession: "Desaccesiones",
+      },
+      legacyEmpty: "No hay registros sin vincular en esta página.",
+      checked: "Registros revisados en esta página: {count}.",
+      referencesParty: "Hace referencia a {name} sin un vínculo tipificado",
+      confirmLink: "Confirmar vínculo",
+      link: "Vincular",
+      previous: "Página anterior",
+      next: "Página siguiente",
+    },
+    errors: {
+      partyNotFound:
+        "Esa parte no está disponible en esta organización. Elija otra.",
+      partyArchived: "Esa parte está archivada. Restáurela o elija otra.",
+      roleNotAllowed: "Esa función no se aplica a este registro.",
+      recordLocked:
+        "Este registro está cerrado: sus partes solo pueden confirmarse, no cambiarse. Use el flujo de corrección del propio registro.",
+      targetNotFound:
+        "Este registro ya no está disponible. Actualice e inténtelo de nuevo.",
+      nameRequired: "Introduzca un nombre para la parte.",
+      datesInvalid: "La función no puede terminar antes de empezar.",
+      linkNotFound:
+        "Ese vínculo ya no está disponible. Actualice e inténtelo de nuevo.",
+      linkAlreadySuperseded:
+        "Ese vínculo ya se finalizó o se sustituyó. Actualice para ver lo más reciente.",
+      reviewNotFound:
+        "Esa sugerencia ya no está disponible. Actualice e inténtelo de nuevo.",
+      reviewAlreadyResolved:
+        "Otra persona ya revisó esta sugerencia. Actualice para ver la decisión.",
+      fallback:
+        "No se pudo completar la acción. Actualice e inténtelo de nuevo.",
+    },
+  },
   trackedImport: {
     validationTitle: "Informe de validación",
     validationSummary: "{valid} filas válidas, {errors} con errores",

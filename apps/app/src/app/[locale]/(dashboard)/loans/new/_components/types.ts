@@ -1,7 +1,9 @@
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+
 export interface NewLoanFormData {
   loanNumber: string;
   type: "incoming" | "outgoing";
-  accountId: string | undefined;
+  accountId: Id<"accounts"> | undefined;
   lenderBorrowerName: string;
   lenderBorrowerContact: string;
   startDate: Date;

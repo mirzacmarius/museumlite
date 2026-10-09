@@ -5231,6 +5231,163 @@ export default {
       scannerError: "Eroare scaner: {error}",
     },
   },
+  parties: {
+    roles: {
+      donor: "Donator / sursă",
+      lender: "Împrumutător",
+      borrower: "Împrumutat",
+      owner: "Proprietar",
+      appraiser: "Evaluator",
+      recipient: "Destinatar",
+    },
+    holderTypes: {
+      privatePerson: "Persoană",
+      organization: "Instituție",
+    },
+    reasons: {
+      name: "Același nume",
+      email: "Același e-mail",
+      phone: "Același telefon",
+    },
+    targetTypes: {
+      accession: "Accesiune",
+      loan: "Împrumut",
+      deaccession: "Scoatere din colecție",
+      appraisal: "Evaluare",
+      collection: "Obiect",
+    },
+    picker: {
+      placeholder: "Selectează sau creează o persoană sau o instituție",
+      searchPlaceholder: "Caută persoane și instituții",
+      heading: "Părți",
+      empty: "Nicio persoană sau instituție corespunzătoare",
+      searching: "Se caută…",
+      create: "Creează o parte nouă",
+      clear: "Șterge selecția",
+    },
+    create: {
+      title: "Creează o parte",
+      description:
+        "Adaugă o persoană sau o instituție o singură dată și reutilizeaz-o în accesiuni, împrumuturi și scoateri din colecție.",
+      submit: "Creează partea",
+      creating: "Se creează…",
+      created: "Parte creată",
+      duplicateRecorded:
+        "Parte creată. Un posibil duplicat a fost înregistrat pentru verificare.",
+      similarTitle: "Există deja părți asemănătoare",
+      similarDescription:
+        "Reutilizează o înregistrare existentă în loc să creezi un duplicat.",
+      useExisting: "Folosește această parte",
+    },
+    links: {
+      title: "Părți",
+      description:
+        "Persoane și instituții legate de această înregistrare. Numele și datele de contact se păstrează așa cum erau la momentul legării.",
+      empty: "Nicio parte nu este legată încă.",
+      partyUnavailable: "Înregistrarea părții nu este disponibilă",
+      archived: "Arhivată",
+      recordedAs: "Înregistrată ca {name}",
+      namedOnRecord: "Numită în înregistrare ca {name}",
+      contactAtLink: "Contact la legare: {contact}",
+      from: "De la {date}",
+      linkedBy: "Legată de {name}",
+      backfilled: "Legată pe baza unei referințe de cont existente",
+      earlier: "Părți anterioare ({count})",
+      replacedOn: "Înlocuită sau încheiată la {date}",
+      reason: "Motiv: {reason}",
+      role: "Rol",
+      party: "Parte",
+      changeReason: "Motivul schimbării",
+      changeReasonPlaceholder: "De exemplu: actul de donație numește fundația",
+      link: "Leagă o parte",
+      linking: "Se leagă…",
+      linked: "Parte legată",
+      end: "Încheie legătura",
+      endTitle: "Închei această legătură cu partea?",
+      endDescription:
+        "Legătura rămâne în istoricul înregistrării, împreună cu motivul tău.",
+      endReason: "Motiv",
+      endConfirm: "Încheie legătura",
+      ended: "Legătura cu partea a fost încheiată",
+      cancel: "Anulează",
+    },
+    history: {
+      tab: "Roluri",
+      title: "Istoricul rolurilor",
+      description:
+        "Proceduri la care a participat această parte. Numele arată ce s-a înregistrat la momentul respectiv.",
+      empty: "Nu există încă roluri înregistrate pentru această parte.",
+      restricted: "Înregistrare indisponibilă pentru tine",
+      current: "Actual",
+      superseded: "Înlocuit",
+      loadMore: "Încarcă mai multe",
+      legacyTitle: "Relații de cont anterioare",
+    },
+    review: {
+      title: "Verificarea părților",
+      description:
+        "Verifică posibilele părți duplicate și înregistrările care numesc o parte doar în text. Nimic nu se unește și nu se leagă automat.",
+      duplicatesTab: "Posibile duplicate",
+      legacyTab: "Înregistrări nelegate",
+      status: "Stare",
+      statuses: {
+        pending: "De verificat",
+        dismissed: "Respinsă",
+        confirmed_distinct: "Nu este aceeași parte",
+      },
+      scan: "Caută posibile duplicate",
+      scanning: "Se compară…",
+      scanResult: "Sugestii noi înregistrate: {count}.",
+      scanLimit: "Au fost comparate doar cele mai recente {count} părți.",
+      noDuplicates: "Nicio sugestie cu această stare.",
+      notSame: "Nu este aceeași parte",
+      dismiss: "Respinge",
+      note: "Notă (opțional)",
+      resolved: "Verificare înregistrată",
+      reviewedBy: "Verificată de {name}",
+      unavailable: "Înregistrarea nu mai este disponibilă",
+      mergeHint:
+        "Pentru a consolida un duplicat real, leagă înregistrările noi de partea pe care o păstrezi și arhivează-o pe cealaltă. Ambele istorii rămân intacte.",
+      legacyDescription:
+        "Înregistrări care numesc o parte doar în text sau care fac referire la un cont fără o legătură tipizată. Confirmă fiecare legătură; formularea originală se păstrează.",
+      recordType: "Tip de înregistrare",
+      kinds: {
+        accession: "Accesiuni",
+        loan: "Împrumuturi",
+        deaccession: "Scoateri din colecție",
+      },
+      legacyEmpty: "Nicio înregistrare nelegată pe această pagină.",
+      checked: "Înregistrări verificate pe această pagină: {count}.",
+      referencesParty: "Face referire la {name} fără o legătură tipizată",
+      confirmLink: "Confirmă legătura",
+      link: "Leagă",
+      previous: "Pagina anterioară",
+      next: "Pagina următoare",
+    },
+    errors: {
+      partyNotFound:
+        "Această parte nu este disponibilă în organizație. Alege alta.",
+      partyArchived:
+        "Această parte este arhivată. Restaureaz-o sau alege alta.",
+      roleNotAllowed: "Acest rol nu se aplică acestei înregistrări.",
+      recordLocked:
+        "Această înregistrare este închisă: părțile ei pot fi doar confirmate, nu schimbate. Folosește fluxul de corectare al înregistrării.",
+      targetNotFound:
+        "Această înregistrare nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
+      nameRequired: "Introdu un nume pentru parte.",
+      datesInvalid: "Rolul nu se poate încheia înainte să înceapă.",
+      linkNotFound:
+        "Această legătură nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
+      linkAlreadySuperseded:
+        "Această legătură a fost deja încheiată sau înlocuită. Reîmprospătează pentru a vedea ultima versiune.",
+      reviewNotFound:
+        "Această sugestie nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
+      reviewAlreadyResolved:
+        "Cineva a verificat deja această sugestie. Reîmprospătează pentru a vedea decizia.",
+      fallback:
+        "Acțiunea nu a putut fi finalizată. Reîmprospătează și încearcă din nou.",
+    },
+  },
   trackedImport: {
     validationTitle: "Raport de validare",
     validationSummary: "{valid} rânduri valide, {errors} cu erori",
