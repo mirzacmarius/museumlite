@@ -4443,6 +4443,172 @@ export default {
       deleted: "supprimé",
     },
   },
+  caseTasks: {
+    panel: {
+      title: "Tâches",
+      description:
+        "Travail attribué pour ce dossier. Terminer une tâche indique que le travail est fait ; cela n’enregistre ni la garde, ni une approbation juridique, ni un changement d’état.",
+      add: "Ajouter une tâche",
+      loading: "Chargement des tâches…",
+      empty: "Aucune tâche pour ce dossier pour l’instant.",
+      readOnly: "Vous pouvez consulter ces tâches, mais pas les modifier.",
+    },
+    status: {
+      todo: "À faire",
+      in_progress: "En cours",
+      blocked: "Bloquée",
+      in_review: "En revue",
+      done: "Terminée",
+      cancelled: "Annulée",
+    },
+    caseTypes: {
+      loan: "Prêt",
+      accession: "Inscription à l’inventaire",
+      deaccession: "Radiation",
+      exhibition: "Exposition",
+      conservation: "Traitement de conservation",
+    },
+    fields: {
+      title: "Titre",
+      description: "Description",
+      owner: "Responsable",
+      reviewer: "Relecteur",
+      noReviewer: "Sans relecture",
+      chooseMember: "Choisir un membre",
+      dueDate: "Échéance",
+      dependencies: "Dépend de",
+      evidence: "Preuves",
+      reason: "Motif",
+      note: "Note",
+    },
+    labels: {
+      unknownUser: "Ancien membre",
+      noDueDate: "Sans échéance",
+      overdue: "en retard",
+      waitingOn: "En attente de {count} tâche(s) non terminée(s)",
+      blockedReason: "Bloquée : {reason}",
+      reviewNote: "Note du relecteur : {note}",
+      completionNote: "Note de clôture : {note}",
+      cancelReason: "Annulée : {reason}",
+      restrictedEvidence: "Preuve à laquelle vous n’avez pas accès",
+    },
+    evidenceKinds: {
+      conditionAssessment: "Constat d’état",
+      movement: "Mouvement",
+      media: "Fichier",
+      auditEntry: "Événement d’audit",
+    },
+    actions: {
+      start: "Commencer",
+      unblock: "Débloquer",
+      complete: "Terminer",
+      submitForReview: "Envoyer en relecture",
+      approve: "Approuver",
+      returnForChanges: "Renvoyer pour modifications",
+      block: "Bloquer",
+      assign: "Responsable et échéance",
+      linkEvidence: "Lier une preuve",
+      cancel: "Annuler la tâche",
+    },
+    dialogs: {
+      close: "Fermer",
+      noAttestation:
+        "Terminer cette tâche n’enregistre ni la garde, ni une approbation juridique, ni un changement d’état. Enregistrez-les dans leurs propres processus.",
+      create: {
+        title: "Ajouter une tâche",
+        description:
+          "Confiez la tâche à un responsable qui peut travailler sur ce dossier. Ajoutez un relecteur si quelqu’un doit l’approuver.",
+        submit: "Ajouter la tâche",
+      },
+      assign: {
+        title: "Responsable et échéance",
+        description:
+          "Les responsables et relecteurs doivent être des membres pouvant travailler sur ce dossier.",
+        submit: "Enregistrer",
+      },
+      block: {
+        title: "Bloquer la tâche",
+        description: "Indiquez ce qui empêche ce travail.",
+        submit: "Bloquer la tâche",
+      },
+      cancel: {
+        title: "Annuler la tâche",
+        description: "Les tâches annulées restent dans le dossier.",
+        submit: "Annuler la tâche",
+      },
+      returnForChanges: {
+        title: "Renvoyer pour modifications",
+        description:
+          "Indiquez au responsable ce qu’il doit modifier avant votre approbation.",
+        submit: "Renvoyer la tâche",
+      },
+      complete: {
+        title: "Terminer la tâche",
+        description: "Marquez ce travail comme terminé.",
+        submit: "Marquer comme terminée",
+      },
+      submitForReview: {
+        title: "Envoyer en relecture",
+        description: "Le relecteur approuve la tâche ou vous la renvoie.",
+        submit: "Envoyer en relecture",
+      },
+      approve: {
+        title: "Approuver la tâche",
+        description: "L’approbation marque ce travail comme terminé.",
+        submit: "Approuver",
+      },
+      evidence: {
+        title: "Lier une preuve",
+        description:
+          "Citez un enregistrement existant pour cette tâche. Le lien ne crée ni ne modifie jamais l’enregistrement.",
+        choose: "Choisir un enregistrement",
+        empty: "Aucun enregistrement à citer pour ce dossier pour l’instant.",
+        submit: "Lier la preuve",
+      },
+    },
+    toasts: {
+      created: "Tâche ajoutée",
+      updated: "Tâche mise à jour",
+      evidenceLinked: "Preuve liée",
+    },
+    errors: {
+      fallback: "La tâche n’a pas pu être enregistrée. Réessayez.",
+      caseNotFound: "Ce dossier n’est pas disponible dans votre organisation.",
+      taskNotFound: "Cette tâche n’est pas disponible. Actualisez la page.",
+      assigneeNotEligible:
+        "Choisissez un responsable membre qui peut travailler sur ce dossier.",
+      reviewerNotEligible:
+        "Choisissez un relecteur, autre que le responsable, qui peut travailler sur ce dossier.",
+      dependencyInvalid:
+        "Une tâche ne peut dépendre que de tâches du même dossier.",
+      dependenciesOpen:
+        "Terminez d’abord les {count} tâche(s) dont celle-ci dépend.",
+      statusChanged:
+        "Cette tâche a changé depuis son ouverture. Actualisez et réessayez.",
+      reviewRequired:
+        "Cette tâche doit être approuvée par son relecteur. Envoyez-la en relecture.",
+      reviewerOnly: "Seul le relecteur de la tâche peut faire cela.",
+      evidenceNotFound:
+        "Cet enregistrement ne peut pas être cité. Choisissez un enregistrement validé de cette organisation.",
+      limitReached: "Ce dossier ou cette tâche a atteint sa limite.",
+      invalidInput: "Vérifiez les champs obligatoires et réessayez.",
+    },
+    myWork: {
+      title: "Mon travail",
+      description:
+        "Vos tâches, les relectures qui vous attendent et les dossiers ouverts qui vous sont attribués.",
+      loading: "Chargement…",
+      loadMore: "Afficher plus",
+      myTasks: "Mes tâches",
+      myTasksEmpty: "Vous n’avez aucune tâche ouverte.",
+      reviews: "En attente de ma relecture",
+      reviewsEmpty: "Rien n’attend votre relecture.",
+      assignedCases: "Dossiers qui me sont attribués",
+      assignedCasesEmpty: "Aucun dossier ouvert ne vous est attribué.",
+      assignedTruncated: "Affichage des 50 premiers dossiers attribués.",
+      since: "Depuis le",
+    },
+  },
   notificationsPage: {
     title: "Notifications",
     description: "Restez informé des approbations de workflow et de l'activité",
@@ -6557,7 +6723,7 @@ export default {
         accounts: "Comptes",
         activity: "Activité",
         analytics: "Analyses",
-        assignments: "Attributions",
+        assignments: "Mon travail",
         conservation: "Conservation",
         exhibitions: "Expositions",
         insurance: "Assurance",
@@ -7748,6 +7914,7 @@ export default {
     navigation: {
       patronManagement: "gestion des usagers",
       overview: "Vue d’ensemble",
+      myWork: "Mon travail",
       objectCatalog: "Catalogue des objets",
       locationTracking: "Emplacements et suivi",
       scan: "Scanner",

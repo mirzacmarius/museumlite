@@ -1,11 +1,12 @@
 "use client";
 
+import { CaseTaskPanel } from "@/components/case-tasks/case-task-panel";
 import { ExhibitionDetailDocumentsPanel } from "./exhibition-detail-documents-panel";
 import { ExhibitionDetailOverviewPanel } from "./exhibition-detail-overview-panel";
-import { ExhibitionPhysicalHandoffsPanel } from "./exhibition-physical-handoffs-panel";
 import { ExhibitionDetailSidebar } from "./exhibition-detail-sidebar";
 import { ExhibitionDetailStats } from "./exhibition-detail-stats";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
+import { ExhibitionPhysicalHandoffsPanel } from "./exhibition-physical-handoffs-panel";
 
 export function ExhibitionDetailBody(props: ExhibitionDetailViewProps) {
   return (
@@ -22,6 +23,11 @@ export function ExhibitionDetailBody(props: ExhibitionDetailViewProps) {
               endDate={props.exhibition.endDate}
             />
             <ExhibitionDetailDocumentsPanel {...props} />
+            <CaseTaskPanel
+              organizationId={props.exhibition.organizationId}
+              caseType="exhibition"
+              caseId={props.exhibitionId}
+            />
           </div>
           <ExhibitionDetailSidebar {...props} />
         </div>

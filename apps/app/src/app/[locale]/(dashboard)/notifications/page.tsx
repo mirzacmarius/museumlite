@@ -161,6 +161,8 @@ const ENTITY_PATHS: Record<string, string> = {
   accession: "/accessions",
   deaccession: "/deaccessions",
   loan: "/loans",
+  exhibition: "/exhibitions",
+  conservationTreatment: "/conservation",
   location: "/locations",
   move_request: "/objects/move-requests",
 };

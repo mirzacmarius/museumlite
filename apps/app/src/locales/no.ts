@@ -4431,6 +4431,171 @@ export default {
       deleted: "slettet",
     },
   },
+  caseTasks: {
+    panel: {
+      title: "Oppgaver",
+      description:
+        "Ansvarsfestet arbeid for denne saken. Å fullføre en oppgave viser at arbeidet er gjort; det registrerer ikke forvaring, juridisk godkjenning eller endret tilstand.",
+      add: "Legg til oppgave",
+      loading: "Laster oppgaver…",
+      empty: "Ingen oppgaver i denne saken ennå.",
+      readOnly: "Du kan se disse oppgavene, men ikke endre dem.",
+    },
+    status: {
+      todo: "Å gjøre",
+      in_progress: "Pågår",
+      blocked: "Blokkert",
+      in_review: "Til gjennomgang",
+      done: "Ferdig",
+      cancelled: "Avbrutt",
+    },
+    caseTypes: {
+      loan: "Lån",
+      accession: "Aksesjon",
+      deaccession: "Avhending",
+      exhibition: "Utstilling",
+      conservation: "Konserveringsbehandling",
+    },
+    fields: {
+      title: "Tittel",
+      description: "Beskrivelse",
+      owner: "Ansvarlig",
+      reviewer: "Godkjenner",
+      noReviewer: "Ingen gjennomgang",
+      chooseMember: "Velg et medlem",
+      dueDate: "Frist",
+      dependencies: "Avhenger av",
+      evidence: "Dokumentasjon",
+      reason: "Årsak",
+      note: "Merknad",
+    },
+    labels: {
+      unknownUser: "Tidligere medlem",
+      noDueDate: "Ingen frist",
+      overdue: "forfalt",
+      waitingOn: "Venter på {count} uferdige oppgave(r)",
+      blockedReason: "Blokkert: {reason}",
+      reviewNote: "Merknad fra godkjenner: {note}",
+      completionNote: "Avslutningsmerknad: {note}",
+      cancelReason: "Avbrutt: {reason}",
+      restrictedEvidence: "Dokumentasjon du ikke har tilgang til",
+    },
+    evidenceKinds: {
+      conditionAssessment: "Tilstandsvurdering",
+      movement: "Flytting",
+      media: "Fil",
+      auditEntry: "Revisjonshendelse",
+    },
+    actions: {
+      start: "Start",
+      unblock: "Opphev blokkering",
+      complete: "Fullfør",
+      submitForReview: "Send til gjennomgang",
+      approve: "Godkjenn",
+      returnForChanges: "Send tilbake for endringer",
+      block: "Blokker",
+      assign: "Ansvarlig og frist",
+      linkEvidence: "Koble dokumentasjon",
+      cancel: "Avbryt oppgave",
+    },
+    dialogs: {
+      close: "Lukk",
+      noAttestation:
+        "Å fullføre denne oppgaven registrerer ikke forvaring, juridisk godkjenning eller endret tilstand. Registrer dette i de egne arbeidsflytene.",
+      create: {
+        title: "Legg til oppgave",
+        description:
+          "Gi oppgaven en ansvarlig som kan arbeide med denne saken. Legg til en godkjenner hvis noen må godkjenne den.",
+        submit: "Legg til oppgave",
+      },
+      assign: {
+        title: "Ansvarlig og frist",
+        description:
+          "Ansvarlige og godkjennere må være medlemmer som kan arbeide med denne saken.",
+        submit: "Lagre",
+      },
+      block: {
+        title: "Blokker oppgave",
+        description: "Beskriv hva som hindrer arbeidet.",
+        submit: "Blokker oppgave",
+      },
+      cancel: {
+        title: "Avbryt oppgave",
+        description: "Avbrutte oppgaver blir stående i saken.",
+        submit: "Avbryt oppgave",
+      },
+      returnForChanges: {
+        title: "Send tilbake for endringer",
+        description:
+          "Fortell den ansvarlige hva som må endres før du godkjenner.",
+        submit: "Send tilbake",
+      },
+      complete: {
+        title: "Fullfør oppgave",
+        description: "Marker arbeidet som ferdig.",
+        submit: "Marker som ferdig",
+      },
+      submitForReview: {
+        title: "Send til gjennomgang",
+        description:
+          "Godkjenneren godkjenner oppgaven eller sender den tilbake.",
+        submit: "Send til gjennomgang",
+      },
+      approve: {
+        title: "Godkjenn oppgave",
+        description: "Godkjenning markerer arbeidet som ferdig.",
+        submit: "Godkjenn",
+      },
+      evidence: {
+        title: "Koble dokumentasjon",
+        description:
+          "Vis til en eksisterende post for denne oppgaven. Koblingen oppretter eller endrer aldri posten.",
+        choose: "Velg en post",
+        empty: "Det finnes ingen poster å vise til for denne saken ennå.",
+        submit: "Koble dokumentasjon",
+      },
+    },
+    toasts: {
+      created: "Oppgave lagt til",
+      updated: "Oppgave oppdatert",
+      evidenceLinked: "Dokumentasjon koblet",
+    },
+    errors: {
+      fallback: "Oppgaven kunne ikke lagres. Prøv igjen.",
+      caseNotFound: "Denne saken er ikke tilgjengelig i organisasjonen din.",
+      taskNotFound: "Denne oppgaven er ikke tilgjengelig. Oppdater siden.",
+      assigneeNotEligible:
+        "Velg en ansvarlig som er medlem og kan arbeide med denne saken.",
+      reviewerNotEligible:
+        "Velg en godkjenner, en annen enn den ansvarlige, som kan arbeide med denne saken.",
+      dependencyInvalid: "Oppgaver kan bare avhenge av oppgaver i samme sak.",
+      dependenciesOpen: "Fullfør først de {count} oppgavene denne avhenger av.",
+      statusChanged:
+        "Oppgaven er endret siden du åpnet den. Oppdater og prøv igjen.",
+      reviewRequired:
+        "Denne oppgaven må godkjennes av godkjenneren. Send den til gjennomgang.",
+      reviewerOnly: "Bare oppgavens godkjenner kan gjøre dette.",
+      evidenceNotFound:
+        "Den posten kan ikke brukes. Velg en godkjent post fra denne organisasjonen.",
+      limitReached: "Saken eller oppgaven har nådd grensen.",
+      invalidInput: "Kontroller de obligatoriske feltene og prøv igjen.",
+    },
+    myWork: {
+      title: "Mitt arbeid",
+      description:
+        "Oppgaver du er ansvarlig for, gjennomganger som venter på deg og åpne saker tildelt deg.",
+      loading: "Laster…",
+      loadMore: "Last inn flere",
+      myTasks: "Mine oppgaver",
+      myTasksEmpty: "Du har ingen åpne oppgaver.",
+      reviews: "Venter på min gjennomgang",
+      reviewsEmpty: "Ingenting venter på din gjennomgang.",
+      assignedCases: "Saker tildelt meg",
+      assignedCasesEmpty: "Ingen åpne saker er tildelt deg.",
+      assignedTruncated: "Viser de første 50 tildelte sakene.",
+      since: "Siden",
+    },
+  },
   notificationsPage: {
     title: "Varsler",
     description: "Hold deg oppdatert på arbeidsflytgodkjenninger og aktivitet",
@@ -6500,7 +6665,7 @@ export default {
         accounts: "Kontoer",
         activity: "Aktivitet",
         analytics: "Analyse",
-        assignments: "Oppgaver",
+        assignments: "Mitt arbeid",
         conservation: "Konservering",
         exhibitions: "Utstillinger",
         insurance: "Forsikring",
@@ -7662,6 +7827,7 @@ export default {
     navigation: {
       patronManagement: "låneradministrasjon",
       overview: "Oversikt",
+      myWork: "Mitt arbeid",
       objectCatalog: "Objektkatalog",
       locationTracking: "Plassering og sporing",
       scan: "Skann",

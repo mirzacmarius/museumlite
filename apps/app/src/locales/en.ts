@@ -4285,6 +4285,169 @@ export default {
       deleted: "deleted",
     },
   },
+  caseTasks: {
+    panel: {
+      title: "Tasks",
+      description:
+        "Accountable work for this case. Completing a task records that the work is done; it does not record custody, legal approval or a condition change.",
+      add: "Add task",
+      loading: "Loading tasks…",
+      empty: "No tasks on this case yet.",
+      readOnly: "You can see these tasks but not change them.",
+    },
+    status: {
+      todo: "To do",
+      in_progress: "In progress",
+      blocked: "Blocked",
+      in_review: "In review",
+      done: "Done",
+      cancelled: "Cancelled",
+    },
+    caseTypes: {
+      loan: "Loan",
+      accession: "Accession",
+      deaccession: "Deaccession",
+      exhibition: "Exhibition",
+      conservation: "Conservation treatment",
+    },
+    fields: {
+      title: "Title",
+      description: "Description",
+      owner: "Owner",
+      reviewer: "Reviewer",
+      noReviewer: "No review",
+      chooseMember: "Choose a member",
+      dueDate: "Due date",
+      dependencies: "Depends on",
+      evidence: "Evidence",
+      reason: "Reason",
+      note: "Note",
+    },
+    labels: {
+      unknownUser: "Former member",
+      noDueDate: "No due date",
+      overdue: "overdue",
+      waitingOn: "Waiting on {count} unfinished task(s)",
+      blockedReason: "Blocked: {reason}",
+      reviewNote: "Reviewer note: {note}",
+      completionNote: "Completion note: {note}",
+      cancelReason: "Cancelled: {reason}",
+      restrictedEvidence: "Evidence you do not have access to",
+    },
+    evidenceKinds: {
+      conditionAssessment: "Condition assessment",
+      movement: "Movement",
+      media: "File",
+      auditEntry: "Audit event",
+    },
+    actions: {
+      start: "Start",
+      unblock: "Unblock",
+      complete: "Complete",
+      submitForReview: "Send for review",
+      approve: "Approve",
+      returnForChanges: "Return for changes",
+      block: "Block",
+      assign: "Owner and due date",
+      linkEvidence: "Link evidence",
+      cancel: "Cancel task",
+    },
+    dialogs: {
+      close: "Close",
+      noAttestation:
+        "Completing this task does not record custody, legal approval or a condition change. Record those in their own workflows.",
+      create: {
+        title: "Add task",
+        description:
+          "Give the task an owner who can work on this case. Add a reviewer if someone must approve it.",
+        submit: "Add task",
+      },
+      assign: {
+        title: "Owner and due date",
+        description:
+          "Owners and reviewers must be members who can work on this case.",
+        submit: "Save",
+      },
+      block: {
+        title: "Block task",
+        description: "Say what is stopping this work.",
+        submit: "Block task",
+      },
+      cancel: {
+        title: "Cancel task",
+        description: "Cancelled tasks stay on the case record.",
+        submit: "Cancel task",
+      },
+      returnForChanges: {
+        title: "Return for changes",
+        description: "Tell the owner what to change before you approve it.",
+        submit: "Return task",
+      },
+      complete: {
+        title: "Complete task",
+        description: "Mark this work as done.",
+        submit: "Mark as done",
+      },
+      submitForReview: {
+        title: "Send for review",
+        description: "The reviewer approves the task or returns it to you.",
+        submit: "Send for review",
+      },
+      approve: {
+        title: "Approve task",
+        description: "Approving marks this work as done.",
+        submit: "Approve",
+      },
+      evidence: {
+        title: "Link evidence",
+        description:
+          "Cite an existing record for this task. Linking never creates or changes the record.",
+        choose: "Choose a record",
+        empty: "There are no records to cite for this case yet.",
+        submit: "Link evidence",
+      },
+    },
+    toasts: {
+      created: "Task added",
+      updated: "Task updated",
+      evidenceLinked: "Evidence linked",
+    },
+    errors: {
+      fallback: "The task could not be saved. Try again.",
+      caseNotFound: "This case is not available in your organization.",
+      taskNotFound: "This task is not available. Refresh the page.",
+      assigneeNotEligible:
+        "Choose an owner who is a member and can work on this case.",
+      reviewerNotEligible:
+        "Choose a reviewer, other than the owner, who can work on this case.",
+      dependencyInvalid: "Tasks can only depend on tasks on the same case.",
+      dependenciesOpen: "Finish the {count} task(s) this one depends on first.",
+      statusChanged:
+        "This task changed since you opened it. Refresh and try again.",
+      reviewRequired:
+        "This task needs its reviewer's approval. Send it for review.",
+      reviewerOnly: "Only the task's reviewer can do this.",
+      evidenceNotFound:
+        "That record is not available to cite. Choose an accepted record from this organization.",
+      limitReached: "This case or task has reached its limit.",
+      invalidInput: "Check the required fields and try again.",
+    },
+    myWork: {
+      title: "My work",
+      description:
+        "Tasks you own, reviews waiting for you and open cases assigned to you.",
+      loading: "Loading…",
+      loadMore: "Load more",
+      myTasks: "My tasks",
+      myTasksEmpty: "You have no open tasks.",
+      reviews: "Waiting for my review",
+      reviewsEmpty: "Nothing is waiting for your review.",
+      assignedCases: "Cases assigned to me",
+      assignedCasesEmpty: "No open cases are assigned to you.",
+      assignedTruncated: "Showing the first 50 assigned cases.",
+      since: "Since",
+    },
+  },
   notificationsPage: {
     title: "Notifications",
     description: "Stay updated on workflow approvals and activity",
@@ -6336,7 +6499,7 @@ export default {
         accounts: "Accounts",
         activity: "Activity",
         analytics: "Analytics",
-        assignments: "Assignments",
+        assignments: "My work",
         conservation: "Conservation",
         exhibitions: "Exhibitions",
         insurance: "Insurance",
@@ -7474,6 +7637,7 @@ export default {
     navigation: {
       patronManagement: "patron management",
       overview: "Overview",
+      myWork: "My work",
       objectCatalog: "Object Catalog",
       locationTracking: "Location & Tracking",
       scan: "Scan",

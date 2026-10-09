@@ -26,6 +26,7 @@ import type * as audit from "../audit.js";
 import type * as auditLog from "../auditLog.js";
 import type * as auth from "../auth.js";
 import type * as batchOperations from "../batchOperations.js";
+import type * as caseTasks from "../caseTasks.js";
 import type * as coinsStampsDetails from "../coinsStampsDetails.js";
 import type * as collectionGroups from "../collectionGroups.js";
 import type * as collections from "../collections.js";
@@ -130,6 +131,7 @@ import type * as utils_authorizationContext from "../utils/authorizationContext.
 import type * as utils_authorizedCollectionBatch from "../utils/authorizedCollectionBatch.js";
 import type * as utils_batchLookup from "../utils/batchLookup.js";
 import type * as utils_caseHistory from "../utils/caseHistory.js";
+import type * as utils_caseTaskValidators from "../utils/caseTaskValidators.js";
 import type * as utils_catalogObjects from "../utils/catalogObjects.js";
 import type * as utils_collectionDetailLifecycle from "../utils/collectionDetailLifecycle.js";
 import type * as utils_collectionDisplayHelpers from "../utils/collectionDisplayHelpers.js";
@@ -180,6 +182,7 @@ import type * as utils_loanStatusTransitions from "../utils/loanStatusTransition
 import type * as utils_loanWorkflow from "../utils/loanWorkflow.js";
 import type * as utils_locationIntegrity from "../utils/locationIntegrity.js";
 import type * as utils_mediaAssets from "../utils/mediaAssets.js";
+import type * as utils_memberPermissions from "../utils/memberPermissions.js";
 import type * as utils_moduleCatalog from "../utils/moduleCatalog.js";
 import type * as utils_moduleValidators from "../utils/moduleValidators.js";
 import type * as utils_movementValidators from "../utils/movementValidators.js";
@@ -216,6 +219,7 @@ import type * as utils_uploadOwnership from "../utils/uploadOwnership.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as utils_verificationCode from "../utils/verificationCode.js";
 import type * as utils_webhookEvents from "../utils/webhookEvents.js";
+import type * as utils_workErrors from "../utils/workErrors.js";
 import type * as utils_workflowConfigs from "../utils/workflowConfigs.js";
 import type * as utils_workflowExecution from "../utils/workflowExecution.js";
 import type * as utils_workflowSteps from "../utils/workflowSteps.js";
@@ -252,6 +256,7 @@ declare const fullApi: ApiFromModules<{
   auditLog: typeof auditLog;
   auth: typeof auth;
   batchOperations: typeof batchOperations;
+  caseTasks: typeof caseTasks;
   coinsStampsDetails: typeof coinsStampsDetails;
   collectionGroups: typeof collectionGroups;
   collections: typeof collections;
@@ -356,6 +361,7 @@ declare const fullApi: ApiFromModules<{
   "utils/authorizedCollectionBatch": typeof utils_authorizedCollectionBatch;
   "utils/batchLookup": typeof utils_batchLookup;
   "utils/caseHistory": typeof utils_caseHistory;
+  "utils/caseTaskValidators": typeof utils_caseTaskValidators;
   "utils/catalogObjects": typeof utils_catalogObjects;
   "utils/collectionDetailLifecycle": typeof utils_collectionDetailLifecycle;
   "utils/collectionDisplayHelpers": typeof utils_collectionDisplayHelpers;
@@ -406,6 +412,7 @@ declare const fullApi: ApiFromModules<{
   "utils/loanWorkflow": typeof utils_loanWorkflow;
   "utils/locationIntegrity": typeof utils_locationIntegrity;
   "utils/mediaAssets": typeof utils_mediaAssets;
+  "utils/memberPermissions": typeof utils_memberPermissions;
   "utils/moduleCatalog": typeof utils_moduleCatalog;
   "utils/moduleValidators": typeof utils_moduleValidators;
   "utils/movementValidators": typeof utils_movementValidators;
@@ -442,6 +449,7 @@ declare const fullApi: ApiFromModules<{
   "utils/validators": typeof utils_validators;
   "utils/verificationCode": typeof utils_verificationCode;
   "utils/webhookEvents": typeof utils_webhookEvents;
+  "utils/workErrors": typeof utils_workErrors;
   "utils/workflowConfigs": typeof utils_workflowConfigs;
   "utils/workflowExecution": typeof utils_workflowExecution;
   "utils/workflowSteps": typeof utils_workflowSteps;

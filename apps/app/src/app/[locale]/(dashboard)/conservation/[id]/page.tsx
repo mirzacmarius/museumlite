@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { ArrowLeft, Box, Calendar, Loader2, Pencil, User } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
+import { CaseTaskPanel } from "@/components/case-tasks/case-task-panel";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -144,6 +145,11 @@ export default function TreatmentDetailPage({
               treatmentId={treatment._id}
               collectionId={treatment.collectionId}
               status={treatment.status}
+            />
+            <CaseTaskPanel
+              organizationId={treatment.organizationId}
+              caseType="conservation"
+              caseId={treatment._id}
             />
           </div>
 

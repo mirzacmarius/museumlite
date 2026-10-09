@@ -37,6 +37,8 @@ export const NOTIFICATION_TYPES = {
   // Assignments
   TASK_ASSIGNED: "task_assigned",
   TASK_COMPLETED: "task_completed",
+  TASK_REVIEW_REQUESTED: "task_review_requested",
+  TASK_RETURNED: "task_returned",
   MOVE_REQUEST_CREATED: "move_request_created",
   MOVE_REQUEST_APPROVED: "move_request_approved",
   COMMENT_MENTION: "comment_mention",
@@ -69,7 +71,13 @@ export const NOTIFICATION_CATEGORIES = {
     "assessment_due",
   ],
   alerts: ["condition_alert", "environmental_alert", "capacity_alert"],
-  assignments: ["task_assigned", "task_completed", "comment_mention"],
+  assignments: [
+    "task_assigned",
+    "task_completed",
+    "task_review_requested",
+    "task_returned",
+    "comment_mention",
+  ],
   system: ["batch_job_completed", "report_ready", "system_announcement"],
 };
 

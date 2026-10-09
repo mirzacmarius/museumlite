@@ -15,6 +15,7 @@ import {
   Image,
   LayoutGrid,
   Library,
+  ListTodo,
   MapPin,
   QrCode,
   Settings2,
@@ -77,6 +78,11 @@ export function buildSidebarNavigation({
       title: translate("untranslatedComponents.navigation.overview"),
       url: "/",
       icon: LayoutGrid,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.myWork"),
+      url: "/assignments",
+      icon: ListTodo,
     },
     {
       title: translate("untranslatedComponents.navigation.objectCatalog"),

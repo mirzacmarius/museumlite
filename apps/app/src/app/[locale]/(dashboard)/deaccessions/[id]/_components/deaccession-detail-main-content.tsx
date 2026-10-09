@@ -1,5 +1,6 @@
 "use client";
 
+import { CaseTaskPanel } from "@/components/case-tasks/case-task-panel";
 import { DeaccessionDetailHeroSection } from "./deaccession-detail-hero-section";
 import { DeaccessionDetailReviewPanel } from "./deaccession-detail-review-panel";
 import { DeaccessionDetailToolbar } from "./deaccession-detail-toolbar";
@@ -23,6 +24,11 @@ export function DeaccessionDetailMainContent(
             <DisposalStagesSection
               deaccession={props.deaccession}
               locale={props.locale}
+            />
+            <CaseTaskPanel
+              organizationId={props.deaccession.organizationId}
+              caseType="deaccession"
+              caseId={props.deaccession._id}
             />
             <DeaccessionDetailWorkflowHistory {...props} />
           </div>
