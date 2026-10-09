@@ -1,5 +1,9 @@
 import type { Infer } from "convex/values";
-import { type exportSource, MAX_EXPORT_BYTES } from "./exportContract";
+import {
+  type exportColumnType,
+  type exportSource,
+  MAX_EXPORT_BYTES,
+} from "./exportContract";
 import {
   REGISTER_COLUMNS,
   REGISTER_CONSISTENCY,
@@ -9,7 +13,7 @@ import {
 
 export interface ExportColumn {
   name: string;
-  type: "text" | "number" | "utcEpochMs" | "json" | "boolean" | "id";
+  type: Infer<typeof exportColumnType>;
 }
 type ExportSource = Infer<typeof exportSource>;
 export const objectColumns: ExportColumn[] = [
@@ -193,7 +197,7 @@ export function manifest(job: {
       criteria,
       effectiveAsOf: criteria.asOf ?? job.asOf,
       compatibility:
-        "MuseumLite register export v1; UTF-8. This is a MuseumLite interchange profile, not a SPECTRUM, LIDO or accreditation conformance claim. JSONL emits every column on each line in schema order with null for empty values. CSV uses RFC 4180 quoting, CRLF records, a header row and the column schema below: id and text cells are quoted; a leading apostrophe is added to text that begins with a formula prefix (=, +, -, @, tab, CR, LF after optional leading whitespace) or an apostrophe, so parsers remove exactly one leading apostrophe; utcEpochMs and number cells are unlocalized numbers; boolean cells are true or false; an unquoted empty cell is null and a quoted empty cell is the empty string.",
+        "MuseumLite register export v1; UTF-8. This is a MuseumLite interchange profile, not a SPECTRUM, LIDO or accreditation conformance claim. JSONL emits every column on each line in schema order with null for empty values. CSV uses RFC 4180 quoting, CRLF records, a header row and the column schema below: id and text cells are quoted; a leading apostrophe is added when the value starts with an apostrophe, a tab, CR or LF, or when its first character after leading whitespace and control characters is =, +, - or @, so parsers remove exactly one leading apostrophe from a quoted cell; utcEpochMs and number cells are unlocalized numbers; boolean cells are true or false; an unquoted empty cell is null and a quoted empty cell is the empty string.",
       consistency: REGISTER_CONSISTENCY[profile],
       evidencePolicy:
         "evidenceStatus is recorded when the row comes from structured evidence and legacy when it predates or bypassed that evidence. notRecorded lists, separated by semicolons, the columns left empty because MuseumLite holds no record of that fact at asOf. Missing facts are never inferred.",

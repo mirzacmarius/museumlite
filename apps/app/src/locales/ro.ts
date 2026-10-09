@@ -8904,7 +8904,7 @@ export default {
     statusRejected: "Respins",
     asOf: "La data de",
     asOfHint:
-      "Lăsați La data de gol pentru a folosi momentul creării registrului. Dovezile înregistrate după acest moment sunt excluse. Datele sunt zile UTC.",
+      "Lăsați La data de gol pentru a folosi momentul creării registrului. Dovezile înregistrate după acest moment sunt excluse. Datele și momentul de referință sunt în UTC.",
     preview: "Previzualizare",
     previewing: "Se încarcă previzualizarea",
     previewLabel: "Previzualizarea registrului",

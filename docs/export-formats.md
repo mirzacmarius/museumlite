@@ -20,13 +20,13 @@ Derived files expire after seven days. Bounded cleanup removes artifact/chunk st
 
 Registers are institutional outputs built on the same job engine: `accession`, `disposal`, `custody` and `condition`. Each is a MuseumLite interchange profile with a fixed, typed column schema. They make no SPECTRUM, LIDO, accreditation or other conformance claim; profiles MuseumLite cannot produce (for example SPECTRUM or LIDO XML) are shown as unavailable and cannot be requested.
 
-Access: the requester needs `collections.read` and a plan with reporting (Pro or Enterprise). Every continuation and download rechecks both. Criteria are fixed at request creation: `fromDate`/`toDate` (UTC epoch milliseconds, inclusive, applied to the profile's event date), `status` (`pending`, `approved` or `rejected`; accession and disposal only), `asOf` (UTC epoch milliseconds, not in the future) and `objectId` (one object of the organization). Invalid criteria are refused with the stable code `REGISTER_CRITERIA_INVALID`; an `objectId` outside the organization is refused as a filter outside the organization.
+Access: the requester needs a plan with reporting (Pro or Enterprise) and `collections.read`; custody registers also need `locations.read` and `loans.read`, and condition registers `loans.read`, because they include location and loan evidence. Every continuation and download rechecks these. Criteria are fixed at request creation: `fromDate`/`toDate` (UTC epoch milliseconds, inclusive, applied to the profile's event date), `status` (`pending`, `approved` or `rejected`; accession and disposal only), `asOf` (UTC epoch milliseconds, not in the future) and `objectId` (one object the organization holds, or one it transferred out). Invalid criteria are refused with the stable code `REGISTER_CRITERIA_INVALID`; an `objectId` outside the organization is refused as a filter outside the organization.
 
 As-of: `effectiveAsOf` is `criteria.asOf`, or the creation cutoff when absent. Evidence recorded after it is excluded: movements, loan condition reports and register records by recording time; accepted assessments by `acceptedAt`; loan handoffs, lender exits, transfer handoffs and legacy condition changes by their event time. Accession and deaccession rows are mutable records: descriptive values and `status` are captured at `capturedAt`, and columns suffixed `AsOf` are derived from timestamps and append-only case history at or before `effectiveAsOf`. A historical as-of therefore shows what MuseumLite had recorded by then, not later corrections or imports.
 
 Missing facts are explicit and never inferred. Every row ends with `recordedAt`, `evidenceStatus` (`recorded`, or `legacy` when the row predates or bypassed structured evidence), `notRecorded` (semicolon-separated names of columns left empty because MuseumLite holds no record of that fact at as-of, including references held by another organization) and `capturedAt`.
 
-Encoding: JSONL emits every schema column on each line, in schema order, with `null` for empty values. CSV has a header row, RFC 4180 quoting and CRLF records. `id` and `text` cells are always quoted; a leading apostrophe is added when the value starts with a formula prefix (`=`, `+`, `-`, `@` after optional leading whitespace, or a leading tab, CR or LF) or with an apostrophe, so a parser removes exactly one leading apostrophe from a quoted text cell. `number` and `utcEpochMs` cells are unlocalized numbers, `boolean` cells are `true` or `false`, and an unquoted empty cell is `null` (a quoted empty cell is the empty string). Decoding a CSV with the manifest `columns` therefore reproduces the JSONL values exactly; `packages/backend/tests/registerExports.test.ts` verifies this round trip for every profile.
+Encoding: JSONL emits every schema column on each line, in schema order, with `null` for empty values. CSV has a header row, RFC 4180 quoting and CRLF records. `id` and `text` cells are always quoted; a leading apostrophe is added when the value starts with an apostrophe, a tab, CR or LF, or when its first character after leading whitespace and control characters is `=`, `+`, `-` or `@`, so a parser removes exactly one leading apostrophe from a quoted text cell. `number` and `utcEpochMs` cells are unlocalized numbers, `boolean` cells are `true` or `false`, and an unquoted empty cell is `null` (a quoted empty cell is the empty string). Decoding a CSV with the manifest `columns` therefore reproduces the JSONL values exactly; `packages/backend/tests/registerExports.test.ts` verifies this round trip for every profile.
 
 The manifest adds `generator` (`name`, `profile` such as `register.accession`, `profileVersion`, `exportSchemaVersion`), `organizationId`, `requestedBy`, frozen `criteria`, `effectiveAsOf`, the profile's `consistency` statement and its `columns`. The `export.completed` audit entry records the profile, criteria and effective as-of with the artifact checksum. `scanned` counts source records examined (register records, objects and evidence records), not rows.
 
@@ -46,7 +46,7 @@ One row per accession record, ordered by `dateReceived`.
 | cost | number | Cost as recorded |
 | objectId | id | Linked object |
 | objectAccessionNumber, objectTitle | text | Linked object's current number and title (this organization's objects only) |
-| objectPriorAccessionNumbers | text | Superseded object numbers, semicolon-separated |
+| objectPriorAccessionNumbers | text | Other numbers the object held by as-of (including the one in force at as-of if since replaced), semicolon-separated |
 | sourceVerified, sourceVerificationException | boolean | Source verification state |
 | identifierConflictReviewed | boolean | A duplicate-identifier review was recorded by as-of |
 | approvedAt | utcEpochMs | Approval time |
@@ -82,7 +82,7 @@ Approved records without decision checks predate them and are `legacy` with the 
 
 ### custody
 
-One row per custody event. Objects are visited in creation order, then objects transferred out of the organization (latest executed transfer each), so history stays in the source organization's register. Within an object rows follow evidence source and recording order; sort by `eventAt` for a chronological view. `eventType` is `movement`, `loan_dispatched`, `loan_returned`, `lender_exit`, `transfer_departure` or `transfer_arrival`. Movements wholly within another organization's locations are not exported; a reference to another organization's location is left empty and listed in `notRecorded`. An empty location means unknown.
+One row per custody event. Objects are visited in creation order, then objects transferred out of the organization (latest executed transfer each), so history stays in the source organization's register. Within an object rows follow evidence source and recording order; sort by `eventAt` for a chronological view. `eventType` is `movement`, `loan_dispatched`, `loan_returned` (outgoing loans), `lender_exit` (a borrowed object returned to its lender), `transfer_departure` or `transfer_arrival`. Movements wholly within another organization's locations are not exported; a reference to another organization's location is left empty and listed in `notRecorded`. An empty location means unknown.
 
 | Column | Type | Meaning |
 | --- | --- | --- |
@@ -102,7 +102,7 @@ One row per custody event. Objects are visited in creation order, then objects t
 
 ### condition
 
-One row per accepted condition assessment, loan condition report or legacy condition. Draft assessments are excluded. `eventType` is `assessment_accepted`, `loan_condition_report`, `legacy_condition_change` (a catalogue condition edit) or `legacy_condition_snapshot` (an undated condition on the object record, with `assessedAt`, `assessorId` and `recordedAt` in `notRecorded`; omitted when a date range is set).
+One row per accepted condition assessment, loan condition report or legacy condition. Draft assessments are excluded. Assessments and conditions stored on the object record follow the object on institution transfer, so they appear in the register of the organization that now holds the object; loan condition reports stay with the loan's organization. `eventType` is `assessment_accepted`, `loan_condition_report`, `legacy_condition_change` (a catalogue condition edit) or `legacy_condition_snapshot` (an undated condition on the object record, with `assessedAt`, `assessorId` and `recordedAt` in `notRecorded`; omitted when a date range is set).
 
 | Column | Type | Meaning |
 | --- | --- | --- |
@@ -119,6 +119,6 @@ One row per accepted condition assessment, loan condition report or legacy condi
 | loanId | id | Loan of a loan condition report |
 | reportDirection | text | `out` or `in` for loan reports |
 
-Register pages read at most 25 register records, or 25 objects and 200 evidence records, and continue mid-object across pages. A record with more than 200 approval steps or a loan object with more than 20 condition reports fails visibly with a processing-limit error.
+Register pages read at most 25 register records, or 25 objects and 200 evidence records (in batches of 20, stopping at about 128 KiB of row data), and continue mid-object across pages. A record with more than 200 approval steps, an object with more than 100 transfer requests, lender exits or identifier reviews, or a loan object with more than 20 condition reports fails visibly with a processing-limit error rather than truncating. An object transferred during capture may be omitted from that run's custody or condition register.
 
 Smaller legacy exports (list CSV buttons, data settings CSV, analytics report summaries and server CSV/XML profile exports) are not durable jobs and do not carry manifests. Their CSV cells follow the same type-based policy: numbers and booleans are unlocalized, Date values are UTC ISO timestamps, and text cells starting with a formula prefix receive a leading apostrophe. Column names never change how a cell is encoded.

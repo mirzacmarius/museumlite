@@ -8164,7 +8164,7 @@ export default {
     statusRejected: "Refusé",
     asOf: "À la date du",
     asOfHint:
-      "Laissez À la date du vide pour utiliser le moment de création du registre. Les preuves enregistrées après cette date sont exclues. Les dates sont des jours UTC.",
+      "Laissez À la date du vide pour utiliser le moment de création du registre. Les preuves enregistrées après cette date sont exclues. Les dates et l'heure de référence sont en UTC.",
     preview: "Aperçu",
     previewing: "Chargement de l'aperçu",
     previewLabel: "Aperçu du registre",

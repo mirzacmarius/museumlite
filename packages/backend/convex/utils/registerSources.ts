@@ -27,11 +27,53 @@ export interface RegisterPage {
 const RECORD_PAGE_SIZE = 25;
 const SUBJECT_BUDGET = 25;
 const EVIDENCE_BUDGET = 200;
+/** Evidence records read per source call, so the row budget is checked often. */
+const SOURCE_BATCH = 20;
+/** Serialized row characters per page; keeps encoded chunks below 512 KiB. */
+const ROW_CHARACTER_BUDGET = 128 * 1024;
 const MAX_APPROVAL_STEPS = 200;
 const MAX_LINKED_RECORDS = 100;
 const MAX_REPORTS_PER_LOAN_ITEM = 20;
+const LOWEST_DATE = -Number.MAX_VALUE;
+const HIGHEST_DATE = Number.MAX_VALUE;
 
 export const REGISTER_CRITERIA_INVALID = "REGISTER_CRITERIA_INVALID";
+
+/** Linked-record lookups fail visibly instead of truncating silently. */
+function boundedLinks<T>(records: T[], what: string) {
+  if (records.length > MAX_LINKED_RECORDS)
+    throw new ConvexError(
+      `Register ${what} exceed processing limits (${MAX_LINKED_RECORDS} per object)`,
+    );
+  return records;
+}
+
+/**
+ * The latest executed transfer that took the object out of this
+ * organization, or null. Only that transfer makes it a register subject.
+ */
+async function latestTransferOut(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  collectionId: Id<"collections">,
+) {
+  const requests = boundedLinks(
+    await ctx.db
+      .query("organizationMoveRequests")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+      .take(MAX_LINKED_RECORDS + 1),
+    "transfer requests",
+  );
+  let latest: Doc<"organizationMoveRequests"> | null = null;
+  for (const request of requests)
+    if (
+      request.sourceOrganizationId === organizationId &&
+      request.status === "executed" &&
+      (!latest || request._creationTime > latest._creationTime)
+    )
+      latest = request;
+  return latest;
+}
 
 /**
  * Validates register criteria and the tenant of every referenced ID. `now`
@@ -59,7 +101,11 @@ export async function validateRegisterCriteria(
     });
   if (objectId) {
     const object = await ctx.db.get(objectId);
-    if (!object || object.organizationId !== organizationId)
+    if (
+      !object ||
+      (object.organizationId !== organizationId &&
+        !(await latestTransferOut(ctx, organizationId, objectId)))
+    )
       throw new ConvexError("Filter outside organization");
   }
 }
@@ -131,7 +177,9 @@ async function accessionPage(
   cursor: string | null,
 ): Promise<RegisterPage> {
   const { organizationId, criteria, asOf } = scope;
-  const { fromDate, toDate, status, objectId } = criteria;
+  const { status, objectId } = criteria;
+  const from = criteria.fromDate ?? LOWEST_DATE;
+  const to = criteria.toDate ?? HIGHEST_DATE;
   const opts = { numItems: RECORD_PAGE_SIZE, cursor };
   const page = objectId
     ? await ctx.db
@@ -141,33 +189,22 @@ async function accessionPage(
     : status
       ? await ctx.db
           .query("accessions")
-          .withIndex("by_organization_and_status_and_dateReceived", (q) => {
-            const base = q
+          .withIndex("by_organization_and_status_and_dateReceived", (q) =>
+            q
               .eq("organizationId", organizationId)
-              .eq("status", status);
-            if (fromDate !== undefined && toDate !== undefined)
-              return base
-                .gte("dateReceived", fromDate)
-                .lte("dateReceived", toDate);
-            if (fromDate !== undefined)
-              return base.gte("dateReceived", fromDate);
-            if (toDate !== undefined) return base.lte("dateReceived", toDate);
-            return base;
-          })
+              .eq("status", status)
+              .gte("dateReceived", from)
+              .lte("dateReceived", to),
+          )
           .paginate(opts)
       : await ctx.db
           .query("accessions")
-          .withIndex("by_organization_and_dateReceived", (q) => {
-            const base = q.eq("organizationId", organizationId);
-            if (fromDate !== undefined && toDate !== undefined)
-              return base
-                .gte("dateReceived", fromDate)
-                .lte("dateReceived", toDate);
-            if (fromDate !== undefined)
-              return base.gte("dateReceived", fromDate);
-            if (toDate !== undefined) return base.lte("dateReceived", toDate);
-            return base;
-          })
+          .withIndex("by_organization_and_dateReceived", (q) =>
+            q
+              .eq("organizationId", organizationId)
+              .gte("dateReceived", from)
+              .lte("dateReceived", to),
+          )
           .paginate(opts);
   const rows: RegisterRow[] = [];
   for (const accession of page.page) {
@@ -179,9 +216,26 @@ async function accessionPage(
     )
       continue;
     const notRecorded: string[] = [];
-    const object = accession.collectionId
-      ? await ctx.db.get(accession.collectionId)
-      : null;
+    const [object, history, reviews] = await Promise.all([
+      accession.collectionId ? ctx.db.get(accession.collectionId) : null,
+      approvalHistoryAsOf(
+        ctx,
+        organizationId,
+        "accession",
+        accession._id,
+        accession.workflowHistory,
+        asOf,
+      ),
+      ctx.db
+        .query("identifierConflictReviews")
+        .withIndex("by_organization_and_register_and_record", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("register", "accession")
+            .eq("recordId", accession._id),
+        )
+        .take(MAX_LINKED_RECORDS + 1),
+    ] as const);
     const heldObject =
       object?.organizationId === organizationId ? object : null;
     if (accession.status === "approved" && !accession.collectionId)
@@ -189,26 +243,20 @@ async function accessionPage(
     if (accession.collectionId && !heldObject)
       notRecorded.push("objectAccessionNumber", "objectTitle");
     const approval = approvalColumns(accession, asOf, notRecorded);
-    const history = await approvalHistoryAsOf(
-      ctx,
-      organizationId,
-      "accession",
-      accession._id,
-      accession.workflowHistory,
-      asOf,
-    );
-    const reviews = await ctx.db
-      .query("identifierConflictReviews")
-      .withIndex("by_organization_and_register_and_record", (q) =>
-        q
-          .eq("organizationId", organizationId)
-          .eq("register", "accession")
-          .eq("recordId", accession._id),
-      )
-      .take(MAX_LINKED_RECORDS);
-    const priorNumbers = (heldObject?.accessionNumberHistory ?? [])
-      .filter((entry) => entry.validTo !== undefined && entry.validTo <= asOf)
-      .map((entry) => entry.number);
+    boundedLinks(reviews, "identifier reviews");
+    // Every number the object held by as-of other than its current number,
+    // including the one in force at as-of when it has since been replaced.
+    const priorNumbers = [
+      ...new Set(
+        (heldObject?.accessionNumberHistory ?? [])
+          .filter(
+            (entry) =>
+              entry.validFrom <= asOf &&
+              entry.number !== heldObject?.accessionNumber,
+          )
+          .map((entry) => entry.number),
+      ),
+    ];
     rows.push(
       registerRow(
         "accession",
@@ -262,7 +310,9 @@ async function disposalPage(
   cursor: string | null,
 ): Promise<RegisterPage> {
   const { organizationId, criteria, asOf } = scope;
-  const { fromDate, toDate, status, objectId } = criteria;
+  const { status, objectId } = criteria;
+  const from = criteria.fromDate ?? LOWEST_DATE;
+  const to = criteria.toDate ?? HIGHEST_DATE;
   const opts = { numItems: RECORD_PAGE_SIZE, cursor };
   const page = objectId
     ? await ctx.db
@@ -272,38 +322,22 @@ async function disposalPage(
     : status
       ? await ctx.db
           .query("deaccessions")
-          .withIndex(
-            "by_organization_and_status_and_dateDeaccessioned",
-            (q) => {
-              const base = q
-                .eq("organizationId", organizationId)
-                .eq("status", status);
-              if (fromDate !== undefined && toDate !== undefined)
-                return base
-                  .gte("dateDeaccessioned", fromDate)
-                  .lte("dateDeaccessioned", toDate);
-              if (fromDate !== undefined)
-                return base.gte("dateDeaccessioned", fromDate);
-              if (toDate !== undefined)
-                return base.lte("dateDeaccessioned", toDate);
-              return base;
-            },
+          .withIndex("by_organization_and_status_and_dateDeaccessioned", (q) =>
+            q
+              .eq("organizationId", organizationId)
+              .eq("status", status)
+              .gte("dateDeaccessioned", from)
+              .lte("dateDeaccessioned", to),
           )
           .paginate(opts)
       : await ctx.db
           .query("deaccessions")
-          .withIndex("by_organization_and_dateDeaccessioned", (q) => {
-            const base = q.eq("organizationId", organizationId);
-            if (fromDate !== undefined && toDate !== undefined)
-              return base
-                .gte("dateDeaccessioned", fromDate)
-                .lte("dateDeaccessioned", toDate);
-            if (fromDate !== undefined)
-              return base.gte("dateDeaccessioned", fromDate);
-            if (toDate !== undefined)
-              return base.lte("dateDeaccessioned", toDate);
-            return base;
-          })
+          .withIndex("by_organization_and_dateDeaccessioned", (q) =>
+            q
+              .eq("organizationId", organizationId)
+              .gte("dateDeaccessioned", from)
+              .lte("dateDeaccessioned", to),
+          )
           .paginate(opts);
   const rows: RegisterRow[] = [];
   for (const deaccession of page.page) {
@@ -315,21 +349,31 @@ async function disposalPage(
     )
       continue;
     const notRecorded: string[] = [];
-    const [object, transfers, exits] = await Promise.all([
+    const [object, transfers, exits, history] = await Promise.all([
       ctx.db.get(deaccession.collectionId),
       ctx.db
         .query("organizationMoveRequests")
         .withIndex("by_collection", (q) =>
           q.eq("collectionId", deaccession.collectionId),
         )
-        .take(MAX_LINKED_RECORDS),
+        .take(MAX_LINKED_RECORDS + 1),
       ctx.db
         .query("loanCustodyExits")
         .withIndex("by_collection", (q) =>
           q.eq("collectionId", deaccession.collectionId),
         )
-        .take(MAX_LINKED_RECORDS),
+        .take(MAX_LINKED_RECORDS + 1),
+      approvalHistoryAsOf(
+        ctx,
+        organizationId,
+        "deaccession",
+        deaccession._id,
+        deaccession.workflowHistory,
+        asOf,
+      ),
     ] as const);
+    boundedLinks(transfers, "transfer requests");
+    boundedLinks(exits, "lender exits");
     const transfer = transfers.find(
       (request) =>
         request.deaccessionId === deaccession._id &&
@@ -351,14 +395,6 @@ async function disposalPage(
       notRecorded.push("objectAccessionNumber");
     if (!heldObject) notRecorded.push("objectTitle");
     const approval = approvalColumns(deaccession, asOf, notRecorded);
-    const history = await approvalHistoryAsOf(
-      ctx,
-      organizationId,
-      "deaccession",
-      deaccession._id,
-      deaccession.workflowHistory,
-      asOf,
-    );
     const review = deaccession.decisionReview;
     const missingDecision = deaccession.status === "approved" && !review;
     if (missingDecision)
@@ -676,7 +712,8 @@ const loanHandoffSource: EvidenceSource = async (
   const rows: RegisterRow[] = [];
   for (const item of docs) {
     const loan = await cachedLoan(ctx, scope, cache, item.loanId);
-    if (!loan) continue;
+    // Borrowed objects leave through lender exits, reported separately.
+    if (!loan || loan.type !== "outgoing") continue;
     const handoffs = [
       {
         eventType: "loan_dispatched",
@@ -1022,7 +1059,7 @@ const legacyConditionSource: EvidenceSource = async (_ctx, scope, subject) => {
       ),
     );
   }
-  return { rows, last: null, done: true, scanned: 0 };
+  return { rows, last: null, done: true, scanned: history.length };
 };
 
 const SUBJECT_SOURCES: Record<"custody" | "condition", EvidenceSource[]> = {
@@ -1039,28 +1076,18 @@ const SUBJECT_SOURCES: Record<"custody" | "condition", EvidenceSource[]> = {
   ],
 };
 
-/**
- * Objects that left this organization through an executed transfer. Only the
- * latest executed transfer of each object is a subject, so history is
- * emitted once.
- */
-async function isLatestTransferOut(
+/** A held object, or one that left through its latest transfer out. */
+async function subjectFor(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  request: Doc<"organizationMoveRequests">,
-) {
-  const requests = await ctx.db
-    .query("organizationMoveRequests")
-    .withIndex("by_collection", (q) =>
-      q.eq("collectionId", request.collectionId),
-    )
-    .take(MAX_LINKED_RECORDS);
-  return !requests.some(
-    (other) =>
-      other.sourceOrganizationId === organizationId &&
-      other.status === "executed" &&
-      other._creationTime > request._creationTime,
-  );
+  object: Doc<"collections">,
+  transfer?: Doc<"organizationMoveRequests">,
+): Promise<Subject | null> {
+  if (object.organizationId === organizationId)
+    return transfer ? null : { object };
+  const latest = await latestTransferOut(ctx, organizationId, object._id);
+  if (!latest || (transfer && latest._id !== transfer._id)) return null;
+  return { object, transfer: latest };
 }
 
 async function nextSubjects(
@@ -1086,9 +1113,8 @@ async function nextSubjects(
           ? [
               {
                 subject:
-                  object.organizationId === organizationId &&
                   object._creationTime <= asOf
-                    ? { object }
+                    ? await subjectFor(ctx, organizationId, object)
                     : null,
                 creationTime: object._creationTime,
                 scanned: 1,
@@ -1134,15 +1160,14 @@ async function nextSubjects(
     creationTime: number;
     scanned: number;
   }> = [];
+  // Only the latest executed transfer of an object that is still elsewhere is
+  // a subject, so its history is emitted once.
   for (const transfer of requests) {
     const object = await ctx.db.get(transfer.collectionId);
     subjects.push({
-      subject:
-        object !== null &&
-        object.organizationId !== organizationId &&
-        (await isLatestTransferOut(ctx, organizationId, transfer))
-          ? { object, transfer }
-          : null,
+      subject: object
+        ? await subjectFor(ctx, organizationId, object, transfer)
+        : null,
       creationTime: transfer._creationTime,
       scanned: 2,
     });
@@ -1157,12 +1182,19 @@ async function loadCurrentSubject(
 ): Promise<Subject | null> {
   const object = await ctx.db.get(current.objectId);
   if (!object) return null;
-  if (!current.transferId)
-    return object.organizationId === scope.organizationId ? { object } : null;
-  const transfer = await ctx.db.get(current.transferId);
-  return transfer && transfer.sourceOrganizationId === scope.organizationId
-    ? { object, transfer }
-    : null;
+  const transfer = current.transferId
+    ? await ctx.db.get(current.transferId)
+    : undefined;
+  if (transfer === null) return null;
+  // An object that left during capture is reached again by the transfers
+  // phase; resuming it here would emit its history twice.
+  if (
+    !transfer &&
+    !scope.criteria.objectId &&
+    object.organizationId !== scope.organizationId
+  )
+    return null;
+  return await subjectFor(ctx, scope.organizationId, object, transfer);
 }
 
 async function subjectPage(
@@ -1176,6 +1208,7 @@ async function subjectPage(
   const rows: RegisterRow[] = [];
   let scanned = 0;
   let budget = EVIDENCE_BUDGET;
+  let characters = 0;
   let subjectsLeft = SUBJECT_BUDGET;
   const emit = (next: SubjectCursor, done = false): RegisterPage => ({
     rows,
@@ -1195,10 +1228,19 @@ async function subjectPage(
       let after = index === startSource ? startAfter : null;
       for (;;) {
         if (budget <= 0) return { source: index, sourceAfter: after };
-        const result = await source(ctx, scope, subject, after, budget, cache);
+        const result = await source(
+          ctx,
+          scope,
+          subject,
+          after,
+          Math.min(budget, SOURCE_BATCH),
+          cache,
+        );
         rows.push(...result.rows);
         scanned += result.scanned;
         budget -= Math.max(result.scanned, 1);
+        for (const row of result.rows) characters += JSON.stringify(row).length;
+        if (characters >= ROW_CHARACTER_BUDGET) budget = 0;
         if (result.done) break;
         after = result.last;
       }

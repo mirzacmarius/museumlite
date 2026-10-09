@@ -8209,7 +8209,7 @@ export default {
     statusRejected: "Rechazado",
     asOf: "A fecha de",
     asOfHint:
-      "Deje A fecha de vacío para usar el momento en que se crea el registro. Se excluye la evidencia registrada después de esa fecha. Las fechas son días UTC.",
+      "Deje A fecha de vacío para usar el momento en que se crea el registro. Se excluye la evidencia registrada después de esa fecha. Las fechas y la fecha de referencia están en UTC.",
     preview: "Vista previa",
     previewing: "Cargando vista previa",
     previewLabel: "Vista previa del registro",

@@ -2,6 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  REGISTER_PROFILES,
+  REGISTER_STATUS_PROFILES,
+} from "@v1/backend/convex/utils/registerProfiles";
 import { Button } from "@v1/ui/button";
 import {
   Card,
@@ -25,6 +29,7 @@ import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { BookText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { ExportJobControl } from "@/components/export-job-control";
+import { useRegisterProfileLabels } from "@/hooks/use-register-profile-labels";
 import { exportJobErrorKey } from "@/lib/export-job-error-copy";
 import { formatIsoTimestamp } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
@@ -39,11 +44,17 @@ type Status = NonNullable<Criteria["status"]>;
 type Preview = FunctionReturnType<typeof api.registers.preview>;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const PROFILES: Profile[] = ["accession", "disposal", "custody", "condition"];
-const STATUS_PROFILES = new Set<Profile>(["accession", "disposal"]);
 
 function isProfile(value: string): value is Profile {
-  return PROFILES.some((profile) => profile === value);
+  return REGISTER_PROFILES.some((profile) => profile === value);
+}
+function hasStatus(profile: Profile) {
+  return REGISTER_STATUS_PROFILES.includes(profile);
+}
+/** A `datetime-local` value read as UTC, like the date criteria. */
+function utcDateTime(value: string) {
+  if (!value) return undefined;
+  return Date.parse(`${value}Z`);
 }
 function isStatus(value: string): value is Status {
   return ["pending", "approved", "rejected"].includes(value);
@@ -98,17 +109,12 @@ export function RegisterExportsCard({
   const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState<string>();
 
-  const profileLabels: Record<Profile, string> = {
-    accession: t("profileAccession"),
-    disposal: t("profileDisposal"),
-    custody: t("profileCustody"),
-    condition: t("profileCondition"),
-  };
+  const profileLabels = useRegisterProfileLabels();
   const criteria: Criteria = {
     fromDate: utcDay(fromDate, false),
     toDate: utcDay(toDate, true),
-    status: STATUS_PROFILES.has(profile) && status ? status : undefined,
-    asOf: asOf ? new Date(asOf).getTime() : undefined,
+    status: hasStatus(profile) && status ? status : undefined,
+    asOf: utcDateTime(asOf),
   };
   const source: RegisterSource = { kind: "register", profile, criteria };
   const sourceKey = JSON.stringify(source);
@@ -164,7 +170,7 @@ export function RegisterExportsCard({
               }}
               className="h-9 w-full rounded-md border border-input bg-background px-2"
             >
-              {PROFILES.map((id) => (
+              {REGISTER_PROFILES.map((id) => (
                 <option key={id} value={id}>
                   {profileLabels[id]}
                 </option>
@@ -199,8 +205,8 @@ export function RegisterExportsCard({
             <Label htmlFor="register-status">{t("status")}</Label>
             <select
               id="register-status"
-              value={STATUS_PROFILES.has(profile) ? status : ""}
-              disabled={!STATUS_PROFILES.has(profile)}
+              value={hasStatus(profile) ? status : ""}
+              disabled={!hasStatus(profile)}
               onChange={(e) =>
                 setStatus(isStatus(e.target.value) ? e.target.value : "")
               }
@@ -291,7 +297,6 @@ export function RegisterExportsCard({
         )}
         {criteriaValid ? (
           <ExportJobControl
-            key={sourceKey}
             organizationId={organizationId}
             source={source}
             label={t("exportLabel", { profile: profileLabels[profile] })}

@@ -18,7 +18,7 @@ const T0 = Date.UTC(2026, 0, 1);
 
 async function fixture(
   tier: "free" | "pro" | "enterprise" = "pro",
-  permissions = ["collections.read"],
+  permissions = ["collections.read", "locations.read", "loans.read"],
 ) {
   vi.useFakeTimers();
   vi.setSystemTime(T0);
@@ -361,6 +361,42 @@ describe("accession register", () => {
     expect(csvText).toContain(`"'=Bowl"`);
     expect(csvText).toContain(`"''Quoted donor"`);
   });
+
+  test("a historical as-of keeps the number in force at that time among the object's prior numbers", async () => {
+    const f = await fixture();
+    const t1 = T0 - 3000;
+    const t3 = T0 - 1000;
+    const objectId = await insertObject(f, {
+      accessionNumber: "N3",
+      title: "Renumbered",
+      accessionNumberHistory: [
+        { number: "N1", validFrom: T0 - 9000, validTo: t1 },
+        { number: "N2", validFrom: t1, validTo: t3 },
+        { number: "N3", validFrom: t3 },
+      ],
+    });
+    await f.t.run((ctx) =>
+      ctx.db.insert("accessions", {
+        organizationId: f.organizationId,
+        collectionId: objectId,
+        accessionNumber: "N1",
+        dateReceived: T0 - 9000,
+        source: "Donor",
+        method: "gift",
+        status: "pending",
+      }),
+    );
+    vi.advanceTimersByTime(1000);
+    const preview = await f.user.query(api.registers.preview, {
+      organizationId: f.organizationId,
+      profile: "accession",
+      criteria: { asOf: T0 + 500 },
+    });
+    expect(preview.rows[0]).toMatchObject({
+      objectAccessionNumber: "N3",
+      objectPriorAccessionNumbers: "N1;N2",
+    });
+  });
 });
 
 describe("disposal register", () => {
@@ -564,6 +600,10 @@ describe("custody register", () => {
       title: "Their record",
       organizationId: f.otherOrganizationId,
     });
+    const borrowed = await insertObject(f, {
+      accessionNumber: "L.2026.1",
+      title: "Borrowed bowl",
+    });
     const move = (
       collectionId: Id<"collections">,
       movedAt: number,
@@ -615,7 +655,33 @@ describe("custody register", () => {
         returnedAt: t3,
         returnedBy: f.userId,
       });
-      return { loanId, loanItemId };
+      const incomingId = await ctx.db.insert("loans", {
+        organizationId: f.organizationId,
+        loanNumber: "IN-9",
+        type: "incoming",
+        lenderBorrowerName: "Lender",
+        startDate: t1,
+        status: "returned",
+      });
+      const incomingItemId = await ctx.db.insert("loanItems", {
+        loanId: incomingId,
+        collectionId: borrowed,
+        custodyStatus: "returned",
+        returnedAt: t2,
+        returnedBy: f.userId,
+      });
+      const exitId = await ctx.db.insert("loanCustodyExits", {
+        organizationId: f.organizationId,
+        loanId: incomingId,
+        loanItemId: incomingItemId,
+        collectionId: borrowed,
+        exitType: "return_to_lender",
+        recipientName: "Lender",
+        recordedBy: f.userId,
+        recordedAt: t2,
+        fromLocationId: store,
+      });
+      return { loanId, loanItemId, exitId };
     });
     const transfer = await f.t.run(async (ctx) => {
       const requestId = await ctx.db.insert("organizationMoveRequests", {
@@ -675,6 +741,7 @@ describe("custody register", () => {
       ],
       [guardedMove, "movement", null],
       [loan.loanItemId, "loan_dispatched", null],
+      [loan.exitId, "lender_exit", null],
       [departedEarly, "movement", "objectTitle"],
       [departedHandoff, "movement", "objectTitle;toLocationId;toLocationName"],
       [transfer.departureId, "transfer_departure", "objectTitle"],
@@ -696,14 +763,20 @@ describe("custody register", () => {
       counterparty: "Borrower",
       eventAt: t2,
     });
-    expect(rows[4]).toMatchObject({
+    expect(rows[3]).toMatchObject({
+      evidenceSource: "loanCustodyExits",
+      objectId: borrowed,
+      fromLocationName: "Store A",
+      counterparty: "Lender",
+    });
+    expect(rows[5]).toMatchObject({
       objectId: departed,
       objectAccessionNumber: "1985.2",
       objectTitle: null,
       fromLocationName: "Gallery",
       toLocationId: null,
     });
-    expect(rows[5]).toMatchObject({
+    expect(rows[6]).toMatchObject({
       transferRequestId: transfer.requestId,
       fromLocationId: gallery,
     });
@@ -718,11 +791,23 @@ describe("custody register", () => {
       laterMove,
       loan.loanItemId,
       loan.loanItemId,
+      loan.exitId,
       departedHandoff,
       transfer.departureId,
     ]);
     expect(current.rows.map((row) => row.eventType)).toContain("loan_returned");
     expect(current.hasMore).toBe(false);
+
+    const departedOnly = await f.user.query(api.registers.preview, {
+      organizationId: f.organizationId,
+      profile: "custody",
+      criteria: { objectId: departed },
+    });
+    expect(departedOnly.rows.map((row) => row.eventId)).toEqual([
+      departedEarly,
+      departedHandoff,
+      transfer.departureId,
+    ]);
   });
 });
 
@@ -934,6 +1019,76 @@ describe("register authorization and recovery", () => {
         source: custody,
       }),
     ).rejects.toThrow(/Feature requires pro tier/);
+  });
+
+  test("catalogue readers without loan access get accession registers but not loan-bearing custody or condition registers", async () => {
+    const f = await fixture("pro", ["collections.read"]);
+    const accession = await f.user.query(api.registers.preview, {
+      organizationId: f.organizationId,
+      profile: "accession",
+      criteria: {},
+    });
+    expect(accession.rows).toEqual([]);
+    for (const profile of ["custody", "condition"] as const) {
+      await expect(
+        f.user.query(api.registers.preview, {
+          organizationId: f.organizationId,
+          profile,
+          criteria: {},
+        }),
+      ).rejects.toThrow(/Permission denied/);
+      await expect(
+        f.user.mutation(api.exports.create, {
+          organizationId: f.organizationId,
+          requestKey: `no-loans-${profile}`,
+          format: "jsonl",
+          source: { kind: "register", profile, criteria: {} },
+        }),
+      ).rejects.toThrow(/Permission denied/);
+    }
+  });
+
+  test("pages of large condition evidence stay under the chunk limit and complete", async () => {
+    const f = await fixture();
+    const objectId = await insertObject(f, {
+      accessionNumber: "BIG-1",
+      title: "Heavily documented",
+    });
+    await f.t.run(async (ctx) => {
+      for (let i = 0; i < 30; i++)
+        await ctx.db.insert("conditionAssessments", {
+          organizationId: f.organizationId,
+          collectionId: objectId,
+          assessedBy: f.userId,
+          assessedAt: T0 - 1000 + i,
+          recordedAt: T0 - 1000 + i,
+          condition: "Fair",
+          summary: `${i}:${"x".repeat(20_000)}`,
+          observations: [],
+          photos: [],
+          status: "accepted",
+          acceptedBy: f.userId,
+          acceptedAt: T0 - 500,
+        });
+    });
+    vi.advanceTimersByTime(1000);
+    const { jobId, job } = await runExport(
+      f,
+      { kind: "register", profile: "condition", criteria: {} },
+      "csv",
+      "large-condition",
+    );
+    expect(job.status).toBe("completed");
+    expect(job.rows).toBe(30);
+    expect(job.checkpoint).toBeGreaterThan(1);
+    const manifest = await downloadManifest(f, jobId);
+    const rows = decodeRegisterCsv(
+      await downloadText(f, jobId),
+      manifest.columns,
+    );
+    expect(rows.map((row) => String(row.summary).split(":")[0])).toEqual(
+      Array.from({ length: 30 }, (_, i) => String(i)),
+    );
   });
 
   test("criteria naming another organization's object or an impossible range are refused with stable errors", async () => {

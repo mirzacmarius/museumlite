@@ -7871,7 +7871,7 @@ export default {
     statusRejected: "Rejected",
     asOf: "As of",
     asOfHint:
-      "Leave As of empty to use the time the register is created. Evidence recorded after the as-of time is excluded. Dates are UTC days.",
+      "Leave As of empty to use the time the register is created. Evidence recorded after the as-of time is excluded. Dates and the as-of time are in UTC.",
     preview: "Preview",
     previewing: "Loading preview",
     previewLabel: "Register preview",

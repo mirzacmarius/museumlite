@@ -27,6 +27,7 @@ import {
 import { getPageInventoryEvidence } from "./utils/indexedCounts";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
+import { REGISTER_PERMISSIONS } from "./utils/registerProfiles";
 import {
   readRegisterPage,
   validateRegisterCriteria,
@@ -37,22 +38,23 @@ const exportJobDoc = v.object({
   _id: v.id("exportJobs"),
   _creationTime: v.number(),
 });
-function requiredExportPermissions(kind: Doc<"exportJobs">["source"]["kind"]) {
-  return kind === "audit"
+function requiredExportPermissions(source: Doc<"exportJobs">["source"]) {
+  if (source.kind === "register") return REGISTER_PERMISSIONS[source.profile];
+  return source.kind === "audit"
     ? ["collections.read", AUDIT_READ_PERMISSION]
     : ["collections.read"];
 }
 async function requireExportAccess(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
-  kind: Doc<"exportJobs">["source"]["kind"],
+  source: Doc<"exportJobs">["source"],
   requireMemberPermission: (permission: string) => Promise<unknown>,
 ) {
-  for (const permission of requiredExportPermissions(kind))
+  for (const permission of requiredExportPermissions(source))
     await requireMemberPermission(permission);
-  if (kind === "audit")
+  if (source.kind === "audit")
     await requireFeatureAccess(ctx, organizationId, "compliance");
-  if (kind === "register")
+  if (source.kind === "register")
     await requireFeatureAccess(ctx, organizationId, "reporting");
 }
 async function requireOwnJob(
@@ -71,11 +73,8 @@ async function requireOwnJob(
     job.creatorId !== userId
   )
     throw new ConvexError("Export unavailable");
-  await requireExportAccess(
-    ctx,
-    job.organizationId,
-    job.source.kind,
-    (permission) => requirePermission(ctx, job.organizationId, permission),
+  await requireExportAccess(ctx, job.organizationId, job.source, (permission) =>
+    requirePermission(ctx, job.organizationId, permission),
   );
   return job;
 }
@@ -105,7 +104,7 @@ export const create = mutation({
     await requireExportAccess(
       ctx,
       args.organizationId,
-      args.source.kind,
+      args.source,
       (permission) => requirePermission(ctx, args.organizationId, permission),
     );
     const creatorId = await getAuthUserId(ctx);
@@ -395,6 +394,20 @@ export const list = query({
       args.organizationId,
       "reporting",
     );
+    const granted = new Map<string, boolean>();
+    const profileAllowed = async (
+      profile: keyof typeof REGISTER_PERMISSIONS,
+    ) => {
+      for (const permission of REGISTER_PERMISSIONS[profile]) {
+        if (!granted.has(permission))
+          granted.set(
+            permission,
+            await hasPermission(ctx, args.organizationId, permission),
+          );
+        if (!granted.get(permission)) return false;
+      }
+      return true;
+    };
     const jobs = await ctx.db
       .query("exportJobs")
       .withIndex("by_organizationId_and_creatorId", (q) =>
@@ -406,7 +419,8 @@ export const list = query({
     for (const job of jobs) {
       if (
         (job.source.kind !== "audit" || auditAllowed) &&
-        (job.source.kind !== "register" || registerAllowed)
+        (job.source.kind !== "register" ||
+          (registerAllowed && (await profileAllowed(job.source.profile))))
       ) {
         visibleJobs.push(toPublicStatus(job));
       }
@@ -468,7 +482,7 @@ async function requireCreatorStillPermitted(
   await requireExportAccess(
     ctx,
     job.organizationId,
-    job.source.kind,
+    job.source,
     async (permissionName) => {
       const permitted: boolean = await ctx.runQuery(
         internal.utils.permissions.checkOrgPermission,
@@ -505,7 +519,11 @@ export const claim = internalMutation({
   },
 });
 export const sourcePage = internalQuery({
-  args: { jobId: v.id("exportJobs"), generation: v.number() },
+  args: {
+    jobId: v.id("exportJobs"),
+    generation: v.number(),
+    capturedAt: v.number(),
+  },
   returns: v.object({
     rows: v.array(v.any()),
     cursor: v.union(v.string(), v.null()),
@@ -525,7 +543,7 @@ export const sourcePage = internalQuery({
           profile: job.source.profile,
           criteria: job.source.criteria,
           asOf: job.source.criteria.asOf ?? job.asOf,
-          capturedAt: Date.now(),
+          capturedAt: args.capturedAt,
         },
         job.cursor,
       );
@@ -540,7 +558,7 @@ export const sourcePage = internalQuery({
       maximumRowsRead: 100,
       maximumBytesRead: 512 * 1024,
     };
-    const capturedAt = Date.now();
+    const capturedAt = args.capturedAt;
     if (job.source.mode === "selected") {
       const page = await ctx.db
         .query("exportSelections")

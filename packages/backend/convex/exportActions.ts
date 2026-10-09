@@ -29,7 +29,10 @@ export const process = internalAction({
           scanned: number;
         };
         if (job.source.kind === "objects" || job.source.kind === "register") {
-          page = await ctx.runQuery(internal.exports.sourcePage, args);
+          page = await ctx.runQuery(internal.exports.sourcePage, {
+            ...args,
+            capturedAt: Date.now(),
+          });
         } else {
           const source: {
             entries: Record<string, unknown>[];

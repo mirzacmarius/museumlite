@@ -1,10 +1,15 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { registerCriteria, registerProfile } from "./utils/exportContract";
+import {
+  exportColumnType,
+  registerCriteria,
+  registerProfile,
+} from "./utils/exportContract";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 import {
   REGISTER_COLUMNS,
+  REGISTER_PERMISSIONS,
   REGISTER_PROFILE_VERSION,
 } from "./utils/registerProfiles";
 import {
@@ -26,19 +31,7 @@ export const preview = query({
   },
   returns: v.object({
     profileVersion: v.number(),
-    columns: v.array(
-      v.object({
-        name: v.string(),
-        type: v.union(
-          v.literal("text"),
-          v.literal("number"),
-          v.literal("utcEpochMs"),
-          v.literal("json"),
-          v.literal("boolean"),
-          v.literal("id"),
-        ),
-      }),
-    ),
+    columns: v.array(v.object({ name: v.string(), type: exportColumnType })),
     rows: v.array(
       v.record(
         v.string(),
@@ -50,7 +43,8 @@ export const preview = query({
     hasMore: v.boolean(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    for (const permission of REGISTER_PERMISSIONS[args.profile])
+      await requirePermission(ctx, args.organizationId, permission);
     await requireFeatureAccess(ctx, args.organizationId, "reporting");
     await validateRegisterCriteria(
       ctx,

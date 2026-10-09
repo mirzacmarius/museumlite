@@ -39,6 +39,14 @@ export const auditExportFilters = v.object({
   objectId: v.optional(v.id("collections")),
   caseId: v.optional(v.string()),
 });
+export const exportColumnType = v.union(
+  v.literal("text"),
+  v.literal("number"),
+  v.literal("utcEpochMs"),
+  v.literal("json"),
+  v.literal("boolean"),
+  v.literal("id"),
+);
 export const registerProfile = v.union(
   v.literal("accession"),
   v.literal("disposal"),

@@ -9,6 +9,7 @@ import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useRef, useState } from "react";
 import { env } from "@/env.mjs";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useRegisterProfileLabels } from "@/hooks/use-register-profile-labels";
 import {
   ExportDownloadError,
   exportJobErrorKey,
@@ -44,13 +45,7 @@ export function ExportJobControl({
   label,
 }: ExportJobControlProps) {
   const t = useScopedI18n("exportJobs");
-  const tRegister = useScopedI18n("registerReports");
-  const registerLabels = {
-    accession: tRegister("profileAccession"),
-    disposal: tRegister("profileDisposal"),
-    custody: tRegister("profileCustody"),
-    condition: tRegister("profileCondition"),
-  };
+  const registerLabels = useRegisterProfileLabels();
   const create = useMutation(api.exports.create);
   const append = useMutation(api.exports.appendSelection);
   const start = useMutation(api.exports.start);

@@ -8060,7 +8060,7 @@ export default {
     statusRejected: "Avvist",
     asOf: "Per",
     asOfHint:
-      "La Per stå tomt for å bruke tidspunktet registeret opprettes. Dokumentasjon registrert etter dette tidspunktet utelates. Datoer er UTC-dager.",
+      "La Per stå tomt for å bruke tidspunktet registeret opprettes. Dokumentasjon registrert etter dette tidspunktet utelates. Datoer og per-tidspunktet er i UTC.",
     preview: "Forhåndsvis",
     previewing: "Laster forhåndsvisning",
     previewLabel: "Forhåndsvisning av register",
