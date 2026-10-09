@@ -139,6 +139,19 @@ async function createCases(
       photos: [],
       status: "draft",
     });
+    const mediaId = await ctx.db.insert("mediaFiles", {
+      collectionId: objectId,
+      organizationId,
+      storageId: await ctx.storage.store(new Blob(["crate photo"])),
+      fileName: `${prefix}-crate.png`,
+      fileType: "image",
+      fileSize: 11,
+      mimeType: "image/png",
+      isPrimary: false,
+      uploadedBy: userId,
+      uploadedAt: 5,
+      uploadStatus: "completed",
+    });
     const loanId = await ctx.db.insert("loans", {
       organizationId,
       loanNumber: `${prefix}-L-001`,
@@ -193,6 +206,7 @@ async function createCases(
       movementId,
       assessmentId,
       draftAssessmentId,
+      mediaId,
       loanId,
       accessionId,
       deaccessionId,
@@ -670,6 +684,11 @@ test("a reviewed task is approved only by its reviewer, with every step on the c
     note: "Correct now",
   });
   await reviewer.mutation(api.caseTasks.approve, { taskId });
+  expect(
+    await workErrorCodeOf(
+      registrar.mutation(api.caseTasks.approve, { taskId }),
+    ),
+  ).toBe("REVIEWER_ONLY");
   expect(
     (
       await reviewer.query(api.caseTasks.listReviewQueue, {
@@ -1149,4 +1168,57 @@ test("evidence links cite only accessible records of the same organization", asy
     { kind: "auditEntry", visible: false },
   ]);
   expect(viewerTask?.evidence[0]?.label).toBeUndefined();
+});
+
+test("files are cited only by staff who may read media", async () => {
+  const { t, registrar, organizationId, registrarId, cases } = await setup();
+  const taskId = await registrar.mutation(api.caseTasks.create, {
+    organizationId,
+    caseType: "loan",
+    caseId: cases.loanId,
+    title: "Photograph the crate",
+    ownerId: registrarId,
+  });
+  const reference = { kind: "media" as const, id: cases.mediaId };
+
+  const withoutMedia = await registrar.query(
+    api.caseTasks.listEvidenceCandidates,
+    { organizationId, caseType: "loan", caseId: cases.loanId },
+  );
+  expect(withoutMedia.some((row) => row.reference.kind === "media")).toBe(
+    false,
+  );
+  await expect(
+    registrar.mutation(api.caseTasks.linkEvidence, { taskId, reference }),
+  ).rejects.toThrow("Permission denied: media.read");
+
+  const mediaReaderId = await addMember(t, organizationId, "Mia Media", [
+    ...STAFF_PERMISSIONS,
+    "media.read",
+  ]);
+  const mediaReader = authedForUser(t, mediaReaderId);
+  const withMedia = await mediaReader.query(
+    api.caseTasks.listEvidenceCandidates,
+    { organizationId, caseType: "loan", caseId: cases.loanId },
+  );
+  expect(withMedia.map((row) => row.reference)).toContainEqual(reference);
+  await mediaReader.mutation(api.caseTasks.linkEvidence, { taskId, reference });
+
+  const seenByRegistrar = (
+    await loanTasks(registrar, organizationId, cases.loanId)
+  ).get("Photograph the crate");
+  expect(seenByRegistrar?.evidence).toMatchObject([
+    { kind: "media", visible: false },
+  ]);
+  const seenByReader = (
+    await loanTasks(mediaReader, organizationId, cases.loanId)
+  ).get("Photograph the crate");
+  expect(seenByReader?.evidence).toMatchObject([
+    {
+      kind: "media",
+      visible: true,
+      label: "HOME-crate.png",
+      objectId: cases.objectId,
+    },
+  ]);
 });

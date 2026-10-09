@@ -203,7 +203,13 @@ export function CreateTaskDialog({
               id="case-task-owner"
               label={t("fields.owner")}
               value={ownerId}
-              onChange={(value) => update({ ownerId: value })}
+              onChange={(value) =>
+                update(
+                  value === reviewerId
+                    ? { ownerId: value, reviewerId: NO_REVIEWER }
+                    : { ownerId: value },
+                )
+              }
               members={members}
             />
             <MemberSelect
@@ -338,7 +344,13 @@ export function AssignTaskDialog({
               id={`case-task-owner-${task._id}`}
               label={t("fields.owner")}
               value={ownerId}
-              onChange={(value) => update({ ownerId: value })}
+              onChange={(value) =>
+                update(
+                  value === reviewerId
+                    ? { ownerId: value, reviewerId: NO_REVIEWER }
+                    : { ownerId: value },
+                )
+              }
               members={members}
             />
             <MemberSelect

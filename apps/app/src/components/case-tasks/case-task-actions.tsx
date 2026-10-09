@@ -212,16 +212,14 @@ export function CaseTaskActions({
       >
         {t("actions.assign")}
       </Button>
-      {task.status !== "blocked" ? (
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => setEvidenceOpen(true)}
-        >
-          {t("actions.linkEvidence")}
-        </Button>
-      ) : null}
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={busy}
+        onClick={() => setEvidenceOpen(true)}
+      >
+        {t("actions.linkEvidence")}
+      </Button>
       <Button
         size="sm"
         variant="ghost"

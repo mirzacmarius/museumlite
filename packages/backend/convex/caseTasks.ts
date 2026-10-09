@@ -278,6 +278,7 @@ async function readCaseLabel(
 interface ViewerAccess {
   userId: Id<"users">;
   collectionsRead: boolean;
+  mediaRead: boolean;
   auditRead: boolean;
 }
 
@@ -285,12 +286,27 @@ async function viewerAccess(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
 ): Promise<ViewerAccess> {
-  const [userId, collectionsRead, auditRead] = await Promise.all([
+  const [userId, collectionsRead, mediaRead, auditRead] = await Promise.all([
     requireUserId(ctx),
     hasPermission(ctx, organizationId, "collections.read"),
+    hasPermission(ctx, organizationId, "media.read"),
     hasPermission(ctx, organizationId, AUDIT_READ_PERMISSION),
   ]);
-  return { userId, collectionsRead, auditRead };
+  return {
+    userId,
+    collectionsRead,
+    mediaRead: collectionsRead && mediaRead,
+    auditRead,
+  };
+}
+
+function canViewEvidence(
+  access: ViewerAccess,
+  kind: CaseTaskEvidenceReference["kind"],
+) {
+  if (kind === "auditEntry") return access.auditRead;
+  if (kind === "media") return access.mediaRead;
+  return access.collectionsRead;
 }
 
 async function presentTask(
@@ -346,10 +362,7 @@ async function presentTask(
     completionNote: task.completionNote,
     cancelReason: task.cancelReason,
     evidence: evidenceRows.map((row, index) => {
-      const visible =
-        row.reference.kind === "auditEntry"
-          ? access.auditRead
-          : access.collectionsRead;
+      const visible = canViewEvidence(access, row.reference.kind);
       return {
         _id: row._id,
         kind: row.reference.kind,
@@ -795,6 +808,7 @@ interface EvidenceCandidate {
 async function objectEvidenceCandidates(
   ctx: QueryCtx,
   object: Doc<"collections">,
+  includeMedia: boolean,
 ): Promise<EvidenceCandidate[]> {
   const { db } = ctx;
   const [assessments, movements, media] = await Promise.all([
@@ -810,11 +824,13 @@ async function objectEvidenceCandidates(
       .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
       .order("desc")
       .take(EVIDENCE_PER_OBJECT),
-    db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
-      .order("desc")
-      .take(EVIDENCE_PER_OBJECT),
+    includeMedia
+      ? db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
+          .order("desc")
+          .take(EVIDENCE_PER_OBJECT)
+      : [],
   ]);
   const locationIds = [
     ...new Set(
@@ -893,7 +909,7 @@ export const listEvidenceCandidates = query({
       const perObject = await Promise.all(
         objects.map((object) =>
           object && object.organizationId === args.organizationId
-            ? objectEvidenceCandidates(ctx, object)
+            ? objectEvidenceCandidates(ctx, object, access.mediaRead)
             : [],
         ),
       );
@@ -1208,9 +1224,9 @@ export const approve = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const { userId, task } = await loadTaskForWork(ctx, args.taskId);
+    requireReviewer(task, userId);
     if (task.status === "done") return null;
     requireStatus(task, ["in_review"]);
-    requireReviewer(task, userId);
     const note = optionalText(args.note, "Note");
     const now = Date.now();
     await applyTransition(
@@ -1448,7 +1464,10 @@ async function resolveEvidence(
       };
     }
     case "media": {
-      await requirePermission(ctx, organizationId, "collections.read");
+      await Promise.all([
+        requirePermission(ctx, organizationId, "collections.read"),
+        requirePermission(ctx, organizationId, "media.read"),
+      ]);
       const row = await ctx.db.get(reference.id);
       if (!row || row.organizationId !== organizationId) throw notFound();
       return {
