@@ -1,7 +1,6 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import {
   AlertCircle,
@@ -13,7 +12,6 @@ import {
   FileCheck,
   FileX,
   History,
-  Inbox,
   LayoutGrid,
   Microscope,
   Package,
@@ -25,6 +23,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
+import { MyWorkSections } from "./my-work-sections";
 
 interface PendingApproval {
   _id: string;
@@ -74,6 +73,7 @@ interface AssignmentsPageClientProps {
 
 export function AssignmentsPageClient({
   assignments,
+  organizationId,
 }: AssignmentsPageClientProps) {
   const locale = useCurrentLocale();
   const t = useI18n();
@@ -85,8 +85,8 @@ export function AssignmentsPageClient({
       <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <ClipboardList className="size-5 text-primary" />
-          <h1 className="text-lg font-semibold text-white">
-            {t("assignmentsPage.title")}
+          <h1 className="text-lg font-semibold text-foreground">
+            {t("caseTasks.myWork.title")}
           </h1>
         </div>
         <div className="flex items-center gap-4">
@@ -124,6 +124,11 @@ export function AssignmentsPageClient({
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-screen-xl space-y-8">
+          <p className="text-sm text-muted-foreground">
+            {t("caseTasks.myWork.description")}
+          </p>
+          <MyWorkSections organizationId={organizationId} />
+
           {pendingApprovals.length > 0 && (
             <section>
               <div className="mb-4 flex items-center justify-between">
@@ -234,27 +239,6 @@ export function AssignmentsPageClient({
               </div>
             </section>
           )}
-
-          {pendingApprovals.length === 0 &&
-            recentlyModified.length === 0 &&
-            myCatalogedItems.length === 0 && (
-              <div className="flex h-64 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border bg-muted/20">
-                <Inbox className="size-12 text-muted-foreground" />
-                <div className="text-center">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    {t("assignmentsPage.empty.title")}
-                  </h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {t("assignmentsPage.empty.description")}
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/objects/new">
-                    {t("assignmentsPage.empty.catalogNew")}
-                  </Link>
-                </Button>
-              </div>
-            )}
         </div>
       </div>
     </div>
@@ -294,6 +278,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
 
   const config = typeConfig[item.type];
   const Icon = config.icon;
+  const caseDetailHref = `${config.href}/${item._id}`;
 
   const urgencyColors = {
     low: "border-border hover:border-border",
@@ -302,7 +287,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
   };
 
   return (
-    <Link href={config.href}>
+    <Link href={caseDetailHref}>
       <div
         className={cn(
           "group relative rounded-xl border bg-card p-4 transition-all duration-300 hover:bg-muted/60 cursor-pointer shadow-lg hover:shadow-2xl",
@@ -337,7 +322,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
                 </span>
               )}
             </div>
-            <h3 className="text-sm font-medium text-white truncate group-hover:text-foreground">
+            <h3 className="text-sm font-medium text-foreground truncate">
               {item.title}
             </h3>
             {item.subtitle && (

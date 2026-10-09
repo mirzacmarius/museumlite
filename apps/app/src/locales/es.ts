@@ -4800,6 +4800,172 @@ export default {
       deleted: "eliminado",
     },
   },
+  caseTasks: {
+    panel: {
+      title: "Tareas",
+      description:
+        "Trabajo con responsable para este caso. Completar una tarea registra que el trabajo está hecho; no registra custodia, aprobación legal ni un cambio de estado de conservación.",
+      add: "Añadir tarea",
+      loading: "Cargando tareas…",
+      empty: "Este caso aún no tiene tareas.",
+      readOnly: "Puede ver estas tareas, pero no modificarlas.",
+    },
+    status: {
+      todo: "Pendiente",
+      in_progress: "En curso",
+      blocked: "Bloqueada",
+      in_review: "En revisión",
+      done: "Hecha",
+      cancelled: "Cancelada",
+    },
+    caseTypes: {
+      loan: "Préstamo",
+      accession: "Registro de ingreso",
+      deaccession: "Baja",
+      exhibition: "Exposición",
+      conservation: "Tratamiento de conservación",
+    },
+    fields: {
+      title: "Título",
+      description: "Descripción",
+      owner: "Responsable",
+      reviewer: "Revisor",
+      noReviewer: "Sin revisión",
+      chooseMember: "Elija un miembro",
+      dueDate: "Fecha límite",
+      dependencies: "Depende de",
+      evidence: "Evidencia",
+      reason: "Motivo",
+      note: "Nota",
+    },
+    labels: {
+      unknownUser: "Antiguo miembro",
+      noDueDate: "Sin fecha límite",
+      overdue: "vencida",
+      waitingOn: "A la espera de {count} tarea(s) sin terminar",
+      blockedReason: "Bloqueada: {reason}",
+      reviewNote: "Nota del revisor: {note}",
+      completionNote: "Nota de cierre: {note}",
+      cancelReason: "Cancelada: {reason}",
+      restrictedEvidence: "Evidencia a la que no tiene acceso",
+    },
+    evidenceKinds: {
+      conditionAssessment: "Evaluación del estado",
+      movement: "Movimiento",
+      media: "Archivo",
+      auditEntry: "Evento de auditoría",
+    },
+    actions: {
+      start: "Empezar",
+      unblock: "Desbloquear",
+      complete: "Completar",
+      submitForReview: "Enviar a revisión",
+      approve: "Aprobar",
+      returnForChanges: "Devolver para cambios",
+      block: "Bloquear",
+      assign: "Responsable y fecha",
+      linkEvidence: "Vincular evidencia",
+      cancel: "Cancelar tarea",
+    },
+    dialogs: {
+      close: "Cerrar",
+      noAttestation:
+        "Completar esta tarea no registra custodia, aprobación legal ni un cambio de estado de conservación. Regístrelos en sus propios flujos de trabajo.",
+      create: {
+        title: "Añadir tarea",
+        description:
+          "Asigne a la tarea un responsable que pueda trabajar en este caso. Añada un revisor si alguien debe aprobarla.",
+        submit: "Añadir tarea",
+      },
+      assign: {
+        title: "Responsable y fecha",
+        description:
+          "Los responsables y revisores deben ser miembros que puedan trabajar en este caso.",
+        submit: "Guardar",
+      },
+      block: {
+        title: "Bloquear tarea",
+        description: "Indique qué impide este trabajo.",
+        submit: "Bloquear tarea",
+      },
+      cancel: {
+        title: "Cancelar tarea",
+        description:
+          "Las tareas canceladas permanecen en el registro del caso.",
+        submit: "Cancelar tarea",
+      },
+      returnForChanges: {
+        title: "Devolver para cambios",
+        description: "Indique al responsable qué cambiar antes de aprobarla.",
+        submit: "Devolver tarea",
+      },
+      complete: {
+        title: "Completar tarea",
+        description: "Marque este trabajo como hecho.",
+        submit: "Marcar como hecha",
+      },
+      submitForReview: {
+        title: "Enviar a revisión",
+        description: "El revisor aprueba la tarea o se la devuelve.",
+        submit: "Enviar a revisión",
+      },
+      approve: {
+        title: "Aprobar tarea",
+        description: "Al aprobarla, este trabajo queda marcado como hecho.",
+        submit: "Aprobar",
+      },
+      evidence: {
+        title: "Vincular evidencia",
+        description:
+          "Cite un registro existente para esta tarea. Vincularlo nunca crea ni modifica el registro.",
+        choose: "Elija un registro",
+        empty: "Todavía no hay registros que citar para este caso.",
+        submit: "Vincular evidencia",
+      },
+    },
+    toasts: {
+      created: "Tarea añadida",
+      updated: "Tarea actualizada",
+      evidenceLinked: "Evidencia vinculada",
+    },
+    errors: {
+      fallback: "No se pudo guardar la tarea. Inténtelo de nuevo.",
+      caseNotFound: "Este caso no está disponible en su organización.",
+      taskNotFound: "Esta tarea no está disponible. Actualice la página.",
+      assigneeNotEligible:
+        "Elija un responsable que sea miembro y pueda trabajar en este caso.",
+      reviewerNotEligible:
+        "Elija un revisor, distinto del responsable, que pueda trabajar en este caso.",
+      dependencyInvalid:
+        "Las tareas solo pueden depender de tareas del mismo caso.",
+      dependenciesOpen:
+        "Termine primero las {count} tarea(s) de las que depende esta.",
+      statusChanged:
+        "Esta tarea cambió desde que la abrió. Actualice e inténtelo de nuevo.",
+      reviewRequired:
+        "Esta tarea necesita la aprobación de su revisor. Envíela a revisión.",
+      reviewerOnly: "Solo el revisor de la tarea puede hacer esto.",
+      evidenceNotFound:
+        "Ese registro no se puede citar. Elija un registro aceptado de esta organización.",
+      limitReached: "Este caso o esta tarea ha alcanzado su límite.",
+      invalidInput: "Revise los campos obligatorios e inténtelo de nuevo.",
+    },
+    myWork: {
+      title: "Mi trabajo",
+      description:
+        "Tareas de las que es responsable, revisiones pendientes y casos abiertos asignados a usted.",
+      loading: "Cargando…",
+      loadMore: "Cargar más",
+      myTasks: "Mis tareas",
+      myTasksEmpty: "No tiene tareas abiertas.",
+      reviews: "Pendientes de mi revisión",
+      reviewsEmpty: "No hay nada pendiente de su revisión.",
+      assignedCases: "Casos asignados a mí",
+      assignedCasesEmpty: "No tiene casos abiertos asignados.",
+      assignedTruncated: "Se muestran los primeros 50 casos asignados.",
+      since: "Desde",
+    },
+  },
   notificationsPage: {
     title: "Notificaciones",
     description:
@@ -7332,7 +7498,7 @@ export default {
         accounts: "Cuentas",
         activity: "Actividad",
         analytics: "Analítica",
-        assignments: "Asignaciones",
+        assignments: "Mi trabajo",
         conservation: "Conservación",
         exhibitions: "Exposiciones",
         insurance: "Seguros",
@@ -8528,6 +8694,7 @@ export default {
       patronManagement: "Gestión de usuarios",
       locked: "No disponible",
       overview: "Resumen",
+      myWork: "Mi trabajo",
       objectCatalog: "Catálogo de objetos",
       locationTracking: "Ubicación y seguimiento",
       scan: "Escanear",
@@ -8633,6 +8800,9 @@ export default {
         taskAssigned: "Tarea asignada",
         taskDueSoon: "La tarea vence pronto",
         taskBlocked: "Tarea bloqueada",
+        taskReadyForReview: "Tarea lista para revisión",
+        taskReturned: "Tarea devuelta",
+        taskApproved: "Tarea aprobada",
         newLoanRequiresApproval: "Nuevo préstamo pendiente de aprobación",
         conditionDisputeReported:
           "Se ha notificado una discrepancia sobre el estado de conservación",
@@ -8732,6 +8902,9 @@ export default {
         taskAssigned: "Se te ha asignado la tarea: {title}",
         taskDueSoon: "La tarea «{title}» vence en menos de 24 horas",
         taskBlocked: "La tarea «{title}» se ha bloqueado: {reason}",
+        taskReadyForReview: "La tarea «{title}» está lista para su revisión",
+        taskReturned: "La tarea «{title}» se ha devuelto para cambios",
+        taskApproved: "La tarea «{title}» se ha aprobado",
         transitExpectedTomorrow:
           "Se espera que el transporte {number} a {destination} llegue mañana.",
         transitDelayed:

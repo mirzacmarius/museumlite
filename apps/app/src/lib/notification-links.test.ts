@@ -17,6 +17,16 @@ describe("notificationEntityHref", () => {
     );
   });
 
+  test("opens case task notifications on the case they belong to", () => {
+    expect(notificationEntityHref("exhibition", "e1")).toBe("/exhibitions/e1");
+    expect(notificationEntityHref("conservationTreatment", "c1")).toBe(
+      "/conservation/c1",
+    );
+    expect(notificationEntityHref("installationTask", "t1")).toBe(
+      "/installations",
+    );
+  });
+
   test("has no link for unknown or incomplete notifications", () => {
     expect(notificationEntityHref("invoice", "i1")).toBeNull();
     expect(notificationEntityHref(undefined, "i1")).toBeNull();

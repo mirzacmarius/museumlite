@@ -6476,6 +6476,172 @@ export default {
       deleted: "șters",
     },
   },
+  caseTasks: {
+    panel: {
+      title: "Sarcini",
+      description:
+        "Lucrări cu responsabil pentru acest dosar. Finalizarea unei sarcini arată că lucrarea este făcută; nu înregistrează custodia, aprobarea legală sau o schimbare de stare.",
+      add: "Adaugă sarcină",
+      loading: "Se încarcă sarcinile…",
+      empty: "Acest dosar nu are încă sarcini.",
+      readOnly: "Puteți vedea aceste sarcini, dar nu le puteți modifica.",
+    },
+    status: {
+      todo: "De făcut",
+      in_progress: "În lucru",
+      blocked: "Blocată",
+      in_review: "În verificare",
+      done: "Finalizată",
+      cancelled: "Anulată",
+    },
+    caseTypes: {
+      loan: "Împrumut",
+      accession: "Înregistrare în inventar",
+      deaccession: "Scoatere din inventar",
+      exhibition: "Expoziție",
+      conservation: "Tratament de conservare",
+    },
+    fields: {
+      title: "Titlu",
+      description: "Descriere",
+      owner: "Responsabil",
+      reviewer: "Verificator",
+      noReviewer: "Fără verificare",
+      chooseMember: "Alegeți un membru",
+      dueDate: "Termen",
+      dependencies: "Depinde de",
+      evidence: "Dovezi",
+      reason: "Motiv",
+      note: "Notă",
+    },
+    labels: {
+      unknownUser: "Fost membru",
+      noDueDate: "Fără termen",
+      overdue: "depășit",
+      waitingOn: "Așteaptă {count} sarcină(i) nefinalizată(e)",
+      blockedReason: "Blocată: {reason}",
+      reviewNote: "Nota verificatorului: {note}",
+      completionNote: "Notă de finalizare: {note}",
+      cancelReason: "Anulată: {reason}",
+      restrictedEvidence: "Dovadă la care nu aveți acces",
+    },
+    evidenceKinds: {
+      conditionAssessment: "Evaluarea stării",
+      movement: "Mutare",
+      media: "Fișier",
+      auditEntry: "Eveniment de audit",
+    },
+    actions: {
+      start: "Începe",
+      unblock: "Deblochează",
+      complete: "Finalizează",
+      submitForReview: "Trimite la verificare",
+      approve: "Aprobă",
+      returnForChanges: "Returnează pentru modificări",
+      block: "Blochează",
+      assign: "Responsabil și termen",
+      linkEvidence: "Leagă o dovadă",
+      cancel: "Anulează sarcina",
+    },
+    dialogs: {
+      close: "Închide",
+      noAttestation:
+        "Finalizarea acestei sarcini nu înregistrează custodia, aprobarea legală sau o schimbare de stare. Înregistrați-le în fluxurile lor dedicate.",
+      create: {
+        title: "Adaugă sarcină",
+        description:
+          "Atribuiți sarcina unui responsabil care poate lucra la acest dosar. Adăugați un verificator dacă cineva trebuie să o aprobe.",
+        submit: "Adaugă sarcina",
+      },
+      assign: {
+        title: "Responsabil și termen",
+        description:
+          "Responsabilii și verificatorii trebuie să fie membri care pot lucra la acest dosar.",
+        submit: "Salvează",
+      },
+      block: {
+        title: "Blochează sarcina",
+        description: "Spuneți ce împiedică această lucrare.",
+        submit: "Blochează sarcina",
+      },
+      cancel: {
+        title: "Anulează sarcina",
+        description: "Sarcinile anulate rămân în dosar.",
+        submit: "Anulează sarcina",
+      },
+      returnForChanges: {
+        title: "Returnează pentru modificări",
+        description:
+          "Spuneți responsabilului ce trebuie schimbat înainte de aprobare.",
+        submit: "Returnează sarcina",
+      },
+      complete: {
+        title: "Finalizează sarcina",
+        description: "Marcați această lucrare ca făcută.",
+        submit: "Marchează ca finalizată",
+      },
+      submitForReview: {
+        title: "Trimite la verificare",
+        description: "Verificatorul aprobă sarcina sau v-o returnează.",
+        submit: "Trimite la verificare",
+      },
+      approve: {
+        title: "Aprobă sarcina",
+        description: "Aprobarea marchează această lucrare ca făcută.",
+        submit: "Aprobă",
+      },
+      evidence: {
+        title: "Leagă o dovadă",
+        description:
+          "Citați o înregistrare existentă pentru această sarcină. Legătura nu creează și nu modifică niciodată înregistrarea.",
+        choose: "Alegeți o înregistrare",
+        empty: "Nu există încă înregistrări de citat pentru acest dosar.",
+        submit: "Leagă dovada",
+      },
+    },
+    toasts: {
+      created: "Sarcină adăugată",
+      updated: "Sarcină actualizată",
+      evidenceLinked: "Dovadă legată",
+    },
+    errors: {
+      fallback: "Sarcina nu a putut fi salvată. Încercați din nou.",
+      caseNotFound: "Acest dosar nu este disponibil în organizația dvs.",
+      taskNotFound: "Această sarcină nu este disponibilă. Reîncărcați pagina.",
+      assigneeNotEligible:
+        "Alegeți un responsabil care este membru și poate lucra la acest dosar.",
+      reviewerNotEligible:
+        "Alegeți un verificator, altul decât responsabilul, care poate lucra la acest dosar.",
+      dependencyInvalid:
+        "Sarcinile pot depinde doar de sarcini din același dosar.",
+      dependenciesOpen:
+        "Finalizați mai întâi cele {count} sarcină(i) de care depinde aceasta.",
+      statusChanged:
+        "Sarcina s-a schimbat de când ați deschis-o. Reîncărcați și încercați din nou.",
+      reviewRequired:
+        "Această sarcină trebuie aprobată de verificator. Trimiteți-o la verificare.",
+      reviewerOnly: "Doar verificatorul sarcinii poate face asta.",
+      evidenceNotFound:
+        "Înregistrarea nu poate fi citată. Alegeți o înregistrare acceptată din această organizație.",
+      limitReached: "Dosarul sau sarcina a atins limita.",
+      invalidInput: "Verificați câmpurile obligatorii și încercați din nou.",
+    },
+    myWork: {
+      title: "Munca mea",
+      description:
+        "Sarcinile de care răspundeți, verificările care vă așteaptă și dosarele deschise atribuite dvs.",
+      loading: "Se încarcă…",
+      loadMore: "Încarcă mai multe",
+      myTasks: "Sarcinile mele",
+      myTasksEmpty: "Nu aveți sarcini deschise.",
+      reviews: "Așteaptă verificarea mea",
+      reviewsEmpty: "Nimic nu așteaptă verificarea dvs.",
+      assignedCases: "Dosare atribuite mie",
+      assignedCasesEmpty: "Nu aveți dosare deschise atribuite.",
+      assignedTruncated: "Se afișează primele 50 de dosare atribuite.",
+      since: "Din",
+    },
+  },
   notificationsPage: {
     title: "Notificări",
     description: "Urmărește aprobările din fluxurile de lucru și activitatea",
@@ -8047,7 +8213,7 @@ export default {
         accounts: "Conturi",
         activity: "Activitate",
         analytics: "Analize",
-        assignments: "Atribuiri",
+        assignments: "Munca mea",
         conservation: "Conservare",
         exhibitions: "Expoziții",
         insurance: "Asigurări",
@@ -9229,6 +9395,7 @@ export default {
       patronManagement: "Gestionarea cititorilor",
       locked: "Indisponibil",
       overview: "Prezentare generală",
+      myWork: "Munca mea",
       objectCatalog: "Catalogul obiectelor",
       locationTracking: "Locații și urmărire",
       scan: "Scanează",
@@ -9334,6 +9501,9 @@ export default {
         taskAssigned: "Sarcină atribuită",
         taskDueSoon: "Sarcina ajunge curând la termen",
         taskBlocked: "Sarcină blocată",
+        taskReadyForReview: "Sarcină pregătită pentru verificare",
+        taskReturned: "Sarcină returnată",
+        taskApproved: "Sarcină aprobată",
         newLoanRequiresApproval: "Un nou împrumut necesită aprobare",
         conditionDisputeReported:
           "A fost raportată o dispută privind starea de conservare",
@@ -9434,6 +9604,9 @@ export default {
         taskDueSoon:
           "Sarcina „{title}” ajunge la termen în mai puțin de 24 de ore",
         taskBlocked: "Sarcina „{title}” a fost blocată: {reason}",
+        taskReadyForReview: "Sarcina „{title}” este pregătită pentru verificarea dvs.",
+        taskReturned: "Sarcina „{title}” a fost returnată pentru modificări",
+        taskApproved: "Sarcina „{title}” a fost aprobată",
         transitExpectedTomorrow:
           "Tranzitul {number} către {destination} este așteptat mâine.",
         transitDelayed:

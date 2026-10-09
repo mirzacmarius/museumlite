@@ -1,5 +1,6 @@
 "use client";
 
+import { CaseTaskPanel } from "@/components/case-tasks/case-task-panel";
 import { TargetPartyLinks } from "@/components/target-party-links";
 import { DeaccessionDetailHeroSection } from "./deaccession-detail-hero-section";
 import { DeaccessionDetailReviewPanel } from "./deaccession-detail-review-panel";
@@ -29,6 +30,11 @@ export function DeaccessionDetailMainContent(
               target={{ type: "deaccession", id: props.deaccession._id }}
               organizationId={props.deaccession.organizationId}
               writePermission="collections.update"
+            />
+            <CaseTaskPanel
+              organizationId={props.deaccession.organizationId}
+              caseType="deaccession"
+              caseId={props.deaccession._id}
             />
             <DeaccessionDetailWorkflowHistory {...props} />
           </div>
