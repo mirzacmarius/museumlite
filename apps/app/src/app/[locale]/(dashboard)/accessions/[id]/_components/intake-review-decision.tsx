@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import { MAX_REVIEW_REASON_LENGTH } from "@v1/backend/convex/utils/accessionReview";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -127,11 +128,15 @@ function RestoreIntakeDialog({
   const handleConfirm = async () => {
     setIsSaving(true);
     setError(null);
+    // Close before saving: on success restore rights end and this dialog
+    // unmounts. A failure reopens it with the reason intact.
+    setOpen(false);
     try {
       await restoreIntake({ accessionId, reason });
-      handleOpenChange(false);
+      setReason("");
     } catch (err) {
       setError(reviewMessage(err));
+      setOpen(true);
     } finally {
       setIsSaving(false);
     }
@@ -140,7 +145,7 @@ function RestoreIntakeDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" disabled={isSaving}>
           <RotateCcw className="mr-2 size-4" />
           {t("action")}
         </Button>
@@ -157,6 +162,7 @@ function RestoreIntakeDialog({
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
+            maxLength={MAX_REVIEW_REASON_LENGTH}
             required
           />
           <p className="text-xs text-muted-foreground">{t("reasonHint")}</p>

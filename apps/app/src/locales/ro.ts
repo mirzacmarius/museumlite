@@ -1932,6 +1932,9 @@ export default {
       notWithdrawn:
         "Această cerere nu mai este retrasă. Reîmprospătați pentru a vedea starea curentă.",
       reasonRequired: "Introduceți un motiv.",
+      notADraft:
+        "Această cerere a fost deja trimisă. Reîmprospătați pentru a vedea starea curentă.",
+      reasonTooLong: "Motivul trebuie să aibă mai puțin de 2000 de caractere.",
       notPermitted:
         "Nu puteți lua această decizie pentru pasul de evaluare curent.",
       fallback:

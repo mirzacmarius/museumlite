@@ -4553,6 +4553,9 @@ export default {
       notWithdrawn:
         "This request is no longer withdrawn. Refresh to see its current state.",
       reasonRequired: "Enter a reason.",
+      notADraft:
+        "This request has already been submitted. Refresh to see its current state.",
+      reasonTooLong: "Keep the reason under 2,000 characters.",
       notPermitted: "You can't make this decision for the current review step.",
       fallback: "The decision could not be saved. Refresh and try again.",
     },

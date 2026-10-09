@@ -152,6 +152,7 @@ const NOTIFICATION_ICONS: Record<string, LucideIcon> = {
   move_request_created: ArrowRightLeft,
   move_request_approved: ArrowRightLeft,
   workflow_rejected: ArrowRightLeft,
+  workflow_restored: FileText,
   location: MapPin,
 };
 

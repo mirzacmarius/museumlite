@@ -31,10 +31,39 @@ export const accessionReviewDecisionValidator = v.object({
  */
 export const ACCESSION_REVIEW_CODES = [
   "NOT_IN_REVIEW",
+  "NOT_A_DRAFT",
   "NOT_WITHDRAWN",
   "REASON_REQUIRED",
+  "REASON_TOO_LONG",
   "NOT_PERMITTED",
 ] as const;
+
+export const MAX_REVIEW_REASON_LENGTH = 2000;
+
+interface AccessionReviewState {
+  status: typeof accessionStatusValidator.type;
+  workflowStep?: number;
+}
+
+/** Submitted and awaiting a reviewer; Draft (step 0) is not under review. */
+export function isAwaitingReview(accession: AccessionReviewState) {
+  return accession.status === "pending" && accession.workflowStep !== 0;
+}
+
+/** Trimmed reviewer reason; refuses blank and overlong reasons. */
+export function requireReviewReason(reason: string) {
+  const trimmed = reason.trim();
+  if (!trimmed) {
+    throw accessionReviewError("REASON_REQUIRED", "A reason is required");
+  }
+  if (trimmed.length > MAX_REVIEW_REASON_LENGTH) {
+    throw accessionReviewError(
+      "REASON_TOO_LONG",
+      `A reason must be at most ${MAX_REVIEW_REASON_LENGTH} characters`,
+    );
+  }
+  return trimmed;
+}
 
 export type AccessionReviewCode = (typeof ACCESSION_REVIEW_CODES)[number];
 

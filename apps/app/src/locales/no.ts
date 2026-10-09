@@ -4704,6 +4704,9 @@ export default {
       notWithdrawn:
         "Denne forespørselen er ikke lenger trukket tilbake. Oppdater for å se gjeldende status.",
       reasonRequired: "Skriv inn en begrunnelse.",
+      notADraft:
+        "Denne forespørselen er allerede sendt inn. Oppdater for å se gjeldende status.",
+      reasonTooLong: "Begrunnelsen må være kortere enn 2000 tegn.",
       notPermitted:
         "Du kan ikke ta denne avgjørelsen for gjeldende gjennomgangstrinn.",
       fallback: "Avgjørelsen kunne ikke lagres. Oppdater og prøv igjen.",

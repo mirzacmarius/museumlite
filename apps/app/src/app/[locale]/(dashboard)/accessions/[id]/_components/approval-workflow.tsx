@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { accessionReviewErrorFromError } from "@v1/backend/convex/utils/accessionReview";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
@@ -9,6 +10,7 @@ import { useMutation, useQuery } from "convex/react";
 import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useAccessionReviewMessage } from "@/hooks/use-accession-review-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { RejectIntakeDialog } from "./reject-intake-dialog";
 
@@ -96,6 +98,7 @@ export function ApprovalWorkflow({
   const tRoot = useI18n();
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("accessions");
+  const reviewMessage = useAccessionReviewMessage();
   const [comment, setComment] = useState("");
   const [exceptionReason, setExceptionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,7 +147,12 @@ export function ApprovalWorkflow({
       setComment("");
       setExceptionReason("");
     } catch (err) {
-      setError(getApprovalErrorMessage(err, t));
+      const approvalError = getApprovalErrorMessage(err, t);
+      setError(
+        accessionReviewErrorFromError(err)
+          ? { ...approvalError, description: reviewMessage(err) }
+          : approvalError,
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -233,6 +241,8 @@ export function ApprovalWorkflow({
           <RejectIntakeDialog
             accessionId={accessionId as Id<"accessions">}
             disabled={isSubmitting}
+            initialReason={comment}
+            onDecided={() => setComment("")}
           />
         </div>
       </div>

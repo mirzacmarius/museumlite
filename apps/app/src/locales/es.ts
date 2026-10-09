@@ -4772,6 +4772,9 @@ export default {
       notWithdrawn:
         "Esta solicitud ya no está retirada. Actualice para ver su estado actual.",
       reasonRequired: "Indique un motivo.",
+      notADraft:
+        "Esta solicitud ya se envió. Actualice para ver su estado actual.",
+      reasonTooLong: "El motivo debe tener menos de 2000 caracteres.",
       notPermitted:
         "No puede tomar esta decisión en el paso de revisión actual.",
       fallback:

@@ -17,6 +17,8 @@ import {
   accessionReviewDecisionValidator,
   accessionReviewError,
   accessionStatusValidator,
+  isAwaitingReview,
+  requireReviewReason,
 } from "./utils/accessionReview";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { batchLookup } from "./utils/batchLookup";
@@ -1004,7 +1006,7 @@ export const get = query({
     await requirePermission(ctx, accession.organizationId, "collections.read");
 
     let canCurrentUserApprove = false;
-    if (accession.status === "pending" && accession.workflowStep !== 0) {
+    if (isAwaitingReview(accession)) {
       const workflowConfig = await getWorkflowConfig(
         ctx,
         accession.organizationId,
@@ -1037,11 +1039,13 @@ export const get = query({
 
     const canCurrentUserRestore =
       accession.status === "withdrawn" &&
-      (await hasPermission(
-        ctx,
-        accession.organizationId,
-        "collections.approve_accession",
-      ));
+      (
+        await resolveIntakeReviewer(
+          ctx,
+          accession.organizationId,
+          accession.reviewDecision?.fromStep,
+        )
+      ).allowed;
     const reviewDecision = accession.reviewDecision;
     const decidedBy = reviewDecision
       ? await ctx.db.get(reviewDecision.decidedBy)
@@ -1261,8 +1265,11 @@ export const submitForApproval = mutation({
       throw new Error("Accession not found");
     }
 
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
+    if (accession.status !== "pending" || (accession.workflowStep ?? 0) > 0) {
+      throw accessionReviewError(
+        "NOT_A_DRAFT",
+        "Only a draft accession can be submitted for approval",
+      );
     }
 
     await requirePermission(
@@ -1287,10 +1294,51 @@ export const submitForApproval = mutation({
       throw new Error("Workflow has no approval steps configured");
     }
 
-    // Reset workflow step if needed
-    await ctx.db.patch(args.accessionId, {
-      workflowStep: firstApprovalStep ?? 1,
-    });
+    const workflowStep = firstApprovalStep ?? 1;
+    await ctx.db.patch(args.accessionId, { workflowStep });
+    const reviewers = await getUsersToNotifyForWorkflowStep(
+      ctx,
+      accession.organizationId,
+      "accession",
+      workflowStep,
+    );
+    await Promise.all([
+      ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+        organizationId: accession.organizationId,
+        workflowType: "accession",
+        entityId: args.accessionId,
+        fromStep: accession.workflowStep ?? 0,
+        toStep: workflowStep,
+        action: "submitted",
+        performedBy: userId,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "submitted_object_accession",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: {
+          accessionNumber: accession.accessionNumber,
+          saveMode: "submit",
+          workflowStep,
+          status: accession.status,
+        },
+      }),
+      ...Array.from(reviewers)
+        .filter((reviewerId) => reviewerId !== userId)
+        .map((reviewerId) =>
+          ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: accession.organizationId,
+            userId: reviewerId,
+            type: "workflow_pending",
+            title: "Object Request Requires Approval",
+            message: `Object request ${accession.accessionNumber} is pending your approval.`,
+            relatedEntityType: "accession",
+            relatedEntityId: args.accessionId,
+          }),
+        ),
+    ]);
 
     return null;
   },
@@ -1316,8 +1364,11 @@ export const approve = mutation({
       throw new Error("Accession not found");
     }
 
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
+    if (!isAwaitingReview(accession)) {
+      throw accessionReviewError(
+        "NOT_IN_REVIEW",
+        "Accession is not awaiting review",
+      );
     }
 
     await requirePermission(
@@ -1578,18 +1629,49 @@ export const approve = mutation({
   },
 });
 
+/**
+ * Whether the caller may decide on an intake at a workflow step: the approver
+ * permission plus that step's role (organization administrators override step
+ * roles). Returns the configured step the decision applies to.
+ */
+async function resolveIntakeReviewer(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  workflowStep: number | undefined,
+) {
+  const [hasApprovePermission, workflowConfig] = await Promise.all([
+    hasPermission(ctx, organizationId, "collections.approve_accession"),
+    getWorkflowConfig(ctx, organizationId, "accession"),
+  ]);
+  const step = resolveWorkflowStepState(
+    workflowConfig?.steps,
+    workflowStep,
+  ).currentStep;
+  const allowed =
+    hasApprovePermission &&
+    (!workflowConfig ||
+      step === undefined ||
+      (await canApproveAtStep(ctx, organizationId, "accession", step)));
+  return { allowed, step };
+}
+
 async function requireIntakeReviewer(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
+  workflowStep: number | undefined,
 ) {
-  if (
-    !(await hasPermission(ctx, organizationId, "collections.approve_accession"))
-  ) {
+  const reviewer = await resolveIntakeReviewer(
+    ctx,
+    organizationId,
+    workflowStep,
+  );
+  if (!reviewer.allowed) {
     throw accessionReviewError(
       "NOT_PERMITTED",
-      "Permission denied: collections.approve_accession",
+      "Permission denied: cannot review this accession at its step",
     );
   }
+  return reviewer.step;
 }
 
 type IntakeReviewDecision = typeof accessionReviewDecisionValidator.type;
@@ -1598,6 +1680,7 @@ const intakeReviewDecisionRecords = {
   returned_to_draft: {
     historyLabel: "Returned to draft",
     workflowAction: "returned",
+    notificationType: "workflow_rejected",
     notificationTitle: "Object Request Returned to Draft",
     notificationMessage: (accessionNumber: string) =>
       `Object request ${accessionNumber} was returned to draft for changes.`,
@@ -1605,6 +1688,7 @@ const intakeReviewDecisionRecords = {
   withdrawn: {
     historyLabel: "Withdrawn",
     workflowAction: "cancelled",
+    notificationType: "workflow_rejected",
     notificationTitle: "Object Request Withdrawn",
     notificationMessage: (accessionNumber: string) =>
       `Object request ${accessionNumber} was withdrawn from review. The record is kept and can be restored.`,
@@ -1612,6 +1696,7 @@ const intakeReviewDecisionRecords = {
   restored: {
     historyLabel: "Restored to draft",
     workflowAction: "returned",
+    notificationType: "workflow_restored",
     notificationTitle: "Object Request Restored",
     notificationMessage: (accessionNumber: string) =>
       `Object request ${accessionNumber} was restored to draft.`,
@@ -1648,6 +1733,9 @@ async function recordIntakeReviewDecision(
     status: withdrawn ? "withdrawn" : "pending",
     workflowStep: withdrawn ? undefined : 0,
     reviewDecision: { decision, reason, decidedBy, decidedAt, fromStep },
+    // An exception authorizes approval within one review round, which ends
+    // here; the audit log keeps the authorization.
+    sourceVerificationException: undefined,
     ...(await appendCaseHistory(ctx, accession, "accession", history)),
   });
 
@@ -1685,7 +1773,7 @@ async function recordIntakeReviewDecision(
       ? ctx.runMutation(internal.audit.createNotificationInternal, {
           organizationId: accession.organizationId,
           userId: submitterId,
-          type: "workflow_rejected",
+          type: record.notificationType,
           title: record.notificationTitle,
           message: `${record.notificationMessage(accession.accessionNumber)} Reason: ${reason}`,
           relatedEntityType: "accession",
@@ -1720,57 +1808,35 @@ export const reject = mutation({
       throw new Error("Accession not found");
     }
 
-    await requireIntakeReviewer(ctx, accession.organizationId);
-    // Drafts (step 0) are not under review; same rule as canCurrentUserApprove.
-    if (accession.status !== "pending" || accession.workflowStep === 0) {
+    if (!isAwaitingReview(accession)) {
       throw accessionReviewError(
         "NOT_IN_REVIEW",
         "Accession is not awaiting review",
       );
     }
-    const reason = args.reason.trim();
-    if (!reason) {
-      throw accessionReviewError("REASON_REQUIRED", "A reason is required");
-    }
-    const workflowConfig = await getWorkflowConfig(
+    const currentStep = await requireIntakeReviewer(
       ctx,
       accession.organizationId,
-      "accession",
-    );
-    const currentStep = resolveWorkflowStepState(
-      workflowConfig?.steps,
       accession.workflowStep,
-    ).currentStep;
-    if (
-      workflowConfig &&
-      currentStep !== undefined &&
-      !(await canApproveAtStep(
-        ctx,
-        accession.organizationId,
-        "accession",
-        currentStep,
-      ))
-    ) {
-      throw accessionReviewError(
-        "NOT_PERMITTED",
-        "Permission denied: cannot review at this step",
-      );
-    }
+    );
+    const reason = requireReviewReason(args.reason);
 
     const fromStep = accession.workflowStep ?? currentStep ?? 0;
-    await recordIntakeReviewDecision(ctx, accession, {
-      decision:
-        args.decision === "withdraw" ? "withdrawn" : "returned_to_draft",
-      reason,
-      decidedBy: userId,
-      fromStep,
-    });
-    // Partial approvals at this step must not count after resubmission.
-    await ctx.runMutation(internal.workflows.clearStepApprovals, {
-      workflowType: "accession",
-      entityId: args.accessionId,
-      stepNumber: fromStep,
-    });
+    await Promise.all([
+      recordIntakeReviewDecision(ctx, accession, {
+        decision:
+          args.decision === "withdraw" ? "withdrawn" : "returned_to_draft",
+        reason,
+        decidedBy: userId,
+        fromStep,
+      }),
+      // Partial approvals at this step must not count after resubmission.
+      ctx.runMutation(internal.workflows.clearStepApprovals, {
+        workflowType: "accession",
+        entityId: args.accessionId,
+        stepNumber: fromStep,
+      }),
+    ]);
 
     return null;
   },
@@ -1795,23 +1861,25 @@ export const restoreWithdrawn = mutation({
       throw new Error("Accession not found");
     }
 
-    await requireIntakeReviewer(ctx, accession.organizationId);
     if (accession.status !== "withdrawn") {
       throw accessionReviewError(
         "NOT_WITHDRAWN",
         "Only a withdrawn accession can be restored",
       );
     }
-    const reason = args.reason.trim();
-    if (!reason) {
-      throw accessionReviewError("REASON_REQUIRED", "A reason is required");
-    }
+    const withdrawnFromStep = accession.reviewDecision?.fromStep;
+    await requireIntakeReviewer(
+      ctx,
+      accession.organizationId,
+      withdrawnFromStep,
+    );
+    const reason = requireReviewReason(args.reason);
 
     await recordIntakeReviewDecision(ctx, accession, {
       decision: "restored",
       reason,
       decidedBy: userId,
-      fromStep: accession.reviewDecision?.fromStep ?? 0,
+      fromStep: withdrawnFromStep ?? 0,
     });
 
     return null;

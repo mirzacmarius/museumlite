@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { MAX_REVIEW_REASON_LENGTH } from "@v1/backend/convex/utils/accessionReview";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -26,12 +27,17 @@ type RejectDecision = "returnToDraft" | "withdraw";
 interface RejectIntakeDialogProps {
   accessionId: Id<"accessions">;
   disabled?: boolean;
+  /** Reviewer comment already typed next to the button; prefills the reason. */
+  initialReason?: string;
+  onDecided?: () => void;
 }
 
 /** Reviewer rejection: send the intake back to Draft, or withdraw it. */
 export function RejectIntakeDialog({
   accessionId,
   disabled = false,
+  initialReason,
+  onDecided,
 }: RejectIntakeDialogProps) {
   const t = useScopedI18n("accessionReview.reject");
   const tAccessions = useScopedI18n("accessions");
@@ -44,23 +50,34 @@ export function RejectIntakeDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const reset = () => {
+    setDecision("returnToDraft");
+    setReason("");
+    setError(null);
+  };
+
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    if (!nextOpen) {
-      setDecision("returnToDraft");
-      setReason("");
-      setError(null);
+    if (nextOpen) {
+      setReason((current) => current || initialReason?.trim() || "");
+    } else {
+      reset();
     }
   };
 
   const handleConfirm = async () => {
     setIsSaving(true);
     setError(null);
+    // Close before saving: on success the intake leaves review and this
+    // panel unmounts. A failure reopens the dialog with the reason intact.
+    setOpen(false);
     try {
       await rejectIntake({ accessionId, decision, reason });
-      handleOpenChange(false);
+      reset();
+      onDecided?.();
     } catch (err) {
       setError(reviewMessage(err));
+      setOpen(true);
     } finally {
       setIsSaving(false);
     }
@@ -83,7 +100,7 @@ export function RejectIntakeDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
-          disabled={disabled}
+          disabled={disabled || isSaving}
           variant="destructive"
           className="transition-transform duration-200 active:translate-y-px"
         >
@@ -135,6 +152,7 @@ export function RejectIntakeDialog({
             onChange={(event) => setReason(event.target.value)}
             placeholder={t("reasonPlaceholder")}
             rows={3}
+            maxLength={MAX_REVIEW_REASON_LENGTH}
             required
           />
           <p className="text-xs text-muted-foreground">{t("reasonHint")}</p>

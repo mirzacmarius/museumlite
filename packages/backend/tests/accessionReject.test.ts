@@ -72,7 +72,13 @@ async function reviewErrorCode(call: Promise<unknown>) {
  * A cataloguer submits a new object with an image, a storage location and a
  * collection group for registrar review, as the intake form does.
  */
-async function submittedIntake() {
+async function submittedIntake({
+  steps = 1,
+  requireSourceVerification = false,
+}: {
+  steps?: number;
+  requireSourceVerification?: boolean;
+} = {}) {
   const t = createConvexTest();
   const registrarSetup = await createOrgUserWithPermissions(
     t,
@@ -90,14 +96,13 @@ async function submittedIntake() {
     await ctx.db.insert("workflowConfigs", {
       organizationId,
       workflowType: "accession",
-      steps: [
-        {
-          stepNumber: 1,
-          roleId: registrarSetup.roleId,
-          name: "Registrar Review",
-        },
-      ],
+      steps: Array.from({ length: steps }, (_, index) => ({
+        stepNumber: index + 1,
+        roleId: registrarSetup.roleId,
+        name: index === 0 ? "Registrar Review" : `Review ${index + 1}`,
+      })),
       canInitiateRoles: [registrarSetup.roleId, cataloguerSetup.roleId],
+      requireSourceVerification,
     });
     const locationId = await ctx.db.insert("locations", {
       organizationId,
@@ -535,4 +540,121 @@ test("legacy rejected accessions keep their status and count, and cannot be reje
       }),
     ),
   ).toBe("NOT_WITHDRAWN");
+});
+
+test("an intake sent back to draft cannot be approved until it is resubmitted", async () => {
+  const { registrar, accessionId } = await submittedIntake();
+  await registrar.mutation(api.accessions.reject, {
+    accessionId,
+    decision: "returnToDraft",
+    reason: "Add the frame dimensions",
+  });
+
+  expect(
+    await reviewErrorCode(
+      registrar.mutation(api.accessions.approve, { accessionId }),
+    ),
+  ).toBe("NOT_IN_REVIEW");
+  expect(
+    await registrar.query(api.accessions.get, { accessionId }),
+  ).toMatchObject({ status: "pending", workflowStep: 0 });
+});
+
+test("only a reviewer for the step it was withdrawn from can restore an intake", async () => {
+  const { t, organizationId, registrar, accessionId } = await submittedIntake();
+  await registrar.mutation(api.accessions.reject, {
+    accessionId,
+    decision: "withdraw",
+    reason: "Donor withdrew the offer",
+  });
+  const curator = authedForUser(
+    t,
+    (
+      await addMember(t, organizationId, "Curator", [
+        "collections.read",
+        "collections.approve_accession",
+      ])
+    ).userId,
+  );
+
+  expect(
+    (await curator.query(api.accessions.get, { accessionId }))
+      ?.canCurrentUserRestore,
+  ).toBe(false);
+  expect(
+    await reviewErrorCode(
+      curator.mutation(api.accessions.restoreWithdrawn, {
+        accessionId,
+        reason: "Donor changed their mind",
+      }),
+    ),
+  ).toBe("NOT_PERMITTED");
+});
+
+test("resubmitting a returned draft from its detail page notifies reviewers and is audited", async () => {
+  const { registrar, cataloguer, organizationId, accessionId } =
+    await submittedIntake();
+  await registrar.mutation(api.accessions.reject, {
+    accessionId,
+    decision: "returnToDraft",
+    reason: "Add the frame dimensions",
+  });
+
+  await cataloguer.mutation(api.accessions.submitForApproval, { accessionId });
+
+  expect(
+    await registrar.query(api.accessions.get, { accessionId }),
+  ).toMatchObject({ workflowStep: 1, canCurrentUserApprove: true });
+  const [latest] = await registrar.query(api.auditLog.getByEntity, {
+    organizationId,
+    entityType: "accession",
+    entityId: accessionId,
+  });
+  expect(latest?.action).toBe("submitted_object_accession");
+  const { notifications } = await registrar.query(api.audit.listNotifications, {
+    organizationId,
+  });
+  expect(notifications[0]).toMatchObject({
+    type: "workflow_pending",
+    relatedEntityId: accessionId,
+  });
+  expect(
+    await reviewErrorCode(
+      cataloguer.mutation(api.accessions.submitForApproval, { accessionId }),
+    ),
+  ).toBe("NOT_A_DRAFT");
+});
+
+test("a source verification exception from an earlier review round does not survive a return to draft", async () => {
+  const { registrar, accessionId } = await submittedIntake({
+    steps: 2,
+    requireSourceVerification: true,
+  });
+  await registrar.mutation(api.accessions.approve, {
+    accessionId,
+    sourceVerificationExceptionReason: "Donor letter pending",
+  });
+  await registrar.mutation(api.accessions.reject, {
+    accessionId,
+    decision: "returnToDraft",
+    reason: "Wrong donor recorded",
+  });
+
+  const accession = await registrar.query(api.accessions.get, { accessionId });
+  expect(accession?.sourceVerificationException).toBeUndefined();
+  expect(accession?.reviewDecision?.fromStep).toBe(2);
+});
+
+test("an overlong reason is refused", async () => {
+  const { registrar, accessionId } = await submittedIntake();
+
+  expect(
+    await reviewErrorCode(
+      registrar.mutation(api.accessions.reject, {
+        accessionId,
+        decision: "withdraw",
+        reason: "x".repeat(2001),
+      }),
+    ),
+  ).toBe("REASON_TOO_LONG");
 });

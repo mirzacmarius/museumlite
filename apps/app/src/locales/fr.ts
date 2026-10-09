@@ -4719,6 +4719,9 @@ export default {
       notWithdrawn:
         "Cette demande n'est plus retirée. Actualisez pour voir son état actuel.",
       reasonRequired: "Indiquez un motif.",
+      notADraft:
+        "Cette demande a déjà été soumise. Actualisez pour voir son état actuel.",
+      reasonTooLong: "Le motif doit faire moins de 2 000 caractères.",
       notPermitted:
         "Vous ne pouvez pas prendre cette décision à l'étape de revue actuelle.",
       fallback:
