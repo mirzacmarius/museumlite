@@ -9,6 +9,7 @@ import {
   partyDisplayName,
 } from "./parties";
 import { partyError } from "./partyErrors";
+import { isOpenEntryStatus } from "./objectEntryValidators";
 import type { PartyRole, PartyTarget } from "./partyValidators";
 import { hasPermission, requirePermission } from "./permissions";
 
@@ -38,6 +39,13 @@ function isWithdrawnObject(object: Doc<"collections"> | null) {
 /** Roles a Party may hold on each kind of record, primary role first. */
 export const ACCESSION_PARTY_ROLES: readonly PartyRole[] = ["donor", "owner"];
 
+/** Depositor first: the entry record names the depositor itself. */
+export const ENTRY_PARTY_ROLES: readonly PartyRole[] = [
+  "depositor",
+  "owner",
+  "recipient",
+];
+
 export function loanPartyRoles(type: Doc<"loans">["type"]): PartyRole[] {
   return type === "incoming" ? ["lender", "owner"] : ["borrower"];
 }
@@ -64,6 +72,8 @@ export interface ResolvedPartyTarget {
   policy: PartyLinkPolicy;
   /** The role the record itself names a party for. */
   primaryRole?: PartyRole;
+  /** Roles whose current party the record's own fields mirror. */
+  mirroredRoles?: readonly PartyRole[];
   /** How the record names that party. */
   recordAssertedName?: string;
   /** The account the record already references for that role. */
@@ -110,6 +120,7 @@ export async function resolvePartyTarget(
         allowedRoles: ACCESSION_PARTY_ROLES,
         policy: accession.status === "pending" ? "open" : "firstLinkOnly",
         primaryRole: "donor",
+        mirroredRoles: ["donor"],
         recordAssertedName: accessionSourceAssertion(accession.source),
         recordAccountId: accession.donorAccountId,
       };
@@ -130,6 +141,7 @@ export async function resolvePartyTarget(
         allowedRoles: loanPartyRoles(loan.type),
         policy: loan.status === "pending" ? "open" : "firstLinkOnly",
         primaryRole: loanPrimaryRole(loan.type),
+        mirroredRoles: [loanPrimaryRole(loan.type)],
         recordAssertedName: loan.lenderBorrowerName.trim() || undefined,
         recordAccountId: loan.accountId,
       };
@@ -211,6 +223,22 @@ export async function resolvePartyTarget(
         policy: "open",
       };
     }
+    case "entry": {
+      const entry = await ctx.db.get(target.id);
+      if (!entry) targetNotFound();
+      await requirePermission(ctx, entry.organizationId, collectionsPermission);
+      return {
+        organizationId: entry.organizationId,
+        label: entry.entryNumber,
+        defaultEffectiveFrom: entry.receivedAt,
+        allowedRoles: ENTRY_PARTY_ROLES,
+        policy: isOpenEntryStatus(entry.status) ? "open" : "firstLinkOnly",
+        primaryRole: "depositor",
+        mirroredRoles: ["depositor", "owner"],
+        recordAssertedName: entry.depositorName.trim() || undefined,
+        recordAccountId: entry.depositorAccountId,
+      };
+    }
   }
 }
 
@@ -263,6 +291,12 @@ export async function readablePartyTargetLabel(
         ? `${record.accessionNumber} ${record.title}`.trim()
         : null;
     }
+    case "entry": {
+      const record = await ctx.db.get(link.targetId);
+      return record?.organizationId === link.organizationId
+        ? record.entryNumber
+        : null;
+    }
   }
 }
 
@@ -299,6 +333,8 @@ function targetFields(target: PartyTarget) {
       return { targetType: "appraisal" as const, targetId: target.id };
     case "collection":
       return { targetType: "collection" as const, targetId: target.id };
+    case "entry":
+      return { targetType: "entry" as const, targetId: target.id };
   }
 }
 
@@ -316,6 +352,8 @@ export function partyTargetOf(link: Doc<"partyLinks">): PartyTarget {
       return { type: "appraisal", id: link.targetId };
     case "collection":
       return { type: "collection", id: link.targetId };
+    case "entry":
+      return { type: "entry", id: link.targetId };
   }
 }
 
@@ -378,12 +416,14 @@ export async function hasPartyLinkHistory(
 }
 
 /**
- * Keeps the record's own party reference in step with its primary-role
- * link on records that are still open for edits.
+ * Keeps the record's own party reference in step with a mirrored role's
+ * link on records that are still open for edits. Ending a link clears the
+ * reference but keeps the name the record states.
  */
-export async function syncPrimaryPartyField(
+export async function syncRecordPartyField(
   ctx: MutationCtx,
   target: PartyTarget,
+  role: PartyRole,
   account: Doc<"accounts"> | null,
 ) {
   if (target.type === "accession") {
@@ -398,6 +438,23 @@ export async function syncPrimaryPartyField(
             lenderBorrowerContact: partyContactSnapshot(account),
           }
         : { accountId: undefined },
+    );
+  } else if (target.type === "entry" && role === "owner") {
+    await ctx.db.patch(
+      target.id,
+      account
+        ? { ownerAccountId: account._id, ownerName: partyDisplayName(account) }
+        : { ownerAccountId: undefined },
+    );
+  } else if (target.type === "entry") {
+    await ctx.db.patch(
+      target.id,
+      account
+        ? {
+            depositorAccountId: account._id,
+            depositorName: partyDisplayName(account),
+          }
+        : { depositorAccountId: undefined },
     );
   }
 }

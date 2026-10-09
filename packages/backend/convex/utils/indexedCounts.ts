@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { isUnaccessionedEntryObject } from "./objectEntryLifecycle";
 
 type CountCtx = Pick<QueryCtx, "db">;
 
@@ -31,6 +32,9 @@ export async function getPageInventoryEvidence(
       if (loan?.organizationId === organizationId)
         inventoryLoanAssociations[loan.type].add(row._id);
     }
+    // Property held under an entry is incoming until it is accessioned.
+    if (await isUnaccessionedEntryObject(ctx, row._id))
+      inventoryLoanAssociations.incoming.add(row._id);
     for (const status of ["pending", "approved"] as const) {
       const deaccession = await ctx.db
         .query("deaccessions")

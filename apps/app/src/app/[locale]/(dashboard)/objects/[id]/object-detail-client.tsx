@@ -12,6 +12,7 @@ import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ObjectDetailHeader } from "./_components/object-detail/object-detail-header";
 import { ObjectDetailHero } from "./_components/object-detail/object-detail-hero";
 import { ObjectDetailTabPanel } from "./_components/object-detail/object-detail-tab-panel";
+import { ObjectEntryNotice } from "./_components/object-entry-notice";
 import {
   getObjectViewTabs,
   type ObjectTabId as TabId,
@@ -285,6 +286,7 @@ function ObjectDetailView({
         />
 
         <div className="flex-1 overflow-y-auto">
+          <ObjectEntryNotice collectionId={collectionId} />
           {isWithdrawn ? (
             <section
               aria-label="Archive register"

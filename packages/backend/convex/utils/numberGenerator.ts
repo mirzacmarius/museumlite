@@ -41,6 +41,7 @@ export interface YearBasedCounter {
     | Id<"claimCounters">
     | Id<"deaccessionCounters">
     | Id<"loanCounters">
+    | Id<"objectEntryCounters">
     | Id<"transitCounters">;
   _creationTime: number;
   organizationId: Id<"organizations">;
@@ -109,7 +110,8 @@ export async function getNextYearBasedValue<
       | "loanCounters"
       | "transitCounters"
       | "claimCounters"
-      | "deaccessionCounters";
+      | "deaccessionCounters"
+      | "objectEntryCounters";
     organizationId: Id<"organizations">;
     year: number;
   },

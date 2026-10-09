@@ -5195,6 +5195,217 @@ export default {
     },
   },
 
+  objectEntries: {
+    title: "Entries",
+    description:
+      "Property received into custody before any acquisition decision. Receiving property never acquires or accessions it.",
+    workbench: {
+      label: "Entries",
+      description: "Temporary custody, acquisition decisions and returns.",
+    },
+    receive: "Receive property",
+    empty: "No property has been received under an entry yet.",
+    emptyFiltered: "No entries have this status.",
+    loadMore: "Load more",
+    allStatuses: "All statuses",
+    overdue: "Overdue",
+    noPermission: "You do not have permission to view entries.",
+    noReceivePermission: "You do not have permission to receive property.",
+    status: {
+      in_custody: "In custody",
+      acquisition_review: "Acquisition under review",
+      accessioned: "Accessioned",
+      exited: "Returned",
+    },
+    purposes: {
+      acquisition: "Considered for acquisition",
+      identification: "Identification or enquiry",
+      deposit: "Deposit for safekeeping",
+      research: "Research or study",
+      other: "Other",
+    },
+    columns: {
+      entry: "Entry",
+      object: "Object",
+      depositor: "Depositor",
+      received: "Received",
+      status: "Status",
+      due: "Due",
+      responsible: "Responsible",
+    },
+    fields: {
+      entryNumber: "Entry number",
+      entryNumberHint:
+        "Leave empty to number it automatically, for example TE-2026-0001.",
+      purpose: "Purpose",
+      purposeNote: "Purpose details",
+      depositor: "Depositor",
+      depositorParty: "Depositor from parties",
+      owner: "Owner",
+      ownerParty: "Owner from parties",
+      ownerSameAsDepositor: "The depositor is the owner",
+      ownerHint:
+        "Leave empty when ownership is not established. An acquisition needs a recorded owner.",
+      receivedAt: "Received on",
+      location: "Receiving location",
+      chooseLocation: "Choose a location",
+      condition: "Condition at receipt",
+      conditionHint:
+        "Describe the condition as received, including any damage.",
+      responsible: "Responsible staff member",
+      chooseMember: "Choose a staff member",
+      responsibilityTerms: "Responsibility and insurance terms",
+      decisionDueAt: "Decision due",
+      returnDueAt: "Return due",
+      notes: "Notes",
+      objectTitle: "Object title",
+      objectName: "Object name",
+      objectDescription: "Description",
+    },
+    sections: {
+      property: "Property",
+      parties: "Depositor and owner",
+      custody: "Custody",
+      dates: "Due dates",
+    },
+    receiveForm: {
+      title: "Receive property",
+      description:
+        "Record property entering custody: who brought it, why, where it is held and its condition. It stays outside the collection until an acquisition is approved.",
+      submit: "Record receipt",
+      saving: "Saving…",
+      success: "Entry {entryNumber} recorded",
+    },
+    detail: {
+      back: "Entries",
+      notFound: "Entry not found",
+      object: "Object",
+      openObject: "Open object",
+      receivedBy: "Received by {name}",
+      currentLocation: "Current location",
+      noLocation: "No recorded location",
+      notRecorded: "Not recorded",
+      ownerNotRecorded: "Not established",
+      ownerNeeded:
+        "No owner is recorded. Record one in Edit details before beginning an acquisition.",
+      acquisition: "Acquisition",
+      noAcquisition: "No acquisition has been started.",
+      openAccession: "Open accession {number}",
+      acquisitionDraft:
+        "Draft: attach title evidence and submit it for approval, or withdraw it.",
+      acquisitionPending: "Awaiting approval under the accession policy.",
+      acquisitionWithdrawn:
+        "Withdrawn. Return the property to its recipient, or begin a new acquisition.",
+      accessionedOn: "Accessioned on {date}",
+      exit: "Exit",
+      exitedTo: "Returned to {name}",
+      exitedOn: "Handed over on {date}",
+      reference: "Reference",
+      recordedBy: "Recorded by {name}",
+    },
+    actions: {
+      beginAcquisition: "Begin acquisition",
+      withdrawAcquisition: "Withdraw acquisition",
+      recordExit: "Record exit",
+      edit: "Edit details",
+      cancel: "Cancel",
+      save: "Save",
+      saving: "Saving…",
+    },
+    acquisition: {
+      title: "Begin acquisition",
+      description:
+        "Opens a draft accession for this object with {owner} as the source of title. The object is accessioned only after the accession policy approves it.",
+      method: "Acquisition method",
+      accessionNumber: "Accession number",
+      accessionNumberHint: "Leave empty to use the configured numbering.",
+      cost: "Cost",
+      notes: "Notes",
+      submit: "Create draft accession",
+      success: "Draft accession created",
+      methods: {
+        purchase: "Purchase",
+        gift: "Gift",
+        transfer: "Transfer",
+        donation: "Donation",
+        bequest: "Bequest",
+        other: "Other",
+      },
+    },
+    exitDialog: {
+      title: "Record exit",
+      description:
+        "Hand the property to its recipient. The object leaves custody and is withdrawn from routine views; nothing is deaccessioned.",
+      recipient: "Recipient",
+      recipientParty: "Recipient from parties",
+      exitedAt: "Handed over on",
+      reference: "Receipt or signature reference",
+      notes: "Notes",
+      observedAt: "Staff confirmed the object is at {location}",
+      submit: "Record exit",
+      success: "Exit recorded",
+    },
+    withdrawDialog: {
+      title: "Withdraw acquisition",
+      description:
+        "The draft accession is withdrawn with your reason and kept in its history. The property stays in custody under this entry.",
+      reason: "Reason",
+      submit: "Withdraw acquisition",
+      success: "Acquisition withdrawn",
+    },
+    editDialog: {
+      title: "Edit entry details",
+      description:
+        "Receipt facts stay as recorded. Change the depositor or owner in Parties.",
+      success: "Entry updated",
+    },
+    objectNotice: {
+      temporary: "Temporary custody: not part of the collection",
+      temporaryDetail:
+        "Held under entry {entryNumber} ({purpose}), deposited by {depositor}.",
+      accessioned: "Received under entry {entryNumber}",
+      exited: "Returned under entry {entryNumber}",
+      openEntry: "Open entry",
+    },
+    accessionLink: "Received under entry {entryNumber}",
+    accessionObject:
+      "The object was recorded when the property was received. It joins the collection when this accession is approved.",
+    errors: {
+      entryNotFound: "This entry no longer exists.",
+      depositorRequired: "Record who deposited the property.",
+      titleRequired: "Give the object a title.",
+      conditionRequired: "Describe the condition at receipt.",
+      textTooLong: "One of the fields is too long. Shorten it and try again.",
+      datesInvalid:
+        "Check the dates: due dates and exits cannot fall before the receipt, and nothing can be in the future.",
+      responsibleNotMember:
+        "The responsible staff member must belong to this organization.",
+      numberInUse:
+        "This number is already used by another entry or object. Choose another.",
+      numberingExhausted:
+        "Automatic numbering found only used numbers. Enter an entry number.",
+      notInCustody: "This entry already has an open acquisition.",
+      acquisitionOpen:
+        "An acquisition is open for this entry. Withdraw it before recording an exit.",
+      entryClosed: "This entry is closed and can no longer change.",
+      ownerRequired:
+        "Record the owner before beginning an acquisition; title can only pass from its owner.",
+      recipientRequired: "Record who received the property.",
+      temporaryCustody:
+        "This object is held under an entry and is not part of the collection. Accession it first.",
+      entryExited:
+        "The property has already left custody, so this acquisition cannot be restored.",
+      objectRecordedOnEntry:
+        "This object was recorded at entry. Edit the object record instead.",
+      numberInvalid: "An entry number needs 1 to 256 visible characters.",
+      acquisitionInReview:
+        "This acquisition is under review; its reviewers decide whether to withdraw it.",
+      reasonRequired: "Give a reason.",
+      exitRequired:
+        "This object is held under an entry. Record its exit on the entry instead of withdrawing it.",
+      fallback: "The entry could not be saved. Try again.",
+    },
+  },
   objectPicker: {
     loading: "Loading…",
     loadMore: "Load more",
@@ -5607,6 +5818,7 @@ export default {
       owner: "Owner",
       appraiser: "Appraiser",
       recipient: "Recipient",
+      depositor: "Depositor",
     },
     holderTypes: {
       privatePerson: "Person",
@@ -5623,6 +5835,7 @@ export default {
       deaccession: "Deaccession",
       appraisal: "Appraisal",
       collection: "Object",
+      entry: "Entry",
     },
     picker: {
       placeholder: "Select or create a person or institution",

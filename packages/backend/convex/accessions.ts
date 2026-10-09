@@ -40,6 +40,12 @@ import {
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
 import { validateObjectDraftTypeDetails } from "./utils/objectDraftTypeDetails";
+import {
+  applyEntryReviewDecision,
+  assertEntryAcquisitionRestorable,
+  assertNoEntryObjectDraft,
+  completeEntryAccession,
+} from "./utils/objectEntryLifecycle";
 import { requireLinkableParty } from "./utils/parties";
 import { accessionSourceAssertion, recordPartyLink } from "./utils/partyLinks";
 import {
@@ -443,6 +449,7 @@ export const upsertObjectDraft = mutation({
       if (existing.status !== "pending") {
         throw new Error("Only pending accessions can be updated");
       }
+      assertNoEntryObjectDraft(existing);
 
       await requirePermission(ctx, args.organizationId, "collections.update");
       await validateObjectDraftTypeDetails(
@@ -1035,6 +1042,10 @@ export const get = query({
       ),
       workflowHistoryIsPreview: v.literal(true),
       workflowHistoryHasMore: v.boolean(),
+      /** The entry the object was received under, for entry acquisitions. */
+      entry: v.optional(
+        v.object({ _id: v.id("objectEntries"), entryNumber: v.string() }),
+      ),
     }),
     v.null(),
   ),
@@ -1094,6 +1105,9 @@ export const get = query({
 
     // Ensure workflowHistory is always an array (even if empty)
     const historyPreview = await recentCaseHistory(ctx, accession, "accession");
+    const entry = accession.entryId
+      ? await ctx.db.get(accession.entryId)
+      : null;
     const draftMedia = accession.draftMedia
       ? await Promise.all(
           accession.draftMedia.map(async (mediaItem) => ({
@@ -1143,6 +1157,10 @@ export const get = query({
       workflowHistory: historyPreview.entries,
       workflowHistoryIsPreview: true as const,
       workflowHistoryHasMore: historyPreview.hasMore,
+      entry:
+        entry && entry.organizationId === accession.organizationId
+          ? { _id: entry._id, entryNumber: entry.entryNumber }
+          : undefined,
     };
   },
 });
@@ -1765,7 +1783,7 @@ const intakeReviewDecisionRecords = {
  * Applies a reviewer decision to an intake and records it in the case
  * history, workflow history and audit log, and tells the submitter why.
  */
-async function recordIntakeReviewDecision(
+export async function recordIntakeReviewDecision(
   ctx: MutationCtx,
   accession: Doc<"accessions">,
   {
@@ -1778,6 +1796,7 @@ async function recordIntakeReviewDecision(
   const record = intakeReviewDecisionRecords[decision];
   const decidedAt = Date.now();
   const withdrawn = decision === "withdrawn";
+  await applyEntryReviewDecision(ctx, accession, decision, decidedAt);
   const history = [
     ...(accession.workflowHistory ?? []),
     {
@@ -1932,6 +1951,7 @@ export const restoreWithdrawn = mutation({
       withdrawnFromStep,
     );
     const reason = requireReviewReason(args.reason);
+    await assertEntryAcquisitionRestorable(ctx, accession);
 
     await recordIntakeReviewDecision(ctx, accession, {
       decision: "restored",
@@ -2008,6 +2028,15 @@ export const createCollectionFromAccession = internalMutation({
 
     if (accession.status !== "approved") {
       throw new Error("Accession must be approved");
+    }
+
+    if (accession.entryId && accession.collectionId) {
+      if (!accession.approvedBy) {
+        throw new Error("Accession must be approved before publish");
+      }
+      await completeEntryAccession(ctx, accession, accession.approvedBy);
+      await syncAccessionSearchDocument(ctx, args.accessionId);
+      return accession.collectionId;
     }
 
     if (accession.collectionId) {

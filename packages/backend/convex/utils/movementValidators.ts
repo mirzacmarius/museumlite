@@ -15,6 +15,8 @@ export const movementKindValidator = v.union(
   v.literal("transit_receipt"),
   v.literal("transit_installation"),
   v.literal("institution_transfer"),
+  v.literal("entry_receipt"),
+  v.literal("entry_exit"),
 );
 export type MovementKind = Infer<typeof movementKindValidator>;
 
