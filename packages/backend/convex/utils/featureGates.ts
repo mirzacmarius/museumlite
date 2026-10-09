@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
@@ -10,6 +11,10 @@ import {
   normalizeSubscriptionTier,
   type SubscriptionTier,
 } from "./featurePolicy";
+import {
+  type CollectionType,
+  getCollectionTypeModuleRequirement,
+} from "./moduleCatalog";
 
 export type { FeatureId, IntegrationId, ModuleId, SubscriptionTier };
 
@@ -86,6 +91,26 @@ export async function requireModuleEnabled(
   const org = await getOrganization(ctx, organizationId);
   if (!hasOrganizationModuleEnabled(org, moduleId)) {
     throw new Error(`Module not enabled: ${moduleId}`);
+  }
+}
+
+/**
+ * Objects of a module-backed collection type exist only while that module is
+ * enabled. Clients map the stable `code` to translated copy.
+ */
+export async function requireCollectionTypeModuleEnabled(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  collectionType: CollectionType | undefined,
+) {
+  const requiredModule = getCollectionTypeModuleRequirement(collectionType);
+  if (!requiredModule) return;
+
+  if (!(await hasModuleEnabled(ctx, organizationId, requiredModule))) {
+    throw new ConvexError({
+      code: "COLLECTION_TYPE_MODULE_DISABLED",
+      message: "Collection type requires enabled module",
+    });
   }
 }
 

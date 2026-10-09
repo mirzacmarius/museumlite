@@ -33,6 +33,7 @@ import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
+import { validateObjectDraftTypeDetails } from "./utils/objectDraftTypeDetails";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -359,6 +360,11 @@ export const upsertObjectDraft = mutation({
       : null;
 
     await validateObjectReferences(ctx, args.organizationId, args.objectData);
+    await validateObjectDraftTypeDetails(
+      ctx,
+      args.organizationId,
+      args.objectData,
+    );
     const normalizedObjectData = {
       ...args.objectData,
       title: args.objectData.title.trim(),

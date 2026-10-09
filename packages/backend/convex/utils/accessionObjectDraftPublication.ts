@@ -6,6 +6,10 @@ import { ensureIdentifierAvailable } from "./identifiers";
 import { validateObjectReferences } from "./locationIntegrity";
 import { insertCompletedMediaAsset } from "./mediaAssets";
 import {
+  publishObjectDraftTypeDetails,
+  validateObjectDraftTypeDetails,
+} from "./objectDraftTypeDetails";
+import {
   applyUsageCounterDelta,
   ensureUsageCounter,
 } from "./organizationUsageCounters";
@@ -40,12 +44,18 @@ export async function publishAccessionObjectDraft(
     catalogIdentifier,
   );
   const draftObjectData = accession.draftObjectData;
-  if (draftObjectData)
+  if (draftObjectData) {
     await validateObjectReferences(
       ctx,
       accession.organizationId,
       draftObjectData,
     );
+    await validateObjectDraftTypeDetails(
+      ctx,
+      accession.organizationId,
+      draftObjectData,
+    );
+  }
   const collectionGroupIds =
     draftObjectData?.collectionGroupIds ??
     (draftObjectData?.collectionGroupId
@@ -124,7 +134,17 @@ export async function publishAccessionObjectDraft(
     ),
   ] as const);
 
-  await syncCollectionOptionUsages(ctx, collectionId);
+  await Promise.all([
+    syncCollectionOptionUsages(ctx, collectionId),
+    publishObjectDraftTypeDetails(ctx, {
+      collectionId,
+      organizationId: accession.organizationId,
+      collectionType: draftObjectData?.collectionType,
+      typeDetails: draftObjectData?.typeDetails,
+      publishedBy: catalogedBy,
+      publishedAt: catalogedAt,
+    }),
+  ]);
 
   await Promise.all([
     ...uniqueCollectionGroupIds.flatMap((collectionGroupId, index) => {
