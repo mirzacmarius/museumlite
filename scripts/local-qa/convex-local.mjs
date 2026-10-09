@@ -25,9 +25,19 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-readState();
+const { env } = readState();
+// `convex codegen` has no --env-file option; pass the loopback target directly.
+const target =
+  args[0] === "codegen"
+    ? [
+        "--url",
+        env.CONVEX_SELF_HOSTED_URL,
+        "--admin-key",
+        env.CONVEX_SELF_HOSTED_ADMIN_KEY,
+      ]
+    : ["--env-file", deploymentEnvPath];
 process.exit(
-  run("bunx", ["convex", ...args, "--env-file", deploymentEnvPath], {
+  run("bunx", ["convex", ...args, ...target], {
     cwd: join(root, "packages/backend"),
     env: localOnlyEnv(),
   }),
