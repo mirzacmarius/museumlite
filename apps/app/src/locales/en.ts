@@ -8258,6 +8258,9 @@ export default {
         taskAssigned: "Task Assigned",
         taskDueSoon: "Task Due Soon",
         taskBlocked: "Task Blocked",
+        taskReadyForReview: "Task Ready for Review",
+        taskReturned: "Task Returned",
+        taskApproved: "Task Approved",
         newLoanRequiresApproval: "New Loan Requires Approval",
         conditionDisputeReported: "Condition Dispute Reported",
         disputeUnderInvestigation: "Dispute Under Investigation",
@@ -8348,6 +8351,9 @@ export default {
         taskAssigned: "You have been assigned to: {title}",
         taskDueSoon: 'Task "{title}" is due in less than 24 hours',
         taskBlocked: 'Task "{title}" has been blocked: {reason}',
+        taskReadyForReview: 'Task "{title}" is ready for your review',
+        taskReturned: 'Task "{title}" was returned for changes',
+        taskApproved: 'Task "{title}" was approved',
         transitExpectedTomorrow:
           "Transit {number} to {destination} is expected to arrive tomorrow.",
         transitDelayed:

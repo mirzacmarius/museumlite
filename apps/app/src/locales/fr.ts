@@ -8548,6 +8548,9 @@ export default {
         taskAssigned: "Tâche attribuée",
         taskDueSoon: "Échéance de la tâche proche",
         taskBlocked: "Tâche bloquée",
+        taskReadyForReview: "Tâche prête pour relecture",
+        taskReturned: "Tâche renvoyée",
+        taskApproved: "Tâche approuvée",
         newLoanRequiresApproval: "Nouveau prêt à approuver",
         conditionDisputeReported: "Litige sur l’état de conservation signalé",
         disputeUnderInvestigation: "Litige en cours d’examen",
@@ -8646,6 +8649,9 @@ export default {
         taskDueSoon:
           "La tâche « {title} » arrive à échéance dans moins de 24 heures",
         taskBlocked: "La tâche « {title} » est bloquée : {reason}",
+        taskReadyForReview: "La tâche « {title} » est prête pour votre relecture",
+        taskReturned: "La tâche « {title} » a été renvoyée pour modifications",
+        taskApproved: "La tâche « {title} » a été approuvée",
         transitExpectedTomorrow:
           "Le transport {number} vers {destination} doit arriver demain.",
         transitDelayed:

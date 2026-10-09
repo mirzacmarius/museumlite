@@ -9287,6 +9287,9 @@ export default {
         taskAssigned: "Sarcină atribuită",
         taskDueSoon: "Sarcina ajunge curând la termen",
         taskBlocked: "Sarcină blocată",
+        taskReadyForReview: "Sarcină pregătită pentru verificare",
+        taskReturned: "Sarcină returnată",
+        taskApproved: "Sarcină aprobată",
         newLoanRequiresApproval: "Un nou împrumut necesită aprobare",
         conditionDisputeReported:
           "A fost raportată o dispută privind starea de conservare",
@@ -9387,6 +9390,9 @@ export default {
         taskDueSoon:
           "Sarcina „{title}” ajunge la termen în mai puțin de 24 de ore",
         taskBlocked: "Sarcina „{title}” a fost blocată: {reason}",
+        taskReadyForReview: "Sarcina „{title}” este pregătită pentru verificarea dvs.",
+        taskReturned: "Sarcina „{title}” a fost returnată pentru modificări",
+        taskApproved: "Sarcina „{title}” a fost aprobată",
         transitExpectedTomorrow:
           "Tranzitul {number} către {destination} este așteptat mâine.",
         transitDelayed:

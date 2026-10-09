@@ -17,6 +17,7 @@ type StateOverrides = Partial<
 const navigationLabels: Record<string, string> = {
   "untranslatedComponents.navigation.patronManagement": "Patron Management",
   "untranslatedComponents.navigation.overview": "Overview",
+  "untranslatedComponents.navigation.myWork": "My work",
   "untranslatedComponents.navigation.objectCatalog": "Object Catalog",
   "untranslatedComponents.navigation.locationTracking": "Location & Tracking",
   "untranslatedComponents.navigation.scan": "Scan",
@@ -207,6 +208,7 @@ describe("buildSidebarNavigation", () => {
 
     expect(allTitles(navigation)).toEqual([
       "Overview",
+      "My work",
       "Object Catalog",
       "Location & Tracking",
       "Scan",

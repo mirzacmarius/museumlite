@@ -8586,6 +8586,9 @@ export default {
         taskAssigned: "Tarea asignada",
         taskDueSoon: "La tarea vence pronto",
         taskBlocked: "Tarea bloqueada",
+        taskReadyForReview: "Tarea lista para revisión",
+        taskReturned: "Tarea devuelta",
+        taskApproved: "Tarea aprobada",
         newLoanRequiresApproval: "Nuevo préstamo pendiente de aprobación",
         conditionDisputeReported:
           "Se ha notificado una discrepancia sobre el estado de conservación",
@@ -8685,6 +8688,9 @@ export default {
         taskAssigned: "Se te ha asignado la tarea: {title}",
         taskDueSoon: "La tarea «{title}» vence en menos de 24 horas",
         taskBlocked: "La tarea «{title}» se ha bloqueado: {reason}",
+        taskReadyForReview: "La tarea «{title}» está lista para su revisión",
+        taskReturned: "La tarea «{title}» se ha devuelto para cambios",
+        taskApproved: "La tarea «{title}» se ha aprobado",
         transitExpectedTomorrow:
           "Se espera que el transporte {number} a {destination} llegue mañana.",
         transitDelayed:

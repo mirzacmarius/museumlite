@@ -8457,6 +8457,9 @@ export default {
         taskAssigned: "Oppgave tildelt",
         taskDueSoon: "Oppgaven har snart frist",
         taskBlocked: "Oppgave blokkert",
+        taskReadyForReview: "Oppgave klar for gjennomgang",
+        taskReturned: "Oppgave sendt tilbake",
+        taskApproved: "Oppgave godkjent",
         newLoanRequiresApproval: "Nytt lån krever godkjenning",
         conditionDisputeReported: "Tilstandsuenighet meldt",
         disputeUnderInvestigation: "Tilstandsuenighet undersøkes",
@@ -8548,6 +8551,9 @@ export default {
         taskAssigned: "Du har fått tildelt oppgaven: {title}",
         taskDueSoon: "Oppgaven «{title}» har frist om mindre enn 24 timer",
         taskBlocked: "Oppgaven «{title}» er blokkert: {reason}",
+        taskReadyForReview: "Oppgaven «{title}» er klar for din gjennomgang",
+        taskReturned: "Oppgaven «{title}» ble sendt tilbake for endringer",
+        taskApproved: "Oppgaven «{title}» ble godkjent",
         transitExpectedTomorrow:
           "Transporten {number} til {destination} forventes å ankomme i morgen.",
         transitDelayed:

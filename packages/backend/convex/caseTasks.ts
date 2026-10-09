@@ -653,42 +653,51 @@ export const listMyAssignedCases = query({
             .take(ASSIGNED_CASE_SCAN)
         : [],
     ]);
-    const inOrganization = <T extends { organizationId: Id<"organizations"> }>(
-      rows: T[],
-    ) => rows.filter((row) => row.organizationId === args.organizationId);
+    const here = (row: { organizationId: Id<"organizations"> }) =>
+      row.organizationId === args.organizationId;
     const cases = [
-      ...inOrganization(accessions)
-        .filter((row) => row.status === "pending")
-        .map((row) => ({
-          caseType: "accession" as const,
-          caseId: row._id,
-          caseLabel: row.accessionNumber,
-          status: row.status,
-          since: row.dateReceived,
-        })),
-      ...inOrganization(deaccessions)
-        .filter((row) => row.status === "pending")
-        .map((row) => ({
-          caseType: "deaccession" as const,
-          caseId: row._id,
-          caseLabel: row.deaccessionNumber,
-          status: row.status,
-          since: row.dateDeaccessioned,
-        })),
-      ...inOrganization(loans)
-        .filter(
-          (row) =>
-            row.status === "pending" ||
-            row.status === "active" ||
-            row.status === "dispatched",
-        )
-        .map((row) => ({
-          caseType: "loan" as const,
-          caseId: row._id,
-          caseLabel: row.loanNumber,
-          status: row.status,
-          since: row.startDate,
-        })),
+      ...accessions.flatMap((row) =>
+        here(row) && row.status === "pending"
+          ? [
+              {
+                caseType: "accession" as const,
+                caseId: row._id,
+                caseLabel: row.accessionNumber,
+                status: row.status,
+                since: row.dateReceived,
+              },
+            ]
+          : [],
+      ),
+      ...deaccessions.flatMap((row) =>
+        here(row) && row.status === "pending"
+          ? [
+              {
+                caseType: "deaccession" as const,
+                caseId: row._id,
+                caseLabel: row.deaccessionNumber,
+                status: row.status,
+                since: row.dateDeaccessioned,
+              },
+            ]
+          : [],
+      ),
+      ...loans.flatMap((row) =>
+        here(row) &&
+        (row.status === "pending" ||
+          row.status === "active" ||
+          row.status === "dispatched")
+          ? [
+              {
+                caseType: "loan" as const,
+                caseId: row._id,
+                caseLabel: row.loanNumber,
+                status: row.status,
+                since: row.startDate,
+              },
+            ]
+          : [],
+      ),
     ].sort((a, b) => a.since - b.since);
     const scanFull = [accessions, deaccessions, loans].some(
       (rows) => rows.length === ASSIGNED_CASE_SCAN,
@@ -775,6 +784,84 @@ async function caseObjectIds(
     : [];
 }
 
+interface EvidenceCandidate {
+  reference: CaseTaskEvidenceReference;
+  label: string;
+  objectId?: Id<"collections">;
+  recordedAt?: number;
+}
+
+/** Recent accepted assessments, moves and files of one object in the caller's organization. */
+async function objectEvidenceCandidates(
+  ctx: QueryCtx,
+  object: Doc<"collections">,
+): Promise<EvidenceCandidate[]> {
+  const { db } = ctx;
+  const [assessments, movements, media] = await Promise.all([
+    db
+      .query("conditionAssessments")
+      .withIndex("by_collection_and_status_and_acceptedAt", (q) =>
+        q.eq("collectionId", object._id).eq("status", "accepted"),
+      )
+      .order("desc")
+      .take(EVIDENCE_PER_OBJECT),
+    db
+      .query("locationHistory")
+      .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
+      .order("desc")
+      .take(EVIDENCE_PER_OBJECT),
+    db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
+      .order("desc")
+      .take(EVIDENCE_PER_OBJECT),
+  ]);
+  const locationIds = [
+    ...new Set(
+      movements.flatMap((row) =>
+        [row.fromLocationId, row.toLocationId].flatMap((id) =>
+          id ? [id] : [],
+        ),
+      ),
+    ),
+  ];
+  const locations = new Map(
+    (await Promise.all(locationIds.map((id) => db.get(id)))).flatMap(
+      (location) => (location ? [[location._id, location.name]] : []),
+    ),
+  );
+  const locationName = (id: Id<"locations"> | undefined) =>
+    (id && locations.get(id)) || "-";
+  return [
+    ...assessments.map((row) => ({
+      reference: { kind: "conditionAssessment" as const, id: row._id },
+      label: clip(`${object.title} - ${row.condition}: ${row.summary}`),
+      objectId: object._id,
+      recordedAt: row.assessedAt,
+    })),
+    ...movements.map((row) => ({
+      reference: { kind: "movement" as const, id: row._id },
+      label: clip(
+        `${object.title}: ${locationName(row.fromLocationId)} -> ${locationName(row.toLocationId)}`,
+      ),
+      objectId: object._id,
+      recordedAt: row.movedAt,
+    })),
+    ...media.flatMap((row) =>
+      row.organizationId === object.organizationId
+        ? [
+            {
+              reference: { kind: "media" as const, id: row._id },
+              label: clip(`${object.title} - ${row.fileName}`),
+              objectId: object._id,
+              recordedAt: row.uploadedAt,
+            },
+          ]
+        : [],
+    ),
+  ];
+}
+
 /** Recent accepted assessments, moves and files for the case's objects, and its audit events. */
 export const listEvidenceCandidates = query({
   args: caseArgs,
@@ -795,12 +882,7 @@ export const listEvidenceCandidates = query({
       args.caseId,
     );
     const access = await viewerAccess(ctx, args.organizationId);
-    const candidates: Array<{
-      reference: CaseTaskEvidenceReference;
-      label: string;
-      objectId?: Id<"collections">;
-      recordedAt?: number;
-    }> = [];
+    const candidates: EvidenceCandidate[] = [];
     if (access.collectionsRead) {
       const objectIds = [
         ...new Set(
@@ -808,66 +890,14 @@ export const listEvidenceCandidates = query({
         ),
       ];
       const objects = await Promise.all(objectIds.map((id) => ctx.db.get(id)));
-      for (const object of objects) {
-        if (!object || object.organizationId !== args.organizationId) continue;
-        const [assessments, movements, media] = await Promise.all([
-          ctx.db
-            .query("conditionAssessments")
-            .withIndex("by_collection_and_status_and_acceptedAt", (q) =>
-              q.eq("collectionId", object._id).eq("status", "accepted"),
-            )
-            .order("desc")
-            .take(EVIDENCE_PER_OBJECT),
-          ctx.db
-            .query("locationHistory")
-            .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
-            .order("desc")
-            .take(EVIDENCE_PER_OBJECT),
-          ctx.db
-            .query("mediaFiles")
-            .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
-            .order("desc")
-            .take(EVIDENCE_PER_OBJECT),
-        ]);
-        for (const row of assessments)
-          candidates.push({
-            reference: { kind: "conditionAssessment", id: row._id },
-            label: clip(`${object.title} - ${row.condition}: ${row.summary}`),
-            objectId: object._id,
-            recordedAt: row.assessedAt,
-          });
-        const locationIds = [
-          ...new Set(
-            movements.flatMap((row) =>
-              [row.fromLocationId, row.toLocationId].flatMap((id) =>
-                id ? [id] : [],
-              ),
-            ),
-          ),
-        ];
-        const locations = new Map(
-          (await Promise.all(locationIds.map((id) => ctx.db.get(id)))).flatMap(
-            (location) => (location ? [[location._id, location.name]] : []),
-          ),
-        );
-        for (const row of movements)
-          candidates.push({
-            reference: { kind: "movement", id: row._id },
-            label: clip(
-              `${object.title}: ${(row.fromLocationId && locations.get(row.fromLocationId)) || "-"} -> ${(row.toLocationId && locations.get(row.toLocationId)) || "-"}`,
-            ),
-            objectId: object._id,
-            recordedAt: row.movedAt,
-          });
-        for (const row of media)
-          if (row.organizationId === args.organizationId)
-            candidates.push({
-              reference: { kind: "media", id: row._id },
-              label: clip(`${object.title} - ${row.fileName}`),
-              objectId: object._id,
-              recordedAt: row.uploadedAt,
-            });
-      }
+      const perObject = await Promise.all(
+        objects.map((object) =>
+          object && object.organizationId === args.organizationId
+            ? objectEvidenceCandidates(ctx, object)
+            : [],
+        ),
+      );
+      candidates.push(...perObject.flat());
     }
     if (access.auditRead) {
       const caseKind =
@@ -1006,8 +1036,8 @@ export const create = mutation({
       recipientId: args.ownerId,
       actorId: userId,
       type: "task_assigned",
-      title: "Task assigned",
-      message: `You own a task: ${title}`,
+      title: "Task Assigned",
+      message: `You have been assigned to: ${title}`,
     });
     return taskId;
   },
@@ -1166,8 +1196,8 @@ export const submitForReview = mutation({
       recipientId: task.reviewerId,
       actorId: userId,
       type: "task_review_requested",
-      title: "Task ready for review",
-      message: `Review requested: ${task.title}`,
+      title: "Task Ready for Review",
+      message: `Task "${task.title}" is ready for your review`,
     });
     return null;
   },
@@ -1201,8 +1231,8 @@ export const approve = mutation({
       recipientId: task.ownerId,
       actorId: userId,
       type: "task_completed",
-      title: "Task approved",
-      message: `Review approved: ${task.title}`,
+      title: "Task Approved",
+      message: `Task "${task.title}" was approved`,
     });
     return null;
   },
@@ -1229,8 +1259,8 @@ export const returnForChanges = mutation({
       recipientId: task.ownerId,
       actorId: userId,
       type: "task_returned",
-      title: "Task returned",
-      message: `Changes requested: ${task.title}`,
+      title: "Task Returned",
+      message: `Task "${task.title}" was returned for changes`,
     });
     return null;
   },
@@ -1347,8 +1377,8 @@ export const assign = mutation({
         recipientId: args.ownerId,
         actorId: userId,
         type: "task_assigned",
-        title: "Task assigned",
-        message: `You own a task: ${task.title}`,
+        title: "Task Assigned",
+        message: `You have been assigned to: ${task.title}`,
       });
     if (
       reviewerId !== undefined &&
@@ -1360,8 +1390,8 @@ export const assign = mutation({
         recipientId: reviewerId,
         actorId: userId,
         type: "task_review_requested",
-        title: "Task ready for review",
-        message: `Review requested: ${task.title}`,
+        title: "Task Ready for Review",
+        message: `Task "${task.title}" is ready for your review`,
       });
     return null;
   },

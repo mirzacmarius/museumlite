@@ -36,13 +36,15 @@ async function addMember(
       name: `${name} role`,
       isSystemRole: false,
     });
+    const existing = new Map(
+      (await ctx.db.query("permissions").collect()).map((row) => [
+        row.name,
+        row._id,
+      ]),
+    );
     for (const permission of permissions) {
-      const existing = await ctx.db
-        .query("permissions")
-        .collect()
-        .then((rows) => rows.find((row) => row.name === permission));
       const permissionId =
-        existing?._id ??
+        existing.get(permission) ??
         (await ctx.db.insert("permissions", {
           name: permission,
           category: permission.startsWith("loans.")
@@ -434,7 +436,7 @@ test("owners must be members who can work on the case and only they are notified
   expect(ownerInbox.notifications).toMatchObject([
     {
       type: "task_assigned",
-      message: "You own a task: Secret courier plan",
+      message: "You have been assigned to: Secret courier plan",
       relatedEntityType: "loan",
       relatedEntityId: cases.loanId,
     },
@@ -688,8 +690,9 @@ test("a reviewed task is approved only by its reviewer, with every step on the c
   });
   expect(
     history.entries
-      .filter((entry) => entry.entityType === "caseTask")
-      .map((entry) => entry.action)
+      .flatMap((entry) =>
+        entry.entityType === "caseTask" ? [entry.action] : [],
+      )
       .reverse(),
   ).toEqual([
     "task_created",

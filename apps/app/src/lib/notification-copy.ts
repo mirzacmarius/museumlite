@@ -42,6 +42,9 @@ function getTitleMatch(title: string): Match | null {
     "Task Assigned": "taskAssigned",
     "Task Due Soon": "taskDueSoon",
     "Task Blocked": "taskBlocked",
+    "Task Ready for Review": "taskReadyForReview",
+    "Task Returned": "taskReturned",
+    "Task Approved": "taskApproved",
     "New Loan Requires Approval": "newLoanRequiresApproval",
     "Condition Dispute Reported": "conditionDisputeReported",
     "Dispute Under Investigation": "disputeUnderInvestigation",
@@ -307,6 +310,21 @@ function getMessageMatch(message: string): Match | null {
       /^Task "(.+)" has been blocked: (.+)$/,
       "taskBlocked",
       (match) => ({ title: match[1] ?? "", reason: match[2] ?? "" }),
+    ],
+    [
+      /^Task "(.+)" is ready for your review$/,
+      "taskReadyForReview",
+      (match) => ({ title: match[1] ?? "" }),
+    ],
+    [
+      /^Task "(.+)" was returned for changes$/,
+      "taskReturned",
+      (match) => ({ title: match[1] ?? "" }),
+    ],
+    [
+      /^Task "(.+)" was approved$/,
+      "taskApproved",
+      (match) => ({ title: match[1] ?? "" }),
     ],
     [
       /^Transit (.+) to (.+) is expected to arrive tomorrow\.$/,

@@ -32,6 +32,30 @@ import { useScopedI18n } from "@/locales/client";
 
 const NO_REVIEWER = "none";
 
+interface CreateTaskForm {
+  title: string;
+  description: string;
+  ownerId: string;
+  reviewerId: string;
+  dueDate: string;
+  dependsOn: Id<"caseTasks">[];
+}
+
+const EMPTY_CREATE_FORM: CreateTaskForm = {
+  title: "",
+  description: "",
+  ownerId: "",
+  reviewerId: NO_REVIEWER,
+  dueDate: "",
+  dependsOn: [],
+};
+
+interface AssignEdits {
+  ownerId?: string;
+  reviewerId?: string;
+  dueDate?: string;
+}
+
 export interface CaseRef {
   organizationId: Id<"organizations">;
   caseType: CaseTaskCaseType;
@@ -108,22 +132,11 @@ export function CreateTaskDialog({
   const errorMessage = useWorkErrorMessage();
   const members = useAssignableMembers(caseRef, open);
   const createTask = useMutation(api.caseTasks.create);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [ownerId, setOwnerId] = useState("");
-  const [reviewerId, setReviewerId] = useState(NO_REVIEWER);
-  const [dueDate, setDueDate] = useState("");
-  const [dependsOn, setDependsOn] = useState<Id<"caseTasks">[]>([]);
+  const [form, setForm] = useState<CreateTaskForm>(EMPTY_CREATE_FORM);
   const [submitting, setSubmitting] = useState(false);
-
-  const reset = () => {
-    setTitle("");
-    setDescription("");
-    setOwnerId("");
-    setReviewerId(NO_REVIEWER);
-    setDueDate("");
-    setDependsOn([]);
-  };
+  const { title, description, ownerId, reviewerId, dueDate, dependsOn } = form;
+  const update = (changes: Partial<CreateTaskForm>) =>
+    setForm((current) => ({ ...current, ...changes }));
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -145,7 +158,7 @@ export function CreateTaskDialog({
         dependsOnTaskIds: dependsOn.length > 0 ? dependsOn : undefined,
       });
       toast.success(t("toasts.created"));
-      reset();
+      setForm(EMPTY_CREATE_FORM);
       onOpenChange(false);
     } catch (error) {
       toast.error(errorMessage(error));
@@ -170,7 +183,7 @@ export function CreateTaskDialog({
               id="case-task-title"
               value={title}
               maxLength={200}
-              onChange={(event) => setTitle(event.target.value)}
+              onChange={(event) => update({ title: event.target.value })}
               required
             />
           </div>
@@ -182,7 +195,7 @@ export function CreateTaskDialog({
               id="case-task-description"
               value={description}
               maxLength={2000}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(event) => update({ description: event.target.value })}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -190,14 +203,14 @@ export function CreateTaskDialog({
               id="case-task-owner"
               label={t("fields.owner")}
               value={ownerId}
-              onChange={setOwnerId}
+              onChange={(value) => update({ ownerId: value })}
               members={members}
             />
             <MemberSelect
               id="case-task-reviewer"
               label={t("fields.reviewer")}
               value={reviewerId}
-              onChange={setReviewerId}
+              onChange={(value) => update({ reviewerId: value })}
               members={members?.filter((member) => member.userId !== ownerId)}
               allowNone
             />
@@ -206,7 +219,7 @@ export function CreateTaskDialog({
             id="case-task-due"
             label={t("fields.dueDate")}
             value={dueDate}
-            onChange={setDueDate}
+            onChange={(value) => update({ dueDate: value })}
           />
           {dependencyOptions.length > 0 ? (
             <fieldset className="space-y-2">
@@ -221,11 +234,12 @@ export function CreateTaskDialog({
                       id={checkboxId}
                       checked={dependsOn.includes(option._id)}
                       onCheckedChange={(checked) =>
-                        setDependsOn((current) =>
-                          checked === true
-                            ? [...current, option._id]
-                            : current.filter((id) => id !== option._id),
-                        )
+                        update({
+                          dependsOn:
+                            checked === true
+                              ? [...dependsOn, option._id]
+                              : dependsOn.filter((id) => id !== option._id),
+                        })
                       }
                     />
                     <Label htmlFor={checkboxId} className="font-normal">
@@ -275,12 +289,14 @@ export function AssignTaskDialog({
   const errorMessage = useWorkErrorMessage();
   const members = useAssignableMembers(caseRef, open);
   const assign = useMutation(api.caseTasks.assign);
-  const [ownerId, setOwnerId] = useState<string>(task.ownerId);
-  const [reviewerId, setReviewerId] = useState<string>(
-    task.reviewerId ?? NO_REVIEWER,
-  );
-  const [dueDate, setDueDate] = useState(dueDateValue(task.dueDate));
+  // Only the fields the user changed; everything else shows the task's current value.
+  const [edits, setEdits] = useState<AssignEdits>({});
   const [submitting, setSubmitting] = useState(false);
+  const ownerId = edits.ownerId ?? task.ownerId;
+  const reviewerId = edits.reviewerId ?? task.reviewerId ?? NO_REVIEWER;
+  const dueDate = edits.dueDate ?? dueDateValue(task.dueDate);
+  const update = (changes: AssignEdits) =>
+    setEdits((current) => ({ ...current, ...changes }));
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -322,14 +338,14 @@ export function AssignTaskDialog({
               id={`case-task-owner-${task._id}`}
               label={t("fields.owner")}
               value={ownerId}
-              onChange={setOwnerId}
+              onChange={(value) => update({ ownerId: value })}
               members={members}
             />
             <MemberSelect
               id={`case-task-reviewer-${task._id}`}
               label={t("fields.reviewer")}
               value={reviewerId}
-              onChange={setReviewerId}
+              onChange={(value) => update({ reviewerId: value })}
               members={members?.filter((member) => member.userId !== ownerId)}
               allowNone
             />
@@ -338,7 +354,7 @@ export function AssignTaskDialog({
             id={`case-task-due-${task._id}`}
             label={t("fields.dueDate")}
             value={dueDate}
-            onChange={setDueDate}
+            onChange={(value) => update({ dueDate: value })}
           />
           <DialogFooter>
             <Button
