@@ -325,6 +325,7 @@ test("owned upload binds organization and uploader before attachment and session
       ...uploadArgs,
       organizationId: foreign.organizationId,
       collectionId: foreign.collectionId,
+      isPrimary: false,
     }),
   ).rejects.toThrow("different organization");
   expect(
@@ -715,6 +716,7 @@ test("an upload session cannot be used after expiry and another member cannot cl
     authedForUser(t, other.userId).mutation(api.media.create, {
       ...args,
       storageId,
+      isPrimary: false,
     }),
   ).rejects.toThrow("different uploader");
   expect(
