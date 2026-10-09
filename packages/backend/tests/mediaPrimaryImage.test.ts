@@ -20,6 +20,14 @@ afterEach(() => {
 
 const MEDIA_STAFF = ["media.upload", "media.read"];
 
+function primaryNames(
+  media: Array<{ fileName: string; isPrimary: boolean }> | undefined,
+) {
+  return (media ?? []).flatMap((item) =>
+    item.isPrimary ? [item.fileName] : [],
+  );
+}
+
 async function storeUpload(
   t: ConvexTest,
   {
@@ -71,7 +79,7 @@ async function mediaStaffWithObject(t: ConvexTest) {
     const media = await staff.query(api.media.list, {
       collectionId: own.collectionId,
     });
-    return media.filter((item) => item.isPrimary).map((item) => item.fileName);
+    return primaryNames(media);
   }
 
   return { ...own, staff, upload, primaryFileNames };
@@ -330,9 +338,7 @@ describe("choosing the primary image", () => {
     const media = await staff.query(api.media.list, {
       collectionId: lastObjectId,
     });
-    expect(
-      media.filter((item) => item.isPrimary).map((item) => item.fileName),
-    ).toEqual(["front.jpg"]);
+    expect(primaryNames(media)).toEqual(["front.jpg"]);
   });
 
   test("staff of another organization cannot choose the primary image", async () => {
@@ -392,14 +398,6 @@ async function draftStaff(t: ConvexTest) {
   return { ...own, staff, draftFile };
 }
 
-function primaryDraftFileNames(
-  draftMedia: Array<{ fileName: string; isPrimary: boolean }> | undefined,
-) {
-  return (draftMedia ?? [])
-    .filter((item) => item.isPrimary)
-    .map((item) => item.fileName);
-}
-
 describe("primary image on object drafts", () => {
   test("saving a draft keeps one primary image when several are flagged", async () => {
     const t = createConvexTest();
@@ -419,7 +417,7 @@ describe("primary image on object drafts", () => {
     });
 
     const draft = await staff.query(api.accessions.get, { accessionId });
-    expect(primaryDraftFileNames(draft?.draftMedia)).toEqual(["back.jpg"]);
+    expect(primaryNames(draft?.draftMedia)).toEqual(["back.jpg"]);
   });
 
   test("publishing a draft saved with conflicting primary flags leaves one primary image", async () => {
@@ -458,9 +456,7 @@ describe("primary image on object drafts", () => {
     const media = await staff.query(api.media.list, {
       collectionId: published.collectionId,
     });
-    expect(
-      media.filter((item) => item.isPrimary).map((item) => item.fileName),
-    ).toEqual(["front.jpg"]);
+    expect(primaryNames(media)).toEqual(["front.jpg"]);
   });
 
   test("a draft keeps its primary image when staff without media upload permission save it", async () => {
@@ -494,6 +490,6 @@ describe("primary image on object drafts", () => {
     });
     const draft = await staff.query(api.accessions.get, { accessionId });
     expect(draft?.draftObjectData?.title).toBe("Carved wooden bowl");
-    expect(primaryDraftFileNames(draft?.draftMedia)).toEqual(["front.jpg"]);
+    expect(primaryNames(draft?.draftMedia)).toEqual(["front.jpg"]);
   });
 });

@@ -336,6 +336,7 @@ test("owned upload binds organization and uploader before attachment and session
     ...uploadArgs,
     organizationId: own.organizationId,
     collectionId: own.collectionId,
+    isPrimary: false,
   });
   expect(
     await authorized.query(api.media.list, { collectionId: own.collectionId }),
@@ -786,6 +787,7 @@ test("a trusted HTTP upload passes public-image ownership review and a fresh ver
   const mediaId = await authorized.mutation(api.media.create, {
     ...uploadArgs,
     storageId,
+    isPrimary: false,
   });
   await authorized.mutation(api.media.updateRights, {
     mediaId,
