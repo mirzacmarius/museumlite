@@ -452,6 +452,48 @@ test("approval does not publish a typed object after its module is disabled", as
   expect(accession?.collectionId).toBeUndefined();
 });
 
+test("blank intake values are not published as details", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await createIntakeRegistrar(t);
+  const publish = async (
+    accessionNumber: string,
+    typeDetails: {
+      collectionType: "archive";
+      fields: { documentType?: string; keywords?: string[] };
+    },
+  ) => {
+    const accessionId = await authed.mutation(
+      api.accessions.upsertObjectDraft,
+      {
+        organizationId,
+        saveMode: "submit",
+        objectData: {
+          accessionNumber,
+          title: "Archive intake",
+          collectionType: "archive",
+          typeDetails,
+        },
+      },
+    );
+    await authed.mutation(api.accessions.approve, { accessionId });
+    const collectionId = await publishedObjectId(authed, accessionId);
+    return authed.query(api.archiveDetails.get, { collectionId });
+  };
+
+  expect(
+    await publish("INT-007", {
+      collectionType: "archive",
+      fields: { documentType: "   ", keywords: [] },
+    }),
+  ).toBeNull();
+  expect(
+    await publish("INT-008", {
+      collectionType: "archive",
+      fields: { documentType: " Board minutes ", keywords: ["", " board "] },
+    }),
+  ).toMatchObject({ documentType: "Board minutes", keywords: ["board"] });
+});
+
 test("natural history details cannot be written while the module is disabled", async () => {
   const t = createConvexTest();
   const { organizationId, userId, authed } = await createIntakeRegistrar(t, {

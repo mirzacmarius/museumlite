@@ -8,7 +8,7 @@ import { useI18n } from "@/locales/client";
 type FieldSpecFor<V> = [NonNullable<V>] extends [boolean]
   ? { kind: "boolean"; label: string }
   : [NonNullable<V>] extends [number]
-    ? { kind: "number" | "date"; label: string }
+    ? { kind: "number" | "year" | "date"; label: string }
     : [NonNullable<V>] extends [string[]]
       ? { kind: "list"; label: string }
       : string extends NonNullable<V>
@@ -28,10 +28,26 @@ type TypeDetailFieldSpecs<T extends CollectionModuleId> = {
 
 export type TypeDetailFieldSpec =
   | { kind: "boolean"; label: string }
-  | { kind: "number" | "date"; label: string }
+  | { kind: "number" | "year" | "date"; label: string }
   | { kind: "list"; label: string }
   | { kind: "text" | "textarea" | "url"; label: string }
   | { kind: "select"; label: string; options: Record<string, string> };
+
+/** Translated names of the module-backed collection types. */
+export function useCollectionModuleLabels(): Record<
+  CollectionModuleId,
+  string
+> {
+  const t = useI18n();
+  return {
+    fine_art: t("untranslatedRecords.objects.tabs.fine_art"),
+    wine: t("untranslatedRecords.objects.tabs.wine"),
+    automotive: t("untranslatedRecords.objects.tabs.automotive"),
+    natural_history: t("untranslatedRecords.objects.tabs.natural_history"),
+    archive: t("untranslatedRecords.objects.tabs.archive"),
+    coins_stamps: t("untranslatedRecords.objects.tabs.coins_stamps"),
+  };
+}
 
 export function useTypeDetailFieldSpecs() {
   const t = useI18n();
@@ -85,7 +101,7 @@ export function useTypeDetailFieldSpecs() {
 
     const wine: TypeDetailFieldSpecs<"wine"> = {
       producer: { kind: "text", label: t("modules.wine.producer") },
-      vintage: { kind: "number", label: t("modules.wine.vintage") },
+      vintage: { kind: "year", label: t("modules.wine.vintage") },
       region: { kind: "text", label: t("modules.wine.region") },
       appellation: { kind: "text", label: t("modules.wine.appellation") },
       varietal: { kind: "text", label: t("modules.wine.varietal") },
@@ -99,11 +115,11 @@ export function useTypeDetailFieldSpecs() {
       rackNumber: { kind: "text", label: t("modules.wine.rack") },
       rowNumber: { kind: "text", label: t("modules.wine.row") },
       peakWindowStart: {
-        kind: "number",
+        kind: "year",
         label: t("objectTypeDetails.fields.peakWindowStart"),
       },
       peakWindowEnd: {
-        kind: "number",
+        kind: "year",
         label: t("objectTypeDetails.fields.peakWindowEnd"),
       },
       fillLevel: {
@@ -146,7 +162,7 @@ export function useTypeDetailFieldSpecs() {
     const automotive: TypeDetailFieldSpecs<"automotive"> = {
       make: { kind: "text", label: t("objectTypeDetails.fields.make") },
       model: { kind: "text", label: t("objectTypeDetails.fields.model") },
-      year: { kind: "number", label: t("objectTypeDetails.fields.year") },
+      year: { kind: "year", label: t("objectTypeDetails.fields.year") },
       vin: { kind: "text", label: t("modules.vehicle.vin") },
       bodyStyle: { kind: "text", label: t("modules.vehicle.bodyStyle") },
       engineNumber: { kind: "text", label: t("modules.vehicle.engineNumber") },
@@ -348,7 +364,7 @@ export function useTypeDetailFieldSpecs() {
       },
       currency: { kind: "text", label: t("modules.coins_stamps.currency") },
       issueYear: {
-        kind: "number",
+        kind: "year",
         label: t("objectTypeDetails.fields.issueYear"),
       },
       issuePeriod: {
@@ -433,18 +449,8 @@ export function useTypeDetailFieldSpecs() {
       coins_stamps: coinsStamps,
     };
 
-    const typeLabels: Record<CollectionModuleId, string> = {
-      fine_art: t("untranslatedRecords.objects.tabs.fine_art"),
-      wine: t("untranslatedRecords.objects.tabs.wine"),
-      automotive: t("untranslatedRecords.objects.tabs.automotive"),
-      natural_history: t("untranslatedRecords.objects.tabs.natural_history"),
-      archive: t("untranslatedRecords.objects.tabs.archive"),
-      coins_stamps: t("untranslatedRecords.objects.tabs.coins_stamps"),
-    };
-
     return {
       fieldSpecs,
-      typeLabels,
       booleanLabels: {
         yes: t("modules.common.yes"),
         no: t("modules.common.no"),

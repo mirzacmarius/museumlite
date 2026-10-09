@@ -2,7 +2,10 @@ import { ConvexError } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import type { ObjectDraftTypeDetails } from "./collectionTypeDetailFields";
+import {
+  type ObjectDraftTypeDetails,
+  withoutBlankDetailValues,
+} from "./collectionTypeDetailFields";
 import { requireCollectionTypeModuleEnabled } from "./featureGates";
 import type { CollectionType } from "./moduleCatalog";
 
@@ -46,10 +49,6 @@ export async function validateObjectDraftTypeDetails(
   );
 }
 
-function hasDetailValues(fields: ObjectDraftTypeDetails["fields"]) {
-  return Object.values(fields).some((value) => value !== undefined);
-}
-
 async function insertTypeDetails(
   ctx: MutationCtx,
   typeDetails: ObjectDraftTypeDetails,
@@ -65,7 +64,7 @@ async function insertTypeDetails(
         entityType: "fineArtDetails",
         entityId: await ctx.db.insert("fineArtDetails", {
           ...record,
-          ...typeDetails.fields,
+          ...withoutBlankDetailValues(typeDetails.fields),
         }),
       };
     case "wine":
@@ -73,7 +72,7 @@ async function insertTypeDetails(
         entityType: "wineDetails",
         entityId: await ctx.db.insert("wineDetails", {
           ...record,
-          ...typeDetails.fields,
+          ...withoutBlankDetailValues(typeDetails.fields),
         }),
       };
     case "automotive":
@@ -81,7 +80,7 @@ async function insertTypeDetails(
         entityType: "vehicleDetails",
         entityId: await ctx.db.insert("vehicleDetails", {
           ...record,
-          ...typeDetails.fields,
+          ...withoutBlankDetailValues(typeDetails.fields),
         }),
       };
     case "natural_history":
@@ -89,7 +88,7 @@ async function insertTypeDetails(
         entityType: "naturalHistoryDetails",
         entityId: await ctx.db.insert("naturalHistoryDetails", {
           ...record,
-          ...typeDetails.fields,
+          ...withoutBlankDetailValues(typeDetails.fields),
         }),
       };
     case "archive":
@@ -97,7 +96,7 @@ async function insertTypeDetails(
         entityType: "archiveDetails",
         entityId: await ctx.db.insert("archiveDetails", {
           ...record,
-          ...typeDetails.fields,
+          ...withoutBlankDetailValues(typeDetails.fields),
         }),
       };
     case "coins_stamps":
@@ -105,42 +104,34 @@ async function insertTypeDetails(
         entityType: "coinsStampsDetails",
         entityId: await ctx.db.insert("coinsStampsDetails", {
           ...record,
-          ...typeDetails.fields,
+          ...withoutBlankDetailValues(typeDetails.fields),
         }),
       };
   }
 }
 
 /**
- * Creates the detail record captured on an accession draft for the object
- * being published from it. Only details for the object's own collection type
- * are published.
+ * Creates the detail record captured on a validated accession draft for the
+ * object published from it. Blank values are not recorded.
  */
 export async function publishObjectDraftTypeDetails(
   ctx: MutationCtx,
   {
     collectionId,
     organizationId,
-    collectionType,
     typeDetails,
     publishedBy,
     publishedAt,
   }: {
     collectionId: Id<"collections">;
     organizationId: Id<"organizations">;
-    collectionType: CollectionType | undefined;
-    typeDetails: ObjectDraftTypeDetails | undefined;
+    typeDetails: ObjectDraftTypeDetails;
     publishedBy: Id<"users">;
     publishedAt: number;
   },
 ) {
-  if (
-    !typeDetails ||
-    typeDetails.collectionType !== collectionType ||
-    !hasDetailValues(typeDetails.fields)
-  ) {
-    return;
-  }
+  const fields = withoutBlankDetailValues(typeDetails.fields);
+  if (Object.keys(fields).length === 0) return;
 
   const { entityType, entityId } = await insertTypeDetails(ctx, typeDetails, {
     collectionId,
@@ -153,6 +144,6 @@ export async function publishObjectDraftTypeDetails(
     action: "created",
     entityType,
     entityId,
-    changes: typeDetails.fields,
+    changes: fields,
   });
 }

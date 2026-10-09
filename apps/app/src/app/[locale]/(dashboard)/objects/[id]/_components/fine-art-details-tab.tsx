@@ -144,7 +144,11 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
                 ? tRoot("objects.filters.loaned")
                 : details.displayStatus === "in_transit"
                   ? tRoot("loans.kpis.inTransit")
-                  : details.displayStatus || common("unknown")}
+                  : details.displayStatus === "in_storage"
+                    ? tRoot("objectTypeDetails.options.inStorage")
+                    : details.displayStatus === "conservation"
+                      ? tRoot("untranslatedRecords.objects.tabs.conservation")
+                      : common("unknown")}
           </span>
         </div>
       </div>

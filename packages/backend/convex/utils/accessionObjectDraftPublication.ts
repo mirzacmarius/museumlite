@@ -44,17 +44,21 @@ export async function publishAccessionObjectDraft(
     catalogIdentifier,
   );
   const draftObjectData = accession.draftObjectData;
+  // Type-specific details belong to accepted objects only.
+  const typeDetails =
+    status === "active" ? draftObjectData?.typeDetails : undefined;
   if (draftObjectData) {
     await validateObjectReferences(
       ctx,
       accession.organizationId,
       draftObjectData,
     );
-    await validateObjectDraftTypeDetails(
-      ctx,
-      accession.organizationId,
-      draftObjectData,
-    );
+    if (status === "active")
+      await validateObjectDraftTypeDetails(
+        ctx,
+        accession.organizationId,
+        draftObjectData,
+      );
   }
   const collectionGroupIds =
     draftObjectData?.collectionGroupIds ??
@@ -136,14 +140,14 @@ export async function publishAccessionObjectDraft(
 
   await Promise.all([
     syncCollectionOptionUsages(ctx, collectionId),
-    publishObjectDraftTypeDetails(ctx, {
-      collectionId,
-      organizationId: accession.organizationId,
-      collectionType: draftObjectData?.collectionType,
-      typeDetails: draftObjectData?.typeDetails,
-      publishedBy: catalogedBy,
-      publishedAt: catalogedAt,
-    }),
+    typeDetails &&
+      publishObjectDraftTypeDetails(ctx, {
+        collectionId,
+        organizationId: accession.organizationId,
+        typeDetails,
+        publishedBy: catalogedBy,
+        publishedAt: catalogedAt,
+      }),
   ]);
 
   await Promise.all([

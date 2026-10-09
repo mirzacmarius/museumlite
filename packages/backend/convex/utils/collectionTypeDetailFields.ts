@@ -345,6 +345,34 @@ export type ObjectDraftTypeDetails = Infer<
   typeof objectDraftTypeDetailsValidator
 >;
 
+function withoutBlankValue(value: unknown) {
+  if (typeof value === "string") return value.trim() || undefined;
+  if (typeof value === "number")
+    return Number.isFinite(value) ? value : undefined;
+  if (Array.isArray(value)) {
+    const items = value.flatMap((item) =>
+      typeof item === "string" ? item.trim() || [] : [item],
+    );
+    return items.length > 0 ? items : undefined;
+  }
+  return value;
+}
+
+/**
+ * Trims text, and drops empty text, empty lists and non-finite numbers, so a
+ * blank input never becomes a recorded detail.
+ */
+export function withoutBlankDetailValues<F extends Record<string, unknown>>(
+  fields: F,
+): Partial<F> {
+  return Object.fromEntries(
+    Object.entries(fields).flatMap(([name, value]) => {
+      const kept = withoutBlankValue(value);
+      return kept === undefined ? [] : [[name, kept]];
+    }),
+  ) as Partial<F>;
+}
+
 /** Fields every type-specific detail record carries besides its details. */
 export const typeDetailRecordFields = {
   collectionId: v.id("collections"),

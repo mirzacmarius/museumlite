@@ -24,12 +24,25 @@ import {
 const UNSET = "__unset__";
 
 function toDateInputValue(timestamp: number) {
-  return new Date(timestamp).toISOString().slice(0, 10);
+  const date = new Date(timestamp);
+  return [
+    String(date.getFullYear()).padStart(4, "0"),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
+/**
+ * Local noon on the chosen day, as elsewhere in the app, so the date reads the
+ * same in the staff member's time zone. `setFullYear` keeps years below 100.
+ */
 function fromDateInputValue(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return year && month && day ? Date.UTC(year, month - 1, day) : undefined;
+  const match = /^(\d{4,})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const date = new Date(0);
+  date.setFullYear(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  date.setHours(12, 0, 0, 0);
+  return date.getTime();
 }
 
 interface TypeDetailFieldInputProps {
@@ -69,12 +82,12 @@ function TypeDetailFieldInput({
         />
       );
     case "number":
+    case "year":
       return (
         <Input
           id={id}
           type="number"
-          step="any"
-          inputMode="decimal"
+          step={spec.kind === "year" ? 1 : "any"}
           // A numeric value keeps in-progress input such as "1.0" intact.
           value={typeof value === "number" ? value : ""}
           onChange={(event) => {

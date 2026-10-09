@@ -21,6 +21,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useI18n, useScopedI18n } from "@/locales/client";
+import { useObjectDraftErrorMessage } from "../../../objects/_components/object-type-details/use-object-draft-error-message";
 
 interface ApprovalWorkflowProps {
   accessionId: string;
@@ -111,6 +112,7 @@ export function ApprovalWorkflow({
   const [exceptionReason, setExceptionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<ApprovalErrorMessage | null>(null);
+  const describeDraftError = useObjectDraftErrorMessage();
 
   const accession = useQuery(
     api.accessions.get,
@@ -156,7 +158,15 @@ export function ApprovalWorkflow({
       setComment("");
       setExceptionReason("");
     } catch (err) {
-      setError(getApprovalErrorMessage(err, t));
+      const draftError = describeDraftError(err);
+      setError(
+        draftError
+          ? {
+              title: t("approval.errors.defaultTitle"),
+              description: draftError,
+            }
+          : getApprovalErrorMessage(err, t),
+      );
     } finally {
       setIsSubmitting(false);
     }

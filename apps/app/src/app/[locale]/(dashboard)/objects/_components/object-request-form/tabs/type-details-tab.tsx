@@ -8,7 +8,7 @@ import type {
   UpdateCollectionFormField,
 } from "../../collection-form-shared/types";
 import { TypeDetailsEditor } from "../../object-type-details/type-details-editor";
-import { useTypeDetailFieldSpecs } from "../../object-type-details/use-type-detail-field-specs";
+import { useCollectionModuleLabels } from "../../object-type-details/use-type-detail-field-specs";
 
 interface ObjectRequestTypeDetailsTabProps {
   collectionType: CollectionModuleId;
@@ -22,7 +22,7 @@ export function ObjectRequestTypeDetailsTab({
   updateField,
 }: ObjectRequestTypeDetailsTabProps) {
   const t = useI18n();
-  const { typeLabels } = useTypeDetailFieldSpecs();
+  const typeLabels = useCollectionModuleLabels();
   const fields =
     formData.typeDetails?.collectionType === collectionType
       ? formData.typeDetails.fields

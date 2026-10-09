@@ -360,11 +360,6 @@ export const upsertObjectDraft = mutation({
       : null;
 
     await validateObjectReferences(ctx, args.organizationId, args.objectData);
-    await validateObjectDraftTypeDetails(
-      ctx,
-      args.organizationId,
-      args.objectData,
-    );
     const normalizedObjectData = {
       ...args.objectData,
       title: args.objectData.title.trim(),
@@ -424,6 +419,11 @@ export const upsertObjectDraft = mutation({
       }
 
       await requirePermission(ctx, args.organizationId, "collections.update");
+      await validateObjectDraftTypeDetails(
+        ctx,
+        args.organizationId,
+        args.objectData,
+      );
 
       const updatedWorkflowStep = shouldAutoApproveSubmit
         ? undefined
@@ -541,6 +541,11 @@ export const upsertObjectDraft = mutation({
     }
 
     await requirePermission(ctx, args.organizationId, "collections.create");
+    await validateObjectDraftTypeDetails(
+      ctx,
+      args.organizationId,
+      args.objectData,
+    );
 
     let accessionNumber = normalizedObjectData.accessionNumber?.trim()
       ? normalizedObjectData.accessionNumber

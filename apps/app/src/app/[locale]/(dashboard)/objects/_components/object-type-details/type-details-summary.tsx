@@ -2,18 +2,27 @@
 
 import type { ObjectDraftTypeDetails } from "@v1/backend/convex/utils/collectionTypeDetailFields";
 import { formatDate } from "@/lib/format-date";
-import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import type { TypeDetailFieldValue } from "./type-detail-values";
 import {
   type TypeDetailFieldSpec,
+  useCollectionModuleLabels,
   useTypeDetailFieldSpecs,
 } from "./use-type-detail-field-specs";
+
+const fractionDigits = { maximumFractionDigits: 6 };
+const DETAIL_NUMBER_FORMATS = {
+  en: new Intl.NumberFormat("en", fractionDigits),
+  es: new Intl.NumberFormat("es", fractionDigits),
+  fr: new Intl.NumberFormat("fr", fractionDigits),
+  no: new Intl.NumberFormat("nb-NO", fractionDigits),
+  ro: new Intl.NumberFormat("ro", fractionDigits),
+};
 
 function formatFieldValue(
   spec: TypeDetailFieldSpec,
   value: TypeDetailFieldValue,
-  locale: ReturnType<typeof useCurrentLocale>,
+  locale: keyof typeof DETAIL_NUMBER_FORMATS,
   booleanLabels: { yes: string; no: string },
 ) {
   if (Array.isArray(value)) return value.join(", ");
@@ -21,12 +30,11 @@ function formatFieldValue(
     return value ? booleanLabels.yes : booleanLabels.no;
   }
   if (typeof value === "number") {
-    return spec.kind === "date"
-      ? formatDate(new Date(value), locale, {
-          dateStyle: "medium",
-          timeZone: "UTC",
-        })
-      : formatNumber(value, locale);
+    if (spec.kind === "year") return String(value);
+    if (spec.kind === "date") {
+      return formatDate(new Date(value), locale, { dateStyle: "medium" });
+    }
+    return DETAIL_NUMBER_FORMATS[locale].format(value);
   }
   return spec.kind === "select" ? (spec.options[value] ?? value) : value;
 }
@@ -39,7 +47,8 @@ export function TypeDetailsSummary({
 }) {
   const t = useI18n();
   const locale = useCurrentLocale();
-  const { fieldSpecs, typeLabels, booleanLabels } = useTypeDetailFieldSpecs();
+  const typeLabels = useCollectionModuleLabels();
+  const { fieldSpecs, booleanLabels } = useTypeDetailFieldSpecs();
   const values: Partial<Record<string, TypeDetailFieldValue>> =
     typeDetails.fields;
   const entries = Object.entries(

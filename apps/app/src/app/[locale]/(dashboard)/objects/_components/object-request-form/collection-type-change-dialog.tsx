@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
 import { useI18n } from "@/locales/client";
-import { useTypeDetailFieldSpecs } from "../object-type-details/use-type-detail-field-specs";
+import { useCollectionModuleLabels } from "../object-type-details/use-type-detail-field-specs";
 
 interface CollectionTypeChangeDialogProps {
   currentCollectionType: CollectionType | undefined;
@@ -32,7 +32,7 @@ export function CollectionTypeChangeDialog({
   onCancel,
 }: CollectionTypeChangeDialogProps) {
   const t = useI18n();
-  const { typeLabels } = useTypeDetailFieldSpecs();
+  const typeLabels = useCollectionModuleLabels();
   const currentTypeLabel = isCollectionModuleId(currentCollectionType)
     ? typeLabels[currentCollectionType]
     : "";

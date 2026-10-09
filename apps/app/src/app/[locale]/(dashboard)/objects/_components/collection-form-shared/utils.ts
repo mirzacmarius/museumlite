@@ -159,6 +159,10 @@ export function getFormSignature(formData: CollectionFormData) {
       ) || [],
     links:
       formData.links?.map(({ localId: _localId, ...entry }) => entry) || [],
+    typeDetails: toObjectDraftTypeDetails(
+      formData.collectionType,
+      formData.typeDetails,
+    ),
   });
 }
 
