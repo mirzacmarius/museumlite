@@ -1,19 +1,61 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { query } from "./_generated/server";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { createOrganizationQuery } from "./utils/convexAuth";
+import {
+  CurrencyTotalsBuilder,
+  currencyTotalsValidator,
+  normalizeCurrency,
+  requireAmount,
+  requireCurrencyCode,
+} from "./utils/currency";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
-import { computeCoverageAlerts } from "./utils/insuranceCoverageAlerts";
-import { computeInsuranceStats } from "./utils/insuranceStats";
+import {
+  type CoverageTarget,
+  collectInForceCoverage,
+  coverageInterval,
+  coverageState,
+  coverageStateValidator,
+  coverageTarget,
+  coverageTargetKindValidator,
+  coverageTargetValidator,
+  describeTarget,
+  effectivePolicyStatus,
+  recordedTargets,
+  requireCoveragePeriod,
+  requireTargetInOrganization,
+  targetFields,
+  targetId,
+} from "./utils/insuranceCoverage";
+import {
+  computeCoverageAlerts,
+  coverageAlertsValidator,
+} from "./utils/insuranceCoverageAlerts";
+import {
+  computeInsuranceStats,
+  insuranceStatsValidator,
+} from "./utils/insuranceStats";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,
   requirePermission,
 } from "./utils/permissions";
+import {
+  appraisalAgeDays,
+  appraisalExpiresAt,
+  currentValuationFor,
+  DAY_MS,
+  INSURANCE_APPRAISAL_MAX_AGE_MS,
+  VALUATION_MAX_AGE_MS,
+} from "./utils/valuation";
+import { valuationError } from "./utils/valuationErrors";
 
 const insuranceReadQuery = createOrganizationQuery("loans.read");
 
@@ -77,6 +119,55 @@ const payoutMethodValidator = v.union(
   v.literal("replacement"),
 );
 
+type ReadCtx = Pick<QueryCtx, "db">;
+
+function requirePolicyPeriod(effectiveDate: number, expirationDate: number) {
+  if (
+    !Number.isFinite(effectiveDate) ||
+    !Number.isFinite(expirationDate) ||
+    expirationDate <= effectiveDate
+  ) {
+    throw valuationError(
+      "INVALID_POLICY_PERIOD",
+      "The policy must expire after it takes effect",
+    );
+  }
+}
+
+async function requireUser(ctx: MutationCtx) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+  return userId;
+}
+
+async function requirePolicyNumberAvailable(
+  ctx: ReadCtx,
+  organizationId: Id<"organizations">,
+  policyNumber: string,
+) {
+  const existingPolicy = await ctx.db
+    .query("insurancePolicies")
+    .withIndex("by_organization_and_policyNumber", (q) =>
+      q.eq("organizationId", organizationId).eq("policyNumber", policyNumber),
+    )
+    .first();
+  if (existingPolicy) {
+    throw valuationError("POLICY_NUMBER_TAKEN", "Policy number already exists");
+  }
+}
+
+/** Recorded status for a newly dated policy. */
+function statusFromDates(
+  effectiveDate: number,
+  expirationDate: number,
+  now: number,
+): "active" | "pending" | "expired" {
+  if (expirationDate < now) return "expired";
+  return effectiveDate <= now ? "active" : "pending";
+}
+
 export const createPolicy = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -87,6 +178,7 @@ export const createPolicy = mutation({
     carrierEmail: v.optional(v.string()),
     policyType: policyTypeValidator,
     coverageAmount: v.number(),
+    currency: v.string(),
     deductible: v.optional(v.number()),
     perItemLimit: v.optional(v.number()),
     premiumAmount: v.optional(v.number()),
@@ -102,60 +194,28 @@ export const createPolicy = mutation({
   },
   returns: v.id("insurancePolicies"),
   handler: async (ctx, args) => {
-    const [userId] = await Promise.all([
-      getAuthUserId(ctx),
-      requirePermission(
-        ctx,
-        args.organizationId,
-        "organization.manage_settings",
-      ),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const existingPolicy = await ctx.db
-      .query("insurancePolicies")
-      .withIndex("by_organization_and_policyNumber", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("policyNumber", args.policyNumber),
-      )
-      .first();
-
-    if (existingPolicy) {
-      throw new Error("Policy number already exists");
-    }
+    const userId = await requireUser(ctx);
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+    const currency = requireCurrencyCode(args.currency);
+    requirePolicyPeriod(args.effectiveDate, args.expirationDate);
+    requireAmount(args.coverageAmount, "Coverage amount");
+    requireAmount(args.deductible, "Deductible");
+    requireAmount(args.perItemLimit, "Per-item limit");
+    requireAmount(args.premiumAmount, "Premium");
+    const policyNumber = args.policyNumber.trim();
+    await requirePolicyNumberAvailable(ctx, args.organizationId, policyNumber);
 
     const now = Date.now();
-    let status: "active" | "pending" | "expired" =
-      args.effectiveDate <= now ? "active" : "pending";
-    if (args.expirationDate < now) {
-      status = "expired";
-    }
-
     const policyId = await ctx.db.insert("insurancePolicies", {
-      organizationId: args.organizationId,
-      policyNumber: args.policyNumber,
-      carrier: args.carrier,
-      carrierContact: args.carrierContact,
-      carrierPhone: args.carrierPhone,
-      carrierEmail: args.carrierEmail,
-      policyType: args.policyType,
-      coverageAmount: args.coverageAmount,
-      deductible: args.deductible,
-      perItemLimit: args.perItemLimit,
-      premiumAmount: args.premiumAmount,
-      premiumFrequency: args.premiumFrequency,
-      nextPremiumDue: args.nextPremiumDue,
-      effectiveDate: args.effectiveDate,
-      expirationDate: args.expirationDate,
-      renewalDate: args.renewalDate,
-      autoRenew: args.autoRenew,
-      status,
-      territory: args.territory,
-      exclusions: args.exclusions,
-      notes: args.notes,
+      ...args,
+      policyNumber,
+      carrier: args.carrier.trim(),
+      currency,
+      status: statusFromDates(args.effectiveDate, args.expirationDate, now),
       createdBy: userId,
       createdAt: now,
     });
@@ -166,7 +226,13 @@ export const createPolicy = mutation({
       action: "created",
       entityType: "insurancePolicy",
       entityId: policyId,
-      changes: { policyNumber: args.policyNumber, carrier: args.carrier },
+      changes: {
+        policyNumber,
+        carrier: args.carrier,
+        currency,
+        effectiveDate: args.effectiveDate,
+        expirationDate: args.expirationDate,
+      },
     });
 
     return policyId;
@@ -183,6 +249,7 @@ export const updatePolicy = mutation({
     carrierEmail: v.optional(v.string()),
     policyType: v.optional(policyTypeValidator),
     coverageAmount: v.optional(v.number()),
+    currency: v.optional(v.string()),
     deductible: v.optional(v.number()),
     perItemLimit: v.optional(v.number()),
     premiumAmount: v.optional(v.number()),
@@ -199,15 +266,10 @@ export const updatePolicy = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, policy] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.policyId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireUser(ctx);
+    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
-      throw new Error("Policy not found");
+      throw valuationError("REFERENCE_NOT_FOUND", "Policy not found");
     }
 
     await requirePermission(
@@ -216,25 +278,51 @@ export const updatePolicy = mutation({
       "organization.manage_settings",
     );
 
-    if (args.policyNumber && args.policyNumber !== policy.policyNumber) {
-      const existingPolicy = await ctx.db
-        .query("insurancePolicies")
-        .withIndex("by_organization_and_policyNumber", (q) =>
-          q
-            .eq("organizationId", policy.organizationId)
-            .eq("policyNumber", args.policyNumber as string),
-        )
-        .first();
+    const { policyId, ...updates } = args;
+    const filteredUpdates: Partial<Doc<"insurancePolicies">> =
+      Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined),
+      );
 
-      if (existingPolicy) {
-        throw new Error("Policy number already exists");
+    if (args.policyNumber !== undefined) {
+      const policyNumber = args.policyNumber.trim();
+      if (policyNumber !== policy.policyNumber) {
+        await requirePolicyNumberAvailable(
+          ctx,
+          policy.organizationId,
+          policyNumber,
+        );
+      }
+      filteredUpdates.policyNumber = policyNumber;
+    }
+    if (args.currency !== undefined) {
+      filteredUpdates.currency = requireCurrencyCode(args.currency);
+    }
+    requireAmount(args.coverageAmount, "Coverage amount");
+    requireAmount(args.deductible, "Deductible");
+    requireAmount(args.perItemLimit, "Per-item limit");
+    requireAmount(args.premiumAmount, "Premium");
+
+    const effectiveDate = args.effectiveDate ?? policy.effectiveDate;
+    const expirationDate = args.expirationDate ?? policy.expirationDate;
+    const datesChanged =
+      args.effectiveDate !== undefined || args.expirationDate !== undefined;
+    if (datesChanged) {
+      requirePolicyPeriod(effectiveDate, expirationDate);
+      const now = Date.now();
+      if (
+        args.status === undefined &&
+        (policy.status === "active" ||
+          policy.status === "pending" ||
+          policy.status === "expired")
+      ) {
+        filteredUpdates.status = statusFromDates(
+          effectiveDate,
+          expirationDate,
+          now,
+        );
       }
     }
-
-    const { policyId, ...updates } = args;
-    const filteredUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([_, v]) => v !== undefined),
-    );
 
     await Promise.all([
       ctx.db.patch(args.policyId, {
@@ -255,6 +343,9 @@ export const updatePolicy = mutation({
     return null;
   },
 });
+
+const MAX_POLICY_COVERAGES = 200;
+const MAX_POLICY_CLAIMS = 200;
 
 export const deletePolicy = mutation({
   args: {
@@ -285,6 +376,7 @@ export const deletePolicy = mutation({
 export const listPolicies = insuranceReadQuery({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
     paginationOpts: paginationOptsValidator,
     status: v.optional(policyStatusValidator),
     policyType: v.optional(policyTypeValidator),
@@ -298,6 +390,7 @@ export const listPolicies = insuranceReadQuery({
         carrier: v.string(),
         policyType: policyTypeValidator,
         coverageAmount: v.number(),
+        currency: v.optional(v.string()),
         effectiveDate: v.number(),
         expirationDate: v.number(),
         status: policyStatusValidator,
@@ -309,91 +402,271 @@ export const listPolicies = insuranceReadQuery({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    let allPolicies: Array<Doc<"insurancePolicies">> = [];
-
-    const policiesQuery = args.status
-      ? ctx.db
-          .query("insurancePolicies")
-          .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", ctx.organizationId)
-              .eq("status", args.status!),
-          )
-      : ctx.db
-          .query("insurancePolicies")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", ctx.organizationId),
-          );
-
-    for await (const policy of policiesQuery) {
-      allPolicies.push(policy);
-    }
-
-    if (args.policyType) {
-      allPolicies = allPolicies.filter((p) => p.policyType === args.policyType);
-    }
-
-    if (args.search && args.search.trim().length > 0) {
-      const searchLower = args.search.toLowerCase();
-      allPolicies = allPolicies.filter(
-        (p) =>
-          p.policyNumber.toLowerCase().includes(searchLower) ||
-          p.carrier.toLowerCase().includes(searchLower),
+    const searchLower = args.search?.trim().toLowerCase();
+    const matching: Array<
+      Doc<"insurancePolicies"> & {
+        effectiveStatus: Doc<"insurancePolicies">["status"];
+      }
+    > = [];
+    const policies = ctx.db
+      .query("insurancePolicies")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.organizationId),
       );
+    for await (const policy of policies) {
+      const effectiveStatus = effectivePolicyStatus(policy, args.now);
+      if (args.status && effectiveStatus !== args.status) continue;
+      if (args.policyType && policy.policyType !== args.policyType) continue;
+      if (
+        searchLower &&
+        !policy.policyNumber.toLowerCase().includes(searchLower) &&
+        !policy.carrier.toLowerCase().includes(searchLower)
+      ) {
+        continue;
+      }
+      matching.push({ ...policy, effectiveStatus });
     }
 
-    allPolicies.sort((a, b) => b.createdAt - a.createdAt);
+    matching.sort((a, b) => b.createdAt - a.createdAt);
 
     const cursor = args.paginationOpts.cursor
       ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
-    const startIndex = cursor;
+    const startIndex = Number.isNaN(cursor) ? 0 : cursor;
     const endIndex = Math.min(
       startIndex + args.paginationOpts.numItems,
-      allPolicies.length,
+      matching.length,
     );
-    const page = allPolicies.slice(startIndex, endIndex);
+    const page = matching.slice(startIndex, endIndex);
 
     const policiesWithCounts = await Promise.all(
       page.map(async (policy) => {
-        const [coverages, claims] = await Promise.all([
-          ctx.db
+        let coverageCount = 0;
+        for (const status of ["active", "pending"] as const) {
+          const coverages = ctx.db
             .query("insuranceCoverages")
             .withIndex("by_policy_and_status", (q) =>
-              q.eq("policyId", policy._id).eq("status", "active"),
-            )
-            .collect(),
-          ctx.db
-            .query("insuranceClaims")
-            .withIndex("by_policy", (q) => q.eq("policyId", policy._id))
-            .collect(),
-        ] as const);
+              q.eq("policyId", policy._id).eq("status", status),
+            );
+          for await (const _coverage of coverages) coverageCount += 1;
+        }
+        let claimsCount = 0;
+        const claims = ctx.db
+          .query("insuranceClaims")
+          .withIndex("by_policy", (q) => q.eq("policyId", policy._id));
+        for await (const _claim of claims) claimsCount += 1;
         return {
           _id: policy._id,
           policyNumber: policy.policyNumber,
           carrier: policy.carrier,
           policyType: policy.policyType,
           coverageAmount: policy.coverageAmount,
+          currency: policy.currency,
           effectiveDate: policy.effectiveDate,
           expirationDate: policy.expirationDate,
-          status: policy.status,
-          coverageCount: coverages.length,
-          claimsCount: claims.length,
+          status: policy.effectiveStatus,
+          coverageCount,
+          claimsCount,
         };
       }),
     );
 
     return {
       page: policiesWithCounts,
-      isDone: endIndex >= allPolicies.length,
+      isDone: endIndex >= matching.length,
       continueCursor: endIndex.toString(),
     };
+  },
+});
+
+const coverageAppraisalStatusValidator = v.union(
+  v.literal("not_applicable"),
+  v.literal("missing"),
+  v.literal("current"),
+  v.literal("stale"),
+);
+
+const coverageViewValidator = v.object({
+  _id: v.id("insuranceCoverages"),
+  policyId: v.id("insurancePolicies"),
+  policyNumber: v.string(),
+  policyCurrency: v.optional(v.string()),
+  target: v.union(
+    v.object({
+      kind: coverageTargetKindValidator,
+      id: v.string(),
+      label: v.string(),
+      reference: v.optional(v.string()),
+    }),
+    v.null(),
+  ),
+  recordedTargets: v.array(
+    v.object({ kind: coverageTargetKindValidator, id: v.string() }),
+  ),
+  coveredValue: v.number(),
+  currency: v.optional(v.string()),
+  start: v.number(),
+  end: v.number(),
+  status: coverageStatusValidator,
+  state: coverageStateValidator,
+  appraisalStatus: coverageAppraisalStatusValidator,
+  currentAppraisal: v.union(
+    v.object({
+      appraisalId: v.id("appraisals"),
+      value: v.number(),
+      currency: v.string(),
+      appraisalDate: v.number(),
+    }),
+    v.null(),
+  ),
+  splitFromCoverageId: v.optional(v.id("insuranceCoverages")),
+  notes: v.optional(v.string()),
+});
+
+/**
+ * The current insurance valuation that supports an object coverage, in the
+ * coverage's currency.
+ */
+async function coverageAppraisal(
+  ctx: ReadCtx,
+  coverage: Doc<"insuranceCoverages">,
+  target: CoverageTarget | null,
+  now: number,
+) {
+  if (target?.kind !== "object") {
+    return {
+      appraisalStatus: "not_applicable" as const,
+      currentAppraisal: null,
+    };
+  }
+  const appraisal = await currentValuationFor(
+    ctx,
+    target.collectionId,
+    "insurance",
+    coverage.currency,
+  );
+  if (!appraisal) {
+    return { appraisalStatus: "missing" as const, currentAppraisal: null };
+  }
+  return {
+    appraisalStatus:
+      appraisalExpiresAt(appraisal, INSURANCE_APPRAISAL_MAX_AGE_MS) < now
+        ? ("stale" as const)
+        : ("current" as const),
+    currentAppraisal: {
+      appraisalId: appraisal._id,
+      value: appraisal.value,
+      currency: appraisal.currency,
+      appraisalDate: appraisal.appraisalDate,
+    },
+  };
+}
+
+type CoverageView = Infer<typeof coverageViewValidator>;
+
+async function toCoverageView(
+  ctx: ReadCtx,
+  coverage: Doc<"insuranceCoverages">,
+  policy: Doc<"insurancePolicies"> | null,
+  now: number,
+): Promise<CoverageView> {
+  const target = coverageTarget(coverage);
+  const described = target ? await describeTarget(ctx, target) : null;
+  const interval = coverageInterval(coverage, {
+    effectiveDate: policy?.effectiveDate ?? 0,
+    expirationDate: policy?.expirationDate ?? 0,
+  });
+  return {
+    _id: coverage._id,
+    policyId: coverage.policyId,
+    policyNumber: policy?.policyNumber ?? "",
+    policyCurrency: policy?.currency,
+    target:
+      target && described
+        ? {
+            kind: target.kind,
+            id: targetId(target),
+            label: described.label,
+            reference: described.reference,
+          }
+        : null,
+    recordedTargets: recordedTargets(coverage).map((entry) => ({
+      kind: entry.kind,
+      id: targetId(entry),
+    })),
+    coveredValue: coverage.coveredValue,
+    currency: normalizeCurrency(coverage.currency) ?? undefined,
+    start: interval.start,
+    end: interval.end,
+    status: coverage.status,
+    state: coverageState(coverage, policy, now),
+    ...(await coverageAppraisal(ctx, coverage, target, now)),
+    splitFromCoverageId: coverage.splitFromCoverageId,
+    notes: coverage.notes,
+  };
+}
+
+/** Coverages for an organization, or one policy, with their state at `now`. */
+export const listCoverages = insuranceReadQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    now: v.number(),
+    paginationOpts: paginationOptsValidator,
+    policyId: v.optional(v.id("insurancePolicies")),
+  },
+  returns: paginationResultValidator(coverageViewValidator),
+  handler: async (ctx, args) => {
+    const policyId = args.policyId;
+    if (policyId) {
+      const policy = await ctx.db.get(policyId);
+      if (!policy || policy.organizationId !== ctx.organizationId) {
+        throw valuationError("REFERENCE_NOT_FOUND", "Policy not found");
+      }
+    }
+    const result = policyId
+      ? await ctx.db
+          .query("insuranceCoverages")
+          .withIndex("by_policy", (q) => q.eq("policyId", policyId))
+          .order("desc")
+          .paginate(args.paginationOpts)
+      : await ctx.db
+          .query("insuranceCoverages")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", ctx.organizationId),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+    const policies = new Map<
+      Id<"insurancePolicies">,
+      Doc<"insurancePolicies"> | null
+    >();
+    const page: CoverageView[] = [];
+    for (const coverage of result.page) {
+      if (!policies.has(coverage.policyId)) {
+        const policy = await ctx.db.get(coverage.policyId);
+        policies.set(
+          coverage.policyId,
+          policy?.organizationId === ctx.organizationId ? policy : null,
+        );
+      }
+      page.push(
+        await toCoverageView(
+          ctx,
+          coverage,
+          policies.get(coverage.policyId) ?? null,
+          args.now,
+        ),
+      );
+    }
+    return { ...result, page };
   },
 });
 
 export const getPolicy = query({
   args: {
     policyId: v.id("insurancePolicies"),
+    now: v.number(),
   },
   returns: v.union(
     v.object({
@@ -406,6 +679,7 @@ export const getPolicy = query({
       carrierEmail: v.optional(v.string()),
       policyType: policyTypeValidator,
       coverageAmount: v.number(),
+      currency: v.optional(v.string()),
       deductible: v.optional(v.number()),
       perItemLimit: v.optional(v.number()),
       premiumAmount: v.optional(v.number()),
@@ -416,6 +690,7 @@ export const getPolicy = query({
       renewalDate: v.optional(v.number()),
       autoRenew: v.optional(v.boolean()),
       status: policyStatusValidator,
+      recordedStatus: policyStatusValidator,
       territory: v.optional(v.string()),
       exclusions: v.optional(v.array(v.string())),
       documentIds: v.optional(v.array(v.id("_storage"))),
@@ -423,20 +698,8 @@ export const getPolicy = query({
       notes: v.optional(v.string()),
       createdBy: v.id("users"),
       createdAt: v.number(),
-      coverages: v.array(
-        v.object({
-          _id: v.id("insuranceCoverages"),
-          collectionId: v.optional(v.id("collections")),
-          collectionTitle: v.optional(v.string()),
-          collectionAccessionNumber: v.optional(v.string()),
-          exhibitionId: v.optional(v.id("exhibitions")),
-          exhibitionTitle: v.optional(v.string()),
-          loanId: v.optional(v.id("loans")),
-          loanNumber: v.optional(v.string()),
-          coveredValue: v.number(),
-          status: coverageStatusValidator,
-        }),
-      ),
+      coverages: v.array(coverageViewValidator),
+      coveragesTruncated: v.boolean(),
       claims: v.array(
         v.object({
           _id: v.id("insuranceClaims"),
@@ -444,6 +707,7 @@ export const getPolicy = query({
           incidentType: incidentTypeValidator,
           incidentDate: v.number(),
           claimedAmount: v.number(),
+          currency: v.optional(v.string()),
           status: claimStatusValidator,
         }),
       ),
@@ -464,66 +728,17 @@ export const getPolicy = query({
       ctx.db
         .query("insuranceCoverages")
         .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
-        .collect(),
+        .take(MAX_POLICY_COVERAGES + 1),
       ctx.db
         .query("insuranceClaims")
         .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
-        .collect(),
+        .take(MAX_POLICY_CLAIMS),
     ] as const);
 
-    const enrichedCoverages = await Promise.all(
-      coverages.map(async (coverage) => {
-        const [collection, exhibition, loan] = await Promise.all([
-          coverage.collectionId
-            ? ctx.db.get(coverage.collectionId)
-            : Promise.resolve(null),
-          coverage.exhibitionId
-            ? ctx.db.get(coverage.exhibitionId)
-            : Promise.resolve(null),
-          coverage.loanId ? ctx.db.get(coverage.loanId) : Promise.resolve(null),
-        ] as const);
-
-        let collectionTitle: string | undefined;
-        let collectionAccessionNumber: string | undefined;
-        let exhibitionTitle: string | undefined;
-        let loanNumber: string | undefined;
-
-        if (collection) {
-          collectionTitle = collection?.title;
-          collectionAccessionNumber = collection?.accessionNumber;
-        }
-
-        if (exhibition) {
-          exhibitionTitle = exhibition?.title;
-        }
-
-        if (loan) {
-          loanNumber = loan?.loanNumber;
-        }
-
-        return {
-          _id: coverage._id,
-          collectionId: coverage.collectionId,
-          collectionTitle,
-          collectionAccessionNumber,
-          exhibitionId: coverage.exhibitionId,
-          exhibitionTitle,
-          loanId: coverage.loanId,
-          loanNumber,
-          coveredValue: coverage.coveredValue,
-          status: coverage.status,
-        };
-      }),
-    );
-
-    const enrichedClaims = claims.map((claim) => ({
-      _id: claim._id,
-      claimNumber: claim.claimNumber,
-      incidentType: claim.incidentType,
-      incidentDate: claim.incidentDate,
-      claimedAmount: claim.claimedAmount,
-      status: claim.status,
-    }));
+    const coverageViews: CoverageView[] = [];
+    for (const coverage of coverages.slice(0, MAX_POLICY_COVERAGES)) {
+      coverageViews.push(await toCoverageView(ctx, coverage, policy, args.now));
+    }
 
     return {
       _id: policy._id,
@@ -535,6 +750,7 @@ export const getPolicy = query({
       carrierEmail: policy.carrierEmail,
       policyType: policy.policyType,
       coverageAmount: policy.coverageAmount,
+      currency: policy.currency,
       deductible: policy.deductible,
       perItemLimit: policy.perItemLimit,
       premiumAmount: policy.premiumAmount,
@@ -544,7 +760,8 @@ export const getPolicy = query({
       expirationDate: policy.expirationDate,
       renewalDate: policy.renewalDate,
       autoRenew: policy.autoRenew,
-      status: policy.status,
+      status: effectivePolicyStatus(policy, args.now),
+      recordedStatus: policy.status,
       territory: policy.territory,
       exclusions: policy.exclusions,
       documentIds: policy.documentIds,
@@ -552,85 +769,106 @@ export const getPolicy = query({
       notes: policy.notes,
       createdBy: policy.createdBy,
       createdAt: policy.createdAt,
-      coverages: enrichedCoverages,
-      claims: enrichedClaims,
+      coverages: coverageViews,
+      coveragesTruncated: coverages.length > MAX_POLICY_COVERAGES,
+      claims: claims.map((claim) => ({
+        _id: claim._id,
+        claimNumber: claim.claimNumber,
+        incidentType: claim.incidentType,
+        incidentDate: claim.incidentDate,
+        claimedAmount: claim.claimedAmount,
+        currency: claim.currency,
+        status: claim.status,
+      })),
     };
   },
 });
 
+/**
+ * Insure one object, loan or exhibition under a policy, in the coverage's own
+ * currency and for an interval inside the policy period. For objects, the
+ * current insurance valuation in that currency is linked when one exists.
+ */
 export const addCoverage = mutation({
   args: {
     policyId: v.id("insurancePolicies"),
-    collectionId: v.optional(v.id("collections")),
-    exhibitionId: v.optional(v.id("exhibitions")),
-    loanId: v.optional(v.id("loans")),
+    target: coverageTargetValidator,
     coveredValue: v.number(),
+    currency: v.string(),
     effectiveDate: v.optional(v.number()),
     expirationDate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    requireCurrentAppraisal: v.optional(v.boolean()),
   },
   returns: v.id("insuranceCoverages"),
   handler: async (ctx, args) => {
-    const [userId, policy] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.policyId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireUser(ctx);
+    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
-      throw new Error("Policy not found");
+      throw valuationError("REFERENCE_NOT_FOUND", "Policy not found");
     }
-
-    if (!args.collectionId && !args.exhibitionId && !args.loanId) {
-      throw new Error(
-        "Must specify at least one of: collectionId, exhibitionId, or loanId",
-      );
-    }
-
     await requirePermission(
       ctx,
       policy.organizationId,
       "organization.manage_settings",
     );
 
-    const [collection, exhibition, loan] = await Promise.all([
-      args.collectionId ? ctx.db.get(args.collectionId) : null,
-      args.exhibitionId ? ctx.db.get(args.exhibitionId) : null,
-      args.loanId ? ctx.db.get(args.loanId) : null,
-    ]);
-
-    if (args.collectionId) {
-      if (!collection || collection.organizationId !== policy.organizationId) {
-        throw new Error("Collection not found or belongs to different org");
-      }
+    const now = Date.now();
+    const policyStatus = effectivePolicyStatus(policy, now);
+    if (
+      policyStatus === "cancelled" ||
+      policyStatus === "suspended" ||
+      policyStatus === "expired"
+    ) {
+      throw valuationError(
+        "POLICY_NOT_IN_FORCE",
+        "Coverage can only be added to a policy that is active or about to start",
+      );
     }
+    const currency = requireCurrencyCode(args.currency);
+    requireAmount(args.coveredValue, "Covered value");
+    requireCoveragePeriod(policy, args.effectiveDate, args.expirationDate);
+    await requireTargetInOrganization(ctx, args.target, policy.organizationId);
 
-    if (args.exhibitionId) {
-      if (!exhibition || exhibition.organizationId !== policy.organizationId) {
-        throw new Error("Exhibition not found or belongs to different org");
+    let appraisalId: Id<"appraisals"> | undefined;
+    let appraisalDate: number | undefined;
+    if (args.target.kind === "object") {
+      const appraisal = await currentValuationFor(
+        ctx,
+        args.target.collectionId,
+        "insurance",
+        currency,
+      );
+      const supportsCover =
+        appraisal !== null &&
+        appraisalExpiresAt(appraisal, INSURANCE_APPRAISAL_MAX_AGE_MS) >= now;
+      if (args.requireCurrentAppraisal && !supportsCover) {
+        throw valuationError(
+          "CURRENT_APPRAISAL_REQUIRED",
+          "A current insurance appraisal in this currency is required",
+        );
       }
-    }
-
-    if (args.loanId) {
-      if (!loan || loan.organizationId !== policy.organizationId) {
-        throw new Error("Loan not found or belongs to different org");
+      if (appraisal && supportsCover) {
+        appraisalId = appraisal._id;
+        appraisalDate = appraisal.appraisalDate;
       }
     }
 
     const coverageId = await ctx.db.insert("insuranceCoverages", {
       organizationId: policy.organizationId,
       policyId: args.policyId,
-      collectionId: args.collectionId,
-      exhibitionId: args.exhibitionId,
-      loanId: args.loanId,
+      ...targetFields(args.target),
       coveredValue: args.coveredValue,
+      currency,
       effectiveDate: args.effectiveDate,
       expirationDate: args.expirationDate,
       status: "active",
-      notes: args.notes,
+      appraisalId,
+      appraisalDate,
+      appraisalRequired: args.requireCurrentAppraisal,
+      notes: args.notes?.trim() || undefined,
       createdBy: userId,
-      createdAt: Date.now(),
+      createdAt: now,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -641,7 +879,11 @@ export const addCoverage = mutation({
       entityId: coverageId,
       changes: {
         policyId: args.policyId,
+        target: { kind: args.target.kind, id: targetId(args.target) },
         coveredValue: args.coveredValue,
+        currency,
+        effectiveDate: args.effectiveDate,
+        expirationDate: args.expirationDate,
       },
     });
 
@@ -655,56 +897,49 @@ export const removeCoverage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, coverage] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.coverageId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireUser(ctx);
+    const coverage = await ctx.db.get(args.coverageId);
     if (!coverage) {
-      throw new Error("Coverage not found");
+      throw valuationError("REFERENCE_NOT_FOUND", "Coverage not found");
     }
-    await Promise.all([
-      requirePermission(
-        ctx,
-        coverage.organizationId,
-        "organization.manage_settings",
-      ),
-      ctx.db.patch(args.coverageId, {
-        status: "removed",
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: coverage.organizationId,
-        userId,
-        action: "removed",
-        entityType: "insuranceCoverage",
-        entityId: args.coverageId,
-        changes: { status: "removed" },
-      }),
-    ] as const);
+    await requirePermission(
+      ctx,
+      coverage.organizationId,
+      "organization.manage_settings",
+    );
+    await ctx.db.patch(args.coverageId, { status: "removed" });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: coverage.organizationId,
+      userId,
+      action: "removed",
+      entityType: "insuranceCoverage",
+      entityId: args.coverageId,
+      changes: { status: "removed" },
+    });
 
     return null;
   },
+});
+
+const objectCoverageValidator = v.object({
+  _id: v.id("insuranceCoverages"),
+  policyId: v.id("insurancePolicies"),
+  policyNumber: v.string(),
+  carrier: v.string(),
+  coveredValue: v.number(),
+  currency: v.optional(v.string()),
+  needsTargetReview: v.boolean(),
+  effectiveDate: v.optional(v.number()),
+  expirationDate: v.optional(v.number()),
+  policyExpirationDate: v.number(),
+  status: coverageStatusValidator,
 });
 
 export const getCoverageForObject = query({
   args: {
     collectionId: v.id("collections"),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("insuranceCoverages"),
-      policyId: v.id("insurancePolicies"),
-      policyNumber: v.string(),
-      carrier: v.string(),
-      coveredValue: v.number(),
-      effectiveDate: v.optional(v.number()),
-      expirationDate: v.optional(v.number()),
-      policyExpirationDate: v.number(),
-      status: coverageStatusValidator,
-    }),
-  ),
+  returns: v.array(objectCoverageValidator),
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
@@ -718,28 +953,79 @@ export const getCoverageForObject = query({
         .withIndex("by_collection", (q) =>
           q.eq("collectionId", args.collectionId),
         )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .collect(),
+        .take(MAX_POLICY_COVERAGES),
     ] as const);
 
-    const enrichedCoverages = await Promise.all(
-      coverages.map(async (coverage) => {
-        const policy = await ctx.db.get(coverage.policyId);
-        return {
-          _id: coverage._id,
-          policyId: coverage.policyId,
-          policyNumber: policy?.policyNumber ?? "",
-          carrier: policy?.carrier ?? "",
-          coveredValue: coverage.coveredValue,
-          effectiveDate: coverage.effectiveDate,
-          expirationDate: coverage.expirationDate,
-          policyExpirationDate: policy?.expirationDate ?? 0,
-          status: coverage.status,
-        };
-      }),
-    );
+    const results: Array<Infer<typeof objectCoverageValidator>> = [];
+    for (const coverage of coverages) {
+      if (coverage.status !== "active") continue;
+      const target = coverageTarget(coverage);
+      if (target && target.kind !== "object") continue;
+      const policy = await ctx.db.get(coverage.policyId);
+      results.push({
+        _id: coverage._id,
+        policyId: coverage.policyId,
+        policyNumber: policy?.policyNumber ?? "",
+        carrier: policy?.carrier ?? "",
+        coveredValue: coverage.coveredValue,
+        currency: normalizeCurrency(coverage.currency) ?? undefined,
+        needsTargetReview: target === null,
+        effectiveDate: coverage.effectiveDate,
+        expirationDate: coverage.expirationDate,
+        policyExpirationDate: policy?.expirationDate ?? 0,
+        status: coverage.status,
+      });
+    }
+    return results;
+  },
+});
 
-    return enrichedCoverages;
+const TARGET_OPTION_LIMIT = 100;
+
+/** Recent loans or exhibitions that a coverage can name as its target. */
+export const listCoverageTargetOptions = insuranceReadQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    kind: v.union(v.literal("loan"), v.literal("exhibition")),
+  },
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      label: v.string(),
+      reference: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    if (args.kind === "loan") {
+      const loans = await ctx.db
+        .query("loans")
+        .withIndex("by_organization_and_startDate", (q) =>
+          q.eq("organizationId", ctx.organizationId),
+        )
+        .order("desc")
+        .take(TARGET_OPTION_LIMIT);
+      return loans
+        .filter((loan) => loan.status !== "cancelled")
+        .map((loan) => ({
+          id: loan._id,
+          label: loan.lenderBorrowerName,
+          reference: loan.loanNumber,
+        }));
+    }
+    const exhibitions = await ctx.db
+      .query("exhibitions")
+      .withIndex("by_organization_and_startDate", (q) =>
+        q.eq("organizationId", ctx.organizationId),
+      )
+      .order("desc")
+      .take(TARGET_OPTION_LIMIT);
+    return exhibitions
+      .filter((exhibition) => exhibition.status !== "rejected")
+      .map((exhibition) => ({
+        id: exhibition._id,
+        label: exhibition.title,
+        reference: undefined,
+      }));
   },
 });
 
@@ -755,6 +1041,7 @@ export const createClaim = mutation({
     incidentType: incidentTypeValidator,
     incidentDescription: v.string(),
     claimedAmount: v.number(),
+    currency: v.string(),
     documentIds: v.optional(v.array(v.id("_storage"))),
     photoIds: v.optional(v.array(v.id("_storage"))),
     internalNotes: v.optional(v.string()),
@@ -775,7 +1062,25 @@ export const createClaim = mutation({
       ctx.db.get(args.policyId),
     ] as const);
     if (!policy || policy.organizationId !== args.organizationId) {
-      throw new Error("Policy not found or belongs to different org");
+      throw valuationError(
+        "REFERENCE_NOT_FOUND",
+        "Policy not found or belongs to different org",
+      );
+    }
+    const currency = requireCurrencyCode(args.currency);
+    requireAmount(args.claimedAmount, "Claimed amount");
+    const targets: CoverageTarget[] = [
+      ...(args.collectionIds ?? []).map((collectionId) => ({
+        kind: "object" as const,
+        collectionId,
+      })),
+      ...(args.loanId ? [{ kind: "loan" as const, loanId: args.loanId }] : []),
+      ...(args.exhibitionId
+        ? [{ kind: "exhibition" as const, exhibitionId: args.exhibitionId }]
+        : []),
+    ];
+    for (const target of targets) {
+      await requireTargetInOrganization(ctx, target, args.organizationId);
     }
 
     const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
@@ -792,6 +1097,7 @@ export const createClaim = mutation({
       incidentType: args.incidentType,
       incidentDescription: args.incidentDescription,
       claimedAmount: args.claimedAmount,
+      currency,
       status: "draft",
       reportedDate: Date.now(),
       documentIds: args.documentIds,
@@ -807,7 +1113,12 @@ export const createClaim = mutation({
       action: "created",
       entityType: "insuranceClaim",
       entityId: claimId,
-      changes: { claimNumber, incidentType: args.incidentType },
+      changes: {
+        claimNumber,
+        incidentType: args.incidentType,
+        claimedAmount: args.claimedAmount,
+        currency,
+      },
     });
 
     return claimId;
@@ -820,6 +1131,7 @@ export const updateClaim = mutation({
     incidentLocation: v.optional(v.string()),
     incidentDescription: v.optional(v.string()),
     claimedAmount: v.optional(v.number()),
+    currency: v.optional(v.string()),
     assessedAmount: v.optional(v.number()),
     settledAmount: v.optional(v.number()),
     deductibleApplied: v.optional(v.number()),
@@ -857,6 +1169,13 @@ export const updateClaim = mutation({
     const updates: Record<string, unknown> = Object.fromEntries(
       Object.entries(otherUpdates).filter(([_, v]) => v !== undefined),
     );
+    if (args.currency !== undefined) {
+      updates.currency = requireCurrencyCode(args.currency);
+    }
+    requireAmount(args.claimedAmount, "Claimed amount");
+    requireAmount(args.assessedAmount, "Assessed amount");
+    requireAmount(args.settledAmount, "Settled amount");
+    requireAmount(args.deductibleApplied, "Deductible applied");
 
     if (status) {
       updates.status = status;
@@ -918,6 +1237,7 @@ export const listClaims = insuranceReadQuery({
         incidentType: incidentTypeValidator,
         incidentDate: v.number(),
         claimedAmount: v.number(),
+        currency: v.optional(v.string()),
         settledAmount: v.optional(v.number()),
         status: claimStatusValidator,
         reportedDate: v.number(),
@@ -983,6 +1303,7 @@ export const listClaims = insuranceReadQuery({
           incidentType: claim.incidentType,
           incidentDate: claim.incidentDate,
           claimedAmount: claim.claimedAmount,
+          currency: claim.currency,
           settledAmount: claim.settledAmount,
           status: claim.status,
           reportedDate: claim.reportedDate,
@@ -1029,6 +1350,7 @@ export const getClaim = query({
       incidentType: incidentTypeValidator,
       incidentDescription: v.string(),
       claimedAmount: v.number(),
+      currency: v.optional(v.string()),
       assessedAmount: v.optional(v.number()),
       settledAmount: v.optional(v.number()),
       deductibleApplied: v.optional(v.number()),
@@ -1123,6 +1445,7 @@ export const getClaim = query({
       incidentType: claim.incidentType,
       incidentDescription: claim.incidentDescription,
       claimedAmount: claim.claimedAmount,
+      currency: claim.currency,
       assessedAmount: claim.assessedAmount,
       settledAmount: claim.settledAmount,
       deductibleApplied: claim.deductibleApplied,
@@ -1151,38 +1474,30 @@ export const getClaim = query({
   },
 });
 
+const expiringPolicyValidator = v.object({
+  _id: v.id("insurancePolicies"),
+  policyNumber: v.string(),
+  carrier: v.string(),
+  currency: v.optional(v.string()),
+  expirationDate: v.number(),
+  daysUntilExpiry: v.number(),
+  coverageCount: v.number(),
+  coveredValue: currencyTotalsValidator,
+});
+
 export const getExpiringPolicies = insuranceReadQuery({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
     daysAhead: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("insurancePolicies"),
-      policyNumber: v.string(),
-      carrier: v.string(),
-      expirationDate: v.number(),
-      daysUntilExpiry: v.number(),
-      coverageCount: v.number(),
-      totalCoveredValue: v.number(),
-    }),
-  ),
+  returns: v.array(expiringPolicyValidator),
   handler: async (ctx, args) => {
-    const days = args.daysAhead ?? 30;
-    const now = Date.now();
-    const futureDate = now + days * 24 * 60 * 60 * 1000;
-    const msPerDay = 24 * 60 * 60 * 1000;
+    const days = Math.min(Math.max(args.daysAhead ?? 30, 0), 366);
+    const now = args.now;
+    const futureDate = now + days * DAY_MS;
 
-    const enrichedPolicies: Array<{
-      _id: Id<"insurancePolicies">;
-      policyNumber: string;
-      carrier: string;
-      expirationDate: number;
-      daysUntilExpiry: number;
-      coverageCount: number;
-      totalCoveredValue: number;
-    }> = [];
-
+    const enrichedPolicies: Array<Infer<typeof expiringPolicyValidator>> = [];
     const expiringQuery = ctx.db
       .query("insurancePolicies")
       .withIndex("by_organization_and_expirationDate", (q) =>
@@ -1193,30 +1508,32 @@ export const getExpiringPolicies = insuranceReadQuery({
       );
 
     for await (const policy of expiringQuery) {
-      if (policy.status !== "active") {
+      if (effectivePolicyStatus(policy, now) !== "active") {
         continue;
       }
 
       let coverageCount = 0;
-      let totalCoveredValue = 0;
+      const coveredValue = new CurrencyTotalsBuilder();
       const coverages = ctx.db
         .query("insuranceCoverages")
         .withIndex("by_policy_and_status", (q) =>
           q.eq("policyId", policy._id).eq("status", "active"),
         );
       for await (const coverage of coverages) {
+        if (coverageState(coverage, policy, now) !== "in_force") continue;
         coverageCount += 1;
-        totalCoveredValue += coverage.coveredValue;
+        coveredValue.add(coverage.currency, coverage.coveredValue);
       }
 
       enrichedPolicies.push({
         _id: policy._id,
         policyNumber: policy.policyNumber,
         carrier: policy.carrier,
+        currency: policy.currency,
         expirationDate: policy.expirationDate,
-        daysUntilExpiry: Math.ceil((policy.expirationDate - now) / msPerDay),
+        daysUntilExpiry: Math.ceil((policy.expirationDate - now) / DAY_MS),
         coverageCount,
-        totalCoveredValue,
+        coveredValue: coveredValue.build(),
       });
     }
 
@@ -1226,9 +1543,14 @@ export const getExpiringPolicies = insuranceReadQuery({
   },
 });
 
+/**
+ * Objects in the institution's care without cover in force at `now`, whether
+ * directly or as part of a covered loan or exhibition.
+ */
 export const getUncoveredObjects = insuranceReadQuery({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
@@ -1244,17 +1566,11 @@ export const getUncoveredObjects = insuranceReadQuery({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    const coveredObjectIds = new Set<Id<"collections">>();
-    const activeCoverages = ctx.db
-      .query("insuranceCoverages")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", ctx.organizationId).eq("status", "active"),
-      );
-    for await (const coverage of activeCoverages) {
-      if (coverage.collectionId) {
-        coveredObjectIds.add(coverage.collectionId);
-      }
-    }
+    const { coveredObjectIds } = await collectInForceCoverage(
+      ctx,
+      ctx.organizationId,
+      args.now,
+    );
 
     const uncoveredObjects: Array<{
       _id: Id<"collections">;
@@ -1262,26 +1578,28 @@ export const getUncoveredObjects = insuranceReadQuery({
       accessionNumber: string;
       status: string;
     }> = [];
-    const activeCollections = ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", ctx.organizationId).eq("status", "active"),
-      );
-    for await (const obj of activeCollections) {
-      if (!coveredObjectIds.has(obj._id)) {
-        uncoveredObjects.push({
-          _id: obj._id,
-          title: obj.title,
-          accessionNumber: obj.accessionNumber,
-          status: obj.status,
-        });
+    for (const status of ["active", "loaned"] as const) {
+      const objects = ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", ctx.organizationId).eq("status", status),
+        );
+      for await (const obj of objects) {
+        if (!coveredObjectIds.has(obj._id)) {
+          uncoveredObjects.push({
+            _id: obj._id,
+            title: obj.title,
+            accessionNumber: obj.accessionNumber,
+            status: obj.status,
+          });
+        }
       }
     }
 
     const cursor = args.paginationOpts.cursor
       ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
-    const startIndex = cursor;
+    const startIndex = Number.isNaN(cursor) ? 0 : cursor;
     const endIndex = Math.min(
       startIndex + args.paginationOpts.numItems,
       uncoveredObjects.length,
@@ -1299,19 +1617,22 @@ export const getUncoveredObjects = insuranceReadQuery({
 export const getInsuranceStats = insuranceReadQuery({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
   },
-  returns: v.object({
-    totalPolicies: v.number(),
-    activePolicies: v.number(),
-    totalCoverageValue: v.number(),
-    totalCoveredItems: v.number(),
-    uncoveredItemsCount: v.number(),
-    openClaimsCount: v.number(),
-    totalClaimedAmount: v.number(),
-    expiringIn30Days: v.number(),
-  }),
-  handler: async (ctx) => {
-    return await computeInsuranceStats(ctx, ctx.organizationId);
+  returns: insuranceStatsValidator,
+  handler: async (ctx, args) => {
+    return await computeInsuranceStats(ctx, ctx.organizationId, args.now);
+  },
+});
+
+export const getCoverageAlerts = insuranceReadQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    now: v.number(),
+  },
+  returns: coverageAlertsValidator,
+  handler: async (ctx, args) => {
+    return await computeCoverageAlerts(ctx, ctx.organizationId, args.now);
   },
 });
 
@@ -1399,74 +1720,199 @@ export const uploadClaimDocument = mutation({
   },
 });
 
+const EXPIRY_ALERT_DAYS = [7, 14, 30];
+const EXPIRY_ALERT_SCAN_LIMIT = 500;
+
+function describeCoveredValue(policyCoverages: Doc<"insuranceCoverages">[]) {
+  const totals = new CurrencyTotalsBuilder();
+  for (const coverage of policyCoverages) {
+    totals.add(coverage.currency, coverage.coveredValue);
+  }
+  return totals
+    .build()
+    .byCurrency.map(
+      (entry) => `${entry.currency} ${entry.total.toLocaleString("en-US")}`,
+    )
+    .join("; ");
+}
+
+/**
+ * Daily: brings recorded policy and coverage statuses in line with their
+ * dates, then notifies coordinators about policies expiring in 7, 14 or 30
+ * days. Covered values are reported per currency.
+ */
 export const checkExpiringPoliciesInternal = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const organizations = await ctx.db.query("organizations").collect();
-
-    const now = Date.now();
-    const alertThresholds = [7, 14, 30];
-
-    await Promise.all(
-      Array.from(organizations).map(async (org) => {
-        const activePolicies = await ctx.db
-          .query("insurancePolicies")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", org._id).eq("status", "active"),
-          )
-          .collect();
-
-        await Promise.all(
-          activePolicies.map(async (policy) => {
-            const daysUntilExpiry = Math.ceil(
-              (policy.expirationDate - now) / (24 * 60 * 60 * 1000),
-            );
-
-            if (
-              daysUntilExpiry <= 0 ||
-              !alertThresholds.includes(daysUntilExpiry)
-            ) {
-              return;
-            }
-
-            const coverages = await ctx.db
-              .query("insuranceCoverages")
-              .withIndex("by_policy_and_status", (q) =>
-                q.eq("policyId", policy._id).eq("status", "active"),
-              )
-              .collect();
-
-            const totalCoveredValue = coverages.reduce(
-              (sum, coverage) => sum + coverage.coveredValue,
-              0,
-            );
-
-            const coordinatorUserIds = await getUserIdsWithPermission(
-              ctx,
-              org._id,
-              "organization.manage_settings",
-            );
-
-            await Promise.all(
-              coordinatorUserIds.map((coordinatorUserId) =>
-                ctx.runMutation(internal.audit.createNotificationInternal, {
-                  organizationId: org._id,
-                  userId: coordinatorUserId,
-                  type: "insurance_expiry",
-                  title: `Insurance Policy Expiring in ${daysUntilExpiry} Days`,
-                  message: `Policy ${policy.policyNumber} (${policy.carrier}) covering ${coverages.length} items worth $${totalCoveredValue.toLocaleString()} expires in ${daysUntilExpiry} days.`,
-                  relatedEntityType: "insurancePolicy",
-                  relatedEntityId: policy._id,
-                }),
-              ),
-            );
-          }),
-        );
-      }),
+    await ctx.scheduler.runAfter(
+      0,
+      internal.insurance.reconcileInsuranceStatuses,
+      {},
     );
 
+    const now = Date.now();
+    const expiring = await ctx.db
+      .query("insurancePolicies")
+      .withIndex("by_expirationDate", (q) =>
+        q.gt("expirationDate", now).lte("expirationDate", now + 31 * DAY_MS),
+      )
+      .take(EXPIRY_ALERT_SCAN_LIMIT);
+
+    for (const policy of expiring) {
+      if (effectivePolicyStatus(policy, now) !== "active") continue;
+      const daysUntilExpiry = Math.ceil((policy.expirationDate - now) / DAY_MS);
+      if (!EXPIRY_ALERT_DAYS.includes(daysUntilExpiry)) continue;
+
+      const coverages = (
+        await ctx.db
+          .query("insuranceCoverages")
+          .withIndex("by_policy_and_status", (q) =>
+            q.eq("policyId", policy._id).eq("status", "active"),
+          )
+          .take(MAX_POLICY_COVERAGES)
+      ).filter(
+        (coverage) => coverageState(coverage, policy, now) === "in_force",
+      );
+      const values = describeCoveredValue(coverages);
+      const message = values
+        ? `Policy ${policy.policyNumber} (${policy.carrier}) covering ${coverages.length} items valued at ${values} expires in ${daysUntilExpiry} days.`
+        : `Policy ${policy.policyNumber} (${policy.carrier}) covering ${coverages.length} items expires in ${daysUntilExpiry} days.`;
+
+      const coordinatorUserIds = await getUserIdsWithPermission(
+        ctx,
+        policy.organizationId,
+        "organization.manage_settings",
+      );
+      for (const coordinatorUserId of coordinatorUserIds) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: policy.organizationId,
+          userId: coordinatorUserId,
+          type: "insurance_expiry",
+          title: `Insurance Policy Expiring in ${daysUntilExpiry} Days`,
+          message,
+          relatedEntityType: "insurancePolicy",
+          relatedEntityId: policy._id,
+        });
+      }
+    }
+
     return null;
+  },
+});
+
+const RECONCILE_BATCH = 100;
+
+/**
+ * Moves recorded statuses to match dates: policies past their expiration
+ * become expired together with their coverages, policies whose period has
+ * started become active, and coverages past their own end become expired.
+ * Bounded per run; reschedules itself until nothing is left.
+ */
+export const reconcileInsuranceStatuses = internalMutation({
+  args: {},
+  returns: v.object({
+    policiesExpired: v.number(),
+    policiesActivated: v.number(),
+    coveragesExpired: v.number(),
+    hasMore: v.boolean(),
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    let budget = RECONCILE_BATCH;
+    let policiesExpired = 0;
+    let policiesActivated = 0;
+    let coveragesExpired = 0;
+    let hasMore = false;
+
+    for (const status of ["active", "pending"] as const) {
+      const overdue = await ctx.db
+        .query("insurancePolicies")
+        .withIndex("by_status_and_expirationDate", (q) =>
+          q.eq("status", status).lt("expirationDate", now),
+        )
+        .take(budget + 1);
+      if (overdue.length > budget) hasMore = true;
+      for (const policy of overdue.slice(0, budget)) {
+        let policyDone = true;
+        for (const coverageStatus of ["active", "pending"] as const) {
+          const coverages = await ctx.db
+            .query("insuranceCoverages")
+            .withIndex("by_policy_and_status", (q) =>
+              q.eq("policyId", policy._id).eq("status", coverageStatus),
+            )
+            .take(budget + 1);
+          if (coverages.length > budget) policyDone = false;
+          for (const coverage of coverages.slice(0, budget)) {
+            await ctx.db.patch(coverage._id, { status: "expired" });
+            coveragesExpired += 1;
+            budget -= 1;
+          }
+        }
+        if (!policyDone || budget <= 0) {
+          hasMore = true;
+          break;
+        }
+        await ctx.db.patch(policy._id, {
+          status: "expired",
+          lastModifiedAt: now,
+        });
+        policiesExpired += 1;
+        budget -= 1;
+      }
+      if (budget <= 0) break;
+    }
+
+    if (budget > 0) {
+      const started = await ctx.db
+        .query("insurancePolicies")
+        .withIndex("by_status_and_effectiveDate", (q) =>
+          q.eq("status", "pending").lte("effectiveDate", now),
+        )
+        .take(budget + 1);
+      if (started.length > budget) hasMore = true;
+      for (const policy of started.slice(0, budget)) {
+        if (policy.expirationDate < now) continue;
+        await ctx.db.patch(policy._id, {
+          status: "active",
+          lastModifiedAt: now,
+        });
+        policiesActivated += 1;
+        budget -= 1;
+      }
+    }
+
+    if (budget > 0) {
+      const ended = await ctx.db
+        .query("insuranceCoverages")
+        .withIndex("by_status_and_expirationDate", (q) =>
+          q
+            .eq("status", "active")
+            .gt("expirationDate", 0)
+            .lt("expirationDate", now),
+        )
+        .take(budget + 1);
+      if (ended.length > budget) hasMore = true;
+      for (const coverage of ended.slice(0, budget)) {
+        await ctx.db.patch(coverage._id, { status: "expired" });
+        coveragesExpired += 1;
+        budget -= 1;
+      }
+    }
+
+    if (hasMore || budget <= 0) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.insurance.reconcileInsuranceStatuses,
+        {},
+      );
+    }
+    return {
+      policiesExpired,
+      policiesActivated,
+      coveragesExpired,
+      hasMore: hasMore || budget <= 0,
+    };
   },
 });
 
@@ -1725,8 +2171,31 @@ export const uploadDisputeDocument = mutation({
 // Auto-Claim on Transit Damage
 // ============================================================================
 
+/** In-force object coverage for one object at `now`, if any. */
+async function inForceObjectCoverage(
+  ctx: ReadCtx,
+  organizationId: Id<"organizations">,
+  collectionId: Id<"collections">,
+  now: number,
+) {
+  const coverages = await ctx.db
+    .query("insuranceCoverages")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .take(MAX_POLICY_COVERAGES);
+  for (const coverage of coverages) {
+    if (coverage.organizationId !== organizationId) continue;
+    const target = coverageTarget(coverage);
+    if (target?.kind !== "object") continue;
+    const policy = await ctx.db.get(coverage.policyId);
+    if (coverageState(coverage, policy, now) === "in_force") return coverage;
+  }
+  return null;
+}
+
 /**
- * Create auto-claim draft for transit damage
+ * Create auto-claim draft for transit damage. The claimed amount is the sum of
+ * the objects' in-force cover when it is recorded in one currency; otherwise
+ * staff enter the amount.
  */
 export const createAutoClaimForTransitDamage = internalMutation({
   args: {
@@ -1739,40 +2208,41 @@ export const createAutoClaimForTransitDamage = internalMutation({
   },
   returns: v.union(v.id("insuranceClaims"), v.null()),
   handler: async (ctx, args) => {
-    // Find active transit or loan policy
-    const policies = await ctx.db
+    const now = Date.now();
+    const candidates = await ctx.db
       .query("insurancePolicies")
       .withIndex("by_organization_and_status", (q) =>
         q.eq("organizationId", args.organizationId).eq("status", "active"),
       )
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("policyType"), "transit"),
-          q.eq(q.field("policyType"), "loan"),
-          q.eq(q.field("policyType"), "blanket"),
-        ),
-      )
-      .collect();
-
-    if (policies.length === 0) {
+      .take(MAX_POLICY_CLAIMS);
+    const policy = candidates.find(
+      (candidate) =>
+        (candidate.policyType === "transit" ||
+          candidate.policyType === "loan" ||
+          candidate.policyType === "blanket") &&
+        effectivePolicyStatus(candidate, now) === "active",
+    );
+    if (!policy) {
       return null;
     }
 
-    // Use the first matching policy
-    const policy = policies[0]!;
-
-    // Calculate claimed amount from active coverages
-    let claimedAmount = 0;
+    const covered = new CurrencyTotalsBuilder();
     for (const collectionId of args.collectionIds) {
-      const coverage = await ctx.db
-        .query("insuranceCoverages")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .first();
-      if (coverage) {
-        claimedAmount += coverage.coveredValue;
-      }
+      const coverage = await inForceObjectCoverage(
+        ctx,
+        args.organizationId,
+        collectionId,
+        now,
+      );
+      if (coverage) covered.add(coverage.currency, coverage.coveredValue);
     }
+    const totals = covered.build();
+    const single =
+      totals.byCurrency.length === 1 && totals.currencyNotRecordedCount === 0
+        ? totals.byCurrency[0]
+        : undefined;
+    const mixed =
+      totals.byCurrency.length > 1 || totals.currencyNotRecordedCount > 0;
 
     const membership = await ctx.db
       .query("userOrganizations")
@@ -1788,7 +2258,6 @@ export const createAutoClaimForTransitDamage = internalMutation({
     }
 
     const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
-    const now = Date.now();
 
     const [claimId, coordinatorUserIds] = await Promise.all([
       ctx.db.insert("insuranceClaims", {
@@ -1800,14 +2269,16 @@ export const createAutoClaimForTransitDamage = internalMutation({
         incidentDate: now,
         incidentType: "transit",
         incidentDescription: args.incidentDescription,
-        claimedAmount,
+        claimedAmount: single?.total ?? 0,
+        currency: single?.currency ?? policy.currency,
         status: "draft",
         reportedDate: now,
         isAutoClaim: true,
         autoClaimSource: "loan_return_damage",
         conditionDisputeId: args.conditionDisputeId,
-        internalNotes:
-          "Auto-generated claim based on condition change detected during loan return.",
+        internalNotes: mixed
+          ? "Auto-generated claim based on condition change detected during loan return. Covered values are recorded in more than one currency or without a currency; enter the claimed amount."
+          : "Auto-generated claim based on condition change detected during loan return.",
         createdBy: args.actorUserId,
         createdAt: now,
       }),
@@ -1841,7 +2312,9 @@ export const createAutoClaimForTransitDamage = internalMutation({
 // ============================================================================
 
 /**
- * Link appraisal to coverage
+ * Link an appraisal to an object coverage. The appraisal must belong to the
+ * covered object in the same organization, must not be superseded, and must
+ * be in the coverage's currency.
  */
 export const linkAppraisalToCoverage = mutation({
   args: {
@@ -1850,15 +2323,10 @@ export const linkAppraisalToCoverage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, coverage] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.coverageId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireUser(ctx);
+    const coverage = await ctx.db.get(args.coverageId);
     if (!coverage) {
-      throw new Error("Coverage not found");
+      throw valuationError("REFERENCE_NOT_FOUND", "Coverage not found");
     }
 
     await requirePermission(
@@ -1868,38 +2336,63 @@ export const linkAppraisalToCoverage = mutation({
     );
 
     const appraisal = await ctx.db.get(args.appraisalId);
-    if (!appraisal) {
-      throw new Error("Appraisal not found");
+    const target = coverageTarget(coverage);
+    if (
+      !appraisal ||
+      appraisal.organizationId !== coverage.organizationId ||
+      target?.kind !== "object" ||
+      appraisal.collectionId !== target.collectionId
+    ) {
+      throw valuationError(
+        "APPRAISAL_NOT_FOR_COVERED_OBJECT",
+        "The appraisal does not belong to the covered object",
+      );
+    }
+    if (appraisal.supersededBy !== undefined) {
+      throw valuationError(
+        "APPRAISAL_SUPERSEDED",
+        "Superseded appraisals stay in the history; link the superseding appraisal",
+      );
+    }
+    const coverageCurrency = normalizeCurrency(coverage.currency);
+    if (
+      coverageCurrency !== null &&
+      normalizeCurrency(appraisal.currency) !== coverageCurrency
+    ) {
+      throw valuationError(
+        "APPRAISAL_CURRENCY_MISMATCH",
+        "The appraisal is recorded in a different currency from the coverage",
+      );
     }
 
-    // Update coverage with appraisal info
-    await Promise.all([
-      ctx.db.patch(args.coverageId, {
-        appraisalId: args.appraisalId,
-        appraisalDate: appraisal.appraisalDate,
-        appraisalWarning: undefined, // Clear any warning
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: coverage.organizationId,
-        userId,
-        action: "linked_appraisal",
-        entityType: "insuranceCoverage",
-        entityId: args.coverageId,
-        changes: { appraisalId: args.appraisalId },
-      }),
-    ]);
+    await ctx.db.patch(args.coverageId, {
+      appraisalId: args.appraisalId,
+      appraisalDate: appraisal.appraisalDate,
+      appraisalWarning: undefined,
+    });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: coverage.organizationId,
+      userId,
+      action: "linked_appraisal",
+      entityType: "insuranceCoverage",
+      entityId: args.coverageId,
+      changes: { appraisalId: args.appraisalId },
+    });
 
     return null;
   },
 });
 
 /**
- * Check appraisal status for coverage
+ * Check the current insurance valuation for an object, optionally in one
+ * currency. Valuations over two years old are flagged for renewal; over three
+ * years old, or past `validUntil`, they no longer support coverage.
  */
 export const checkAppraisalForCoverage = query({
   args: {
     collectionId: v.id("collections"),
     now: v.number(),
+    currency: v.optional(v.string()),
   },
   returns: v.object({
     hasAppraisal: v.boolean(),
@@ -1907,6 +2400,7 @@ export const checkAppraisalForCoverage = query({
     appraisalId: v.optional(v.id("appraisals")),
     appraisalDate: v.optional(v.number()),
     appraisalValue: v.optional(v.number()),
+    appraisalCurrency: v.optional(v.string()),
     appraisalAgeDays: v.optional(v.number()),
     warning: v.optional(v.string()),
   }),
@@ -1942,15 +2436,13 @@ export const checkAppraisalForCoverage = query({
       throw error;
     }
 
-    // Find most recent appraisal
-    const appraisals = await ctx.db
-      .query("appraisals")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
-
-    if (appraisals.length === 0) {
+    const current = await currentValuationFor(
+      ctx,
+      args.collectionId,
+      "insurance",
+      args.currency,
+    );
+    if (!current) {
       return {
         hasAppraisal: false,
         appraisalValid: false,
@@ -1958,32 +2450,32 @@ export const checkAppraisalForCoverage = query({
       };
     }
 
-    const latestAppraisal = appraisals.reduce((newest, appraisal) =>
-      appraisal.appraisalDate > newest.appraisalDate ? appraisal : newest,
-    );
-
-    const now = args.now;
-    const ageDays = Math.floor(
-      (now - latestAppraisal.appraisalDate) / (24 * 60 * 60 * 1000),
-    );
-    const threeYearsInDays = 3 * 365;
+    const ageDays = appraisalAgeDays(current, args.now);
+    const staleDays = INSURANCE_APPRAISAL_MAX_AGE_MS / DAY_MS;
+    const renewalDays = VALUATION_MAX_AGE_MS / DAY_MS;
 
     let warning: string | undefined;
     let appraisalValid = true;
-
-    if (ageDays > threeYearsInDays) {
+    if (ageDays > staleDays) {
       warning = `Appraisal is ${Math.floor(ageDays / 365)} years old and may be stale`;
       appraisalValid = false;
-    } else if (ageDays > 2 * 365) {
+    } else if (
+      current.validUntil !== undefined &&
+      current.validUntil < args.now
+    ) {
+      warning = "Appraisal is past its valid-until date";
+      appraisalValid = false;
+    } else if (ageDays > renewalDays) {
       warning = "Appraisal is over 2 years old and should be updated soon";
     }
 
     return {
       hasAppraisal: true,
       appraisalValid,
-      appraisalId: latestAppraisal._id,
-      appraisalDate: latestAppraisal.appraisalDate,
-      appraisalValue: latestAppraisal.value,
+      appraisalId: current._id,
+      appraisalDate: current.appraisalDate,
+      appraisalValue: current.value,
+      appraisalCurrency: current.currency,
       appraisalAgeDays: ageDays,
       warning,
     };
@@ -1991,281 +2483,94 @@ export const checkAppraisalForCoverage = query({
 });
 
 /**
- * Get coverages with stale appraisals
+ * Object coverages in force whose current insurance valuation, in the
+ * coverage's currency, is missing or older than the allowed age.
  */
+const staleCoverageValidator = v.object({
+  _id: v.id("insuranceCoverages"),
+  policyId: v.id("insurancePolicies"),
+  policyNumber: v.string(),
+  collectionId: v.id("collections"),
+  collectionTitle: v.optional(v.string()),
+  coveredValue: v.number(),
+  currency: v.optional(v.string()),
+  appraisalId: v.optional(v.id("appraisals")),
+  appraisalDate: v.optional(v.number()),
+  appraisalAgeDays: v.optional(v.number()),
+  issue: v.union(
+    v.literal("missing"),
+    v.literal("stale"),
+    v.literal("currency_not_recorded"),
+  ),
+});
+
 export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
     appraisalMaxAgeDays: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("insuranceCoverages"),
-      policyId: v.id("insurancePolicies"),
-      policyNumber: v.string(),
-      collectionId: v.optional(v.id("collections")),
-      collectionTitle: v.optional(v.string()),
-      coveredValue: v.number(),
-      appraisalId: v.optional(v.id("appraisals")),
-      appraisalDate: v.optional(v.number()),
-      appraisalAgeDays: v.optional(v.number()),
-      issue: v.string(),
-    }),
-  ),
+  returns: v.array(staleCoverageValidator),
   handler: async (ctx, args) => {
-    const maxAgeDays = args.appraisalMaxAgeDays ?? 3 * 365; // Default 3 years
-    const now = Date.now();
-    const msPerDay = 24 * 60 * 60 * 1000;
-
-    const results: Array<{
-      _id: Id<"insuranceCoverages">;
-      policyId: Id<"insurancePolicies">;
-      policyNumber: string;
-      collectionId?: Id<"collections">;
-      collectionTitle?: string;
-      coveredValue: number;
-      appraisalId?: Id<"appraisals">;
-      appraisalDate?: number;
-      appraisalAgeDays?: number;
-      issue: string;
-    }> = [];
+    const maxAgeMs =
+      args.appraisalMaxAgeDays !== undefined
+        ? Math.max(args.appraisalMaxAgeDays, 0) * DAY_MS
+        : INSURANCE_APPRAISAL_MAX_AGE_MS;
+    const results: Array<Infer<typeof staleCoverageValidator>> = [];
+    const policies = new Map<
+      Id<"insurancePolicies">,
+      Doc<"insurancePolicies"> | null
+    >();
 
     const activeCoverages = ctx.db
       .query("insuranceCoverages")
       .withIndex("by_organization_and_status", (q) =>
         q.eq("organizationId", ctx.organizationId).eq("status", "active"),
       );
-
-    const db = ctx.db;
     for await (const coverage of activeCoverages) {
-      const collectionId = coverage.collectionId;
-      if (!collectionId) continue;
+      const target = coverageTarget(coverage);
+      if (target?.kind !== "object") continue;
+      if (!policies.has(coverage.policyId)) {
+        policies.set(coverage.policyId, await ctx.db.get(coverage.policyId));
+      }
+      const policy = policies.get(coverage.policyId) ?? null;
+      if (coverageState(coverage, policy, args.now) !== "in_force") continue;
 
-      const [policy, collection, appraisal] = await Promise.all([
-        db.get(coverage.policyId),
-        db.get(collectionId),
-        coverage.appraisalId
-          ? db.get(coverage.appraisalId)
-          : Promise.resolve(null),
-      ] as const);
-
-      if (coverage.appraisalId) {
-        if (appraisal) {
-          const ageDays = Math.floor(
-            (now - appraisal.appraisalDate) / msPerDay,
-          );
-          if (ageDays > maxAgeDays) {
-            results.push({
-              _id: coverage._id,
-              policyId: coverage.policyId,
-              policyNumber: policy?.policyNumber ?? "Unknown",
-              collectionId,
-              collectionTitle: collection?.title,
-              coveredValue: coverage.coveredValue,
-              appraisalId: coverage.appraisalId,
-              appraisalDate: appraisal.appraisalDate,
-              appraisalAgeDays: ageDays,
-              issue: `Appraisal is ${Math.floor(ageDays / 365)} years old`,
-            });
-          }
-        }
+      const collection = await ctx.db.get(target.collectionId);
+      const base = {
+        _id: coverage._id,
+        policyId: coverage.policyId,
+        policyNumber: policy?.policyNumber ?? "",
+        collectionId: target.collectionId,
+        collectionTitle: collection?.title,
+        coveredValue: coverage.coveredValue,
+        currency: normalizeCurrency(coverage.currency) ?? undefined,
+      };
+      if (base.currency === undefined) {
+        results.push({ ...base, issue: "currency_not_recorded" as const });
         continue;
       }
-
-      // No linked appraisal - check if collection has one
-      let latestAppraisalDate: number | undefined;
-      const appraisals = ctx.db
-        .query("appraisals")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId));
-      for await (const appraisal of appraisals) {
-        latestAppraisalDate =
-          latestAppraisalDate === undefined
-            ? appraisal.appraisalDate
-            : Math.max(latestAppraisalDate, appraisal.appraisalDate);
-      }
-
-      if (latestAppraisalDate === undefined) {
-        results.push({
-          _id: coverage._id,
-          policyId: coverage.policyId,
-          policyNumber: policy?.policyNumber ?? "Unknown",
-          collectionId,
-          collectionTitle: collection?.title,
-          coveredValue: coverage.coveredValue,
-          issue: "No appraisal on file",
-        });
+      const appraisal = await currentValuationFor(
+        ctx,
+        target.collectionId,
+        "insurance",
+        base.currency,
+      );
+      if (!appraisal) {
+        results.push({ ...base, issue: "missing" as const });
         continue;
       }
-
-      const ageDays = Math.floor((now - latestAppraisalDate) / msPerDay);
-      if (ageDays > maxAgeDays) {
+      if (appraisalExpiresAt(appraisal, maxAgeMs) < args.now) {
         results.push({
-          _id: coverage._id,
-          policyId: coverage.policyId,
-          policyNumber: policy?.policyNumber ?? "Unknown",
-          collectionId,
-          collectionTitle: collection?.title,
-          coveredValue: coverage.coveredValue,
-          appraisalDate: latestAppraisalDate,
-          appraisalAgeDays: ageDays,
-          issue: `Appraisal is ${Math.floor(ageDays / 365)} years old (not linked)`,
+          ...base,
+          appraisalId: appraisal._id,
+          appraisalDate: appraisal.appraisalDate,
+          appraisalAgeDays: appraisalAgeDays(appraisal, args.now),
+          issue: "stale" as const,
         });
       }
     }
 
     return results;
-  },
-});
-
-/**
- * Add coverage with appraisal verification
- */
-export const addCoverageWithAppraisalCheck = mutation({
-  args: {
-    policyId: v.id("insurancePolicies"),
-    collectionId: v.id("collections"),
-    coveredValue: v.number(),
-    requireAppraisal: v.optional(v.boolean()),
-    skipAppraisalWarning: v.optional(v.boolean()),
-    notes: v.optional(v.string()),
-  },
-  returns: v.object({
-    coverageId: v.optional(v.id("insuranceCoverages")),
-    warning: v.optional(v.string()),
-    blocked: v.boolean(),
-  }),
-  handler: async (ctx, args) => {
-    const [userId, policy] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.policyId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!policy) {
-      throw new Error("Policy not found");
-    }
-
-    await requirePermission(
-      ctx,
-      policy.organizationId,
-      "organization.manage_settings",
-    );
-
-    const collection = await ctx.db.get(args.collectionId);
-    if (!collection || collection.organizationId !== policy.organizationId) {
-      throw new Error("Collection not found or belongs to different org");
-    }
-
-    // Check appraisal status
-    const appraisals = await ctx.db
-      .query("appraisals")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
-
-    let warning: string | undefined;
-    let appraisalId: Id<"appraisals"> | undefined;
-    let appraisalDate: number | undefined;
-
-    if (appraisals.length === 0) {
-      if (args.requireAppraisal && !args.skipAppraisalWarning) {
-        return {
-          blocked: true,
-          warning: "Appraisal required before adding insurance coverage",
-        };
-      }
-      warning = "No appraisal on file for this object";
-    } else {
-      const latest = appraisals.reduce((newest, appraisal) =>
-        appraisal.appraisalDate > newest.appraisalDate ? appraisal : newest,
-      );
-      appraisalId = latest._id;
-      appraisalDate = latest.appraisalDate;
-
-      const now = Date.now();
-      const ageDays = Math.floor(
-        (now - latest.appraisalDate) / (24 * 60 * 60 * 1000),
-      );
-      const threeYearsInDays = 3 * 365;
-
-      if (ageDays > threeYearsInDays) {
-        if (args.requireAppraisal && !args.skipAppraisalWarning) {
-          return {
-            blocked: true,
-            warning: `Appraisal is ${Math.floor(ageDays / 365)} years old. Updated appraisal required.`,
-          };
-        }
-        warning = `Appraisal is ${Math.floor(ageDays / 365)} years old`;
-      }
-    }
-
-    const coverageId = await ctx.db.insert("insuranceCoverages", {
-      organizationId: policy.organizationId,
-      policyId: args.policyId,
-      collectionId: args.collectionId,
-      coveredValue: args.coveredValue,
-      status: "active",
-      appraisalId,
-      appraisalDate,
-      appraisalRequired: args.requireAppraisal,
-      appraisalWarning: warning,
-      notes: args.notes,
-      createdBy: userId,
-      createdAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: policy.organizationId,
-      userId,
-      action: "created",
-      entityType: "insuranceCoverage",
-      entityId: coverageId,
-      changes: {
-        policyId: args.policyId,
-        coveredValue: args.coveredValue,
-        appraisalWarning: warning,
-      },
-    });
-
-    return { coverageId, warning, blocked: false };
-  },
-});
-
-export const getCoverageAlerts = insuranceReadQuery({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  returns: v.object({
-    expiringPolicies: v.array(
-      v.object({
-        _id: v.id("insurancePolicies"),
-        policyNumber: v.string(),
-        carrier: v.string(),
-        expirationDate: v.number(),
-        daysUntilExpiry: v.number(),
-        coverageCount: v.number(),
-        totalCoveredValue: v.number(),
-        severity: v.union(
-          v.literal("critical"),
-          v.literal("warning"),
-          v.literal("info"),
-        ),
-      }),
-    ),
-    uncoveredStats: v.object({
-      totalObjects: v.number(),
-      coveredObjects: v.number(),
-      uncoveredObjects: v.number(),
-      coveragePercentage: v.number(),
-    }),
-    expiredPoliciesCount: v.number(),
-    pendingClaimsCount: v.number(),
-    staleAppraisalCount: v.number(),
-    disputedClaimsCount: v.number(),
-  }),
-  handler: async (ctx) => {
-    return await computeCoverageAlerts(ctx, ctx.organizationId);
   },
 });

@@ -1,13 +1,22 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { classifyInventoryRecord } from "./collectionMetrics";
+import { normalizeCurrency } from "./currency";
 import { getExhibitionLifecycle } from "./exhibitionMetrics";
+import { coverageTarget } from "./insuranceCoverage";
 import {
   distinctScope,
   type ProjectionFact,
   type ProjectionGeneration,
   readTotals,
 } from "./projectionStore";
+import {
+  appraisalExpiresAt,
+  INSURANCE_APPRAISAL_MAX_AGE_MS,
+} from "./valuation";
+
+/** Active coverage value per currency: `insurance.coveredValue.<ISO code>`. */
+export const COVERED_VALUE_METRIC_PREFIX = "insurance.coveredValue.";
 
 type ParentPhase = {
   table: "loanItems" | "collectionGroupItems";
@@ -335,12 +344,22 @@ export async function computeSourceFacts(
     case "insuranceCoverages": {
       const coverage = doc as Doc<"insuranceCoverages">;
       if (coverage.status !== "active") break;
-      add("insurance.coveredValue", coverage.coveredValue || 0);
+      const target = coverageTarget(coverage);
+      if (!target) {
+        add("insurance.coverages.needsReview");
+        break;
+      }
+      const currency = normalizeCurrency(coverage.currency);
+      if (currency) {
+        add(`${COVERED_VALUE_METRIC_PREFIX}${currency}`, coverage.coveredValue);
+      } else {
+        add("insurance.coverages.currencyNotRecorded");
+      }
       if (
-        coverage.collectionId &&
-        (await placeObject(ctx, organizationId, coverage.collectionId))
+        target.kind === "object" &&
+        (await placeObject(ctx, organizationId, target.collectionId))
       ) {
-        add("coverage", 1, objectScope(coverage.collectionId));
+        add("coverage", 1, objectScope(target.collectionId));
       }
       break;
     }
@@ -547,7 +566,16 @@ export async function computeSourceFacts(
     }
     case "appraisals": {
       const appraisal = doc as Doc<"appraisals">;
-      dated("appraisals.date", appraisal.appraisalDate);
+      if (
+        appraisal.appraisalType === "insurance" &&
+        appraisal.isCurrentValuation === true &&
+        appraisal.supersededBy === undefined
+      ) {
+        dated(
+          "appraisals.currentInsurance.staleAt",
+          appraisalExpiresAt(appraisal, INSURANCE_APPRAISAL_MAX_AGE_MS),
+        );
+      }
       break;
     }
     case "userOrganizations":

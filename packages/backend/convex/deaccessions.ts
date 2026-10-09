@@ -48,6 +48,12 @@ import {
   recordWorkflowStepAdvance,
   recordWorkflowStepApproval,
 } from "./utils/workflowExecution";
+import {
+  appraisalAgeDays,
+  isWithinValuationAge,
+  VALUATION_MAX_AGE_MS,
+} from "./utils/valuation";
+import { valuationError } from "./utils/valuationErrors";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const targetCollectionStatusValidator = v.union(
@@ -2301,28 +2307,38 @@ export const linkAppraisal = mutation({
 
     const appraisal = await ctx.db.get(args.appraisalId);
     if (!appraisal) {
-      throw new Error("Appraisal not found");
+      throw valuationError("REFERENCE_NOT_FOUND", "Appraisal not found");
     }
 
     // Verify appraisal belongs to same collection
-    if (appraisal.collectionId !== deaccession.collectionId) {
-      throw new Error("Appraisal does not belong to the deaccessioned item");
+    if (
+      appraisal.collectionId !== deaccession.collectionId ||
+      appraisal.organizationId !== deaccession.organizationId
+    ) {
+      throw valuationError(
+        "APPRAISAL_NOT_FOR_COVERED_OBJECT",
+        "Appraisal does not belong to the deaccessioned item",
+      );
+    }
+    if (appraisal.supersededBy !== undefined) {
+      throw valuationError(
+        "APPRAISAL_SUPERSEDED",
+        "Superseded appraisals stay in the history; link the superseding appraisal",
+      );
     }
 
-    // Check appraisal age (max 2 years = 730 days)
-    const maxAgeMs = 730 * 24 * 60 * 60 * 1000; // 2 years in ms
-    const appraisalAge = Date.now() - appraisal.appraisalDate;
-    const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
-
-    const isValid = appraisalAge <= maxAgeMs;
+    const now = Date.now();
+    const ageDays = appraisalAgeDays(appraisal, now);
+    const isValid = isWithinValuationAge(appraisal, now, VALUATION_MAX_AGE_MS);
 
     await ctx.db.patch(args.deaccessionId, {
       appraisalId: args.appraisalId,
       appraisalValue: appraisal.value,
+      appraisalCurrency: appraisal.currency,
       appraisalDate: appraisal.appraisalDate,
       appraisalVerified: isValid,
       appraisalVerifiedBy: userId,
-      appraisalVerifiedAt: Date.now(),
+      appraisalVerifiedAt: now,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -2334,6 +2350,8 @@ export const linkAppraisal = mutation({
       changes: {
         appraisalId: args.appraisalId,
         value: appraisal.value,
+        currency: appraisal.currency,
+        purpose: appraisal.appraisalType,
         ageDays,
         valid: isValid,
       },
@@ -2345,72 +2363,6 @@ export const linkAppraisal = mutation({
         ? `Appraisal is valid (${ageDays} days old)`
         : `Appraisal is too old (${ageDays} days). Maximum age is 730 days (2 years).`,
       appraisalAge: ageDays,
-    };
-  },
-});
-
-/**
- * Get current appraisal for an item
- */
-export const getCurrentAppraisal = query({
-  args: {
-    collectionId: v.id("collections"),
-  },
-  returns: v.union(
-    v.object({
-      _id: v.id("appraisals"),
-      appraisalDate: v.number(),
-      appraiserName: v.string(),
-      appraiserCompany: v.optional(v.string()),
-      appraisalType: v.string(),
-      value: v.number(),
-      currency: v.string(),
-      ageDays: v.number(),
-      isValid: v.boolean(),
-    }),
-    v.null(),
-  ),
-  handler: async (ctx, args) => {
-    const collection = await ctx.db.get(args.collectionId);
-    if (!collection) {
-      return null;
-    }
-
-    const [, appraisals] = await Promise.all([
-      requirePermission(ctx, collection.organizationId, "collections.read"),
-      ctx.db
-        .query("appraisals")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", args.collectionId),
-        )
-        .collect(),
-    ] as const);
-
-    if (appraisals.length === 0) {
-      return null;
-    }
-
-    // Sort by date descending and get most recent
-    appraisals.sort((a, b) => b.appraisalDate - a.appraisalDate);
-    const current = appraisals[0];
-    if (!current) {
-      return null;
-    }
-
-    const maxAgeMs = 730 * 24 * 60 * 60 * 1000;
-    const appraisalAge = Date.now() - current.appraisalDate;
-    const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
-
-    return {
-      _id: current._id,
-      appraisalDate: current.appraisalDate,
-      appraiserName: current.appraiserName,
-      appraiserCompany: current.appraiserCompany,
-      appraisalType: current.appraisalType,
-      value: current.value,
-      currency: current.currency,
-      ageDays,
-      isValid: appraisalAge <= maxAgeMs,
     };
   },
 });
@@ -2457,6 +2409,7 @@ export const getDisposalStages = query({
       valuation: v.object({
         linkedAppraisalId: v.optional(v.id("appraisals")),
         value: v.optional(v.number()),
+        currency: v.optional(v.string()),
         appraisalDate: v.optional(v.number()),
         isCurrent: v.boolean(),
       }),
@@ -2553,6 +2506,7 @@ export const getDisposalStages = query({
       valuation: {
         linkedAppraisalId: deaccession.appraisalId,
         value: deaccession.appraisalValue,
+        currency: deaccession.appraisalCurrency,
         appraisalDate: deaccession.appraisalDate,
         isCurrent: hasCurrentValuation(deaccession, now),
       },

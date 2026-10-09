@@ -15,6 +15,7 @@ import {
   type ProjectionUnavailable,
   throughStartOf,
 } from "./projectionReads";
+import { COVERED_VALUE_METRIC_PREFIX } from "./projectionSources";
 
 type ReadCtx = Pick<QueryCtx, "db" | "runQuery">;
 
@@ -563,7 +564,6 @@ export async function buildCollectionHealth(
   const { reader } = opened;
   const yearStart = new Date(new Date(now).getFullYear(), 0, 1).getTime();
   const thirtyDaysFromNow = now + 30 * DAY_MS;
-  const threeYearsAgo = now - 3 * 365 * DAY_MS;
 
   const [
     totals,
@@ -578,7 +578,7 @@ export async function buildCollectionHealth(
     reader.sums("treatments.completed", [atOrAfter(yearStart)]),
     reader.sums("assessments.due", [before(now)]),
     reader.sums("insurance.expiration", [before(thirtyDaysFromNow)]),
-    reader.sums("appraisals.date", [before(threeYearsAgo)]),
+    reader.sums("appraisals.currentInsurance.staleAt", [before(now)]),
     reader.sums("loans.open.endDate", [
       before(now),
       between(now, thirtyDaysFromNow),
@@ -686,7 +686,18 @@ export async function buildCollectionHealth(
       overdueAssessments,
     },
     insurance: {
-      totalCoveredValue: metric(totals, "insurance.coveredValue"),
+      coveredValueByCurrency: Object.entries(totals)
+        .filter(([name]) => name.startsWith(COVERED_VALUE_METRIC_PREFIX))
+        .map(([name, total]) => ({
+          currency: name.slice(COVERED_VALUE_METRIC_PREFIX.length),
+          total,
+        }))
+        .sort((a, b) => a.currency.localeCompare(b.currency)),
+      coveragesWithoutCurrency: metric(
+        totals,
+        "insurance.coverages.currencyNotRecorded",
+      ),
+      coveragesNeedingReview: metric(totals, "insurance.coverages.needsReview"),
       objectsWithCoverage,
       objectsWithoutCoverage,
       expiringPolicies,

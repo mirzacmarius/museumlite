@@ -2,91 +2,131 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
-import { type QueryCtx, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import { requireAmount, requireCurrencyCode } from "./utils/currency";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
-import { mutation } from "./utils/mutationBuilders";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
+import {
+  APPRAISAL_PURPOSE_ORDER,
+  appraisalAgeDays,
+  appraisalExpiresAt,
+  appraisalPurposeValidator,
+  appraisalViewValidator,
+  isWithinValuationAge,
+  loadObjectAppraisals,
+  MAX_APPRAISALS_PER_OBJECT,
+  refreshCurrentValuationFlags,
+  selectCurrentValuations,
+  toAppraisalView,
+  VALUATION_MAX_AGE_MS,
+} from "./utils/valuation";
+import { valuationError } from "./utils/valuationErrors";
 
-const appraisalTypeValidator = v.union(
-  v.literal("insurance"),
-  v.literal("market"),
-  v.literal("fair_market"),
-  v.literal("replacement"),
-  v.literal("liquidation"),
-);
+const appraisalFields = {
+  appraisalDate: v.number(),
+  appraiserName: v.string(),
+  appraiserCompany: v.optional(v.string()),
+  appraiserCredentials: v.optional(v.string()),
+  appraisalType: appraisalPurposeValidator,
+  value: v.number(),
+  currency: v.string(),
+  notes: v.optional(v.string()),
+  validUntil: v.optional(v.number()),
+};
+
+interface AppraisalInput {
+  appraisalDate: number;
+  appraiserName: string;
+  appraiserCompany?: string;
+  appraiserCredentials?: string;
+  appraisalType: Doc<"appraisals">["appraisalType"];
+  value: number;
+  currency: string;
+  notes?: string;
+  validUntil?: number;
+}
+
+function optionalText(value: string | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+/** Validates recorded appraisal facts; values are never edited afterwards. */
+function validatedAppraisal(input: AppraisalInput) {
+  const currency = requireCurrencyCode(input.currency);
+  requireAmount(input.value, "Appraised value");
+  if (!Number.isFinite(input.appraisalDate)) {
+    throw valuationError("INVALID_DATE", "Appraisal date is invalid");
+  }
+  if (
+    input.validUntil !== undefined &&
+    (!Number.isFinite(input.validUntil) ||
+      input.validUntil < input.appraisalDate)
+  ) {
+    throw valuationError(
+      "INVALID_DATE",
+      "Valid-until date must be on or after the appraisal date",
+    );
+  }
+  const appraiserName = input.appraiserName.trim();
+  if (!appraiserName) {
+    throw valuationError("APPRAISER_REQUIRED", "Appraiser name is required");
+  }
+  return {
+    appraisalDate: input.appraisalDate,
+    appraiserName,
+    appraiserCompany: optionalText(input.appraiserCompany),
+    appraiserCredentials: optionalText(input.appraiserCredentials),
+    appraisalType: input.appraisalType,
+    value: input.value,
+    currency,
+    notes: optionalText(input.notes),
+    validUntil: input.validUntil,
+  };
+}
+
+async function requireAuthenticatedUser(ctx: MutationCtx) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+  return userId;
+}
 
 /**
- * Create an appraisal for a collection item
+ * Record an appraisal for an object. It becomes the current valuation for its
+ * purpose and currency when no later appraisal exists for them.
  */
 export const create = mutation({
   args: {
     collectionId: v.id("collections"),
-    appraisalDate: v.number(),
-    appraiserName: v.string(),
-    appraiserCompany: v.optional(v.string()),
-    appraiserCredentials: v.optional(v.string()),
-    appraisalType: appraisalTypeValidator,
-    value: v.number(),
-    currency: v.string(),
-    notes: v.optional(v.string()),
-    documents: v.optional(v.array(v.id("_storage"))),
-    validUntil: v.optional(v.number()),
-    setAsCurrent: v.optional(v.boolean()),
+    ...appraisalFields,
   },
   returns: v.id("appraisals"),
   handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuthenticatedUser(ctx);
+    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
-      throw new Error("Collection not found");
+      throw valuationError("REFERENCE_NOT_FOUND", "Object not found");
     }
-
     await requirePermission(
       ctx,
       collection.organizationId,
       "collections.update",
     );
-
-    // If setting as current, unset any existing current appraisals
-    if (args.setAsCurrent) {
-      const existingAppraisals = await ctx.db
-        .query("appraisals")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", args.collectionId),
-        )
-        .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
-        .collect();
-
-      await Promise.all(
-        existingAppraisals.map((appraisal) =>
-          ctx.db.patch(appraisal._id, { isCurrentAppraisal: false }),
-        ),
-      );
-    }
+    const { collectionId, ...input } = args;
+    const fields = validatedAppraisal(input);
 
     const appraisalId = await ctx.db.insert("appraisals", {
       organizationId: collection.organizationId,
-      collectionId: args.collectionId,
-      appraisalDate: args.appraisalDate,
-      appraiserName: args.appraiserName,
-      appraiserCompany: args.appraiserCompany,
-      appraiserCredentials: args.appraiserCredentials,
-      appraisalType: args.appraisalType,
-      value: args.value,
-      currency: args.currency,
-      notes: args.notes,
-      documents: args.documents,
+      collectionId,
+      ...fields,
       createdBy: userId,
       createdAt: Date.now(),
-      validUntil: args.validUntil,
-      isCurrentAppraisal: args.setAsCurrent ?? false,
     });
+    await refreshCurrentValuationFlags(ctx, collectionId);
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: collection.organizationId,
@@ -95,9 +135,11 @@ export const create = mutation({
       entityType: "appraisal",
       entityId: appraisalId,
       changes: {
-        collectionId: args.collectionId,
-        value: args.value,
-        appraisalType: args.appraisalType,
+        collectionId,
+        purpose: fields.appraisalType,
+        value: fields.value,
+        currency: fields.currency,
+        appraisalDate: fields.appraisalDate,
       },
     });
 
@@ -106,71 +148,81 @@ export const create = mutation({
 });
 
 /**
- * Update an appraisal
+ * Correct an appraisal by recording a superseding one. The superseded record
+ * keeps its original values and remains in the object's history.
  */
-export const update = mutation({
+export const supersede = mutation({
   args: {
     appraisalId: v.id("appraisals"),
-    appraisalDate: v.optional(v.number()),
-    appraiserName: v.optional(v.string()),
-    appraiserCompany: v.optional(v.string()),
-    appraiserCredentials: v.optional(v.string()),
-    appraisalType: v.optional(appraisalTypeValidator),
-    value: v.optional(v.number()),
-    currency: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    documents: v.optional(v.array(v.id("_storage"))),
-    validUntil: v.optional(v.number()),
+    reason: v.string(),
+    ...appraisalFields,
   },
-  returns: v.null(),
+  returns: v.id("appraisals"),
   handler: async (ctx, args) => {
-    const [userId, appraisal] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.appraisalId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    const userId = await requireAuthenticatedUser(ctx);
+    const previous = await ctx.db.get(args.appraisalId);
+    if (!previous) {
+      throw valuationError("REFERENCE_NOT_FOUND", "Appraisal not found");
     }
-    if (!appraisal) {
-      throw new Error("Appraisal not found");
+    await requirePermission(ctx, previous.organizationId, "collections.update");
+    if (previous.supersededBy !== undefined) {
+      throw valuationError(
+        "APPRAISAL_ALREADY_SUPERSEDED",
+        "This appraisal was already superseded; correct the superseding appraisal instead",
+      );
     }
+    const reason = args.reason.trim();
+    if (!reason) {
+      throw valuationError(
+        "REASON_REQUIRED",
+        "A reason is required to supersede an appraisal",
+      );
+    }
+    const { appraisalId: _previousId, reason: _reason, ...input } = args;
+    const fields = validatedAppraisal(input);
+    const now = Date.now();
 
-    await requirePermission(
-      ctx,
-      appraisal.organizationId,
-      "collections.update",
-    );
+    const appraisalId = await ctx.db.insert("appraisals", {
+      organizationId: previous.organizationId,
+      collectionId: previous.collectionId,
+      ...fields,
+      supersedes: previous._id,
+      supersessionReason: reason,
+      createdBy: userId,
+      createdAt: now,
+    });
+    await ctx.db.patch(previous._id, {
+      supersededBy: appraisalId,
+      supersededAt: now,
+      supersededByUserId: userId,
+    });
+    await refreshCurrentValuationFlags(ctx, previous.collectionId);
 
-    const updates: Record<string, unknown> = {};
-    if (args.appraisalDate !== undefined)
-      updates.appraisalDate = args.appraisalDate;
-    if (args.appraiserName !== undefined)
-      updates.appraiserName = args.appraiserName;
-    if (args.appraiserCompany !== undefined)
-      updates.appraiserCompany = args.appraiserCompany;
-    if (args.appraiserCredentials !== undefined)
-      updates.appraiserCredentials = args.appraiserCredentials;
-    if (args.appraisalType !== undefined)
-      updates.appraisalType = args.appraisalType;
-    if (args.value !== undefined) updates.value = args.value;
-    if (args.currency !== undefined) updates.currency = args.currency;
-    if (args.notes !== undefined) updates.notes = args.notes;
-    if (args.documents !== undefined) updates.documents = args.documents;
-    if (args.validUntil !== undefined) updates.validUntil = args.validUntil;
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: previous.organizationId,
+      userId,
+      action: "superseded",
+      entityType: "appraisal",
+      entityId: previous._id,
+      changes: {
+        supersededBy: appraisalId,
+        reason,
+        previous: {
+          purpose: previous.appraisalType,
+          value: previous.value,
+          currency: previous.currency,
+          appraisalDate: previous.appraisalDate,
+        },
+        replacement: {
+          purpose: fields.appraisalType,
+          value: fields.value,
+          currency: fields.currency,
+          appraisalDate: fields.appraisalDate,
+        },
+      },
+    });
 
-    await Promise.all([
-      ctx.db.patch(args.appraisalId, updates),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: appraisal.organizationId,
-        userId,
-        action: "updated",
-        entityType: "appraisal",
-        entityId: args.appraisalId,
-        changes: updates,
-      }),
-    ]);
-
-    return null;
+    return appraisalId;
   },
 });
 
@@ -202,47 +254,16 @@ export const remove = mutation({
   },
 });
 
-/**
- * Set an appraisal as the current/active one for an item
- */
-export const setAsCurrent = mutation({
-  args: {
-    appraisalId: v.id("appraisals"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, appraisal] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.appraisalId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!appraisal) {
-      throw new Error("Appraisal not found");
-    }
-
-    const [, existingAppraisals] = await Promise.all([
-      requirePermission(ctx, appraisal.organizationId, "collections.update"),
-      ctx.db
-        .query("appraisals")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", appraisal.collectionId),
-        )
-        .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
-        .collect(),
-    ] as const);
-
-    await Promise.all([
-      ...existingAppraisals.map((existing) =>
-        ctx.db.patch(existing._id, { isCurrentAppraisal: false }),
-      ),
-      ctx.db.patch(args.appraisalId, { isCurrentAppraisal: true }),
-    ]);
-
-    return null;
-  },
-});
+async function isCurrentAppraisal(
+  ctx: Pick<QueryCtx, "db">,
+  appraisal: Doc<"appraisals">,
+) {
+  if (appraisal.supersededBy !== undefined) return false;
+  const current = selectCurrentValuations(
+    await loadObjectAppraisals(ctx, appraisal.collectionId),
+  );
+  return [...current.values()].some((entry) => entry._id === appraisal._id);
+}
 
 /**
  * Get an appraisal by ID
@@ -252,25 +273,10 @@ export const get = query({
     appraisalId: v.id("appraisals"),
   },
   returns: v.union(
-    v.object({
-      _id: v.id("appraisals"),
-      _creationTime: v.number(),
+    appraisalViewValidator.extend({
       organizationId: v.id("organizations"),
-      collectionId: v.id("collections"),
-      appraisalDate: v.number(),
-      appraiserName: v.string(),
-      appraiserCompany: v.optional(v.string()),
-      appraiserCredentials: v.optional(v.string()),
-      appraisalType: appraisalTypeValidator,
-      value: v.number(),
-      currency: v.string(),
-      notes: v.optional(v.string()),
       documents: v.optional(v.array(v.id("_storage"))),
       createdBy: v.id("users"),
-      createdAt: v.number(),
-      validUntil: v.optional(v.number()),
-      isCurrentAppraisal: v.optional(v.boolean()),
-      ageDays: v.number(),
       isValid: v.boolean(),
     }),
     v.null(),
@@ -283,20 +289,25 @@ export const get = query({
 
     await requirePermission(ctx, appraisal.organizationId, "collections.read");
 
-    const maxAgeMs = 730 * 24 * 60 * 60 * 1000; // 2 years
-    const appraisalAge = Date.now() - appraisal.appraisalDate;
-    const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
-
+    const view = toAppraisalView(
+      appraisal,
+      await isCurrentAppraisal(ctx, appraisal),
+      Date.now(),
+    );
     return {
-      ...appraisal,
-      ageDays,
-      isValid: appraisalAge <= maxAgeMs,
+      ...view,
+      organizationId: appraisal.organizationId,
+      documents: appraisal.documents,
+      createdBy: appraisal.createdBy,
+      isValid:
+        view.isWithinValuationAge && appraisal.supersededBy === undefined,
     };
   },
 });
 
 /**
- * List appraisals for a collection item
+ * List appraisals for a collection item, newest first, with the derived
+ * current valuation marker.
  */
 export const listByCollection = query({
   args: {
@@ -308,10 +319,11 @@ export const listByCollection = query({
       appraisalDate: v.number(),
       appraiserName: v.string(),
       appraiserCompany: v.optional(v.string()),
-      appraisalType: appraisalTypeValidator,
+      appraisalType: appraisalPurposeValidator,
       value: v.number(),
       currency: v.string(),
-      isCurrentAppraisal: v.optional(v.boolean()),
+      isCurrent: v.boolean(),
+      isSuperseded: v.boolean(),
       ageDays: v.number(),
       isValid: v.boolean(),
     }),
@@ -324,34 +336,80 @@ export const listByCollection = query({
 
     const [, appraisals] = await Promise.all([
       requirePermission(ctx, collection.organizationId, "collections.read"),
-      ctx.db
-        .query("appraisals")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", args.collectionId),
-        )
-        .collect(),
+      loadObjectAppraisals(ctx, args.collectionId),
     ] as const);
+    const current = new Set(
+      [...selectCurrentValuations(appraisals).values()].map(
+        (appraisal) => appraisal._id,
+      ),
+    );
+    const now = Date.now();
 
-    const maxAgeMs = 730 * 24 * 60 * 60 * 1000;
+    return appraisals.map((appraisal) => ({
+      _id: appraisal._id,
+      appraisalDate: appraisal.appraisalDate,
+      appraiserName: appraisal.appraiserName,
+      appraiserCompany: appraisal.appraiserCompany,
+      appraisalType: appraisal.appraisalType,
+      value: appraisal.value,
+      currency: appraisal.currency,
+      isCurrent: current.has(appraisal._id),
+      isSuperseded: appraisal.supersededBy !== undefined,
+      ageDays: appraisalAgeDays(appraisal, now),
+      isValid:
+        appraisal.supersededBy === undefined &&
+        isWithinValuationAge(appraisal, now, VALUATION_MAX_AGE_MS),
+    }));
+  },
+});
 
-    return appraisals
-      .map((appraisal) => {
-        const appraisalAge = Date.now() - appraisal.appraisalDate;
-        const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
-        return {
-          _id: appraisal._id,
-          appraisalDate: appraisal.appraisalDate,
-          appraiserName: appraisal.appraiserName,
-          appraiserCompany: appraisal.appraiserCompany,
-          appraisalType: appraisal.appraisalType,
-          value: appraisal.value,
-          currency: appraisal.currency,
-          isCurrentAppraisal: appraisal.isCurrentAppraisal,
-          ageDays,
-          isValid: appraisalAge <= maxAgeMs,
-        };
-      })
-      .sort((a, b) => b.appraisalDate - a.appraisalDate);
+/**
+ * An object's valuations: the current valuation for each purpose and
+ * currency, and the full appraisal history including superseded records.
+ */
+export const getObjectValuation = query({
+  args: {
+    collectionId: v.id("collections"),
+    now: v.number(),
+  },
+  returns: v.union(
+    v.object({
+      current: v.array(appraisalViewValidator),
+      history: v.array(appraisalViewValidator),
+      truncated: v.boolean(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return null;
+    }
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+
+    const appraisals = await loadObjectAppraisals(ctx, args.collectionId);
+    const currentIds = new Set(
+      [...selectCurrentValuations(appraisals).values()].map(
+        (appraisal) => appraisal._id,
+      ),
+    );
+    const history = appraisals.map((appraisal) =>
+      toAppraisalView(appraisal, currentIds.has(appraisal._id), args.now),
+    );
+    const current = history
+      .filter((entry) => entry.isCurrent)
+      .sort(
+        (a, b) =>
+          APPRAISAL_PURPOSE_ORDER.indexOf(a.purpose) -
+            APPRAISAL_PURPOSE_ORDER.indexOf(b.purpose) ||
+          a.currency.localeCompare(b.currency),
+      );
+
+    return {
+      current,
+      history,
+      truncated: appraisals.length >= MAX_APPRAISALS_PER_OBJECT,
+    };
   },
 });
 
@@ -359,8 +417,8 @@ export const listByCollection = query({
  * List appraisals for an organization with pagination
  */
 const BOUNDED_APPRAISAL_SEARCH_SCAN_LIMIT = 500;
-const MAX_APPRAISAL_AGE_MS = 730 * 24 * 60 * 60 * 1000;
 const APPRAISAL_EXPIRY_WARNING_MS = 90 * 24 * 60 * 60 * 1000;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 async function enrichAppraisalPage(
   ctx: { db: QueryCtx["db"] },
@@ -370,15 +428,10 @@ async function enrichAppraisalPage(
   return await Promise.all(
     appraisals.map(async (appraisal) => {
       const collection = await ctx.db.get(appraisal.collectionId);
-      const appraisalAge = now - appraisal.appraisalDate;
-      const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
-      const isValid = appraisalAge <= MAX_APPRAISAL_AGE_MS;
-      const daysUntilExpiry = isValid
-        ? Math.floor(
-            (MAX_APPRAISAL_AGE_MS - appraisalAge) / (24 * 60 * 60 * 1000),
-          )
-        : undefined;
-
+      const renewalDueAt = appraisalExpiresAt(appraisal, VALUATION_MAX_AGE_MS);
+      const isValid =
+        appraisal.supersededBy === undefined &&
+        isWithinValuationAge(appraisal, now, VALUATION_MAX_AGE_MS);
       return {
         _id: appraisal._id,
         collectionId: appraisal.collectionId,
@@ -388,9 +441,12 @@ async function enrichAppraisalPage(
         appraisalType: appraisal.appraisalType,
         value: appraisal.value,
         currency: appraisal.currency,
-        ageDays,
+        isSuperseded: appraisal.supersededBy !== undefined,
+        ageDays: appraisalAgeDays(appraisal, now),
         isValid,
-        daysUntilExpiry,
+        daysUntilExpiry: isValid
+          ? Math.floor((renewalDueAt - now) / MS_PER_DAY)
+          : undefined,
       };
     }),
   );
@@ -410,9 +466,10 @@ export const list = query({
         collectionTitle: v.optional(v.string()),
         appraisalDate: v.number(),
         appraiserName: v.string(),
-        appraisalType: appraisalTypeValidator,
+        appraisalType: appraisalPurposeValidator,
         value: v.number(),
         currency: v.string(),
+        isSuperseded: v.boolean(),
         ageDays: v.number(),
         isValid: v.boolean(),
         daysUntilExpiry: v.optional(v.number()),
@@ -435,12 +492,12 @@ export const list = query({
         .order("desc")
         .take(BOUNDED_APPRAISAL_SEARCH_SCAN_LIMIT);
 
-      const expiringAppraisals = recentAppraisals.filter((appraisal) => {
-        const appraisalAge = now - appraisal.appraisalDate;
-        return (
-          appraisalAge >= MAX_APPRAISAL_AGE_MS - APPRAISAL_EXPIRY_WARNING_MS
-        );
-      });
+      const expiringAppraisals = recentAppraisals.filter(
+        (appraisal) =>
+          appraisal.supersededBy === undefined &&
+          appraisalExpiresAt(appraisal, VALUATION_MAX_AGE_MS) - now <=
+            APPRAISAL_EXPIRY_WARNING_MS,
+      );
 
       const cursor = args.paginationOpts.cursor
         ? Number.parseInt(args.paginationOpts.cursor, 10)
@@ -472,5 +529,38 @@ export const list = query({
       isDone: paginationResult.isDone,
       continueCursor: paginationResult.continueCursor,
     };
+  },
+});
+
+const BACKFILL_PAGE_SIZE = 50;
+
+/**
+ * Recomputes the stored current-valuation flag for objects with appraisals
+ * recorded before purpose-scoped valuations. Bounded per page and resumable;
+ * safe to run more than once.
+ */
+export const backfillCurrentValuations = internalMutation({
+  args: {
+    cursor: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: v.object({ processed: v.number(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("appraisals")
+      .paginate({ numItems: BACKFILL_PAGE_SIZE, cursor: args.cursor ?? null });
+    const objects = new Set<Id<"collections">>(
+      page.page.map((appraisal) => appraisal.collectionId),
+    );
+    for (const collectionId of objects) {
+      await refreshCurrentValuationFlags(ctx, collectionId);
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.appraisals.backfillCurrentValuations,
+        { cursor: page.continueCursor },
+      );
+    }
+    return { processed: page.page.length, isDone: page.isDone };
   },
 });
