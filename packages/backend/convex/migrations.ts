@@ -1589,9 +1589,9 @@ export const recoverStrandedMediaUploads = internalMutation({
 
 /**
  * Migration: Leave one primary image on objects that uploads flagged with
- * several (MUS-672). Keeps each object's oldest primary image, which its
- * object page already shows, and clears the flag from the others. Bounded and
- * rerunnable; continues itself page by page.
+ * several (MUS-672). Keeps each object's oldest primary image and clears the
+ * flag from the others; objects with one primary file or none are untouched.
+ * Bounded and rerunnable; continues itself page by page.
  *
  * bun run convex:local -- run migrations:repairDuplicatePrimaryImages
  */

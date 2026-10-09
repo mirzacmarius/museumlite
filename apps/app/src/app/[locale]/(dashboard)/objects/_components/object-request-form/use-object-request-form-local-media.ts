@@ -39,13 +39,16 @@ export function useObjectRequestFormLocalMedia({
     }>
   >([]);
 
+  const previewUrlsRef = useRef(new Set<string>());
+
   useEffect(() => {
+    const previewUrls = previewUrlsRef.current;
     return () => {
-      for (const item of selectedFiles) {
-        URL.revokeObjectURL(item.previewUrl);
+      for (const previewUrl of previewUrls) {
+        URL.revokeObjectURL(previewUrl);
       }
     };
-  }, [selectedFiles]);
+  }, []);
 
   const hasLocalMediaSelections =
     selectedFiles.length > 0 || selectedDocuments.length > 0;
@@ -60,11 +63,11 @@ export function useObjectRequestFormLocalMedia({
         }
 
         const files = Array.from(filesList);
-        const newFiles = files.map((file, index) => ({
-          id: `${Date.now()}-${index}`,
-          file,
-          previewUrl: URL.createObjectURL(file),
-        }));
+        const newFiles = files.map((file, index) => {
+          const previewUrl = URL.createObjectURL(file);
+          previewUrlsRef.current.add(previewUrl);
+          return { id: `${Date.now()}-${index}`, file, previewUrl };
+        });
 
         setSelectedFiles((prev) => [...prev, ...newFiles]);
 
@@ -90,6 +93,7 @@ export function useObjectRequestFormLocalMedia({
       const fileToDelete = prev.find((item) => item.id === fileId);
       if (fileToDelete) {
         URL.revokeObjectURL(fileToDelete.previewUrl);
+        previewUrlsRef.current.delete(fileToDelete.previewUrl);
       }
 
       return prev.filter((item) => item.id !== fileId);
@@ -230,6 +234,10 @@ export function useObjectRequestFormLocalMedia({
   );
 
   const clearLocalMediaSelections = useCallback(() => {
+    for (const previewUrl of previewUrlsRef.current) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    previewUrlsRef.current.clear();
     setSelectedFiles([]);
     setSelectedDocuments([]);
   }, []);

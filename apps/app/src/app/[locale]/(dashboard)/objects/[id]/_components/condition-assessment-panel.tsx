@@ -147,6 +147,7 @@ export function ConditionAssessmentPanel({
         fileName: file.name,
         fileSize: file.size,
         mimeType: file.type,
+        isPrimary: false,
       });
       setPhotoIds((ids) => [...ids, mediaId]);
       setNotice(t("uploaded"));

@@ -2,6 +2,7 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getMediaFileType, shouldGenerateMediaThumbnail } from "./mediaAssets";
+import { hasPermission } from "./permissions";
 
 // An object normally has one primary file; this only bounds legacy repairs.
 const PRIMARY_MEDIA_READ_LIMIT = 100;
@@ -50,13 +51,17 @@ export async function resolveNewMediaPrimary(
 ) {
   if (!canBePrimaryImage(media)) return false;
   if (requested !== undefined) return requested;
-  const images = await ctx.db
+  let checked = 0;
+  for await (const image of ctx.db
     .query("mediaFiles")
     .withIndex("by_collection_and_fileType", (q) =>
       q.eq("collectionId", collectionId).eq("fileType", "image"),
-    )
-    .take(PRIMARY_MEDIA_READ_LIMIT);
-  return !images.some(canBePrimaryImage);
+    )) {
+    if (canBePrimaryImage(image)) return false;
+    checked += 1;
+    if (checked >= PRIMARY_MEDIA_READ_LIMIT) return false;
+  }
+  return true;
 }
 
 /** Clears the primary flag from every other file attached to the object. */
@@ -108,17 +113,9 @@ export async function keepOldestPrimaryImage(
 ) {
   const primaryMedia = await listPrimaryMedia(ctx, collectionId);
   if (primaryMedia.length < 2) return 0;
-  const primaryImages = await ctx.db
-    .query("mediaFiles")
-    .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
-      q
-        .eq("collectionId", collectionId)
-        .eq("isPrimary", true)
-        .eq("fileType", "image"),
-    )
-    .take(PRIMARY_MEDIA_READ_LIMIT);
+  // The index orders primaries by file type, then oldest first.
   const keep =
-    primaryImages.find(canBePrimaryImage) ??
+    primaryMedia.find(canBePrimaryImage) ??
     primaryMedia.reduce((oldest, media) =>
       media._creationTime < oldest._creationTime ? media : oldest,
     );
@@ -162,15 +159,31 @@ export function normalizeDraftMediaPrimary<T extends DraftMediaItem>(
   });
 }
 
-function draftPrimaryStorageId(draftMedia: DraftMediaItem[]) {
-  return normalizeDraftMediaPrimary(draftMedia).find((item) => item.isPrimary)
-    ?.storageId;
-}
-
-/** Whether saving `next` would show a different primary image than `saved`. */
-export function changesDraftPrimaryImage(
+/**
+ * Choosing a draft's primary image needs the same permission as choosing an
+ * object's. Staff without it still save the draft; its saved primary stays.
+ */
+export async function keepDraftPrimaryUnlessPermitted<T extends DraftMediaItem>(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
   saved: DraftMediaItem[] | undefined,
-  next: DraftMediaItem[],
-) {
-  return draftPrimaryStorageId(saved ?? []) !== draftPrimaryStorageId(next);
+  next: T[],
+): Promise<T[]> {
+  const savedPrimaryId = normalizeDraftMediaPrimary(saved ?? []).find(
+    (item) => item.isPrimary,
+  )?.storageId;
+  const nextPrimaryId = next.find((item) => item.isPrimary)?.storageId;
+  if (
+    savedPrimaryId === undefined ||
+    nextPrimaryId === savedPrimaryId ||
+    (await hasPermission(ctx, organizationId, "media.upload"))
+  ) {
+    return next;
+  }
+  return normalizeDraftMediaPrimary(
+    next.map((item) => ({
+      ...item,
+      isPrimary: item.storageId === savedPrimaryId,
+    })),
+  );
 }

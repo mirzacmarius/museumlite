@@ -41,7 +41,7 @@ import {
   requirePermission,
 } from "./utils/permissions";
 import {
-  changesDraftPrimaryImage,
+  keepDraftPrimaryUnlessPermitted,
   normalizeDraftMediaPrimary,
 } from "./utils/primaryMedia";
 import {
@@ -367,7 +367,7 @@ export const upsertObjectDraft = mutation({
       ...args.objectData,
       title: args.objectData.title.trim(),
     };
-    const draftMedia =
+    const submittedDraftMedia =
       args.draftMedia && normalizeDraftMediaPrimary(args.draftMedia);
 
     if (normalizedObjectData.title.length === 0) {
@@ -424,12 +424,14 @@ export const upsertObjectDraft = mutation({
       }
 
       await requirePermission(ctx, args.organizationId, "collections.update");
-      if (
-        draftMedia &&
-        changesDraftPrimaryImage(existing.draftMedia, draftMedia)
-      ) {
-        await requirePermission(ctx, args.organizationId, "media.upload");
-      }
+      const draftMedia =
+        submittedDraftMedia &&
+        (await keepDraftPrimaryUnlessPermitted(
+          ctx,
+          args.organizationId,
+          existing.draftMedia,
+          submittedDraftMedia,
+        ));
 
       const updatedWorkflowStep = shouldAutoApproveSubmit
         ? undefined
@@ -547,9 +549,6 @@ export const upsertObjectDraft = mutation({
     }
 
     await requirePermission(ctx, args.organizationId, "collections.create");
-    if (draftMedia && changesDraftPrimaryImage(undefined, draftMedia)) {
-      await requirePermission(ctx, args.organizationId, "media.upload");
-    }
 
     let accessionNumber = normalizedObjectData.accessionNumber?.trim()
       ? normalizedObjectData.accessionNumber
@@ -596,9 +595,9 @@ export const upsertObjectDraft = mutation({
         ...normalizedObjectData,
         accessionNumber,
       },
-      draftMedia,
+      draftMedia: submittedDraftMedia,
     });
-    for (const media of draftMedia ?? [])
+    for (const media of submittedDraftMedia ?? [])
       await claimStorageOwnership(ctx, {
         storageId: media.storageId,
         organizationId: args.organizationId,

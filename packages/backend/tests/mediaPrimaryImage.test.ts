@@ -277,6 +277,64 @@ describe("choosing the primary image", () => {
     expect(rerun).toEqual({ cleared: 0, isDone: true });
   });
 
+  test("the repair migration continues through every page of objects", async () => {
+    const t = createConvexTest();
+    const { staff, organizationId, userId } = await mediaStaffWithObject(t);
+    const lastObjectId = await t.run(async (ctx) => {
+      for (let index = 0; index < 50; index += 1) {
+        await ctx.db.insert("collections", {
+          organizationId,
+          accessionNumber: `FILL-${index}`,
+          title: `Filler ${index}`,
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: Date.now(),
+        });
+      }
+      const collectionId = await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "LAST-1",
+        title: "Last object",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+      for (const fileName of ["front.jpg", "back.jpg"]) {
+        await ctx.db.insert("mediaFiles", {
+          organizationId,
+          collectionId,
+          storageId: await ctx.storage.store(
+            new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+          ),
+          fileName,
+          fileType: "image",
+          fileSize: 1,
+          mimeType: "image/jpeg",
+          mediaCategory: "image",
+          isPrimary: true,
+          uploadedBy: userId,
+          uploadedAt: Date.now(),
+          uploadStatus: "completed",
+        });
+      }
+      return collectionId;
+    });
+
+    const firstPage = await t.mutation(
+      internal.migrations.repairDuplicatePrimaryImages,
+      {},
+    );
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+    expect(firstPage).toEqual({ cleared: 0, isDone: false });
+    const media = await staff.query(api.media.list, {
+      collectionId: lastObjectId,
+    });
+    expect(
+      media.filter((item) => item.isPrimary).map((item) => item.fileName),
+    ).toEqual(["front.jpg"]);
+  });
+
   test("staff of another organization cannot choose the primary image", async () => {
     const t = createConvexTest();
     const { upload, primaryFileNames } = await mediaStaffWithObject(t);
@@ -291,7 +349,7 @@ describe("choosing the primary image", () => {
       authedForUser(t, outsider.userId).mutation(api.media.setPrimary, {
         mediaId: detailId,
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow("Permission denied: media.upload");
     expect(await primaryFileNames()).toEqual(["front.jpg"]);
   });
 });
@@ -405,7 +463,7 @@ describe("primary image on object drafts", () => {
     ).toEqual(["front.jpg"]);
   });
 
-  test("staff without media upload permission cannot change a draft's primary image", async () => {
+  test("a draft keeps its primary image when staff without media upload permission save it", async () => {
     const t = createConvexTest();
     const { staff, organizationId, draftFile } = await draftStaff(t);
     const draftMedia = [
@@ -424,25 +482,15 @@ describe("primary image on object drafts", () => {
       "collections.update",
     ]);
 
-    await expect(
-      cataloger.mutation(api.accessions.upsertObjectDraft, {
-        organizationId,
-        accessionId,
-        saveMode: "draft",
-        objectData: { title: "Carved bowl", accessionNumber: "BOWL-3" },
-        draftMedia: draftMedia.map((item) => ({
-          ...item,
-          isPrimary: item.fileName === "back.jpg",
-        })),
-      }),
-    ).rejects.toThrow("Permission denied: media.upload");
-
     await cataloger.mutation(api.accessions.upsertObjectDraft, {
       organizationId,
       accessionId,
       saveMode: "draft",
       objectData: { title: "Carved wooden bowl", accessionNumber: "BOWL-3" },
-      draftMedia,
+      draftMedia: draftMedia.map((item) => ({
+        ...item,
+        isPrimary: item.fileName === "back.jpg",
+      })),
     });
     const draft = await staff.query(api.accessions.get, { accessionId });
     expect(draft?.draftObjectData?.title).toBe("Carved wooden bowl");
