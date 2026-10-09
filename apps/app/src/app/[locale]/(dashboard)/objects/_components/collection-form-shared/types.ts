@@ -1,6 +1,8 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { CollectionModuleId } from "@v1/backend/convex/utils/moduleCatalog";
 import type { CollectionType } from "@/components/collection-type-selector";
 import type { ObjectTabId } from "../../[id]/_components/object-tab-config";
+import type { TypeDetailsDraft } from "../object-type-details/type-detail-values";
 
 export interface OwnershipEntry {
   localId?: string;
@@ -50,6 +52,7 @@ export interface CollectionFormData {
   alternateAccessionNumbers?: string[];
   ownershipHistory?: OwnershipEntry[];
   collectionType?: CollectionType;
+  typeDetails?: TypeDetailsDraft;
   displayStatus?: string;
   isPubliclyVisible?: boolean;
   isHighResDownloadable?: boolean;
@@ -67,6 +70,7 @@ export type CollectionEditTabId = Extract<
   | "digital"
   | "accession"
   | "placement"
+  | CollectionModuleId
 >;
 
 export interface DraftMediaItem {

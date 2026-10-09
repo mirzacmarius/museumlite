@@ -1022,6 +1022,73 @@ export default {
       bottleSize: "750 ml",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "Detalles de {type}",
+      description:
+        "Se guardan con este borrador y se registran en el objeto cuando se aprueba el ingreso. Cambiar el tipo de colección elimina estos detalles.",
+    },
+    summary: {
+      title: "Detalles de {type}",
+    },
+    changeType: {
+      title: "¿Cambiar el tipo de colección?",
+      description:
+        "Se eliminarán los detalles de {type} introducidos en este borrador. Solo se conservan los detalles del tipo de colección actual del borrador.",
+      confirm: "Cambiar tipo y eliminar detalles",
+      cancel: "Mantener el tipo actual",
+    },
+    errors: {
+      moduleDisabled:
+        "El módulo de este tipo de colección no está habilitado para tu organización. Elige otro tipo de colección o pide a un administrador que habilite el módulo.",
+      typeMismatch:
+        "Los detalles específicos del tipo no coinciden con el tipo de colección seleccionado. Revisa los detalles y vuelve a guardar.",
+    },
+    fields: {
+      appraiser: "Tasador",
+      lastAppraisalDate: "Fecha de la última tasación",
+      insuranceCarrier: "Aseguradora",
+      insuranceExpiresAt: "Fecha de vencimiento del seguro",
+      peakWindowStart: "Beber desde (año)",
+      peakWindowEnd: "Beber hasta (año)",
+      make: "Marca",
+      model: "Modelo",
+      year: "Año",
+      odometerUnit: "Unidad del odómetro",
+      retentionYears: "Periodo de retención (años)",
+      digitalAssetUrl: "URL del activo digital",
+      countryOrRegion: "País o región",
+      issueYear: "Año de emisión",
+      issuePeriod: "Periodo de emisión",
+      series: "Serie",
+      certifyingAuthority: "Entidad certificadora",
+      diameterMm: "Diámetro (mm)",
+      weightGrams: "Peso (g)",
+      conditionNotes: "Notas de estado",
+      notes: "Notas",
+    },
+    options: {
+      inStorage: "En almacén",
+      cork: "Corcho",
+      screwcap: "Tapón de rosca",
+      synthetic: "Sintético",
+      glass: "Vidrio",
+      crown: "Chapa corona",
+      miles: "Millas",
+      kilometres: "Kilómetros",
+      male: "Macho",
+      female: "Hembra",
+      dry: "Seco",
+      wet: "Húmedo (fluido)",
+      frozen: "Congelado",
+      pinned: "Montado con alfiler",
+      pressed: "Prensado",
+      mounted: "Montado",
+      cast: "Molde",
+      fossil: "Fósil",
+      other: "Otro",
+    },
+  },
   workflows: {
     title: "Configuración de flujos de trabajo",
     description:

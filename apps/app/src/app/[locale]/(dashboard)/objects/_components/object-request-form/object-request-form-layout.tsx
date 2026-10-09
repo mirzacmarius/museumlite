@@ -2,6 +2,7 @@
 
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { useI18n } from "@/locales/client";
+import { CollectionTypeChangeDialog } from "./collection-type-change-dialog";
 import {
   ObjectRequestFormFooter,
   resolveObjectRequestFormFooterDraft,
@@ -63,6 +64,9 @@ export function ObjectRequestFormLayout({
     handleSaveAndNavigate,
     pageBadge,
     mode,
+    pendingCollectionType,
+    confirmCollectionTypeChange,
+    cancelCollectionTypeChange,
   } = form;
 
   const galleryImages = [
@@ -187,6 +191,13 @@ export function ObjectRequestFormLayout({
         onDiscard={handleDiscardAndNavigate}
         onSave={handleSaveAndNavigate}
         isSaving={isSavingDraft}
+      />
+
+      <CollectionTypeChangeDialog
+        currentCollectionType={formData.collectionType}
+        pendingCollectionType={pendingCollectionType}
+        onConfirm={confirmCollectionTypeChange}
+        onCancel={cancelCollectionTypeChange}
       />
     </div>
   );

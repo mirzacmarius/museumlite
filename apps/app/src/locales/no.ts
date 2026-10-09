@@ -1006,6 +1006,73 @@ export default {
       bottleSize: "750 ml",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "Detaljer for {type}",
+      description:
+        "Lagres med dette utkastet og registreres på objektet når mottaket godkjennes. Hvis du endrer samlingstype, fjernes disse detaljene.",
+    },
+    summary: {
+      title: "Detaljer for {type}",
+    },
+    changeType: {
+      title: "Endre samlingstype?",
+      description:
+        "Detaljene for {type} som er lagt inn i dette utkastet, fjernes. Bare detaljer for utkastets nåværende samlingstype beholdes.",
+      confirm: "Endre type og fjern detaljer",
+      cancel: "Behold nåværende type",
+    },
+    errors: {
+      moduleDisabled:
+        "Modulen for denne samlingstypen er ikke aktivert for organisasjonen din. Velg en annen samlingstype eller be en administrator aktivere modulen.",
+      typeMismatch:
+        "De typespesifikke detaljene samsvarer ikke med valgt samlingstype. Se over detaljene og lagre på nytt.",
+    },
+    fields: {
+      appraiser: "Takstmann",
+      lastAppraisalDate: "Dato for siste taksering",
+      insuranceCarrier: "Forsikringsselskap",
+      insuranceExpiresAt: "Forsikringens utløpsdato",
+      peakWindowStart: "Drikkes fra (år)",
+      peakWindowEnd: "Drikkes til (år)",
+      make: "Merke",
+      model: "Modell",
+      year: "Årsmodell",
+      odometerUnit: "Enhet for kilometerteller",
+      retentionYears: "Oppbevaringstid (år)",
+      digitalAssetUrl: "URL til digital ressurs",
+      countryOrRegion: "Land eller region",
+      issueYear: "Utgivelsesår",
+      issuePeriod: "Utgivelsesperiode",
+      series: "Serie",
+      certifyingAuthority: "Sertifiseringsinstans",
+      diameterMm: "Diameter (mm)",
+      weightGrams: "Vekt (g)",
+      conditionNotes: "Tilstandsnotater",
+      notes: "Notater",
+    },
+    options: {
+      inStorage: "På magasin",
+      cork: "Kork",
+      screwcap: "Skrukork",
+      synthetic: "Syntetisk",
+      glass: "Glass",
+      crown: "Kronekork",
+      miles: "Miles",
+      kilometres: "Kilometer",
+      male: "Hann",
+      female: "Hunn",
+      dry: "Tørr",
+      wet: "Våt (væske)",
+      frozen: "Frossen",
+      pinned: "Nålet",
+      pressed: "Presset",
+      mounted: "Montert",
+      cast: "Avstøpning",
+      fossil: "Fossil",
+      other: "Annet",
+    },
+  },
   workflows: {
     title: "Arbeidsflytskonfigurasjon",
     description:

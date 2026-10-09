@@ -13,6 +13,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { useAccessionReviewMessage } from "@/hooks/use-accession-review-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { RejectIntakeDialog } from "./reject-intake-dialog";
+import { useObjectDraftErrorMessage } from "../../../objects/_components/object-type-details/use-object-draft-error-message";
 
 interface ApprovalWorkflowProps {
   accessionId: string;
@@ -103,6 +104,7 @@ export function ApprovalWorkflow({
   const [exceptionReason, setExceptionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<ApprovalErrorMessage | null>(null);
+  const describeDraftError = useObjectDraftErrorMessage();
 
   const accession = useQuery(
     api.accessions.get,
@@ -147,11 +149,17 @@ export function ApprovalWorkflow({
       setComment("");
       setExceptionReason("");
     } catch (err) {
+      const draftError = describeDraftError(err);
       const approvalError = getApprovalErrorMessage(err, t);
       setError(
-        accessionReviewErrorFromError(err)
-          ? { ...approvalError, description: reviewMessage(err) }
-          : approvalError,
+        draftError
+          ? {
+              title: t("approval.errors.defaultTitle"),
+              description: draftError,
+            }
+          : accessionReviewErrorFromError(err)
+            ? { ...approvalError, description: reviewMessage(err) }
+            : approvalError,
       );
     } finally {
       setIsSubmitting(false);

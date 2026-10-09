@@ -39,6 +39,7 @@ import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
+import { validateObjectDraftTypeDetails } from "./utils/objectDraftTypeDetails";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -428,6 +429,11 @@ export const upsertObjectDraft = mutation({
       }
 
       await requirePermission(ctx, args.organizationId, "collections.update");
+      await validateObjectDraftTypeDetails(
+        ctx,
+        args.organizationId,
+        args.objectData,
+      );
       const draftMedia =
         submittedDraftMedia &&
         (await keepDraftPrimaryUnlessPermitted(
@@ -553,6 +559,11 @@ export const upsertObjectDraft = mutation({
     }
 
     await requirePermission(ctx, args.organizationId, "collections.create");
+    await validateObjectDraftTypeDetails(
+      ctx,
+      args.organizationId,
+      args.objectData,
+    );
 
     let accessionNumber = normalizedObjectData.accessionNumber?.trim()
       ? normalizedObjectData.accessionNumber

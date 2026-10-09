@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { objectDraftTypeDetailsValidator } from "./collectionTypeDetailFields";
 import { collectionTypeValidator } from "./moduleValidators";
 
 export const objectDraftLinkValidator = v.object({
@@ -59,6 +60,7 @@ export const objectDraftDataValidator = v.object({
   alternateAccessionNumbers: v.optional(v.array(v.string())),
   ownershipHistory: v.optional(v.array(objectDraftOwnershipEntryValidator)),
   collectionType: v.optional(collectionTypeValidator),
+  typeDetails: v.optional(objectDraftTypeDetailsValidator),
   displayStatus: v.optional(v.string()),
   isPubliclyVisible: v.optional(v.boolean()),
   isHighResDownloadable: v.optional(v.boolean()),

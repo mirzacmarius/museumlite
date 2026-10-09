@@ -3,7 +3,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
-import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useQuery } from "convex/react";
 import {
@@ -12,7 +11,6 @@ import {
   Globe2,
   Hash,
   Landmark,
-  Plus,
   ScrollText,
   ShieldCheck,
   Stamp,
@@ -96,14 +94,10 @@ export function CoinsStampsDetailsTab({
   if (details === null) {
     return (
       <div className="space-y-6">
-        <div className="flex h-32 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border">
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
             {common("noDetailsYet", { module: "coins and stamps" })}
           </p>
-          <Button variant="outline" size="sm">
-            <Plus className="mr-2 size-4" />
-            {common("addDetails", { module: "Coins and Stamps" })}
-          </Button>
         </div>
       </div>
     );

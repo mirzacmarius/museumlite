@@ -2,6 +2,7 @@ import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { parseStringListField } from "../../../../../../lib/string-list-field";
+import { toObjectDraftTypeDetails } from "../object-type-details/type-detail-values";
 import type {
   CollectionFormData,
   DraftMediaItem,
@@ -158,6 +159,10 @@ export function getFormSignature(formData: CollectionFormData) {
       ) || [],
     links:
       formData.links?.map(({ localId: _localId, ...entry }) => entry) || [],
+    typeDetails: toObjectDraftTypeDetails(
+      formData.collectionType,
+      formData.typeDetails,
+    ),
   });
 }
 
@@ -273,6 +278,10 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
         entry.owner.trim().length > 0 ? [entry] : [],
       ) || [],
     collectionType: formData.collectionType,
+    typeDetails: toObjectDraftTypeDetails(
+      formData.collectionType,
+      formData.typeDetails,
+    ),
     displayStatus: formData.displayStatus,
     isPubliclyVisible: formData.isPubliclyVisible ?? false,
     isHighResDownloadable: formData.isHighResDownloadable ?? false,
