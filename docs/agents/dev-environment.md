@@ -46,6 +46,8 @@ packages/email/            # React Email templates
 | Marketing site (Next.js) | 3001 | `bun dev:web` | Static marketing pages |
 | Convex backend | N/A (cloud) | `cd packages/backend && bun dev` | Requires Convex auth |
 
+In production only the app's Vercel build (`apps/app/vercel.json`) runs `convex deploy`. The marketing site's production build reads `NEXT_PUBLIC_CONVEX_URL` from its Vercel project, so a marketing deploy that succeeds while the app deploy is rejected (for example by the account's daily deployment limit) cannot leave the backend ahead of the app.
+
 Running `bun dev` at root starts `convex dev --tail-logs` against the cloud deployment. Without Convex auth, Next.js starts but cannot fetch data. Agents do not run it: they use `scripts/local-qa/README.md` for an isolated loopback backend and `bun run convex:local -- <args>` for Convex CLI commands. A bare `convex` command reads `packages/backend/.env.local`, which points at the cloud.
 
 ## Environment files
