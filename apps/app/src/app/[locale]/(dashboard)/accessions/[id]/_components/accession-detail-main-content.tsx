@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AuditCaseHistory } from "@/components/audit-case-history";
 import { PermissionGate } from "@/components/permission-gate";
 import { useI18n } from "@/locales/client";
+import { TypeDetailsSummary } from "../../../objects/_components/object-type-details/type-details-summary";
 import { AccessionDetailReviewPanel } from "./accession-detail-review-panel";
 import type { WorkflowStepInfo } from "./accession-detail-types";
 import {
@@ -167,6 +168,14 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                         {accession.draftObjectData.description}
                       </p>
                     }
+                  />
+                </div>
+              ) : null}
+
+              {accession.draftObjectData.typeDetails ? (
+                <div className="mt-5">
+                  <TypeDetailsSummary
+                    typeDetails={accession.draftObjectData.typeDetails}
                   />
                 </div>
               ) : null}

@@ -199,7 +199,6 @@ const intakeCases = [
         folderNumber: "3",
         digitalAssetUrl: "https://archive.example.org/bm-1999-03",
         fileFormat: "PDF/A",
-        fileSize: 2.4,
         pageCount: 48,
         ocrProcessed: true,
         keywords: ["merger", "board"],

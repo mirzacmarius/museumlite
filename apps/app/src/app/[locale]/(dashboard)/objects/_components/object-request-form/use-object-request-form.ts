@@ -2,6 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  isCollectionModuleId,
+  isCollectionTypeEnabled,
+} from "@v1/backend/convex/utils/moduleCatalog";
 import { useQuery } from "convex/react";
 import {
   useCallback,
@@ -26,6 +30,7 @@ import {
   createFormDataFromDraftObject,
   getFormSignature,
 } from "../collection-form-shared/utils";
+import { useObjectDraftErrorMessage } from "../object-type-details/use-object-draft-error-message";
 import { objectRequestDraftReducer } from "./object-request-form-draft-reducer";
 import { useObjectRequestFormDraft } from "./use-object-request-form-draft";
 import { useObjectRequestFormLocalMedia } from "./use-object-request-form-local-media";
@@ -75,6 +80,7 @@ export function useObjectRequestForm({
       persistedDraftMedia,
       draftSavedAt,
       initialized: hasDraftInitialized,
+      pendingCollectionType,
     },
     dispatchDraft,
   ] = useReducer(objectRequestDraftReducer, {
@@ -83,6 +89,7 @@ export function useObjectRequestForm({
     persistedDraftMedia: initialDraftMedia ?? [],
     draftSavedAt: initialDraftSavedAt,
     initialized: false,
+    pendingCollectionType: null,
   });
 
   const currentLocationPath = useQuery(
@@ -100,9 +107,16 @@ export function useObjectRequestForm({
       : "skip",
   );
 
+  const typeDetailsTab =
+    isCollectionModuleId(formData.collectionType) &&
+    isCollectionTypeEnabled(formData.collectionType, enabledModules)
+      ? formData.collectionType
+      : undefined;
   const { tabs, activeTab, setActiveTab } = useFormTabState(
     isLocationTrackingEnabled,
+    typeDetailsTab,
   );
+  const describeError = useObjectDraftErrorMessage();
 
   const localMedia = useObjectRequestFormLocalMedia({
     currentOrganizationId,
@@ -186,6 +200,7 @@ export function useObjectRequestForm({
     uploadDraftMedia: localMedia.uploadDraftMedia,
     clearLocalMediaSelections: localMedia.clearLocalMediaSelections,
     setError,
+    describeError,
   });
 
   const submitState = useObjectRequestFormSubmit({
@@ -197,6 +212,7 @@ export function useObjectRequestForm({
     selectedDocumentsCount: localMedia.selectedDocuments.length,
     uploadDraftMedia: localMedia.uploadDraftMedia,
     setError,
+    describeError,
     t,
     push: draftState.push,
   });
@@ -214,6 +230,14 @@ export function useObjectRequestForm({
     ) => {
       dispatchDraft({ type: "update_field", field, value });
     },
+    [],
+  );
+  const confirmCollectionTypeChange = useCallback(
+    () => dispatchDraft({ type: "confirm_collection_type_change" }),
+    [],
+  );
+  const cancelCollectionTypeChange = useCallback(
+    () => dispatchDraft({ type: "cancel_collection_type_change" }),
     [],
   );
 
@@ -255,6 +279,9 @@ export function useObjectRequestForm({
     locationSummary,
     collectionSummary,
     updateField,
+    pendingCollectionType,
+    confirmCollectionTypeChange,
+    cancelCollectionTypeChange,
     isDraftCurrent,
     hasSavedFieldDraft,
     hasLocalMediaSelections: localMedia.hasLocalMediaSelections,

@@ -30,11 +30,6 @@ export async function validateObjectDraftTypeDetails(
     typeDetails?: ObjectDraftTypeDetails;
   },
 ) {
-  await requireCollectionTypeModuleEnabled(
-    ctx,
-    organizationId,
-    objectData.collectionType,
-  );
   if (
     objectData.typeDetails &&
     objectData.typeDetails.collectionType !== objectData.collectionType
@@ -44,6 +39,11 @@ export async function validateObjectDraftTypeDetails(
       "Type-specific details do not match the draft's collection type",
     );
   }
+  await requireCollectionTypeModuleEnabled(
+    ctx,
+    organizationId,
+    objectData.collectionType,
+  );
 }
 
 function hasDetailValues(fields: ObjectDraftTypeDetails["fields"]) {

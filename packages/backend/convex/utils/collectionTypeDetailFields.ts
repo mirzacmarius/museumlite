@@ -247,7 +247,6 @@ export const archiveIntakeDetailFields = {
   folderNumber: v.optional(v.string()),
   digitalAssetUrl: v.optional(v.string()),
   fileFormat: v.optional(v.string()),
-  fileSize: v.optional(v.number()),
   pageCount: v.optional(v.number()),
   ocrProcessed: v.optional(v.boolean()),
   keywords: v.optional(v.array(v.string())),
@@ -255,6 +254,7 @@ export const archiveIntakeDetailFields = {
 
 export const archiveDetailFields = {
   ...archiveIntakeDetailFields,
+  fileSize: v.optional(v.number()),
   flaggedForDestruction: v.optional(v.boolean()),
   destructionDate: v.optional(v.number()),
   destructionMethod: v.optional(v.string()),
@@ -311,7 +311,7 @@ export const coinsStampsIntakeDetailFields = coinsStampsDetailFields;
  * Details staff can capture on an accession draft, one collection type at a
  * time. Running logs (fine-art provenance chain and shipping, vehicle service,
  * parts and events), archive legal hold and destruction, and stored file
- * references are recorded on the published object through their own
+ * references and sizes are recorded on the published object through their own
  * mutations, so they are not part of intake.
  */
 export const objectDraftTypeDetailsValidator = v.union(

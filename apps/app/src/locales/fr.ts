@@ -1023,6 +1023,73 @@ export default {
       bottleSize: "750 ml",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "Détails {type}",
+      description:
+        "Enregistrés avec ce brouillon et reportés sur l'objet lorsque l'entrée est approuvée. Changer le type de collection supprime ces détails.",
+    },
+    summary: {
+      title: "Détails {type}",
+    },
+    changeType: {
+      title: "Changer le type de collection ?",
+      description:
+        "Les détails {type} saisis dans ce brouillon seront supprimés. Seuls les détails du type de collection actuel du brouillon sont conservés.",
+      confirm: "Changer le type et supprimer les détails",
+      cancel: "Conserver le type actuel",
+    },
+    errors: {
+      moduleDisabled:
+        "Le module de ce type de collection n'est pas activé pour votre organisation. Choisissez un autre type de collection ou demandez à un administrateur d'activer le module.",
+      typeMismatch:
+        "Les détails propres au type ne correspondent pas au type de collection sélectionné. Vérifiez les détails et enregistrez à nouveau.",
+    },
+    fields: {
+      appraiser: "Expert",
+      lastAppraisalDate: "Date de la dernière expertise",
+      insuranceCarrier: "Assureur",
+      insuranceExpiresAt: "Date d'expiration de l'assurance",
+      peakWindowStart: "À boire à partir de (année)",
+      peakWindowEnd: "À boire jusqu'en (année)",
+      make: "Marque",
+      model: "Modèle",
+      year: "Année",
+      odometerUnit: "Unité du compteur",
+      retentionYears: "Durée de conservation (années)",
+      digitalAssetUrl: "URL de la ressource numérique",
+      countryOrRegion: "Pays ou région",
+      issueYear: "Année d'émission",
+      issuePeriod: "Période d'émission",
+      series: "Série",
+      certifyingAuthority: "Organisme de certification",
+      diameterMm: "Diamètre (mm)",
+      weightGrams: "Poids (g)",
+      conditionNotes: "Notes sur l'état",
+      notes: "Notes",
+    },
+    options: {
+      inStorage: "En réserve",
+      cork: "Liège",
+      screwcap: "Capsule à vis",
+      synthetic: "Synthétique",
+      glass: "Verre",
+      crown: "Capsule couronne",
+      miles: "Miles",
+      kilometres: "Kilomètres",
+      male: "Mâle",
+      female: "Femelle",
+      dry: "Sec",
+      wet: "En fluide",
+      frozen: "Congelé",
+      pinned: "Épinglé",
+      pressed: "Pressé",
+      mounted: "Monté",
+      cast: "Moulage",
+      fossil: "Fossile",
+      other: "Autre",
+    },
+  },
   workflows: {
     title: "Configuration des flux de travail",
     description:

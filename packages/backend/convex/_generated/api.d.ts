@@ -138,6 +138,7 @@ import type * as utils_collectionLifecycle from "../utils/collectionLifecycle.js
 import type * as utils_collectionListHelpers from "../utils/collectionListHelpers.js";
 import type * as utils_collectionMetrics from "../utils/collectionMetrics.js";
 import type * as utils_collectionOptionUsages from "../utils/collectionOptionUsages.js";
+import type * as utils_collectionTypeDetailFields from "../utils/collectionTypeDetailFields.js";
 import type * as utils_convexAuth from "../utils/convexAuth.js";
 import type * as utils_custodyErrors from "../utils/custodyErrors.js";
 import type * as utils_customerNumber from "../utils/customerNumber.js";
@@ -187,6 +188,7 @@ import type * as utils_mutationBuilders from "../utils/mutationBuilders.js";
 import type * as utils_notificationRecipients from "../utils/notificationRecipients.js";
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
 import type * as utils_objectDraftData from "../utils/objectDraftData.js";
+import type * as utils_objectDraftTypeDetails from "../utils/objectDraftTypeDetails.js";
 import type * as utils_objectSearch from "../utils/objectSearch.js";
 import type * as utils_onboardingCollectionSuggestions from "../utils/onboardingCollectionSuggestions.js";
 import type * as utils_operationalKpis from "../utils/operationalKpis.js";
@@ -364,6 +366,7 @@ declare const fullApi: ApiFromModules<{
   "utils/collectionListHelpers": typeof utils_collectionListHelpers;
   "utils/collectionMetrics": typeof utils_collectionMetrics;
   "utils/collectionOptionUsages": typeof utils_collectionOptionUsages;
+  "utils/collectionTypeDetailFields": typeof utils_collectionTypeDetailFields;
   "utils/convexAuth": typeof utils_convexAuth;
   "utils/custodyErrors": typeof utils_custodyErrors;
   "utils/customerNumber": typeof utils_customerNumber;
@@ -413,6 +416,7 @@ declare const fullApi: ApiFromModules<{
   "utils/notificationRecipients": typeof utils_notificationRecipients;
   "utils/numberGenerator": typeof utils_numberGenerator;
   "utils/objectDraftData": typeof utils_objectDraftData;
+  "utils/objectDraftTypeDetails": typeof utils_objectDraftTypeDetails;
   "utils/objectSearch": typeof utils_objectSearch;
   "utils/onboardingCollectionSuggestions": typeof utils_onboardingCollectionSuggestions;
   "utils/operationalKpis": typeof utils_operationalKpis;
