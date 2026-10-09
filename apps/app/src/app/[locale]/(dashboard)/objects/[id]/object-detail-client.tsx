@@ -42,6 +42,8 @@ interface ObjectDetailClientProps {
   collectionId: Id<"collections">;
   preloadedObjectDetail?: Preloaded<typeof api.collections.getObjectDetail>;
   initialObjectDetail?: ObjectDetailData | null;
+  /** Tab requested by a `?tab=` link. */
+  initialTab?: string;
 }
 
 export function ObjectDetailClient(props: ObjectDetailClientProps) {
@@ -50,6 +52,7 @@ export function ObjectDetailClient(props: ObjectDetailClientProps) {
       <PreloadedObjectDetailClient
         collectionId={props.collectionId}
         preloadedObjectDetail={props.preloadedObjectDetail}
+        initialTab={props.initialTab}
       />
     );
   }
@@ -58,6 +61,7 @@ export function ObjectDetailClient(props: ObjectDetailClientProps) {
     <ObjectDetailView
       collectionId={props.collectionId}
       objectDetail={props.initialObjectDetail ?? null}
+      initialTab={props.initialTab}
     />
   );
 }
@@ -116,22 +120,30 @@ function objectDetailViewReducer(
 function PreloadedObjectDetailClient({
   collectionId,
   preloadedObjectDetail,
+  initialTab,
 }: {
   collectionId: Id<"collections">;
   preloadedObjectDetail: Preloaded<typeof api.collections.getObjectDetail>;
+  initialTab?: string;
 }) {
   const objectDetail = usePreloadedQuery(preloadedObjectDetail);
   return (
-    <ObjectDetailView collectionId={collectionId} objectDetail={objectDetail} />
+    <ObjectDetailView
+      collectionId={collectionId}
+      objectDetail={objectDetail}
+      initialTab={initialTab}
+    />
   );
 }
 
 function ObjectDetailView({
   collectionId,
   objectDetail,
+  initialTab,
 }: {
   collectionId: Id<"collections">;
   objectDetail: ObjectDetailData | null;
+  initialTab?: string;
 }) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
@@ -142,9 +154,14 @@ function ObjectDetailView({
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
   const heroImage = objectDetail?.heroImage ?? null;
+  // Unknown requested tabs fall back to the first tab below.
   const [state, dispatch] = useReducer(
     objectDetailViewReducer,
-    initialObjectDetailViewState,
+    initialTab,
+    (tab): ObjectDetailViewState => ({
+      ...initialObjectDetailViewState,
+      activeTab: (tab ?? initialObjectDetailViewState.activeTab) as TabId,
+    }),
   );
   const featureOrganizationId =
     collection?.organizationId ?? currentOrganizationId ?? undefined;

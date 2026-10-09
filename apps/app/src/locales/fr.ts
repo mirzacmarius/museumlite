@@ -5973,6 +5973,7 @@ export default {
       lender: "Prêteur",
       borrower: "Emprunteur",
       owner: "Propriétaire",
+      custodian: "Dépositaire",
       appraiser: "Expert",
       recipient: "Destinataire",
       depositor: "Déposant",
@@ -5993,6 +5994,7 @@ export default {
       appraisal: "Estimation",
       collection: "Objet",
       entry: "Entrée",
+      provenanceClaim: "Assertion de provenance",
     },
     picker: {
       placeholder: "Sélectionner ou créer une personne ou une institution",
@@ -6124,6 +6126,275 @@ export default {
       reviewAlreadyResolved:
         "Quelqu'un a déjà vérifié cette suggestion. Actualisez pour voir la décision.",
       fallback: "L'action n'a pas pu aboutir. Actualisez puis réessayez.",
+    },
+  },
+  provenance: {
+    title: "Assertions de provenance",
+    description:
+      "Assertions datées sur les détenteurs successifs de cet objet, chacune avec ses sources et son degré de confiance. Les corrections et les assertions contradictoires sont conservées, jamais écrasées.",
+    record: "Enregistrer une assertion",
+    empty: "Aucune assertion de provenance n'est encore enregistrée.",
+    loading: "Chargement de la provenance…",
+    withdrawn:
+      "Cet objet est retiré. Restaurez-le pour enregistrer ou examiner sa provenance.",
+    truncated:
+      "Seules les {count} assertions les plus récentes sont affichées.",
+    history: "Assertions corrigées et rétractées ({count})",
+    roles: {
+      owner: "Propriétaire",
+      custodian: "Dépositaire",
+    },
+    partyKinds: {
+      named: "Détenteur nommé",
+      anonymous: "Détenteur anonyme",
+      unknown: "Détenteur inconnu",
+    },
+    methods: {
+      purchase: "Achat",
+      auction: "Vente aux enchères",
+      gift: "Don",
+      bequest: "Legs",
+      inheritance: "Héritage",
+      exchange: "Échange",
+      commission: "Commande",
+      fieldCollection: "Collecte de terrain",
+      confiscation: "Confiscation",
+      restitution: "Restitution",
+      other: "Autre",
+    },
+    confidence: {
+      documented: "Documentée",
+      probable: "Probable",
+      possible: "Possible",
+      unassessed: "Non évaluée",
+    },
+    reviewStatus: {
+      unreviewed: "En attente d'examen",
+      accepted: "Acceptée",
+      disputed: "Contestée",
+      rejected: "Rejetée",
+    },
+    dates: {
+      undated: "Dates non indiquées",
+      range: "{start} – {end}",
+      from: "À partir de {start}",
+      until: "Jusqu'à {end}",
+      decade: "années {year}",
+      circa: "vers {date}",
+      notAfter: "au plus tard en {date}",
+      notBefore: "pas avant {date}",
+      uncertain: "{date} ?",
+    },
+    card: {
+      statement: "Telle qu'énoncée",
+      place: "Lieu : {place}",
+      method: "Mode : {method}",
+      recordedBy: "Enregistrée par {name}",
+      reviewedBy: "Examinée par {name}",
+      reviewNote: "Note d'examen : {note}",
+      contradicts: "Contredit : {statement}",
+      contradictedBy: "Contredite par : {statement}",
+      corrects: "Corrige une assertion antérieure",
+      corrected: "Corrigée",
+      retracted: "Rétractée",
+      reason: "Motif : {reason}",
+      identifiedAs: "Identifié comme {name}",
+      partyArchived: "Partie archivée",
+      correct: "Corriger",
+      retract: "Rétracter",
+      addEvidence: "Ajouter une source",
+      review: "Examiner",
+      someone: "un membre du personnel",
+    },
+    evidence: {
+      title: "Sources",
+      none: "Aucune source citée.",
+      kind: "Source",
+      kinds: {
+        citation: "Citation",
+        media: "Fichier de cet objet",
+      },
+      citation: "Citation",
+      citationPlaceholder:
+        "Par exemple : Christie's, Londres, catalogue de vente, 12 mai 1925",
+      url: "Lien vers la source (facultatif)",
+      excerpt: "Extrait (facultatif)",
+      excerptPlaceholder: "Ce que dit la source, cité tel quel",
+      locator: "Page, folio ou lot (facultatif)",
+      file: "Fichier",
+      filePlaceholder: "Choisir un fichier",
+      noFiles:
+        "Cet objet n'a pas encore de fichiers. Téléversez-les d'abord dans l'onglet Médias.",
+      restrictedFile: "Un fichier auquel vous n'avez pas accès",
+      fileUnavailable: "Fichier plus disponible",
+      open: "Ouvrir",
+      quote: "« {excerpt} »",
+      locatorLabel: "à {locator}",
+      retracted: "Rétractée : {reason}",
+      retract: "Rétracter",
+      retractReason: "Motif de la rétractation",
+      retractConfirm: "Rétracter la source",
+      retractDescription:
+        "La source reste attachée à l'assertion, marquée comme rétractée avec votre motif.",
+      retractedToast: "Source rétractée",
+      add: "Ajouter une source",
+      remove: "Retirer la source",
+      addTitle: "Ajouter une source",
+      addDescription:
+        "Citez une source qui étaye cette assertion. Les sources sont conservées telles qu'enregistrées ; une source erronée peut être rétractée avec un motif.",
+      save: "Ajouter la source",
+      added: "Source ajoutée",
+    },
+    form: {
+      recordTitle: "Enregistrer une assertion de provenance",
+      recordDescription:
+        "Rédigez l'assertion telle que la source ou votre recherche l'énonce. Laissez de côté ce que la source ne donne pas ; rien n'est complété à votre place.",
+      correctTitle: "Corriger l'assertion",
+      correctDescription:
+        "La correction remplace cette assertion dans la provenance actuelle. L'originale reste dans l'historique avec votre motif, et ses sources sont reprises.",
+      reason: "Motif de la correction",
+      reasonPlaceholder: "Par exemple : le livre de stock indique 1936",
+      statement: "Assertion telle qu'énoncée",
+      statementPlaceholder:
+        "Par exemple : Paul Rosenberg, Paris, au plus tard en 1937 ; vendu à …",
+      role: "Rôle du détenteur",
+      partyKind: "Détenteur",
+      partyText: "Nom tel que donné par la source",
+      partyDescription: "Description (facultatif)",
+      partyDescriptionPlaceholder:
+        "Par exemple : collection particulière, Suisse",
+      identifyParty: "Identifier comme partie (facultatif)",
+      method: "Mode d'acquisition par le détenteur",
+      methodNotStated: "Non indiqué",
+      place: "Lieu (facultatif)",
+      startDate: "À partir de",
+      endDate: "Jusqu'à",
+      confidence: "Confiance",
+      confidenceHint: "Une assertion documentée nécessite au moins une source.",
+      contradicts: "Contredit une assertion existante",
+      contradictsNone: "Non",
+      evidence: "Sources",
+      evidenceCarried:
+        "Les sources actuelles de l'assertion sont reprises. Ajoutez ici les nouvelles.",
+      save: "Enregistrer l'assertion",
+      saving: "Enregistrement…",
+      recorded: "Assertion enregistrée",
+      corrected: "Assertion corrigée",
+      requiredFields: "Renseignez l'assertion et les champs obligatoires.",
+      invalidDate:
+        "Vérifiez les dates : saisissez les éléments exigés par la précision et, pour une décennie, sa première année.",
+      cancel: "Annuler",
+    },
+    dateInput: {
+      precision: "Connue au",
+      precisions: {
+        none: "Non indiquée",
+        day: "Jour",
+        month: "Mois",
+        year: "Année",
+        decade: "Décennie",
+      },
+      year: "Année",
+      month: "Mois",
+      day: "Jour",
+      qualifier: "Nuance",
+      qualifiers: {
+        exact: "Telle qu'indiquée",
+        circa: "Vers (circa)",
+        notAfter: "Au plus tard (à cette date ou avant)",
+        notBefore: "Pas avant (à cette date ou après)",
+      },
+      uncertain: "La source est incertaine",
+      decadeHint:
+        "Saisissez la première année de la décennie, par exemple 1920.",
+    },
+    retract: {
+      title: "Rétracter l'assertion ?",
+      description:
+        "Rétractez une assertion enregistrée par erreur, par exemple sur le mauvais objet. Elle reste dans l'historique avec votre motif.",
+      reason: "Motif",
+      confirm: "Rétracter l'assertion",
+      done: "Assertion rétractée",
+    },
+    review: {
+      title: "Examiner l'assertion",
+      description:
+        "Votre décision est enregistrée avec l'assertion. Son libellé et ses sources ne changent pas.",
+      decision: "Décision",
+      decisions: {
+        accepted: "Accepter",
+        disputed: "Contester",
+        rejected: "Rejeter",
+      },
+      note: "Note",
+      notePlaceholder: "Pourquoi l'assertion est-elle contestée ou rejetée ?",
+      noteRequired: "Ajoutez une note pour contester ou rejeter une assertion.",
+      confirm: "Enregistrer la décision",
+      recorded: "Examen enregistré",
+    },
+    identify: {
+      title: "Identifier le détenteur",
+      description:
+        "Reliez le détenteur nommé dans cette assertion à une fiche de partie. Le libellé de l'assertion ne change pas.",
+      party: "Partie",
+      confirm: "Identifier",
+      linked: "Détenteur identifié",
+      remove: "Retirer l'identification",
+      removeReason: "Motif du retrait",
+      removeConfirm: "Retirer",
+      removed: "Identification retirée",
+    },
+    queue: {
+      title: "Assertions de provenance à examiner",
+      statuses: {
+        unreviewed: "En attente d'examen",
+        disputed: "Contestées",
+      },
+      empty: "Aucune assertion en attente.",
+      contradicts: "Contredit une autre assertion",
+      loading: "Chargement…",
+      loadMore: "Charger plus",
+    },
+    legacy: {
+      title: "Texte de provenance antérieur",
+      description:
+        "Provenance non structurée antérieure aux assertions, conservée telle qu'écrite. Enregistrez-en des assertions au fil de votre recherche.",
+      recordFrom: "Enregistrer comme assertion",
+    },
+    errors: {
+      objectNotFound:
+        "Cet objet n'est plus disponible. Actualisez et réessayez.",
+      objectWithdrawn:
+        "Cet objet est retiré. Restaurez-le avant de modifier sa provenance.",
+      claimNotFound:
+        "Cette assertion n'est plus disponible. Actualisez et réessayez.",
+      claimSuperseded:
+        "Cette assertion a déjà été corrigée ou rétractée. Actualisez pour voir l'assertion en vigueur.",
+      statementRequired: "Rédigez l'assertion telle qu'énoncée.",
+      partyNameRequired:
+        "Saisissez le nom du détenteur tel que la source le donne.",
+      partyInvalid:
+        "Seul un détenteur nommé peut être identifié comme partie, et un détenteur inconnu n'a pas de description.",
+      dateInvalid:
+        "Une date n'est pas valide. Vérifiez les éléments exigés par sa précision et le calendrier.",
+      dateOrderInvalid: "La date de fin précède la date de début.",
+      textTooLong:
+        "Un des champs est trop long. Raccourcissez-le et réessayez.",
+      contradictionInvalid:
+        "Une assertion ne peut contredire qu'une assertion en vigueur sur le même objet.",
+      evidenceRequired:
+        "Une assertion documentée nécessite au moins une source. Ajoutez une source ou abaissez la confiance.",
+      evidenceInvalid:
+        "Vérifiez les sources : une citation nécessite son texte, un lien doit commencer par http:// ou https://, et un fichier doit appartenir à cet objet.",
+      evidenceLimit: "Cette assertion a déjà le nombre maximal de sources.",
+      evidenceNotFound:
+        "Cette source n'est plus disponible. Actualisez et réessayez.",
+      evidenceRetracted: "Cette source a déjà été rétractée.",
+      reasonRequired: "Indiquez un motif.",
+      reviewNoteRequired:
+        "Ajoutez une note pour contester ou rejeter une assertion.",
+      permission: "Vous n'avez pas l'autorisation de faire cela.",
+      fallback: "L'action n'a pas pu être effectuée. Actualisez et réessayez.",
     },
   },
   trackedImport: {

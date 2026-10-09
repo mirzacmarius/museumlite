@@ -6016,6 +6016,7 @@ export default {
       lender: "Prestamista",
       borrower: "Prestatario",
       owner: "Propietario",
+      custodian: "Custodio",
       appraiser: "Tasador",
       recipient: "Destinatario",
       depositor: "Depositante",
@@ -6036,6 +6037,7 @@ export default {
       appraisal: "Tasación",
       collection: "Objeto",
       entry: "Entrada",
+      provenanceClaim: "Afirmación de procedencia",
     },
     picker: {
       placeholder: "Seleccionar o crear una persona o institución",
@@ -6167,6 +6169,274 @@ export default {
         "Otra persona ya revisó esta sugerencia. Actualice para ver la decisión.",
       fallback:
         "No se pudo completar la acción. Actualice e inténtelo de nuevo.",
+    },
+  },
+  provenance: {
+    title: "Afirmaciones de procedencia",
+    description:
+      "Afirmaciones fechadas sobre quién tuvo este objeto, cada una con sus fuentes y su grado de confianza. Las correcciones y las afirmaciones contradictorias se conservan; nunca se sobrescriben.",
+    record: "Registrar afirmación",
+    empty: "Todavía no hay afirmaciones de procedencia registradas.",
+    loading: "Cargando procedencia…",
+    withdrawn:
+      "Este objeto está retirado. Restáuralo para registrar o revisar su procedencia.",
+    truncated: "Solo se muestran las {count} afirmaciones más recientes.",
+    history: "Afirmaciones corregidas y retractadas ({count})",
+    roles: {
+      owner: "Propietario",
+      custodian: "Custodio",
+    },
+    partyKinds: {
+      named: "Poseedor identificado por nombre",
+      anonymous: "Poseedor anónimo",
+      unknown: "Poseedor desconocido",
+    },
+    methods: {
+      purchase: "Compra",
+      auction: "Subasta",
+      gift: "Donación",
+      bequest: "Legado",
+      inheritance: "Herencia",
+      exchange: "Intercambio",
+      commission: "Encargo",
+      fieldCollection: "Recolección de campo",
+      confiscation: "Confiscación",
+      restitution: "Restitución",
+      other: "Otro",
+    },
+    confidence: {
+      documented: "Documentada",
+      probable: "Probable",
+      possible: "Posible",
+      unassessed: "Sin evaluar",
+    },
+    reviewStatus: {
+      unreviewed: "Pendiente de revisión",
+      accepted: "Aceptada",
+      disputed: "Cuestionada",
+      rejected: "Rechazada",
+    },
+    dates: {
+      undated: "Fechas no indicadas",
+      range: "{start} – {end}",
+      from: "Desde {start}",
+      until: "Hasta {end}",
+      decade: "década de {year}",
+      circa: "c. {date}",
+      notAfter: "a más tardar en {date}",
+      notBefore: "no antes de {date}",
+      uncertain: "{date}?",
+    },
+    card: {
+      statement: "Según se afirma",
+      place: "Lugar: {place}",
+      method: "Modo: {method}",
+      recordedBy: "Registrada por {name}",
+      reviewedBy: "Revisada por {name}",
+      reviewNote: "Nota de revisión: {note}",
+      contradicts: "Contradice: {statement}",
+      contradictedBy: "Contradicha por: {statement}",
+      corrects: "Corrige una afirmación anterior",
+      corrected: "Corregida",
+      retracted: "Retractada",
+      reason: "Motivo: {reason}",
+      identifiedAs: "Identificado como {name}",
+      partyArchived: "Parte archivada",
+      correct: "Corregir",
+      retract: "Retractar",
+      addEvidence: "Añadir fuente",
+      review: "Revisar",
+      someone: "un miembro del personal",
+    },
+    evidence: {
+      title: "Fuentes",
+      none: "No se citan fuentes.",
+      kind: "Fuente",
+      kinds: {
+        citation: "Cita",
+        media: "Archivo de este objeto",
+      },
+      citation: "Cita",
+      citationPlaceholder:
+        "Por ejemplo: Christie's, Londres, catálogo de subasta, 12 de mayo de 1925",
+      url: "Enlace a la fuente (opcional)",
+      excerpt: "Extracto (opcional)",
+      excerptPlaceholder: "Lo que dice la fuente, citado tal como se lee",
+      locator: "Página, folio o lote (opcional)",
+      file: "Archivo",
+      filePlaceholder: "Elige un archivo",
+      noFiles:
+        "Este objeto aún no tiene archivos. Súbelos primero en la pestaña Multimedia.",
+      restrictedFile: "Un archivo al que no tienes acceso",
+      fileUnavailable: "El archivo ya no está disponible",
+      open: "Abrir",
+      quote: "«{excerpt}»",
+      locatorLabel: "en {locator}",
+      retracted: "Retractada: {reason}",
+      retract: "Retractar",
+      retractReason: "Motivo de la retractación",
+      retractConfirm: "Retractar fuente",
+      retractDescription:
+        "La fuente permanece en la afirmación, marcada como retractada con tu motivo.",
+      retractedToast: "Fuente retractada",
+      add: "Añadir una fuente",
+      remove: "Quitar fuente",
+      addTitle: "Añadir fuente",
+      addDescription:
+        "Cita una fuente que respalde esta afirmación. Las fuentes se conservan tal como se registraron; una fuente errónea se puede retractar indicando el motivo.",
+      save: "Añadir fuente",
+      added: "Fuente añadida",
+    },
+    form: {
+      recordTitle: "Registrar afirmación de procedencia",
+      recordDescription:
+        "Escribe la afirmación tal como la expresa la fuente o tu investigación. Omite lo que la fuente no indica; no se rellena nada por ti.",
+      correctTitle: "Corregir afirmación",
+      correctDescription:
+        "La corrección sustituye esta afirmación en la procedencia actual. La original queda en el historial con tu motivo y sus fuentes se trasladan.",
+      reason: "Motivo de la corrección",
+      reasonPlaceholder: "Por ejemplo: el libro de existencias indica 1936",
+      statement: "Afirmación tal como se expresa",
+      statementPlaceholder:
+        "Por ejemplo: Paul Rosenberg, París, a más tardar en 1937; vendido a …",
+      role: "Función del poseedor",
+      partyKind: "Poseedor",
+      partyText: "Nombre tal como figura en la fuente",
+      partyDescription: "Descripción (opcional)",
+      partyDescriptionPlaceholder: "Por ejemplo: colección privada, Suiza",
+      identifyParty: "Identificar como parte (opcional)",
+      method: "Cómo lo adquirió el poseedor",
+      methodNotStated: "No indicado",
+      place: "Lugar (opcional)",
+      startDate: "Desde",
+      endDate: "Hasta",
+      confidence: "Confianza",
+      confidenceHint:
+        "Una afirmación documentada necesita al menos una fuente.",
+      contradicts: "Contradice una afirmación existente",
+      contradictsNone: "No",
+      evidence: "Fuentes",
+      evidenceCarried:
+        "Las fuentes actuales de la afirmación se trasladan. Añade aquí las nuevas.",
+      save: "Guardar afirmación",
+      saving: "Guardando…",
+      recorded: "Afirmación registrada",
+      corrected: "Afirmación corregida",
+      requiredFields: "Completa la afirmación y los campos obligatorios.",
+      invalidDate:
+        "Revisa las fechas: indica las partes que exige la precisión y, para una década, su primer año.",
+      cancel: "Cancelar",
+    },
+    dateInput: {
+      precision: "Se conoce hasta",
+      precisions: {
+        none: "No indicada",
+        day: "Día",
+        month: "Mes",
+        year: "Año",
+        decade: "Década",
+      },
+      year: "Año",
+      month: "Mes",
+      day: "Día",
+      qualifier: "Matiz",
+      qualifiers: {
+        exact: "Tal como se indica",
+        circa: "Hacia (circa)",
+        notAfter: "A más tardar (en o antes)",
+        notBefore: "No antes de (en o después)",
+      },
+      uncertain: "La fuente no está segura",
+      decadeHint: "Indica el primer año de la década, por ejemplo 1920.",
+    },
+    retract: {
+      title: "¿Retractar la afirmación?",
+      description:
+        "Retracta una afirmación registrada por error, por ejemplo en el objeto equivocado. Queda en el historial con tu motivo.",
+      reason: "Motivo",
+      confirm: "Retractar afirmación",
+      done: "Afirmación retractada",
+    },
+    review: {
+      title: "Revisar afirmación",
+      description:
+        "Tu decisión se registra con la afirmación. La redacción y las fuentes de la afirmación no cambian.",
+      decision: "Decisión",
+      decisions: {
+        accepted: "Aceptar",
+        disputed: "Cuestionar",
+        rejected: "Rechazar",
+      },
+      note: "Nota",
+      notePlaceholder: "¿Por qué se cuestiona o rechaza la afirmación?",
+      noteRequired: "Añade una nota para cuestionar o rechazar una afirmación.",
+      confirm: "Registrar decisión",
+      recorded: "Revisión registrada",
+    },
+    identify: {
+      title: "Identificar poseedor",
+      description:
+        "Vincula el poseedor nombrado en esta afirmación con un registro de parte. La redacción de la afirmación no cambia.",
+      party: "Parte",
+      confirm: "Identificar",
+      linked: "Poseedor identificado",
+      remove: "Quitar identificación",
+      removeReason: "Motivo para quitarla",
+      removeConfirm: "Quitar",
+      removed: "Identificación quitada",
+    },
+    queue: {
+      title: "Afirmaciones de procedencia por revisar",
+      statuses: {
+        unreviewed: "Pendientes de revisión",
+        disputed: "Cuestionadas",
+      },
+      empty: "No hay afirmaciones pendientes.",
+      contradicts: "Contradice otra afirmación",
+      loading: "Cargando…",
+      loadMore: "Cargar más",
+    },
+    legacy: {
+      title: "Texto de procedencia anterior",
+      description:
+        "Procedencia no estructurada anterior a las afirmaciones, conservada tal como se escribió. Registra afirmaciones a partir de ella según lo permita tu investigación.",
+      recordFrom: "Registrar como afirmación",
+    },
+    errors: {
+      objectNotFound:
+        "Este objeto ya no está disponible. Actualiza e inténtalo de nuevo.",
+      objectWithdrawn:
+        "Este objeto está retirado. Restáuralo antes de cambiar su procedencia.",
+      claimNotFound:
+        "Esa afirmación ya no está disponible. Actualiza e inténtalo de nuevo.",
+      claimSuperseded:
+        "Esa afirmación ya se corrigió o retractó. Actualiza para ver la afirmación vigente.",
+      statementRequired: "Escribe la afirmación tal como se expresa.",
+      partyNameRequired:
+        "Indica el nombre del poseedor tal como figura en la fuente.",
+      partyInvalid:
+        "Solo un poseedor nombrado puede identificarse como parte, y un poseedor desconocido no lleva descripción.",
+      dateInvalid:
+        "Una fecha no es válida. Revisa las partes que exige su precisión y el calendario.",
+      dateOrderInvalid: "La fecha final es anterior a la inicial.",
+      textTooLong:
+        "Uno de los campos es demasiado largo. Acórtalo e inténtalo de nuevo.",
+      contradictionInvalid:
+        "Una afirmación solo puede contradecir una afirmación vigente sobre el mismo objeto.",
+      evidenceRequired:
+        "Una afirmación documentada necesita al menos una fuente. Añade una fuente o reduce la confianza.",
+      evidenceInvalid:
+        "Revisa las fuentes: una cita necesita su texto, un enlace debe empezar por http:// o https:// y un archivo debe pertenecer a este objeto.",
+      evidenceLimit: "Esta afirmación ya tiene el número máximo de fuentes.",
+      evidenceNotFound:
+        "Esa fuente ya no está disponible. Actualiza e inténtalo de nuevo.",
+      evidenceRetracted: "Esa fuente ya se retractó.",
+      reasonRequired: "Indica un motivo.",
+      reviewNoteRequired:
+        "Añade una nota para cuestionar o rechazar una afirmación.",
+      permission: "No tienes permiso para hacer esto.",
+      fallback:
+        "No se pudo completar la acción. Actualiza e inténtalo de nuevo.",
     },
   },
   trackedImport: {

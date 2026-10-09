@@ -292,9 +292,9 @@ export const listForObject = query({
         endDate: claim.endDate,
         confidence: claim.confidence,
         contradictsClaimId: claim.contradictsClaimId,
-        contradictedByClaimIds: claims
-          .filter((other) => other.contradictsClaimId === claim._id)
-          .map((other) => other._id),
+        contradictedByClaimIds: claims.flatMap((other) =>
+          other.contradictsClaimId === claim._id ? [other._id] : [],
+        ),
         supersedesClaimId: claim.supersedesClaimId,
         createdAt: claim.createdAt,
         createdByName: names.get(claim.createdBy),

@@ -40,7 +40,8 @@
           "packages/backend/convex/exports.ts",
           "packages/backend/convex/utils/exhibitionCrud.ts",
           "packages/backend/convex/partyLinks.ts",
-          "packages/backend/convex/partyDuplicates.ts"
+          "packages/backend/convex/partyDuplicates.ts",
+          "packages/backend/convex/utils/provenance.ts"
         ],
         "rules": ["react-doctor/async-defer-await"]
       },
