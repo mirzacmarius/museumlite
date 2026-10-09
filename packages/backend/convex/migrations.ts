@@ -1602,10 +1602,12 @@ export const repairDuplicatePrimaryImages = internalMutation({
     const page = await ctx.db
       .query("collections")
       .paginate({ numItems: 50, cursor: args.cursor ?? null });
-    let cleared = 0;
-    for (const collection of page.page) {
-      cleared += await keepOldestPrimaryImage(ctx, collection._id);
-    }
+    const clearedPerObject = await Promise.all(
+      page.page.map((collection) =>
+        keepOldestPrimaryImage(ctx, collection._id),
+      ),
+    );
+    const cleared = clearedPerObject.reduce((sum, count) => sum + count, 0);
     if (!page.isDone) {
       await ctx.scheduler.runAfter(
         0,

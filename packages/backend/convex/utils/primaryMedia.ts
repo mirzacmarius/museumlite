@@ -33,8 +33,9 @@ async function clearPrimaryFlags(ctx: MutationCtx, media: Doc<"mediaFiles">[]) {
 }
 
 /**
- * Decides whether a new file starts as the object's primary image: an explicit
- * request wins, otherwise an image becomes primary only when there is none.
+ * Decides whether a new file starts as the object's primary image. An explicit
+ * request wins; otherwise only the object's first image becomes primary, so an
+ * upload never replaces the image an object already shows.
  */
 export async function resolveNewMediaPrimary(
   ctx: QueryCtx,
@@ -48,9 +49,14 @@ export async function resolveNewMediaPrimary(
   },
 ) {
   if (!canBePrimaryImage(media)) return false;
-  if (requested === true) return true;
-  const primaryMedia = await listPrimaryMedia(ctx, collectionId);
-  return !primaryMedia.some(canBePrimaryImage);
+  if (requested !== undefined) return requested;
+  const images = await ctx.db
+    .query("mediaFiles")
+    .withIndex("by_collection_and_fileType", (q) =>
+      q.eq("collectionId", collectionId).eq("fileType", "image"),
+    )
+    .take(PRIMARY_MEDIA_READ_LIMIT);
+  return !images.some(canBePrimaryImage);
 }
 
 /** Clears the primary flag from every other file attached to the object. */
@@ -92,20 +98,33 @@ export async function makeOnlyPrimaryImage(
 }
 
 /**
- * Repairs an object left with several primary files by keeping its oldest
- * primary image, which is the one its object page already shows.
+ * Repairs an object that uploads left with several primary files. Keeps the
+ * oldest primary image (or, without one, the oldest primary file) and clears
+ * the rest; objects with one primary file or none are left untouched.
  */
 export async function keepOldestPrimaryImage(
   ctx: MutationCtx,
   collectionId: Id<"collections">,
 ) {
   const primaryMedia = await listPrimaryMedia(ctx, collectionId);
-  const [keep] = primaryMedia
-    .filter(canBePrimaryImage)
-    .sort((a, b) => a._creationTime - b._creationTime);
+  if (primaryMedia.length < 2) return 0;
+  const primaryImages = await ctx.db
+    .query("mediaFiles")
+    .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
+      q
+        .eq("collectionId", collectionId)
+        .eq("isPrimary", true)
+        .eq("fileType", "image"),
+    )
+    .take(PRIMARY_MEDIA_READ_LIMIT);
+  const keep =
+    primaryImages.find(canBePrimaryImage) ??
+    primaryMedia.reduce((oldest, media) =>
+      media._creationTime < oldest._creationTime ? media : oldest,
+    );
   return await clearPrimaryFlags(
     ctx,
-    primaryMedia.filter((media) => media._id !== keep?._id),
+    primaryMedia.filter((media) => media._id !== keep._id),
   );
 }
 

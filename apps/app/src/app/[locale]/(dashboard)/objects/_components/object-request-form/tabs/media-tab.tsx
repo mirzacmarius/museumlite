@@ -61,7 +61,7 @@ export function ObjectRequestMediaTab({
                   ? [
                       <div
                         key={item.storageId}
-                        className="group relative overflow-hidden rounded-xl border border-border/60 bg-background/70"
+                        className="overflow-hidden rounded-xl border border-border/60 bg-background/70"
                       >
                         {item.url ? (
                           <div className="relative aspect-square w-full">
@@ -74,9 +74,19 @@ export function ObjectRequestMediaTab({
                             />
                           </div>
                         ) : null}
-                        <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
+                        <div className="flex items-start justify-between gap-2 px-4 py-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-foreground">
+                              {item.fileName}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {tRoot(
+                                "untranslatedRecords.objects.media.savedWithDraft",
+                              )}
+                            </p>
+                          </div>
                           {item.isPrimary ? (
-                            <div className="rounded-full bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground">
+                            <div className="shrink-0 rounded-full bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground">
                               {tRoot("objects.form.media.primary")}
                             </div>
                           ) : (
@@ -85,7 +95,7 @@ export function ObjectRequestMediaTab({
                                 type="button"
                                 size="icon"
                                 variant="secondary"
-                                className="size-8 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                                className="size-8 shrink-0"
                                 onClick={() => handleSetPrimary(item.storageId)}
                                 title={common("setAsPrimary")}
                                 aria-label={common("setAsPrimary")}
@@ -94,16 +104,6 @@ export function ObjectRequestMediaTab({
                               </Button>
                             </PermissionGate>
                           )}
-                        </div>
-                        <div className="px-4 py-3">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {item.fileName}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {tRoot(
-                              "untranslatedRecords.objects.media.savedWithDraft",
-                            )}
-                          </p>
                         </div>
                       </div>,
                     ]

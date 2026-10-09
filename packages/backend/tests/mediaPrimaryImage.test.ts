@@ -111,7 +111,7 @@ async function addMember(
 }
 
 describe("primary image on upload", () => {
-  test("an uploaded image becomes primary only when the object has none", async () => {
+  test("the first image uploaded to an object becomes its primary image", async () => {
     const t = createConvexTest();
     const { upload, primaryFileNames } = await mediaStaffWithObject(t);
 
@@ -119,6 +119,28 @@ describe("primary image on upload", () => {
     await upload("back.jpg");
 
     expect(await primaryFileNames()).toEqual(["front.jpg"]);
+  });
+
+  test("an upload does not replace the image an object without a primary already shows", async () => {
+    const t = createConvexTest();
+    const { upload, primaryFileNames } = await mediaStaffWithObject(t);
+    const importedId = await upload("imported.jpg");
+    await t.run(async (ctx) => {
+      await ctx.db.patch(importedId, { isPrimary: false });
+    });
+
+    await upload("detail.jpg");
+
+    expect(await primaryFileNames()).toEqual([]);
+  });
+
+  test("an image uploaded as not primary stays a secondary image", async () => {
+    const t = createConvexTest();
+    const { upload, primaryFileNames } = await mediaStaffWithObject(t);
+
+    await upload("front.jpg", { isPrimary: false });
+
+    expect(await primaryFileNames()).toEqual([]);
   });
 
   test("an image uploaded as primary replaces the previous primary image", async () => {
@@ -227,14 +249,17 @@ describe("choosing the primary image", () => {
     const reportId = await upload("condition-report.pdf", {
       mimeType: "application/pdf",
     });
+    const detailId = await upload("detail.jpg");
+    const scannedObject = await mediaStaffWithObject(t);
+    const scanId = await scannedObject.upload("scan.pdf", {
+      mimeType: "application/pdf",
+    });
     await t.run(async (ctx) => {
       await ctx.db.patch(frontId, { isPrimary: false });
       await ctx.db.patch(backId, { isPrimary: true });
       await ctx.db.patch(reportId, { isPrimary: true });
-    });
-    const detailId = await upload("detail.jpg");
-    await t.run(async (ctx) => {
       await ctx.db.patch(detailId, { isPrimary: true });
+      await ctx.db.patch(scanId, { isPrimary: true });
     });
 
     const firstRun = await t.mutation(
@@ -247,6 +272,7 @@ describe("choosing the primary image", () => {
     );
 
     expect(await primaryFileNames()).toEqual(["back.jpg"]);
+    expect(await scannedObject.primaryFileNames()).toEqual(["scan.pdf"]);
     expect(firstRun).toEqual({ cleared: 2, isDone: true });
     expect(rerun).toEqual({ cleared: 0, isDone: true });
   });
