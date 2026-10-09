@@ -17,8 +17,9 @@ export default function LoanAgreementsSettingsPage() {
   return (
     <FeatureGuard
       featureName={t("title")}
-      isLocked={!hasFeature("loans")}
-      tierNeeded="pro"
+      reason={
+        hasFeature("loans") ? null : { kind: "tier_required", tier: "pro" }
+      }
     >
       <MultiPermissionGate
         permissions={["organization.manage_settings", "loans.read"]}
