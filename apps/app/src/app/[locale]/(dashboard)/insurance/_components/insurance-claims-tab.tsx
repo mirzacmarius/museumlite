@@ -13,8 +13,9 @@ import {
 } from "@v1/ui/select";
 import { Search, Shield } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
+import { type FormatLocale, formatMoney } from "@/lib/format-number";
 import { useScopedI18n } from "@/locales/client";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
+import { MoneyCell } from "./money-cell";
 import {
   type ClaimStatus,
   claimStatusColor,
@@ -29,6 +30,7 @@ interface InsuranceClaimRow extends Record<string, unknown> {
   incidentType: string;
   incidentDate: number;
   claimedAmount: number;
+  currency?: string;
   status: string;
 }
 
@@ -74,7 +76,7 @@ export function InsuranceClaimsTab({
           <SelectContent>
             {claimStatusOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-            {t(`claimStatus.${option.value}`)}
+                {t(`claimStatus.${option.value}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -137,12 +139,14 @@ export function InsuranceClaimsTab({
             key: "claimedAmount",
             label: t("claimed"),
             className: "w-36 flex-none",
-            render: (claim) =>
-              formatCurrency(
-                claim.claimedAmount,
-                locale as FormatLocale,
-                "USD",
-              ),
+            render: (claim: InsuranceClaimRow) => (
+              <MoneyCell
+                value={claim.claimedAmount}
+                currency={claim.currency}
+                locale={locale}
+                notRecordedLabel={t("currencyNotRecorded")}
+              />
+            ),
           },
           {
             key: "status",

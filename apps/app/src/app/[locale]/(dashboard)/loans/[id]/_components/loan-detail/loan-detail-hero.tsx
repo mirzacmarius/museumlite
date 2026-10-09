@@ -3,7 +3,8 @@
 import { cn } from "@v1/ui/utils";
 import { Banknote, CalendarRange, Check, Copy, Layers } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
+import { RecordedValue } from "@/components/recorded-value";
+import type { FormatLocale } from "@/lib/format-number";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
 
@@ -132,7 +133,7 @@ export function LoanDetailHero({
                 <Banknote className="size-4 text-muted-foreground" />
                 <span className="text-muted-foreground">
                   {tActions("totalValue")}{" "}
-                  {formatCurrency(loan.insuranceValue, locale, "USD")}
+                  <RecordedValue value={loan.insuranceValue} />
                 </span>
               </div>
             )}

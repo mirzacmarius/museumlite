@@ -78,3 +78,21 @@ export function formatCurrency(
     currency,
   });
 }
+
+/**
+ * Formats an amount in its recorded currency. Without a currency the bare
+ * number is returned so callers can label it "currency not recorded"; a
+ * currency code the runtime cannot format is shown after the number.
+ */
+export function formatMoney(
+  value: number,
+  locale: Locale,
+  currency: string | null | undefined,
+): string {
+  if (!currency) return formatNumber(value, locale);
+  try {
+    return formatCurrency(value, locale, currency);
+  } catch {
+    return `${formatNumber(value, locale)} ${currency}`;
+  }
+}

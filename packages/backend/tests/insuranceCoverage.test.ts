@@ -358,6 +358,83 @@ test("the daily insurance check records expiry on policies and their coverages",
   });
 });
 
+test("the daily insurance check expires a coverage whose own period ended inside an active policy", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+  const t = createConvexTest();
+  const { organizationId, staff, objectId, loanId } = await setupRegistrar(t);
+  const policyId = await createPolicy(staff, organizationId);
+  const shortId = await staff.mutation(api.insurance.addCoverage, {
+    policyId,
+    target: { kind: "loan", loanId },
+    coveredValue: 4_000,
+    currency: "EUR",
+    expirationDate: NOW + 5 * DAY,
+  });
+  const fullId = await staff.mutation(api.insurance.addCoverage, {
+    policyId,
+    target: { kind: "object", collectionId: objectId },
+    coveredValue: 25_000,
+    currency: "EUR",
+  });
+
+  vi.setSystemTime(NOW + 6 * DAY);
+  await t.mutation(internal.insurance.checkExpiringPoliciesInternal, {});
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+  const policy = await staff.query(api.insurance.getPolicy, {
+    policyId,
+    now: NOW + 6 * DAY,
+  });
+  expect(policy?.recordedStatus).toBe("active");
+  expect(
+    Object.fromEntries(
+      (policy?.coverages ?? []).map((coverage) => [
+        coverage._id,
+        coverage.status,
+      ]),
+    ),
+  ).toEqual({ [shortId]: "expired", [fullId]: "active" });
+});
+
+test("the expiry notification reports covered values per currency", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+  const t = createConvexTest();
+  const { organizationId, staff, objectId, loanId } = await setupRegistrar(t);
+  const policyId = await createPolicy(staff, organizationId, {
+    policyNumber: "POL-NOTIFY",
+    effectiveDate: NOW - 300 * DAY,
+    expirationDate: NOW + 30 * DAY,
+  });
+  await staff.mutation(api.insurance.addCoverage, {
+    policyId,
+    target: { kind: "object", collectionId: objectId },
+    coveredValue: 25_000,
+    currency: "EUR",
+  });
+  await staff.mutation(api.insurance.addCoverage, {
+    policyId,
+    target: { kind: "loan", loanId },
+    coveredValue: 13_500,
+    currency: "USD",
+  });
+
+  await t.mutation(internal.insurance.checkExpiringPoliciesInternal, {});
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+  const { notifications } = await staff.query(api.audit.listNotifications, {
+    organizationId,
+  });
+  expect(
+    notifications
+      .filter((notification) => notification.type === "insurance_expiry")
+      .map((notification) => notification.message),
+  ).toEqual([
+    "Policy POL-NOTIFY (Fine Art Underwriters) covering 2 items valued at EUR 25,000; USD 13,500 expires in 30 days.",
+  ]);
+});
+
 test("an appraisal from another organization or object cannot be linked to a coverage", async () => {
   const t = createConvexTest();
   const { organizationId, userId, staff, objectId } = await setupRegistrar(t);

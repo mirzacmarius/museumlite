@@ -14,7 +14,7 @@ import {
 import { Search, Shield } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { useScopedI18n } from "@/locales/client";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
+import { MoneyCell } from "./money-cell";
 import {
   type PolicyStatus,
   type PolicyType,
@@ -29,6 +29,7 @@ interface InsurancePolicyRow extends Record<string, unknown> {
   carrier: string;
   policyType: string;
   coverageAmount: number;
+  currency?: string;
   effectiveDate: number;
   expirationDate: number;
   status: string;
@@ -144,12 +145,14 @@ export function InsurancePoliciesTab({
             key: "coverageAmount",
             label: t("coverage"),
             className: "w-36 flex-none",
-            render: (policy) =>
-              formatCurrency(
-                policy.coverageAmount,
-                locale as FormatLocale,
-                "USD",
-              ),
+            render: (policy: InsurancePolicyRow) => (
+              <MoneyCell
+                value={policy.coverageAmount}
+                currency={policy.currency}
+                locale={locale}
+                notRecordedLabel={t("currencyNotRecorded")}
+              />
+            ),
           },
           {
             key: "effectiveDate",

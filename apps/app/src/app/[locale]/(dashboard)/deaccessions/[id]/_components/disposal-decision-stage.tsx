@@ -18,7 +18,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ClientDateFns } from "@/components/client-date";
 import { usePermissions } from "@/components/permission-gate";
-import { formatCurrency } from "@/lib/format-number";
+import { useValuationErrorMessage } from "@/hooks/use-valuation-error-message";
+import { formatMoney } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { disposalStageErrorMessage } from "./disposal-stage-error";
 
@@ -171,6 +172,8 @@ function DisposalValuation({
   stages: DisposalStages;
 }) {
   const t = useScopedI18n("deaccessions.stages");
+  const tValuation = useScopedI18n("valuation");
+  const valuationErrorMessage = useValuationErrorMessage();
   const locale = useCurrentLocale();
   const { hasPermission } = usePermissions();
   const canLink =
@@ -185,9 +188,10 @@ function DisposalValuation({
   const linked = appraisals?.find(
     (appraisal) => appraisal._id === stages.valuation.linkedAppraisalId,
   );
+  const linkable = appraisals?.filter((appraisal) => !appraisal.isSuperseded);
 
   const handleLink = async () => {
-    const appraisal = appraisals?.find((entry) => entry._id === selectedId);
+    const appraisal = linkable?.find((entry) => entry._id === selectedId);
     if (!appraisal) return;
     setIsLinking(true);
     try {
@@ -199,7 +203,12 @@ function DisposalValuation({
       else toast.warning(t("valuation.tooOld"));
       setSelectedId("");
     } catch (error) {
-      toast.error(disposalStageErrorMessage(error, t("actionFailed")));
+      toast.error(
+        valuationErrorMessage(
+          error,
+          disposalStageErrorMessage(error, t("actionFailed")),
+        ),
+      );
     } finally {
       setIsLinking(false);
     }
@@ -211,7 +220,7 @@ function DisposalValuation({
       <p className="mt-1 text-sm text-muted-foreground">
         {linked
           ? t("valuation.linked", {
-              value: formatCurrency(linked.value, locale, linked.currency),
+              value: formatMoney(linked.value, locale, linked.currency),
               appraiser: linked.appraiserName,
             })
           : t("valuation.none")}
@@ -219,8 +228,8 @@ function DisposalValuation({
           <span className="ml-1">({t("valuation.notCurrent")})</span>
         ) : null}
       </p>
-      {canLink && appraisals !== undefined ? (
-        appraisals.length === 0 ? (
+      {canLink && linkable !== undefined ? (
+        linkable.length === 0 ? (
           <p className="mt-2 text-xs text-muted-foreground">
             {t("valuation.noAppraisals")}
           </p>
@@ -235,14 +244,11 @@ function DisposalValuation({
                   <SelectValue placeholder={t("valuation.select")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {appraisals.map((appraisal) => (
+                  {linkable.map((appraisal) => (
                     <SelectItem key={appraisal._id} value={appraisal._id}>
-                      {formatCurrency(
-                        appraisal.value,
-                        locale,
-                        appraisal.currency,
-                      )}{" "}
-                      · {appraisal.appraiserName} ·{" "}
+                      {formatMoney(appraisal.value, locale, appraisal.currency)}{" "}
+                      · {tValuation(`purposes.${appraisal.appraisalType}`)} ·{" "}
+                      {appraisal.appraiserName} ·{" "}
                       {t("valuation.ageDays", { days: appraisal.ageDays })}
                     </SelectItem>
                   ))}

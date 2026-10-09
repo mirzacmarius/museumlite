@@ -14,6 +14,7 @@ import {
 } from "@v1/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CurrencyInput, isCurrencyCode } from "@/components/currency-input";
 import { useScopedI18n } from "@/locales/client";
 
 export function PolicyForm({
@@ -27,6 +28,7 @@ export function PolicyForm({
     carrier: string;
     policyType: "blanket" | "scheduled" | "exhibition" | "transit" | "loan";
     coverageAmount: number;
+    currency: string;
     effectiveDate: number;
     expirationDate: number;
     deductible?: number;
@@ -34,6 +36,7 @@ export function PolicyForm({
   }) => Promise<void>;
 }) {
   const t = useScopedI18n("untranslatedDashboard.insurance");
+  const tValuation = useScopedI18n("valuation");
   const [form, setForm] = useState({
     policyNumber: "",
     carrier: "",
@@ -44,6 +47,7 @@ export function PolicyForm({
       | "transit"
       | "loan",
     coverageAmount: "",
+    currency: "",
     deductible: "",
     premiumAmount: "",
     effectiveDate: "",
@@ -64,9 +68,17 @@ export function PolicyForm({
       return;
     }
 
+    if (!isCurrencyCode(form.currency)) {
+      toast.error(tValuation("invalidCurrency"));
+      return;
+    }
     const effectiveDate = Date.parse(form.effectiveDate);
     const expirationDate = Date.parse(form.expirationDate);
-    if (Number.isNaN(effectiveDate) || Number.isNaN(expirationDate)) {
+    if (
+      Number.isNaN(effectiveDate) ||
+      Number.isNaN(expirationDate) ||
+      expirationDate <= effectiveDate
+    ) {
       toast.error(t("validDatesError"));
       return;
     }
@@ -79,6 +91,7 @@ export function PolicyForm({
         carrier: form.carrier.trim(),
         policyType: form.policyType,
         coverageAmount: Number.parseFloat(form.coverageAmount),
+        currency: form.currency.trim(),
         deductible: form.deductible
           ? Number.parseFloat(form.deductible)
           : undefined,
@@ -93,6 +106,7 @@ export function PolicyForm({
         carrier: "",
         policyType: "blanket",
         coverageAmount: "",
+        currency: "",
         deductible: "",
         premiumAmount: "",
         effectiveDate: "",
@@ -147,15 +161,21 @@ export function PolicyForm({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="blanket">{t("policyTypeBlanket")}</SelectItem>
-              <SelectItem value="scheduled">{t("policyTypeScheduled")}</SelectItem>
-              <SelectItem value="exhibition">{t("policyTypeExhibition")}</SelectItem>
+              <SelectItem value="scheduled">
+                {t("policyTypeScheduled")}
+              </SelectItem>
+              <SelectItem value="exhibition">
+                {t("policyTypeExhibition")}
+              </SelectItem>
               <SelectItem value="transit">{t("policyTypeTransit")}</SelectItem>
               <SelectItem value="loan">{t("policyTypeLoan")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="coverageAmount">{t("coverageAmountRequiredLabel")}</Label>
+          <Label htmlFor="coverageAmount">
+            {t("coverageAmountRequiredLabel")}
+          </Label>
           <Input
             id="coverageAmount"
             type="number"
@@ -171,6 +191,16 @@ export function PolicyForm({
             required
           />
         </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <CurrencyInput
+          id="policyCurrency"
+          label={t("currencyRequiredLabel")}
+          hint={t("policyCurrencyHint")}
+          value={form.currency}
+          onChange={(currency) => setForm((prev) => ({ ...prev, currency }))}
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

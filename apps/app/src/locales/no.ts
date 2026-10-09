@@ -4834,6 +4834,97 @@ export default {
     refineSearch:
       "Flere objekter samsvarer. Avgrens søket for å snevre inn listen.",
   },
+  valuation: {
+    title: "Verdsettelse",
+    description:
+      "Takseringer etter formål og valuta. Gjeldende verdsettelse for hvert formål og hver valuta er den nyeste takseringen som ikke er erstattet. Verdier omregnes aldri mellom valutaer.",
+    recordAppraisal: "Registrer taksering",
+    noCurrent: "Ingen takseringer er registrert ennå.",
+    currentTitle: "Gjeldende verdsettelser",
+    historyTitle: "Takseringshistorikk",
+    truncated: "Viser de 200 nyeste takseringene.",
+    renewalDue: "Bør fornyes",
+    currencyNotRecognized: "Valutakoden er ikke gjenkjent",
+    current: "Gjeldende",
+    supersededBadge: "Erstattet",
+    replacedBadge: "Ikke gjeldende",
+    correctionOf: "Korrigering: {reason}",
+    supersededOn: "Erstattet",
+    supersede: "Korriger",
+    requiredFields: "Fyll ut de obligatoriske feltene.",
+    invalidValue: "Angi en verdi på null eller mer.",
+    invalidCurrency: "Angi en valutakode på tre bokstaver, for eksempel EUR.",
+    recorded: "Taksering registrert",
+    superseded: "Taksering korrigert",
+    failed: "Kunne ikke lagre takseringen",
+    recordTitle: "Registrer taksering",
+    recordDescription:
+      "Registrerte verdier kan ikke endres senere. Korrigeringer registreres som en ny taksering som erstatter den opprinnelige.",
+    supersedeTitle: "Korriger taksering",
+    supersedeDescription:
+      "Den opprinnelige takseringen blir stående i historikken, merket som erstattet av denne korrigeringen.",
+    reason: "Årsak til korrigeringen *",
+    reasonPlaceholder: "Hvorfor den registrerte takseringen korrigeres",
+    purpose: "Formål *",
+    appraisalDate: "Takseringsdato *",
+    value: "Verdi *",
+    currency: "Valuta *",
+    currencyHint: "ISO-kode på tre bokstaver, for eksempel EUR",
+    appraiserName: "Takstperson *",
+    appraiserCompany: "Firma",
+    validUntil: "Gyldig til",
+    notes: "Notater",
+    save: "Lagre taksering",
+    saving: "Lagrer…",
+    totalsByCurrency: "Summer per valuta",
+    withoutCurrency:
+      "{count} poster uten registrert valuta telles, men summeres ikke.",
+    recordedValueHint: "Registrert verdi, valuta ikke registrert",
+    purposes: {
+      insurance: "Forsikring",
+      replacement: "Gjenanskaffelse",
+      market: "Marked",
+      fair_market: "Virkelig markedsverdi",
+      liquidation: "Realisasjon",
+    },
+    errors: {
+      INVALID_CURRENCY:
+        "Angi en gjenkjent valutakode på tre bokstaver, for eksempel EUR.",
+      INVALID_AMOUNT: "Beløp må være null eller mer.",
+      INVALID_DATE:
+        "Kontroller datoene. Gyldig til-datoen må være samme dag som eller etter takseringsdatoen.",
+      APPRAISER_REQUIRED: "Angi navnet på takstpersonen.",
+      REASON_REQUIRED: "Oppgi en årsak til korrigeringen.",
+      REFERENCE_NOT_FOUND:
+        "En koblet post er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+      APPRAISAL_ALREADY_SUPERSEDED:
+        "Denne takseringen er allerede korrigert. Korriger den nyere takseringen i stedet.",
+      APPRAISAL_SUPERSEDED:
+        "Erstattede takseringer blir stående i historikken. Velg takseringen som korrigerte den.",
+      APPRAISAL_NOT_FOR_COVERED_OBJECT:
+        "Den takseringen gjelder et annet objekt.",
+      APPRAISAL_CURRENCY_MISMATCH:
+        "Takseringen er i en annen valuta enn dekningen.",
+      CURRENT_APPRAISAL_REQUIRED:
+        "Registrer først en gjeldende forsikringstaksering i denne valutaen.",
+      POLICY_NUMBER_TAKEN:
+        "En annen forsikringsavtale bruker allerede dette nummeret.",
+      INVALID_POLICY_PERIOD:
+        "Forsikringsavtalen må utløpe etter at den trer i kraft.",
+      POLICY_NOT_IN_FORCE:
+        "Dekning kan bare legges til en aktiv eller kommende forsikringsavtale.",
+      INVALID_COVERAGE_PERIOD:
+        "Dekningen må slutte samme dag som eller etter at den starter.",
+      COVERAGE_OUTSIDE_POLICY_PERIOD:
+        "Dekningsdatoene må ligge innenfor avtaleperioden.",
+      COVERAGE_TARGET_NOT_FOUND:
+        "Det valgte objektet, utlånet eller utstillingen ble ikke funnet i denne organisasjonen.",
+      LEGACY_REVIEW_RESOLVED: "Denne gjennomgangen er allerede avsluttet.",
+      LEGACY_REVIEW_TARGET_INVALID:
+        "Velg mål som er registrert på dekningen, hvert bare én gang.",
+      fallback: "Noe gikk galt. Prøv igjen.",
+    },
+  },
   deaccessions: {
     loadedResults: "Antall i lastede resultater",
     loadMore: "Last flere",
@@ -6086,6 +6177,7 @@ export default {
         media: "Medier",
         accession: "Registrering",
         provenance: "Proveniens og historikk",
+        valuation: "Verdsettelse",
         placement: "Plassering og relasjoner",
         conservation: "Konservering",
         exhibitions: "Utstillinger",
@@ -6265,6 +6357,125 @@ export default {
       effective: "Ikrafttredelse",
       expires: "Utløper",
       coverages: "Dekninger",
+      currencyRequiredLabel: "Valuta *",
+      currencyNotRecorded: "Valuta ikke registrert",
+      policyCurrencyHint: "Valuta for dekningsgrensen, for eksempel EUR",
+      tabs: {
+        overview: "Mangler og utløp",
+        coverages: "Dekninger",
+        review: "Gjennomgang av dekninger",
+      },
+      coverageTab: {
+        addCoverage: "Legg til dekning",
+        addTitle: "Legg til dekning",
+        addDescription:
+          "Forsikre ett objekt, utlån eller én utstilling under en forsikringsavtale, i egen valuta.",
+        requiredFields:
+          "Velg en forsikringsavtale og et mål, og angi dekket verdi.",
+        added: "Dekning lagt til",
+        failed: "Kunne ikke legge til dekningen",
+        policy: "Forsikringsavtale *",
+        periodHint: "La datoene stå tomme for å følge avtaleperioden:",
+        targetType: "Dekker *",
+        target: "Mål *",
+        selectObject: "Velg objekt",
+        selectLoan: "Velg utlån",
+        selectExhibition: "Velg utstilling",
+        noOptions: "Ingenting å velge",
+        coveredValue: "Dekket verdi *",
+        currencyHint: "Standard er avtalens valuta",
+        startDate: "Dekning starter",
+        endDate: "Dekning slutter",
+        save: "Legg til dekning",
+        saving: "Legger til…",
+        splitFrom: "skilt ut fra en gjennomgått dekning",
+        needsReviewTargets: "Registrert på {count} mål, må gjennomgås",
+        empty: "Ingen dekninger ennå",
+        emptyDescription:
+          "Legg til dekning for å forsikre et objekt, et utlån eller en utstilling.",
+        loadMore: "Last inn flere",
+        targetKinds: {
+          object: "Objekt",
+          loan: "Utlån",
+          exhibition: "Utstilling",
+        },
+        columns: {
+          target: "Dekker",
+          policy: "Forsikringsavtale",
+          value: "Dekket verdi",
+          period: "Periode",
+          state: "Status",
+          appraisal: "Forsikringstaksering",
+        },
+        states: {
+          in_force: "I kraft",
+          not_started: "Ikke startet",
+          expired: "Utløpt",
+          policy_inactive: "Avtalen er inaktiv",
+          removed: "Fjernet",
+          needs_review: "Må gjennomgås",
+        },
+        appraisalStatus: {
+          not_applicable: "Ikke relevant",
+          missing: "Mangler",
+          current: "Gjeldende",
+          stale: "Utdatert",
+        },
+      },
+      overview: {
+        needsReview: "Dekninger som må gjennomgås",
+        staleAppraisals: "Utdaterte forsikringstakseringer",
+        openClaims: "Åpne skadesaker",
+        disputedClaims: "Omstridte skadesaker",
+        inForceTitle: "Dekning i kraft",
+        inForceDescription:
+          "Summer per valuta. Beløp i ulike valutaer legges aldri sammen.",
+        noCover: "Ingen dekning i kraft.",
+        gapsTitle: "Objekter uten dekning",
+        gapsDescription:
+          "Objekter i deres varetekt uten dekning i kraft, verken direkte eller gjennom et dekket utlån eller en dekket utstilling.",
+        coveredOf: "{covered} av {total} objekter dekket ({percentage} %)",
+        noGaps: "Alle objekter har dekning i kraft.",
+        moreGaps: "Viser de {count} første objektene.",
+        expiringTitle: "Forsikringsavtaler som utløper innen 90 dager",
+        noExpiring: "Ingen forsikringsavtaler utløper de neste 90 dagene.",
+        expiresIn: "Utløper om {days} dager",
+        coverageCount: "{count} dekninger",
+        expiredTitle: "Utløpte forsikringsavtaler",
+        noExpired: "Ingen utløpte forsikringsavtaler.",
+        expiredBadge: "Utløpt",
+        moreExpired: "{count} utløpte forsikringsavtaler totalt.",
+      },
+      review: {
+        title: "Gjennomgang av eldre dekninger",
+        description:
+          "Disse dekningene ble registrert på mer enn ett mål. Ingenting endres før du bestemmer hvilket mål hver av dem gjelder.",
+        openCount: "{count} åpne",
+        showResolved: "Vis avsluttede",
+        showOpen: "Vis åpne",
+        empty: "Ingen dekninger må gjennomgås.",
+        emptyResolved: "Ingen gjennomganger er avsluttet ennå.",
+        value: "Registrert verdi",
+        resolve: "Avslutt",
+        targets: "Registrerte mål",
+        resolvedSummary:
+          "Beholdt mål: {target}. Separate dekninger registrert: {count}",
+        truncated: "Viser de 100 nyeste gjennomgangene.",
+        resolved: "Gjennomgangen av dekningen er avsluttet",
+        failed: "Kunne ikke avslutte gjennomgangen",
+        resolveTitle: "Avslutt gjennomgang av dekning",
+        resolveDescription:
+          "Velg målet den registrerte dekningen gjelder. Du kan også registrere separate dekninger for de andre målene, hver med sin egen verdi.",
+        keep: "Den registrerte dekningen gjelder *",
+        currency: "Valuta for den registrerte verdien",
+        currencyHint: "La stå tomt hvis den ikke er kjent",
+        addSplit: "Registrer en separat dekning for {target}",
+        splitValue: "Dekket verdi",
+        splitCurrency: "Valuta",
+        note: "Notat",
+        save: "Avslutt",
+        saving: "Avslutter…",
+      },
       claimStatus: {
         all: "Alle statuser",
         open: "Åpen",
@@ -7892,6 +8103,10 @@ export default {
           "Objektet «{title}» må vurderes av en konservator.",
         insurancePolicyExpiring:
           "Forsikringsavtalen {policyNumber} ({carrier}), som dekker {count} objekter verdt {value}, utløper om {days} dager.",
+        insurancePolicyExpiringValued:
+          "Forsikringsavtale {policyNumber} ({carrier}), som dekker {count} objekter verdsatt til {values}, utløper om {days} dager.",
+        insurancePolicyExpiringUnvalued:
+          "Forsikringsavtale {policyNumber} ({carrier}), som dekker {count} objekter, utløper om {days} dager.",
         autoGeneratedInsuranceClaim:
           "Et utkast til forsikringskrav ({claimNumber}) er opprettet etter at transportskade ble oppdaget ved retur av et lån. Se over og send inn.",
         acquisitionPendingAtStep:

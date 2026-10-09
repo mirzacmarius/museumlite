@@ -84,6 +84,10 @@ const ProvenanceHistoryTab = dynamic(
     import("../provenance-history-tab").then((mod) => mod.ProvenanceHistoryTab),
   { loading: LoadingPanel },
 );
+const ValuationTab = dynamic(
+  () => import("../valuation-tab").then((mod) => mod.ValuationTab),
+  { loading: LoadingPanel },
+);
 const VehicleDetailsTab = dynamic(
   () => import("../vehicle-details-tab").then((mod) => mod.VehicleDetailsTab),
   { loading: LoadingPanel },
@@ -153,6 +157,9 @@ export function ObjectDetailTabPanel({
         {activeTab === "accession" && <AccessionTab collection={collection} />}
         {activeTab === "provenance" && (
           <ProvenanceHistoryTab collection={collection} />
+        )}
+        {activeTab === "valuation" && (
+          <ValuationTab collectionId={collectionId} locale={locale} />
         )}
         {activeTab === "placement" && (
           <PlacementRelationshipsTab

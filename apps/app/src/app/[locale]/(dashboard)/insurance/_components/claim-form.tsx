@@ -14,6 +14,7 @@ import {
 } from "@v1/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CurrencyInput, isCurrencyCode } from "@/components/currency-input";
 import { useScopedI18n } from "@/locales/client";
 
 export function ClaimForm({
@@ -22,7 +23,11 @@ export function ClaimForm({
   onSubmit,
 }: {
   organizationId: Id<"organizations">;
-  policyOptions: Array<{ label: string; value: Id<"insurancePolicies"> }>;
+  policyOptions: Array<{
+    label: string;
+    value: Id<"insurancePolicies">;
+    currency?: string;
+  }>;
   onSubmit: (payload: {
     organizationId: Id<"organizations">;
     policyId: Id<"insurancePolicies">;
@@ -39,12 +44,15 @@ export function ClaimForm({
       | "other";
     incidentDescription: string;
     claimedAmount: number;
+    currency: string;
     incidentLocation?: string;
   }) => Promise<void>;
 }) {
   const t = useScopedI18n("untranslatedDashboard.insurance");
+  const tValuation = useScopedI18n("valuation");
   const [form, setForm] = useState({
     policyId: "",
+    currency: "",
     incidentDate: "",
     incidentType: "damage" as
       | "damage"
@@ -79,6 +87,10 @@ export function ClaimForm({
       toast.error(t("validIncidentDateError"));
       return;
     }
+    if (!isCurrencyCode(form.currency)) {
+      toast.error(tValuation("invalidCurrency"));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -89,10 +101,12 @@ export function ClaimForm({
         incidentType: form.incidentType,
         incidentDescription: form.incidentDescription.trim(),
         claimedAmount: Number.parseFloat(form.claimedAmount),
+        currency: form.currency.trim(),
         incidentLocation: form.incidentLocation.trim() || undefined,
       });
       setForm({
         policyId: "",
+        currency: "",
         incidentDate: "",
         incidentType: "damage",
         incidentLocation: "",
@@ -111,7 +125,15 @@ export function ClaimForm({
         <Select
           value={form.policyId}
           onValueChange={(value) =>
-            setForm((prev) => ({ ...prev, policyId: value }))
+            setForm((prev) => ({
+              ...prev,
+              policyId: value,
+              currency:
+                prev.currency ||
+                (policyOptions.find((option) => option.value === value)
+                  ?.currency ??
+                  ""),
+            }))
           }
         >
           <SelectTrigger>
@@ -161,8 +183,12 @@ export function ClaimForm({
               <SelectItem value="loss">{t("incidentLoss")}</SelectItem>
               <SelectItem value="fire">{t("incidentFire")}</SelectItem>
               <SelectItem value="water">{t("incidentWater")}</SelectItem>
-              <SelectItem value="vandalism">{t("incidentVandalism")}</SelectItem>
-              <SelectItem value="natural_disaster">{t("incidentNaturalDisaster")}</SelectItem>
+              <SelectItem value="vandalism">
+                {t("incidentVandalism")}
+              </SelectItem>
+              <SelectItem value="natural_disaster">
+                {t("incidentNaturalDisaster")}
+              </SelectItem>
               <SelectItem value="transit">{t("incidentTransit")}</SelectItem>
               <SelectItem value="other">{t("other")}</SelectItem>
             </SelectContent>
@@ -203,18 +229,32 @@ export function ClaimForm({
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="claimedAmount">{t("claimedAmountRequiredLabel")}</Label>
-        <Input
-          id="claimedAmount"
-          type="number"
-          min="0"
-          value={form.claimedAmount}
-          onChange={(event) =>
-            setForm((prev) => ({ ...prev, claimedAmount: event.target.value }))
-          }
-          placeholder="25000"
-          required
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="claimedAmount">
+            {t("claimedAmountRequiredLabel")}
+          </Label>
+          <Input
+            id="claimedAmount"
+            type="number"
+            min="0"
+            value={form.claimedAmount}
+            onChange={(event) =>
+              setForm((prev) => ({
+                ...prev,
+                claimedAmount: event.target.value,
+              }))
+            }
+            placeholder="25000"
+            required
+          />
+        </div>
+        <CurrencyInput
+          id="claimCurrency"
+          label={t("currencyRequiredLabel")}
+          hint={tValuation("currencyHint")}
+          value={form.currency}
+          onChange={(currency) => setForm((prev) => ({ ...prev, currency }))}
         />
       </div>
 

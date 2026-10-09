@@ -14,20 +14,32 @@ import {
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, Plus, Shield } from "lucide-react";
+import { Building2, Plus, Shield, ShieldPlus } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
 import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useValuationErrorMessage } from "@/hooks/use-valuation-error-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ClaimForm } from "./claim-form";
+import { CoverageForm } from "./coverage-form";
 import { InsuranceClaimsTab } from "./insurance-claims-tab";
+import { InsuranceCoveragesTab } from "./insurance-coverages-tab";
+import { InsuranceOverviewTab } from "./insurance-overview-tab";
 import { InsurancePoliciesTab } from "./insurance-policies-tab";
+import { LegacyCoverageReviewTab } from "./legacy-coverage-review-tab";
 import { PolicyForm } from "./policy-form";
-import type { ClaimStatus, PolicyStatus, PolicyType } from "./types";
+import {
+  type ClaimStatus,
+  INSURANCE_TABS,
+  type InsuranceTab,
+  type PolicyStatus,
+  type PolicyType,
+} from "./types";
 
 interface InsurancePageState {
   searchPolicies: string;
@@ -35,9 +47,10 @@ interface InsurancePageState {
   policyStatus: PolicyStatus;
   policyType: PolicyType;
   claimStatus: ClaimStatus;
-  activeTab: "policies" | "claims";
+  activeTab: InsuranceTab;
   policyDialogOpen: boolean;
   claimDialogOpen: boolean;
+  coverageDialogOpen: boolean;
 }
 
 type InsurancePageAction =
@@ -46,9 +59,10 @@ type InsurancePageAction =
   | { type: "setPolicyStatus"; value: PolicyStatus }
   | { type: "setPolicyType"; value: PolicyType }
   | { type: "setClaimStatus"; value: ClaimStatus }
-  | { type: "setActiveTab"; value: "policies" | "claims" }
+  | { type: "setActiveTab"; value: InsuranceTab }
   | { type: "setPolicyDialogOpen"; value: boolean }
-  | { type: "setClaimDialogOpen"; value: boolean };
+  | { type: "setClaimDialogOpen"; value: boolean }
+  | { type: "setCoverageDialogOpen"; value: boolean };
 
 const initialInsurancePageState: InsurancePageState = {
   searchPolicies: "",
@@ -56,9 +70,10 @@ const initialInsurancePageState: InsurancePageState = {
   policyStatus: "all",
   policyType: "all",
   claimStatus: "all",
-  activeTab: "policies",
+  activeTab: "overview",
   policyDialogOpen: false,
   claimDialogOpen: false,
+  coverageDialogOpen: false,
 };
 
 function insurancePageReducer(
@@ -82,6 +97,8 @@ function insurancePageReducer(
       return { ...state, policyDialogOpen: action.value };
     case "setClaimDialogOpen":
       return { ...state, claimDialogOpen: action.value };
+    case "setCoverageDialogOpen":
+      return { ...state, coverageDialogOpen: action.value };
   }
 }
 
@@ -90,6 +107,8 @@ export function InsurancePageClient() {
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
+  const now = useClientNow();
+  const errorMessage = useValuationErrorMessage();
   const [state, dispatch] = useReducer(
     insurancePageReducer,
     initialInsurancePageState,
@@ -97,9 +116,10 @@ export function InsurancePageClient() {
 
   const listPolicies = useQuery(
     api.insurance.listPolicies,
-    currentOrganizationId
+    currentOrganizationId && now !== undefined
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
+          now,
           paginationOpts: { numItems: 50, cursor: null },
           status: state.policyStatus === "all" ? undefined : state.policyStatus,
           policyType: state.policyType === "all" ? undefined : state.policyType,
@@ -131,8 +151,19 @@ export function InsurancePageClient() {
       policies.map((p) => ({
         label: `${p.policyNumber} · ${p.carrier}`,
         value: p._id,
+        currency: p.currency,
+        status: p.status,
+        effectiveDate: p.effectiveDate,
+        expirationDate: p.expirationDate,
       })),
     [policies],
+  );
+  const coveragePolicyOptions = useMemo(
+    () =>
+      policyOptions.filter(
+        (option) => option.status === "active" || option.status === "pending",
+      ),
+    [policyOptions],
   );
 
   if (isLoading) {
@@ -151,7 +182,9 @@ export function InsurancePageClient() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">{t("noOrganizationSelected")}</h3>
+            <h3 className="text-lg font-semibold">
+              {t("noOrganizationSelected")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t("selectOrganizationDescription")}
             </p>
@@ -178,9 +211,7 @@ export function InsurancePageClient() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
               <h2 className="page-title">{t("title")}</h2>
-              <p className="page-description">
-                {t("description")}
-              </p>
+              <p className="page-description">{t("description")}</p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
               <PermissionGate permission="organization.manage_settings">
@@ -217,12 +248,46 @@ export function InsurancePageClient() {
                           });
                         } catch (err) {
                           toast.error(
-                            err instanceof Error
-                              ? err.message
-                              : t("policyCreateFailed"),
+                            errorMessage(err, t("policyCreateFailed")),
                           );
                         }
                       }}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </PermissionGate>
+              <PermissionGate permission="organization.manage_settings">
+                <Dialog
+                  open={state.coverageDialogOpen}
+                  onOpenChange={(value) =>
+                    dispatch({ type: "setCoverageDialogOpen", value })
+                  }
+                >
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <ShieldPlus className="mr-2 size-4" />
+                      {t("coverageTab.addCoverage")}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>{t("coverageTab.addTitle")}</DialogTitle>
+                      <DialogDescription>
+                        {t("coverageTab.addDescription")}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <CoverageForm
+                      organizationId={
+                        currentOrganizationId as Id<"organizations">
+                      }
+                      locale={locale}
+                      policies={coveragePolicyOptions}
+                      onDone={() =>
+                        dispatch({
+                          type: "setCoverageDialogOpen",
+                          value: false,
+                        })
+                      }
                     />
                   </DialogContent>
                 </Dialog>
@@ -262,9 +327,7 @@ export function InsurancePageClient() {
                           });
                         } catch (err) {
                           toast.error(
-                            err instanceof Error
-                              ? err.message
-                              : t("claimCreateFailed"),
+                            errorMessage(err, t("claimCreateFailed")),
                           );
                         }
                       }}
@@ -278,17 +341,43 @@ export function InsurancePageClient() {
           <div>
             <Tabs
               value={state.activeTab}
-              onValueChange={(value) =>
-                dispatch({
-                  type: "setActiveTab",
-                  value: value as "policies" | "claims",
-                })
-              }
+              onValueChange={(value) => {
+                const tab = INSURANCE_TABS.find((entry) => entry === value);
+                if (tab) dispatch({ type: "setActiveTab", value: tab });
+              }}
             >
-              <TabsList className="mb-6 rounded-lg bg-muted p-1">
+              <TabsList className="mb-6 flex-wrap rounded-lg bg-muted p-1">
+                <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
                 <TabsTrigger value="policies">{t("policies")}</TabsTrigger>
+                <TabsTrigger value="coverages">
+                  {t("tabs.coverages")}
+                </TabsTrigger>
                 <TabsTrigger value="claims">{t("claims")}</TabsTrigger>
+                <TabsTrigger value="review">{t("tabs.review")}</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="overview">
+                <InsuranceOverviewTab
+                  organizationId={currentOrganizationId as Id<"organizations">}
+                  now={now}
+                  locale={locale}
+                />
+              </TabsContent>
+
+              <TabsContent value="coverages">
+                <InsuranceCoveragesTab
+                  organizationId={currentOrganizationId as Id<"organizations">}
+                  now={now}
+                  locale={locale}
+                />
+              </TabsContent>
+
+              <TabsContent value="review">
+                <LegacyCoverageReviewTab
+                  organizationId={currentOrganizationId as Id<"organizations">}
+                  locale={locale}
+                />
+              </TabsContent>
 
               <TabsContent value="policies">
                 <InsurancePoliciesTab

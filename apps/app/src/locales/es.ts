@@ -4906,6 +4906,96 @@ export default {
     refineSearch:
       "Hay más objetos que coinciden. Afine la búsqueda para acotar la lista.",
   },
+  valuation: {
+    title: "Valoración",
+    description:
+      "Tasaciones por finalidad y moneda. La valoración vigente para cada finalidad y moneda es la tasación más reciente que no ha sido sustituida. Los valores nunca se convierten entre monedas.",
+    recordAppraisal: "Registrar tasación",
+    noCurrent: "Aún no hay tasaciones registradas.",
+    currentTitle: "Valoraciones vigentes",
+    historyTitle: "Historial de tasaciones",
+    truncated: "Se muestran las 200 tasaciones más recientes.",
+    renewalDue: "Renovación pendiente",
+    currencyNotRecognized: "Código de moneda no reconocido",
+    current: "Vigente",
+    supersededBadge: "Sustituida",
+    replacedBadge: "No vigente",
+    correctionOf: "Corrección: {reason}",
+    supersededOn: "Sustituida el",
+    supersede: "Corregir",
+    requiredFields: "Complete los campos obligatorios.",
+    invalidValue: "Introduzca un valor igual o mayor que cero.",
+    invalidCurrency:
+      "Introduzca un código de moneda de tres letras, por ejemplo EUR.",
+    recorded: "Tasación registrada",
+    superseded: "Tasación corregida",
+    failed: "No se pudo guardar la tasación",
+    recordTitle: "Registrar tasación",
+    recordDescription:
+      "Los valores registrados no se pueden editar después. Las correcciones se registran como una nueva tasación que sustituye a la original.",
+    supersedeTitle: "Corregir tasación",
+    supersedeDescription:
+      "La tasación original permanece en el historial, marcada como sustituida por esta corrección.",
+    reason: "Motivo de la corrección *",
+    reasonPlaceholder: "Por qué se corrige la tasación registrada",
+    purpose: "Finalidad *",
+    appraisalDate: "Fecha de tasación *",
+    value: "Valor *",
+    currency: "Moneda *",
+    currencyHint: "Código ISO de tres letras, por ejemplo EUR",
+    appraiserName: "Tasador *",
+    appraiserCompany: "Empresa",
+    validUntil: "Válida hasta",
+    notes: "Notas",
+    save: "Guardar tasación",
+    saving: "Guardando…",
+    totalsByCurrency: "Totales por moneda",
+    withoutCurrency:
+      "{count} registros sin moneda registrada se cuentan pero no se suman.",
+    recordedValueHint: "Valor registrado, moneda no registrada",
+    purposes: {
+      insurance: "Seguro",
+      replacement: "Reposición",
+      market: "Mercado",
+      fair_market: "Valor razonable de mercado",
+      liquidation: "Liquidación",
+    },
+    errors: {
+      INVALID_CURRENCY:
+        "Introduzca un código de moneda de tres letras reconocido, por ejemplo EUR.",
+      INVALID_AMOUNT: "Los importes deben ser iguales o mayores que cero.",
+      INVALID_DATE:
+        "Revise las fechas. La fecha de validez debe ser igual o posterior a la fecha de tasación.",
+      APPRAISER_REQUIRED: "Introduzca el nombre del tasador.",
+      REASON_REQUIRED: "Indique un motivo para la corrección.",
+      REFERENCE_NOT_FOUND:
+        "Un registro vinculado ya no está disponible. Actualice e inténtelo de nuevo.",
+      APPRAISAL_ALREADY_SUPERSEDED:
+        "Esta tasación ya se corrigió. Corrija en su lugar la tasación más reciente.",
+      APPRAISAL_SUPERSEDED:
+        "Las tasaciones sustituidas permanecen en el historial. Elija la tasación que la corrigió.",
+      APPRAISAL_NOT_FOR_COVERED_OBJECT: "Esa tasación pertenece a otro objeto.",
+      APPRAISAL_CURRENCY_MISMATCH:
+        "La tasación está en una moneda distinta de la cobertura.",
+      CURRENT_APPRAISAL_REQUIRED:
+        "Registre primero una tasación de seguro vigente en esta moneda.",
+      POLICY_NUMBER_TAKEN: "Otra póliza ya usa este número.",
+      INVALID_POLICY_PERIOD:
+        "La póliza debe vencer después de entrar en vigor.",
+      POLICY_NOT_IN_FORCE:
+        "Solo se puede añadir cobertura a una póliza activa o de próximo inicio.",
+      INVALID_COVERAGE_PERIOD:
+        "La cobertura debe terminar en la misma fecha de inicio o después.",
+      COVERAGE_OUTSIDE_POLICY_PERIOD:
+        "Las fechas de la cobertura deben estar dentro del periodo de la póliza.",
+      COVERAGE_TARGET_NOT_FOUND:
+        "No se encontró el objeto, préstamo o exposición seleccionado en esta organización.",
+      LEGACY_REVIEW_RESOLVED: "Esta revisión ya se resolvió.",
+      LEGACY_REVIEW_TARGET_INVALID:
+        "Elija destinos registrados en la cobertura, cada uno solo una vez.",
+      fallback: "Algo salió mal. Inténtelo de nuevo.",
+    },
+  },
   deaccessions: {
     loadedResults: "Recuentos de resultados cargados",
     loadMore: "Cargar más",
@@ -6182,6 +6272,7 @@ export default {
         media: "Medios",
         accession: "Ingreso",
         provenance: "Procedencia e historial",
+        valuation: "Valoración",
         placement: "Ubicación y relaciones",
         conservation: "Conservación",
         exhibitions: "Exposiciones",
@@ -6362,6 +6453,127 @@ export default {
       effective: "Vigencia",
       expires: "Vencimiento",
       coverages: "Coberturas",
+      currencyRequiredLabel: "Moneda *",
+      currencyNotRecorded: "Moneda no registrada",
+      policyCurrencyHint: "Moneda del límite de cobertura, por ejemplo EUR",
+      tabs: {
+        overview: "Carencias y vencimientos",
+        coverages: "Coberturas",
+        review: "Revisión de coberturas",
+      },
+      coverageTab: {
+        addCoverage: "Añadir cobertura",
+        addTitle: "Añadir cobertura",
+        addDescription:
+          "Asegure un objeto, préstamo o exposición con una póliza, en su propia moneda.",
+        requiredFields:
+          "Elija una póliza y un destino, e introduzca el valor cubierto.",
+        added: "Cobertura añadida",
+        failed: "No se pudo añadir la cobertura",
+        policy: "Póliza *",
+        periodHint:
+          "Deje las fechas vacías para seguir el periodo de la póliza:",
+        targetType: "Cubre *",
+        target: "Destino *",
+        selectObject: "Seleccionar objeto",
+        selectLoan: "Seleccionar préstamo",
+        selectExhibition: "Seleccionar exposición",
+        noOptions: "No hay nada que elegir",
+        coveredValue: "Valor cubierto *",
+        currencyHint: "Por defecto, la moneda de la póliza",
+        startDate: "Inicio de la cobertura",
+        endDate: "Fin de la cobertura",
+        save: "Añadir cobertura",
+        saving: "Añadiendo…",
+        splitFrom: "separada de una cobertura revisada",
+        needsReviewTargets:
+          "Registrada para {count} destinos, requiere revisión",
+        empty: "Aún no hay coberturas",
+        emptyDescription:
+          "Añada una cobertura para asegurar un objeto, préstamo o exposición.",
+        loadMore: "Cargar más",
+        targetKinds: {
+          object: "Objeto",
+          loan: "Préstamo",
+          exhibition: "Exposición",
+        },
+        columns: {
+          target: "Cubre",
+          policy: "Póliza",
+          value: "Valor cubierto",
+          period: "Periodo",
+          state: "Estado",
+          appraisal: "Tasación de seguro",
+        },
+        states: {
+          in_force: "En vigor",
+          not_started: "No iniciada",
+          expired: "Vencida",
+          policy_inactive: "Póliza inactiva",
+          removed: "Retirada",
+          needs_review: "Requiere revisión",
+        },
+        appraisalStatus: {
+          not_applicable: "No aplicable",
+          missing: "Falta",
+          current: "Vigente",
+          stale: "Desactualizada",
+        },
+      },
+      overview: {
+        needsReview: "Coberturas que requieren revisión",
+        staleAppraisals: "Tasaciones de seguro desactualizadas",
+        openClaims: "Reclamaciones abiertas",
+        disputedClaims: "Reclamaciones en disputa",
+        inForceTitle: "Cobertura en vigor",
+        inForceDescription:
+          "Totales por moneda. Los importes en monedas distintas nunca se suman.",
+        noCover: "No hay cobertura en vigor.",
+        gapsTitle: "Objetos sin cobertura",
+        gapsDescription:
+          "Objetos bajo su custodia sin cobertura en vigor, ni directa ni a través de un préstamo o una exposición cubiertos.",
+        coveredOf: "{covered} de {total} objetos cubiertos ({percentage}%)",
+        noGaps: "Todos los objetos tienen cobertura en vigor.",
+        moreGaps: "Se muestran los primeros {count} objetos.",
+        expiringTitle: "Pólizas que vencen en 90 días",
+        noExpiring: "Ninguna póliza vence en los próximos 90 días.",
+        expiresIn: "Vence en {days} días",
+        coverageCount: "{count} coberturas",
+        expiredTitle: "Pólizas vencidas",
+        noExpired: "No hay pólizas vencidas.",
+        expiredBadge: "Vencida",
+        moreExpired: "{count} pólizas vencidas en total.",
+      },
+      review: {
+        title: "Revisión de coberturas heredadas",
+        description:
+          "Estas coberturas se registraron para más de un destino. Nada cambia hasta que decida a qué destino se aplica cada una.",
+        openCount: "{count} abiertas",
+        showResolved: "Mostrar resueltas",
+        showOpen: "Mostrar abiertas",
+        empty: "Ninguna cobertura requiere revisión.",
+        emptyResolved: "Aún no se ha resuelto ninguna revisión.",
+        value: "Valor registrado",
+        resolve: "Resolver",
+        targets: "Destinos registrados",
+        resolvedSummary:
+          "Destino conservado: {target}. Coberturas separadas registradas: {count}",
+        truncated: "Se muestran las 100 revisiones más recientes.",
+        resolved: "Revisión de cobertura resuelta",
+        failed: "No se pudo resolver la revisión",
+        resolveTitle: "Resolver cobertura",
+        resolveDescription:
+          "Elija el destino al que se aplica la cobertura registrada. También puede registrar coberturas separadas para los demás destinos, cada una con su propio valor.",
+        keep: "La cobertura registrada se aplica a *",
+        currency: "Moneda del valor registrado",
+        currencyHint: "Déjela vacía si no se conoce",
+        addSplit: "Registrar una cobertura separada para {target}",
+        splitValue: "Valor cubierto",
+        splitCurrency: "Moneda",
+        note: "Nota",
+        save: "Resolver",
+        saving: "Resolviendo…",
+      },
       claimStatus: {
         all: "Todos los estados",
         open: "Abierta",
@@ -8033,6 +8245,10 @@ export default {
           "El objeto «{title}» requiere una evaluación de conservación.",
         insurancePolicyExpiring:
           "La póliza {policyNumber} ({carrier}), que cubre {count} objetos por valor de {value}, vence en {days} días.",
+        insurancePolicyExpiringValued:
+          "La póliza {policyNumber} ({carrier}), que cubre {count} objetos valorados en {values}, vence en {days} días.",
+        insurancePolicyExpiringUnvalued:
+          "La póliza {policyNumber} ({carrier}), que cubre {count} objetos, vence en {days} días.",
         autoGeneratedInsuranceClaim:
           "Se ha creado un borrador de reclamación al seguro ({claimNumber}) por daños de transporte detectados al devolver un préstamo. Revísalo y envíalo.",
         acquisitionPendingAtStep:
