@@ -162,6 +162,8 @@ for (const path of ["/exports/download", "/exports/manifest"]) {
         if (path.endsWith("manifest")) {
           const metadata = manifest({
             source: job.source,
+            organizationId: job.organizationId,
+            creatorId: job.creatorId,
             format: job.format,
             schemaVersion: job.schemaVersion,
             asOf: job.asOf,
@@ -219,7 +221,7 @@ for (const path of ["/exports/download", "/exports/manifest"]) {
               job.format === "csv"
                 ? "text/csv;charset=utf-8"
                 : "application/x-ndjson",
-            "Content-Disposition": `attachment; filename="${job.source.kind}-${job._id}.${job.format}"`,
+            "Content-Disposition": `attachment; filename="${job.source.kind === "register" ? `register-${job.source.profile}` : job.source.kind}-${job._id}.${job.format}"`,
             "X-Content-SHA256": job.sha256 ?? "",
           },
         });

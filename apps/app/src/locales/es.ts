@@ -8709,6 +8709,46 @@ export default {
       "El archivo de exportación no está disponible. Reintente o cree una nueva exportación.",
     reportsNote:
       "Los resúmenes de informes siguientes contienen respuestas actuales de KPI y listas limitadas de elementos recientes o próximos. Use las exportaciones completas de catálogo y auditoría anteriores para obtener conjuntos de datos de origen conciliados.",
+    sourceRegister: "Registro: {profile}",
+    progressRegister:
+      "{rows} filas de registro · {scanned} registros examinados · {pages} páginas",
+    errorRegisterCriteria:
+      "Revise los criterios del registro: las fechas deben ser válidas, la fecha inicial no puede ser posterior a la final, la fecha de referencia no puede estar en el futuro y el estado solo se aplica a los registros de ingresos y bajas.",
+  },
+  registerReports: {
+    title: "Registros institucionales",
+    description:
+      "Genere registros de ingresos, bajas, custodia y estado de conservación a partir de la evidencia registrada. Cada archivo tiene un esquema de columnas tipado y un manifiesto con los criterios, la fecha de referencia y el generador.",
+    profile: "Registro",
+    profileAccession: "Registro de ingresos",
+    profileDisposal: "Registro de bajas",
+    profileCustody: "Registro de custodia",
+    profileCondition: "Registro de estado de conservación",
+    profileSpectrum: "SPECTRUM XML (no compatible)",
+    profileLido: "LIDO XML (no compatible)",
+    fromDate: "Desde",
+    toDate: "Hasta",
+    status: "Estado",
+    statusAny: "Cualquier estado",
+    statusPending: "Pendiente",
+    statusApproved: "Aprobado",
+    statusRejected: "Rechazado",
+    asOf: "A fecha de",
+    asOfHint:
+      "Deje A fecha de vacío para usar el momento en que se crea el registro. Se excluye la evidencia registrada después de esa fecha. Las fechas y la fecha de referencia están en UTC.",
+    preview: "Vista previa",
+    previewing: "Cargando vista previa",
+    previewLabel: "Vista previa del registro",
+    previewSummary:
+      "Se muestran {shown} de {rows} filas de la primera página ({scanned} registros examinados).",
+    previewMore:
+      "Hay más filas; cree el registro para obtener el archivo completo.",
+    previewEmpty: "La primera página no tiene filas para estos criterios.",
+    notRecordedNote:
+      "Las celdas vacías indicadas en notRecorded nunca se registraron en MuseumLite. Las filas marcadas como legacy son anteriores a la evidencia estructurada.",
+    exportLabel: "Crear archivo de {profile}",
+    unsupportedNote:
+      "Los registros usan un perfil de intercambio documentado de MuseumLite. No constituyen una declaración de conformidad con SPECTRUM, LIDO ni acreditación, y los perfiles no compatibles no se pueden generar.",
   },
   projectionHealth: {
     unavailable: {

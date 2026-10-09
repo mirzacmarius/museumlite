@@ -8667,6 +8667,47 @@ export default {
       "Le fichier d'export n'est pas disponible. Réessayez ou créez un nouvel export.",
     reportsNote:
       "Les synthèses de rapports ci-dessous contiennent les réponses KPI actuelles et des listes limitées d'éléments récents ou à venir. Utilisez les exports complets du catalogue et de l'audit ci-dessus pour obtenir des jeux de données source rapprochés.",
+    sourceRegister: "Registre : {profile}",
+    progressRegister:
+      "{rows} lignes de registre · {scanned} enregistrements examinés · {pages} pages",
+    errorRegisterCriteria:
+      "Vérifiez les critères du registre : les dates doivent être valides, la date de début ne peut pas suivre la date de fin, la date de référence ne peut pas être dans le futur et un statut ne s'applique qu'aux registres d'inventaire et de cession.",
+  },
+  registerReports: {
+    title: "Registres institutionnels",
+    description:
+      "Générez les registres d'inventaire, de cession, de garde et d'état de conservation à partir des preuves enregistrées. Chaque fichier a un schéma de colonnes typé et un manifeste indiquant les critères, la date de référence et le générateur.",
+    profile: "Registre",
+    profileAccession: "Registre d'inventaire",
+    profileDisposal: "Registre des cessions",
+    profileCustody: "Registre de garde",
+    profileCondition: "Registre d'état de conservation",
+    profileSpectrum: "SPECTRUM XML (non pris en charge)",
+    profileLido: "LIDO XML (non pris en charge)",
+    fromDate: "Du",
+    toDate: "Au",
+    status: "Statut",
+    statusAny: "Tous les statuts",
+    statusPending: "En attente",
+    statusApproved: "Approuvé",
+    statusRejected: "Refusé",
+    asOf: "À la date du",
+    asOfHint:
+      "Laissez À la date du vide pour utiliser le moment de création du registre. Les preuves enregistrées après cette date sont exclues. Les dates et l'heure de référence sont en UTC.",
+    preview: "Aperçu",
+    previewing: "Chargement de l'aperçu",
+    previewLabel: "Aperçu du registre",
+    previewSummary:
+      "{shown} lignes affichées sur {rows} de la première page ({scanned} enregistrements examinés).",
+    previewMore:
+      "D'autres lignes suivent ; créez le registre pour obtenir le fichier complet.",
+    previewEmpty:
+      "La première page ne contient aucune ligne pour ces critères.",
+    notRecordedNote:
+      "Les cellules vides nommées dans notRecorded n'ont jamais été enregistrées dans MuseumLite. Les lignes marquées legacy sont antérieures aux preuves structurées.",
+    exportLabel: "Créer le fichier {profile}",
+    unsupportedNote:
+      "Les registres utilisent un profil d'échange MuseumLite documenté. Ils ne constituent pas une déclaration de conformité SPECTRUM, LIDO ou d'accréditation, et les profils non pris en charge ne peuvent pas être générés.",
   },
   projectionHealth: {
     unavailable: {

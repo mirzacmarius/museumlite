@@ -28,8 +28,11 @@ export const process = internalAction({
           done: boolean;
           scanned: number;
         };
-        if (job.source.kind === "objects") {
-          page = await ctx.runQuery(internal.exports.sourcePage, args);
+        if (job.source.kind === "objects" || job.source.kind === "register") {
+          page = await ctx.runQuery(internal.exports.sourcePage, {
+            ...args,
+            capturedAt: Date.now(),
+          });
         } else {
           const source: {
             entries: Record<string, unknown>[];
@@ -60,12 +63,7 @@ export const process = internalAction({
           };
         }
         const bytes = new TextEncoder().encode(
-          encodeRows(
-            page.rows,
-            job.source.kind,
-            job.format,
-            job.checkpoint === 0,
-          ),
+          encodeRows(page.rows, job.source, job.format, job.checkpoint === 0),
         );
         if (bytes.length > MAX_CHUNK_BYTES)
           throw new Error(
