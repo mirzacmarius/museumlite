@@ -27,6 +27,13 @@ export function accessionSourceAssertion(source: string): string | undefined {
 /** Roles a Party may hold on each kind of record, primary role first. */
 export const ACCESSION_PARTY_ROLES: readonly PartyRole[] = ["donor", "owner"];
 
+/** Depositor first: the entry record names the depositor itself. */
+export const ENTRY_PARTY_ROLES: readonly PartyRole[] = [
+  "depositor",
+  "owner",
+  "recipient",
+];
+
 export function loanPartyRoles(type: Doc<"loans">["type"]): PartyRole[] {
   return type === "incoming" ? ["lender", "owner"] : ["borrower"];
 }
@@ -173,6 +180,23 @@ export async function resolvePartyTarget(
         policy: "open",
       };
     }
+    case "entry": {
+      const entry = await ctx.db.get(target.id);
+      if (!entry) targetNotFound();
+      await requirePermission(ctx, entry.organizationId, collectionsPermission);
+      const open =
+        entry.status === "in_custody" || entry.status === "acquisition_review";
+      return {
+        organizationId: entry.organizationId,
+        label: entry.entryNumber,
+        defaultEffectiveFrom: entry.receivedAt,
+        allowedRoles: ENTRY_PARTY_ROLES,
+        policy: open ? "open" : "firstLinkOnly",
+        primaryRole: "depositor",
+        recordAssertedName: entry.depositorName.trim() || undefined,
+        recordAccountId: entry.depositorAccountId,
+      };
+    }
   }
 }
 
@@ -217,6 +241,12 @@ export async function readablePartyTargetLabel(
         ? `${record.accessionNumber} ${record.title}`.trim()
         : null;
     }
+    case "entry": {
+      const record = await ctx.db.get(link.targetId);
+      return record?.organizationId === link.organizationId
+        ? record.entryNumber
+        : null;
+    }
   }
 }
 
@@ -251,6 +281,8 @@ function targetFields(target: PartyTarget) {
       return { targetType: "appraisal" as const, targetId: target.id };
     case "collection":
       return { targetType: "collection" as const, targetId: target.id };
+    case "entry":
+      return { targetType: "entry" as const, targetId: target.id };
   }
 }
 
@@ -266,6 +298,8 @@ export function partyTargetOf(link: Doc<"partyLinks">): PartyTarget {
       return { type: "appraisal", id: link.targetId };
     case "collection":
       return { type: "collection", id: link.targetId };
+    case "entry":
+      return { type: "entry", id: link.targetId };
   }
 }
 
@@ -348,6 +382,16 @@ export async function syncPrimaryPartyField(
             lenderBorrowerContact: partyContactSnapshot(account),
           }
         : { accountId: undefined },
+    );
+  } else if (target.type === "entry") {
+    await ctx.db.patch(
+      target.id,
+      account
+        ? {
+            depositorAccountId: account._id,
+            depositorName: partyDisplayName(account),
+          }
+        : { depositorAccountId: undefined },
     );
   }
 }

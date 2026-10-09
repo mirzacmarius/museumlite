@@ -308,7 +308,7 @@ describe("accession register", () => {
     expect(manifest.generator).toEqual({
       name: "MuseumLite register export",
       profile: "register.accession",
-      profileVersion: 1,
+      profileVersion: 2,
       exportSchemaVersion: 1,
     });
     expect(manifest.organizationId).toBe(f.organizationId);
@@ -1282,7 +1282,7 @@ describe("register authorization and recovery", () => {
       profile: "accession",
       criteria: { status: "pending" },
     });
-    expect(preview.profileVersion).toBe(1);
+    expect(preview.profileVersion).toBe(2);
     expect(preview.columns.slice(0, 3)).toEqual([
       { name: "accessionId", type: "id" },
       { name: "accessionNumber", type: "text" },

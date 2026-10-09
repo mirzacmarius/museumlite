@@ -20,6 +20,7 @@ const subjectTables: Record<string, TableNames> = {
   transitRecord: "transitRecords",
   organizationMoveRequest: "organizationMoveRequests",
   libraryAcquisitionRequest: "libraryAcquisitionRequests",
+  objectEntry: "objectEntries",
 };
 function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -73,6 +74,7 @@ export async function captureAuditEvidence(
     "transitRecord",
     "organizationMoveRequest",
     "libraryAcquisitionRequest",
+    "objectEntry",
   ].includes(args.entityType)
     ? `${args.entityType}:${args.entityId}`
     : undefined;
@@ -110,6 +112,7 @@ export async function captureAuditEvidence(
           "loanNumber",
           "locationCode",
           "referenceNumber",
+          "entryNumber",
         ]) ?? args.entityId,
     },
     objectId,

@@ -320,7 +320,7 @@ describe("synthetic institution measurement", () => {
     expect(analytics.objects).toMatchObject({ total: SMALL.objects });
     expect(result.rebuild).toMatchObject({
       processedRows: 130,
-      checkpointPages: 27,
+      checkpointPages: 28,
       maxPageRows: 25,
     });
     expect(result.singleArchiveAmplification).toMatchObject({

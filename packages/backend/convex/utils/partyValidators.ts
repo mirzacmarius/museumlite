@@ -11,6 +11,7 @@ export const partyRoleValidator = v.union(
   v.literal("owner"),
   v.literal("appraiser"),
   v.literal("recipient"),
+  v.literal("depositor"),
 );
 
 export type PartyRole = Infer<typeof partyRoleValidator>;
@@ -22,6 +23,7 @@ export const PARTY_ROLES: readonly PartyRole[] = [
   "owner",
   "appraiser",
   "recipient",
+  "depositor",
 ];
 
 export const partyTargetTypeValidator = v.union(
@@ -30,6 +32,7 @@ export const partyTargetTypeValidator = v.union(
   v.literal("deaccession"),
   v.literal("appraisal"),
   v.literal("collection"),
+  v.literal("entry"),
 );
 
 export type PartyTargetType = Infer<typeof partyTargetTypeValidator>;
@@ -41,6 +44,7 @@ export const partyTargetValidator = v.union(
   v.object({ type: v.literal("deaccession"), id: v.id("deaccessions") }),
   v.object({ type: v.literal("appraisal"), id: v.id("appraisals") }),
   v.object({ type: v.literal("collection"), id: v.id("collections") }),
+  v.object({ type: v.literal("entry"), id: v.id("objectEntries") }),
 );
 
 export type PartyTarget = Infer<typeof partyTargetValidator>;
@@ -51,6 +55,7 @@ export const partyTargetIdValidator = v.union(
   v.id("deaccessions"),
   v.id("appraisals"),
   v.id("collections"),
+  v.id("objectEntries"),
 );
 
 const partyLinkFields = {
@@ -100,6 +105,11 @@ export const partyLinkDocumentValidator = v.union(
     ...partyLinkFields,
     targetType: v.literal("collection"),
     targetId: v.id("collections"),
+  }),
+  v.object({
+    ...partyLinkFields,
+    targetType: v.literal("entry"),
+    targetId: v.id("objectEntries"),
   }),
 );
 
