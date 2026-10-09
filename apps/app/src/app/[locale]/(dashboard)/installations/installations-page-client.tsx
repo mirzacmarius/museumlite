@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "@v1/ui/dialog";
 import { EmptyState } from "@v1/ui/empty-state";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -29,6 +28,7 @@ import { Building2, Hammer, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { ClientDate } from "@/components/client-date";
 import {
   DashboardListPageSkeleton,
@@ -36,7 +36,7 @@ import {
 } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type TaskStatus = "todo" | "in_progress" | "completed" | "blocked";
@@ -96,7 +96,7 @@ export function InstallationsPageClient() {
   const t = useScopedI18n("untranslatedDashboard.installations");
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
+  const canUseInstallations = useCapabilities().isAvailable("installations");
   const [selectedExhibitionId, setSelectedExhibitionId] = useState<
     Id<"exhibitions"> | ""
   >("");
@@ -104,7 +104,7 @@ export function InstallationsPageClient() {
 
   const exhibitions = useQuery(
     api.exhibitions.listByOrganization,
-    currentOrganizationId
+    currentOrganizationId && canUseInstallations
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
@@ -117,7 +117,7 @@ export function InstallationsPageClient() {
 
   const tasks = useQuery(
     api.installations.listTasks,
-    currentOrganizationId && selectedExhibitionId
+    currentOrganizationId && canUseInstallations && selectedExhibitionId
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           exhibitionId: selectedExhibitionId as Id<"exhibitions">,
@@ -177,11 +177,7 @@ export function InstallationsPageClient() {
   }
 
   return (
-    <FeatureGuard
-      featureName={t("title")}
-      isLocked={!hasFeature("installations")}
-      tierNeeded="pro"
-    >
+    <CapabilityGuard capability="installations" featureName={t("title")}>
       <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -388,7 +384,7 @@ export function InstallationsPageClient() {
           </div>
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }
 

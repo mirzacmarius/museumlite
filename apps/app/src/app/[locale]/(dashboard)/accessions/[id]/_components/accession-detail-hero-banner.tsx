@@ -75,7 +75,7 @@ export function AccessionDetailHeroBanner({
           ) : null}
           {accession.collectionId ? (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/collections/${accession.collectionId}`}>
+              <Link href={`/objects/${accession.collectionId}`}>
                 <ExternalLink className="mr-2 size-4" />
                 {tRoot("accessions.detail.viewCollection")}
               </Link>
@@ -112,7 +112,9 @@ export function AccessionDetailHeroBanner({
                       ? tRoot("accessions.status.approved")
                       : displayStatus === "rejected"
                         ? tRoot("accessions.status.rejected")
-                        : displayStatus}
+                        : displayStatus === "withdrawn"
+                          ? tRoot("accessionReview.status.withdrawn")
+                          : displayStatus}
               </span>
               <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
                 {accession.accessionNumber}

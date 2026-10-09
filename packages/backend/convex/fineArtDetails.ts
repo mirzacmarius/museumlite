@@ -3,52 +3,16 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  fineArtDetailFields,
+  provenanceChainEntryValidator,
+  shippingLogEntryValidator,
+  typeDetailRecordFields,
+} from "./utils/collectionTypeDetailFields";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
-
-const provenanceEntryValidator = v.object({
-  eventType: v.union(
-    v.literal("sale"),
-    v.literal("auction"),
-    v.literal("inheritance"),
-    v.literal("gift"),
-    v.literal("commission"),
-    v.literal("acquisition"),
-    v.literal("other"),
-  ),
-  owner: v.string(),
-  startYear: v.optional(v.string()),
-  endYear: v.optional(v.string()),
-  location: v.optional(v.string()),
-  salePrice: v.optional(v.number()),
-  currency: v.optional(v.string()),
-  auctionHouse: v.optional(v.string()),
-  documentIds: v.optional(v.array(v.id("_storage"))),
-  notes: v.optional(v.string()),
-  verified: v.optional(v.boolean()),
-});
-
-const shippingLogValidator = v.object({
-  fromLocation: v.string(),
-  toLocation: v.string(),
-  carrier: v.optional(v.string()),
-  trackingNumber: v.optional(v.string()),
-  departedAt: v.optional(v.number()),
-  arrivedAt: v.optional(v.number()),
-  conditionBefore: v.optional(v.string()),
-  conditionAfter: v.optional(v.string()),
-  notes: v.optional(v.string()),
-});
-
-const displayStatusValidator = v.union(
-  v.literal("on_display"),
-  v.literal("in_storage"),
-  v.literal("loaned_out"),
-  v.literal("in_transit"),
-  v.literal("conservation"),
-);
 
 async function requireFineArtModule(
   ctx: MutationCtx | QueryCtx,
@@ -64,21 +28,9 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("fineArtDetails"),
-      collectionId: v.id("collections"),
-      organizationId: v.id("organizations"),
-      appraisedValue: v.optional(v.number()),
-      replacementValue: v.optional(v.number()),
-      insurancePolicyNumber: v.optional(v.string()),
-      insuranceCarrier: v.optional(v.string()),
-      insuranceExpiresAt: v.optional(v.number()),
-      reappraisalDate: v.optional(v.number()),
-      lastAppraisalDate: v.optional(v.number()),
-      appraiser: v.optional(v.string()),
-      displayStatus: v.optional(displayStatusValidator),
-      provenanceChain: v.optional(v.array(provenanceEntryValidator)),
-      shippingLogs: v.optional(v.array(shippingLogValidator)),
-      createdAt: v.number(),
-      lastModifiedAt: v.optional(v.number()),
+      _creationTime: v.number(),
+      ...typeDetailRecordFields,
+      ...fineArtDetailFields,
     }),
     v.null(),
   ),
@@ -111,17 +63,7 @@ export const get = query({
 export const upsert = mutation({
   args: {
     collectionId: v.id("collections"),
-    appraisedValue: v.optional(v.number()),
-    replacementValue: v.optional(v.number()),
-    insurancePolicyNumber: v.optional(v.string()),
-    insuranceCarrier: v.optional(v.string()),
-    insuranceExpiresAt: v.optional(v.number()),
-    reappraisalDate: v.optional(v.number()),
-    lastAppraisalDate: v.optional(v.number()),
-    appraiser: v.optional(v.string()),
-    displayStatus: v.optional(displayStatusValidator),
-    provenanceChain: v.optional(v.array(provenanceEntryValidator)),
-    shippingLogs: v.optional(v.array(shippingLogValidator)),
+    ...fineArtDetailFields,
   },
   returns: v.id("fineArtDetails"),
   handler: async (ctx, args) => {
@@ -214,7 +156,7 @@ export const remove = mutation({
 export const addProvenanceEntry = mutation({
   args: {
     collectionId: v.id("collections"),
-    entry: provenanceEntryValidator,
+    entry: provenanceChainEntryValidator,
   },
   returns: v.id("fineArtDetails"),
   handler: async (ctx, args) => {
@@ -282,7 +224,7 @@ export const addProvenanceEntry = mutation({
 export const addShippingLog = mutation({
   args: {
     collectionId: v.id("collections"),
-    log: shippingLogValidator,
+    log: shippingLogEntryValidator,
   },
   returns: v.id("fineArtDetails"),
   handler: async (ctx, args) => {

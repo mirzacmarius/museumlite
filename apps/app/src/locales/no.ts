@@ -189,6 +189,7 @@ export default {
       developer: "Utvikler",
       data: "Dataimport/-eksport",
       metrics: "Målingsstatus",
+      loanAgreements: "Låneavtaler",
     },
     roles: {
       title: "Rollehåndtering",
@@ -1006,6 +1007,73 @@ export default {
       bottleSize: "750 ml",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "Detaljer for {type}",
+      description:
+        "Lagres med dette utkastet og registreres på objektet når mottaket godkjennes. Hvis du endrer samlingstype, fjernes disse detaljene.",
+    },
+    summary: {
+      title: "Detaljer for {type}",
+    },
+    changeType: {
+      title: "Endre samlingstype?",
+      description:
+        "Detaljene for {type} som er lagt inn i dette utkastet, fjernes. Bare detaljer for utkastets nåværende samlingstype beholdes.",
+      confirm: "Endre type og fjern detaljer",
+      cancel: "Behold nåværende type",
+    },
+    errors: {
+      moduleDisabled:
+        "Modulen for denne samlingstypen er ikke aktivert for organisasjonen din. Velg en annen samlingstype eller be en administrator aktivere modulen.",
+      typeMismatch:
+        "De typespesifikke detaljene samsvarer ikke med valgt samlingstype. Se over detaljene og lagre på nytt.",
+    },
+    fields: {
+      appraiser: "Takstmann",
+      lastAppraisalDate: "Dato for siste taksering",
+      insuranceCarrier: "Forsikringsselskap",
+      insuranceExpiresAt: "Forsikringens utløpsdato",
+      peakWindowStart: "Drikkes fra (år)",
+      peakWindowEnd: "Drikkes til (år)",
+      make: "Merke",
+      model: "Modell",
+      year: "Årsmodell",
+      odometerUnit: "Enhet for kilometerteller",
+      retentionYears: "Oppbevaringstid (år)",
+      digitalAssetUrl: "URL til digital ressurs",
+      countryOrRegion: "Land eller region",
+      issueYear: "Utgivelsesår",
+      issuePeriod: "Utgivelsesperiode",
+      series: "Serie",
+      certifyingAuthority: "Sertifiseringsinstans",
+      diameterMm: "Diameter (mm)",
+      weightGrams: "Vekt (g)",
+      conditionNotes: "Tilstandsnotater",
+      notes: "Notater",
+    },
+    options: {
+      inStorage: "På magasin",
+      cork: "Kork",
+      screwcap: "Skrukork",
+      synthetic: "Syntetisk",
+      glass: "Glass",
+      crown: "Kronekork",
+      miles: "Miles",
+      kilometres: "Kilometer",
+      male: "Hann",
+      female: "Hunn",
+      dry: "Tørr",
+      wet: "Våt (væske)",
+      frozen: "Frossen",
+      pinned: "Nålet",
+      pressed: "Presset",
+      mounted: "Montert",
+      cast: "Avstøpning",
+      fossil: "Fossil",
+      other: "Annet",
+    },
+  },
   workflows: {
     title: "Arbeidsflytskonfigurasjon",
     description:
@@ -1320,6 +1388,118 @@ export default {
     },
 
     testError: "Testen mislyktes",
+  },
+  webhookDeliveries: {
+    noPermission:
+      "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å administrere webhooks.",
+    log: {
+      title: "Leveringslogg",
+      description:
+        "Alle hendelser sendt til endepunktene dine, med hvert forsøk og svar. Oppføringer beholdes i 30 dager.",
+      endpointFilter: "Endepunkt",
+      statusFilter: "Status",
+      allEndpoints: "Alle endepunkter",
+      allStatuses: "Alle statuser",
+      empty: "Ingen leveringer samsvarer med disse filtrene.",
+      loadMore: "Last inn flere",
+      details: "Detaljer",
+      deletedEndpoint: "Slettet endepunkt",
+      testEvent: "Testhendelse",
+      attempts: "Forsøk: {count}",
+      nextAttempt: "Neste forsøk {time}",
+      sending: "Sender nå",
+    },
+    status: {
+      pending: "Venter",
+      retrying: "Prøver igjen",
+      succeeded: "Levert",
+      failed_transient: "Mislyktes",
+      failed_permanent: "Mislyktes permanent",
+      cancelled: "Avbrutt",
+    },
+    outcome: {
+      succeeded: "Levert",
+      failed_transient: "Midlertidig feil",
+      failed_permanent: "Permanent feil",
+    },
+    reasons: {
+      http_error: "Mottakeren svarte HTTP {status}",
+      timeout: "Ingen svar innen 10 sekunder",
+      network_error: "Kunne ikke koble til endepunktet",
+      attempt_lost: "Forsøket rapporterte ikke tilbake",
+      event_expired: "Hendelsen er ikke lenger lagret",
+      endpoint_deleted: "Endepunktet ble slettet",
+      endpoint_disabled: "Endepunktet ble deaktivert",
+      endpoint_insecure: "Endepunktets URL bruker ikke HTTPS",
+      endpoint_unsubscribed:
+        "Endepunktet abonnerer ikke lenger på denne hendelsen",
+    },
+    detail: {
+      title: "Leveringsdetaljer",
+      deliveryId: "Leverings-ID",
+      eventId: "Hendelses-ID",
+      event: "Hendelse",
+      endpoint: "Endepunkt",
+      created: "Opprettet",
+      payload: "Innhold (versjon {version})",
+      attemptsTitle: "Forsøk",
+      noAttempts: "Ingen forespørsel er sendt for denne leveringen.",
+      attempt: "Forsøk {number}",
+      duration: "{ms} ms",
+      retry: "Prøv leveringen igjen",
+      retrying: "Prøver igjen...",
+      retryHelp:
+        "Et nytt forsøk sender det samme innholdet med samme leverings-ID, slik at mottakeren kan se bort fra duplikater.",
+      notFound: "Denne leveringen er ikke lenger tilgjengelig.",
+      close: "Lukk",
+    },
+    endpoint: {
+      lastDelivery: "Sist levert {time}",
+      neverDelivered: "Ikke levert ennå",
+      viewDeliveries: "Leveringer",
+      sendTest: "Send test",
+      testQueued:
+        "Testhendelsen er lagt i kø. Resultatet vises i leveringsloggen.",
+      rotateSecret: "Bytt hemmelighet",
+    },
+    rotate: {
+      title: "Bytte signeringshemmelighet?",
+      description:
+        "Den nåværende hemmeligheten slutter å virke umiddelbart. Alle senere forsøk, også nye forsøk, signeres med den nye hemmeligheten, så oppdater mottakeren.",
+      confirm: "Bytt hemmelighet",
+      cancel: "Avbryt",
+      rotatedTitle: "Ny signeringshemmelighet",
+      rotatedDescription:
+        "Kopier denne hemmeligheten nå. Du vil ikke kunne se den igjen.",
+      done: "Ferdig",
+    },
+    signing: {
+      title: "Verifisere leveringer",
+      signature:
+        "X-ML-Signature er sha256= etterfulgt av heksadesimal HMAC-SHA256 av den rå forespørselsteksten, med signeringshemmeligheten som nøkkel.",
+      signatureV2:
+        "X-ML-Signature-V2 er v2= etterfulgt av HMAC-SHA256 av X-ML-Delivery-verdien, et punktum, X-ML-Timestamp-verdien, et punktum og teksten. X-ML-Timestamp er sendetidspunktet i Unix-sekunder; avvis verdier utenfor toleransevinduet ditt.",
+      duplicates:
+        "Nye forsøk gjenbruker X-ML-Delivery og samme tekst. Behandle en gjentatt leverings-ID som allerede behandlet.",
+      retries:
+        "Alle 2xx-svar regnes som levert. Etter tidsavbrudd, nettverksfeil og svarene 408, 429 og 5xx sendes hendelsen på nytt, opptil 6 sendinger totalt over omtrent 3 timer. Omdirigeringer følges ikke, og andre svar prøves ikke på nytt.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Skriv inn et navn på endepunktet.",
+      WEBHOOK_URL_INVALID: "Skriv inn en gyldig HTTPS-URL.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "En av de valgte hendelsene er ikke tilgjengelig.",
+      WEBHOOK_LIMIT_REACHED:
+        "Denne organisasjonen har allerede maksimalt antall webhook-endepunkter.",
+      WEBHOOK_NOT_FOUND: "Dette endepunktet finnes ikke lenger.",
+      WEBHOOK_DISABLED: "Aktiver endepunktet før du sender til det.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "Endepunktet abonnerer ikke lenger på denne hendelsen. Abonner på nytt før du prøver igjen.",
+      DELIVERY_NOT_FOUND: "Denne leveringen finnes ikke lenger.",
+      DELIVERY_NOT_RETRYABLE:
+        "Bare mislykkede eller avbrutte leveringer kan prøves på nytt.",
+      fallback: "Handlingen kunne ikke fullføres. Prøv igjen.",
+    },
   },
   activity: {
     title: "Aktivitet",
@@ -2319,6 +2499,132 @@ export default {
 
     charts: {
       statusDistribution: "Statusfordeling",
+    },
+  },
+  loanAgreementTemplates: {
+    title: "Låneavtaler",
+    description:
+      "Skriv avtalene organisasjonen din utsteder for lån. Plassholderne fylles ut med opplysningene for hvert lån når en avtale lages.",
+    newTemplate: "Ny mal",
+    empty: "Ingen maler ennå. Lån bruker standardavtalen til du oppretter en.",
+    standardAgreement: "Standardavtale",
+    standardAgreementDescription:
+      "Innebygd. Brukes for lån når ingen mal er satt som standard.",
+    defaultBadge: "Standard",
+    archivedBadge: "Arkivert",
+    archivedHeading: "Arkiverte maler",
+    sectionCount: "Seksjoner: {count}",
+    appliesTo: {
+      any: "Alle lån",
+      incoming: "Innlån",
+      outgoing: "Utlån",
+    },
+    actions: {
+      edit: "Rediger",
+      setDefault: "Gjør til standard",
+      archive: "Arkiver",
+      restore: "Gjenopprett",
+    },
+    toasts: {
+      created: "Malen er opprettet.",
+      saved: "Malen er lagret.",
+      defaultSet: "Standardmalen er oppdatert.",
+      archived: "Malen er arkivert.",
+      restored: "Malen er gjenopprettet.",
+    },
+    editor: {
+      createTitle: "Ny mal for låneavtale",
+      editTitle: "Rediger mal for låneavtale",
+      description:
+        "Seksjonene vises i rekkefølge etter partene. En linje der plassholderne ikke har noen verdi for et lån, utelates.",
+      name: "Navn",
+      namePlaceholder: "Standard utlån",
+      language: "Språk",
+      appliesTo: "Gjelder for",
+      sections: "Seksjoner",
+      sectionHeading: "Overskrift",
+      sectionBody: "Tekst",
+      addSection: "Legg til seksjon",
+      removeSection: "Fjern seksjon",
+      moveUp: "Flytt seksjonen opp",
+      moveDown: "Flytt seksjonen ned",
+      startFromStandard: "Start fra standardavtalen",
+      placeholders: "Plassholdere",
+      placeholdersHint:
+        "Kopier en plassholder inn i en overskrift eller tekst.",
+      copied: "Kopierte {placeholder}",
+      preview: "Forhåndsvisning med et eksempellån",
+      save: "Lagre malen",
+      saving: "Lagrer…",
+      cancel: "Avbryt",
+    },
+    placeholders: {
+      loanNumber: "Lånenummer",
+      loanStartDate: "Startdato",
+      loanEndDate: "Sluttdato",
+      loanCurrency: "Valutakode for forsikringsverdien",
+      loanTerms: "Vilkår registrert på lånet",
+      lenderName: "Utlåner",
+      borrowerName: "Låntaker",
+      organizationName: "Organisasjonen din",
+      objectList: "Tabell over gjenstandene på lån",
+      objectCount: "Antall gjenstander",
+      insuranceValue: "Forsikringsverdi med valuta",
+    },
+    sample: {
+      partnerName: "Havnegalleriet",
+      terms: "Gjenstandene fraktes med kurér fra den utlånende institusjonen.",
+      firstObject: "Havn i skumringen",
+      secondObject: "Modell av fiskebåt",
+      condition: "God",
+    },
+    errors: {
+      templateNotFound: "Denne malen finnes ikke lenger. Oppdater siden.",
+      templateArchived:
+        "Denne malen er arkivert. Gjenopprett den før du endrer den.",
+      nameRequired: "Gi malen et navn.",
+      sectionsRequired:
+        "Legg til minst én seksjon, og skriv tekst i hver seksjon.",
+      templateTooLarge:
+        "Malen er for lang. Kort ned teksten eller fjern seksjoner.",
+      unknownPlaceholder:
+        "{placeholder} er ikke en kjent plassholder. Bruk en fra listen.",
+      malformedPlaceholder:
+        "En plassholder er skrevet feil. Hver plassholder starter med to åpne krøllparenteser og slutter med to lukkede.",
+      invalidCurrency:
+        "Skriv inn en valutakode på tre bokstaver, for eksempel NOK.",
+      templateLimitReached:
+        "Du kan ha høyst {limit} aktive maler. Arkiver en før du legger til en ny.",
+      currencyAlreadyRecorded:
+        "Dette lånet har allerede en registrert valuta. Oppdater siden.",
+      fallback: "Endringen kunne ikke lagres. Prøv igjen.",
+    },
+    agreement: {
+      template: "Mal",
+      printTitle: "Låneavtale {loanNumber}",
+      email: {
+        subject: "Låneavtale {loanNumber}",
+        greeting: "Hei {name},",
+        intro: "Vedlagt er låneavtalen for {loanNumber}.",
+        details: "Lånedetaljer:",
+        loanNumber: "Lånenummer: {loanNumber}",
+        incoming: "Type: innlån",
+        outgoing: "Type: utlån",
+        startDate: "Startdato: {date}",
+        endDate: "Sluttdato: {date}",
+        objects: "Gjenstander:",
+        review: "Vennligst se gjennom og signer avtalen.",
+        signOff: "Med vennlig hilsen",
+      },
+    },
+    currency: {
+      label: "Valuta",
+      placeholder: "NOK",
+      hint: "Kode på tre bokstaver, for eksempel NOK eller EUR.",
+      missing:
+        "Ingen valuta er registrert for forsikringsverdien til dette lånet, så avtalen viser den som et tall uten valuta.",
+      record: "Registrer valuta",
+      recorded: "Valutaen er registrert.",
     },
   },
   transit: {
@@ -4819,6 +5125,64 @@ export default {
     helpText:
       "Hvis du ikke har en konto ennå, bruker du e-posten i invitasjonen for å opprette en først. Etter innlogging kan du godta denne organisasjonsinvitasjonen.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Trukket tilbake",
+    },
+    reject: {
+      title: "Avvis denne objektforespørselen",
+      description:
+        "Velg hva som skal skje videre. Ingenting legges til i samlingen, og ingen avhending registreres.",
+      returnToDraft: "Send tilbake til utkast",
+      returnToDraftDescription:
+        "Innsenderen kan redigere forespørselen og sende den til gjennomgang igjen.",
+      withdraw: "Trekk tilbake",
+      withdrawDescription:
+        "Tar forespørselen ut av aktiv gjennomgang. Posten, utkastdataene og filene beholdes og kan gjenopprettes.",
+      reasonLabel: "Begrunnelse",
+      reasonPlaceholder:
+        "Forklar hva som må endres eller hvorfor den trekkes tilbake",
+      reasonHint:
+        "Påkrevd. Innsenderen varsles, og begrunnelsen lagres i sakshistorikken.",
+      confirmReturnToDraft: "Send tilbake til utkast",
+      confirmWithdraw: "Trekk tilbake forespørsel",
+      saving: "Lagrer...",
+    },
+    restore: {
+      action: "Gjenopprett til utkast",
+      title: "Gjenopprett denne objektforespørselen",
+      description:
+        "Forespørselen går tilbake til Utkast-kolonnen slik at den kan redigeres og sendes til gjennomgang igjen.",
+      reasonLabel: "Begrunnelse",
+      reasonHint: "Påkrevd. Lagres i sakshistorikken.",
+      confirm: "Gjenopprett til utkast",
+    },
+    decision: {
+      returnedTitle: "Sendt tilbake til utkast for endringer",
+      withdrawnTitle: "Trukket tilbake fra gjennomgang",
+      restoredTitle: "Gjenopprettet etter tilbaketrekking",
+      decidedBy: "Av {name}",
+      withdrawnDescription:
+        "Denne forespørselen beholdes som dokumentasjon og ligger ikke i noen aktiv kø. Ingenting ble lagt til i samlingen.",
+    },
+    board: {
+      withdrawn: "Trukket tilbake",
+      showActive: "Tilbake til aktiv tavle",
+    },
+    errors: {
+      notInReview:
+        "Denne forespørselen venter ikke lenger på gjennomgang. Oppdater for å se gjeldende status.",
+      notWithdrawn:
+        "Denne forespørselen er ikke lenger trukket tilbake. Oppdater for å se gjeldende status.",
+      reasonRequired: "Skriv inn en begrunnelse.",
+      notADraft:
+        "Denne forespørselen er allerede sendt inn. Oppdater for å se gjeldende status.",
+      reasonTooLong: "Begrunnelsen må være kortere enn 2000 tegn.",
+      notPermitted:
+        "Du kan ikke ta denne avgjørelsen for gjeldende gjennomgangstrinn.",
+      fallback: "Avgjørelsen kunne ikke lagres. Oppdater og prøv igjen.",
+    },
+  },
   accessions: {
     title: "Aksessjoner",
     description: "Administrer innkommende elementer og godkjenningsarbeidsflyt",
@@ -5267,6 +5631,162 @@ export default {
       addNotes: "Tilleggsnotater om denne deaksesjonen...",
     },
   },
+  parties: {
+    roles: {
+      donor: "Giver / kilde",
+      lender: "Långiver",
+      borrower: "Låntaker",
+      owner: "Eier",
+      appraiser: "Takstmann",
+      recipient: "Mottaker",
+    },
+    holderTypes: {
+      privatePerson: "Person",
+      organization: "Institusjon",
+    },
+    reasons: {
+      name: "Samme navn",
+      email: "Samme e-post",
+      phone: "Samme telefon",
+    },
+    targetTypes: {
+      accession: "Aksesjon",
+      loan: "Lån",
+      deaccession: "Deaksesjon",
+      appraisal: "Taksering",
+      collection: "Objekt",
+    },
+    picker: {
+      placeholder: "Velg eller opprett en person eller institusjon",
+      searchPlaceholder: "Søk etter personer og institusjoner",
+      heading: "Parter",
+      empty: "Ingen samsvarende personer eller institusjoner",
+      searching: "Søker…",
+      create: "Opprett ny part",
+      clear: "Fjern valget",
+    },
+    create: {
+      title: "Opprett part",
+      description:
+        "Legg til en person eller institusjon én gang og bruk den igjen i aksesjoner, lån og deaksesjoner.",
+      submit: "Opprett part",
+      creating: "Oppretter…",
+      created: "Part opprettet",
+      duplicateRecorded:
+        "Part opprettet. Et mulig duplikat ble registrert for gjennomgang.",
+      similarTitle: "Lignende parter finnes allerede",
+      similarDescription:
+        "Bruk en eksisterende post i stedet for å opprette et duplikat.",
+      useExisting: "Bruk denne parten",
+    },
+    links: {
+      title: "Parter",
+      description:
+        "Personer og institusjoner knyttet til denne posten. Navn og kontaktopplysninger beholdes slik de var da koblingen ble laget.",
+      empty: "Ingen part er koblet ennå.",
+      partyUnavailable: "Partsposten er ikke tilgjengelig",
+      archived: "Arkivert",
+      recordedAs: "Registrert som {name}",
+      namedOnRecord: "Navngitt i posten som {name}",
+      contactAtLink: "Kontakt ved kobling: {contact}",
+      from: "Fra {date}",
+      linkedBy: "Koblet av {name}",
+      backfilled: "Koblet fra en eksisterende kontoreferanse",
+      earlier: "Tidligere parter ({count})",
+      replacedOn: "Erstattet eller avsluttet {date}",
+      reason: "Begrunnelse: {reason}",
+      role: "Rolle",
+      party: "Part",
+      changeReason: "Begrunnelse for endringen",
+      changeReasonPlaceholder: "For eksempel: gavebrevet nevner stiftelsen",
+      link: "Koble part",
+      linking: "Kobler…",
+      linked: "Part koblet",
+      end: "Avslutt kobling",
+      endTitle: "Avslutte denne partskoblingen?",
+      endDescription:
+        "Koblingen blir stående i postens historikk sammen med begrunnelsen din.",
+      endReason: "Begrunnelse",
+      endConfirm: "Avslutt kobling",
+      ended: "Partskobling avsluttet",
+      cancel: "Avbryt",
+    },
+    history: {
+      tab: "Roller",
+      title: "Rollehistorikk",
+      description:
+        "Prosedyrer denne parten har deltatt i. Navnene viser det som ble registrert den gangen.",
+      empty: "Ingen roller er registrert for denne parten ennå.",
+      restricted: "Posten er ikke tilgjengelig for deg",
+      current: "Gjeldende",
+      superseded: "Erstattet",
+      loadMore: "Last inn flere",
+      legacyTitle: "Tidligere kontorelasjoner",
+    },
+    review: {
+      title: "Gjennomgang av parter",
+      description:
+        "Gå gjennom mulige duplikate parter og poster som bare nevner en part i tekst. Ingenting slås sammen eller kobles automatisk.",
+      duplicatesTab: "Mulige duplikater",
+      legacyTab: "Ukoblede poster",
+      status: "Status",
+      statuses: {
+        pending: "Til gjennomgang",
+        dismissed: "Avvist",
+        confirmed_distinct: "Ikke samme part",
+      },
+      scan: "Finn mulige duplikater",
+      scanning: "Sammenligner…",
+      scanResult: "Nye forslag registrert: {count}.",
+      scanLimit: "Bare de {count} nyeste partene ble sammenlignet.",
+      noDuplicates: "Ingen forslag med denne statusen.",
+      notSame: "Ikke samme part",
+      dismiss: "Avvis",
+      note: "Notat (valgfritt)",
+      resolved: "Gjennomgang registrert",
+      reviewedBy: "Gjennomgått av {name}",
+      unavailable: "Posten er ikke lenger tilgjengelig",
+      mergeHint:
+        "For å samle et ekte duplikat kobler du nye poster til parten du beholder og arkiverer den andre. Begge historikkene forblir intakte.",
+      legacyDescription:
+        "Poster som bare nevner en part i tekst, eller som viser til en konto uten en typet kobling. Bekreft hver kobling; den opprinnelige ordlyden beholdes.",
+      recordType: "Posttype",
+      kinds: {
+        accession: "Aksesjoner",
+        loan: "Lån",
+        deaccession: "Deaksesjoner",
+      },
+      legacyEmpty: "Ingen ukoblede poster på denne siden.",
+      checked: "Poster kontrollert på denne siden: {count}.",
+      referencesParty: "Viser til {name} uten en typet kobling",
+      confirmLink: "Bekreft kobling",
+      link: "Koble",
+      previous: "Forrige side",
+      next: "Neste side",
+    },
+    errors: {
+      partyNotFound:
+        "Den parten er ikke tilgjengelig i denne organisasjonen. Velg en annen.",
+      partyArchived:
+        "Den parten er arkivert. Gjenopprett den eller velg en annen.",
+      roleNotAllowed: "Den rollen gjelder ikke for denne posten.",
+      recordLocked:
+        "Denne posten er lukket, så partene kan bare bekreftes, ikke endres. Bruk postens egen korrigeringsflyt.",
+      targetNotFound:
+        "Denne posten er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+      nameRequired: "Skriv inn et navn på parten.",
+      datesInvalid: "Rollen kan ikke slutte før den begynner.",
+      linkNotFound:
+        "Den koblingen er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+      linkAlreadySuperseded:
+        "Den koblingen er allerede avsluttet eller erstattet. Oppdater for å se det siste.",
+      reviewNotFound:
+        "Det forslaget er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
+      reviewAlreadyResolved:
+        "Noen har allerede gjennomgått dette forslaget. Oppdater for å se avgjørelsen.",
+      fallback: "Handlingen kunne ikke fullføres. Oppdater og prøv igjen.",
+    },
+  },
   trackedImport: {
     validationTitle: "Valideringsrapport",
     validationSummary: "{valid} gyldige rader, {errors} med feil",
@@ -5360,16 +5880,16 @@ export default {
       agreement: {
         title: "UTLÅNSAVTALE",
         number: "Avtalenummer:",
-        period: "2. LÅNEPERIODE",
+        period: "LÅNEPERIODE",
         startDate: "Startdato:",
         endDate: "Sluttdato:",
-        objectsOnLoan: "3. GJENSTANDER PÅ UTLÅN",
+        objectsOnLoan: "GJENSTANDER PÅ UTLÅN",
         accessionNumber: "Tilvekstnr.",
         titleDescription: "Tittel/beskrivelse",
-        insurance: "4. FORSIKRING",
+        insurance: "FORSIKRING",
         totalInsuranceValue: "Samlet forsikringsverdi:",
-        termsConditions: "5. VILKÅR OG BETINGELSER",
-        standardConditions: ". STANDARDVILKÅR",
+        termsConditions: "VILKÅR OG BETINGELSER",
+        standardConditions: "STANDARDVILKÅR",
         borrowerCare:
           "Låntakeren forplikter seg til å behandle de utlånte gjenstandene med samme aktsomhet som ved oppbevaring av tilsvarende eiendeler som tilhører låntakeren.",
         noTreatment:
@@ -7254,9 +7774,15 @@ export default {
       saveAndNew: "Lagre og legg til en til",
     },
     featureGuard: {
-      unavailable: "Denne funksjonen er ikke tilgjengelig i abonnementet ditt.",
+      tierRequired:
+        "Organisasjonens abonnement inkluderer ikke dette. Det er en del av {tier}-abonnementet; en administrator kan oppgradere under Innstillinger › Fakturering.",
+      moduleDisabled:
+        "Denne modulen er slått av for organisasjonen din. En administrator kan slå den på under Innstillinger › Moduler.",
+      permissionMissing:
+        "Rollen din gir ikke tilgang til dette. Be en administrator om å oppdatere rollen din.",
       locked: "{featureName} er låst",
       upgradeTo: "Oppgrader til {tier}",
+      openModules: "Åpne Innstillinger › Moduler",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -7825,7 +8351,8 @@ export default {
         "Det finnes allerede en giver med denne e-postadressen: {donor}",
     },
     navigation: {
-      patronManagement: "låneradministrasjon",
+      patronManagement: "Låneradministrasjon",
+      locked: "Utilgjengelig",
       overview: "Oversikt",
       myWork: "Mitt arbeid",
       objectCatalog: "Objektkatalog",
@@ -8200,6 +8727,45 @@ export default {
       "Eksportfilen er ikke tilgjengelig. Prøv igjen eller opprett en ny eksport.",
     reportsNote:
       "Rapportsammendragene nedenfor inneholder gjeldende KPI-svar og begrensede lister over nylige eller kommende elementer. Bruk de fullstendige katalog- og revisjonseksportene ovenfor for avstemte kildedatasett.",
+    sourceRegister: "Register: {profile}",
+    progressRegister:
+      "{rows} registerrader · {scanned} poster undersøkt · {pages} sider",
+    errorRegisterCriteria:
+      "Kontroller registerkriteriene: datoene må være gyldige, startdatoen kan ikke være etter sluttdatoen, per-tidspunktet kan ikke være i fremtiden, og status gjelder bare aksesjons- og avhendingsregistre.",
+  },
+  registerReports: {
+    title: "Institusjonelle registre",
+    description:
+      "Lag aksesjons-, avhendings-, forvarings- og tilstandsregistre fra registrert dokumentasjon. Hver fil har et typet kolonneskjema og et manifest med kriteriene, per-tidspunktet og generatoren.",
+    profile: "Register",
+    profileAccession: "Aksesjonsregister",
+    profileDisposal: "Avhendingsregister",
+    profileCustody: "Forvaringsregister",
+    profileCondition: "Tilstandsregister",
+    profileSpectrum: "SPECTRUM XML (støttes ikke)",
+    profileLido: "LIDO XML (støttes ikke)",
+    fromDate: "Fra",
+    toDate: "Til",
+    status: "Status",
+    statusAny: "Alle statuser",
+    statusPending: "Venter",
+    statusApproved: "Godkjent",
+    statusRejected: "Avvist",
+    asOf: "Per",
+    asOfHint:
+      "La Per stå tomt for å bruke tidspunktet registeret opprettes. Dokumentasjon registrert etter dette tidspunktet utelates. Datoer og per-tidspunktet er i UTC.",
+    preview: "Forhåndsvis",
+    previewing: "Laster forhåndsvisning",
+    previewLabel: "Forhåndsvisning av register",
+    previewSummary:
+      "Viser {shown} av {rows} rader fra første side ({scanned} poster undersøkt).",
+    previewMore: "Flere rader følger; opprett registeret for å få hele filen.",
+    previewEmpty: "Første side har ingen rader for disse kriteriene.",
+    notRecordedNote:
+      "Tomme celler som er oppført i notRecorded ble aldri registrert i MuseumLite. Rader merket legacy er eldre enn strukturert dokumentasjon.",
+    exportLabel: "Opprett fil for {profile}",
+    unsupportedNote:
+      "Registrene bruker en dokumentert MuseumLite-utvekslingsprofil. De er ikke en erklæring om samsvar med SPECTRUM, LIDO eller akkreditering, og profiler som ikke støttes kan ikke lages.",
   },
   projectionHealth: {
     unavailable: {

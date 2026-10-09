@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { getNotificationCopy } from "@/lib/notification-copy";
+import { notificationEntityHref } from "@/lib/notification-links";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { useOrganization } from "./organization-provider";
 
@@ -61,38 +62,6 @@ export function NotificationBell() {
     await markAllRead({
       organizationId: currentOrganizationId as Id<"organizations">,
     });
-  };
-
-  const getNotificationLink = (
-    entityType?: string,
-    entityId?: string,
-  ): string | null => {
-    if (!entityType || !entityId) return null;
-
-    switch (entityType) {
-      case "collection":
-        return `/collections/${entityId}`;
-      case "object":
-        return `/objects/${entityId}`;
-      case "accession":
-        return `/accessions/${entityId}`;
-      case "deaccession":
-        return `/deaccessions/${entityId}`;
-      case "loan":
-        return `/loans/${entityId}`;
-      case "exhibition":
-        return `/exhibitions/${entityId}`;
-      case "conservationTreatment":
-        return `/conservation/${entityId}`;
-      case "installationTask":
-        return "/installations";
-      case "location":
-        return `/locations/${entityId}`;
-      case "move_request":
-        return `/objects/move-requests/${entityId}`;
-      default:
-        return null;
-    }
   };
 
   return (
@@ -162,7 +131,7 @@ export function NotificationBell() {
                     },
                     translate,
                   );
-                  const link = getNotificationLink(
+                  const link = notificationEntityHref(
                     notification.relatedEntityType,
                     notification.relatedEntityId,
                   );

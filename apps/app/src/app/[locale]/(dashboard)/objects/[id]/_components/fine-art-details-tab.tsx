@@ -2,19 +2,11 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import {
-  DollarSign,
-  FileCheck,
-  History,
-  Plus,
-  Shield,
-  Truck,
-} from "lucide-react";
+import { DollarSign, FileCheck, History, Shield, Truck } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatCurrency } from "@/lib/format-number";
@@ -48,9 +40,9 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
     return (
       <FeatureGuard
         featureName={t("moduleName")}
-        isLocked={true}
+        reason={{ kind: "module_disabled" }}
         description={t("moduleDescription")}
-        showUpgrade={false}
+        showAction={false}
       >
         <div />
       </FeatureGuard>
@@ -70,14 +62,10 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
   if (details === null) {
     return (
       <div className="space-y-6">
-        <div className="flex h-32 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border">
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
             {common("noDetailsYet", { module: "fine art" })}
           </p>
-          <Button variant="outline" size="sm">
-            <Plus className="mr-2 size-4" />
-            {common("addDetails", { module: "Fine Art" })}
-          </Button>
         </div>
       </div>
     );
@@ -156,7 +144,11 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
                 ? tRoot("objects.filters.loaned")
                 : details.displayStatus === "in_transit"
                   ? tRoot("loans.kpis.inTransit")
-                  : details.displayStatus || common("unknown")}
+                  : details.displayStatus === "in_storage"
+                    ? tRoot("objectTypeDetails.options.inStorage")
+                    : details.displayStatus === "conservation"
+                      ? tRoot("untranslatedRecords.objects.tabs.conservation")
+                      : common("unknown")}
           </span>
         </div>
       </div>

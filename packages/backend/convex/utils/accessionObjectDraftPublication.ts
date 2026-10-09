@@ -6,9 +6,14 @@ import { ensureIdentifierAvailable } from "./identifiers";
 import { validateObjectReferences } from "./locationIntegrity";
 import { insertCompletedMediaAsset } from "./mediaAssets";
 import {
+  publishObjectDraftTypeDetails,
+  validateObjectDraftTypeDetails,
+} from "./objectDraftTypeDetails";
+import {
   applyUsageCounterDelta,
   ensureUsageCounter,
 } from "./organizationUsageCounters";
+import { normalizeDraftMediaPrimary } from "./primaryMedia";
 import { transferStorageOwnership } from "./uploadOwnership";
 
 function serializeStringList(values?: string[]) {
@@ -40,12 +45,22 @@ export async function publishAccessionObjectDraft(
     catalogIdentifier,
   );
   const draftObjectData = accession.draftObjectData;
-  if (draftObjectData)
+  // Type-specific details belong to accepted objects only.
+  const typeDetails =
+    status === "active" ? draftObjectData?.typeDetails : undefined;
+  if (draftObjectData) {
     await validateObjectReferences(
       ctx,
       accession.organizationId,
       draftObjectData,
     );
+    if (status === "active")
+      await validateObjectDraftTypeDetails(
+        ctx,
+        accession.organizationId,
+        draftObjectData,
+      );
+  }
   const collectionGroupIds =
     draftObjectData?.collectionGroupIds ??
     (draftObjectData?.collectionGroupId
@@ -124,7 +139,18 @@ export async function publishAccessionObjectDraft(
     ),
   ] as const);
 
-  await syncCollectionOptionUsages(ctx, collectionId);
+  await Promise.all([
+    syncCollectionOptionUsages(ctx, collectionId),
+    typeDetails &&
+      publishObjectDraftTypeDetails(ctx, {
+        collectionId,
+        organizationId: accession.organizationId,
+        typeDetails,
+        publishedBy: catalogedBy,
+        publishedAt: catalogedAt,
+      }),
+  ]);
+  const draftMedia = normalizeDraftMediaPrimary(accession.draftMedia ?? []);
 
   await Promise.all([
     ...uniqueCollectionGroupIds.flatMap((collectionGroupId, index) => {
@@ -152,7 +178,7 @@ export async function publishAccessionObjectDraft(
         }),
       ];
     }),
-    ...(accession.draftMedia ?? []).map(async (draftMediaItem) => {
+    ...draftMedia.map(async (draftMediaItem) => {
       const { mediaId } = await insertCompletedMediaAsset(ctx, {
         collectionId,
         organizationId: accession.organizationId,

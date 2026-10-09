@@ -2,22 +2,28 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { useScopedI18n } from "@/locales/client";
+import { useWebhookErrorMessage } from "./webhook-delivery-labels";
+import type { DeliveryFilter } from "./webhook-delivery-log";
 
 export function useWebhooksTab(organizationId: Id<"organizations">) {
   const t = useScopedI18n("settings");
+  const tDeliveries = useScopedI18n("webhookDeliveries");
+  const errorMessage = useWebhookErrorMessage();
   const webhooks = useQuery(api.webhooks.list, { organizationId });
   const availableEvents = useQuery(api.webhooks.listEvents, {});
   const createWebhook = useMutation(api.webhooks.create);
   const updateWebhook = useMutation(api.webhooks.update);
   const deleteWebhook = useMutation(api.webhooks.deleteWebhook);
-  const testWebhook = useAction(api.webhooksActions.test);
+  const sendTest = useMutation(api.webhookDeliveries.sendTest);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [newWebhook, setNewWebhook] = useState({
     name: "",
     url: "",
@@ -31,10 +37,18 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
     message: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>({});
+  const [selectedDeliveryId, setSelectedDeliveryId] =
+    useState<Id<"webhookDeliveries"> | null>(null);
+  const [rotatingWebhook, setRotatingWebhook] = useState<{
+    _id: Id<"webhooks">;
+    name: string;
+  } | null>(null);
 
   const handleCreate = async () => {
     if (!newWebhook.name.trim() || !newWebhook.url.trim()) return;
     setIsCreating(true);
+    setCreateError(null);
     try {
       const result = await createWebhook({
         organizationId,
@@ -46,8 +60,8 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
             : availableEvents || [],
       });
       setCreatedSecret(result.secret);
-    } catch {
-      alert(t("errors.failedToCreateWebhook"));
+    } catch (error) {
+      setCreateError(errorMessage(error));
     } finally {
       setIsCreating(false);
     }
@@ -59,16 +73,19 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
   ) => {
     try {
       await updateWebhook({ webhookId, isActive: !isActive });
-    } catch {
-      alert(t("errors.failedToUpdateWebhook"));
+    } catch (error) {
+      toast.error(errorMessage(error));
     }
   };
 
   const handleDelete = async (webhookId: Id<"webhooks">) => {
     try {
       await deleteWebhook({ webhookId });
-    } catch {
-      alert(t("errors.failedToDeleteWebhook"));
+      setDeliveryFilter((filter) =>
+        filter.webhookId === webhookId ? { status: filter.status } : filter,
+      );
+    } catch (error) {
+      toast.error(errorMessage(error));
     }
   };
 
@@ -76,23 +93,26 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
     setTestingId(webhookId);
     setTestResult(null);
     try {
-      const result = await testWebhook({ webhookId });
+      const deliveryId = await sendTest({ organizationId, webhookId });
       setTestResult({
         id: webhookId,
-        success: result.success,
-        message: result.success
-          ? t("webhooks.testSuccess", { statusCode: result.statusCode })
-          : result.error || t("webhooks.testFailed"),
+        success: true,
+        message: tDeliveries("endpoint.testQueued"),
       });
-    } catch {
+      setSelectedDeliveryId(deliveryId);
+    } catch (error) {
       setTestResult({
         id: webhookId,
         success: false,
-        message: t("webhooks.testFailed"),
+        message: errorMessage(error),
       });
     } finally {
       setTestingId(null);
     }
+  };
+
+  const handleViewDeliveries = (webhookId: Id<"webhooks">) => {
+    setDeliveryFilter((filter) => ({ ...filter, webhookId }));
   };
 
   const handleCopy = useCallback(async () => {
@@ -112,6 +132,7 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
   const closeDialog = () => {
     setShowCreate(false);
     setCreatedSecret(null);
+    setCreateError(null);
     setNewWebhook({ name: "", url: "", events: [] });
   };
 
@@ -131,16 +152,24 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
     showCreate,
     setShowCreate,
     createdSecret,
+    createError,
     newWebhook,
     setNewWebhook,
     isCreating,
     testingId,
     testResult,
     copied,
+    deliveryFilter,
+    setDeliveryFilter,
+    selectedDeliveryId,
+    setSelectedDeliveryId,
+    rotatingWebhook,
+    setRotatingWebhook,
     handleCreate,
     handleToggleActive,
     handleDelete,
     handleTest,
+    handleViewDeliveries,
     handleCopy,
     closeDialog,
     toggleEvent,

@@ -3,28 +3,14 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  naturalHistoryDetailFields,
+  typeDetailRecordFields,
+} from "./utils/collectionTypeDetailFields";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
-
-const preservationMethodValidator = v.union(
-  v.literal("dry"),
-  v.literal("wet"),
-  v.literal("frozen"),
-  v.literal("pinned"),
-  v.literal("pressed"),
-  v.literal("mounted"),
-  v.literal("cast"),
-  v.literal("fossil"),
-  v.literal("other"),
-);
-
-const sexValidator = v.union(
-  v.literal("male"),
-  v.literal("female"),
-  v.literal("unknown"),
-);
 
 async function requireNaturalHistoryModule(
   ctx: MutationCtx | QueryCtx,
@@ -40,38 +26,9 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("naturalHistoryDetails"),
-      collectionId: v.id("collections"),
-      organizationId: v.id("organizations"),
-      kingdom: v.optional(v.string()),
-      phylum: v.optional(v.string()),
-      taxonomyClass: v.optional(v.string()),
-      order: v.optional(v.string()),
-      family: v.optional(v.string()),
-      genus: v.optional(v.string()),
-      species: v.optional(v.string()),
-      subspecies: v.optional(v.string()),
-      commonName: v.optional(v.string()),
-      scientificName: v.optional(v.string()),
-      collectionDate: v.optional(v.number()),
-      collectorName: v.optional(v.string()),
-      collectionMethod: v.optional(v.string()),
-      latitude: v.optional(v.number()),
-      longitude: v.optional(v.number()),
-      altitude: v.optional(v.number()),
-      locality: v.optional(v.string()),
-      habitat: v.optional(v.string()),
-      geologicalPeriod: v.optional(v.string()),
-      formation: v.optional(v.string()),
-      preservationMethod: v.optional(preservationMethodValidator),
-      storageMedium: v.optional(v.string()),
-      containerType: v.optional(v.string()),
-      sex: v.optional(sexValidator),
-      lifeStage: v.optional(v.string()),
-      specimenType: v.optional(v.string()),
-      dnaAvailable: v.optional(v.boolean()),
-      tissueAvailable: v.optional(v.boolean()),
-      createdAt: v.number(),
-      lastModifiedAt: v.optional(v.number()),
+      _creationTime: v.number(),
+      ...typeDetailRecordFields,
+      ...naturalHistoryDetailFields,
     }),
     v.null(),
   ),
@@ -104,34 +61,7 @@ export const get = query({
 export const upsert = mutation({
   args: {
     collectionId: v.id("collections"),
-    kingdom: v.optional(v.string()),
-    phylum: v.optional(v.string()),
-    taxonomyClass: v.optional(v.string()),
-    order: v.optional(v.string()),
-    family: v.optional(v.string()),
-    genus: v.optional(v.string()),
-    species: v.optional(v.string()),
-    subspecies: v.optional(v.string()),
-    commonName: v.optional(v.string()),
-    scientificName: v.optional(v.string()),
-    collectionDate: v.optional(v.number()),
-    collectorName: v.optional(v.string()),
-    collectionMethod: v.optional(v.string()),
-    latitude: v.optional(v.number()),
-    longitude: v.optional(v.number()),
-    altitude: v.optional(v.number()),
-    locality: v.optional(v.string()),
-    habitat: v.optional(v.string()),
-    geologicalPeriod: v.optional(v.string()),
-    formation: v.optional(v.string()),
-    preservationMethod: v.optional(preservationMethodValidator),
-    storageMedium: v.optional(v.string()),
-    containerType: v.optional(v.string()),
-    sex: v.optional(sexValidator),
-    lifeStage: v.optional(v.string()),
-    specimenType: v.optional(v.string()),
-    dnaAvailable: v.optional(v.boolean()),
-    tissueAvailable: v.optional(v.boolean()),
+    ...naturalHistoryDetailFields,
   },
   returns: v.id("naturalHistoryDetails"),
   handler: async (ctx, args) => {
@@ -146,7 +76,8 @@ export const upsert = mutation({
       throw new Error("Collection not found");
     }
 
-    const [, existing] = await Promise.all([
+    const [, , existing] = await Promise.all([
+      requireNaturalHistoryModule(ctx, collection.organizationId),
       requirePermission(ctx, collection.organizationId, "collections.update"),
       ctx.db
         .query("naturalHistoryDetails")

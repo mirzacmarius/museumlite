@@ -32,6 +32,8 @@ import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
+import { requireLinkableParty } from "./utils/parties";
+import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
@@ -55,7 +57,6 @@ const targetCollectionStatusValidator = v.union(
   v.literal("archived"),
   v.literal("deleted"),
 );
-const REJECTED_ACCESSION_DEACCESSION_REASON = "Accession rejected";
 
 function resolveTargetCollectionStatus(deaccession: {
   targetCollectionStatus?: "deaccessioned" | "archived" | "deleted";
@@ -545,88 +546,6 @@ export const createInternal = internalMutation({
       },
       args.createdByUserId,
     );
-  },
-});
-
-export const createRejectedFromAccession = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    collectionId: v.id("collections"),
-    createdByUserId: v.id("users"),
-    accessionNumber: v.string(),
-    comment: v.optional(v.string()),
-  },
-  returns: v.id("deaccessions"),
-  handler: async (ctx, args) => {
-    const collection = await ctx.db.get(args.collectionId);
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
-
-    if (collection.organizationId !== args.organizationId) {
-      throw new Error("Collection does not belong to organization");
-    }
-
-    const existingRejectedDeaccession = await ctx.db
-      .query("deaccessions")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .filter((q) => q.eq(q.field("status"), "rejected"))
-      .first();
-
-    if (existingRejectedDeaccession) {
-      await syncDeaccessionSearchDocument(ctx, existingRejectedDeaccession._id);
-      return existingRejectedDeaccession._id;
-    }
-
-    const deaccessionNumber = await generateNextDeaccessionNumber(
-      ctx,
-      args.organizationId,
-    );
-    const now = Date.now();
-    const notes = args.comment
-      ? `Rejected accession ${args.accessionNumber}: ${args.comment}`
-      : `Rejected accession ${args.accessionNumber}`;
-
-    const deaccessionId = await ctx.db.insert("deaccessions", {
-      organizationId: args.organizationId,
-      collectionId: args.collectionId,
-      deaccessionNumber,
-      dateDeaccessioned: now,
-      reason: REJECTED_ACCESSION_DEACCESSION_REASON,
-      method: "transfer",
-      disposition: "Rejected during accession review",
-      notes,
-      status: "rejected",
-      targetCollectionStatus: "deaccessioned",
-      workflowStep: -2,
-      workflowHistory: [
-        {
-          step: -2,
-          approvedBy: args.createdByUserId,
-          approvedAt: now,
-          comment: args.comment,
-        },
-      ],
-    });
-    await Promise.all([
-      syncDeaccessionSearchDocument(ctx, deaccessionId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: args.organizationId,
-        userId: args.createdByUserId,
-        action: "rejected",
-        entityType: "deaccession",
-        entityId: deaccessionId,
-        changes: {
-          deaccessionNumber,
-          source: "accession_rejection",
-          accessionNumber: args.accessionNumber,
-        },
-      }),
-    ]);
-
-    return deaccessionId;
   },
 });
 
@@ -1862,6 +1781,8 @@ export const recordExit = mutation({
     deaccessionId: v.id("deaccessions"),
     exitDate: v.number(),
     recipient: v.string(),
+    /** Optional Party the recipient text names; linked in the recipient role. */
+    recipientAccountId: v.optional(v.id("accounts")),
     reference: v.optional(v.string()),
     notes: v.optional(v.string()),
     correctionReason: v.optional(v.string()),
@@ -1879,6 +1800,13 @@ export const recordExit = mutation({
     if (!Number.isFinite(args.exitDate) || args.exitDate <= 0) {
       throw new ConvexError("Exit date is required");
     }
+    const recipientParty = args.recipientAccountId
+      ? await requireLinkableParty(
+          ctx,
+          deaccession.organizationId,
+          args.recipientAccountId,
+        )
+      : null;
     const now = Date.now();
     const exitRecord = {
       exitDate: args.exitDate,
@@ -1890,6 +1818,16 @@ export const recordExit = mutation({
     };
     const previous = deaccession.exitRecord;
     const correctionReason = args.correctionReason?.trim();
+    const linkRecipient = () =>
+      syncExitRecipientLink(ctx, {
+        deaccession,
+        previousExit: previous,
+        exitDate: args.exitDate,
+        recipient,
+        recipientParty,
+        correctionReason,
+        userId,
+      });
 
     if (previous) {
       if (
@@ -1898,6 +1836,7 @@ export const recordExit = mutation({
         previous.reference === exitRecord.reference &&
         previous.notes === exitRecord.notes
       ) {
+        await linkRecipient();
         return null;
       }
       if (!correctionReason) {
@@ -1929,6 +1868,7 @@ export const recordExit = mutation({
         },
       }),
     ] as const);
+    await linkRecipient();
 
     return null;
   },

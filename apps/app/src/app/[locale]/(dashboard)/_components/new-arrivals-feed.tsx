@@ -18,6 +18,7 @@ export function NewArrivalsFeed() {
   const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("newArrivals");
+  const tReview = useScopedI18n("accessionReview.status");
   const common = useScopedI18n("common");
 
   const accessions = useQuery(
@@ -61,14 +62,18 @@ export function NewArrivalsFeed() {
                   ? "pending"
                   : accession.status === "approved"
                     ? "active"
-                    : "overdue";
+                    : accession.status === "withdrawn"
+                      ? "draft"
+                      : "overdue";
 
               const statusLabel =
                 accession.status === "pending"
                   ? t("statusProcessing")
                   : accession.status === "approved"
                     ? t("statusCataloged")
-                    : t("statusRejected");
+                    : accession.status === "withdrawn"
+                      ? tReview("withdrawn")
+                      : t("statusRejected");
 
               return (
                 <Link

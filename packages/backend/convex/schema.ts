@@ -2,15 +2,29 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  accessionReviewDecisionValidator,
+  accessionStatusValidator,
+} from "./utils/accessionReview";
+import {
   caseTaskCaseTypeValidator,
   caseTaskEvidenceReferenceValidator,
   caseTaskStatusValidator,
 } from "./utils/caseTaskValidators";
 import {
+  archiveDetailFields,
+  coinsStampsDetailFields,
+  fineArtDetailFields,
+  naturalHistoryDetailFields,
+  typeDetailRecordFields,
+  vehicleDetailFields,
+  wineDetailFields,
+} from "./utils/collectionTypeDetailFields";
+import {
   exportFormat,
   exportSource,
   exportStatus,
 } from "./utils/exportContract";
+import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
 import {
   collectionTypeValidator,
   enabledModuleValidator,
@@ -24,6 +38,10 @@ import {
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
 import {
+  partyDuplicateReviewDocumentValidator,
+  partyLinkDocumentValidator,
+} from "./utils/partyValidators";
+import {
   projectionAvailability,
   projectionDiscrepancyFields,
   projectionFact,
@@ -31,6 +49,11 @@ import {
   projectionGenerationFields,
   projectionUnavailableReason,
 } from "./utils/projectionValidators";
+import {
+  webhookDeliveryAttemptFields,
+  webhookDeliveryFields,
+  webhookEventFields,
+} from "./utils/webhookValidators";
 
 // Type-safe validators for flexible data structures
 
@@ -85,46 +108,6 @@ export const metadataRecord = v.record(
   v.string(),
   v.union(v.string(), v.number(), v.boolean(), v.null()),
 );
-
-/**
- * Provenance chain entry - tracks ownership history for fine art
- */
-export const provenanceChainEntry = v.object({
-  eventType: v.union(
-    v.literal("sale"),
-    v.literal("auction"),
-    v.literal("inheritance"),
-    v.literal("gift"),
-    v.literal("commission"),
-    v.literal("acquisition"),
-    v.literal("other"),
-  ),
-  owner: v.string(),
-  startYear: v.optional(v.string()),
-  endYear: v.optional(v.string()),
-  location: v.optional(v.string()),
-  salePrice: v.optional(v.number()),
-  currency: v.optional(v.string()),
-  auctionHouse: v.optional(v.string()),
-  documentIds: v.optional(v.array(v.id("_storage"))),
-  notes: v.optional(v.string()),
-  verified: v.optional(v.boolean()),
-});
-
-/**
- * Shipping log entry - tracks transportation history
- */
-export const shippingLogEntry = v.object({
-  fromLocation: v.string(),
-  toLocation: v.string(),
-  carrier: v.optional(v.string()),
-  trackingNumber: v.optional(v.string()),
-  departedAt: v.optional(v.number()),
-  arrivedAt: v.optional(v.number()),
-  conditionBefore: v.optional(v.string()),
-  conditionAfter: v.optional(v.string()),
-  notes: v.optional(v.string()),
-});
 
 export default defineSchema({
   organizationProjectionStates: defineTable({
@@ -1045,67 +1028,8 @@ export default defineSchema({
 
   // Fine Art module details (provenance, insurance, valuation)
   fineArtDetails: defineTable({
-    collectionId: v.id("collections"),
-    organizationId: v.id("organizations"),
-    appraisedValue: v.optional(v.number()),
-    replacementValue: v.optional(v.number()),
-    insurancePolicyNumber: v.optional(v.string()),
-    insuranceCarrier: v.optional(v.string()),
-    insuranceExpiresAt: v.optional(v.number()),
-    reappraisalDate: v.optional(v.number()),
-    lastAppraisalDate: v.optional(v.number()),
-    appraiser: v.optional(v.string()),
-    displayStatus: v.optional(
-      v.union(
-        v.literal("on_display"),
-        v.literal("in_storage"),
-        v.literal("loaned_out"),
-        v.literal("in_transit"),
-        v.literal("conservation"),
-      ),
-    ),
-    provenanceChain: v.optional(
-      v.array(
-        v.object({
-          eventType: v.union(
-            v.literal("sale"),
-            v.literal("auction"),
-            v.literal("inheritance"),
-            v.literal("gift"),
-            v.literal("commission"),
-            v.literal("acquisition"),
-            v.literal("other"),
-          ),
-          owner: v.string(),
-          startYear: v.optional(v.string()),
-          endYear: v.optional(v.string()),
-          location: v.optional(v.string()),
-          salePrice: v.optional(v.number()),
-          currency: v.optional(v.string()),
-          auctionHouse: v.optional(v.string()),
-          documentIds: v.optional(v.array(v.id("_storage"))),
-          notes: v.optional(v.string()),
-          verified: v.optional(v.boolean()),
-        }),
-      ),
-    ),
-    shippingLogs: v.optional(
-      v.array(
-        v.object({
-          fromLocation: v.string(),
-          toLocation: v.string(),
-          carrier: v.optional(v.string()),
-          trackingNumber: v.optional(v.string()),
-          departedAt: v.optional(v.number()),
-          arrivedAt: v.optional(v.number()),
-          conditionBefore: v.optional(v.string()),
-          conditionAfter: v.optional(v.string()),
-          notes: v.optional(v.string()),
-        }),
-      ),
-    ),
-    createdAt: v.number(),
-    lastModifiedAt: v.optional(v.number()),
+    ...typeDetailRecordFields,
+    ...fineArtDetailFields,
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -1113,47 +1037,8 @@ export default defineSchema({
 
   // Wine & Spirits module details
   wineDetails: defineTable({
-    collectionId: v.id("collections"),
-    organizationId: v.id("organizations"),
-    vintage: v.optional(v.number()),
-    peakWindowStart: v.optional(v.number()),
-    peakWindowEnd: v.optional(v.number()),
-    binNumber: v.optional(v.string()),
-    rackNumber: v.optional(v.string()),
-    rowNumber: v.optional(v.string()),
-    bottleSize: v.optional(v.string()),
-    quantity: v.optional(v.number()),
-    fillLevel: v.optional(
-      v.union(
-        v.literal("into_neck"),
-        v.literal("top_shoulder"),
-        v.literal("high_shoulder"),
-        v.literal("mid_shoulder"),
-        v.literal("low_shoulder"),
-        v.literal("below_shoulder"),
-      ),
-    ),
-    closureType: v.optional(
-      v.union(
-        v.literal("cork"),
-        v.literal("screwcap"),
-        v.literal("synthetic"),
-        v.literal("glass"),
-        v.literal("crown"),
-      ),
-    ),
-    labelCondition: v.optional(v.string()),
-    capsuleCondition: v.optional(v.string()),
-    producer: v.optional(v.string()),
-    region: v.optional(v.string()),
-    appellation: v.optional(v.string()),
-    varietal: v.optional(v.string()),
-    alcoholContent: v.optional(v.number()),
-    purchasePrice: v.optional(v.number()),
-    currentValue: v.optional(v.number()),
-    drinkingNotes: v.optional(v.string()),
-    createdAt: v.number(),
-    lastModifiedAt: v.optional(v.number()),
+    ...typeDetailRecordFields,
+    ...wineDetailFields,
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -1162,70 +1047,8 @@ export default defineSchema({
 
   // Automotive & Machinery module details
   vehicleDetails: defineTable({
-    collectionId: v.id("collections"),
-    organizationId: v.id("organizations"),
-    vin: v.optional(v.string()),
-    make: v.optional(v.string()),
-    model: v.optional(v.string()),
-    year: v.optional(v.number()),
-    bodyStyle: v.optional(v.string()),
-    engineNumber: v.optional(v.string()),
-    transmissionType: v.optional(v.string()),
-    exteriorColor: v.optional(v.string()),
-    interiorColor: v.optional(v.string()),
-    odometer: v.optional(v.number()),
-    odometerUnit: v.optional(v.union(v.literal("miles"), v.literal("km"))),
-    fuelType: v.optional(v.string()),
-    registrationNumber: v.optional(v.string()),
-    registrationState: v.optional(v.string()),
-    titleNumber: v.optional(v.string()),
-    insuranceValue: v.optional(v.number()),
-    serviceLog: v.optional(
-      v.array(
-        v.object({
-          serviceDate: v.number(),
-          serviceType: v.string(),
-          description: v.string(),
-          mileage: v.optional(v.number()),
-          provider: v.optional(v.string()),
-          cost: v.optional(v.number()),
-          documentIds: v.optional(v.array(v.id("_storage"))),
-        }),
-      ),
-    ),
-    partsLifing: v.optional(
-      v.array(
-        v.object({
-          partName: v.string(),
-          installDate: v.optional(v.number()),
-          installMileage: v.optional(v.number()),
-          expectedLifeMiles: v.optional(v.number()),
-          notes: v.optional(v.string()),
-        }),
-      ),
-    ),
-    eventHistory: v.optional(
-      v.array(
-        v.object({
-          eventDate: v.number(),
-          eventType: v.union(
-            v.literal("concours"),
-            v.literal("show"),
-            v.literal("race"),
-            v.literal("rally"),
-            v.literal("auction"),
-            v.literal("other"),
-          ),
-          eventName: v.string(),
-          location: v.optional(v.string()),
-          result: v.optional(v.string()),
-          awards: v.optional(v.array(v.string())),
-          notes: v.optional(v.string()),
-        }),
-      ),
-    ),
-    createdAt: v.number(),
-    lastModifiedAt: v.optional(v.number()),
+    ...typeDetailRecordFields,
+    ...vehicleDetailFields,
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -1234,52 +1057,8 @@ export default defineSchema({
 
   // Natural History & Science module details
   naturalHistoryDetails: defineTable({
-    collectionId: v.id("collections"),
-    organizationId: v.id("organizations"),
-    kingdom: v.optional(v.string()),
-    phylum: v.optional(v.string()),
-    taxonomyClass: v.optional(v.string()),
-    order: v.optional(v.string()),
-    family: v.optional(v.string()),
-    genus: v.optional(v.string()),
-    species: v.optional(v.string()),
-    subspecies: v.optional(v.string()),
-    commonName: v.optional(v.string()),
-    scientificName: v.optional(v.string()),
-    collectionDate: v.optional(v.number()),
-    collectorName: v.optional(v.string()),
-    collectionMethod: v.optional(v.string()),
-    latitude: v.optional(v.number()),
-    longitude: v.optional(v.number()),
-    altitude: v.optional(v.number()),
-    locality: v.optional(v.string()),
-    habitat: v.optional(v.string()),
-    geologicalPeriod: v.optional(v.string()),
-    formation: v.optional(v.string()),
-    preservationMethod: v.optional(
-      v.union(
-        v.literal("dry"),
-        v.literal("wet"),
-        v.literal("frozen"),
-        v.literal("pinned"),
-        v.literal("pressed"),
-        v.literal("mounted"),
-        v.literal("cast"),
-        v.literal("fossil"),
-        v.literal("other"),
-      ),
-    ),
-    storageMedium: v.optional(v.string()),
-    containerType: v.optional(v.string()),
-    sex: v.optional(
-      v.union(v.literal("male"), v.literal("female"), v.literal("unknown")),
-    ),
-    lifeStage: v.optional(v.string()),
-    specimenType: v.optional(v.string()),
-    dnaAvailable: v.optional(v.boolean()),
-    tissueAvailable: v.optional(v.boolean()),
-    createdAt: v.number(),
-    lastModifiedAt: v.optional(v.number()),
+    ...typeDetailRecordFields,
+    ...naturalHistoryDetailFields,
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -1288,42 +1067,8 @@ export default defineSchema({
 
   // Corporate Archive module details
   archiveDetails: defineTable({
-    collectionId: v.id("collections"),
-    organizationId: v.id("organizations"),
-    documentType: v.optional(v.string()),
-    retentionCategory: v.optional(v.string()),
-    retentionYears: v.optional(v.number()),
-    retentionStartDate: v.optional(v.number()),
-    retentionExpiresAt: v.optional(v.number()),
-    flaggedForDestruction: v.optional(v.boolean()),
-    destructionDate: v.optional(v.number()),
-    destructionMethod: v.optional(v.string()),
-    destructionWitnessedBy: v.optional(v.string()),
-    legalHold: v.optional(v.boolean()),
-    legalHoldReason: v.optional(v.string()),
-    confidentialityLevel: v.optional(
-      v.union(
-        v.literal("public"),
-        v.literal("internal"),
-        v.literal("confidential"),
-        v.literal("restricted"),
-        v.literal("top_secret"),
-      ),
-    ),
-    accessRestrictions: v.optional(v.array(v.string())),
-    originatingDepartment: v.optional(v.string()),
-    recordSeries: v.optional(v.string()),
-    boxNumber: v.optional(v.string()),
-    folderNumber: v.optional(v.string()),
-    digitalAssetUrl: v.optional(v.string()),
-    digitalAssetStorageId: v.optional(v.id("_storage")),
-    fileFormat: v.optional(v.string()),
-    fileSize: v.optional(v.number()),
-    pageCount: v.optional(v.number()),
-    ocrProcessed: v.optional(v.boolean()),
-    keywords: v.optional(v.array(v.string())),
-    createdAt: v.number(),
-    lastModifiedAt: v.optional(v.number()),
+    ...typeDetailRecordFields,
+    ...archiveDetailFields,
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -1335,43 +1080,8 @@ export default defineSchema({
 
   // Coins and stamps module details
   coinsStampsDetails: defineTable({
-    collectionId: v.id("collections"),
-    organizationId: v.id("organizations"),
-    itemCategory: v.optional(v.union(v.literal("coin"), v.literal("stamp"))),
-    issuingAuthority: v.optional(v.string()),
-    countryOrRegion: v.optional(v.string()),
-    denomination: v.optional(v.string()),
-    currency: v.optional(v.string()),
-    issueYear: v.optional(v.number()),
-    issuePeriod: v.optional(v.string()),
-    mintOrPrinter: v.optional(v.string()),
-    series: v.optional(v.string()),
-    catalogNumber: v.optional(v.string()),
-    grade: v.optional(v.string()),
-    certificationNumber: v.optional(v.string()),
-    certifyingAuthority: v.optional(v.string()),
-    conditionNotes: v.optional(v.string()),
-    composition: v.optional(v.string()),
-    diameterMm: v.optional(v.number()),
-    weightGrams: v.optional(v.number()),
-    perforation: v.optional(v.string()),
-    watermark: v.optional(v.string()),
-    color: v.optional(v.string()),
-    rarity: v.optional(
-      v.union(
-        v.literal("common"),
-        v.literal("scarce"),
-        v.literal("rare"),
-        v.literal("very_rare"),
-        v.literal("unique"),
-      ),
-    ),
-    acquisitionPrice: v.optional(v.number()),
-    estimatedValue: v.optional(v.number()),
-    storageLocation: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    createdAt: v.number(),
-    lastModifiedAt: v.optional(v.number()),
+    ...typeDetailRecordFields,
+    ...coinsStampsDetailFields,
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -1404,11 +1114,7 @@ export default defineSchema({
     cost: v.optional(v.number()),
     approvedBy: v.optional(v.id("users")),
     approvedAt: v.optional(v.number()),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("approved"),
-      v.literal("rejected"),
-    ),
+    status: accessionStatusValidator,
     notes: v.optional(v.string()),
     draftObjectData: v.optional(objectDraftDataValidator),
     draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
@@ -1424,6 +1130,9 @@ export default defineSchema({
         }),
       ),
     ),
+    // Latest reviewer decision on an intake (MUS-673): returned to draft,
+    // withdrawn, or restored from withdrawal. Full trail is in case history.
+    reviewDecision: v.optional(accessionReviewDecisionValidator),
     // Source verification fields
     sourceVerified: v.optional(v.boolean()),
     sourceVerifiedBy: v.optional(v.id("users")),
@@ -1501,11 +1210,7 @@ export default defineSchema({
   accessionSearchDocuments: defineTable({
     organizationId: v.id("organizations"),
     accessionId: v.id("accessions"),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("approved"),
-      v.literal("rejected"),
-    ),
+    status: accessionStatusValidator,
     searchText: v.string(),
     dateReceived: v.number(),
   })
@@ -2126,6 +1831,8 @@ export default defineSchema({
     ),
     terms: v.optional(v.string()),
     insuranceValue: v.optional(v.number()),
+    // ISO 4217 code of insuranceValue (MUS-674); absent on older loans.
+    currency: v.optional(v.string()),
     approvedBy: v.optional(v.id("users")),
     approvedAt: v.optional(v.number()),
     notes: v.optional(v.string()),
@@ -2267,6 +1974,15 @@ export default defineSchema({
       "collectionId",
       "status",
       "acceptedAt",
+    ]),
+
+  // Administrator-managed loan agreement templates (MUS-674). Archived, never deleted.
+  loanAgreementTemplates: defineTable(loanAgreementTemplateFields)
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_loanType_and_isDefault", [
+      "organizationId",
+      "loanType",
+      "isDefault",
     ]),
 
   // Documents attached to loans
@@ -3195,6 +2911,25 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_organization", ["organizationId"]),
+
+  // Outgoing webhook events captured at emit time, one delivery per endpoint
+  webhookEvents: defineTable(webhookEventFields).index("by_organizationId", [
+    "organizationId",
+  ]),
+  webhookDeliveries: defineTable(webhookDeliveryFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_organizationId_and_status", ["organizationId", "status"])
+    .index("by_organizationId_and_webhookId", ["organizationId", "webhookId"])
+    .index("by_organizationId_and_webhookId_and_status", [
+      "organizationId",
+      "webhookId",
+      "status",
+    ])
+    .index("by_eventId", ["eventId"])
+    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"]),
+  webhookDeliveryAttempts: defineTable(webhookDeliveryAttemptFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_deliveryId_and_attemptNumber", ["deliveryId", "attemptNumber"]),
 
   // API keys for external integrations
   apiKeys: defineTable({
@@ -4761,6 +4496,23 @@ export default defineSchema({
       "accountId",
       "relationshipType",
     ]),
+
+  // Typed Party roles in procedures (MUS-642). The account is the Party;
+  // links are superseded, never deleted (ADR 0002).
+  partyLinks: defineTable(partyLinkDocumentValidator)
+    .index("by_organization_and_target_and_role_and_supersededAt", [
+      "organizationId",
+      "targetType",
+      "targetId",
+      "role",
+      "supersededAt",
+    ])
+    .index("by_account", ["accountId"]),
+
+  // Suggested duplicate Parties awaiting staff review. Never merged.
+  partyDuplicateReviews: defineTable(partyDuplicateReviewDocumentValidator)
+    .index("by_organization_and_pairKey", ["organizationId", "pairKey"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),

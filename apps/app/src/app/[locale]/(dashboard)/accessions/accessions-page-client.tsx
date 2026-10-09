@@ -46,7 +46,7 @@ export function AccessionsPageClient({
     return <AccessionsPageSkeleton />;
   }
 
-  const { pending, approved, rejected } = counts;
+  const { pending, approved, rejected, withdrawn } = counts;
   const pendingTransfers =
     transferRequests?.filter((request) => request.status === "pending")
       .length ?? "-";
@@ -69,6 +69,7 @@ export function AccessionsPageClient({
               pending,
               approved,
               rejected,
+              withdrawn,
             }}
           />
         </div>
@@ -140,6 +141,7 @@ export function AccessionsPageClient({
           organizationId={organizationId}
           searchQuery={deferredSearchQuery}
           columnCounts={counts.columns}
+          withdrawnCount={withdrawn}
         />
       </Suspense>
     </div>

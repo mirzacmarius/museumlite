@@ -20,8 +20,11 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
 import { type Dispatch, type FormEvent, useReducer } from "react";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useCapabilities } from "@/hooks/use-capabilities";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface SiteFormData {
@@ -363,6 +366,8 @@ function SiteCard({
 export default function SitesSettingsPage() {
   const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
+  const canUseSites = useCapabilities().isAvailable("sites");
+  const capabilityErrorMessage = useCapabilityErrorMessage();
   const [state, dispatch] = useReducer(
     sitesPageReducer,
     INITIAL_SITES_PAGE_STATE,
@@ -378,7 +383,7 @@ export default function SitesSettingsPage() {
 
   const sites = useQuery(
     api.sites.list,
-    currentOrganizationId
+    currentOrganizationId && canUseSites
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
@@ -419,7 +424,7 @@ export default function SitesSettingsPage() {
       console.error("Error creating site:", err);
       dispatch({
         type: "setError",
-        error: t("failedCreateSite"),
+        error: capabilityErrorMessage(err) ?? t("failedCreateSite"),
       });
     } finally {
       dispatch({ type: "setIsSubmitting", isSubmitting: false });
@@ -477,7 +482,7 @@ export default function SitesSettingsPage() {
       console.error("Error updating site:", err);
       dispatch({
         type: "setError",
-        error: t("failedUpdateSite"),
+        error: capabilityErrorMessage(err) ?? t("failedUpdateSite"),
       });
     } finally {
       dispatch({ type: "setIsSubmitting", isSubmitting: false });
@@ -493,12 +498,12 @@ export default function SitesSettingsPage() {
       await archiveSite({ siteId });
     } catch (err) {
       console.error("Error archiving site:", err);
-      alert(t("failedArchiveSite"));
+      alert(capabilityErrorMessage(err) ?? t("failedArchiveSite"));
     }
   };
 
   return (
-    <PermissionGate permission="sites.read">
+    <CapabilityGuard capability="sites" featureName={t("sites")}>
       <div className="flex flex-col gap-8">
         <SitesPageHeader
           createDialogOpen={createDialogOpen}
@@ -555,6 +560,6 @@ export default function SitesSettingsPage() {
           />
         </Dialog>
       </div>
-    </PermissionGate>
+    </CapabilityGuard>
   );
 }

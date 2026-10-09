@@ -2,13 +2,20 @@
 
 import { useRef } from "react";
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { LoanAgreementItem, LoanAgreementLoan } from "./types";
 
 interface UseLoanAgreementActionsOptions {
   loan: LoanAgreementLoan;
   items: LoanAgreementItem[];
   organizationName: string;
+}
+
+function escapeHtml(text: string) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 export function useLoanAgreementActions({
@@ -18,14 +25,14 @@ export function useLoanAgreementActions({
 }: UseLoanAgreementActionsOptions) {
   const printRef = useRef<HTMLDivElement>(null);
   const locale = useCurrentLocale();
+  const t = useScopedI18n("loanAgreementTemplates.agreement");
 
-  const formatLoanDate = (timestamp: number) => {
-    return formatDate(new Date(timestamp), locale, {
+  const formatLoanDate = (timestamp: number) =>
+    formatDate(new Date(timestamp), locale, {
       day: "2-digit",
       month: "long",
       year: "numeric",
     });
-  };
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -34,11 +41,12 @@ export function useLoanAgreementActions({
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
+    const title = escapeHtml(t("printTitle", { loanNumber: loan.loanNumber }));
     printWindow.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="${printContent.lang || locale}">
         <head>
-          <title>Loan Agreement - ${loan.loanNumber}</title>
+          <title>${title}</title>
           <style>
             body {
               font-family: 'Times New Roman', Times, serif;
@@ -74,32 +82,34 @@ export function useLoanAgreementActions({
   };
 
   const handleEmail = () => {
-    const subject = encodeURIComponent(`Loan Agreement - ${loan.loanNumber}`);
-    const startDateFormatted = formatLoanDate(loan.startDate);
-    const endDateFormatted = loan.endDate ? formatLoanDate(loan.endDate) : "";
-    const body = encodeURIComponent(
-      `Dear ${loan.lenderBorrowerName},
-
-Please find attached the loan agreement for ${loan.loanNumber}.
-
-Loan Details:
-- Loan Number: ${loan.loanNumber}
-- Type: ${loan.type === "incoming" ? "Incoming Loan" : "Outgoing Loan"}
-- Start Date: ${startDateFormatted}
-${loan.endDate ? `- End Date: ${endDateFormatted}` : ""}
-
-Objects:
-${items.map((item) => `- ${item.accessionNumber}: ${item.title}`).join("\n")}
-
-Please review and sign the agreement.
-
-Best regards,
-${organizationName}`,
+    const lines = [
+      t("email.greeting", { name: loan.lenderBorrowerName }),
+      "",
+      t("email.intro", { loanNumber: loan.loanNumber }),
+      "",
+      t("email.details"),
+      `- ${t("email.loanNumber", { loanNumber: loan.loanNumber })}`,
+      `- ${loan.type === "incoming" ? t("email.incoming") : t("email.outgoing")}`,
+      `- ${t("email.startDate", { date: formatLoanDate(loan.startDate) })}`,
+      ...(loan.endDate
+        ? [`- ${t("email.endDate", { date: formatLoanDate(loan.endDate) })}`]
+        : []),
+      "",
+      t("email.objects"),
+      ...items.map((item) => `- ${item.accessionNumber}: ${item.title}`),
+      "",
+      t("email.review"),
+      "",
+      t("email.signOff"),
+      organizationName,
+    ];
+    const subject = encodeURIComponent(
+      t("email.subject", { loanNumber: loan.loanNumber }),
     );
-
-    const email = loan.account?.contactEmail || loan.account?.email || "";
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    const body = encodeURIComponent(lines.join("\n"));
+    const recipient = loan.account?.contactEmail || loan.account?.email || "";
+    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
   };
 
-  return { printRef, locale, formatLoanDate, handlePrint, handleEmail };
+  return { printRef, handlePrint, handleEmail };
 }

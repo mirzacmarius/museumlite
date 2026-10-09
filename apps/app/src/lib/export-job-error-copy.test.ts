@@ -45,6 +45,24 @@ describe("exportJobErrorKey", () => {
     );
   });
 
+  it("maps the stable register criteria code whether data arrives parsed or serialized", () => {
+    const data = {
+      code: "REGISTER_CRITERIA_INVALID",
+      message: "Invalid register criteria",
+    };
+    expect(exportJobErrorKey(new ConvexError(data))).toBe(
+      "errorRegisterCriteria",
+    );
+    expect(exportJobErrorKey(new ConvexError(JSON.stringify(data)))).toBe(
+      "errorRegisterCriteria",
+    );
+    expect(
+      exportJobErrorKey(
+        "Register record history exceeds processing limits (200 approval steps)",
+      ),
+    ).toBe("errorTooLarge");
+  });
+
   it("maps download HTTP statuses without echoing server text", () => {
     expect(exportJobErrorKey(new ExportDownloadError(403))).toBe("errorAccess");
     expect(exportJobErrorKey(new ExportDownloadError(404))).toBe(
@@ -58,5 +76,18 @@ describe("exportJobErrorKey", () => {
   it("falls back to the generic failure for unknown messages", () => {
     expect(exportJobErrorKey(new Error("Something odd"))).toBe("failed");
     expect(exportJobErrorKey(undefined)).toBe("failed");
+  });
+
+  it("maps coded capability failures to the access copy whatever their text", () => {
+    expect(
+      exportJobErrorKey(
+        new ConvexError({
+          code: "CAPABILITY_UNAVAILABLE",
+          reason: "tier_required",
+          requiredTier: "enterprise",
+          message: "Unavailable",
+        }),
+      ),
+    ).toBe("errorAccess");
   });
 });

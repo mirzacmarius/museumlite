@@ -191,6 +191,7 @@ export default {
       developer: "Développeur",
       data: "Import/Export de données",
       metrics: "État des indicateurs",
+      loanAgreements: "Contrats de prêt",
     },
     roles: {
       title: "Gestion des Rôles",
@@ -1023,6 +1024,73 @@ export default {
       bottleSize: "750 ml",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "Détails {type}",
+      description:
+        "Enregistrés avec ce brouillon et reportés sur l'objet lorsque l'entrée est approuvée. Changer le type de collection supprime ces détails.",
+    },
+    summary: {
+      title: "Détails {type}",
+    },
+    changeType: {
+      title: "Changer le type de collection ?",
+      description:
+        "Les détails {type} saisis dans ce brouillon seront supprimés. Seuls les détails du type de collection actuel du brouillon sont conservés.",
+      confirm: "Changer le type et supprimer les détails",
+      cancel: "Conserver le type actuel",
+    },
+    errors: {
+      moduleDisabled:
+        "Le module de ce type de collection n'est pas activé pour votre organisation. Choisissez un autre type de collection ou demandez à un administrateur d'activer le module.",
+      typeMismatch:
+        "Les détails propres au type ne correspondent pas au type de collection sélectionné. Vérifiez les détails et enregistrez à nouveau.",
+    },
+    fields: {
+      appraiser: "Expert",
+      lastAppraisalDate: "Date de la dernière expertise",
+      insuranceCarrier: "Assureur",
+      insuranceExpiresAt: "Date d'expiration de l'assurance",
+      peakWindowStart: "À boire à partir de (année)",
+      peakWindowEnd: "À boire jusqu'en (année)",
+      make: "Marque",
+      model: "Modèle",
+      year: "Année",
+      odometerUnit: "Unité du compteur",
+      retentionYears: "Durée de conservation (années)",
+      digitalAssetUrl: "URL de la ressource numérique",
+      countryOrRegion: "Pays ou région",
+      issueYear: "Année d'émission",
+      issuePeriod: "Période d'émission",
+      series: "Série",
+      certifyingAuthority: "Organisme de certification",
+      diameterMm: "Diamètre (mm)",
+      weightGrams: "Poids (g)",
+      conditionNotes: "Notes sur l'état",
+      notes: "Notes",
+    },
+    options: {
+      inStorage: "En réserve",
+      cork: "Liège",
+      screwcap: "Capsule à vis",
+      synthetic: "Synthétique",
+      glass: "Verre",
+      crown: "Capsule couronne",
+      miles: "Miles",
+      kilometres: "Kilomètres",
+      male: "Mâle",
+      female: "Femelle",
+      dry: "Sec",
+      wet: "En fluide",
+      frozen: "Congelé",
+      pinned: "Épinglé",
+      pressed: "Pressé",
+      mounted: "Monté",
+      cast: "Moulage",
+      fossil: "Fossile",
+      other: "Autre",
+    },
+  },
   workflows: {
     title: "Configuration des flux de travail",
     description:
@@ -1394,6 +1462,119 @@ export default {
       failedToCreateWebhook: "Échec de la création du webhook",
       failedToUpdateWebhook: "Échec de la mise à jour du webhook",
       failedToDeleteWebhook: "Échec de la suppression du webhook",
+    },
+  },
+  webhookDeliveries: {
+    noPermission:
+      "Vous devez avoir l'autorisation de gérer les paramètres de l'organisation pour gérer les webhooks.",
+    log: {
+      title: "Journal des livraisons",
+      description:
+        "Chaque événement envoyé à vos points de terminaison, avec chaque tentative et réponse. Les entrées sont conservées 30 jours.",
+      endpointFilter: "Point de terminaison",
+      statusFilter: "Statut",
+      allEndpoints: "Tous les points de terminaison",
+      allStatuses: "Tous les statuts",
+      empty: "Aucune livraison ne correspond à ces filtres.",
+      loadMore: "Charger plus",
+      details: "Détails",
+      deletedEndpoint: "Point de terminaison supprimé",
+      testEvent: "Événement de test",
+      attempts: "Tentatives : {count}",
+      nextAttempt: "Prochaine tentative {time}",
+      sending: "Envoi en cours",
+    },
+    status: {
+      pending: "En attente",
+      retrying: "Nouvelle tentative",
+      succeeded: "Livré",
+      failed_transient: "Échec",
+      failed_permanent: "Échec définitif",
+      cancelled: "Annulé",
+    },
+    outcome: {
+      succeeded: "Livré",
+      failed_transient: "Échec temporaire",
+      failed_permanent: "Échec définitif",
+    },
+    reasons: {
+      http_error: "Le destinataire a répondu HTTP {status}",
+      timeout: "Aucune réponse en 10 secondes",
+      network_error: "Connexion au point de terminaison impossible",
+      attempt_lost: "La tentative n'a pas transmis son résultat",
+      event_expired: "L'événement n'est plus conservé",
+      endpoint_deleted: "Le point de terminaison a été supprimé",
+      endpoint_disabled: "Le point de terminaison a été désactivé",
+      endpoint_insecure: "L'URL du point de terminaison n'utilise pas HTTPS",
+      endpoint_unsubscribed:
+        "Le point de terminaison n'est plus abonné à cet événement",
+    },
+    detail: {
+      title: "Détails de la livraison",
+      deliveryId: "ID de livraison",
+      eventId: "ID d'événement",
+      event: "Événement",
+      endpoint: "Point de terminaison",
+      created: "Créé",
+      payload: "Contenu (version {version})",
+      attemptsTitle: "Tentatives",
+      noAttempts: "Aucune requête n'a été envoyée pour cette livraison.",
+      attempt: "Tentative {number}",
+      duration: "{ms} ms",
+      retry: "Relancer la livraison",
+      retrying: "Relance...",
+      retryHelp:
+        "Une relance renvoie le même contenu avec le même ID de livraison, afin que votre destinataire puisse ignorer les doublons.",
+      notFound: "Cette livraison n'est plus disponible.",
+      close: "Fermer",
+    },
+    endpoint: {
+      lastDelivery: "Dernière livraison {time}",
+      neverDelivered: "Pas encore livré",
+      viewDeliveries: "Livraisons",
+      sendTest: "Envoyer un test",
+      testQueued:
+        "Événement de test en file d'attente. Son résultat apparaît dans le journal des livraisons.",
+      rotateSecret: "Renouveler le secret",
+    },
+    rotate: {
+      title: "Renouveler le secret de signature ?",
+      description:
+        "Le secret actuel cesse de fonctionner immédiatement. Chaque tentative ultérieure, y compris les relances, est signée avec le nouveau secret : mettez à jour votre destinataire.",
+      confirm: "Renouveler le secret",
+      cancel: "Annuler",
+      rotatedTitle: "Nouveau secret de signature",
+      rotatedDescription:
+        "Copiez ce secret maintenant. Vous ne pourrez plus le revoir.",
+      done: "Terminé",
+    },
+    signing: {
+      title: "Vérifier les livraisons",
+      signature:
+        "X-ML-Signature vaut sha256= suivi du HMAC-SHA256 hexadécimal du corps brut de la requête, calculé avec votre secret de signature.",
+      signatureV2:
+        "X-ML-Signature-V2 vaut v2= suivi du HMAC-SHA256 de la valeur X-ML-Delivery, d'un point, de la valeur X-ML-Timestamp, d'un point et du corps. X-ML-Timestamp est l'heure d'envoi en secondes Unix ; rejetez les valeurs hors de votre marge de tolérance.",
+      duplicates:
+        "Les relances réutilisent X-ML-Delivery et le même corps. Considérez un ID de livraison répété comme déjà traité.",
+      retries:
+        "Toute réponse 2xx compte comme livrée. Après un délai dépassé, une erreur réseau ou une réponse 408, 429 ou 5xx, l'événement est renvoyé, jusqu'à 6 envois au total sur environ 3 heures. Les redirections ne sont pas suivies et les autres réponses ne sont pas relancées.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Saisissez un nom pour le point de terminaison.",
+      WEBHOOK_URL_INVALID: "Saisissez une URL HTTPS valide.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "L'un des événements sélectionnés n'est pas disponible.",
+      WEBHOOK_LIMIT_REACHED:
+        "Cette organisation a déjà le nombre maximal de points de terminaison webhook.",
+      WEBHOOK_NOT_FOUND: "Ce point de terminaison n'existe plus.",
+      WEBHOOK_DISABLED:
+        "Activez le point de terminaison avant de lui envoyer des événements.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "Le point de terminaison n'est plus abonné à cet événement. Réabonnez-le avant de relancer.",
+      DELIVERY_NOT_FOUND: "Cette livraison n'existe plus.",
+      DELIVERY_NOT_RETRYABLE:
+        "Seules les livraisons en échec ou annulées peuvent être relancées.",
+      fallback: "L'action n'a pas pu être effectuée. Réessayez.",
     },
   },
   activity: {
@@ -2404,6 +2585,132 @@ export default {
 
     charts: {
       statusDistribution: "Répartition par statut",
+    },
+  },
+  loanAgreementTemplates: {
+    title: "Contrats de prêt",
+    description:
+      "Rédigez les contrats que votre organisation émet pour les prêts. Les variables sont remplacées par les informations de chaque prêt lors de la génération d'un contrat.",
+    newTemplate: "Nouveau modèle",
+    empty:
+      "Aucun modèle pour l'instant. Les prêts utilisent le contrat standard jusqu'à ce que vous en créiez un.",
+    standardAgreement: "Contrat standard",
+    standardAgreementDescription:
+      "Intégré. Utilisé pour les prêts lorsqu'aucun modèle n'est défini par défaut.",
+    defaultBadge: "Par défaut",
+    archivedBadge: "Archivé",
+    archivedHeading: "Modèles archivés",
+    sectionCount: "Sections : {count}",
+    appliesTo: {
+      any: "Tous les prêts",
+      incoming: "Prêts entrants",
+      outgoing: "Prêts sortants",
+    },
+    actions: {
+      edit: "Modifier",
+      setDefault: "Définir par défaut",
+      archive: "Archiver",
+      restore: "Restaurer",
+    },
+    toasts: {
+      created: "Modèle créé.",
+      saved: "Modèle enregistré.",
+      defaultSet: "Modèle par défaut mis à jour.",
+      archived: "Modèle archivé.",
+      restored: "Modèle restauré.",
+    },
+    editor: {
+      createTitle: "Nouveau modèle de contrat de prêt",
+      editTitle: "Modifier le modèle de contrat de prêt",
+      description:
+        "Les sections apparaissent dans l'ordre après les parties. Une ligne dont les variables n'ont aucune valeur pour un prêt est omise.",
+      name: "Nom",
+      namePlaceholder: "Prêt sortant standard",
+      language: "Langue",
+      appliesTo: "S'applique à",
+      sections: "Sections",
+      sectionHeading: "Titre",
+      sectionBody: "Texte",
+      addSection: "Ajouter une section",
+      removeSection: "Supprimer la section",
+      moveUp: "Monter la section",
+      moveDown: "Descendre la section",
+      startFromStandard: "Partir du contrat standard",
+      placeholders: "Variables",
+      placeholdersHint: "Copiez une variable dans un titre ou un texte.",
+      copied: "{placeholder} copié",
+      preview: "Aperçu avec un prêt d'exemple",
+      save: "Enregistrer le modèle",
+      saving: "Enregistrement…",
+      cancel: "Annuler",
+    },
+    placeholders: {
+      loanNumber: "Numéro du prêt",
+      loanStartDate: "Date de début",
+      loanEndDate: "Date de fin",
+      loanCurrency: "Code de devise de la valeur assurée",
+      loanTerms: "Conditions enregistrées sur le prêt",
+      lenderName: "Prêteur",
+      borrowerName: "Emprunteur",
+      organizationName: "Votre organisation",
+      objectList: "Tableau des objets prêtés",
+      objectCount: "Nombre d'objets",
+      insuranceValue: "Valeur assurée avec la devise",
+    },
+    sample: {
+      partnerName: "Galerie du Port",
+      terms: "Les objets voyagent avec un convoyeur de l'institution prêteuse.",
+      firstObject: "Port au crépuscule",
+      secondObject: "Maquette de bateau de pêche",
+      condition: "Bon",
+    },
+    errors: {
+      templateNotFound: "Ce modèle n'existe plus. Actualisez la page.",
+      templateArchived:
+        "Ce modèle est archivé. Restaurez-le avant de le modifier.",
+      nameRequired: "Donnez un nom au modèle.",
+      sectionsRequired:
+        "Ajoutez au moins une section et saisissez du texte dans chaque section.",
+      templateTooLarge:
+        "Le modèle est trop long. Raccourcissez le texte ou supprimez des sections.",
+      unknownPlaceholder:
+        "{placeholder} n'est pas une variable connue. Utilisez-en une de la liste.",
+      malformedPlaceholder:
+        "Une variable est mal écrite. Chacune commence par deux accolades ouvrantes et se termine par deux accolades fermantes.",
+      invalidCurrency:
+        "Saisissez un code de devise à trois lettres, par exemple EUR.",
+      templateLimitReached:
+        "Vous pouvez conserver au maximum {limit} modèles actifs. Archivez-en un avant d'en ajouter un autre.",
+      currencyAlreadyRecorded:
+        "Une devise est déjà enregistrée pour ce prêt. Actualisez la page.",
+      fallback: "La modification n'a pas pu être enregistrée. Réessayez.",
+    },
+    agreement: {
+      template: "Modèle",
+      printTitle: "Contrat de prêt {loanNumber}",
+      email: {
+        subject: "Contrat de prêt {loanNumber}",
+        greeting: "Bonjour {name},",
+        intro: "Veuillez trouver ci-joint le contrat de prêt {loanNumber}.",
+        details: "Détails du prêt :",
+        loanNumber: "Numéro du prêt : {loanNumber}",
+        incoming: "Type : prêt entrant",
+        outgoing: "Type : prêt sortant",
+        startDate: "Date de début : {date}",
+        endDate: "Date de fin : {date}",
+        objects: "Objets :",
+        review: "Merci de relire et de signer le contrat.",
+        signOff: "Cordialement,",
+      },
+    },
+    currency: {
+      label: "Devise",
+      placeholder: "EUR",
+      hint: "Code à trois lettres, par exemple EUR ou NOK.",
+      missing:
+        "Aucune devise n'est enregistrée pour la valeur assurée de ce prêt ; le contrat l'affiche donc comme un simple nombre.",
+      record: "Enregistrer la devise",
+      recorded: "Devise enregistrée.",
     },
   },
   transit: {
@@ -4835,6 +5142,65 @@ export default {
     helpText:
       "Si vous n'avez pas encore de compte, utilisez l'e-mail de l'invitation pour en créer un. Après connexion, vous pourrez accepter cette invitation d'organisation.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Retirée",
+    },
+    reject: {
+      title: "Refuser cette demande d'objet",
+      description:
+        "Choisissez la suite. Rien n'est ajouté à la collection et aucune aliénation n'est enregistrée.",
+      returnToDraft: "Renvoyer en brouillon",
+      returnToDraftDescription:
+        "La personne qui l'a soumise peut modifier la demande et la soumettre à nouveau.",
+      withdraw: "Retirer",
+      withdrawDescription:
+        "Sort la demande de la revue active. La fiche, ses données de brouillon et ses fichiers sont conservés et peuvent être restaurés.",
+      reasonLabel: "Motif",
+      reasonPlaceholder:
+        "Expliquez ce qui doit changer ou pourquoi elle est retirée",
+      reasonHint:
+        "Obligatoire. La personne qui l'a soumise est avertie et le motif est conservé dans l'historique du dossier.",
+      confirmReturnToDraft: "Renvoyer en brouillon",
+      confirmWithdraw: "Retirer la demande",
+      saving: "Enregistrement...",
+    },
+    restore: {
+      action: "Restaurer en brouillon",
+      title: "Restaurer cette demande d'objet",
+      description:
+        "La demande revient dans la colonne Brouillon pour être modifiée et soumise à nouveau.",
+      reasonLabel: "Motif",
+      reasonHint: "Obligatoire. Conservé dans l'historique du dossier.",
+      confirm: "Restaurer en brouillon",
+    },
+    decision: {
+      returnedTitle: "Renvoyée en brouillon pour modifications",
+      withdrawnTitle: "Retirée de la revue",
+      restoredTitle: "Restaurée après retrait",
+      decidedBy: "Par {name}",
+      withdrawnDescription:
+        "Cette demande est conservée pour mémoire et ne figure dans aucune file active. Rien n'a été ajouté à la collection.",
+    },
+    board: {
+      withdrawn: "Retirées",
+      showActive: "Retour au tableau actif",
+    },
+    errors: {
+      notInReview:
+        "Cette demande n'est plus en attente de revue. Actualisez pour voir son état actuel.",
+      notWithdrawn:
+        "Cette demande n'est plus retirée. Actualisez pour voir son état actuel.",
+      reasonRequired: "Indiquez un motif.",
+      notADraft:
+        "Cette demande a déjà été soumise. Actualisez pour voir son état actuel.",
+      reasonTooLong: "Le motif doit faire moins de 2 000 caractères.",
+      notPermitted:
+        "Vous ne pouvez pas prendre cette décision à l'étape de revue actuelle.",
+      fallback:
+        "La décision n'a pas pu être enregistrée. Actualisez et réessayez.",
+    },
+  },
   accessions: {
     title: "Acquisitions",
     description:
@@ -5294,6 +5660,163 @@ export default {
       addNotes: "Notes supplémentaires sur cette désaccession...",
     },
   },
+  parties: {
+    roles: {
+      donor: "Donateur / provenance",
+      lender: "Prêteur",
+      borrower: "Emprunteur",
+      owner: "Propriétaire",
+      appraiser: "Expert",
+      recipient: "Destinataire",
+    },
+    holderTypes: {
+      privatePerson: "Personne",
+      organization: "Institution",
+    },
+    reasons: {
+      name: "Même nom",
+      email: "Même e-mail",
+      phone: "Même téléphone",
+    },
+    targetTypes: {
+      accession: "Acquisition",
+      loan: "Prêt",
+      deaccession: "Désaccession",
+      appraisal: "Estimation",
+      collection: "Objet",
+    },
+    picker: {
+      placeholder: "Sélectionner ou créer une personne ou une institution",
+      searchPlaceholder: "Rechercher des personnes et des institutions",
+      heading: "Parties",
+      empty: "Aucune personne ni institution correspondante",
+      searching: "Recherche…",
+      create: "Créer une nouvelle partie",
+      clear: "Effacer la sélection",
+    },
+    create: {
+      title: "Créer une partie",
+      description:
+        "Ajoutez une personne ou une institution une seule fois et réutilisez-la pour les acquisitions, les prêts et les désaccessions.",
+      submit: "Créer la partie",
+      creating: "Création…",
+      created: "Partie créée",
+      duplicateRecorded:
+        "Partie créée. Un doublon possible a été enregistré pour vérification.",
+      similarTitle: "Des parties similaires existent déjà",
+      similarDescription:
+        "Réutilisez une fiche existante au lieu de créer un doublon.",
+      useExisting: "Utiliser cette partie",
+    },
+    links: {
+      title: "Parties",
+      description:
+        "Personnes et institutions liées à cette fiche. Les noms et coordonnées sont conservés tels qu'ils étaient au moment du lien.",
+      empty: "Aucune partie n'est encore liée.",
+      partyUnavailable: "Fiche de la partie indisponible",
+      archived: "Archivée",
+      recordedAs: "Enregistrée sous le nom {name}",
+      namedOnRecord: "Nommée dans la fiche : {name}",
+      contactAtLink: "Coordonnées lors du lien : {contact}",
+      from: "À partir du {date}",
+      linkedBy: "Liée par {name}",
+      backfilled: "Liée à partir d'une référence de compte existante",
+      earlier: "Parties précédentes ({count})",
+      replacedOn: "Remplacée ou terminée le {date}",
+      reason: "Motif : {reason}",
+      role: "Rôle",
+      party: "Partie",
+      changeReason: "Motif du changement",
+      changeReasonPlaceholder:
+        "Par exemple : l'acte de donation nomme la fondation",
+      link: "Lier une partie",
+      linking: "Liaison…",
+      linked: "Partie liée",
+      end: "Terminer le lien",
+      endTitle: "Terminer ce lien avec la partie ?",
+      endDescription:
+        "Le lien reste dans l'historique de la fiche avec votre motif.",
+      endReason: "Motif",
+      endConfirm: "Terminer le lien",
+      ended: "Lien avec la partie terminé",
+      cancel: "Annuler",
+    },
+    history: {
+      tab: "Rôles",
+      title: "Historique des rôles",
+      description:
+        "Procédures auxquelles cette partie a participé. Les noms affichent ce qui a été enregistré à l'époque.",
+      empty: "Aucun rôle n'est encore enregistré pour cette partie.",
+      restricted: "Fiche non accessible",
+      current: "Actuel",
+      superseded: "Remplacé",
+      loadMore: "Charger plus",
+      legacyTitle: "Anciennes relations de compte",
+    },
+    review: {
+      title: "Vérification des parties",
+      description:
+        "Vérifiez les doublons possibles et les fiches qui ne nomment une partie qu'en texte libre. Rien n'est fusionné ni lié automatiquement.",
+      duplicatesTab: "Doublons possibles",
+      legacyTab: "Fiches non liées",
+      status: "Statut",
+      statuses: {
+        pending: "À vérifier",
+        dismissed: "Écartée",
+        confirmed_distinct: "Pas la même partie",
+      },
+      scan: "Rechercher des doublons possibles",
+      scanning: "Comparaison…",
+      scanResult: "Nouvelles suggestions enregistrées : {count}.",
+      scanLimit:
+        "Seules les {count} parties les plus récentes ont été comparées.",
+      noDuplicates: "Aucune suggestion avec ce statut.",
+      notSame: "Pas la même partie",
+      dismiss: "Écarter",
+      note: "Note (facultative)",
+      resolved: "Vérification enregistrée",
+      reviewedBy: "Vérifiée par {name}",
+      unavailable: "Fiche plus disponible",
+      mergeHint:
+        "Pour regrouper un vrai doublon, liez les nouvelles fiches à la partie conservée et archivez l'autre. Les deux historiques restent intacts.",
+      legacyDescription:
+        "Fiches qui ne nomment une partie qu'en texte libre ou qui font référence à un compte sans lien typé. Confirmez chaque lien ; la formulation d'origine est conservée.",
+      recordType: "Type de fiche",
+      kinds: {
+        accession: "Acquisitions",
+        loan: "Prêts",
+        deaccession: "Désaccessions",
+      },
+      legacyEmpty: "Aucune fiche non liée sur cette page.",
+      checked: "Fiches vérifiées sur cette page : {count}.",
+      referencesParty: "Fait référence à {name} sans lien typé",
+      confirmLink: "Confirmer le lien",
+      link: "Lier",
+      previous: "Page précédente",
+      next: "Page suivante",
+    },
+    errors: {
+      partyNotFound:
+        "Cette partie n'est pas disponible dans cette organisation. Choisissez-en une autre.",
+      partyArchived:
+        "Cette partie est archivée. Restaurez-la ou choisissez-en une autre.",
+      roleNotAllowed: "Ce rôle ne s'applique pas à cette fiche.",
+      recordLocked:
+        "Cette fiche est clôturée : ses parties peuvent seulement être confirmées, pas modifiées. Utilisez le flux de correction de la fiche.",
+      targetNotFound:
+        "Cette fiche n'est plus disponible. Actualisez puis réessayez.",
+      nameRequired: "Saisissez un nom pour la partie.",
+      datesInvalid: "Le rôle ne peut pas se terminer avant de commencer.",
+      linkNotFound: "Ce lien n'est plus disponible. Actualisez puis réessayez.",
+      linkAlreadySuperseded:
+        "Ce lien a déjà été terminé ou remplacé. Actualisez pour voir la dernière version.",
+      reviewNotFound:
+        "Cette suggestion n'est plus disponible. Actualisez puis réessayez.",
+      reviewAlreadyResolved:
+        "Quelqu'un a déjà vérifié cette suggestion. Actualisez pour voir la décision.",
+      fallback: "L'action n'a pas pu aboutir. Actualisez puis réessayez.",
+    },
+  },
   trackedImport: {
     validationTitle: "Rapport de validation",
     validationSummary: "{valid} lignes valides, {errors} en erreur",
@@ -5387,16 +5910,16 @@ export default {
       agreement: {
         title: "CONTRAT DE PRÊT",
         number: "Numéro du contrat :",
-        period: "2. DURÉE DU PRÊT",
+        period: "DURÉE DU PRÊT",
         startDate: "Date de début :",
         endDate: "Date de fin :",
-        objectsOnLoan: "3. OBJETS PRÊTÉS",
+        objectsOnLoan: "OBJETS PRÊTÉS",
         accessionNumber: "N° d’inventaire",
         titleDescription: "Titre / Description",
-        insurance: "4. ASSURANCE",
+        insurance: "ASSURANCE",
         totalInsuranceValue: "Valeur totale assurée :",
-        termsConditions: "5. CONDITIONS GÉNÉRALES",
-        standardConditions: ". CONDITIONS STANDARD",
+        termsConditions: "CONDITIONS GÉNÉRALES",
+        standardConditions: "CONDITIONS STANDARD",
         borrowerCare:
           "L’emprunteur s’engage à prendre soin des objets prêtés avec la même diligence que celle qu’il applique à la conservation de ses propres biens comparables.",
         noTreatment:
@@ -7328,10 +7851,15 @@ export default {
       saveAndNew: "Enregistrer et en ajouter un autre",
     },
     featureGuard: {
-      unavailable:
-        "Cette fonctionnalité n’est pas disponible avec votre offre.",
+      tierRequired:
+        "L’offre de votre organisation n’inclut pas cette fonctionnalité. Elle fait partie de l’offre {tier} ; un administrateur peut changer d’offre dans Paramètres › Facturation.",
+      moduleDisabled:
+        "Ce module est désactivé pour votre organisation. Un administrateur peut l’activer dans Paramètres › Modules.",
+      permissionMissing:
+        "Votre rôle ne donne pas accès à cette fonctionnalité. Demandez à un administrateur de mettre à jour votre rôle.",
       locked: "{featureName} est verrouillé",
       upgradeTo: "Passer à {tier}",
+      openModules: "Ouvrir Paramètres › Modules",
       tiers: {
         pro: "Pro",
         enterprise: "Entreprise",
@@ -7912,7 +8440,8 @@ export default {
         "Un donateur avec cette adresse e-mail existe déjà : {donor}",
     },
     navigation: {
-      patronManagement: "gestion des usagers",
+      patronManagement: "Gestion des usagers",
+      locked: "Indisponible",
       overview: "Vue d’ensemble",
       myWork: "Mon travail",
       objectCatalog: "Catalogue des objets",
@@ -8305,6 +8834,47 @@ export default {
       "Le fichier d'export n'est pas disponible. Réessayez ou créez un nouvel export.",
     reportsNote:
       "Les synthèses de rapports ci-dessous contiennent les réponses KPI actuelles et des listes limitées d'éléments récents ou à venir. Utilisez les exports complets du catalogue et de l'audit ci-dessus pour obtenir des jeux de données source rapprochés.",
+    sourceRegister: "Registre : {profile}",
+    progressRegister:
+      "{rows} lignes de registre · {scanned} enregistrements examinés · {pages} pages",
+    errorRegisterCriteria:
+      "Vérifiez les critères du registre : les dates doivent être valides, la date de début ne peut pas suivre la date de fin, la date de référence ne peut pas être dans le futur et un statut ne s'applique qu'aux registres d'inventaire et de cession.",
+  },
+  registerReports: {
+    title: "Registres institutionnels",
+    description:
+      "Générez les registres d'inventaire, de cession, de garde et d'état de conservation à partir des preuves enregistrées. Chaque fichier a un schéma de colonnes typé et un manifeste indiquant les critères, la date de référence et le générateur.",
+    profile: "Registre",
+    profileAccession: "Registre d'inventaire",
+    profileDisposal: "Registre des cessions",
+    profileCustody: "Registre de garde",
+    profileCondition: "Registre d'état de conservation",
+    profileSpectrum: "SPECTRUM XML (non pris en charge)",
+    profileLido: "LIDO XML (non pris en charge)",
+    fromDate: "Du",
+    toDate: "Au",
+    status: "Statut",
+    statusAny: "Tous les statuts",
+    statusPending: "En attente",
+    statusApproved: "Approuvé",
+    statusRejected: "Refusé",
+    asOf: "À la date du",
+    asOfHint:
+      "Laissez À la date du vide pour utiliser le moment de création du registre. Les preuves enregistrées après cette date sont exclues. Les dates et l'heure de référence sont en UTC.",
+    preview: "Aperçu",
+    previewing: "Chargement de l'aperçu",
+    previewLabel: "Aperçu du registre",
+    previewSummary:
+      "{shown} lignes affichées sur {rows} de la première page ({scanned} enregistrements examinés).",
+    previewMore:
+      "D'autres lignes suivent ; créez le registre pour obtenir le fichier complet.",
+    previewEmpty:
+      "La première page ne contient aucune ligne pour ces critères.",
+    notRecordedNote:
+      "Les cellules vides nommées dans notRecorded n'ont jamais été enregistrées dans MuseumLite. Les lignes marquées legacy sont antérieures aux preuves structurées.",
+    exportLabel: "Créer le fichier {profile}",
+    unsupportedNote:
+      "Les registres utilisent un profil d'échange MuseumLite documenté. Ils ne constituent pas une déclaration de conformité SPECTRUM, LIDO ou d'accréditation, et les profils non pris en charge ne peuvent pas être générés.",
   },
   projectionHealth: {
     unavailable: {

@@ -3,18 +3,14 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  archiveDetailFields,
+  typeDetailRecordFields,
+} from "./utils/collectionTypeDetailFields";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
-
-const confidentialityLevelValidator = v.union(
-  v.literal("public"),
-  v.literal("internal"),
-  v.literal("confidential"),
-  v.literal("restricted"),
-  v.literal("top_secret"),
-);
 
 async function requireArchiveModule(
   ctx: QueryCtx | MutationCtx,
@@ -30,34 +26,9 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("archiveDetails"),
-      collectionId: v.id("collections"),
-      organizationId: v.id("organizations"),
-      documentType: v.optional(v.string()),
-      retentionCategory: v.optional(v.string()),
-      retentionYears: v.optional(v.number()),
-      retentionStartDate: v.optional(v.number()),
-      retentionExpiresAt: v.optional(v.number()),
-      flaggedForDestruction: v.optional(v.boolean()),
-      destructionDate: v.optional(v.number()),
-      destructionMethod: v.optional(v.string()),
-      destructionWitnessedBy: v.optional(v.string()),
-      legalHold: v.optional(v.boolean()),
-      legalHoldReason: v.optional(v.string()),
-      confidentialityLevel: v.optional(confidentialityLevelValidator),
-      accessRestrictions: v.optional(v.array(v.string())),
-      originatingDepartment: v.optional(v.string()),
-      recordSeries: v.optional(v.string()),
-      boxNumber: v.optional(v.string()),
-      folderNumber: v.optional(v.string()),
-      digitalAssetUrl: v.optional(v.string()),
-      digitalAssetStorageId: v.optional(v.id("_storage")),
-      fileFormat: v.optional(v.string()),
-      fileSize: v.optional(v.number()),
-      pageCount: v.optional(v.number()),
-      ocrProcessed: v.optional(v.boolean()),
-      keywords: v.optional(v.array(v.string())),
-      createdAt: v.number(),
-      lastModifiedAt: v.optional(v.number()),
+      _creationTime: v.number(),
+      ...typeDetailRecordFields,
+      ...archiveDetailFields,
     }),
     v.null(),
   ),
@@ -90,30 +61,7 @@ export const get = query({
 export const upsert = mutation({
   args: {
     collectionId: v.id("collections"),
-    documentType: v.optional(v.string()),
-    retentionCategory: v.optional(v.string()),
-    retentionYears: v.optional(v.number()),
-    retentionStartDate: v.optional(v.number()),
-    retentionExpiresAt: v.optional(v.number()),
-    flaggedForDestruction: v.optional(v.boolean()),
-    destructionDate: v.optional(v.number()),
-    destructionMethod: v.optional(v.string()),
-    destructionWitnessedBy: v.optional(v.string()),
-    legalHold: v.optional(v.boolean()),
-    legalHoldReason: v.optional(v.string()),
-    confidentialityLevel: v.optional(confidentialityLevelValidator),
-    accessRestrictions: v.optional(v.array(v.string())),
-    originatingDepartment: v.optional(v.string()),
-    recordSeries: v.optional(v.string()),
-    boxNumber: v.optional(v.string()),
-    folderNumber: v.optional(v.string()),
-    digitalAssetUrl: v.optional(v.string()),
-    digitalAssetStorageId: v.optional(v.id("_storage")),
-    fileFormat: v.optional(v.string()),
-    fileSize: v.optional(v.number()),
-    pageCount: v.optional(v.number()),
-    ocrProcessed: v.optional(v.boolean()),
-    keywords: v.optional(v.array(v.string())),
+    ...archiveDetailFields,
   },
   returns: v.id("archiveDetails"),
   handler: async (ctx, args) => {
