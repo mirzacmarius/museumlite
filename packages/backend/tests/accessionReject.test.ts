@@ -403,13 +403,11 @@ test("reject decisions are audited, kept in the case history and explained to th
     entityType: "accession",
     entityId: accessionId,
   });
-  expect(
-    audit
-      .filter((entry) => entry.action !== "submitted_object_accession")
-      .map((entry) => [entry.action, entry.changes?.reason]),
-  ).toEqual([
+  expect(audit.map((entry) => [entry.action, entry.changes?.reason])).toEqual([
     ["withdrawn", "Donor withdrew the offer"],
+    ["submitted_object_accession", undefined],
     ["returned_to_draft", "Add the frame dimensions"],
+    ["submitted_object_accession", undefined],
   ]);
 
   const history = await registrar.query(api.auditLog.listCaseHistory, {

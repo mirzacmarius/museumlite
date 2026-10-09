@@ -1325,19 +1325,19 @@ export const submitForApproval = mutation({
           status: accession.status,
         },
       }),
-      ...Array.from(reviewers)
-        .filter((reviewerId) => reviewerId !== userId)
-        .map((reviewerId) =>
-          ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: accession.organizationId,
-            userId: reviewerId,
-            type: "workflow_pending",
-            title: "Object Request Requires Approval",
-            message: `Object request ${accession.accessionNumber} is pending your approval.`,
-            relatedEntityType: "accession",
-            relatedEntityId: args.accessionId,
-          }),
-        ),
+      ...Array.from(reviewers, (reviewerId) =>
+        reviewerId === userId
+          ? null
+          : ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: accession.organizationId,
+              userId: reviewerId,
+              type: "workflow_pending",
+              title: "Object Request Requires Approval",
+              message: `Object request ${accession.accessionNumber} is pending your approval.`,
+              relatedEntityType: "accession",
+              relatedEntityId: args.accessionId,
+            }),
+      ),
     ]);
 
     return null;

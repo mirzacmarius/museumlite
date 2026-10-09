@@ -24,6 +24,20 @@ import { useScopedI18n } from "@/locales/client";
 
 type RejectDecision = "returnToDraft" | "withdraw";
 
+interface RejectForm {
+  open: boolean;
+  decision: RejectDecision;
+  reason: string;
+  error: string | null;
+}
+
+const initialRejectForm: RejectForm = {
+  open: false,
+  decision: "returnToDraft",
+  reason: "",
+  error: null,
+};
+
 interface RejectIntakeDialogProps {
   accessionId: Id<"accessions">;
   disabled?: boolean;
@@ -44,40 +58,37 @@ export function RejectIntakeDialog({
   const tCommon = useScopedI18n("common");
   const reviewMessage = useAccessionReviewMessage();
   const rejectIntake = useMutation(api.accessions.reject);
-  const [open, setOpen] = useState(false);
-  const [decision, setDecision] = useState<RejectDecision>("returnToDraft");
-  const [reason, setReason] = useState("");
+  const [form, setForm] = useState<RejectForm>(initialRejectForm);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const reset = () => {
-    setDecision("returnToDraft");
-    setReason("");
-    setError(null);
-  };
+  const { open, decision, reason, error } = form;
 
   const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
-    if (nextOpen) {
-      setReason((current) => current || initialReason?.trim() || "");
-    } else {
-      reset();
-    }
+    setForm((current) =>
+      nextOpen
+        ? {
+            ...current,
+            open: true,
+            reason: current.reason || initialReason?.trim() || "",
+          }
+        : initialRejectForm,
+    );
   };
 
   const handleConfirm = async () => {
     setIsSaving(true);
-    setError(null);
     // Close before saving: on success the intake leaves review and this
     // panel unmounts. A failure reopens the dialog with the reason intact.
-    setOpen(false);
+    setForm((current) => ({ ...current, open: false, error: null }));
     try {
       await rejectIntake({ accessionId, decision, reason });
-      reset();
+      setForm(initialRejectForm);
       onDecided?.();
     } catch (err) {
-      setError(reviewMessage(err));
-      setOpen(true);
+      setForm((current) => ({
+        ...current,
+        open: true,
+        error: reviewMessage(err),
+      }));
     } finally {
       setIsSaving(false);
     }
@@ -117,7 +128,7 @@ export function RejectIntakeDialog({
           value={decision}
           onValueChange={(value) => {
             if (value === "returnToDraft" || value === "withdraw") {
-              setDecision(value);
+              setForm((current) => ({ ...current, decision: value }));
             }
           }}
           className="gap-3"
@@ -149,7 +160,9 @@ export function RejectIntakeDialog({
           <Textarea
             id="reject-reason"
             value={reason}
-            onChange={(event) => setReason(event.target.value)}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, reason: event.target.value }))
+            }
             placeholder={t("reasonPlaceholder")}
             rows={3}
             maxLength={MAX_REVIEW_REASON_LENGTH}
