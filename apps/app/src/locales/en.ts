@@ -1830,7 +1830,11 @@ export default {
         "{placeholder} is not a known placeholder. Use one from the list.",
       malformedPlaceholder:
         "A placeholder is not written correctly. Each one starts with two opening braces and ends with two closing braces.",
+      templateLimitReached:
+        "You can keep at most {limit} active templates. Archive one before adding another.",
       invalidCurrency: "Enter a three-letter currency code, such as EUR.",
+      currencyAlreadyRecorded:
+        "This loan already has a currency recorded. Refresh the page.",
       fallback: "The change could not be saved. Try again.",
     },
     agreement: {
@@ -1855,6 +1859,10 @@ export default {
       label: "Currency",
       placeholder: "EUR",
       hint: "Three-letter code, such as EUR or NOK.",
+      missing:
+        "No currency is recorded for this loan's insurance value, so the agreement shows it as a plain number.",
+      record: "Record currency",
+      recorded: "Currency recorded.",
     },
   },
   transit: {

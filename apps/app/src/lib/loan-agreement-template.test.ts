@@ -99,6 +99,22 @@ test("the object list becomes a table between the surrounding text", () => {
   ]);
 });
 
+test("a loan without objects gets no object table, even beside other values", () => {
+  expect(
+    bodyText("Loan {{loan.number}}: {{object.list}}", outgoingLoan),
+  ).toEqual([{ kind: "text", text: "Loan LN-2026-004:" }]);
+});
+
+test("an insurance value of zero counts as not insured", () => {
+  expect(
+    renderLoanAgreement(
+      [{ heading: "Insurance", body: "Insured for {{insurance.value}}." }],
+      { ...outgoingLoan, currency: "EUR", insuranceValue: 0 },
+      "en",
+    ),
+  ).toEqual([]);
+});
+
 const standardLabels = {
   periodHeading: "LOAN PERIOD",
   startDate: "Start Date:",

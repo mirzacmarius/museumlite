@@ -21,13 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { FileText } from "lucide-react";
-import { useReducer } from "react";
+import { Suspense, useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 import { useLoanAgreementTemplateErrorMessage } from "@/hooks/use-loan-agreement-template-error-message";
-import { useStandardLoanAgreementSections } from "@/hooks/use-standard-loan-agreement-sections";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import {
+  loadAgreementDictionary,
+  loanAgreementLabels,
+} from "@/lib/loan-agreement-labels";
+import { standardLoanAgreementSections } from "@/lib/loan-agreement-template";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { PlaceholderReference } from "./placeholder-reference";
 import {
   initialTemplateDraft,
@@ -46,10 +50,10 @@ import { TemplatePreview } from "./template-preview";
 import { TemplateSectionsField } from "./template-sections-field";
 import { useAppliesToLabel } from "./use-applies-to-label";
 
-/** Which template the editor is open for; null template means a new one. */
+/** Which template the editor is open for; a null templateId means a new one. */
 export type TemplateEditorTarget =
   | { open: false }
-  | { open: true; template: LoanAgreementTemplate | null };
+  | { open: true; templateId: Id<"loanAgreementTemplates"> | null };
 
 interface TemplateEditorFormProps {
   organizationId: Id<"organizations">;
@@ -64,11 +68,11 @@ function TemplateEditorForm({
   template,
   onDone,
 }: TemplateEditorFormProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loanAgreementTemplates");
   const locale = useCurrentLocale();
   const appliesToLabel = useAppliesToLabel();
   const errorMessage = useLoanAgreementTemplateErrorMessage();
-  const standardSections = useStandardLoanAgreementSections();
   const createTemplate = useMutation(api.loanAgreementTemplates.create);
   const updateTemplate = useMutation(api.loanAgreementTemplates.update);
   const [draft, dispatch] = useReducer(
@@ -76,11 +80,33 @@ function TemplateEditorForm({
     { template, language: locale },
     initialTemplateDraft,
   );
+  // A save can finish after this editor closed (and another opened); only the
+  // editor that is still open may close the dialog.
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const sections = draft.sections.map(({ heading, body }) => ({
     heading,
     body,
   }));
+  const isBlank = draft.sections.every(
+    (section) => !section.heading.trim() && !section.body.trim(),
+  );
+
+  const startFromStandard = async () => {
+    const dictionary = await loadAgreementDictionary(draft.language);
+    dispatch({
+      type: "replaceSections",
+      sections: withSectionIds(
+        standardLoanAgreementSections(loanAgreementLabels(dictionary).standard),
+      ),
+    });
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -100,7 +126,7 @@ function TemplateEditorForm({
         await createTemplate(content);
         toast.success(t("toasts.created"));
       }
-      onDone();
+      if (isMounted.current) onDone();
     } catch (error) {
       dispatch({ type: "saveFailed", error: errorMessage(error) });
     }
@@ -176,21 +202,17 @@ function TemplateEditorForm({
               </Select>
             </div>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              dispatch({
-                type: "replaceSections",
-                sections: withSectionIds(standardSections),
-                language: locale,
-              })
-            }
-          >
-            <FileText className="mr-2 size-4" />
-            {t("editor.startFromStandard")}
-          </Button>
+          {isBlank && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={startFromStandard}
+            >
+              <FileText className="mr-2 size-4" />
+              {t("editor.startFromStandard")}
+            </Button>
+          )}
           <TemplateSectionsField
             sections={draft.sections}
             dispatch={dispatch}
@@ -199,12 +221,20 @@ function TemplateEditorForm({
         </div>
         <div className="space-y-2">
           <p className="text-sm font-medium">{t("editor.preview")}</p>
-          <TemplatePreview
-            sections={sections}
-            language={draft.language}
-            loanType={draft.loanType}
-            organizationName={organizationName}
-          />
+          <Suspense
+            fallback={
+              <p className="text-sm text-muted-foreground">
+                {tRoot("common.loading")}
+              </p>
+            }
+          >
+            <TemplatePreview
+              sections={sections}
+              language={draft.language}
+              loanType={draft.loanType}
+              organizationName={organizationName}
+            />
+          </Suspense>
         </div>
       </div>
 
@@ -238,27 +268,57 @@ export function TemplateEditorDialog({
   target,
   onClose,
 }: TemplateEditorDialogProps) {
-  const t = useScopedI18n("loanAgreementTemplates.editor");
-  const template = target.open ? target.template : null;
+  const tRoot = useI18n();
+  const t = useScopedI18n("loanAgreementTemplates");
+  const templateId = target.open ? target.templateId : null;
+  const template = useQuery(
+    api.loanAgreementTemplates.get,
+    templateId ? { organizationId, templateId } : "skip",
+  );
+
+  let content: React.ReactNode = null;
+  if (target.open && !templateId) {
+    content = (
+      <TemplateEditorForm
+        key="new"
+        organizationId={organizationId}
+        organizationName={organizationName}
+        template={null}
+        onDone={onClose}
+      />
+    );
+  } else if (target.open && template === undefined) {
+    content = (
+      <p className="text-sm text-muted-foreground">{tRoot("common.loading")}</p>
+    );
+  } else if (target.open && template === null) {
+    content = (
+      <p role="alert" className="text-sm text-destructive">
+        {t("errors.templateNotFound")}
+      </p>
+    );
+  } else if (target.open && template) {
+    content = (
+      <TemplateEditorForm
+        key={template._id}
+        organizationId={organizationId}
+        organizationName={organizationName}
+        template={template}
+        onDone={onClose}
+      />
+    );
+  }
 
   return (
     <Dialog open={target.open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {template ? t("editTitle") : t("createTitle")}
+            {templateId ? t("editor.editTitle") : t("editor.createTitle")}
           </DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
+          <DialogDescription>{t("editor.description")}</DialogDescription>
         </DialogHeader>
-        {target.open && (
-          <TemplateEditorForm
-            key={template?._id ?? "new"}
-            organizationId={organizationId}
-            organizationName={organizationName}
-            template={template}
-            onDone={onClose}
-          />
-        )}
+        {content}
       </DialogContent>
     </Dialog>
   );

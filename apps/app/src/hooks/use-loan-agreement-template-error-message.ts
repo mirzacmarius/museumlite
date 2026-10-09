@@ -2,6 +2,7 @@ import {
   type LoanAgreementTemplateErrorData,
   loanAgreementTemplateErrorFromError,
 } from "@v1/backend/convex/utils/loanAgreementErrors";
+import { LOAN_AGREEMENT_TEMPLATE_LIMITS } from "@v1/backend/convex/utils/loanAgreementValidators";
 import { useScopedI18n } from "@/locales/client";
 
 /**
@@ -22,6 +23,10 @@ export function useLoanAgreementTemplateErrorMessage() {
         return t("sectionsRequired");
       case "TEMPLATE_TOO_LARGE":
         return t("templateTooLarge");
+      case "TEMPLATE_LIMIT_REACHED":
+        return t("templateLimitReached", {
+          limit: LOAN_AGREEMENT_TEMPLATE_LIMITS.activeTemplates,
+        });
       case "UNKNOWN_PLACEHOLDER":
         return t("unknownPlaceholder", {
           placeholder: `{{${error.placeholder ?? ""}}}`,
@@ -30,6 +35,8 @@ export function useLoanAgreementTemplateErrorMessage() {
         return t("malformedPlaceholder");
       case "INVALID_CURRENCY":
         return t("invalidCurrency");
+      case "CURRENCY_ALREADY_RECORDED":
+        return t("currencyAlreadyRecorded");
     }
   }
 

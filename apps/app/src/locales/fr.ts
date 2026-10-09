@@ -2499,6 +2499,10 @@ export default {
         "Une variable est mal écrite. Chacune commence par deux accolades ouvrantes et se termine par deux accolades fermantes.",
       invalidCurrency:
         "Saisissez un code de devise à trois lettres, par exemple EUR.",
+      templateLimitReached:
+        "Vous pouvez conserver au maximum {limit} modèles actifs. Archivez-en un avant d'en ajouter un autre.",
+      currencyAlreadyRecorded:
+        "Une devise est déjà enregistrée pour ce prêt. Actualisez la page.",
       fallback: "La modification n'a pas pu être enregistrée. Réessayez.",
     },
     agreement: {
@@ -2523,6 +2527,10 @@ export default {
       label: "Devise",
       placeholder: "EUR",
       hint: "Code à trois lettres, par exemple EUR ou NOK.",
+      missing:
+        "Aucune devise n'est enregistrée pour la valeur assurée de ce prêt ; le contrat l'affiche donc comme un simple nombre.",
+      record: "Enregistrer la devise",
+      recorded: "Devise enregistrée.",
     },
   },
   transit: {

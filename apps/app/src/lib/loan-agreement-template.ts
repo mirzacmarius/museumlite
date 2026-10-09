@@ -119,7 +119,8 @@ function placeholderValue(
     case "organization.name":
       return data.organizationName;
     case "insurance.value":
-      if (data.insuranceValue === undefined) return "";
+      // Zero means no insurance value was entered, as on the loan page.
+      if (!data.insuranceValue) return "";
       return data.currency
         ? formatCurrency(data.insuranceValue, locale, data.currency)
         : formatNumber(data.insuranceValue, locale);
@@ -149,7 +150,11 @@ function textBlock(lines: string[]): LoanAgreementBlock | null {
   const first = lines.findIndex((line) => line.trim());
   if (first === -1) return null;
   const last = lines.findLastIndex((line) => line.trim());
-  return { kind: "text", text: lines.slice(first, last + 1).join("\n") };
+  const text = lines
+    .slice(first, last + 1)
+    .map((line) => line.trimEnd())
+    .join("\n");
+  return { kind: "text", text };
 }
 
 function renderBody(
@@ -185,7 +190,11 @@ function renderBody(
     let current = "";
     let splitByTable = false;
     parsed.tokens.forEach((token, index) => {
-      if (token.kind === "placeholder" && token.name === "object.list") {
+      if (
+        token.kind === "placeholder" &&
+        token.name === "object.list" &&
+        data.objects.length > 0
+      ) {
         if (current.trim()) lines.push(current);
         current = "";
         splitByTable = true;

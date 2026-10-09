@@ -51,6 +51,7 @@ export function LoanDetailHeader({
         <div className="h-4 w-px bg-border" />
         <LoanAgreement
           loanId={loan._id}
+          organizationId={loan.organizationId}
           loan={{
             loanNumber: loan.loanNumber,
             type: loan.type,

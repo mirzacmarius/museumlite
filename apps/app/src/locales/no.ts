@@ -2414,6 +2414,10 @@ export default {
         "En plassholder er skrevet feil. Hver plassholder starter med to åpne krøllparenteser og slutter med to lukkede.",
       invalidCurrency:
         "Skriv inn en valutakode på tre bokstaver, for eksempel NOK.",
+      templateLimitReached:
+        "Du kan ha høyst {limit} aktive maler. Arkiver en før du legger til en ny.",
+      currencyAlreadyRecorded:
+        "Dette lånet har allerede en registrert valuta. Oppdater siden.",
       fallback: "Endringen kunne ikke lagres. Prøv igjen.",
     },
     agreement: {
@@ -2438,6 +2442,10 @@ export default {
       label: "Valuta",
       placeholder: "NOK",
       hint: "Kode på tre bokstaver, for eksempel NOK eller EUR.",
+      missing:
+        "Ingen valuta er registrert for forsikringsverdien til dette lånet, så avtalen viser den som et tall uten valuta.",
+      record: "Registrer valuta",
+      recorded: "Valutaen er registrert.",
     },
   },
   transit: {

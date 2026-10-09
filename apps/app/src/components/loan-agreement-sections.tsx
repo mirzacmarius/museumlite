@@ -1,35 +1,44 @@
-"use client";
-
+import type { LoanAgreementLabels } from "@/lib/loan-agreement-labels";
 import type {
   LoanAgreementObject,
   RenderedLoanAgreementSection,
 } from "@/lib/loan-agreement-template";
-import { useI18n } from "@/locales/client";
+
+type ObjectTableLabels = Pick<
+  LoanAgreementLabels,
+  "accessionNumber" | "titleDescription" | "condition"
+>;
 
 function LoanAgreementObjectsTable({
   objects,
+  labels,
 }: {
   objects: LoanAgreementObject[];
+  labels: ObjectTableLabels;
 }) {
-  const tRoot = useI18n();
+  // Accession numbers can repeat (or be blank for removed objects).
+  const rows = objects.map((object, position) => ({
+    object,
+    key: `${position}-${object.accessionNumber}`,
+  }));
   return (
     <table className="mb-3 w-full border-collapse">
       <thead>
         <tr>
           <th className="border border-black bg-zinc-100 p-2 text-left">
-            {tRoot("untranslatedRecords.loans.agreement.accessionNumber")}
+            {labels.accessionNumber}
           </th>
           <th className="border border-black bg-zinc-100 p-2 text-left">
-            {tRoot("untranslatedRecords.loans.agreement.titleDescription")}
+            {labels.titleDescription}
           </th>
           <th className="border border-black bg-zinc-100 p-2 text-left">
-            {tRoot("loans.actions.condition")}
+            {labels.condition}
           </th>
         </tr>
       </thead>
       <tbody>
-        {objects.map((object) => (
-          <tr key={object.accessionNumber}>
+        {rows.map(({ object, key }) => (
+          <tr key={key}>
             <td className="border border-black p-2">
               {object.accessionNumber}
             </td>
@@ -48,6 +57,7 @@ interface LoanAgreementSectionsProps {
   sections: RenderedLoanAgreementSection[];
   /** Number given to the first headed section, after the fixed sections. */
   firstNumber: number;
+  labels: ObjectTableLabels;
 }
 
 /**
@@ -57,6 +67,7 @@ interface LoanAgreementSectionsProps {
 export function LoanAgreementSections({
   sections,
   firstNumber,
+  labels,
 }: LoanAgreementSectionsProps) {
   // The rendered agreement is static output, so position-based keys are stable.
   let nextNumber = firstNumber;
@@ -84,6 +95,7 @@ export function LoanAgreementSections({
               <LoanAgreementObjectsTable
                 key={blockKey}
                 objects={block.objects}
+                labels={labels}
               />
             ) : (
               <p key={blockKey} className="terms mb-3 whitespace-pre-wrap">

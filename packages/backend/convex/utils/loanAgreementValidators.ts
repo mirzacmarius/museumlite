@@ -1,11 +1,18 @@
 import { v } from "convex/values";
 
-/** Keeps a template document well under Convex's 1 MB document limit. */
+/**
+ * Bounds on template content. Character limits drive the editor fields;
+ * templateBytes caps the stored UTF-8 size so a template stays far below
+ * Convex's 1 MiB document limit and an organization's active templates
+ * (at most activeTemplates of them) fit comfortably in one query's reads.
+ */
 export const LOAN_AGREEMENT_TEMPLATE_LIMITS = {
   nameLength: 120,
   sections: 30,
   headingLength: 200,
   bodyLength: 20_000,
+  templateBytes: 100_000,
+  activeTemplates: 50,
 } as const;
 
 /** Languages a loan agreement template can be written in (the app locales). */

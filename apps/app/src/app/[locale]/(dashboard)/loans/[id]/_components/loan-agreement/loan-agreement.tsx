@@ -19,9 +19,10 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { FileText, Mail, Printer } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { LoanAgreementDocument } from "./loan-agreement-document";
+import { LoanCurrencyBackfill } from "./loan-currency-backfill";
 import type { LoanAgreementProps } from "./types";
 import { useLoanAgreementActions } from "./use-loan-agreement-actions";
 import {
@@ -31,6 +32,7 @@ import {
 
 function LoanAgreementPreview({
   loanId,
+  organizationId,
   loan,
   items,
   organizationName,
@@ -43,12 +45,10 @@ function LoanAgreementPreview({
     items,
     organizationName,
   });
-  const agreement = useLoanAgreementTemplate({
-    loanId,
-    loan,
-    items,
-    organizationName,
-  });
+  const agreement = useLoanAgreementTemplate({ loanId, organizationId });
+  const loading = (
+    <p className="text-sm text-muted-foreground">{tRoot("common.loading")}</p>
+  );
 
   return (
     <>
@@ -77,18 +77,22 @@ function LoanAgreementPreview({
         </Select>
       </div>
 
+      {loan.insuranceValue && !loan.currency ? (
+        <LoanCurrencyBackfill loanId={loanId} />
+      ) : null}
+
       {agreement.isLoading ? (
-        <p className="text-sm text-muted-foreground">
-          {tRoot("common.loading")}
-        </p>
+        loading
       ) : (
-        <LoanAgreementDocument
-          printRef={printRef}
-          loan={loan}
-          organizationName={organizationName}
-          language={agreement.language}
-          sections={agreement.sections}
-        />
+        <Suspense fallback={loading}>
+          <LoanAgreementDocument
+            printRef={printRef}
+            loan={loan}
+            items={items}
+            organizationName={organizationName}
+            template={agreement.template}
+          />
+        </Suspense>
       )}
 
       <DialogFooter className="gap-2">

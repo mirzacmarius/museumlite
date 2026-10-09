@@ -38,6 +38,7 @@ export interface LoanAgreementLoan {
 
 export interface LoanAgreementProps {
   loanId: Id<"loans">;
+  organizationId: Id<"organizations">;
   loan: LoanAgreementLoan;
   items: LoanAgreementItem[];
   organizationName: string;

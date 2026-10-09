@@ -31,11 +31,7 @@ export type TemplateDraftAction =
   | { type: "addSection"; id: string }
   | { type: "removeSection"; id: string }
   | { type: "moveSection"; id: string; offset: -1 | 1 }
-  | {
-      type: "replaceSections";
-      sections: DraftSection[];
-      language: TemplateLanguage;
-    }
+  | { type: "replaceSections"; sections: DraftSection[] }
   | { type: "saveStarted" }
   | { type: "saveFailed"; error: string };
 
@@ -118,11 +114,7 @@ export function templateDraftReducer(
         sections: moveSection(state.sections, action.id, action.offset),
       };
     case "replaceSections":
-      return {
-        ...state,
-        sections: action.sections,
-        language: action.language,
-      };
+      return { ...state, sections: action.sections };
     case "saveStarted":
       return { ...state, isSaving: true, error: null };
     case "saveFailed":

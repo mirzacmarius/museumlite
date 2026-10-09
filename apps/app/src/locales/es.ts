@@ -2452,6 +2452,10 @@ export default {
         "Un marcador no está bien escrito. Cada uno empieza con dos llaves de apertura y termina con dos llaves de cierre.",
       invalidCurrency:
         "Introduzca un código de moneda de tres letras, como EUR.",
+      templateLimitReached:
+        "Puede mantener como máximo {limit} plantillas activas. Archive una antes de añadir otra.",
+      currencyAlreadyRecorded:
+        "Este préstamo ya tiene una moneda registrada. Actualice la página.",
       fallback: "No se pudo guardar el cambio. Inténtelo de nuevo.",
     },
     agreement: {
@@ -2476,6 +2480,10 @@ export default {
       label: "Moneda",
       placeholder: "EUR",
       hint: "Código de tres letras, como EUR o NOK.",
+      missing:
+        "No hay ninguna moneda registrada para el valor asegurado de este préstamo, por lo que el contrato lo muestra como un número sin moneda.",
+      record: "Registrar moneda",
+      recorded: "Moneda registrada.",
     },
   },
   transit: {

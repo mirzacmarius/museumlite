@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { requireLoansAccess } from "./utils/loanAccess";
 import { loanAgreementTemplateError } from "./utils/loanAgreementErrors";
@@ -12,6 +12,7 @@ import {
   loanAgreementLoanTypeValidator,
   loanAgreementSectionValidator,
   loanAgreementTemplateFields,
+  loanAgreementTemplateStatusValidator,
 } from "./utils/loanAgreementValidators";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
@@ -51,6 +52,11 @@ function validatedContent(args: { name: string; sections: TemplateSection[] }) {
     heading: section.heading.trim(),
     body: section.body,
   }));
+  const encoder = new TextEncoder();
+  const storedBytes = [
+    name,
+    ...sections.flatMap((section) => [section.heading, section.body]),
+  ].reduce((total, text) => total + encoder.encode(text).length, 0);
   if (
     name.length > limits.nameLength ||
     sections.length > limits.sections ||
@@ -58,7 +64,8 @@ function validatedContent(args: { name: string; sections: TemplateSection[] }) {
       (section) =>
         section.heading.length > limits.headingLength ||
         section.body.length > limits.bodyLength,
-    )
+    ) ||
+    storedBytes > limits.templateBytes
   ) {
     throw loanAgreementTemplateError(
       "TEMPLATE_TOO_LARGE",
@@ -171,48 +178,82 @@ async function requireActiveTemplate(
   return template;
 }
 
-/** Upper bound on templates returned per organization and status. */
-const LIST_LIMIT = 200;
+const MAX_ACTIVE_TEMPLATES = LOAN_AGREEMENT_TEMPLATE_LIMITS.activeTemplates;
+/** Archived templates listed for restoring, most recently created first. */
+const ARCHIVED_LIST_LIMIT = 50;
+
+const templateSummaryValidator = v.object({
+  _id: v.id("loanAgreementTemplates"),
+  name: v.string(),
+  language: loanAgreementLanguageValidator,
+  loanType: loanAgreementLoanTypeValidator,
+  isDefault: v.boolean(),
+  status: loanAgreementTemplateStatusValidator,
+  sectionCount: v.number(),
+});
+
+function summarize(template: Doc<"loanAgreementTemplates">) {
+  return {
+    _id: template._id,
+    name: template.name,
+    language: template.language,
+    loanType: template.loanType,
+    isDefault: template.isDefault,
+    status: template.status,
+    sectionCount: template.sections.length,
+  };
+}
 
 function byName(a: { name: string }, b: { name: string }) {
   return a.name.localeCompare(b.name);
 }
 
-async function templatesWithStatus(
+/** All active templates; create and restore keep them within the cap. */
+async function activeTemplates(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  status: "active" | "archived",
 ) {
   const templates = await ctx.db
     .query("loanAgreementTemplates")
     .withIndex("by_organization_and_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", status),
+      q.eq("organizationId", organizationId).eq("status", "active"),
     )
-    .take(LIST_LIMIT);
+    .take(MAX_ACTIVE_TEMPLATES);
   return templates.sort(byName);
 }
 
-/** Active templates by name, followed by archived ones when requested. */
+async function requireRoomForActiveTemplate(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const active = await activeTemplates(ctx, organizationId);
+  if (active.length >= MAX_ACTIVE_TEMPLATES) {
+    throw loanAgreementTemplateError(
+      "TEMPLATE_LIMIT_REACHED",
+      `An organization can keep at most ${MAX_ACTIVE_TEMPLATES} active templates`,
+    );
+  }
+}
+
+/** Active templates by name, then recent archived ones when requested. */
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
     includeArchived: v.optional(v.boolean()),
   },
-  returns: v.array(templateValidator),
+  returns: v.array(templateSummaryValidator),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "loans.read");
-    const active = await templatesWithStatus(
-      ctx,
-      args.organizationId,
-      "active",
-    );
-    if (!args.includeArchived) return active;
-    const archived = await templatesWithStatus(
-      ctx,
-      args.organizationId,
-      "archived",
-    );
-    return [...active, ...archived];
+    const active = await activeTemplates(ctx, args.organizationId);
+    if (!args.includeArchived) return active.map(summarize);
+    const archived = await ctx.db
+      .query("loanAgreementTemplates")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "archived"),
+      )
+      .order("desc")
+      .take(ARCHIVED_LIST_LIMIT);
+    return [...active, ...archived.sort(byName)].map(summarize);
   },
 });
 
@@ -228,7 +269,7 @@ export const listForLoan = query({
   },
   returns: v.union(
     v.object({
-      templates: v.array(templateValidator),
+      templates: v.array(templateSummaryValidator),
       defaultTemplateId: v.union(v.id("loanAgreementTemplates"), v.null()),
     }),
     v.null(),
@@ -238,11 +279,7 @@ export const listForLoan = query({
     if (!loan) return null;
     await requirePermission(ctx, loan.organizationId, "loans.read");
 
-    const active = await templatesWithStatus(
-      ctx,
-      loan.organizationId,
-      "active",
-    );
+    const active = await activeTemplates(ctx, loan.organizationId);
     const templates = active.filter(
       (template) =>
         template.loanType === "any" || template.loanType === loan.type,
@@ -252,7 +289,10 @@ export const listForLoan = query({
         (template) => template.isDefault && template.loanType === loanType,
       );
     const preselected = defaultFor(loan.type) ?? defaultFor("any");
-    return { templates, defaultTemplateId: preselected?._id ?? null };
+    return {
+      templates: templates.map(summarize),
+      defaultTemplateId: preselected?._id ?? null,
+    };
   },
 });
 
@@ -278,6 +318,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const userId = await requireTemplateAdministrator(ctx, args.organizationId);
     const { name, sections } = validatedContent(args);
+    await requireRoomForActiveTemplate(ctx, args.organizationId);
     const content = {
       name,
       language: args.language,
@@ -362,6 +403,8 @@ export const archive = mutation({
       args.organizationId,
       args.templateId,
     );
+    // Archiving again (a stale page, a double click) keeps the original record.
+    if (template.status === "archived") return null;
     await ctx.db.patch(args.templateId, {
       status: "archived",
       isDefault: false,
@@ -393,6 +436,8 @@ export const restore = mutation({
       args.organizationId,
       args.templateId,
     );
+    if (template.status === "active") return null;
+    await requireRoomForActiveTemplate(ctx, args.organizationId);
     await ctx.db.patch(args.templateId, {
       status: "active",
       archivedBy: undefined,
@@ -434,7 +479,7 @@ export const setDefault = mutation({
           .eq("loanType", template.loanType)
           .eq("isDefault", true),
       )
-      .take(LIST_LIMIT);
+      .take(MAX_ACTIVE_TEMPLATES);
     for (const current of currentDefaults) {
       if (current._id !== template._id) {
         await ctx.db.patch(current._id, { isDefault: false });

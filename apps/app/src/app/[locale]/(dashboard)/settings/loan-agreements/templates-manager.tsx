@@ -15,13 +15,13 @@ import {
   type TemplateEditorTarget,
 } from "./template-editor-dialog";
 import {
-  type LoanAgreementTemplate,
+  type LoanAgreementTemplateSummary,
   TEMPLATE_LANGUAGE_NAMES,
 } from "./template-options";
 import { useAppliesToLabel } from "./use-applies-to-label";
 
 interface TemplateRowProps {
-  template: LoanAgreementTemplate;
+  template: LoanAgreementTemplateSummary;
   onEdit: () => void;
   onSetDefault: () => void;
   onArchive: () => void;
@@ -45,7 +45,7 @@ function TemplateRow({
         <p className="text-sm text-muted-foreground">
           {appliesToLabel(template.loanType)} ·{" "}
           {TEMPLATE_LANGUAGE_NAMES[template.language]} ·{" "}
-          {t("sectionCount", { count: template.sections.length })}
+          {t("sectionCount", { count: template.sectionCount })}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export function TemplatesManager({
       toast.error(errorMessage(error));
     }
   };
-  const target = (template: LoanAgreementTemplate) => ({
+  const target = (template: LoanAgreementTemplateSummary) => ({
     organizationId,
     templateId: template._id,
   });
@@ -116,7 +116,9 @@ export function TemplatesManager({
           <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
           <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
-        <Button onClick={() => setEditorTarget({ open: true, template: null })}>
+        <Button
+          onClick={() => setEditorTarget({ open: true, templateId: null })}
+        >
           <Plus className="mr-2 size-4" />
           {t("newTemplate")}
         </Button>
@@ -144,7 +146,9 @@ export function TemplatesManager({
             <TemplateRow
               key={template._id}
               template={template}
-              onEdit={() => setEditorTarget({ open: true, template })}
+              onEdit={() =>
+                setEditorTarget({ open: true, templateId: template._id })
+              }
               onSetDefault={() =>
                 runAction(
                   () => setDefault(target(template)),

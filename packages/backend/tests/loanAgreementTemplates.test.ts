@@ -146,6 +146,55 @@ test("editing a pending loan can change its currency", async () => {
   expect(loan?.currency).toBe("EUR");
 });
 
+async function createActiveLoanWithoutCurrency(t: ConvexTest) {
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...ADMIN_PERMISSIONS, "loans.update", "loans.approve"],
+    { subscriptionTier: "pro" },
+  );
+  const authed = authedForUser(t, userId);
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    type: "outgoing",
+    lenderBorrowerName: "Partner Museum",
+    startDate: Date.UTC(2026, 0, 15),
+    insuranceValue: 250000,
+  });
+  await authed.mutation(api.loans.approve, { loanId });
+  return { authed, loanId };
+}
+
+test("an approved loan without a currency can have one recorded once", async () => {
+  const t = createConvexTest();
+  const { authed, loanId } = await createActiveLoanWithoutCurrency(t);
+
+  await authed.mutation(api.loans.recordCurrency, { loanId, currency: "nok" });
+
+  const loan = await authed.query(api.loans.get, { loanId });
+  expect([loan?.status, loan?.currency]).toEqual(["active", "NOK"]);
+  const error = await templateErrorOf(
+    authed.mutation(api.loans.recordCurrency, { loanId, currency: "EUR" }),
+  );
+  expect(error?.code).toBe("CURRENCY_ALREADY_RECORDED");
+});
+
+test("recording a currency validates the code and the loan's organization", async () => {
+  const t = createConvexTest();
+  const { authed, loanId } = await createActiveLoanWithoutCurrency(t);
+  const outsider = await createLoanAdmin(t, "Outsider Museum");
+
+  const invalid = await templateErrorOf(
+    authed.mutation(api.loans.recordCurrency, { loanId, currency: "Euro" }),
+  );
+  expect(invalid?.code).toBe("INVALID_CURRENCY");
+  await expect(
+    outsider.authed.mutation(api.loans.recordCurrency, {
+      loanId,
+      currency: "EUR",
+    }),
+  ).rejects.toThrow("Permission denied: loans.update");
+});
+
 test("another organization cannot read a template through its own organization", async () => {
   const t = createConvexTest();
   const owner = await createLoanAdmin(t, "Owner Museum");
@@ -296,6 +345,53 @@ test("template size is bounded", async () => {
   );
 
   expect(error?.code).toBe("TEMPLATE_TOO_LARGE");
+});
+
+test("template size is measured in stored bytes, not characters", async () => {
+  const t = createConvexTest();
+  const { authed, organizationId } = await createLoanAdmin(t);
+  // Each section is within the per-section character limit, but "€" takes
+  // three bytes, so together they exceed the 100,000-byte template budget.
+  const clause = { heading: "Clause", body: "€".repeat(18_000) };
+
+  const error = await templateErrorOf(
+    authed.mutation(api.loanAgreementTemplates.create, {
+      organizationId,
+      name: "Multibyte",
+      language: "en",
+      loanType: "any",
+      sections: [clause, clause],
+    }),
+  );
+
+  expect(error?.code).toBe("TEMPLATE_TOO_LARGE");
+});
+
+test("an organization keeps at most 50 active templates", async () => {
+  const t = createConvexTest();
+  const admin = await createLoanAdmin(t);
+  const firstId = await createTemplate(admin, { name: "Template 1" });
+  for (let number = 2; number <= 50; number++) {
+    await createTemplate(admin, { name: `Template ${number}` });
+  }
+
+  const createError = await templateErrorOf(
+    createTemplate(admin, { name: "Template 51" }),
+  );
+  expect(createError?.code).toBe("TEMPLATE_LIMIT_REACHED");
+
+  await admin.authed.mutation(api.loanAgreementTemplates.archive, {
+    organizationId: admin.organizationId,
+    templateId: firstId,
+  });
+  await createTemplate(admin, { name: "Template 51" });
+  const restoreError = await templateErrorOf(
+    admin.authed.mutation(api.loanAgreementTemplates.restore, {
+      organizationId: admin.organizationId,
+      templateId: firstId,
+    }),
+  );
+  expect(restoreError?.code).toBe("TEMPLATE_LIMIT_REACHED");
 });
 
 test("an administrator edits a template's content", async () => {
@@ -616,6 +712,35 @@ test("archiving retires a template from loans but keeps its record", async () =>
     isDefault: false,
     sections: [conditionsSection],
   });
+});
+
+test("archiving an already archived template keeps the original archive record", async () => {
+  const t = createConvexTest();
+  const admin = await createLoanAdmin(t);
+  const colleagueId = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { name: "Second Admin" });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: admin.organizationId,
+      roleId: admin.roleId,
+      joinedAt: Date.now(),
+    });
+    return userId;
+  });
+  const templateId = await createTemplate(admin);
+  const target = { organizationId: admin.organizationId, templateId };
+
+  await admin.authed.mutation(api.loanAgreementTemplates.archive, target);
+  await authedForUser(t, colleagueId).mutation(
+    api.loanAgreementTemplates.archive,
+    target,
+  );
+
+  const template = await admin.authed.query(
+    api.loanAgreementTemplates.get,
+    target,
+  );
+  expect(template?.archivedBy).toBe(admin.userId);
 });
 
 test("an archived template cannot be edited or made the default", async () => {

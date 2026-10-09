@@ -1,6 +1,11 @@
+import type { api } from "@v1/backend/convex/_generated/api";
 import type { Doc } from "@v1/backend/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 
 export type LoanAgreementTemplate = Doc<"loanAgreementTemplates">;
+export type LoanAgreementTemplateSummary = FunctionReturnType<
+  typeof api.loanAgreementTemplates.list
+>[number];
 export type TemplateLanguage = LoanAgreementTemplate["language"];
 export type TemplateLoanType = LoanAgreementTemplate["loanType"];
 

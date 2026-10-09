@@ -5533,6 +5533,10 @@ export default {
         "Un câmp variabil nu este scris corect. Fiecare începe cu două acolade deschise și se termină cu două acolade închise.",
       invalidCurrency:
         "Introduceți un cod de monedă din trei litere, de exemplu EUR.",
+      templateLimitReached:
+        "Puteți păstra cel mult {limit} șabloane active. Arhivați unul înainte de a adăuga altul.",
+      currencyAlreadyRecorded:
+        "Acest împrumut are deja o monedă înregistrată. Reîmprospătați pagina.",
       fallback: "Modificarea nu a putut fi salvată. Încercați din nou.",
     },
     agreement: {
@@ -5558,6 +5562,10 @@ export default {
       label: "Monedă",
       placeholder: "EUR",
       hint: "Cod din trei litere, de exemplu EUR sau RON.",
+      missing:
+        "Nu este înregistrată nicio monedă pentru valoarea asigurată a acestui împrumut, așa că în contract apare ca un simplu număr.",
+      record: "Înregistrează moneda",
+      recorded: "Moneda a fost înregistrată.",
     },
   },
   transit: {

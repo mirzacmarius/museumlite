@@ -1,12 +1,13 @@
 "use client";
 
 import { LoanAgreementSections } from "@/components/loan-agreement-sections";
+import { useLoanAgreementLabels } from "@/hooks/use-loan-agreement-labels";
 import {
   type LoanAgreementData,
   type LoanAgreementTemplateSection,
   renderLoanAgreement,
 } from "@/lib/loan-agreement-template";
-import { useI18n, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
 import type { TemplateLanguage, TemplateLoanType } from "./template-options";
 
 const SAMPLE_LOAN_NUMBER = "LN-2026-001";
@@ -18,15 +19,18 @@ interface TemplatePreviewProps {
   organizationName: string;
 }
 
-/** The template rendered with a sample loan, numbered as in a real agreement. */
+/**
+ * The template rendered with a sample loan in the template's language,
+ * numbered as in a real agreement. Suspends while that language loads.
+ */
 export function TemplatePreview({
   sections,
   language,
   loanType,
   organizationName,
 }: TemplatePreviewProps) {
-  const tRoot = useI18n();
   const t = useScopedI18n("loanAgreementTemplates.sample");
+  const labels = useLoanAgreementLabels(language);
   const sampleLoan: LoanAgreementData = {
     loanNumber: SAMPLE_LOAN_NUMBER,
     type: loanType === "incoming" ? "incoming" : "outgoing",
@@ -59,15 +63,16 @@ export function TemplatePreview({
       style={{ fontFamily: "serif" }}
     >
       <div className="mb-6 text-center">
-        <p className="text-lg font-semibold">
-          {tRoot("untranslatedRecords.loans.agreement.title")}
-        </p>
+        <p className="text-lg font-semibold">{labels.title}</p>
         <p>
-          {tRoot("untranslatedRecords.loans.agreement.number")}{" "}
-          {SAMPLE_LOAN_NUMBER}
+          {labels.number} {SAMPLE_LOAN_NUMBER}
         </p>
       </div>
-      <LoanAgreementSections sections={rendered} firstNumber={2} />
+      <LoanAgreementSections
+        sections={rendered}
+        firstNumber={2}
+        labels={labels}
+      />
     </div>
   );
 }

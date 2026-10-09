@@ -131,7 +131,7 @@ export function LoanDetailHero({
                 {tRoot("untranslatedRecords.loans.items.objectsPaintings")}
               </span>
             </div>
-            {loan.insuranceValue && (
+            {loan.insuranceValue ? (
               <div className="flex items-center gap-2 text-xs">
                 <Banknote className="size-4 text-muted-foreground" />
                 <span className="text-muted-foreground">
@@ -141,7 +141,7 @@ export function LoanDetailHero({
                     : formatNumber(loan.insuranceValue, locale)}
                 </span>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
