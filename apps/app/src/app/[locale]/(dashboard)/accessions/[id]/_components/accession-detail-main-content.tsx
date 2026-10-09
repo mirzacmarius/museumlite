@@ -126,7 +126,7 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
               className="w-full justify-between sm:w-auto"
               asChild
             >
-              <Link href={`/collections/${accession.collectionId}`}>
+              <Link href={`/objects/${accession.collectionId}`}>
                 {tRoot(
                   "untranslatedRecords.accessions.detail.openCreatedObject",
                 )}

@@ -1,4 +1,5 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { isOrganizationModuleEnabled } from "@v1/backend/convex/utils/capabilities";
 import {
   type FeatureId,
   hasFeatureTierAccess,
@@ -10,6 +11,11 @@ import { useOrganization } from "@/components/organization-provider";
 
 export type { FeatureId, IntegrationId, ModuleId, SubscriptionTier };
 
+/**
+ * Single-dimension checks for surfaces outside the capability matrix (object
+ * detail tabs, collection-type modules). Destinations in the matrix use
+ * `useCapabilities` instead.
+ */
 export function useFeatureAccess() {
   const { currentOrganization, organizations } = useOrganization();
   const tier = currentOrganization?.subscriptionTier ?? "free";
@@ -29,12 +35,11 @@ export function useFeatureAccess() {
     return hasFeatureTierAccess(scopedTier, featureId);
   };
 
-  const hasModule = (moduleId: ModuleId) => {
-    return (
-      enabledModules.includes(moduleId) ||
-      (moduleId === "library" && enabledIntegrations.includes("library"))
+  const hasModule = (moduleId: ModuleId) =>
+    isOrganizationModuleEnabled(
+      { enabledModules, enabledIntegrations },
+      moduleId,
     );
-  };
 
   const hasIntegration = (integrationId: IntegrationId) => {
     return enabledIntegrations.includes(integrationId);

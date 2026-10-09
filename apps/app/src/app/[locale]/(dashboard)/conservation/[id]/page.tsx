@@ -161,7 +161,7 @@ export default function TreatmentDetailPage({
                       {t("detail.collectionObject")}
                     </p>
                     <Link
-                      href={`/collections/${treatment.collectionId}`}
+                      href={`/objects/${treatment.collectionId}`}
                       className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
                     >
                       {treatment.collectionTitle || t("detail.unknownObject")}

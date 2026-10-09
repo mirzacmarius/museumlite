@@ -30,10 +30,9 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
   if (!hasAccess) {
     return (
       <FeatureGuard
-        featureName="Loans"
-        isLocked={true}
-        tierNeeded="pro"
-        showUpgrade={false}
+        featureName={tRoot("objects.tabs.loans")}
+        reason={{ kind: "tier_required", tier: "pro" }}
+        showAction={false}
       >
         <div />
       </FeatureGuard>

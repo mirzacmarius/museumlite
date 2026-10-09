@@ -5,6 +5,10 @@ import { internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import {
+  type CapabilityUnavailableData,
+  capabilityUnavailableFromError,
+} from "../convex/utils/capabilities";
+import {
   type CustodyConflictData,
   custodyConflictFromError,
 } from "../convex/utils/custodyErrors";
@@ -174,6 +178,18 @@ export async function custodyConflictOf(
     await call;
   } catch (error) {
     return custodyConflictFromError(error);
+  }
+  throw new Error("Expected the call to be rejected");
+}
+
+/** Awaits a call expected to fail and returns its capability failure payload. */
+export async function capabilityFailureOf(
+  call: Promise<unknown>,
+): Promise<CapabilityUnavailableData | null> {
+  try {
+    await call;
+  } catch (error) {
+    return capabilityUnavailableFromError(error);
   }
   throw new Error("Expected the call to be rejected");
 }

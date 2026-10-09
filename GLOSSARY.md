@@ -11,7 +11,7 @@ The tenant responsible for an institution's records and its access policy.
 _Avoid_: Account, institution (when you mean the tenant)
 
 **Site**:
-A physical or operational subdivision of an Organization.
+A physical or operational subdivision of an Organization. Sites do not narrow access today: every Capability is granted for the whole Organization.
 _Avoid_: Building, branch
 
 **Location**:
@@ -57,6 +57,52 @@ _Avoid_: Delete, remove
 **Withdrawal**:
 Removal of an Object, or of an intake request a reviewer declined, from routine views while its record is retained and restorable. It asserts neither a change of title nor disposal; a withdrawn intake was never accessioned, so it never produces a Deaccession.
 _Avoid_: Delete, archive (when title or disposal is meant)
+
+### Access
+
+Access has independent dimensions: the Organization's Modules, its Entitlements, and the staff member's Role. A Capability names which of them it needs.
+
+**Module**:
+An optional area an Organization turns on in Settings › Modules, such as Library, Accounts or a collection type like Fine Art. Turning a Module on never grants an Entitlement. The Insurance Module only lists Insurance in navigation, because insurance records predate it.
+_Avoid_: Add-on, integration (the legacy library integration also turns on the Library Module)
+
+**Entitlement**:
+A workflow included in the Organization's plan (Free, Pro or Enterprise), such as loans, exhibitions or compliance. Code calls it a feature.
+_Avoid_: Module, feature flag
+
+**Role**:
+A named set of Permissions held by each staff member within one Organization.
+_Avoid_: User type, group
+
+**Permission**:
+One action a Role allows, such as `loans.read` or `organization.manage_settings`.
+_Avoid_: Right, scope
+
+**Capability**:
+A staff-facing area or command, with its canonical route, defined by the Module, Entitlement and Permissions it needs. When unavailable it names the first missing dimension: Module, then Permission, then Entitlement, so staff without access are never told to upgrade. Non-members are told nothing about an Organization.
+_Avoid_: Feature (when the combination is meant)
+
+### Work
+
+**Case**:
+A workflow record with its own approval history, such as a loan, transit record, exhibition, conservation treatment, accession, deaccession, move request or library acquisition request.
+_Avoid_: Ticket, request (as a general term)
+
+**Task**:
+A unit of work waiting on a staff member, such as an installation task or an approval step on a Case.
+_Avoid_: To-do, job
+
+### Library circulation
+
+These terms belong to the optional Library Module and never describe museum Objects.
+
+**Item**:
+A catalogued library holding that Patrons borrow; each physical copy circulates on its own.
+_Avoid_: Object, book (Items include other media)
+
+**Patron**:
+A person registered to borrow Items, recorded as an account of type patron.
+_Avoid_: Borrower (a loans party), member, user
 
 ### Publication
 

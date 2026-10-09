@@ -25,6 +25,8 @@ import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notic
 import { useOrganization } from "@/components/organization-provider";
 import { usePermission } from "@/components/permission-gate";
 import { PlanUsageStats } from "@/components/plan-usage-stats";
+import { useCapabilities } from "@/hooks/use-capabilities";
+import { navigationAccess } from "@/lib/capability-access";
 import { formatDate } from "@/lib/format-date";
 import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
@@ -388,6 +390,8 @@ export default function DashboardPage() {
     currentOrganizationId,
     "organization.view_analytics",
   );
+  const showReportsLink =
+    navigationAccess(useCapabilities().stateOf("reporting")) !== "hidden";
   const canManageBilling = usePermission(
     currentOrganizationId,
     "organization.manage_settings",
@@ -603,27 +607,29 @@ export default function DashboardPage() {
           canCreate={canCreateCollectionGroup === true}
         />
 
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
-            <div className="shrink-0 rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
-              <Eye className="size-4" aria-hidden="true" />
+        {showReportsLink ? (
+          <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card p-5">
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
+                <Eye className="size-4" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">
+                  {tRoot("analytics.title")}
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("analyticsDescription")}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                {tRoot("analytics.title")}
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t("analyticsDescription")}
-              </p>
-            </div>
-          </div>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/analytics">
-              {t("viewReports")}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </section>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/analytics">
+                {t("viewReports")}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          </section>
+        ) : null}
 
         <BillingOverviewSection
           canManageBilling={canManageBilling}

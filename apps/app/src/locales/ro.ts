@@ -8429,9 +8429,15 @@ export default {
       saveAndNew: "Salvează și adaugă altul",
     },
     featureGuard: {
-      unavailable: "Această funcție nu este disponibilă în planul tău.",
+      tierRequired:
+        "Planul organizației tale nu include această funcție. Face parte din planul {tier}; un administrator poate face upgrade din Setări › Facturare.",
+      moduleDisabled:
+        "Acest modul este dezactivat pentru organizația ta. Un administrator îl poate activa din Setări › Module.",
+      permissionMissing:
+        "Rolul tău nu include acces la această funcție. Cere unui administrator să îți actualizeze rolul.",
       locked: "{featureName} este blocată",
       upgradeTo: "Treci la planul {tier}",
+      openModules: "Deschide Setări › Module",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -9006,7 +9012,8 @@ export default {
         "Există deja un donator cu această adresă de e-mail: {donor}",
     },
     navigation: {
-      patronManagement: "gestionarea utilizatorilor",
+      patronManagement: "Gestionarea cititorilor",
+      locked: "Indisponibil",
       overview: "Prezentare generală",
       objectCatalog: "Catalogul obiectelor",
       locationTracking: "Locații și urmărire",

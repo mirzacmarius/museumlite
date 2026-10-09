@@ -32,10 +32,9 @@ export function ConservationTab({
   if (!hasAccess) {
     return (
       <FeatureGuard
-        featureName="Conservation"
-        isLocked={true}
-        tierNeeded="pro"
-        showUpgrade={false}
+        featureName={tRoot("objects.tabs.conservation")}
+        reason={{ kind: "tier_required", tier: "pro" }}
+        showAction={false}
       >
         <div />
       </FeatureGuard>

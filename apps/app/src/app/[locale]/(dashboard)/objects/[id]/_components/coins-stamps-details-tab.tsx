@@ -72,9 +72,9 @@ export function CoinsStampsDetailsTab({
     return (
       <FeatureGuard
         featureName={t("moduleName")}
-        isLocked={true}
+        reason={{ kind: "module_disabled" }}
         description={t("moduleDescription")}
-        showUpgrade={false}
+        showAction={false}
       >
         <div />
       </FeatureGuard>

@@ -7720,9 +7720,15 @@ export default {
       saveAndNew: "Guardar y añadir otro",
     },
     featureGuard: {
-      unavailable: "Esta función no está disponible en tu plan.",
+      tierRequired:
+        "El plan de tu organización no incluye esta función. Forma parte del plan {tier}; un administrador puede mejorarlo en Configuración › Facturación.",
+      moduleDisabled:
+        "Este módulo está desactivado para tu organización. Un administrador puede activarlo en Configuración › Módulos.",
+      permissionMissing:
+        "Tu rol no incluye acceso a esta función. Pide a un administrador que actualice tu rol.",
       locked: "{featureName} está bloqueado",
       upgradeTo: "Mejorar al plan {tier}",
+      openModules: "Abrir Configuración › Módulos",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -8305,7 +8311,8 @@ export default {
         "Ya existe un donante con este correo electrónico: {donor}",
     },
     navigation: {
-      patronManagement: "gestión de usuarios",
+      patronManagement: "Gestión de usuarios",
+      locked: "No disponible",
       overview: "Resumen",
       objectCatalog: "Catálogo de objetos",
       locationTracking: "Ubicación y seguimiento",
