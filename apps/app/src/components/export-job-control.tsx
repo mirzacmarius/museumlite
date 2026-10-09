@@ -44,6 +44,13 @@ export function ExportJobControl({
   label,
 }: ExportJobControlProps) {
   const t = useScopedI18n("exportJobs");
+  const tRegister = useScopedI18n("registerReports");
+  const registerLabels = {
+    accession: tRegister("profileAccession"),
+    disposal: tRegister("profileDisposal"),
+    custody: tRegister("profileCustody"),
+    condition: tRegister("profileCondition"),
+  };
   const create = useMutation(api.exports.create);
   const append = useMutation(api.exports.appendSelection);
   const start = useMutation(api.exports.start);
@@ -51,7 +58,11 @@ export function ExportJobControl({
   const resume = useMutation(api.exports.resume);
   const { hasFeature } = useFeatureAccess();
   const sourceAllowed =
-    source.kind !== "audit" || hasFeature("compliance", organizationId);
+    source.kind === "audit"
+      ? hasFeature("compliance", organizationId)
+      : source.kind === "register"
+        ? hasFeature("reporting", organizationId)
+        : true;
   const jobs = useQuery(
     api.exports.list,
     sourceAllowed ? { organizationId } : "skip",
@@ -152,7 +163,7 @@ export function ExportJobControl({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `export-${jobId}.${extension}`;
+    a.download = `${source.kind === "register" ? `register-${source.profile}` : "export"}-${jobId}.${extension}`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -222,22 +233,39 @@ export function ExportJobControl({
       )}
       <ul className="space-y-3 mt-3">
         {jobs
-          ?.filter((job) => job.source.kind === source.kind)
+          ?.filter(
+            (job) =>
+              job.source.kind === source.kind &&
+              (job.source.kind !== "register" ||
+                source.kind !== "register" ||
+                job.source.profile === source.profile),
+          )
           .slice(0, 5)
           .map((job) => (
             <li key={job.jobId} className="border-t py-2">
               <p>
                 {job.source.kind === "audit"
                   ? t("sourceAudit")
-                  : job.source.mode === "selected"
-                    ? t("sourceSelected")
-                    : t("sourceCatalog")}{" "}
+                  : job.source.kind === "register"
+                    ? t("sourceRegister", {
+                        profile: registerLabels[job.source.profile],
+                      })
+                    : job.source.mode === "selected"
+                      ? t("sourceSelected")
+                      : t("sourceCatalog")}{" "}
                 · {job.format.toUpperCase()} · {statusLabel(job.status)} ·{" "}
-                {t(job.source.kind === "audit" ? "progressAudit" : "progress", {
-                  rows: job.rows,
-                  scanned: job.scanned,
-                  pages: job.checkpoint,
-                })}
+                {t(
+                  job.source.kind === "audit"
+                    ? "progressAudit"
+                    : job.source.kind === "register"
+                      ? "progressRegister"
+                      : "progress",
+                  {
+                    rows: job.rows,
+                    scanned: job.scanned,
+                    pages: job.checkpoint,
+                  },
+                )}
                 {job.selected > 0
                   ? ` · ${t("selectedCount", { count: job.selected })}`
                   : ""}

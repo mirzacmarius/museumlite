@@ -27,6 +27,10 @@ import {
 import { getPageInventoryEvidence } from "./utils/indexedCounts";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
+import {
+  readRegisterPage,
+  validateRegisterCriteria,
+} from "./utils/registerSources";
 
 const exportJobDoc = v.object({
   ...schema.tables.exportJobs.validator.fields,
@@ -48,6 +52,8 @@ async function requireExportAccess(
     await requireMemberPermission(permission);
   if (kind === "audit")
     await requireFeatureAccess(ctx, organizationId, "compliance");
+  if (kind === "register")
+    await requireFeatureAccess(ctx, organizationId, "reporting");
 }
 async function requireOwnJob(
   ctx: QueryCtx | MutationCtx,
@@ -145,6 +151,14 @@ export const create = mutation({
         if (!record || record.organizationId !== args.organizationId)
           throw new ConvexError("Filter outside organization");
       }
+    } else if (args.source.kind === "register") {
+      await validateRegisterCriteria(
+        ctx,
+        args.organizationId,
+        args.source.profile,
+        args.source.criteria,
+        Date.now(),
+      );
     } else {
       const filters = args.source.filters;
       if (filters.entityId && !filters.entityType)
@@ -177,6 +191,7 @@ export const create = mutation({
     if (!isSelected && args.selectedCount !== undefined)
       throw new ConvexError("Selected count only applies to selected exports");
     if (
+      args.source.kind === "objects" &&
       isSelected &&
       Object.values(args.source.filters).some((value) => value !== undefined)
     )
@@ -375,6 +390,11 @@ export const list = query({
     const auditAllowed =
       (await hasFeatureAccess(ctx, args.organizationId, "compliance")) &&
       (await hasPermission(ctx, args.organizationId, AUDIT_READ_PERMISSION));
+    const registerAllowed = await hasFeatureAccess(
+      ctx,
+      args.organizationId,
+      "reporting",
+    );
     const jobs = await ctx.db
       .query("exportJobs")
       .withIndex("by_organizationId_and_creatorId", (q) =>
@@ -384,7 +404,10 @@ export const list = query({
       .take(20);
     const visibleJobs: ReturnType<typeof toPublicStatus>[] = [];
     for (const job of jobs) {
-      if (job.source.kind !== "audit" || auditAllowed) {
+      if (
+        (job.source.kind !== "audit" || auditAllowed) &&
+        (job.source.kind !== "register" || registerAllowed)
+      ) {
         visibleJobs.push(toPublicStatus(job));
       }
     }
@@ -494,6 +517,18 @@ export const sourcePage = internalQuery({
     if (!job || job.generation !== args.generation || job.status !== "running")
       throw new ConvexError("Export interrupted");
     await requireCreatorStillPermitted(ctx, job);
+    if (job.source.kind === "register")
+      return await readRegisterPage(
+        ctx,
+        {
+          organizationId: job.organizationId,
+          profile: job.source.profile,
+          criteria: job.source.criteria,
+          asOf: job.source.criteria.asOf ?? job.asOf,
+          capturedAt: Date.now(),
+        },
+        job.cursor,
+      );
     if (job.source.kind !== "objects") throw new ConvexError("Invalid source");
     const opts = {
       numItems:
@@ -769,6 +804,13 @@ export const complete = internalMutation({
         sha256: args.sha256,
         schemaVersion: job.schemaVersion,
         asOf: job.asOf,
+        ...(job.source.kind === "register"
+          ? {
+              profile: job.source.profile,
+              criteria: job.source.criteria,
+              effectiveAsOf: job.source.criteria.asOf ?? job.asOf,
+            }
+          : {}),
       },
     });
     return true;

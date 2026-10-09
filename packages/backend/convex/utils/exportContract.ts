@@ -39,6 +39,21 @@ export const auditExportFilters = v.object({
   objectId: v.optional(v.id("collections")),
   caseId: v.optional(v.string()),
 });
+export const registerProfile = v.union(
+  v.literal("accession"),
+  v.literal("disposal"),
+  v.literal("custody"),
+  v.literal("condition"),
+);
+export const registerCriteria = v.object({
+  fromDate: v.optional(v.number()),
+  toDate: v.optional(v.number()),
+  status: v.optional(
+    v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+  ),
+  asOf: v.optional(v.number()),
+  objectId: v.optional(v.id("collections")),
+});
 export const exportSource = v.union(
   v.object({
     kind: v.literal("objects"),
@@ -46,6 +61,11 @@ export const exportSource = v.union(
     filters: objectExportFilters,
   }),
   v.object({ kind: v.literal("audit"), filters: auditExportFilters }),
+  v.object({
+    kind: v.literal("register"),
+    profile: registerProfile,
+    criteria: registerCriteria,
+  }),
 );
 export const exportStatus = v.union(
   v.literal("selecting"),

@@ -7845,6 +7845,45 @@ export default {
       "The export file is not available. Retry or create a new export.",
     reportsNote:
       "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
+    sourceRegister: "Register: {profile}",
+    progressRegister:
+      "{rows} register rows · {scanned} records examined · {pages} pages",
+    errorRegisterCriteria:
+      "Check the register criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, and a status applies only to accession and disposal registers.",
+  },
+  registerReports: {
+    title: "Institutional registers",
+    description:
+      "Generate accession, disposal, custody and condition registers from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time and generator.",
+    profile: "Register",
+    profileAccession: "Accession register",
+    profileDisposal: "Disposal register",
+    profileCustody: "Custody register",
+    profileCondition: "Condition register",
+    profileSpectrum: "SPECTRUM XML (not supported)",
+    profileLido: "LIDO XML (not supported)",
+    fromDate: "From",
+    toDate: "To",
+    status: "Status",
+    statusAny: "Any status",
+    statusPending: "Pending",
+    statusApproved: "Approved",
+    statusRejected: "Rejected",
+    asOf: "As of",
+    asOfHint:
+      "Leave As of empty to use the time the register is created. Evidence recorded after the as-of time is excluded. Dates are UTC days.",
+    preview: "Preview",
+    previewing: "Loading preview",
+    previewLabel: "Register preview",
+    previewSummary:
+      "Showing {shown} of {rows} rows from the first page ({scanned} records examined).",
+    previewMore: "More rows follow; create the register for the complete file.",
+    previewEmpty: "The first page has no rows for these criteria.",
+    notRecordedNote:
+      "Empty cells named in notRecorded were never recorded in MuseumLite. Rows marked legacy predate structured evidence.",
+    exportLabel: "Create {profile} file",
+    unsupportedNote:
+      "Registers use a documented MuseumLite interchange profile. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
   },
   projectionHealth: {
     unavailable: {
