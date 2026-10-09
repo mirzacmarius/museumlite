@@ -17,6 +17,7 @@ const labels: HistoricalPeriodLabels = {
   range: (start, end) => `${start} – ${end}`,
   from: (start) => `From ${start}`,
   until: (end) => `Until ${end}`,
+  openStart: (end) => `… – ${end}`,
   undated: "Dates not stated",
 };
 
@@ -73,6 +74,9 @@ describe("formatting partial dates", () => {
     );
     expect(formatHistoricalPeriod(undefined, year1945, "en", labels)).toBe(
       "Until 1945",
+    );
+    expect(formatHistoricalPeriod(undefined, by1937, "en", labels)).toBe(
+      "… – by 1937",
     );
     expect(formatHistoricalPeriod(undefined, undefined, "en", labels)).toBe(
       "Dates not stated",

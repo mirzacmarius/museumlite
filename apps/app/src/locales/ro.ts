@@ -5749,6 +5749,7 @@ export default {
       range: "{start} – {end}",
       from: "Din {start}",
       until: "Până în {end}",
+      openStart: "… – {end}",
       decade: "anii {year}",
       circa: "cca. {date}",
       notAfter: "cel târziu în {date}",
@@ -5951,7 +5952,7 @@ export default {
       contradictionInvalid:
         "O afirmație poate contrazice doar o afirmație actuală despre același obiect.",
       evidenceRequired:
-        "O afirmație documentată are nevoie de cel puțin o sursă. Adaugă o sursă sau scade încrederea.",
+        "O afirmație documentată are nevoie de cel puțin o sursă. Adaugă o sursă sau alege o încredere mai mică (printr-o corectură, dacă afirmația este deja înregistrată).",
       evidenceInvalid:
         "Verifică sursele: o citare are nevoie de text, un link trebuie să înceapă cu http:// sau https://, iar un fișier trebuie să aparțină acestui obiect.",
       evidenceLimit: "Această afirmație are deja numărul maxim de surse.",

@@ -6221,6 +6221,7 @@ export default {
       range: "{start} – {end}",
       from: "Desde {start}",
       until: "Hasta {end}",
+      openStart: "… – {end}",
       decade: "década de {year}",
       circa: "c. {date}",
       notAfter: "a más tardar en {date}",
@@ -6424,7 +6425,7 @@ export default {
       contradictionInvalid:
         "Una afirmación solo puede contradecir una afirmación vigente sobre el mismo objeto.",
       evidenceRequired:
-        "Una afirmación documentada necesita al menos una fuente. Añade una fuente o reduce la confianza.",
+        "Una afirmación documentada necesita al menos una fuente. Añade una fuente o usa una confianza menor (mediante una corrección si la afirmación ya está registrada).",
       evidenceInvalid:
         "Revisa las fuentes: una cita necesita su texto, un enlace debe empezar por http:// o https:// y un archivo debe pertenecer a este objeto.",
       evidenceLimit: "Esta afirmación ya tiene el número máximo de fuentes.",

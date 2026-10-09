@@ -6147,6 +6147,7 @@ export default {
       range: "{start}–{end}",
       from: "Fra {start}",
       until: "Til {end}",
+      openStart: "… – {end}",
       decade: "{year}-årene",
       circa: "ca. {date}",
       notAfter: "senest {date}",
@@ -6347,7 +6348,7 @@ export default {
       contradictionInvalid:
         "En påstand kan bare motsi en gjeldende påstand om samme objekt.",
       evidenceRequired:
-        "En dokumentert påstand trenger minst ett belegg. Legg til belegg eller senk sikkerheten.",
+        "En dokumentert påstand trenger minst ett belegg. Legg til en kilde, eller velg lavere sikkerhet (med en rettelse hvis påstanden allerede er registrert).",
       evidenceInvalid:
         "Kontroller belegget: en kildehenvisning trenger tekst, en lenke må begynne med http:// eller https://, og en fil må tilhøre dette objektet.",
       evidenceLimit: "Denne påstanden har allerede maksimalt antall belegg.",

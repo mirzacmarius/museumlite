@@ -19,6 +19,7 @@ export function useHistoricalDateFormat() {
     range: (start, end) => t("range", { start, end }),
     from: (start) => t("from", { start }),
     until: (end) => t("until", { end }),
+    openStart: (end) => t("openStart", { end }),
     undated: t("undated"),
   };
   return {

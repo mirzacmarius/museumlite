@@ -16,6 +16,8 @@ export interface HistoricalPeriodLabels extends HistoricalDateLabels {
   range: (start: string, end: string) => string;
   from: (start: string) => string;
   until: (end: string) => string;
+  /** A qualified end with no start: "… – by 1938". */
+  openStart: (end: string) => string;
   undated: string;
 }
 
@@ -114,8 +116,8 @@ export function formatHistoricalDate(
 }
 
 /**
- * A claim's period. A lone qualified start ("by 1937") reads on its own; a
- * missing side is left out rather than guessed.
+ * A claim's period. A lone qualified start ("by 1937") reads on its own and
+ * a lone qualified end is open-started; a missing side is never guessed.
  */
 export function formatHistoricalPeriod(
   startDate: HistoricalDate | undefined,
@@ -131,7 +133,8 @@ export function formatHistoricalPeriod(
     : undefined;
   if (start && end) return labels.range(start, end);
   if (start) return startDate?.qualifier ? start : labels.from(start);
-  if (end) return labels.until(end);
+  if (end)
+    return endDate?.qualifier ? labels.openStart(end) : labels.until(end);
   return labels.undated;
 }
 

@@ -6019,6 +6019,7 @@ export default {
       range: "{start} – {end}",
       from: "From {start}",
       until: "Until {end}",
+      openStart: "… – {end}",
       decade: "{year}s",
       circa: "c. {date}",
       notAfter: "by {date}",
@@ -6220,7 +6221,7 @@ export default {
       contradictionInvalid:
         "A claim can only contradict a current claim about the same object.",
       evidenceRequired:
-        "A documented claim needs at least one evidence item. Add evidence or lower the confidence.",
+        "A documented claim needs at least one evidence item. Add a source, or use a lower confidence (through a correction if the claim is already recorded).",
       evidenceInvalid:
         "Check the evidence: a citation needs its text, a link must start with http:// or https://, and a file must belong to this object.",
       evidenceLimit:

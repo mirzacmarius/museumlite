@@ -93,14 +93,14 @@ function EvidenceItem({
     );
   }
   return (
-    <li
-      className={cn(
-        "space-y-1 text-sm",
-        !evidence.isActive && "text-muted-foreground line-through",
-      )}
-    >
+    <li className="space-y-1 text-sm">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div
+          className={cn(
+            "min-w-0",
+            !evidence.isActive && "text-muted-foreground line-through",
+          )}
+        >
           {source}
           {evidence.locator ? (
             <span className="ml-1 text-xs text-muted-foreground">
@@ -123,12 +123,17 @@ function EvidenceItem({
         ) : null}
       </div>
       {evidence.excerpt ? (
-        <p className="text-xs italic text-muted-foreground">
+        <p
+          className={cn(
+            "text-xs italic text-muted-foreground",
+            !evidence.isActive && "line-through",
+          )}
+        >
           {t("quote", { excerpt: evidence.excerpt })}
         </p>
       ) : null}
       {!evidence.isActive && evidence.retractionReason ? (
-        <p className="text-xs no-underline">
+        <p className="text-xs text-muted-foreground">
           {t("retracted", { reason: evidence.retractionReason })}
         </p>
       ) : null}

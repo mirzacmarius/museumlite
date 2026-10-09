@@ -6179,6 +6179,7 @@ export default {
       range: "{start} – {end}",
       from: "À partir de {start}",
       until: "Jusqu'à {end}",
+      openStart: "… – {end}",
       decade: "années {year}",
       circa: "vers {date}",
       notAfter: "au plus tard en {date}",
@@ -6383,7 +6384,7 @@ export default {
       contradictionInvalid:
         "Une assertion ne peut contredire qu'une assertion en vigueur sur le même objet.",
       evidenceRequired:
-        "Une assertion documentée nécessite au moins une source. Ajoutez une source ou abaissez la confiance.",
+        "Une assertion documentée nécessite au moins une source. Ajoutez une source ou choisissez une confiance plus faible (par une correction si l'assertion est déjà enregistrée).",
       evidenceInvalid:
         "Vérifiez les sources : une citation nécessite son texte, un lien doit commencer par http:// ou https://, et un fichier doit appartenir à cet objet.",
       evidenceLimit: "Cette assertion a déjà le nombre maximal de sources.",

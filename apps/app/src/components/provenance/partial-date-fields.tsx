@@ -59,7 +59,7 @@ export function PartialDateFields({
   return (
     <fieldset className="space-y-2 rounded-lg border border-border/60 p-3">
       <legend className="px-1 text-sm font-medium">{label}</legend>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2">
         <div className="space-y-1.5">
           <Label htmlFor={`${id}-precision`} className="text-xs">
             {t("precision")}
