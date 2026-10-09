@@ -122,8 +122,10 @@ export function RegisterExportsCard({
   });
   const [preview, setPreview] = useState<PreviewState>({ loading: false });
   const { profile, fromDate, toDate, status, asOf } = form;
-  const update = (patch: Partial<RegisterForm>) =>
+  const update = (patch: Partial<RegisterForm>) => {
     setForm((current) => ({ ...current, ...patch }));
+    setPreview((current) => ({ ...current, error: undefined }));
+  };
 
   const profileLabels = useRegisterProfileLabels();
   const criteria: Criteria = {
@@ -251,7 +253,7 @@ export function RegisterExportsCard({
           <Button
             size="sm"
             variant="outline"
-            disabled={previewing}
+            disabled={previewing || !criteriaValid}
             onClick={() => void runPreview()}
           >
             {previewing && <Loader2 className="mr-2 size-4 animate-spin" />}

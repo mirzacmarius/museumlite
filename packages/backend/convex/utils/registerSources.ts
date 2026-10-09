@@ -119,15 +119,22 @@ function inDateRange(criteria: RegisterCriteria, time: number | undefined) {
   );
 }
 
+/**
+ * Approval steps (step 1 and later) recorded by as-of. Step 0 is the
+ * submission marker written when a workflow case is created, not an
+ * approval. Steps held only in the record's embedded history are legacy.
+ */
 async function approvalHistoryAsOf(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   caseType: "accession" | "deaccession",
   entityId: string,
-  legacy: Array<{ approvedAt: number }> | undefined,
+  legacy: Array<{ step: number; approvedAt: number }> | undefined,
   asOf: number,
 ) {
-  const legacySteps = (legacy ?? []).filter((step) => step.approvedAt <= asOf);
+  const legacySteps = (legacy ?? []).filter(
+    (entry) => entry.step > 0 && entry.approvedAt <= asOf,
+  );
   const entries = await ctx.db
     .query("caseHistoryEntries")
     .withIndex("by_organization_and_caseType_and_entityId_and_ordinal", (q) =>
@@ -142,7 +149,9 @@ async function approvalHistoryAsOf(
     throw new ConvexError(
       `Register record history exceeds processing limits (${MAX_APPROVAL_STEPS} approval steps)`,
     );
-  const recorded = entries.filter((row) => row.entry.approvedAt <= asOf);
+  const recorded = entries.filter(
+    (row) => row.entry.step > 0 && row.entry.approvedAt <= asOf,
+  );
   return {
     steps: legacySteps.length + recorded.length,
     legacy:

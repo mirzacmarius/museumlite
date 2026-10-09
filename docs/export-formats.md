@@ -52,7 +52,7 @@ One row per accession record, ordered by `dateReceived`.
 | approvedAt | utcEpochMs | Approval time |
 | approvedBy | id | Approving user |
 | approvedAsOf | boolean | Approved at or before as-of |
-| approvalStepsAsOf | number | Approval steps in case history by as-of |
+| approvalStepsAsOf | number | Approval steps (step 1 and later) in case history by as-of; the step-0 submission marker is not counted |
 
 ### disposal
 

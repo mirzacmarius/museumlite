@@ -261,6 +261,15 @@ describe("accession register", () => {
         source: "Field survey, 2023",
         method: "transfer",
         status: "pending",
+        workflowStep: 0,
+        workflowHistory: [
+          {
+            step: 0,
+            approvedBy: f.userId,
+            approvedAt: T0 - 20,
+            comment: "Created",
+          },
+        ],
       });
       const legacy = await ctx.db.insert("accessions", {
         organizationId: f.organizationId,
