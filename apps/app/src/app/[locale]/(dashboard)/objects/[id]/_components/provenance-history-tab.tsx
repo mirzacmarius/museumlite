@@ -1,9 +1,8 @@
 "use client";
 
-import { cn } from "@v1/ui/utils";
-import { FileCheck, History, Link as LinkIcon } from "lucide-react";
-import { useI18n, useScopedI18n } from "@/locales/client";
-import { formatOwnershipDateRange } from "./format-ownership-date-range";
+import { Link as LinkIcon } from "lucide-react";
+import { ProvenanceClaimsPanel } from "@/components/provenance/provenance-claims-panel";
+import { useI18n } from "@/locales/client";
 import type { CollectionData } from "./types";
 
 interface ProvenanceHistoryTabProps {
@@ -14,142 +13,53 @@ export function ProvenanceHistoryTab({
   collection,
 }: ProvenanceHistoryTabProps) {
   const tRoot = useI18n();
-  const tObjects = useScopedI18n("objects.printView");
-  const hasHistoricalContext =
-    Boolean(collection.provenance) ||
-    Boolean(collection.exhibitionHistory) ||
-    Boolean(collection.links && collection.links.length > 0) ||
-    Boolean(
-      collection.ownershipHistory && collection.ownershipHistory.length > 0,
-    );
+  const hasLinks = Boolean(collection.links && collection.links.length > 0);
 
   return (
     <div className="space-y-8">
-      <div>
-        <h3 className="mb-6 flex items-center gap-2 text-xs font-medium text-foreground">
-          <History className="size-4 text-purple-500" />
-          {tRoot("untranslatedRecords.objects.detail.provenanceHistory")}
-        </h3>
+      <ProvenanceClaimsPanel
+        objectId={collection._id}
+        organizationId={collection.organizationId}
+        legacyProvenance={collection.provenance}
+        legacyOwnership={collection.ownershipHistory}
+      />
 
-        {hasHistoricalContext ? (
-          <div className="space-y-6">
-            {(collection.provenance || collection.exhibitionHistory) && (
-              <div className="grid grid-cols-1 gap-6 rounded-xl border border-border/60 bg-secondary/20 p-6 md:grid-cols-2">
-                {collection.provenance && (
-                  <div className="grid gap-2">
-                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {tRoot("objects.tabs.provenance")}
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                      {collection.provenance}
-                    </p>
-                  </div>
-                )}
-
-                {collection.exhibitionHistory && (
-                  <div className="grid gap-2">
-                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {tRoot("objects.form.exhibitionHistory")}
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                      {collection.exhibitionHistory}
-                    </p>
-                  </div>
-                )}
+      {collection.exhibitionHistory || hasLinks ? (
+        <div className="grid grid-cols-1 gap-6 rounded-xl border border-border/60 bg-secondary/20 p-6 md:grid-cols-2">
+          {collection.exhibitionHistory ? (
+            <div className="grid gap-2">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {tRoot("objects.form.exhibitionHistory")}
               </div>
-            )}
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                {collection.exhibitionHistory}
+              </p>
+            </div>
+          ) : null}
 
-            {collection.links && collection.links.length > 0 ? (
-              <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-6">
-                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {tRoot("objects.form.links")}
-                </div>
-                <div className="space-y-1">
-                  {collection.links.map((link) => (
-                    <a
-                      key={link.url}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-max items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent hover:underline"
-                    >
-                      <LinkIcon className="size-3.5 text-muted-foreground" />
-                      <span>{link.label || link.url}</span>
-                    </a>
-                  ))}
-                </div>
+          {hasLinks ? (
+            <div className="grid gap-2">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {tRoot("objects.form.links")}
               </div>
-            ) : null}
-
-            {collection.ownershipHistory &&
-            collection.ownershipHistory.length > 0 ? (
-              <div>
-                <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-                  <History className="size-4 text-accent" />
-                  {tRoot("objects.printView.ownershipHistory")}
-                </h3>
-                <div className="relative space-y-8 border-l border-border pl-8">
-                  {collection.ownershipHistory.map((entry, index) => (
-                    <div
-                      key={`${entry.owner}-${entry.startYear ?? ""}-${entry.endYear ?? ""}`}
-                      className="relative"
-                    >
-                      <div
-                        className={cn(
-                          "absolute -left-[39px] top-1.5 flex size-4 items-center justify-center rounded-full bg-background",
-                          index === 0
-                            ? "border-2 border-accent"
-                            : "border-2 border-muted-foreground/50",
-                        )}
-                      >
-                        {index === 0 && (
-                          <div className="size-1.5 rounded-full bg-accent" />
-                        )}
-                      </div>
-                      <div className="max-w-2xl rounded-lg border border-border/60 bg-secondary/20 p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <h4 className="text-sm font-semibold text-foreground">
-                            {entry.owner}
-                          </h4>
-                          {formatOwnershipDateRange(entry, {
-                            presentLabel: tObjects("present"),
-                          }) ? (
-                            <span className="font-mono text-xs text-muted-foreground">
-                              {formatOwnershipDateRange(entry, {
-                                presentLabel: tObjects("present"),
-                              })}
-                            </span>
-                          ) : null}
-                        </div>
-                        {entry.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {entry.description}
-                          </p>
-                        )}
-                        {entry.verified && entry.verificationSource && (
-                          <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <FileCheck className="size-3" />
-                            {tRoot(
-                              "untranslatedRecords.objects.detail.verifiedBy",
-                            )}{" "}
-                            {entry.verificationSource}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-1">
+                {collection.links?.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-max items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent hover:underline"
+                  >
+                    <LinkIcon className="size-3.5 text-muted-foreground" />
+                    <span>{link.label || link.url}</span>
+                  </a>
+                ))}
               </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
-              {tRoot("untranslatedRecords.objects.detail.noProvenance")}
-            </p>
-          </div>
-        )}
-      </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

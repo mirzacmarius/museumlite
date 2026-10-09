@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { LightboxImage } from "@v1/ui/image-lightbox";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import dynamic from "next/dynamic";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useMemo, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -15,6 +16,7 @@ import { ObjectDetailTabPanel } from "./_components/object-detail/object-detail-
 import { ObjectEntryNotice } from "./_components/object-entry-notice";
 import {
   getObjectViewTabs,
+  OBJECT_TAB_IDS,
   type ObjectTabId as TabId,
 } from "./_components/object-tab-config";
 import type { ObjectDetailData } from "./_components/types";
@@ -142,9 +144,18 @@ function ObjectDetailView({
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
   const heroImage = objectDetail?.heroImage ?? null;
+  // A `?tab=` link opens that tab when the object has it.
+  const [requestedTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(OBJECT_TAB_IDS),
+  );
   const [state, dispatch] = useReducer(
     objectDetailViewReducer,
-    initialObjectDetailViewState,
+    requestedTab,
+    (tab): ObjectDetailViewState => ({
+      ...initialObjectDetailViewState,
+      activeTab: tab ?? initialObjectDetailViewState.activeTab,
+    }),
   );
   const featureOrganizationId =
     collection?.organizationId ?? currentOrganizationId ?? undefined;

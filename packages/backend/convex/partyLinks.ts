@@ -43,6 +43,7 @@ import {
   partyTargetValidator,
 } from "./utils/partyValidators";
 import { requirePermission } from "./utils/permissions";
+import { historicalDateValidator } from "./utils/provenanceValidators";
 
 const linkOriginValidator = v.union(v.literal("staff"), v.literal("backfill"));
 
@@ -62,7 +63,7 @@ const partyLinkViewValidator = v.object({
   nameSnapshot: v.string(),
   assertedName: v.optional(v.string()),
   contactSnapshot: v.optional(v.string()),
-  effectiveFrom: v.number(),
+  effectiveFrom: v.optional(v.number()),
   effectiveTo: v.optional(v.number()),
   origin: linkOriginValidator,
   createdAt: v.number(),
@@ -83,8 +84,16 @@ const roleHistoryItemValidator = v.union(
     nameSnapshot: v.string(),
     assertedName: v.optional(v.string()),
     contactSnapshot: v.optional(v.string()),
-    effectiveFrom: v.number(),
+    effectiveFrom: v.optional(v.number()),
     effectiveTo: v.optional(v.number()),
+    /** A provenance claim's Object and its partial dates. */
+    provenance: v.optional(
+      v.object({
+        objectId: v.id("collections"),
+        startDate: v.optional(historicalDateValidator),
+        endDate: v.optional(historicalDateValidator),
+      }),
+    ),
     origin: linkOriginValidator,
     createdAt: v.number(),
     supersededAt: v.optional(v.number()),
@@ -179,6 +188,19 @@ async function toRoleHistoryItem(
       isCurrent,
     };
   }
+  // The label check already read and tenant-checked this claim; reading it
+  // again keeps that helper's string contract for every target type.
+  const claim =
+    link.targetType === "provenanceClaim"
+      ? await ctx.db.get(link.targetId)
+      : null;
+  const provenance = claim
+    ? {
+        objectId: claim.objectId,
+        startDate: claim.startDate,
+        endDate: claim.endDate,
+      }
+    : undefined;
   return {
     _id: link._id,
     restricted: false,
@@ -186,6 +208,7 @@ async function toRoleHistoryItem(
     targetType: link.targetType,
     targetId: link.targetId,
     targetLabel,
+    provenance,
     nameSnapshot: link.nameSnapshot,
     assertedName: link.assertedName,
     contactSnapshot: link.contactSnapshot,
@@ -278,6 +301,15 @@ export const link = mutation({
     }
     if (resolved.policy === "closed") partyRecordLocked();
     if (
+      resolved.undatedLinks &&
+      (args.effectiveFrom !== undefined || args.effectiveTo !== undefined)
+    ) {
+      throw partyError(
+        "PARTY_DATES_INVALID",
+        "This record keeps the role's dates itself",
+      );
+    }
+    if (
       resolved.policy === "firstLinkOnly" &&
       (hasHistory ||
         (isPrimary &&
@@ -296,13 +328,16 @@ export const link = mutation({
       account,
       role: args.role,
       allowedRoles: resolved.allowedRoles,
-      effectiveFrom:
-        args.effectiveFrom ?? resolved.defaultEffectiveFrom ?? Date.now(),
+      effectiveFrom: resolved.undatedLinks
+        ? undefined
+        : (args.effectiveFrom ?? resolved.defaultEffectiveFrom ?? Date.now()),
       effectiveTo: args.effectiveTo,
-      // The record's own wording names its first primary party only.
-      assertedName:
-        explicitAssertion ??
-        (isPrimary && !hasHistory ? resolved.recordAssertedName : undefined),
+      // The record's own wording names its first primary party only, unless
+      // the record is never rewritten.
+      assertedName: resolved.recordNamesEveryLink
+        ? resolved.recordAssertedName
+        : (explicitAssertion ??
+          (isPrimary && !hasHistory ? resolved.recordAssertedName : undefined)),
       supersessionReason: args.reason,
       userId,
       origin: "staff",

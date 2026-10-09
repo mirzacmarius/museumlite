@@ -127,12 +127,16 @@ function LinkDetails({
         </p>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        <PartyLinkDate
-          kind="from"
-          timestamp={link.effectiveFrom}
-          locale={locale}
-        />
-        {" · "}
+        {link.effectiveFrom !== undefined ? (
+          <>
+            <PartyLinkDate
+              kind="from"
+              timestamp={link.effectiveFrom}
+              locale={locale}
+            />
+            {" · "}
+          </>
+        ) : null}
         {link.origin === "backfill"
           ? t("links.backfilled")
           : t("links.linkedBy", { name: link.createdByName ?? "—" })}

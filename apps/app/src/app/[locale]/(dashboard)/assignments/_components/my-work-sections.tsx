@@ -9,12 +9,15 @@ import {
   ClipboardCheck,
   ExternalLink,
   ListTodo,
+  ScrollText,
 } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { CaseTaskCard } from "@/components/case-tasks/case-task-card";
 import { caseHref } from "@/components/case-tasks/case-task-links";
 import { ClientDate } from "@/components/client-date";
+import { usePermissions } from "@/components/permission-gate";
+import { ProvenanceReviewQueue } from "@/components/provenance/provenance-review-queue";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 const PAGE_SIZE = 20;
@@ -142,6 +145,8 @@ export function MyWorkSections({
   organizationId: Id<"organizations">;
 }) {
   const t = useScopedI18n("caseTasks.myWork");
+  const tProvenance = useScopedI18n("provenance.queue");
+  const { hasPermission } = usePermissions();
   const [now] = useState(() => Date.now());
   return (
     <div className="space-y-8">
@@ -167,6 +172,14 @@ export function MyWorkSections({
           now={now}
         />
       </Section>
+      {hasPermission("collections.review_provenance") ? (
+        <Section
+          icon={<ScrollText className="size-4 text-purple-400" />}
+          title={tProvenance("title")}
+        >
+          <ProvenanceReviewQueue organizationId={organizationId} />
+        </Section>
+      ) : null}
       <Section
         icon={<Briefcase className="size-4 text-emerald-400" />}
         title={t("assignedCases")}

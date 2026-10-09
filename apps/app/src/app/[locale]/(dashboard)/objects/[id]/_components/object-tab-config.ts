@@ -1,27 +1,32 @@
 "use client";
 
 import {
+  COLLECTION_MODULE_IDS,
   type CollectionModuleId,
   isCollectionModuleId,
   isCollectionTypeEnabled,
   type ModuleId,
 } from "@v1/backend/convex/utils/moduleCatalog";
 
-export type ObjectTabId =
-  | "general"
-  | "physical"
-  | "media"
-  | "accession"
-  | "placement"
-  | "digital"
-  | "provenance"
-  | "valuation"
-  | "conservation"
-  | "exhibitions"
-  | "loans"
-  | "logs"
-  | "comments"
-  | CollectionModuleId;
+/** Every object tab, including collection-type detail tabs. */
+export const OBJECT_TAB_IDS = [
+  "general",
+  "physical",
+  "media",
+  "accession",
+  "placement",
+  "digital",
+  "provenance",
+  "valuation",
+  "conservation",
+  "exhibitions",
+  "loans",
+  "logs",
+  "comments",
+  ...COLLECTION_MODULE_IDS,
+] as const;
+
+export type ObjectTabId = (typeof OBJECT_TAB_IDS)[number];
 
 export interface ObjectTabDefinition {
   id: ObjectTabId;

@@ -7,6 +7,7 @@ import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import Link from "next/link";
+import { useHistoricalDateFormat } from "@/components/provenance/use-historical-date-format";
 import { PartyLinkDate } from "@/components/target-party-links";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -22,6 +23,7 @@ const TARGET_ROUTES: Partial<Record<PartyTargetType, string>> = {
 export function PartyRoleHistory({ accountId }: { accountId: Id<"accounts"> }) {
   const t = useScopedI18n("parties");
   const locale = useCurrentLocale();
+  const historicalDates = useHistoricalDateFormat();
   const party = useQuery(api.parties.get, { accountId });
   const partyName = party?.displayName;
   const { results, status, loadMore } = usePaginatedQuery(
@@ -66,6 +68,12 @@ export function PartyRoleHistory({ accountId }: { accountId: Id<"accounts"> }) {
               );
             }
             const route = TARGET_ROUTES[entry.targetType];
+            // A provenance claim opens its Object's provenance.
+            const href = entry.provenance
+              ? `/objects/${entry.provenance.objectId}?tab=provenance`
+              : route
+                ? `${route}/${entry.targetId}`
+                : undefined;
             return (
               <li
                 key={entry._id}
@@ -76,9 +84,9 @@ export function PartyRoleHistory({ accountId }: { accountId: Id<"accounts"> }) {
                   <span className="text-muted-foreground">
                     {t(`targetTypes.${entry.targetType}`)}
                   </span>
-                  {route ? (
+                  {href ? (
                     <Link
-                      href={`${route}/${entry.targetId}`}
+                      href={href}
                       className="font-medium underline-offset-4 hover:underline"
                     >
                       {entry.targetLabel}
@@ -99,11 +107,18 @@ export function PartyRoleHistory({ accountId }: { accountId: Id<"accounts"> }) {
                   </p>
                 ) : null}
                 <p className="text-xs text-muted-foreground">
-                  <PartyLinkDate
-                    kind="from"
-                    timestamp={entry.effectiveFrom}
-                    locale={locale}
-                  />
+                  {entry.provenance ? (
+                    historicalDates.period(
+                      entry.provenance.startDate,
+                      entry.provenance.endDate,
+                    )
+                  ) : entry.effectiveFrom !== undefined ? (
+                    <PartyLinkDate
+                      kind="from"
+                      timestamp={entry.effectiveFrom}
+                      locale={locale}
+                    />
+                  ) : null}
                   {entry.supersededAt ? (
                     <>
                       {" · "}
