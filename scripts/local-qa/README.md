@@ -7,10 +7,14 @@ bun run qa:backend                     # start backend on 127.0.0.1:3230 (QA_POR
 bun run convex:local -- deploy --yes   # push packages/backend/convex to it
 bun run qa:seed                        # auth keys, synthetic QA user and organization
 bun run qa:app                         # Next.js app on :3000 pointed at it (QA_APP_PORT to change)
+bun run qa:session                     # how to get a signed-in browser session
+bun run codegen:local                  # regenerate packages/backend/convex/_generated
 bun run qa:backend -- --stop           # stop the backend
 ```
 
-Sign in with the email and password in `.local-qa/credentials.json`.
+Sign in at `/en/login` with the email and password in `.local-qa/credentials.json`; the seeded account is verified and lands on the dashboard. If the login page cannot be driven, `bun run qa:session` writes fresh auth cookies to `.local-qa/storage-state.json` for Playwright (`browser.newContext({ storageState })`) or manual use. If the app runs on another port, set `QA_APP_PORT` for `qa:seed` and `qa:session` too.
+
+CI runs the same backend, deploy and seed in the `deploy` job of `.github/workflows/check.yml`, with the Linux backend binary pinned there.
 
 ## Rules
 

@@ -8,13 +8,16 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 /** Per-worktree, gitignored scratch space for the local QA backend. */
 export const stateDir = join(root, ".local-qa");
 export const deploymentEnvPath = join(stateDir, "deployment.env");
 export const processPath = join(stateDir, "process.json");
+export const credentialsPath = join(stateDir, "credentials.json");
+/** Password provider the app's login page signs in with. */
+export const QA_AUTH_PROVIDER = "password-with-reset";
 
 export const CLOUD_ENV_VARS = [
   "CONVEX_DEPLOYMENT",
@@ -90,6 +93,36 @@ export function findBackendBinary() {
     .sort()
     .pop();
   return newest ? join(base, newest, "convex-local-backend") : null;
+}
+
+/** Origin of the app started by `bun run qa:app`. */
+export function qaAppUrl() {
+  return (
+    process.env.QA_APP_URL ??
+    `http://localhost:${process.env.QA_APP_PORT ?? "3000"}`
+  );
+}
+
+/** Signs in through the public auth action, as the login page does. */
+export async function signInQaUser(url, email, password) {
+  const { ConvexHttpClient } = await import(
+    pathToFileURL(join(root, "node_modules/convex/dist/esm/browser/index.js"))
+      .href
+  );
+  const { api } = await import(
+    pathToFileURL(join(root, "packages/backend/convex/_generated/api.js")).href
+  );
+  const client = new ConvexHttpClient(url);
+  const { tokens } = await client.action(api.auth.signIn, {
+    provider: QA_AUTH_PROVIDER,
+    params: { email, password, flow: "signIn" },
+  });
+  if (!tokens?.token) {
+    console.error("✗ Sign-in did not return a session token");
+    process.exit(1);
+  }
+  client.setAuth(tokens.token);
+  return { client, api, tokens };
 }
 
 /** Environment with every cloud-targeting variable removed. */
