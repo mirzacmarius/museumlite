@@ -77,4 +77,17 @@ describe("exportJobErrorKey", () => {
     expect(exportJobErrorKey(new Error("Something odd"))).toBe("failed");
     expect(exportJobErrorKey(undefined)).toBe("failed");
   });
+
+  it("maps coded capability failures to the access copy whatever their text", () => {
+    expect(
+      exportJobErrorKey(
+        new ConvexError({
+          code: "CAPABILITY_UNAVAILABLE",
+          reason: "tier_required",
+          requiredTier: "enterprise",
+          message: "Unavailable",
+        }),
+      ),
+    ).toBe("errorAccess");
+  });
 });

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { accessionStatusValidator } from "./accessionReview";
 import { batchLookup } from "./batchLookup";
 
 export const accessionListItemValidator = v.object({
@@ -18,11 +19,7 @@ export const accessionListItemValidator = v.object({
     v.literal("other"),
     v.literal("bequest"),
   ),
-  status: v.union(
-    v.literal("pending"),
-    v.literal("approved"),
-    v.literal("rejected"),
-  ),
+  status: accessionStatusValidator,
   workflowStep: v.optional(v.number()),
   assignedTo: v.optional(v.id("users")),
   assigneeName: v.optional(v.string()),

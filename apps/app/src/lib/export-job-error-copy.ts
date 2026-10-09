@@ -1,3 +1,4 @@
+import { capabilityUnavailableFromError } from "@v1/backend/convex/utils/capabilities";
 import { ConvexError } from "convex/values";
 
 export type ExportJobErrorKey =
@@ -67,6 +68,7 @@ export function exportJobErrorKey(error: unknown): ExportJobErrorKey {
     if (error.status === 404 || error.status === 409) return "errorUnavailable";
     return "failed";
   }
+  if (capabilityUnavailableFromError(error)) return "errorAccess";
   const message = errorMessage(error);
   if (!message) return "failed";
   return (

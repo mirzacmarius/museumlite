@@ -3,47 +3,16 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  typeDetailRecordFields,
+  vehicleDetailFields,
+  vehicleEventHistoryEntryValidator,
+  vehicleServiceLogEntryValidator,
+} from "./utils/collectionTypeDetailFields";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
-
-const odometerUnitValidator = v.union(v.literal("miles"), v.literal("km"));
-
-const serviceLogEntryValidator = v.object({
-  serviceDate: v.number(),
-  serviceType: v.string(),
-  description: v.string(),
-  mileage: v.optional(v.number()),
-  provider: v.optional(v.string()),
-  cost: v.optional(v.number()),
-  documentIds: v.optional(v.array(v.id("_storage"))),
-});
-
-const partsLifingEntryValidator = v.object({
-  partName: v.string(),
-  installDate: v.optional(v.number()),
-  installMileage: v.optional(v.number()),
-  expectedLifeMiles: v.optional(v.number()),
-  notes: v.optional(v.string()),
-});
-
-const eventHistoryEntryValidator = v.object({
-  eventDate: v.number(),
-  eventType: v.union(
-    v.literal("concours"),
-    v.literal("show"),
-    v.literal("race"),
-    v.literal("rally"),
-    v.literal("auction"),
-    v.literal("other"),
-  ),
-  eventName: v.string(),
-  location: v.optional(v.string()),
-  result: v.optional(v.string()),
-  awards: v.optional(v.array(v.string())),
-  notes: v.optional(v.string()),
-});
 
 async function requireAutomotiveModule(
   ctx: MutationCtx | QueryCtx,
@@ -59,29 +28,9 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("vehicleDetails"),
-      collectionId: v.id("collections"),
-      organizationId: v.id("organizations"),
-      vin: v.optional(v.string()),
-      make: v.optional(v.string()),
-      model: v.optional(v.string()),
-      year: v.optional(v.number()),
-      bodyStyle: v.optional(v.string()),
-      engineNumber: v.optional(v.string()),
-      transmissionType: v.optional(v.string()),
-      exteriorColor: v.optional(v.string()),
-      interiorColor: v.optional(v.string()),
-      odometer: v.optional(v.number()),
-      odometerUnit: v.optional(odometerUnitValidator),
-      fuelType: v.optional(v.string()),
-      registrationNumber: v.optional(v.string()),
-      registrationState: v.optional(v.string()),
-      titleNumber: v.optional(v.string()),
-      insuranceValue: v.optional(v.number()),
-      serviceLog: v.optional(v.array(serviceLogEntryValidator)),
-      partsLifing: v.optional(v.array(partsLifingEntryValidator)),
-      eventHistory: v.optional(v.array(eventHistoryEntryValidator)),
-      createdAt: v.number(),
-      lastModifiedAt: v.optional(v.number()),
+      _creationTime: v.number(),
+      ...typeDetailRecordFields,
+      ...vehicleDetailFields,
     }),
     v.null(),
   ),
@@ -162,25 +111,7 @@ export const getByVin = query({
 export const upsert = mutation({
   args: {
     collectionId: v.id("collections"),
-    vin: v.optional(v.string()),
-    make: v.optional(v.string()),
-    model: v.optional(v.string()),
-    year: v.optional(v.number()),
-    bodyStyle: v.optional(v.string()),
-    engineNumber: v.optional(v.string()),
-    transmissionType: v.optional(v.string()),
-    exteriorColor: v.optional(v.string()),
-    interiorColor: v.optional(v.string()),
-    odometer: v.optional(v.number()),
-    odometerUnit: v.optional(odometerUnitValidator),
-    fuelType: v.optional(v.string()),
-    registrationNumber: v.optional(v.string()),
-    registrationState: v.optional(v.string()),
-    titleNumber: v.optional(v.string()),
-    insuranceValue: v.optional(v.number()),
-    serviceLog: v.optional(v.array(serviceLogEntryValidator)),
-    partsLifing: v.optional(v.array(partsLifingEntryValidator)),
-    eventHistory: v.optional(v.array(eventHistoryEntryValidator)),
+    ...vehicleDetailFields,
   },
   returns: v.id("vehicleDetails"),
   handler: async (ctx, args) => {
@@ -273,7 +204,7 @@ export const remove = mutation({
 export const addServiceLogEntry = mutation({
   args: {
     collectionId: v.id("collections"),
-    entry: serviceLogEntryValidator,
+    entry: vehicleServiceLogEntryValidator,
   },
   returns: v.id("vehicleDetails"),
   handler: async (ctx, args) => {
@@ -341,7 +272,7 @@ export const addServiceLogEntry = mutation({
 export const addEventHistoryEntry = mutation({
   args: {
     collectionId: v.id("collections"),
-    entry: eventHistoryEntryValidator,
+    entry: vehicleEventHistoryEntryValidator,
   },
   returns: v.id("vehicleDetails"),
   handler: async (ctx, args) => {

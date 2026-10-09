@@ -1,5 +1,18 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import {
+  type CapabilityId,
+  type CapabilityUnavailableData,
+  capabilityStateError,
+  capabilityUnavailable,
+  evaluateCapabilityEntitlement,
+  isOrganizationModuleEnabled,
+  moduleDisabledMessage,
+  type OrganizationAccess,
+  tierRequiredMessage,
+} from "./capabilities";
 import {
   type FeatureId,
   getFeatureRequiredTier,
@@ -10,6 +23,10 @@ import {
   normalizeSubscriptionTier,
   type SubscriptionTier,
 } from "./featurePolicy";
+import {
+  type CollectionType,
+  getCollectionTypeModuleRequirement,
+} from "./moduleCatalog";
 
 export type { FeatureId, IntegrationId, ModuleId, SubscriptionTier };
 
@@ -24,17 +41,21 @@ function hasOrganizationFeatureAccess(
   return hasFeatureTierAccess(getTier(org), featureId);
 }
 
+export function organizationAccess(
+  org: Doc<"organizations">,
+): OrganizationAccess {
+  return {
+    subscriptionTier: org.subscriptionTier,
+    enabledModules: org.settings?.enabledModules,
+    enabledIntegrations: org.settings?.enabledIntegrations,
+  };
+}
+
 function hasOrganizationModuleEnabled(
   org: Doc<"organizations">,
   moduleId: ModuleId,
 ): boolean {
-  const enabledModules = org.settings?.enabledModules ?? [];
-  if (enabledModules.includes(moduleId)) {
-    return true;
-  }
-
-  const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
-  return moduleId === "library" && enabledIntegrations.includes("library");
+  return isOrganizationModuleEnabled(organizationAccess(org), moduleId);
 }
 
 async function getOrganization(
@@ -46,6 +67,35 @@ async function getOrganization(
     throw new Error("Organization not found");
   }
   return org;
+}
+
+async function isCallerMember(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) return false;
+  const membership = await ctx.db
+    .query("userOrganizations")
+    .withIndex("by_user_and_organization", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId),
+    )
+    .first();
+  return membership !== null;
+}
+
+/**
+ * Members get the coded failure their UI explains. Anyone else gets the
+ * legacy uncoded error, which clients see redacted, so an organization's
+ * modules and plan never leak to outsiders. Runs only on the failure path.
+ */
+async function refuse(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  error: ConvexError<CapabilityUnavailableData>,
+): Promise<never> {
+  if (await isCallerMember(ctx, organizationId)) throw error;
+  throw new Error(error.data.message);
 }
 
 export async function hasFeatureAccess(
@@ -65,8 +115,33 @@ export async function requireFeatureAccess(
   const org = await getOrganization(ctx, organizationId);
   if (!hasOrganizationFeatureAccess(org, featureId)) {
     const requiredTier = getFeatureRequiredTier(featureId);
-    throw new Error(`Feature requires ${requiredTier} tier`);
+    await refuse(
+      ctx,
+      organizationId,
+      capabilityUnavailable({
+        reason: "tier_required",
+        requiredTier,
+        message: tierRequiredMessage(requiredTier),
+      }),
+    );
   }
+}
+
+/**
+ * Enforces a capability's organization-level dimensions (module, then plan)
+ * from the capability matrix. Callers still check the command's permission.
+ */
+export async function requireCapabilityEntitlement(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  capability: CapabilityId,
+) {
+  const org = await getOrganization(ctx, organizationId);
+  const error = capabilityStateError(
+    evaluateCapabilityEntitlement(capability, organizationAccess(org)),
+    "",
+  );
+  if (error) await refuse(ctx, organizationId, error);
 }
 
 export async function hasModuleEnabled(
@@ -85,7 +160,35 @@ export async function requireModuleEnabled(
 ) {
   const org = await getOrganization(ctx, organizationId);
   if (!hasOrganizationModuleEnabled(org, moduleId)) {
-    throw new Error(`Module not enabled: ${moduleId}`);
+    await refuse(
+      ctx,
+      organizationId,
+      capabilityUnavailable({
+        reason: "module_disabled",
+        module: moduleId,
+        message: moduleDisabledMessage(moduleId),
+      }),
+    );
+  }
+}
+
+/**
+ * Objects of a module-backed collection type exist only while that module is
+ * enabled. Clients map the stable `code` to translated copy.
+ */
+export async function requireCollectionTypeModuleEnabled(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  collectionType: CollectionType | undefined,
+) {
+  const requiredModule = getCollectionTypeModuleRequirement(collectionType);
+  if (!requiredModule) return;
+
+  if (!(await hasModuleEnabled(ctx, organizationId, requiredModule))) {
+    throw new ConvexError({
+      code: "COLLECTION_TYPE_MODULE_DISABLED",
+      message: "Collection type requires enabled module",
+    });
   }
 }
 
@@ -107,7 +210,15 @@ export async function requireIntegrationEnabled(
   const org = await getOrganization(ctx, organizationId);
   const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
   if (!enabledIntegrations.includes(integrationId)) {
-    throw new Error(`Integration not enabled: ${integrationId}`);
+    await refuse(
+      ctx,
+      organizationId,
+      capabilityUnavailable({
+        reason: "module_disabled",
+        module: integrationId,
+        message: `Integration not enabled: ${integrationId}`,
+      }),
+    );
   }
 }
 

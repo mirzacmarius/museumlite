@@ -23,6 +23,7 @@ interface UseObjectRequestFormSubmitOptions {
   selectedDocumentsCount: number;
   uploadDraftMedia: () => Promise<DraftMediaItem[]>;
   setError: (error: string | null) => void;
+  describeError: (error: unknown) => string | null;
   t: (key: string) => string;
   push: (href: string) => void;
 }
@@ -36,6 +37,7 @@ export function useObjectRequestFormSubmit({
   selectedDocumentsCount,
   uploadDraftMedia,
   setError,
+  describeError,
   t,
   push,
 }: UseObjectRequestFormSubmitOptions) {
@@ -81,7 +83,8 @@ export function useObjectRequestFormSubmit({
       } catch (err) {
         console.error("Error submitting object request:", err);
         setError(
-          err instanceof Error ? err.message : t("form.errors.saveFailed"),
+          describeError(err) ??
+            (err instanceof Error ? err.message : t("form.errors.saveFailed")),
         );
       } finally {
         setIsSubmitting(false);
@@ -90,6 +93,7 @@ export function useObjectRequestFormSubmit({
     [
       activeDraftAccessionId,
       currentOrganizationId,
+      describeError,
       formData,
       persistedDraftMedia,
       push,

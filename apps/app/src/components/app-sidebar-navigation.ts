@@ -1,3 +1,4 @@
+import { capabilityRoute } from "@v1/backend/convex/utils/capabilities";
 import {
   Activity,
   Bookmark,
@@ -26,7 +27,11 @@ import {
   Users,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import type { FeatureId } from "@/hooks/use-feature-access";
+import {
+  type CapabilityId,
+  type CapabilityStateLookup,
+  navigationAccess,
+} from "@/lib/capability-access";
 
 export type SidebarIcon = ComponentType<{ className?: string }>;
 
@@ -47,11 +52,8 @@ export interface NavigationGroup {
 
 interface BuildSidebarNavigationInput {
   translate: (key: string) => string;
-  hasFeature: (featureId: FeatureId) => boolean;
-  isLibraryModuleEnabled: boolean;
-  isInsuranceModuleEnabled: boolean;
+  capabilityState: CapabilityStateLookup;
   isLocationTrackingEnabled: boolean;
-  canAccessAdministration: boolean;
 }
 
 interface SidebarNavigation {
@@ -59,210 +61,141 @@ interface SidebarNavigation {
   navigationGroups: NavigationGroup[];
 }
 
+/**
+ * Builds the sidebar from the capability matrix: every gated destination uses
+ * its capability's canonical route and is open, locked or hidden by the
+ * caller's capability state.
+ */
 export function buildSidebarNavigation({
   translate,
-  hasFeature,
-  isLibraryModuleEnabled,
-  isInsuranceModuleEnabled,
+  capabilityState,
   isLocationTrackingEnabled,
-  canAccessAdministration,
 }: BuildSidebarNavigationInput): SidebarNavigation {
-  const patronManagementNavItem: NavigationItem = {
-    title: translate("untranslatedComponents.navigation.patronManagement"),
-    url: "/accounts?type=patron",
-    icon: Users,
+  const label = (key: string) =>
+    translate(`untranslatedComponents.navigation.${key}`);
+  const capabilityItem = (
+    capability: CapabilityId,
+    item: { title: string; icon: SidebarIcon },
+    options?: { lockWhenModuleDisabled?: boolean },
+  ): NavigationItem[] => {
+    const access = navigationAccess(capabilityState(capability), options);
+    if (access === "hidden") return [];
+    return [
+      {
+        ...item,
+        url: capabilityRoute(capability),
+        locked: access === "locked",
+      },
+    ];
   };
+  const isOpen = (capability: CapabilityId) =>
+    navigationAccess(capabilityState(capability)) === "open";
+
   const navCoreInventory: NavigationItem[] = [
-    {
-      title: translate("untranslatedComponents.navigation.overview"),
-      url: "/",
-      icon: LayoutGrid,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.objectCatalog"),
-      url: "/objects",
-      icon: Database,
-    },
+    { title: label("overview"), url: "/", icon: LayoutGrid },
+    { title: label("objectCatalog"), url: "/objects", icon: Database },
     ...(isLocationTrackingEnabled
-      ? [
-          {
-            title: translate(
-              "untranslatedComponents.navigation.locationTracking",
-            ),
-            url: "/locations",
-            icon: MapPin,
-          },
-        ]
+      ? [{ title: label("locationTracking"), url: "/locations", icon: MapPin }]
       : []),
-    {
-      title: translate("untranslatedComponents.navigation.scan"),
-      url: "/scan",
-      icon: QrCode,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.accessions"),
-      url: "/accessions",
-      icon: FileCheck,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.deaccessions"),
-      url: "/deaccessions",
-      icon: FileX,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.conservation"),
-      url: "/conservation",
+    { title: label("scan"), url: "/scan", icon: QrCode },
+    { title: label("accessions"), url: "/accessions", icon: FileCheck },
+    { title: label("deaccessions"), url: "/deaccessions", icon: FileX },
+    ...capabilityItem("conservation", {
+      title: label("conservation"),
       icon: Activity,
-      locked: !hasFeature("conservation"),
-    },
-    ...(isInsuranceModuleEnabled
-      ? [
-          {
-            title: translate("untranslatedComponents.navigation.insurance"),
-            url: "/insurance",
-            icon: Shield,
-            locked: !hasFeature("conservation"),
-          },
-        ]
-      : []),
+    }),
+    ...capabilityItem("insurance", { title: label("insurance"), icon: Shield }),
   ];
 
   const navExhibitionsLoans: NavigationItem[] = [
-    {
-      title: translate("untranslatedComponents.navigation.loansTransport"),
-      url: "/loans",
-      icon: Truck,
-      locked: !hasFeature("loans"),
-    },
-    {
-      ...patronManagementNavItem,
-      locked: !hasFeature("loans"),
-    },
-    {
-      title: translate("untranslatedComponents.navigation.transitLog"),
-      url: "/transit",
+    ...capabilityItem("loans", { title: label("loansTransport"), icon: Truck }),
+    ...capabilityItem("transit", {
+      title: label("transitLog"),
       icon: Container,
-      locked: !hasFeature("loans"),
-    },
-    {
-      title: translate("untranslatedComponents.navigation.exhibitions"),
-      url: "/exhibitions",
+    }),
+    ...capabilityItem("exhibitions", {
+      title: label("exhibitions"),
       icon: GalleryVerticalEnd,
-      locked: !hasFeature("exhibitions"),
-    },
-    {
-      title: translate("untranslatedComponents.navigation.installations"),
-      url: "/installations",
+    }),
+    ...capabilityItem("installations", {
+      title: label("installations"),
       icon: Hammer,
-      locked: !hasFeature("installations"),
-    },
+    }),
   ];
 
   const navLibrary: NavigationItem[] = [
-    {
-      title: translate("untranslatedComponents.navigation.libraryDashboard"),
-      url: "/library",
+    ...capabilityItem("library", {
+      title: label("libraryDashboard"),
       icon: Library,
-    },
+    }),
+    { title: label("catalogSearch"), url: "/library/catalog", icon: BookOpen },
     {
-      title: translate("untranslatedComponents.navigation.catalogSearch"),
-      url: "/library/catalog",
-      icon: BookOpen,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.circulationDesk"),
+      title: label("circulationDesk"),
       url: "/library/circulation",
       icon: IdCard,
-      locked: !isLibraryModuleEnabled,
     },
+    { title: label("holds"), url: "/library/holds", icon: Bookmark },
+    ...capabilityItem(
+      "patrons",
+      { title: label("patronManagement"), icon: Users },
+      { lockWhenModuleDisabled: true },
+    ),
+    { title: label("finesFees"), url: "/library/fines", icon: Ticket },
     {
-      title: translate("untranslatedComponents.navigation.holds"),
-      url: "/library/holds",
-      icon: Bookmark,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      ...patronManagementNavItem,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.finesFees"),
-      url: "/library/fines",
-      icon: Ticket,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.acquisitions"),
+      title: label("acquisitions"),
       url: "/library/acquisitions",
       icon: ShoppingCart,
-      locked: !isLibraryModuleEnabled,
     },
   ];
 
   const navAdministration: NavigationItem[] = [
-    {
-      title: translate("untranslatedComponents.navigation.analyticsReports"),
-      url: "/analytics",
+    ...capabilityItem("reporting", {
+      title: label("analyticsReports"),
       icon: ChartColumn,
-      locked: !hasFeature("reporting"),
-    },
-    {
-      title: translate("untranslatedComponents.navigation.accountsCrm"),
-      url: "/accounts",
+    }),
+    ...capabilityItem("accounts", {
+      title: label("accountsCrm"),
       icon: Contact,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.publicPortal"),
-      url: "/portal",
+    }),
+    ...capabilityItem("public_portal", {
+      title: label("publicPortal"),
       icon: Globe,
-      locked: !hasFeature("public_portal"),
-    },
+    }),
+    { title: label("digitalAssets"), url: "/media", icon: Image },
     {
-      title: translate("untranslatedComponents.navigation.digitalAssets"),
-      url: "/media",
-      icon: Image,
-    },
-    {
-      title: translate("untranslatedComponents.navigation.preferences"),
+      title: label("preferences"),
       url: "/settings/preferences",
       icon: SlidersHorizontal,
     },
     {
-      title: translate("untranslatedComponents.navigation.settings"),
-      url: "/settings/organization",
+      title: label("settings"),
+      url: capabilityRoute("administration"),
       icon: Settings2,
     },
   ];
 
+  const groups: NavigationGroup[] = [
+    {
+      title: label("exhibitionsLoans"),
+      icon: Truck,
+      items: navExhibitionsLoans,
+    },
+    ...(isOpen("library")
+      ? [{ title: label("library"), icon: Library, items: navLibrary }]
+      : []),
+    ...(isOpen("administration")
+      ? [
+          {
+            title: label("administration"),
+            icon: Settings2,
+            items: navAdministration,
+          },
+        ]
+      : []),
+  ];
+
   return {
     topLevelNavigation: navCoreInventory,
-    navigationGroups: [
-      {
-        title: translate("untranslatedComponents.navigation.exhibitionsLoans"),
-        icon: Truck,
-        items: navExhibitionsLoans,
-      },
-      ...(isLibraryModuleEnabled
-        ? [
-            {
-              title: translate("untranslatedComponents.navigation.library"),
-              icon: Library,
-              items: navLibrary,
-            },
-          ]
-        : []),
-      ...(canAccessAdministration
-        ? [
-            {
-              title: translate(
-                "untranslatedComponents.navigation.administration",
-              ),
-              icon: Settings2,
-              items: navAdministration,
-            },
-          ]
-        : []),
-    ],
+    navigationGroups: groups.filter((group) => group.items.length > 0),
   };
 }

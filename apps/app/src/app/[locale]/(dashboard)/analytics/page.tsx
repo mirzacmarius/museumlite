@@ -2,14 +2,15 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import { BarChart3 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { ClientTime } from "@/components/client-date";
 import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
@@ -105,7 +106,7 @@ export default function AnalyticsPage() {
   const t = useI18n();
   const { currentOrganizationId } = useOrganization();
   const { hasFeature, hasModule } = useFeatureAccess();
-  const hasReporting = hasFeature("reporting");
+  const hasReporting = useCapabilities().isAvailable("reporting");
   const hasCompliance = hasFeature("compliance");
   const hasInventoryValuation = hasModule("inventory_valuation");
   const now = useClientNow();
@@ -143,13 +144,12 @@ export default function AnalyticsPage() {
 
   if (!hasReporting) {
     return (
-      <FeatureGuard
+      <CapabilityGuard
+        capability="reporting"
         featureName={t("analytics.featureName")}
-        isLocked={true}
-        tierNeeded="pro"
       >
         <div className="p-6" />
-      </FeatureGuard>
+      </CapabilityGuard>
     );
   }
 
@@ -204,77 +204,71 @@ export default function AnalyticsPage() {
       : null;
 
   return (
-    <FeatureGuard
-      featureName={t("analytics.featureName")}
-      isLocked={!hasFeature("reporting")}
-      tierNeeded="pro"
-    >
-      <div className="flex flex-col h-full gap-y-6 p-6 overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-              <BarChart3 className="size-6 text-primary" />
-              {t("analytics.title")}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t("analytics.description")}
-            </p>
-          </div>
-          {kpiData ? (
-            <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
-              {t("analytics.updatedAt")}{" "}
-              <ClientTime timestamp={kpiData.generatedAt} />
-            </div>
-          ) : null}
+    <div className="flex flex-col h-full gap-y-6 p-6 overflow-y-auto">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <BarChart3 className="size-6 text-primary" />
+            {t("analytics.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("analytics.description")}
+          </p>
         </div>
-
-        {metricsUnavailableReason ? (
-          <MetricsUnavailableNotice reason={metricsUnavailableReason} />
-        ) : null}
-
         {kpiData ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {hasInventoryValuation && (
-              <InventoryValuationCard data={kpiData.inventory} />
-            )}
-            <LoanCalendarCard data={kpiData.loans} />
-            <ExhibitionPipelineCard
-              data={{ ...kpiData.exhibitions, asOf: kpiData.asOf }}
-            />
+          <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
+            {t("analytics.updatedAt")}{" "}
+            <ClientTime timestamp={kpiData.generatedAt} />
           </div>
         ) : null}
+      </div>
 
-        {complianceData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ComplianceReportCard
-              data={{
-                accessions: complianceData.accessions,
-                deaccessions: complianceData.deaccessions,
-              }}
-            />
-            <AuditTrailCard data={complianceData.auditTrail} />
-          </div>
-        )}
+      {metricsUnavailableReason ? (
+        <MetricsUnavailableNotice reason={metricsUnavailableReason} />
+      ) : null}
 
-        {locationData ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <LocationUtilizationCard data={locationData} />
-          </div>
-        ) : null}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ScheduledReportsCard organizationId={currentOrganizationId} />
-          <ReportExportsCard
-            organizationId={currentOrganizationId}
-            reports={reports}
-            unavailableReason={metricsUnavailableReason}
+      {kpiData ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {hasInventoryValuation && (
+            <InventoryValuationCard data={kpiData.inventory} />
+          )}
+          <LoanCalendarCard data={kpiData.loans} />
+          <ExhibitionPipelineCard
+            data={{ ...kpiData.exhibitions, asOf: kpiData.asOf }}
           />
         </div>
+      ) : null}
 
+      {complianceData && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RegisterExportsCard organizationId={currentOrganizationId} />
+          <ComplianceReportCard
+            data={{
+              accessions: complianceData.accessions,
+              deaccessions: complianceData.deaccessions,
+            }}
+          />
+          <AuditTrailCard data={complianceData.auditTrail} />
         </div>
+      )}
+
+      {locationData ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LocationUtilizationCard data={locationData} />
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ScheduledReportsCard organizationId={currentOrganizationId} />
+        <ReportExportsCard
+          organizationId={currentOrganizationId}
+          reports={reports}
+          unavailableReason={metricsUnavailableReason}
+        />
       </div>
-    </FeatureGuard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RegisterExportsCard organizationId={currentOrganizationId} />
+      </div>
+    </div>
   );
 }

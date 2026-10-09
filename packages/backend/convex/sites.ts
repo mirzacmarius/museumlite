@@ -1,9 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { requireFeatureAccess } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
-import { requirePermission } from "./utils/permissions";
+import { requireCapability } from "./utils/permissions";
 
 /**
  * Create site
@@ -21,13 +20,10 @@ export const create = mutation({
     const [userId] = await Promise.all([
       getAuthUserId(ctx),
 
-      requireFeatureAccess(ctx, args.organizationId, "public_portal"),
-      requirePermission(
-        ctx,
-        args.organizationId,
+      requireCapability(ctx, args.organizationId, "sites", [
         "organization.manage_settings",
-      ),
-      requirePermission(ctx, args.organizationId, "sites.create"),
+        "sites.create",
+      ]),
     ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -91,10 +87,7 @@ export const get = query({
       return null;
     }
 
-    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
-
-    // Check permission
-    await requirePermission(ctx, site.organizationId, "sites.read");
+    await requireCapability(ctx, site.organizationId, "sites", "sites.read");
 
     return site;
   },
@@ -121,10 +114,7 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "public_portal");
-
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "sites.read");
+    await requireCapability(ctx, args.organizationId, "sites", "sites.read");
 
     let query = ctx.db
       .query("sites")
@@ -172,16 +162,9 @@ export const update = mutation({
       throw new Error("Site not found");
     }
 
-    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
-
-    // Check permission
-    await Promise.all([
-      requirePermission(
-        ctx,
-        site.organizationId,
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.update"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.update",
     ]);
 
     // If marking as primary, unset any existing primary site
@@ -242,14 +225,9 @@ export const archive = mutation({
       throw new Error("Cannot archive the primary site");
     }
 
-    await Promise.all([
-      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
-      requirePermission(
-        ctx,
-        site.organizationId,
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.delete"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.delete",
     ]);
 
     // Locations carry no siteId, so active locations cannot block deactivation.
@@ -280,14 +258,9 @@ export const grantUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
-    await Promise.all([
-      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
-      requirePermission(
-        ctx,
-        site.organizationId,
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.update"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.update",
     ]);
     const user = await ctx.db.get(args.userId);
     if (!user) {
@@ -351,14 +324,9 @@ export const revokeUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
-    await Promise.all([
-      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
-      requirePermission(
-        ctx,
-        site.organizationId,
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.update"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.update",
     ]);
     const userSite = await ctx.db
       .query("userSites")

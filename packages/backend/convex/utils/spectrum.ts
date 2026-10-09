@@ -42,7 +42,7 @@ export interface SpectrumObjectEntry {
   /** Entry notes */
   notes?: string;
   /** Approval status */
-  approvalStatus?: "pending" | "approved" | "rejected";
+  approvalStatus?: "pending" | "approved" | "rejected" | "withdrawn";
   /** Date approved (if applicable) */
   dateApproved?: string;
 }

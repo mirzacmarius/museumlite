@@ -15,7 +15,6 @@ import {
   DialogTrigger,
 } from "@v1/ui/dialog";
 import { EmptyState } from "@v1/ui/empty-state";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -30,11 +29,12 @@ import { Building2, Container, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { ClientDate } from "@/components/client-date";
 import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type TransitStatus =
@@ -88,7 +88,7 @@ export function TransitPageClient() {
   const t = useScopedI18n("untranslatedDashboard.transit");
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
+  const canUseTransit = useCapabilities().isAvailable("transit");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<TransitStatus>("all");
   const [typeFilter, setTypeFilter] = useState<TransitType>("all");
@@ -96,7 +96,7 @@ export function TransitPageClient() {
 
   const transitRecords = useQuery(
     api.transit.listTransitRecords,
-    currentOrganizationId
+    currentOrganizationId && canUseTransit
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
@@ -142,11 +142,7 @@ export function TransitPageClient() {
   }
 
   return (
-    <FeatureGuard
-      featureName={t("title")}
-      isLocked={!hasFeature("loans")}
-      tierNeeded="pro"
-    >
+    <CapabilityGuard capability="transit" featureName={t("title")}>
       <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -363,7 +359,7 @@ export function TransitPageClient() {
           </div>
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }
 

@@ -37,6 +37,7 @@ export function DisposalStagesSection({
           />
           <DisposalExitStage
             deaccessionId={deaccession._id}
+            organizationId={deaccession.organizationId}
             exit={stages.exit}
             locale={locale}
           />

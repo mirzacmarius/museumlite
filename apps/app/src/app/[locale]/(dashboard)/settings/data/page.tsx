@@ -5,12 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { Download, Upload } from "lucide-react";
 import { Suspense } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { DataBatchJobs } from "./data-batch-jobs";
 import { DataExportTab } from "./data-export-tab";
 import { DataImportTab } from "./data-import-tab";
 import { DataIntegrityReview } from "./data-integrity-review";
-
-import { useScopedI18n } from "@/locales/client";
+import { PartyReview } from "./party-review";
 export default function DataPage() {
   const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
@@ -18,9 +18,7 @@ export default function DataPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">
-          {t("selectOrganizationData")}
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationData")}</p>
       </div>
     );
   }
@@ -41,6 +39,7 @@ export default function DataPage() {
       <Suspense fallback={<p role="status">Loading record review…</p>}>
         <DataBatchJobs key={organizationId} organizationId={organizationId} />
         <DataIntegrityReview organizationId={organizationId} />
+        <PartyReview organizationId={organizationId} />
       </Suspense>
       <Tabs defaultValue="import" className="w-full">
         <TabsList>

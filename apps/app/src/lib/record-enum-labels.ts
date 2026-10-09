@@ -27,6 +27,7 @@ const accessionStatusKeys: Record<string, string> = {
   pending: "accessions.status.pending",
   approved: "accessions.status.approved",
   rejected: "accessions.status.rejected",
+  withdrawn: "accessionReview.status.withdrawn",
   draft: "untranslatedRecords.objects.status.draft",
 };
 

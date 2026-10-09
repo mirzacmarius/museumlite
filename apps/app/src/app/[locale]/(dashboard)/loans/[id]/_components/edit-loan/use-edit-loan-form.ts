@@ -2,9 +2,12 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { loanAgreementTemplateErrorFromError } from "@v1/backend/convex/utils/loanAgreementErrors";
+import { isLoanCurrencyCode } from "@v1/backend/convex/utils/loanCurrency";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useLoanAgreementTemplateErrorMessage } from "@/hooks/use-loan-agreement-template-error-message";
 import { useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
 import { type EditLoanFormData, EMPTY_EDIT_LOAN_FORM } from "./types";
@@ -16,6 +19,8 @@ interface UseEditLoanFormOptions {
 
 export function useEditLoanForm({ loanId, loan }: UseEditLoanFormOptions) {
   const tActions = useScopedI18n("loans.actions");
+  const tAgreementErrors = useScopedI18n("loanAgreementTemplates.errors");
+  const agreementErrorMessage = useLoanAgreementTemplateErrorMessage();
   const { push } = useRouter();
   const updateLoan = useMutation(api.loans.update);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +37,7 @@ export function useEditLoanForm({ loanId, loan }: UseEditLoanFormOptions) {
         endDate: loan.endDate ? new Date(loan.endDate) : undefined,
         terms: loan.terms || "",
         insuranceValue: loan.insuranceValue?.toString() || "",
+        currency: loan.currency ?? "",
         notes: loan.notes || "",
       });
     }
@@ -42,6 +48,11 @@ export function useEditLoanForm({ loanId, loan }: UseEditLoanFormOptions) {
     setError(null);
     if (!formData.lenderBorrowerName.trim()) {
       setError(tActions("lenderBorrowerRequired"));
+      return;
+    }
+    const currency = formData.currency.trim();
+    if (currency && !isLoanCurrencyCode(currency)) {
+      setError(tAgreementErrors("invalidCurrency"));
       return;
     }
 
@@ -57,13 +68,17 @@ export function useEditLoanForm({ loanId, loan }: UseEditLoanFormOptions) {
         insuranceValue: formData.insuranceValue
           ? Number.parseFloat(formData.insuranceValue)
           : undefined,
+        // An empty currency clears a previously recorded one.
+        currency,
         notes: formData.notes || undefined,
       });
       push(`/loans/${loanId}`);
     } catch (err) {
       console.error("Error updating loan:", err);
       setError(
-        err instanceof Error ? err.message : tActions("failedToCreateLoan"),
+        loanAgreementTemplateErrorFromError(err) || !(err instanceof Error)
+          ? agreementErrorMessage(err, tActions("failedToCreateLoan"))
+          : err.message,
       );
       setIsSubmitting(false);
     }

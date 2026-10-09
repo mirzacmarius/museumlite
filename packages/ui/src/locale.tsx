@@ -76,9 +76,12 @@ export interface UiMessages {
     saveAndNew: string;
   };
   featureGuard: {
-    unavailable: string;
     locked: string;
+    tierRequired: string;
+    moduleDisabled: string;
+    permissionMissing: string;
     upgradeTo: string;
+    openModules: string;
     tiers: { pro: string; enterprise: string };
   };
 }
@@ -165,9 +168,15 @@ export const defaultUiMessages: UiMessages = {
     saveAndNew: "Save & Add Another",
   },
   featureGuard: {
-    unavailable: "This feature is not available on your plan.",
     locked: "{featureName} is locked",
+    tierRequired:
+      "Your organization's plan does not include this. It is part of the {tier} plan; an administrator can upgrade in Settings › Billing.",
+    moduleDisabled:
+      "This module is turned off for your organization. An administrator can turn it on in Settings › Modules.",
+    permissionMissing:
+      "Your role does not include access to this. Ask an administrator to update your role.",
     upgradeTo: "Upgrade to {tier}",
+    openModules: "Open Settings › Modules",
     tiers: { pro: "Pro", enterprise: "Enterprise" },
   },
 };

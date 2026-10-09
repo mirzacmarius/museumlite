@@ -3,12 +3,12 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useQuery } from "convex/react";
 import { Building2, Plus } from "lucide-react";
 import Link from "next/link";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useScopedI18n } from "@/locales/client";
 import { PortalPreview } from "./_components/portal-preview";
 import { PortalSettingsSidebar } from "./_components/portal-settings-sidebar";
@@ -18,8 +18,7 @@ export default function PublicPortalPage() {
   const common = useScopedI18n("common");
   const t = useScopedI18n("untranslatedDashboard.portal");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
-  const isPortalLocked = !hasFeature("public_portal");
+  const isPortalLocked = !useCapabilities().isAvailable("public_portal");
 
   const portalSettings = useQuery(
     api.organizations.getPortalSettings,
@@ -56,9 +55,13 @@ export default function PublicPortalPage() {
 
   if (isPortalLocked) {
     return (
-      <FeatureGuard featureName={t("publicPortal")} isLocked tierNeeded="pro">
+      <CapabilityGuard
+        capability="public_portal"
+        featureName={t("publicPortal")}
+        loadingFallback={<PortalPageSkeleton />}
+      >
         <div className="min-h-[400px]" />
-      </FeatureGuard>
+      </CapabilityGuard>
     );
   }
 
@@ -67,24 +70,20 @@ export default function PublicPortalPage() {
   }
 
   return (
-    <FeatureGuard featureName={t("publicPortal")} isLocked={false} tierNeeded="pro">
-      <div className="flex size-full flex-col overflow-hidden bg-background">
-        <div className="shrink-0 border-b border-border px-6 py-4">
-          <h1 className="page-title">{t("publicPortal")}</h1>
-          <p className="page-description mt-1">
-            {t("configureAndPreview")}
-          </p>
-        </div>
-
-        <div className="flex min-h-0 flex-1 gap-6 p-6">
-          <PortalSettingsSidebar />
-          <PortalPreview
-            isEnabled={portalSettings.isEnabled}
-            orgSlug={portalSettings.orgSlug}
-            portalSlug={portalSettings.portalSlug}
-          />
-        </div>
+    <div className="flex size-full flex-col overflow-hidden bg-background">
+      <div className="shrink-0 border-b border-border px-6 py-4">
+        <h1 className="page-title">{t("publicPortal")}</h1>
+        <p className="page-description mt-1">{t("configureAndPreview")}</p>
       </div>
-    </FeatureGuard>
+
+      <div className="flex min-h-0 flex-1 gap-6 p-6">
+        <PortalSettingsSidebar />
+        <PortalPreview
+          isEnabled={portalSettings.isEnabled}
+          orgSlug={portalSettings.orgSlug}
+          portalSlug={portalSettings.portalSlug}
+        />
+      </div>
+    </div>
   );
 }

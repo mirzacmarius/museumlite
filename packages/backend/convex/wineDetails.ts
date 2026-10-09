@@ -3,27 +3,14 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  typeDetailRecordFields,
+  wineDetailFields,
+} from "./utils/collectionTypeDetailFields";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
-
-const fillLevelValidator = v.union(
-  v.literal("into_neck"),
-  v.literal("top_shoulder"),
-  v.literal("high_shoulder"),
-  v.literal("mid_shoulder"),
-  v.literal("low_shoulder"),
-  v.literal("below_shoulder"),
-);
-
-const closureTypeValidator = v.union(
-  v.literal("cork"),
-  v.literal("screwcap"),
-  v.literal("synthetic"),
-  v.literal("glass"),
-  v.literal("crown"),
-);
 
 interface DrinkingWindow {
   _id: Id<"wineDetails">;
@@ -49,30 +36,9 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("wineDetails"),
-      collectionId: v.id("collections"),
-      organizationId: v.id("organizations"),
-      vintage: v.optional(v.number()),
-      peakWindowStart: v.optional(v.number()),
-      peakWindowEnd: v.optional(v.number()),
-      binNumber: v.optional(v.string()),
-      rackNumber: v.optional(v.string()),
-      rowNumber: v.optional(v.string()),
-      bottleSize: v.optional(v.string()),
-      quantity: v.optional(v.number()),
-      fillLevel: v.optional(fillLevelValidator),
-      closureType: v.optional(closureTypeValidator),
-      labelCondition: v.optional(v.string()),
-      capsuleCondition: v.optional(v.string()),
-      producer: v.optional(v.string()),
-      region: v.optional(v.string()),
-      appellation: v.optional(v.string()),
-      varietal: v.optional(v.string()),
-      alcoholContent: v.optional(v.number()),
-      purchasePrice: v.optional(v.number()),
-      currentValue: v.optional(v.number()),
-      drinkingNotes: v.optional(v.string()),
-      createdAt: v.number(),
-      lastModifiedAt: v.optional(v.number()),
+      _creationTime: v.number(),
+      ...typeDetailRecordFields,
+      ...wineDetailFields,
     }),
     v.null(),
   ),
@@ -107,26 +73,7 @@ export const get = query({
 export const upsert = mutation({
   args: {
     collectionId: v.id("collections"),
-    vintage: v.optional(v.number()),
-    peakWindowStart: v.optional(v.number()),
-    peakWindowEnd: v.optional(v.number()),
-    binNumber: v.optional(v.string()),
-    rackNumber: v.optional(v.string()),
-    rowNumber: v.optional(v.string()),
-    bottleSize: v.optional(v.string()),
-    quantity: v.optional(v.number()),
-    fillLevel: v.optional(fillLevelValidator),
-    closureType: v.optional(closureTypeValidator),
-    labelCondition: v.optional(v.string()),
-    capsuleCondition: v.optional(v.string()),
-    producer: v.optional(v.string()),
-    region: v.optional(v.string()),
-    appellation: v.optional(v.string()),
-    varietal: v.optional(v.string()),
-    alcoholContent: v.optional(v.number()),
-    purchasePrice: v.optional(v.number()),
-    currentValue: v.optional(v.number()),
-    drinkingNotes: v.optional(v.string()),
+    ...wineDetailFields,
   },
   returns: v.id("wineDetails"),
   handler: async (ctx, args) => {

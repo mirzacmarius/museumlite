@@ -1,16 +1,21 @@
 "use client";
 
+import type { CollectionModuleId } from "@v1/backend/convex/utils/moduleCatalog";
 import { useEffect, useMemo, useState } from "react";
 import { getObjectEditTabs } from "../../[id]/_components/object-tab-config";
 import type { CollectionEditTabId } from "./types";
 
-export function useFormTabState(isLocationTrackingEnabled: boolean) {
+export function useFormTabState(
+  isLocationTrackingEnabled: boolean,
+  typeDetailsTab?: CollectionModuleId,
+) {
   const tabs = useMemo(
     () =>
       getObjectEditTabs({
         locationTrackingEnabled: isLocationTrackingEnabled,
+        typeDetailsTab,
       }).map((tab) => ({ ...tab, id: tab.id as CollectionEditTabId })),
-    [isLocationTrackingEnabled],
+    [isLocationTrackingEnabled, typeDetailsTab],
   );
   const [activeTab, setActiveTab] = useState<CollectionEditTabId>("general");
 

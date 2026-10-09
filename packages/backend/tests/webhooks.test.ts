@@ -1,8 +1,9 @@
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { api, internal } from "../convex/_generated/api";
+import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import { webhookErrorCodeFromError } from "../convex/utils/webhookErrors";
 import { authedForUser, createOrgUserWithPermissions } from "./testHarness";
 import { modules } from "./testSetup";
 
@@ -35,26 +36,138 @@ describe("webhook secret generation", () => {
   });
 });
 
+async function errorCodeOf(call: Promise<unknown>) {
+  try {
+    await call;
+  } catch (error) {
+    return webhookErrorCodeFromError(error);
+  }
+  throw new Error("Expected the call to be rejected");
+}
+
+describe("webhook endpoint configuration", () => {
+  test("only events with a wired emit point are advertised and accepted", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    const authed = authedForUser(t, userId, "session-webhook-events");
+
+    expect(await authed.query(api.webhooks.listEvents, {})).toEqual([
+      "collection.created",
+      "loan.approved",
+      "media.uploaded",
+    ]);
+    expect(
+      await errorCodeOf(
+        authed.mutation(api.webhooks.create, {
+          organizationId,
+          name: "Accessions",
+          url: "https://example.com/accessions",
+          events: ["accession.created"],
+        }),
+      ),
+    ).toBe("WEBHOOK_EVENT_UNSUPPORTED");
+  });
+
+  test("an endpoint keeps legacy subscriptions it already has but cannot add new ones", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    const authed = authedForUser(t, userId, "session-webhook-legacy");
+    const webhookId = await t.run(async (ctx) =>
+      ctx.db.insert("webhooks", {
+        organizationId,
+        name: "Legacy",
+        url: "https://example.com/legacy",
+        secret: "whsec_legacy",
+        events: ["loan.created", "collection.created"],
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      }),
+    );
+
+    await authed.mutation(api.webhooks.update, {
+      webhookId,
+      events: ["loan.created", "collection.created", "media.uploaded"],
+    });
+    expect(
+      (await authed.query(api.webhooks.get, { webhookId }))?.events,
+    ).toEqual(["loan.created", "collection.created", "media.uploaded"]);
+    expect(
+      await errorCodeOf(
+        authed.mutation(api.webhooks.update, {
+          webhookId,
+          events: ["loan.created", "loan.returned"],
+        }),
+      ),
+    ).toBe("WEBHOOK_EVENT_UNSUPPORTED");
+  });
+
+  test("endpoints need a name and an https URL", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    const authed = authedForUser(t, userId, "session-webhook-validation");
+
+    for (const url of ["http://example.com/hook", "not a url", "https://"]) {
+      expect(
+        await errorCodeOf(
+          authed.mutation(api.webhooks.create, {
+            organizationId,
+            name: "Insecure",
+            url,
+            events: ["collection.created"],
+          }),
+        ),
+      ).toBe("WEBHOOK_URL_INVALID");
+    }
+    expect(
+      await errorCodeOf(
+        authed.mutation(api.webhooks.create, {
+          organizationId,
+          name: "   ",
+          url: "https://example.com/hook",
+          events: ["collection.created"],
+        }),
+      ),
+    ).toBe("WEBHOOK_NAME_REQUIRED");
+
+    const { id } = await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Valid",
+      url: "https://example.com/hook",
+      events: ["collection.created"],
+    });
+    expect(
+      await errorCodeOf(
+        authed.mutation(api.webhooks.update, {
+          webhookId: id,
+          url: "http://example.com/hook",
+        }),
+      ),
+    ).toBe("WEBHOOK_URL_INVALID");
+  });
+});
+
 describe("webhook delivery", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
-  test("getActiveForEvent returns only active webhooks subscribed to the event", async () => {
+  test("an event reaches only active endpoints subscribed to it", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      ["collections.create"],
+      { subscriptionTier: "pro" },
+    );
 
-    const { organizationId, userId } = await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Webhook Museum",
-        slug: `webhook-museum-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-      });
-      const userId = await ctx.db.insert("users", {
-        name: "Webhook User",
-        email: `webhook-${Math.random().toString(36).slice(2, 8)}@example.com`,
-      });
-
+    await t.run(async (ctx) => {
       await ctx.db.insert("webhooks", {
         organizationId,
         name: "Active collection hook",
@@ -85,19 +198,51 @@ describe("webhook delivery", () => {
         createdBy: userId,
         createdAt: Date.now(),
       });
-
-      return { organizationId, userId };
     });
 
-    const hooks = await t.query(internal.webhooks.getActiveForEvent, {
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    await authedForUser(t, userId).mutation(api.collections.create, {
       organizationId,
-      event: "collection.created",
+      accessionNumber: "WEBHOOK-ROUTE-001",
+      title: "Routed Object",
+    });
+    await t.finishAllScheduledFunctions(() => {
+      vi.runAllTimers();
     });
 
-    expect(hooks).toHaveLength(1);
-    expect(hooks[0]?.url).toBe("https://example.com/collection");
-    expect(hooks[0]?.secret).toBe("whsec_active");
-    expect(userId).toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://example.com/collection");
+  });
+
+  test("no event is recorded when no endpoint subscribes", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      ["collections.create", "organization.manage_settings"],
+      { subscriptionTier: "pro" },
+    );
+    const authed = authedForUser(t, userId);
+    await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Loans only",
+      url: "https://example.com/loans",
+      events: ["loan.approved"],
+    });
+
+    await authed.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "WEBHOOK-NONE-001",
+      title: "Unrouted Object",
+    });
+
+    const { page } = await authed.query(api.webhookDeliveries.list, {
+      organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(page).toEqual([]);
   });
 
   test("creating a collection schedules webhook delivery with signed payload", async () => {

@@ -13,15 +13,31 @@ import {
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import { Check, Loader2, Send, Trash2, X } from "lucide-react";
+import { Check, KeyRound, List, Loader2, Send, Trash2, X } from "lucide-react";
 
-import { useI18n } from "@/locales/client";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+
 export interface WebhookItem {
   _id: Id<"webhooks">;
   name: string;
   url: string;
   isActive: boolean;
   events: string[];
+  lastTriggeredAt?: number;
+}
+
+function LastDelivered({ timestamp }: { timestamp: number | undefined }) {
+  const t = useScopedI18n("webhookDeliveries");
+  const locale = useCurrentLocale();
+  const time = useClientRelativeTime(timestamp, locale, { addSuffix: true });
+  return (
+    <span className="text-xs text-white/60">
+      {timestamp
+        ? t("endpoint.lastDelivery", { time })
+        : t("endpoint.neverDelivered")}
+    </span>
+  );
 }
 
 interface WebhooksListProps {
@@ -35,6 +51,8 @@ interface WebhooksListProps {
   onTest: (webhookId: Id<"webhooks">) => void;
   onToggleActive: (webhookId: Id<"webhooks">, isActive: boolean) => void;
   onDelete: (webhookId: Id<"webhooks">) => void;
+  onViewDeliveries: (webhookId: Id<"webhooks">) => void;
+  onRotateSecret: (webhook: { _id: Id<"webhooks">; name: string }) => void;
   t: ReturnType<typeof import("@/locales/client").useScopedI18n<"settings">>;
 }
 
@@ -45,9 +63,12 @@ export function WebhooksList({
   onTest,
   onToggleActive,
   onDelete,
+  onViewDeliveries,
+  onRotateSecret,
   t,
 }: WebhooksListProps) {
   const tRoot = useI18n();
+  const tDeliveries = useScopedI18n("webhookDeliveries");
   return (
     <div className="rounded-lg border border-border">
       {!webhooks ? (
@@ -69,19 +90,37 @@ export function WebhooksList({
                   />
                   <span className="font-medium">{webhook.name}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewDeliveries(webhook._id)}
+                  >
+                    <List className="mr-2 size-4" />
+                    {tDeliveries("endpoint.viewDeliveries")}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onTest(webhook._id)}
-                    disabled={testingId === webhook._id}
+                    disabled={testingId === webhook._id || !webhook.isActive}
                   >
                     {testingId === webhook._id ? (
                       <Loader2 className="mr-2 size-4 animate-spin" />
                     ) : (
                       <Send className="mr-2 size-4" />
                     )}
-                    {t("webhooks.test")}
+                    {tDeliveries("endpoint.sendTest")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      onRotateSecret({ _id: webhook._id, name: webhook.name })
+                    }
+                  >
+                    <KeyRound className="mr-2 size-4" />
+                    {tDeliveries("endpoint.rotateSecret")}
                   </Button>
                   <Button
                     variant="outline"
@@ -124,10 +163,11 @@ export function WebhooksList({
                   </AlertDialog>
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
                 <code className="rounded bg-muted px-2 py-0.5">
                   {webhook.url}
                 </code>
+                <LastDelivered timestamp={webhook.lastTriggeredAt} />
               </div>
               <div className="flex flex-wrap gap-1">
                 {webhook.events.slice(0, 5).map((event) => (
@@ -140,7 +180,8 @@ export function WebhooksList({
                 ))}
                 {webhook.events.length > 5 && (
                   <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    +{webhook.events.length - 5} {tRoot("untranslatedDashboard.settings.more")}
+                    +{webhook.events.length - 5}{" "}
+                    {tRoot("untranslatedDashboard.settings.more")}
                   </span>
                 )}
               </div>
