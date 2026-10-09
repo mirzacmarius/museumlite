@@ -33,12 +33,12 @@ export function CaseTaskPanel({
 
   return (
     <section
-      className="space-y-4 rounded-xl border border-white/10 bg-card p-6"
+      className="space-y-4 rounded-xl border border-border bg-card p-6"
       aria-labelledby={`case-tasks-${caseId}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <ListChecks className="size-4 text-white/60" />
+          <ListChecks className="size-4 text-muted-foreground" />
           <h3
             id={`case-tasks-${caseId}`}
             className="text-lg font-medium text-foreground"
@@ -53,15 +53,15 @@ export function CaseTaskPanel({
           </Button>
         ) : null}
       </div>
-      <p className="text-sm text-white/60">{t("panel.description")}</p>
+      <p className="text-sm text-muted-foreground">{t("panel.description")}</p>
 
       {view === undefined ? (
-        <div className="flex items-center gap-2 text-sm text-white/60">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
           {t("panel.loading")}
         </div>
       ) : view.tasks.length === 0 ? (
-        <p className="text-sm text-white/60">{t("panel.empty")}</p>
+        <p className="text-sm text-muted-foreground">{t("panel.empty")}</p>
       ) : (
         <ul className="space-y-3">
           {view.tasks.map((task) => (
@@ -77,7 +77,7 @@ export function CaseTaskPanel({
         </ul>
       )}
       {view && !view.canManage ? (
-        <p className="text-xs text-white/60">{t("panel.readOnly")}</p>
+        <p className="text-xs text-muted-foreground">{t("panel.readOnly")}</p>
       ) : null}
 
       {view?.canManage && createOpen ? (

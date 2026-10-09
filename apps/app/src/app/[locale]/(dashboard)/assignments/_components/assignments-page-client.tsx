@@ -85,7 +85,7 @@ export function AssignmentsPageClient({
       <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <ClipboardList className="size-5 text-primary" />
-          <h1 className="text-lg font-semibold text-white">
+          <h1 className="text-lg font-semibold text-foreground">
             {t("caseTasks.myWork.title")}
           </h1>
         </div>
@@ -124,7 +124,7 @@ export function AssignmentsPageClient({
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-screen-xl space-y-8">
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-muted-foreground">
             {t("caseTasks.myWork.description")}
           </p>
           <MyWorkSections organizationId={organizationId} />
@@ -322,7 +322,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
                 </span>
               )}
             </div>
-            <h3 className="text-sm font-medium text-white truncate group-hover:text-foreground">
+            <h3 className="text-sm font-medium text-foreground truncate">
               {item.title}
             </h3>
             {item.subtitle && (

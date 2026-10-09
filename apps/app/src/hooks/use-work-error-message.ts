@@ -1,15 +1,17 @@
 import { workErrorFromError } from "@v1/backend/convex/utils/workErrors";
 import { useScopedI18n } from "@/locales/client";
+import { useCapabilityErrorMessage } from "./use-capability-error-message";
 
 /**
- * Translates case task failures. Any other failure gets the translated
- * fallback; server error text is never shown.
+ * Translates case task failures and capability refusals. Any other failure
+ * gets the translated fallback; server error text is never shown.
  */
 export function useWorkErrorMessage() {
   const t = useScopedI18n("caseTasks.errors");
+  const capabilityMessage = useCapabilityErrorMessage();
   return (error: unknown) => {
     const data = workErrorFromError(error);
-    if (!data) return t("fallback");
+    if (!data) return capabilityMessage(error) ?? t("fallback");
     switch (data.code) {
       case "CASE_NOT_FOUND":
         return t("caseNotFound");

@@ -59,9 +59,9 @@ function TaskQueue({
     { initialNumItems: PAGE_SIZE },
   );
   if (status === "LoadingFirstPage")
-    return <p className="text-sm text-white/60">{t("loading")}</p>;
+    return <p className="text-sm text-muted-foreground">{t("loading")}</p>;
   if (results.length === 0)
-    return <p className="text-sm text-white/60">{emptyLabel}</p>;
+    return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   return (
     <div className="space-y-3">
       <ul className="space-y-3">
@@ -96,24 +96,28 @@ function AssignedCases({
     organizationId,
   });
   if (assigned === undefined)
-    return <p className="text-sm text-white/60">{t("myWork.loading")}</p>;
+    return (
+      <p className="text-sm text-muted-foreground">{t("myWork.loading")}</p>
+    );
   if (assigned.cases.length === 0)
     return (
-      <p className="text-sm text-white/60">{t("myWork.assignedCasesEmpty")}</p>
+      <p className="text-sm text-muted-foreground">
+        {t("myWork.assignedCasesEmpty")}
+      </p>
     );
   return (
     <div className="space-y-2">
-      <ul className="divide-y divide-white/10 rounded-lg border border-white/10">
+      <ul className="divide-y divide-border rounded-lg border border-border">
         {assigned.cases.map((row) => (
           <li key={`${row.caseType}:${row.caseId}`}>
             <Link
               href={caseHref(row.caseType, row.caseId)}
-              className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-white/5"
+              className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-muted/50"
             >
-              <span className="text-white">
+              <span className="text-foreground">
                 {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
               </span>
-              <span className="flex items-center gap-2 text-xs text-white/60">
+              <span className="flex items-center gap-2 text-xs text-muted-foreground">
                 {t("myWork.since")}{" "}
                 <ClientDate timestamp={row.since} locale={locale} />
                 <ExternalLink className="size-3" />
@@ -123,7 +127,9 @@ function AssignedCases({
         ))}
       </ul>
       {assigned.truncated ? (
-        <p className="text-xs text-white/60">{t("myWork.assignedTruncated")}</p>
+        <p className="text-xs text-muted-foreground">
+          {t("myWork.assignedTruncated")}
+        </p>
       ) : null}
     </div>
   );

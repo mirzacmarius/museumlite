@@ -256,7 +256,9 @@ export function CreateTaskDialog({
               })}
             </fieldset>
           ) : null}
-          <p className="text-xs text-white/60">{t("dialogs.noAttestation")}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("dialogs.noAttestation")}
+          </p>
           <DialogFooter>
             <Button
               type="button"
@@ -452,7 +454,7 @@ export function TaskNoteDialog({
             />
           </div>
           {showNoAttestation ? (
-            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
               {t("dialogs.noAttestation")}
             </p>
           ) : null}
@@ -533,7 +535,7 @@ export function LinkEvidenceDialog({
             </DialogDescription>
           </DialogHeader>
           {candidates !== undefined && available.length === 0 ? (
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-muted-foreground">
               {t("dialogs.evidence.empty")}
             </p>
           ) : (
