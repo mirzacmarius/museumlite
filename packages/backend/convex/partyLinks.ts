@@ -121,8 +121,12 @@ export const listForTarget = query({
       resolved.organizationId,
       args.target,
     );
+    // Newest first; the stable sort below keeps this order for equal createdAt.
+    const newestFirst = links.toSorted(
+      (left, right) => right._creationTime - left._creationTime,
+    );
     const views = await Promise.all(
-      links.map(async (link) => {
+      newestFirst.map(async (link) => {
         const [account, creator] = await Promise.all([
           ctx.db.get(link.accountId),
           link.createdBy ? ctx.db.get(link.createdBy) : null,
