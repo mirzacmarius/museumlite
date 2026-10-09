@@ -2555,6 +2555,98 @@ export default {
     refineSearch:
       "Mai multe obiecte se potrivesc. Restrângeți căutarea pentru a reduce lista.",
   },
+  valuation: {
+    title: "Evaluare",
+    description:
+      "Expertize pe scop și monedă. Evaluarea curentă pentru fiecare scop și monedă este cea mai recentă expertiză care nu a fost înlocuită. Valorile nu sunt niciodată convertite între monede.",
+    recordAppraisal: "Înregistrează expertiza",
+    noCurrent: "Nu există încă expertize înregistrate.",
+    currentTitle: "Evaluări curente",
+    historyTitle: "Istoricul expertizelor",
+    truncated: "Se afișează cele mai recente 200 de expertize.",
+    renewalDue: "Necesită reînnoire",
+    currencyNotRecognized: "Codul monedei nu este recunoscut",
+    current: "Curentă",
+    supersededBadge: "Înlocuită",
+    replacedBadge: "Nu este curentă",
+    correctionOf: "Corectare: {reason}",
+    supersededOn: "Înlocuită la",
+    supersede: "Corectează",
+    requiredFields: "Completați câmpurile obligatorii.",
+    invalidValue: "Introduceți o valoare mai mare sau egală cu zero.",
+    invalidCurrency:
+      "Introduceți un cod de monedă din trei litere, de exemplu EUR.",
+    recorded: "Expertiza a fost înregistrată",
+    superseded: "Expertiza a fost corectată",
+    failed: "Expertiza nu a putut fi salvată",
+    recordTitle: "Înregistrează expertiza",
+    recordDescription:
+      "Valorile înregistrate nu mai pot fi modificate ulterior. Corectările se înregistrează ca o expertiză nouă care o înlocuiește pe cea inițială.",
+    supersedeTitle: "Corectează expertiza",
+    supersedeDescription:
+      "Expertiza inițială rămâne în istoric, marcată ca înlocuită de această corectare.",
+    reason: "Motivul corectării *",
+    reasonPlaceholder: "De ce este corectată expertiza înregistrată",
+    purpose: "Scop *",
+    appraisalDate: "Data expertizei *",
+    value: "Valoare *",
+    currency: "Monedă *",
+    currencyHint: "Cod ISO din trei litere, de exemplu EUR",
+    appraiserName: "Expert *",
+    appraiserCompany: "Firmă",
+    appraiserCredentials: "Calificări",
+    validUntil: "Valabilă până la",
+    notes: "Note",
+    save: "Salvează expertiza",
+    saving: "Se salvează…",
+    totalsByCurrency: "Totaluri pe monedă",
+    withoutCurrency:
+      "{count} înregistrări fără monedă sunt numărate, dar nu sunt adunate.",
+    recordedValueHint: "Valoare înregistrată, moneda nu este înregistrată",
+    purposes: {
+      insurance: "Asigurare",
+      replacement: "Înlocuire",
+      market: "Piață",
+      fair_market: "Valoare justă de piață",
+      liquidation: "Lichidare",
+    },
+    errors: {
+      INVALID_CURRENCY:
+        "Introduceți un cod de monedă recunoscut, din trei litere, de exemplu EUR.",
+      INVALID_AMOUNT: "Sumele trebuie să fie mai mari sau egale cu zero.",
+      INVALID_DATE:
+        "Verificați datele. Data de valabilitate trebuie să fie aceeași sau ulterioară datei expertizei.",
+      APPRAISER_REQUIRED: "Introduceți numele expertului.",
+      REASON_REQUIRED: "Indicați un motiv pentru corectare.",
+      REFERENCE_NOT_FOUND:
+        "O înregistrare asociată nu mai este disponibilă. Reîmprospătați și încercați din nou.",
+      APPRAISAL_ALREADY_SUPERSEDED:
+        "Această expertiză a fost deja corectată. Corectați în schimb expertiza mai nouă.",
+      APPRAISAL_SUPERSEDED:
+        "Expertizele înlocuite rămân în istoric. Alegeți expertiza care a corectat-o.",
+      APPRAISAL_NOT_FOR_COVERED_OBJECT:
+        "Această expertiză aparține altui obiect.",
+      APPRAISAL_CURRENCY_MISMATCH:
+        "Expertiza este într-o altă monedă decât acoperirea.",
+      CURRENT_APPRAISAL_REQUIRED:
+        "Înregistrați mai întâi o expertiză de asigurare curentă în această monedă.",
+      POLICY_NUMBER_TAKEN: "O altă poliță folosește deja acest număr.",
+      INVALID_POLICY_PERIOD:
+        "Polița trebuie să expire după intrarea în vigoare.",
+      POLICY_NOT_IN_FORCE:
+        "Acoperirea poate fi adăugată doar unei polițe active sau care urmează să intre în vigoare.",
+      INVALID_COVERAGE_PERIOD:
+        "Acoperirea trebuie să se încheie la data de început sau după aceasta.",
+      COVERAGE_OUTSIDE_POLICY_PERIOD:
+        "Datele acoperirii trebuie să fie în perioada poliței.",
+      COVERAGE_TARGET_NOT_FOUND:
+        "Obiectul, împrumutul sau expoziția selectată nu a fost găsită în această organizație.",
+      LEGACY_REVIEW_RESOLVED: "Această verificare a fost deja soluționată.",
+      LEGACY_REVIEW_TARGET_INVALID:
+        "Alegeți ținte înregistrate pe acoperire, fiecare o singură dată.",
+      fallback: "A apărut o eroare. Încercați din nou.",
+    },
+  },
   deaccessions: {
     loadedResults: "Număr pentru rezultatele încărcate",
     loadMore: "Încarcă mai multe",
@@ -7581,6 +7673,7 @@ export default {
         media: "Media",
         accession: "Înregistrare",
         provenance: "Proveniență și istoric",
+        valuation: "Evaluare",
         placement: "Amplasare și relații",
         conservation: "Conservare",
         exhibitions: "Expoziții",
@@ -7761,6 +7854,127 @@ export default {
       effective: "Intrare în vigoare",
       expires: "Expiră",
       coverages: "Acoperiri",
+      currencyRequiredLabel: "Monedă *",
+      currencyNotRecorded: "Moneda nu este înregistrată",
+      policyCurrencyHint: "Moneda limitei de acoperire, de exemplu EUR",
+      tabs: {
+        overview: "Lipsuri și expirări",
+        coverages: "Acoperiri",
+        review: "Verificarea acoperirilor",
+      },
+      coverageTab: {
+        addCoverage: "Adaugă acoperire",
+        addTitle: "Adaugă acoperire",
+        addDescription:
+          "Asigurați un obiect, un împrumut sau o expoziție printr-o poliță, în propria monedă.",
+        requiredFields:
+          "Alegeți o poliță și o țintă și introduceți valoarea acoperită.",
+        added: "Acoperirea a fost adăugată",
+        failed: "Acoperirea nu a putut fi adăugată",
+        policy: "Poliță *",
+        periodHint: "Lăsați datele goale pentru a urma perioada poliței:",
+        targetType: "Acoperă *",
+        target: "Țintă *",
+        selectObject: "Selectați obiectul",
+        selectLoan: "Selectați împrumutul",
+        selectExhibition: "Selectați expoziția",
+        noOptions: "Nu există opțiuni",
+        coveredValue: "Valoare acoperită *",
+        currencyHint: "Implicit, moneda poliței",
+        startDate: "Începutul acoperirii",
+        endDate: "Sfârșitul acoperirii",
+        save: "Adaugă acoperire",
+        saving: "Se adaugă…",
+        splitFrom: "separată dintr-o acoperire verificată",
+        needsReviewTargets:
+          "Înregistrată pentru {count} ținte, necesită verificare",
+        empty: "Nu există încă acoperiri",
+        emptyDescription:
+          "Adăugați o acoperire pentru a asigura un obiect, un împrumut sau o expoziție.",
+        loadMore: "Încarcă mai multe",
+        targetKinds: {
+          object: "Obiect",
+          loan: "Împrumut",
+          exhibition: "Expoziție",
+        },
+        columns: {
+          target: "Acoperă",
+          policy: "Poliță",
+          value: "Valoare acoperită",
+          period: "Perioadă",
+          state: "Stare",
+          appraisal: "Expertiză de asigurare",
+        },
+        states: {
+          in_force: "În vigoare",
+          not_started: "Neînceput",
+          expired: "Expirată",
+          policy_inactive: "Poliță inactivă",
+          removed: "Eliminată",
+          needs_review: "Necesită verificare",
+        },
+        appraisalStatus: {
+          not_applicable: "Nu se aplică",
+          currency_not_recorded: "Moneda nu este înregistrată",
+          missing: "Lipsește",
+          current: "Curentă",
+          stale: "Depășită",
+        },
+      },
+      overview: {
+        needsReview: "Acoperiri care necesită verificare",
+        staleAppraisals: "Expertize de asigurare depășite",
+        openClaims: "Daune deschise",
+        disputedClaims: "Daune contestate",
+        inForceTitle: "Acoperire în vigoare",
+        inForceDescription:
+          "Totaluri pe monedă. Sumele în monede diferite nu sunt adunate niciodată.",
+        noCover: "Nu există acoperire în vigoare.",
+        gapsTitle: "Obiecte fără acoperire",
+        gapsDescription:
+          "Obiecte aflate în grija dumneavoastră fără acoperire în vigoare, nici directă, nici printr-un împrumut sau o expoziție acoperite.",
+        coveredOf: "{covered} din {total} obiecte acoperite ({percentage}%)",
+        noGaps: "Toate obiectele au acoperire în vigoare.",
+        moreGaps: "Se afișează primele {count} obiecte.",
+        expiringTitle: "Polițe care expiră în 90 de zile",
+        noExpiring: "Nicio poliță nu expiră în următoarele 90 de zile.",
+        expiresIn: "Expiră în {days} zile",
+        coverageCount: "{count} acoperiri",
+        expiredTitle: "Polițe expirate",
+        noExpired: "Nu există polițe expirate.",
+        expiredBadge: "Expirată",
+        moreExpired: "{count} polițe expirate în total.",
+      },
+      review: {
+        title: "Verificarea acoperirilor moștenite",
+        description:
+          "Aceste acoperiri au fost înregistrate pentru mai multe ținte. Nimic nu se schimbă până când decideți cărei ținte i se aplică fiecare.",
+        openCount: "{count} deschise",
+        showResolved: "Afișează soluționate",
+        showOpen: "Afișează deschise",
+        empty: "Nicio acoperire nu necesită verificare.",
+        emptyResolved: "Nicio verificare nu a fost încă soluționată.",
+        value: "Valoare înregistrată",
+        resolve: "Soluționează",
+        targets: "Ținte înregistrate",
+        resolvedSummary:
+          "Ținta păstrată: {target}. Acoperiri separate înregistrate: {count}",
+        truncated: "Se afișează cele mai recente 100 de verificări.",
+        resolved: "Verificarea acoperirii a fost soluționată",
+        failed: "Verificarea nu a putut fi soluționată",
+        resolveTitle: "Soluționează acoperirea",
+        resolveDescription:
+          "Alegeți ținta căreia i se aplică acoperirea înregistrată. Puteți înregistra și acoperiri separate pentru celelalte ținte, fiecare cu propria valoare.",
+        keep: "Acoperirea înregistrată se aplică pentru *",
+        currency: "Moneda valorii înregistrate",
+        currencyHint: "Lăsați gol dacă nu se cunoaște",
+        addSplit: "Înregistrează o acoperire separată pentru {target}",
+        splitValue: "Valoare acoperită",
+        splitCurrency: "Monedă",
+        note: "Notă",
+        save: "Soluționează",
+        saving: "Se soluționează…",
+      },
       claimStatus: {
         all: "Toate stările",
         open: "Deschisă",
@@ -9434,6 +9648,10 @@ export default {
           "Obiectul „{title}” necesită o evaluare de conservare.",
         insurancePolicyExpiring:
           "Polița {policyNumber} ({carrier}), care acoperă {count} obiecte în valoare de {value}, expiră în {days} zile.",
+        insurancePolicyExpiringValued:
+          "Polița {policyNumber} ({carrier}), care acoperă {count} obiecte evaluate la {values}, expiră în {days} zile.",
+        insurancePolicyExpiringUnvalued:
+          "Polița {policyNumber} ({carrier}), care acoperă {count} obiecte, expiră în {days} zile.",
         autoGeneratedInsuranceClaim:
           "A fost creat un proiect de cerere de despăgubire ({claimNumber}) pentru daune de tranzit detectate la returnarea unui împrumut. Verifică-l și trimite-l.",
         acquisitionPendingAtStep:

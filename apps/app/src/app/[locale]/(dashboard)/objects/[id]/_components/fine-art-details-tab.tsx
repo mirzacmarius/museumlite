@@ -8,6 +8,7 @@ import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { DollarSign, FileCheck, History, Shield, Truck } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
+import { RecordedValue } from "@/components/recorded-value";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
@@ -81,11 +82,10 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
               {t("appraisedValue")}
             </span>
           </div>
-          <span className="text-2xl font-light text-foreground">
-            {details.appraisedValue
-              ? formatCurrency(details.appraisedValue, locale, "USD")
-              : "—"}
-          </span>
+          <RecordedValue
+            value={details.appraisedValue}
+            className="text-2xl font-light text-foreground"
+          />
         </div>
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
@@ -95,11 +95,10 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
               {t("replacementValue")}
             </span>
           </div>
-          <span className="text-2xl font-light text-foreground">
-            {details.replacementValue
-              ? formatCurrency(details.replacementValue, locale, "USD")
-              : "—"}
-          </span>
+          <RecordedValue
+            value={details.replacementValue}
+            className="text-2xl font-light text-foreground"
+          />
         </div>
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">

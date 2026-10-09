@@ -1180,7 +1180,12 @@ export const getCollectionHealthDashboard = query({
         overdueAssessments: v.number(),
       }),
       insurance: v.object({
-        totalCoveredValue: v.number(),
+        /** Recorded active coverage value; amounts are never summed across currencies. */
+        coveredValueByCurrency: v.array(
+          v.object({ currency: v.string(), total: v.number() }),
+        ),
+        coveragesWithoutCurrency: v.number(),
+        coveragesNeedingReview: v.number(),
         objectsWithCoverage: v.number(),
         objectsWithoutCoverage: v.number(),
         expiringPolicies: v.number(),

@@ -137,6 +137,7 @@ const organizationScopedTables = [
   "librarySettings",
   "insurancePolicies",
   "insuranceCoverages",
+  "legacyCoverageReviews",
   "insuranceClaims",
   "claimCounters",
   "transitRecords",

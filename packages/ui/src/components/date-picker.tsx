@@ -19,6 +19,8 @@ interface DatePickerProps {
   className?: string;
   displayFormat?: string;
   defaultMonth?: Date;
+  /** Last month the calendar can show; defaults to the end of this year. */
+  endMonth?: Date;
 }
 
 export function DatePicker({
@@ -31,6 +33,7 @@ export function DatePicker({
   className,
   displayFormat,
   defaultMonth,
+  endMonth,
 }: DatePickerProps) {
   const { locale, dateFnsLocale, messages } = useUiLocale();
   const [open, setOpen] = React.useState(false);
@@ -61,6 +64,7 @@ export function DatePicker({
             mode="single"
             selected={date}
             defaultMonth={defaultMonth ?? date}
+            endMonth={endMonth}
             captionLayout="dropdown"
             onSelect={(date) => {
               onSelect?.(date);

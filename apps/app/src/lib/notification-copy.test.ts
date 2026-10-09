@@ -60,6 +60,32 @@ describe("getNotificationCopy", () => {
     });
   });
 
+  it("localizes insurance expiry values per currency without adding them up", () => {
+    expect(
+      getNotificationCopy(
+        {
+          title: "Insurance Policy Expiring in 7 Days",
+          message:
+            "Policy POL-2 (Lloyd's) covering 3 items valued at EUR 30,000; USD 13,500 expires in 7 days.",
+        },
+        dictionaryTranslator(french),
+      ),
+    ).toEqual({
+      title: "La police d’assurance expire dans 7 jours",
+      message:
+        "La police POL-2 (Lloyd's), qui couvre 3 objets d’une valeur de EUR 30,000; USD 13,500, expire dans 7 jours.",
+    });
+    expect(
+      getNotificationCopy(
+        {
+          title: "Insurance Policy Expiring in 14 Days",
+          message: "Policy POL-3 (Mutual) covering 0 items expires in 14 days.",
+        },
+        dictionaryTranslator(romanian),
+      ).message,
+    ).toBe("Polița POL-3 (Mutual), care acoperă 0 obiecte, expiră în 14 zile.");
+  });
+
   it("translates built-in task copy while retaining user-provided task text", () => {
     expect(
       getNotificationCopy(
