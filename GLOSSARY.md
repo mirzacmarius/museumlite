@@ -58,6 +58,16 @@ _Avoid_: Delete, remove
 Removal of an Object, or of an intake request a reviewer declined, from routine views while its record is retained and restorable. It asserts neither a change of title nor disposal; a withdrawn intake was never accessioned, so it never produces a Deaccession.
 _Avoid_: Delete, archive (when title or disposal is meant)
 
+### Provenance
+
+**Provenance claim**:
+A recorded assertion about who held an Object, in what role, when and how, kept in its author's wording with its evidence and confidence. A correction supersedes a claim, a retraction ends it, and neither rewrites it. Contradictory claims are kept side by side for review.
+_Avoid_: Ownership history (the legacy free-text list), provenance entry
+
+**Partial date**:
+A historical date known only to a day, month, year or decade, optionally circa, not after, not before, or uncertain. It is never stored as a timestamp.
+_Avoid_: Approximate timestamp
+
 ### Access
 
 Access has independent dimensions: the Organization's Modules, its Entitlements, and the staff member's Role. A Capability names which of them it needs.

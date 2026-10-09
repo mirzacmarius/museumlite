@@ -24,6 +24,17 @@ export function accessionSourceAssertion(source: string): string | undefined {
   return text && text !== LINKED_SOURCE_PLACEHOLDER ? text : undefined;
 }
 
+/** How a provenance claim's Object is named in party role history. */
+export function provenanceObjectLabel(
+  object: Pick<Doc<"collections">, "accessionNumber" | "title">,
+): string {
+  return `${object.accessionNumber} ${object.title}`.trim();
+}
+
+function isWithdrawnObject(object: Doc<"collections"> | null) {
+  return object?.status === "archived" || object?.status === "deleted";
+}
+
 /** Roles a Party may hold on each kind of record, primary role first. */
 export const ACCESSION_PARTY_ROLES: readonly PartyRole[] = ["donor", "owner"];
 
@@ -57,6 +68,13 @@ export interface ResolvedPartyTarget {
   recordAssertedName?: string;
   /** The account the record already references for that role. */
   recordAccountId?: Id<"accounts">;
+  /**
+   * The record's wording names every party linked in its primary role, not
+   * only the first, because the record itself is never rewritten.
+   */
+  recordNamesEveryLink?: boolean;
+  /** Links carry no dates; the record keeps them as partial dates. */
+  undatedLinks?: boolean;
 }
 
 type TargetAccess = "read" | "write";
@@ -140,6 +158,26 @@ export async function resolvePartyTarget(
         recordAssertedName: deaccession.exitRecord?.recipient,
       };
     }
+    case "provenanceClaim": {
+      const claim = await ctx.db.get(target.id);
+      if (!claim) targetNotFound();
+      await requirePermission(ctx, claim.organizationId, collectionsPermission);
+      const object = await ctx.db.get(claim.objectId);
+      return {
+        organizationId: claim.organizationId,
+        label: object ? provenanceObjectLabel(object) : "",
+        // Only a holder the source names can be identified as a Party.
+        allowedRoles: claim.partyKind === "named" ? [claim.role] : [],
+        policy:
+          claim.supersededAt === undefined && !isWithdrawnObject(object)
+            ? "open"
+            : "closed",
+        primaryRole: claim.role,
+        recordAssertedName: claim.partyText,
+        recordNamesEveryLink: true,
+        undatedLinks: true,
+      };
+    }
     case "appraisal": {
       const appraisal = await ctx.db.get(target.id);
       if (!appraisal) targetNotFound();
@@ -205,6 +243,14 @@ export async function readablePartyTargetLabel(
         ? record.deaccessionNumber
         : null;
     }
+    case "provenanceClaim": {
+      const claim = await ctx.db.get(link.targetId);
+      if (claim?.organizationId !== link.organizationId) return null;
+      const object = await ctx.db.get(claim.objectId);
+      return object?.organizationId === link.organizationId
+        ? provenanceObjectLabel(object)
+        : null;
+    }
     case "appraisal": {
       const record = await ctx.db.get(link.targetId);
       return record?.organizationId === link.organizationId
@@ -247,6 +293,8 @@ function targetFields(target: PartyTarget) {
       return { targetType: "loan" as const, targetId: target.id };
     case "deaccession":
       return { targetType: "deaccession" as const, targetId: target.id };
+    case "provenanceClaim":
+      return { targetType: "provenanceClaim" as const, targetId: target.id };
     case "appraisal":
       return { targetType: "appraisal" as const, targetId: target.id };
     case "collection":
@@ -262,6 +310,8 @@ export function partyTargetOf(link: Doc<"partyLinks">): PartyTarget {
       return { type: "loan", id: link.targetId };
     case "deaccession":
       return { type: "deaccession", id: link.targetId };
+    case "provenanceClaim":
+      return { type: "provenanceClaim", id: link.targetId };
     case "appraisal":
       return { type: "appraisal", id: link.targetId };
     case "collection":
@@ -444,7 +494,8 @@ export interface RecordPartyLinkInput {
   account: Doc<"accounts">;
   role: PartyRole;
   allowedRoles: readonly PartyRole[];
-  effectiveFrom: number;
+  /** Absent for records that keep the role's dates themselves. */
+  effectiveFrom?: number;
   effectiveTo?: number;
   assertedName?: string;
   supersessionReason?: string;
@@ -493,7 +544,11 @@ export async function recordPartyLink(
       return { linkId: current._id, created: false };
     }
   }
-  if (effectiveTo !== undefined && effectiveTo < input.effectiveFrom) {
+  if (
+    effectiveTo !== undefined &&
+    input.effectiveFrom !== undefined &&
+    effectiveTo < input.effectiveFrom
+  ) {
     throw partyError(
       "PARTY_DATES_INVALID",
       "The role cannot end before it starts",

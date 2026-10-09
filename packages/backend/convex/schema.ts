@@ -50,6 +50,10 @@ import {
   projectionUnavailableReason,
 } from "./utils/projectionValidators";
 import {
+  provenanceClaimDocumentValidator,
+  provenanceEvidenceDocumentValidator,
+} from "./utils/provenanceValidators";
+import {
   webhookDeliveryAttemptFields,
   webhookDeliveryFields,
   webhookEventFields,
@@ -4562,6 +4566,26 @@ export default defineSchema({
   partyDuplicateReviews: defineTable(partyDuplicateReviewDocumentValidator)
     .index("by_organization_and_pairKey", ["organizationId", "pairKey"])
     .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // Provenance claims (MUS-643): immutable assertions about an Object's
+  // holders. Corrections supersede; contradictory claims stay for review
+  // (ADR 0006).
+  provenanceClaims: defineTable(provenanceClaimDocumentValidator)
+    .index("by_organization_and_objectId_and_supersededAt", [
+      "organizationId",
+      "objectId",
+      "supersededAt",
+    ])
+    .index("by_organization_and_reviewStatus_and_supersededAt", [
+      "organizationId",
+      "reviewStatus",
+      "supersededAt",
+    ]),
+
+  // Sources cited for provenance claims; retracted, never deleted.
+  provenanceEvidence: defineTable(provenanceEvidenceDocumentValidator)
+    .index("by_organization_and_objectId", ["organizationId", "objectId"])
+    .index("by_organization_and_claimId", ["organizationId", "claimId"]),
 
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),
