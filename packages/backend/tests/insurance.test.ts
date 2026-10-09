@@ -26,7 +26,6 @@ async function setupInsuranceFixture(t: ConvexTest): Promise<InsuranceFixture> {
     [...insurancePermissions],
     {
       subscriptionTier: "pro",
-      enabledModules: ["insurance"],
       slugPrefix: "insurance-test",
     },
   );
@@ -425,11 +424,7 @@ test.each([
   const { organizationId, userId } = await createOrgUserWithPermissions(
     t,
     ["collections.read"],
-    {
-      subscriptionTier: "pro",
-      enabledModules: ["insurance"],
-      slugPrefix: "appraisal-age",
-    },
+    { subscriptionTier: "pro", slugPrefix: "appraisal-age" },
   );
   const authed = authedForUser(t, userId);
   const collectionId = await t.run(async (ctx) => {

@@ -17,7 +17,7 @@ async function setup() {
       type: "museum",
       subscriptionTier: "pro",
       settings: {
-        enabledModules: ["fine_art", "accounts", "insurance"],
+        enabledModules: ["fine_art", "accounts"],
         accessionNumberFormat: "{YYYY}.{####}",
         locationTypes: ["Private storage"],
       },

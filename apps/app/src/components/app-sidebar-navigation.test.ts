@@ -55,8 +55,8 @@ function buildNavigation(
       if (!capabilitiesLoaded) return undefined;
       const override = overrides[capability];
       return override
-        ? ({ capability, ...override } as CapabilityState)
-        : { capability, status: "available" };
+        ? ({ capability, listed: true, ...override } as CapabilityState)
+        : { capability, listed: true, status: "available" };
     },
     isLocationTrackingEnabled: true,
   });
@@ -148,9 +148,9 @@ describe("buildSidebarNavigation", () => {
     });
   });
 
-  test("hides Insurance while the insurance module is off", () => {
+  test("hides Insurance while its module does not list it, even though the page stays usable", () => {
     const navigation = buildNavigation({
-      insurance: { status: "module_disabled", module: "insurance" },
+      insurance: { status: "available", listed: false },
     });
 
     expect(allTitles(navigation)).not.toContain("Insurance");

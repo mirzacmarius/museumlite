@@ -25,6 +25,7 @@ import {
 import { useCommandPalette } from "./command-palette-provider";
 import { CommandPaletteResults } from "./command-palette-results";
 import { useOrganization } from "./organization-provider";
+import { usePermissions } from "./permission-gate";
 
 export function CommandPalette() {
   const translate = useI18n();
@@ -33,8 +34,10 @@ export function CommandPalette() {
   const { push } = useRouter();
   const { currentOrganizationId, currentOrganization } = useOrganization();
   const { stateOf } = useCapabilities();
+  const { hasPermission } = usePermissions();
   const paletteActions = buildCommandPaletteActions({
     capabilityState: stateOf,
+    hasPermission,
     isLocationTrackingEnabled:
       currentOrganization?.settings?.locationTrackingEnabled ?? true,
   });

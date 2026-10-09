@@ -1,10 +1,11 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { CAPABILITY_IDS, evaluateCapability } from "./utils/capabilities";
+import { organizationAccess } from "./utils/featureGates";
 import { enabledModuleValidator } from "./utils/moduleValidators";
 import {
   getCurrentUserOrganization,
-  getUserPermissions,
+  getRolePermissionNames,
 } from "./utils/permissions";
 
 const capabilityIdValidator = v.union(
@@ -17,25 +18,24 @@ const tierValidator = v.union(
   v.literal("enterprise"),
 );
 
+const stateFields = {
+  capability: capabilityIdValidator,
+  listed: v.boolean(),
+};
+
 const capabilityStateValidator = v.union(
+  v.object({ ...stateFields, status: v.literal("available") }),
   v.object({
-    capability: capabilityIdValidator,
-    status: v.literal("available"),
-  }),
-  v.object({
-    capability: capabilityIdValidator,
+    ...stateFields,
     status: v.literal("module_disabled"),
     module: enabledModuleValidator,
   }),
   v.object({
-    capability: capabilityIdValidator,
+    ...stateFields,
     status: v.literal("tier_required"),
     requiredTier: tierValidator,
   }),
-  v.object({
-    capability: capabilityIdValidator,
-    status: v.literal("permission_missing"),
-  }),
+  v.object({ ...stateFields, status: v.literal("permission_missing") }),
 );
 
 /**
@@ -51,14 +51,12 @@ export const forOrganization = query({
       args.organizationId,
     );
     if (!membership) return null;
-    const organization = await ctx.db.get(args.organizationId);
+    const [organization, permissions] = await Promise.all([
+      ctx.db.get(args.organizationId),
+      getRolePermissionNames(ctx, membership.roleId),
+    ]);
     if (!organization) return null;
-    const permissions = await getUserPermissions(ctx, args.organizationId);
-    const access = {
-      subscriptionTier: organization.subscriptionTier,
-      enabledModules: organization.settings?.enabledModules,
-      enabledIntegrations: organization.settings?.enabledIntegrations,
-    };
+    const access = organizationAccess(organization);
     return CAPABILITY_IDS.map((capability) =>
       evaluateCapability(capability, access, permissions),
     );

@@ -23,6 +23,7 @@ import { AuditEventDetails } from "@/components/audit-event-details";
 import { CapabilityGuard } from "@/components/capability-guard";
 import { ExportJobControl } from "@/components/export-job-control";
 import { useOrganization } from "@/components/organization-provider";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -412,6 +413,7 @@ function ActivityList({
 
 function ActivityPageContent() {
   const { currentOrganizationId, isLoading } = useOrganization();
+  const canUseCompliance = useCapabilities().isAvailable("compliance");
   const t = useScopedI18n("activityLog");
   const tExport = useScopedI18n("exportJobs");
 
@@ -487,24 +489,27 @@ function ActivityPageContent() {
       (state.fromDate && state.toDate && state.fromDate > state.toDate),
   );
 
-  const entityTypes = useQuery(api.auditLog.getEntityTypes, {});
+  const entityTypes = useQuery(
+    api.auditLog.getEntityTypes,
+    canUseCompliance ? {} : "skip",
+  );
 
   const availableActions = useQuery(
     api.auditLog.getAvailableActions,
-    currentOrganizationId
+    currentOrganizationId && canUseCompliance
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const activeUsers = useQuery(
     api.auditLog.getActiveUsers,
-    currentOrganizationId
+    currentOrganizationId && canUseCompliance
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const queryArgs =
-    currentOrganizationId && !invalidDates
+    currentOrganizationId && canUseCompliance && !invalidDates
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           userId: state.selectedUserId

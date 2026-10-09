@@ -28,15 +28,18 @@ export interface CommandPaletteAction {
 
 interface BuildCommandPaletteActionsInput {
   capabilityState: CapabilityStateLookup;
+  hasPermission: (permission: string) => boolean;
   isLocationTrackingEnabled: boolean;
 }
 
 /**
  * Palette commands from the capability matrix. Unlike the sidebar, the
- * palette only lists commands the member can run now.
+ * palette lists only commands the member can open now. New accessions stay
+ * listed because workflow settings decide who may start one.
  */
 export function buildCommandPaletteActions({
   capabilityState,
+  hasPermission,
   isLocationTrackingEnabled,
 }: BuildCommandPaletteActionsInput) {
   const isOpen = (capability: CapabilityId) =>
@@ -44,20 +47,25 @@ export function buildCommandPaletteActions({
   const when = (condition: boolean, action: CommandPaletteAction) =>
     condition ? [action] : [];
 
+  const canCreateRecords = hasPermission("collections.create");
   const create: CommandPaletteAction[] = [
-    {
+    ...when(canCreateRecords, {
       labelKey: "newObject",
       href: "/objects/new",
       icon: FilePlus,
       shortcut: "⌘N",
-    },
+    }),
     { labelKey: "newAccession", href: "/accessions/new", icon: Plus },
-    ...when(isOpen("loans"), {
+    ...when(isOpen("loans") && hasPermission("loans.create"), {
       labelKey: "newLoan",
       href: `${capabilityRoute("loans")}/new`,
       icon: Plus,
     }),
-    { labelKey: "newCollectionGroup", href: "/collections/new", icon: Plus },
+    ...when(canCreateRecords, {
+      labelKey: "newCollectionGroup",
+      href: "/collections/new",
+      icon: Plus,
+    }),
   ];
 
   const navigation: CommandPaletteAction[] = [

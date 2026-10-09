@@ -14,9 +14,10 @@ import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,
   requireCapability,
+  requirePermission,
 } from "./utils/permissions";
 
-/** Insurance is the Insurance module on the loans plan (see capability matrix). */
+/** Insurance commands run on the loans plan (see the capability matrix). */
 async function requireInsurancePermission(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
@@ -1947,7 +1948,7 @@ export const checkAppraisalForCoverage = query({
     }
 
     try {
-      await requireInsurancePermission(
+      await requirePermission(
         ctx,
         collection.organizationId,
         "collections.read",

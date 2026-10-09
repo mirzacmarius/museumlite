@@ -2,6 +2,7 @@ import type {
   CapabilityId,
   CapabilityState,
 } from "@v1/backend/convex/utils/capabilities";
+import type { FeatureGuardReason } from "@v1/ui/feature-guard";
 
 export type { CapabilityId, CapabilityState };
 
@@ -14,15 +15,15 @@ export type NavigationAccess = "open" | "locked" | "hidden";
 
 /**
  * Plan-gated destinations stay visible but locked so their page can explain
- * the plan. Modules that are off and roles without access are hidden; a
- * dependent module can opt into the lock when its parent area is visible.
- * Unknown (still loading) states are hidden.
+ * the plan. Modules that are off, unlisted capabilities and roles without
+ * access are hidden; a dependent module can opt into the lock when its parent
+ * area is visible. Unknown (still loading) states are hidden.
  */
 export function navigationAccess(
   state: CapabilityState | undefined,
   { lockWhenModuleDisabled = false } = {},
 ): NavigationAccess {
-  if (!state) return "hidden";
+  if (!state?.listed) return "hidden";
   switch (state.status) {
     case "available":
       return "open";
@@ -35,15 +36,10 @@ export function navigationAccess(
   }
 }
 
-export type CapabilityGuardReason =
-  | { kind: "tier_required"; tier: "pro" | "enterprise" }
-  | { kind: "module_disabled" }
-  | { kind: "permission_missing" };
-
 /** The explanation a page shows for an unavailable capability; null when open. */
 export function capabilityGuardReason(
   state: CapabilityState,
-): CapabilityGuardReason | null {
+): FeatureGuardReason | null {
   switch (state.status) {
     case "available":
       return null;

@@ -1,16 +1,4 @@
 export default {
-  capabilities: {
-    moduleDisabled:
-      "Acest modul este dezactivat pentru organizația ta. Un administrator îl poate activa din Setări › Module.",
-    tierRequired:
-      "Această acțiune necesită planul {tier}. Un administrator poate face upgrade din Setări › Facturare.",
-    permissionMissing:
-      "Rolul tău nu permite această acțiune. Cere unui administrator să îți actualizeze rolul.",
-    tiers: {
-      pro: "Pro",
-      enterprise: "Enterprise",
-    },
-  },
   custodyConflicts: {
     sourceChanged:
       "Acest obiect se află acum la {location}. Reîmprospătați, confirmați unde se află și înregistrați din nou predarea.",

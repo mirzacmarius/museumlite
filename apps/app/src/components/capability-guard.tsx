@@ -2,6 +2,7 @@
 
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import type { ReactNode } from "react";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import {
   type CapabilityId,
@@ -13,7 +14,7 @@ interface CapabilityGuardProps {
   featureName: string;
   description?: string;
   children: ReactNode;
-  /** Rendered while capability states load. */
+  /** Rendered while capability states load; defaults to a page skeleton. */
   loadingFallback?: ReactNode;
 }
 
@@ -27,7 +28,7 @@ export function CapabilityGuard({
   featureName,
   description,
   children,
-  loadingFallback = null,
+  loadingFallback = <DashboardListPageSkeleton layout="list" />,
 }: CapabilityGuardProps) {
   const { stateOf, isAvailable } = useCapabilities();
   const state = stateOf(capability);

@@ -28,12 +28,12 @@ export function useCapabilities() {
       return (
         byCapability.get(capability) ?? {
           capability,
+          listed: true,
           status: "permission_missing",
         }
       );
     };
     return {
-      isLoading: states === undefined,
       stateOf,
       isAvailable: (capability: CapabilityId) =>
         stateOf(capability)?.status === "available",

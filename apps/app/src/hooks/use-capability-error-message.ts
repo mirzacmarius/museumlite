@@ -2,11 +2,12 @@ import { capabilityUnavailableFromError } from "@v1/backend/convex/utils/capabil
 import { useScopedI18n } from "@/locales/client";
 
 /**
- * Translates coded CAPABILITY_UNAVAILABLE failures from backend commands.
- * Returns null for any other error so callers keep their own handling.
+ * Translates coded CAPABILITY_UNAVAILABLE failures from backend commands with
+ * the same copy as the page guard. Returns null for any other error so
+ * callers keep their own handling.
  */
 export function useCapabilityErrorMessage() {
-  const t = useScopedI18n("capabilities");
+  const t = useScopedI18n("ui.featureGuard");
   return (error: unknown): string | null => {
     const failure = capabilityUnavailableFromError(error);
     if (!failure) return null;

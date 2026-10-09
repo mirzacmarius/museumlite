@@ -1,16 +1,4 @@
 export default {
-  capabilities: {
-    moduleDisabled:
-      "Denne modulen er slått av for organisasjonen din. En administrator kan slå den på under Innstillinger › Moduler.",
-    tierRequired:
-      "Dette krever {tier}-abonnementet. En administrator kan oppgradere under Innstillinger › Fakturering.",
-    permissionMissing:
-      "Rollen din tillater ikke dette. Be en administrator om å oppdatere rollen din.",
-    tiers: {
-      pro: "Pro",
-      enterprise: "Enterprise",
-    },
-  },
   custodyConflicts: {
     sourceChanged:
       "Dette objektet er nå på {location}. Oppdater, bekreft hvor det er, og registrer overleveringen på nytt.",

@@ -1,16 +1,4 @@
 export default {
-  capabilities: {
-    moduleDisabled:
-      "This module is turned off for your organization. An administrator can turn it on in Settings › Modules.",
-    tierRequired:
-      "This needs the {tier} plan. An administrator can upgrade in Settings › Billing.",
-    permissionMissing:
-      "Your role does not allow this. Ask an administrator to update your role.",
-    tiers: {
-      pro: "Pro",
-      enterprise: "Enterprise",
-    },
-  },
   custodyConflicts: {
     sourceChanged:
       "This object is now at {location}. Refresh, confirm where it is, and record the handoff again.",

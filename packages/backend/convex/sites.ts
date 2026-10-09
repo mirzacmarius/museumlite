@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
-import { requireCapability, requirePermission } from "./utils/permissions";
+import { requireCapability } from "./utils/permissions";
 
 /**
  * Create site
@@ -20,13 +20,10 @@ export const create = mutation({
     const [userId] = await Promise.all([
       getAuthUserId(ctx),
 
-      requireCapability(
-        ctx,
-        args.organizationId,
-        "sites",
+      requireCapability(ctx, args.organizationId, "sites", [
         "organization.manage_settings",
-      ),
-      requirePermission(ctx, args.organizationId, "sites.create"),
+        "sites.create",
+      ]),
     ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -165,14 +162,9 @@ export const update = mutation({
       throw new Error("Site not found");
     }
 
-    await Promise.all([
-      requireCapability(
-        ctx,
-        site.organizationId,
-        "sites",
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.update"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.update",
     ]);
 
     // If marking as primary, unset any existing primary site
@@ -233,14 +225,9 @@ export const archive = mutation({
       throw new Error("Cannot archive the primary site");
     }
 
-    await Promise.all([
-      requireCapability(
-        ctx,
-        site.organizationId,
-        "sites",
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.delete"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.delete",
     ]);
 
     // Locations carry no siteId, so active locations cannot block deactivation.
@@ -271,14 +258,9 @@ export const grantUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
-    await Promise.all([
-      requireCapability(
-        ctx,
-        site.organizationId,
-        "sites",
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.update"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.update",
     ]);
     const user = await ctx.db.get(args.userId);
     if (!user) {
@@ -342,14 +324,9 @@ export const revokeUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
-    await Promise.all([
-      requireCapability(
-        ctx,
-        site.organizationId,
-        "sites",
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, site.organizationId, "sites.update"),
+    await requireCapability(ctx, site.organizationId, "sites", [
+      "organization.manage_settings",
+      "sites.update",
     ]);
     const userSite = await ctx.db
       .query("userSites")

@@ -1,8 +1,10 @@
 import { ConvexError } from "convex/values";
+import { convexErrorData } from "./convexErrorData";
 import {
   type FeatureId,
   getFeatureRequiredTier,
   hasFeatureTierAccess,
+  SUBSCRIPTION_TIERS,
   type SubscriptionTier,
 } from "./featurePolicy";
 import { MODULE_IDS, type ModuleId } from "./moduleCatalog";
@@ -36,6 +38,11 @@ export interface CapabilityRequirement {
   feature?: FeatureId;
   /** Free opt-in module an administrator turns on in Settings > Modules. */
   module?: ModuleId;
+  /**
+   * Module that only decides whether navigation lists the capability. Its
+   * pages and commands do not require it.
+   */
+  listedWithModule?: ModuleId;
   /** Role permissions needed to open the canonical route. */
   permissions: readonly string[];
   /** Canonical route used by navigation and the command palette. */
@@ -64,12 +71,15 @@ export const CAPABILITY_MATRIX = {
     permissions: ["collections.read"],
     route: "/conservation",
   },
+  // Policies predate the Insurance module (2026-09-20), so the module only
+  // lists Insurance in navigation; enforcing it would cut off existing data.
   insurance: {
-    module: "insurance",
     feature: "loans",
+    listedWithModule: "insurance",
     permissions: ["loans.read"],
     route: "/insurance",
   },
+  // /analytics is an administration route (server layout gate).
   reporting: {
     feature: "reporting",
     permissions: ["organization.manage_settings"],
@@ -124,15 +134,20 @@ export type CapabilityUnavailableReason =
   (typeof CAPABILITY_UNAVAILABLE_REASONS)[number];
 
 // Type aliases (not interfaces) so the payload satisfies Convex's Value type.
+type CapabilityStateBase = {
+  capability: CapabilityId;
+  /** False when navigation should not list the capability. */
+  listed: boolean;
+};
+
 export type CapabilityState =
-  | { capability: CapabilityId; status: "available" }
-  | { capability: CapabilityId; status: "module_disabled"; module: ModuleId }
-  | {
-      capability: CapabilityId;
+  | (CapabilityStateBase & { status: "available" })
+  | (CapabilityStateBase & { status: "module_disabled"; module: ModuleId })
+  | (CapabilityStateBase & {
       status: "tier_required";
       requiredTier: SubscriptionTier;
-    }
-  | { capability: CapabilityId; status: "permission_missing" };
+    })
+  | (CapabilityStateBase & { status: "permission_missing" });
 
 export interface OrganizationAccess {
   subscriptionTier?: SubscriptionTier | null;
@@ -157,23 +172,40 @@ function requirementOf(capability: CapabilityId): CapabilityRequirement {
 }
 
 /**
- * Organization-level dimensions only (module, then plan). Role permissions are
- * checked separately because each command needs its own permission.
+ * The first missing dimension is the reason: the module (an administrator's
+ * choice), then the role (the member's access), then the plan. Members whose
+ * role lacks access are never told to upgrade.
+ *
+ * `requiredPermissions` defaults to the capability's route permissions; a
+ * command passes its own permission instead.
  */
-export function evaluateCapabilityEntitlement(
+export function evaluateCapability(
   capability: CapabilityId,
   access: OrganizationAccess,
+  permissions: ReadonlyArray<string>,
+  requiredPermissions: ReadonlyArray<string> = requirementOf(
+    capability,
+  ).permissions,
 ): CapabilityState {
   const requirement = requirementOf(capability);
+  const listed =
+    !requirement.listedWithModule ||
+    isOrganizationModuleEnabled(access, requirement.listedWithModule);
   if (
     requirement.module &&
     !isOrganizationModuleEnabled(access, requirement.module)
   ) {
     return {
       capability,
+      listed,
       status: "module_disabled",
       module: requirement.module,
     };
+  }
+  if (
+    requiredPermissions.some((permission) => !permissions.includes(permission))
+  ) {
+    return { capability, listed, status: "permission_missing" };
   }
   if (
     requirement.feature &&
@@ -181,27 +213,20 @@ export function evaluateCapabilityEntitlement(
   ) {
     return {
       capability,
+      listed,
       status: "tier_required",
       requiredTier: getFeatureRequiredTier(requirement.feature),
     };
   }
-  return { capability, status: "available" };
+  return { capability, listed, status: "available" };
 }
 
-/** Module, then plan, then role: the first missing dimension is the reason. */
-export function evaluateCapability(
+/** Module and plan only, for gates that check the permission separately. */
+export function evaluateCapabilityEntitlement(
   capability: CapabilityId,
   access: OrganizationAccess,
-  permissions: ReadonlyArray<string>,
 ): CapabilityState {
-  const entitlement = evaluateCapabilityEntitlement(capability, access);
-  if (entitlement.status !== "available") return entitlement;
-  const missingPermission = requirementOf(capability).permissions.some(
-    (permission) => !permissions.includes(permission),
-  );
-  return missingPermission
-    ? { capability, status: "permission_missing" }
-    : entitlement;
+  return evaluateCapability(capability, access, [], []);
 }
 
 export function capabilityRoute(capability: CapabilityId): string {
@@ -222,7 +247,8 @@ export type CapabilityUnavailableData = {
 
 /**
  * Coded, user-recoverable access failure. `message` keeps the legacy English
- * text so server-side callers that match on it keep working.
+ * text so server-side callers that match on it keep working. Only throw it to
+ * members of the organization: its data is not redacted for clients.
  */
 export function capabilityUnavailable(
   details: Omit<CapabilityUnavailableData, "code">,
@@ -241,23 +267,46 @@ export function capabilityUnavailable(
   return error;
 }
 
-function errorData(error: unknown): unknown {
-  if (
-    typeof error !== "object" ||
-    error === null ||
-    !(
-      error instanceof ConvexError ||
-      ("name" in error && error.name === "ConvexError")
-    ) ||
-    !("data" in error)
-  ) {
-    return undefined;
-  }
-  if (typeof error.data !== "string") return error.data;
-  try {
-    return JSON.parse(error.data);
-  } catch {
-    return undefined;
+export function permissionMissingMessage(permission: string) {
+  return `Permission denied: ${permission}`;
+}
+
+export function moduleDisabledMessage(moduleId: string) {
+  return `Module not enabled: ${moduleId}`;
+}
+
+export function tierRequiredMessage(tier: SubscriptionTier) {
+  return `Feature requires ${tier} tier`;
+}
+
+/** The coded failure for an unavailable state; null when available. */
+export function capabilityStateError(
+  state: CapabilityState,
+  permission: string,
+): ConvexError<CapabilityUnavailableData> | null {
+  switch (state.status) {
+    case "available":
+      return null;
+    case "module_disabled":
+      return capabilityUnavailable({
+        reason: "module_disabled",
+        capability: state.capability,
+        module: state.module,
+        message: moduleDisabledMessage(state.module),
+      });
+    case "tier_required":
+      return capabilityUnavailable({
+        reason: "tier_required",
+        capability: state.capability,
+        requiredTier: state.requiredTier,
+        message: tierRequiredMessage(state.requiredTier),
+      });
+    case "permission_missing":
+      return capabilityUnavailable({
+        reason: "permission_missing",
+        capability: state.capability,
+        message: permissionMissingMessage(permission),
+      });
   }
 }
 
@@ -268,13 +317,11 @@ function oneOf<T extends string>(
   return values.find((candidate) => candidate === value);
 }
 
-const TIERS: ReadonlyArray<SubscriptionTier> = ["free", "pro", "enterprise"];
-
 /** Reads a capability failure from a thrown error; null for anything else. */
 export function capabilityUnavailableFromError(
   error: unknown,
 ): CapabilityUnavailableData | null {
-  const data = errorData(error);
+  const data = convexErrorData(error);
   if (typeof data !== "object" || data === null) return null;
   const record = data as Record<string, unknown>;
   if (record.code !== CAPABILITY_UNAVAILABLE_CODE) return null;
@@ -287,7 +334,7 @@ export function capabilityUnavailableFromError(
   };
   const capability = oneOf(CAPABILITY_IDS, record.capability);
   if (capability) result.capability = capability;
-  const requiredTier = oneOf(TIERS, record.requiredTier);
+  const requiredTier = oneOf(SUBSCRIPTION_TIERS, record.requiredTier);
   if (requiredTier) result.requiredTier = requiredTier;
   const moduleId = oneOf(MODULE_IDS, record.module);
   if (moduleId) result.module = moduleId;

@@ -63,7 +63,7 @@ _Avoid_: Delete, archive (when title or disposal is meant)
 Access has independent dimensions: the Organization's Modules, its Entitlements, and the staff member's Role. A Capability names which of them it needs.
 
 **Module**:
-An optional area an Organization turns on in Settings › Modules, such as Library, Insurance, Accounts or a collection type like Fine Art. Turning a Module on never grants an Entitlement.
+An optional area an Organization turns on in Settings › Modules, such as Library, Accounts or a collection type like Fine Art. Turning a Module on never grants an Entitlement. The Insurance Module only lists Insurance in navigation, because insurance records predate it.
 _Avoid_: Add-on, integration (the legacy library integration also turns on the Library Module)
 
 **Entitlement**:
@@ -79,7 +79,7 @@ One action a Role allows, such as `loans.read` or `organization.manage_settings`
 _Avoid_: Right, scope
 
 **Capability**:
-A staff-facing area or command, with its canonical route, defined by the Module, Entitlement and Permissions it needs. When unavailable it names the first missing dimension: Module, then Entitlement, then Permission.
+A staff-facing area or command, with its canonical route, defined by the Module, Entitlement and Permissions it needs. When unavailable it names the first missing dimension: Module, then Permission, then Entitlement, so staff without access are never told to upgrade. Non-members are told nothing about an Organization.
 _Avoid_: Feature (when the combination is meant)
 
 ### Work

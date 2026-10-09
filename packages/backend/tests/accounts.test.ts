@@ -4,7 +4,6 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
-import { capabilityFailureOf } from "./testHarness";
 import { modules } from "./testSetup";
 
 type TestSetup = {
@@ -401,15 +400,16 @@ describe("Accounts CRUD", () => {
 
   test("should enforce module gating", async () => {
     const t = convexTest(schema, modules);
-    const { userId } = await createTestSetup(t);
+    const { userId, roleId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
       subject: `${userId}|session-gating`,
       issuer: "https://example.test",
     });
 
+    // Module state is only reported to members; outsiders get a plain denial.
     const orgWithoutModule = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
+      const organizationId = await ctx.db.insert("organizations", {
         name: "No Accounts Module",
         slug: `no-accounts-${Math.random().toString(36).slice(2, 8)}`,
         type: "museum",
@@ -417,20 +417,21 @@ describe("Accounts CRUD", () => {
           enabledModules: [],
         },
       });
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+      return organizationId;
     });
 
-    expect(
-      await capabilityFailureOf(
-        authed.query(api.accounts.list, {
-          organizationId: orgWithoutModule,
-          paginationOpts: { numItems: 10, cursor: null },
-        }),
-      ),
-    ).toMatchObject({
-      code: "CAPABILITY_UNAVAILABLE",
-      reason: "module_disabled",
-      module: "accounts",
-    });
+    await expect(
+      authed.query(api.accounts.list, {
+        organizationId: orgWithoutModule,
+        paginationOpts: { numItems: 10, cursor: null },
+      }),
+    ).rejects.toThrow("Module not enabled: accounts");
   });
 
   test("should enforce multi-tenant isolation", async () => {

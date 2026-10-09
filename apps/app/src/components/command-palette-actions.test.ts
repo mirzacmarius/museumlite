@@ -5,18 +5,22 @@ import type {
 import { describe, expect, test } from "vitest";
 import { buildCommandPaletteActions } from "./command-palette-actions";
 
+const ALL_PERMISSIONS = ["collections.create", "loans.create"];
+
 function actions(
   unavailable: Partial<
-    Record<CapabilityId, Omit<CapabilityState, "capability">>
+    Record<CapabilityId, Omit<CapabilityState, "capability" | "listed">>
   > = {},
-  { isLocationTrackingEnabled = true } = {},
+  { isLocationTrackingEnabled = true, permissions = ALL_PERMISSIONS } = {},
 ) {
   return buildCommandPaletteActions({
     capabilityState: (capability) =>
       ({
         capability,
+        listed: true,
         ...(unavailable[capability] ?? { status: "available" }),
       }) as CapabilityState,
+    hasPermission: (permission) => permissions.includes(permission),
     isLocationTrackingEnabled,
   });
 }
@@ -50,6 +54,15 @@ describe("buildCommandPaletteActions", () => {
 
     expect(result).not.toContain("/loans");
     expect(result).not.toContain("/loans/new");
+  });
+
+  test("offers create commands only to roles that can create", () => {
+    const result = hrefs(actions({}, { permissions: [] }));
+
+    expect(result).not.toContain("/loans/new");
+    expect(result).not.toContain("/objects/new");
+    expect(result).not.toContain("/collections/new");
+    expect(result).toContain("/loans");
   });
 
   test("leaves out the library while its module is off", () => {

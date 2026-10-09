@@ -4,12 +4,18 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internalQuery } from "../_generated/server";
 import { batchGetByIds } from "./batchLookup";
-import { type CapabilityId, capabilityUnavailable } from "./capabilities";
+import {
+  type CapabilityId,
+  capabilityStateError,
+  capabilityUnavailable,
+  evaluateCapability,
+  permissionMissingMessage,
+} from "./capabilities";
 import {
   type FeatureId,
   hasFeatureAccess,
   type ModuleId,
-  requireCapabilityEntitlement,
+  organizationAccess,
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./featureGates";
@@ -126,10 +132,17 @@ export async function getUserPermissions(
   if (!role) {
     return [];
   }
+  return getRolePermissionNames(ctx, role._id);
+}
 
+/** Permission names granted to a role. */
+export async function getRolePermissionNames(
+  ctx: QueryCtx | MutationCtx,
+  roleId: Id<"roles">,
+): Promise<string[]> {
   const rolePermissions = await ctx.db
     .query("rolePermissions")
-    .withIndex("by_role", (q) => q.eq("roleId", role._id))
+    .withIndex("by_role", (q) => q.eq("roleId", roleId))
     .collect();
 
   const permissions = await Promise.all(
@@ -204,28 +217,47 @@ export async function requirePermission(
 function permissionDenied(permissionName: string) {
   return capabilityUnavailable({
     reason: "permission_missing",
-    message: `Permission denied: ${permissionName}`,
+    message: permissionMissingMessage(permissionName),
   });
 }
 
 /**
- * Gate for a command that belongs to a capability in the capability matrix.
- * Membership comes first so non-members learn nothing about the
- * organization's modules or plan; then the module and plan; then the
- * command's own permission.
+ * Gate for a command that belongs to a capability in the capability matrix,
+ * in the same order as the navigation states: membership first, so
+ * non-members learn nothing about the organization; then the module, the
+ * command's permission and the plan.
  */
 export async function requireCapability(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
   capability: CapabilityId,
-  permissionName: string,
+  permission: string | readonly string[],
 ): Promise<void> {
+  const required: readonly string[] =
+    typeof permission === "string" ? [permission] : permission;
   const membership = await getCurrentUserOrganization(ctx, organizationId);
   if (!membership) {
-    throw permissionDenied(permissionName);
+    throw permissionDenied(required[0] ?? capability);
   }
-  await requireCapabilityEntitlement(ctx, organizationId, capability);
-  await requirePermission(ctx, organizationId, permissionName);
+  const [organization, permissions] = await Promise.all([
+    ctx.db.get(organizationId),
+    getRolePermissionNames(ctx, membership.roleId),
+  ]);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+  const missing =
+    required.find((name) => !permissions.includes(name)) ?? required[0];
+  const error = capabilityStateError(
+    evaluateCapability(
+      capability,
+      organizationAccess(organization),
+      permissions,
+      required,
+    ),
+    missing ?? capability,
+  );
+  if (error) throw error;
 }
 
 /**

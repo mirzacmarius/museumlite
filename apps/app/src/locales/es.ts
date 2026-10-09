@@ -1,18 +1,6 @@
 // spanish translations
 
 export default {
-  capabilities: {
-    moduleDisabled:
-      "Este módulo está desactivado para tu organización. Un administrador puede activarlo en Configuración › Módulos.",
-    tierRequired:
-      "Esta acción requiere el plan {tier}. Un administrador puede mejorarlo en Configuración › Facturación.",
-    permissionMissing:
-      "Tu rol no permite esta acción. Pide a un administrador que actualice tu rol.",
-    tiers: {
-      pro: "Pro",
-      enterprise: "Enterprise",
-    },
-  },
   custodyConflicts: {
     sourceChanged:
       "Este objeto está ahora en {location}. Actualice, confirme dónde está y vuelva a registrar la entrega.",

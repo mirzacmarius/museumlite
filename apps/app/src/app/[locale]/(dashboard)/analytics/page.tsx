@@ -192,72 +192,67 @@ export default function AnalyticsPage() {
       : null;
 
   return (
-    <CapabilityGuard
-      capability="reporting"
-      featureName={t("analytics.featureName")}
-    >
-      <div className="flex flex-col h-full gap-y-6 p-6 overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-              <BarChart3 className="size-6 text-primary" />
-              {t("analytics.title")}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t("analytics.description")}
-            </p>
-          </div>
-          {kpiData ? (
-            <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
-              {t("analytics.updatedAt")}{" "}
-              <ClientTime timestamp={kpiData.generatedAt} />
-            </div>
-          ) : null}
+    <div className="flex flex-col h-full gap-y-6 p-6 overflow-y-auto">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <BarChart3 className="size-6 text-primary" />
+            {t("analytics.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("analytics.description")}
+          </p>
         </div>
-
-        {metricsUnavailableReason ? (
-          <MetricsUnavailableNotice reason={metricsUnavailableReason} />
-        ) : null}
-
         {kpiData ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {hasInventoryValuation && (
-              <InventoryValuationCard data={kpiData.inventory} />
-            )}
-            <LoanCalendarCard data={kpiData.loans} />
-            <ExhibitionPipelineCard
-              data={{ ...kpiData.exhibitions, asOf: kpiData.asOf }}
-            />
+          <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
+            {t("analytics.updatedAt")}{" "}
+            <ClientTime timestamp={kpiData.generatedAt} />
           </div>
         ) : null}
+      </div>
 
-        {complianceData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ComplianceReportCard
-              data={{
-                accessions: complianceData.accessions,
-                deaccessions: complianceData.deaccessions,
-              }}
-            />
-            <AuditTrailCard data={complianceData.auditTrail} />
-          </div>
-        )}
+      {metricsUnavailableReason ? (
+        <MetricsUnavailableNotice reason={metricsUnavailableReason} />
+      ) : null}
 
-        {locationData ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <LocationUtilizationCard data={locationData} />
-          </div>
-        ) : null}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ScheduledReportsCard organizationId={currentOrganizationId} />
-          <ReportExportsCard
-            organizationId={currentOrganizationId}
-            reports={reports}
-            unavailableReason={metricsUnavailableReason}
+      {kpiData ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {hasInventoryValuation && (
+            <InventoryValuationCard data={kpiData.inventory} />
+          )}
+          <LoanCalendarCard data={kpiData.loans} />
+          <ExhibitionPipelineCard
+            data={{ ...kpiData.exhibitions, asOf: kpiData.asOf }}
           />
         </div>
+      ) : null}
+
+      {complianceData && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ComplianceReportCard
+            data={{
+              accessions: complianceData.accessions,
+              deaccessions: complianceData.deaccessions,
+            }}
+          />
+          <AuditTrailCard data={complianceData.auditTrail} />
+        </div>
+      )}
+
+      {locationData ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LocationUtilizationCard data={locationData} />
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ScheduledReportsCard organizationId={currentOrganizationId} />
+        <ReportExportsCard
+          organizationId={currentOrganizationId}
+          reports={reports}
+          unavailableReason={metricsUnavailableReason}
+        />
       </div>
-    </CapabilityGuard>
+    </div>
   );
 }

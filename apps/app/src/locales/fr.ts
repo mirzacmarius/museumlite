@@ -1,16 +1,4 @@
 export default {
-  capabilities: {
-    moduleDisabled:
-      "Ce module est désactivé pour votre organisation. Un administrateur peut l’activer dans Paramètres › Modules.",
-    tierRequired:
-      "Cette action nécessite l’offre {tier}. Un administrateur peut changer d’offre dans Paramètres › Facturation.",
-    permissionMissing:
-      "Votre rôle ne permet pas cette action. Demandez à un administrateur de mettre à jour votre rôle.",
-    tiers: {
-      pro: "Pro",
-      enterprise: "Entreprise",
-    },
-  },
   custodyConflicts: {
     sourceChanged:
       "Cet objet se trouve maintenant à {location}. Actualisez, confirmez son emplacement et enregistrez à nouveau la remise.",
