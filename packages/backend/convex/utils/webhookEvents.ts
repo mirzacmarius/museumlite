@@ -3,17 +3,16 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import {
   MAX_WEBHOOKS_PER_ORGANIZATION,
+  maxAttemptsFor,
   randomToken,
   serializeWebhookBody,
-  WEBHOOK_MAX_ATTEMPTS,
   WEBHOOK_PAYLOAD_VERSION,
   type WebhookEventType,
 } from "./webhookDelivery";
 
 /**
  * Records the event and one delivery per subscribed active endpoint in the
- * caller's transaction, then schedules the first attempts. Nothing is stored
- * when no endpoint subscribes.
+ * caller's transaction. Nothing is stored when no endpoint subscribes.
  */
 export async function emitWebhookEvent(
   ctx: MutationCtx,
@@ -37,10 +36,14 @@ export async function emitWebhookEvent(
     type: event,
     data,
     webhooks: subscribers,
-    maxAttempts: WEBHOOK_MAX_ATTEMPTS,
   });
 }
 
+/**
+ * Captures the payload once, creates a pending delivery per endpoint and
+ * schedules a single dispatch, so the caller's transaction schedules one
+ * function per event however many endpoints subscribe.
+ */
 export async function recordWebhookEvent(
   ctx: MutationCtx,
   args: {
@@ -48,7 +51,6 @@ export async function recordWebhookEvent(
     type: string;
     data: Record<string, unknown>;
     webhooks: Array<Doc<"webhooks">>;
-    maxAttempts: number;
   },
 ): Promise<Array<Id<"webhookDeliveries">>> {
   const now = Date.now();
@@ -66,9 +68,9 @@ export async function recordWebhookEvent(
     }),
   });
 
-  return await Promise.all(
-    args.webhooks.map(async (webhook) => {
-      const deliveryId = await ctx.db.insert("webhookDeliveries", {
+  const deliveryIds = await Promise.all(
+    args.webhooks.map((webhook) =>
+      ctx.db.insert("webhookDeliveries", {
         organizationId: args.organizationId,
         webhookId: webhook._id,
         eventId: eventDocId,
@@ -76,16 +78,14 @@ export async function recordWebhookEvent(
         status: "pending",
         attemptCount: 0,
         seriesStartAttempt: 0,
-        maxAttempts: args.maxAttempts,
+        maxAttempts: maxAttemptsFor(args.type),
         nextAttemptAt: now,
         retryCount: 0,
-      });
-      await ctx.scheduler.runAfter(
-        0,
-        internal.webhooksActions.attemptDelivery,
-        { deliveryId, attempt: 1 },
-      );
-      return deliveryId;
-    }),
+      }),
+    ),
   );
+  await ctx.scheduler.runAfter(0, internal.webhookDeliveries.dispatchEvent, {
+    eventId: eventDocId,
+  });
+  return deliveryIds;
 }

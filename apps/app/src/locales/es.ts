@@ -1387,6 +1387,7 @@ export default {
       timeout: "Sin respuesta en 10 segundos",
       network_error: "No se pudo conectar con el endpoint",
       attempt_lost: "El intento no informó su resultado",
+      event_expired: "El evento ya no está almacenado",
       endpoint_deleted: "El endpoint se eliminó",
       endpoint_disabled: "El endpoint se desactivó",
       endpoint_insecure: "La URL del endpoint no usa HTTPS",
@@ -1435,11 +1436,11 @@ export default {
       signature:
         "X-ML-Signature es sha256= seguido del HMAC-SHA256 en hexadecimal del cuerpo sin procesar de la solicitud, con tu secreto de firma como clave.",
       signatureV2:
-        "X-ML-Signature-V2 es v2= seguido del HMAC-SHA256 del valor de X-ML-Delivery, un punto, el valor de X-ML-Timestamp, un punto y el cuerpo. Rechaza marcas de tiempo fuera de tu margen de tolerancia.",
+        "X-ML-Signature-V2 es v2= seguido del HMAC-SHA256 del valor de X-ML-Delivery, un punto, el valor de X-ML-Timestamp, un punto y el cuerpo. X-ML-Timestamp es la hora de envío en segundos Unix; rechaza valores fuera de tu margen de tolerancia.",
       duplicates:
         "Los reintentos reutilizan X-ML-Delivery y el mismo cuerpo. Trata un ID de entrega repetido como ya procesado.",
       retries:
-        "Cualquier respuesta 2xx cuenta como entregada. Los tiempos de espera agotados, los errores de red y las respuestas 408, 429 y 5xx se reintentan hasta 6 veces durante unas 3 horas; las demás respuestas no se reintentan.",
+        "Cualquier respuesta 2xx cuenta como entregada. Tras tiempos de espera agotados, errores de red y respuestas 408, 429 y 5xx, el evento se vuelve a enviar, hasta 6 envíos en total durante unas 3 horas. Las redirecciones no se siguen y las demás respuestas no se reintentan.",
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Introduce un nombre para el endpoint.",

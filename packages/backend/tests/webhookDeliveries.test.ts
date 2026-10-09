@@ -295,9 +295,8 @@ describe("durable webhook deliveries", () => {
     vi.useFakeTimers();
 
     await createObject(admin, organizationId);
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await vi.advanceTimersByTimeAsync(10_000);
-    await t.finishInProgressScheduledFunctions();
     await drain(t);
 
     const { page } = await admin.query(api.webhookDeliveries.list, {
@@ -572,7 +571,7 @@ describe("durable webhook deliveries", () => {
     await drain(t);
     expect(fetchMock).not.toHaveBeenCalled();
 
-    vi.advanceTimersByTime(5 * 60_000);
+    vi.advanceTimersByTime(10 * 60_000);
     await t.mutation(internal.webhookDeliveries.sweep, {});
     await drain(t);
 
@@ -692,7 +691,7 @@ describe("durable webhook deliveries", () => {
     vi.useFakeTimers();
 
     await createObject(admin, organizationId);
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await t.finishInProgressScheduledFunctions();
     const { secret: newSecret } = await admin.mutation(
       api.webhooks.rotateSecret,
@@ -789,5 +788,192 @@ describe("durable webhook deliveries", () => {
       ),
     ).rejects.toThrow(/Permission denied/);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("each subscribed endpoint gets its own delivery of the same captured body", async () => {
+    const t = createConvexTest();
+    const { organizationId, admin } = await setupIntegration(t, [
+      "collection.created",
+    ]);
+    await admin.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Second system",
+      url: "https://second.example.test/hooks",
+      events: ["collection.created"],
+    });
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    await createObject(admin, organizationId);
+    await drain(t);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const requests = fetchMock.mock.calls.map((call) =>
+      requestOf(call as FetchCall),
+    );
+    expect(requests.map((request) => request.url).sort()).toEqual([
+      "https://receiver.example.test/hooks",
+      "https://second.example.test/hooks",
+    ]);
+    expect(requests[0]?.body).toBe(requests[1]?.body);
+    expect(requests[0]?.headers.get("X-ML-Delivery")).not.toBe(
+      requests[1]?.headers.get("X-ML-Delivery"),
+    );
+  });
+
+  test("a redirect is not followed and fails the delivery permanently", async () => {
+    const t = createConvexTest();
+    const { organizationId, admin } = await setupIntegration(t, [
+      "collection.created",
+    ]);
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(null, {
+          status: 302,
+          headers: { Location: "http://elsewhere.example.test/" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    await createObject(admin, organizationId);
+    await drain(t);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as unknown as FetchCall;
+    expect(init?.redirect).toBe("manual");
+    const { page } = await admin.query(api.webhookDeliveries.list, {
+      organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(page[0]).toMatchObject({
+      status: "failed_permanent",
+      lastResponseStatus: 302,
+      lastErrorCode: "http_error",
+    });
+  });
+
+  test("a delivery whose event snapshot is gone is cancelled and cannot be retried", async () => {
+    const t = createConvexTest();
+    const { organizationId, admin } = await setupIntegration(t, [
+      "collection.created",
+    ]);
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    await createObject(admin, organizationId);
+    await t.run(async (ctx) => {
+      for (const event of await ctx.db.query("webhookEvents").take(10)) {
+        await ctx.db.delete(event._id);
+      }
+    });
+    await drain(t);
+    vi.advanceTimersByTime(10 * 60_000);
+    await t.mutation(internal.webhookDeliveries.sweep, {});
+    await drain(t);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    const { page } = await admin.query(api.webhookDeliveries.list, {
+      organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(page[0]).toMatchObject({
+      status: "cancelled",
+      lastErrorCode: "event_expired",
+    });
+    expect(
+      await webhookErrorCodeOf(
+        admin.mutation(api.webhookDeliveries.retry, {
+          organizationId,
+          deliveryId: page[0]!._id,
+        }),
+      ),
+    ).toBe("DELIVERY_NOT_FOUND");
+  });
+
+  test("a delivery job queued by the previous emitter is recorded and delivered", async () => {
+    const t = createConvexTest();
+    const { organizationId, admin } = await setupIntegration(t, [
+      "collection.created",
+    ]);
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    await t.action(internal.webhooksActions.deliver, {
+      organizationId,
+      event: "collection.created",
+      data: { title: "Queued before deploy" },
+    });
+    await drain(t);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const request = requestOf(fetchMock.mock.calls[0] as FetchCall | undefined);
+    expect(JSON.parse(request.body)).toMatchObject({
+      event: "collection.created",
+      data: { title: "Queued before deploy" },
+    });
+    const { page } = await admin.query(api.webhookDeliveries.list, {
+      organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(page[0]?.status).toBe("succeeded");
+  });
+
+  test("purging a library organization removes its delivery logs", async () => {
+    const t = createConvexTest();
+    const { organizationId, admin, webhookId } = await setupIntegration(t, [
+      "collection.created",
+    ]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("down", { status: 503 })),
+    );
+    vi.useFakeTimers();
+    await admin.mutation(api.webhookDeliveries.sendTest, {
+      organizationId,
+      webhookId,
+    });
+    await drain(t);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+      for (const entry of await ctx.db
+        .query("auditLog")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(10)) {
+        await ctx.db.delete(entry._id);
+      }
+    });
+
+    await t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+      organizationIds: [organizationId],
+      dryRun: false,
+    });
+
+    const remaining = await t.run(async (ctx) => ({
+      events: await ctx.db
+        .query("webhookEvents")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(1),
+      deliveries: await ctx.db
+        .query("webhookDeliveries")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(1),
+      attempts: await ctx.db
+        .query("webhookDeliveryAttempts")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(1),
+    }));
+    expect(remaining).toEqual({ events: [], deliveries: [], attempts: [] });
   });
 });

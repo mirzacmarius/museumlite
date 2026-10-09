@@ -67,6 +67,8 @@ export function reasonLabel(
       return t("reasons.network_error");
     case "attempt_lost":
       return t("reasons.attempt_lost");
+    case "event_expired":
+      return t("reasons.event_expired");
     case "endpoint_deleted":
       return t("reasons.endpoint_deleted");
     case "endpoint_disabled":
@@ -81,15 +83,12 @@ export function reasonLabel(
 export function DeliveryStatusBadge({
   delivery,
 }: {
-  delivery: Pick<
-    DeliverySummary,
-    "status" | "seriesAttempts" | "inFlight" | "attemptCount"
-  >;
+  delivery: Pick<DeliverySummary, "status" | "inFlight" | "attemptCount">;
 }) {
   const t = useScopedI18n("webhookDeliveries");
   const retrying =
     delivery.status === "pending" &&
-    (delivery.seriesAttempts > 0 || delivery.attemptCount > 0) &&
+    delivery.attemptCount > 0 &&
     !delivery.inFlight;
   const label = retrying
     ? t("status.retrying")

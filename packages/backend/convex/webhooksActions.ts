@@ -47,6 +47,32 @@ export const attemptDelivery = internalAction({
   },
 });
 
+/**
+ * Entry point of jobs scheduled by the pre-durable emitter. Such jobs may
+ * still be queued during the deploy; they are recorded like a new emit.
+ */
+export const deliver = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+    event: v.string(),
+    data: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.runMutation(internal.webhookDeliveries.recordLegacyEvent, {
+      organizationId: args.organizationId,
+      event: args.event,
+      data:
+        typeof args.data === "object" &&
+        args.data !== null &&
+        !Array.isArray(args.data)
+          ? (args.data as Record<string, unknown>)
+          : {},
+    });
+    return null;
+  },
+});
+
 async function postWithTimeout(
   url: string,
   headers: Record<string, string>,
@@ -62,6 +88,7 @@ async function postWithTimeout(
       method: "POST",
       headers,
       body,
+      redirect: "manual",
       signal: controller.signal,
     });
     return { kind: "response", status: response.status };

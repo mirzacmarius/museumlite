@@ -33,8 +33,11 @@ function validUrl(url: string) {
   return trimmed;
 }
 
-function validEvents(events: string[]) {
-  const unsupported = events.filter((event) => !isSupportedWebhookEvent(event));
+/** Rejects unsupported events unless the endpoint already subscribes to them. */
+function validEvents(events: string[], current: string[] = []) {
+  const unsupported = events.filter(
+    (event) => !isSupportedWebhookEvent(event) && !current.includes(event),
+  );
   if (unsupported.length > 0) {
     throw webhookError(
       "WEBHOOK_EVENT_UNSUPPORTED",
@@ -257,9 +260,11 @@ export const update = mutation({
 
     const name = args.name === undefined ? undefined : validName(args.name);
     const url = args.url === undefined ? undefined : validUrl(args.url);
-    const events =
-      args.events === undefined ? undefined : validEvents(args.events);
     const webhook = await requireManagedWebhook(ctx, args.webhookId);
+    const events =
+      args.events === undefined
+        ? undefined
+        : validEvents(args.events, webhook.events);
 
     await Promise.all([
       ctx.db.patch(args.webhookId, {

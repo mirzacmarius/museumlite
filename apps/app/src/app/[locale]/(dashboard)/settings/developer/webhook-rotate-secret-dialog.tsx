@@ -36,7 +36,10 @@ export function WebhookRotateSecretDialog({
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
 
+  // A rotation in flight must finish here so its new secret is shown once,
+  // for the endpoint it belongs to.
   function close() {
+    if (pending) return;
     setSecret(null);
     setError(undefined);
     setCopied(false);
@@ -109,7 +112,9 @@ export function WebhookRotateSecretDialog({
             <Button onClick={close}>{t("rotate.done")}</Button>
           ) : (
             <>
-              <AlertDialogCancel>{t("rotate.cancel")}</AlertDialogCancel>
+              <AlertDialogCancel disabled={pending}>
+                {t("rotate.cancel")}
+              </AlertDialogCancel>
               <Button onClick={handleRotate} disabled={pending}>
                 {pending ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />

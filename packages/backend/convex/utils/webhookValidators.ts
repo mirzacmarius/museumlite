@@ -21,6 +21,7 @@ export const webhookDeliveryErrorCode = v.union(
   v.literal("timeout"),
   v.literal("network_error"),
   v.literal("attempt_lost"),
+  v.literal("event_expired"),
   v.literal("endpoint_deleted"),
   v.literal("endpoint_disabled"),
   v.literal("endpoint_insecure"),

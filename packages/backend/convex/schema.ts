@@ -3197,7 +3197,9 @@ export default defineSchema({
   }).index("by_organization", ["organizationId"]),
 
   // Outgoing webhook events captured at emit time, one delivery per endpoint
-  webhookEvents: defineTable(webhookEventFields),
+  webhookEvents: defineTable(webhookEventFields).index("by_organizationId", [
+    "organizationId",
+  ]),
   webhookDeliveries: defineTable(webhookDeliveryFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_organizationId_and_status", ["organizationId", "status"])
@@ -3209,10 +3211,9 @@ export default defineSchema({
     ])
     .index("by_eventId", ["eventId"])
     .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"]),
-  webhookDeliveryAttempts: defineTable(webhookDeliveryAttemptFields).index(
-    "by_deliveryId_and_attemptNumber",
-    ["deliveryId", "attemptNumber"],
-  ),
+  webhookDeliveryAttempts: defineTable(webhookDeliveryAttemptFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_deliveryId_and_attemptNumber", ["deliveryId", "attemptNumber"]),
 
   // API keys for external integrations
   apiKeys: defineTable({

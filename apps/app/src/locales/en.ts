@@ -1338,6 +1338,7 @@ export default {
       timeout: "No response within 10 seconds",
       network_error: "Could not connect to the endpoint",
       attempt_lost: "The attempt did not report back",
+      event_expired: "The event is no longer stored",
       endpoint_deleted: "The endpoint was deleted",
       endpoint_disabled: "The endpoint was disabled",
       endpoint_insecure: "The endpoint URL is not HTTPS",
@@ -1386,11 +1387,11 @@ export default {
       signature:
         "X-ML-Signature is sha256= followed by the hex HMAC-SHA256 of the raw request body, keyed with your signing secret.",
       signatureV2:
-        "X-ML-Signature-V2 is v2= followed by the HMAC-SHA256 of the X-ML-Delivery value, a period, the X-ML-Timestamp value, a period and the body. Reject timestamps outside your tolerance window.",
+        "X-ML-Signature-V2 is v2= followed by the HMAC-SHA256 of the X-ML-Delivery value, a period, the X-ML-Timestamp value, a period and the body. X-ML-Timestamp is the send time in Unix seconds; reject values outside your tolerance window.",
       duplicates:
         "Retries reuse X-ML-Delivery and the same body. Treat a repeated delivery ID as already processed.",
       retries:
-        "Any 2xx response counts as delivered. Timeouts, network errors, 408, 429 and 5xx responses are retried up to 6 times over about 3 hours; other responses are not retried.",
+        "Any 2xx response counts as delivered. After timeouts, network errors, 408, 429 and 5xx responses an event is sent again, up to 6 sends in total over about 3 hours. Redirects are not followed, and other responses are not retried.",
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Enter a name for the endpoint.",

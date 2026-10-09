@@ -10,17 +10,20 @@ import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 import {
-  isHttpsWebhookUrl,
+  type EndpointIneligibility,
+  endpointIneligibility,
+  isSupportedWebhookEvent,
+  MAX_WEBHOOKS_PER_ORGANIZATION,
+  maxAttemptsFor,
   retryDelayMs,
   WEBHOOK_ATTEMPT_LEASE_MS,
-  WEBHOOK_MAX_ATTEMPTS,
+  WEBHOOK_LAST_TRIGGERED_RESOLUTION_MS,
   WEBHOOK_RETENTION_MS,
   WEBHOOK_SWEEP_GRACE_MS,
   WEBHOOK_TEST_EVENT,
-  WEBHOOK_TEST_MAX_ATTEMPTS,
 } from "./utils/webhookDelivery";
-import { webhookError } from "./utils/webhookErrors";
-import { recordWebhookEvent } from "./utils/webhookEvents";
+import { type WebhookErrorCode, webhookError } from "./utils/webhookErrors";
+import { emitWebhookEvent, recordWebhookEvent } from "./utils/webhookEvents";
 import {
   type WebhookDeliveryErrorCode,
   type WebhookDeliveryStatus,
@@ -224,9 +227,22 @@ export const get = query({
   },
 });
 
+const INELIGIBLE_ENDPOINT_ERRORS = {
+  endpoint_deleted: ["WEBHOOK_NOT_FOUND", "Webhook endpoint not found"],
+  endpoint_disabled: ["WEBHOOK_DISABLED", "Webhook endpoint is disabled"],
+  endpoint_unsubscribed: [
+    "WEBHOOK_NOT_SUBSCRIBED",
+    "Webhook endpoint no longer subscribes to this event",
+  ],
+  endpoint_insecure: ["WEBHOOK_URL_INVALID", "Webhook URL must use HTTPS"],
+} as const satisfies Record<
+  EndpointIneligibility,
+  readonly [WebhookErrorCode, string]
+>;
+
 /**
- * Endpoint checks shared by manual retries and test sends, so an administrator
- * learns immediately why a delivery could not be queued.
+ * The claim-time endpoint checks, run up front for manual retries and test
+ * sends so an administrator learns immediately why nothing can be queued.
  */
 async function requireSendableWebhook(
   ctx: MutationCtx,
@@ -235,20 +251,15 @@ async function requireSendableWebhook(
   eventType: string,
 ) {
   const webhook = await ctx.db.get(webhookId);
-  if (!webhook || webhook.organizationId !== organizationId) {
-    throw webhookError("WEBHOOK_NOT_FOUND", "Webhook endpoint not found");
-  }
-  if (!webhook.isActive) {
-    throw webhookError("WEBHOOK_DISABLED", "Webhook endpoint is disabled");
-  }
-  if (!isHttpsWebhookUrl(webhook.url)) {
-    throw webhookError("WEBHOOK_URL_INVALID", "Webhook URL must use HTTPS");
-  }
-  if (eventType !== WEBHOOK_TEST_EVENT && !webhook.events.includes(eventType)) {
-    throw webhookError(
-      "WEBHOOK_NOT_SUBSCRIBED",
-      "Webhook endpoint no longer subscribes to this event",
-    );
+  const ineligibility = endpointIneligibility(
+    webhook,
+    organizationId,
+    eventType,
+  );
+  if (ineligibility || !webhook) {
+    const [code, message] =
+      INELIGIBLE_ENDPOINT_ERRORS[ineligibility ?? "endpoint_deleted"];
+    throw webhookError(code, message);
   }
   return webhook;
 }
@@ -269,7 +280,12 @@ export const retry = mutation({
     await requirePermission(ctx, args.organizationId, MANAGE_PERMISSION);
 
     const delivery = await ctx.db.get(args.deliveryId);
-    if (!delivery || delivery.organizationId !== args.organizationId) {
+    const event = delivery ? await ctx.db.get(delivery.eventId) : null;
+    if (
+      !delivery ||
+      !event ||
+      delivery.organizationId !== args.organizationId
+    ) {
       throw webhookError("DELIVERY_NOT_FOUND", "Delivery not found");
     }
     if (delivery.status === "pending" || delivery.status === "succeeded") {
@@ -285,12 +301,11 @@ export const retry = mutation({
       delivery.eventType,
     );
 
-    const now = Date.now();
     await ctx.db.patch(delivery._id, {
       status: "pending",
       seriesStartAttempt: delivery.attemptCount,
       maxAttempts: maxAttemptsFor(delivery.eventType),
-      nextAttemptAt: now,
+      nextAttemptAt: Date.now(),
       inFlightSince: undefined,
       completedAt: undefined,
       retryCount: delivery.retryCount + 1,
@@ -337,18 +352,52 @@ export const sendTest = mutation({
       type: WEBHOOK_TEST_EVENT,
       data: { message: "This is a test webhook delivery from MuseumLite" },
       webhooks: [webhook],
-      maxAttempts: WEBHOOK_TEST_MAX_ATTEMPTS,
     });
     if (!deliveryId) throw new Error("Test delivery was not recorded");
     return deliveryId;
   },
 });
 
-function maxAttemptsFor(eventType: string) {
-  return eventType === WEBHOOK_TEST_EVENT
-    ? WEBHOOK_TEST_MAX_ATTEMPTS
-    : WEBHOOK_MAX_ATTEMPTS;
-}
+/** Schedules the first attempt of each new delivery of an event. */
+export const dispatchEvent = internalMutation({
+  args: { eventId: v.id("webhookEvents") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const deliveries = await ctx.db
+      .query("webhookDeliveries")
+      .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
+      .take(MAX_WEBHOOKS_PER_ORGANIZATION);
+    for (const delivery of deliveries) {
+      if (delivery.status === "pending" && delivery.attemptCount === 0) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.webhooksActions.attemptDelivery,
+          { deliveryId: delivery._id, attempt: 1 },
+        );
+      }
+    }
+    return null;
+  },
+});
+
+/**
+ * Durably records an event handed over by a `webhooksActions.deliver` job
+ * that was scheduled before durable deliveries were deployed.
+ */
+export const recordLegacyEvent = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    event: v.string(),
+    data: v.record(v.string(), v.any()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (isSupportedWebhookEvent(args.event)) {
+      await emitWebhookEvent(ctx, args.organizationId, args.event, args.data);
+    }
+    return null;
+  },
+});
 
 const claimResult = v.union(
   v.object({ kind: v.literal("skip") }),
@@ -427,43 +476,28 @@ export const claimAttempt = internalMutation({
       ctx.db.get(delivery.webhookId),
       ctx.db.get(delivery.eventId),
     ]);
-    if (!webhook || webhook.organizationId !== delivery.organizationId) {
-      return await finishWithoutSending(
-        ctx,
-        delivery,
-        "cancelled",
-        "endpoint_deleted",
-      );
-    }
-    if (!webhook.isActive) {
-      return await finishWithoutSending(
-        ctx,
-        delivery,
-        "cancelled",
-        "endpoint_disabled",
-      );
-    }
-    if (
-      delivery.eventType !== WEBHOOK_TEST_EVENT &&
-      !webhook.events.includes(delivery.eventType)
-    ) {
-      return await finishWithoutSending(
-        ctx,
-        delivery,
-        "cancelled",
-        "endpoint_unsubscribed",
-      );
-    }
-    if (!isHttpsWebhookUrl(webhook.url)) {
-      return await finishWithoutSending(
-        ctx,
-        delivery,
-        "failed_permanent",
-        "endpoint_insecure",
-      );
-    }
     if (!event) {
-      return { kind: "skip" as const };
+      return await finishWithoutSending(
+        ctx,
+        delivery,
+        "cancelled",
+        "event_expired",
+      );
+    }
+    const ineligibility = endpointIneligibility(
+      webhook,
+      delivery.organizationId,
+      delivery.eventType,
+    );
+    if (ineligibility || !webhook) {
+      return await finishWithoutSending(
+        ctx,
+        delivery,
+        ineligibility === "endpoint_insecure"
+          ? "failed_permanent"
+          : "cancelled",
+        ineligibility ?? "endpoint_deleted",
+      );
     }
 
     await ctx.db.patch(delivery._id, {
@@ -657,7 +691,11 @@ export const recordAttemptResult = internalMutation({
     });
     if (args.outcome === "succeeded") {
       const webhook = await ctx.db.get(delivery.webhookId);
-      if (webhook) {
+      if (
+        webhook &&
+        now - (webhook.lastTriggeredAt ?? 0) >=
+          WEBHOOK_LAST_TRIGGERED_RESOLUTION_MS
+      ) {
         await ctx.db.patch(webhook._id, { lastTriggeredAt: now });
       }
     }

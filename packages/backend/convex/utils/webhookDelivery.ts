@@ -1,3 +1,4 @@
+import type { Doc, Id } from "../_generated/dataModel";
 import type {
   WebhookAttemptOutcome,
   WebhookDeliveryErrorCode,
@@ -19,7 +20,10 @@ export const WEBHOOK_TEST_MAX_ATTEMPTS = 1;
 export const WEBHOOK_REQUEST_TIMEOUT_MS = 10_000;
 /** How long a claimed attempt may stay unreported before the sweep retries it. */
 export const WEBHOOK_ATTEMPT_LEASE_MS = 2 * 60_000;
-export const WEBHOOK_SWEEP_GRACE_MS = 60_000;
+/** How late a pending attempt may run before the sweep schedules it again. */
+export const WEBHOOK_SWEEP_GRACE_MS = 5 * 60_000;
+/** Success timestamps closer together than this are not rewritten. */
+export const WEBHOOK_LAST_TRIGGERED_RESOLUTION_MS = 60_000;
 export const WEBHOOK_RETENTION_MS = 30 * 24 * 60 * 60_000;
 
 const BACKOFF_BASE_MS = 30_000;
@@ -46,6 +50,38 @@ export function isHttpsWebhookUrl(url: string): boolean {
   }
 }
 
+export function maxAttemptsFor(eventType: string) {
+  return eventType === WEBHOOK_TEST_EVENT
+    ? WEBHOOK_TEST_MAX_ATTEMPTS
+    : WEBHOOK_MAX_ATTEMPTS;
+}
+
+export type EndpointIneligibility =
+  | "endpoint_deleted"
+  | "endpoint_disabled"
+  | "endpoint_unsubscribed"
+  | "endpoint_insecure";
+
+/**
+ * Why an endpoint may not receive `eventType` for `organizationId` right now,
+ * or null when it may. Test events ignore subscriptions.
+ */
+export function endpointIneligibility(
+  webhook: Doc<"webhooks"> | null,
+  organizationId: Id<"organizations">,
+  eventType: string,
+): EndpointIneligibility | null {
+  if (!webhook || webhook.organizationId !== organizationId) {
+    return "endpoint_deleted";
+  }
+  if (!webhook.isActive) return "endpoint_disabled";
+  if (eventType !== WEBHOOK_TEST_EVENT && !webhook.events.includes(eventType)) {
+    return "endpoint_unsubscribed";
+  }
+  if (!isHttpsWebhookUrl(webhook.url)) return "endpoint_insecure";
+  return null;
+}
+
 /**
  * Delay before the next attempt after `failedInSeries` consecutive failures:
  * 30s, 2m, 8m, 32m, then 2h, each with +/-20% jitter.
@@ -70,7 +106,10 @@ export interface ClassifiedAttempt {
   errorCode?: WebhookDeliveryErrorCode;
 }
 
-/** 2xx succeeds; 408, 429, 5xx, timeouts and network errors are retried. */
+/**
+ * 2xx succeeds; 408, 429, 5xx, timeouts and network errors are retried.
+ * Redirects are not followed and, like other responses, fail permanently.
+ */
 export function classifyAttempt(result: AttemptResult): ClassifiedAttempt {
   if (result.kind === "timeout") {
     return { outcome: "failed_transient", errorCode: "timeout" };

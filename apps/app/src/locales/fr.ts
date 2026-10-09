@@ -1434,6 +1434,7 @@ export default {
       timeout: "Aucune réponse en 10 secondes",
       network_error: "Connexion au point de terminaison impossible",
       attempt_lost: "La tentative n'a pas transmis son résultat",
+      event_expired: "L'événement n'est plus conservé",
       endpoint_deleted: "Le point de terminaison a été supprimé",
       endpoint_disabled: "Le point de terminaison a été désactivé",
       endpoint_insecure: "L'URL du point de terminaison n'utilise pas HTTPS",
@@ -1484,11 +1485,11 @@ export default {
       signature:
         "X-ML-Signature vaut sha256= suivi du HMAC-SHA256 hexadécimal du corps brut de la requête, calculé avec votre secret de signature.",
       signatureV2:
-        "X-ML-Signature-V2 vaut v2= suivi du HMAC-SHA256 de la valeur X-ML-Delivery, d'un point, de la valeur X-ML-Timestamp, d'un point et du corps. Rejetez les horodatages hors de votre marge de tolérance.",
+        "X-ML-Signature-V2 vaut v2= suivi du HMAC-SHA256 de la valeur X-ML-Delivery, d'un point, de la valeur X-ML-Timestamp, d'un point et du corps. X-ML-Timestamp est l'heure d'envoi en secondes Unix ; rejetez les valeurs hors de votre marge de tolérance.",
       duplicates:
         "Les relances réutilisent X-ML-Delivery et le même corps. Considérez un ID de livraison répété comme déjà traité.",
       retries:
-        "Toute réponse 2xx compte comme livrée. Les délais dépassés, les erreurs réseau et les réponses 408, 429 et 5xx sont relancés jusqu'à 6 fois sur environ 3 heures ; les autres réponses ne sont pas relancées.",
+        "Toute réponse 2xx compte comme livrée. Après un délai dépassé, une erreur réseau ou une réponse 408, 429 ou 5xx, l'événement est renvoyé, jusqu'à 6 envois au total sur environ 3 heures. Les redirections ne sont pas suivies et les autres réponses ne sont pas relancées.",
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Saisissez un nom pour le point de terminaison.",

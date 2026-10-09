@@ -5419,6 +5419,7 @@ export default {
       timeout: "Niciun răspuns în 10 secunde",
       network_error: "Nu s-a putut realiza conexiunea cu endpoint-ul",
       attempt_lost: "Încercarea nu și-a raportat rezultatul",
+      event_expired: "Evenimentul nu mai este stocat",
       endpoint_deleted: "Endpoint-ul a fost șters",
       endpoint_disabled: "Endpoint-ul a fost dezactivat",
       endpoint_insecure: "URL-ul endpoint-ului nu folosește HTTPS",
@@ -5469,11 +5470,11 @@ export default {
       signature:
         "X-ML-Signature este sha256= urmat de HMAC-SHA256 în hexazecimal al corpului brut al cererii, calculat cu secretul tău de semnare.",
       signatureV2:
-        "X-ML-Signature-V2 este v2= urmat de HMAC-SHA256 al valorii X-ML-Delivery, un punct, valoarea X-ML-Timestamp, un punct și corpul. Respinge marcajele de timp din afara intervalului tău de toleranță.",
+        "X-ML-Signature-V2 este v2= urmat de HMAC-SHA256 al valorii X-ML-Delivery, un punct, valoarea X-ML-Timestamp, un punct și corpul. X-ML-Timestamp este ora trimiterii în secunde Unix; respinge valorile din afara intervalului tău de toleranță.",
       duplicates:
         "Reîncercările refolosesc X-ML-Delivery și același corp. Tratează un ID de livrare repetat ca deja procesat.",
       retries:
-        "Orice răspuns 2xx contează ca livrat. Expirările, erorile de rețea și răspunsurile 408, 429 și 5xx se reîncearcă de până la 6 ori pe parcursul a aproximativ 3 ore; celelalte răspunsuri nu se reîncearcă.",
+        "Orice răspuns 2xx contează ca livrat. După expirări, erori de rețea și răspunsuri 408, 429 și 5xx evenimentul este retrimis, până la 6 trimiteri în total pe parcursul a aproximativ 3 ore. Redirecționările nu sunt urmate, iar celelalte răspunsuri nu se reîncearcă.",
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Introdu un nume pentru endpoint.",

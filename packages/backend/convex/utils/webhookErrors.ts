@@ -1,4 +1,5 @@
 import { ConvexError } from "convex/values";
+import { convexErrorData } from "./convexErrorData";
 
 /**
  * Stable codes for webhook administration failures an administrator can fix.
@@ -28,31 +29,11 @@ export function webhookError(
   return new ConvexError({ code, message });
 }
 
-function errorData(error: unknown): unknown {
-  if (
-    typeof error !== "object" ||
-    error === null ||
-    !(
-      error instanceof ConvexError ||
-      ("name" in error && error.name === "ConvexError")
-    ) ||
-    !("data" in error)
-  ) {
-    return undefined;
-  }
-  if (typeof error.data !== "string") return error.data;
-  try {
-    return JSON.parse(error.data);
-  } catch {
-    return undefined;
-  }
-}
-
 /** Reads a webhook error code from a thrown error; null for any other failure. */
 export function webhookErrorCodeFromError(
   error: unknown,
 ): WebhookErrorCode | null {
-  const data = errorData(error);
+  const data = convexErrorData(error);
   if (typeof data !== "object" || data === null || !("code" in data)) {
     return null;
   }

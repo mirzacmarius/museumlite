@@ -70,6 +70,42 @@ describe("webhook endpoint configuration", () => {
     ).toBe("WEBHOOK_EVENT_UNSUPPORTED");
   });
 
+  test("an endpoint keeps legacy subscriptions it already has but cannot add new ones", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    const authed = authedForUser(t, userId, "session-webhook-legacy");
+    const webhookId = await t.run(async (ctx) =>
+      ctx.db.insert("webhooks", {
+        organizationId,
+        name: "Legacy",
+        url: "https://example.com/legacy",
+        secret: "whsec_legacy",
+        events: ["loan.created", "collection.created"],
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      }),
+    );
+
+    await authed.mutation(api.webhooks.update, {
+      webhookId,
+      events: ["loan.created", "collection.created", "media.uploaded"],
+    });
+    expect(
+      (await authed.query(api.webhooks.get, { webhookId }))?.events,
+    ).toEqual(["loan.created", "collection.created", "media.uploaded"]);
+    expect(
+      await errorCodeOf(
+        authed.mutation(api.webhooks.update, {
+          webhookId,
+          events: ["loan.created", "loan.returned"],
+        }),
+      ),
+    ).toBe("WEBHOOK_EVENT_UNSUPPORTED");
+  });
+
   test("endpoints need a name and an https URL", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createOrgUserWithPermissions(t, [

@@ -1359,6 +1359,7 @@ export default {
       timeout: "Ingen svar innen 10 sekunder",
       network_error: "Kunne ikke koble til endepunktet",
       attempt_lost: "Forsøket rapporterte ikke tilbake",
+      event_expired: "Hendelsen er ikke lenger lagret",
       endpoint_deleted: "Endepunktet ble slettet",
       endpoint_disabled: "Endepunktet ble deaktivert",
       endpoint_insecure: "Endepunktets URL bruker ikke HTTPS",
@@ -1409,11 +1410,11 @@ export default {
       signature:
         "X-ML-Signature er sha256= etterfulgt av heksadesimal HMAC-SHA256 av den rå forespørselsteksten, med signeringshemmeligheten som nøkkel.",
       signatureV2:
-        "X-ML-Signature-V2 er v2= etterfulgt av HMAC-SHA256 av X-ML-Delivery-verdien, et punktum, X-ML-Timestamp-verdien, et punktum og teksten. Avvis tidsstempler utenfor toleransevinduet ditt.",
+        "X-ML-Signature-V2 er v2= etterfulgt av HMAC-SHA256 av X-ML-Delivery-verdien, et punktum, X-ML-Timestamp-verdien, et punktum og teksten. X-ML-Timestamp er sendetidspunktet i Unix-sekunder; avvis verdier utenfor toleransevinduet ditt.",
       duplicates:
         "Nye forsøk gjenbruker X-ML-Delivery og samme tekst. Behandle en gjentatt leverings-ID som allerede behandlet.",
       retries:
-        "Alle 2xx-svar regnes som levert. Tidsavbrudd, nettverksfeil og svarene 408, 429 og 5xx prøves på nytt opptil 6 ganger over omtrent 3 timer; andre svar prøves ikke på nytt.",
+        "Alle 2xx-svar regnes som levert. Etter tidsavbrudd, nettverksfeil og svarene 408, 429 og 5xx sendes hendelsen på nytt, opptil 6 sendinger totalt over omtrent 3 timer. Omdirigeringer følges ikke, og andre svar prøves ikke på nytt.",
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Skriv inn et navn på endepunktet.",
