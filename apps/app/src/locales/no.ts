@@ -8623,6 +8623,45 @@ export default {
       "Eksportfilen er ikke tilgjengelig. Prøv igjen eller opprett en ny eksport.",
     reportsNote:
       "Rapportsammendragene nedenfor inneholder gjeldende KPI-svar og begrensede lister over nylige eller kommende elementer. Bruk de fullstendige katalog- og revisjonseksportene ovenfor for avstemte kildedatasett.",
+    sourceRegister: "Register: {profile}",
+    progressRegister:
+      "{rows} registerrader · {scanned} poster undersøkt · {pages} sider",
+    errorRegisterCriteria:
+      "Kontroller registerkriteriene: datoene må være gyldige, startdatoen kan ikke være etter sluttdatoen, per-tidspunktet kan ikke være i fremtiden, og status gjelder bare aksesjons- og avhendingsregistre.",
+  },
+  registerReports: {
+    title: "Institusjonelle registre",
+    description:
+      "Lag aksesjons-, avhendings-, forvarings- og tilstandsregistre fra registrert dokumentasjon. Hver fil har et typet kolonneskjema og et manifest med kriteriene, per-tidspunktet og generatoren.",
+    profile: "Register",
+    profileAccession: "Aksesjonsregister",
+    profileDisposal: "Avhendingsregister",
+    profileCustody: "Forvaringsregister",
+    profileCondition: "Tilstandsregister",
+    profileSpectrum: "SPECTRUM XML (støttes ikke)",
+    profileLido: "LIDO XML (støttes ikke)",
+    fromDate: "Fra",
+    toDate: "Til",
+    status: "Status",
+    statusAny: "Alle statuser",
+    statusPending: "Venter",
+    statusApproved: "Godkjent",
+    statusRejected: "Avvist",
+    asOf: "Per",
+    asOfHint:
+      "La Per stå tomt for å bruke tidspunktet registeret opprettes. Dokumentasjon registrert etter dette tidspunktet utelates. Datoer og per-tidspunktet er i UTC.",
+    preview: "Forhåndsvis",
+    previewing: "Laster forhåndsvisning",
+    previewLabel: "Forhåndsvisning av register",
+    previewSummary:
+      "Viser {shown} av {rows} rader fra første side ({scanned} poster undersøkt).",
+    previewMore: "Flere rader følger; opprett registeret for å få hele filen.",
+    previewEmpty: "Første side har ingen rader for disse kriteriene.",
+    notRecordedNote:
+      "Tomme celler som er oppført i notRecorded ble aldri registrert i MuseumLite. Rader merket legacy er eldre enn strukturert dokumentasjon.",
+    exportLabel: "Opprett fil for {profile}",
+    unsupportedNote:
+      "Registrene bruker en dokumentert MuseumLite-utvekslingsprofil. De er ikke en erklæring om samsvar med SPECTRUM, LIDO eller akkreditering, og profiler som ikke støttes kan ikke lages.",
   },
   projectionHealth: {
     unavailable: {

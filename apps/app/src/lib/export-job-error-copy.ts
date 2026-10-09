@@ -12,9 +12,11 @@ export type ExportJobErrorKey =
   | "errorInvalidRequest"
   | "errorInterrupted"
   | "errorUnavailable"
+  | "errorRegisterCriteria"
   | "failed";
 
 const MESSAGE_KEYS: Array<[RegExp, ExportJobErrorKey]> = [
+  [/REGISTER_CRITERIA_INVALID/, "errorRegisterCriteria"],
   [
     /Export unavailable|permission revoked|Permission denied|Authentication required|Not authenticated|Feature requires/i,
     "errorAccess",
@@ -47,8 +49,14 @@ export class ExportDownloadError extends Error {
 }
 
 function errorMessage(error: unknown) {
-  if (error instanceof ConvexError)
-    return typeof error.data === "string" ? error.data : error.message;
+  if (error instanceof ConvexError) {
+    if (typeof error.data === "string") return error.data;
+    const code: unknown =
+      typeof error.data === "object" && error.data !== null
+        ? error.data.code
+        : undefined;
+    return typeof code === "string" ? code : error.message;
+  }
   if (error instanceof Error) return error.message;
   return typeof error === "string" ? error : undefined;
 }

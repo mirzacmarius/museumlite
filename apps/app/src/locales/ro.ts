@@ -9470,6 +9470,46 @@ export default {
       "Fișierul de export nu este disponibil. Reîncercați sau creați un export nou.",
     reportsNote:
       "Rezumatele de rapoarte de mai jos conțin răspunsurile KPI curente și liste limitate de elemente recente sau viitoare. Folosiți exporturile complete ale catalogului și auditului de mai sus pentru seturi de date sursă reconciliate.",
+    sourceRegister: "Registru: {profile}",
+    progressRegister:
+      "{rows} rânduri de registru · {scanned} înregistrări examinate · {pages} pagini",
+    errorRegisterCriteria:
+      "Verificați criteriile registrului: datele trebuie să fie valide, data de început nu poate fi după data de sfârșit, data de referință nu poate fi în viitor, iar statusul se aplică doar registrelor de accesiune și de dezafectare.",
+  },
+  registerReports: {
+    title: "Registre instituționale",
+    description:
+      "Generați registre de accesiune, dezafectare, custodie și stare de conservare din dovezile înregistrate. Fiecare fișier are o schemă de coloane tipizată și un manifest cu criteriile, data de referință și generatorul.",
+    profile: "Registru",
+    profileAccession: "Registru de accesiune",
+    profileDisposal: "Registru de dezafectare",
+    profileCustody: "Registru de custodie",
+    profileCondition: "Registru de stare de conservare",
+    profileSpectrum: "SPECTRUM XML (neacceptat)",
+    profileLido: "LIDO XML (neacceptat)",
+    fromDate: "De la",
+    toDate: "Până la",
+    status: "Status",
+    statusAny: "Orice status",
+    statusPending: "În așteptare",
+    statusApproved: "Aprobat",
+    statusRejected: "Respins",
+    asOf: "La data de",
+    asOfHint:
+      "Lăsați La data de gol pentru a folosi momentul creării registrului. Dovezile înregistrate după acest moment sunt excluse. Datele și momentul de referință sunt în UTC.",
+    preview: "Previzualizare",
+    previewing: "Se încarcă previzualizarea",
+    previewLabel: "Previzualizarea registrului",
+    previewSummary:
+      "Se afișează {shown} din {rows} rânduri din prima pagină ({scanned} înregistrări examinate).",
+    previewMore:
+      "Urmează mai multe rânduri; creați registrul pentru fișierul complet.",
+    previewEmpty: "Prima pagină nu are rânduri pentru aceste criterii.",
+    notRecordedNote:
+      "Celulele goale numite în notRecorded nu au fost niciodată înregistrate în MuseumLite. Rândurile marcate legacy sunt anterioare dovezilor structurate.",
+    exportLabel: "Creați fișierul {profile}",
+    unsupportedNote:
+      "Registrele folosesc un profil de schimb MuseumLite documentat. Ele nu reprezintă o declarație de conformitate SPECTRUM, LIDO sau de acreditare, iar profilurile neacceptate nu pot fi generate.",
   },
   projectionHealth: {
     unavailable: {

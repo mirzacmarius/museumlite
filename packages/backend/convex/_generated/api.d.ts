@@ -107,6 +107,7 @@ import type * as passwordRecovery_verification from "../passwordRecovery/verific
 import type * as passwordReset_ResendOTPPasswordReset from "../passwordReset/ResendOTPPasswordReset.js";
 import type * as projections from "../projections.js";
 import type * as qrCodes from "../qrCodes.js";
+import type * as registers from "../registers.js";
 import type * as reporting from "../reporting.js";
 import type * as roles from "../roles.js";
 import type * as savedViews from "../savedViews.js";
@@ -225,6 +226,8 @@ import type * as utils_projectionStore from "../utils/projectionStore.js";
 import type * as utils_projectionValidators from "../utils/projectionValidators.js";
 import type * as utils_publicMedia from "../utils/publicMedia.js";
 import type * as utils_publicPortal from "../utils/publicPortal.js";
+import type * as utils_registerProfiles from "../utils/registerProfiles.js";
+import type * as utils_registerSources from "../utils/registerSources.js";
 import type * as utils_relatedEntityIntegrity from "../utils/relatedEntityIntegrity.js";
 import type * as utils_reportSchedule from "../utils/reportSchedule.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
@@ -357,6 +360,7 @@ declare const fullApi: ApiFromModules<{
   "passwordReset/ResendOTPPasswordReset": typeof passwordReset_ResendOTPPasswordReset;
   projections: typeof projections;
   qrCodes: typeof qrCodes;
+  registers: typeof registers;
   reporting: typeof reporting;
   roles: typeof roles;
   savedViews: typeof savedViews;
@@ -475,6 +479,8 @@ declare const fullApi: ApiFromModules<{
   "utils/projectionValidators": typeof utils_projectionValidators;
   "utils/publicMedia": typeof utils_publicMedia;
   "utils/publicPortal": typeof utils_publicPortal;
+  "utils/registerProfiles": typeof utils_registerProfiles;
+  "utils/registerSources": typeof utils_registerSources;
   "utils/relatedEntityIntegrity": typeof utils_relatedEntityIntegrity;
   "utils/reportSchedule": typeof utils_reportSchedule;
   "utils/spectrum": typeof utils_spectrum;

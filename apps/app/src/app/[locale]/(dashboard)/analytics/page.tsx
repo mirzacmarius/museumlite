@@ -78,6 +78,18 @@ const ReportExportsCard = dynamic(
   },
 );
 
+const RegisterExportsCard = dynamic(
+  () =>
+    import("./_components/register-exports-card").then(
+      (mod) => mod.RegisterExportsCard,
+    ),
+  {
+    loading: () => (
+      <Skeleton className="h-[280px] w-full rounded-xl bg-muted/20" />
+    ),
+  },
+);
+
 const ScheduledReportsCard = dynamic(
   () =>
     import("./_components/scheduled-reports-card").then(
@@ -252,6 +264,10 @@ export default function AnalyticsPage() {
           reports={reports}
           unavailableReason={metricsUnavailableReason}
         />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RegisterExportsCard organizationId={currentOrganizationId} />
       </div>
     </div>
   );
