@@ -123,9 +123,11 @@ test("a scan suggests parties that share a normalized name, email or phone and n
     await staff.query(api.parties.get, { accountId: smithB }),
   ).toMatchObject({ displayName: "JANE SMITH", archived: false });
   expect(
-    await staff.query(api.partyLinks.listForTarget, {
-      target: { type: "accession", id: accessionId },
-    }),
+    (
+      await staff.query(api.partyLinks.listForTarget, {
+        target: { type: "accession", id: accessionId },
+      })
+    ).links,
   ).toMatchObject([{ accountId: smithA, isCurrent: true }]);
 
   // A reviewed pair is not suggested again.
@@ -275,4 +277,38 @@ test("reviewing duplicates needs accounts.write and stays inside the organizatio
       })
     ).page,
   ).toEqual([]);
+});
+
+test("a blank email does not hide the contact email when suggesting duplicates", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const legacyId = await t.run(async (ctx) =>
+    ctx.db.insert("accounts", {
+      organizationId,
+      accountNumber: "ACC-LEGACY",
+      accountType: "lender",
+      businessName: "Old Lender Ltd",
+      email: "   ",
+      contactEmail: "desk@lender.example",
+      createdBy: userId,
+      createdAt: Date.now(),
+    }),
+  );
+  const currentId = await insertAccount(t, organizationId, userId, {
+    businessName: "Lender Desk",
+    email: "Desk@Lender.example",
+  });
+
+  await staff.mutation(api.partyDuplicates.scan, { organizationId });
+  const pending = await staff.query(api.partyDuplicates.list, {
+    organizationId,
+    status: "pending",
+    paginationOpts: page,
+  });
+  expect(
+    pending.page.map((review) => ({
+      ids: [review.first?._id, review.second?._id].sort(),
+      reasons: review.reasons,
+    })),
+  ).toEqual([{ ids: [legacyId, currentId].sort(), reasons: ["email"] }]);
 });

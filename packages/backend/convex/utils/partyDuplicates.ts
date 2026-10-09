@@ -79,13 +79,14 @@ export function findDuplicatePairs(
 }
 
 /**
- * Existing parties whose name or email may match the given details. Uses the
- * name search indexes and the email index, so it stays bounded.
+ * Existing parties that may match the given details: name matches from the
+ * name search indexes (any age), plus normalized email or phone matches
+ * among the most recent parties. Bounded either way.
  */
 export async function findPartyCandidates(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
-  details: { name: string; email?: string },
+  details: { name: string; email?: string; phone?: string },
 ): Promise<Doc<"accounts">[]> {
   const name = details.name.trim();
   const byId = new Map<Id<"accounts">, Doc<"accounts">>();
@@ -107,17 +108,23 @@ export async function findPartyCandidates(
     for (const account of [...byBusinessName, ...byLastName])
       byId.set(account._id, account);
   }
-  const email = details.email?.trim();
-  if (email) {
-    const variants = Array.from(new Set([email, email.toLowerCase()]));
-    for (const variant of variants) {
-      const matches = await ctx.db
-        .query("accounts")
-        .withIndex("by_email", (q) => q.eq("email", variant))
-        .take(CANDIDATE_LOOKUP_LIMIT);
-      for (const account of matches)
-        if (account.organizationId === organizationId)
-          byId.set(account._id, account);
+  const email = normalizePartyEmail(details.email);
+  const phone = normalizePartyPhone(details.phone);
+  if (email || phone) {
+    const recent = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .order("desc")
+      .take(DUPLICATE_SCAN_ACCOUNT_LIMIT);
+    for (const account of recent) {
+      const matches = partyIdentityKeys(account).some(
+        ({ reason, key }) =>
+          (reason === "email" && key === email) ||
+          (reason === "phone" && key === phone),
+      );
+      if (matches) byId.set(account._id, account);
     }
   }
   return Array.from(byId.values());

@@ -43,9 +43,7 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
         <TargetPartyLinks
           target={{ type: "accession", id: accession._id }}
           organizationId={accession.organizationId}
-          roles={["donor", "owner"]}
           writePermission="collections.update"
-          assertedName={accession.source}
         />
 
         {configuredWorkflowSteps.length > 0 &&

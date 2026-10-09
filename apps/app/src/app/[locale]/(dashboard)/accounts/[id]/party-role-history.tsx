@@ -42,8 +42,29 @@ export function PartyRoleHistory({ accountId }: { accountId: Id<"accounts"> }) {
       ) : (
         <ul className="space-y-3">
           {results.map((entry) => {
+            const statusBadge = (
+              <Badge variant={entry.isCurrent ? "secondary" : "outline"}>
+                {entry.isCurrent
+                  ? t("history.current")
+                  : t("history.superseded")}
+              </Badge>
+            );
+            if (entry.restricted) {
+              return (
+                <li
+                  key={entry._id}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-4 text-sm"
+                >
+                  <Badge variant="outline">{t(`roles.${entry.role}`)}</Badge>
+                  <span className="text-muted-foreground">
+                    {t(`targetTypes.${entry.targetType}`)}
+                  </span>
+                  <span className="font-medium">{t("history.restricted")}</span>
+                  {statusBadge}
+                </li>
+              );
+            }
             const route = TARGET_ROUTES[entry.targetType];
-            const label = entry.targetLabel ?? t("history.restricted");
             return (
               <li
                 key={entry._id}
@@ -54,21 +75,17 @@ export function PartyRoleHistory({ accountId }: { accountId: Id<"accounts"> }) {
                   <span className="text-muted-foreground">
                     {t(`targetTypes.${entry.targetType}`)}
                   </span>
-                  {route && entry.targetLabel ? (
+                  {route ? (
                     <Link
                       href={`${route}/${entry.targetId}`}
                       className="font-medium underline-offset-4 hover:underline"
                     >
-                      {label}
+                      {entry.targetLabel}
                     </Link>
                   ) : (
-                    <span className="font-medium">{label}</span>
+                    <span className="font-medium">{entry.targetLabel}</span>
                   )}
-                  <Badge variant={entry.isCurrent ? "secondary" : "outline"}>
-                    {entry.isCurrent
-                      ? t("history.current")
-                      : t("history.superseded")}
-                  </Badge>
+                  {statusBadge}
                 </div>
                 {entry.nameSnapshot !== partyName ? (
                   <p className="text-muted-foreground">

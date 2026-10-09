@@ -30,7 +30,7 @@ import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type PartyLinkView = FunctionReturnType<
   typeof api.partyLinks.listForTarget
->[number];
+>["links"][number];
 
 interface PanelState {
   role: PartyRole | undefined;
@@ -144,23 +144,19 @@ function LinkDetails({
 interface TargetPartyLinksProps {
   target: PartyTarget;
   organizationId: Id<"organizations">;
-  roles: readonly PartyRole[];
   /** The record's own write permission, required to link parties. */
   writePermission: "collections.update" | "loans.update";
-  /** How the record names the party, kept as the named assertion. */
-  assertedName?: string;
 }
 
 /**
  * Parties linked to one procedure record: current roles, earlier parties
  * with their recorded snapshots, and linking for staff who may edit it.
+ * Which roles fit and whether parties may still change come from the server.
  */
 export function TargetPartyLinks({
   target,
   organizationId,
-  roles,
   writePermission,
-  assertedName,
 }: TargetPartyLinksProps) {
   const t = useScopedI18n("parties");
   const locale = useCurrentLocale();
@@ -168,35 +164,49 @@ export function TargetPartyLinks({
   const { hasPermission } = usePermissions();
   const partyErrorMessage = usePartyErrorMessage();
   const [state, dispatch] = useReducer(reducer, {
-    role: roles[0],
+    role: undefined,
     partyId: undefined,
     reason: "",
     isSaving: false,
     endingLinkId: undefined,
     endReason: "",
   });
-  const links = useQuery(
+  const result = useQuery(
     api.partyLinks.listForTarget,
     canPick ? { target } : "skip",
   );
   const link = useMutation(api.partyLinks.link);
   const supersede = useMutation(api.partyLinks.supersede);
 
-  if (!canPick) return null;
-  const canEdit = hasPermission(writePermission);
-  const current = links?.filter((entry) => entry.isCurrent) ?? [];
-  const earlier = links?.filter((entry) => !entry.isCurrent) ?? [];
-  const replacing = current.some((entry) => entry.role === state.role);
+  if (!canPick || !result) return null;
+  const { links, policy } = result;
+  const canChange = hasPermission(writePermission) && policy === "open";
+  // Closed records may only gain a first link in a role with no history.
+  const linkableRoles = hasPermission(writePermission)
+    ? policy === "open"
+      ? result.allowedRoles
+      : policy === "firstLinkOnly"
+        ? result.allowedRoles.filter(
+            (role) => !links.some((entry) => entry.role === role),
+          )
+        : []
+    : [];
+  const role =
+    state.role && linkableRoles.includes(state.role)
+      ? state.role
+      : linkableRoles[0];
+  const current = links.filter((entry) => entry.isCurrent);
+  const earlier = links.filter((entry) => !entry.isCurrent);
+  const replacing = current.some((entry) => entry.role === role);
 
   const handleLink = async () => {
-    if (!state.partyId || !state.role) return;
+    if (!state.partyId || !role) return;
     dispatch({ type: "setSaving", value: true });
     try {
       await link({
         target,
         accountId: state.partyId,
-        role: state.role,
-        assertedName,
+        role,
         reason: state.reason.trim() || undefined,
       });
       toast.success(t("links.linked"));
@@ -231,7 +241,7 @@ export function TargetPartyLinks({
         </p>
       </div>
 
-      {links === undefined ? null : current.length === 0 ? (
+      {current.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("links.empty")}</p>
       ) : (
         <ul className="space-y-3">
@@ -241,7 +251,7 @@ export function TargetPartyLinks({
               className="space-y-2 rounded-lg border border-border/60 p-3"
             >
               <LinkDetails link={entry} locale={locale} />
-              {canEdit && state.endingLinkId === entry._id ? (
+              {canChange && state.endingLinkId === entry._id ? (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">{t("links.endTitle")}</p>
                   <p className="text-xs text-muted-foreground">
@@ -282,7 +292,7 @@ export function TargetPartyLinks({
                     </Button>
                   </div>
                 </div>
-              ) : canEdit ? (
+              ) : canChange ? (
                 <Button
                   type="button"
                   size="sm"
@@ -324,13 +334,13 @@ export function TargetPartyLinks({
         </details>
       ) : null}
 
-      {canEdit ? (
+      {role ? (
         <div className="space-y-3 border-t border-border/60 pt-4">
-          {roles.length > 1 ? (
+          {linkableRoles.length > 1 ? (
             <div className="space-y-1.5">
               <Label htmlFor="party-link-role">{t("links.role")}</Label>
               <Select
-                value={state.role}
+                value={role}
                 onValueChange={(value) =>
                   dispatch({ type: "setRole", value: value as PartyRole })
                 }
@@ -339,9 +349,9 @@ export function TargetPartyLinks({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {t(`roles.${role}`)}
+                  {linkableRoles.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {t(`roles.${option}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>

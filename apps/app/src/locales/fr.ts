@@ -5269,6 +5269,8 @@ export default {
       partyArchived:
         "Cette partie est archivée. Restaurez-la ou choisissez-en une autre.",
       roleNotAllowed: "Ce rôle ne s'applique pas à cette fiche.",
+      recordLocked:
+        "Cette fiche est clôturée : ses parties peuvent seulement être confirmées, pas modifiées. Utilisez le flux de correction de la fiche.",
       targetNotFound:
         "Cette fiche n'est plus disponible. Actualisez puis réessayez.",
       nameRequired: "Saisissez un nom pour la partie.",

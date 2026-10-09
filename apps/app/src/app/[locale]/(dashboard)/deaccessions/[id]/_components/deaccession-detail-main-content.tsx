@@ -28,9 +28,7 @@ export function DeaccessionDetailMainContent(
             <TargetPartyLinks
               target={{ type: "deaccession", id: props.deaccession._id }}
               organizationId={props.deaccession.organizationId}
-              roles={["recipient"]}
               writePermission="collections.update"
-              assertedName={props.deaccession.exitRecord?.recipient}
             />
             <DeaccessionDetailWorkflowHistory {...props} />
           </div>

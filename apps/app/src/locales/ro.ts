@@ -5244,6 +5244,8 @@ export default {
       partyArchived:
         "Această parte este arhivată. Restaureaz-o sau alege alta.",
       roleNotAllowed: "Acest rol nu se aplică acestei înregistrări.",
+      recordLocked:
+        "Această înregistrare este închisă: părțile ei pot fi doar confirmate, nu schimbate. Folosește fluxul de corectare al înregistrării.",
       targetNotFound:
         "Această înregistrare nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
       nameRequired: "Introdu un nume pentru parte.",

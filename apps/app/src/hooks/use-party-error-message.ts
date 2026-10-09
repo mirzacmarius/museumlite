@@ -18,6 +18,8 @@ export function usePartyErrorMessage() {
         return t("partyArchived");
       case "PARTY_ROLE_NOT_ALLOWED":
         return t("roleNotAllowed");
+      case "PARTY_RECORD_LOCKED":
+        return t("recordLocked");
       case "PARTY_TARGET_NOT_FOUND":
         return t("targetNotFound");
       case "PARTY_NAME_REQUIRED":

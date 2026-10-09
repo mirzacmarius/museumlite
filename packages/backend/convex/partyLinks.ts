@@ -4,26 +4,33 @@ import {
   paginationResultValidator,
 } from "convex/server";
 import { type Infer, v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { requireModuleEnabled } from "./utils/featureGates";
 import { requireLoansAccess } from "./utils/loanAccess";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   partyDisplayName,
   requireLinkableParty,
+  requirePartyAccess,
   toPartySummary,
 } from "./utils/parties";
 import { partyError } from "./utils/partyErrors";
 import {
+  ACCESSION_PARTY_ROLES,
   accessionSourceAssertion,
-  hasCurrentPartyLink,
+  assertPartyRoleAllowed,
+  currentPartyLink,
+  endPartyLink,
+  hasPartyLinkHistory,
+  loanPartyRoles,
+  loanPrimaryRole,
   partyLinksForTarget,
+  partyRecordLocked,
   partyTargetOf,
   readablePartyTargetLabel,
   recordPartyLink,
   resolvePartyTarget,
+  syncPrimaryPartyField,
 } from "./utils/partyLinks";
 import {
   type PartyRole,
@@ -38,6 +45,12 @@ import {
 import { requirePermission } from "./utils/permissions";
 
 const linkOriginValidator = v.union(v.literal("staff"), v.literal("backfill"));
+
+const partyLinkPolicyValidator = v.union(
+  v.literal("open"),
+  v.literal("firstLinkOnly"),
+  v.literal("closed"),
+);
 
 const partyLinkViewValidator = v.object({
   _id: v.id("partyLinks"),
@@ -59,43 +72,50 @@ const partyLinkViewValidator = v.object({
   isCurrent: v.boolean(),
 });
 
-const roleHistoryItemValidator = v.object({
-  _id: v.id("partyLinks"),
-  role: partyRoleValidator,
-  targetType: partyTargetTypeValidator,
-  targetId: partyTargetIdValidator,
-  /** Null when the caller may not read the linked record. */
-  targetLabel: v.union(v.string(), v.null()),
-  nameSnapshot: v.string(),
-  assertedName: v.optional(v.string()),
-  contactSnapshot: v.optional(v.string()),
-  effectiveFrom: v.number(),
-  effectiveTo: v.optional(v.number()),
-  origin: linkOriginValidator,
-  createdAt: v.number(),
-  supersededAt: v.optional(v.number()),
-  supersessionReason: v.optional(v.string()),
-  isCurrent: v.boolean(),
-});
-
-async function requirePartyReader(
-  ctx: QueryCtx,
-  organizationId: Doc<"organizations">["_id"],
-) {
-  await requireModuleEnabled(ctx, organizationId, "accounts");
-  await requirePermission(ctx, organizationId, "accounts.read");
-}
+const roleHistoryItemValidator = v.union(
+  v.object({
+    _id: v.id("partyLinks"),
+    restricted: v.literal(false),
+    role: partyRoleValidator,
+    targetType: partyTargetTypeValidator,
+    targetId: partyTargetIdValidator,
+    targetLabel: v.string(),
+    nameSnapshot: v.string(),
+    assertedName: v.optional(v.string()),
+    contactSnapshot: v.optional(v.string()),
+    effectiveFrom: v.number(),
+    effectiveTo: v.optional(v.number()),
+    origin: linkOriginValidator,
+    createdAt: v.number(),
+    supersededAt: v.optional(v.number()),
+    supersessionReason: v.optional(v.string()),
+    isCurrent: v.boolean(),
+  }),
+  /** The caller may not open the linked record: only the role is shown. */
+  v.object({
+    _id: v.id("partyLinks"),
+    restricted: v.literal(true),
+    role: partyRoleValidator,
+    targetType: partyTargetTypeValidator,
+    isCurrent: v.boolean(),
+  }),
+);
 
 /**
  * Parties linked to a procedure record: current roles first, then superseded
- * links with their original name and contact snapshots.
+ * links with their original name and contact snapshots. Also reports which
+ * roles fit the record and how its parties may change.
  */
 export const listForTarget = query({
   args: { target: partyTargetValidator },
-  returns: v.array(partyLinkViewValidator),
+  returns: v.object({
+    allowedRoles: v.array(partyRoleValidator),
+    policy: partyLinkPolicyValidator,
+    links: v.array(partyLinkViewValidator),
+  }),
   handler: async (ctx, args) => {
     const resolved = await resolvePartyTarget(ctx, args.target, "read");
-    await requirePartyReader(ctx, resolved.organizationId);
+    await requirePartyAccess(ctx, resolved.organizationId, "accounts.read");
     const links = await partyLinksForTarget(
       ctx,
       resolved.organizationId,
@@ -128,11 +148,15 @@ export const listForTarget = query({
         };
       }),
     );
-    return views.sort(
-      (left, right) =>
-        Number(right.isCurrent) - Number(left.isCurrent) ||
-        right.createdAt - left.createdAt,
-    );
+    return {
+      allowedRoles: [...resolved.allowedRoles],
+      policy: resolved.policy,
+      links: views.sort(
+        (left, right) =>
+          Number(right.isCurrent) - Number(left.isCurrent) ||
+          right.createdAt - left.createdAt,
+      ),
+    };
   },
 });
 
@@ -140,12 +164,24 @@ async function toRoleHistoryItem(
   ctx: QueryCtx,
   link: Doc<"partyLinks">,
 ): Promise<Infer<typeof roleHistoryItemValidator>> {
+  const isCurrent = link.supersededAt === undefined;
+  const targetLabel = await readablePartyTargetLabel(ctx, link);
+  if (targetLabel === null) {
+    return {
+      _id: link._id,
+      restricted: true,
+      role: link.role,
+      targetType: link.targetType,
+      isCurrent,
+    };
+  }
   return {
     _id: link._id,
+    restricted: false,
     role: link.role,
     targetType: link.targetType,
     targetId: link.targetId,
-    targetLabel: await readablePartyTargetLabel(ctx, link),
+    targetLabel,
     nameSnapshot: link.nameSnapshot,
     assertedName: link.assertedName,
     contactSnapshot: link.contactSnapshot,
@@ -155,11 +191,14 @@ async function toRoleHistoryItem(
     createdAt: link.createdAt,
     supersededAt: link.supersededAt,
     supersessionReason: link.supersessionReason,
-    isCurrent: link.supersededAt === undefined,
+    isCurrent,
   };
 }
 
-/** Role history of one Party across procedures, newest first. */
+/**
+ * Role history of one Party across procedures, newest first. Records the
+ * caller may not open are listed by role only.
+ */
 export const listForAccount = query({
   args: {
     accountId: v.id("accounts"),
@@ -171,7 +210,7 @@ export const listForAccount = query({
     if (!account) {
       throw partyError("PARTY_NOT_FOUND", "Party not found");
     }
-    await requirePartyReader(ctx, account.organizationId);
+    await requirePartyAccess(ctx, account.organizationId, "accounts.read");
     const result = await ctx.db
       .query("partyLinks")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -191,8 +230,12 @@ export const listForAccount = query({
 /**
  * Links a Party to a procedure record in a contextual role. Requires the
  * record's own write permission and `accounts.read`; the Party must belong
- * to the record's organization, be active, and fit the role. A different
- * current Party in that role is superseded, never deleted.
+ * to the record's organization, be active, and fit the role.
+ *
+ * Records still open for edits (pending accessions and loans, appraisals,
+ * objects) may replace a Party; the earlier link is superseded, never
+ * deleted, and the record's own party reference follows. Closed records may
+ * only gain a first link per role that agrees with what they already say.
  */
 export const link = mutation({
   args: {
@@ -211,13 +254,40 @@ export const link = mutation({
       throw new Error("Not authenticated");
     }
     const resolved = await resolvePartyTarget(ctx, args.target, "write");
+    const organizationId = resolved.organizationId;
+    const isPrimary = args.role === resolved.primaryRole;
+    const confirmsRecord =
+      isPrimary && args.accountId === resolved.recordAccountId;
     const account = await requireLinkableParty(
       ctx,
-      resolved.organizationId,
+      organizationId,
       args.accountId,
+      { allowArchived: confirmsRecord },
     );
-    const { linkId } = await recordPartyLink(ctx, {
-      organizationId: resolved.organizationId,
+    assertPartyRoleAllowed(args.role, resolved.allowedRoles);
+    const [current, hasHistory] = await Promise.all([
+      currentPartyLink(ctx, organizationId, args.target, args.role),
+      hasPartyLinkHistory(ctx, organizationId, args.target, [args.role]),
+    ]);
+    if (current?.accountId === account._id) {
+      return current._id;
+    }
+    if (resolved.policy === "closed") partyRecordLocked();
+    if (
+      resolved.policy === "firstLinkOnly" &&
+      (hasHistory ||
+        (isPrimary &&
+          resolved.recordAccountId !== undefined &&
+          !confirmsRecord))
+    ) {
+      partyRecordLocked();
+    }
+    const explicitAssertion =
+      args.target.type === "accession" && args.assertedName !== undefined
+        ? accessionSourceAssertion(args.assertedName)
+        : args.assertedName;
+    const { linkId, created } = await recordPartyLink(ctx, {
+      organizationId,
       target: args.target,
       account,
       role: args.role,
@@ -225,21 +295,25 @@ export const link = mutation({
       effectiveFrom:
         args.effectiveFrom ?? resolved.defaultEffectiveFrom ?? Date.now(),
       effectiveTo: args.effectiveTo,
+      // The record's own wording names its first primary party only.
       assertedName:
-        args.target.type === "accession" && args.assertedName !== undefined
-          ? accessionSourceAssertion(args.assertedName)
-          : args.assertedName,
+        explicitAssertion ??
+        (isPrimary && !hasHistory ? resolved.recordAssertedName : undefined),
       supersessionReason: args.reason,
       userId,
       origin: "staff",
     });
+    if (created && isPrimary && resolved.policy === "open") {
+      await syncPrimaryPartyField(ctx, args.target, account);
+    }
     return linkId;
   },
 });
 
 /**
- * Ends a current link without naming a replacement. The link and its
- * snapshots stay in the record's history.
+ * Ends a current link without naming a replacement, on records still open
+ * for edits. The link and its snapshots stay in the record's history and
+ * the record's own party reference is cleared.
  */
 export const supersede = mutation({
   args: {
@@ -256,41 +330,23 @@ export const supersede = mutation({
     if (!existing) {
       throw partyError("PARTY_LINK_NOT_FOUND", "Party link not found");
     }
-    const resolved = await resolvePartyTarget(
-      ctx,
-      partyTargetOf(existing),
-      "write",
-    );
+    const target = partyTargetOf(existing);
+    const resolved = await resolvePartyTarget(ctx, target, "write");
     if (resolved.organizationId !== existing.organizationId) {
       throw partyError("PARTY_LINK_NOT_FOUND", "Party link not found");
     }
-    await requireModuleEnabled(ctx, existing.organizationId, "accounts");
-    await requirePermission(ctx, existing.organizationId, "accounts.read");
+    await requirePartyAccess(ctx, existing.organizationId, "accounts.read");
     if (existing.supersededAt !== undefined) {
       throw partyError(
         "PARTY_LINK_ALREADY_SUPERSEDED",
         "This party link has already been superseded",
       );
     }
-    const reason = args.reason.trim();
-    await ctx.db.patch(existing._id, {
-      supersededAt: Date.now(),
-      supersededBy: userId,
-      supersessionReason: reason || undefined,
-    });
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: existing.organizationId,
-      userId,
-      action: "party_link_ended",
-      entityType: existing.targetType,
-      entityId: existing.targetId,
-      changes: {
-        role: existing.role,
-        accountId: existing.accountId,
-        linkId: existing._id,
-        reason: reason || undefined,
-      },
-    });
+    if (resolved.policy !== "open") partyRecordLocked();
+    await endPartyLink(ctx, existing, userId, args.reason);
+    if (existing.role === resolved.primaryRole) {
+      await syncPrimaryPartyField(ctx, target, null);
+    }
     return null;
   },
 });
@@ -322,7 +378,7 @@ interface LegacyCandidate {
   assertedName?: string;
   contact?: string;
   date: number;
-  roles: PartyRole[];
+  roles: readonly PartyRole[];
   existingAccountId?: Id<"accounts">;
 }
 
@@ -330,12 +386,13 @@ async function legacyLinkItem(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   candidate: LegacyCandidate,
-) {
+): Promise<Infer<typeof legacyLinkItemValidator> | null> {
   const [suggestedRole] = candidate.roles;
   if (!suggestedRole) return null;
   if (!candidate.assertedName && !candidate.existingAccountId) return null;
+  // Records with any link history (current or ended) have been reviewed.
   if (
-    await hasCurrentPartyLink(
+    await hasPartyLinkHistory(
       ctx,
       organizationId,
       candidate.target,
@@ -362,14 +419,9 @@ async function legacyLinkItem(
   };
 }
 
-function loanRoles(loan: Doc<"loans">): PartyRole[] {
-  return loan.type === "incoming" ? ["lender", "owner"] : ["borrower"];
-}
-
 /**
- * Records that name a party only in free text, or reference an account
- * without a typed link. Staff confirm each link; nothing is linked
- * automatically.
+ * Records that name a party only in text, or reference an account without
+ * a typed link. Staff confirm each link; nothing is linked automatically.
  */
 export const listLegacyLinks = query({
   args: {
@@ -384,20 +436,18 @@ export const listLegacyLinks = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    await requirePartyReader(ctx, args.organizationId);
+    await requirePartyAccess(ctx, args.organizationId, "accounts.read");
     if (args.kind === "loan") {
       await requireLoansAccess(ctx, args.organizationId);
       await requirePermission(ctx, args.organizationId, "loans.read");
     } else {
       await requirePermission(ctx, args.organizationId, "collections.read");
     }
-    const paginationOpts = {
-      ...args.paginationOpts,
-      numItems: Math.min(
-        LEGACY_REVIEW_PAGE_LIMIT,
-        Math.max(1, args.paginationOpts.numItems),
-      ),
-    };
+    if (args.paginationOpts.numItems > LEGACY_REVIEW_PAGE_LIMIT) {
+      throw new Error(
+        `Legacy link review pages hold at most ${LEGACY_REVIEW_PAGE_LIMIT} records`,
+      );
+    }
     let candidates: LegacyCandidate[];
     let page: { isDone: boolean; continueCursor: string; checked: number };
     if (args.kind === "accession") {
@@ -406,13 +456,13 @@ export const listLegacyLinks = query({
         .withIndex("by_organization", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .paginate(paginationOpts);
+        .paginate(args.paginationOpts);
       candidates = result.page.map((accession) => ({
         target: { type: "accession", id: accession._id },
         label: accession.accessionNumber,
         assertedName: accessionSourceAssertion(accession.source),
         date: accession.dateReceived,
-        roles: ["donor", "owner"],
+        roles: ACCESSION_PARTY_ROLES,
         existingAccountId: accession.donorAccountId,
       }));
       page = { ...result, checked: result.page.length };
@@ -422,14 +472,14 @@ export const listLegacyLinks = query({
         .withIndex("by_organization", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .paginate(paginationOpts);
+        .paginate(args.paginationOpts);
       candidates = result.page.map((loan) => ({
         target: { type: "loan", id: loan._id },
         label: loan.loanNumber,
         assertedName: loan.lenderBorrowerName.trim() || undefined,
         contact: loan.lenderBorrowerContact?.trim() || undefined,
         date: loan.startDate,
-        roles: loanRoles(loan),
+        roles: loanPartyRoles(loan.type),
         existingAccountId: loan.accountId,
       }));
       page = { ...result, checked: result.page.length };
@@ -439,7 +489,7 @@ export const listLegacyLinks = query({
         .withIndex("by_organization", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .paginate(paginationOpts);
+        .paginate(args.paginationOpts);
       candidates = result.page.flatMap((deaccession) =>
         deaccession.exitRecord
           ? [
@@ -486,8 +536,9 @@ async function backfillLink(
 ) {
   const account = await ctx.db.get(input.accountId);
   if (!account || account.organizationId !== organizationId) return false;
+  // Never recreate a link staff already made or deliberately ended.
   if (
-    await hasCurrentPartyLink(ctx, organizationId, input.target, [input.role])
+    await hasPartyLinkHistory(ctx, organizationId, input.target, [input.role])
   )
     return false;
   await recordPartyLink(ctx, {
@@ -508,7 +559,7 @@ async function backfillLink(
  * Creates typed links from existing account references (accession donor
  * accounts and loan accounts) in one bounded batch. Run only with owner
  * approval, page by page with the returned cursor; reruns skip records that
- * already have a link. Name-only records are never linked here.
+ * already have link history. Name-only records are never linked here.
  */
 export const backfillFromAccountFields = internalMutation({
   args: {
@@ -564,7 +615,7 @@ export const backfillFromAccountFields = internalMutation({
       const linked = await backfillLink(ctx, args.organizationId, {
         target: { type: "loan", id: loan._id },
         accountId: loan.accountId,
-        role: loan.type === "incoming" ? "lender" : "borrower",
+        role: loanPrimaryRole(loan.type),
         effectiveFrom: loan.startDate,
         effectiveTo: loan.endDate,
         assertedName: loan.lenderBorrowerName,

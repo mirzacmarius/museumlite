@@ -5127,6 +5127,8 @@ export default {
         "That party is not available in this organization. Choose another.",
       partyArchived: "That party is archived. Restore it or choose another.",
       roleNotAllowed: "That role does not apply to this record.",
+      recordLocked:
+        "This record is closed, so its parties can only be confirmed, not changed. Use the record's own correction flow.",
       targetNotFound:
         "This record is no longer available. Refresh and try again.",
       nameRequired: "Enter a name for the party.",

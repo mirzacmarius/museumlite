@@ -1,6 +1,7 @@
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { isDisposalDecision } from "./disposalPolicy";
 import { requireLoansAccess } from "./loanAccess";
 import {
   normalizePartyName,
@@ -23,12 +24,39 @@ export function accessionSourceAssertion(source: string): string | undefined {
   return text && text !== LINKED_SOURCE_PLACEHOLDER ? text : undefined;
 }
 
+/** Roles a Party may hold on each kind of record, primary role first. */
+export const ACCESSION_PARTY_ROLES: readonly PartyRole[] = ["donor", "owner"];
+
+export function loanPartyRoles(type: Doc<"loans">["type"]): PartyRole[] {
+  return type === "incoming" ? ["lender", "owner"] : ["borrower"];
+}
+
+export function loanPrimaryRole(type: Doc<"loans">["type"]): PartyRole {
+  return type === "incoming" ? "lender" : "borrower";
+}
+
+/**
+ * How parties may change on a record through `partyLinks`:
+ * - `open`: link, replace and end (the record's own edit rules allow it);
+ * - `firstLinkOnly`: a closed record may only gain a first link per role
+ *   that agrees with what the record already says;
+ * - `closed`: no changes here (use the record's own flow).
+ */
+export type PartyLinkPolicy = "open" | "firstLinkOnly" | "closed";
+
 export interface ResolvedPartyTarget {
   organizationId: Id<"organizations">;
   label: string;
   /** Domain date the role starts from when the caller gives none. */
   defaultEffectiveFrom?: number;
   allowedRoles: readonly PartyRole[];
+  policy: PartyLinkPolicy;
+  /** The role the record itself names a party for. */
+  primaryRole?: PartyRole;
+  /** How the record names that party. */
+  recordAssertedName?: string;
+  /** The account the record already references for that role. */
+  recordAccountId?: Id<"accounts">;
 }
 
 type TargetAccess = "read" | "write";
@@ -61,7 +89,11 @@ export async function resolvePartyTarget(
         organizationId: accession.organizationId,
         label: accession.accessionNumber,
         defaultEffectiveFrom: accession.dateReceived,
-        allowedRoles: ["donor", "owner"],
+        allowedRoles: ACCESSION_PARTY_ROLES,
+        policy: accession.status === "pending" ? "open" : "firstLinkOnly",
+        primaryRole: "donor",
+        recordAssertedName: accessionSourceAssertion(accession.source),
+        recordAccountId: accession.donorAccountId,
       };
     }
     case "loan": {
@@ -77,8 +109,11 @@ export async function resolvePartyTarget(
         organizationId: loan.organizationId,
         label: loan.loanNumber,
         defaultEffectiveFrom: loan.startDate,
-        allowedRoles:
-          loan.type === "incoming" ? ["lender", "owner"] : ["borrower"],
+        allowedRoles: loanPartyRoles(loan.type),
+        policy: loan.status === "pending" ? "open" : "firstLinkOnly",
+        primaryRole: loanPrimaryRole(loan.type),
+        recordAssertedName: loan.lenderBorrowerName.trim() || undefined,
+        recordAccountId: loan.accountId,
       };
     }
     case "deaccession": {
@@ -89,12 +124,20 @@ export async function resolvePartyTarget(
         deaccession.organizationId,
         collectionsPermission,
       );
+      const exitRecorded =
+        deaccession.status === "approved" &&
+        isDisposalDecision(deaccession) &&
+        deaccession.exitRecord !== undefined;
       return {
         organizationId: deaccession.organizationId,
         label: deaccession.deaccessionNumber,
         defaultEffectiveFrom:
           deaccession.exitRecord?.exitDate ?? deaccession.dateDeaccessioned,
         allowedRoles: ["recipient"],
+        // Recipient changes go through exit corrections (recordExit).
+        policy: exitRecorded ? "firstLinkOnly" : "closed",
+        primaryRole: "recipient",
+        recordAssertedName: deaccession.exitRecord?.recipient,
       };
     }
     case "appraisal": {
@@ -110,6 +153,9 @@ export async function resolvePartyTarget(
         label: appraisal.appraiserName,
         defaultEffectiveFrom: appraisal.appraisalDate,
         allowedRoles: ["appraiser"],
+        policy: "open",
+        primaryRole: "appraiser",
+        recordAssertedName: appraisal.appraiserName.trim() || undefined,
       };
     }
     case "collection": {
@@ -124,6 +170,7 @@ export async function resolvePartyTarget(
         organizationId: collection.organizationId,
         label: `${collection.accessionNumber} ${collection.title}`.trim(),
         allowedRoles: ["owner"],
+        policy: "open",
       };
     }
   }
@@ -183,6 +230,13 @@ export function assertPartyRoleAllowed(
       `The ${role} role does not apply to this record`,
     );
   }
+}
+
+export function partyRecordLocked(): never {
+  throw partyError(
+    "PARTY_RECORD_LOCKED",
+    "This record's parties cannot be changed here",
+  );
 }
 
 function targetFields(target: PartyTarget) {
@@ -250,17 +304,138 @@ export async function partyLinksForTarget(
     .take(PARTY_LINKS_PER_TARGET_LIMIT);
 }
 
-/** True when the target has a current link in any of `roles`. */
-export async function hasCurrentPartyLink(
+/** True when the target has ever had a link (current or ended) in `roles`. */
+export async function hasPartyLinkHistory(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
   target: PartyTarget,
   roles: readonly PartyRole[],
 ) {
   for (const role of roles) {
-    if (await currentPartyLink(ctx, organizationId, target, role)) return true;
+    const link = await ctx.db
+      .query("partyLinks")
+      .withIndex("by_organization_and_target_and_role_and_supersededAt", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("targetType", target.type)
+          .eq("targetId", target.id)
+          .eq("role", role),
+      )
+      .first();
+    if (link) return true;
   }
   return false;
+}
+
+/**
+ * Keeps the record's own party reference in step with its primary-role
+ * link on records that are still open for edits.
+ */
+export async function syncPrimaryPartyField(
+  ctx: MutationCtx,
+  target: PartyTarget,
+  account: Doc<"accounts"> | null,
+) {
+  if (target.type === "accession") {
+    await ctx.db.patch(target.id, { donorAccountId: account?._id });
+  } else if (target.type === "loan") {
+    await ctx.db.patch(
+      target.id,
+      account
+        ? {
+            accountId: account._id,
+            lenderBorrowerName: partyDisplayName(account),
+            lenderBorrowerContact: partyContactSnapshot(account),
+          }
+        : { accountId: undefined },
+    );
+  }
+}
+
+/** Ends a current link; the link and its snapshots stay in the history. */
+export async function endPartyLink(
+  ctx: MutationCtx,
+  link: Doc<"partyLinks">,
+  userId: Id<"users">,
+  reason: string | undefined,
+) {
+  const supersessionReason = reason?.trim() || undefined;
+  await ctx.db.patch(link._id, {
+    supersededAt: Date.now(),
+    supersededBy: userId,
+    supersessionReason,
+  });
+  await ctx.runMutation(internal.audit.logAction, {
+    organizationId: link.organizationId,
+    userId,
+    action: "party_link_ended",
+    entityType: link.targetType,
+    entityId: link.targetId,
+    changes: {
+      role: link.role,
+      accountId: link.accountId,
+      linkId: link._id,
+      reason: supersessionReason,
+    },
+  });
+}
+
+/**
+ * Keeps the recipient link of a disposal in step with its exit record. A
+ * chosen Party becomes (or stays) the recipient. Without one, a correction
+ * that names someone else ends the typed link, and a corrected exit date
+ * re-records the same Party from the new date.
+ */
+export async function syncExitRecipientLink(
+  ctx: MutationCtx,
+  input: {
+    deaccession: Doc<"deaccessions">;
+    previousExit: Doc<"deaccessions">["exitRecord"];
+    exitDate: number;
+    recipient: string;
+    recipientParty: Doc<"accounts"> | null;
+    correctionReason: string | undefined;
+    userId: Id<"users">;
+  },
+) {
+  const organizationId = input.deaccession.organizationId;
+  const target: PartyTarget = {
+    type: "deaccession",
+    id: input.deaccession._id,
+  };
+  const link = (account: Doc<"accounts">) =>
+    recordPartyLink(ctx, {
+      organizationId,
+      target,
+      account,
+      role: "recipient",
+      allowedRoles: ["recipient"],
+      effectiveFrom: input.exitDate,
+      assertedName: input.recipient,
+      supersessionReason: input.correctionReason,
+      userId: input.userId,
+      origin: "staff",
+    });
+  if (input.recipientParty) {
+    await link(input.recipientParty);
+    return;
+  }
+  if (!input.previousExit) return;
+  const current = await currentPartyLink(
+    ctx,
+    organizationId,
+    target,
+    "recipient",
+  );
+  if (!current) return;
+  if (input.previousExit.recipient !== input.recipient) {
+    await endPartyLink(ctx, current, input.userId, input.correctionReason);
+    return;
+  }
+  if (input.previousExit.exitDate !== input.exitDate) {
+    const account = await ctx.db.get(current.accountId);
+    if (account?.organizationId === organizationId) await link(account);
+  }
 }
 
 export interface RecordPartyLinkInput {
@@ -279,9 +454,10 @@ export interface RecordPartyLinkInput {
 
 /**
  * Makes `account` the current Party in `role` for the target. A different
- * current Party is superseded (kept, with who and when); linking the same
- * Party again returns the existing link so retries are harmless. The caller
- * has already enforced the target's permission and the Party's tenant.
+ * current Party is superseded (kept, with who and when). Linking the same
+ * Party again is a no-op unless its dates or named assertion change, in
+ * which case the corrected link supersedes the earlier one. The caller has
+ * already enforced the target's permission and the Party's tenant.
  */
 export async function recordPartyLink(
   ctx: MutationCtx,
@@ -291,33 +467,40 @@ export async function recordPartyLink(
   if (input.account.organizationId !== input.organizationId) {
     throw partyError("PARTY_NOT_FOUND", "Party not found in this organization");
   }
-  if (
-    input.effectiveTo !== undefined &&
-    input.effectiveTo < input.effectiveFrom
-  ) {
-    throw partyError(
-      "PARTY_DATES_INVALID",
-      "The role cannot end before it starts",
-    );
-  }
   const current = await currentPartyLink(
     ctx,
     input.organizationId,
     input.target,
     input.role,
   );
-  if (current?.accountId === input.account._id) {
-    return { linkId: current._id, created: false };
-  }
-
-  const now = Date.now();
   const nameSnapshot = partyDisplayName(input.account);
   const asserted = input.assertedName?.trim();
-  const assertedName =
+  let assertedName =
     asserted &&
     normalizePartyName(asserted) !== normalizePartyName(nameSnapshot)
       ? asserted
       : undefined;
+  let effectiveTo = input.effectiveTo;
+  const samePartyCurrent = current?.accountId === input.account._id;
+  if (current && samePartyCurrent) {
+    assertedName ??= current.assertedName;
+    effectiveTo ??= current.effectiveTo;
+    if (
+      input.effectiveFrom === current.effectiveFrom &&
+      effectiveTo === current.effectiveTo &&
+      assertedName === current.assertedName
+    ) {
+      return { linkId: current._id, created: false };
+    }
+  }
+  if (effectiveTo !== undefined && effectiveTo < input.effectiveFrom) {
+    throw partyError(
+      "PARTY_DATES_INVALID",
+      "The role cannot end before it starts",
+    );
+  }
+
+  const now = Date.now();
   const linkId = await ctx.db.insert("partyLinks", {
     organizationId: input.organizationId,
     accountId: input.account._id,
@@ -326,7 +509,7 @@ export async function recordPartyLink(
     contactSnapshot: partyContactSnapshot(input.account),
     assertedName,
     effectiveFrom: input.effectiveFrom,
-    effectiveTo: input.effectiveTo,
+    effectiveTo,
     origin: input.origin,
     createdBy: input.userId,
     createdAt: now,

@@ -230,3 +230,25 @@ test("similar existing parties are suggested before a new party is created", asy
     },
   ]);
 });
+
+test("an email written with different capitals or spacing still finds the existing party", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const foreign = await createMuseum(t);
+  const existingId = await insertAccount(t, organizationId, userId, {
+    businessName: "Harbour Studio",
+    email: " Studio@Harbour.Example ",
+  });
+  await insertAccount(t, foreign.organizationId, foreign.userId, {
+    businessName: "Foreign Studio",
+    email: "studio@harbour.example",
+  });
+
+  expect(
+    await staff.query(api.parties.findSimilar, {
+      organizationId,
+      name: "Completely Different Name",
+      email: "STUDIO@harbour.example",
+    }),
+  ).toMatchObject([{ party: { _id: existingId }, reasons: ["email"] }]);
+});

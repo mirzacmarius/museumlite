@@ -30,9 +30,7 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
         <TargetPartyLinks
           target={{ type: "loan", id: loan._id }}
           organizationId={loan.organizationId}
-          roles={loan.type === "incoming" ? ["lender", "owner"] : ["borrower"]}
           writePermission="loans.update"
-          assertedName={loan.lenderBorrowerName}
         />
         {/* Status Flow */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">

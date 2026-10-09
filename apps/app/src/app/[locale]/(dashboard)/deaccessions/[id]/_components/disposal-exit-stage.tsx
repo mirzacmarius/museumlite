@@ -145,6 +145,8 @@ function ExitForm({
     exitDate: Date | undefined;
     recipient: string;
     recipientAccountId: Id<"accounts"> | undefined;
+    /** Recipient text last filled from a picked party. */
+    filledRecipient: string | undefined;
     reference: string;
     notes: string;
     correctionReason: string;
@@ -152,6 +154,7 @@ function ExitForm({
     exitDate: existing ? new Date(existing.exitDate) : undefined,
     recipient: existing?.recipient ?? "",
     recipientAccountId: undefined,
+    filledRecipient: undefined,
     reference: existing?.reference ?? "",
     notes: existing?.notes ?? "",
     correctionReason: "",
@@ -221,14 +224,21 @@ function ExitForm({
             organizationId={organizationId}
             value={recipientAccountId}
             onChange={(party) =>
-              setForm((current) => ({
-                ...current,
-                recipientAccountId: party?._id,
-                recipient:
-                  party && !current.recipient.trim()
-                    ? party.displayName
-                    : current.recipient,
-              }))
+              setForm((current) => {
+                // Picking fills the recipient unless staff typed their own.
+                const untouched =
+                  !current.recipient.trim() ||
+                  current.recipient === current.filledRecipient ||
+                  current.recipient === existing?.recipient;
+                const recipient =
+                  party && untouched ? party.displayName : current.recipient;
+                return {
+                  ...current,
+                  recipientAccountId: party?._id,
+                  recipient,
+                  filledRecipient: recipient,
+                };
+              })
             }
             disabled={isSaving}
           />

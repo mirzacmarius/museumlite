@@ -5,11 +5,9 @@ import {
 } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { requireModuleEnabled } from "./utils/featureGates";
+import { query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
-import { toPartySummary } from "./utils/parties";
+import { requirePartyAccess, toPartySummary } from "./utils/parties";
 import {
   DUPLICATE_SCAN_ACCOUNT_LIMIT,
   DUPLICATE_SCAN_NEW_REVIEW_LIMIT,
@@ -23,16 +21,6 @@ import {
   duplicateReviewStatusValidator,
   partySummaryValidator,
 } from "./utils/partyValidators";
-import { requirePermission } from "./utils/permissions";
-
-async function requireParties(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">,
-  permission: "accounts.read" | "accounts.write",
-) {
-  await requireModuleEnabled(ctx, organizationId, "accounts");
-  await requirePermission(ctx, organizationId, permission);
-}
 
 /**
  * Compares the most recent parties by normalized name, email and phone and
@@ -51,7 +39,7 @@ export const scan = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await requireParties(ctx, args.organizationId, "accounts.write");
+    await requirePartyAccess(ctx, args.organizationId, "accounts.write");
     const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -96,7 +84,7 @@ export const list = query({
   },
   returns: paginationResultValidator(duplicateReviewViewValidator),
   handler: async (ctx, args) => {
-    await requireParties(ctx, args.organizationId, "accounts.read");
+    await requirePartyAccess(ctx, args.organizationId, "accounts.read");
     const result = await ctx.db
       .query("partyDuplicateReviews")
       .withIndex("by_organization_and_status", (q) =>
@@ -155,7 +143,7 @@ export const resolve = mutation({
         "Duplicate suggestion not found",
       );
     }
-    await requireParties(ctx, review.organizationId, "accounts.write");
+    await requirePartyAccess(ctx, review.organizationId, "accounts.write");
     if (review.status !== "pending") {
       throw partyError(
         "DUPLICATE_REVIEW_ALREADY_RESOLVED",

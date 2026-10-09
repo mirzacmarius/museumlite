@@ -5,6 +5,7 @@ import {
   type PartyErrorData,
   partyErrorFromError,
 } from "../convex/utils/partyErrors";
+import type { PartyTarget } from "../convex/utils/partyValidators";
 import {
   authedForUser,
   type ConvexTest,
@@ -23,6 +24,9 @@ const REGISTRAR_PERMISSIONS = [
   "accounts.write",
 ];
 
+type Client = ReturnType<typeof authedForUser>;
+
+/** A museum whose accessions go through an approval step, so they start pending. */
 async function createMuseum(
   t: ConvexTest,
   permissions: string[] = REGISTRAR_PERMISSIONS,
@@ -31,6 +35,14 @@ async function createMuseum(
     subscriptionTier: "pro",
     enabledModules: ["accounts"],
     roleName: "Registrar",
+  });
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId: setup.organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId: setup.roleId, name: "Committee" }],
+      canInitiateRoles: [setup.roleId],
+    });
   });
   return { ...setup, staff: authedForUser(t, setup.userId) };
 }
@@ -72,54 +84,9 @@ async function partyErrorOf(call: Promise<unknown>): Promise<PartyErrorData> {
   throw new Error("Expected the call to be rejected");
 }
 
-test("a donor chosen when an accession is created is linked to it and appears in the party's role history", async () => {
-  const t = createConvexTest();
-  const { organizationId, userId, staff } = await createMuseum(t);
-  const donorId = await insertParty(t, organizationId, userId, {
-    businessName: "Ada Lovelace",
-    holderType: "privatePerson",
-    email: "ada@example.org",
-  });
-
-  const accessionId = await staff.mutation(api.accessions.create, {
-    organizationId,
-    accessionNumber: "2026.1",
-    dateReceived: Date.UTC(2026, 0, 5),
-    source: "Gift of Ada Lovelace",
-    donorAccountId: donorId,
-    method: "gift",
-  });
-
-  const links = await staff.query(api.partyLinks.listForTarget, {
-    target: { type: "accession", id: accessionId },
-  });
-  expect(links).toMatchObject([
-    {
-      role: "donor",
-      accountId: donorId,
-      partyName: "Ada Lovelace",
-      nameSnapshot: "Ada Lovelace",
-      assertedName: "Gift of Ada Lovelace",
-      contactSnapshot: "ada@example.org",
-      effectiveFrom: Date.UTC(2026, 0, 5),
-      isCurrent: true,
-    },
-  ]);
-
-  const history = await staff.query(api.partyLinks.listForAccount, {
-    accountId: donorId,
-    paginationOpts: { numItems: 10, cursor: null },
-  });
-  expect(history.page).toMatchObject([
-    {
-      role: "donor",
-      targetType: "accession",
-      targetId: accessionId,
-      targetLabel: "2026.1",
-      isCurrent: true,
-    },
-  ]);
-});
+async function linksFor(client: Client, target: PartyTarget) {
+  return (await client.query(api.partyLinks.listForTarget, { target })).links;
+}
 
 async function addMember(
   t: ConvexTest,
@@ -152,6 +119,78 @@ async function addMember(
   });
   return { userId, client: authedForUser(t, userId) };
 }
+
+async function insertObject(
+  t: ConvexTest,
+  organizationId: Id<"organizations">,
+  userId: Id<"users">,
+) {
+  return await t.run(async (ctx) =>
+    ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `OBJ-${Math.random().toString(36).slice(2, 7)}`,
+      title: "Disposed vase",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    }),
+  );
+}
+
+test("a donor chosen when an accession is created is linked to it and appears in the party's role history", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const donorId = await insertParty(t, organizationId, userId, {
+    businessName: "Ada Lovelace",
+    holderType: "privatePerson",
+    email: "ada@example.org",
+  });
+
+  const accessionId = await staff.mutation(api.accessions.create, {
+    organizationId,
+    accessionNumber: "2026.1",
+    dateReceived: Date.UTC(2026, 0, 5),
+    source: "Gift of Ada Lovelace",
+    donorAccountId: donorId,
+    method: "gift",
+  });
+
+  expect(
+    await staff.query(api.partyLinks.listForTarget, {
+      target: { type: "accession", id: accessionId },
+    }),
+  ).toMatchObject({
+    allowedRoles: ["donor", "owner"],
+    policy: "open",
+    links: [
+      {
+        role: "donor",
+        accountId: donorId,
+        partyName: "Ada Lovelace",
+        nameSnapshot: "Ada Lovelace",
+        assertedName: "Gift of Ada Lovelace",
+        contactSnapshot: "ada@example.org",
+        effectiveFrom: Date.UTC(2026, 0, 5),
+        isCurrent: true,
+      },
+    ],
+  });
+
+  const history = await staff.query(api.partyLinks.listForAccount, {
+    accountId: donorId,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(history.page).toMatchObject([
+    {
+      restricted: false,
+      role: "donor",
+      targetType: "accession",
+      targetId: accessionId,
+      targetLabel: "2026.1",
+      isCurrent: true,
+    },
+  ]);
+});
 
 test("replacing a party supersedes the earlier link and renaming a party keeps the recorded snapshots", async () => {
   const t = createConvexTest();
@@ -190,9 +229,7 @@ test("replacing a party supersedes the earlier link and renaming a party keeps t
     businessName: "Northern Gallery of Art",
   });
 
-  const links = await staff.query(api.partyLinks.listForTarget, {
-    target: { type: "accession", id: accessionId },
-  });
+  const links = await linksFor(staff, { type: "accession", id: accessionId });
   expect(links).toMatchObject([
     { accountId: secondId, nameSnapshot: "Southern Trust", isCurrent: true },
     {
@@ -205,6 +242,8 @@ test("replacing a party supersedes the earlier link and renaming a party keeps t
     },
   ]);
   expect(links[1]?.supersededAt).toEqual(expect.any(Number));
+  // The replacement does not inherit the earlier donor's name on the record.
+  expect(links[0]?.assertedName).toBeUndefined();
 
   const firstHistory = await staff.query(api.partyLinks.listForAccount, {
     accountId: firstId,
@@ -213,6 +252,148 @@ test("replacing a party supersedes the earlier link and renaming a party keeps t
   expect(firstHistory.page).toMatchObject([
     { role: "donor", nameSnapshot: "Northern Gallery", isCurrent: false },
   ]);
+});
+
+test("linking or ending the lender of a pending loan keeps the loan's account and name in step", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const firstId = await insertParty(t, organizationId, userId, {
+    businessName: "First Lender",
+  });
+  const secondId = await insertParty(t, organizationId, userId, {
+    businessName: "Second Lender",
+    email: "second@lender.example",
+  });
+  const loanId = await staff.mutation(api.loans.create, {
+    organizationId,
+    type: "incoming",
+    accountId: firstId,
+    lenderBorrowerName: "First Lender",
+    startDate: Date.UTC(2026, 2, 1),
+  });
+
+  await staff.mutation(api.partyLinks.link, {
+    target: { type: "loan", id: loanId },
+    accountId: secondId,
+    role: "lender",
+    reason: "Agreement signed by the second lender",
+  });
+  expect(await staff.query(api.loans.get, { loanId })).toMatchObject({
+    accountId: secondId,
+    lenderBorrowerName: "Second Lender",
+    lenderBorrowerContact: "second@lender.example",
+  });
+
+  const [current] = await linksFor(staff, { type: "loan", id: loanId });
+  if (!current) throw new Error("Expected a current lender link");
+  await staff.mutation(api.partyLinks.supersede, {
+    linkId: current._id,
+    reason: "Lender withdrew",
+  });
+  const loan = await staff.query(api.loans.get, { loanId });
+  expect(loan?.accountId).toBeUndefined();
+  expect(loan?.lenderBorrowerName).toBe("Second Lender");
+});
+
+test("an approved accession only accepts a first link that agrees with it", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const recordedId = await insertParty(t, organizationId, userId, {
+    businessName: "Recorded Donor",
+  });
+  const otherId = await insertParty(t, organizationId, userId, {
+    businessName: "Other Donor",
+  });
+  const accessionId = await t.run(async (ctx) =>
+    ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: "1990.1",
+      dateReceived: Date.UTC(1990, 0, 1),
+      source: "Recorded Donor family",
+      donorAccountId: recordedId,
+      method: "gift",
+      status: "approved",
+    }),
+  );
+  const target = { type: "accession" as const, id: accessionId };
+
+  expect(
+    await staff.query(api.partyLinks.listForTarget, { target }),
+  ).toMatchObject({ policy: "firstLinkOnly", links: [] });
+  expect(
+    await partyErrorOf(
+      staff.mutation(api.partyLinks.link, {
+        target,
+        accountId: otherId,
+        role: "donor",
+      }),
+    ),
+  ).toMatchObject({ code: "PARTY_RECORD_LOCKED" });
+
+  await staff.mutation(api.partyLinks.link, {
+    target,
+    accountId: recordedId,
+    role: "donor",
+  });
+  const [link] = await linksFor(staff, target);
+  expect(link).toMatchObject({
+    accountId: recordedId,
+    assertedName: "Recorded Donor family",
+    isCurrent: true,
+  });
+  if (!link) throw new Error("Expected the confirmed link");
+  expect(
+    await partyErrorOf(
+      staff.mutation(api.partyLinks.link, {
+        target,
+        accountId: otherId,
+        role: "donor",
+      }),
+    ),
+  ).toMatchObject({ code: "PARTY_RECORD_LOCKED" });
+  expect(
+    await partyErrorOf(
+      staff.mutation(api.partyLinks.supersede, {
+        linkId: link._id,
+        reason: "Not allowed on approved records",
+      }),
+    ),
+  ).toMatchObject({ code: "PARTY_RECORD_LOCKED" });
+});
+
+test("a deaccession recipient is only linked once its exit is recorded", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const partyId = await insertParty(t, organizationId, userId, {
+    businessName: "Early Recipient",
+  });
+  const collectionId = await insertObject(t, organizationId, userId);
+  const deaccessionId = await t.run(async (ctx) =>
+    ctx.db.insert("deaccessions", {
+      organizationId,
+      collectionId,
+      deaccessionNumber: "D-2026-009",
+      dateDeaccessioned: Date.UTC(2026, 4, 1),
+      reason: "Pending review",
+      method: "transfer",
+      status: "pending",
+    }),
+  );
+
+  expect(
+    await staff.query(api.partyLinks.listForTarget, {
+      target: { type: "deaccession", id: deaccessionId },
+    }),
+  ).toMatchObject({ policy: "closed" });
+  expect(
+    await partyErrorOf(
+      staff.mutation(api.partyLinks.link, {
+        target: { type: "deaccession", id: deaccessionId },
+        accountId: partyId,
+        role: "recipient",
+      }),
+    ),
+  ).toMatchObject({ code: "PARTY_RECORD_LOCKED" });
 });
 
 test("linking the same party again is a harmless retry that keeps one current link", async () => {
@@ -241,10 +422,7 @@ test("linking the same party again is a harmless retry that keeps one current li
   });
 
   expect(second).toBe(first);
-  const links = await staff.query(api.partyLinks.listForTarget, {
-    target: { type: "loan", id: loanId },
-  });
-  expect(links).toMatchObject([
+  expect(await linksFor(staff, { type: "loan", id: loanId })).toMatchObject([
     {
       role: "lender",
       accountId: partyId,
@@ -273,26 +451,54 @@ test("a borrower chosen for an outgoing loan is linked while the loan keeps its 
     endDate: Date.UTC(2026, 9, 1),
   });
 
-  const loan = await staff.query(api.loans.get, { loanId });
-  expect(loan).toMatchObject({
+  expect(await staff.query(api.loans.get, { loanId })).toMatchObject({
     accountId: borrowerId,
     lenderBorrowerName: "City Museum (Registrar)",
     lenderBorrowerContact: "loans@city.example",
   });
-  const links = await staff.query(api.partyLinks.listForTarget, {
-    target: { type: "loan", id: loanId },
+  expect(
+    await staff.query(api.partyLinks.listForTarget, {
+      target: { type: "loan", id: loanId },
+    }),
+  ).toMatchObject({
+    allowedRoles: ["borrower"],
+    links: [
+      {
+        role: "borrower",
+        accountId: borrowerId,
+        nameSnapshot: "City Museum",
+        assertedName: "City Museum (Registrar)",
+        effectiveFrom: Date.UTC(2026, 3, 1),
+        effectiveTo: Date.UTC(2026, 9, 1),
+        isCurrent: true,
+      },
+    ],
   });
-  expect(links).toMatchObject([
-    {
-      role: "borrower",
-      accountId: borrowerId,
-      nameSnapshot: "City Museum",
-      assertedName: "City Museum (Registrar)",
-      effectiveFrom: Date.UTC(2026, 3, 1),
-      effectiveTo: Date.UTC(2026, 9, 1),
-      isCurrent: true,
-    },
-  ]);
+});
+
+test("a secondary role does not borrow the record's donor name as its named assertion", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const ownerId = await insertParty(t, organizationId, userId, {
+    businessName: "Museum Trust",
+  });
+  const accessionId = await staff.mutation(api.accessions.create, {
+    organizationId,
+    accessionNumber: "2026.4",
+    dateReceived: Date.UTC(2026, 0, 1),
+    source: "Jane Doe (donor)",
+    method: "gift",
+  });
+
+  await staff.mutation(api.partyLinks.link, {
+    target: { type: "accession", id: accessionId },
+    accountId: ownerId,
+    role: "owner",
+  });
+
+  const [owner] = await linksFor(staff, { type: "accession", id: accessionId });
+  expect(owner).toMatchObject({ role: "owner", nameSnapshot: "Museum Trust" });
+  expect(owner?.assertedName).toBeUndefined();
 });
 
 test("a role that does not fit the record is rejected with a stable code", async () => {
@@ -333,11 +539,9 @@ test("a role that does not fit the record is rejected with a stable code", async
       }),
     ),
   ).toMatchObject({ code: "PARTY_ROLE_NOT_ALLOWED" });
-  expect(
-    await staff.query(api.partyLinks.listForTarget, {
-      target: { type: "accession", id: accessionId },
-    }),
-  ).toEqual([]);
+  expect(await linksFor(staff, { type: "accession", id: accessionId })).toEqual(
+    [],
+  );
 });
 
 async function createTwoMuseums(t: ConvexTest) {
@@ -540,10 +744,44 @@ test("linking requires the record's own write permission and accounts.read", asy
   // The cataloger may link the accession donor; the viewer may read it.
   await cataloger.client.mutation(api.partyLinks.link, accessionLink);
   expect(
-    await viewer.client.query(api.partyLinks.listForTarget, {
-      target: { type: "accession", id: accessionId },
-    }),
+    await linksFor(viewer.client, { type: "accession", id: accessionId }),
   ).toMatchObject([{ accountId: partyId, role: "donor", isCurrent: true }]);
+});
+
+test("role history hides details of records the reader may not open", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const partyId = await insertParty(t, organizationId, userId, {
+    businessName: "Private Lender",
+    email: "private@lender.example",
+  });
+  await staff.mutation(api.loans.create, {
+    organizationId,
+    type: "incoming",
+    accountId: partyId,
+    lenderBorrowerName: "Private Lender (estate)",
+    startDate: Date.UTC(2026, 5, 1),
+  });
+  const accountsOnly = await addMember(
+    t,
+    organizationId,
+    ["accounts.read"],
+    "Accounts Reader",
+  );
+
+  const history = await accountsOnly.client.query(
+    api.partyLinks.listForAccount,
+    { accountId: partyId, paginationOpts: { numItems: 10, cursor: null } },
+  );
+  expect(history.page).toEqual([
+    {
+      _id: expect.any(String),
+      restricted: true,
+      role: "lender",
+      targetType: "loan",
+      isCurrent: true,
+    },
+  ]);
 });
 
 test("party links need the accounts module", async () => {
@@ -570,7 +808,7 @@ test("party links need the accounts module", async () => {
   ).rejects.toThrow("Module not enabled: accounts");
 });
 
-test("ending a link keeps it in the record history and cannot be repeated", async () => {
+test("ending a link keeps it in the record history, clears the record's donor and cannot be repeated", async () => {
   const t = createConvexTest();
   const { organizationId, userId, staff } = await createMuseum(t);
   const partyId = await insertParty(t, organizationId, userId, {
@@ -584,9 +822,8 @@ test("ending a link keeps it in the record history and cannot be repeated", asyn
     donorAccountId: partyId,
     method: "gift",
   });
-  const [link] = await staff.query(api.partyLinks.listForTarget, {
-    target: { type: "accession", id: accessionId },
-  });
+  const target = { type: "accession" as const, id: accessionId };
+  const [link] = await linksFor(staff, target);
   if (!link) throw new Error("Expected a donor link");
 
   await staff.mutation(api.partyLinks.supersede, {
@@ -594,17 +831,20 @@ test("ending a link keeps it in the record history and cannot be repeated", asyn
     reason: "Recorded in error",
   });
 
-  expect(
-    await staff.query(api.partyLinks.listForTarget, {
-      target: { type: "accession", id: accessionId },
-    }),
-  ).toMatchObject([
+  expect(await linksFor(staff, target)).toMatchObject([
     {
       _id: link._id,
       isCurrent: false,
       supersessionReason: "Recorded in error",
     },
   ]);
+  // The record no longer references the party, so nothing brings it back.
+  const legacy = await staff.query(api.partyLinks.listLegacyLinks, {
+    organizationId,
+    kind: "accession",
+    paginationOpts: { numItems: 25, cursor: null },
+  });
+  expect(legacy.items).toEqual([]);
   expect(
     await partyErrorOf(
       staff.mutation(api.partyLinks.supersede, {
@@ -615,31 +855,13 @@ test("ending a link keeps it in the record history and cannot be repeated", asyn
   ).toMatchObject({ code: "PARTY_LINK_ALREADY_SUPERSEDED" });
 });
 
-async function insertObject(
+async function insertApprovedDisposal(
   t: ConvexTest,
   organizationId: Id<"organizations">,
   userId: Id<"users">,
 ) {
-  return await t.run(async (ctx) =>
-    ctx.db.insert("collections", {
-      organizationId,
-      accessionNumber: `OBJ-${Math.random().toString(36).slice(2, 7)}`,
-      title: "Disposed vase",
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-    }),
-  );
-}
-
-test("the recipient chosen when an exit is recorded is linked and the exit keeps the recipient as written", async () => {
-  const t = createConvexTest();
-  const { organizationId, userId, staff } = await createMuseum(t);
-  const recipientId = await insertParty(t, organizationId, userId, {
-    businessName: "Regional Heritage Trust",
-  });
   const collectionId = await insertObject(t, organizationId, userId);
-  const deaccessionId = await t.run(async (ctx) =>
+  return await t.run(async (ctx) =>
     ctx.db.insert("deaccessions", {
       organizationId,
       collectionId,
@@ -652,6 +874,15 @@ test("the recipient chosen when an exit is recorded is linked and the exit keeps
       approvedAt: Date.UTC(2026, 4, 1),
     }),
   );
+}
+
+test("the recipient chosen when an exit is recorded is linked and the exit keeps the recipient as written", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const recipientId = await insertParty(t, organizationId, userId, {
+    businessName: "Regional Heritage Trust",
+  });
+  const deaccessionId = await insertApprovedDisposal(t, organizationId, userId);
 
   await staff.mutation(api.deaccessions.recordExit, {
     deaccessionId,
@@ -670,16 +901,69 @@ test("the recipient chosen when an exit is recorded is linked and the exit keeps
     await staff.query(api.partyLinks.listForTarget, {
       target: { type: "deaccession", id: deaccessionId },
     }),
-  ).toMatchObject([
+  ).toMatchObject({
+    policy: "firstLinkOnly",
+    links: [
+      {
+        role: "recipient",
+        accountId: recipientId,
+        nameSnapshot: "Regional Heritage Trust",
+        assertedName: "Regional Heritage Trust, collections desk",
+        effectiveFrom: Date.UTC(2026, 4, 10),
+        isCurrent: true,
+      },
+    ],
+  });
+});
+
+test("correcting an exit keeps the recipient link in step with the corrected record", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const recipientId = await insertParty(t, organizationId, userId, {
+    businessName: "Harbour Museum",
+  });
+  const deaccessionId = await insertApprovedDisposal(t, organizationId, userId);
+  const target = { type: "deaccession" as const, id: deaccessionId };
+  await staff.mutation(api.deaccessions.recordExit, {
+    deaccessionId,
+    exitDate: Date.UTC(2026, 0, 1),
+    recipient: "Harbour Museum",
+    recipientAccountId: recipientId,
+  });
+
+  // A corrected date with the same recipient re-records the link's dates.
+  await staff.mutation(api.deaccessions.recordExit, {
+    deaccessionId,
+    exitDate: Date.UTC(2026, 1, 1),
+    recipient: "Harbour Museum",
+    correctionReason: "Collection date was in February",
+  });
+  expect(await linksFor(staff, target)).toMatchObject([
     {
-      role: "recipient",
       accountId: recipientId,
-      nameSnapshot: "Regional Heritage Trust",
-      assertedName: "Regional Heritage Trust, collections desk",
-      effectiveFrom: Date.UTC(2026, 4, 10),
+      effectiveFrom: Date.UTC(2026, 1, 1),
       isCurrent: true,
     },
+    {
+      accountId: recipientId,
+      effectiveFrom: Date.UTC(2026, 0, 1),
+      isCurrent: false,
+      supersessionReason: "Collection date was in February",
+    },
   ]);
+
+  // A different recipient written without a party ends the typed link.
+  await staff.mutation(api.deaccessions.recordExit, {
+    deaccessionId,
+    exitDate: Date.UTC(2026, 1, 1),
+    recipient: "City Archive",
+    correctionReason: "Object went to the archive instead",
+  });
+  const links = await linksFor(staff, target);
+  expect(links.filter((link) => link.isCurrent)).toEqual([]);
+  expect(links[0]).toMatchObject({
+    supersessionReason: "Object went to the archive instead",
+  });
 });
 
 test("an appraiser party is linked to an appraisal through its target type", async () => {
@@ -708,13 +992,10 @@ test("an appraiser party is linked to an appraisal through its target type", asy
     target: { type: "appraisal", id: appraisalId },
     accountId: appraiserId,
     role: "appraiser",
-    assertedName: "J. Valuer",
   });
 
   expect(
-    await staff.query(api.partyLinks.listForTarget, {
-      target: { type: "appraisal", id: appraisalId },
-    }),
+    await linksFor(staff, { type: "appraisal", id: appraisalId }),
   ).toMatchObject([
     {
       role: "appraiser",

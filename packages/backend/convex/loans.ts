@@ -44,7 +44,7 @@ import {
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import { requireLinkableParty } from "./utils/parties";
-import { recordPartyLink } from "./utils/partyLinks";
+import { loanPrimaryRole, recordPartyLink } from "./utils/partyLinks";
 import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
@@ -169,7 +169,7 @@ export const create = mutation({
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
     if (party) {
-      const role = args.type === "incoming" ? "lender" : "borrower";
+      const role = loanPrimaryRole(args.type);
       await recordPartyLink(ctx, {
         organizationId: args.organizationId,
         target: { type: "loan", id: loanId },

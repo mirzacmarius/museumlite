@@ -187,11 +187,11 @@ test("the legacy review lists name-only and unlinked records and drops each once
     },
   ]);
 
+  // The record's own wording is kept as the named assertion.
   await staff.mutation(api.partyLinks.link, {
     target: { type: "accession", id: seeded.nameOnlyAccessionId },
     accountId: seeded.partyId,
     role: "donor",
-    assertedName: "Mrs. Edith Holm",
   });
 
   const after = await staff.query(api.partyLinks.listLegacyLinks, {
@@ -203,9 +203,11 @@ test("the legacy review lists name-only and unlinked records and drops each once
     seeded.idOnlyAccessionId,
   ]);
   expect(
-    await staff.query(api.partyLinks.listForTarget, {
-      target: { type: "accession", id: seeded.nameOnlyAccessionId },
-    }),
+    (
+      await staff.query(api.partyLinks.listForTarget, {
+        target: { type: "accession", id: seeded.nameOnlyAccessionId },
+      })
+    ).links,
   ).toMatchObject([
     {
       nameSnapshot: "Holm Family Collection",
@@ -293,9 +295,11 @@ test("the owner-approved backfill links existing account references once and lea
   expect(loanRun).toMatchObject({ created: 1, isDone: true });
 
   expect(
-    await staff.query(api.partyLinks.listForTarget, {
-      target: { type: "accession", id: seeded.idOnlyAccessionId },
-    }),
+    (
+      await staff.query(api.partyLinks.listForTarget, {
+        target: { type: "accession", id: seeded.idOnlyAccessionId },
+      })
+    ).links,
   ).toMatchObject([
     {
       role: "donor",
@@ -307,9 +311,11 @@ test("the owner-approved backfill links existing account references once and lea
     },
   ]);
   expect(
-    await staff.query(api.partyLinks.listForTarget, {
-      target: { type: "loan", id: seeded.idOnlyLoanId },
-    }),
+    (
+      await staff.query(api.partyLinks.listForTarget, {
+        target: { type: "loan", id: seeded.idOnlyLoanId },
+      })
+    ).links,
   ).toMatchObject([{ role: "lender", origin: "backfill" }]);
 
   const rerun = await t.mutation(
@@ -325,5 +331,38 @@ test("the owner-approved backfill links existing account references once and lea
   });
   expect(remaining.items.map((item) => item.target.id)).toEqual([
     seeded.nameOnlyAccessionId,
+  ]);
+});
+
+test("a returned loan that references an archived party can still confirm that reference", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff } = await createMuseum(t);
+  const seeded = await seedLegacyRecords(t, organizationId, userId);
+  await t.run(async (ctx) => {
+    await ctx.db.patch(seeded.partyId, { status: "archived" });
+  });
+  const target = { type: "loan" as const, id: seeded.idOnlyLoanId };
+
+  const [item] = (
+    await staff.query(api.partyLinks.listLegacyLinks, {
+      organizationId,
+      kind: "loan",
+      paginationOpts: page,
+    })
+  ).items.filter((entry) => entry.target.id === seeded.idOnlyLoanId);
+  expect(item?.existingParty).toMatchObject({
+    _id: seeded.partyId,
+    archived: true,
+  });
+
+  await staff.mutation(api.partyLinks.link, {
+    target,
+    accountId: seeded.partyId,
+    role: "lender",
+  });
+  expect(
+    (await staff.query(api.partyLinks.listForTarget, { target })).links,
+  ).toMatchObject([
+    { accountId: seeded.partyId, partyArchived: true, isCurrent: true },
   ]);
 });

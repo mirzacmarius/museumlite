@@ -5241,6 +5241,8 @@ export default {
       partyArchived:
         "Den parten er arkivert. Gjenopprett den eller velg en annen.",
       roleNotAllowed: "Den rollen gjelder ikke for denne posten.",
+      recordLocked:
+        "Denne posten er lukket, så partene kan bare bekreftes, ikke endres. Bruk postens egen korrigeringsflyt.",
       targetNotFound:
         "Denne posten er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
       nameRequired: "Skriv inn et navn på parten.",

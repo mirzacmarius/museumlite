@@ -272,7 +272,6 @@ function LegacyLinkRow({
         target: item.target,
         accountId,
         role: item.suggestedRole,
-        assertedName: item.assertedName,
       });
       toast.success(t("links.linked"));
     } catch (error) {
@@ -307,7 +306,7 @@ function LegacyLinkRow({
             <Button
               type="button"
               size="sm"
-              disabled={isSaving || item.existingParty.archived}
+              disabled={isSaving}
               onClick={() => {
                 if (item.existingParty) void linkParty(item.existingParty._id);
               }}

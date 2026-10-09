@@ -5316,6 +5316,8 @@ export default {
         "Esa parte no está disponible en esta organización. Elija otra.",
       partyArchived: "Esa parte está archivada. Restáurela o elija otra.",
       roleNotAllowed: "Esa función no se aplica a este registro.",
+      recordLocked:
+        "Este registro está cerrado: sus partes solo pueden confirmarse, no cambiarse. Use el flujo de corrección del propio registro.",
       targetNotFound:
         "Este registro ya no está disponible. Actualice e inténtelo de nuevo.",
       nameRequired: "Introduzca un nombre para la parte.",

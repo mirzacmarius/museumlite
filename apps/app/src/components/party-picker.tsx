@@ -69,7 +69,7 @@ type PickerAction =
   | { type: "setOpen"; value: boolean }
   | { type: "setSearch"; value: string }
   | { type: "setDialogOpen"; value: boolean }
-  | { type: "setFormData"; value: NewAccountForm }
+  | { type: "updateFormData"; update: SetStateAction<NewAccountForm> }
   | { type: "setSubmitting"; value: boolean }
   | { type: "openCreate"; name: string }
   | { type: "closeCreate" };
@@ -90,8 +90,14 @@ function reducer(state: PickerState, action: PickerAction): PickerState {
       return { ...state, search: action.value };
     case "setDialogOpen":
       return { ...state, dialogOpen: action.value };
-    case "setFormData":
-      return { ...state, formData: action.value };
+    case "updateFormData":
+      return {
+        ...state,
+        formData:
+          typeof action.update === "function"
+            ? action.update(state.formData)
+            : action.update,
+      };
     case "setSubmitting":
       return { ...state, isSubmitting: action.value };
     case "openCreate":
@@ -145,6 +151,7 @@ export function PartyPicker({
   const search = useDeferredValue(state.search.trim());
   const draftName = useDeferredValue(state.formData.businessName.trim());
   const draftEmail = useDeferredValue(state.formData.email.trim());
+  const draftPhone = useDeferredValue(state.formData.phone.trim());
 
   const results = useQuery(
     api.parties.search,
@@ -156,11 +163,12 @@ export function PartyPicker({
   );
   const similar = useQuery(
     api.parties.findSimilar,
-    state.dialogOpen && draftName
+    state.dialogOpen && draftName.length >= 2
       ? {
           organizationId,
           name: draftName,
           email: draftEmail || undefined,
+          phone: draftPhone || undefined,
         }
       : "skip",
   );
@@ -168,11 +176,8 @@ export function PartyPicker({
 
   const setFormData = useCallback(
     (update: SetStateAction<NewAccountForm>) =>
-      dispatch({
-        type: "setFormData",
-        value: typeof update === "function" ? update(state.formData) : update,
-      }),
-    [state.formData],
+      dispatch({ type: "updateFormData", update }),
+    [],
   );
 
   const choose = (party: PartySummary | undefined) => {

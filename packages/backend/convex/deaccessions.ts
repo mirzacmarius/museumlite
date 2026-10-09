@@ -33,7 +33,7 @@ import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import { requireLinkableParty } from "./utils/parties";
-import { recordPartyLink } from "./utils/partyLinks";
+import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
@@ -1890,21 +1890,6 @@ export const recordExit = mutation({
           args.recipientAccountId,
         )
       : null;
-    const linkRecipient = async () => {
-      if (!recipientParty) return;
-      await recordPartyLink(ctx, {
-        organizationId: deaccession.organizationId,
-        target: { type: "deaccession", id: deaccession._id },
-        account: recipientParty,
-        role: "recipient",
-        allowedRoles: ["recipient"],
-        effectiveFrom: args.exitDate,
-        assertedName: recipient,
-        supersessionReason: args.correctionReason,
-        userId,
-        origin: "staff",
-      });
-    };
     const now = Date.now();
     const exitRecord = {
       exitDate: args.exitDate,
@@ -1916,6 +1901,16 @@ export const recordExit = mutation({
     };
     const previous = deaccession.exitRecord;
     const correctionReason = args.correctionReason?.trim();
+    const linkRecipient = () =>
+      syncExitRecipientLink(ctx, {
+        deaccession,
+        previousExit: previous,
+        exitDate: args.exitDate,
+        recipient,
+        recipientParty,
+        correctionReason,
+        userId,
+      });
 
     if (previous) {
       if (

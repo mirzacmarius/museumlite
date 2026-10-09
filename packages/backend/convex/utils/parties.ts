@@ -80,7 +80,7 @@ export function toPartySummary(account: PartyAccount): PartySummary {
 export function normalizePartyName(name: string): string | undefined {
   const tokens = name
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/\p{M}/gu, "")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .split(" ")
@@ -108,30 +108,45 @@ export function partyIdentityKeys(
   if (name && name !== normalizePartyName(account.accountNumber)) {
     keys.push({ reason: "name", key: name });
   }
-  const email = normalizePartyEmail(account.email ?? account.contactEmail);
+  const email = normalizePartyEmail(
+    trimmed(account.email) ?? trimmed(account.contactEmail),
+  );
   if (email) keys.push({ reason: "email", key: email });
-  const phone = normalizePartyPhone(account.phone ?? account.contactPhone);
+  const phone = normalizePartyPhone(
+    trimmed(account.phone) ?? trimmed(account.contactPhone),
+  );
   if (phone) keys.push({ reason: "phone", key: phone });
   return keys;
+}
+
+/** Parties are available only with the accounts module and the permission. */
+export async function requirePartyAccess(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  permission: "accounts.read" | "accounts.write",
+) {
+  await requireModuleEnabled(ctx, organizationId, "accounts");
+  await requirePermission(ctx, organizationId, permission);
 }
 
 /**
  * Loads a Party that may be linked to a procedure in `organizationId`.
  * Requires the accounts module and `accounts.read`; a missing, foreign or
- * archived account is rejected with a stable code.
+ * archived account is rejected with a stable code. `allowArchived` is only
+ * for confirming an account the record itself already references.
  */
 export async function requireLinkableParty(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
   accountId: Id<"accounts">,
+  options: { allowArchived?: boolean } = {},
 ): Promise<Doc<"accounts">> {
-  await requireModuleEnabled(ctx, organizationId, "accounts");
-  await requirePermission(ctx, organizationId, "accounts.read");
+  await requirePartyAccess(ctx, organizationId, "accounts.read");
   const account = await ctx.db.get(accountId);
   if (!account || account.organizationId !== organizationId) {
     throw partyError("PARTY_NOT_FOUND", "Party not found in this organization");
   }
-  if (account.status === "archived") {
+  if (account.status === "archived" && !options.allowArchived) {
     throw partyError("PARTY_ARCHIVED", "Archived parties cannot be linked");
   }
   return account;

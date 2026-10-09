@@ -2,12 +2,11 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type QueryCtx, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { buildAccountCreateDocument } from "./utils/accountProfile";
-import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { generateNextAccountNumber } from "./utils/numberGenerator";
-import { toPartySummary } from "./utils/parties";
+import { requirePartyAccess, toPartySummary } from "./utils/parties";
 import {
   duplicateReasonsFor,
   findPartyCandidates,
@@ -21,7 +20,6 @@ import {
   type PartySummary,
   partySummaryValidator,
 } from "./utils/partyValidators";
-import { requirePermission } from "./utils/permissions";
 
 const DEFAULT_SEARCH_LIMIT = 20;
 const MAX_SEARCH_LIMIT = 50;
@@ -29,14 +27,6 @@ const RECENT_SCAN_LIMIT = 100;
 const SIMILAR_PARTY_LIMIT = 10;
 /** Pending reviews one party creation may add. */
 const CREATE_DUPLICATE_REVIEW_LIMIT = 10;
-
-async function requirePartyReader(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-) {
-  await requireModuleEnabled(ctx, organizationId, "accounts");
-  await requirePermission(ctx, organizationId, "accounts.read");
-}
 
 /**
  * Picker search over people and institutions. Uses the name search indexes
@@ -51,7 +41,7 @@ export const search = query({
   },
   returns: v.array(partySummaryValidator),
   handler: async (ctx, args) => {
-    await requirePartyReader(ctx, args.organizationId);
+    await requirePartyAccess(ctx, args.organizationId, "accounts.read");
     const limit = Math.min(
       MAX_SEARCH_LIMIT,
       Math.max(1, Math.floor(args.limit ?? DEFAULT_SEARCH_LIMIT)),
@@ -114,7 +104,7 @@ export const get = query({
   handler: async (ctx, args) => {
     const account = await ctx.db.get(args.accountId);
     if (!account) return null;
-    await requirePartyReader(ctx, account.organizationId);
+    await requirePartyAccess(ctx, account.organizationId, "accounts.read");
     return toPartySummary(account);
   },
 });
@@ -137,11 +127,12 @@ export const findSimilar = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePartyReader(ctx, args.organizationId);
-    const candidates = await findPartyCandidates(ctx, args.organizationId, {
-      name: args.name,
-      email: args.email,
-    });
+    await requirePartyAccess(ctx, args.organizationId, "accounts.read");
+    const candidates = await findPartyCandidates(
+      ctx,
+      args.organizationId,
+      args,
+    );
     const similar: Array<{
       party: PartySummary;
       reasons: DuplicateReason[];
@@ -191,8 +182,7 @@ export const create = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.write");
+    await requirePartyAccess(ctx, args.organizationId, "accounts.write");
     const name = args.name.trim();
     if (!name) {
       throw partyError("PARTY_NAME_REQUIRED", "A party name is required");
@@ -231,6 +221,7 @@ export const create = mutation({
     const candidates = await findPartyCandidates(ctx, args.organizationId, {
       name,
       email: args.email,
+      phone: args.phone,
     });
     const pairs = candidates.flatMap((candidate) => {
       if (candidate._id === accountId) return [];
