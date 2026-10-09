@@ -3392,7 +3392,7 @@ export default {
     title: "Conservation",
     description: "Track conservation treatments and condition assessments",
     newTreatment: "New Treatment",
-    searchPlaceholder: "Search treatments by title...",
+    searchPlaceholder: "Search by title, description, or notes...",
     loading: "Loading...",
     loadingTreatments: "Loading treatments...",
     noOrganizationTitle: "No Organization Found",

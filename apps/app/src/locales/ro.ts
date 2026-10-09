@@ -3567,7 +3567,7 @@ export default {
       confirmDelete: "Ești sigur că vrei să ștergi acest tratament?",
     },
 
-    searchPlaceholder: "Caută tratamente după titlu...",
+    searchPlaceholder: "Caută după titlu, descriere sau note...",
     loading: "Se încarcă...",
     loadingTreatments: "Se încarcă tratamentele...",
     noOrganizationTitle: "Nu a fost găsită nicio organizație",

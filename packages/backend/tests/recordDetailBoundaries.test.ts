@@ -231,3 +231,31 @@ for (const recordCase of detailRecordCases) {
     );
   });
 }
+
+for (const recordCase of detailRecordCases.filter(
+  (candidate) => candidate.tier === "pro",
+)) {
+  test(`${recordCase.name} reads as an unavailable feature, not a crash, when the organization's plan lacks it`, async () => {
+    const t = createConvexTest();
+    const owner = await createOrgUserCollectionWithPermissions(
+      t,
+      [recordCase.readPermission],
+      { subscriptionTier: "free" },
+    );
+    const outsider = await createOrgUserWithPermissions(
+      t,
+      [recordCase.readPermission],
+      { subscriptionTier: "pro" },
+    );
+    const recordId = await recordCase.insert(t, owner);
+
+    expect(
+      await errorCodeOf(
+        recordCase.read(authedForUser(t, owner.userId), recordId),
+      ),
+    ).toBe("CAPABILITY_UNAVAILABLE");
+    expect(
+      await recordCase.read(authedForUser(t, outsider.userId), recordId),
+    ).toBeNull();
+  });
+}

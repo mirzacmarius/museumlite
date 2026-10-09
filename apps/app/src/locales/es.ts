@@ -4152,7 +4152,7 @@ export default {
     description:
       "Seguimiento de tratamientos de conservación y evaluaciones de condición",
     newTreatment: "Nuevo Tratamiento",
-    searchPlaceholder: "Buscar tratamientos por título...",
+    searchPlaceholder: "Buscar por título, descripción o notas...",
     loading: "Cargando...",
     loadingTreatments: "Cargando tratamientos...",
     noOrganizationTitle: "No se Encontró Organización",

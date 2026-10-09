@@ -1,7 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { type FeatureId, requireFeatureAccess } from "./featureGates";
+import { type FeatureId, hasFeatureAccess } from "./featureGates";
 import { getCurrentUserOrganization, hasPermission } from "./permissions";
 
 /**
@@ -11,9 +11,16 @@ import { getCurrentUserOrganization, hasPermission } from "./permissions";
  */
 export const RECORD_FORBIDDEN = "RECORD_FORBIDDEN";
 
-// Type alias (not an interface) so the payload satisfies Convex's Value type.
+// Type aliases (not interfaces) so the payloads satisfy Convex's Value type.
 export type RecordForbiddenData = {
   code: typeof RECORD_FORBIDDEN;
+  message: string;
+};
+
+/** The capability-error payload clients already read for plan-gated features. */
+export type RecordFeatureUnavailableData = {
+  code: "CAPABILITY_UNAVAILABLE";
+  reason: "tier_required";
   message: string;
 };
 
@@ -22,8 +29,8 @@ export type RecordForbiddenData = {
  *
  * Returns `false` when the caller is signed out or not a member, so another
  * organization's identifier reads exactly like a missing one. A member whose
- * role lacks `permission` gets a RECORD_FORBIDDEN error, and a feature the
- * organization's plan does not include keeps its own unavailable error.
+ * role lacks `permission` gets a RECORD_FORBIDDEN error, and a member of an
+ * organization whose plan lacks `feature` gets a CAPABILITY_UNAVAILABLE error.
  */
 export async function canReadRecord(
   ctx: QueryCtx,
@@ -33,8 +40,16 @@ export async function canReadRecord(
 ): Promise<boolean> {
   const membership = await getCurrentUserOrganization(ctx, organizationId);
   if (!membership) return false;
-  if (options.feature) {
-    await requireFeatureAccess(ctx, organizationId, options.feature);
+  if (
+    options.feature &&
+    !(await hasFeatureAccess(ctx, organizationId, options.feature))
+  ) {
+    const unavailable: RecordFeatureUnavailableData = {
+      code: "CAPABILITY_UNAVAILABLE",
+      reason: "tier_required",
+      message: `Feature ${options.feature} is not included in this plan`,
+    };
+    throw new ConvexError(unavailable);
   }
   if (await hasPermission(ctx, organizationId, permission)) return true;
   const data: RecordForbiddenData = {

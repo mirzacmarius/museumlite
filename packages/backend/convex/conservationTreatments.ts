@@ -1,5 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -87,15 +90,9 @@ async function requireConservationAccess(
   await requireFeatureAccess(ctx, organizationId, "conservation");
 }
 
-const TREATMENT_TYPES = [
-  "routine",
-  "stabilization",
-  "restoration",
-  "cleaning",
-  "repair",
-  "assessment",
-  "other",
-] as const;
+const TREATMENT_TYPES = treatmentTypeValidator.members.map(
+  (member) => member.value,
+);
 
 const treatmentListItemValidator = v.object({
   _id: v.id("conservationTreatments"),
@@ -129,25 +126,29 @@ async function toTreatmentListItems(
   return treatments.map((treatment) => {
     const performer = performers.get(treatment.performedBy);
     return {
-      _id: treatment._id,
-      _creationTime: treatment._creationTime,
-      treatmentType: treatment.treatmentType,
-      title: treatment.title,
-      description: treatment.description,
-      performedAt: treatment.performedAt,
-      performedByName:
-        treatment.performedByName || performer?.name || performer?.email,
-      status: treatment.status,
-      collectionId: treatment.collectionId,
-      collectionTitle: collections.get(treatment.collectionId)?.title,
+      notes: treatment.notes,
+      item: {
+        _id: treatment._id,
+        _creationTime: treatment._creationTime,
+        treatmentType: treatment.treatmentType,
+        title: treatment.title,
+        description: treatment.description,
+        performedAt: treatment.performedAt,
+        performedByName:
+          treatment.performedByName || performer?.name || performer?.email,
+        status: treatment.status,
+        collectionId: treatment.collectionId,
+        collectionTitle: collections.get(treatment.collectionId)?.title,
+      },
     };
   });
 }
 
 /**
  * One page of an organization's treatments, newest first, optionally limited
- * to a treatment type. A search matches treatment titles and orders by
- * relevance.
+ * to a treatment type. A search keeps the rows of the page whose title,
+ * description, notes, object or performer contain it, so a page can hold
+ * fewer rows than requested while more remain.
  */
 export const listPage = query({
   args: {
@@ -156,52 +157,47 @@ export const listPage = query({
     search: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(treatmentListItemValidator),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(treatmentListItemValidator),
   handler: async (ctx, args) => {
     await Promise.all([
       requireConservationAccess(ctx, args.organizationId),
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
-    const search = args.search?.trim();
     const treatmentType = args.treatmentType;
+    const result = await (
+      treatmentType
+        ? ctx.db
+            .query("conservationTreatments")
+            .withIndex("by_organization_and_treatmentType", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("treatmentType", treatmentType),
+            )
+        : ctx.db
+            .query("conservationTreatments")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", args.organizationId),
+            )
+    )
+      .order("desc")
+      .paginate(args.paginationOpts);
 
-    const result = search
-      ? await ctx.db
-          .query("conservationTreatments")
-          .withSearchIndex("search_title", (q) => {
-            const scoped = q
-              .search("title", search)
-              .eq("organizationId", args.organizationId);
-            return treatmentType
-              ? scoped.eq("treatmentType", treatmentType)
-              : scoped;
-          })
-          .paginate(args.paginationOpts)
-      : await (treatmentType
-          ? ctx.db
-              .query("conservationTreatments")
-              .withIndex("by_organization_and_treatmentType", (q) =>
-                q
-                  .eq("organizationId", args.organizationId)
-                  .eq("treatmentType", treatmentType),
-              )
-          : ctx.db
-              .query("conservationTreatments")
-              .withIndex("by_organization", (q) =>
-                q.eq("organizationId", args.organizationId),
-              )
-        )
-          .order("desc")
-          .paginate(args.paginationOpts);
-
+    const search = args.search?.trim().toLowerCase();
+    const rows = await toTreatmentListItems(ctx, result.page);
     return {
-      page: await toTreatmentListItems(ctx, result.page),
-      isDone: result.isDone,
-      continueCursor: result.continueCursor,
+      ...result,
+      page: rows.flatMap(({ item, notes }) =>
+        !search ||
+        [
+          item.title,
+          item.description,
+          notes,
+          item.collectionTitle,
+          item.performedByName,
+        ].some((value) => value?.toLowerCase().includes(search))
+          ? [item]
+          : [],
+      ),
     };
   },
 });

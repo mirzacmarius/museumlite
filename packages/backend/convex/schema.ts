@@ -2162,11 +2162,7 @@ export default defineSchema({
     .index("by_organization_and_treatmentType", [
       "organizationId",
       "treatmentType",
-    ])
-    .searchIndex("search_title", {
-      searchField: "title",
-      filterFields: ["organizationId", "treatmentType"],
-    }),
+    ]),
 
   // Assessment schedules for periodic condition checks
   assessmentSchedules: defineTable({

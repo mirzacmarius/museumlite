@@ -4101,7 +4101,7 @@ export default {
     description:
       "Suivre les traitements de conservation et les évaluations de l'état",
     newTreatment: "Nouveau Traitement",
-    searchPlaceholder: "Rechercher des traitements par titre...",
+    searchPlaceholder: "Rechercher par titre, description ou notes...",
     loading: "Chargement...",
     loadingTreatments: "Chargement des traitements...",
     noOrganizationTitle: "Aucune Organisation Trouvée",

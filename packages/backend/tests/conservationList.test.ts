@@ -133,6 +133,48 @@ test("search matches treatment titles within the selected type", async () => {
   expect(repairsOnly).toEqual(["Varnish consolidation 0"]);
 });
 
+test("search also matches the object and the performer, across pages that hold no match", async () => {
+  const t = createConvexTest();
+  const setup = await setupConservation(t);
+  await t.run(async (ctx) => {
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId: setup.organizationId,
+      accessionNumber: "OBJ-FJORD",
+      title: "Fjordheim tapestry",
+      status: "active",
+      catalogedBy: setup.userId,
+      catalogedAt: Date.UTC(2025, 0, 1),
+    });
+    await ctx.db.insert("conservationTreatments", {
+      organizationId: setup.organizationId,
+      collectionId,
+      treatmentType: "repair",
+      title: "Joint repair",
+      description: "Recorded treatment",
+      performedBy: setup.userId,
+      performedByName: "Ingrid Solberg",
+      performedAt: Date.UTC(2025, 0, 1),
+    });
+  });
+  await insertTreatments(t, setup, [
+    { treatmentType: "cleaning", count: 30, title: "Surface clean" },
+  ]);
+  const user = authedForUser(t, setup.userId);
+
+  expect(
+    await listAll(user, {
+      organizationId: setup.organizationId,
+      search: "fjordheim",
+    }),
+  ).toEqual(["Joint repair"]);
+  expect(
+    await listAll(user, {
+      organizationId: setup.organizationId,
+      search: "ingrid",
+    }),
+  ).toEqual(["Joint repair"]);
+});
+
 test("treatment lists stay within the caller's organization and plan", async () => {
   const t = createConvexTest();
   const owner = await setupConservation(t);

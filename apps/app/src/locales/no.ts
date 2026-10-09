@@ -4095,7 +4095,7 @@ export default {
     title: "Konservering",
     description: "Spor konserveringsbehandlinger og tilstandsvurderinger",
     newTreatment: "Ny Behandling",
-    searchPlaceholder: "Søk i behandlinger etter tittel...",
+    searchPlaceholder: "Søk etter tittel, beskrivelse eller notater...",
     loading: "Laster...",
     loadingTreatments: "Laster behandlinger...",
     noOrganizationTitle: "Ingen Organisasjon Funnet",
