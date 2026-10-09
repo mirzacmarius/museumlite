@@ -25,6 +25,7 @@ type AccessionKanbanProps = {
   searchQuery: string;
   columnCounts?: BoardCounts["columns"];
   withdrawnCount?: number;
+  returnPath: string;
 };
 
 export function AccessionKanban({
@@ -32,6 +33,7 @@ export function AccessionKanban({
   searchQuery,
   columnCounts,
   withdrawnCount,
+  returnPath,
 }: AccessionKanbanProps) {
   const t = useScopedI18n("accessionReview.board");
   const [statusFilter, setStatusFilter] = useQueryState(
@@ -63,6 +65,7 @@ export function AccessionKanban({
               column={{ kind: "withdrawn" }}
               stepName={t("withdrawn")}
               searchQuery={searchQuery}
+              returnPath={returnPath}
               total={withdrawnCount}
             />
           </Suspense>
@@ -108,6 +111,7 @@ export function AccessionKanban({
               stepName={step.name}
               roleName={step.roleName}
               searchQuery={searchQuery}
+              returnPath={returnPath}
               total={
                 columnCounts?.find(
                   (column) => column.stepNumber === step.stepNumber,

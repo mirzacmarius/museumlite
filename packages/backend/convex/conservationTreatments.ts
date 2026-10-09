@@ -1,15 +1,18 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
   readWorkflowHistoryPage,
   workflowHistoryPageValidator,
 } from "./auditLog";
+import { batchLookup } from "./utils/batchLookup";
 import { appendCaseHistory } from "./utils/caseHistory";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
+import { countIndexedQuery } from "./utils/indexedCounts";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   canApproveAtStep,
@@ -18,6 +21,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
@@ -83,66 +87,167 @@ async function requireConservationAccess(
   await requireFeatureAccess(ctx, organizationId, "conservation");
 }
 
-export const listByOrganization = query({
+const TREATMENT_TYPES = [
+  "routine",
+  "stabilization",
+  "restoration",
+  "cleaning",
+  "repair",
+  "assessment",
+  "other",
+] as const;
+
+const treatmentListItemValidator = v.object({
+  _id: v.id("conservationTreatments"),
+  _creationTime: v.number(),
+  treatmentType: treatmentTypeValidator,
+  title: v.string(),
+  description: v.string(),
+  performedAt: v.number(),
+  performedByName: v.optional(v.string()),
+  status: v.optional(treatmentStatusValidator),
+  collectionId: v.id("collections"),
+  collectionTitle: v.optional(v.string()),
+});
+
+async function toTreatmentListItems(
+  ctx: QueryCtx,
+  treatments: Doc<"conservationTreatments">[],
+) {
+  const [collections, performers] = await Promise.all([
+    batchLookup(
+      ctx,
+      treatments.map((treatment) => treatment.collectionId),
+      "collections",
+    ),
+    batchLookup(
+      ctx,
+      treatments.map((treatment) => treatment.performedBy),
+      "users",
+    ),
+  ] as const);
+  return treatments.map((treatment) => {
+    const performer = performers.get(treatment.performedBy);
+    return {
+      _id: treatment._id,
+      _creationTime: treatment._creationTime,
+      treatmentType: treatment.treatmentType,
+      title: treatment.title,
+      description: treatment.description,
+      performedAt: treatment.performedAt,
+      performedByName:
+        treatment.performedByName || performer?.name || performer?.email,
+      status: treatment.status,
+      collectionId: treatment.collectionId,
+      collectionTitle: collections.get(treatment.collectionId)?.title,
+    };
+  });
+}
+
+/**
+ * One page of an organization's treatments, newest first, optionally limited
+ * to a treatment type. A search matches treatment titles and orders by
+ * relevance.
+ */
+export const listPage = query({
   args: {
     organizationId: v.id("organizations"),
+    treatmentType: v.optional(treatmentTypeValidator),
+    search: v.optional(v.string()),
+    paginationOpts: paginationOptsValidator,
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("conservationTreatments"),
-      _creationTime: v.number(),
-      treatmentType: treatmentTypeValidator,
-      title: v.string(),
-      description: v.string(),
-      performedAt: v.number(),
-      performedByName: v.optional(v.string()),
-      notes: v.optional(v.string()),
-      collectionId: v.id("collections"),
-      collectionTitle: v.optional(v.string()),
-    }),
-  ),
+  returns: v.object({
+    page: v.array(treatmentListItemValidator),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
   handler: async (ctx, args) => {
     await Promise.all([
       requireConservationAccess(ctx, args.organizationId),
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
-    const treatments = await ctx.db
-      .query("conservationTreatments")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .order("desc")
-      .collect();
+    const search = args.search?.trim();
+    const treatmentType = args.treatmentType;
 
-    const results = await Promise.all(
-      treatments.map(async (treatment) => {
-        const [collection, user] = await Promise.all([
-          ctx.db.get(treatment.collectionId),
-          ctx.db.get(treatment.performedBy),
-        ] as const);
-        return {
-          _id: treatment._id,
-          _creationTime: treatment._creationTime,
-          treatmentType: treatment.treatmentType,
-          title: treatment.title,
-          description: treatment.description,
-          performedAt: treatment.performedAt,
-          performedByName:
-            treatment.performedByName || user?.name || user?.email,
-          notes: treatment.notes,
-          collectionId: treatment.collectionId,
-          collectionTitle: collection?.title,
-        };
-      }),
+    const result = search
+      ? await ctx.db
+          .query("conservationTreatments")
+          .withSearchIndex("search_title", (q) => {
+            const scoped = q
+              .search("title", search)
+              .eq("organizationId", args.organizationId);
+            return treatmentType
+              ? scoped.eq("treatmentType", treatmentType)
+              : scoped;
+          })
+          .paginate(args.paginationOpts)
+      : await (treatmentType
+          ? ctx.db
+              .query("conservationTreatments")
+              .withIndex("by_organization_and_treatmentType", (q) =>
+                q
+                  .eq("organizationId", args.organizationId)
+                  .eq("treatmentType", treatmentType),
+              )
+          : ctx.db
+              .query("conservationTreatments")
+              .withIndex("by_organization", (q) =>
+                q.eq("organizationId", args.organizationId),
+              )
+        )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+    return {
+      page: await toTreatmentListItems(ctx, result.page),
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+    };
+  },
+});
+
+/** Exact treatment totals, overall and per type, for the list filters. */
+export const getListCounts = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    total: v.number(),
+    byType: v.array(
+      v.object({ treatmentType: treatmentTypeValidator, count: v.number() }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
+    const counts = await Promise.all(
+      TREATMENT_TYPES.map(async (treatmentType) => ({
+        treatmentType,
+        count: await countIndexedQuery(
+          ctx.db
+            .query("conservationTreatments")
+            .withIndex("by_organization_and_treatmentType", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("treatmentType", treatmentType),
+            ),
+        ),
+      })),
     );
-
-    return results;
+    const byType = counts.filter((entry) => entry.count > 0);
+    return {
+      total: byType.reduce((total, entry) => total + entry.count, 0),
+      byType,
+    };
   },
 });
 
 export const get = query({
   args: {
-    id: v.id("conservationTreatments"),
+    // A string, so malformed links and other tables' IDs read as missing.
+    id: v.string(),
   },
   returns: v.union(
     v.object({
@@ -163,15 +268,16 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const treatment = await ctx.db.get(args.id);
-    if (!treatment) {
+    const treatmentId = ctx.db.normalizeId("conservationTreatments", args.id);
+    const treatment = treatmentId ? await ctx.db.get(treatmentId) : null;
+    if (
+      !treatment ||
+      !(await canReadRecord(ctx, treatment.organizationId, "collections.read", {
+        feature: "conservation",
+      }))
+    ) {
       return null;
     }
-
-    await Promise.all([
-      requireConservationAccess(ctx, treatment.organizationId),
-      requirePermission(ctx, treatment.organizationId, "collections.read"),
-    ]);
 
     const [collection, user] = await Promise.all([
       ctx.db.get(treatment.collectionId),

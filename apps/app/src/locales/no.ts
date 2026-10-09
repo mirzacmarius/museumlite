@@ -4095,7 +4095,7 @@ export default {
     title: "Konservering",
     description: "Spor konserveringsbehandlinger og tilstandsvurderinger",
     newTreatment: "Ny Behandling",
-    searchPlaceholder: "Søk etter tittel, beskrivelse eller notater...",
+    searchPlaceholder: "Søk i behandlinger etter tittel...",
     loading: "Laster...",
     loadingTreatments: "Laster behandlinger...",
     noOrganizationTitle: "Ingen Organisasjon Funnet",
@@ -5192,6 +5192,68 @@ export default {
     addObject: "Legg til objekt",
   },
 
+  recordRecovery: {
+    missing: {
+      title: "Fant ikke posten",
+      description:
+        "Lenken kan være ufullstendig, eller posten tilhører en organisasjon du ikke er medlem av.",
+    },
+    removed: {
+      title: "Denne posten er ikke lenger tilgjengelig",
+      description:
+        "Den ble fjernet, eller tilgangen din endret seg, mens du hadde den åpen.",
+    },
+    forbidden: {
+      title: "Du har ikke tilgang til denne posten",
+      description:
+        "Rollen din i denne organisasjonen gir ikke tillatelse til å se den. Be en administrator om tilgang hvis du trenger det.",
+    },
+    unavailable: {
+      title: "Denne funksjonen er ikke tilgjengelig",
+      description:
+        "Organisasjonens abonnement eller aktiverte moduler inkluderer den ikke. Åpne listen for å se alternativene dine.",
+    },
+    error: {
+      title: "Kunne ikke laste denne posten",
+      description:
+        "Noe gikk galt under lasting. Prøv igjen, eller gå tilbake til resultatene dine.",
+    },
+    backToResults: "Tilbake til resultatene",
+    tryAgain: "Prøv igjen",
+    errorId: "Feil-ID: {id}",
+    goToList: {
+      objects: "Gå til objekter",
+      loans: "Gå til lån",
+      accessions: "Gå til aksesjoner",
+      deaccessions: "Gå til deaksesjoner",
+      locations: "Gå til steder",
+      conservation: "Gå til konservering",
+    },
+    pageNotFound: {
+      title: "Fant ikke siden",
+      description: "Siden du åpnet finnes ikke eller er flyttet.",
+    },
+    goToDashboard: "Gå til oversikten",
+  },
+  listState: {
+    clearFilters: "Fjern filtre",
+    noMatch: {
+      title: "Ingenting samsvarer med disse filtrene",
+      description:
+        "Endre søket eller filtrene, eller fjern dem for å se hele listen.",
+    },
+    loadMore: "Last inn flere",
+    loading: "Laster…",
+    shownOfTotal: "Viser {shown} av {total}",
+    matchesShown: "Treff vist: {shown}",
+    sort: {
+      label: "Sorter",
+      newest: "Nyeste først",
+      oldest: "Eldste først",
+      identifier: "Identifikator (A–Å)",
+    },
+    allTypes: "Alle typer",
+  },
   objectPicker: {
     loading: "Laster…",
     loadMore: "Last inn flere",

@@ -5,14 +5,20 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { FileUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useDeferredValue, useState } from "react";
+import { Suspense, useCallback } from "react";
 import {
   ExportButtonWithFormat,
   type ExportFormat,
 } from "@/components/export-button-with-format";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import { useDebouncedSearch, useListState } from "@/hooks/use-list-state";
+import { useListReturnPath } from "@/hooks/use-return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { AccessionKanban } from "./accession-kanban";
+import {
+  ACCESSION_LIST_KEYS,
+  accessionListState,
+} from "./accession-list-state";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsStats } from "./accessions-stats";
 import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
@@ -26,9 +32,13 @@ export function AccessionsPageClient({
 }: AccessionsPageClientProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("accessions");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const list = useListState(accessionListState);
+  const updateList = list.update;
+  const [searchQuery, setSearchQuery] = useDebouncedSearch(
+    list.state.search,
+    useCallback((search: string) => updateList({ search }), [updateList]),
+  );
+  const returnPath = useListReturnPath(ACCESSION_LIST_KEYS);
   const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   const canReviewTransfers =
@@ -78,7 +88,8 @@ export function AccessionsPageClient({
           <div className="group relative">
             <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
             <input
-              type="text"
+              type="search"
+              aria-label={t("searchPlaceholder")}
               placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -139,9 +150,10 @@ export function AccessionsPageClient({
       <Suspense fallback={<AccessionsPageSkeleton />}>
         <AccessionKanban
           organizationId={organizationId}
-          searchQuery={deferredSearchQuery}
+          searchQuery={list.state.search}
           columnCounts={counts.columns}
           withdrawnCount={withdrawn}
+          returnPath={returnPath}
         />
       </Suspense>
     </div>

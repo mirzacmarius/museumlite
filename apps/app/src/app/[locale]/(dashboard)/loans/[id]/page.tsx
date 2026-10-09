@@ -1,6 +1,8 @@
 "use client";
 
 import { SidebarProvider } from "@v1/ui/sidebar";
+import { RecordRecoveryState } from "@/components/record-recovery-state";
+import { useRecordViewState } from "@/hooks/use-return-path";
 import { useScopedI18n } from "@/locales/client";
 import { LoanContextSidebar } from "./_components/loan-context-sidebar";
 import { LoanDetailHeader } from "./_components/loan-detail/loan-detail-header";
@@ -25,6 +27,7 @@ export default function LoanDetailPage() {
     copied,
     handleCopyId,
   } = useLoanDetailPage();
+  const viewState = useRecordViewState(loan);
 
   if (!currentOrganizationId) {
     return (
@@ -46,11 +49,10 @@ export default function LoanDetailPage() {
 
   if (loan === null) {
     return (
-      <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">
-          {tLoans("emptyState.noLoansFound")}
-        </p>
-      </div>
+      <RecordRecoveryState
+        kind={viewState === "removed" ? "removed" : "missing"}
+        list="loans"
+      />
     );
   }
 

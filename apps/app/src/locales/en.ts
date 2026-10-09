@@ -3392,7 +3392,7 @@ export default {
     title: "Conservation",
     description: "Track conservation treatments and condition assessments",
     newTreatment: "New Treatment",
-    searchPlaceholder: "Search by title, description, or notes...",
+    searchPlaceholder: "Search treatments by title...",
     loading: "Loading...",
     loadingTreatments: "Loading treatments...",
     noOrganizationTitle: "No Organization Found",
@@ -5032,6 +5032,68 @@ export default {
     },
   },
 
+  recordRecovery: {
+    missing: {
+      title: "Record not found",
+      description:
+        "The link may be incomplete, or the record belongs to an organization you are not a member of.",
+    },
+    removed: {
+      title: "This record is no longer available",
+      description:
+        "It was removed, or your access changed, while you had it open.",
+    },
+    forbidden: {
+      title: "You do not have access to this record",
+      description:
+        "Your role in this organization does not include permission to view it. Ask an administrator if you need access.",
+    },
+    unavailable: {
+      title: "This feature is not available",
+      description:
+        "Your organization's plan or enabled modules do not include it. Open the list to see your options.",
+    },
+    error: {
+      title: "This record could not be loaded",
+      description:
+        "Something went wrong while loading it. Try again, or return to your results.",
+    },
+    backToResults: "Back to results",
+    tryAgain: "Try again",
+    errorId: "Error ID: {id}",
+    goToList: {
+      objects: "Go to objects",
+      loans: "Go to loans",
+      accessions: "Go to accessions",
+      deaccessions: "Go to deaccessions",
+      locations: "Go to locations",
+      conservation: "Go to conservation",
+    },
+    pageNotFound: {
+      title: "Page not found",
+      description: "The page you opened does not exist or has moved.",
+    },
+    goToDashboard: "Go to dashboard",
+  },
+  listState: {
+    clearFilters: "Clear filters",
+    noMatch: {
+      title: "Nothing matches these filters",
+      description:
+        "Change the search or filters, or clear them to see the whole list.",
+    },
+    loadMore: "Load more",
+    loading: "Loading…",
+    shownOfTotal: "Showing {shown} of {total}",
+    matchesShown: "Matches shown: {shown}",
+    sort: {
+      label: "Sort",
+      newest: "Newest first",
+      oldest: "Oldest first",
+      identifier: "Identifier (A–Z)",
+    },
+    allTypes: "All types",
+  },
   objectPicker: {
     loading: "Loading…",
     loadMore: "Load more",

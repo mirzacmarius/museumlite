@@ -1,7 +1,6 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { ArrowLeft, Box, Calendar, Loader2, Pencil, User } from "lucide-react";
@@ -9,6 +8,11 @@ import Link from "next/link";
 import { use } from "react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
+import {
+  RecordRecoveryState,
+  useBackToResultsLink,
+} from "@/components/record-recovery-state";
+import { useRecordViewState } from "@/hooks/use-return-path";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 import { TreatmentEvidencePanel } from "./_components/treatment-evidence-panel";
@@ -32,9 +36,9 @@ export default function TreatmentDetailPage({
   const t = useScopedI18n("conservation");
   const { id } = use(params);
 
-  const treatment = useQuery(api.conservationTreatments.get, {
-    id: id as Id<"conservationTreatments">,
-  });
+  const treatment = useQuery(api.conservationTreatments.get, { id });
+  const viewState = useRecordViewState(treatment);
+  const back = useBackToResultsLink("conservation");
 
   if (treatment === undefined) {
     return (
@@ -46,12 +50,10 @@ export default function TreatmentDetailPage({
 
   if (treatment === null) {
     return (
-      <div className="flex size-full flex-col items-center justify-center gap-4 bg-background">
-        <p className="text-muted-foreground">{t("detail.notFound")}</p>
-        <Button asChild variant="outline">
-          <Link href="/conservation">{t("detail.backToList")}</Link>
-        </Button>
-      </div>
+      <RecordRecoveryState
+        kind={viewState === "removed" ? "removed" : "missing"}
+        list="conservation"
+      />
     );
   }
 
@@ -70,9 +72,9 @@ export default function TreatmentDetailPage({
               asChild
               className="-ml-3 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
-              <Link href="/conservation">
+              <Link href={back.href}>
                 <ArrowLeft className="mr-2 size-4" />
-                {t("detail.backToList")}
+                {back.fromResults ? back.label : t("detail.backToList")}
               </Link>
             </Button>
 

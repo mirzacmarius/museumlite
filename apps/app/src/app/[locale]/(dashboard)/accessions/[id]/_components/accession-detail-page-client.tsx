@@ -8,7 +8,9 @@ import { Archive, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { RecordRecoveryState } from "@/components/record-recovery-state";
 import { useAccessionReviewMessage } from "@/hooks/use-accession-review-message";
+import { useRecordViewState } from "@/hooks/use-return-path";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { AccessionCatalogIdentifier } from "./accession-catalog-identifier";
 import { AccessionDetailHeroBanner } from "./accession-detail-hero-banner";
@@ -39,6 +41,7 @@ export function AccessionDetailPageClient() {
     api.accessions.getWorkflowSteps,
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
+  const viewState = useRecordViewState(accession);
 
   if (!currentOrganizationId) {
     return (
@@ -60,11 +63,10 @@ export function AccessionDetailPageClient() {
 
   if (accession === null) {
     return (
-      <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">
-          {tRoot("accessions.accessionNotFound")}
-        </p>
-      </div>
+      <RecordRecoveryState
+        kind={viewState === "removed" ? "removed" : "missing"}
+        list="accessions"
+      />
     );
   }
 

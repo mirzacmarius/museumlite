@@ -3,41 +3,38 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { Suspense } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { useScopedI18n } from "@/locales/client";
 import { KanbanColumnSkeleton } from "../accessions/kanban-column-skeleton";
-import { DeaccessionKanbanColumn } from "./deaccession-kanban-column";
-
-export interface DeaccessionKanbanItem {
-  _id: Id<"deaccessions">;
-  deaccessionNumber: string;
-  collectionId: Id<"collections">;
-  collectionTitle: string;
-  accessionNumber?: string;
-  dateDeaccessioned: number;
-  reason: string;
-  method: "sale" | "donation" | "destruction" | "transfer";
-  targetCollectionStatus: "deaccessioned" | "archived" | "deleted";
-  status: "pending" | "approved" | "rejected";
-  workflowStep?: number;
-}
+import {
+  type DeaccessionBoardColumn,
+  DeaccessionKanbanColumn,
+} from "./deaccession-kanban-column";
 
 type DeaccessionKanbanProps = {
   organizationId: Id<"organizations">;
-  searchQuery: string;
-  deaccessions: { page: DeaccessionKanbanItem[] };
+  search: string;
+  status: "all" | "pending" | "approved" | "rejected";
+  counts?: FunctionReturnType<typeof api.deaccessions.getBoardCounts>;
+  returnPath: string;
 };
 
-type WorkflowStep = {
-  stepNumber: number;
+interface VisibleColumn {
+  key: string;
+  column: DeaccessionBoardColumn;
   name: string;
   roleName?: string;
-};
+  total?: number;
+}
 
 export function DeaccessionKanban({
   organizationId,
-  searchQuery,
-  deaccessions,
+  search,
+  status,
+  counts,
+  returnPath,
 }: DeaccessionKanbanProps) {
+  const t = useScopedI18n("deaccessions");
   const workflowSteps = useQuery(api.deaccessions.getWorkflowSteps, {
     organizationId,
   });
@@ -54,22 +51,54 @@ export function DeaccessionKanban({
     );
   }
 
+  const stepCounts = new Map(
+    counts?.columns.map((entry) => [entry.stepNumber, entry.count]),
+  );
+  const columns: VisibleColumn[] = [];
+  if (status === "rejected") {
+    columns.push({
+      key: "rejected",
+      column: { kind: "rejected" },
+      name: t("status.rejected"),
+      total: counts?.rejected,
+    });
+  }
+  for (const step of workflowSteps.steps) {
+    const isApprovedColumn = step.stepNumber === -1;
+    if (
+      isApprovedColumn
+        ? status !== "all" && status !== "approved"
+        : status !== "all" && status !== "pending"
+    ) {
+      continue;
+    }
+    columns.push({
+      key: `${step.stepNumber}-${step.name}`,
+      column: isApprovedColumn
+        ? { kind: "approved" }
+        : { kind: "step", step: step.stepNumber },
+      name: step.name,
+      roleName: "roleName" in step ? step.roleName : undefined,
+      total: isApprovedColumn
+        ? counts?.approved
+        : stepCounts.get(step.stepNumber),
+    });
+  }
+
   return (
     <div className="custom-scrollbar flex-1 overflow-x-auto">
       <div className="flex h-full min-w-max gap-6 pb-4">
-        {workflowSteps.steps.map((step: WorkflowStep) => (
-          <Suspense
-            key={`${step.stepNumber}-${step.name}`}
-            fallback={<KanbanColumnSkeleton />}
-          >
-            <DeaccessionKanbanColumn
-              deaccessions={deaccessions}
-              roleName={step.roleName}
-              searchQuery={searchQuery}
-              stepName={step.name}
-              stepNumber={step.stepNumber}
-            />
-          </Suspense>
+        {columns.map((entry) => (
+          <DeaccessionKanbanColumn
+            key={entry.key}
+            organizationId={organizationId}
+            column={entry.column}
+            roleName={entry.roleName}
+            search={search}
+            stepName={entry.name}
+            total={entry.total}
+            returnPath={returnPath}
+          />
         ))}
       </div>
     </div>

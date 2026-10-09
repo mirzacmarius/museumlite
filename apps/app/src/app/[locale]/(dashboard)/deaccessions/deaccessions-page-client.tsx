@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { usePaginatedQuery, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   Archive,
@@ -20,49 +20,46 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useDeferredValue, useState } from "react";
+import { useCallback, useState } from "react";
 import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
+import { useDebouncedSearch, useListState } from "@/hooks/use-list-state";
+import { useListReturnPath } from "@/hooks/use-return-path";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "../accessions/accessions-page-skeleton";
 import { DeaccessionKanban } from "./deaccession-kanban";
+import { deaccessionListState } from "./deaccession-list-state";
 import { DeaccessionsStats } from "./deaccessions-stats";
 
 type DeaccessionsPageClientProps = {
   organizationId: Id<"organizations">;
 };
 
-type DeaccessionsList = FunctionReturnType<typeof api.deaccessions.list>;
-type DeaccessionListItem = DeaccessionsList["page"][number];
 type DeaccessionsExportData = FunctionReturnType<
   typeof api.deaccessions.listForExport
 >;
 type DeaccessionsExportItem = DeaccessionsExportData["items"][number];
 
+const STATUS_FILTERS = ["all", "pending", "approved", "rejected"] as const;
+
 export function DeaccessionsPageClient({
   organizationId,
 }: DeaccessionsPageClientProps) {
   const t = useScopedI18n("deaccessions");
-  const [searchQuery, setSearchQuery] = useState("");
+  const tList = useScopedI18n("listState");
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [statusFilter] = useQueryState(
-    "status",
-    parseAsStringLiteral(["pending", "approved", "rejected"] as const),
+  const list = useListState(deaccessionListState);
+  const updateList = list.update;
+  const [searchInput, setSearchInput] = useDebouncedSearch(
+    list.state.search,
+    useCallback((search: string) => updateList({ search }), [updateList]),
   );
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.deaccessions.list,
-    {
-      organizationId,
-      status: statusFilter ?? undefined,
-    },
-    { initialNumItems: 100 },
-  );
-  const deaccessions = { page: results };
+  const returnPath = useListReturnPath(deaccessionListState.keys);
+  const counts = useQuery(api.deaccessions.getBoardCounts, { organizationId });
+  const statusFilter = list.state.filters.status;
 
-  if (status === "LoadingFirstPage") {
+  if (counts === undefined) {
     return (
       <AccessionsPageSkeleton
         actionsCount={3}
@@ -72,38 +69,57 @@ export function DeaccessionsPageClient({
     );
   }
 
-  const pending = deaccessions.page.filter(
-    (item: DeaccessionListItem) => item.status === "pending",
-  ).length;
-  const deaccessioned = deaccessions.page.filter(
-    (item: DeaccessionListItem) => item.status === "approved",
-  ).length;
-
   return (
     <>
       <div className="flex h-full flex-col p-6">
-        <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
-          <div>
-            <DeaccessionsStats
-              deaccessioned={deaccessioned}
-              pending={pending}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("loadedResults")}
-            </p>
-          </div>
+        <div className="mb-6 flex min-h-[52px] flex-wrap items-center justify-between gap-6">
+          <DeaccessionsStats
+            deaccessioned={counts.approved}
+            pending={counts.pending}
+          />
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <fieldset className="flex rounded-lg bg-muted p-1">
+              <legend className="sr-only">{t("table.status")}</legend>
+              {STATUS_FILTERS.map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  aria-pressed={statusFilter === status}
+                  onClick={() => list.update({ filters: { status } })}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                    statusFilter === status
+                      ? "bg-card shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t(`filters.${status}`)}
+                </button>
+              ))}
+            </fieldset>
+
             <div className="group relative">
               <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
               <input
-                type="text"
+                type="search"
+                aria-label={t("searchPlaceholder")}
                 placeholder={t("searchPlaceholder")}
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
                 className="w-64 rounded-md border border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
               />
             </div>
+
+            {list.isFiltered ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2.5 text-xs"
+                onClick={list.clear}
+              >
+                {tList("clearFilters")}
+              </Button>
+            ) : null}
 
             <PermissionGate
               loadingFallback={
@@ -151,15 +167,12 @@ export function DeaccessionsPageClient({
         </div>
 
         <DeaccessionKanban
-          deaccessions={deaccessions}
           organizationId={organizationId}
-          searchQuery={deferredSearchQuery}
+          search={list.state.search}
+          status={statusFilter}
+          counts={counts}
+          returnPath={returnPath}
         />
-        {status === "CanLoadMore" && (
-          <Button variant="outline" onClick={() => loadMore(100)}>
-            {t("loadMore")}
-          </Button>
-        )}
       </div>
 
       <DeaccessionsReportDialog

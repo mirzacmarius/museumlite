@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
+import { useBackToResultsLink } from "@/components/record-recovery-state";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import type { ObjectDetailData } from "../types";
 
@@ -65,6 +66,7 @@ export function ObjectDetailHeader({
   editObjectLabel,
   shareTitle,
 }: ObjectDetailHeaderProps) {
+  const back = useBackToResultsLink("objects");
   const handleCopyLink = async () => {
     const didCopy = await writeTextToClipboard(window.location.href);
     if (!didCopy) {
@@ -79,7 +81,7 @@ export function ObjectDetailHeader({
     <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
       <div className="flex items-center gap-2 text-xs">
         <Button variant="ghost" size="icon" className="size-7" asChild>
-          <Link href="/objects">
+          <Link href={back.href} aria-label={back.label} title={back.label}>
             <ArrowLeft className="size-4 text-muted-foreground" />
           </Link>
         </Button>
