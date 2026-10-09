@@ -728,7 +728,7 @@ const approvalValidator = v.object({
   approverName: v.optional(v.string()),
 });
 
-async function resolveCase(
+export async function resolveCase(
   ctx: QueryCtx,
   args: {
     organizationId: Id<"organizations">;

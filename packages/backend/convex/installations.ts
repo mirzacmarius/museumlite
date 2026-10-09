@@ -6,8 +6,10 @@ import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { env } from "./env";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireFeatureAccess } from "./utils/featureGates";
+import { memberPermissionNames } from "./utils/memberPermissions";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
+import { workError } from "./utils/workErrors";
 
 const taskTypeValidator = v.union(
   v.literal("lighting"),
@@ -39,6 +41,50 @@ async function requireInstallationAccess(
   organizationId: Id<"organizations">,
 ) {
   await requireFeatureAccess(ctx, organizationId, "installations");
+}
+
+/** Internal assignees must be members who can read the installation board. */
+async function requireInstallationAssignee(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  assigneeId: Id<"users">,
+) {
+  const permissions = await memberPermissionNames(
+    ctx,
+    organizationId,
+    assigneeId,
+  );
+  if (!permissions?.has("collections.read"))
+    throw workError(
+      "ASSIGNEE_NOT_ELIGIBLE",
+      "Assignee must be a member of this organization",
+    );
+}
+
+async function requireExhibitionDependencies(
+  ctx: QueryCtx,
+  task: {
+    organizationId: Id<"organizations">;
+    exhibitionId: Id<"exhibitions">;
+    taskId?: Id<"installationTasks">;
+  },
+  dependencyIds: Id<"installationTasks">[],
+) {
+  const dependencies = await Promise.all(
+    dependencyIds.map((id) => ctx.db.get(id)),
+  );
+  for (const dependency of dependencies) {
+    if (
+      !dependency ||
+      dependency._id === task.taskId ||
+      dependency.organizationId !== task.organizationId ||
+      dependency.exhibitionId !== task.exhibitionId
+    )
+      throw workError(
+        "DEPENDENCY_INVALID",
+        "Dependencies must be tasks for the same exhibition",
+      );
+  }
 }
 
 // ============================================
@@ -73,6 +119,20 @@ export const createTask = mutation({
     if (exhibition.organizationId !== args.organizationId) {
       throw new Error("Exhibition does not belong to this organization");
     }
+    if (args.assigneeId)
+      await requireInstallationAssignee(
+        ctx,
+        args.organizationId,
+        args.assigneeId,
+      );
+    await requireExhibitionDependencies(
+      ctx,
+      {
+        organizationId: args.organizationId,
+        exhibitionId: args.exhibitionId,
+      },
+      args.dependsOnTaskIds ?? [],
+    );
 
     const taskId = await ctx.db.insert("installationTasks", {
       organizationId: args.organizationId,
@@ -144,6 +204,22 @@ export const updateTask = mutation({
       requireInstallationAccess(ctx, task.organizationId),
       requirePermission(ctx, task.organizationId, "collections.update"),
     ]);
+    if (args.assigneeId)
+      await requireInstallationAssignee(
+        ctx,
+        task.organizationId,
+        args.assigneeId,
+      );
+    if (args.dependsOnTaskIds)
+      await requireExhibitionDependencies(
+        ctx,
+        {
+          organizationId: task.organizationId,
+          exhibitionId: task.exhibitionId,
+          taskId: task._id,
+        },
+        args.dependsOnTaskIds,
+      );
 
     const { taskId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -559,6 +635,14 @@ export const assignTask = mutation({
     await Promise.all([
       requireInstallationAccess(ctx, task.organizationId),
       requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
+    if (args.assigneeId)
+      await requireInstallationAssignee(
+        ctx,
+        task.organizationId,
+        args.assigneeId,
+      );
+    await Promise.all([
       ctx.db.patch(args.taskId, {
         assigneeId: args.assigneeId,
         assigneeName: args.assigneeName,
@@ -584,10 +668,10 @@ export const assignTask = mutation({
       const assignedByName =
         assigningUser?.name ?? assigningUser?.email ?? "A team member";
 
-      // Get organization for building deep link
-      const org = await ctx.db.get(task.organizationId);
-      const taskUrl = org
-        ? `${env.SITE_URL}/${org.slug}/exhibitions/${task.exhibitionId}/tasks/${args.taskId}`
+      // App routes are not organization-scoped; the exhibition page is the task's home.
+      const siteUrl = env.SITE_URL?.replace(/\/$/, "");
+      const taskUrl = siteUrl
+        ? `${siteUrl}/exhibitions/${task.exhibitionId}`
         : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {

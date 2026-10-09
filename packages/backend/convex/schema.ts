@@ -6,6 +6,11 @@ import {
   accessionStatusValidator,
 } from "./utils/accessionReview";
 import {
+  caseTaskCaseTypeValidator,
+  caseTaskEvidenceReferenceValidator,
+  caseTaskStatusValidator,
+} from "./utils/caseTaskValidators";
+import {
   archiveDetailFields,
   coinsStampsDetailFields,
   fineArtDetailFields,
@@ -4387,6 +4392,71 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
     sortOrder: v.number(),
   }).index("by_task", ["taskId"]),
+
+  // Case tasks - accountable work linked to one case (MUS-656). Completing a
+  // task never records custody, approval or condition on the case.
+  caseTasks: defineTable({
+    organizationId: v.id("organizations"),
+    caseType: caseTaskCaseTypeValidator,
+    caseId: v.string(),
+    title: v.string(),
+    description: v.optional(v.string()),
+    ownerId: v.id("users"),
+    reviewerId: v.optional(v.id("users")),
+    dueDate: v.optional(v.number()),
+    /** Due date, or MAX_SAFE_INTEGER when undated, so queues sort by due. */
+    queueDueAt: v.number(),
+    status: caseTaskStatusValidator,
+    open: v.boolean(),
+    dependsOnTaskIds: v.array(v.id("caseTasks")),
+    blockedReason: v.optional(v.string()),
+    reviewNote: v.optional(v.string()),
+    completionNote: v.optional(v.string()),
+    cancelReason: v.optional(v.string()),
+    startedAt: v.optional(v.number()),
+    submittedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    completedBy: v.optional(v.id("users")),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_caseType_and_caseId", [
+      "organizationId",
+      "caseType",
+      "caseId",
+    ])
+    .index("by_organization_and_ownerId_and_open_and_queueDueAt", [
+      "organizationId",
+      "ownerId",
+      "open",
+      "queueDueAt",
+    ])
+    .index("by_organization_and_reviewerId_and_status_and_queueDueAt", [
+      "organizationId",
+      "reviewerId",
+      "status",
+      "queueDueAt",
+    ]),
+
+  // Evidence links cite existing records for a case task; append-only.
+  caseTaskEvidence: defineTable({
+    organizationId: v.id("organizations"),
+    taskId: v.id("caseTasks"),
+    reference: caseTaskEvidenceReferenceValidator,
+    /** Label captured when linked, so the citation survives later edits. */
+    label: v.string(),
+    objectId: v.optional(v.id("collections")),
+    /** When the cited record was made (assessment, move, upload, event). */
+    recordedAt: v.optional(v.number()),
+    /** Case of a cited audit entry, for opening its case history. */
+    auditCaseId: v.optional(v.string()),
+    linkedBy: v.id("users"),
+    linkedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_taskId", ["taskId"]),
 
   organizationSubscriptions: defineTable({
     organizationId: v.id("organizations"),

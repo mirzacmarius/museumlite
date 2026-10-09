@@ -144,6 +144,8 @@ const organizationScopedTables = [
   "transitCounters",
   "installationTasks",
   "installationTaskTemplates",
+  "caseTasks",
+  "caseTaskEvidence",
   "contacts",
   "accountRelationships",
   "partyLinks",

@@ -1,6 +1,7 @@
 "use client";
 
 import { SidebarProvider } from "@v1/ui/sidebar";
+import { CaseTaskPanel } from "@/components/case-tasks/case-task-panel";
 import { RecordRecoveryState } from "@/components/record-recovery-state";
 import { useRecordViewState } from "@/hooks/use-return-path";
 import { useScopedI18n } from "@/locales/client";
@@ -82,6 +83,13 @@ export default function LoanDetailPage() {
               activeTab={activeTab}
               onTabChange={setActiveTab}
             />
+            <div className="mx-auto max-w-7xl px-8 pb-10">
+              <CaseTaskPanel
+                organizationId={loan.organizationId}
+                caseType="loan"
+                caseId={loan._id}
+              />
+            </div>
           </div>
         </main>
 

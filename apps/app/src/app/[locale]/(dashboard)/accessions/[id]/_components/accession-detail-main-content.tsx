@@ -4,6 +4,7 @@ import { Button } from "@v1/ui/button";
 import { CheckCircle, Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AuditCaseHistory } from "@/components/audit-case-history";
+import { CaseTaskPanel } from "@/components/case-tasks/case-task-panel";
 import { PermissionGate } from "@/components/permission-gate";
 import { TargetPartyLinks } from "@/components/target-party-links";
 import { useI18n } from "@/locales/client";
@@ -237,6 +238,12 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
               ) : null}
             </SectionCard>
           ) : null}
+
+          <CaseTaskPanel
+            organizationId={accession.organizationId}
+            caseType="accession"
+            caseId={accession._id}
+          />
 
           <AuditCaseHistory
             organizationId={accession.organizationId}

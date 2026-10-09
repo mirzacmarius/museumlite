@@ -18,6 +18,12 @@ export function notificationEntityHref(
       return `/deaccessions/${entityId}`;
     case "loan":
       return `/loans/${entityId}`;
+    case "exhibition":
+      return `/exhibitions/${entityId}`;
+    case "conservationTreatment":
+      return `/conservation/${entityId}`;
+    case "installationTask":
+      return "/installations";
     case "location":
       return `/locations/${entityId}`;
     case "move_request":

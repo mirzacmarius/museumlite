@@ -101,6 +101,25 @@ describe("getNotificationCopy", () => {
     );
   });
 
+  it.each([
+    [
+      "Task Ready for Review",
+      'Task "Check courier" is ready for your review',
+      "taskReadyForReview",
+    ],
+    [
+      "Task Returned",
+      'Task "Check courier" was returned for changes',
+      "taskReturned",
+    ],
+    ["Task Approved", 'Task "Check courier" was approved', "taskApproved"],
+  ])("translates case task review copy for %s", (title, message, key) => {
+    expect(getNotificationCopy({ title, message }, translate)).toEqual({
+      title: `untranslatedComponents.notificationCopy.titles.${key}:{}`,
+      message: `untranslatedComponents.notificationCopy.messages.${key}:{"title":"Check courier"}`,
+    });
+  });
+
   it("translates loan approval workflows and preserves loan numbers and direction", () => {
     expect(
       getNotificationCopy(
