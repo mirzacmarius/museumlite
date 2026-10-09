@@ -26,6 +26,7 @@ import {
   createFormDataFromDraftObject,
   getFormSignature,
 } from "../collection-form-shared/utils";
+import { resolveDraftPrimaryImageId } from "./draft-primary-image";
 import { objectRequestDraftReducer } from "./object-request-form-draft-reducer";
 import { useObjectRequestFormDraft } from "./use-object-request-form-draft";
 import { useObjectRequestFormLocalMedia } from "./use-object-request-form-local-media";
@@ -109,9 +110,50 @@ export function useObjectRequestForm({
     setError,
     t,
   });
+  const {
+    selectedFiles: localFiles,
+    uploadDraftMedia: uploadLocalMedia,
+    clearLocalMediaSelections: clearLocalMedia,
+  } = localMedia;
+
+  const [primaryImageChoice, setPrimaryImageChoice] = useState<string | null>(
+    null,
+  );
+  const savedPrimaryImageId = resolveDraftPrimaryImageId({
+    choice: null,
+    savedMedia: persistedDraftMedia,
+    newImageIds: [],
+  });
+  const primaryImageId = resolveDraftPrimaryImageId({
+    choice: primaryImageChoice,
+    savedMedia: persistedDraftMedia,
+    newImageIds: localFiles.map((file) => file.id),
+  });
+  const savedDraftMedia = useMemo(
+    () =>
+      persistedDraftMedia.map((item) => ({
+        ...item,
+        isPrimary:
+          item.mediaCategory === "image" && item.storageId === primaryImageId,
+      })),
+    [persistedDraftMedia, primaryImageId],
+  );
+  const selectedFiles = localFiles.map((file) => ({
+    ...file,
+    isPrimary: file.id === primaryImageId,
+  }));
+  const uploadDraftMedia = useCallback(
+    () => uploadLocalMedia(primaryImageId),
+    [primaryImageId, uploadLocalMedia],
+  );
+  const clearLocalMediaSelections = useCallback(() => {
+    clearLocalMedia();
+    setPrimaryImageChoice(null);
+  }, [clearLocalMedia]);
 
   const isFormDirty =
-    getFormSignature(formData) !== initialFormSignatureRef.current;
+    getFormSignature(formData) !== initialFormSignatureRef.current ||
+    (savedPrimaryImageId !== null && primaryImageId !== savedPrimaryImageId);
   const hasUnsavedChanges = isFormDirty || localMedia.hasLocalMediaSelections;
   const hasSavedFieldDraft = draftSavedAt !== null;
   const isDraftCurrent = hasSavedFieldDraft && !isFormDirty;
@@ -178,13 +220,13 @@ export function useObjectRequestForm({
     currentOrganizationId,
     activeDraftAccessionId,
     formData,
-    persistedDraftMedia,
+    persistedDraftMedia: savedDraftMedia,
     initialFormSignatureRef,
     dispatchDraft,
-    selectedFilesCount: localMedia.selectedFiles.length,
+    selectedFilesCount: selectedFiles.length,
     selectedDocumentsCount: localMedia.selectedDocuments.length,
-    uploadDraftMedia: localMedia.uploadDraftMedia,
-    clearLocalMediaSelections: localMedia.clearLocalMediaSelections,
+    uploadDraftMedia,
+    clearLocalMediaSelections,
     setError,
   });
 
@@ -192,10 +234,10 @@ export function useObjectRequestForm({
     currentOrganizationId,
     activeDraftAccessionId,
     formData,
-    persistedDraftMedia,
-    selectedFilesCount: localMedia.selectedFiles.length,
+    persistedDraftMedia: savedDraftMedia,
+    selectedFilesCount: selectedFiles.length,
     selectedDocumentsCount: localMedia.selectedDocuments.length,
-    uploadDraftMedia: localMedia.uploadDraftMedia,
+    uploadDraftMedia,
     setError,
     t,
     push: draftState.push,
@@ -231,7 +273,6 @@ export function useObjectRequestForm({
     error,
     isSubmitting: submitState.isSubmitting,
     isSavingDraft: draftState.isSavingDraft,
-    heroImage: localMedia.heroImage,
     pageTitle,
     pageBadge,
     mode,
@@ -239,15 +280,15 @@ export function useObjectRequestForm({
     handleNavigate: navigation.handleNavigate,
     handleSubmit: submitState.handleSubmit,
     handleSaveDraft: draftState.handleSaveDraft,
-    selectedFiles: localMedia.selectedFiles,
+    selectedFiles,
     selectedDocuments: localMedia.selectedDocuments,
-    persistedDraftMedia,
+    persistedDraftMedia: savedDraftMedia,
     fileInputRef: localMedia.fileInputRef,
     cameraInputRef: localMedia.cameraInputRef,
     documentInputRef: localMedia.documentInputRef,
     handleFileSelect: localMedia.handleFileSelect,
     handleDocumentSelect: localMedia.handleDocumentSelect,
-    handleSetPrimary: localMedia.handleSetPrimary,
+    handleSetPrimary: setPrimaryImageChoice,
     handleDeleteImage: localMedia.handleDeleteImage,
     handleDeleteDocument: localMedia.handleDeleteDocument,
     isLocationTrackingEnabled,

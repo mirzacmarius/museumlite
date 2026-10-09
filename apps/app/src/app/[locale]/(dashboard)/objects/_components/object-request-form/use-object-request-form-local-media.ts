@@ -29,7 +29,6 @@ export function useObjectRequestFormLocalMedia({
       id: string;
       file: File;
       previewUrl: string;
-      isPrimary: boolean;
     }>
   >([]);
   const [selectedDocuments, setSelectedDocuments] = useState<
@@ -40,16 +39,17 @@ export function useObjectRequestFormLocalMedia({
     }>
   >([]);
 
+  const previewUrlsRef = useRef(new Set<string>());
+
   useEffect(() => {
+    const previewUrls = previewUrlsRef.current;
     return () => {
-      for (const item of selectedFiles) {
-        URL.revokeObjectURL(item.previewUrl);
+      for (const previewUrl of previewUrls) {
+        URL.revokeObjectURL(previewUrl);
       }
     };
-  }, [selectedFiles]);
+  }, []);
 
-  const heroImage =
-    selectedFiles.find((file) => file.isPrimary) ?? selectedFiles[0];
   const hasLocalMediaSelections =
     selectedFiles.length > 0 || selectedDocuments.length > 0;
 
@@ -63,14 +63,11 @@ export function useObjectRequestFormLocalMedia({
         }
 
         const files = Array.from(filesList);
-        const isFirstBatch = selectedFiles.length === 0;
-
-        const newFiles = files.map((file, index) => ({
-          id: `${Date.now()}-${index}`,
-          file,
-          previewUrl: URL.createObjectURL(file),
-          isPrimary: isFirstBatch && index === 0,
-        }));
+        const newFiles = files.map((file, index) => {
+          const previewUrl = URL.createObjectURL(file);
+          previewUrlsRef.current.add(previewUrl);
+          return { id: `${Date.now()}-${index}`, file, previewUrl };
+        });
 
         setSelectedFiles((prev) => [...prev, ...newFiles]);
 
@@ -88,34 +85,18 @@ export function useObjectRequestFormLocalMedia({
         );
       }
     },
-    [selectedFiles.length, setError, t],
+    [setError, t],
   );
-
-  const handleSetPrimary = useCallback((fileId: string) => {
-    setSelectedFiles((prev) =>
-      prev.map((item) => ({
-        ...item,
-        isPrimary: item.id === fileId,
-      })),
-    );
-  }, []);
 
   const handleDeleteImage = useCallback((fileId: string) => {
     setSelectedFiles((prev) => {
       const fileToDelete = prev.find((item) => item.id === fileId);
       if (fileToDelete) {
         URL.revokeObjectURL(fileToDelete.previewUrl);
+        previewUrlsRef.current.delete(fileToDelete.previewUrl);
       }
 
-      const remaining = prev.filter((item) => item.id !== fileId);
-      if (remaining.length > 0 && !remaining.some((item) => item.isPrimary)) {
-        const first = remaining[0];
-        if (first) {
-          return [{ ...first, isPrimary: true }, ...remaining.slice(1)];
-        }
-      }
-
-      return remaining;
+      return prev.filter((item) => item.id !== fileId);
     });
   }, []);
 
@@ -155,99 +136,108 @@ export function useObjectRequestFormLocalMedia({
     setSelectedDocuments((prev) => prev.filter((item) => item.id !== docId));
   }, []);
 
-  const uploadDraftMedia = useCallback(async (): Promise<DraftMediaItem[]> => {
-    if (!currentOrganizationId) {
-      return [];
-    }
+  const uploadDraftMedia = useCallback(
+    async (primaryFileId: string | null): Promise<DraftMediaItem[]> => {
+      if (!currentOrganizationId) {
+        return [];
+      }
 
-    const [uploadedFiles, uploadedDocuments] = await Promise.all([
-      Promise.all(
-        selectedFiles.map(async (fileData) => {
-          const uploadUrlResult = await generateDraftUploadUrl({
-            organizationId: currentOrganizationId,
-            fileName: fileData.file.name,
-            fileSize: fileData.file.size,
-            mimeType: fileData.file.type,
-          });
+      const [uploadedFiles, uploadedDocuments] = await Promise.all([
+        Promise.all(
+          selectedFiles.map(async (fileData) => {
+            const uploadUrlResult = await generateDraftUploadUrl({
+              organizationId: currentOrganizationId,
+              fileName: fileData.file.name,
+              fileSize: fileData.file.size,
+              mimeType: fileData.file.type,
+            });
 
-          const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
-            method: "POST",
-            body: fileData.file,
-          });
+            const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+              method: "POST",
+              body: fileData.file,
+            });
 
-          if (!uploadResponse.ok) {
-            throw new Error(`Failed to upload ${fileData.file.name}`);
-          }
+            if (!uploadResponse.ok) {
+              throw new Error(`Failed to upload ${fileData.file.name}`);
+            }
 
-          const uploadResult = await uploadResponse.json();
-          const storageId = uploadResult.storageId as
-            | Id<"_storage">
-            | undefined;
+            const uploadResult = await uploadResponse.json();
+            const storageId = uploadResult.storageId as
+              | Id<"_storage">
+              | undefined;
 
-          if (!storageId) {
-            throw new Error(`No storage ID returned for ${fileData.file.name}`);
-          }
+            if (!storageId) {
+              throw new Error(
+                `No storage ID returned for ${fileData.file.name}`,
+              );
+            }
 
-          return {
-            storageId,
-            fileName: fileData.file.name,
-            fileSize: fileData.file.size,
-            mimeType: fileData.file.type,
-            mediaCategory: "image",
-            isPrimary: fileData.isPrimary,
-          } as const;
-        }),
-      ),
-      Promise.all(
-        selectedDocuments.map(async (documentData) => {
-          const uploadUrlResult = await generateDraftUploadUrl({
-            organizationId: currentOrganizationId,
-            fileName: documentData.file.name,
-            fileSize: documentData.file.size,
-            mimeType: documentData.file.type,
-          });
+            return {
+              storageId,
+              fileName: fileData.file.name,
+              fileSize: fileData.file.size,
+              mimeType: fileData.file.type,
+              mediaCategory: "image",
+              isPrimary: fileData.id === primaryFileId,
+            } as const;
+          }),
+        ),
+        Promise.all(
+          selectedDocuments.map(async (documentData) => {
+            const uploadUrlResult = await generateDraftUploadUrl({
+              organizationId: currentOrganizationId,
+              fileName: documentData.file.name,
+              fileSize: documentData.file.size,
+              mimeType: documentData.file.type,
+            });
 
-          const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
-            method: "POST",
-            body: documentData.file,
-          });
+            const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+              method: "POST",
+              body: documentData.file,
+            });
 
-          if (!uploadResponse.ok) {
-            throw new Error(`Failed to upload ${documentData.file.name}`);
-          }
+            if (!uploadResponse.ok) {
+              throw new Error(`Failed to upload ${documentData.file.name}`);
+            }
 
-          const uploadResult = await uploadResponse.json();
-          const storageId = uploadResult.storageId as
-            | Id<"_storage">
-            | undefined;
+            const uploadResult = await uploadResponse.json();
+            const storageId = uploadResult.storageId as
+              | Id<"_storage">
+              | undefined;
 
-          if (!storageId) {
-            throw new Error(
-              `No storage ID returned for ${documentData.file.name}`,
-            );
-          }
+            if (!storageId) {
+              throw new Error(
+                `No storage ID returned for ${documentData.file.name}`,
+              );
+            }
 
-          return {
-            storageId,
-            fileName: documentData.file.name,
-            fileSize: documentData.file.size,
-            mimeType: documentData.file.type,
-            mediaCategory: "document",
-            isPrimary: false,
-          } as const;
-        }),
-      ),
-    ]);
+            return {
+              storageId,
+              fileName: documentData.file.name,
+              fileSize: documentData.file.size,
+              mimeType: documentData.file.type,
+              mediaCategory: "document",
+              isPrimary: false,
+            } as const;
+          }),
+        ),
+      ]);
 
-    return [...uploadedFiles, ...uploadedDocuments];
-  }, [
-    currentOrganizationId,
-    generateDraftUploadUrl,
-    selectedDocuments,
-    selectedFiles,
-  ]);
+      return [...uploadedFiles, ...uploadedDocuments];
+    },
+    [
+      currentOrganizationId,
+      generateDraftUploadUrl,
+      selectedDocuments,
+      selectedFiles,
+    ],
+  );
 
   const clearLocalMediaSelections = useCallback(() => {
+    for (const previewUrl of previewUrlsRef.current) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    previewUrlsRef.current.clear();
     setSelectedFiles([]);
     setSelectedDocuments([]);
   }, []);
@@ -258,10 +248,8 @@ export function useObjectRequestFormLocalMedia({
     documentInputRef,
     selectedFiles,
     selectedDocuments,
-    heroImage,
     hasLocalMediaSelections,
     handleFileSelect,
-    handleSetPrimary,
     handleDeleteImage,
     handleDocumentSelect,
     handleDeleteDocument,

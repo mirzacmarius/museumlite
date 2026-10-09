@@ -3,6 +3,8 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import type { RefObject } from "react";
+import { useI18n } from "@/locales/client";
+import type { ObjectTabDefinition } from "../../[id]/_components/object-tab-config";
 import { CollectionEditAccessionTab } from "../collection-edit-form/tabs/accession-tab";
 import { CollectionEditDigitalTab } from "../collection-edit-form/tabs/digital-tab";
 import { CollectionEditGeneralTab } from "../collection-edit-form/tabs/general-tab";
@@ -25,7 +27,7 @@ import { ObjectRequestProvenanceTab } from "./tabs/provenance-tab";
 
 interface ObjectRequestTab {
   id: CollectionEditTabId;
-  label: string;
+  label: ObjectTabDefinition["label"];
 }
 
 interface ObjectRequestFormTabShellProps {
@@ -75,6 +77,7 @@ export function ObjectRequestFormTabShell({
   handleDeleteImage,
   handleDeleteDocument,
 }: ObjectRequestFormTabShellProps) {
+  const tRoot = useI18n();
   const tabProps = {
     formData,
     updateField,
@@ -100,7 +103,7 @@ export function ObjectRequestFormTabShell({
             size="sm"
             onClick={() => onTabSelect(tab.id)}
           >
-            {tab.label}
+            {tRoot(tab.label)}
           </Button>
         ))}
       </div>
