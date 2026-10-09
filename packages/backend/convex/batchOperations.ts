@@ -13,6 +13,7 @@ import {
   requireUsableLocation,
 } from "./utils/locationIntegrity";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { assertEntryAllowsStatus } from "./utils/objectEntryLifecycle";
 import { requirePermission } from "./utils/permissions";
 
 // ============================================
@@ -778,6 +779,7 @@ async function processBulkStatusChange(
   },
   userId: Id<"users">,
 ) {
+  await assertEntryAllowsStatus(ctx, collection._id, payload.newStatus);
   const now = Date.now();
   const updates: Partial<CollectionDoc> = {
     status: payload.newStatus,
@@ -960,6 +962,7 @@ export const quickBulkStatusChange = mutation({
               error: "Collection belongs to different organization",
             };
           }
+          await assertEntryAllowsStatus(ctx, collectionId, args.newStatus);
 
           const updates: Partial<CollectionDoc> = {
             status: args.newStatus,

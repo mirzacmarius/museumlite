@@ -9,6 +9,7 @@ import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds } from "./utils/batchLookup";
 import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import { getExhibitionsForObject } from "./utils/exhibitionParticipation";
+import { buildUpdatedAccessionState } from "./utils/identifierHistory";
 import {
   assertObservedSourceLocationMatches,
   buildTransferScopeSnapshot,
@@ -18,6 +19,7 @@ import {
   requireTargetTransferLocation,
 } from "./utils/institutionTransferEvidence";
 import { mutation } from "./utils/mutationBuilders";
+import { isUnaccessionedEntryObject } from "./utils/objectEntryLifecycle";
 import {
   getCurrentUserOrganization,
   hasPermission,
@@ -351,82 +353,6 @@ async function resolveGeneratedAccessionNumber(
   );
 }
 
-function dedupeStrings(values: string[] | undefined) {
-  if (!values || values.length === 0) {
-    return undefined;
-  }
-
-  return Array.from(
-    new Set(
-      values.flatMap((value) => {
-        const trimmedValue = value.trim();
-        return trimmedValue.length > 0 ? [trimmedValue] : [];
-      }),
-    ),
-  );
-}
-
-function buildUpdatedAccessionState(
-  collection: {
-    accessionNumber: string;
-    alternateAccessionNumbers?: string[];
-    accessionNumberHistory?: Array<{
-      number: string;
-      validFrom: number;
-      validTo?: number;
-    }>;
-  },
-  nextAccessionNumber: string,
-  now: number,
-) {
-  if (collection.accessionNumber === nextAccessionNumber) {
-    return {
-      accessionNumber: collection.accessionNumber,
-      alternateAccessionNumbers: dedupeStrings(
-        collection.alternateAccessionNumbers,
-      ),
-      accessionNumberHistory: collection.accessionNumberHistory,
-    };
-  }
-
-  const alternateAccessionNumbers = dedupeStrings([
-    ...(collection.alternateAccessionNumbers ?? []),
-    collection.accessionNumber,
-  ]);
-
-  const existingHistory = [...(collection.accessionNumberHistory ?? [])];
-  const history = existingHistory.map((entry) =>
-    entry.validTo === undefined && entry.number === collection.accessionNumber
-      ? { ...entry, validTo: now }
-      : entry,
-  );
-
-  const hasOpenCurrentEntry = history.some(
-    (entry) =>
-      entry.number === collection.accessionNumber &&
-      entry.validTo === undefined,
-  );
-
-  if (!hasOpenCurrentEntry) {
-    history.push({
-      number: collection.accessionNumber,
-      validFrom: now,
-      validTo: now,
-    });
-  }
-
-  history.push({
-    number: nextAccessionNumber,
-    validFrom: now,
-  });
-
-  return {
-    accessionNumber: nextAccessionNumber,
-    alternateAccessionNumbers,
-    accessionNumberHistory: history,
-  };
-}
-
 async function buildEligibilityBlockers(
   ctx: QueryCtx | MutationCtx,
   collection: {
@@ -508,6 +434,14 @@ async function buildEligibilityBlockers(
     blockers.push({
       code: "pending_organization_move",
       message: "This object already has a pending organization move request.",
+    });
+  }
+
+  if (await isUnaccessionedEntryObject(ctx, collection._id)) {
+    blockers.push({
+      code: "temporary_custody",
+      message:
+        "This object is held under a temporary entry and is not part of the collection.",
     });
   }
 

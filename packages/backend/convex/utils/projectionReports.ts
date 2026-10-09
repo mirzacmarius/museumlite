@@ -578,8 +578,11 @@ export async function buildCollectionHealth(
   const yearStart = new Date(new Date(now).getFullYear(), 0, 1).getTime();
   const thirtyDaysFromNow = now + 30 * DAY_MS;
 
+  // Main-table reads stay out of the concurrent metric component reads:
+  // convex-test resolves an awaited query against the innermost running
+  // component, so mixing them in one Promise.all fails nondeterministically.
+  const totals = await reader.totals();
   const [
-    totals,
     [completedTreatmentsThisYear = 0],
     [overdueAssessments = 0],
     [expiringPolicies = 0],
@@ -587,7 +590,6 @@ export async function buildCollectionHealth(
     [overdueLoans = 0, dueSoon = 0],
     [expiringLicenses = 0],
   ] = await Promise.all([
-    reader.totals(),
     reader.sums("treatments.completed", [atOrAfter(yearStart)]),
     reader.sums("assessments.due", [before(now)]),
     reader.sums("insurance.expiration", [before(thirtyDaysFromNow)]),

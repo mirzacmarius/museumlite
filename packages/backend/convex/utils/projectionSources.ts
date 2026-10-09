@@ -38,6 +38,7 @@ export const PROJECTION_PHASES = [
   "mediaVersions",
   "insuranceCoverages",
   "accessions",
+  "objectEntries",
   "collections",
   "locations",
   "exhibitions",
@@ -382,6 +383,17 @@ export async function computeSourceFacts(
       if (placement?.siteId) {
         add(`accessions.${accession.status}`, 1, siteScope(placement.siteId));
       }
+      break;
+    }
+    case "objectEntries": {
+      const entry = doc as Doc<"objectEntries">;
+      if (!(await placeObject(ctx, organizationId, entry.collectionId))) {
+        add("quality.missing_reference");
+        break;
+      }
+      // Held without title until accessioned, like property on loan in.
+      if (entry.status !== "accessioned")
+        add("incoming", 1, objectScope(entry.collectionId));
       break;
     }
     case "collections": {

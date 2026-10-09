@@ -32,6 +32,7 @@ import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
+import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
 import { requireLinkableParty } from "./utils/parties";
 import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
@@ -322,6 +323,7 @@ export async function createDeaccessionRecord(
   if (collection.organizationId !== args.organizationId) {
     throw new Error("Collection does not belong to organization");
   }
+  await assertAccessionedIfEntered(ctx, args.collectionId);
 
   await assertCollectionNotOnLoan(
     ctx,

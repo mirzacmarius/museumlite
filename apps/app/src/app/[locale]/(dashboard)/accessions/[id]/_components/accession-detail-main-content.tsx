@@ -42,6 +42,17 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
       ) : null}
 
       <div className="space-y-6">
+        {accession.entry ? (
+          <Link
+            href={`/accessions/entries/${accession.entry._id}`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-2 hover:underline"
+          >
+            <ExternalLink className="size-4" />
+            {tRoot("objectEntries.accessionLink", {
+              entryNumber: accession.entry.entryNumber,
+            })}
+          </Link>
+        ) : null}
         <IntakeReviewDecision
           accession={accession}
           isDraft={isDraft}
@@ -117,9 +128,13 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
           <SectionCard
             eyebrow={tRoot("untranslatedRecords.objects.attributes.collection")}
             title={tRoot("untranslatedRecords.accessions.detail.linkedObject")}
-            description={tRoot(
-              "untranslatedRecords.accessions.detail.linkedObjectDescription",
-            )}
+            description={
+              accession.entry
+                ? tRoot("objectEntries.accessionObject")
+                : tRoot(
+                    "untranslatedRecords.accessions.detail.linkedObjectDescription",
+                  )
+            }
           >
             <Button
               variant="outline"
@@ -128,9 +143,11 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
               asChild
             >
               <Link href={`/objects/${accession.collectionId}`}>
-                {tRoot(
-                  "untranslatedRecords.accessions.detail.openCreatedObject",
-                )}
+                {accession.entry
+                  ? tRoot("objectEntries.detail.openObject")
+                  : tRoot(
+                      "untranslatedRecords.accessions.detail.openCreatedObject",
+                    )}
                 <ExternalLink className="size-4" />
               </Link>
             </Button>

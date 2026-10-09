@@ -15,6 +15,7 @@ const TARGET_ROUTES: Partial<Record<PartyTargetType, string>> = {
   loan: "/loans",
   deaccession: "/deaccessions",
   collection: "/collections",
+  entry: "/accessions/entries",
 };
 
 /** Every procedure role this Party has held, with what was recorded then. */

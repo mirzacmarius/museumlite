@@ -5428,6 +5428,220 @@ export default {
     },
   },
 
+  objectEntries: {
+    title: "Entradas",
+    description:
+      "Bienes recibidos en custodia antes de cualquier decisión de adquisición. Recibir un bien nunca lo adquiere ni lo registra en el inventario.",
+    workbench: {
+      label: "Entradas",
+      description:
+        "Custodia temporal, decisiones de adquisición y devoluciones.",
+    },
+    receive: "Recibir bienes",
+    empty: "Todavía no se ha recibido ningún bien mediante una entrada.",
+    emptyFiltered: "Ninguna entrada tiene este estado.",
+    loadMore: "Cargar más",
+    allStatuses: "Todos los estados",
+    overdue: "Vencida",
+    noPermission: "No tienes permiso para ver las entradas.",
+    noReceivePermission: "No tienes permiso para recibir bienes.",
+    status: {
+      in_custody: "En custodia",
+      acquisition_review: "Adquisición en revisión",
+      accessioned: "Registrado",
+      exited: "Devuelto",
+    },
+    purposes: {
+      acquisition: "Para posible adquisición",
+      identification: "Identificación o consulta",
+      deposit: "Depósito en custodia",
+      research: "Investigación o estudio",
+      other: "Otro",
+    },
+    columns: {
+      entry: "Entrada",
+      object: "Objeto",
+      depositor: "Depositante",
+      received: "Recibido",
+      status: "Estado",
+      due: "Vencimiento",
+      responsible: "Responsable",
+    },
+    fields: {
+      entryNumber: "Número de entrada",
+      entryNumberHint:
+        "Déjalo vacío para numerarla automáticamente, por ejemplo TE-2026-0001.",
+      purpose: "Finalidad",
+      purposeNote: "Detalles de la finalidad",
+      depositor: "Depositante",
+      depositorParty: "Depositante desde las partes",
+      owner: "Propietario",
+      ownerParty: "Propietario desde las partes",
+      ownerSameAsDepositor: "El depositante es el propietario",
+      ownerHint:
+        "Déjalo vacío si la propiedad no está acreditada. Una adquisición necesita un propietario registrado.",
+      receivedAt: "Recibido el",
+      location: "Ubicación de recepción",
+      chooseLocation: "Elige una ubicación",
+      condition: "Estado de conservación al recibirlo",
+      conditionHint:
+        "Describe el estado en que se recibió, incluidos los daños.",
+      responsible: "Miembro del personal responsable",
+      chooseMember: "Elige un miembro del personal",
+      responsibilityTerms: "Condiciones de responsabilidad y seguro",
+      decisionDueAt: "Fecha límite de decisión",
+      returnDueAt: "Fecha límite de devolución",
+      notes: "Notas",
+      objectTitle: "Título del objeto",
+      objectName: "Nombre del objeto",
+      objectDescription: "Descripción",
+    },
+    sections: {
+      property: "Bien",
+      parties: "Depositante y propietario",
+      custody: "Custodia",
+      dates: "Fechas límite",
+    },
+    receiveForm: {
+      title: "Recibir bienes",
+      description:
+        "Registra la entrada de un bien en custodia: quién lo trajo, por qué, dónde se guarda y su estado. Queda fuera de la colección hasta que se apruebe una adquisición.",
+      submit: "Registrar recepción",
+      saving: "Guardando…",
+      success: "Entrada {entryNumber} registrada",
+    },
+    detail: {
+      back: "Entradas",
+      notFound: "No se encontró la entrada",
+      object: "Objeto",
+      openObject: "Abrir objeto",
+      receivedBy: "Recibido por {name}",
+      currentLocation: "Ubicación actual",
+      noLocation: "Sin ubicación registrada",
+      notRecorded: "No registrado",
+      ownerNotRecorded: "No acreditado",
+      ownerNeeded:
+        "No hay propietario registrado. Regístralo en Editar detalles antes de iniciar una adquisición.",
+      acquisition: "Adquisición",
+      noAcquisition: "No se ha iniciado ninguna adquisición.",
+      openAccession: "Abrir registro {number}",
+      acquisitionDraft:
+        "Borrador: adjunta las pruebas de titularidad y envíalo a aprobación, o retíralo.",
+      acquisitionPending:
+        "Pendiente de aprobación según la política de registro.",
+      acquisitionWithdrawn:
+        "Retirada. Devuelve el bien a su destinatario o inicia una nueva adquisición.",
+      accessionedOn: "Registrado el {date}",
+      exit: "Salida",
+      exitedTo: "Devuelto a {name}",
+      exitedOn: "Entregado el {date}",
+      reference: "Referencia",
+      recordedBy: "Registrado por {name}",
+    },
+    actions: {
+      beginAcquisition: "Iniciar adquisición",
+      withdrawAcquisition: "Retirar adquisición",
+      recordExit: "Registrar salida",
+      edit: "Editar detalles",
+      cancel: "Cancelar",
+      save: "Guardar",
+      saving: "Guardando…",
+    },
+    acquisition: {
+      title: "Iniciar adquisición",
+      description:
+        "Abre un registro en borrador para este objeto con {owner} como origen de la titularidad. El objeto solo se registra cuando la política de registro lo aprueba.",
+      method: "Método de adquisición",
+      accessionNumber: "Número de registro",
+      accessionNumberHint: "Déjalo vacío para usar la numeración configurada.",
+      cost: "Coste",
+      notes: "Notas",
+      submit: "Crear registro en borrador",
+      success: "Registro en borrador creado",
+      methods: {
+        purchase: "Compra",
+        gift: "Regalo",
+        transfer: "Transferencia",
+        donation: "Donación",
+        bequest: "Legado",
+        other: "Otro",
+      },
+    },
+    exitDialog: {
+      title: "Registrar salida",
+      description:
+        "Entrega el bien a su destinatario. El objeto sale de la custodia y se retira de las vistas habituales; no se da de baja nada.",
+      recipient: "Destinatario",
+      recipientParty: "Destinatario desde las partes",
+      exitedAt: "Entregado el",
+      reference: "Referencia del recibo o la firma",
+      notes: "Notas",
+      observedAt: "El personal confirmó que el objeto está en {location}",
+      submit: "Registrar salida",
+      success: "Salida registrada",
+    },
+    withdrawDialog: {
+      title: "Retirar adquisición",
+      description:
+        "El registro en borrador se retira con tu motivo y se conserva en su historial. El bien sigue en custodia con esta entrada.",
+      reason: "Motivo",
+      submit: "Retirar adquisición",
+      success: "Adquisición retirada",
+    },
+    editDialog: {
+      title: "Editar detalles de la entrada",
+      description:
+        "Los datos de la recepción se conservan tal como se registraron. Cambia el depositante o el propietario en Partes.",
+      success: "Entrada actualizada",
+    },
+    objectNotice: {
+      temporary: "Custodia temporal: no forma parte de la colección",
+      temporaryDetail:
+        "Se guarda con la entrada {entryNumber} ({purpose}), depositado por {depositor}.",
+      accessioned: "Recibido con la entrada {entryNumber}",
+      exited: "Devuelto con la entrada {entryNumber}",
+      openEntry: "Abrir entrada",
+    },
+    accessionLink: "Recibido con la entrada {entryNumber}",
+    accessionObject:
+      "El objeto se registró al recibir el bien. Pasa a la colección cuando se apruebe este registro.",
+    errors: {
+      entryNotFound: "Esta entrada ya no existe.",
+      depositorRequired: "Indica quién depositó el bien.",
+      titleRequired: "Pon un título al objeto.",
+      conditionRequired: "Describe el estado de conservación al recibirlo.",
+      textTooLong:
+        "Uno de los campos es demasiado largo. Acórtalo e inténtalo de nuevo.",
+      datesInvalid:
+        "Revisa las fechas: los vencimientos y las salidas no pueden ser anteriores a la recepción, y nada puede estar en el futuro.",
+      responsibleNotMember:
+        "El miembro del personal responsable debe pertenecer a esta organización.",
+      numberInUse: "Otra entrada u otro objeto ya usa este número. Elige otro.",
+      numberingExhausted:
+        "La numeración automática solo encontró números en uso. Introduce un número de entrada.",
+      notInCustody: "Esta entrada ya tiene una adquisición abierta.",
+      acquisitionOpen:
+        "Hay una adquisición abierta para esta entrada. Retírala antes de registrar una salida.",
+      entryClosed: "Esta entrada está cerrada y ya no puede cambiar.",
+      ownerRequired:
+        "Registra el propietario antes de iniciar una adquisición; la titularidad solo puede transmitirla su propietario.",
+      recipientRequired: "Indica quién recibió el bien.",
+      temporaryCustody:
+        "Este objeto se guarda con una entrada y no forma parte de la colección. Regístralo primero.",
+      entryExited:
+        "El bien ya ha salido de la custodia, así que esta adquisición no se puede restaurar.",
+      objectRecordedOnEntry:
+        "Este objeto se registró en la entrada. Edita la ficha del objeto.",
+      numberInvalid:
+        "Un número de entrada necesita entre 1 y 256 caracteres visibles.",
+      acquisitionInReview:
+        "Esta adquisición está en revisión; sus revisores deciden si se retira.",
+      reasonRequired: "Indica un motivo.",
+      exitRequired:
+        "Este objeto se guarda con una entrada. Registra su salida en la entrada en lugar de retirarlo.",
+      fallback: "No se pudo guardar la entrada. Inténtalo de nuevo.",
+    },
+  },
   objectPicker: {
     loading: "Cargando…",
     loadMore: "Cargar más",
@@ -5804,6 +6018,7 @@ export default {
       owner: "Propietario",
       appraiser: "Tasador",
       recipient: "Destinatario",
+      depositor: "Depositante",
     },
     holderTypes: {
       privatePerson: "Persona",
@@ -5820,6 +6035,7 @@ export default {
       deaccession: "Desaccesión",
       appraisal: "Tasación",
       collection: "Objeto",
+      entry: "Entrada",
     },
     picker: {
       placeholder: "Seleccionar o crear una persona o institución",
