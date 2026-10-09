@@ -428,6 +428,27 @@ function getMessageMatch(message: string): Match | null {
       (match) => ({ title: match[1] ?? "" }),
     ],
     [
+      /^Policy (.+) \((.+)\) covering (\d+) items valued at (.+) expires in (\d+) days\.$/,
+      "insurancePolicyExpiringValued",
+      (match) => ({
+        policyNumber: match[1] ?? "",
+        carrier: match[2] ?? "",
+        count: match[3] ?? "",
+        values: match[4] ?? "",
+        days: match[5] ?? "",
+      }),
+    ],
+    [
+      /^Policy (.+) \((.+)\) covering (\d+) items expires in (\d+) days\.$/,
+      "insurancePolicyExpiringUnvalued",
+      (match) => ({
+        policyNumber: match[1] ?? "",
+        carrier: match[2] ?? "",
+        count: match[3] ?? "",
+        days: match[4] ?? "",
+      }),
+    ],
+    [
       /^Policy (.+) \((.+)\) covering (\d+) items worth \$(.+) expires in (\d+) days\.$/,
       "insurancePolicyExpiring",
       (match) => ({

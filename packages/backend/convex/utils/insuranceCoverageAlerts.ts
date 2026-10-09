@@ -1,177 +1,228 @@
-import type { Id } from "../_generated/dataModel";
+import { type Infer, v } from "convex/values";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { countIndexedQuery } from "./indexedCounts";
-import { computeInsuranceStats } from "./insuranceStats";
+import { CurrencyTotalsBuilder, currencyTotalsValidator } from "./currency";
+import {
+  collectInForceCoverage,
+  coverageState,
+  effectivePolicyStatus,
+} from "./insuranceCoverage";
+import { computeOpenClaims, countInsurableObjects } from "./insuranceStats";
+import {
+  appraisalExpiresAt,
+  INSURANCE_APPRAISAL_MAX_AGE_MS,
+  selectCurrentValuations,
+} from "./valuation";
 
 type AlertsCtx = Pick<QueryCtx, "db">;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const EXPIRING_WINDOW_DAYS = 90;
+const EXPIRED_POLICY_ROWS = 20;
+const UNCOVERED_SAMPLE_SIZE = 25;
 
-export type CoverageAlertsResult = {
-  expiringPolicies: Array<{
-    _id: Id<"insurancePolicies">;
-    policyNumber: string;
-    carrier: string;
-    expirationDate: number;
-    daysUntilExpiry: number;
-    coverageCount: number;
-    totalCoveredValue: number;
-    severity: "critical" | "warning" | "info";
-  }>;
-  uncoveredStats: {
-    totalObjects: number;
-    coveredObjects: number;
-    uncoveredObjects: number;
-    coveragePercentage: number;
-  };
-  expiredPoliciesCount: number;
-  pendingClaimsCount: number;
-  staleAppraisalCount: number;
-  disputedClaimsCount: number;
-};
-
-async function countActiveCollections(
-  ctx: AlertsCtx,
-  organizationId: Id<"organizations">,
-) {
-  return countIndexedQuery(
-    ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
+export const coverageAlertsValidator = v.object({
+  inForceValue: currencyTotalsValidator,
+  expiringPolicies: v.array(
+    v.object({
+      _id: v.id("insurancePolicies"),
+      policyNumber: v.string(),
+      carrier: v.string(),
+      currency: v.optional(v.string()),
+      expirationDate: v.number(),
+      daysUntilExpiry: v.number(),
+      coverageCount: v.number(),
+      coveredValue: currencyTotalsValidator,
+      severity: v.union(
+        v.literal("critical"),
+        v.literal("warning"),
+        v.literal("info"),
       ),
-  );
-}
+    }),
+  ),
+  expiredPolicies: v.array(
+    v.object({
+      _id: v.id("insurancePolicies"),
+      policyNumber: v.string(),
+      carrier: v.string(),
+      expirationDate: v.number(),
+      coverageCount: v.number(),
+    }),
+  ),
+  expiredPoliciesCount: v.number(),
+  uncoveredStats: v.object({
+    totalObjects: v.number(),
+    coveredObjects: v.number(),
+    uncoveredObjects: v.number(),
+    coveragePercentage: v.number(),
+  }),
+  /** The first objects without cover in force, for the gaps view. */
+  uncoveredSample: v.array(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+    }),
+  ),
+  coveragesNeedingReview: v.number(),
+  pendingClaimsCount: v.number(),
+  staleAppraisalCount: v.number(),
+  disputedClaimsCount: v.number(),
+});
 
-async function countCoveredCollectionIds(
+export type CoverageAlertsResult = Infer<typeof coverageAlertsValidator>;
+
+async function policyCoverages(
   ctx: AlertsCtx,
-  organizationId: Id<"organizations">,
+  policy: Doc<"insurancePolicies">,
+  now: number,
 ) {
-  const coveredObjectIds = new Set<Id<"collections">>();
-  const activeCoverages = ctx.db
-    .query("insuranceCoverages")
-    .withIndex("by_organization_and_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "active"),
-    );
-  for await (const coverage of activeCoverages) {
-    if (coverage.collectionId) {
-      coveredObjectIds.add(coverage.collectionId);
-    }
-  }
-  return coveredObjectIds.size;
-}
-
-export async function computeCoverageAlerts(
-  ctx: AlertsCtx,
-  organizationId: Id<"organizations">,
-): Promise<CoverageAlertsResult> {
-  const now = Date.now();
-  const in90Days = now + 90 * MS_PER_DAY;
-  const threeYearsAgo = now - 3 * 365 * MS_PER_DAY;
-
-  const expiringPoliciesQuery = ctx.db
-    .query("insurancePolicies")
-    .withIndex("by_organization_and_expirationDate", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .gte("expirationDate", now)
-        .lte("expirationDate", in90Days),
-    );
-
-  const expiringPolicies: CoverageAlertsResult["expiringPolicies"] = [];
-  for await (const policy of expiringPoliciesQuery) {
-    if (policy.status !== "active") {
-      continue;
-    }
-
-    let coverageCount = 0;
-    let totalCoveredValue = 0;
+  let inForce = 0;
+  let recorded = 0;
+  const value = new CurrencyTotalsBuilder();
+  for (const status of ["active", "pending", "expired"] as const) {
     const coverages = ctx.db
       .query("insuranceCoverages")
       .withIndex("by_policy_and_status", (q) =>
-        q.eq("policyId", policy._id).eq("status", "active"),
+        q.eq("policyId", policy._id).eq("status", status),
       );
     for await (const coverage of coverages) {
-      coverageCount += 1;
-      totalCoveredValue += coverage.coveredValue;
-    }
-
-    const daysUntilExpiry = Math.ceil(
-      (policy.expirationDate - now) / MS_PER_DAY,
-    );
-    let severity: "critical" | "warning" | "info" = "info";
-    if (daysUntilExpiry <= 7) {
-      severity = "critical";
-    } else if (daysUntilExpiry <= 30) {
-      severity = "warning";
-    }
-
-    expiringPolicies.push({
-      _id: policy._id,
-      policyNumber: policy.policyNumber,
-      carrier: policy.carrier,
-      expirationDate: policy.expirationDate,
-      daysUntilExpiry,
-      coverageCount,
-      totalCoveredValue,
-      severity,
-    });
-  }
-
-  const [totalObjects, coveredObjects, expiredPoliciesCount, stats] =
-    await Promise.all([
-      countActiveCollections(ctx, organizationId),
-      countCoveredCollectionIds(ctx, organizationId),
-      countIndexedQuery(
-        ctx.db
-          .query("insurancePolicies")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", organizationId).eq("status", "expired"),
-          ),
-      ),
-      computeInsuranceStats(ctx, organizationId),
-    ] as const);
-
-  const uncoveredObjects = totalObjects - coveredObjects;
-  const coveragePercentage =
-    totalObjects > 0 ? Math.round((coveredObjects / totalObjects) * 100) : 0;
-
-  let disputedClaimsCount = 0;
-  const claims = ctx.db
-    .query("insuranceClaims")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    );
-  for await (const claim of claims) {
-    if (claim.isDisputed && claim.disputeStatus !== "resolved") {
-      disputedClaimsCount += 1;
+      recorded += 1;
+      if (coverageState(coverage, policy, now) !== "in_force") continue;
+      inForce += 1;
+      value.add(coverage.currency, coverage.coveredValue);
     }
   }
+  return { inForce, recorded, value: value.build() };
+}
 
-  let staleAppraisalCount = 0;
+/**
+ * Current insurance valuations past their three-year age or `validUntil`.
+ * Superseded and replaced appraisals are history, not stale valuations.
+ */
+async function countStaleInsuranceValuations(
+  ctx: AlertsCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+) {
+  const byObject = new Map<Id<"collections">, Doc<"appraisals">[]>();
   const appraisals = ctx.db
     .query("appraisals")
     .withIndex("by_organization", (q) =>
       q.eq("organizationId", organizationId),
     );
   for await (const appraisal of appraisals) {
-    if (appraisal.appraisalDate < threeYearsAgo) {
-      staleAppraisalCount += 1;
+    if (appraisal.appraisalType !== "insurance") continue;
+    const rows = byObject.get(appraisal.collectionId) ?? [];
+    rows.push(appraisal);
+    byObject.set(appraisal.collectionId, rows);
+  }
+  let stale = 0;
+  for (const rows of byObject.values()) {
+    for (const current of selectCurrentValuations(rows).values()) {
+      if (appraisalExpiresAt(current, INSURANCE_APPRAISAL_MAX_AGE_MS) < now) {
+        stale += 1;
+      }
+    }
+  }
+  return stale;
+}
+
+export async function computeCoverageAlerts(
+  ctx: AlertsCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+): Promise<CoverageAlertsResult> {
+  const expiringBefore = now + EXPIRING_WINDOW_DAYS * MS_PER_DAY;
+  const expiringPolicies: CoverageAlertsResult["expiringPolicies"] = [];
+  const expiredPolicies: CoverageAlertsResult["expiredPolicies"] = [];
+  let expiredPoliciesCount = 0;
+
+  const policies = ctx.db
+    .query("insurancePolicies")
+    .withIndex("by_organization_and_expirationDate", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .lte("expirationDate", expiringBefore),
+    )
+    .order("desc");
+  for await (const policy of policies) {
+    const status = effectivePolicyStatus(policy, now);
+    if (status === "expired") {
+      expiredPoliciesCount += 1;
+      if (expiredPolicies.length < EXPIRED_POLICY_ROWS) {
+        const coverages = await policyCoverages(ctx, policy, now);
+        expiredPolicies.push({
+          _id: policy._id,
+          policyNumber: policy.policyNumber,
+          carrier: policy.carrier,
+          expirationDate: policy.expirationDate,
+          coverageCount: coverages.recorded,
+        });
+      }
+      continue;
+    }
+    if (status !== "active") continue;
+    const coverages = await policyCoverages(ctx, policy, now);
+    const daysUntilExpiry = Math.ceil(
+      (policy.expirationDate - now) / MS_PER_DAY,
+    );
+    expiringPolicies.push({
+      _id: policy._id,
+      policyNumber: policy.policyNumber,
+      carrier: policy.carrier,
+      currency: policy.currency,
+      expirationDate: policy.expirationDate,
+      daysUntilExpiry,
+      coverageCount: coverages.inForce,
+      coveredValue: coverages.value,
+      severity:
+        daysUntilExpiry <= 7
+          ? "critical"
+          : daysUntilExpiry <= 30
+            ? "warning"
+            : "info",
+    });
+  }
+
+  const coverage = await collectInForceCoverage(ctx, organizationId, now);
+  const [objects, claims, staleAppraisalCount] = await Promise.all([
+    countInsurableObjects(ctx, organizationId, coverage, UNCOVERED_SAMPLE_SIZE),
+    computeOpenClaims(ctx, organizationId),
+    countStaleInsuranceValuations(ctx, organizationId, now),
+  ]);
+
+  let disputedClaimsCount = 0;
+  const claimRows = ctx.db
+    .query("insuranceClaims")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", organizationId),
+    );
+  for await (const claim of claimRows) {
+    if (claim.isDisputed && claim.disputeStatus !== "resolved") {
+      disputedClaimsCount += 1;
     }
   }
 
   return {
+    inForceValue: coverage.value,
     expiringPolicies: expiringPolicies.sort(
       (a, b) => a.daysUntilExpiry - b.daysUntilExpiry,
     ),
-    uncoveredStats: {
-      totalObjects,
-      coveredObjects,
-      uncoveredObjects,
-      coveragePercentage,
-    },
+    expiredPolicies,
     expiredPoliciesCount,
-    pendingClaimsCount: stats.openClaimsCount,
+    uncoveredStats: {
+      totalObjects: objects.totalObjects,
+      coveredObjects: objects.coveredObjects,
+      uncoveredObjects: objects.totalObjects - objects.coveredObjects,
+      coveragePercentage:
+        objects.totalObjects > 0
+          ? Math.round((objects.coveredObjects / objects.totalObjects) * 100)
+          : 0,
+    },
+    uncoveredSample: objects.uncoveredSample,
+    coveragesNeedingReview: coverage.needsReviewCount,
+    pendingClaimsCount: claims.openClaimsCount,
     staleAppraisalCount,
     disputedClaimsCount,
   };

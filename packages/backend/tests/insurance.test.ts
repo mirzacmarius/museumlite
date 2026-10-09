@@ -60,11 +60,15 @@ test("should create insurance policy with carrier info", async () => {
     carrier: "Fine Art Insurance Co",
     policyType: "blanket",
     coverageAmount: 1_000_000,
+    currency: "EUR",
     effectiveDate: now,
     expirationDate: now + 365 * 24 * 60 * 60 * 1000,
   });
 
-  const policy = await authed.query(api.insurance.getPolicy, { policyId });
+  const policy = await authed.query(api.insurance.getPolicy, {
+    policyId,
+    now: Date.now(),
+  });
 
   expect(policy).not.toBeNull();
   expect(policy?.carrier).toBe("Fine Art Insurance Co");
@@ -83,14 +87,16 @@ test("should add coverage for collection object", async () => {
     carrier: "Coverage Carrier",
     policyType: "scheduled",
     coverageAmount: 500_000,
+    currency: "EUR",
     effectiveDate: now,
     expirationDate: now + 365 * 24 * 60 * 60 * 1000,
   });
 
   const coverageId = await authed.mutation(api.insurance.addCoverage, {
     policyId,
-    collectionId,
+    target: { kind: "object", collectionId },
     coveredValue: 25_000,
+    currency: "EUR",
   });
 
   expect(coverageId).toBeDefined();
@@ -114,6 +120,7 @@ test("should create claim with auto-generated number", async () => {
     carrier: "Claims Carrier",
     policyType: "blanket",
     coverageAmount: 750_000,
+    currency: "EUR",
     effectiveDate: now,
     expirationDate: now + 365 * 24 * 60 * 60 * 1000,
   });
@@ -126,6 +133,7 @@ test("should create claim with auto-generated number", async () => {
     incidentType: "damage",
     incidentDescription: "Minor frame damage during handling",
     claimedAmount: 1200,
+    currency: "EUR",
   });
 
   const claim = await authed.query(api.insurance.getClaim, { claimId });
@@ -146,6 +154,7 @@ test("should track claim status workflow", async () => {
     carrier: "Workflow Carrier",
     policyType: "blanket",
     coverageAmount: 500_000,
+    currency: "EUR",
     effectiveDate: now,
     expirationDate: now + 365 * 24 * 60 * 60 * 1000,
   });
@@ -157,6 +166,7 @@ test("should track claim status workflow", async () => {
     incidentType: "other",
     incidentDescription: "Test claim workflow",
     claimedAmount: 500,
+    currency: "EUR",
   });
 
   await authed.mutation(api.insurance.updateClaim, {
@@ -180,12 +190,14 @@ test("should detect expiring policies", async () => {
     carrier: "Expiring Carrier",
     policyType: "blanket",
     coverageAmount: 100_000,
+    currency: "EUR",
     effectiveDate: now - 300 * 24 * 60 * 60 * 1000,
     expirationDate: now + 10 * 24 * 60 * 60 * 1000,
   });
 
   const expiring = await authed.query(api.insurance.getExpiringPolicies, {
     organizationId,
+    now: Date.now(),
     daysAhead: 30,
   });
 
@@ -226,6 +238,7 @@ test("createAutoClaimForTransitDamage sums active coverages across collections",
     carrier: "Transit Carrier",
     policyType: "transit",
     coverageAmount: 500_000,
+    currency: "EUR",
     effectiveDate: now,
     expirationDate: now + 365 * 24 * 60 * 60 * 1000,
   });
@@ -233,13 +246,15 @@ test("createAutoClaimForTransitDamage sums active coverages across collections",
   await Promise.all([
     authed.mutation(api.insurance.addCoverage, {
       policyId,
-      collectionId: collectionIdA,
+      target: { kind: "object", collectionId: collectionIdA },
       coveredValue: 1000,
+      currency: "EUR",
     }),
     authed.mutation(api.insurance.addCoverage, {
       policyId,
-      collectionId: collectionIdB,
+      target: { kind: "object", collectionId: collectionIdB },
       coveredValue: 2500,
+      currency: "EUR",
     }),
   ]);
 
@@ -272,6 +287,71 @@ test("createAutoClaimForTransitDamage sums active coverages across collections",
   });
 
   expect(claim?.claimedAmount).toBe(3500);
+  expect(claim?.currency).toBe("EUR");
+});
+
+test("an auto-claim leaves the amount to staff when covered values span currencies", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, collectionId, authed } =
+    await setupInsuranceFixture(t);
+  const secondId = await t.run(async (ctx) =>
+    ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `INS-USD-${Math.random().toString(36).slice(2, 8)}`,
+      title: "Dollar-insured object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    }),
+  );
+  const now = Date.now();
+  const policyId = await authed.mutation(api.insurance.createPolicy, {
+    organizationId,
+    policyNumber: "POL-MIXED",
+    carrier: "Transit Carrier",
+    policyType: "transit",
+    coverageAmount: 500_000,
+    currency: "EUR",
+    effectiveDate: now,
+    expirationDate: now + 365 * 24 * 60 * 60 * 1000,
+  });
+  await authed.mutation(api.insurance.addCoverage, {
+    policyId,
+    target: { kind: "object", collectionId },
+    coveredValue: 1000,
+    currency: "EUR",
+  });
+  await authed.mutation(api.insurance.addCoverage, {
+    policyId,
+    target: { kind: "object", collectionId: secondId },
+    coveredValue: 2500,
+    currency: "USD",
+  });
+  const loanId = await t.run(async (ctx) =>
+    ctx.db.insert("loans", {
+      organizationId,
+      loanNumber: `LOAN-${Math.random().toString(36).slice(2, 8)}`,
+      type: "outgoing",
+      lenderBorrowerName: "Borrowing Museum",
+      startDate: now,
+      status: "active",
+    }),
+  );
+
+  const claimId = await t.mutation(
+    internal.insurance.createAutoClaimForTransitDamage,
+    {
+      organizationId,
+      loanId,
+      collectionIds: [collectionId, secondId],
+      incidentDescription: "Transit damage during loan return",
+      actorUserId: userId,
+    },
+  );
+  if (!claimId) throw new Error("claim missing");
+  const claim = await authed.query(api.insurance.getClaim, { claimId });
+  expect(claim).toMatchObject({ claimedAmount: 0, currency: "EUR" });
+  expect(claim?.internalNotes).toContain("more than one currency");
 });
 
 test("should identify uncovered objects", async () => {
@@ -281,6 +361,7 @@ test("should identify uncovered objects", async () => {
 
   const uncovered = await authed.query(api.insurance.getUncoveredObjects, {
     organizationId,
+    now: Date.now(),
     paginationOpts: { cursor: null, numItems: 25 },
   });
 
@@ -299,14 +380,16 @@ test("should attribute auto-claim to actor user", async () => {
     carrier: "Auto Claim Carrier",
     policyType: "transit",
     coverageAmount: 100_000,
+    currency: "EUR",
     effectiveDate: now,
     expirationDate: now + 365 * 24 * 60 * 60 * 1000,
   });
 
   await authed.mutation(api.insurance.addCoverage, {
     policyId,
-    collectionId,
+    target: { kind: "object", collectionId },
     coveredValue: 15_000,
+    currency: "EUR",
   });
 
   const loanId = await t.run(async (ctx) => {
@@ -355,14 +438,16 @@ test("should reject auto-claim for non-member actor", async () => {
     carrier: "Auto Claim Carrier",
     policyType: "transit",
     coverageAmount: 100_000,
+    currency: "EUR",
     effectiveDate: now,
     expirationDate: now + 365 * 24 * 60 * 60 * 1000,
   });
 
   await authed.mutation(api.insurance.addCoverage, {
     policyId,
-    collectionId,
+    target: { kind: "object", collectionId },
     coveredValue: 15_000,
+    currency: "EUR",
   });
 
   const loanId = await t.run(async (ctx) => {

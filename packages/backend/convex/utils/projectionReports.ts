@@ -15,6 +15,7 @@ import {
   type ProjectionUnavailable,
   throughStartOf,
 } from "./projectionReads";
+import { COVERED_VALUE_METRIC_PREFIX } from "./projectionSources";
 
 type ReadCtx = Pick<QueryCtx, "db" | "runQuery">;
 
@@ -553,6 +554,19 @@ export async function buildConservationTrendSeries(
 // Collection health
 // ============================================
 
+/** Active coverage value per currency; currencies are never added together. */
+function coveredValueByCurrency(totals: Record<string, number>) {
+  const byCurrency: Array<{ currency: string; total: number }> = [];
+  for (const [name, total] of Object.entries(totals)) {
+    if (!name.startsWith(COVERED_VALUE_METRIC_PREFIX)) continue;
+    byCurrency.push({
+      currency: name.slice(COVERED_VALUE_METRIC_PREFIX.length),
+      total,
+    });
+  }
+  return byCurrency.sort((a, b) => a.currency.localeCompare(b.currency));
+}
+
 export async function buildCollectionHealth(
   ctx: ReadCtx,
   organizationId: Id<"organizations">,
@@ -563,7 +577,6 @@ export async function buildCollectionHealth(
   const { reader } = opened;
   const yearStart = new Date(new Date(now).getFullYear(), 0, 1).getTime();
   const thirtyDaysFromNow = now + 30 * DAY_MS;
-  const threeYearsAgo = now - 3 * 365 * DAY_MS;
 
   const [
     totals,
@@ -578,7 +591,7 @@ export async function buildCollectionHealth(
     reader.sums("treatments.completed", [atOrAfter(yearStart)]),
     reader.sums("assessments.due", [before(now)]),
     reader.sums("insurance.expiration", [before(thirtyDaysFromNow)]),
-    reader.sums("appraisals.date", [before(threeYearsAgo)]),
+    reader.sums("appraisals.currentInsurance.staleAt", [before(now)]),
     reader.sums("loans.open.endDate", [
       before(now),
       between(now, thirtyDaysFromNow),
@@ -686,7 +699,12 @@ export async function buildCollectionHealth(
       overdueAssessments,
     },
     insurance: {
-      totalCoveredValue: metric(totals, "insurance.coveredValue"),
+      coveredValueByCurrency: coveredValueByCurrency(totals),
+      coveragesWithoutCurrency: metric(
+        totals,
+        "insurance.coverages.currencyNotRecorded",
+      ),
+      coveragesNeedingReview: metric(totals, "insurance.coverages.needsReview"),
       objectsWithCoverage,
       objectsWithoutCoverage,
       expiringPolicies,

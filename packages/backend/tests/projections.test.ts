@@ -100,7 +100,7 @@ describe("projection health and rebuild", () => {
     ).toMatchObject({
       availability: "unavailable",
       reason: "not_built",
-      definitionVersion: 1,
+      definitionVersion: 2,
       stateDefinitionVersion: null,
       active: null,
     });
@@ -122,7 +122,7 @@ describe("projection health and rebuild", () => {
       await staff.query(api.projections.getHealth, { organizationId }),
     ).toMatchObject({
       availability: "ready",
-      stateDefinitionVersion: 1,
+      stateDefinitionVersion: 2,
       active: { status: "completed", processedRows: 1 },
       building: null,
     });
@@ -133,7 +133,7 @@ describe("projection health and rebuild", () => {
     const unavailable = {
       availability: "unavailable",
       reason: "not_built",
-      definitionVersion: 1,
+      definitionVersion: 2,
     };
 
     expect(
@@ -375,7 +375,7 @@ describe("checkpointed rebuild", () => {
     ).toEqual({
       availability: "unavailable",
       reason: "building",
-      definitionVersion: 1,
+      definitionVersion: 2,
     });
 
     await settle();

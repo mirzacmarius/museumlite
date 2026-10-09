@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
+import { RecordedValue } from "@/components/recorded-value";
 import { formatCurrency, formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
@@ -79,11 +80,10 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
               {t("insuranceValue")}
             </span>
           </div>
-          <span className="text-2xl font-light text-foreground">
-            {details.insuranceValue
-              ? formatCurrency(details.insuranceValue, locale, "USD")
-              : "—"}
-          </span>
+          <RecordedValue
+            value={details.insuranceValue}
+            className="text-2xl font-light text-foreground"
+          />
         </div>
       </div>
 

@@ -5220,6 +5220,97 @@ export default {
     refineSearch:
       "D'autres objets correspondent. Affinez la recherche pour réduire la liste.",
   },
+  valuation: {
+    title: "Valorisation",
+    description:
+      "Estimations par finalité et par devise. La valorisation en vigueur pour chaque finalité et devise est l’estimation la plus récente qui n’a pas été remplacée. Les valeurs ne sont jamais converties d’une devise à l’autre.",
+    recordAppraisal: "Enregistrer une estimation",
+    noCurrent: "Aucune estimation enregistrée pour l’instant.",
+    currentTitle: "Valorisations en vigueur",
+    historyTitle: "Historique des estimations",
+    truncated: "Affichage des 200 estimations les plus récentes.",
+    renewalDue: "Renouvellement à prévoir",
+    currencyNotRecognized: "Code de devise non reconnu",
+    current: "En vigueur",
+    supersededBadge: "Remplacée",
+    replacedBadge: "Pas en vigueur",
+    correctionOf: "Correction : {reason}",
+    supersededOn: "Remplacée le",
+    supersede: "Corriger",
+    requiredFields: "Renseignez les champs obligatoires.",
+    invalidValue: "Saisissez une valeur supérieure ou égale à zéro.",
+    invalidCurrency:
+      "Saisissez un code de devise à trois lettres, par exemple EUR.",
+    recorded: "Estimation enregistrée",
+    superseded: "Estimation corrigée",
+    failed: "Impossible d’enregistrer l’estimation",
+    recordTitle: "Enregistrer une estimation",
+    recordDescription:
+      "Les valeurs enregistrées ne peuvent plus être modifiées. Une correction est enregistrée comme une nouvelle estimation qui remplace l’originale.",
+    supersedeTitle: "Corriger l’estimation",
+    supersedeDescription:
+      "L’estimation d’origine reste dans l’historique, marquée comme remplacée par cette correction.",
+    reason: "Motif de la correction *",
+    reasonPlaceholder: "Pourquoi l’estimation enregistrée est corrigée",
+    purpose: "Finalité *",
+    appraisalDate: "Date de l’estimation *",
+    value: "Valeur *",
+    currency: "Devise *",
+    currencyHint: "Code ISO à trois lettres, par exemple EUR",
+    appraiserName: "Expert *",
+    appraiserCompany: "Société",
+    appraiserCredentials: "Qualifications",
+    validUntil: "Valable jusqu’au",
+    notes: "Notes",
+    save: "Enregistrer l’estimation",
+    saving: "Enregistrement…",
+    totalsByCurrency: "Totaux par devise",
+    withoutCurrency:
+      "{count} enregistrements sans devise sont comptés mais pas additionnés.",
+    recordedValueHint: "Valeur enregistrée, devise non renseignée",
+    purposes: {
+      insurance: "Assurance",
+      replacement: "Remplacement",
+      market: "Marché",
+      fair_market: "Juste valeur marchande",
+      liquidation: "Liquidation",
+    },
+    errors: {
+      INVALID_CURRENCY:
+        "Saisissez un code de devise à trois lettres reconnu, par exemple EUR.",
+      INVALID_AMOUNT: "Les montants doivent être supérieurs ou égaux à zéro.",
+      INVALID_DATE:
+        "Vérifiez les dates. La date de validité doit être identique ou postérieure à la date de l’estimation.",
+      APPRAISER_REQUIRED: "Saisissez le nom de l’expert.",
+      REASON_REQUIRED: "Indiquez le motif de la correction.",
+      REFERENCE_NOT_FOUND:
+        "Un enregistrement lié n’est plus disponible. Actualisez puis réessayez.",
+      APPRAISAL_ALREADY_SUPERSEDED:
+        "Cette estimation a déjà été corrigée. Corrigez plutôt l’estimation la plus récente.",
+      APPRAISAL_SUPERSEDED:
+        "Les estimations remplacées restent dans l’historique. Choisissez l’estimation qui l’a corrigée.",
+      APPRAISAL_NOT_FOR_COVERED_OBJECT:
+        "Cette estimation concerne un autre objet.",
+      APPRAISAL_CURRENCY_MISMATCH:
+        "L’estimation est dans une autre devise que la couverture.",
+      CURRENT_APPRAISAL_REQUIRED:
+        "Enregistrez d’abord une estimation d’assurance en vigueur dans cette devise.",
+      POLICY_NUMBER_TAKEN: "Une autre police utilise déjà ce numéro.",
+      INVALID_POLICY_PERIOD: "La police doit expirer après sa prise d’effet.",
+      POLICY_NOT_IN_FORCE:
+        "Une couverture ne peut être ajoutée qu’à une police active ou à venir.",
+      INVALID_COVERAGE_PERIOD:
+        "La couverture doit se terminer à sa date de début ou après.",
+      COVERAGE_OUTSIDE_POLICY_PERIOD:
+        "Les dates de couverture doivent se situer dans la période de la police.",
+      COVERAGE_TARGET_NOT_FOUND:
+        "L’objet, le prêt ou l’exposition sélectionné est introuvable dans cette organisation.",
+      LEGACY_REVIEW_RESOLVED: "Cette révision a déjà été traitée.",
+      LEGACY_REVIEW_TARGET_INVALID:
+        "Choisissez des cibles enregistrées sur la couverture, chacune une seule fois.",
+      fallback: "Une erreur s’est produite. Réessayez.",
+    },
+  },
   deaccessions: {
     loadedResults: "Nombre dans les résultats chargés",
     loadMore: "Charger plus",
@@ -6660,6 +6751,7 @@ export default {
         media: "Médias",
         accession: "Inventaire",
         provenance: "Provenance et historique",
+        valuation: "Valorisation",
         placement: "Emplacement et relations",
         conservation: "Conservation",
         exhibitions: "Expositions",
@@ -6841,6 +6933,127 @@ export default {
       effective: "Prise d’effet",
       expires: "Expiration",
       coverages: "Garanties",
+      currencyRequiredLabel: "Devise *",
+      currencyNotRecorded: "Devise non renseignée",
+      policyCurrencyHint: "Devise du plafond de couverture, par exemple EUR",
+      tabs: {
+        overview: "Lacunes et échéances",
+        coverages: "Couvertures",
+        review: "Révision des couvertures",
+      },
+      coverageTab: {
+        addCoverage: "Ajouter une couverture",
+        addTitle: "Ajouter une couverture",
+        addDescription:
+          "Assurez un objet, un prêt ou une exposition au titre d’une police, dans sa propre devise.",
+        requiredFields:
+          "Choisissez une police et une cible, puis saisissez la valeur couverte.",
+        added: "Couverture ajoutée",
+        failed: "Impossible d’ajouter la couverture",
+        policy: "Police *",
+        periodHint:
+          "Laissez les dates vides pour suivre la période de la police :",
+        targetType: "Couvre *",
+        target: "Cible *",
+        selectObject: "Sélectionner un objet",
+        selectLoan: "Sélectionner un prêt",
+        selectExhibition: "Sélectionner une exposition",
+        noOptions: "Aucun choix disponible",
+        coveredValue: "Valeur couverte *",
+        currencyHint: "Par défaut, la devise de la police",
+        startDate: "Début de la couverture",
+        endDate: "Fin de la couverture",
+        save: "Ajouter la couverture",
+        saving: "Ajout…",
+        splitFrom: "issue d’une couverture révisée",
+        needsReviewTargets: "Enregistrée pour {count} cibles, à réviser",
+        empty: "Aucune couverture pour l’instant",
+        emptyDescription:
+          "Ajoutez une couverture pour assurer un objet, un prêt ou une exposition.",
+        loadMore: "Charger plus",
+        targetKinds: {
+          object: "Objet",
+          loan: "Prêt",
+          exhibition: "Exposition",
+        },
+        columns: {
+          target: "Couvre",
+          policy: "Police",
+          value: "Valeur couverte",
+          period: "Période",
+          state: "État",
+          appraisal: "Estimation d’assurance",
+        },
+        states: {
+          in_force: "En vigueur",
+          not_started: "Pas commencée",
+          expired: "Expirée",
+          policy_inactive: "Police inactive",
+          removed: "Retirée",
+          needs_review: "À réviser",
+        },
+        appraisalStatus: {
+          not_applicable: "Sans objet",
+          currency_not_recorded: "Devise non renseignée",
+          missing: "Manquante",
+          current: "En vigueur",
+          stale: "Périmée",
+        },
+      },
+      overview: {
+        needsReview: "Couvertures à réviser",
+        staleAppraisals: "Estimations d’assurance périmées",
+        openClaims: "Sinistres ouverts",
+        disputedClaims: "Sinistres contestés",
+        inForceTitle: "Couverture en vigueur",
+        inForceDescription:
+          "Totaux par devise. Les montants dans des devises différentes ne sont jamais additionnés.",
+        noCover: "Aucune couverture en vigueur.",
+        gapsTitle: "Objets sans couverture",
+        gapsDescription:
+          "Objets dont vous avez la garde sans couverture en vigueur, ni directe ni via un prêt ou une exposition couverts.",
+        coveredOf: "{covered} objets couverts sur {total} ({percentage} %)",
+        noGaps: "Tous les objets ont une couverture en vigueur.",
+        moreGaps: "Affichage des {count} premiers objets.",
+        expiringTitle: "Polices expirant dans les 90 jours",
+        noExpiring: "Aucune police n’expire dans les 90 prochains jours.",
+        expiresIn: "Expire dans {days} jours",
+        coverageCount: "{count} couvertures",
+        expiredTitle: "Polices expirées",
+        noExpired: "Aucune police expirée.",
+        expiredBadge: "Expirée",
+        moreExpired: "{count} polices expirées au total.",
+      },
+      review: {
+        title: "Révision des couvertures héritées",
+        description:
+          "Ces couvertures ont été enregistrées pour plusieurs cibles. Rien ne change tant que vous n’avez pas décidé à quelle cible chacune s’applique.",
+        openCount: "{count} ouvertes",
+        showResolved: "Afficher les traitées",
+        showOpen: "Afficher les ouvertes",
+        empty: "Aucune couverture à réviser.",
+        emptyResolved: "Aucune révision n’a encore été traitée.",
+        value: "Valeur enregistrée",
+        resolve: "Traiter",
+        targets: "Cibles enregistrées",
+        resolvedSummary:
+          "Cible conservée : {target}. Couvertures distinctes enregistrées : {count}",
+        truncated: "Affichage des 100 révisions les plus récentes.",
+        resolved: "Révision de couverture traitée",
+        failed: "Impossible de traiter la révision",
+        resolveTitle: "Traiter la couverture",
+        resolveDescription:
+          "Choisissez la cible à laquelle s’applique la couverture enregistrée. Vous pouvez aussi enregistrer des couvertures distinctes pour les autres cibles, chacune avec sa propre valeur.",
+        keep: "La couverture enregistrée s’applique à *",
+        currency: "Devise de la valeur enregistrée",
+        currencyHint: "Laissez vide si elle est inconnue",
+        addSplit: "Enregistrer une couverture distincte pour {target}",
+        splitValue: "Valeur couverte",
+        splitCurrency: "Devise",
+        note: "Note",
+        save: "Traiter",
+        saving: "Traitement…",
+      },
       claimStatus: {
         all: "Tous les statuts",
         open: "Ouverte",
@@ -8520,6 +8733,10 @@ export default {
           "L’objet « {title} » doit faire l’objet d’une évaluation de conservation.",
         insurancePolicyExpiring:
           "La police {policyNumber} ({carrier}), qui couvre {count} objets d’une valeur de {value}, expire dans {days} jours.",
+        insurancePolicyExpiringValued:
+          "La police {policyNumber} ({carrier}), qui couvre {count} objets d’une valeur de {values}, expire dans {days} jours.",
+        insurancePolicyExpiringUnvalued:
+          "La police {policyNumber} ({carrier}), qui couvre {count} objets, expire dans {days} jours.",
         autoGeneratedInsuranceClaim:
           "Un brouillon de déclaration de sinistre ({claimNumber}) a été créé à la suite de dommages de transport détectés lors du retour d’un prêt. Veuillez le vérifier et l’envoyer.",
         acquisitionPendingAtStep:
