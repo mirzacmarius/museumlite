@@ -1,8 +1,11 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { isCollectionModuleId } from "@v1/backend/convex/utils/moduleCatalog";
 import { Button } from "@v1/ui/button";
 import type { RefObject } from "react";
+import { useI18n } from "@/locales/client";
+import type { ObjectTabDefinition } from "../../[id]/_components/object-tab-config";
 import { CollectionEditAccessionTab } from "../collection-edit-form/tabs/accession-tab";
 import { CollectionEditDigitalTab } from "../collection-edit-form/tabs/digital-tab";
 import { CollectionEditGeneralTab } from "../collection-edit-form/tabs/general-tab";
@@ -22,10 +25,11 @@ import { ObjectRequestMediaTab } from "./tabs/media-tab";
 import { ObjectRequestPhysicalTab } from "./tabs/physical-tab";
 import { ObjectRequestPlacementTab } from "./tabs/placement-tab";
 import { ObjectRequestProvenanceTab } from "./tabs/provenance-tab";
+import { ObjectRequestTypeDetailsTab } from "./tabs/type-details-tab";
 
 interface ObjectRequestTab {
   id: CollectionEditTabId;
-  label: string;
+  label: ObjectTabDefinition["label"];
 }
 
 interface ObjectRequestFormTabShellProps {
@@ -75,6 +79,7 @@ export function ObjectRequestFormTabShell({
   handleDeleteImage,
   handleDeleteDocument,
 }: ObjectRequestFormTabShellProps) {
+  const tRoot = useI18n();
   const tabProps = {
     formData,
     updateField,
@@ -100,7 +105,7 @@ export function ObjectRequestFormTabShell({
             size="sm"
             onClick={() => onTabSelect(tab.id)}
           >
-            {tab.label}
+            {tRoot(tab.label)}
           </Button>
         ))}
       </div>
@@ -117,6 +122,13 @@ export function ObjectRequestFormTabShell({
                 identifierAccessionId={identifierAccessionId}
               />
             )
+          ) : null}
+          {isCollectionModuleId(activeTab) ? (
+            <ObjectRequestTypeDetailsTab
+              collectionType={activeTab}
+              formData={formData}
+              updateField={updateField}
+            />
           ) : null}
           {activeTab === "accession" ? (
             mode === "draft-edit" ? (

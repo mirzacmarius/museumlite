@@ -3,7 +3,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import {
@@ -17,20 +16,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { CapabilityGuard } from "@/components/capability-guard";
 import {
   DashboardListPageSkeleton,
   GridCardsSkeleton,
 } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function ConservationPage() {
   const t = useScopedI18n("conservation");
   const { currentOrganizationId, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
 
   if (isLoading) {
@@ -56,11 +54,7 @@ export default function ConservationPage() {
   }
 
   return (
-    <FeatureGuard
-      featureName={t("title")}
-      isLocked={!hasFeature("conservation")}
-      tierNeeded="pro"
-    >
+    <CapabilityGuard capability="conservation" featureName={t("title")}>
       <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -98,7 +92,7 @@ export default function ConservationPage() {
           </div>
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }
 

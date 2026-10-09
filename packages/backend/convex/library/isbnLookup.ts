@@ -3,6 +3,10 @@ import { v } from "convex/values";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { type ActionCtx, action } from "../_generated/server";
+import {
+  capabilityUnavailable,
+  isOrganizationModuleEnabled,
+} from "../utils/capabilities";
 
 /**
  * ISBN lookup result type
@@ -50,13 +54,17 @@ async function requireLibraryModule(
     throw new Error("Organization not found");
   }
 
-  const enabledModules = org.settings?.enabledModules ?? [];
-  const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
-  if (
-    !enabledModules.includes("library") &&
-    !enabledIntegrations.includes("library")
-  ) {
-    throw new Error("Module not enabled: library");
+  const access = {
+    enabledModules: org.settings?.enabledModules,
+    enabledIntegrations: org.settings?.enabledIntegrations,
+  };
+  if (!isOrganizationModuleEnabled(access, "library")) {
+    throw capabilityUnavailable({
+      reason: "module_disabled",
+      capability: "library",
+      module: "library",
+      message: "Module not enabled: library",
+    });
   }
 }
 

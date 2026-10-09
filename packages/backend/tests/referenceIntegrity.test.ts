@@ -325,6 +325,7 @@ test("owned upload binds organization and uploader before attachment and session
       ...uploadArgs,
       organizationId: foreign.organizationId,
       collectionId: foreign.collectionId,
+      isPrimary: false,
     }),
   ).rejects.toThrow("different organization");
   expect(
@@ -336,6 +337,7 @@ test("owned upload binds organization and uploader before attachment and session
     ...uploadArgs,
     organizationId: own.organizationId,
     collectionId: own.collectionId,
+    isPrimary: false,
   });
   expect(
     await authorized.query(api.media.list, { collectionId: own.collectionId }),
@@ -714,6 +716,7 @@ test("an upload session cannot be used after expiry and another member cannot cl
     authedForUser(t, other.userId).mutation(api.media.create, {
       ...args,
       storageId,
+      isPrimary: false,
     }),
   ).rejects.toThrow("different uploader");
   expect(
@@ -786,6 +789,7 @@ test("a trusted HTTP upload passes public-image ownership review and a fresh ver
   const mediaId = await authorized.mutation(api.media.create, {
     ...uploadArgs,
     storageId,
+    isPrimary: false,
   });
   await authorized.mutation(api.media.updateRights, {
     mediaId,

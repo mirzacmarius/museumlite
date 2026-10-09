@@ -15,7 +15,6 @@ import {
   insertCompletedMediaAsset,
   isSupportedMediaMimeType,
   MAX_SMALL_MEDIA_FILE_SIZE,
-  shouldGenerateMediaThumbnail,
 } from "./utils/mediaAssets";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
@@ -23,6 +22,12 @@ import {
   requireModuleAndPermission,
   requirePermission,
 } from "./utils/permissions";
+import {
+  canBePrimaryImage,
+  clearOtherPrimaryMedia,
+  makeOnlyPrimaryImage,
+  resolveNewMediaPrimary,
+} from "./utils/primaryMedia";
 import { buildStorageStats } from "./utils/projectionReports";
 import { projectionUnavailableResult } from "./utils/projectionValidators";
 import { revokePublicRendition } from "./utils/publicMedia";
@@ -164,6 +169,12 @@ export const create = mutation({
         "Chunked uploads are unavailable; upload a file up to 20 MB",
       );
 
+    const isPrimary = await resolveNewMediaPrimary(ctx, {
+      collectionId: args.collectionId,
+      fileType: fileCategory,
+      mediaCategory,
+      requested: args.isPrimary,
+    });
     const { mediaId } = await insertCompletedMediaAsset(ctx, {
       collectionId: args.collectionId,
       organizationId: args.organizationId,
@@ -172,12 +183,15 @@ export const create = mutation({
       fileSize: args.fileSize,
       mimeType: args.mimeType,
       mediaCategory,
-      isPrimary: args.isPrimary ?? false,
+      isPrimary,
       caption: args.caption,
       photographer: args.photographer,
       copyright: args.copyright,
       uploadedBy: userId,
     });
+    if (isPrimary) {
+      await clearOtherPrimaryMedia(ctx, args.collectionId, mediaId);
+    }
     await claimStorageOwnership(ctx, {
       storageId: args.storageId,
       organizationId: args.organizationId,
@@ -275,8 +289,7 @@ export const list = query({
     );
 
     mediaWithUrls.sort((a, b) => {
-      if (a.isPrimary) return -1;
-      if (b.isPrimary) return 1;
+      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
       const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
       const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
       return orderA - orderB;
@@ -328,20 +341,16 @@ export const update = mutation({
     if (args.photographer !== undefined)
       updates.photographer = args.photographer;
     if (args.copyright !== undefined) updates.copyright = args.copyright;
-    if (args.isPrimary !== undefined) {
-      updates.isPrimary = args.isPrimary;
-
-      // If setting as primary and it's an image <50MB, generate thumbnail
-      if (
-        args.isPrimary &&
-        media.fileType === "image" &&
-        media.fileSize < MAX_SMALL_MEDIA_FILE_SIZE
-      ) {
-        await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-          mediaId: args.mediaId,
-        });
-      }
+    if (args.isPrimary === true) {
+      await makeOnlyPrimaryImage(ctx, media);
+    } else if (
+      args.isPrimary === false &&
+      media.isPrimary &&
+      canBePrimaryImage(media)
+    ) {
+      throw new Error("Choose another image as the primary image instead");
     }
+    if (args.isPrimary !== undefined) updates.isPrimary = args.isPrimary;
 
     await Promise.all([
       ctx.db.patch(args.mediaId, updates),
@@ -405,38 +414,8 @@ export const setPrimary = mutation({
       throw new Error("Media not found");
     }
 
-    const [, otherMedia] = await Promise.all([
-      requirePermission(ctx, media.organizationId, "media.upload"),
-      ctx.db
-        .query("mediaFiles")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", media.collectionId),
-        )
-        .filter((q) => q.eq(q.field("isPrimary"), true))
-        .collect(),
-    ] as const);
-
-    await Promise.all([
-      ...otherMedia.map((m) =>
-        m._id !== args.mediaId
-          ? ctx.db.patch(m._id, { isPrimary: false })
-          : Promise.resolve(),
-      ),
-      ctx.db.patch(args.mediaId, { isPrimary: true }),
-    ]);
-
-    // Generate thumbnail if image <50MB
-    if (
-      shouldGenerateMediaThumbnail({
-        fileType: media.fileType,
-        fileSize: media.fileSize,
-        isPrimary: true,
-      })
-    ) {
-      await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-        mediaId: args.mediaId,
-      });
-    }
+    await requirePermission(ctx, media.organizationId, "media.upload");
+    await makeOnlyPrimaryImage(ctx, media);
 
     return null;
   },

@@ -5,7 +5,6 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
 import { DatePickerInput } from "@v1/ui/date-picker";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -21,10 +20,11 @@ import { parseAsString, useQueryStates } from "nuqs";
 import { Suspense } from "react";
 import { AuditCaseHistory } from "@/components/audit-case-history";
 import { AuditEventDetails } from "@/components/audit-event-details";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { ExportJobControl } from "@/components/export-job-control";
 import { useOrganization } from "@/components/organization-provider";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 function ActivityTimestamp({ timestamp }: { timestamp: number }) {
@@ -413,7 +413,7 @@ function ActivityList({
 
 function ActivityPageContent() {
   const { currentOrganizationId, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
+  const canUseCompliance = useCapabilities().isAvailable("compliance");
   const t = useScopedI18n("activityLog");
   const tExport = useScopedI18n("exportJobs");
 
@@ -489,24 +489,27 @@ function ActivityPageContent() {
       (state.fromDate && state.toDate && state.fromDate > state.toDate),
   );
 
-  const entityTypes = useQuery(api.auditLog.getEntityTypes, {});
+  const entityTypes = useQuery(
+    api.auditLog.getEntityTypes,
+    canUseCompliance ? {} : "skip",
+  );
 
   const availableActions = useQuery(
     api.auditLog.getAvailableActions,
-    currentOrganizationId
+    currentOrganizationId && canUseCompliance
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const activeUsers = useQuery(
     api.auditLog.getActiveUsers,
-    currentOrganizationId
+    currentOrganizationId && canUseCompliance
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const queryArgs =
-    currentOrganizationId && !invalidDates
+    currentOrganizationId && canUseCompliance && !invalidDates
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           userId: state.selectedUserId
@@ -580,11 +583,7 @@ function ActivityPageContent() {
   }
 
   return (
-    <FeatureGuard
-      featureName={t("featureName")}
-      isLocked={!hasFeature("compliance")}
-      tierNeeded="enterprise"
-    >
+    <CapabilityGuard capability="compliance" featureName={t("featureName")}>
       <div className="flex h-full min-h-0 w-full flex-col gap-6">
         <ActivityPageHeader title={t("title")} description={t("description")} />
 
@@ -698,7 +697,7 @@ function ActivityPageContent() {
           />
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }
 

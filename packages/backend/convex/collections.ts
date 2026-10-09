@@ -31,7 +31,11 @@ import {
   toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
-import { enforceObjectQuota, hasModuleEnabled } from "./utils/featureGates";
+import {
+  enforceObjectQuota,
+  hasModuleEnabled,
+  requireCollectionTypeModuleEnabled,
+} from "./utils/featureGates";
 import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
@@ -42,10 +46,6 @@ import {
   moveCollectionToLocation,
   requireUsableLocation,
 } from "./utils/locationIntegrity";
-import {
-  type CollectionType,
-  getCollectionTypeModuleRequirement,
-} from "./utils/moduleCatalog";
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { mutation } from "./utils/mutationBuilders";
 import { searchObjects } from "./utils/objectSearch";
@@ -82,19 +82,6 @@ async function validateCollectionReferences(
 
 function isPublicCatalogStatus(status: Doc<"collections">["status"]) {
   return status === "active" || status === "loaned";
-}
-
-async function requireCollectionTypeModuleEnabled(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  collectionType: CollectionType | undefined,
-) {
-  const requiredModule = getCollectionTypeModuleRequirement(collectionType);
-  if (!requiredModule) return;
-
-  if (!(await hasModuleEnabled(ctx, organizationId, requiredModule))) {
-    throw new Error("Collection type requires enabled module");
-  }
 }
 
 const conditionHistoryEntryValidator = v.object({

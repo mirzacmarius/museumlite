@@ -61,8 +61,7 @@ import {
 } from "@/components/app-sidebar-navigation";
 import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
-import { usePermissions } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
 function getUserInitials(user: {
@@ -96,13 +95,24 @@ interface SidebarUser {
   image?: string | null;
 }
 
+function LockedMarker({ label }: { label: string }) {
+  return (
+    <>
+      <Lock aria-hidden="true" className="ml-auto size-3" />
+      <span className="sr-only">{label}</span>
+    </>
+  );
+}
+
 function TopLevelNavigation({
   items,
   isPathActive,
+  lockedLabel,
   onNavigate,
 }: {
   items: NavigationItem[];
   isPathActive: (url: string) => boolean;
+  lockedLabel: string;
   onNavigate: () => void;
 }) {
   return (
@@ -122,23 +132,17 @@ function TopLevelNavigation({
                     size="sm"
                     tooltip={item.title}
                     isActive={itemActive}
-                    aria-disabled={item.locked}
                     className={cn(
                       "h-7 text-xs font-medium",
-                      item.locked && "pointer-events-none opacity-60",
+                      item.locked && "opacity-60",
                     )}
                   >
-                    <Link
-                      href={item.url}
-                      onClick={
-                        item.locked
-                          ? (event) => event.preventDefault()
-                          : onNavigate
-                      }
-                    >
+                    <Link href={item.url} onClick={onNavigate}>
                       {ItemIcon ? <ItemIcon /> : null}
                       <span>{item.title}</span>
-                      {item.locked ? <Lock className="ml-auto size-3" /> : null}
+                      {item.locked ? (
+                        <LockedMarker label={lockedLabel} />
+                      ) : null}
                     </Link>
                   </SidebarMenuButton>
                   <SidebarMenuSub className="gap-0 py-0.5">
@@ -152,25 +156,16 @@ function TopLevelNavigation({
                             asChild
                             size="sm"
                             isActive={subItemActive}
-                            aria-disabled={subItem.locked}
                             className={cn(
                               "h-7 text-xs font-medium",
-                              subItem.locked &&
-                                "pointer-events-none opacity-60",
+                              subItem.locked && "opacity-60",
                             )}
                           >
-                            <Link
-                              href={subItem.url}
-                              onClick={
-                                subItem.locked
-                                  ? (event) => event.preventDefault()
-                                  : onNavigate
-                              }
-                            >
+                            <Link href={subItem.url} onClick={onNavigate}>
                               {SubItemIcon ? <SubItemIcon /> : null}
                               <span>{subItem.title}</span>
                               {subItem.locked ? (
-                                <Lock className="ml-auto size-3" />
+                                <LockedMarker label={lockedLabel} />
                               ) : null}
                             </Link>
                           </SidebarMenuSubButton>
@@ -189,23 +184,15 @@ function TopLevelNavigation({
                   size="sm"
                   tooltip={item.title}
                   isActive={itemActive}
-                  aria-disabled={item.locked}
                   className={cn(
                     "h-7 text-xs font-medium",
-                    item.locked && "pointer-events-none opacity-60",
+                    item.locked && "opacity-60",
                   )}
                 >
-                  <Link
-                    href={item.url}
-                    onClick={
-                      item.locked
-                        ? (event) => event.preventDefault()
-                        : onNavigate
-                    }
-                  >
+                  <Link href={item.url} onClick={onNavigate}>
                     {ItemIcon ? <ItemIcon /> : null}
                     <span>{item.title}</span>
-                    {item.locked ? <Lock className="ml-auto size-3" /> : null}
+                    {item.locked ? <LockedMarker label={lockedLabel} /> : null}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -220,10 +207,12 @@ function TopLevelNavigation({
 function NavigationGroups({
   groups,
   isPathActive,
+  lockedLabel,
   onNavigate,
 }: {
   groups: NavigationGroup[];
   isPathActive: (url: string) => boolean;
+  lockedLabel: string;
   onNavigate: () => void;
 }) {
   return (
@@ -266,24 +255,16 @@ function NavigationGroups({
                               asChild
                               size="sm"
                               isActive={itemActive}
-                              aria-disabled={item.locked}
                               className={cn(
                                 "h-7 text-xs font-medium",
-                                item.locked && "pointer-events-none opacity-60",
+                                item.locked && "opacity-60",
                               )}
                             >
-                              <Link
-                                href={item.url}
-                                onClick={
-                                  item.locked
-                                    ? (event) => event.preventDefault()
-                                    : onNavigate
-                                }
-                              >
+                              <Link href={item.url} onClick={onNavigate}>
                                 {ItemIcon ? <ItemIcon /> : null}
                                 <span>{item.title}</span>
                                 {item.locked ? (
-                                  <Lock className="ml-auto size-3" />
+                                  <LockedMarker label={lockedLabel} />
                                 ) : null}
                               </Link>
                             </SidebarMenuSubButton>
@@ -570,8 +551,7 @@ function AppSidebarClientInner({
   const translate = useI18n();
   const { organizations, currentOrganizationId, setCurrentOrganizationId } =
     useOrganization();
-  const { hasPermission } = usePermissions();
-  const { hasFeature, hasModule } = useFeatureAccess();
+  const { stateOf } = useCapabilities();
   const { setOpen } = useCommandPalette();
   const { isMobile, setOpenMobile } = useSidebar();
   const user = usePreloadedQuery(preloadedUser);
@@ -608,8 +588,6 @@ function AppSidebarClientInner({
     (org) => org._id === currentOrganizationId,
   );
 
-  const isLibraryModuleEnabled = hasModule("library");
-  const isInsuranceModuleEnabled = hasModule("insurance");
   const isLocationTrackingEnabled =
     currentOrg?.settings?.locationTrackingEnabled ?? true;
 
@@ -622,13 +600,11 @@ function AppSidebarClientInner({
     return pathname?.startsWith(url);
   };
 
+  const lockedLabel = translate("untranslatedComponents.navigation.locked");
   const { topLevelNavigation, navigationGroups } = buildSidebarNavigation({
     translate,
-    hasFeature,
-    isLibraryModuleEnabled,
-    isInsuranceModuleEnabled,
+    capabilityState: stateOf,
     isLocationTrackingEnabled,
-    canAccessAdministration: hasPermission("organization.manage_settings"),
   });
 
   return (
@@ -647,12 +623,14 @@ function AppSidebarClientInner({
         <TopLevelNavigation
           items={topLevelNavigation}
           isPathActive={isPathActive}
+          lockedLabel={lockedLabel}
           onNavigate={closeMobileSidebar}
         />
 
         <NavigationGroups
           groups={navigationGroups}
           isPathActive={isPathActive}
+          lockedLabel={lockedLabel}
           onNavigate={closeMobileSidebar}
         />
       </SidebarContent>

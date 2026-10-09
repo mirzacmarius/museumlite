@@ -20,6 +20,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isDeveloperPath = pathname === "/settings/developer";
   const isDataPath = pathname === "/settings/data";
   const isMetricsPath = pathname === "/settings/metrics";
+  const isLoanAgreementsPath = pathname === "/settings/loan-agreements";
   const navItems = [
     {
       href: "/settings/organization",
@@ -34,6 +35,11 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
     { href: "/settings/users", label: t("users"), active: isUsersPath },
     { href: "/settings/roles", label: t("roles"), active: isRolesPath },
     { href: "/settings/sites", label: t("sites"), active: isSitesPath },
+    {
+      href: "/settings/loan-agreements",
+      label: t("loanAgreements"),
+      active: isLoanAgreementsPath,
+    },
     {
       href: "/settings/integrations",
       label: t("integrations"),
@@ -146,6 +152,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("sites")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/loan-agreements"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isLoanAgreementsPath && "bg-muted"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-foreground/80 ${isLoanAgreementsPath && "font-medium text-foreground"}`,
+              )}
+            >
+              {t("loanAgreements")}
             </span>
           </Link>
           <Link

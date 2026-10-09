@@ -111,11 +111,8 @@ export function useCollectionEditFormMedia({
             return;
           }
 
-          const isFirstMedia =
-            !media || (Array.isArray(media) && media.length === 0);
-
           await Promise.all(
-            uploaded.map(async (file, index) => {
+            uploaded.map(async (file) => {
               if (!file) {
                 throw new Error("Upload completed but file data is missing");
               }
@@ -136,7 +133,6 @@ export function useCollectionEditFormMedia({
                 fileName: file.name || "unknown",
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
-                isPrimary: isFirstMedia && index === 0,
                 mediaCategory: "image",
               });
             }),

@@ -6,6 +6,7 @@ import type { FunctionReturnType } from "convex/server";
 import { Edit, Star, Upload } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
@@ -95,16 +96,19 @@ export function CollectionEditMediaTab({
                       <Edit className="size-3.5" />
                     </Button>
                     {!file.isPrimary ? (
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="secondary"
-                        className="size-8"
-                        onClick={() => handleSetPrimary(file._id)}
-                        title={common("setAsPrimary")}
-                      >
-                        <Star className="size-3.5" />
-                      </Button>
+                      <PermissionGate permission="media.upload">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="size-8"
+                          onClick={() => handleSetPrimary(file._id)}
+                          title={common("setAsPrimary")}
+                          aria-label={common("setAsPrimary")}
+                        >
+                          <Star className="size-3.5" />
+                        </Button>
+                      </PermissionGate>
                     ) : null}
                   </div>
                 </div>

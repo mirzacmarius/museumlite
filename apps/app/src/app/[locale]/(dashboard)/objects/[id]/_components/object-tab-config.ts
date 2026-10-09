@@ -196,11 +196,23 @@ export function getObjectViewTabs(options: {
 
 export function getObjectEditTabs(options?: {
   locationTrackingEnabled?: boolean;
+  /** Collection type whose intake details the form captures, if any. */
+  typeDetailsTab?: CollectionModuleId;
 }) {
-  return editBaseTabs.filter((tab) => {
+  const tabs = editBaseTabs.filter((tab) => {
     if (tab.id === "placement" && options?.locationTrackingEnabled === false) {
       return false;
     }
     return tab.editable;
   });
+  if (!options?.typeDetailsTab) return tabs;
+
+  const [generalTab, ...otherTabs] = tabs;
+  const typeDetailsTab = {
+    ...moduleTabMap[options.typeDetailsTab],
+    editable: true,
+  };
+  return generalTab
+    ? [generalTab, typeDetailsTab, ...otherTabs]
+    : [typeDetailsTab, ...otherTabs];
 }

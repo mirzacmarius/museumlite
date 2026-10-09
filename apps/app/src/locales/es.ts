@@ -194,6 +194,7 @@ export default {
       developer: "Desarrollador",
       data: "Importar/Exportar datos",
       metrics: "Estado de métricas",
+      loanAgreements: "Contratos de préstamo",
     },
     roles: {
       title: "Gestión de Roles",
@@ -1022,6 +1023,73 @@ export default {
       bottleSize: "750 ml",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "Detalles de {type}",
+      description:
+        "Se guardan con este borrador y se registran en el objeto cuando se aprueba el ingreso. Cambiar el tipo de colección elimina estos detalles.",
+    },
+    summary: {
+      title: "Detalles de {type}",
+    },
+    changeType: {
+      title: "¿Cambiar el tipo de colección?",
+      description:
+        "Se eliminarán los detalles de {type} introducidos en este borrador. Solo se conservan los detalles del tipo de colección actual del borrador.",
+      confirm: "Cambiar tipo y eliminar detalles",
+      cancel: "Mantener el tipo actual",
+    },
+    errors: {
+      moduleDisabled:
+        "El módulo de este tipo de colección no está habilitado para tu organización. Elige otro tipo de colección o pide a un administrador que habilite el módulo.",
+      typeMismatch:
+        "Los detalles específicos del tipo no coinciden con el tipo de colección seleccionado. Revisa los detalles y vuelve a guardar.",
+    },
+    fields: {
+      appraiser: "Tasador",
+      lastAppraisalDate: "Fecha de la última tasación",
+      insuranceCarrier: "Aseguradora",
+      insuranceExpiresAt: "Fecha de vencimiento del seguro",
+      peakWindowStart: "Beber desde (año)",
+      peakWindowEnd: "Beber hasta (año)",
+      make: "Marca",
+      model: "Modelo",
+      year: "Año",
+      odometerUnit: "Unidad del odómetro",
+      retentionYears: "Periodo de retención (años)",
+      digitalAssetUrl: "URL del activo digital",
+      countryOrRegion: "País o región",
+      issueYear: "Año de emisión",
+      issuePeriod: "Periodo de emisión",
+      series: "Serie",
+      certifyingAuthority: "Entidad certificadora",
+      diameterMm: "Diámetro (mm)",
+      weightGrams: "Peso (g)",
+      conditionNotes: "Notas de estado",
+      notes: "Notas",
+    },
+    options: {
+      inStorage: "En almacén",
+      cork: "Corcho",
+      screwcap: "Tapón de rosca",
+      synthetic: "Sintético",
+      glass: "Vidrio",
+      crown: "Chapa corona",
+      miles: "Millas",
+      kilometres: "Kilómetros",
+      male: "Macho",
+      female: "Hembra",
+      dry: "Seco",
+      wet: "Húmedo (fluido)",
+      frozen: "Congelado",
+      pinned: "Montado con alfiler",
+      pressed: "Prensado",
+      mounted: "Montado",
+      cast: "Molde",
+      fossil: "Fósil",
+      other: "Otro",
+    },
+  },
   workflows: {
     title: "Configuración de flujos de trabajo",
     description:
@@ -1348,6 +1416,116 @@ export default {
     },
 
     testError: "La prueba ha fallado",
+  },
+  webhookDeliveries: {
+    noPermission:
+      "Necesitas permiso para gestionar la configuración de la organización para administrar webhooks.",
+    log: {
+      title: "Registro de entregas",
+      description:
+        "Cada evento enviado a tus endpoints, con cada intento y respuesta. Las entradas se conservan 30 días.",
+      endpointFilter: "Endpoint",
+      statusFilter: "Estado",
+      allEndpoints: "Todos los endpoints",
+      allStatuses: "Todos los estados",
+      empty: "Ninguna entrega coincide con estos filtros.",
+      loadMore: "Cargar más",
+      details: "Detalles",
+      deletedEndpoint: "Endpoint eliminado",
+      testEvent: "Evento de prueba",
+      attempts: "Intentos: {count}",
+      nextAttempt: "Próximo intento {time}",
+      sending: "Enviando ahora",
+    },
+    status: {
+      pending: "Pendiente",
+      retrying: "Reintentando",
+      succeeded: "Entregado",
+      failed_transient: "Fallido",
+      failed_permanent: "Fallido definitivamente",
+      cancelled: "Cancelado",
+    },
+    outcome: {
+      succeeded: "Entregado",
+      failed_transient: "Fallo reintentable",
+      failed_permanent: "Fallo definitivo",
+    },
+    reasons: {
+      http_error: "El receptor respondió HTTP {status}",
+      timeout: "Sin respuesta en 10 segundos",
+      network_error: "No se pudo conectar con el endpoint",
+      attempt_lost: "El intento no informó su resultado",
+      event_expired: "El evento ya no está almacenado",
+      endpoint_deleted: "El endpoint se eliminó",
+      endpoint_disabled: "El endpoint se desactivó",
+      endpoint_insecure: "La URL del endpoint no usa HTTPS",
+      endpoint_unsubscribed: "El endpoint ya no está suscrito a este evento",
+    },
+    detail: {
+      title: "Detalles de la entrega",
+      deliveryId: "ID de entrega",
+      eventId: "ID de evento",
+      event: "Evento",
+      endpoint: "Endpoint",
+      created: "Creado",
+      payload: "Contenido (versión {version})",
+      attemptsTitle: "Intentos",
+      noAttempts: "No se ha enviado ninguna solicitud para esta entrega.",
+      attempt: "Intento {number}",
+      duration: "{ms} ms",
+      retry: "Reintentar entrega",
+      retrying: "Reintentando...",
+      retryHelp:
+        "Un reintento reenvía el mismo contenido con el mismo ID de entrega, para que tu receptor pueda ignorar duplicados.",
+      notFound: "Esta entrega ya no está disponible.",
+      close: "Cerrar",
+    },
+    endpoint: {
+      lastDelivery: "Última entrega {time}",
+      neverDelivered: "Aún no entregado",
+      viewDeliveries: "Entregas",
+      sendTest: "Enviar prueba",
+      testQueued:
+        "Evento de prueba en cola. Su resultado aparece en el registro de entregas.",
+      rotateSecret: "Rotar secreto",
+    },
+    rotate: {
+      title: "¿Rotar el secreto de firma?",
+      description:
+        "El secreto actual deja de funcionar de inmediato. Cada intento posterior, incluidos los reintentos, se firma con el nuevo secreto, así que actualiza tu receptor.",
+      confirm: "Rotar secreto",
+      cancel: "Cancelar",
+      rotatedTitle: "Nuevo secreto de firma",
+      rotatedDescription: "Copia este secreto ahora. No podrás volver a verlo.",
+      done: "Listo",
+    },
+    signing: {
+      title: "Verificar entregas",
+      signature:
+        "X-ML-Signature es sha256= seguido del HMAC-SHA256 en hexadecimal del cuerpo sin procesar de la solicitud, con tu secreto de firma como clave.",
+      signatureV2:
+        "X-ML-Signature-V2 es v2= seguido del HMAC-SHA256 del valor de X-ML-Delivery, un punto, el valor de X-ML-Timestamp, un punto y el cuerpo. X-ML-Timestamp es la hora de envío en segundos Unix; rechaza valores fuera de tu margen de tolerancia.",
+      duplicates:
+        "Los reintentos reutilizan X-ML-Delivery y el mismo cuerpo. Trata un ID de entrega repetido como ya procesado.",
+      retries:
+        "Cualquier respuesta 2xx cuenta como entregada. Tras tiempos de espera agotados, errores de red y respuestas 408, 429 y 5xx, el evento se vuelve a enviar, hasta 6 envíos en total durante unas 3 horas. Las redirecciones no se siguen y las demás respuestas no se reintentan.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Introduce un nombre para el endpoint.",
+      WEBHOOK_URL_INVALID: "Introduce una URL HTTPS válida.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "Uno de los eventos seleccionados no está disponible.",
+      WEBHOOK_LIMIT_REACHED:
+        "Esta organización ya tiene el número máximo de endpoints de webhook.",
+      WEBHOOK_NOT_FOUND: "Este endpoint ya no existe.",
+      WEBHOOK_DISABLED: "Activa el endpoint antes de enviarle eventos.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "El endpoint ya no está suscrito a este evento. Vuelve a suscribirlo antes de reintentar.",
+      DELIVERY_NOT_FOUND: "Esta entrega ya no existe.",
+      DELIVERY_NOT_RETRYABLE:
+        "Solo se pueden reintentar las entregas fallidas o canceladas.",
+      fallback: "No se pudo completar la acción. Inténtalo de nuevo.",
+    },
   },
   activity: {
     title: "Actividad",
@@ -2357,6 +2535,132 @@ export default {
     },
     charts: {
       statusDistribution: "Distribución por estado",
+    },
+  },
+  loanAgreementTemplates: {
+    title: "Contratos de préstamo",
+    description:
+      "Redacte los contratos que su organización emite para los préstamos. Los marcadores se completan con los datos de cada préstamo al generar un contrato.",
+    newTemplate: "Nueva plantilla",
+    empty:
+      "Aún no hay plantillas. Los préstamos usan el contrato estándar hasta que cree una.",
+    standardAgreement: "Contrato estándar",
+    standardAgreementDescription:
+      "Integrado. Se usa para los préstamos cuando ninguna plantilla está definida como predeterminada.",
+    defaultBadge: "Predeterminada",
+    archivedBadge: "Archivada",
+    archivedHeading: "Plantillas archivadas",
+    sectionCount: "Secciones: {count}",
+    appliesTo: {
+      any: "Todos los préstamos",
+      incoming: "Préstamos entrantes",
+      outgoing: "Préstamos salientes",
+    },
+    actions: {
+      edit: "Editar",
+      setDefault: "Hacer predeterminada",
+      archive: "Archivar",
+      restore: "Restaurar",
+    },
+    toasts: {
+      created: "Plantilla creada.",
+      saved: "Plantilla guardada.",
+      defaultSet: "Plantilla predeterminada actualizada.",
+      archived: "Plantilla archivada.",
+      restored: "Plantilla restaurada.",
+    },
+    editor: {
+      createTitle: "Nueva plantilla de contrato de préstamo",
+      editTitle: "Editar plantilla de contrato de préstamo",
+      description:
+        "Las secciones aparecen en orden después de las partes. Se omite una línea cuyos marcadores no tienen valor para un préstamo.",
+      name: "Nombre",
+      namePlaceholder: "Préstamo saliente estándar",
+      language: "Idioma",
+      appliesTo: "Se aplica a",
+      sections: "Secciones",
+      sectionHeading: "Título",
+      sectionBody: "Texto",
+      addSection: "Añadir sección",
+      removeSection: "Eliminar sección",
+      moveUp: "Subir sección",
+      moveDown: "Bajar sección",
+      startFromStandard: "Partir del contrato estándar",
+      placeholders: "Marcadores",
+      placeholdersHint: "Copie un marcador en un título o texto.",
+      copied: "Copiado {placeholder}",
+      preview: "Vista previa con un préstamo de ejemplo",
+      save: "Guardar plantilla",
+      saving: "Guardando…",
+      cancel: "Cancelar",
+    },
+    placeholders: {
+      loanNumber: "Número de préstamo",
+      loanStartDate: "Fecha de inicio",
+      loanEndDate: "Fecha de finalización",
+      loanCurrency: "Código de moneda del valor asegurado",
+      loanTerms: "Términos registrados en el préstamo",
+      lenderName: "Prestamista",
+      borrowerName: "Prestatario",
+      organizationName: "Su organización",
+      objectList: "Tabla de los objetos prestados",
+      objectCount: "Número de objetos",
+      insuranceValue: "Valor asegurado con moneda",
+    },
+    sample: {
+      partnerName: "Galería del Puerto",
+      terms: "Los objetos viajan con un correo de la institución prestamista.",
+      firstObject: "Puerto al atardecer",
+      secondObject: "Maqueta de barco pesquero",
+      condition: "Bueno",
+    },
+    errors: {
+      templateNotFound: "Esta plantilla ya no existe. Actualice la página.",
+      templateArchived:
+        "Esta plantilla está archivada. Restáurela antes de modificarla.",
+      nameRequired: "Asigne un nombre a la plantilla.",
+      sectionsRequired:
+        "Añada al menos una sección y escriba texto en cada sección.",
+      templateTooLarge:
+        "La plantilla es demasiado larga. Acorte el texto o elimine secciones.",
+      unknownPlaceholder:
+        "{placeholder} no es un marcador conocido. Use uno de la lista.",
+      malformedPlaceholder:
+        "Un marcador no está bien escrito. Cada uno empieza con dos llaves de apertura y termina con dos llaves de cierre.",
+      invalidCurrency:
+        "Introduzca un código de moneda de tres letras, como EUR.",
+      templateLimitReached:
+        "Puede mantener como máximo {limit} plantillas activas. Archive una antes de añadir otra.",
+      currencyAlreadyRecorded:
+        "Este préstamo ya tiene una moneda registrada. Actualice la página.",
+      fallback: "No se pudo guardar el cambio. Inténtelo de nuevo.",
+    },
+    agreement: {
+      template: "Plantilla",
+      printTitle: "Contrato de préstamo {loanNumber}",
+      email: {
+        subject: "Contrato de préstamo {loanNumber}",
+        greeting: "Estimado/a {name}:",
+        intro: "Adjuntamos el contrato de préstamo de {loanNumber}.",
+        details: "Datos del préstamo:",
+        loanNumber: "Número de préstamo: {loanNumber}",
+        incoming: "Tipo: préstamo entrante",
+        outgoing: "Tipo: préstamo saliente",
+        startDate: "Fecha de inicio: {date}",
+        endDate: "Fecha de finalización: {date}",
+        objects: "Objetos:",
+        review: "Le rogamos que revise y firme el contrato.",
+        signOff: "Saludos cordiales,",
+      },
+    },
+    currency: {
+      label: "Moneda",
+      placeholder: "EUR",
+      hint: "Código de tres letras, como EUR o NOK.",
+      missing:
+        "No hay ninguna moneda registrada para el valor asegurado de este préstamo, por lo que el contrato lo muestra como un número sin moneda.",
+      record: "Registrar moneda",
+      recorded: "Moneda registrada.",
     },
   },
   transit: {
@@ -4723,6 +5027,64 @@ export default {
     helpText:
       "Si aún no tienes una cuenta, usa el correo de la invitación para crear una primero. Después de iniciar sesión, podrás aceptar esta invitación de organización.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Retirada",
+    },
+    reject: {
+      title: "Rechazar esta solicitud de objeto",
+      description:
+        "Elija qué ocurre a continuación. No se añade nada a la colección ni se registra ninguna baja.",
+      returnToDraft: "Devolver a borrador",
+      returnToDraftDescription:
+        "Quien la envió puede editar la solicitud y volver a enviarla a revisión.",
+      withdraw: "Retirar",
+      withdrawDescription:
+        "Saca la solicitud de la revisión activa. El registro, sus datos de borrador y sus archivos se conservan y pueden restaurarse.",
+      reasonLabel: "Motivo",
+      reasonPlaceholder: "Explique qué debe cambiar o por qué se retira",
+      reasonHint:
+        "Obligatorio. Se notifica a quien la envió y el motivo queda en el historial del caso.",
+      confirmReturnToDraft: "Devolver a borrador",
+      confirmWithdraw: "Retirar solicitud",
+      saving: "Guardando...",
+    },
+    restore: {
+      action: "Restaurar a borrador",
+      title: "Restaurar esta solicitud de objeto",
+      description:
+        "La solicitud vuelve a la columna Borrador para editarla y enviarla de nuevo a revisión.",
+      reasonLabel: "Motivo",
+      reasonHint: "Obligatorio. Queda en el historial del caso.",
+      confirm: "Restaurar a borrador",
+    },
+    decision: {
+      returnedTitle: "Devuelta a borrador para cambios",
+      withdrawnTitle: "Retirada de la revisión",
+      restoredTitle: "Restaurada tras la retirada",
+      decidedBy: "Por {name}",
+      withdrawnDescription:
+        "Esta solicitud se conserva como registro y no está en ninguna cola activa. No se añadió nada a la colección.",
+    },
+    board: {
+      withdrawn: "Retiradas",
+      showActive: "Volver al tablero activo",
+    },
+    errors: {
+      notInReview:
+        "Esta solicitud ya no está pendiente de revisión. Actualice para ver su estado actual.",
+      notWithdrawn:
+        "Esta solicitud ya no está retirada. Actualice para ver su estado actual.",
+      reasonRequired: "Indique un motivo.",
+      notADraft:
+        "Esta solicitud ya se envió. Actualice para ver su estado actual.",
+      reasonTooLong: "El motivo debe tener menos de 2000 caracteres.",
+      notPermitted:
+        "No puede tomar esta decisión en el paso de revisión actual.",
+      fallback:
+        "No se pudo guardar la decisión. Actualice e inténtelo de nuevo.",
+    },
+  },
   accessions: {
     title: "Adquisiciones",
     description:
@@ -5177,6 +5539,163 @@ export default {
       addNotes: "Notas adicionales sobre esta desaccesión...",
     },
   },
+  parties: {
+    roles: {
+      donor: "Donante / procedencia",
+      lender: "Prestamista",
+      borrower: "Prestatario",
+      owner: "Propietario",
+      appraiser: "Tasador",
+      recipient: "Destinatario",
+    },
+    holderTypes: {
+      privatePerson: "Persona",
+      organization: "Institución",
+    },
+    reasons: {
+      name: "Mismo nombre",
+      email: "Mismo correo electrónico",
+      phone: "Mismo teléfono",
+    },
+    targetTypes: {
+      accession: "Adquisición",
+      loan: "Préstamo",
+      deaccession: "Desaccesión",
+      appraisal: "Tasación",
+      collection: "Objeto",
+    },
+    picker: {
+      placeholder: "Seleccionar o crear una persona o institución",
+      searchPlaceholder: "Buscar personas e instituciones",
+      heading: "Partes",
+      empty: "No hay personas ni instituciones coincidentes",
+      searching: "Buscando…",
+      create: "Crear nueva parte",
+      clear: "Quitar selección",
+    },
+    create: {
+      title: "Crear parte",
+      description:
+        "Añada una persona o institución una sola vez y reutilícela en adquisiciones, préstamos y desaccesiones.",
+      submit: "Crear parte",
+      creating: "Creando…",
+      created: "Parte creada",
+      duplicateRecorded:
+        "Parte creada. Se registró un posible duplicado para su revisión.",
+      similarTitle: "Ya existen partes similares",
+      similarDescription:
+        "Reutilice un registro existente en lugar de crear un duplicado.",
+      useExisting: "Usar esta parte",
+    },
+    links: {
+      title: "Partes",
+      description:
+        "Personas e instituciones vinculadas a este registro. Los nombres y datos de contacto se conservan tal como estaban al vincularse.",
+      empty: "Todavía no hay ninguna parte vinculada.",
+      partyUnavailable: "Registro de la parte no disponible",
+      archived: "Archivada",
+      recordedAs: "Registrada como {name}",
+      namedOnRecord: "Nombrada en el registro como {name}",
+      contactAtLink: "Contacto al vincular: {contact}",
+      from: "Desde {date}",
+      linkedBy: "Vinculada por {name}",
+      backfilled: "Vinculada a partir de una referencia de cuenta existente",
+      earlier: "Partes anteriores ({count})",
+      replacedOn: "Sustituida o finalizada el {date}",
+      reason: "Motivo: {reason}",
+      role: "Función",
+      party: "Parte",
+      changeReason: "Motivo del cambio",
+      changeReasonPlaceholder:
+        "Por ejemplo: la escritura de donación nombra a la fundación",
+      link: "Vincular parte",
+      linking: "Vinculando…",
+      linked: "Parte vinculada",
+      end: "Finalizar vínculo",
+      endTitle: "¿Finalizar este vínculo con la parte?",
+      endDescription:
+        "El vínculo permanece en el historial del registro junto con su motivo.",
+      endReason: "Motivo",
+      endConfirm: "Finalizar vínculo",
+      ended: "Vínculo con la parte finalizado",
+      cancel: "Cancelar",
+    },
+    history: {
+      tab: "Funciones",
+      title: "Historial de funciones",
+      description:
+        "Procedimientos en los que ha participado esta parte. Los nombres muestran lo que se registró en su momento.",
+      empty: "Todavía no hay funciones registradas para esta parte.",
+      restricted: "Registro no disponible para usted",
+      current: "Actual",
+      superseded: "Sustituida",
+      loadMore: "Cargar más",
+      legacyTitle: "Relaciones de cuenta anteriores",
+    },
+    review: {
+      title: "Revisión de partes",
+      description:
+        "Revise posibles partes duplicadas y registros que nombran a una parte solo en texto. Nada se fusiona ni se vincula automáticamente.",
+      duplicatesTab: "Posibles duplicados",
+      legacyTab: "Registros sin vincular",
+      status: "Estado",
+      statuses: {
+        pending: "Por revisar",
+        dismissed: "Descartada",
+        confirmed_distinct: "No es la misma parte",
+      },
+      scan: "Buscar posibles duplicados",
+      scanning: "Comparando…",
+      scanResult: "Nuevas sugerencias registradas: {count}.",
+      scanLimit: "Solo se compararon las {count} partes más recientes.",
+      noDuplicates: "No hay sugerencias con este estado.",
+      notSame: "No es la misma parte",
+      dismiss: "Descartar",
+      note: "Nota (opcional)",
+      resolved: "Revisión registrada",
+      reviewedBy: "Revisada por {name}",
+      unavailable: "El registro ya no está disponible",
+      mergeHint:
+        "Para consolidar un duplicado real, vincule los nuevos registros a la parte que conserve y archive la otra. Ambos historiales se mantienen intactos.",
+      legacyDescription:
+        "Registros que nombran a una parte solo en texto o que hacen referencia a una cuenta sin un vínculo tipificado. Confirme cada vínculo; se conserva la redacción original.",
+      recordType: "Tipo de registro",
+      kinds: {
+        accession: "Adquisiciones",
+        loan: "Préstamos",
+        deaccession: "Desaccesiones",
+      },
+      legacyEmpty: "No hay registros sin vincular en esta página.",
+      checked: "Registros revisados en esta página: {count}.",
+      referencesParty: "Hace referencia a {name} sin un vínculo tipificado",
+      confirmLink: "Confirmar vínculo",
+      link: "Vincular",
+      previous: "Página anterior",
+      next: "Página siguiente",
+    },
+    errors: {
+      partyNotFound:
+        "Esa parte no está disponible en esta organización. Elija otra.",
+      partyArchived: "Esa parte está archivada. Restáurela o elija otra.",
+      roleNotAllowed: "Esa función no se aplica a este registro.",
+      recordLocked:
+        "Este registro está cerrado: sus partes solo pueden confirmarse, no cambiarse. Use el flujo de corrección del propio registro.",
+      targetNotFound:
+        "Este registro ya no está disponible. Actualice e inténtelo de nuevo.",
+      nameRequired: "Introduzca un nombre para la parte.",
+      datesInvalid: "La función no puede terminar antes de empezar.",
+      linkNotFound:
+        "Ese vínculo ya no está disponible. Actualice e inténtelo de nuevo.",
+      linkAlreadySuperseded:
+        "Ese vínculo ya se finalizó o se sustituyó. Actualice para ver lo más reciente.",
+      reviewNotFound:
+        "Esa sugerencia ya no está disponible. Actualice e inténtelo de nuevo.",
+      reviewAlreadyResolved:
+        "Otra persona ya revisó esta sugerencia. Actualice para ver la decisión.",
+      fallback:
+        "No se pudo completar la acción. Actualice e inténtelo de nuevo.",
+    },
+  },
   trackedImport: {
     validationTitle: "Informe de validación",
     validationSummary: "{valid} filas válidas, {errors} con errores",
@@ -5271,16 +5790,16 @@ export default {
       agreement: {
         title: "CONTRATO DE PRÉSTAMO",
         number: "Número de contrato:",
-        period: "2. PERÍODO DEL PRÉSTAMO",
+        period: "PERÍODO DEL PRÉSTAMO",
         startDate: "Fecha de inicio:",
         endDate: "Fecha de finalización:",
-        objectsOnLoan: "3. OBJETOS PRESTADOS",
+        objectsOnLoan: "OBJETOS PRESTADOS",
         accessionNumber: "N.º de ingreso",
         titleDescription: "Título / descripción",
-        insurance: "4. SEGURO",
+        insurance: "SEGURO",
         totalInsuranceValue: "Valor total asegurado:",
-        termsConditions: "5. TÉRMINOS Y CONDICIONES",
-        standardConditions: ". CONDICIONES GENERALES",
+        termsConditions: "TÉRMINOS Y CONDICIONES",
+        standardConditions: "CONDICIONES GENERALES",
         borrowerCare:
           "El prestatario se compromete a cuidar los objetos prestados con la misma diligencia que aplica a la custodia de bienes propios comparables.",
         noTreatment:
@@ -7201,9 +7720,15 @@ export default {
       saveAndNew: "Guardar y añadir otro",
     },
     featureGuard: {
-      unavailable: "Esta función no está disponible en tu plan.",
+      tierRequired:
+        "El plan de tu organización no incluye esta función. Forma parte del plan {tier}; un administrador puede mejorarlo en Configuración › Facturación.",
+      moduleDisabled:
+        "Este módulo está desactivado para tu organización. Un administrador puede activarlo en Configuración › Módulos.",
+      permissionMissing:
+        "Tu rol no incluye acceso a esta función. Pide a un administrador que actualice tu rol.",
       locked: "{featureName} está bloqueado",
       upgradeTo: "Mejorar al plan {tier}",
+      openModules: "Abrir Configuración › Módulos",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -7786,7 +8311,8 @@ export default {
         "Ya existe un donante con este correo electrónico: {donor}",
     },
     navigation: {
-      patronManagement: "gestión de usuarios",
+      patronManagement: "Gestión de usuarios",
+      locked: "No disponible",
       overview: "Resumen",
       objectCatalog: "Catálogo de objetos",
       locationTracking: "Ubicación y seguimiento",

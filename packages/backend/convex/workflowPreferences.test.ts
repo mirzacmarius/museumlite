@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import { modules } from "../tests/testSetup";
 import { api } from "./_generated/api";
@@ -94,24 +94,28 @@ test("disabled accession workflow publishes submitted object drafts immediately"
   }: { storageId: import("./_generated/dataModel").Id<"_storage"> } =
     await uploadResponse.json();
 
-  const accessionId = await asUser.mutation(api.accessions.upsertObjectDraft, {
-    organizationId,
-    saveMode: "submit",
-    objectData: {
-      accessionNumber: "AUTO-1",
-      title: "Auto published object",
-    },
-    draftMedia: [
-      {
-        storageId: mediaStorageId,
-        fileName: "front.jpg",
-        fileSize: 1,
-        mimeType: "image/jpeg",
-        mediaCategory: "image",
-        isPrimary: false,
+  // Publishing makes the image primary; fake timers keep its thumbnail job queued.
+  vi.useFakeTimers();
+  const accessionId = await asUser
+    .mutation(api.accessions.upsertObjectDraft, {
+      organizationId,
+      saveMode: "submit",
+      objectData: {
+        accessionNumber: "AUTO-1",
+        title: "Auto published object",
       },
-    ],
-  });
+      draftMedia: [
+        {
+          storageId: mediaStorageId,
+          fileName: "front.jpg",
+          fileSize: 1,
+          mimeType: "image/jpeg",
+          mediaCategory: "image",
+          isPrimary: false,
+        },
+      ],
+    })
+    .finally(() => vi.useRealTimers());
 
   const result = await t.run(async (ctx) => {
     const [accession, collection] = await Promise.all([
@@ -149,7 +153,7 @@ test("disabled accession workflow publishes submitted object drafts immediately"
   expect(result.media?.fileName).toBe("front.jpg");
   expect(result.media?.fileType).toBe("image");
   expect(result.media?.mediaCategory).toBe("image");
-  expect(result.media?.isPrimary).toBe(false);
+  expect(result.media?.isPrimary).toBe(true);
   expect(result.media?.uploadStatus).toBe("completed");
   expect(result.usageCounter?.objectCount).toBe(1);
   expect(result.usageCounter?.mediaFileCount).toBe(1);

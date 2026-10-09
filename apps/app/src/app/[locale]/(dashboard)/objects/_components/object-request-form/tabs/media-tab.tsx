@@ -4,6 +4,7 @@ import { Button } from "@v1/ui/button";
 import { Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type {
@@ -73,19 +74,36 @@ export function ObjectRequestMediaTab({
                             />
                           </div>
                         ) : null}
-                        <div className="px-4 py-3">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {item.fileName}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {item.isPrimary
-                              ? tRoot(
-                                  "untranslatedRecords.objects.media.primaryAlreadySaved",
-                                )
-                              : tRoot(
-                                  "untranslatedRecords.objects.media.savedWithDraft",
-                                )}
-                          </p>
+                        <div className="flex items-start justify-between gap-2 px-4 py-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-foreground">
+                              {item.fileName}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {tRoot(
+                                "untranslatedRecords.objects.media.savedWithDraft",
+                              )}
+                            </p>
+                          </div>
+                          {item.isPrimary ? (
+                            <div className="shrink-0 rounded-full bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground">
+                              {tRoot("objects.form.media.primary")}
+                            </div>
+                          ) : (
+                            <PermissionGate permission="media.upload">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="secondary"
+                                className="size-8 shrink-0"
+                                onClick={() => handleSetPrimary(item.storageId)}
+                                title={common("setAsPrimary")}
+                                aria-label={common("setAsPrimary")}
+                              >
+                                <Star className="size-3.5" />
+                              </Button>
+                            </PermissionGate>
+                          )}
                         </div>
                       </div>,
                     ]
@@ -120,22 +138,25 @@ export function ObjectRequestMediaTab({
                   )}
                 </div>
 
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-zinc-950/65 p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-zinc-950/65 p-3 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                   <div className="truncate text-xs text-white">
                     {file.file.name}
                   </div>
                   <div className="flex items-center gap-1">
                     {!file.isPrimary ? (
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="secondary"
-                        className="size-8"
-                        onClick={() => handleSetPrimary(file.id)}
-                        title={common("setAsPrimary")}
-                      >
-                        <Star className="size-3.5" />
-                      </Button>
+                      <PermissionGate permission="media.upload">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="size-8"
+                          onClick={() => handleSetPrimary(file.id)}
+                          title={common("setAsPrimary")}
+                          aria-label={common("setAsPrimary")}
+                        >
+                          <Star className="size-3.5" />
+                        </Button>
+                      </PermissionGate>
                     ) : null}
                     <Button
                       type="button"
