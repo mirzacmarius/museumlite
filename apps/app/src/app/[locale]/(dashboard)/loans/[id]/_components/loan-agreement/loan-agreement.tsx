@@ -10,22 +10,111 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@v1/ui/dialog";
+import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { FileText, Mail, Printer } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { LoanAgreementDocument } from "./loan-agreement-document";
+import { LoanCurrencyBackfill } from "./loan-currency-backfill";
 import type { LoanAgreementProps } from "./types";
 import { useLoanAgreementActions } from "./use-loan-agreement-actions";
-export function LoanAgreement({
+import {
+  STANDARD_AGREEMENT,
+  useLoanAgreementTemplate,
+} from "./use-loan-agreement-template";
+
+function LoanAgreementPreview({
+  loanId,
+  organizationId,
   loan,
   items,
   organizationName,
-}: LoanAgreementProps) {
+  onClose,
+}: LoanAgreementProps & { onClose: () => void }) {
   const tRoot = useI18n();
+  const t = useScopedI18n("loanAgreementTemplates");
+  const { printRef, handlePrint, handleEmail } = useLoanAgreementActions({
+    loan,
+    items,
+    organizationName,
+  });
+  const agreement = useLoanAgreementTemplate({ loanId, organizationId });
+  const loading = (
+    <p className="text-sm text-muted-foreground">{tRoot("common.loading")}</p>
+  );
+
+  return (
+    <>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Label htmlFor="loan-agreement-template">
+          {t("agreement.template")}
+        </Label>
+        <Select
+          value={agreement.selectedValue}
+          onValueChange={agreement.selectTemplate}
+          disabled={agreement.isLoading}
+        >
+          <SelectTrigger id="loan-agreement-template" className="sm:w-80">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {agreement.templates.map((template) => (
+              <SelectItem key={template._id} value={template._id}>
+                {template.name}
+              </SelectItem>
+            ))}
+            <SelectItem value={STANDARD_AGREEMENT}>
+              {t("standardAgreement")}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loan.insuranceValue && !loan.currency ? (
+        <LoanCurrencyBackfill loanId={loanId} />
+      ) : null}
+
+      {agreement.isLoading ? (
+        loading
+      ) : (
+        <Suspense fallback={loading}>
+          <LoanAgreementDocument
+            printRef={printRef}
+            loan={loan}
+            items={items}
+            organizationName={organizationName}
+            template={agreement.template}
+          />
+        </Suspense>
+      )}
+
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={onClose}>
+          {tRoot("deaccessions.actions.close")}
+        </Button>
+        <Button variant="outline" onClick={handleEmail}>
+          <Mail className="mr-2 size-4" />
+          {tRoot("untranslatedRecords.loans.agreement.sendEmail")}
+        </Button>
+        <Button onClick={handlePrint} disabled={agreement.isLoading}>
+          <Printer className="mr-2 size-4" />
+          {tRoot("untranslatedRecords.loans.agreement.printAgreement")}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+export function LoanAgreement(props: LoanAgreementProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const tActions = useScopedI18n("loans.actions");
-  const { printRef, locale, formatLoanDate, handlePrint, handleEmail } =
-    useLoanAgreementActions({ loan, items, organizationName });
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -42,29 +131,7 @@ export function LoanAgreement({
             {tActions("loanAgreementPreview")}
           </DialogDescription>
         </DialogHeader>
-
-        <LoanAgreementDocument
-          printRef={printRef}
-          loan={loan}
-          items={items}
-          organizationName={organizationName}
-          locale={locale}
-          formatLoanDate={formatLoanDate}
-        />
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => setDialogOpen(false)}>
-            {tRoot("deaccessions.actions.close")}
-          </Button>
-          <Button variant="outline" onClick={handleEmail}>
-            <Mail className="mr-2 size-4" />
-            {tRoot("untranslatedRecords.loans.agreement.sendEmail")}
-          </Button>
-          <Button onClick={handlePrint}>
-            <Printer className="mr-2 size-4" />
-            {tRoot("untranslatedRecords.loans.agreement.printAgreement")}
-          </Button>
-        </DialogFooter>
+        <LoanAgreementPreview {...props} onClose={() => setDialogOpen(false)} />
       </DialogContent>
     </Dialog>
   );

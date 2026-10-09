@@ -29,6 +29,7 @@ interface UseObjectRequestFormDraftOptions {
   uploadDraftMedia: () => Promise<DraftMediaItem[]>;
   clearLocalMediaSelections: () => void;
   setError: (error: string | null) => void;
+  describeError: (error: unknown) => string | null;
 }
 
 export function useObjectRequestFormDraft({
@@ -43,6 +44,7 @@ export function useObjectRequestFormDraft({
   uploadDraftMedia,
   clearLocalMediaSelections,
   setError,
+  describeError,
 }: UseObjectRequestFormDraftOptions) {
   const { push } = useRouter();
   const upsertObjectDraft = useMutation(api.accessions.upsertObjectDraft);
@@ -99,7 +101,10 @@ export function useObjectRequestFormDraft({
 
         return true;
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to save draft.");
+        setError(
+          describeError(err) ??
+            (err instanceof Error ? err.message : "Failed to save draft."),
+        );
         return false;
       } finally {
         setIsSavingDraft(false);
@@ -109,6 +114,7 @@ export function useObjectRequestFormDraft({
       activeDraftAccessionId,
       clearLocalMediaSelections,
       currentOrganizationId,
+      describeError,
       dispatchDraft,
       formData,
       initialFormSignatureRef,

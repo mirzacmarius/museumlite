@@ -516,6 +516,7 @@ export default {
       developer: "Dezvoltator",
       data: "Import/Export Date",
       metrics: "Starea indicatorilor",
+      loanAgreements: "Contracte de împrumut",
     },
     roles: {
       title: "Gestionare Roluri",
@@ -1881,6 +1882,64 @@ export default {
       none: "Niciuna",
       printedOn: "Printează la data de",
       print: "Printează",
+    },
+  },
+  accessionReview: {
+    status: {
+      withdrawn: "Retrasă",
+    },
+    reject: {
+      title: "Respinge această cerere de obiect",
+      description:
+        "Alegeți ce urmează. Nimic nu este adăugat în colecție și nu se înregistrează nicio scoatere din evidență.",
+      returnToDraft: "Trimite înapoi la ciornă",
+      returnToDraftDescription:
+        "Persoana care a trimis-o poate edita cererea și o poate trimite din nou spre evaluare.",
+      withdraw: "Retrage",
+      withdrawDescription:
+        "Scoate cererea din evaluarea activă. Înregistrarea, datele ciornei și fișierele sunt păstrate și pot fi restaurate.",
+      reasonLabel: "Motiv",
+      reasonPlaceholder: "Explicați ce trebuie schimbat sau de ce este retrasă",
+      reasonHint:
+        "Obligatoriu. Persoana care a trimis-o este notificată, iar motivul rămâne în istoricul cazului.",
+      confirmReturnToDraft: "Trimite înapoi la ciornă",
+      confirmWithdraw: "Retrage cererea",
+      saving: "Se salvează...",
+    },
+    restore: {
+      action: "Restaurează ca ciornă",
+      title: "Restaurează această cerere de obiect",
+      description:
+        "Cererea revine în coloana Ciornă pentru a fi editată și trimisă din nou spre evaluare.",
+      reasonLabel: "Motiv",
+      reasonHint: "Obligatoriu. Rămâne în istoricul cazului.",
+      confirm: "Restaurează ca ciornă",
+    },
+    decision: {
+      returnedTitle: "Trimisă înapoi la ciornă pentru modificări",
+      withdrawnTitle: "Retrasă din evaluare",
+      restoredTitle: "Restaurată după retragere",
+      decidedBy: "De {name}",
+      withdrawnDescription:
+        "Această cerere este păstrată ca evidență și nu se află în nicio coadă activă. Nimic nu a fost adăugat în colecție.",
+    },
+    board: {
+      withdrawn: "Retrase",
+      showActive: "Înapoi la panoul activ",
+    },
+    errors: {
+      notInReview:
+        "Această cerere nu mai așteaptă evaluarea. Reîmprospătați pentru a vedea starea curentă.",
+      notWithdrawn:
+        "Această cerere nu mai este retrasă. Reîmprospătați pentru a vedea starea curentă.",
+      reasonRequired: "Introduceți un motiv.",
+      notADraft:
+        "Această cerere a fost deja trimisă. Reîmprospătați pentru a vedea starea curentă.",
+      reasonTooLong: "Motivul trebuie să aibă mai puțin de 2000 de caractere.",
+      notPermitted:
+        "Nu puteți lua această decizie pentru pasul de evaluare curent.",
+      fallback:
+        "Decizia nu a putut fi salvată. Reîmprospătați și încercați din nou.",
     },
   },
   accessions: {
@@ -5022,6 +5081,73 @@ export default {
       confirmDelete: "Ești sigur că vrei să ștergi acest fișier?",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "Detalii {type}",
+      description:
+        "Se salvează cu această ciornă și se înregistrează pe obiect când intrarea este aprobată. Schimbarea tipului de colecție elimină aceste detalii.",
+    },
+    summary: {
+      title: "Detalii {type}",
+    },
+    changeType: {
+      title: "Schimbați tipul de colecție?",
+      description:
+        "Detaliile {type} introduse în această ciornă vor fi eliminate. Se păstrează doar detaliile pentru tipul de colecție actual al ciornei.",
+      confirm: "Schimbă tipul și elimină detaliile",
+      cancel: "Păstrează tipul actual",
+    },
+    errors: {
+      moduleDisabled:
+        "Modulul acestui tip de colecție nu este activat pentru organizația dvs. Alegeți alt tip de colecție sau cereți unui administrator să activeze modulul.",
+      typeMismatch:
+        "Detaliile specifice tipului nu corespund tipului de colecție selectat. Verificați detaliile și salvați din nou.",
+    },
+    fields: {
+      appraiser: "Evaluator",
+      lastAppraisalDate: "Data ultimei evaluări",
+      insuranceCarrier: "Asigurător",
+      insuranceExpiresAt: "Data expirării asigurării",
+      peakWindowStart: "De băut din (anul)",
+      peakWindowEnd: "De băut până în (anul)",
+      make: "Marcă",
+      model: "Model",
+      year: "An",
+      odometerUnit: "Unitatea kilometrajului",
+      retentionYears: "Perioadă de păstrare (ani)",
+      digitalAssetUrl: "URL resursă digitală",
+      countryOrRegion: "Țară sau regiune",
+      issueYear: "Anul emiterii",
+      issuePeriod: "Perioada emiterii",
+      series: "Serie",
+      certifyingAuthority: "Autoritate de certificare",
+      diameterMm: "Diametru (mm)",
+      weightGrams: "Greutate (g)",
+      conditionNotes: "Note privind starea",
+      notes: "Note",
+    },
+    options: {
+      inStorage: "În depozit",
+      cork: "Dop de plută",
+      screwcap: "Capac filetat",
+      synthetic: "Sintetic",
+      glass: "Sticlă",
+      crown: "Capsă coroană",
+      miles: "Mile",
+      kilometres: "Kilometri",
+      male: "Mascul",
+      female: "Femelă",
+      dry: "Uscat",
+      wet: "Umed (în lichid)",
+      frozen: "Congelat",
+      pinned: "Fixat cu ac",
+      pressed: "Presat",
+      mounted: "Montat",
+      cast: "Mulaj",
+      fossil: "Fosilă",
+      other: "Altul",
+    },
+  },
   workflows: {
     title: "Fluxuri de Lucru",
     description: "Automatizează procesele",
@@ -5195,6 +5321,163 @@ export default {
       scanned: "Scanat: {code}",
       objectNotFound: "Obiectul nu a fost găsit: {code}",
       scannerError: "Eroare scaner: {error}",
+    },
+  },
+  parties: {
+    roles: {
+      donor: "Donator / sursă",
+      lender: "Împrumutător",
+      borrower: "Împrumutat",
+      owner: "Proprietar",
+      appraiser: "Evaluator",
+      recipient: "Destinatar",
+    },
+    holderTypes: {
+      privatePerson: "Persoană",
+      organization: "Instituție",
+    },
+    reasons: {
+      name: "Același nume",
+      email: "Același e-mail",
+      phone: "Același telefon",
+    },
+    targetTypes: {
+      accession: "Accesiune",
+      loan: "Împrumut",
+      deaccession: "Scoatere din colecție",
+      appraisal: "Evaluare",
+      collection: "Obiect",
+    },
+    picker: {
+      placeholder: "Selectează sau creează o persoană sau o instituție",
+      searchPlaceholder: "Caută persoane și instituții",
+      heading: "Părți",
+      empty: "Nicio persoană sau instituție corespunzătoare",
+      searching: "Se caută…",
+      create: "Creează o parte nouă",
+      clear: "Șterge selecția",
+    },
+    create: {
+      title: "Creează o parte",
+      description:
+        "Adaugă o persoană sau o instituție o singură dată și reutilizeaz-o în accesiuni, împrumuturi și scoateri din colecție.",
+      submit: "Creează partea",
+      creating: "Se creează…",
+      created: "Parte creată",
+      duplicateRecorded:
+        "Parte creată. Un posibil duplicat a fost înregistrat pentru verificare.",
+      similarTitle: "Există deja părți asemănătoare",
+      similarDescription:
+        "Reutilizează o înregistrare existentă în loc să creezi un duplicat.",
+      useExisting: "Folosește această parte",
+    },
+    links: {
+      title: "Părți",
+      description:
+        "Persoane și instituții legate de această înregistrare. Numele și datele de contact se păstrează așa cum erau la momentul legării.",
+      empty: "Nicio parte nu este legată încă.",
+      partyUnavailable: "Înregistrarea părții nu este disponibilă",
+      archived: "Arhivată",
+      recordedAs: "Înregistrată ca {name}",
+      namedOnRecord: "Numită în înregistrare ca {name}",
+      contactAtLink: "Contact la legare: {contact}",
+      from: "De la {date}",
+      linkedBy: "Legată de {name}",
+      backfilled: "Legată pe baza unei referințe de cont existente",
+      earlier: "Părți anterioare ({count})",
+      replacedOn: "Înlocuită sau încheiată la {date}",
+      reason: "Motiv: {reason}",
+      role: "Rol",
+      party: "Parte",
+      changeReason: "Motivul schimbării",
+      changeReasonPlaceholder: "De exemplu: actul de donație numește fundația",
+      link: "Leagă o parte",
+      linking: "Se leagă…",
+      linked: "Parte legată",
+      end: "Încheie legătura",
+      endTitle: "Închei această legătură cu partea?",
+      endDescription:
+        "Legătura rămâne în istoricul înregistrării, împreună cu motivul tău.",
+      endReason: "Motiv",
+      endConfirm: "Încheie legătura",
+      ended: "Legătura cu partea a fost încheiată",
+      cancel: "Anulează",
+    },
+    history: {
+      tab: "Roluri",
+      title: "Istoricul rolurilor",
+      description:
+        "Proceduri la care a participat această parte. Numele arată ce s-a înregistrat la momentul respectiv.",
+      empty: "Nu există încă roluri înregistrate pentru această parte.",
+      restricted: "Înregistrare indisponibilă pentru tine",
+      current: "Actual",
+      superseded: "Înlocuit",
+      loadMore: "Încarcă mai multe",
+      legacyTitle: "Relații de cont anterioare",
+    },
+    review: {
+      title: "Verificarea părților",
+      description:
+        "Verifică posibilele părți duplicate și înregistrările care numesc o parte doar în text. Nimic nu se unește și nu se leagă automat.",
+      duplicatesTab: "Posibile duplicate",
+      legacyTab: "Înregistrări nelegate",
+      status: "Stare",
+      statuses: {
+        pending: "De verificat",
+        dismissed: "Respinsă",
+        confirmed_distinct: "Nu este aceeași parte",
+      },
+      scan: "Caută posibile duplicate",
+      scanning: "Se compară…",
+      scanResult: "Sugestii noi înregistrate: {count}.",
+      scanLimit: "Au fost comparate doar cele mai recente {count} părți.",
+      noDuplicates: "Nicio sugestie cu această stare.",
+      notSame: "Nu este aceeași parte",
+      dismiss: "Respinge",
+      note: "Notă (opțional)",
+      resolved: "Verificare înregistrată",
+      reviewedBy: "Verificată de {name}",
+      unavailable: "Înregistrarea nu mai este disponibilă",
+      mergeHint:
+        "Pentru a consolida un duplicat real, leagă înregistrările noi de partea pe care o păstrezi și arhivează-o pe cealaltă. Ambele istorii rămân intacte.",
+      legacyDescription:
+        "Înregistrări care numesc o parte doar în text sau care fac referire la un cont fără o legătură tipizată. Confirmă fiecare legătură; formularea originală se păstrează.",
+      recordType: "Tip de înregistrare",
+      kinds: {
+        accession: "Accesiuni",
+        loan: "Împrumuturi",
+        deaccession: "Scoateri din colecție",
+      },
+      legacyEmpty: "Nicio înregistrare nelegată pe această pagină.",
+      checked: "Înregistrări verificate pe această pagină: {count}.",
+      referencesParty: "Face referire la {name} fără o legătură tipizată",
+      confirmLink: "Confirmă legătura",
+      link: "Leagă",
+      previous: "Pagina anterioară",
+      next: "Pagina următoare",
+    },
+    errors: {
+      partyNotFound:
+        "Această parte nu este disponibilă în organizație. Alege alta.",
+      partyArchived:
+        "Această parte este arhivată. Restaureaz-o sau alege alta.",
+      roleNotAllowed: "Acest rol nu se aplică acestei înregistrări.",
+      recordLocked:
+        "Această înregistrare este închisă: părțile ei pot fi doar confirmate, nu schimbate. Folosește fluxul de corectare al înregistrării.",
+      targetNotFound:
+        "Această înregistrare nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
+      nameRequired: "Introdu un nume pentru parte.",
+      datesInvalid: "Rolul nu se poate încheia înainte să înceapă.",
+      linkNotFound:
+        "Această legătură nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
+      linkAlreadySuperseded:
+        "Această legătură a fost deja încheiată sau înlocuită. Reîmprospătează pentru a vedea ultima versiune.",
+      reviewNotFound:
+        "Această sugestie nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
+      reviewAlreadyResolved:
+        "Cineva a verificat deja această sugestie. Reîmprospătează pentru a vedea decizia.",
+      fallback:
+        "Acțiunea nu a putut fi finalizată. Reîmprospătează și încearcă din nou.",
     },
   },
   trackedImport: {
@@ -5473,6 +5756,118 @@ export default {
       failedToDeleteWebhook: "Ștergerea webhookului a eșuat",
     },
   },
+  webhookDeliveries: {
+    noPermission:
+      "Ai nevoie de permisiunea de a gestiona setările organizației pentru a administra webhook-urile.",
+    log: {
+      title: "Jurnal de livrări",
+      description:
+        "Fiecare eveniment trimis către endpoint-urile tale, cu fiecare încercare și răspuns. Înregistrările se păstrează 30 de zile.",
+      endpointFilter: "Endpoint",
+      statusFilter: "Stare",
+      allEndpoints: "Toate endpoint-urile",
+      allStatuses: "Toate stările",
+      empty: "Nicio livrare nu corespunde acestor filtre.",
+      loadMore: "Încarcă mai multe",
+      details: "Detalii",
+      deletedEndpoint: "Endpoint șters",
+      testEvent: "Eveniment de test",
+      attempts: "Încercări: {count}",
+      nextAttempt: "Următoarea încercare {time}",
+      sending: "Se trimite acum",
+    },
+    status: {
+      pending: "În așteptare",
+      retrying: "Se reîncearcă",
+      succeeded: "Livrat",
+      failed_transient: "Eșuat",
+      failed_permanent: "Eșuat definitiv",
+      cancelled: "Anulat",
+    },
+    outcome: {
+      succeeded: "Livrat",
+      failed_transient: "Eșec temporar",
+      failed_permanent: "Eșec definitiv",
+    },
+    reasons: {
+      http_error: "Destinatarul a răspuns HTTP {status}",
+      timeout: "Niciun răspuns în 10 secunde",
+      network_error: "Nu s-a putut realiza conexiunea cu endpoint-ul",
+      attempt_lost: "Încercarea nu și-a raportat rezultatul",
+      event_expired: "Evenimentul nu mai este stocat",
+      endpoint_deleted: "Endpoint-ul a fost șters",
+      endpoint_disabled: "Endpoint-ul a fost dezactivat",
+      endpoint_insecure: "URL-ul endpoint-ului nu folosește HTTPS",
+      endpoint_unsubscribed:
+        "Endpoint-ul nu mai este abonat la acest eveniment",
+    },
+    detail: {
+      title: "Detaliile livrării",
+      deliveryId: "ID livrare",
+      eventId: "ID eveniment",
+      event: "Eveniment",
+      endpoint: "Endpoint",
+      created: "Creat",
+      payload: "Conținut (versiunea {version})",
+      attemptsTitle: "Încercări",
+      noAttempts: "Nu a fost trimisă nicio cerere pentru această livrare.",
+      attempt: "Încercarea {number}",
+      duration: "{ms} ms",
+      retry: "Reîncearcă livrarea",
+      retrying: "Se reîncearcă...",
+      retryHelp:
+        "O reîncercare retrimite același conținut cu același ID de livrare, astfel încât destinatarul să poată ignora duplicatele.",
+      notFound: "Această livrare nu mai este disponibilă.",
+      close: "Închide",
+    },
+    endpoint: {
+      lastDelivery: "Ultima livrare {time}",
+      neverDelivered: "Nelivrat încă",
+      viewDeliveries: "Livrări",
+      sendTest: "Trimite test",
+      testQueued:
+        "Evenimentul de test a fost pus în coadă. Rezultatul apare în jurnalul de livrări.",
+      rotateSecret: "Schimbă secretul",
+    },
+    rotate: {
+      title: "Schimbi secretul de semnare?",
+      description:
+        "Secretul actual nu mai funcționează imediat. Fiecare încercare ulterioară, inclusiv reîncercările, este semnată cu noul secret, așa că actualizează destinatarul.",
+      confirm: "Schimbă secretul",
+      cancel: "Anulează",
+      rotatedTitle: "Secret de semnare nou",
+      rotatedDescription:
+        "Copiază acest secret acum. Nu îl vei mai putea vedea.",
+      done: "Gata",
+    },
+    signing: {
+      title: "Verificarea livrărilor",
+      signature:
+        "X-ML-Signature este sha256= urmat de HMAC-SHA256 în hexazecimal al corpului brut al cererii, calculat cu secretul tău de semnare.",
+      signatureV2:
+        "X-ML-Signature-V2 este v2= urmat de HMAC-SHA256 al valorii X-ML-Delivery, un punct, valoarea X-ML-Timestamp, un punct și corpul. X-ML-Timestamp este ora trimiterii în secunde Unix; respinge valorile din afara intervalului tău de toleranță.",
+      duplicates:
+        "Reîncercările refolosesc X-ML-Delivery și același corp. Tratează un ID de livrare repetat ca deja procesat.",
+      retries:
+        "Orice răspuns 2xx contează ca livrat. După expirări, erori de rețea și răspunsuri 408, 429 și 5xx evenimentul este retrimis, până la 6 trimiteri în total pe parcursul a aproximativ 3 ore. Redirecționările nu sunt urmate, iar celelalte răspunsuri nu se reîncearcă.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Introdu un nume pentru endpoint.",
+      WEBHOOK_URL_INVALID: "Introdu un URL HTTPS valid.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "Unul dintre evenimentele selectate nu este disponibil.",
+      WEBHOOK_LIMIT_REACHED:
+        "Această organizație are deja numărul maxim de endpoint-uri webhook.",
+      WEBHOOK_NOT_FOUND: "Acest endpoint nu mai există.",
+      WEBHOOK_DISABLED: "Activează endpoint-ul înainte de a trimite către el.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "Endpoint-ul nu mai este abonat la acest eveniment. Abonează-l din nou înainte de a reîncerca.",
+      DELIVERY_NOT_FOUND: "Această livrare nu mai există.",
+      DELIVERY_NOT_RETRYABLE:
+        "Doar livrările eșuate sau anulate pot fi reîncercate.",
+      fallback: "Acțiunea nu a putut fi finalizată. Încearcă din nou.",
+    },
+  },
   activity: {
     title: "Activitate",
     headerTitle: "Activitate",
@@ -5530,6 +5925,134 @@ export default {
     statusProcessing: "În curs de procesare",
     statusCataloged: "Catalogat",
     statusRejected: "Respins",
+  },
+  loanAgreementTemplates: {
+    title: "Contracte de împrumut",
+    description:
+      "Redactați contractele pe care organizația dvs. le emite pentru împrumuturi. Câmpurile variabile sunt completate cu datele fiecărui împrumut atunci când se generează un contract.",
+    newTemplate: "Șablon nou",
+    empty:
+      "Nu există încă șabloane. Împrumuturile folosesc contractul standard până când creați unul.",
+    standardAgreement: "Contract standard",
+    standardAgreementDescription:
+      "Integrat. Se folosește pentru împrumuturi când niciun șablon nu este setat ca implicit.",
+    defaultBadge: "Implicit",
+    archivedBadge: "Arhivat",
+    archivedHeading: "Șabloane arhivate",
+    sectionCount: "Secțiuni: {count}",
+    appliesTo: {
+      any: "Toate împrumuturile",
+      incoming: "Împrumuturi primite",
+      outgoing: "Împrumuturi acordate",
+    },
+    actions: {
+      edit: "Editează",
+      setDefault: "Setează ca implicit",
+      archive: "Arhivează",
+      restore: "Restaurează",
+    },
+    toasts: {
+      created: "Șablonul a fost creat.",
+      saved: "Șablonul a fost salvat.",
+      defaultSet: "Șablonul implicit a fost actualizat.",
+      archived: "Șablonul a fost arhivat.",
+      restored: "Șablonul a fost restaurat.",
+    },
+    editor: {
+      createTitle: "Șablon nou de contract de împrumut",
+      editTitle: "Editează șablonul de contract de împrumut",
+      description:
+        "Secțiunile apar în ordine după părți. O linie ale cărei câmpuri variabile nu au valoare pentru un împrumut este omisă.",
+      name: "Nume",
+      namePlaceholder: "Împrumut acordat standard",
+      language: "Limbă",
+      appliesTo: "Se aplică pentru",
+      sections: "Secțiuni",
+      sectionHeading: "Titlu",
+      sectionBody: "Text",
+      addSection: "Adaugă secțiune",
+      removeSection: "Elimină secțiunea",
+      moveUp: "Mută secțiunea în sus",
+      moveDown: "Mută secțiunea în jos",
+      startFromStandard: "Pornește de la contractul standard",
+      placeholders: "Câmpuri variabile",
+      placeholdersHint: "Copiați un câmp variabil într-un titlu sau text.",
+      copied: "S-a copiat {placeholder}",
+      preview: "Previzualizare cu un împrumut exemplu",
+      save: "Salvează șablonul",
+      saving: "Se salvează…",
+      cancel: "Anulează",
+    },
+    placeholders: {
+      loanNumber: "Numărul împrumutului",
+      loanStartDate: "Data începerii",
+      loanEndDate: "Data încheierii",
+      loanCurrency: "Codul monedei valorii asigurate",
+      loanTerms: "Termenii înregistrați pe împrumut",
+      lenderName: "Împrumutător",
+      borrowerName: "Împrumutat",
+      organizationName: "Organizația dvs.",
+      objectList: "Tabelul obiectelor împrumutate",
+      objectCount: "Numărul de obiecte",
+      insuranceValue: "Valoarea asigurată cu moneda",
+    },
+    sample: {
+      partnerName: "Galeria Portului",
+      terms:
+        "Obiectele sunt transportate cu un curier al instituției care împrumută.",
+      firstObject: "Port la apus",
+      secondObject: "Machetă de barcă de pescuit",
+      condition: "Bună",
+    },
+    errors: {
+      templateNotFound: "Acest șablon nu mai există. Reîmprospătați pagina.",
+      templateArchived:
+        "Acest șablon este arhivat. Restaurați-l înainte de a-l modifica.",
+      nameRequired: "Dați un nume șablonului.",
+      sectionsRequired:
+        "Adăugați cel puțin o secțiune și scrieți text în fiecare secțiune.",
+      templateTooLarge:
+        "Șablonul este prea lung. Scurtați textul sau eliminați secțiuni.",
+      unknownPlaceholder:
+        "{placeholder} nu este un câmp variabil cunoscut. Folosiți unul din listă.",
+      malformedPlaceholder:
+        "Un câmp variabil nu este scris corect. Fiecare începe cu două acolade deschise și se termină cu două acolade închise.",
+      invalidCurrency:
+        "Introduceți un cod de monedă din trei litere, de exemplu EUR.",
+      templateLimitReached:
+        "Puteți păstra cel mult {limit} șabloane active. Arhivați unul înainte de a adăuga altul.",
+      currencyAlreadyRecorded:
+        "Acest împrumut are deja o monedă înregistrată. Reîmprospătați pagina.",
+      fallback: "Modificarea nu a putut fi salvată. Încercați din nou.",
+    },
+    agreement: {
+      template: "Șablon",
+      printTitle: "Contract de împrumut {loanNumber}",
+      email: {
+        subject: "Contract de împrumut {loanNumber}",
+        greeting: "Stimate/Stimată {name},",
+        intro:
+          "Vă transmitem atașat contractul de împrumut pentru {loanNumber}.",
+        details: "Detaliile împrumutului:",
+        loanNumber: "Numărul împrumutului: {loanNumber}",
+        incoming: "Tip: împrumut primit",
+        outgoing: "Tip: împrumut acordat",
+        startDate: "Data începerii: {date}",
+        endDate: "Data încheierii: {date}",
+        objects: "Obiecte:",
+        review: "Vă rugăm să verificați și să semnați contractul.",
+        signOff: "Cu stimă,",
+      },
+    },
+    currency: {
+      label: "Monedă",
+      placeholder: "EUR",
+      hint: "Cod din trei litere, de exemplu EUR sau RON.",
+      missing:
+        "Nu este înregistrată nicio monedă pentru valoarea asigurată a acestui împrumut, așa că în contract apare ca un simplu număr.",
+      record: "Înregistrează moneda",
+      recorded: "Moneda a fost înregistrată.",
+    },
   },
   transit: {
     status: "Starea transportului",
@@ -6077,16 +6600,16 @@ export default {
       agreement: {
         title: "CONTRACT DE ÎMPRUMUT",
         number: "Numărul contractului:",
-        period: "2. PERIOADA ÎMPRUMUTULUI",
+        period: "PERIOADA ÎMPRUMUTULUI",
         startDate: "Data începerii:",
         endDate: "Data încheierii:",
-        objectsOnLoan: "3. OBIECTE ÎMPRUMUTATE",
+        objectsOnLoan: "OBIECTE ÎMPRUMUTATE",
         accessionNumber: "Nr. de inventar",
         titleDescription: "Titlu/descriere",
-        insurance: "4. ASIGURARE",
+        insurance: "ASIGURARE",
         totalInsuranceValue: "Valoarea totală asigurată:",
-        termsConditions: "5. TERMENI ȘI CONDIȚII",
-        standardConditions: ". CONDIȚII STANDARD",
+        termsConditions: "TERMENI ȘI CONDIȚII",
+        standardConditions: "CONDIȚII STANDARD",
         borrowerCare:
           "Împrumutatul se angajează să îngrijească obiectele împrumutate cu aceeași atenție ca bunurile proprii comparabile aflate în păstrarea sa.",
         noTreatment:
@@ -8120,9 +8643,15 @@ export default {
       saveAndNew: "Salvează și adaugă altul",
     },
     featureGuard: {
-      unavailable: "Această funcție nu este disponibilă în planul tău.",
+      tierRequired:
+        "Planul organizației tale nu include această funcție. Face parte din planul {tier}; un administrator poate face upgrade din Setări › Facturare.",
+      moduleDisabled:
+        "Acest modul este dezactivat pentru organizația ta. Un administrator îl poate activa din Setări › Module.",
+      permissionMissing:
+        "Rolul tău nu include acces la această funcție. Cere unui administrator să îți actualizeze rolul.",
       locked: "{featureName} este blocată",
       upgradeTo: "Treci la planul {tier}",
+      openModules: "Deschide Setări › Module",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -8697,7 +9226,8 @@ export default {
         "Există deja un donator cu această adresă de e-mail: {donor}",
     },
     navigation: {
-      patronManagement: "gestionarea utilizatorilor",
+      patronManagement: "Gestionarea cititorilor",
+      locked: "Indisponibil",
       overview: "Prezentare generală",
       objectCatalog: "Catalogul obiectelor",
       locationTracking: "Locații și urmărire",
@@ -9096,6 +9626,46 @@ export default {
       "Fișierul de export nu este disponibil. Reîncercați sau creați un export nou.",
     reportsNote:
       "Rezumatele de rapoarte de mai jos conțin răspunsurile KPI curente și liste limitate de elemente recente sau viitoare. Folosiți exporturile complete ale catalogului și auditului de mai sus pentru seturi de date sursă reconciliate.",
+    sourceRegister: "Registru: {profile}",
+    progressRegister:
+      "{rows} rânduri de registru · {scanned} înregistrări examinate · {pages} pagini",
+    errorRegisterCriteria:
+      "Verificați criteriile registrului: datele trebuie să fie valide, data de început nu poate fi după data de sfârșit, data de referință nu poate fi în viitor, iar statusul se aplică doar registrelor de accesiune și de dezafectare.",
+  },
+  registerReports: {
+    title: "Registre instituționale",
+    description:
+      "Generați registre de accesiune, dezafectare, custodie și stare de conservare din dovezile înregistrate. Fiecare fișier are o schemă de coloane tipizată și un manifest cu criteriile, data de referință și generatorul.",
+    profile: "Registru",
+    profileAccession: "Registru de accesiune",
+    profileDisposal: "Registru de dezafectare",
+    profileCustody: "Registru de custodie",
+    profileCondition: "Registru de stare de conservare",
+    profileSpectrum: "SPECTRUM XML (neacceptat)",
+    profileLido: "LIDO XML (neacceptat)",
+    fromDate: "De la",
+    toDate: "Până la",
+    status: "Status",
+    statusAny: "Orice status",
+    statusPending: "În așteptare",
+    statusApproved: "Aprobat",
+    statusRejected: "Respins",
+    asOf: "La data de",
+    asOfHint:
+      "Lăsați La data de gol pentru a folosi momentul creării registrului. Dovezile înregistrate după acest moment sunt excluse. Datele și momentul de referință sunt în UTC.",
+    preview: "Previzualizare",
+    previewing: "Se încarcă previzualizarea",
+    previewLabel: "Previzualizarea registrului",
+    previewSummary:
+      "Se afișează {shown} din {rows} rânduri din prima pagină ({scanned} înregistrări examinate).",
+    previewMore:
+      "Urmează mai multe rânduri; creați registrul pentru fișierul complet.",
+    previewEmpty: "Prima pagină nu are rânduri pentru aceste criterii.",
+    notRecordedNote:
+      "Celulele goale numite în notRecorded nu au fost niciodată înregistrate în MuseumLite. Rândurile marcate legacy sunt anterioare dovezilor structurate.",
+    exportLabel: "Creați fișierul {profile}",
+    unsupportedNote:
+      "Registrele folosesc un profil de schimb MuseumLite documentat. Ele nu reprezintă o declarație de conformitate SPECTRUM, LIDO sau de acreditare, iar profilurile neacceptate nu pot fi generate.",
   },
   projectionHealth: {
     unavailable: {

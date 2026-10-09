@@ -2,15 +2,14 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useMutation } from "convex/react";
 import { Building2, Handshake, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
 import { LoanList } from "./_components/loan-list";
 import type { LoanStatus, LoanType } from "./_components/types";
@@ -19,7 +18,6 @@ import { LoansPageSkeleton } from "./loans-page-skeleton";
 export default function LoansPage() {
   const t = useScopedI18n("loans");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
   const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
   const [typeFilter, setTypeFilter] = useState<LoanType>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,11 +78,7 @@ export default function LoansPage() {
   }
 
   return (
-    <FeatureGuard
-      featureName={t("title")}
-      isLocked={!hasFeature("loans")}
-      tierNeeded="pro"
-    >
+    <CapabilityGuard capability="loans" featureName={t("title")}>
       <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -118,6 +112,6 @@ export default function LoansPage() {
           />
         </div>
       </div>
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }

@@ -6,6 +6,8 @@ import { Button } from "@v1/ui/button";
 import type { FunctionReturnType } from "convex/server";
 import type React from "react";
 import type { RefObject } from "react";
+import { useI18n } from "@/locales/client";
+import type { ObjectTabDefinition } from "../../[id]/_components/object-tab-config";
 import type {
   CollectionEditTabId,
   CollectionFormData,
@@ -27,7 +29,7 @@ type CollectionDoc = NonNullable<
 
 interface CollectionEditFormTab {
   id: CollectionEditTabId;
-  label: string;
+  label: ObjectTabDefinition["label"];
 }
 
 interface CollectionEditFormTabShellProps {
@@ -99,6 +101,7 @@ export function CollectionEditFormTabShell({
   handleSetPrimary,
   setEditingImageId,
 }: CollectionEditFormTabShellProps) {
+  const tRoot = useI18n();
   const tabProps = {
     formData,
     updateField,
@@ -124,7 +127,7 @@ export function CollectionEditFormTabShell({
             size="sm"
             onClick={() => onTabSelect(tab.id)}
           >
-            {tab.label}
+            {tRoot(tab.label)}
           </Button>
         ))}
       </div>

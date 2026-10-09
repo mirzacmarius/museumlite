@@ -2,23 +2,66 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalQuery, query } from "./_generated/server";
-import { internalMutation, mutation } from "./utils/mutationBuilders";
+import type { Id } from "./_generated/dataModel";
+import { type MutationCtx, query } from "./_generated/server";
+import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
+import {
+  isHttpsWebhookUrl,
+  isSupportedWebhookEvent,
+  MAX_WEBHOOKS_PER_ORGANIZATION,
+  WEBHOOK_EVENT_TYPES,
+} from "./utils/webhookDelivery";
+import { webhookError } from "./utils/webhookErrors";
 
-const WEBHOOK_EVENTS = [
-  "collection.created",
-  "collection.updated",
-  "collection.deleted",
-  "loan.created",
-  "loan.approved",
-  "loan.dispatched",
-  "loan.returned",
-  "accession.created",
-  "accession.approved",
-  "accession.cataloged",
-  "media.uploaded",
-] as const;
+const MAX_NAME_LENGTH = 100;
+const MAX_URL_LENGTH = 2048;
+
+function validName(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw webhookError("WEBHOOK_NAME_REQUIRED", "Webhook name is required");
+  }
+  return trimmed.slice(0, MAX_NAME_LENGTH);
+}
+
+function validUrl(url: string) {
+  const trimmed = url.trim();
+  if (trimmed.length > MAX_URL_LENGTH || !isHttpsWebhookUrl(trimmed)) {
+    throw webhookError("WEBHOOK_URL_INVALID", "Webhook URL must use HTTPS");
+  }
+  return trimmed;
+}
+
+/** Rejects unsupported events unless the endpoint already subscribes to them. */
+function validEvents(events: string[], current: string[] = []) {
+  const unsupported = events.filter(
+    (event) => !isSupportedWebhookEvent(event) && !current.includes(event),
+  );
+  if (unsupported.length > 0) {
+    throw webhookError(
+      "WEBHOOK_EVENT_UNSUPPORTED",
+      `Unsupported events: ${unsupported.join(", ")}`,
+    );
+  }
+  return [...new Set(events)];
+}
+
+async function requireManagedWebhook(
+  ctx: MutationCtx,
+  webhookId: Id<"webhooks">,
+) {
+  const webhook = await ctx.db.get(webhookId);
+  if (!webhook) {
+    throw webhookError("WEBHOOK_NOT_FOUND", "Webhook endpoint not found");
+  }
+  await requirePermission(
+    ctx,
+    webhook.organizationId,
+    "organization.manage_settings",
+  );
+  return webhook;
+}
 
 function generateSecret(): string {
   const chars =
@@ -46,7 +89,7 @@ export const listEvents = query({
   args: {},
   returns: v.array(v.string()),
   handler: async () => {
-    return [...WEBHOOK_EVENTS];
+    return [...WEBHOOK_EVENT_TYPES];
   },
 });
 
@@ -80,7 +123,7 @@ export const list = query({
         .withIndex("by_organization", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .collect(),
+        .take(MAX_WEBHOOKS_PER_ORGANIZATION),
     ] as const);
 
     return webhooks.map((wh) => ({
@@ -153,16 +196,9 @@ export const create = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    if (!args.url.startsWith("https://")) {
-      throw new Error("Webhook URL must use HTTPS");
-    }
-
-    const invalidEvents = args.events.filter(
-      (e) => !WEBHOOK_EVENTS.includes(e as (typeof WEBHOOK_EVENTS)[number]),
-    );
-    if (invalidEvents.length > 0) {
-      throw new Error(`Invalid events: ${invalidEvents.join(", ")}`);
-    }
+    const name = validName(args.name);
+    const url = validUrl(args.url);
+    const events = validEvents(args.events);
 
     await requirePermission(
       ctx,
@@ -170,14 +206,27 @@ export const create = mutation({
       "organization.manage_settings",
     );
 
+    const existing = await ctx.db
+      .query("webhooks")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .take(MAX_WEBHOOKS_PER_ORGANIZATION);
+    if (existing.length >= MAX_WEBHOOKS_PER_ORGANIZATION) {
+      throw webhookError(
+        "WEBHOOK_LIMIT_REACHED",
+        `An organization can have at most ${MAX_WEBHOOKS_PER_ORGANIZATION} webhook endpoints`,
+      );
+    }
+
     const secret = generateSecret();
 
     const id = await ctx.db.insert("webhooks", {
       organizationId: args.organizationId,
-      name: args.name,
-      url: args.url,
+      name,
+      url,
       secret,
-      events: args.events,
+      events,
       isActive: true,
       createdBy: userId,
       createdAt: Date.now(),
@@ -189,11 +238,7 @@ export const create = mutation({
       action: "created_webhook",
       entityType: "webhook",
       entityId: id,
-      changes: {
-        name: args.name,
-        url: args.url,
-        events: args.events,
-      },
+      changes: { name, url, events },
     });
 
     return { id, secret };
@@ -213,33 +258,19 @@ export const update = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const webhook = await ctx.db.get(args.webhookId);
-    if (!webhook) throw new Error("Webhook not found");
-
-    if (args.url && !args.url.startsWith("https://")) {
-      throw new Error("Webhook URL must use HTTPS");
-    }
-
-    if (args.events) {
-      const invalidEvents = args.events.filter(
-        (e) => !WEBHOOK_EVENTS.includes(e as (typeof WEBHOOK_EVENTS)[number]),
-      );
-      if (invalidEvents.length > 0) {
-        throw new Error(`Invalid events: ${invalidEvents.join(", ")}`);
-      }
-    }
-
-    await requirePermission(
-      ctx,
-      webhook.organizationId,
-      "organization.manage_settings",
-    );
+    const name = args.name === undefined ? undefined : validName(args.name);
+    const url = args.url === undefined ? undefined : validUrl(args.url);
+    const webhook = await requireManagedWebhook(ctx, args.webhookId);
+    const events =
+      args.events === undefined
+        ? undefined
+        : validEvents(args.events, webhook.events);
 
     await Promise.all([
       ctx.db.patch(args.webhookId, {
-        ...(args.name !== undefined && { name: args.name }),
-        ...(args.url !== undefined && { url: args.url }),
-        ...(args.events !== undefined && { events: args.events }),
+        ...(name !== undefined && { name }),
+        ...(url !== undefined && { url }),
+        ...(events !== undefined && { events }),
         ...(args.isActive !== undefined && { isActive: args.isActive }),
       }),
       ctx.runMutation(internal.audit.logAction, {
@@ -249,9 +280,9 @@ export const update = mutation({
         entityType: "webhook",
         entityId: args.webhookId,
         changes: {
-          name: args.name,
-          url: args.url,
-          events: args.events,
+          name,
+          url,
+          events,
           isActive: args.isActive,
         },
       }),
@@ -272,14 +303,7 @@ export const rotateSecret = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const webhook = await ctx.db.get(args.webhookId);
-    if (!webhook) throw new Error("Webhook not found");
-
-    await requirePermission(
-      ctx,
-      webhook.organizationId,
-      "organization.manage_settings",
-    );
+    const webhook = await requireManagedWebhook(ctx, args.webhookId);
 
     const secret = generateSecret();
     await Promise.all([
@@ -309,14 +333,7 @@ export const deleteWebhook = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const webhook = await ctx.db.get(args.webhookId);
-    if (!webhook) throw new Error("Webhook not found");
-
-    await requirePermission(
-      ctx,
-      webhook.organizationId,
-      "organization.manage_settings",
-    );
+    const webhook = await requireManagedWebhook(ctx, args.webhookId);
 
     await Promise.all([
       ctx.db.delete(args.webhookId),
@@ -333,103 +350,6 @@ export const deleteWebhook = mutation({
       }),
     ]);
 
-    return null;
-  },
-});
-
-export const getWebhookOrgId = internalQuery({
-  args: {
-    webhookId: v.id("webhooks"),
-  },
-  returns: v.union(v.id("organizations"), v.null()),
-  handler: async (ctx, args) => {
-    const webhook = await ctx.db.get(args.webhookId);
-    return webhook?.organizationId ?? null;
-  },
-});
-
-export const getActiveForEvent = internalQuery({
-  args: {
-    organizationId: v.id("organizations"),
-    event: v.string(),
-  },
-  returns: v.array(
-    v.object({
-      _id: v.id("webhooks"),
-      url: v.string(),
-      secret: v.string(),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const webhooks = await ctx.db
-      .query("webhooks")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const active: Array<{
-      _id: (typeof webhooks)[number]["_id"];
-      url: string;
-      secret: string;
-    }> = [];
-    for (const webhook of webhooks) {
-      if (!webhook.isActive) {
-        continue;
-      }
-      let isSubscribed = false;
-      for (const subscribedEvent of webhook.events) {
-        if (subscribedEvent === args.event) {
-          isSubscribed = true;
-          break;
-        }
-      }
-      if (!isSubscribed) {
-        continue;
-      }
-      active.push({
-        _id: webhook._id,
-        url: webhook.url,
-        secret: webhook.secret,
-      });
-    }
-    return active;
-  },
-});
-
-export const getInternal = internalQuery({
-  args: {
-    webhookId: v.id("webhooks"),
-  },
-  returns: v.union(
-    v.object({
-      url: v.string(),
-      secret: v.string(),
-      events: v.array(v.string()),
-      isActive: v.boolean(),
-    }),
-    v.null(),
-  ),
-  handler: async (ctx, args) => {
-    const webhook = await ctx.db.get(args.webhookId);
-    if (!webhook) return null;
-
-    return {
-      url: webhook.url,
-      secret: webhook.secret,
-      events: webhook.events,
-      isActive: webhook.isActive,
-    };
-  },
-});
-
-export const updateLastTriggered = internalMutation({
-  args: {
-    webhookId: v.id("webhooks"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.webhookId, { lastTriggeredAt: Date.now() });
     return null;
   },
 });

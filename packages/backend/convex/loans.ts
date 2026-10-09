@@ -16,6 +16,8 @@ import {
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess } from "./utils/featureGates";
 import { requireLoansAccess } from "./utils/loanAccess";
+import { loanAgreementTemplateError } from "./utils/loanAgreementErrors";
+import { normalizeLoanCurrency } from "./utils/loanCurrency";
 import {
   deleteLoanDocumentHandler,
   listLoanDocumentsHandler,
@@ -43,6 +45,8 @@ import {
 } from "./utils/loanWorkflow";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
+import { requireLinkableParty } from "./utils/parties";
+import { loanPrimaryRole, recordPartyLink } from "./utils/partyLinks";
 import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
@@ -68,6 +72,7 @@ export const create = mutation({
     endDate: v.optional(v.number()),
     terms: v.optional(v.string()),
     insuranceValue: v.optional(v.number()),
+    currency: v.optional(v.string()),
     notes: v.optional(v.string()),
     useDetailedConditionReports: v.optional(v.boolean()),
     collectionIds: v.optional(v.array(v.id("collections"))),
@@ -93,21 +98,18 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Validate account if provided
-    if (args.accountId) {
-      const account = await ctx.db.get(args.accountId);
-      if (!account) {
-        throw new Error("Account not found");
-      }
-      if (account.organizationId !== args.organizationId) {
-        throw new Error("Account does not belong to this organization");
-      }
-    }
-
     // Validate date ordering
     if (args.endDate !== undefined && args.endDate < args.startDate) {
       throw new Error("Loan end date cannot be before start date");
     }
+    const currency =
+      args.currency === undefined
+        ? undefined
+        : normalizeLoanCurrency(args.currency);
+
+    const party = args.accountId
+      ? await requireLinkableParty(ctx, args.organizationId, args.accountId)
+      : null;
 
     // Generate or use provided loan number
     let loanNumber: string;
@@ -168,11 +170,27 @@ export const create = mutation({
       status: "pending",
       terms: args.terms,
       insuranceValue: args.insuranceValue,
+      currency,
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
       workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
+    if (party) {
+      const role = loanPrimaryRole(args.type);
+      await recordPartyLink(ctx, {
+        organizationId: args.organizationId,
+        target: { type: "loan", id: loanId },
+        account: party,
+        role,
+        allowedRoles: [role],
+        effectiveFrom: args.startDate,
+        effectiveTo: args.endDate,
+        assertedName: args.lenderBorrowerName,
+        userId,
+        origin: "staff",
+      });
+    }
 
     // Add items if provided
     // Support both old format (collectionIds + conditionOut) and new format (itemsWithConditions)
@@ -748,6 +766,7 @@ export const get = query({
       ),
       terms: v.optional(v.string()),
       insuranceValue: v.optional(v.number()),
+      currency: v.optional(v.string()),
       approvedBy: v.optional(v.id("users")),
       approvedAt: v.optional(v.number()),
       notes: v.optional(v.string()),
@@ -904,6 +923,7 @@ export const get = query({
       status: loan.status,
       terms: loan.terms,
       insuranceValue: loan.insuranceValue,
+      currency: loan.currency,
       approvedBy: loan.approvedBy,
       approvedAt: loan.approvedAt,
       notes: loan.notes,
@@ -929,6 +949,8 @@ export const update = mutation({
     endDate: v.optional(v.number()),
     terms: v.optional(v.string()),
     insuranceValue: v.optional(v.number()),
+    /** ISO 4217 code; an empty string clears it. */
+    currency: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   returns: v.null(),
@@ -960,6 +982,7 @@ export const update = mutation({
       endDate?: number;
       terms?: string;
       insuranceValue?: number;
+      currency?: string;
       notes?: string;
     } = {};
 
@@ -972,6 +995,8 @@ export const update = mutation({
     if (args.terms !== undefined) updates.terms = args.terms;
     if (args.insuranceValue !== undefined)
       updates.insuranceValue = args.insuranceValue;
+    if (args.currency !== undefined)
+      updates.currency = normalizeLoanCurrency(args.currency);
     if (args.notes !== undefined) updates.notes = args.notes;
 
     // Validate date ordering using effective (post-update) values
@@ -987,6 +1012,63 @@ export const update = mutation({
 
     await ctx.db.patch(args.loanId, updates);
 
+    return null;
+  },
+});
+
+/**
+ * Records the currency of a loan's insurance value when none was recorded.
+ * Loans created before the currency was captured can be completed in any
+ * status; an existing currency only changes through `update` while pending.
+ */
+export const recordCurrency = mutation({
+  args: {
+    loanId: v.id("loans"),
+    currency: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+    const canUpdate = await hasPermission(
+      ctx,
+      loan.organizationId,
+      "loans.update",
+    );
+    if (!canUpdate) {
+      throw new Error("Permission denied: loans.update");
+    }
+    if (loan.currency) {
+      throw loanAgreementTemplateError(
+        "CURRENCY_ALREADY_RECORDED",
+        "The loan already has a currency",
+      );
+    }
+    const currency = normalizeLoanCurrency(args.currency);
+    if (!currency) {
+      throw loanAgreementTemplateError(
+        "INVALID_CURRENCY",
+        "Currency must be a three-letter ISO 4217 code",
+      );
+    }
+
+    await ctx.db.patch(loan._id, { currency });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "recorded_loan_currency",
+      entityType: "loan",
+      entityId: loan._id,
+      changes: { currency },
+    });
     return null;
   },
 });

@@ -2,6 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  isCollectionModuleId,
+  isCollectionTypeEnabled,
+} from "@v1/backend/convex/utils/moduleCatalog";
 import { useQuery } from "convex/react";
 import {
   useCallback,
@@ -26,6 +30,8 @@ import {
   createFormDataFromDraftObject,
   getFormSignature,
 } from "../collection-form-shared/utils";
+import { resolveDraftPrimaryImageId } from "./draft-primary-image";
+import { useObjectDraftErrorMessage } from "../object-type-details/use-object-draft-error-message";
 import { objectRequestDraftReducer } from "./object-request-form-draft-reducer";
 import { useObjectRequestFormDraft } from "./use-object-request-form-draft";
 import { useObjectRequestFormLocalMedia } from "./use-object-request-form-local-media";
@@ -75,6 +81,7 @@ export function useObjectRequestForm({
       persistedDraftMedia,
       draftSavedAt,
       initialized: hasDraftInitialized,
+      pendingCollectionType,
     },
     dispatchDraft,
   ] = useReducer(objectRequestDraftReducer, {
@@ -83,6 +90,7 @@ export function useObjectRequestForm({
     persistedDraftMedia: initialDraftMedia ?? [],
     draftSavedAt: initialDraftSavedAt,
     initialized: false,
+    pendingCollectionType: null,
   });
 
   const currentLocationPath = useQuery(
@@ -100,18 +108,66 @@ export function useObjectRequestForm({
       : "skip",
   );
 
+  const typeDetailsTab =
+    isCollectionModuleId(formData.collectionType) &&
+    isCollectionTypeEnabled(formData.collectionType, enabledModules)
+      ? formData.collectionType
+      : undefined;
   const { tabs, activeTab, setActiveTab } = useFormTabState(
     isLocationTrackingEnabled,
+    typeDetailsTab,
   );
+  const describeError = useObjectDraftErrorMessage();
 
   const localMedia = useObjectRequestFormLocalMedia({
     currentOrganizationId,
     setError,
     t,
   });
+  const {
+    selectedFiles: localFiles,
+    uploadDraftMedia: uploadLocalMedia,
+    clearLocalMediaSelections: clearLocalMedia,
+  } = localMedia;
+
+  const [primaryImageChoice, setPrimaryImageChoice] = useState<string | null>(
+    null,
+  );
+  const savedPrimaryImageId = resolveDraftPrimaryImageId({
+    choice: null,
+    savedMedia: persistedDraftMedia,
+    newImageIds: [],
+  });
+  const primaryImageId = resolveDraftPrimaryImageId({
+    choice: primaryImageChoice,
+    savedMedia: persistedDraftMedia,
+    newImageIds: localFiles.map((file) => file.id),
+  });
+  const savedDraftMedia = useMemo(
+    () =>
+      persistedDraftMedia.map((item) => ({
+        ...item,
+        isPrimary:
+          item.mediaCategory === "image" && item.storageId === primaryImageId,
+      })),
+    [persistedDraftMedia, primaryImageId],
+  );
+  const selectedFiles = localFiles.map((file) => ({
+    ...file,
+    isPrimary: file.id === primaryImageId,
+  }));
+  const uploadDraftMedia = useCallback(
+    () => uploadLocalMedia(primaryImageId),
+    [primaryImageId, uploadLocalMedia],
+  );
+  const clearLocalMediaSelections = useCallback(() => {
+    clearLocalMedia();
+    setPrimaryImageChoice(null);
+  }, [clearLocalMedia]);
 
   const isFormDirty =
-    getFormSignature(formData) !== initialFormSignatureRef.current;
+    getFormSignature(formData) !== initialFormSignatureRef.current ||
+    (savedPrimaryImageId !== null && primaryImageId !== savedPrimaryImageId);
   const hasUnsavedChanges = isFormDirty || localMedia.hasLocalMediaSelections;
   const hasSavedFieldDraft = draftSavedAt !== null;
   const isDraftCurrent = hasSavedFieldDraft && !isFormDirty;
@@ -178,25 +234,27 @@ export function useObjectRequestForm({
     currentOrganizationId,
     activeDraftAccessionId,
     formData,
-    persistedDraftMedia,
+    persistedDraftMedia: savedDraftMedia,
     initialFormSignatureRef,
     dispatchDraft,
-    selectedFilesCount: localMedia.selectedFiles.length,
+    selectedFilesCount: selectedFiles.length,
     selectedDocumentsCount: localMedia.selectedDocuments.length,
-    uploadDraftMedia: localMedia.uploadDraftMedia,
-    clearLocalMediaSelections: localMedia.clearLocalMediaSelections,
+    uploadDraftMedia,
+    clearLocalMediaSelections,
     setError,
+    describeError,
   });
 
   const submitState = useObjectRequestFormSubmit({
     currentOrganizationId,
     activeDraftAccessionId,
     formData,
-    persistedDraftMedia,
-    selectedFilesCount: localMedia.selectedFiles.length,
+    persistedDraftMedia: savedDraftMedia,
+    selectedFilesCount: selectedFiles.length,
     selectedDocumentsCount: localMedia.selectedDocuments.length,
-    uploadDraftMedia: localMedia.uploadDraftMedia,
+    uploadDraftMedia,
     setError,
+    describeError,
     t,
     push: draftState.push,
   });
@@ -216,6 +274,14 @@ export function useObjectRequestForm({
     },
     [],
   );
+  const confirmCollectionTypeChange = useCallback(
+    () => dispatchDraft({ type: "confirm_collection_type_change" }),
+    [],
+  );
+  const cancelCollectionTypeChange = useCallback(
+    () => dispatchDraft({ type: "cancel_collection_type_change" }),
+    [],
+  );
 
   return {
     t,
@@ -231,7 +297,6 @@ export function useObjectRequestForm({
     error,
     isSubmitting: submitState.isSubmitting,
     isSavingDraft: draftState.isSavingDraft,
-    heroImage: localMedia.heroImage,
     pageTitle,
     pageBadge,
     mode,
@@ -239,15 +304,15 @@ export function useObjectRequestForm({
     handleNavigate: navigation.handleNavigate,
     handleSubmit: submitState.handleSubmit,
     handleSaveDraft: draftState.handleSaveDraft,
-    selectedFiles: localMedia.selectedFiles,
+    selectedFiles,
     selectedDocuments: localMedia.selectedDocuments,
-    persistedDraftMedia,
+    persistedDraftMedia: savedDraftMedia,
     fileInputRef: localMedia.fileInputRef,
     cameraInputRef: localMedia.cameraInputRef,
     documentInputRef: localMedia.documentInputRef,
     handleFileSelect: localMedia.handleFileSelect,
     handleDocumentSelect: localMedia.handleDocumentSelect,
-    handleSetPrimary: localMedia.handleSetPrimary,
+    handleSetPrimary: setPrimaryImageChoice,
     handleDeleteImage: localMedia.handleDeleteImage,
     handleDeleteDocument: localMedia.handleDeleteDocument,
     isLocationTrackingEnabled,
@@ -255,6 +320,9 @@ export function useObjectRequestForm({
     locationSummary,
     collectionSummary,
     updateField,
+    pendingCollectionType,
+    confirmCollectionTypeChange,
+    cancelCollectionTypeChange,
     isDraftCurrent,
     hasSavedFieldDraft,
     hasLocalMediaSelections: localMedia.hasLocalMediaSelections,

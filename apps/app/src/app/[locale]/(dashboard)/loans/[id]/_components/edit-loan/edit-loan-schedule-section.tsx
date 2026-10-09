@@ -4,6 +4,7 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Banknote, Calendar } from "lucide-react";
+import { LoanCurrencyInput } from "@/components/loan-currency-input";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { EditLoanFormData } from "./types";
 
@@ -50,22 +51,29 @@ export function EditLoanScheduleSection({
           placeholder={t("selectEndDate")}
         />
 
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="insuranceValue">
-            {tRoot("loans.actions.insuranceValue")}
-          </Label>
-          <div className="relative">
-            <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="insuranceValue"
-              type="number"
-              step="0.01"
-              value={formData.insuranceValue}
-              onChange={(e) => onChange({ insuranceValue: e.target.value })}
-              placeholder="0.00"
-              className="pl-9 bg-background"
-            />
+        <div className="grid grid-cols-[1fr_8rem] items-start gap-4 md:col-span-2">
+          <div className="space-y-2">
+            <Label htmlFor="insuranceValue">
+              {tRoot("loans.actions.insuranceValue")}
+            </Label>
+            <div className="relative">
+              <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="insuranceValue"
+                type="number"
+                step="0.01"
+                value={formData.insuranceValue}
+                onChange={(e) => onChange({ insuranceValue: e.target.value })}
+                placeholder="0.00"
+                className="pl-9 bg-background"
+              />
+            </div>
           </div>
+          <LoanCurrencyInput
+            id="currency"
+            value={formData.currency}
+            onChange={(currency) => onChange({ currency })}
+          />
         </div>
       </div>
     </div>

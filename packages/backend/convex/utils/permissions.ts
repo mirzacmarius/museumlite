@@ -5,9 +5,17 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internalQuery } from "../_generated/server";
 import { batchGetByIds } from "./batchLookup";
 import {
+  type CapabilityId,
+  capabilityStateError,
+  capabilityUnavailable,
+  evaluateCapability,
+  permissionMissingMessage,
+} from "./capabilities";
+import {
   type FeatureId,
   hasFeatureAccess,
   type ModuleId,
+  organizationAccess,
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./featureGates";
@@ -124,10 +132,17 @@ export async function getUserPermissions(
   if (!role) {
     return [];
   }
+  return getRolePermissionNames(ctx, role._id);
+}
 
+/** Permission names granted to a role. */
+export async function getRolePermissionNames(
+  ctx: QueryCtx | MutationCtx,
+  roleId: Id<"roles">,
+): Promise<string[]> {
   const rolePermissions = await ctx.db
     .query("rolePermissions")
-    .withIndex("by_role", (q) => q.eq("roleId", role._id))
+    .withIndex("by_role", (q) => q.eq("roleId", roleId))
     .collect();
 
   const permissions = await Promise.all(
@@ -195,8 +210,54 @@ export async function requirePermission(
   }
   const has = await hasPermission(ctx, organizationId, permissionName);
   if (!has) {
-    throw new Error(`Permission denied: ${permissionName}`);
+    throw permissionDenied(permissionName);
   }
+}
+
+function permissionDenied(permissionName: string) {
+  return capabilityUnavailable({
+    reason: "permission_missing",
+    message: permissionMissingMessage(permissionName),
+  });
+}
+
+/**
+ * Gate for a command that belongs to a capability in the capability matrix,
+ * in the same order as the navigation states: membership first, so
+ * non-members learn nothing about the organization; then the module, the
+ * command's permission and the plan.
+ */
+export async function requireCapability(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  capability: CapabilityId,
+  permission: string | readonly string[],
+): Promise<void> {
+  const required: readonly string[] =
+    typeof permission === "string" ? [permission] : permission;
+  const membership = await getCurrentUserOrganization(ctx, organizationId);
+  if (!membership) {
+    throw permissionDenied(required[0] ?? capability);
+  }
+  const [organization, permissions] = await Promise.all([
+    ctx.db.get(organizationId),
+    getRolePermissionNames(ctx, membership.roleId),
+  ]);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+  const missing =
+    required.find((name) => !permissions.includes(name)) ?? required[0];
+  const error = capabilityStateError(
+    evaluateCapability(
+      capability,
+      organizationAccess(organization),
+      permissions,
+      required,
+    ),
+    missing ?? capability,
+  );
+  if (error) throw error;
 }
 
 /**

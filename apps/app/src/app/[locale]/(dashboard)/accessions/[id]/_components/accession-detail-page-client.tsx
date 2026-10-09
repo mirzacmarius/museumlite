@@ -2,11 +2,13 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { accessionReviewErrorFromError } from "@v1/backend/convex/utils/accessionReview";
 import { useMutation, useQuery } from "convex/react";
 import { Archive, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useAccessionReviewMessage } from "@/hooks/use-accession-review-message";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { AccessionCatalogIdentifier } from "./accession-catalog-identifier";
 import { AccessionDetailHeroBanner } from "./accession-detail-hero-banner";
@@ -22,6 +24,7 @@ export function AccessionDetailPageClient() {
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
   const tCommon = useScopedI18n("common");
+  const reviewMessage = useAccessionReviewMessage();
   const submitForApproval = useMutation(api.accessions.submitForApproval);
   const verifySource = useMutation(api.accessions.verifySource);
   const [isSubmittingDraft, setIsSubmittingDraft] = useState(false);
@@ -127,7 +130,9 @@ export function AccessionDetailPageClient() {
         ? "Approved"
         : accession.status === "rejected"
           ? "Rejected"
-          : tRoot("untranslatedRecords.accessions.detail.unknown");
+          : accession.status === "withdrawn"
+            ? tRoot("accessionReview.status.withdrawn")
+            : tRoot("untranslatedRecords.accessions.detail.unknown");
   const heroSourceVerificationState = requiresSourceVerification
     ? accession.sourceVerificationException && !accession.sourceVerified
       ? tRoot("accessions.approval.sourceExceptionRecorded")
@@ -153,6 +158,8 @@ export function AccessionDetailPageClient() {
         return <CheckCircle className="size-5 text-green-500" />;
       case "rejected":
         return <XCircle className="size-5 text-red-500" />;
+      case "withdrawn":
+        return <Archive className="size-5 text-zinc-400" />;
       default:
         return null;
     }
@@ -168,6 +175,8 @@ export function AccessionDetailPageClient() {
         return "bg-green-500/10 text-green-600 dark:text-green-400";
       case "rejected":
         return "bg-red-500/10 text-red-600 dark:text-red-400";
+      case "withdrawn":
+        return "bg-zinc-500/10 text-zinc-600 dark:text-zinc-300";
       default:
         return "bg-muted text-muted-foreground";
     }
@@ -183,9 +192,11 @@ export function AccessionDetailPageClient() {
       refresh();
     } catch (err) {
       setDraftActionError(
-        err instanceof Error
-          ? err.message
-          : tRoot("untranslatedRecords.accessions.errors.submitDraft"),
+        accessionReviewErrorFromError(err)
+          ? reviewMessage(err)
+          : err instanceof Error
+            ? err.message
+            : tRoot("untranslatedRecords.accessions.errors.submitDraft"),
       );
     } finally {
       setIsSubmittingDraft(false);

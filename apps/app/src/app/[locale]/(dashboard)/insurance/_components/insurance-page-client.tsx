@@ -3,16 +3,15 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { useQuery } from "convex/react";
 import { Building2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useReducer } from "react";
+import { CapabilityGuard } from "@/components/capability-guard";
 import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientNow } from "@/hooks/use-client-date-format";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { InsuranceClaimsTab } from "./insurance-claims-tab";
 import { InsuranceCoveragesTab } from "./insurance-coverages-tab";
@@ -102,7 +101,6 @@ function NoOrganization() {
 export function InsurancePageClient() {
   const t = useScopedI18n("untranslatedDashboard.insurance");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
 
   if (isLoading) {
     return (
@@ -119,15 +117,11 @@ export function InsurancePageClient() {
   }
 
   return (
-    <FeatureGuard
-      featureName={t("title")}
-      isLocked={!hasFeature("conservation")}
-      tierNeeded="pro"
-    >
+    <CapabilityGuard capability="insurance" featureName={t("title")}>
       <InsuranceWorkspace
         organizationId={currentOrganizationId as Id<"organizations">}
       />
-    </FeatureGuard>
+    </CapabilityGuard>
   );
 }
 

@@ -43,7 +43,6 @@ import {
   Edit,
   FileText,
   History,
-  Link as LinkIcon,
   Mail,
   MapPin,
   Phone,
@@ -64,6 +63,7 @@ import {
   formatDateInputValue,
 } from "@/lib/account-holder";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { PartyRoleHistory } from "./party-role-history";
 
 export default function AccountDetailPage() {
   const _locale = useCurrentLocale();
@@ -224,8 +224,11 @@ export default function AccountDetailPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="flex-1">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">{t("detail.overview")}</TabsTrigger>
+            <TabsTrigger value="roles">
+              {tRoot("parties.history.tab")}
+            </TabsTrigger>
             <TabsTrigger value="contacts">
               {t("detail.contacts")}
               {contacts && contacts.length > 0 && (
@@ -256,6 +259,10 @@ export default function AccountDetailPage() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <OverviewTab account={account} />
+          </TabsContent>
+
+          <TabsContent value="roles" className="space-y-6">
+            <PartyRoleHistory accountId={accountId} />
           </TabsContent>
 
           {/* Contacts Tab */}
@@ -1129,14 +1136,8 @@ function RelationshipsTab({
   const t = useScopedI18n("accounts.detail");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6">
         <h2 className="text-lg font-medium">{t("relationships")}</h2>
-        <PermissionGate permission="accounts.write">
-          <Button size="sm">
-            <LinkIcon className="mr-2 size-4" />
-            {t("linkEntity")}
-          </Button>
-        </PermissionGate>
       </div>
 
       {!relationships || relationships.length === 0 ? (

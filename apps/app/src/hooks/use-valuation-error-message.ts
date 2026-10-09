@@ -2,14 +2,16 @@ import {
   type ValuationErrorCode,
   valuationErrorFromError,
 } from "@v1/backend/convex/utils/valuationErrors";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 /**
- * Translates valuation and insurance coverage errors. Any other failure gets
- * the translated fallback; server error text is never shown.
+ * Translates valuation, insurance coverage and capability errors. Any other
+ * failure gets the translated fallback; server error text is never shown.
  */
 export function useValuationErrorMessage() {
   const t = useScopedI18n("valuation.errors");
+  const capabilityErrorMessage = useCapabilityErrorMessage();
   const messages: Record<ValuationErrorCode, string> = {
     INVALID_CURRENCY: t("INVALID_CURRENCY"),
     INVALID_AMOUNT: t("INVALID_AMOUNT"),
@@ -35,6 +37,8 @@ export function useValuationErrorMessage() {
   return (error: unknown, fallback?: string) => {
     const data = valuationErrorFromError(error);
     if (data) return messages[data.code];
+    const capabilityMessage = capabilityErrorMessage(error);
+    if (capabilityMessage) return capabilityMessage;
     return fallback ?? t("fallback");
   };
 }

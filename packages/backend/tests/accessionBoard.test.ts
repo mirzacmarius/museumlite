@@ -90,6 +90,7 @@ test("a column paginates beyond the first hundred and counts match the whole org
     pending: 130,
     approved: 3,
     rejected: 2,
+    withdrawn: 0,
     columns: [
       { stepNumber: 0, count: 0 },
       { stepNumber: 1, count: 130 },

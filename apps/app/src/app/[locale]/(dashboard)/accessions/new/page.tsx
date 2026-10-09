@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { partyErrorFromError } from "@v1/backend/convex/utils/partyErrors";
 import { Button } from "@v1/ui/button";
 import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
@@ -25,14 +26,15 @@ import {
   useCallback,
   useReducer,
 } from "react";
-import { AccountCombobox } from "@/components/account-combobox";
 import {
   DropzoneUploader,
   type UploadFile,
 } from "@/components/dropzone-uploader";
 import { IdentifierAvailabilityHint } from "@/components/identifier-availability-hint";
 import { useOrganization } from "@/components/organization-provider";
+import { PartyPicker, usePartyPickerAccess } from "@/components/party-picker";
 import { PermissionGate } from "@/components/permission-gate";
+import { usePartyErrorMessage } from "@/hooks/use-party-error-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
 type AccessionMethod =
@@ -49,7 +51,9 @@ interface NewAccessionFormData {
   catalogIdentifier: string;
   dateReceived: Date;
   source: string;
-  donorAccountId: string | undefined;
+  donorAccountId: Id<"accounts"> | undefined;
+  /** Display name of the selected donor party, used when source is blank. */
+  donorName: string;
   method: AccessionMethod;
   cost: string;
   notes: string;
@@ -94,6 +98,7 @@ const initialNewAccessionPageState: NewAccessionPageState = {
     dateReceived: new Date(),
     source: "",
     donorAccountId: undefined,
+    donorName: "",
     method: "purchase",
     cost: "",
     notes: "",
@@ -301,25 +306,30 @@ function AccessionSourceFields({
   organizationId: Id<"organizations">;
   setFormData: SetFormData;
 }) {
+  const { canPick } = usePartyPickerAccess();
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="donorAccount">{labels.donorAccount}</Label>
-        <AccountCombobox
-          organizationId={organizationId}
-          value={formData.donorAccountId}
-          onValueChange={(accountId) =>
-            setFormData((prev) => ({
-              ...prev,
-              donorAccountId: accountId,
-            }))
-          }
-          placeholder={labels.donorAccountPlaceholder}
-        />
-        <p className="text-xs text-muted-foreground">
-          {labels.donorAccountHint}
-        </p>
-      </div>
+      {canPick ? (
+        <div className="space-y-2">
+          <Label htmlFor="donorAccount">{labels.donorAccount}</Label>
+          <PartyPicker
+            id="donorAccount"
+            organizationId={organizationId}
+            value={formData.donorAccountId}
+            onChange={(party) =>
+              setFormData((prev) => ({
+                ...prev,
+                donorAccountId: party?._id,
+                donorName: party?.displayName ?? "",
+              }))
+            }
+            placeholder={labels.donorAccountPlaceholder}
+          />
+          <p className="text-xs text-muted-foreground">
+            {labels.donorAccountHint}
+          </p>
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="source">
@@ -479,6 +489,7 @@ export default function NewAccessionPage() {
   const { push, back } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
+  const partyErrorMessage = usePartyErrorMessage();
   const generateUploadUrl = useMutation(api.accessions.generateDraftUploadUrl);
   const [state, dispatch] = useReducer(
     newAccessionPageReducer,
@@ -613,10 +624,8 @@ export default function NewAccessionPage() {
         accessionNumber: state.formData.accessionNumber || undefined,
         catalogIdentifier: state.formData.catalogIdentifier || undefined,
         dateReceived: state.formData.dateReceived.getTime(),
-        source: state.formData.source || "See linked account",
-        donorAccountId: state.formData.donorAccountId
-          ? (state.formData.donorAccountId as Id<"accounts">)
-          : undefined,
+        source: state.formData.source.trim() || state.formData.donorName,
+        donorAccountId: state.formData.donorAccountId,
         documents:
           state.uploadedDocuments.length > 0
             ? state.uploadedDocuments.map((d) => d.storageId)
@@ -632,8 +641,11 @@ export default function NewAccessionPage() {
       console.error("Error creating accession:", err);
       dispatch({
         type: "setError",
-        value:
-          err instanceof Error ? err.message : t("form.sourceRequiredError"),
+        value: partyErrorFromError(err)
+          ? partyErrorMessage(err)
+          : err instanceof Error
+            ? err.message
+            : t("form.sourceRequiredError"),
       });
       dispatch({ type: "setIsSubmitting", value: false });
     }

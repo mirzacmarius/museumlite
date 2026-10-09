@@ -189,6 +189,7 @@ export default {
       developer: "Developer",
       data: "Data Import/Export",
       metrics: "Metrics health",
+      loanAgreements: "Loan agreements",
     },
     roles: {
       title: "Role Management",
@@ -1004,6 +1005,73 @@ export default {
       none: "None",
     },
   },
+  objectTypeDetails: {
+    section: {
+      title: "{type} details",
+      description:
+        "Saved with this draft and recorded on the object when the intake is approved. Changing the collection type removes these details.",
+    },
+    summary: {
+      title: "{type} details",
+    },
+    changeType: {
+      title: "Change collection type?",
+      description:
+        "The {type} details entered on this draft will be removed. Details are kept only for the draft's current collection type.",
+      confirm: "Change type and remove details",
+      cancel: "Keep current type",
+    },
+    errors: {
+      moduleDisabled:
+        "This collection type's module is not enabled for your organization. Choose another collection type or ask an administrator to enable the module.",
+      typeMismatch:
+        "The type-specific details do not match the selected collection type. Review the details and save again.",
+    },
+    fields: {
+      appraiser: "Appraiser",
+      lastAppraisalDate: "Last appraisal date",
+      insuranceCarrier: "Insurance carrier",
+      insuranceExpiresAt: "Insurance expiry date",
+      peakWindowStart: "Drink from (year)",
+      peakWindowEnd: "Drink until (year)",
+      make: "Make",
+      model: "Model",
+      year: "Year",
+      odometerUnit: "Odometer unit",
+      retentionYears: "Retention period (years)",
+      digitalAssetUrl: "Digital asset URL",
+      countryOrRegion: "Country or region",
+      issueYear: "Issue year",
+      issuePeriod: "Issue period",
+      series: "Series",
+      certifyingAuthority: "Certifying authority",
+      diameterMm: "Diameter (mm)",
+      weightGrams: "Weight (g)",
+      conditionNotes: "Condition notes",
+      notes: "Notes",
+    },
+    options: {
+      inStorage: "In storage",
+      cork: "Cork",
+      screwcap: "Screw cap",
+      synthetic: "Synthetic",
+      glass: "Glass",
+      crown: "Crown cap",
+      miles: "Miles",
+      kilometres: "Kilometres",
+      male: "Male",
+      female: "Female",
+      dry: "Dry",
+      wet: "Wet (fluid)",
+      frozen: "Frozen",
+      pinned: "Pinned",
+      pressed: "Pressed",
+      mounted: "Mounted",
+      cast: "Cast",
+      fossil: "Fossil",
+      other: "Other",
+    },
+  },
   workflows: {
     title: "Workflow Configuration",
     description: "Manage approval workflows for critical system actions.",
@@ -1298,6 +1366,115 @@ export default {
       failedToCreateWebhook: "Failed to create webhook",
       failedToUpdateWebhook: "Failed to update webhook",
       failedToDeleteWebhook: "Failed to delete webhook",
+    },
+  },
+  webhookDeliveries: {
+    noPermission:
+      "You need permission to manage organization settings to manage webhooks.",
+    log: {
+      title: "Delivery log",
+      description:
+        "Every event sent to your endpoints, with each attempt and response. Entries are kept for 30 days.",
+      endpointFilter: "Endpoint",
+      statusFilter: "Status",
+      allEndpoints: "All endpoints",
+      allStatuses: "All statuses",
+      empty: "No deliveries match these filters.",
+      loadMore: "Load more",
+      details: "Details",
+      deletedEndpoint: "Deleted endpoint",
+      testEvent: "Test event",
+      attempts: "Attempts: {count}",
+      nextAttempt: "Next attempt {time}",
+      sending: "Sending now",
+    },
+    status: {
+      pending: "Pending",
+      retrying: "Retrying",
+      succeeded: "Delivered",
+      failed_transient: "Failed",
+      failed_permanent: "Failed permanently",
+      cancelled: "Cancelled",
+    },
+    outcome: {
+      succeeded: "Delivered",
+      failed_transient: "Retryable failure",
+      failed_permanent: "Permanent failure",
+    },
+    reasons: {
+      http_error: "Receiver answered HTTP {status}",
+      timeout: "No response within 10 seconds",
+      network_error: "Could not connect to the endpoint",
+      attempt_lost: "The attempt did not report back",
+      event_expired: "The event is no longer stored",
+      endpoint_deleted: "The endpoint was deleted",
+      endpoint_disabled: "The endpoint was disabled",
+      endpoint_insecure: "The endpoint URL is not HTTPS",
+      endpoint_unsubscribed: "The endpoint no longer subscribes to this event",
+    },
+    detail: {
+      title: "Delivery details",
+      deliveryId: "Delivery ID",
+      eventId: "Event ID",
+      event: "Event",
+      endpoint: "Endpoint",
+      created: "Created",
+      payload: "Payload (version {version})",
+      attemptsTitle: "Attempts",
+      noAttempts: "No request has been sent for this delivery.",
+      attempt: "Attempt {number}",
+      duration: "{ms} ms",
+      retry: "Retry delivery",
+      retrying: "Retrying...",
+      retryHelp:
+        "A retry resends the same payload with the same delivery ID, so your receiver can ignore duplicates.",
+      notFound: "This delivery is no longer available.",
+      close: "Close",
+    },
+    endpoint: {
+      lastDelivery: "Last delivered {time}",
+      neverDelivered: "Not delivered yet",
+      viewDeliveries: "Deliveries",
+      sendTest: "Send test",
+      testQueued: "Test event queued. Its result appears in the delivery log.",
+      rotateSecret: "Rotate secret",
+    },
+    rotate: {
+      title: "Rotate signing secret?",
+      description:
+        "The current secret stops working immediately. Every later attempt, including retries, is signed with the new secret, so update your receiver.",
+      confirm: "Rotate secret",
+      cancel: "Cancel",
+      rotatedTitle: "New signing secret",
+      rotatedDescription:
+        "Copy this secret now. You won't be able to see it again.",
+      done: "Done",
+    },
+    signing: {
+      title: "Verifying deliveries",
+      signature:
+        "X-ML-Signature is sha256= followed by the hex HMAC-SHA256 of the raw request body, keyed with your signing secret.",
+      signatureV2:
+        "X-ML-Signature-V2 is v2= followed by the HMAC-SHA256 of the X-ML-Delivery value, a period, the X-ML-Timestamp value, a period and the body. X-ML-Timestamp is the send time in Unix seconds; reject values outside your tolerance window.",
+      duplicates:
+        "Retries reuse X-ML-Delivery and the same body. Treat a repeated delivery ID as already processed.",
+      retries:
+        "Any 2xx response counts as delivered. After timeouts, network errors, 408, 429 and 5xx responses an event is sent again, up to 6 sends in total over about 3 hours. Redirects are not followed, and other responses are not retried.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Enter a name for the endpoint.",
+      WEBHOOK_URL_INVALID: "Enter a valid HTTPS URL.",
+      WEBHOOK_EVENT_UNSUPPORTED: "One of the selected events is not available.",
+      WEBHOOK_LIMIT_REACHED:
+        "This organization already has the maximum number of webhook endpoints.",
+      WEBHOOK_NOT_FOUND: "This endpoint no longer exists.",
+      WEBHOOK_DISABLED: "Enable the endpoint before sending to it.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "The endpoint no longer subscribes to this event. Subscribe it again before retrying.",
+      DELIVERY_NOT_FOUND: "This delivery no longer exists.",
+      DELIVERY_NOT_RETRYABLE:
+        "Only failed or cancelled deliveries can be retried.",
+      fallback: "The action could not be completed. Try again.",
     },
   },
   activity: {
@@ -1737,6 +1914,131 @@ export default {
       partialReturnDesc:
         'This is a partial return. The loan will remain "{status}" and only the selected items will be marked as returned. The remaining {remaining} {items} will stay on loan.',
       areYouSureYouWantToProceed: "Are you sure you want to proceed?",
+    },
+  },
+  loanAgreementTemplates: {
+    title: "Loan agreements",
+    description:
+      "Write the agreements your organization issues for loans. Placeholders are filled in with each loan's details when an agreement is generated.",
+    newTemplate: "New template",
+    empty:
+      "No templates yet. Loans use the standard agreement until you create one.",
+    standardAgreement: "Standard agreement",
+    standardAgreementDescription:
+      "Built in. Used for loans when no template is set as the default.",
+    defaultBadge: "Default",
+    archivedBadge: "Archived",
+    archivedHeading: "Archived templates",
+    sectionCount: "Sections: {count}",
+    appliesTo: {
+      any: "All loans",
+      incoming: "Incoming loans",
+      outgoing: "Outgoing loans",
+    },
+    actions: {
+      edit: "Edit",
+      setDefault: "Make default",
+      archive: "Archive",
+      restore: "Restore",
+    },
+    toasts: {
+      created: "Template created.",
+      saved: "Template saved.",
+      defaultSet: "Default template updated.",
+      archived: "Template archived.",
+      restored: "Template restored.",
+    },
+    editor: {
+      createTitle: "New loan agreement template",
+      editTitle: "Edit loan agreement template",
+      description:
+        "Sections appear in order after the parties. A line whose placeholders have no value for a loan is left out.",
+      name: "Name",
+      namePlaceholder: "Standard outgoing loan",
+      language: "Language",
+      appliesTo: "Applies to",
+      sections: "Sections",
+      sectionHeading: "Heading",
+      sectionBody: "Text",
+      addSection: "Add section",
+      removeSection: "Remove section",
+      moveUp: "Move section up",
+      moveDown: "Move section down",
+      startFromStandard: "Start from the standard agreement",
+      placeholders: "Placeholders",
+      placeholdersHint: "Copy a placeholder into a heading or text.",
+      copied: "Copied {placeholder}",
+      preview: "Preview with a sample loan",
+      save: "Save template",
+      saving: "Saving…",
+      cancel: "Cancel",
+    },
+    placeholders: {
+      loanNumber: "Loan number",
+      loanStartDate: "Start date",
+      loanEndDate: "End date",
+      loanCurrency: "Currency code of the insurance value",
+      loanTerms: "Terms recorded on the loan",
+      lenderName: "Lender",
+      borrowerName: "Borrower",
+      organizationName: "Your organization",
+      objectList: "Table of the objects on loan",
+      objectCount: "Number of objects",
+      insuranceValue: "Insurance value with currency",
+    },
+    sample: {
+      partnerName: "Harbour Gallery",
+      terms: "Objects travel with a courier from the lending institution.",
+      firstObject: "Harbour at dusk",
+      secondObject: "Fishing boat model",
+      condition: "Good",
+    },
+    errors: {
+      templateNotFound: "This template no longer exists. Refresh the page.",
+      templateArchived:
+        "This template is archived. Restore it before changing it.",
+      nameRequired: "Give the template a name.",
+      sectionsRequired:
+        "Add at least one section, and give every section some text.",
+      templateTooLarge:
+        "The template is too long. Shorten the text or remove sections.",
+      unknownPlaceholder:
+        "{placeholder} is not a known placeholder. Use one from the list.",
+      malformedPlaceholder:
+        "A placeholder is not written correctly. Each one starts with two opening braces and ends with two closing braces.",
+      templateLimitReached:
+        "You can keep at most {limit} active templates. Archive one before adding another.",
+      invalidCurrency: "Enter a three-letter currency code, such as EUR.",
+      currencyAlreadyRecorded:
+        "This loan already has a currency recorded. Refresh the page.",
+      fallback: "The change could not be saved. Try again.",
+    },
+    agreement: {
+      template: "Template",
+      printTitle: "Loan agreement {loanNumber}",
+      email: {
+        subject: "Loan agreement {loanNumber}",
+        greeting: "Dear {name},",
+        intro: "Please find attached the loan agreement for {loanNumber}.",
+        details: "Loan details:",
+        loanNumber: "Loan number: {loanNumber}",
+        incoming: "Type: Incoming loan",
+        outgoing: "Type: Outgoing loan",
+        startDate: "Start date: {date}",
+        endDate: "End date: {date}",
+        objects: "Objects:",
+        review: "Please review and sign the agreement.",
+        signOff: "Best regards,",
+      },
+    },
+    currency: {
+      label: "Currency",
+      placeholder: "EUR",
+      hint: "Three-letter code, such as EUR or NOK.",
+      missing:
+        "No currency is recorded for this loan's insurance value, so the agreement shows it as a plain number.",
+      record: "Record currency",
+      recorded: "Currency recorded.",
     },
   },
   transit: {
@@ -4504,6 +4806,62 @@ export default {
     helpText:
       "If you do not have an account yet, use the invited email to create one first. After sign-in, you can accept this organization invitation.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Withdrawn",
+    },
+    reject: {
+      title: "Reject this object request",
+      description:
+        "Choose what happens next. Nothing is added to the collection and no deaccession is recorded.",
+      returnToDraft: "Send back to Draft",
+      returnToDraftDescription:
+        "The submitter can edit the request and submit it for review again.",
+      withdraw: "Withdraw",
+      withdrawDescription:
+        "Takes the request out of active review. The record, its draft details and files are kept and can be restored.",
+      reasonLabel: "Reason",
+      reasonPlaceholder: "Explain what needs to change or why it is withdrawn",
+      reasonHint:
+        "Required. The submitter is notified and the reason is kept in the case history.",
+      confirmReturnToDraft: "Send back to Draft",
+      confirmWithdraw: "Withdraw request",
+      saving: "Saving...",
+    },
+    restore: {
+      action: "Restore to Draft",
+      title: "Restore this object request",
+      description:
+        "The request returns to the Draft column so it can be edited and submitted for review again.",
+      reasonLabel: "Reason",
+      reasonHint: "Required. Kept in the case history.",
+      confirm: "Restore to Draft",
+    },
+    decision: {
+      returnedTitle: "Returned to draft for changes",
+      withdrawnTitle: "Withdrawn from review",
+      restoredTitle: "Restored from withdrawal",
+      decidedBy: "By {name}",
+      withdrawnDescription:
+        "This request is kept for the record and is not in any active queue. Nothing was added to the collection.",
+    },
+    board: {
+      withdrawn: "Withdrawn",
+      showActive: "Back to active board",
+    },
+    errors: {
+      notInReview:
+        "This request is no longer awaiting review. Refresh to see its current state.",
+      notWithdrawn:
+        "This request is no longer withdrawn. Refresh to see its current state.",
+      reasonRequired: "Enter a reason.",
+      notADraft:
+        "This request has already been submitted. Refresh to see its current state.",
+      reasonTooLong: "Keep the reason under 2,000 characters.",
+      notPermitted: "You can't make this decision for the current review step.",
+      fallback: "The decision could not be saved. Refresh and try again.",
+    },
+  },
   accessions: {
     title: "Accessions",
     description: "Manage incoming items and approval workflow",
@@ -5078,6 +5436,161 @@ export default {
       scannerError: "Scanner error: {error}",
     },
   },
+  parties: {
+    roles: {
+      donor: "Donor / source",
+      lender: "Lender",
+      borrower: "Borrower",
+      owner: "Owner",
+      appraiser: "Appraiser",
+      recipient: "Recipient",
+    },
+    holderTypes: {
+      privatePerson: "Person",
+      organization: "Institution",
+    },
+    reasons: {
+      name: "Same name",
+      email: "Same email",
+      phone: "Same phone",
+    },
+    targetTypes: {
+      accession: "Accession",
+      loan: "Loan",
+      deaccession: "Deaccession",
+      appraisal: "Appraisal",
+      collection: "Object",
+    },
+    picker: {
+      placeholder: "Select or create a person or institution",
+      searchPlaceholder: "Search people and institutions",
+      heading: "Parties",
+      empty: "No matching people or institutions",
+      searching: "Searching…",
+      create: "Create new party",
+      clear: "Clear selection",
+    },
+    create: {
+      title: "Create party",
+      description:
+        "Add a person or institution once and reuse it across accessions, loans and deaccessions.",
+      submit: "Create party",
+      creating: "Creating…",
+      created: "Party created",
+      duplicateRecorded:
+        "Party created. A possible duplicate was recorded for review.",
+      similarTitle: "Similar parties already exist",
+      similarDescription:
+        "Reuse an existing record instead of creating a duplicate.",
+      useExisting: "Use this party",
+    },
+    links: {
+      title: "Parties",
+      description:
+        "People and institutions linked to this record. Names and contact details are kept as they were when linked.",
+      empty: "No party is linked yet.",
+      partyUnavailable: "Party record unavailable",
+      archived: "Archived",
+      recordedAs: "Recorded as {name}",
+      namedOnRecord: "Named on the record as {name}",
+      contactAtLink: "Contact when linked: {contact}",
+      from: "From {date}",
+      linkedBy: "Linked by {name}",
+      backfilled: "Linked from an existing account reference",
+      earlier: "Earlier parties ({count})",
+      replacedOn: "Replaced or ended on {date}",
+      reason: "Reason: {reason}",
+      role: "Role",
+      party: "Party",
+      changeReason: "Reason for the change",
+      changeReasonPlaceholder: "For example: the deed of gift names the trust",
+      link: "Link party",
+      linking: "Linking…",
+      linked: "Party linked",
+      end: "End link",
+      endTitle: "End this party link?",
+      endDescription:
+        "The link stays in the record's history together with your reason.",
+      endReason: "Reason",
+      endConfirm: "End link",
+      ended: "Party link ended",
+      cancel: "Cancel",
+    },
+    history: {
+      tab: "Roles",
+      title: "Role history",
+      description:
+        "Procedures this party has taken part in. Names show what was recorded at the time.",
+      empty: "No roles are recorded for this party yet.",
+      restricted: "Record not available to you",
+      current: "Current",
+      superseded: "Superseded",
+      loadMore: "Load more",
+      legacyTitle: "Earlier account relationships",
+    },
+    review: {
+      title: "Party review",
+      description:
+        "Review possible duplicate parties and records that name a party only in text. Nothing is merged or linked automatically.",
+      duplicatesTab: "Possible duplicates",
+      legacyTab: "Unlinked records",
+      status: "Status",
+      statuses: {
+        pending: "To review",
+        dismissed: "Dismissed",
+        confirmed_distinct: "Not the same party",
+      },
+      scan: "Find possible duplicates",
+      scanning: "Comparing…",
+      scanResult: "New suggestions recorded: {count}.",
+      scanLimit: "Only the {count} most recent parties were compared.",
+      noDuplicates: "No suggestions with this status.",
+      notSame: "Not the same party",
+      dismiss: "Dismiss",
+      note: "Note (optional)",
+      resolved: "Review recorded",
+      reviewedBy: "Reviewed by {name}",
+      unavailable: "Record no longer available",
+      mergeHint:
+        "To consolidate a true duplicate, link new records to the party you keep and archive the other. Both histories stay intact.",
+      legacyDescription:
+        "Records that name a party only in text, or reference an account without a typed link. Confirm each link; the original wording is kept.",
+      recordType: "Record type",
+      kinds: {
+        accession: "Accessions",
+        loan: "Loans",
+        deaccession: "Deaccessions",
+      },
+      legacyEmpty: "No unlinked records on this page.",
+      checked: "Records checked on this page: {count}.",
+      referencesParty: "References {name} without a typed link",
+      confirmLink: "Confirm link",
+      link: "Link",
+      previous: "Previous page",
+      next: "Next page",
+    },
+    errors: {
+      partyNotFound:
+        "That party is not available in this organization. Choose another.",
+      partyArchived: "That party is archived. Restore it or choose another.",
+      roleNotAllowed: "That role does not apply to this record.",
+      recordLocked:
+        "This record is closed, so its parties can only be confirmed, not changed. Use the record's own correction flow.",
+      targetNotFound:
+        "This record is no longer available. Refresh and try again.",
+      nameRequired: "Enter a name for the party.",
+      datesInvalid: "The role cannot end before it starts.",
+      linkNotFound:
+        "That party link is no longer available. Refresh and try again.",
+      linkAlreadySuperseded:
+        "That link has already been ended or replaced. Refresh to see the latest.",
+      reviewNotFound:
+        "That suggestion is no longer available. Refresh and try again.",
+      reviewAlreadyResolved:
+        "Someone already reviewed this suggestion. Refresh to see the decision.",
+      fallback: "The action could not be completed. Refresh and try again.",
+    },
+  },
   trackedImport: {
     validationTitle: "Validation report",
     validationSummary: "{valid} valid rows, {errors} with errors",
@@ -5123,16 +5636,16 @@ export default {
       agreement: {
         title: "LOAN AGREEMENT",
         number: "Agreement Number:",
-        period: "2. LOAN PERIOD",
+        period: "LOAN PERIOD",
         startDate: "Start Date:",
         endDate: "End Date:",
-        objectsOnLoan: "3. OBJECTS ON LOAN",
+        objectsOnLoan: "OBJECTS ON LOAN",
         accessionNumber: "Accession No.",
         titleDescription: "Title/Description",
-        insurance: "4. INSURANCE",
+        insurance: "INSURANCE",
         totalInsuranceValue: "Total Insurance Value:",
-        termsConditions: "5. TERMS AND CONDITIONS",
-        standardConditions: ". STANDARD CONDITIONS",
+        termsConditions: "TERMS AND CONDITIONS",
+        standardConditions: "STANDARD CONDITIONS",
         borrowerCare:
           "The Borrower agrees to exercise the same care with respect to the loaned objects as it does in the safekeeping of comparable property of its own.",
         noTreatment:
@@ -7128,9 +7641,15 @@ export default {
       saveAndNew: "Save & Add Another",
     },
     featureGuard: {
-      unavailable: "This feature is not available on your plan.",
+      tierRequired:
+        "Your organization's plan does not include this. It is part of the {tier} plan; an administrator can upgrade in Settings › Billing.",
+      moduleDisabled:
+        "This module is turned off for your organization. An administrator can turn it on in Settings › Modules.",
+      permissionMissing:
+        "Your role does not include access to this. Ask an administrator to update your role.",
       locked: "{featureName} is locked",
       upgradeTo: "Upgrade to {tier}",
+      openModules: "Open Settings › Modules",
       tiers: {
         pro: "Pro",
         enterprise: "Enterprise",
@@ -7682,7 +8201,8 @@ export default {
       duplicateEmail: "A donor with this email already exists: {donor}",
     },
     navigation: {
-      patronManagement: "patron management",
+      patronManagement: "Patron Management",
+      locked: "Unavailable",
       overview: "Overview",
       objectCatalog: "Object Catalog",
       locationTracking: "Location & Tracking",
@@ -8059,6 +8579,45 @@ export default {
       "The export file is not available. Retry or create a new export.",
     reportsNote:
       "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
+    sourceRegister: "Register: {profile}",
+    progressRegister:
+      "{rows} register rows · {scanned} records examined · {pages} pages",
+    errorRegisterCriteria:
+      "Check the register criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, and a status applies only to accession and disposal registers.",
+  },
+  registerReports: {
+    title: "Institutional registers",
+    description:
+      "Generate accession, disposal, custody and condition registers from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time and generator.",
+    profile: "Register",
+    profileAccession: "Accession register",
+    profileDisposal: "Disposal register",
+    profileCustody: "Custody register",
+    profileCondition: "Condition register",
+    profileSpectrum: "SPECTRUM XML (not supported)",
+    profileLido: "LIDO XML (not supported)",
+    fromDate: "From",
+    toDate: "To",
+    status: "Status",
+    statusAny: "Any status",
+    statusPending: "Pending",
+    statusApproved: "Approved",
+    statusRejected: "Rejected",
+    asOf: "As of",
+    asOfHint:
+      "Leave As of empty to use the time the register is created. Evidence recorded after the as-of time is excluded. Dates and the as-of time are in UTC.",
+    preview: "Preview",
+    previewing: "Loading preview",
+    previewLabel: "Register preview",
+    previewSummary:
+      "Showing {shown} of {rows} rows from the first page ({scanned} records examined).",
+    previewMore: "More rows follow; create the register for the complete file.",
+    previewEmpty: "The first page has no rows for these criteria.",
+    notRecordedNote:
+      "Empty cells named in notRecorded were never recorded in MuseumLite. Rows marked legacy predate structured evidence.",
+    exportLabel: "Create {profile} file",
+    unsupportedNote:
+      "Registers use a documented MuseumLite interchange profile. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
   },
   projectionHealth: {
     unavailable: {

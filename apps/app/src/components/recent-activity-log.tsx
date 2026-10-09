@@ -39,6 +39,8 @@ function getActionText(
         return translate("untranslatedComponents.activity.accessionApproved");
       if (status === "rejected")
         return translate("untranslatedComponents.activity.accessionRejected");
+      if (status === "withdrawn")
+        return translate("accessionReview.decision.withdrawnTitle");
       return translate("untranslatedComponents.activity.accessionReceived");
     case "deaccession":
       if (status === "approved")

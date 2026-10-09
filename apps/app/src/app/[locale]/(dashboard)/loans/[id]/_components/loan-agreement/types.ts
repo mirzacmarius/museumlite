@@ -1,3 +1,5 @@
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+
 export interface LoanAgreementItem {
   accessionNumber: string;
   title: string;
@@ -7,7 +9,7 @@ export interface LoanAgreementItem {
 export interface LoanAgreementAccount {
   _id: string;
   accountNumber: string;
-  businessName: string;
+  businessName?: string;
   phone?: string;
   email?: string;
   address?: string;
@@ -29,13 +31,14 @@ export interface LoanAgreementLoan {
   endDate?: number;
   terms?: string;
   insuranceValue?: number;
-  notes?: string;
-  approvedBy?: string;
-  approvedAt?: number;
+  /** ISO 4217 code of the insurance value; absent on older loans. */
+  currency?: string;
   account?: LoanAgreementAccount;
 }
 
 export interface LoanAgreementProps {
+  loanId: Id<"loans">;
+  organizationId: Id<"organizations">;
   loan: LoanAgreementLoan;
   items: LoanAgreementItem[];
   organizationName: string;

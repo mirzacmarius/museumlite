@@ -1,9 +1,9 @@
+import { customQuery } from "convex-helpers/server/customFunctions";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
 import { requireAuthenticatedUser } from "./utils/authorizationContext";
-import { createOrganizationQuery } from "./utils/convexAuth";
 import {
   normalizeCurrency,
   requireAmount,
@@ -20,7 +20,7 @@ import {
   targetId,
 } from "./utils/insuranceCoverage";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
-import { requirePermission } from "./utils/permissions";
+import { requireCapability } from "./utils/permissions";
 import { valuationError } from "./utils/valuationErrors";
 
 /**
@@ -30,7 +30,15 @@ import { valuationError } from "./utils/valuationErrors";
  * coverages with explicit values for the other targets.
  */
 
-const insuranceReadQuery = createOrganizationQuery("loans.read");
+/** Coverage reviews belong to the insurance capability (loans plan). */
+const insuranceReadQuery = customQuery(query, {
+  args: { organizationId: v.id("organizations") },
+  input: async (ctx, args) => {
+    const userId = await requireAuthenticatedUser(ctx);
+    await requireCapability(ctx, args.organizationId, "insurance", "loans.read");
+    return { ctx: { userId, organizationId: args.organizationId }, args: {} };
+  },
+});
 
 const reviewStatusValidator = v.union(v.literal("open"), v.literal("resolved"));
 
@@ -190,9 +198,10 @@ export const resolve = mutation({
     if (!review) {
       throw valuationError("REFERENCE_NOT_FOUND", "Review not found");
     }
-    await requirePermission(
+    await requireCapability(
       ctx,
       review.organizationId,
+      "insurance",
       "organization.manage_settings",
     );
     requireOpenReview(review);

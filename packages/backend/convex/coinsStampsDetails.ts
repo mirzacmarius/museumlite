@@ -3,20 +3,14 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  coinsStampsDetailFields,
+  typeDetailRecordFields,
+} from "./utils/collectionTypeDetailFields";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
-
-const itemCategoryValidator = v.union(v.literal("coin"), v.literal("stamp"));
-
-const rarityValidator = v.union(
-  v.literal("common"),
-  v.literal("scarce"),
-  v.literal("rare"),
-  v.literal("very_rare"),
-  v.literal("unique"),
-);
 
 async function requireCoinsStampsModule(
   ctx: QueryCtx | MutationCtx,
@@ -25,34 +19,6 @@ async function requireCoinsStampsModule(
   await requireModuleEnabled(ctx, organizationId, "coins_stamps");
 }
 
-const coinsStampsDetailsFields = {
-  itemCategory: v.optional(itemCategoryValidator),
-  issuingAuthority: v.optional(v.string()),
-  countryOrRegion: v.optional(v.string()),
-  denomination: v.optional(v.string()),
-  currency: v.optional(v.string()),
-  issueYear: v.optional(v.number()),
-  issuePeriod: v.optional(v.string()),
-  mintOrPrinter: v.optional(v.string()),
-  series: v.optional(v.string()),
-  catalogNumber: v.optional(v.string()),
-  grade: v.optional(v.string()),
-  certificationNumber: v.optional(v.string()),
-  certifyingAuthority: v.optional(v.string()),
-  conditionNotes: v.optional(v.string()),
-  composition: v.optional(v.string()),
-  diameterMm: v.optional(v.number()),
-  weightGrams: v.optional(v.number()),
-  perforation: v.optional(v.string()),
-  watermark: v.optional(v.string()),
-  color: v.optional(v.string()),
-  rarity: v.optional(rarityValidator),
-  acquisitionPrice: v.optional(v.number()),
-  estimatedValue: v.optional(v.number()),
-  storageLocation: v.optional(v.string()),
-  notes: v.optional(v.string()),
-};
-
 export const get = query({
   args: {
     collectionId: v.id("collections"),
@@ -60,11 +26,9 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("coinsStampsDetails"),
-      collectionId: v.id("collections"),
-      organizationId: v.id("organizations"),
-      ...coinsStampsDetailsFields,
-      createdAt: v.number(),
-      lastModifiedAt: v.optional(v.number()),
+      _creationTime: v.number(),
+      ...typeDetailRecordFields,
+      ...coinsStampsDetailFields,
     }),
     v.null(),
   ),
@@ -97,7 +61,7 @@ export const get = query({
 export const upsert = mutation({
   args: {
     collectionId: v.id("collections"),
-    ...coinsStampsDetailsFields,
+    ...coinsStampsDetailFields,
   },
   returns: v.id("coinsStampsDetails"),
   handler: async (ctx, args) => {
