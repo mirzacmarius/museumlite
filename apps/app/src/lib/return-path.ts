@@ -1,4 +1,4 @@
-import { getRouteLocale } from "./locale-routes";
+import { getUnlocalizedPath } from "./locale-routes";
 
 /** Detail-page query parameter holding the list URL the record was opened from. */
 export const RETURN_PATH_PARAM = "from";
@@ -37,8 +37,7 @@ export function listReturnPath(
   pathname: string,
   searchParams: SearchParamsReader,
 ): string {
-  const locale = getRouteLocale(pathname);
-  const path = locale ? pathname.slice(locale.length + 1) || "/" : pathname;
+  const path = getUnlocalizedPath(pathname);
   const query = searchParams.toString();
   return query ? `${path}?${query}` : path;
 }

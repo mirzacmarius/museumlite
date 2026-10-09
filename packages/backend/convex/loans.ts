@@ -823,7 +823,7 @@ export const get = query({
     if (
       !loan ||
       !(await canReadRecord(ctx, loan.organizationId, "loans.read", {
-        feature: "loans",
+        capability: "loans",
       }))
     ) {
       return null;

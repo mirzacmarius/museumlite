@@ -97,7 +97,6 @@ test("a column paginates beyond the first hundred and board counts match the who
     columns: [
       { stepNumber: 1, count: 130 },
       { stepNumber: 2, count: 0 },
-      { stepNumber: -1, count: 3 },
     ],
   });
 });
@@ -130,7 +129,6 @@ test("legacy rows without a step wait in the first step and rows past a shortene
   expect(counts.columns).toEqual([
     { stepNumber: 1, count: 3 },
     { stepNumber: 2, count: 1 },
-    { stepNumber: -1, count: 0 },
   ]);
 });
 
@@ -158,10 +156,7 @@ test("without a configured workflow every pending deaccession waits in one revie
     "LEGACY-0",
     "STALE-0",
   ]);
-  expect(counts.columns).toEqual([
-    { stepNumber: 1, count: 2 },
-    { stepNumber: -1, count: 0 },
-  ]);
+  expect(counts.columns).toEqual([{ stepNumber: 1, count: 2 }]);
 });
 
 test("approved and rejected columns list only their decisions, newest first", async () => {
@@ -228,6 +223,73 @@ test("board search matches the object title within the requested column only", a
     "Fjordheim tapestry",
   ]);
   expect(await search({ kind: "step", step: 2 })).toEqual([]);
+});
+
+test("a row left on a step removed from the middle of the workflow stays on the board and in its totals", async () => {
+  const t = createConvexTest();
+  const setup = await createOrgUserCollectionWithPermissions(t, [
+    "collections.read",
+  ]);
+  await t.run((ctx) =>
+    ctx.db.insert("workflowConfigs", {
+      organizationId: setup.organizationId,
+      workflowType: "deaccession",
+      steps: [
+        { stepNumber: 1, roleId: setup.roleId, name: "Registrar Review" },
+        { stepNumber: 3, roleId: setup.roleId, name: "Board Approval" },
+      ],
+      canInitiateRoles: [setup.roleId],
+    }),
+  );
+  await insertDeaccessions(t, setup, [
+    { status: "pending", workflowStep: 2, count: 1, prefix: "ORPHAN" },
+    { status: "pending", workflowStep: 3, count: 1, prefix: "BOARD" },
+  ]);
+  const user = authedForUser(t, setup.userId);
+  const column = async (step: number) =>
+    (
+      await user.query(api.deaccessions.listBoardColumn, {
+        organizationId: setup.organizationId,
+        column: { kind: "step", step },
+        paginationOpts: { cursor: null, numItems: 10 },
+      })
+    ).page.map((row) => row.deaccessionNumber);
+
+  expect(await column(1)).toEqual(["ORPHAN-0"]);
+  expect(await column(3)).toEqual(["BOARD-0"]);
+  expect(
+    await user.query(api.deaccessions.getBoardCounts, {
+      organizationId: setup.organizationId,
+    }),
+  ).toMatchObject({
+    pending: 2,
+    columns: [
+      { stepNumber: 1, count: 1 },
+      { stepNumber: 3, count: 1 },
+    ],
+  });
+});
+
+test("board search still finds deaccessions recorded before search documents existed", async () => {
+  const t = createConvexTest();
+  const setup = await setupBoard(t);
+  await insertDeaccessions(t, setup, [
+    { status: "pending", workflowStep: 1, count: 3, prefix: "LEGACY" },
+    { status: "pending", workflowStep: 1, count: 1, prefix: "OLD-REVIEW" },
+  ]);
+  const user = authedForUser(t, setup.userId);
+
+  const result = await user.query(api.deaccessions.listBoardColumn, {
+    organizationId: setup.organizationId,
+    column: { kind: "step", step: 1 },
+    search: "old-review",
+    paginationOpts: { cursor: null, numItems: 10 },
+  });
+
+  expectMatchesReturns(deaccessions.listBoardColumn, result);
+  expect(result.page.map((row) => row.deaccessionNumber)).toEqual([
+    "OLD-REVIEW-0",
+  ]);
 });
 
 test("board queries require collections.read in the organization", async () => {

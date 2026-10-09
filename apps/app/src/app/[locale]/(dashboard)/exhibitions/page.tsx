@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { CapabilityGuard } from "@/components/capability-guard";
 import { ClientDate } from "@/components/client-date";
 import { CollectionSelector } from "@/components/collection-selector";
@@ -36,7 +36,7 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
-import { useDebouncedSearch, useListState } from "@/hooks/use-list-state";
+import { useListState } from "@/hooks/use-list-state";
 import {
   type ExhibitionScheduleStatus,
   getExhibitionScheduleStatus,
@@ -70,11 +70,7 @@ export default function ExhibitionsPage() {
   const t = useScopedI18n("exhibitions");
   const { currentOrganizationId, isLoading } = useOrganization();
   const list = useListState(exhibitionListState);
-  const updateList = list.update;
-  const [searchInput, setSearchInput] = useDebouncedSearch(
-    list.state.search,
-    useCallback((search: string) => updateList({ search }), [updateList]),
-  );
+  const { searchInput, setSearchInput } = list;
   const searchQuery = list.state.search;
   const statusFilter: ExhibitionStatus = list.state.filters.schedule;
   const requestedObjectId = list.state.filters.object;

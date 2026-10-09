@@ -1,5 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -601,93 +604,88 @@ async function toDeaccessionListItems(
   });
 }
 
-/**
- * Configured review steps. Without a workflow every pending deaccession
- * waits in a single review step.
- */
-async function getDeaccessionStepRange(
+/** Configured review steps, ascending; without a workflow, one review step. */
+async function getDeaccessionReviewSteps(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
 ) {
   const config = await getWorkflowConfig(ctx, organizationId, "deaccession");
   const steps = config?.steps.map((step) => step.stepNumber) ?? [];
-  const stepNumbers =
-    steps.length > 0
-      ? Array.from(new Set(steps)).toSorted((a, b) => a - b)
-      : [1];
-  return {
-    stepNumbers,
-    firstStep: stepNumbers[0] ?? 1,
-    lastStep: stepNumbers[stepNumbers.length - 1] ?? 1,
-  };
+  return steps.length > 0
+    ? Array.from(new Set(steps)).toSorted((a, b) => a - b)
+    : [1];
 }
 
-type DeaccessionStepRange = Awaited<ReturnType<typeof getDeaccessionStepRange>>;
-
 /**
- * Pending deaccessions in one review column. The first step also holds legacy
- * rows without a step, and the last step holds rows left beyond a shortened
- * workflow, so every pending deaccession appears in exactly one column.
+ * The workflowStep range each review column holds: from its step up to the
+ * next configured step. The first column also holds legacy rows without a
+ * step and the last holds rows beyond a shortened workflow, so every pending
+ * deaccession appears in exactly one column.
  */
+interface StepColumnRange {
+  stepNumber: number;
+  from?: number;
+  to?: number;
+}
+
+function stepColumnRanges(steps: number[]): StepColumnRange[] {
+  return steps.map((stepNumber, index) => ({
+    stepNumber,
+    from: index === 0 ? undefined : stepNumber,
+    to: steps[index + 1],
+  }));
+}
+
 function pendingStepQuery(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  step: number,
-  range: DeaccessionStepRange,
+  range: StepColumnRange,
 ) {
-  const index =
-    "by_organization_and_status_and_workflowStep_and_dateDeaccessioned";
-  const pending = () =>
-    ctx.db
-      .query("deaccessions")
-      .withIndex(index, (q) =>
-        q.eq("organizationId", organizationId).eq("status", "pending"),
-      );
-  if (range.firstStep === range.lastStep) return pending();
-  if (step <= range.firstStep) {
-    return ctx.db
-      .query("deaccessions")
-      .withIndex(index, (q) =>
-        q
-          .eq("organizationId", organizationId)
-          .eq("status", "pending")
-          .lte("workflowStep", range.firstStep),
-      );
-  }
-  if (step >= range.lastStep) {
-    return ctx.db
-      .query("deaccessions")
-      .withIndex(index, (q) =>
-        q
-          .eq("organizationId", organizationId)
-          .eq("status", "pending")
-          .gte("workflowStep", range.lastStep),
-      );
-  }
   return ctx.db
     .query("deaccessions")
-    .withIndex(index, (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .eq("status", "pending")
-        .eq("workflowStep", step),
+    .withIndex(
+      "by_organization_and_status_and_workflowStep_and_dateDeaccessioned",
+      (q) => {
+        const pending = q
+          .eq("organizationId", organizationId)
+          .eq("status", "pending");
+        if (range.from !== undefined && range.to !== undefined) {
+          return pending
+            .gte("workflowStep", range.from)
+            .lt("workflowStep", range.to);
+        }
+        if (range.from !== undefined) {
+          return pending.gte("workflowStep", range.from);
+        }
+        if (range.to !== undefined) return pending.lt("workflowStep", range.to);
+        return pending;
+      },
     );
 }
 
-function isInPendingStep(
-  row: Doc<"deaccessions">,
-  step: number,
-  range: DeaccessionStepRange,
-) {
+function isInStepColumn(row: Doc<"deaccessions">, range: StepColumnRange) {
   if (row.status !== "pending") return false;
-  if (range.firstStep === range.lastStep) return true;
-  const current = row.workflowStep;
-  if (step <= range.firstStep) {
-    return current === undefined || current <= range.firstStep;
+  const step = row.workflowStep;
+  if (range.from !== undefined && (step === undefined || step < range.from)) {
+    return false;
   }
-  if (current === undefined) return false;
-  if (step >= range.lastStep) return current >= range.lastStep;
-  return current === step;
+  return range.to === undefined || step === undefined || step < range.to;
+}
+
+function matchesDeaccessionSearch(
+  row: Doc<"deaccessions">,
+  item: { collectionTitle: string; accessionNumber?: string },
+  search: string,
+) {
+  return [
+    row.deaccessionNumber,
+    row.reason,
+    row.disposition,
+    row.notes,
+    row.method,
+    item.collectionTitle,
+    item.accessionNumber,
+  ].some((value) => value?.toLowerCase().includes(search));
 }
 
 const deaccessionBoardColumnValidator = v.union(
@@ -697,9 +695,10 @@ const deaccessionBoardColumnValidator = v.union(
 );
 
 /**
- * One deaccession board column, paginated on the server. With a search, rows
- * come from the indexed search documents; a page can hold fewer rows than
- * requested while more remain.
+ * One deaccession board column, paginated on the server, newest first within
+ * a step. A search reads the indexed search documents; for an organization
+ * whose records predate them, it matches within each page instead. Either way
+ * a page can hold fewer rows than requested while more remain.
  */
 export const listBoardColumn = query({
   args: {
@@ -708,19 +707,33 @@ export const listBoardColumn = query({
     search: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(deaccessionListItemValidator),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(deaccessionListItemValidator),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
     const column = args.column;
     const status = column.kind === "step" ? "pending" : column.kind;
-    const range = await getDeaccessionStepRange(ctx, args.organizationId);
-    const search = args.search?.trim();
+    const steps = await getDeaccessionReviewSteps(ctx, args.organizationId);
+    const range =
+      column.kind === "step"
+        ? stepColumnRanges(steps).find(
+            (candidate) => candidate.stepNumber === column.step,
+          )
+        : undefined;
+    if (column.kind === "step" && !range) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+    const search = args.search?.trim().toLowerCase();
+    const hasSearchDocuments =
+      search !== undefined &&
+      search !== "" &&
+      (await ctx.db
+        .query("deaccessionSearchDocuments")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .first()) !== null;
 
-    if (search) {
+    if (search && hasSearchDocuments) {
       const result = await ctx.db
         .query("deaccessionSearchDocuments")
         .withSearchIndex("search_text", (q) =>
@@ -739,19 +752,14 @@ export const listBoardColumn = query({
         const row = rowsById.get(document.deaccessionId);
         if (!row || row.organizationId !== args.organizationId) return [];
         if (row.status !== status) return [];
-        if (column.kind === "step" && !isInPendingStep(row, column.step, range))
-          return [];
+        if (range && !isInStepColumn(row, range)) return [];
         return [row];
       });
-      return {
-        page: await toDeaccessionListItems(ctx, rows),
-        isDone: result.isDone,
-        continueCursor: result.continueCursor,
-      };
+      return { ...result, page: await toDeaccessionListItems(ctx, rows) };
     }
 
-    const result = await (column.kind === "step"
-      ? pendingStepQuery(ctx, args.organizationId, column.step, range)
+    const result = await (range
+      ? pendingStepQuery(ctx, args.organizationId, range)
       : ctx.db
           .query("deaccessions")
           .withIndex("by_organization_and_status_and_dateDeaccessioned", (q) =>
@@ -760,10 +768,17 @@ export const listBoardColumn = query({
     )
       .order("desc")
       .paginate(args.paginationOpts);
+    const items = await toDeaccessionListItems(ctx, result.page);
     return {
-      page: await toDeaccessionListItems(ctx, result.page),
-      isDone: result.isDone,
-      continueCursor: result.continueCursor,
+      ...result,
+      page: search
+        ? items.filter((item, index) => {
+            const row = result.page[index];
+            return (
+              row !== undefined && matchesDeaccessionSearch(row, item, search)
+            );
+          })
+        : items,
     };
   },
 });
@@ -781,8 +796,10 @@ export const getBoardCounts = query({
   }),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
-    const range = await getDeaccessionStepRange(ctx, args.organizationId);
-    const countStatus = (status: "pending" | "approved" | "rejected") =>
+    const ranges = stepColumnRanges(
+      await getDeaccessionReviewSteps(ctx, args.organizationId),
+    );
+    const countStatus = (status: "approved" | "rejected") =>
       countIndexedQuery(
         ctx.db
           .query("deaccessions")
@@ -790,27 +807,23 @@ export const getBoardCounts = query({
             q.eq("organizationId", args.organizationId).eq("status", status),
           ),
       );
-    const [pending, approved, rejected, ...stepCounts] = await Promise.all([
-      countStatus("pending"),
+    const [approved, rejected, columns] = await Promise.all([
       countStatus("approved"),
       countStatus("rejected"),
-      ...range.stepNumbers.map((step) =>
-        countIndexedQuery(
-          pendingStepQuery(ctx, args.organizationId, step, range),
-        ),
+      Promise.all(
+        ranges.map(async (range) => ({
+          stepNumber: range.stepNumber,
+          count: await countIndexedQuery(
+            pendingStepQuery(ctx, args.organizationId, range),
+          ),
+        })),
       ),
     ]);
     return {
-      pending,
+      pending: columns.reduce((total, column) => total + column.count, 0),
       approved,
       rejected,
-      columns: [
-        ...range.stepNumbers.map((stepNumber, index) => ({
-          stepNumber,
-          count: stepCounts[index] ?? 0,
-        })),
-        { stepNumber: -1, count: approved },
-      ],
+      columns,
     };
   },
 });

@@ -1,7 +1,7 @@
-import { ConvexError } from "convex/values";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import { capabilityUnavailableFromError } from "../convex/utils/capabilities";
 import {
   authedForUser,
   type ConvexTest,
@@ -27,17 +27,12 @@ async function addMemberWithoutRead(
   return authedForUser(t, member.userId);
 }
 
-async function errorCodeOf(call: Promise<unknown>) {
+/** Why a member's read was refused, from its coded capability error. */
+async function refusalOf(call: Promise<unknown>) {
   try {
     await call;
   } catch (error) {
-    if (!(error instanceof ConvexError)) return null;
-    // convex-test hands ConvexError data back serialized; clients receive JSON.
-    const data: unknown =
-      typeof error.data === "string" ? JSON.parse(error.data) : error.data;
-    return typeof data === "object" && data !== null && "code" in data
-      ? data.code
-      : null;
+    return capabilityUnavailableFromError(error)?.reason ?? null;
   }
   throw new Error("Expected the call to be rejected");
 }
@@ -71,7 +66,7 @@ test("a malformed object link or another record type's identifier reads as missi
   }
 });
 
-test("a member whose role cannot read objects gets a coded forbidden error", async () => {
+test("a member whose role cannot read objects gets a coded permission refusal", async () => {
   const t = createConvexTest();
   const owner = await createOrgUserCollectionWithPermissions(t, [
     "collections.read",
@@ -79,12 +74,12 @@ test("a member whose role cannot read objects gets a coded forbidden error", asy
   const member = await addMemberWithoutRead(t, owner.organizationId);
 
   expect(
-    await errorCodeOf(
+    await refusalOf(
       member.query(api.collections.getObjectDetail, {
         collectionId: owner.collectionId,
       }),
     ),
-  ).toBe("RECORD_FORBIDDEN");
+  ).toBe("permission_missing");
 });
 
 type Caller = ReturnType<typeof authedForUser>;
@@ -226,8 +221,8 @@ for (const recordCase of detailRecordCases) {
         await recordCase.read(authedForUser(t, owner.userId), malformed),
       ).toBeNull();
     }
-    expect(await errorCodeOf(recordCase.read(member, recordId))).toBe(
-      "RECORD_FORBIDDEN",
+    expect(await refusalOf(recordCase.read(member, recordId))).toBe(
+      "permission_missing",
     );
   });
 }
@@ -250,10 +245,10 @@ for (const recordCase of detailRecordCases.filter(
     const recordId = await recordCase.insert(t, owner);
 
     expect(
-      await errorCodeOf(
+      await refusalOf(
         recordCase.read(authedForUser(t, owner.userId), recordId),
       ),
-    ).toBe("CAPABILITY_UNAVAILABLE");
+    ).toBe("tier_required");
     expect(
       await recordCase.read(authedForUser(t, outsider.userId), recordId),
     ).toBeNull();

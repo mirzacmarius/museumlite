@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useBackToResults } from "@/hooks/use-return-path";
 import {
   type RecordRecoveryKind,
@@ -57,6 +58,8 @@ interface RecordRecoveryStateProps {
   list: RecordList;
   onRetry?: () => void;
   errorId?: string;
+  /** The guard's explanation of a refusal, replacing the generic copy. */
+  reason?: string | null;
 }
 
 /**
@@ -68,6 +71,7 @@ export function RecordRecoveryState({
   list,
   onRetry,
   errorId,
+  reason,
 }: RecordRecoveryStateProps) {
   const t = useScopedI18n("recordRecovery");
   const listHref = RECORD_LISTS[list];
@@ -92,7 +96,7 @@ export function RecordRecoveryState({
             {t(`${kind}.title`)}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {t(`${kind}.description`)}
+            {reason ?? t(`${kind}.description`)}
           </p>
         </div>
         {errorId ? (
@@ -140,6 +144,7 @@ export function RecordErrorRecovery({
   retry,
 }: RecordErrorRecoveryProps) {
   const kind = recordErrorKind(error);
+  const reason = useCapabilityErrorMessage()(error);
   useEffect(() => {
     if (kind === "error") console.error("Record detail error:", error);
   }, [error, kind]);
@@ -149,7 +154,8 @@ export function RecordErrorRecovery({
       kind={kind}
       list={list}
       onRetry={retry}
-      errorId={error.digest}
+      errorId={kind === "error" ? error.digest : undefined}
+      reason={reason}
     />
   );
 }

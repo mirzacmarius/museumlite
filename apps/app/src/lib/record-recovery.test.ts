@@ -2,46 +2,35 @@ import { ConvexError } from "convex/values";
 import { describe, expect, test } from "vitest";
 import { recordErrorKind, recordViewState } from "./record-recovery";
 
-describe("recordErrorKind", () => {
-  test("a coded forbidden read is a permission problem, not a crash", () => {
-    expect(
-      recordErrorKind(
-        new ConvexError({ code: "RECORD_FORBIDDEN", message: "denied" }),
-      ),
-    ).toBe("forbidden");
+const refusal = (reason: string) =>
+  new ConvexError({
+    code: "CAPABILITY_UNAVAILABLE",
+    reason,
+    message: "refused",
   });
 
-  test("clients that receive the error payload as JSON read the same code", () => {
+describe("recordErrorKind", () => {
+  test("a role without the read permission is a permission problem, not a crash", () => {
+    expect(recordErrorKind(refusal("permission_missing"))).toBe("forbidden");
+  });
+
+  test("clients that receive the error payload as JSON read the same reason", () => {
     expect(
       recordErrorKind(
         new ConvexError(
-          JSON.stringify({ code: "RECORD_FORBIDDEN", message: "denied" }),
+          JSON.stringify({
+            code: "CAPABILITY_UNAVAILABLE",
+            reason: "permission_missing",
+            message: "refused",
+          }),
         ),
       ),
     ).toBe("forbidden");
   });
 
-  test("a feature outside the organization's plan is unavailable", () => {
-    expect(
-      recordErrorKind(
-        new ConvexError({ code: "CAPABILITY_UNAVAILABLE", message: "plan" }),
-      ),
-    ).toBe("unavailable");
-    expect(
-      recordErrorKind(
-        new Error("[CONVEX Q(loans:get)] Feature requires pro tier"),
-      ),
-    ).toBe("unavailable");
-  });
-
-  test("a link whose identifier fails validation reads as missing", () => {
-    expect(
-      recordErrorKind(
-        new Error(
-          'ArgumentValidationError: Value does not match validator.\nPath: .loanId\nValue: "abc"\nValidator: v.id("loans")',
-        ),
-      ),
-    ).toBe("missing");
+  test("a module that is off or a plan without the feature is unavailable", () => {
+    expect(recordErrorKind(refusal("tier_required"))).toBe("unavailable");
+    expect(recordErrorKind(refusal("module_disabled"))).toBe("unavailable");
   });
 
   test("anything else is an unexpected error that can be retried", () => {

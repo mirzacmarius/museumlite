@@ -164,20 +164,19 @@ export const listPage = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
     const treatmentType = args.treatmentType;
-    const result = await (
-      treatmentType
-        ? ctx.db
-            .query("conservationTreatments")
-            .withIndex("by_organization_and_treatmentType", (q) =>
-              q
-                .eq("organizationId", args.organizationId)
-                .eq("treatmentType", treatmentType),
-            )
-        : ctx.db
-            .query("conservationTreatments")
-            .withIndex("by_organization", (q) =>
-              q.eq("organizationId", args.organizationId),
-            )
+    const result = await (treatmentType
+      ? ctx.db
+          .query("conservationTreatments")
+          .withIndex("by_organization_and_treatmentType", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("treatmentType", treatmentType),
+          )
+      : ctx.db
+          .query("conservationTreatments")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
     )
       .order("desc")
       .paginate(args.paginationOpts);
@@ -269,7 +268,7 @@ export const get = query({
     if (
       !treatment ||
       !(await canReadRecord(ctx, treatment.organizationId, "collections.read", {
-        feature: "conservation",
+        capability: "conservation",
       }))
     ) {
       return null;

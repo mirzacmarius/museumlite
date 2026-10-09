@@ -20,16 +20,19 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
-import { useDebouncedSearch, useListState } from "@/hooks/use-list-state";
+import { useListState } from "@/hooks/use-list-state";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "../accessions/accessions-page-skeleton";
 import { DeaccessionKanban } from "./deaccession-kanban";
-import { deaccessionListState } from "./deaccession-list-state";
+import {
+  DEACCESSION_STATUS_FILTERS,
+  deaccessionListState,
+} from "./deaccession-list-state";
 import { DeaccessionsStats } from "./deaccessions-stats";
 
 type DeaccessionsPageClientProps = {
@@ -41,8 +44,6 @@ type DeaccessionsExportData = FunctionReturnType<
 >;
 type DeaccessionsExportItem = DeaccessionsExportData["items"][number];
 
-const STATUS_FILTERS = ["all", "pending", "approved", "rejected"] as const;
-
 export function DeaccessionsPageClient({
   organizationId,
 }: DeaccessionsPageClientProps) {
@@ -50,11 +51,7 @@ export function DeaccessionsPageClient({
   const tList = useScopedI18n("listState");
   const [isReportOpen, setIsReportOpen] = useState(false);
   const list = useListState(deaccessionListState);
-  const updateList = list.update;
-  const [searchInput, setSearchInput] = useDebouncedSearch(
-    list.state.search,
-    useCallback((search: string) => updateList({ search }), [updateList]),
-  );
+  const { searchInput, setSearchInput } = list;
   const returnPath = useListReturnPath(deaccessionListState.keys);
   const counts = useQuery(api.deaccessions.getBoardCounts, { organizationId });
   const statusFilter = list.state.filters.status;
@@ -81,7 +78,7 @@ export function DeaccessionsPageClient({
           <div className="flex flex-wrap items-center gap-3">
             <fieldset className="flex rounded-lg bg-muted p-1">
               <legend className="sr-only">{t("table.status")}</legend>
-              {STATUS_FILTERS.map((status) => (
+              {DEACCESSION_STATUS_FILTERS.map((status) => (
                 <button
                   key={status}
                   type="button"

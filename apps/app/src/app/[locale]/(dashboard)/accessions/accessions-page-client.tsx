@@ -5,13 +5,13 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { FileUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useCallback } from "react";
+import { Suspense } from "react";
 import {
   ExportButtonWithFormat,
   type ExportFormat,
 } from "@/components/export-button-with-format";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
-import { useDebouncedSearch, useListState } from "@/hooks/use-list-state";
+import { useListState } from "@/hooks/use-list-state";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { AccessionKanban } from "./accession-kanban";
@@ -33,11 +33,7 @@ export function AccessionsPageClient({
   const tRoot = useI18n();
   const t = useScopedI18n("accessions");
   const list = useListState(accessionListState);
-  const updateList = list.update;
-  const [searchQuery, setSearchQuery] = useDebouncedSearch(
-    list.state.search,
-    useCallback((search: string) => updateList({ search }), [updateList]),
-  );
+  const { searchInput: searchQuery, setSearchInput: setSearchQuery } = list;
   const returnPath = useListReturnPath(ACCESSION_LIST_KEYS);
   const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();

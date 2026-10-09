@@ -4,7 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { usePaginatedQuery } from "convex/react";
 import { useCallback, useState } from "react";
-import { useDebouncedSearch, useListState } from "@/hooks/use-list-state";
+import { useListState } from "@/hooks/use-list-state";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { LoanListFilters } from "./loan-list-filters";
 import { LoanListKpis } from "./loan-list-kpis";
@@ -19,11 +19,7 @@ export function LoanList({ organizationId }: LoanListProps) {
   const list = useListState(loanListState);
   const { status: statusFilter, type: typeFilter } = list.state.filters;
   const searchQuery = list.state.search;
-  const updateList = list.update;
-  const [searchInput, setSearchInput] = useDebouncedSearch(
-    searchQuery,
-    useCallback((search: string) => updateList({ search }), [updateList]),
-  );
+  const { searchInput, setSearchInput } = list;
   const returnPath = useListReturnPath(loanListState.keys);
 
   const {

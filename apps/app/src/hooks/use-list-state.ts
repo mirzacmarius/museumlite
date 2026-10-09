@@ -4,7 +4,6 @@ import "@/lib/nuqs-localstorage-shim";
 import { parseAsString, useQueryStates } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
-  FilterValues,
   ListState,
   ListStateChange,
   ListStateDefinition,
@@ -12,10 +11,15 @@ import type {
 
 type AnyFilterSpec = Record<string, readonly [string, ...string[]] | "text">;
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 /**
  * Binds a list's URL contract to the address bar. Updates replace the current
  * history entry, so Back returns to the page before the list with the list's
  * last view intact, and a reload or shared link shows the same view.
+ *
+ * `searchInput` types freely and commits to the URL after a pause; it follows
+ * the URL when the search changes elsewhere, and `clear` drops pending text.
  */
 export function useListState<
   Filters extends AnyFilterSpec,
@@ -45,58 +49,39 @@ export function useListState<
     [definition, setValues],
   );
 
+  const [searchInput, setSearchInput] = useState(state.search);
+  const [followedSearch, setFollowedSearch] = useState(state.search);
+  if (state.search !== followedSearch) {
+    setFollowedSearch(state.search);
+    setSearchInput(state.search);
+  }
+  useEffect(() => {
+    if (searchInput === state.search) return;
+    const timeoutId = window.setTimeout(
+      () =>
+        apply((current) => definition.update(current, { search: searchInput })),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [apply, definition, searchInput, state.search]);
+
   return {
     state,
     isFiltered: definition.isFiltered(state),
+    searchInput,
+    setSearchInput,
     update: useCallback(
       (change: ListStateChange<Filters, Sort>) =>
         apply((current) => definition.update(current, change)),
-      [apply, definition],
-    ),
-    setFilter: useCallback(
-      <Key extends keyof Filters>(
-        key: Key,
-        value: FilterValues<Filters>[Key],
-      ) =>
-        apply((current) =>
-          definition.update(current, {
-            filters: { [key]: value } as Partial<FilterValues<Filters>>,
-          }),
-        ),
       [apply, definition],
     ),
     loadMore: useCallback(
       () => apply((current) => definition.loadMore(current)),
       [apply, definition],
     ),
-    clear: useCallback(
-      () => apply((current) => definition.clear(current)),
-      [apply, definition],
-    ),
+    clear: useCallback(() => {
+      setSearchInput("");
+      apply((current) => definition.clear(current));
+    }, [apply, definition]),
   };
-}
-
-/**
- * A search box that types freely and commits to the URL after a pause, and
- * follows the URL when it changes elsewhere (Back, Clear filters).
- */
-export function useDebouncedSearch(
-  committed: string,
-  commit: (value: string) => void,
-  delayMs = 300,
-) {
-  const [input, setInput] = useState(committed);
-  const [lastCommitted, setLastCommitted] = useState(committed);
-  if (committed !== lastCommitted) {
-    setLastCommitted(committed);
-    setInput(committed);
-  }
-
-  useEffect(() => {
-    if (input === committed) return;
-    const timeoutId = window.setTimeout(() => commit(input), delayMs);
-    return () => window.clearTimeout(timeoutId);
-  }, [commit, committed, delayMs, input]);
-
-  return [input, setInput] as const;
 }

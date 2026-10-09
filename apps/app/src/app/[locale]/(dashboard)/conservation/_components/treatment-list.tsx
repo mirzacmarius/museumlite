@@ -8,9 +8,8 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { Box, Calendar, Search, User, Wrench } from "lucide-react";
 import Link from "next/link";
-import { useCallback } from "react";
 import { GridCardsSkeleton } from "@/components/dashboard-list-page-skeleton";
-import { useDebouncedSearch, useListState } from "@/hooks/use-list-state";
+import { useListState } from "@/hooks/use-list-state";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { formatDate } from "@/lib/format-date";
 import { defineListState } from "@/lib/list-state";
@@ -49,11 +48,7 @@ export function TreatmentList({
   const t = useScopedI18n("conservation");
   const tList = useScopedI18n("listState");
   const list = useListState(treatmentListState);
-  const updateList = list.update;
-  const [searchInput, setSearchInput] = useDebouncedSearch(
-    list.state.search,
-    useCallback((search: string) => updateList({ search }), [updateList]),
-  );
+  const { searchInput, setSearchInput } = list;
   const returnPath = useListReturnPath(treatmentListState.keys);
   const selectedType = list.state.filters.type;
   const search = list.state.search.trim();
