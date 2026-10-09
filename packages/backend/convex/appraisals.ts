@@ -3,7 +3,8 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import { type QueryCtx, query } from "./_generated/server";
+import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { requireAmount, requireCurrencyCode } from "./utils/currency";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
@@ -87,14 +88,6 @@ function validatedAppraisal(input: AppraisalInput) {
   };
 }
 
-async function requireAuthenticatedUser(ctx: MutationCtx) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-  return userId;
-}
-
 /**
  * Record an appraisal for an object. It becomes the current valuation for its
  * purpose and currency when no later appraisal exists for them.
@@ -147,6 +140,24 @@ export const create = mutation({
   },
 });
 
+/** The trimmed correction reason; refuses already superseded appraisals. */
+function supersessionReason(previous: Doc<"appraisals">, rawReason: string) {
+  if (previous.supersededBy !== undefined) {
+    throw valuationError(
+      "APPRAISAL_ALREADY_SUPERSEDED",
+      "This appraisal was already superseded; correct the superseding appraisal instead",
+    );
+  }
+  const reason = rawReason.trim();
+  if (!reason) {
+    throw valuationError(
+      "REASON_REQUIRED",
+      "A reason is required to supersede an appraisal",
+    );
+  }
+  return reason;
+}
+
 /**
  * Correct an appraisal by recording a superseding one. The superseded record
  * keeps its original values and remains in the object's history.
@@ -165,19 +176,7 @@ export const supersede = mutation({
       throw valuationError("REFERENCE_NOT_FOUND", "Appraisal not found");
     }
     await requirePermission(ctx, previous.organizationId, "collections.update");
-    if (previous.supersededBy !== undefined) {
-      throw valuationError(
-        "APPRAISAL_ALREADY_SUPERSEDED",
-        "This appraisal was already superseded; correct the superseding appraisal instead",
-      );
-    }
-    const reason = args.reason.trim();
-    if (!reason) {
-      throw valuationError(
-        "REASON_REQUIRED",
-        "A reason is required to supersede an appraisal",
-      );
-    }
+    const reason = supersessionReason(previous, args.reason);
     const { appraisalId: _previousId, reason: _reason, ...input } = args;
     const fields = validatedAppraisal(input);
     const now = Date.now();
@@ -186,6 +185,8 @@ export const supersede = mutation({
       organizationId: previous.organizationId,
       collectionId: previous.collectionId,
       ...fields,
+      // The supporting report stays attached to the corrected valuation.
+      documents: previous.documents,
       supersedes: previous._id,
       supersessionReason: reason,
       createdBy: userId,

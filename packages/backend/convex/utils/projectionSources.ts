@@ -3,7 +3,7 @@ import type { QueryCtx } from "../_generated/server";
 import { classifyInventoryRecord } from "./collectionMetrics";
 import { normalizeCurrency } from "./currency";
 import { getExhibitionLifecycle } from "./exhibitionMetrics";
-import { coverageTarget } from "./insuranceCoverage";
+import { coverageTarget, needsTargetReview } from "./insuranceCoverage";
 import {
   distinctScope,
   type ProjectionFact,
@@ -344,11 +344,12 @@ export async function computeSourceFacts(
     case "insuranceCoverages": {
       const coverage = doc as Doc<"insuranceCoverages">;
       if (coverage.status !== "active") break;
-      const target = coverageTarget(coverage);
-      if (!target) {
+      if (needsTargetReview(coverage)) {
         add("insurance.coverages.needsReview");
         break;
       }
+      const target = coverageTarget(coverage);
+      if (!target) break;
       const currency = normalizeCurrency(coverage.currency);
       if (currency) {
         add(`${COVERED_VALUE_METRIC_PREFIX}${currency}`, coverage.coveredValue);

@@ -11,6 +11,7 @@ import { useState } from "react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
+import { CALENDAR_DATE_OPTIONS } from "@/lib/format-date";
 import { type FormatLocale, formatMoney } from "@/lib/format-number";
 import { useScopedI18n } from "@/locales/client";
 import {
@@ -36,7 +37,9 @@ function defaultsFrom(appraisal: AppraisalView): AppraisalDefaults {
     appraisalDate: appraisal.appraisalDate,
     appraiserName: appraisal.appraiserName,
     appraiserCompany: appraisal.appraiserCompany,
+    appraiserCredentials: appraisal.appraiserCredentials,
     validUntil: appraisal.validUntil,
+    notes: appraisal.notes,
   };
 }
 
@@ -180,7 +183,11 @@ function CurrentValuationCard({
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         {appraisal.appraiserName} ·{" "}
-        <ClientDate timestamp={appraisal.appraisalDate} locale={locale} />
+        <ClientDate
+          timestamp={appraisal.appraisalDate}
+          locale={locale}
+          options={CALENDAR_DATE_OPTIONS}
+        />
       </p>
       {appraisal.currencyRecognized ? null : (
         <p className="mt-1 text-xs text-amber-400">
@@ -242,7 +249,12 @@ function AppraisalHistoryRow({
         <p className="text-xs text-muted-foreground">
           {appraisal.appraiserName}
           {appraisal.appraiserCompany ? ` (${appraisal.appraiserCompany})` : ""}{" "}
-          · <ClientDate timestamp={appraisal.appraisalDate} locale={locale} />
+          ·{" "}
+          <ClientDate
+            timestamp={appraisal.appraisalDate}
+            locale={locale}
+            options={CALENDAR_DATE_OPTIONS}
+          />
         </p>
         {appraisal.supersessionReason ? (
           <p className="text-xs text-muted-foreground">

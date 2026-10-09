@@ -11,7 +11,7 @@ import { computeOpenClaims, countInsurableObjects } from "./insuranceStats";
 import {
   appraisalExpiresAt,
   INSURANCE_APPRAISAL_MAX_AGE_MS,
-  valuationGroupKey,
+  selectCurrentValuations,
 } from "./valuation";
 
 type AlertsCtx = Pick<QueryCtx, "db">;
@@ -19,6 +19,7 @@ type AlertsCtx = Pick<QueryCtx, "db">;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const EXPIRING_WINDOW_DAYS = 90;
 const EXPIRED_POLICY_ROWS = 20;
+const UNCOVERED_SAMPLE_SIZE = 25;
 
 export const coverageAlertsValidator = v.object({
   inForceValue: currencyTotalsValidator,
@@ -55,6 +56,14 @@ export const coverageAlertsValidator = v.object({
     uncoveredObjects: v.number(),
     coveragePercentage: v.number(),
   }),
+  /** The first objects without cover in force, for the gaps view. */
+  uncoveredSample: v.array(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+    }),
+  ),
   coveragesNeedingReview: v.number(),
   pendingClaimsCount: v.number(),
   staleAppraisalCount: v.number(),
@@ -96,7 +105,7 @@ async function countStaleInsuranceValuations(
   organizationId: Id<"organizations">,
   now: number,
 ) {
-  const latest = new Map<string, Doc<"appraisals">>();
+  const byObject = new Map<Id<"collections">, Doc<"appraisals">[]>();
   const appraisals = ctx.db
     .query("appraisals")
     .withIndex("by_organization", (q) =>
@@ -104,22 +113,16 @@ async function countStaleInsuranceValuations(
     );
   for await (const appraisal of appraisals) {
     if (appraisal.appraisalType !== "insurance") continue;
-    if (appraisal.supersededBy !== undefined) continue;
-    const key = `${appraisal.collectionId}|${valuationGroupKey(appraisal)}`;
-    const existing = latest.get(key);
-    if (
-      !existing ||
-      appraisal.appraisalDate > existing.appraisalDate ||
-      (appraisal.appraisalDate === existing.appraisalDate &&
-        appraisal._creationTime > existing._creationTime)
-    ) {
-      latest.set(key, appraisal);
-    }
+    const rows = byObject.get(appraisal.collectionId) ?? [];
+    rows.push(appraisal);
+    byObject.set(appraisal.collectionId, rows);
   }
   let stale = 0;
-  for (const appraisal of latest.values()) {
-    if (appraisalExpiresAt(appraisal, INSURANCE_APPRAISAL_MAX_AGE_MS) < now) {
-      stale += 1;
+  for (const rows of byObject.values()) {
+    for (const current of selectCurrentValuations(rows).values()) {
+      if (appraisalExpiresAt(current, INSURANCE_APPRAISAL_MAX_AGE_MS) < now) {
+        stale += 1;
+      }
     }
   }
   return stale;
@@ -184,7 +187,7 @@ export async function computeCoverageAlerts(
 
   const coverage = await collectInForceCoverage(ctx, organizationId, now);
   const [objects, claims, staleAppraisalCount] = await Promise.all([
-    countInsurableObjects(ctx, organizationId, coverage),
+    countInsurableObjects(ctx, organizationId, coverage, UNCOVERED_SAMPLE_SIZE),
     computeOpenClaims(ctx, organizationId),
     countStaleInsuranceValuations(ctx, organizationId, now),
   ]);
@@ -217,6 +220,7 @@ export async function computeCoverageAlerts(
           ? Math.round((objects.coveredObjects / objects.totalObjects) * 100)
           : 0,
     },
+    uncoveredSample: objects.uncoveredSample,
     coveragesNeedingReview: coverage.needsReviewCount,
     pendingClaimsCount: claims.openClaimsCount,
     staleAppraisalCount,

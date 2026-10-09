@@ -1,8 +1,8 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
+import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { createOrganizationQuery } from "./utils/convexAuth";
 import {
   normalizeCurrency,
@@ -150,6 +150,15 @@ export const list = insuranceReadQuery({
   },
 });
 
+function requireOpenReview(review: Doc<"legacyCoverageReviews">) {
+  if (review.status === "resolved") {
+    throw valuationError(
+      "LEGACY_REVIEW_RESOLVED",
+      "This coverage review was already resolved",
+    );
+  }
+}
+
 /**
  * Resolve a legacy coverage: it keeps only the chosen target. Each `split`
  * entry records a separate coverage, under the same policy and dates, for
@@ -176,10 +185,7 @@ export const resolve = mutation({
     createdCoverageIds: v.array(v.id("insuranceCoverages")),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuthenticatedUser(ctx);
     const review = await ctx.db.get(args.reviewId);
     if (!review) {
       throw valuationError("REFERENCE_NOT_FOUND", "Review not found");
@@ -189,12 +195,7 @@ export const resolve = mutation({
       review.organizationId,
       "organization.manage_settings",
     );
-    if (review.status === "resolved") {
-      throw valuationError(
-        "LEGACY_REVIEW_RESOLVED",
-        "This coverage review was already resolved",
-      );
-    }
+    requireOpenReview(review);
     const coverage = await ctx.db.get(review.coverageId);
     if (!coverage || coverage.organizationId !== review.organizationId) {
       throw valuationError("REFERENCE_NOT_FOUND", "Coverage not found");
@@ -220,7 +221,7 @@ export const resolve = mutation({
 
     const currency =
       args.currency === undefined
-        ? (normalizeCurrency(coverage.currency) ?? undefined)
+        ? undefined
         : requireCurrencyCode(args.currency);
     await requireTargetInOrganization(ctx, kept, review.organizationId);
     const splitRows: Array<{
@@ -247,7 +248,7 @@ export const resolve = mutation({
       loanId: undefined,
       exhibitionId: undefined,
       ...targetFields(kept),
-      currency,
+      ...(currency === undefined ? {} : { currency }),
     });
     const createdCoverageIds: Id<"insuranceCoverages">[] = [];
     for (const row of splitRows) {
@@ -291,7 +292,7 @@ export const resolve = mutation({
           id: targetId(target),
         })),
         keptTarget: { kind: kept.kind, id: targetId(kept) },
-        currency,
+        currency: currency ?? coverage.currency,
         createdCoverages: splitRows.map((row, index) => ({
           coverageId: createdCoverageIds[index],
           kind: row.target.kind,

@@ -554,6 +554,19 @@ export async function buildConservationTrendSeries(
 // Collection health
 // ============================================
 
+/** Active coverage value per currency; currencies are never added together. */
+function coveredValueByCurrency(totals: Record<string, number>) {
+  const byCurrency: Array<{ currency: string; total: number }> = [];
+  for (const [name, total] of Object.entries(totals)) {
+    if (!name.startsWith(COVERED_VALUE_METRIC_PREFIX)) continue;
+    byCurrency.push({
+      currency: name.slice(COVERED_VALUE_METRIC_PREFIX.length),
+      total,
+    });
+  }
+  return byCurrency.sort((a, b) => a.currency.localeCompare(b.currency));
+}
+
 export async function buildCollectionHealth(
   ctx: ReadCtx,
   organizationId: Id<"organizations">,
@@ -686,13 +699,7 @@ export async function buildCollectionHealth(
       overdueAssessments,
     },
     insurance: {
-      coveredValueByCurrency: Object.entries(totals)
-        .filter(([name]) => name.startsWith(COVERED_VALUE_METRIC_PREFIX))
-        .map(([name, total]) => ({
-          currency: name.slice(COVERED_VALUE_METRIC_PREFIX.length),
-          total,
-        }))
-        .sort((a, b) => a.currency.localeCompare(b.currency)),
+      coveredValueByCurrency: coveredValueByCurrency(totals),
       coveragesWithoutCurrency: metric(
         totals,
         "insurance.coverages.currencyNotRecorded",

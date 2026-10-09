@@ -20,6 +20,11 @@ import { ClientDate } from "@/components/client-date";
 import { CurrencyInput, isCurrencyCode } from "@/components/currency-input";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useValuationErrorMessage } from "@/hooks/use-valuation-error-message";
+import { parseDateInputValue } from "@/lib/account-holder";
+import {
+  CALENDAR_DATE_OPTIONS,
+  futureCalendarEndMonth,
+} from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 
 export interface CoveragePolicyOption {
@@ -71,6 +76,7 @@ export function CoverageForm({
     expirationDate: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [endMonth] = useState(futureCalendarEndMonth);
   const update = (patch: Partial<typeof form>) =>
     setForm((previous) => ({ ...previous, ...patch }));
   const options = useQuery(
@@ -94,12 +100,8 @@ export function CoverageForm({
       toast.error(tValuation("invalidCurrency"));
       return;
     }
-    const effectiveDate = form.effectiveDate
-      ? Date.parse(form.effectiveDate)
-      : undefined;
-    const expirationDate = form.expirationDate
-      ? Date.parse(form.expirationDate)
-      : undefined;
+    const effectiveDate = parseDateInputValue(form.effectiveDate);
+    const expirationDate = parseDateInputValue(form.expirationDate);
     setIsSaving(true);
     try {
       await addCoverage({
@@ -155,8 +157,17 @@ export function CoverageForm({
         {policy ? (
           <p className="text-xs text-muted-foreground">
             {t("periodHint")}{" "}
-            <ClientDate timestamp={policy.effectiveDate} locale={locale} /> –{" "}
-            <ClientDate timestamp={policy.expirationDate} locale={locale} />
+            <ClientDate
+              timestamp={policy.effectiveDate}
+              locale={locale}
+              options={CALENDAR_DATE_OPTIONS}
+            />{" "}
+            –{" "}
+            <ClientDate
+              timestamp={policy.expirationDate}
+              locale={locale}
+              options={CALENDAR_DATE_OPTIONS}
+            />
           </p>
         ) : null}
       </div>
@@ -248,12 +259,14 @@ export function CoverageForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <DatePickerInput
           id="coverage-start"
+          endMonth={endMonth}
           label={t("startDate")}
           value={form.effectiveDate}
           onChange={(effectiveDate) => update({ effectiveDate })}
         />
         <DatePickerInput
           id="coverage-end"
+          endMonth={endMonth}
           label={t("endDate")}
           value={form.expirationDate}
           onChange={(expirationDate) => update({ expirationDate })}

@@ -358,6 +358,76 @@ test("the daily insurance check records expiry on policies and their coverages",
   });
 });
 
+test("renewing an expired policy brings its lapsed coverages back into force", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+  const t = createConvexTest();
+  const { organizationId, staff, objectId } = await setupRegistrar(t);
+  const policyId = await createPolicy(staff, organizationId, {
+    effectiveDate: NOW - 300 * DAY,
+    expirationDate: NOW + 10 * DAY,
+  });
+  await staff.mutation(api.insurance.addCoverage, {
+    policyId,
+    target: { kind: "object", collectionId: objectId },
+    coveredValue: 25_000,
+    currency: "EUR",
+  });
+  vi.setSystemTime(NOW + 11 * DAY);
+  await t.mutation(internal.insurance.checkExpiringPoliciesInternal, {});
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+  await staff.mutation(api.insurance.updatePolicy, {
+    policyId,
+    expirationDate: NOW + 400 * DAY,
+  });
+
+  const policy = await staff.query(api.insurance.getPolicy, {
+    policyId,
+    now: NOW + 11 * DAY,
+  });
+  expect(policy).toMatchObject({
+    status: "active",
+    recordedStatus: "active",
+    coverages: [{ status: "active", state: "in_force" }],
+  });
+});
+
+test("a coverage without a recorded currency is not matched to an appraisal in some other currency", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, staff, objectId } = await setupRegistrar(t);
+  const policyId = await createPolicy(staff, organizationId);
+  await staff.mutation(api.appraisals.create, {
+    collectionId: objectId,
+    appraisalDate: NOW - 30 * DAY,
+    appraiserName: "Valuer",
+    appraisalType: "insurance",
+    value: 3_000_000,
+    currency: "JPY",
+  });
+  await t.run(async (ctx) => {
+    await ctx.db.insert("insuranceCoverages", {
+      organizationId,
+      policyId,
+      collectionId: objectId,
+      coveredValue: 50_000,
+      status: "active",
+      createdBy: userId,
+      createdAt: NOW - 40 * DAY,
+    });
+  });
+
+  const coverages = await staff.query(api.insurance.listCoverages, {
+    organizationId,
+    now: NOW,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  expect(coverages.page).toMatchObject([
+    { appraisalStatus: "currency_not_recorded", currentAppraisal: null },
+  ]);
+  expect(coverages.page[0]?.currency).toBeUndefined();
+});
+
 test("the daily insurance check expires a coverage whose own period ended inside an active policy", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
@@ -427,9 +497,9 @@ test("the expiry notification reports covered values per currency", async () => 
     organizationId,
   });
   expect(
-    notifications
-      .filter((notification) => notification.type === "insurance_expiry")
-      .map((notification) => notification.message),
+    notifications.flatMap((notification) =>
+      notification.type === "insurance_expiry" ? [notification.message] : [],
+    ),
   ).toEqual([
     "Policy POL-NOTIFY (Fine Art Underwriters) covering 2 items valued at EUR 25,000; USD 13,500 expires in 30 days.",
   ]);

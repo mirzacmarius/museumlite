@@ -13,7 +13,6 @@ import {
 } from "@v1/ui/select";
 import { Search, Shield } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
-import { type FormatLocale, formatMoney } from "@/lib/format-number";
 import { useScopedI18n } from "@/locales/client";
 import { MoneyCell } from "./money-cell";
 import {

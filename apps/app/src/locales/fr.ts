@@ -4893,6 +4893,7 @@ export default {
     currencyHint: "Code ISO à trois lettres, par exemple EUR",
     appraiserName: "Expert *",
     appraiserCompany: "Société",
+    appraiserCredentials: "Qualifications",
     validUntil: "Valable jusqu’au",
     notes: "Notes",
     save: "Enregistrer l’estimation",
@@ -6470,6 +6471,7 @@ export default {
         },
         appraisalStatus: {
           not_applicable: "Sans objet",
+          currency_not_recorded: "Devise non renseignée",
           missing: "Manquante",
           current: "En vigueur",
           stale: "Périmée",

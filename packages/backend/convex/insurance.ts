@@ -7,6 +7,7 @@ import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { createOrganizationQuery } from "./utils/convexAuth";
 import {
   CurrencyTotalsBuilder,
@@ -134,14 +135,6 @@ function requirePolicyPeriod(effectiveDate: number, expirationDate: number) {
   }
 }
 
-async function requireUser(ctx: MutationCtx) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-  return userId;
-}
-
 async function requirePolicyNumberAvailable(
   ctx: ReadCtx,
   organizationId: Id<"organizations">,
@@ -194,7 +187,7 @@ export const createPolicy = mutation({
   },
   returns: v.id("insurancePolicies"),
   handler: async (ctx, args) => {
-    const userId = await requireUser(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     await requirePermission(
       ctx,
       args.organizationId,
@@ -239,6 +232,35 @@ export const createPolicy = mutation({
   },
 });
 
+/**
+ * When an expired policy is renewed, coverages that lapsed with it return to
+ * force. Coverages whose own end date has passed stay expired.
+ */
+async function reactivateRenewedCoverages(
+  ctx: MutationCtx,
+  policyId: Id<"insurancePolicies">,
+  now: number,
+) {
+  const lapsed = await ctx.db
+    .query("insuranceCoverages")
+    .withIndex("by_policy_and_status", (q) =>
+      q.eq("policyId", policyId).eq("status", "expired"),
+    )
+    .take(MAX_POLICY_COVERAGES);
+  let reactivated = 0;
+  for (const coverage of lapsed) {
+    if (
+      coverage.expirationDate !== undefined &&
+      coverage.expirationDate < now
+    ) {
+      continue;
+    }
+    await ctx.db.patch(coverage._id, { status: "active" });
+    reactivated += 1;
+  }
+  return reactivated;
+}
+
 export const updatePolicy = mutation({
   args: {
     policyId: v.id("insurancePolicies"),
@@ -266,7 +288,7 @@ export const updatePolicy = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireUser(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw valuationError("REFERENCE_NOT_FOUND", "Policy not found");
@@ -324,6 +346,14 @@ export const updatePolicy = mutation({
       }
     }
 
+    const renewed =
+      policy.status === "expired" &&
+      (filteredUpdates.status === "active" ||
+        filteredUpdates.status === "pending");
+    const reactivated = renewed
+      ? await reactivateRenewedCoverages(ctx, args.policyId, Date.now())
+      : 0;
+
     await Promise.all([
       ctx.db.patch(args.policyId, {
         ...filteredUpdates,
@@ -336,7 +366,9 @@ export const updatePolicy = mutation({
         action: "updated",
         entityType: "insurancePolicy",
         entityId: args.policyId,
-        changes: filteredUpdates,
+        changes: reactivated
+          ? { ...filteredUpdates, reactivatedCoverages: reactivated }
+          : filteredUpdates,
       }),
     ]);
 
@@ -479,8 +511,57 @@ export const listPolicies = insuranceReadQuery({
   },
 });
 
+const POLICY_OPTION_LIMIT = 200;
+
+/**
+ * Policies to choose from when adding coverage or a claim, newest first,
+ * with their status at `now`. Independent of the policy list filters.
+ */
+export const listPolicyOptions = insuranceReadQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    now: v.number(),
+  },
+  returns: v.object({
+    policies: v.array(
+      v.object({
+        _id: v.id("insurancePolicies"),
+        policyNumber: v.string(),
+        carrier: v.string(),
+        currency: v.optional(v.string()),
+        effectiveDate: v.number(),
+        expirationDate: v.number(),
+        status: policyStatusValidator,
+      }),
+    ),
+    truncated: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const policies = await ctx.db
+      .query("insurancePolicies")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.organizationId),
+      )
+      .order("desc")
+      .take(POLICY_OPTION_LIMIT + 1);
+    return {
+      policies: policies.slice(0, POLICY_OPTION_LIMIT).map((policy) => ({
+        _id: policy._id,
+        policyNumber: policy.policyNumber,
+        carrier: policy.carrier,
+        currency: policy.currency,
+        effectiveDate: policy.effectiveDate,
+        expirationDate: policy.expirationDate,
+        status: effectivePolicyStatus(policy, args.now),
+      })),
+      truncated: policies.length > POLICY_OPTION_LIMIT,
+    };
+  },
+});
+
 const coverageAppraisalStatusValidator = v.union(
   v.literal("not_applicable"),
+  v.literal("currency_not_recorded"),
   v.literal("missing"),
   v.literal("current"),
   v.literal("stale"),
@@ -539,11 +620,18 @@ async function coverageAppraisal(
       currentAppraisal: null,
     };
   }
+  const currency = normalizeCurrency(coverage.currency);
+  if (currency === null) {
+    return {
+      appraisalStatus: "currency_not_recorded" as const,
+      currentAppraisal: null,
+    };
+  }
   const appraisal = await currentValuationFor(
     ctx,
     target.collectionId,
     "insurance",
-    coverage.currency,
+    currency,
   );
   if (!appraisal) {
     return { appraisalStatus: "missing" as const, currentAppraisal: null };
@@ -802,7 +890,7 @@ export const addCoverage = mutation({
   },
   returns: v.id("insuranceCoverages"),
   handler: async (ctx, args) => {
-    const userId = await requireUser(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw valuationError("REFERENCE_NOT_FOUND", "Policy not found");
@@ -897,7 +985,7 @@ export const removeCoverage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireUser(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const coverage = await ctx.db.get(args.coverageId);
     if (!coverage) {
       throw valuationError("REFERENCE_NOT_FOUND", "Coverage not found");
@@ -953,6 +1041,7 @@ export const getCoverageForObject = query({
         .withIndex("by_collection", (q) =>
           q.eq("collectionId", args.collectionId),
         )
+        .order("desc")
         .take(MAX_POLICY_COVERAGES),
     ] as const);
 
@@ -996,6 +1085,8 @@ export const listCoverageTargetOptions = insuranceReadQuery({
     }),
   ),
   handler: async (ctx, args) => {
+    const options: Array<{ id: string; label: string; reference?: string }> =
+      [];
     if (args.kind === "loan") {
       const loans = await ctx.db
         .query("loans")
@@ -1004,13 +1095,15 @@ export const listCoverageTargetOptions = insuranceReadQuery({
         )
         .order("desc")
         .take(TARGET_OPTION_LIMIT);
-      return loans
-        .filter((loan) => loan.status !== "cancelled")
-        .map((loan) => ({
+      for (const loan of loans) {
+        if (loan.status === "cancelled") continue;
+        options.push({
           id: loan._id,
           label: loan.lenderBorrowerName,
           reference: loan.loanNumber,
-        }));
+        });
+      }
+      return options;
     }
     const exhibitions = await ctx.db
       .query("exhibitions")
@@ -1019,13 +1112,11 @@ export const listCoverageTargetOptions = insuranceReadQuery({
       )
       .order("desc")
       .take(TARGET_OPTION_LIMIT);
-    return exhibitions
-      .filter((exhibition) => exhibition.status !== "rejected")
-      .map((exhibition) => ({
-        id: exhibition._id,
-        label: exhibition.title,
-        reference: undefined,
-      }));
+    for (const exhibition of exhibitions) {
+      if (exhibition.status === "rejected") continue;
+      options.push({ id: exhibition._id, label: exhibition.title });
+    }
+    return options;
   },
 });
 
@@ -1720,7 +1811,7 @@ export const uploadClaimDocument = mutation({
   },
 });
 
-const EXPIRY_ALERT_DAYS = [7, 14, 30];
+const EXPIRY_ALERT_DAYS = new Set([7, 14, 30]);
 const EXPIRY_ALERT_SCAN_LIMIT = 500;
 
 function describeCoveredValue(policyCoverages: Doc<"insuranceCoverages">[]) {
@@ -1762,7 +1853,7 @@ export const checkExpiringPoliciesInternal = internalMutation({
     for (const policy of expiring) {
       if (effectivePolicyStatus(policy, now) !== "active") continue;
       const daysUntilExpiry = Math.ceil((policy.expirationDate - now) / DAY_MS);
-      if (!EXPIRY_ALERT_DAYS.includes(daysUntilExpiry)) continue;
+      if (!EXPIRY_ALERT_DAYS.has(daysUntilExpiry)) continue;
 
       const coverages = (
         await ctx.db
@@ -2323,7 +2414,7 @@ export const linkAppraisalToCoverage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireUser(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const coverage = await ctx.db.get(args.coverageId);
     if (!coverage) {
       throw valuationError("REFERENCE_NOT_FOUND", "Coverage not found");
@@ -2451,21 +2542,17 @@ export const checkAppraisalForCoverage = query({
     }
 
     const ageDays = appraisalAgeDays(current, args.now);
-    const staleDays = INSURANCE_APPRAISAL_MAX_AGE_MS / DAY_MS;
-    const renewalDays = VALUATION_MAX_AGE_MS / DAY_MS;
+    const pastValidUntil =
+      current.validUntil !== undefined && current.validUntil < args.now;
+    const appraisalValid =
+      appraisalExpiresAt(current, INSURANCE_APPRAISAL_MAX_AGE_MS) >= args.now;
 
     let warning: string | undefined;
-    let appraisalValid = true;
-    if (ageDays > staleDays) {
-      warning = `Appraisal is ${Math.floor(ageDays / 365)} years old and may be stale`;
-      appraisalValid = false;
-    } else if (
-      current.validUntil !== undefined &&
-      current.validUntil < args.now
-    ) {
-      warning = "Appraisal is past its valid-until date";
-      appraisalValid = false;
-    } else if (ageDays > renewalDays) {
+    if (!appraisalValid) {
+      warning = pastValidUntil
+        ? "Appraisal is past its valid-until date"
+        : `Appraisal is ${Math.floor(ageDays / 365)} years old and may be stale`;
+    } else if (appraisalExpiresAt(current, VALUATION_MAX_AGE_MS) < args.now) {
       warning = "Appraisal is over 2 years old and should be updated soon";
     }
 

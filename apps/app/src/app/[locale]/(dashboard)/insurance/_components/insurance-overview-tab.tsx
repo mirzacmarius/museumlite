@@ -8,9 +8,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ClientDate } from "@/components/client-date";
 import { CurrencyTotals } from "@/components/currency-totals";
+import { CALENDAR_DATE_OPTIONS } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
-
-const GAP_ROWS = 25;
 
 const severityColor = {
   critical: "border-rose-500/30 text-rose-400",
@@ -67,16 +66,6 @@ export function InsuranceOverviewTab({
     api.insurance.getCoverageAlerts,
     now === undefined ? "skip" : { organizationId, now },
   );
-  const gaps = useQuery(
-    api.insurance.getUncoveredObjects,
-    now === undefined
-      ? "skip"
-      : {
-          organizationId,
-          now,
-          paginationOpts: { numItems: GAP_ROWS, cursor: null },
-        },
-  );
 
   if (alerts === undefined) {
     return <div className="h-48 w-full animate-pulse rounded-xl bg-card/40" />;
@@ -110,11 +99,11 @@ export function InsuranceOverviewTab({
               percentage: alerts.uncoveredStats.coveragePercentage,
             })}
           </p>
-          {gaps === undefined ? null : gaps.page.length === 0 ? (
+          {alerts.uncoveredSample.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noGaps")}</p>
           ) : (
             <ul className="divide-y divide-border/60 text-sm">
-              {gaps.page.map((object) => (
+              {alerts.uncoveredSample.map((object) => (
                 <li key={object._id} className="py-2">
                   <Link
                     href={`/objects/${object._id}`}
@@ -129,9 +118,10 @@ export function InsuranceOverviewTab({
               ))}
             </ul>
           )}
-          {gaps && !gaps.isDone ? (
+          {alerts.uncoveredStats.uncoveredObjects >
+          alerts.uncoveredSample.length ? (
             <p className="text-xs text-muted-foreground">
-              {t("moreGaps", { count: GAP_ROWS })}
+              {t("moreGaps", { count: alerts.uncoveredSample.length })}
             </p>
           ) : null}
         </Panel>
@@ -193,6 +183,7 @@ export function InsuranceOverviewTab({
                     <ClientDate
                       timestamp={policy.expirationDate}
                       locale={locale}
+                      options={CALENDAR_DATE_OPTIONS}
                     />
                     · {t("coverageCount", { count: policy.coverageCount })}
                   </span>

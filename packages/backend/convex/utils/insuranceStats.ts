@@ -43,14 +43,23 @@ export interface InsuranceStats {
   expiringIn30Days: number;
 }
 
-/** Insurable objects and how many of them have cover in force. */
+/**
+ * Insurable objects, how many have cover in force, and the first
+ * `sampleSize` objects without it.
+ */
 export async function countInsurableObjects(
   ctx: StatsCtx,
   organizationId: Id<"organizations">,
   coverage: InForceCoverage,
+  sampleSize = 0,
 ) {
   let totalObjects = 0;
   let coveredObjects = 0;
+  const uncoveredSample: Array<{
+    _id: Id<"collections">;
+    title: string;
+    accessionNumber: string;
+  }> = [];
   for (const status of INSURABLE_OBJECT_STATUSES) {
     const objects = ctx.db
       .query("collections")
@@ -59,10 +68,18 @@ export async function countInsurableObjects(
       );
     for await (const object of objects) {
       totalObjects += 1;
-      if (coverage.coveredObjectIds.has(object._id)) coveredObjects += 1;
+      if (coverage.coveredObjectIds.has(object._id)) {
+        coveredObjects += 1;
+      } else if (uncoveredSample.length < sampleSize) {
+        uncoveredSample.push({
+          _id: object._id,
+          title: object.title,
+          accessionNumber: object.accessionNumber,
+        });
+      }
     }
   }
-  return { totalObjects, coveredObjects };
+  return { totalObjects, coveredObjects, uncoveredSample };
 }
 
 export async function computeOpenClaims(

@@ -4717,6 +4717,7 @@ export default {
     currencyHint: "Three-letter ISO code, for example EUR",
     appraiserName: "Appraiser *",
     appraiserCompany: "Company",
+    appraiserCredentials: "Credentials",
     validUntil: "Valid until",
     notes: "Notes",
     save: "Save appraisal",
@@ -6247,6 +6248,7 @@ export default {
         },
         appraisalStatus: {
           not_applicable: "Not applicable",
+          currency_not_recorded: "Currency not recorded",
           missing: "Missing",
           current: "Current",
           stale: "Stale",

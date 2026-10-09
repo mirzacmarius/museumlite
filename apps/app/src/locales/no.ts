@@ -4872,6 +4872,7 @@ export default {
     currencyHint: "ISO-kode på tre bokstaver, for eksempel EUR",
     appraiserName: "Takstperson *",
     appraiserCompany: "Firma",
+    appraiserCredentials: "Kvalifikasjoner",
     validUntil: "Gyldig til",
     notes: "Notater",
     save: "Lagre taksering",
@@ -6417,6 +6418,7 @@ export default {
         },
         appraisalStatus: {
           not_applicable: "Ikke relevant",
+          currency_not_recorded: "Valuta ikke registrert",
           missing: "Mangler",
           current: "Gjeldende",
           stale: "Utdatert",

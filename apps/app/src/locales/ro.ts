@@ -2535,6 +2535,7 @@ export default {
     currencyHint: "Cod ISO din trei litere, de exemplu EUR",
     appraiserName: "Expert *",
     appraiserCompany: "Firmă",
+    appraiserCredentials: "Calificări",
     validUntil: "Valabilă până la",
     notes: "Note",
     save: "Salvează expertiza",
@@ -7225,6 +7226,7 @@ export default {
         },
         appraisalStatus: {
           not_applicable: "Nu se aplică",
+          currency_not_recorded: "Moneda nu este înregistrată",
           missing: "Lipsește",
           current: "Curentă",
           stale: "Depășită",

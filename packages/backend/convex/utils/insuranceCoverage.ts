@@ -269,9 +269,9 @@ async function objectsCoveredThrough(
         .query("loanItems")
         .withIndex("by_loan", (q) => q.eq("loanId", target.loanId))
         .take(MAX_TARGET_MEMBERS);
-      return items
-        .filter((item) => item.custodyStatus !== "returned")
-        .map((item) => item.collectionId);
+      return items.flatMap((item) =>
+        item.custodyStatus === "returned" ? [] : [item.collectionId],
+      );
     }
     case "exhibition": {
       const members = await ctx.db
@@ -280,9 +280,9 @@ async function objectsCoveredThrough(
           q.eq("exhibitionId", target.exhibitionId),
         )
         .take(MAX_TARGET_MEMBERS);
-      return members
-        .filter((member) => member.status !== "returned")
-        .map((member) => member.collectionId);
+      return members.flatMap((member) =>
+        member.status === "returned" ? [] : [member.collectionId],
+      );
     }
   }
 }
@@ -293,6 +293,7 @@ export interface InForceCoverage {
   /** Value of coverages in force at `now`, per currency. */
   value: CurrencyTotals;
   inForceCount: number;
+  /** Legacy coverages naming several targets, awaiting reviewed resolution. */
   needsReviewCount: number;
 }
 
@@ -308,6 +309,7 @@ export async function collectInForceCoverage(
   >();
   const coveredObjectIds = new Set<Id<"collections">>();
   const value = new CurrencyTotalsBuilder();
+  const expandedTargets = new Set<string>();
   let inForceCount = 0;
   let needsReviewCount = 0;
 
@@ -330,7 +332,7 @@ export async function collectInForceCoverage(
         policies.get(coverage.policyId) ?? null,
         now,
       );
-      if (state === "needs_review") {
+      if (needsTargetReview(coverage)) {
         needsReviewCount += 1;
         continue;
       }
@@ -339,6 +341,9 @@ export async function collectInForceCoverage(
       if (!target) continue;
       inForceCount += 1;
       value.add(coverage.currency, coverage.coveredValue);
+      const key = `${target.kind}:${targetId(target)}`;
+      if (expandedTargets.has(key)) continue;
+      expandedTargets.add(key);
       for (const collectionId of await objectsCoveredThrough(ctx, target)) {
         coveredObjectIds.add(collectionId);
       }

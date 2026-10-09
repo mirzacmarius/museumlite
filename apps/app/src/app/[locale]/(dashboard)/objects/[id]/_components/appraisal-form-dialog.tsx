@@ -26,6 +26,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CurrencyInput, isCurrencyCode } from "@/components/currency-input";
 import { useValuationErrorMessage } from "@/hooks/use-valuation-error-message";
+import {
+  formatDateInputValue,
+  parseDateInputValue,
+} from "@/lib/account-holder";
+import { futureCalendarEndMonth } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 
 export const APPRAISAL_PURPOSES = [
@@ -45,7 +50,9 @@ export interface AppraisalDefaults {
   appraisalDate: number;
   appraiserName: string;
   appraiserCompany?: string;
+  appraiserCredentials?: string;
   validUntil?: number;
+  notes?: string;
 }
 
 interface AppraisalFormDialogProps {
@@ -54,13 +61,6 @@ interface AppraisalFormDialogProps {
   collectionId: Id<"collections">;
   /** When set, the form records a correction that supersedes this appraisal. */
   supersedes?: { appraisalId: Id<"appraisals">; defaults: AppraisalDefaults };
-}
-
-/** Date inputs hold UTC calendar dates, matching `Date.parse` on submit. */
-function toDateInput(timestamp: number | undefined) {
-  return timestamp === undefined
-    ? ""
-    : new Date(timestamp).toISOString().slice(0, 10);
 }
 
 export function AppraisalFormDialog({
@@ -78,24 +78,26 @@ export function AppraisalFormDialog({
     purpose: defaults?.purpose ?? ("insurance" as AppraisalPurpose),
     value: defaults ? String(defaults.value) : "",
     currency: defaults?.currency ?? "",
-    appraisalDate: toDateInput(defaults?.appraisalDate),
-    validUntil: toDateInput(defaults?.validUntil),
+    appraisalDate: formatDateInputValue(defaults?.appraisalDate),
+    validUntil: formatDateInputValue(defaults?.validUntil),
     appraiserName: defaults?.appraiserName ?? "",
     appraiserCompany: defaults?.appraiserCompany ?? "",
-    notes: "",
+    appraiserCredentials: defaults?.appraiserCredentials ?? "",
+    notes: defaults?.notes ?? "",
     reason: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [endMonth] = useState(futureCalendarEndMonth);
   const update = (patch: Partial<typeof form>) =>
     setForm((previous) => ({ ...previous, ...patch }));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const value = Number.parseFloat(form.value);
-    const appraisalDate = Date.parse(form.appraisalDate);
+    const appraisalDate = parseDateInputValue(form.appraisalDate);
     if (
       !form.appraiserName.trim() ||
-      Number.isNaN(appraisalDate) ||
+      appraisalDate === undefined ||
       (supersedes && !form.reason.trim())
     ) {
       toast.error(t("requiredFields"));
@@ -117,12 +119,10 @@ export function AppraisalFormDialog({
       value,
       currency: form.currency.trim(),
       appraisalDate,
-      validUntil:
-        validUntil === undefined || Number.isNaN(validUntil)
-          ? undefined
-          : validUntil,
+      validUntil,
       appraiserName: form.appraiserName.trim(),
       appraiserCompany: form.appraiserCompany.trim() || undefined,
+      appraiserCredentials: form.appraiserCredentials.trim() || undefined,
       notes: form.notes.trim() || undefined,
     };
     setIsSaving(true);
@@ -239,9 +239,22 @@ export function AppraisalFormDialog({
               />
             </div>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="appraiser-credentials">
+              {t("appraiserCredentials")}
+            </Label>
+            <Input
+              id="appraiser-credentials"
+              value={form.appraiserCredentials}
+              onChange={(event) =>
+                update({ appraiserCredentials: event.target.value })
+              }
+            />
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <DatePickerInput
               id="appraisal-valid-until"
+              endMonth={endMonth}
               label={t("validUntil")}
               value={form.validUntil}
               onChange={(validUntil) => update({ validUntil })}

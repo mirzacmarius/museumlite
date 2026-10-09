@@ -18,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { CurrencyInput, isCurrencyCode } from "@/components/currency-input";
@@ -167,6 +167,44 @@ export function LegacyCoverageReviewTab({
   );
 }
 
+interface SplitEntry {
+  coveredValue: string;
+  currency: string;
+}
+
+interface ResolveForm {
+  keep: TargetKind;
+  currency: string;
+  split: Partial<Record<TargetKind, SplitEntry>>;
+  note: string;
+  isSaving: boolean;
+}
+
+type ResolveFormAction =
+  | { type: "keep"; value: TargetKind }
+  | { type: "currency"; value: string }
+  | { type: "split"; kind: TargetKind; value: SplitEntry | undefined }
+  | { type: "note"; value: string }
+  | { type: "saving"; value: boolean };
+
+function resolveFormReducer(
+  form: ResolveForm,
+  action: ResolveFormAction,
+): ResolveForm {
+  switch (action.type) {
+    case "keep":
+      return { ...form, keep: action.value };
+    case "currency":
+      return { ...form, currency: action.value };
+    case "split":
+      return { ...form, split: { ...form.split, [action.kind]: action.value } };
+    case "note":
+      return { ...form, note: action.value };
+    case "saving":
+      return { ...form, isSaving: action.value };
+  }
+}
+
 function ResolveReviewDialog({
   review,
   onClose,
@@ -181,17 +219,14 @@ function ResolveReviewDialog({
   const tValuation = useScopedI18n("valuation");
   const errorMessage = useValuationErrorMessage();
   const resolve = useMutation(api.insuranceCoverageReviews.resolve);
-  const [keep, setKeep] = useState<TargetKind>(
-    review.targets[0]?.kind ?? "object",
-  );
-  const [currency, setCurrency] = useState(
-    review.coverageCurrency ?? review.policyCurrency ?? "",
-  );
-  const [split, setSplit] = useState<
-    Partial<Record<TargetKind, { coveredValue: string; currency: string }>>
-  >({});
-  const [note, setNote] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [form, dispatch] = useReducer(resolveFormReducer, {
+    keep: review.targets[0]?.kind ?? "object",
+    currency: review.coverageCurrency ?? "",
+    split: {},
+    note: "",
+    isSaving: false,
+  });
+  const { keep, currency, split, note, isSaving } = form;
   const others = review.targets.filter((target) => target.kind !== keep);
   const describe = (target: Review["targets"][number]) =>
     target.reference ? `${target.reference} · ${target.label}` : target.label;
@@ -217,7 +252,7 @@ function ResolveReviewDialog({
         return;
       }
     }
-    setIsSaving(true);
+    dispatch({ type: "saving", value: true });
     try {
       await resolve({
         reviewId: review._id,
@@ -235,7 +270,7 @@ function ResolveReviewDialog({
     } catch (error) {
       toast.error(errorMessage(error, t("failed")));
     } finally {
-      setIsSaving(false);
+      dispatch({ type: "saving", value: false });
     }
   };
 
@@ -251,7 +286,9 @@ function ResolveReviewDialog({
             <legend className="text-sm font-medium">{t("keep")}</legend>
             <RadioGroup
               value={keep}
-              onValueChange={(value) => setKeep(value as TargetKind)}
+              onValueChange={(value) =>
+                dispatch({ type: "keep", value: value as TargetKind })
+              }
             >
               {review.targets.map((target) => (
                 <div key={target.id} className="flex items-center gap-2">
@@ -273,7 +310,7 @@ function ResolveReviewDialog({
             label={t("currency")}
             hint={t("currencyHint")}
             value={currency}
-            onChange={setCurrency}
+            onChange={(value) => dispatch({ type: "currency", value })}
           />
 
           {others.map((target) => {
@@ -288,12 +325,16 @@ function ResolveReviewDialog({
                     id={`split-${target.kind}`}
                     checked={entry !== undefined}
                     onCheckedChange={(checked) =>
-                      setSplit((previous) => ({
-                        ...previous,
-                        [target.kind]: checked
-                          ? { coveredValue: "", currency }
+                      dispatch({
+                        type: "split",
+                        kind: target.kind,
+                        value: checked
+                          ? {
+                              coveredValue: "",
+                              currency: currency || review.policyCurrency || "",
+                            }
                           : undefined,
-                      }))
+                      })
                     }
                   />
                   <Label htmlFor={`split-${target.kind}`}>
@@ -313,13 +354,14 @@ function ResolveReviewDialog({
                         step="any"
                         value={entry.coveredValue}
                         onChange={(event) =>
-                          setSplit((previous) => ({
-                            ...previous,
-                            [target.kind]: {
+                          dispatch({
+                            type: "split",
+                            kind: target.kind,
+                            value: {
                               ...entry,
                               coveredValue: event.target.value,
                             },
-                          }))
+                          })
                         }
                       />
                     </div>
@@ -329,10 +371,11 @@ function ResolveReviewDialog({
                       hint={tValuation("currencyHint")}
                       value={entry.currency}
                       onChange={(value) =>
-                        setSplit((previous) => ({
-                          ...previous,
-                          [target.kind]: { ...entry, currency: value },
-                        }))
+                        dispatch({
+                          type: "split",
+                          kind: target.kind,
+                          value: { ...entry, currency: value },
+                        })
                       }
                     />
                   </div>
@@ -346,7 +389,9 @@ function ResolveReviewDialog({
             <Textarea
               id="review-note"
               value={note}
-              onChange={(event) => setNote(event.target.value)}
+              onChange={(event) =>
+                dispatch({ type: "note", value: event.target.value })
+              }
             />
           </div>
 

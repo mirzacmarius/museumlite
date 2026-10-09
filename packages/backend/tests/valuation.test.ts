@@ -6,6 +6,7 @@ import {
   type ValuationErrorData,
   valuationErrorFromError,
 } from "../convex/utils/valuationErrors";
+import { expectMatchesReturns } from "./returnsValidation";
 import {
   authedForUser,
   type ConvexTest,
@@ -13,7 +14,6 @@ import {
   createOrgUserCollectionWithPermissions,
   createOrgUserWithPermissions,
 } from "./testHarness";
-import { expectMatchesReturns } from "./returnsValidation";
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 8, 17, 12);

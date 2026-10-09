@@ -17,13 +17,16 @@ export function RecordedValue({
 }) {
   const t = useScopedI18n("valuation");
   const locale = useCurrentLocale() as FormatLocale;
-  if (!value) return <span className={className}>—</span>;
   return (
     <span className="inline-flex flex-col">
-      <span className={className}>{formatNumber(value, locale)}</span>
-      <span className="text-[10px] font-normal text-muted-foreground">
-        {t("recordedValueHint")}
+      <span className={className}>
+        {value ? formatNumber(value, locale) : "—"}
       </span>
+      {value ? (
+        <span className="text-[10px] font-normal text-muted-foreground">
+          {t("recordedValueHint")}
+        </span>
+      ) : null}
     </span>
   );
 }

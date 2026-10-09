@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { CurrencyInput, isCurrencyCode } from "@/components/currency-input";
+import { futureCalendarEndMonth } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 
 export function PolicyForm({
@@ -37,6 +38,7 @@ export function PolicyForm({
 }) {
   const t = useScopedI18n("untranslatedDashboard.insurance");
   const tValuation = useScopedI18n("valuation");
+  const [endMonth] = useState(futureCalendarEndMonth);
   const [form, setForm] = useState({
     policyNumber: "",
     carrier: "",
@@ -205,6 +207,7 @@ export function PolicyForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <DatePickerInput
+          endMonth={endMonth}
           label={t("effectiveDateRequiredLabel")}
           id="effectiveDate"
           value={form.effectiveDate}
@@ -216,6 +219,7 @@ export function PolicyForm({
           }
         />
         <DatePickerInput
+          endMonth={endMonth}
           label={t("expirationDateRequiredLabel")}
           id="expirationDate"
           value={form.expirationDate}

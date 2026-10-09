@@ -10,6 +10,7 @@ import { usePaginatedQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { ShieldCheck } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
+import { CALENDAR_DATE_OPTIONS } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 import { MoneyCell } from "./money-cell";
 
@@ -28,6 +29,7 @@ const stateColor: Record<CoverageRow["state"], string> = {
 
 const appraisalColor: Record<CoverageRow["appraisalStatus"], string> = {
   not_applicable: "text-muted-foreground",
+  currency_not_recorded: "text-amber-400",
   missing: "text-amber-400",
   current: "text-emerald-400",
   stale: "text-rose-400",
@@ -104,8 +106,17 @@ export function InsuranceCoveragesTab({
             className: "w-48 flex-none",
             render: (row) => (
               <span className="text-xs">
-                <ClientDate timestamp={row.start} locale={locale} /> –{" "}
-                <ClientDate timestamp={row.end} locale={locale} />
+                <ClientDate
+                  timestamp={row.start}
+                  locale={locale}
+                  options={CALENDAR_DATE_OPTIONS}
+                />{" "}
+                –{" "}
+                <ClientDate
+                  timestamp={row.end}
+                  locale={locale}
+                  options={CALENDAR_DATE_OPTIONS}
+                />
               </span>
             ),
           },

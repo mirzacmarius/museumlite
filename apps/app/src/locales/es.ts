@@ -4945,6 +4945,7 @@ export default {
     currencyHint: "Código ISO de tres letras, por ejemplo EUR",
     appraiserName: "Tasador *",
     appraiserCompany: "Empresa",
+    appraiserCredentials: "Acreditaciones",
     validUntil: "Válida hasta",
     notes: "Notas",
     save: "Guardar tasación",
@@ -6515,6 +6516,7 @@ export default {
         },
         appraisalStatus: {
           not_applicable: "No aplicable",
+          currency_not_recorded: "Moneda no registrada",
           missing: "Falta",
           current: "Vigente",
           stale: "Desactualizada",
