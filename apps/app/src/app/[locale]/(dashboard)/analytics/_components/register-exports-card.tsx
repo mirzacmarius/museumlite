@@ -87,6 +87,22 @@ function formatCell(
   return String(value);
 }
 
+interface RegisterForm {
+  profile: Profile;
+  /** `YYYY-MM-DD` UTC day, or empty. */
+  fromDate: string;
+  toDate: string;
+  status: Status | "";
+  /** `datetime-local` value read as UTC, or empty. */
+  asOf: string;
+}
+interface PreviewState {
+  loading: boolean;
+  key?: string;
+  result?: Preview;
+  error?: string;
+}
+
 interface RegisterExportsCardProps {
   organizationId: Id<"organizations">;
 }
@@ -97,17 +113,17 @@ export function RegisterExportsCard({
   const t = useScopedI18n("registerReports");
   const tExport = useScopedI18n("exportJobs");
   const convex = useConvex();
-  const [profile, setProfile] = useState<Profile>("accession");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [status, setStatus] = useState<Status | "">("");
-  const [asOf, setAsOf] = useState("");
-  const [preview, setPreview] = useState<{
-    key: string;
-    result: Preview;
-  }>();
-  const [previewing, setPreviewing] = useState(false);
-  const [error, setError] = useState<string>();
+  const [form, setForm] = useState<RegisterForm>({
+    profile: "accession",
+    fromDate: "",
+    toDate: "",
+    status: "",
+    asOf: "",
+  });
+  const [preview, setPreview] = useState<PreviewState>({ loading: false });
+  const { profile, fromDate, toDate, status, asOf } = form;
+  const update = (patch: Partial<RegisterForm>) =>
+    setForm((current) => ({ ...current, ...patch }));
 
   const profileLabels = useRegisterProfileLabels();
   const criteria: Criteria = {
@@ -123,29 +139,28 @@ export function RegisterExportsCard({
       criteria.toDate === undefined ||
       criteria.fromDate <= criteria.toDate) &&
     (criteria.asOf === undefined || Number.isFinite(criteria.asOf));
-  const shownPreview = preview?.key === sourceKey ? preview.result : undefined;
+  const shownPreview = preview.key === sourceKey ? preview.result : undefined;
+  const previewing = preview.loading;
+  const error = preview.error;
 
   async function runPreview() {
     if (
       !criteriaValid ||
       (criteria.asOf !== undefined && criteria.asOf > Date.now())
     ) {
-      setError(tExport("errorRegisterCriteria"));
+      setPreview({ loading: false, error: tExport("errorRegisterCriteria") });
       return;
     }
-    setPreviewing(true);
-    setError(undefined);
+    setPreview({ loading: true });
     try {
       const result = await convex.query(api.registers.preview, {
         organizationId,
         profile,
         criteria,
       });
-      setPreview({ key: sourceKey, result });
+      setPreview({ loading: false, key: sourceKey, result });
     } catch (e) {
-      setError(tExport(exportJobErrorKey(e)));
-    } finally {
-      setPreviewing(false);
+      setPreview({ loading: false, error: tExport(exportJobErrorKey(e)) });
     }
   }
 
@@ -153,7 +168,7 @@ export function RegisterExportsCard({
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm lg:col-span-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <BookText className="h-4 w-4" />
+          <BookText className="size-4" />
           {t("title")}
         </CardTitle>
         <CardDescription>{t("description")}</CardDescription>
@@ -166,7 +181,8 @@ export function RegisterExportsCard({
               id="register-profile"
               value={profile}
               onChange={(e) => {
-                if (isProfile(e.target.value)) setProfile(e.target.value);
+                if (isProfile(e.target.value))
+                  update({ profile: e.target.value });
               }}
               className="h-9 w-full rounded-md border border-input bg-background px-2"
             >
@@ -189,7 +205,7 @@ export function RegisterExportsCard({
               id="register-from"
               type="date"
               value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
+              onChange={(e) => update({ fromDate: e.target.value })}
             />
           </div>
           <div className="space-y-1">
@@ -198,7 +214,7 @@ export function RegisterExportsCard({
               id="register-to"
               type="date"
               value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
+              onChange={(e) => update({ toDate: e.target.value })}
             />
           </div>
           <div className="space-y-1">
@@ -208,7 +224,9 @@ export function RegisterExportsCard({
               value={hasStatus(profile) ? status : ""}
               disabled={!hasStatus(profile)}
               onChange={(e) =>
-                setStatus(isStatus(e.target.value) ? e.target.value : "")
+                update({
+                  status: isStatus(e.target.value) ? e.target.value : "",
+                })
               }
               className="h-9 w-full rounded-md border border-input bg-background px-2 disabled:opacity-50"
             >
@@ -224,7 +242,7 @@ export function RegisterExportsCard({
               id="register-as-of"
               type="datetime-local"
               value={asOf}
-              onChange={(e) => setAsOf(e.target.value)}
+              onChange={(e) => update({ asOf: e.target.value })}
             />
           </div>
         </div>
@@ -236,7 +254,7 @@ export function RegisterExportsCard({
             disabled={previewing}
             onClick={() => void runPreview()}
           >
-            {previewing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {previewing && <Loader2 className="mr-2 size-4 animate-spin" />}
             {previewing ? t("previewing") : t("preview")}
           </Button>
         </div>

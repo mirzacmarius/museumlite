@@ -160,14 +160,21 @@ function approvalColumns(
   asOf: number,
   notRecorded: string[],
 ) {
+  let missing = false;
   if (record.status === "approved") {
     if (record.approvedAt === undefined) notRecorded.push("approvedAt");
     if (record.approvedBy === undefined) notRecorded.push("approvedBy");
+    missing =
+      record.approvedAt === undefined || record.approvedBy === undefined;
   }
   return {
-    approvedAt: record.approvedAt ?? null,
-    approvedBy: record.approvedBy ?? null,
-    approvedAsOf: record.approvedAt !== undefined && record.approvedAt <= asOf,
+    missing,
+    columns: {
+      approvedAt: record.approvedAt ?? null,
+      approvedBy: record.approvedBy ?? null,
+      approvedAsOf:
+        record.approvedAt !== undefined && record.approvedAt <= asOf,
+    },
   };
 }
 
@@ -246,17 +253,13 @@ async function accessionPage(
     boundedLinks(reviews, "identifier reviews");
     // Every number the object held by as-of other than its current number,
     // including the one in force at as-of when it has since been replaced.
-    const priorNumbers = [
-      ...new Set(
-        (heldObject?.accessionNumberHistory ?? [])
-          .filter(
-            (entry) =>
-              entry.validFrom <= asOf &&
-              entry.number !== heldObject?.accessionNumber,
-          )
-          .map((entry) => entry.number),
-      ),
-    ];
+    const priorNumbers = new Set<string>();
+    for (const entry of heldObject?.accessionNumberHistory ?? [])
+      if (
+        entry.validFrom <= asOf &&
+        entry.number !== heldObject?.accessionNumber
+      )
+        priorNumbers.add(entry.number);
     rows.push(
       registerRow(
         "accession",
@@ -272,8 +275,8 @@ async function accessionPage(
           objectId: accession.collectionId ?? null,
           objectAccessionNumber: heldObject?.accessionNumber ?? null,
           objectTitle: heldObject?.title ?? null,
-          objectPriorAccessionNumbers: priorNumbers.length
-            ? priorNumbers.join(";")
+          objectPriorAccessionNumbers: priorNumbers.size
+            ? [...priorNumbers].join(";")
             : null,
           sourceVerified: accession.sourceVerified === true,
           sourceVerificationException:
@@ -281,15 +284,11 @@ async function accessionPage(
           identifierConflictReviewed: reviews.some(
             (review) => review.reviewedAt <= asOf,
           ),
-          ...approval,
+          ...approval.columns,
           approvalStepsAsOf: history.steps,
           recordedAt: accession._creationTime,
           evidenceStatus:
-            history.legacy ||
-            notRecorded.includes("approvedAt") ||
-            notRecorded.includes("approvedBy")
-              ? "legacy"
-              : "recorded",
+            history.legacy || approval.missing ? "legacy" : "recorded",
           capturedAt: scope.capturedAt,
         },
         notRecorded,
@@ -302,6 +301,30 @@ async function accessionPage(
     done: page.isDone,
     scanned: page.page.length,
   };
+}
+
+/** Transfers and legacy loan returns that created a deaccession record. */
+function disposalCategory(
+  organizationId: Id<"organizations">,
+  deaccessionId: Id<"deaccessions">,
+  transfers: Doc<"organizationMoveRequests">[],
+  exits: Doc<"loanCustodyExits">[],
+) {
+  let transfer: Doc<"organizationMoveRequests"> | undefined;
+  for (const request of transfers)
+    if (
+      request.deaccessionId === deaccessionId &&
+      request.sourceOrganizationId === organizationId
+    )
+      transfer = request;
+  let legacyLoanReturn = false;
+  for (const exit of exits)
+    if (
+      exit.legacySyntheticDeaccessionId === deaccessionId &&
+      exit.organizationId === organizationId
+    )
+      legacyLoanReturn = true;
+  return { transfer, legacyLoanReturn };
 }
 
 async function disposalPage(
@@ -374,15 +397,11 @@ async function disposalPage(
     ] as const);
     boundedLinks(transfers, "transfer requests");
     boundedLinks(exits, "lender exits");
-    const transfer = transfers.find(
-      (request) =>
-        request.deaccessionId === deaccession._id &&
-        request.sourceOrganizationId === organizationId,
-    );
-    const legacyLoanReturn = exits.some(
-      (exit) =>
-        exit.legacySyntheticDeaccessionId === deaccession._id &&
-        exit.organizationId === organizationId,
+    const { transfer, legacyLoanReturn } = disposalCategory(
+      organizationId,
+      deaccession._id,
+      transfers,
+      exits,
     );
     const heldObject =
       object?.organizationId === organizationId ? object : null;
@@ -427,7 +446,7 @@ async function disposalPage(
           objectId: deaccession.collectionId,
           objectAccessionNumber,
           objectTitle: heldObject?.title ?? null,
-          ...approval,
+          ...approval.columns,
           approvalStepsAsOf: history.steps,
           decisionPolicyVersion: review?.policyVersion ?? null,
           decisionCheckedAt: review?.checkedAt ?? null,
@@ -444,10 +463,7 @@ async function disposalPage(
           transferRequestId: transfer?._id ?? null,
           recordedAt: deaccession._creationTime,
           evidenceStatus:
-            history.legacy ||
-            missingDecision ||
-            notRecorded.includes("approvedAt") ||
-            notRecorded.includes("approvedBy")
+            history.legacy || missingDecision || approval.missing
               ? "legacy"
               : "recorded",
           capturedAt: scope.capturedAt,
