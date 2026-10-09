@@ -49,6 +49,7 @@ const policyArgs = (organizationId: Id<"organizations">, number: string) => ({
   carrier: "Carrier",
   policyType: "blanket" as const,
   coverageAmount: 1_000,
+  currency: "USD",
   effectiveDate: Date.UTC(2026, 0, 1),
   expirationDate: Date.UTC(2027, 0, 1),
 });
@@ -248,6 +249,7 @@ describe("capability gates on commands", () => {
     );
     const policies = await authed.query(api.insurance.listPolicies, {
       organizationId,
+      now: Date.UTC(2026, 6, 1),
       paginationOpts: { numItems: 10, cursor: null },
     });
 
@@ -276,6 +278,27 @@ describe("capability gates on commands", () => {
       reason: "tier_required",
       capability: "insurance",
       requiredTier: "pro",
+    });
+  });
+
+  test("a free-plan administrator cannot read the legacy coverage review queue", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      ["loans.read", "organization.manage_settings"],
+      { subscriptionTier: "free", enabledModules: ["insurance"] },
+    );
+
+    const failure = await capabilityFailureOf(
+      authedForUser(t, userId).query(api.insuranceCoverageReviews.list, {
+        organizationId,
+      }),
+    );
+
+    expect(failure).toMatchObject({
+      code: "CAPABILITY_UNAVAILABLE",
+      reason: "tier_required",
+      capability: "insurance",
     });
   });
 

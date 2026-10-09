@@ -15,6 +15,7 @@ export type ObjectTabId =
   | "placement"
   | "digital"
   | "provenance"
+  | "valuation"
   | "conservation"
   | "exhibitions"
   | "loans"
@@ -54,6 +55,11 @@ const viewBaseTabs: ObjectTabDefinition[] = [
     id: "provenance",
     label: "untranslatedRecords.objects.tabs.provenance",
     editable: true,
+  },
+  {
+    id: "valuation",
+    label: "untranslatedRecords.objects.tabs.valuation",
+    editable: false,
   },
   {
     id: "placement",

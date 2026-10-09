@@ -1,3 +1,13 @@
+export const INSURANCE_TABS = [
+  "overview",
+  "policies",
+  "coverages",
+  "claims",
+  "review",
+] as const;
+
+export type InsuranceTab = (typeof INSURANCE_TABS)[number];
+
 export type PolicyStatus =
   | "all"
   | "active"

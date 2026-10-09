@@ -1290,6 +1290,7 @@ export default defineSchema({
     appraisalVerifiedBy: v.optional(v.id("users")),
     appraisalVerifiedAt: v.optional(v.number()),
     appraisalValue: v.optional(v.number()),
+    appraisalCurrency: v.optional(v.string()),
     appraisalDate: v.optional(v.number()),
     // Stage-specific disposal evidence. Approved records without a
     // decisionReview predate stage checks and are reported as legacy.
@@ -1404,7 +1405,15 @@ export default defineSchema({
     createdAt: v.number(),
     // Validity tracking
     validUntil: v.optional(v.number()), // Typically 2-3 years from appraisal date
-    isCurrentAppraisal: v.optional(v.boolean()), // Mark as the current/active appraisal
+    isCurrentAppraisal: v.optional(v.boolean()), // Legacy manual marker; current valuation is derived (utils/valuation.ts)
+    // Supersession: recorded values are immutable, corrections supersede.
+    supersedes: v.optional(v.id("appraisals")),
+    supersessionReason: v.optional(v.string()),
+    supersededBy: v.optional(v.id("appraisals")),
+    supersededAt: v.optional(v.number()),
+    supersededByUserId: v.optional(v.id("users")),
+    // Materialized "latest non-superseded for its purpose and currency".
+    isCurrentValuation: v.optional(v.boolean()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_appraisalDate", [
@@ -3773,6 +3782,7 @@ export default defineSchema({
 
     // Coverage amounts
     coverageAmount: v.number(), // Total coverage limit
+    currency: v.optional(v.string()), // ISO 4217; required for new policies
     deductible: v.optional(v.number()),
     perItemLimit: v.optional(v.number()), // Max coverage per item
 
@@ -3828,20 +3838,28 @@ export default defineSchema({
     .index("by_organization_and_expirationDate", [
       "organizationId",
       "expirationDate",
-    ]),
+    ])
+    .index("by_status_and_expirationDate", ["status", "expirationDate"])
+    .index("by_status_and_effectiveDate", ["status", "effectiveDate"]),
 
   // Insurance Policy Coverages - Links policies to objects/exhibitions/loans
   insuranceCoverages: defineTable({
     organizationId: v.id("organizations"),
     policyId: v.id("insurancePolicies"),
 
-    // What is covered (one of these)
+    // What is covered: exactly one target, named by targetType. Legacy rows
+    // without targetType and with several targets await reviewed resolution.
+    targetType: v.optional(
+      v.union(v.literal("object"), v.literal("loan"), v.literal("exhibition")),
+    ),
     collectionId: v.optional(v.id("collections")), // Individual object
     exhibitionId: v.optional(v.id("exhibitions")), // Exhibition
     loanId: v.optional(v.id("loans")), // Loan
+    splitFromCoverageId: v.optional(v.id("insuranceCoverages")),
 
     // Coverage details
     coveredValue: v.number(), // Insured value for this item
+    currency: v.optional(v.string()), // ISO 4217; required for new coverages
     effectiveDate: v.optional(v.number()), // Override policy dates if needed
     expirationDate: v.optional(v.number()),
 
@@ -3875,7 +3893,37 @@ export default defineSchema({
     .index("by_loan", ["loanId"])
     .index("by_policy_and_status", ["policyId", "status"])
     .index("by_organization_and_status", ["organizationId", "status"])
-    .index("by_appraisal", ["appraisalId"]),
+    .index("by_appraisal", ["appraisalId"])
+    .index("by_status_and_expirationDate", ["status", "expirationDate"]),
+
+  // Legacy coverages naming several targets, held for a reviewed resolution.
+  legacyCoverageReviews: defineTable({
+    organizationId: v.id("organizations"),
+    coverageId: v.id("insuranceCoverages"),
+    policyId: v.id("insurancePolicies"),
+    status: v.union(v.literal("open"), v.literal("resolved")),
+    // Targets and value as recorded when the review was opened.
+    collectionId: v.optional(v.id("collections")),
+    loanId: v.optional(v.id("loans")),
+    exhibitionId: v.optional(v.id("exhibitions")),
+    coveredValue: v.number(),
+    detectedAt: v.number(),
+    resolution: v.optional(
+      v.object({
+        keptTarget: v.union(
+          v.literal("object"),
+          v.literal("loan"),
+          v.literal("exhibition"),
+        ),
+        createdCoverageIds: v.array(v.id("insuranceCoverages")),
+        note: v.optional(v.string()),
+        resolvedBy: v.id("users"),
+        resolvedAt: v.number(),
+      }),
+    ),
+  })
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_coverage", ["coverageId"]),
 
   // Insurance Claims - Track incidents and claims
   insuranceClaims: defineTable({
@@ -3906,6 +3954,7 @@ export default defineSchema({
 
     // Claim amounts
     claimedAmount: v.number(),
+    currency: v.optional(v.string()), // ISO 4217; required for new claims
     assessedAmount: v.optional(v.number()),
     settledAmount: v.optional(v.number()),
     deductibleApplied: v.optional(v.number()),

@@ -1,4 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
+import { VALUATION_MAX_AGE_MS } from "./valuation";
 
 /**
  * Stage-specific disposal policy.
@@ -24,8 +25,6 @@ export interface DisposalDecisionCheck {
   required: boolean;
   passed: boolean;
 }
-
-export const VALUATION_MAX_AGE_MS = 730 * 24 * 60 * 60 * 1000;
 
 const DECISION_CHECK_LABELS: Record<DisposalDecisionCheckKey, string> = {
   reason: "reason for disposal",
@@ -73,6 +72,12 @@ export function methodHasProceedsStage(method: DisposalMethod) {
   return METHOD_STAGE_POLICY[method].proceedsStage;
 }
 
+/**
+ * A decision accepts the valuation linked to it when it is dated, not in the
+ * future and within the shared two-year valuation age (`utils/valuation.ts`).
+ * Linking refuses superseded appraisals; the linked value and currency are
+ * snapshotted on the deaccession so the decision keeps its original evidence.
+ */
 export function hasCurrentValuation(
   deaccession: Pick<Doc<"deaccessions">, "appraisalVerified" | "appraisalDate">,
   now: number,

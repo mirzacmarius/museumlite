@@ -15,9 +15,9 @@ import {
   ShieldCheck,
   Stamp,
 } from "lucide-react";
+import { RecordedValue } from "@/components/recorded-value";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface CoinsStampsDetailsTabProps {
   collectionId: string;
@@ -55,7 +55,6 @@ function formatRarity(rarity: string | undefined, t: (key: string) => string) {
 export function CoinsStampsDetailsTab({
   collectionId,
 }: CoinsStampsDetailsTabProps) {
-  const locale = useCurrentLocale();
   const tRoot = useI18n();
   const t = useScopedI18n("modules.coins_stamps");
   const common = useScopedI18n("modules.common");
@@ -231,9 +230,7 @@ export function CoinsStampsDetailsTab({
                 {t("estimatedValue")}
               </dt>
               <dd className="text-sm text-foreground">
-                {details.estimatedValue
-                  ? formatCurrency(details.estimatedValue, locale, "USD")
-                  : "—"}
+                <RecordedValue value={details.estimatedValue} />
               </dd>
             </div>
             <div>
@@ -241,9 +238,7 @@ export function CoinsStampsDetailsTab({
                 {t("acquisitionPrice")}
               </dt>
               <dd className="text-sm text-foreground">
-                {details.acquisitionPrice
-                  ? formatCurrency(details.acquisitionPrice, locale, "USD")
-                  : "—"}
+                <RecordedValue value={details.acquisitionPrice} />
               </dd>
             </div>
             <div>

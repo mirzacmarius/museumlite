@@ -52,6 +52,23 @@ function isDateLocale(locale: string): locale is DateLocale {
   );
 }
 
+/**
+ * Display options for calendar dates entered as `yyyy-MM-dd` and stored at
+ * UTC midnight, so they show the same day in every time zone.
+ */
+export const CALENDAR_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  timeZone: "UTC",
+  dateStyle: "medium",
+};
+
+/**
+ * Last month date pickers offer for future dates such as policy expiries,
+ * coverage ends and appraisal validity: December, ten years ahead.
+ */
+export function futureCalendarEndMonth() {
+  return new Date(new Date().getFullYear() + 10, 11, 1);
+}
+
 export function formatDate(
   date: Date,
   locale: string,

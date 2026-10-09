@@ -12,8 +12,8 @@ import {
   MapPin,
   Wine,
 } from "lucide-react";
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { RecordedValue } from "@/components/recorded-value";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<FunctionReturnType<typeof api.wineDetails.get>>;
 
@@ -298,7 +298,6 @@ export function WineDetailsContent({
 }
 
 function WineValuationSection({ details }: { details: DetailsDoc }) {
-  const locale = useCurrentLocale();
   const t = useScopedI18n("modules.wine");
 
   return (
@@ -313,20 +312,22 @@ function WineValuationSection({ details }: { details: DetailsDoc }) {
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("purchasePrice")}
             </span>
-            <p className="mt-1 text-lg font-light text-foreground">
-              {details.purchasePrice
-                ? formatCurrency(details.purchasePrice, locale, "USD")
-                : "—"}
+            <p className="mt-1">
+              <RecordedValue
+                value={details.purchasePrice}
+                className="text-lg font-light text-foreground"
+              />
             </p>
           </div>
           <div>
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("currentValue")}
             </span>
-            <p className="mt-1 text-lg font-light text-emerald-500">
-              {details.currentValue
-                ? formatCurrency(details.currentValue, locale, "USD")
-                : "—"}
+            <p className="mt-1">
+              <RecordedValue
+                value={details.currentValue}
+                className="text-lg font-light text-emerald-500"
+              />
             </p>
           </div>
         </div>
