@@ -401,6 +401,7 @@ const entryObjectValidator = v.object({
   identifier: v.string(),
   title: v.string(),
   status: v.string(),
+  currentLocationId: v.optional(v.id("locations")),
   currentLocationName: v.union(v.string(), v.null()),
 });
 
@@ -508,6 +509,7 @@ async function toEntryView(ctx: QueryCtx, entry: Doc<"objectEntries">) {
           identifier: heldObject.accessionNumber,
           title: heldObject.title,
           status: heldObject.status,
+          currentLocationId: heldObject.currentLocationId,
           currentLocationName: await locationName(
             ctx,
             organizationId,
@@ -629,11 +631,6 @@ export const recordExit = mutation({
         "REFERENCE_NOT_FOUND",
         "The entry's object is not held by this organization",
       );
-    await assertExitNotBlockedByExhibition(
-      ctx,
-      object._id,
-      "Cannot return an object while its exhibition outcome is unresolved",
-    );
     if (
       !observedSourceMatches(
         args.observedFromLocationId,
@@ -651,6 +648,11 @@ export const recordExit = mutation({
           ),
         },
       );
+    await assertExitNotBlockedByExhibition(
+      ctx,
+      object._id,
+      "Cannot return an object while its exhibition outcome is unresolved",
+    );
     const fromLocationId = object.currentLocationId;
     const reason = `Returned under entry ${entry.entryNumber} to ${recipientName}`;
     const movementId = await recordCustodyDeparture(
@@ -1033,5 +1035,32 @@ export const update = mutation({
       },
     });
     return null;
+  },
+});
+
+const MEMBER_SCAN = 200;
+
+/** Staff who can be made accountable for property held under an entry. */
+export const listResponsibleMembers = query({
+  args: { organizationId: v.id("organizations") },
+  returns: v.array(v.object({ userId: v.id("users"), name: v.string() })),
+  handler: async (ctx, args) => {
+    await requireUserId(ctx);
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const memberships = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .take(MEMBER_SCAN);
+    const members = await Promise.all(
+      memberships.map(async (membership) => {
+        const name = userName(await ctx.db.get(membership.userId));
+        return name ? { userId: membership.userId, name } : null;
+      }),
+    );
+    return members
+      .flatMap((member) => (member ? [member] : []))
+      .sort((a, b) => a.name.localeCompare(b.name));
   },
 });

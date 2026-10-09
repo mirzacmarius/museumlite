@@ -42,6 +42,17 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
       ) : null}
 
       <div className="space-y-6">
+        {accession.entry ? (
+          <Link
+            href={`/accessions/entries/${accession.entry._id}`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-2 hover:underline"
+          >
+            <ExternalLink className="size-4" />
+            {tRoot("objectEntries.accessionLink", {
+              entryNumber: accession.entry.entryNumber,
+            })}
+          </Link>
+        ) : null}
         <IntakeReviewDecision
           accession={accession}
           isDraft={isDraft}

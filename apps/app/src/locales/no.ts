@@ -5357,6 +5357,202 @@ export default {
     addObject: "Legg til objekt",
   },
 
+  objectEntries: {
+    title: "Innleveringer",
+    description:
+      "Gjenstander mottatt i forvaring før noen ervervsbeslutning. Å motta en gjenstand erverver eller aksesjonerer den aldri.",
+    workbench: {
+      label: "Innleveringer",
+      description:
+        "Midlertidig forvaring, ervervsbeslutninger og tilbakeleveringer.",
+    },
+    receive: "Motta gjenstand",
+    empty: "Ingen gjenstander er mottatt under en innlevering ennå.",
+    emptyFiltered: "Ingen innleveringer har denne statusen.",
+    loadMore: "Last inn flere",
+    allStatuses: "Alle statuser",
+    overdue: "Forfalt",
+    noPermission: "Du har ikke tilgang til å se innleveringer.",
+    noReceivePermission: "Du har ikke tilgang til å motta gjenstander.",
+    status: {
+      in_custody: "I forvaring",
+      acquisition_review: "Erverv til vurdering",
+      accessioned: "Aksesjonert",
+      exited: "Levert tilbake",
+    },
+    purposes: {
+      acquisition: "Vurderes for erverv",
+      identification: "Identifisering eller forespørsel",
+      deposit: "Deponert for oppbevaring",
+      research: "Forskning eller studier",
+      other: "Annet",
+    },
+    columns: {
+      entry: "Innlevering",
+      object: "Gjenstand",
+      depositor: "Innleverer",
+      received: "Mottatt",
+      status: "Status",
+      due: "Frist",
+      responsible: "Ansvarlig",
+    },
+    fields: {
+      entryNumber: "Innleveringsnummer",
+      entryNumberHint:
+        "La feltet stå tomt for automatisk nummerering, for eksempel TE-2026-0001.",
+      purpose: "Formål",
+      purposeNote: "Detaljer om formålet",
+      depositor: "Innleverer",
+      depositorParty: "Innleverer fra parter",
+      owner: "Eier",
+      ownerParty: "Eier fra parter",
+      ownerSameAsDepositor: "Innlevereren er eieren",
+      ownerHint:
+        "La feltet stå tomt hvis eierskapet ikke er fastslått. Et erverv krever en registrert eier.",
+      receivedAt: "Mottatt",
+      location: "Mottakssted",
+      chooseLocation: "Velg et sted",
+      condition: "Tilstand ved mottak",
+      conditionHint:
+        "Beskriv tilstanden ved mottak, inkludert eventuelle skader.",
+      responsible: "Ansvarlig medarbeider",
+      chooseMember: "Velg en medarbeider",
+      responsibilityTerms: "Vilkår for ansvar og forsikring",
+      decisionDueAt: "Frist for beslutning",
+      returnDueAt: "Frist for tilbakelevering",
+      notes: "Notater",
+      objectTitle: "Gjenstandens tittel",
+      objectName: "Gjenstandsnavn",
+      objectDescription: "Beskrivelse",
+    },
+    sections: {
+      property: "Gjenstand",
+      parties: "Innleverer og eier",
+      custody: "Forvaring",
+      dates: "Frister",
+    },
+    receiveForm: {
+      title: "Motta gjenstand",
+      description:
+        "Registrer at en gjenstand tas i forvaring: hvem som leverte den, hvorfor, hvor den oppbevares og tilstanden. Den står utenfor samlingen til et erverv er godkjent.",
+      submit: "Registrer mottak",
+      saving: "Lagrer…",
+      success: "Innlevering {entryNumber} registrert",
+    },
+    detail: {
+      back: "Innleveringer",
+      notFound: "Fant ikke innleveringen",
+      object: "Gjenstand",
+      openObject: "Åpne gjenstand",
+      receivedBy: "Mottatt av {name}",
+      currentLocation: "Nåværende plassering",
+      noLocation: "Ingen registrert plassering",
+      notRecorded: "Ikke registrert",
+      ownerNotRecorded: "Ikke fastslått",
+      acquisition: "Erverv",
+      noAcquisition: "Ingen erverv er startet.",
+      openAccession: "Åpne aksesjon {number}",
+      acquisitionDraft:
+        "Utkast: legg ved dokumentasjon på eiendomsrett og send det til godkjenning.",
+      acquisitionPending: "Venter på godkjenning etter aksesjonspolicyen.",
+      acquisitionWithdrawn:
+        "Trukket tilbake. Lever gjenstanden til mottakeren, eller start et nytt erverv.",
+      accessionedOn: "Aksesjonert {date}",
+      exit: "Utlevering",
+      exitedTo: "Levert tilbake til {name}",
+      exitedOn: "Overlevert {date}",
+      reference: "Referanse",
+      recordedBy: "Registrert av {name}",
+      parties: "Parter",
+    },
+    actions: {
+      beginAcquisition: "Start erverv",
+      recordExit: "Registrer utlevering",
+      edit: "Rediger detaljer",
+      cancel: "Avbryt",
+      save: "Lagre",
+      saving: "Lagrer…",
+    },
+    acquisition: {
+      title: "Start erverv",
+      description:
+        "Oppretter et aksesjonsutkast for denne gjenstanden med {owner} som opphav for eiendomsretten. Gjenstanden aksesjoneres først når aksesjonspolicyen godkjenner den.",
+      method: "Ervervsmåte",
+      accessionNumber: "Aksesjonsnummer",
+      accessionNumberHint:
+        "La feltet stå tomt for å bruke den konfigurerte nummereringen.",
+      cost: "Kostnad",
+      notes: "Notater",
+      submit: "Opprett aksesjonsutkast",
+      success: "Aksesjonsutkast opprettet",
+      methods: {
+        purchase: "Kjøp",
+        gift: "Gave",
+        transfer: "Overføring",
+        donation: "Donasjon",
+        bequest: "Testamentarisk gave",
+        other: "Annet",
+      },
+    },
+    exitDialog: {
+      title: "Registrer utlevering",
+      description:
+        "Lever gjenstanden til mottakeren. Gjenstanden forlater forvaringen og fjernes fra de vanlige visningene; ingenting avhendes.",
+      recipient: "Mottaker",
+      recipientParty: "Mottaker fra parter",
+      exitedAt: "Overlevert",
+      reference: "Referanse til kvittering eller signatur",
+      notes: "Notater",
+      observedAt: "Ansatte har bekreftet at gjenstanden er i {location}",
+      submit: "Registrer utlevering",
+      success: "Utlevering registrert",
+    },
+    editDialog: {
+      title: "Rediger innleveringsdetaljer",
+      description:
+        "Opplysningene om mottaket står som registrert. Endre innleverer eller eier under Parter.",
+      success: "Innleveringen er oppdatert",
+    },
+    objectNotice: {
+      temporary: "Midlertidig forvaring: ikke en del av samlingen",
+      temporaryDetail:
+        "Oppbevares under innlevering {entryNumber} ({purpose}), levert inn av {depositor}.",
+      accessioned: "Mottatt under innlevering {entryNumber}",
+      exited: "Levert tilbake under innlevering {entryNumber}",
+      openEntry: "Åpne innlevering",
+    },
+    accessionLink: "Mottatt under innlevering {entryNumber}",
+    errors: {
+      entryNotFound: "Denne innleveringen finnes ikke lenger.",
+      depositorRequired: "Registrer hvem som leverte inn gjenstanden.",
+      titleRequired: "Gi gjenstanden en tittel.",
+      conditionRequired: "Beskriv tilstanden ved mottak.",
+      textTooLong: "Ett av feltene er for langt. Forkort det og prøv igjen.",
+      datesInvalid:
+        "Kontroller datoene: frister og utleveringer kan ikke være før mottaket, og ingenting kan ligge i fremtiden.",
+      responsibleNotMember:
+        "Den ansvarlige medarbeideren må tilhøre denne organisasjonen.",
+      numberInUse:
+        "Nummeret brukes allerede av en annen innlevering eller gjenstand. Velg et annet.",
+      numberingExhausted:
+        "Den automatiske nummereringen fant bare brukte numre. Skriv inn et innleveringsnummer.",
+      notInCustody: "Denne innleveringen har allerede et åpent erverv.",
+      acquisitionOpen:
+        "Et erverv er åpent for denne innleveringen. Trekk det tilbake før du registrerer en utlevering.",
+      entryClosed:
+        "Denne innleveringen er avsluttet og kan ikke lenger endres.",
+      ownerRequired:
+        "Registrer eieren før du starter et erverv; eiendomsretten kan bare overdras av eieren.",
+      recipientRequired: "Registrer hvem som mottok gjenstanden.",
+      temporaryCustody:
+        "Denne gjenstanden oppbevares under en innlevering og er ikke en del av samlingen. Aksesjoner den først.",
+      entryExited:
+        "Gjenstanden har allerede forlatt forvaringen, så dette ervervet kan ikke gjenopprettes.",
+      objectRecordedOnEntry:
+        "Denne gjenstanden ble registrert ved innlevering. Rediger gjenstandsposten i stedet.",
+      fallback: "Innleveringen kunne ikke lagres. Prøv igjen.",
+    },
+  },
   objectPicker: {
     loading: "Laster…",
     loadMore: "Last inn flere",
@@ -5731,6 +5927,7 @@ export default {
       owner: "Eier",
       appraiser: "Takstmann",
       recipient: "Mottaker",
+      depositor: "Innleverer",
     },
     holderTypes: {
       privatePerson: "Person",
@@ -5747,6 +5944,7 @@ export default {
       deaccession: "Deaksesjon",
       appraisal: "Taksering",
       collection: "Objekt",
+      entry: "Innlevering",
     },
     picker: {
       placeholder: "Velg eller opprett en person eller institusjon",

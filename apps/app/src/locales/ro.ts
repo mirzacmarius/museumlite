@@ -2549,6 +2549,202 @@ export default {
       overdue: "Restante",
     },
   },
+  objectEntries: {
+    title: "Intrări",
+    description:
+      "Bunuri primite în custodie înaintea oricărei decizii de achiziție. Primirea unui bun nu îl achiziționează și nu îl înregistrează niciodată în inventar.",
+    workbench: {
+      label: "Intrări",
+      description: "Custodie temporară, decizii de achiziție și restituiri.",
+    },
+    receive: "Primește bunuri",
+    empty: "Încă nu a fost primit niciun bun printr-o intrare.",
+    emptyFiltered: "Nicio intrare nu are acest status.",
+    loadMore: "Încarcă mai multe",
+    allStatuses: "Toate statusurile",
+    overdue: "Depășit",
+    noPermission: "Nu ai permisiunea de a vedea intrările.",
+    noReceivePermission: "Nu ai permisiunea de a primi bunuri.",
+    status: {
+      in_custody: "În custodie",
+      acquisition_review: "Achiziție în analiză",
+      accessioned: "Înregistrat în inventar",
+      exited: "Restituit",
+    },
+    purposes: {
+      acquisition: "Propus pentru achiziție",
+      identification: "Identificare sau solicitare",
+      deposit: "Depozit pentru păstrare",
+      research: "Cercetare sau studiu",
+      other: "Altul",
+    },
+    columns: {
+      entry: "Intrare",
+      object: "Obiect",
+      depositor: "Deponent",
+      received: "Primit",
+      status: "Status",
+      due: "Termen",
+      responsible: "Responsabil",
+    },
+    fields: {
+      entryNumber: "Număr de intrare",
+      entryNumberHint:
+        "Lasă gol pentru numerotare automată, de exemplu TE-2026-0001.",
+      purpose: "Scop",
+      purposeNote: "Detalii despre scop",
+      depositor: "Deponent",
+      depositorParty: "Deponent din părți",
+      owner: "Proprietar",
+      ownerParty: "Proprietar din părți",
+      ownerSameAsDepositor: "Deponentul este proprietarul",
+      ownerHint:
+        "Lasă gol când proprietatea nu este stabilită. O achiziție necesită un proprietar înregistrat.",
+      receivedAt: "Primit la",
+      location: "Locul de primire",
+      chooseLocation: "Alege o locație",
+      condition: "Starea la primire",
+      conditionHint:
+        "Descrie starea la primire, inclusiv eventualele deteriorări.",
+      responsible: "Membru al personalului responsabil",
+      chooseMember: "Alege un membru al personalului",
+      responsibilityTerms: "Condiții de răspundere și asigurare",
+      decisionDueAt: "Termen pentru decizie",
+      returnDueAt: "Termen pentru restituire",
+      notes: "Note",
+      objectTitle: "Titlul obiectului",
+      objectName: "Denumirea obiectului",
+      objectDescription: "Descriere",
+    },
+    sections: {
+      property: "Bun",
+      parties: "Deponent și proprietar",
+      custody: "Custodie",
+      dates: "Termene",
+    },
+    receiveForm: {
+      title: "Primește bunuri",
+      description:
+        "Înregistrează intrarea unui bun în custodie: cine l-a adus, de ce, unde este păstrat și în ce stare. Rămâne în afara colecției până la aprobarea unei achiziții.",
+      submit: "Înregistrează primirea",
+      saving: "Se salvează…",
+      success: "Intrarea {entryNumber} a fost înregistrată",
+    },
+    detail: {
+      back: "Intrări",
+      notFound: "Intrarea nu a fost găsită",
+      object: "Obiect",
+      openObject: "Deschide obiectul",
+      receivedBy: "Primit de {name}",
+      currentLocation: "Locația curentă",
+      noLocation: "Nicio locație înregistrată",
+      notRecorded: "Neînregistrat",
+      ownerNotRecorded: "Nestabilit",
+      acquisition: "Achiziție",
+      noAcquisition: "Nu a fost începută nicio achiziție.",
+      openAccession: "Deschide înregistrarea {number}",
+      acquisitionDraft:
+        "Ciornă: atașează dovezile privind dreptul de proprietate, apoi trimite-o spre aprobare.",
+      acquisitionPending:
+        "În așteptarea aprobării conform politicii de înregistrare.",
+      acquisitionWithdrawn:
+        "Retrasă. Restituie bunul destinatarului sau începe o nouă achiziție.",
+      accessionedOn: "Înregistrat în inventar la {date}",
+      exit: "Ieșire",
+      exitedTo: "Restituit către {name}",
+      exitedOn: "Predat la {date}",
+      reference: "Referință",
+      recordedBy: "Înregistrat de {name}",
+      parties: "Părți",
+    },
+    actions: {
+      beginAcquisition: "Începe achiziția",
+      recordExit: "Înregistrează ieșirea",
+      edit: "Editează detaliile",
+      cancel: "Anulează",
+      save: "Salvează",
+      saving: "Se salvează…",
+    },
+    acquisition: {
+      title: "Începe achiziția",
+      description:
+        "Deschide o înregistrare ciornă pentru acest obiect, cu {owner} ca sursă a dreptului de proprietate. Obiectul este înregistrat în inventar doar după aprobarea conform politicii de înregistrare.",
+      method: "Modul de achiziție",
+      accessionNumber: "Număr de inventar",
+      accessionNumberHint: "Lasă gol pentru a folosi numerotarea configurată.",
+      cost: "Cost",
+      notes: "Note",
+      submit: "Creează înregistrarea ciornă",
+      success: "Înregistrarea ciornă a fost creată",
+      methods: {
+        purchase: "Cumpărare",
+        gift: "Dar",
+        transfer: "Transfer",
+        donation: "Donație",
+        bequest: "Legat",
+        other: "Altul",
+      },
+    },
+    exitDialog: {
+      title: "Înregistrează ieșirea",
+      description:
+        "Predă bunul destinatarului. Obiectul iese din custodie și este retras din vizualizările obișnuite; nimic nu este scos din inventar.",
+      recipient: "Destinatar",
+      recipientParty: "Destinatar din părți",
+      exitedAt: "Predat la",
+      reference: "Referința chitanței sau a semnăturii",
+      notes: "Note",
+      observedAt: "Personalul a confirmat că obiectul se află la {location}",
+      submit: "Înregistrează ieșirea",
+      success: "Ieșirea a fost înregistrată",
+    },
+    editDialog: {
+      title: "Editează detaliile intrării",
+      description:
+        "Datele primirii rămân așa cum au fost înregistrate. Schimbă deponentul sau proprietarul în Părți.",
+      success: "Intrarea a fost actualizată",
+    },
+    objectNotice: {
+      temporary: "Custodie temporară: nu face parte din colecție",
+      temporaryDetail:
+        "Păstrat în baza intrării {entryNumber} ({purpose}), depus de {depositor}.",
+      accessioned: "Primit în baza intrării {entryNumber}",
+      exited: "Restituit în baza intrării {entryNumber}",
+      openEntry: "Deschide intrarea",
+    },
+    accessionLink: "Primit în baza intrării {entryNumber}",
+    errors: {
+      entryNotFound: "Această intrare nu mai există.",
+      depositorRequired: "Înregistrează cine a depus bunul.",
+      titleRequired: "Dă un titlu obiectului.",
+      conditionRequired: "Descrie starea la primire.",
+      textTooLong:
+        "Unul dintre câmpuri este prea lung. Scurtează-l și încearcă din nou.",
+      datesInvalid:
+        "Verifică datele: termenele și ieșirile nu pot fi înaintea primirii și nimic nu poate fi în viitor.",
+      responsibleNotMember:
+        "Membrul personalului responsabil trebuie să aparțină acestei organizații.",
+      numberInUse:
+        "Acest număr este deja folosit de altă intrare sau de alt obiect. Alege altul.",
+      numberingExhausted:
+        "Numerotarea automată a găsit doar numere folosite. Introdu un număr de intrare.",
+      notInCustody: "Această intrare are deja o achiziție deschisă.",
+      acquisitionOpen:
+        "Există o achiziție deschisă pentru această intrare. Retrage-o înainte de a înregistra o ieșire.",
+      entryClosed:
+        "Această intrare este închisă și nu mai poate fi modificată.",
+      ownerRequired:
+        "Înregistrează proprietarul înainte de a începe o achiziție; dreptul de proprietate poate fi transmis doar de proprietar.",
+      recipientRequired: "Înregistrează cine a primit bunul.",
+      temporaryCustody:
+        "Acest obiect este păstrat în baza unei intrări și nu face parte din colecție. Înregistrează-l mai întâi în inventar.",
+      entryExited:
+        "Bunul a ieșit deja din custodie, așa că această achiziție nu mai poate fi restaurată.",
+      objectRecordedOnEntry:
+        "Acest obiect a fost înregistrat la intrare. Editează în schimb fișa obiectului.",
+      fallback: "Intrarea nu a putut fi salvată. Încearcă din nou.",
+    },
+  },
   objectPicker: {
     loading: "Se încarcă…",
     loadMore: "Încarcă mai multe",
@@ -5331,6 +5527,7 @@ export default {
       owner: "Proprietar",
       appraiser: "Evaluator",
       recipient: "Destinatar",
+      depositor: "Deponent",
     },
     holderTypes: {
       privatePerson: "Persoană",
@@ -5347,6 +5544,7 @@ export default {
       deaccession: "Scoatere din colecție",
       appraisal: "Evaluare",
       collection: "Obiect",
+      entry: "Intrare",
     },
     picker: {
       placeholder: "Selectează sau creează o persoană sau o instituție",
@@ -9604,7 +9802,8 @@ export default {
         taskDueSoon:
           "Sarcina „{title}” ajunge la termen în mai puțin de 24 de ore",
         taskBlocked: "Sarcina „{title}” a fost blocată: {reason}",
-        taskReadyForReview: "Sarcina „{title}” este pregătită pentru verificarea dvs.",
+        taskReadyForReview:
+          "Sarcina „{title}” este pregătită pentru verificarea dvs.",
         taskReturned: "Sarcina „{title}” a fost returnată pentru modificări",
         taskApproved: "Sarcina „{title}” a fost aprobată",
         transitExpectedTomorrow:

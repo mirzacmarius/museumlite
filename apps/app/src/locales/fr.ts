@@ -5380,6 +5380,203 @@ export default {
     },
   },
 
+  objectEntries: {
+    title: "Entrées",
+    description:
+      "Biens reçus en dépôt avant toute décision d’acquisition. Recevoir un bien ne l’acquiert ni ne l’inscrit jamais à l’inventaire.",
+    workbench: {
+      label: "Entrées",
+      description:
+        "Dépôts temporaires, décisions d’acquisition et restitutions.",
+    },
+    receive: "Recevoir un bien",
+    empty: "Aucun bien n’a encore été reçu au titre d’une entrée.",
+    emptyFiltered: "Aucune entrée n’a ce statut.",
+    loadMore: "Charger plus",
+    allStatuses: "Tous les statuts",
+    overdue: "En retard",
+    noPermission: "Vous n’avez pas l’autorisation de consulter les entrées.",
+    noReceivePermission:
+      "Vous n’avez pas l’autorisation de recevoir des biens.",
+    status: {
+      in_custody: "En dépôt",
+      acquisition_review: "Acquisition à l’examen",
+      accessioned: "Inscrit à l’inventaire",
+      exited: "Restitué",
+    },
+    purposes: {
+      acquisition: "Proposé à l’acquisition",
+      identification: "Identification ou demande d’avis",
+      deposit: "Dépôt pour mise en sécurité",
+      research: "Recherche ou étude",
+      other: "Autre",
+    },
+    columns: {
+      entry: "Entrée",
+      object: "Objet",
+      depositor: "Déposant",
+      received: "Reçu",
+      status: "Statut",
+      due: "Échéance",
+      responsible: "Responsable",
+    },
+    fields: {
+      entryNumber: "Numéro d’entrée",
+      entryNumberHint:
+        "Laissez vide pour une numérotation automatique, par exemple TE-2026-0001.",
+      purpose: "Motif",
+      purposeNote: "Précisions sur le motif",
+      depositor: "Déposant",
+      depositorParty: "Déposant parmi les parties",
+      owner: "Propriétaire",
+      ownerParty: "Propriétaire parmi les parties",
+      ownerSameAsDepositor: "Le déposant est le propriétaire",
+      ownerHint:
+        "Laissez vide si la propriété n’est pas établie. Une acquisition exige un propriétaire enregistré.",
+      receivedAt: "Reçu le",
+      location: "Lieu de réception",
+      chooseLocation: "Choisissez un lieu",
+      condition: "État à la réception",
+      conditionHint: "Décrivez l’état à la réception, y compris les dommages.",
+      responsible: "Membre du personnel responsable",
+      chooseMember: "Choisissez un membre du personnel",
+      responsibilityTerms: "Conditions de responsabilité et d’assurance",
+      decisionDueAt: "Décision attendue le",
+      returnDueAt: "Restitution prévue le",
+      notes: "Notes",
+      objectTitle: "Titre de l’objet",
+      objectName: "Désignation de l’objet",
+      objectDescription: "Description",
+    },
+    sections: {
+      property: "Bien",
+      parties: "Déposant et propriétaire",
+      custody: "Garde",
+      dates: "Échéances",
+    },
+    receiveForm: {
+      title: "Recevoir un bien",
+      description:
+        "Enregistrez l’entrée d’un bien : qui l’a apporté, pourquoi, où il est conservé et dans quel état. Il reste hors collection tant qu’aucune acquisition n’est approuvée.",
+      submit: "Enregistrer la réception",
+      saving: "Enregistrement…",
+      success: "Entrée {entryNumber} enregistrée",
+    },
+    detail: {
+      back: "Entrées",
+      notFound: "Entrée introuvable",
+      object: "Objet",
+      openObject: "Ouvrir l’objet",
+      receivedBy: "Reçu par {name}",
+      currentLocation: "Emplacement actuel",
+      noLocation: "Aucun emplacement enregistré",
+      notRecorded: "Non enregistré",
+      ownerNotRecorded: "Non établi",
+      acquisition: "Acquisition",
+      noAcquisition: "Aucune acquisition n’a été engagée.",
+      openAccession: "Ouvrir l’inscription {number}",
+      acquisitionDraft:
+        "Brouillon : joignez les preuves de propriété, puis soumettez-le à approbation.",
+      acquisitionPending:
+        "En attente d’approbation selon la politique d’inscription.",
+      acquisitionWithdrawn:
+        "Retirée. Restituez le bien à son destinataire ou engagez une nouvelle acquisition.",
+      accessionedOn: "Inscrit à l’inventaire le {date}",
+      exit: "Sortie",
+      exitedTo: "Restitué à {name}",
+      exitedOn: "Remis le {date}",
+      reference: "Référence",
+      recordedBy: "Enregistré par {name}",
+      parties: "Parties",
+    },
+    actions: {
+      beginAcquisition: "Engager l’acquisition",
+      recordExit: "Enregistrer la sortie",
+      edit: "Modifier les détails",
+      cancel: "Annuler",
+      save: "Enregistrer",
+      saving: "Enregistrement…",
+    },
+    acquisition: {
+      title: "Engager l’acquisition",
+      description:
+        "Ouvre une inscription en brouillon pour cet objet, avec {owner} comme origine du titre de propriété. L’objet n’est inscrit qu’après approbation selon la politique d’inscription.",
+      method: "Mode d’acquisition",
+      accessionNumber: "Numéro d’inventaire",
+      accessionNumberHint:
+        "Laissez vide pour utiliser la numérotation configurée.",
+      cost: "Coût",
+      notes: "Notes",
+      submit: "Créer l’inscription en brouillon",
+      success: "Inscription en brouillon créée",
+      methods: {
+        purchase: "Achat",
+        gift: "Don manuel",
+        transfer: "Transfert",
+        donation: "Donation",
+        bequest: "Legs",
+        other: "Autre",
+      },
+    },
+    exitDialog: {
+      title: "Enregistrer la sortie",
+      description:
+        "Remettez le bien à son destinataire. L’objet quitte la garde et est retiré des vues courantes ; rien n’est radié de l’inventaire.",
+      recipient: "Destinataire",
+      recipientParty: "Destinataire parmi les parties",
+      exitedAt: "Remis le",
+      reference: "Référence du reçu ou de la signature",
+      notes: "Notes",
+      observedAt: "Le personnel a confirmé que l’objet se trouve à {location}",
+      submit: "Enregistrer la sortie",
+      success: "Sortie enregistrée",
+    },
+    editDialog: {
+      title: "Modifier les détails de l’entrée",
+      description:
+        "Les faits de la réception restent tels qu’enregistrés. Modifiez le déposant ou le propriétaire dans Parties.",
+      success: "Entrée mise à jour",
+    },
+    objectNotice: {
+      temporary: "Dépôt temporaire : hors collection",
+      temporaryDetail:
+        "Conservé au titre de l’entrée {entryNumber} ({purpose}), déposé par {depositor}.",
+      accessioned: "Reçu au titre de l’entrée {entryNumber}",
+      exited: "Restitué au titre de l’entrée {entryNumber}",
+      openEntry: "Ouvrir l’entrée",
+    },
+    accessionLink: "Reçu au titre de l’entrée {entryNumber}",
+    errors: {
+      entryNotFound: "Cette entrée n’existe plus.",
+      depositorRequired: "Indiquez qui a déposé le bien.",
+      titleRequired: "Donnez un titre à l’objet.",
+      conditionRequired: "Décrivez l’état à la réception.",
+      textTooLong:
+        "Un des champs est trop long. Raccourcissez-le et réessayez.",
+      datesInvalid:
+        "Vérifiez les dates : les échéances et les sorties ne peuvent pas précéder la réception, et aucune date ne peut être future.",
+      responsibleNotMember:
+        "Le membre du personnel responsable doit appartenir à cette organisation.",
+      numberInUse:
+        "Ce numéro est déjà utilisé par une autre entrée ou un autre objet. Choisissez-en un autre.",
+      numberingExhausted:
+        "La numérotation automatique n’a trouvé que des numéros utilisés. Saisissez un numéro d’entrée.",
+      notInCustody: "Cette entrée a déjà une acquisition en cours.",
+      acquisitionOpen:
+        "Une acquisition est en cours pour cette entrée. Retirez-la avant d’enregistrer une sortie.",
+      entryClosed: "Cette entrée est close et ne peut plus être modifiée.",
+      ownerRequired:
+        "Enregistrez le propriétaire avant d’engager une acquisition ; seul le propriétaire peut transmettre la propriété.",
+      recipientRequired: "Indiquez qui a reçu le bien.",
+      temporaryCustody:
+        "Cet objet est conservé au titre d’une entrée et ne fait pas partie de la collection. Inscrivez-le d’abord à l’inventaire.",
+      entryExited:
+        "Le bien a déjà quitté la garde ; cette acquisition ne peut donc pas être restaurée.",
+      objectRecordedOnEntry:
+        "Cet objet a été enregistré à l’entrée. Modifiez plutôt la fiche de l’objet.",
+      fallback: "L’entrée n’a pas pu être enregistrée. Réessayez.",
+    },
+  },
   objectPicker: {
     loading: "Chargement…",
     loadMore: "Charger plus",
@@ -5759,6 +5956,7 @@ export default {
       owner: "Propriétaire",
       appraiser: "Expert",
       recipient: "Destinataire",
+      depositor: "Déposant",
     },
     holderTypes: {
       privatePerson: "Personne",
@@ -5775,6 +5973,7 @@ export default {
       deaccession: "Désaccession",
       appraisal: "Estimation",
       collection: "Objet",
+      entry: "Entrée",
     },
     picker: {
       placeholder: "Sélectionner ou créer une personne ou une institution",
@@ -8862,7 +9061,8 @@ export default {
         taskDueSoon:
           "La tâche « {title} » arrive à échéance dans moins de 24 heures",
         taskBlocked: "La tâche « {title} » est bloquée : {reason}",
-        taskReadyForReview: "La tâche « {title} » est prête pour votre relecture",
+        taskReadyForReview:
+          "La tâche « {title} » est prête pour votre relecture",
         taskReturned: "La tâche « {title} » a été renvoyée pour modifications",
         taskApproved: "La tâche « {title} » a été approuvée",
         transitExpectedTomorrow:

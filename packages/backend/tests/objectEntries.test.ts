@@ -1145,3 +1145,39 @@ describe("working with entries", () => {
     ).toBe("ENTRY_CLOSED");
   });
 });
+
+test("offers the organization's members as accountable staff", async () => {
+  const t = createConvexTest();
+  const museum = await createMuseum(t);
+  const outsider = await createOrgUserWithPermissions(
+    t,
+    REGISTRAR_PERMISSIONS,
+    {
+      userName: "Outsider",
+    },
+  );
+  await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { name: "Colleague" });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: museum.organizationId,
+      roleId: museum.roleId,
+      joinedAt: T0,
+    });
+  });
+
+  const members = await museum.staff.query(
+    api.objectEntries.listResponsibleMembers,
+    { organizationId: museum.organizationId },
+  );
+  expect(members.map((member) => member.name)).toEqual([
+    "Colleague",
+    "Test User",
+  ]);
+  await expect(
+    authedForUser(t, outsider.userId).query(
+      api.objectEntries.listResponsibleMembers,
+      { organizationId: museum.organizationId },
+    ),
+  ).rejects.toThrow();
+});
