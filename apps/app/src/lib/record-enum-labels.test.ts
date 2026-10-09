@@ -41,6 +41,7 @@ describe("record enum labels", () => {
     ["pending", "accessions.status.pending"],
     ["approved", "accessions.status.approved"],
     ["rejected", "accessions.status.rejected"],
+    ["withdrawn", "accessionReview.status.withdrawn"],
     ["draft", "untranslatedRecords.objects.status.draft"],
   ])("translates accession status %s", (status, key) => {
     expect(getAccessionStatusLabel(status, keyFor)).toBe(`translated:${key}`);

@@ -14,10 +14,12 @@ import {
   SectionCard,
 } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
+import { IntakeReviewDecision } from "./intake-review-decision";
 export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
   const tRoot = useI18n();
   const {
     accession,
+    locale,
     isDraft,
     configuredWorkflowSteps,
     workflowSummary,
@@ -37,6 +39,11 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
       ) : null}
 
       <div className="space-y-6">
+        <IntakeReviewDecision
+          accession={accession}
+          isDraft={isDraft}
+          locale={locale}
+        />
         <AccessionDetailReviewPanel {...props} />
 
         {configuredWorkflowSteps.length > 0 &&

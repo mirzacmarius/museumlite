@@ -122,6 +122,7 @@ import type * as utils_accessionCounter from "../utils/accessionCounter.js";
 import type * as utils_accessionListItems from "../utils/accessionListItems.js";
 import type * as utils_accessionNumberParser from "../utils/accessionNumberParser.js";
 import type * as utils_accessionObjectDraftPublication from "../utils/accessionObjectDraftPublication.js";
+import type * as utils_accessionReview from "../utils/accessionReview.js";
 import type * as utils_accessionSearch from "../utils/accessionSearch.js";
 import type * as utils_accountAdministration from "../utils/accountAdministration.js";
 import type * as utils_accountProfile from "../utils/accountProfile.js";
@@ -349,6 +350,7 @@ declare const fullApi: ApiFromModules<{
   "utils/accessionListItems": typeof utils_accessionListItems;
   "utils/accessionNumberParser": typeof utils_accessionNumberParser;
   "utils/accessionObjectDraftPublication": typeof utils_accessionObjectDraftPublication;
+  "utils/accessionReview": typeof utils_accessionReview;
   "utils/accessionSearch": typeof utils_accessionSearch;
   "utils/accountAdministration": typeof utils_accountAdministration;
   "utils/accountProfile": typeof utils_accountProfile;

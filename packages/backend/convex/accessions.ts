@@ -13,10 +13,16 @@ import {
   toAccessionListItems,
 } from "./utils/accessionListItems";
 import { publishAccessionObjectDraft } from "./utils/accessionObjectDraftPublication";
+import {
+  accessionReviewDecisionValidator,
+  accessionReviewError,
+  accessionStatusValidator,
+  isAwaitingReview,
+  requireReviewReason,
+} from "./utils/accessionReview";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { batchLookup } from "./utils/batchLookup";
 import { appendCaseHistory, recentCaseHistory } from "./utils/caseHistory";
-import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
@@ -56,8 +62,6 @@ import {
   recordWorkflowStepApproval,
 } from "./utils/workflowExecution";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
-
-const REJECTED_OBJECT_DISPLAY_STATUS = "REJECTED";
 
 const accessionDraftMediaWithUrlValidator = v.object({
   storageId: v.id("_storage"),
@@ -676,13 +680,7 @@ export const list = query({
   args: {
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
-    status: v.optional(
-      v.union(
-        v.literal("pending"),
-        v.literal("approved"),
-        v.literal("rejected"),
-      ),
-    ),
+    status: v.optional(accessionStatusValidator),
     search: v.optional(v.string()),
   },
   returns: accessionPageValidator,
@@ -822,6 +820,7 @@ function isInPendingColumn(
 
 const boardColumnValidator = v.union(
   v.object({ kind: v.literal("approved") }),
+  v.object({ kind: v.literal("withdrawn") }),
   v.object({ kind: v.literal("step"), step: v.number() }),
 );
 
@@ -845,7 +844,7 @@ export const listBoardColumn = query({
     const lastStep = await getLastAccessionStep(ctx, args.organizationId);
 
     if (search) {
-      const status = column.kind === "approved" ? "approved" : "pending";
+      const status = column.kind === "step" ? "pending" : column.kind;
       const result = await ctx.db
         .query("accessionSearchDocuments")
         .withSearchIndex("search_text", (q) =>
@@ -859,11 +858,11 @@ export const listBoardColumn = query({
       return {
         page: await toAccessionListItems(
           ctx,
-          column.kind === "approved"
-            ? accessions.filter((row) => row.status === "approved")
-            : accessions.filter((row) =>
+          column.kind === "step"
+            ? accessions.filter((row) =>
                 isInPendingColumn(row, column.step, lastStep),
-              ),
+              )
+            : accessions.filter((row) => row.status === status),
         ),
         isDone: result.isDone,
         continueCursor: result.continueCursor,
@@ -871,13 +870,13 @@ export const listBoardColumn = query({
     }
 
     const result =
-      column.kind === "approved"
+      column.kind !== "step"
         ? await ctx.db
             .query("accessions")
             .withIndex("by_organization_and_status_and_dateReceived", (q) =>
               q
                 .eq("organizationId", args.organizationId)
-                .eq("status", "approved"),
+                .eq("status", column.kind),
             )
             .order("desc")
             .paginate(args.paginationOpts)
@@ -905,13 +904,15 @@ export const getBoardCounts = query({
   returns: v.object({
     pending: v.number(),
     approved: v.number(),
+    /** Legacy rejections; new reviewer rejections return to Draft or withdraw. */
     rejected: v.number(),
+    withdrawn: v.number(),
     columns: v.array(v.object({ stepNumber: v.number(), count: v.number() })),
   }),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
     const lastStep = await getLastAccessionStep(ctx, args.organizationId);
-    const countStatus = (status: "pending" | "approved" | "rejected") =>
+    const countStatus = (status: Doc<"accessions">["status"]) =>
       countIndexedQuery(
         ctx.db
           .query("accessions")
@@ -920,20 +921,23 @@ export const getBoardCounts = query({
           ),
       );
     const steps = Array.from({ length: lastStep + 1 }, (_, step) => step);
-    const [pending, approved, rejected, ...stepCounts] = await Promise.all([
-      countStatus("pending"),
-      countStatus("approved"),
-      countStatus("rejected"),
-      ...steps.map((step) =>
-        countIndexedQuery(
-          pendingColumnQuery(ctx, args.organizationId, step, lastStep),
+    const [pending, approved, rejected, withdrawn, ...stepCounts] =
+      await Promise.all([
+        countStatus("pending"),
+        countStatus("approved"),
+        countStatus("rejected"),
+        countStatus("withdrawn"),
+        ...steps.map((step) =>
+          countIndexedQuery(
+            pendingColumnQuery(ctx, args.organizationId, step, lastStep),
+          ),
         ),
-      ),
-    ]);
+      ]);
     return {
       pending,
       approved,
       rejected,
+      withdrawn,
       columns: [
         ...steps.map((stepNumber, index) => ({
           stepNumber,
@@ -978,15 +982,17 @@ export const get = query({
         v.object({ reason: v.string(), authorizedAt: v.number() }),
       ),
       canCurrentUserApprove: v.boolean(),
+      canCurrentUserRestore: v.boolean(),
       approvedBy: v.optional(v.id("users")),
       approvedAt: v.optional(v.number()),
-      status: v.union(
-        v.literal("pending"),
-        v.literal("approved"),
-        v.literal("rejected"),
-      ),
+      status: accessionStatusValidator,
       notes: v.optional(v.string()),
       workflowStep: v.optional(v.number()),
+      reviewDecision: v.optional(
+        accessionReviewDecisionValidator.omit("decidedBy").extend({
+          decidedByName: v.optional(v.string()),
+        }),
+      ),
       draftObjectData: v.optional(objectDraftDataValidator),
       draftMedia: v.optional(v.array(accessionDraftMediaWithUrlValidator)),
       workflowHistory: v.optional(
@@ -1014,7 +1020,7 @@ export const get = query({
     await requirePermission(ctx, accession.organizationId, "collections.read");
 
     let canCurrentUserApprove = false;
-    if (accession.status === "pending" && accession.workflowStep !== 0) {
+    if (isAwaitingReview(accession)) {
       const workflowConfig = await getWorkflowConfig(
         ctx,
         accession.organizationId,
@@ -1044,6 +1050,20 @@ export const get = query({
           ));
       }
     }
+
+    const canCurrentUserRestore =
+      accession.status === "withdrawn" &&
+      (
+        await resolveIntakeReviewer(
+          ctx,
+          accession.organizationId,
+          accession.reviewDecision?.fromStep,
+        )
+      ).allowed;
+    const reviewDecision = accession.reviewDecision;
+    const decidedBy = reviewDecision
+      ? await ctx.db.get(reviewDecision.decidedBy)
+      : null;
 
     // Ensure workflowHistory is always an array (even if empty)
     const historyPreview = await recentCaseHistory(ctx, accession, "accession");
@@ -1077,11 +1097,20 @@ export const get = query({
         authorizedAt: accession.sourceVerificationException.authorizedAt,
       },
       canCurrentUserApprove,
+      canCurrentUserRestore,
       approvedBy: accession.approvedBy,
       approvedAt: accession.approvedAt,
       status: accession.status,
       notes: accession.notes,
       workflowStep: accession.workflowStep,
+      reviewDecision: reviewDecision && {
+        decision: reviewDecision.decision,
+        reason: reviewDecision.reason,
+        decidedAt: reviewDecision.decidedAt,
+        fromStep: reviewDecision.fromStep,
+        decidedByName:
+          decidedBy?.name ?? decidedBy?.username ?? decidedBy?.email,
+      },
       draftObjectData: accession.draftObjectData,
       draftMedia,
       workflowHistory: historyPreview.entries,
@@ -1250,8 +1279,11 @@ export const submitForApproval = mutation({
       throw new Error("Accession not found");
     }
 
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
+    if (accession.status !== "pending" || (accession.workflowStep ?? 0) > 0) {
+      throw accessionReviewError(
+        "NOT_A_DRAFT",
+        "Only a draft accession can be submitted for approval",
+      );
     }
 
     await requirePermission(
@@ -1276,10 +1308,51 @@ export const submitForApproval = mutation({
       throw new Error("Workflow has no approval steps configured");
     }
 
-    // Reset workflow step if needed
-    await ctx.db.patch(args.accessionId, {
-      workflowStep: firstApprovalStep ?? 1,
-    });
+    const workflowStep = firstApprovalStep ?? 1;
+    await ctx.db.patch(args.accessionId, { workflowStep });
+    const reviewers = await getUsersToNotifyForWorkflowStep(
+      ctx,
+      accession.organizationId,
+      "accession",
+      workflowStep,
+    );
+    await Promise.all([
+      ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+        organizationId: accession.organizationId,
+        workflowType: "accession",
+        entityId: args.accessionId,
+        fromStep: accession.workflowStep ?? 0,
+        toStep: workflowStep,
+        action: "submitted",
+        performedBy: userId,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "submitted_object_accession",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: {
+          accessionNumber: accession.accessionNumber,
+          saveMode: "submit",
+          workflowStep,
+          status: accession.status,
+        },
+      }),
+      ...Array.from(reviewers, (reviewerId) =>
+        reviewerId === userId
+          ? null
+          : ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: accession.organizationId,
+              userId: reviewerId,
+              type: "workflow_pending",
+              title: "Object Request Requires Approval",
+              message: `Object request ${accession.accessionNumber} is pending your approval.`,
+              relatedEntityType: "accession",
+              relatedEntityId: args.accessionId,
+            }),
+      ),
+    ]);
 
     return null;
   },
@@ -1305,8 +1378,11 @@ export const approve = mutation({
       throw new Error("Accession not found");
     }
 
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
+    if (!isAwaitingReview(accession)) {
+      throw accessionReviewError(
+        "NOT_IN_REVIEW",
+        "Accession is not awaiting review",
+      );
     }
 
     await requirePermission(
@@ -1568,12 +1644,170 @@ export const approve = mutation({
 });
 
 /**
- * Reject accession
+ * Whether the caller may decide on an intake at a workflow step: the approver
+ * permission plus that step's role (organization administrators override step
+ * roles). Returns the configured step the decision applies to.
+ */
+async function resolveIntakeReviewer(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  workflowStep: number | undefined,
+) {
+  const [hasApprovePermission, workflowConfig] = await Promise.all([
+    hasPermission(ctx, organizationId, "collections.approve_accession"),
+    getWorkflowConfig(ctx, organizationId, "accession"),
+  ]);
+  const step = resolveWorkflowStepState(
+    workflowConfig?.steps,
+    workflowStep,
+  ).currentStep;
+  const allowed =
+    hasApprovePermission &&
+    (!workflowConfig ||
+      step === undefined ||
+      (await canApproveAtStep(ctx, organizationId, "accession", step)));
+  return { allowed, step };
+}
+
+async function requireIntakeReviewer(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  workflowStep: number | undefined,
+) {
+  const reviewer = await resolveIntakeReviewer(
+    ctx,
+    organizationId,
+    workflowStep,
+  );
+  if (!reviewer.allowed) {
+    throw accessionReviewError(
+      "NOT_PERMITTED",
+      "Permission denied: cannot review this accession at its step",
+    );
+  }
+  return reviewer.step;
+}
+
+type IntakeReviewDecision = typeof accessionReviewDecisionValidator.type;
+
+const intakeReviewDecisionRecords = {
+  returned_to_draft: {
+    historyLabel: "Returned to draft",
+    workflowAction: "returned",
+    notificationType: "workflow_rejected",
+    notificationTitle: "Object Request Returned to Draft",
+    notificationMessage: (accessionNumber: string) =>
+      `Object request ${accessionNumber} was returned to draft for changes.`,
+  },
+  withdrawn: {
+    historyLabel: "Withdrawn",
+    workflowAction: "cancelled",
+    notificationType: "workflow_rejected",
+    notificationTitle: "Object Request Withdrawn",
+    notificationMessage: (accessionNumber: string) =>
+      `Object request ${accessionNumber} was withdrawn from review. The record is kept and can be restored.`,
+  },
+  restored: {
+    historyLabel: "Restored to draft",
+    workflowAction: "returned",
+    notificationType: "workflow_restored",
+    notificationTitle: "Object Request Restored",
+    notificationMessage: (accessionNumber: string) =>
+      `Object request ${accessionNumber} was restored to draft.`,
+  },
+} as const;
+
+/**
+ * Applies a reviewer decision to an intake and records it in the case
+ * history, workflow history and audit log, and tells the submitter why.
+ */
+async function recordIntakeReviewDecision(
+  ctx: MutationCtx,
+  accession: Doc<"accessions">,
+  {
+    decidedBy,
+    decision,
+    fromStep,
+    reason,
+  }: Omit<IntakeReviewDecision, "decidedAt">,
+) {
+  const record = intakeReviewDecisionRecords[decision];
+  const decidedAt = Date.now();
+  const withdrawn = decision === "withdrawn";
+  const history = [
+    ...(accession.workflowHistory ?? []),
+    {
+      step: fromStep,
+      approvedBy: decidedBy,
+      approvedAt: decidedAt,
+      comment: `${record.historyLabel}: ${reason}`,
+    },
+  ];
+  await ctx.db.patch(accession._id, {
+    status: withdrawn ? "withdrawn" : "pending",
+    workflowStep: withdrawn ? undefined : 0,
+    reviewDecision: { decision, reason, decidedBy, decidedAt, fromStep },
+    // An exception authorizes approval within one review round, which ends
+    // here; the audit log keeps the authorization.
+    sourceVerificationException: undefined,
+    ...(await appendCaseHistory(ctx, accession, "accession", history)),
+  });
+
+  const submitterId = getWorkflowCreatorRecipient(
+    accession.workflowHistory,
+    decidedBy,
+  );
+  await Promise.all([
+    syncAccessionSearchDocument(ctx, accession._id),
+    ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+      organizationId: accession.organizationId,
+      workflowType: "accession",
+      entityId: accession._id,
+      fromStep,
+      toStep: withdrawn ? fromStep : 0,
+      action: record.workflowAction,
+      performedBy: decidedBy,
+      comment: reason,
+      metadata: { decision },
+    }),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: accession.organizationId,
+      userId: decidedBy,
+      action: decision,
+      entityType: "accession",
+      entityId: accession._id,
+      changes: {
+        accessionNumber: accession.accessionNumber,
+        status: withdrawn ? "withdrawn" : "pending",
+        fromStep,
+        reason,
+      },
+    }),
+    submitterId
+      ? ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: accession.organizationId,
+          userId: submitterId,
+          type: record.notificationType,
+          title: record.notificationTitle,
+          message: `${record.notificationMessage(accession.accessionNumber)} Reason: ${reason}`,
+          relatedEntityType: "accession",
+          relatedEntityId: accession._id,
+        })
+      : null,
+  ]);
+}
+
+/**
+ * Reviewer rejection of an intake under review. Either returns it to Draft
+ * for the submitter to edit and resubmit, or withdraws it: the record, draft
+ * data and media are retained and restorable. Neither publishes an object or
+ * records a deaccession; nothing was accessioned.
  */
 export const reject = mutation({
   args: {
     accessionId: v.id("accessions"),
-    comment: v.optional(v.string()),
+    decision: v.union(v.literal("returnToDraft"), v.literal("withdraw")),
+    reason: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1588,68 +1822,79 @@ export const reject = mutation({
       throw new Error("Accession not found");
     }
 
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
+    if (!isAwaitingReview(accession)) {
+      throw accessionReviewError(
+        "NOT_IN_REVIEW",
+        "Accession is not awaiting review",
+      );
     }
-
-    await Promise.all([
-      requirePermission(
-        ctx,
-        accession.organizationId,
-        "collections.approve_accession",
-      ),
-      ctx.db.patch(args.accessionId, {
-        status: "rejected",
-        workflowStep: -2,
-        approvedBy: userId,
-        approvedAt: Date.now(),
-        notes: args.comment
-          ? `${accession.notes || ""}\nRejected: ${args.comment}`.trim()
-          : accession.notes,
-      }),
-      syncAccessionSearchDocument(ctx, args.accessionId),
-    ]);
-    const collectionId = await ctx.runMutation(
-      internal.accessions.createCollectionFromRejectedAccession,
-      {
-        accessionId: args.accessionId,
-        rejectedBy: userId,
-      },
+    const currentStep = await requireIntakeReviewer(
+      ctx,
+      accession.organizationId,
+      accession.workflowStep,
     );
+    const reason = requireReviewReason(args.reason);
 
+    const fromStep = accession.workflowStep ?? currentStep ?? 0;
     await Promise.all([
-      ctx.runMutation(internal.deaccessions.createRejectedFromAccession, {
-        organizationId: accession.organizationId,
-        collectionId,
-        createdByUserId: userId,
-        accessionNumber: accession.accessionNumber,
-        comment: args.comment,
+      recordIntakeReviewDecision(ctx, accession, {
+        decision:
+          args.decision === "withdraw" ? "withdrawn" : "returned_to_draft",
+        reason,
+        decidedBy: userId,
+        fromStep,
       }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: accession.organizationId,
-        userId,
-        action: "rejected",
-        entityType: "accession",
+      // Partial approvals at this step must not count after resubmission.
+      ctx.runMutation(internal.workflows.clearStepApprovals, {
+        workflowType: "accession",
         entityId: args.accessionId,
-        changes: { status: "rejected", comment: args.comment },
+        stepNumber: fromStep,
       }),
     ]);
 
-    // Notify users who were involved in the workflow (from history)
-    const history = [...(accession.workflowHistory ?? [])];
-    const creatorEntry = history.find((h) => h.step === 0);
-    const creatorId = creatorEntry?.approvedBy;
-    if (creatorId && creatorId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: accession.organizationId,
-        userId: creatorId,
-        type: "workflow_rejected",
-        title: "Accession Rejected",
-        message: `Accession ${accession.accessionNumber} has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
-        relatedEntityType: "accession",
-        relatedEntityId: args.accessionId,
-      });
+    return null;
+  },
+});
+
+/** Returns a withdrawn intake to Draft so it can be edited and resubmitted. */
+export const restoreWithdrawn = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
     }
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    if (accession.status !== "withdrawn") {
+      throw accessionReviewError(
+        "NOT_WITHDRAWN",
+        "Only a withdrawn accession can be restored",
+      );
+    }
+    const withdrawnFromStep = accession.reviewDecision?.fromStep;
+    await requireIntakeReviewer(
+      ctx,
+      accession.organizationId,
+      withdrawnFromStep,
+    );
+    const reason = requireReviewReason(args.reason);
+
+    await recordIntakeReviewDecision(ctx, accession, {
+      decision: "restored",
+      reason,
+      decidedBy: userId,
+      fromStep: withdrawnFromStep ?? 0,
+    });
 
     return null;
   },
@@ -1738,56 +1983,6 @@ export const createCollectionFromAccession = internalMutation({
       catalogedBy,
       catalogedAt,
       status: "active",
-    });
-
-    await Promise.all([
-      ctx.db.patch(args.accessionId, {
-        collectionId,
-      }),
-      syncAccessionSearchDocument(ctx, args.accessionId),
-    ]);
-
-    return collectionId;
-  },
-});
-
-export const createCollectionFromRejectedAccession = internalMutation({
-  args: {
-    accessionId: v.id("accessions"),
-    rejectedBy: v.id("users"),
-  },
-  returns: v.id("collections"),
-  handler: async (ctx, args) => {
-    const accession = await ctx.db.get(args.accessionId);
-    if (!accession) {
-      throw new Error("Accession not found");
-    }
-
-    if (accession.status !== "rejected") {
-      throw new Error("Accession must be rejected");
-    }
-
-    const rejectedAt = accession.approvedAt ?? Date.now();
-
-    if (accession.collectionId) {
-      await Promise.all([
-        markCollectionDeaccessioned(ctx, {
-          collectionId: accession.collectionId,
-          changedBy: args.rejectedBy,
-          changedAt: rejectedAt,
-          displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
-        }),
-        syncAccessionSearchDocument(ctx, args.accessionId),
-      ]);
-      return accession.collectionId;
-    }
-
-    const collectionId = await publishAccessionObjectDraft(ctx, {
-      accession,
-      catalogedBy: args.rejectedBy,
-      catalogedAt: rejectedAt,
-      status: "deaccessioned",
-      displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
     });
 
     await Promise.all([
@@ -1999,11 +2194,7 @@ export const listMyAssigned = query({
       _id: v.id("accessions"),
       accessionNumber: v.string(),
       source: v.string(),
-      status: v.union(
-        v.literal("pending"),
-        v.literal("approved"),
-        v.literal("rejected"),
-      ),
+      status: accessionStatusValidator,
       workflowStep: v.optional(v.number()),
       dateReceived: v.number(),
     }),

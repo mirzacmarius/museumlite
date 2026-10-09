@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { accessionStatusValidator } from "./utils/accessionReview";
 import { canApproveAtStep } from "./utils/permissions";
 
 /**
@@ -42,11 +43,7 @@ export const listMyAssignments = query({
         _id: v.id("accessions"),
         accessionNumber: v.string(),
         source: v.string(),
-        status: v.union(
-          v.literal("pending"),
-          v.literal("approved"),
-          v.literal("rejected"),
-        ),
+        status: accessionStatusValidator,
         workflowStep: v.optional(v.number()),
         dateReceived: v.number(),
       }),

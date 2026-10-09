@@ -5,7 +5,9 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { usePaginatedQuery } from "convex/react";
+import type { FunctionArgs } from "convex/server";
 import {
+  Archive,
   CheckCircle,
   Clock,
   FileEdit,
@@ -16,9 +18,13 @@ import Link from "next/link";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatAccessionMethodLabel } from "./[id]/_components/accession-detail-ui";
 
+export type AccessionBoardColumn = FunctionArgs<
+  typeof api.accessions.listBoardColumn
+>["column"];
+
 type KanbanColumnProps = {
   organizationId: Id<"organizations">;
-  stepNumber: number;
+  column: AccessionBoardColumn;
   stepName: string;
   roleName?: string;
   searchQuery: string;
@@ -38,6 +44,7 @@ const stepDotStyles: Record<number, string> = {
 };
 
 const DEFAULT_DOT_STYLE = "bg-muted-foreground";
+const WITHDRAWN_DOT_STYLE = "bg-zinc-600";
 
 function getStepDotStyle(stepNumber: number): string {
   const direct = stepDotStyles[stepNumber];
@@ -57,6 +64,16 @@ function getStepIcon(stepNumber: number) {
   return <ShieldCheck className="size-4" />;
 }
 
+function getColumnDotStyle(column: AccessionBoardColumn): string {
+  if (column.kind === "withdrawn") return WITHDRAWN_DOT_STYLE;
+  return getStepDotStyle(column.kind === "approved" ? -1 : column.step);
+}
+
+function getColumnIcon(column: AccessionBoardColumn) {
+  if (column.kind === "withdrawn") return <Archive className="size-4" />;
+  return getStepIcon(column.kind === "approved" ? -1 : column.step);
+}
+
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -68,7 +85,7 @@ function getInitials(name: string): string {
 
 export function KanbanColumn({
   organizationId,
-  stepNumber,
+  column,
   stepName,
   roleName,
   searchQuery,
@@ -77,17 +94,14 @@ export function KanbanColumn({
   const tRoot = useI18n();
   const t = useScopedI18n("accessions");
 
-  const dotStyle = getStepDotStyle(stepNumber);
-  const icon = getStepIcon(stepNumber);
+  const dotStyle = getColumnDotStyle(column);
+  const icon = getColumnIcon(column);
   const search = searchQuery.trim();
   const { results, status, loadMore } = usePaginatedQuery(
     api.accessions.listBoardColumn,
     {
       organizationId,
-      column:
-        stepNumber === -1
-          ? { kind: "approved" }
-          : { kind: "step", step: stepNumber },
+      column,
       search: search || undefined,
     },
     { initialNumItems: PAGE_SIZE },

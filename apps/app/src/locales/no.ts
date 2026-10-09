@@ -4654,6 +4654,64 @@ export default {
     helpText:
       "Hvis du ikke har en konto ennå, bruker du e-posten i invitasjonen for å opprette en først. Etter innlogging kan du godta denne organisasjonsinvitasjonen.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Trukket tilbake",
+    },
+    reject: {
+      title: "Avvis denne objektforespørselen",
+      description:
+        "Velg hva som skal skje videre. Ingenting legges til i samlingen, og ingen avhending registreres.",
+      returnToDraft: "Send tilbake til utkast",
+      returnToDraftDescription:
+        "Innsenderen kan redigere forespørselen og sende den til gjennomgang igjen.",
+      withdraw: "Trekk tilbake",
+      withdrawDescription:
+        "Tar forespørselen ut av aktiv gjennomgang. Posten, utkastdataene og filene beholdes og kan gjenopprettes.",
+      reasonLabel: "Begrunnelse",
+      reasonPlaceholder:
+        "Forklar hva som må endres eller hvorfor den trekkes tilbake",
+      reasonHint:
+        "Påkrevd. Innsenderen varsles, og begrunnelsen lagres i sakshistorikken.",
+      confirmReturnToDraft: "Send tilbake til utkast",
+      confirmWithdraw: "Trekk tilbake forespørsel",
+      saving: "Lagrer...",
+    },
+    restore: {
+      action: "Gjenopprett til utkast",
+      title: "Gjenopprett denne objektforespørselen",
+      description:
+        "Forespørselen går tilbake til Utkast-kolonnen slik at den kan redigeres og sendes til gjennomgang igjen.",
+      reasonLabel: "Begrunnelse",
+      reasonHint: "Påkrevd. Lagres i sakshistorikken.",
+      confirm: "Gjenopprett til utkast",
+    },
+    decision: {
+      returnedTitle: "Sendt tilbake til utkast for endringer",
+      withdrawnTitle: "Trukket tilbake fra gjennomgang",
+      restoredTitle: "Gjenopprettet etter tilbaketrekking",
+      decidedBy: "Av {name}",
+      withdrawnDescription:
+        "Denne forespørselen beholdes som dokumentasjon og ligger ikke i noen aktiv kø. Ingenting ble lagt til i samlingen.",
+    },
+    board: {
+      withdrawn: "Trukket tilbake",
+      showActive: "Tilbake til aktiv tavle",
+    },
+    errors: {
+      notInReview:
+        "Denne forespørselen venter ikke lenger på gjennomgang. Oppdater for å se gjeldende status.",
+      notWithdrawn:
+        "Denne forespørselen er ikke lenger trukket tilbake. Oppdater for å se gjeldende status.",
+      reasonRequired: "Skriv inn en begrunnelse.",
+      notADraft:
+        "Denne forespørselen er allerede sendt inn. Oppdater for å se gjeldende status.",
+      reasonTooLong: "Begrunnelsen må være kortere enn 2000 tegn.",
+      notPermitted:
+        "Du kan ikke ta denne avgjørelsen for gjeldende gjennomgangstrinn.",
+      fallback: "Avgjørelsen kunne ikke lagres. Oppdater og prøv igjen.",
+    },
+  },
   accessions: {
     title: "Aksessjoner",
     description: "Administrer innkommende elementer og godkjenningsarbeidsflyt",

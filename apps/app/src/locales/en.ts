@@ -4504,6 +4504,62 @@ export default {
     helpText:
       "If you do not have an account yet, use the invited email to create one first. After sign-in, you can accept this organization invitation.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Withdrawn",
+    },
+    reject: {
+      title: "Reject this object request",
+      description:
+        "Choose what happens next. Nothing is added to the collection and no deaccession is recorded.",
+      returnToDraft: "Send back to Draft",
+      returnToDraftDescription:
+        "The submitter can edit the request and submit it for review again.",
+      withdraw: "Withdraw",
+      withdrawDescription:
+        "Takes the request out of active review. The record, its draft details and files are kept and can be restored.",
+      reasonLabel: "Reason",
+      reasonPlaceholder: "Explain what needs to change or why it is withdrawn",
+      reasonHint:
+        "Required. The submitter is notified and the reason is kept in the case history.",
+      confirmReturnToDraft: "Send back to Draft",
+      confirmWithdraw: "Withdraw request",
+      saving: "Saving...",
+    },
+    restore: {
+      action: "Restore to Draft",
+      title: "Restore this object request",
+      description:
+        "The request returns to the Draft column so it can be edited and submitted for review again.",
+      reasonLabel: "Reason",
+      reasonHint: "Required. Kept in the case history.",
+      confirm: "Restore to Draft",
+    },
+    decision: {
+      returnedTitle: "Returned to draft for changes",
+      withdrawnTitle: "Withdrawn from review",
+      restoredTitle: "Restored from withdrawal",
+      decidedBy: "By {name}",
+      withdrawnDescription:
+        "This request is kept for the record and is not in any active queue. Nothing was added to the collection.",
+    },
+    board: {
+      withdrawn: "Withdrawn",
+      showActive: "Back to active board",
+    },
+    errors: {
+      notInReview:
+        "This request is no longer awaiting review. Refresh to see its current state.",
+      notWithdrawn:
+        "This request is no longer withdrawn. Refresh to see its current state.",
+      reasonRequired: "Enter a reason.",
+      notADraft:
+        "This request has already been submitted. Refresh to see its current state.",
+      reasonTooLong: "Keep the reason under 2,000 characters.",
+      notPermitted: "You can't make this decision for the current review step.",
+      fallback: "The decision could not be saved. Refresh and try again.",
+    },
+  },
   accessions: {
     title: "Accessions",
     description: "Manage incoming items and approval workflow",

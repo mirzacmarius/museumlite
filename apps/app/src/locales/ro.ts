@@ -1883,6 +1883,64 @@ export default {
       print: "Printează",
     },
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Retrasă",
+    },
+    reject: {
+      title: "Respinge această cerere de obiect",
+      description:
+        "Alegeți ce urmează. Nimic nu este adăugat în colecție și nu se înregistrează nicio scoatere din evidență.",
+      returnToDraft: "Trimite înapoi la ciornă",
+      returnToDraftDescription:
+        "Persoana care a trimis-o poate edita cererea și o poate trimite din nou spre evaluare.",
+      withdraw: "Retrage",
+      withdrawDescription:
+        "Scoate cererea din evaluarea activă. Înregistrarea, datele ciornei și fișierele sunt păstrate și pot fi restaurate.",
+      reasonLabel: "Motiv",
+      reasonPlaceholder: "Explicați ce trebuie schimbat sau de ce este retrasă",
+      reasonHint:
+        "Obligatoriu. Persoana care a trimis-o este notificată, iar motivul rămâne în istoricul cazului.",
+      confirmReturnToDraft: "Trimite înapoi la ciornă",
+      confirmWithdraw: "Retrage cererea",
+      saving: "Se salvează...",
+    },
+    restore: {
+      action: "Restaurează ca ciornă",
+      title: "Restaurează această cerere de obiect",
+      description:
+        "Cererea revine în coloana Ciornă pentru a fi editată și trimisă din nou spre evaluare.",
+      reasonLabel: "Motiv",
+      reasonHint: "Obligatoriu. Rămâne în istoricul cazului.",
+      confirm: "Restaurează ca ciornă",
+    },
+    decision: {
+      returnedTitle: "Trimisă înapoi la ciornă pentru modificări",
+      withdrawnTitle: "Retrasă din evaluare",
+      restoredTitle: "Restaurată după retragere",
+      decidedBy: "De {name}",
+      withdrawnDescription:
+        "Această cerere este păstrată ca evidență și nu se află în nicio coadă activă. Nimic nu a fost adăugat în colecție.",
+    },
+    board: {
+      withdrawn: "Retrase",
+      showActive: "Înapoi la panoul activ",
+    },
+    errors: {
+      notInReview:
+        "Această cerere nu mai așteaptă evaluarea. Reîmprospătați pentru a vedea starea curentă.",
+      notWithdrawn:
+        "Această cerere nu mai este retrasă. Reîmprospătați pentru a vedea starea curentă.",
+      reasonRequired: "Introduceți un motiv.",
+      notADraft:
+        "Această cerere a fost deja trimisă. Reîmprospătați pentru a vedea starea curentă.",
+      reasonTooLong: "Motivul trebuie să aibă mai puțin de 2000 de caractere.",
+      notPermitted:
+        "Nu puteți lua această decizie pentru pasul de evaluare curent.",
+      fallback:
+        "Decizia nu a putut fi salvată. Reîmprospătați și încercați din nou.",
+    },
+  },
   accessions: {
     title: "Accesiuni",
     description: "Gestionează intrările în colecție",

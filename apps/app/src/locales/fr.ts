@@ -4669,6 +4669,65 @@ export default {
     helpText:
       "Si vous n'avez pas encore de compte, utilisez l'e-mail de l'invitation pour en créer un. Après connexion, vous pourrez accepter cette invitation d'organisation.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Retirée",
+    },
+    reject: {
+      title: "Refuser cette demande d'objet",
+      description:
+        "Choisissez la suite. Rien n'est ajouté à la collection et aucune aliénation n'est enregistrée.",
+      returnToDraft: "Renvoyer en brouillon",
+      returnToDraftDescription:
+        "La personne qui l'a soumise peut modifier la demande et la soumettre à nouveau.",
+      withdraw: "Retirer",
+      withdrawDescription:
+        "Sort la demande de la revue active. La fiche, ses données de brouillon et ses fichiers sont conservés et peuvent être restaurés.",
+      reasonLabel: "Motif",
+      reasonPlaceholder:
+        "Expliquez ce qui doit changer ou pourquoi elle est retirée",
+      reasonHint:
+        "Obligatoire. La personne qui l'a soumise est avertie et le motif est conservé dans l'historique du dossier.",
+      confirmReturnToDraft: "Renvoyer en brouillon",
+      confirmWithdraw: "Retirer la demande",
+      saving: "Enregistrement...",
+    },
+    restore: {
+      action: "Restaurer en brouillon",
+      title: "Restaurer cette demande d'objet",
+      description:
+        "La demande revient dans la colonne Brouillon pour être modifiée et soumise à nouveau.",
+      reasonLabel: "Motif",
+      reasonHint: "Obligatoire. Conservé dans l'historique du dossier.",
+      confirm: "Restaurer en brouillon",
+    },
+    decision: {
+      returnedTitle: "Renvoyée en brouillon pour modifications",
+      withdrawnTitle: "Retirée de la revue",
+      restoredTitle: "Restaurée après retrait",
+      decidedBy: "Par {name}",
+      withdrawnDescription:
+        "Cette demande est conservée pour mémoire et ne figure dans aucune file active. Rien n'a été ajouté à la collection.",
+    },
+    board: {
+      withdrawn: "Retirées",
+      showActive: "Retour au tableau actif",
+    },
+    errors: {
+      notInReview:
+        "Cette demande n'est plus en attente de revue. Actualisez pour voir son état actuel.",
+      notWithdrawn:
+        "Cette demande n'est plus retirée. Actualisez pour voir son état actuel.",
+      reasonRequired: "Indiquez un motif.",
+      notADraft:
+        "Cette demande a déjà été soumise. Actualisez pour voir son état actuel.",
+      reasonTooLong: "Le motif doit faire moins de 2 000 caractères.",
+      notPermitted:
+        "Vous ne pouvez pas prendre cette décision à l'étape de revue actuelle.",
+      fallback:
+        "La décision n'a pas pu être enregistrée. Actualisez et réessayez.",
+    },
+  },
   accessions: {
     title: "Acquisitions",
     description:
