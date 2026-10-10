@@ -120,6 +120,10 @@ _Avoid_: Notification type (the specific event kind within a category)
 The record of one event that was notified about. Dispatching the same intent again notifies nobody, so each recipient hears about an event once.
 _Avoid_: Notification (the per-recipient message)
 
+**Digest**:
+One email that groups a staff member's notifications from one Organization, sent daily or weekly at the local time they chose. When it is sent it lists only the notifications they may still read and still want emailed.
+_Avoid_: Summary, newsletter
+
 ### Library circulation
 
 These terms belong to the optional Library Module and never describe museum Objects.
