@@ -5,6 +5,8 @@ import {
   type QualityErrorData,
   qualityErrorFromError,
 } from "../convex/utils/documentationQualityErrors";
+import { notificationEntityHref } from "../convex/utils/notificationLinks";
+import { workErrorFromError } from "../convex/utils/workErrors";
 import { normalizeIdentifier } from "../convex/utils/identifiers";
 import {
   authedForUser,
@@ -1256,4 +1258,118 @@ test("a running check that stopped making progress can be resumed, but not befor
     detected: 1,
     opened: 1,
   });
+});
+
+test("repair work on a finding is assigned as a case task that reaches the owner's My work", async () => {
+  const {
+    t,
+    admin,
+    officer,
+    adminId,
+    officerId,
+    viewerId,
+    organizationId,
+    foreignOrganizationId,
+  } = await setup();
+  const ownerId = await addMember(t, organizationId, "Rosa Repairer", [
+    ...OFFICER_PERMISSIONS,
+    "media.read",
+  ]);
+  const owner = authedForUser(t, ownerId);
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    ...PAINTINGS,
+  });
+  const objectId = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "1990.1",
+    objectType: "Painting",
+  });
+  await runCheck(t, officer, organizationId);
+  const finding = await onlyFinding(officer, organizationId, "open");
+  const caseRef = {
+    organizationId,
+    caseType: "documentationFinding" as const,
+    caseId: finding._id,
+  };
+
+  expect(
+    (
+      await officer.query(api.caseTasks.listAssignableMembers, caseRef)
+    ).map((member) => member.userId),
+  ).toEqual(expect.arrayContaining([adminId, officerId, ownerId]));
+  expect(
+    (
+      await officer.query(api.caseTasks.listAssignableMembers, caseRef)
+    ).map((member) => member.userId),
+  ).not.toContain(viewerId);
+  const ineligible = await officer
+    .mutation(api.caseTasks.create, {
+      ...caseRef,
+      title: "Photograph",
+      ownerId: viewerId,
+    })
+    .then(
+      () => null,
+      (error) => workErrorFromError(error)?.code,
+    );
+  expect(ineligible).toBe("ASSIGNEE_NOT_ELIGIBLE");
+
+  const taskId = await officer.mutation(api.caseTasks.create, {
+    ...caseRef,
+    title: "Photograph and assess 1990.1",
+    ownerId,
+    reviewerId: adminId,
+    dueDate: Date.UTC(2026, 11, 1),
+  });
+
+  expect(
+    (await owner.query(api.caseTasks.listMyWork, {
+      organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+    })).page,
+  ).toMatchObject([
+    {
+      _id: taskId,
+      caseType: "documentationFinding",
+      caseId: finding._id,
+      caseLabel: "1990.1",
+      ownerId,
+    },
+  ]);
+  const notification = (
+    await owner.query(api.notifications.getNotificationCenter, {
+      organizationId,
+    })
+  ).notifications.find((row) => row.type === "task_assigned");
+  expect(
+    notificationEntityHref(
+      notification?.relatedEntityType,
+      notification?.relatedEntityId,
+    ),
+  ).toBe(`/documentation-quality/${finding._id}`);
+
+  await addImage(t, organizationId, adminId, objectId);
+  expect(
+    (await owner.query(api.caseTasks.listEvidenceCandidates, caseRef)).map(
+      (candidate) => candidate.reference.kind,
+    ),
+  ).toContain("media");
+
+  // Finishing the task does not resolve the finding; the next check does.
+  await owner.mutation(api.caseTasks.submitForReview, { taskId });
+  await admin.mutation(api.caseTasks.approve, { taskId });
+  expect((await onlyFinding(officer, organizationId, "open"))._id).toBe(
+    finding._id,
+  );
+
+  const foreignCase = await officer
+    .query(api.caseTasks.listForCase, {
+      ...caseRef,
+      organizationId: foreignOrganizationId,
+    })
+    .then(
+      () => null,
+      (error) => error,
+    );
+  expect(foreignCase).not.toBeNull();
 });

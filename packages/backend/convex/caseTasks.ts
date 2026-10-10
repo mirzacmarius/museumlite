@@ -16,6 +16,8 @@ import {
   caseTaskEvidenceReferenceValidator,
   caseTaskStatusValidator,
 } from "./utils/caseTaskValidators";
+import { CAPABILITY_MATRIX } from "./utils/capabilities";
+import { findingLabel, findingObjectIds } from "./utils/documentationFindings";
 import { hasFeatureAccess } from "./utils/featureGates";
 import {
   memberPermissionNames,
@@ -24,7 +26,11 @@ import {
 import { mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import type { NotificationEntityType } from "./utils/notificationTypes";
-import { hasPermission, requirePermission } from "./utils/permissions";
+import {
+  hasPermission,
+  requireCapability,
+  requirePermission,
+} from "./utils/permissions";
 import { workError } from "./utils/workErrors";
 
 const MAX_TASKS_PER_CASE = 100;
@@ -81,6 +87,12 @@ const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
     feature: "conservation",
     auditKey: "conservationTreatmentId",
     notificationEntityType: "conservationTreatment",
+  },
+  documentationFinding: {
+    readPermission: "collections.read",
+    workPermission: "collections.update",
+    auditKey: "documentationFindingId",
+    notificationEntityType: "documentationFinding",
   },
 };
 
@@ -141,9 +153,16 @@ const taskValidator = v.object({
   completedAt: v.optional(v.number()),
 });
 
-type CaseDoc = Awaited<ReturnType<typeof resolveCase>>;
+type CaseDoc =
+  | Awaited<ReturnType<typeof resolveCase>>
+  | Doc<"documentationFindings">;
+
+function isFinding(entity: CaseDoc): entity is Doc<"documentationFindings"> {
+  return "lastCheckNumber" in entity;
+}
 
 function caseLabelOf(entity: CaseDoc): string {
+  if (isFinding(entity)) return findingLabel(entity);
   if ("loanNumber" in entity) return entity.loanNumber;
   if ("deaccessionNumber" in entity) return entity.deaccessionNumber;
   if ("accessionNumber" in entity) return entity.accessionNumber;
@@ -186,13 +205,37 @@ async function requireUserId(ctx: QueryCtx) {
   return userId;
 }
 
+/**
+ * A documentation quality finding, for members with the documentation
+ * quality capability.
+ */
+async function loadFindingCase(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  caseId: string,
+) {
+  await requireCapability(
+    ctx,
+    organizationId,
+    "documentation_quality",
+    CAPABILITY_MATRIX.documentation_quality.permissions,
+  );
+  const findingId = ctx.db.normalizeId("documentationFindings", caseId);
+  const finding = findingId ? await ctx.db.get(findingId) : null;
+  if (!finding || finding.organizationId !== organizationId)
+    throw workError("CASE_NOT_FOUND", "Case not found in this organization");
+  return finding;
+}
+
 /** Resolves the case for the caller, enforcing the case's read access. */
 async function loadCase(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   caseType: CaseTaskCaseType,
   caseId: string,
-) {
+): Promise<CaseDoc> {
+  if (caseType === "documentationFinding")
+    return await loadFindingCase(ctx, organizationId, caseId);
   try {
     return await resolveCase(ctx, {
       organizationId,
@@ -264,6 +307,7 @@ async function readCaseLabel(
     deaccession: "deaccessions",
     exhibition: "exhibitions",
     conservation: "conservationTreatments",
+    documentationFinding: "documentationFindings",
   } as const;
   const id = ctx.db.normalizeId(table[caseType], caseId);
   const entity = id ? await ctx.db.get(id) : null;
@@ -794,6 +838,11 @@ async function caseObjectIds(
       .take(CASE_OBJECT_LIMIT);
     return members.map((member) => member.collectionId);
   }
+  if (isFinding(entity))
+    return findingObjectIds(entity).flatMap((id) => {
+      const objectId = ctx.db.normalizeId("collections", id);
+      return objectId ? [objectId] : [];
+    });
   return "collectionId" in entity && entity.collectionId
     ? [entity.collectionId]
     : [];

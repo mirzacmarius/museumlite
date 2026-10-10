@@ -166,6 +166,7 @@ import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_deliveryLedger from "../utils/deliveryLedger.js";
 import type * as utils_disposalPolicy from "../utils/disposalPolicy.js";
 import type * as utils_documentationChecks from "../utils/documentationChecks.js";
+import type * as utils_documentationFindings from "../utils/documentationFindings.js";
 import type * as utils_documentationQualityErrors from "../utils/documentationQualityErrors.js";
 import type * as utils_documentationQualityValidators from "../utils/documentationQualityValidators.js";
 import type * as utils_documentationRequirements from "../utils/documentationRequirements.js";
@@ -457,6 +458,7 @@ declare const fullApi: ApiFromModules<{
   "utils/deliveryLedger": typeof utils_deliveryLedger;
   "utils/disposalPolicy": typeof utils_disposalPolicy;
   "utils/documentationChecks": typeof utils_documentationChecks;
+  "utils/documentationFindings": typeof utils_documentationFindings;
   "utils/documentationQualityErrors": typeof utils_documentationQualityErrors;
   "utils/documentationQualityValidators": typeof utils_documentationQualityValidators;
   "utils/documentationRequirements": typeof utils_documentationRequirements;

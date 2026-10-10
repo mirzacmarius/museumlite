@@ -27,6 +27,10 @@ import {
   normalizeObjectType,
   scheduleCheckPage,
 } from "./utils/documentationChecks";
+import {
+  type FindingRecordRef,
+  findingRecords,
+} from "./utils/documentationFindings";
 import { qualityError } from "./utils/documentationQualityErrors";
 import {
   checkFailureCodeValidator,
@@ -868,30 +872,6 @@ const findingRecordTypeValidator = v.union(
   v.literal("accession"),
   v.literal("deaccession"),
 );
-
-type FindingRecordRef = {
-  type: "object" | "accession" | "deaccession";
-  id: string;
-};
-
-/** The records a finding is about, where staff repair them. */
-function findingRecords(
-  finding: Doc<"documentationFindings">,
-): FindingRecordRef[] {
-  switch (finding.kind) {
-    case "missing_evidence":
-      return [{ type: "object", id: finding.objectId }];
-    case "duplicate_identifier":
-      return finding.records.map((record) => ({
-        type: finding.register === "catalog" ? "object" : "accession",
-        id: record.id,
-      }));
-    case "legacy_link":
-      return [finding.target];
-    case "orphan_reference":
-      return [finding.subject];
-  }
-}
 
 async function readFindingRecord(
   ctx: QueryCtx,

@@ -190,6 +190,7 @@ const CASE_ACCESS: Record<
   accession: { permission: "collections.read" },
   deaccession: { permission: "collections.read" },
   organizationMoveRequest: { permission: "collections.read" },
+  documentationFinding: { permission: "collections.read" },
   libraryAcquisitionRequest: {
     permission: "collections.read",
     module: "library",
