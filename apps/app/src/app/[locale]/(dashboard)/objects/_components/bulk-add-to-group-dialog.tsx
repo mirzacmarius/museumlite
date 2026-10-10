@@ -21,7 +21,7 @@ import {
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import { FolderPlus } from "lucide-react";
-import { useState } from "react";
+import { type RefObject, useState } from "react";
 import { toast } from "sonner";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
@@ -31,6 +31,8 @@ interface BulkAddToGroupDialogProps {
   selectedIds: Id<"collections">[];
   organizationId: Id<"organizations">;
   onSuccess: () => void;
+  /** Takes focus on close when the selection bar that opened it is gone. */
+  returnFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function BulkAddToGroupDialog({
@@ -39,6 +41,7 @@ export function BulkAddToGroupDialog({
   selectedIds,
   organizationId,
   onSuccess,
+  returnFocusRef,
 }: BulkAddToGroupDialogProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("common.toast");
@@ -85,7 +88,7 @@ export function BulkAddToGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent fallbackFocusRef={returnFocusRef}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FolderPlus className="size-5" />

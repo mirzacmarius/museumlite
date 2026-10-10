@@ -1,6 +1,7 @@
 "use client";
 
 import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
+import type { RefObject } from "react";
 import type { MediaFileType } from "@/hooks/use-url-filters";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
@@ -13,6 +14,8 @@ interface MediaAppliedFiltersProps {
   filters: MediaAppliedFiltersValue;
   onChange: (filters: Partial<MediaAppliedFiltersValue>) => void;
   onClearAll: () => void;
+  /** Takes focus when the last filter is removed. */
+  returnFocusRef?: RefObject<HTMLElement | null>;
   className?: string;
 }
 
@@ -33,6 +36,7 @@ export function MediaAppliedFilters({
   filters,
   onChange,
   onClearAll,
+  returnFocusRef,
   className,
 }: MediaAppliedFiltersProps) {
   const common = useScopedI18n("common");
@@ -42,7 +46,11 @@ export function MediaAppliedFilters({
   if (!showBar) return null;
 
   return (
-    <AppliedFiltersBar className={className}>
+    <AppliedFiltersBar
+      className={className}
+      onClearAll={onClearAll}
+      returnFocusRef={returnFocusRef}
+    >
       {filters.fileType !== "all" && (
         <AppliedFilterChip
           label={t("untranslatedDashboard.media.typeFilter")}
@@ -57,7 +65,6 @@ export function MediaAppliedFilters({
           onRemove={() => onChange({ search: "" })}
         />
       )}
-      <AppliedFilterChip label={common("clearAll")} onRemove={onClearAll} />
     </AppliedFiltersBar>
   );
 }

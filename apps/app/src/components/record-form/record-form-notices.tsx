@@ -98,14 +98,35 @@ export function RecordFormNotices({
   );
   const fieldList = (fields: string[]) => fields.map(fieldLabel).join(", ");
   const { failure, remote, recoveryOffer } = session;
-  // A save is usually started far below these notices; bring its outcome
-  // into view and focus, like an error summary.
+  // A save refused for its fields takes staff to the first field to fix.
+  // Otherwise the save, usually started far below these notices, brings its
+  // outcome into view and focus, like an error summary.
   const noticesRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!failure) return;
-    noticesRef.current?.scrollIntoView({ block: "nearest" });
-    noticesRef.current?.focus({ preventScroll: true });
-  }, [failure]);
+    const notices = noticesRef.current;
+    if (!failure || !notices) return;
+    const fields =
+      failure.kind === "invalid"
+        ? failure.fields
+        : failure.kind === "field"
+          ? [failure.field]
+          : [];
+    const shown = firstShownFieldInError(
+      notices.closest("form") ?? document.body,
+      fields,
+    );
+    if (shown) {
+      shown.focus();
+      return;
+    }
+    const [hidden] = fields;
+    if (hidden && onGoToField) {
+      onGoToField(hidden);
+      return;
+    }
+    notices.scrollIntoView({ block: "nearest" });
+    notices.focus({ preventScroll: true });
+  }, [failure, onGoToField]);
   const reviewActions = (
     <>
       <Button type="button" size="sm" onClick={session.applyLatest}>
@@ -307,14 +328,31 @@ export function RecordLockedNotice({ message }: { message: string }) {
   );
 }
 
+function fieldErrorId(field: string) {
+  return `${field}-error`;
+}
+
 /** Accessible link between an input and its error message. */
 export function fieldErrorProps(field: string, message: string | undefined) {
   return message
     ? {
         "aria-invalid": true as const,
-        "aria-describedby": `${field}-error`,
+        "aria-describedby": fieldErrorId(field),
       }
     : {};
+}
+
+/** The first input on screen, in reading order, described by a field's error. */
+function firstShownFieldInError(container: Element, fields: string[]) {
+  const errorIds = new Set(fields.map(fieldErrorId));
+  return Array.from(
+    container.querySelectorAll<HTMLElement>("[aria-describedby]"),
+  ).find((element) =>
+    element
+      .getAttribute("aria-describedby")
+      ?.split(/\s+/)
+      .some((id) => errorIds.has(id)),
+  );
 }
 
 /** A field's error, placed under its input. */
@@ -327,7 +365,7 @@ export function FieldError({
 }) {
   if (!message) return null;
   return (
-    <FormMessage className="text-xs" id={`${field}-error`}>
+    <FormMessage className="text-xs" id={fieldErrorId(field)}>
       {message}
     </FormMessage>
   );

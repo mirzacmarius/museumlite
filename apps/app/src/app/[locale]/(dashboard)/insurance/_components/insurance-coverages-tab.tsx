@@ -54,13 +54,13 @@ export function InsuranceCoveragesTab({
   return (
     <div className="space-y-4">
       <DataTable
+        label={tInsurance("tabs.coverages")}
         loading={status === "LoadingFirstPage"}
         data={results}
         columns={[
           {
             key: "target",
             label: t("columns.target"),
-            className: "min-w-0 flex-[1.6]",
             render: (row) =>
               row.target ? (
                 <span className="flex min-w-0 flex-col">
@@ -85,12 +85,12 @@ export function InsuranceCoveragesTab({
           {
             key: "policyNumber",
             label: t("columns.policy"),
-            className: "w-32 flex-none",
+            className: "w-32",
           },
           {
             key: "coveredValue",
             label: t("columns.value"),
-            className: "w-36 flex-none",
+            className: "w-36",
             render: (row) => (
               <MoneyCell
                 value={row.coveredValue}
@@ -103,7 +103,7 @@ export function InsuranceCoveragesTab({
           {
             key: "period",
             label: t("columns.period"),
-            className: "w-48 flex-none",
+            className: "w-48",
             render: (row) => (
               <span className="text-xs">
                 <ClientDate
@@ -123,7 +123,7 @@ export function InsuranceCoveragesTab({
           {
             key: "state",
             label: t("columns.state"),
-            className: "w-32 flex-none",
+            className: "w-32",
             render: (row) => (
               <Badge variant="outline" className={stateColor[row.state]}>
                 {t(`states.${row.state}`)}
@@ -133,7 +133,7 @@ export function InsuranceCoveragesTab({
           {
             key: "appraisalStatus",
             label: t("columns.appraisal"),
-            className: "w-32 flex-none",
+            className: "w-32",
             render: (row) => (
               <span
                 className={`text-xs ${appraisalColor[row.appraisalStatus]}`}

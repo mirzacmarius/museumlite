@@ -1,6 +1,7 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useRef } from "react";
 import { ExportJobControl } from "@/components/export-job-control";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -21,6 +22,8 @@ export function CollectionFiltersAndList({
 }) {
   const catalog = useCollectionCatalogList(organizationId);
   const tExport = useScopedI18n("exportJobs");
+  // Where focus goes when the selection bar, or a dialog it opened, closes.
+  const listRef = useRef<HTMLElement>(null);
 
   return (
     <div className="flex flex-col h-full">
@@ -63,6 +66,7 @@ export function CollectionFiltersAndList({
           onAddToCollection={() => catalog.setShowAddToCollectionDialog(true)}
           isFiltered={catalog.isFiltered}
           onClearFilters={catalog.resetFilters}
+          listRef={listRef}
         />
       </div>
 
@@ -73,6 +77,7 @@ export function CollectionFiltersAndList({
         onMoveLocation={() => catalog.setShowMoveLocationDialog(true)}
         onPrintLabels={() => catalog.setShowBulkPrintLabelsDialog(true)}
         onDeaccession={() => catalog.setShowBulkDeaccessionDialog(true)}
+        returnFocusRef={listRef}
       />
 
       <BulkMoveLocationDialog
@@ -81,6 +86,7 @@ export function CollectionFiltersAndList({
         selectedIds={Array.from(catalog.selectedIds)}
         organizationId={organizationId}
         onSuccess={catalog.handleBulkSuccess}
+        returnFocusRef={listRef}
       />
 
       <BulkDeaccessionDialog
@@ -88,6 +94,7 @@ export function CollectionFiltersAndList({
         onOpenChange={catalog.setShowBulkDeaccessionDialog}
         selectedIds={Array.from(catalog.selectedIds)}
         onSuccess={catalog.handleBulkSuccess}
+        returnFocusRef={listRef}
       />
 
       <BulkAddToGroupDialog
@@ -96,6 +103,7 @@ export function CollectionFiltersAndList({
         selectedIds={Array.from(catalog.selectedIds)}
         organizationId={organizationId}
         onSuccess={catalog.handleBulkSuccess}
+        returnFocusRef={listRef}
       />
 
       <BulkPrintLabelsDialog
@@ -103,6 +111,7 @@ export function CollectionFiltersAndList({
         onOpenChange={catalog.setShowBulkPrintLabelsDialog}
         selectedIds={Array.from(catalog.selectedIds)}
         onSuccess={catalog.handleBulkSuccess}
+        returnFocusRef={listRef}
       />
 
       {catalog.activeCollectionGroup ? (

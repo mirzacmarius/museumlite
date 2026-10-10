@@ -15,7 +15,7 @@ import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { useQuery } from "convex/react";
 import { Printer } from "lucide-react";
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import type { LabelData, LabelSize } from "@/components/qr-label-generator";
 import { QRLabelSheet } from "@/components/qr-label-generator";
@@ -26,6 +26,8 @@ interface BulkPrintLabelsDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedIds: Id<"collections">[];
   onSuccess: () => void;
+  /** Takes focus on close when the selection bar that opened it is gone. */
+  returnFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function BulkPrintLabelsDialog({
@@ -33,6 +35,7 @@ export function BulkPrintLabelsDialog({
   onOpenChange,
   selectedIds,
   onSuccess,
+  returnFocusRef,
 }: BulkPrintLabelsDialogProps) {
   const t = useScopedI18n("objects.bulkDialogs.printLabels");
   const tQrLabel = useScopedI18n("objects.qrLabel");
@@ -80,7 +83,10 @@ export function BulkPrintLabelsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col max-w-6xl w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
+      <DialogContent
+        fallbackFocusRef={returnFocusRef}
+        className="flex flex-col max-w-6xl w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0"
+      >
         <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">
           <DialogTitle className="text-black">{t("title")}</DialogTitle>
           <DialogDescription>

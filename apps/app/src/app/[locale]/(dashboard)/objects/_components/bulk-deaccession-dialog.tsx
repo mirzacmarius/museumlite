@@ -15,7 +15,7 @@ import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { type RefObject, useState } from "react";
 import { toast } from "sonner";
 import { useScopedI18n } from "@/locales/client";
 
@@ -24,6 +24,8 @@ interface BulkDeaccessionDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedIds: Id<"collections">[];
   onSuccess: () => void;
+  /** Takes focus on close when the selection bar that opened it is gone. */
+  returnFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function BulkDeaccessionDialog({
@@ -31,6 +33,7 @@ export function BulkDeaccessionDialog({
   onOpenChange,
   selectedIds,
   onSuccess,
+  returnFocusRef,
 }: BulkDeaccessionDialogProps) {
   const t = useScopedI18n("common.toast");
   const tDialog = useScopedI18n("objects.bulkDialogs.deaccession");
@@ -88,7 +91,7 @@ export function BulkDeaccessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent fallbackFocusRef={returnFocusRef}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="size-5 text-amber-500" />

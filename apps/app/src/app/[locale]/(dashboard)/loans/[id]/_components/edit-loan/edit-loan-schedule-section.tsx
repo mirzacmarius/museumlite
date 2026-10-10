@@ -4,11 +4,13 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Banknote, Calendar } from "lucide-react";
+import { useState } from "react";
 import { LoanCurrencyInput } from "@/components/loan-currency-input";
 import {
   FieldError,
   fieldErrorProps,
 } from "@/components/record-form/record-form-notices";
+import { futureCalendarEndMonth } from "@/lib/format-date";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { EditLoanFormData } from "./types";
 
@@ -28,6 +30,8 @@ export function EditLoanScheduleSection({
   const startDate = new Date(formData.startDate);
   const endDate =
     formData.endDate === null ? undefined : new Date(formData.endDate);
+  // Loans run into later years, beyond the calendar's default last month.
+  const [endMonth] = useState(futureCalendarEndMonth);
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -52,6 +56,8 @@ export function EditLoanScheduleSection({
               onChange({ startDate: date?.getTime() ?? formData.startDate })
             }
             placeholder={t("selectStartDate")}
+            endMonth={endMonth}
+            {...fieldErrorProps("startDate", fieldErrors.startDate)}
           />
           <FieldError field="startDate" message={fieldErrors.startDate} />
         </div>
@@ -66,6 +72,8 @@ export function EditLoanScheduleSection({
               onChange({ endDate: date?.getTime() ?? null })
             }
             placeholder={t("selectEndDate")}
+            endMonth={endMonth}
+            {...fieldErrorProps("endDate", fieldErrors.endDate)}
           />
           <FieldError field="endDate" message={fieldErrors.endDate} />
         </div>
@@ -102,6 +110,7 @@ export function EditLoanScheduleSection({
               id="currency"
               value={formData.currency}
               onChange={(currency) => onChange({ currency })}
+              {...fieldErrorProps("currency", fieldErrors.currency)}
             />
             <FieldError field="currency" message={fieldErrors.currency} />
           </div>

@@ -1,9 +1,8 @@
 "use client";
 
-import { Slot } from "@radix-ui/react-slot";
 import { Check, ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import * as React from "react";
-import { useUiLocale } from "../locale";
+import { formatUiMessage, useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
 import {
@@ -232,18 +231,84 @@ export function FilterOptionRow({
 }
 
 export interface AppliedFiltersBarProps {
+  /** The applied filters, as `AppliedFilterChip`s. */
   children: React.ReactNode;
+  /** Shows a Clear all button after the chips. */
+  onClearAll?: () => void;
+  /** Takes focus when the last filter is removed, e.g. the search box. */
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
   className?: string;
 }
 
+const AppliedFiltersBarContext = React.createContext<{
+  chipRemoved: (chip: HTMLElement) => void;
+} | null>(null);
+
+const CHIP_SELECTOR = "[data-applied-filter]";
+
+/**
+ * The filters applied to a list, each removable. Removing one keeps focus in
+ * the bar on the chip that takes its place; removing the last closes the bar
+ * and returns focus to `returnFocusRef`.
+ */
 export function AppliedFiltersBar({
   children,
+  onClearAll,
+  returnFocusRef,
   className,
 }: AppliedFiltersBarProps) {
+  const { messages } = useUiLocale();
+  const barRef = React.useRef<HTMLDivElement>(null);
+  const removedIndexRef = React.useRef<number | null>(null);
+  const context = React.useMemo(
+    () => ({
+      chipRemoved: (chip: HTMLElement) => {
+        const chips = barRef.current?.querySelectorAll(CHIP_SELECTOR) ?? [];
+        removedIndexRef.current = Array.from(chips).indexOf(chip);
+      },
+    }),
+    [],
+  );
+
+  // Once the removed chip has left the page, focus the one in its place.
+  React.useLayoutEffect(() => {
+    const bar = barRef.current;
+    const removedIndex = removedIndexRef.current;
+    if (!bar || removedIndex === null) return;
+    if (bar.contains(document.activeElement)) return;
+    removedIndexRef.current = null;
+    const chips = bar.querySelectorAll<HTMLElement>(CHIP_SELECTOR);
+    (chips[removedIndex] ?? chips[removedIndex - 1])?.focus();
+  });
+  // Runs before the bar leaves the page, while one of its buttons has focus.
+  React.useLayoutEffect(() => {
+    const bar = barRef.current;
+    return () => {
+      if (bar?.contains(document.activeElement))
+        returnFocusRef?.current?.focus();
+    };
+  }, [returnFocusRef]);
+
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      {children}
-    </div>
+    <AppliedFiltersBarContext.Provider value={context}>
+      <div
+        ref={barRef}
+        className={cn("flex flex-wrap items-center gap-2", className)}
+      >
+        {children}
+        {onClearAll ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClearAll}
+            className="h-7 text-xs"
+          >
+            {messages.filters.clearAll}
+          </Button>
+        ) : null}
+      </div>
+    </AppliedFiltersBarContext.Provider>
   );
 }
 
@@ -252,21 +317,31 @@ export interface AppliedFilterChipProps {
   value?: string;
   onRemove: () => void;
   className?: string;
-  asChild?: boolean;
 }
 
+/** One applied filter; activating it removes the filter. */
 export function AppliedFilterChip({
   label,
   value,
   onRemove,
   className,
-  asChild = false,
 }: AppliedFilterChipProps) {
-  const Comp = asChild ? Slot : "button";
+  const { messages } = useUiLocale();
+  const bar = React.useContext(AppliedFiltersBarContext);
+  const filter = value ? `${label}: ${value}` : label;
+
   return (
-    <Comp
+    <button
       type="button"
-      onClick={onRemove}
+      data-applied-filter=""
+      aria-label={formatUiMessage(messages.filters.removeFilter, {
+        label: filter,
+      })}
+      title={filter}
+      onClick={(event) => {
+        bar?.chipRemoved(event.currentTarget);
+        onRemove();
+      }}
       className={cn(
         "inline-flex items-center gap-2 rounded-md border border-border bg-background/40 px-2 py-1 text-xs text-foreground hover:bg-accent",
         className,
@@ -277,9 +352,12 @@ export function AppliedFilterChip({
         {value ? <span className="text-muted-foreground">: </span> : null}
         {value ? <span className="text-foreground">{value}</span> : null}
       </span>
-      <span className="grid size-4 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+      <span
+        aria-hidden="true"
+        className="grid size-4 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      >
         <X className="size-3.5" />
       </span>
-    </Comp>
+    </button>
   );
 }

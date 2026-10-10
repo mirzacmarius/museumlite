@@ -1348,6 +1348,10 @@ export default {
     tryAgain: "Încearcă din nou",
   },
   objects: {
+    backToObject: "Înapoi la obiect",
+    selectObject: "Selectează {title}",
+    selectAllShown: "Selectează toate obiectele afișate",
+    searchLabel: "Caută obiecte",
     qrLabel: {
       size1x1: "Pătrat mic",
       showObjectName: "Afișează numele obiectului",
@@ -1556,7 +1560,8 @@ export default {
       status: "Stare",
     },
     bulkActions: {
-      itemsSelected: "Obiecte selectate: {count}",
+      objectsSelected: "Obiecte selectate: {count}",
+      label: "Obiecte selectate",
       addToGroup: "Adaugă în grup",
       moveLocation: "Mută locația",
       export: "Exportă",
@@ -2150,6 +2155,7 @@ export default {
     },
   },
   loans: {
+    searchLabel: "Caută împrumuturi",
     title: "Împrumuturi",
     description: "Gestionează împrumuturile de colecție",
     newLoan: "Împrumut Nou",
@@ -2493,6 +2499,7 @@ export default {
       statusDistribution: "Distribuția stărilor",
     },
     table: {
+      select: "Selectează",
       type: "Tip",
       loanIdTitle: "ID-ul și titlul împrumutului",
       partnerInstitution: "Instituție parteneră",
@@ -2509,11 +2516,11 @@ export default {
       loanNotFound: "Împrumut negăsit",
     },
     bulkActions: {
-      loan: "împrumut",
-      loansPlural: "împrumuturi",
-      selected: "selectate",
+      clearSelection: "Golește selecția",
+      loansSelected: "Împrumuturi selectate: {count}",
+      label: "Împrumuturi selectate",
       approveSelected: "Aprobă selecția",
-      cancelSelected: "Anulează selecția",
+      cancelSelected: "Anulează împrumuturile selectate",
       export: "Exportă",
       csvHeaders: {
         loanNumber: "Număr împrumut",
@@ -9741,6 +9748,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Suborganizațiile pot transfera obiecte în cadrul aceleiași ierarhii.",
       notifications: "Notificări",
+      notificationsUnread: "Notificări, {count} necitite",
       markAllRead: "Marchează totul ca citit",
       viewAllNotifications: "Vezi toate notificările",
       loading: "Se încarcă…",
@@ -9810,6 +9818,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "Ai modificări nesalvate care se vor pierde dacă părăsești această pagină. Dorești să le salvezi mai întâi?",
       discardChanges: "Renunță la modificări",
+      keepEditing: "Continuă editarea",
       enterCode: "Introdu codul",
       orContinueWithGoogle: "Sau continuă cu Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:

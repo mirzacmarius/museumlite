@@ -10,7 +10,10 @@ interface FormMessageProps {
   variant?: FormMessageVariant;
   className?: string;
   icon?: boolean;
-  /** Lets an input reference the message through `aria-describedby`. */
+  /**
+   * Lets an input reference the message through `aria-describedby`; it is
+   * then read with the input rather than announced on its own.
+   */
   id?: string;
 }
 
@@ -43,7 +46,7 @@ export function FormMessage({
         variantStyles[variant],
         className,
       )}
-      role={variant === "error" ? "alert" : undefined}
+      role={variant === "error" && !id ? "alert" : undefined}
     >
       {icon && variantIcons[variant]}
       {children}

@@ -2218,6 +2218,7 @@ export default {
     },
   },
   loans: {
+    searchLabel: "Rechercher des prêts",
     title: "Prêts",
     description: "Gérer les accords de prêt entrants et sortants",
     newLoan: "Nouveau Prêt",
@@ -2272,6 +2273,7 @@ export default {
       unavailable: "Indisponible",
     },
     table: {
+      select: "Sélectionner",
       type: "Type",
       loanIdTitle: "ID de Prêt et Titre",
       partnerInstitution: "Institution Partenaire",
@@ -2288,9 +2290,9 @@ export default {
       loanNotFound: "Prêt introuvable",
     },
     bulkActions: {
-      loan: "prêt",
-      loansPlural: "prêts",
-      selected: "sélectionné",
+      clearSelection: "Effacer la sélection",
+      loansSelected: "{count} prêt{s} sélectionné{s}",
+      label: "Prêts sélectionnés",
       approveSelected: "Approuver la Sélection",
       cancelSelected: "Annuler la Sélection",
       export: "Exporter",
@@ -3170,6 +3172,10 @@ export default {
     close: "Fermer",
   },
   objects: {
+    backToObject: "Retour à l'objet",
+    selectObject: "Sélectionner {title}",
+    selectAllShown: "Sélectionner tous les objets affichés",
+    searchLabel: "Rechercher des objets",
     qrLabel: {
       size1x1: "Petit carré",
       showObjectName: "Afficher le nom de l'objet",
@@ -3276,7 +3282,8 @@ export default {
       status: "Statut",
     },
     bulkActions: {
-      itemsSelected: "{count} élément{s} sélectionné{s}",
+      objectsSelected: "{count} objet{s} sélectionné{s}",
+      label: "Objets sélectionnés",
       addToGroup: "Ajouter au Groupe",
       moveLocation: "Déplacer l'Emplacement",
       export: "Exporter",
@@ -8998,6 +9005,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Les sous-organisations peuvent transférer des objets au sein de la même hiérarchie.",
       notifications: "Notifications",
+      notificationsUnread: "Notifications, {count} non lues",
       markAllRead: "Tout marquer comme lu",
       viewAllNotifications: "Voir toutes les notifications",
       loading: "Chargement…",
@@ -9069,6 +9077,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "Vous avez des modifications non enregistrées qui seront perdues si vous quittez cette page. Voulez-vous d’abord les enregistrer ?",
       discardChanges: "Ignorer les modifications",
+      keepEditing: "Continuer la modification",
       enterCode: "Saisir le code",
       orContinueWithGoogle: "Ou continuer avec Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:

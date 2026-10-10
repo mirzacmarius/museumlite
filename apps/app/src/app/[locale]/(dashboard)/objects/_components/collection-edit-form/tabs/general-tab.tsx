@@ -209,10 +209,12 @@ export function CollectionEditGeneralTab({
           />
 
           <div className="space-y-2">
-            <Label htmlFor="objectType">
+            <Label id="objectType-label" htmlFor="objectType">
               {tRoot("objects.filters.objectType")}
             </Label>
             <TypeCombobox
+              id="objectType"
+              aria-labelledby="objectType-label"
               organizationId={currentOrganizationId}
               collectionId={typedCollectionId}
               canDeleteTypes={false}
