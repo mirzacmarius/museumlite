@@ -5,6 +5,8 @@ import { evaluateCapability } from "./capabilities";
 import type {
   FindingDetail,
   FindingKind,
+  FindingReview,
+  IdentifierCarry,
 } from "./documentationQualityValidators";
 import {
   objectEvidence,
@@ -12,6 +14,7 @@ import {
   recordedLegacyText,
 } from "./documentationRequirements";
 import { organizationAccess } from "./featureGates";
+import type { IdentifierRegister } from "./identifiers";
 import { memberPermissionNames } from "./memberPermissions";
 
 type Check = Doc<"documentationChecks">;
@@ -26,9 +29,12 @@ export const CHECK_STALE_AFTER_MS = 10 * 60 * 1000;
  * that read every record closes findings it did not detect again.
  */
 export const CHECK_PHASES = [
+  "catalog_identifiers",
+  "accession_identifiers",
   "objects_active",
   "objects_loaned",
   "objects_deaccessioned",
+  "resolve_duplicate_identifier",
   "resolve_missing_evidence",
 ] as const;
 
@@ -42,9 +48,15 @@ interface PageStats {
   resolved: number;
 }
 
+/** Records of one duplicate identifier shown on its finding. */
+const DUPLICATE_RECORDS_KEPT = 10;
+/** Records of one duplicate identifier read to confirm their reviews. */
+const DUPLICATE_GROUP_READ_LIMIT = 100;
+
 interface PageProgress {
   cursor: string | null;
   done: boolean;
+  carry?: IdentifierCarry;
 }
 
 interface Detection {
@@ -52,6 +64,12 @@ interface Detection {
   /** What was found; a change reopens an accepted finding. */
   signature: string;
   detail: FindingDetail;
+  /**
+   * For findings reviewed in another register (identifier conflict
+   * reviews): that review, or null while it is incomplete. The finding
+   * follows it instead of its own acceptance.
+   */
+  registerReview?: FindingReview | null;
 }
 
 export function normalizeObjectType(value: string) {
@@ -78,41 +96,224 @@ async function recordDetection(
   if (existing?.lastCheckNumber === check.number) return;
   stats.detected++;
   const now = Date.now();
+  const { registerReview } = detection;
   if (!existing) {
+    const status = registerReview ? "accepted" : "open";
     await ctx.db.insert("documentationFindings", {
       organizationId: check.organizationId,
       key: detection.key,
       ...detection.detail,
-      status: "open",
+      status,
       standing: true,
       signature: detection.signature,
       firstCheckNumber: check.number,
       lastCheckNumber: check.number,
       firstDetectedAt: now,
       lastDetectedAt: now,
+      review: registerReview ?? undefined,
     });
-    stats.opened++;
+    if (status === "open") stats.opened++;
     return;
   }
-  const reopen =
-    existing.status === "resolved" ||
-    (existing.status === "accepted" &&
-      existing.signature !== detection.signature);
-  if (reopen) stats.reopened++;
+  const status =
+    registerReview !== undefined
+      ? registerReview
+        ? "accepted"
+        : "open"
+      : existing.status === "resolved" ||
+          (existing.status === "accepted" &&
+            existing.signature !== detection.signature)
+        ? "open"
+        : existing.status;
+  const reopened = status === "open" && existing.status !== "open";
+  if (reopened) stats.reopened++;
   await ctx.db.replace(existing._id, {
     organizationId: existing.organizationId,
     key: existing.key,
     ...detection.detail,
-    status: reopen ? "open" : existing.status,
+    status,
     standing: true,
     signature: detection.signature,
     firstCheckNumber: existing.firstCheckNumber,
     lastCheckNumber: check.number,
     firstDetectedAt: existing.firstDetectedAt,
     lastDetectedAt: now,
-    reopenedAt: reopen ? now : existing.reopenedAt,
-    review: existing.review,
+    reopenedAt: reopened ? now : existing.reopenedAt,
+    review: registerReview ?? existing.review,
   });
+}
+
+/** The latest identifier conflict review, when every record has one. */
+async function identifierRegisterReview(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  register: IdentifierRegister,
+  normalizedIdentifier: string,
+  records: ReadonlyArray<{ _id: Id<"collections"> | Id<"accessions"> }>,
+): Promise<FindingReview | null> {
+  let latest: FindingReview | null = null;
+  for (const record of records) {
+    const review = await ctx.db
+      .query("identifierConflictReviews")
+      .withIndex("by_organization_and_register_and_record", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("register", register)
+          .eq("recordId", record._id),
+      )
+      .order("desc")
+      .first();
+    if (!review || review.normalizedIdentifier !== normalizedIdentifier)
+      return null;
+    if (!latest || review.reviewedAt > latest.reviewedAt)
+      latest = {
+        note: review.note,
+        reviewedBy: review.reviewedBy,
+        reviewedAt: review.reviewedAt,
+      };
+  }
+  return latest;
+}
+
+/** Records sharing one normalized identifier in a register, oldest first. */
+export async function identifierGroup(
+  ctx: Pick<MutationCtx, "db">,
+  organizationId: Id<"organizations">,
+  register: IdentifierRegister,
+  normalizedIdentifier: string,
+  limit: number,
+): Promise<Array<Doc<"collections"> | Doc<"accessions">>> {
+  return register === "catalog"
+    ? await ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("normalizedIdentifier", normalizedIdentifier),
+        )
+        .take(limit)
+    : await ctx.db
+        .query("accessions")
+        .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("normalizedIdentifier", normalizedIdentifier),
+        )
+        .take(limit);
+}
+
+async function duplicateRecordLabel(
+  ctx: MutationCtx,
+  record: Doc<"collections"> | Doc<"accessions">,
+) {
+  if ("title" in record) return record.title;
+  if (!record.collectionId) return "";
+  const object = await ctx.db.get(record.collectionId);
+  return object?.organizationId === record.organizationId ? object.title : "";
+}
+
+async function flushDuplicateGroup(
+  ctx: MutationCtx,
+  check: Check,
+  register: IdentifierRegister,
+  carry: IdentifierCarry,
+  stats: PageStats,
+) {
+  if (carry.count < 2) return;
+  const records = await identifierGroup(
+    ctx,
+    check.organizationId,
+    register,
+    carry.normalizedIdentifier,
+    DUPLICATE_GROUP_READ_LIMIT + 1,
+  );
+  const [first] = records;
+  if (!first || records.length < 2) return;
+  const shown = await Promise.all(
+    records.slice(0, DUPLICATE_RECORDS_KEPT).map(async (record) => ({
+      id: record._id,
+      identifier: record.accessionNumber,
+      label: await duplicateRecordLabel(ctx, record),
+    })),
+  );
+  await recordDetection(
+    ctx,
+    check,
+    {
+      key: `duplicate_identifier:${register}:${carry.normalizedIdentifier}`,
+      signature: records.map((record) => record._id).join(","),
+      detail: {
+        kind: "duplicate_identifier",
+        register,
+        normalizedIdentifier: carry.normalizedIdentifier,
+        identifier: first.accessionNumber,
+        records: shown,
+        recordCount: Math.max(carry.count, records.length),
+      },
+      registerReview:
+        records.length > DUPLICATE_GROUP_READ_LIMIT
+          ? null
+          : await identifierRegisterReview(
+              ctx,
+              check.organizationId,
+              register,
+              carry.normalizedIdentifier,
+              records,
+            ),
+    },
+    stats,
+  );
+}
+
+/**
+ * Walks a register in identifier order, so records sharing an identifier
+ * are adjacent; a group may continue on the next page. Identifiers not yet
+ * indexed are left out (the check reports that the index is incomplete).
+ */
+async function scanIdentifiers(
+  ctx: MutationCtx,
+  check: Check,
+  register: IdentifierRegister,
+  pageSize: number,
+  stats: PageStats,
+): Promise<PageProgress> {
+  const result =
+    register === "catalog"
+      ? await ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+            q
+              .eq("organizationId", check.organizationId)
+              .gte("normalizedIdentifier", ""),
+          )
+          .paginate({ cursor: check.cursor, numItems: pageSize })
+      : await ctx.db
+          .query("accessions")
+          .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+            q
+              .eq("organizationId", check.organizationId)
+              .gte("normalizedIdentifier", ""),
+          )
+          .paginate({ cursor: check.cursor, numItems: pageSize });
+  let carry = check.carry;
+  for (const record of result.page) {
+    const key = record.normalizedIdentifier ?? "";
+    if (carry?.normalizedIdentifier === key) {
+      carry = { normalizedIdentifier: key, count: carry.count + 1 };
+      continue;
+    }
+    if (carry) await flushDuplicateGroup(ctx, check, register, carry, stats);
+    carry = { normalizedIdentifier: key, count: 1 };
+  }
+  if (result.isDone && carry) {
+    await flushDuplicateGroup(ctx, check, register, carry, stats);
+    carry = undefined;
+  }
+  return {
+    cursor: result.isDone ? null : result.continueCursor,
+    done: result.isDone,
+    carry,
+  };
 }
 
 async function scanObjects(
@@ -213,12 +414,24 @@ function runPhase(
   stats: PageStats,
 ): Promise<PageProgress> {
   switch (phase) {
+    case "catalog_identifiers":
+      return scanIdentifiers(ctx, check, "catalog", pageSize, stats);
+    case "accession_identifiers":
+      return scanIdentifiers(ctx, check, "accession", pageSize, stats);
     case "objects_active":
       return scanObjects(ctx, check, "active", pageSize, stats);
     case "objects_loaned":
       return scanObjects(ctx, check, "loaned", pageSize, stats);
     case "objects_deaccessioned":
       return scanObjects(ctx, check, "deaccessioned", pageSize, stats);
+    case "resolve_duplicate_identifier":
+      return resolveUndetected(
+        ctx,
+        check,
+        "duplicate_identifier",
+        pageSize,
+        stats,
+      );
     case "resolve_missing_evidence":
       return resolveUndetected(ctx, check, "missing_evidence", pageSize, stats);
   }
@@ -306,6 +519,7 @@ export async function applyCheckPage(
   await ctx.db.patch(check._id, {
     phase: progress.done ? check.phase + 1 : check.phase,
     cursor: progress.cursor,
+    carry: progress.carry,
     checkpoint,
     checkedRecords: check.checkedRecords + stats.rows,
     detected: check.detected + stats.detected,

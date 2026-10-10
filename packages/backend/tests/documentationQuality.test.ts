@@ -5,6 +5,7 @@ import {
   type QualityErrorData,
   qualityErrorFromError,
 } from "../convex/utils/documentationQualityErrors";
+import { normalizeIdentifier } from "../convex/utils/identifiers";
 import {
   authedForUser,
   type ConvexTest,
@@ -127,6 +128,8 @@ interface ObjectFixture {
   title?: string;
   objectType?: string;
   status?: "active" | "loaned" | "deaccessioned" | "archived";
+  /** Leave the identifier out of the identifier index, like legacy rows. */
+  unindexed?: boolean;
 }
 
 async function insertObject(
@@ -139,6 +142,9 @@ async function insertObject(
     ctx.db.insert("collections", {
       organizationId,
       accessionNumber: fixture.accessionNumber,
+      normalizedIdentifier: fixture.unindexed
+        ? undefined
+        : normalizeIdentifier(fixture.accessionNumber),
       title: fixture.title ?? `Object ${fixture.accessionNumber}`,
       objectType: fixture.objectType,
       status: fixture.status ?? "active",
@@ -193,6 +199,31 @@ async function addAcceptedAssessment(
       acceptedAt: 3,
     });
   });
+}
+
+async function insertAccession(
+  t: ConvexTest,
+  organizationId: Id<"organizations">,
+  fixture: {
+    accessionNumber: string;
+    source?: string;
+    collectionId?: Id<"collections">;
+    donorAccountId?: Id<"accounts">;
+  },
+) {
+  return t.run((ctx) =>
+    ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: fixture.accessionNumber,
+      normalizedIdentifier: normalizeIdentifier(fixture.accessionNumber),
+      dateReceived: Date.UTC(1990, 0, 1),
+      source: fixture.source ?? "See linked account",
+      method: "gift",
+      status: "approved",
+      collectionId: fixture.collectionId,
+      donorAccountId: fixture.donorAccountId,
+    }),
+  );
 }
 
 async function holdUnderOpenEntry(
@@ -517,4 +548,115 @@ test("a check reports missing evidence for objects of the profile's type and sta
       collectionId: undocumented,
     }),
   ).toEqual(before);
+});
+
+test("duplicate identifiers are surfaced without renumbering and reviewed through the identifier register", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  const first = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "Old-01",
+    title: "Bowl",
+  });
+  const second = await insertObject(t, organizationId, adminId, {
+    accessionNumber: " old-01 ",
+    title: "Cup",
+  });
+  await insertObject(t, organizationId, adminId, { accessionNumber: "Old-02" });
+  await insertObject(t, organizationId, adminId, {
+    accessionNumber: "LEGACY-9",
+    unindexed: true,
+  });
+  const accessionA = await insertAccession(t, organizationId, {
+    accessionNumber: "1950.7",
+    collectionId: first,
+  });
+  const accessionB = await insertAccession(t, organizationId, {
+    accessionNumber: "1950.7",
+  });
+
+  const check = await runCheck(t, officer, organizationId);
+
+  expect(check).toMatchObject({
+    status: "completed",
+    identifierIndexIncomplete: true,
+  });
+  const duplicates = await findings(
+    officer,
+    organizationId,
+    "open",
+    "duplicate_identifier",
+  );
+  expect(duplicates).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        register: "catalog",
+        normalizedIdentifier: "old-01",
+        identifier: "Old-01",
+        recordCount: 2,
+        records: [
+          { id: first, identifier: "Old-01", label: "Bowl" },
+          { id: second, identifier: " old-01 ", label: "Cup" },
+        ],
+      }),
+      expect.objectContaining({
+        register: "accession",
+        normalizedIdentifier: "1950.7",
+        recordCount: 2,
+        records: [
+          { id: accessionA, identifier: "1950.7", label: "Bowl" },
+          { id: accessionB, identifier: "1950.7", label: "" },
+        ],
+      }),
+    ]),
+  );
+  expect(duplicates).toHaveLength(2);
+
+  const catalogFinding = duplicates.find(
+    (finding) =>
+      finding.kind === "duplicate_identifier" && finding.register === "catalog",
+  );
+  if (!catalogFinding) throw new Error("Catalog duplicate missing");
+  await officer.mutation(api.documentationQuality.acceptFinding, {
+    findingId: catalogFinding._id,
+    note: "Both register entries are historical; kept as recorded.",
+  });
+  const register = await officer.query(api.identifiers.listConflicts, {
+    organizationId,
+    register: "catalog",
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(register.page.map((row) => [row.identifier, row.review?.note])).toEqual(
+    [
+      ["Old-01", "Both register entries are historical; kept as recorded."],
+      [" old-01 ", "Both register entries are historical; kept as recorded."],
+    ],
+  );
+
+  // Reviewing the accession duplicates in the identifier register is enough.
+  for (const recordId of [accessionA, accessionB])
+    await admin.mutation(api.identifiers.reviewConflict, {
+      organizationId,
+      register: "accession",
+      recordId,
+      note: "Two lots received under one number in 1950.",
+    });
+  await runCheck(t, officer, organizationId);
+  expect(
+    (await findings(officer, organizationId, "accepted")).map((finding) => [
+      finding.kind === "duplicate_identifier" ? finding.register : null,
+      finding.review?.note,
+    ]),
+  ).toEqual(
+    expect.arrayContaining([
+      ["catalog", "Both register entries are historical; kept as recorded."],
+      ["accession", "Two lots received under one number in 1950."],
+    ]),
+  );
+  expect(await findings(officer, organizationId, "open")).toEqual([]);
+  expect(
+    (
+      await officer.query(api.collections.getObjectDetail, {
+        collectionId: second,
+      })
+    )?.collection.accessionNumber,
+  ).toBe(" old-01 ");
 });

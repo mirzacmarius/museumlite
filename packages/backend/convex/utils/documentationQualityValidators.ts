@@ -100,15 +100,9 @@ export const checkedProfileValidator = v.object({
 
 export type CheckedProfile = Infer<typeof checkedProfileValidator>;
 
-/** A duplicate identifier group carried from one page to the next. */
+/** The identifier group a page ended in, continued on the next page. */
 export const identifierCarryValidator = v.object({
   normalizedIdentifier: v.string(),
-  records: v.array(
-    v.object({
-      id: v.union(v.id("collections"), v.id("accessions")),
-      identifier: v.string(),
-    }),
-  ),
   count: v.number(),
 });
 

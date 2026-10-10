@@ -21,7 +21,7 @@ import {
   applyCheckPage,
   CHECK_PAGE_SIZE,
   CHECK_PHASES,
-  CHECK_STALE_AFTER_MS,
+  identifierGroup,
   markCheckPageFailed,
   normalizeObjectType,
   scheduleCheckPage,
@@ -41,6 +41,10 @@ import {
   findingStatusValidator,
 } from "./utils/documentationQualityValidators";
 import { organizationAccess } from "./utils/featureGates";
+import {
+  findIdentifierMatches,
+  recordIdentifierConflictReview,
+} from "./utils/identifiers";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { hasPermission, requireCapability } from "./utils/permissions";
 
@@ -628,5 +632,112 @@ export const listFindings = query({
               .eq("status", args.status),
           )
           .paginate(args.paginationOpts);
+  },
+});
+
+const MAX_REVIEW_NOTE_LENGTH = 2000;
+/** Records of one duplicate identifier that one review may cover. */
+const DUPLICATE_REVIEW_LIMIT = 100;
+
+function reviewNote(value: string) {
+  const note = value.trim();
+  if (!note || note.length > MAX_REVIEW_NOTE_LENGTH)
+    throw qualityError(
+      "REVIEW_NOTE_REQUIRED",
+      `Give a reason of 1-${MAX_REVIEW_NOTE_LENGTH} characters`,
+    );
+  return note;
+}
+
+async function loadFindingForReview(
+  ctx: MutationCtx,
+  findingId: Id<"documentationFindings">,
+) {
+  const finding = await ctx.db.get(findingId);
+  if (!finding) throw qualityError("FINDING_NOT_FOUND", "Finding not found");
+  const userId = await requireQualityAccess(ctx, finding.organizationId);
+  return { finding, userId };
+}
+
+/**
+ * A duplicate identifier is reviewed in the identifier register: every record
+ * sharing it gets a conflict review, and nothing is renumbered.
+ */
+async function reviewDuplicateIdentifier(
+  ctx: MutationCtx,
+  finding: Extract<
+    Doc<"documentationFindings">,
+    { kind: "duplicate_identifier" }
+  >,
+  note: string,
+  userId: Id<"users">,
+) {
+  const { needsBackfill } = await findIdentifierMatches(
+    ctx,
+    finding.organizationId,
+    finding.register,
+    finding.identifier,
+  );
+  if (needsBackfill)
+    throw qualityError(
+      "IDENTIFIER_INDEX_INCOMPLETE",
+      "Complete the identifier index before reviewing duplicates",
+    );
+  const records = await identifierGroup(
+    ctx,
+    finding.organizationId,
+    finding.register,
+    finding.normalizedIdentifier,
+    DUPLICATE_REVIEW_LIMIT + 1,
+  );
+  if (records.length > DUPLICATE_REVIEW_LIMIT)
+    throw qualityError(
+      "DUPLICATE_GROUP_TOO_LARGE",
+      "Review these records in the identifier register",
+    );
+  for (const record of records)
+    await recordIdentifierConflictReview(ctx, {
+      organizationId: finding.organizationId,
+      register: finding.register,
+      record,
+      note,
+      userId,
+    });
+}
+
+/**
+ * Keeps an open finding as a reviewed exception, with the reason. The
+ * record is not changed; the finding reopens if a later check finds
+ * something different.
+ */
+export const acceptFinding = mutation({
+  args: { findingId: v.id("documentationFindings"), note: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { finding, userId } = await loadFindingForReview(
+      ctx,
+      args.findingId,
+    );
+    if (finding.status !== "open")
+      throw qualityError(
+        "FINDING_STATUS_CHANGED",
+        "Only an open finding can be accepted",
+      );
+    const note = reviewNote(args.note);
+    if (finding.kind === "duplicate_identifier")
+      await reviewDuplicateIdentifier(ctx, finding, note, userId);
+    await ctx.db.patch(finding._id, {
+      status: "accepted",
+      review: { note, reviewedBy: userId, reviewedAt: Date.now() },
+    });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: finding.organizationId,
+      userId,
+      action: "documentation_finding_accepted",
+      entityType: "documentationFinding",
+      entityId: finding._id,
+      changes: { kind: finding.kind, key: finding.key, note },
+    });
+    return null;
   },
 });
