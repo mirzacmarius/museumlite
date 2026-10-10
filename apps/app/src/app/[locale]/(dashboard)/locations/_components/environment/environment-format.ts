@@ -130,10 +130,13 @@ export function formatLimits(
   return null;
 }
 
-/** How long ago `timestamp` was at `now`, for example "5 minutes ago". */
+/**
+ * How long ago `timestamp` was at `now`, for example "5 minutes ago". `now` is
+ * rounded down to the minute, so a moment after it reads as this minute.
+ */
 export function formatAge(timestamp: number, now: number, locale: string) {
   const formatter = getRelativeTimeFormatter(locale);
-  const elapsed = timestamp - now;
+  const elapsed = Math.min(timestamp - now, 0);
   if (Math.abs(elapsed) < HOUR) {
     return formatter.format(Math.round(elapsed / MINUTE), "minute");
   }

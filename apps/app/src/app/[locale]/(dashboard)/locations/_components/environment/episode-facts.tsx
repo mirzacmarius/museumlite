@@ -98,9 +98,13 @@ export function EpisodeFacts({
             locale,
           )}
           <span className="block text-xs text-muted-foreground">
-            {t("lasted", {
-              duration: formatDuration(end - episode.startedAt, locale),
-            })}
+            {episode.status === "open"
+              ? t("openFor", {
+                  duration: formatDuration(end - episode.startedAt, locale),
+                })
+              : t("lasted", {
+                  duration: formatDuration(end - episode.startedAt, locale),
+                })}
           </span>
         </Fact>
         <Fact label={t("readings")}>

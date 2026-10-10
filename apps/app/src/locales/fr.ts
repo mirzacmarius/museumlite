@@ -2977,6 +2977,7 @@ export default {
       lastReading: "Dernière mesure",
       endedAt: "Fin",
       lasted: "Durée : {duration}",
+      openFor: "Ouvert depuis {duration}",
       readings: "Mesures",
       readingCounts:
         "{count} comptées, {outOfRange} hors des seuils, {late} en retard",

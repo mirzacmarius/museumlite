@@ -2202,6 +2202,7 @@ export default {
       lastReading: "Latest reading",
       endedAt: "Ended",
       lasted: "Lasted {duration}",
+      openFor: "Open for {duration}",
       readings: "Readings",
       readingCounts:
         "{count} counted, {outOfRange} outside the thresholds, {late} late",

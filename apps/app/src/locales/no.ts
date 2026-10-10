@@ -2889,6 +2889,7 @@ export default {
       lastReading: "Siste måling",
       endedAt: "Sluttet",
       lasted: "Varte {duration}",
+      openFor: "Åpen i {duration}",
       readings: "Målinger",
       readingCounts:
         "{count} talt, {outOfRange} utenfor grensene, {late} forsinket",

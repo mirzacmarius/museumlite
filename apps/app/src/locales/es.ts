@@ -2925,6 +2925,7 @@ export default {
       lastReading: "Última lectura",
       endedAt: "Fin",
       lasted: "Duración: {duration}",
+      openFor: "Abierto desde hace {duration}",
       readings: "Lecturas",
       readingCounts:
         "{count} contadas, {outOfRange} fuera de los umbrales, {late} tardías",

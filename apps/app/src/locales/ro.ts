@@ -3432,6 +3432,7 @@ export default {
       lastReading: "Ultima măsurătoare",
       endedAt: "Încheiat",
       lasted: "A durat {duration}",
+      openFor: "Deschis de {duration}",
       readings: "Măsurători",
       readingCounts:
         "{count} numărate, {outOfRange} în afara pragurilor, {late} întârziate",
