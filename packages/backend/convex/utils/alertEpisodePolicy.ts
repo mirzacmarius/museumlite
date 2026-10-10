@@ -72,11 +72,13 @@ export function hasNoThresholds(
   );
 }
 
-export type EnvironmentalMeasure =
-  | "temperature"
-  | "humidity"
-  | "lightLevel"
-  | "uvLevel";
+export const ENVIRONMENTAL_MEASURES = [
+  "temperature",
+  "humidity",
+  "lightLevel",
+  "uvLevel",
+] as const;
+export type EnvironmentalMeasure = (typeof ENVIRONMENTAL_MEASURES)[number];
 
 /** The values one reading measured; a device sends temperature and humidity. */
 export type MeasuredValues = Partial<Record<EnvironmentalMeasure, number>>;
@@ -172,7 +174,7 @@ export function widenRanges(
   values: MeasuredValues,
 ): ObservedRanges {
   const widened: ObservedRanges = { ...ranges };
-  for (const measure of Object.keys(MEASURE_TEXT) as EnvironmentalMeasure[]) {
+  for (const measure of ENVIRONMENTAL_MEASURES) {
     const value = values[measure];
     if (value === undefined) continue;
     const range = ranges[measure];

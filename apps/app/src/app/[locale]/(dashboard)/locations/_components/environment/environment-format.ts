@@ -165,10 +165,3 @@ export function formatObservationTime(timestamp: number, locale: string) {
     timeStyle: "short",
   });
 }
-
-export const ENVIRONMENTAL_MEASURES: readonly EnvironmentalMeasure[] = [
-  "temperature",
-  "humidity",
-  "lightLevel",
-  "uvLevel",
-];

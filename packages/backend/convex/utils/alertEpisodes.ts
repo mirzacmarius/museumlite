@@ -241,35 +241,38 @@ function trackSource(
   const { source, observedAt } = observation;
   const probe = source.kind === "probe" ? source.probe._id : undefined;
   const tracked = sources.find((entry) => entry.probe === probe);
-  const others = sources.filter((entry) => entry !== tracked);
-  if (outOfRange) return [...others, { probe, lastObservedAt: observedAt }];
+  const withTracked = (next: Doc<"alertEpisodes">["sources"][number]) =>
+    tracked
+      ? sources.map((entry) => (entry === tracked ? next : entry))
+      : [...sources, next];
+  if (outOfRange) return withTracked({ probe, lastObservedAt: observedAt });
   if (!tracked) return sources;
   if (tracked.recoveredAt !== undefined) {
-    return [...others, { ...tracked, lastObservedAt: observedAt }];
+    return withTracked({ ...tracked, lastObservedAt: observedAt });
   }
   const inRangeSince = tracked.inRangeSince ?? observedAt;
   const recovered =
     source.kind === "staff" || observedAt - inRangeSince >= RECOVERY_AFTER_MS;
-  return [
-    ...others,
-    {
-      probe,
-      lastObservedAt: observedAt,
-      inRangeSince,
-      recoveredAt: recovered ? observedAt : undefined,
-    },
-  ];
+  return withTracked({
+    probe,
+    lastObservedAt: observedAt,
+    inRangeSince,
+    recoveredAt: recovered ? observedAt : undefined,
+  });
 }
 
 function describeBreaches(breaches: Breach[]) {
   return breaches.map(describeBreach).join("; ");
 }
 
+/** The episode change a notification is about; it names the dispatch key. */
+type Transition = "opened" | `escalated:${number}` | "recovered";
+
 async function notifyManagers(
   ctx: MutationCtx,
   location: Doc<"locations">,
   episodeId: Id<"alertEpisodes">,
-  transition: string,
+  transition: Transition,
   content: { title: string; message: string },
 ) {
   await dispatchNotification(ctx, {

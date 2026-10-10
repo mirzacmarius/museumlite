@@ -1,13 +1,10 @@
 "use client";
 
 import type { api } from "@v1/backend/convex/_generated/api";
+import { ENVIRONMENTAL_MEASURES } from "@v1/backend/convex/utils/alertEpisodePolicy";
 import type { FunctionReturnType } from "convex/server";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import {
-  ENVIRONMENTAL_MEASURES,
-  formatMeasurement,
-  formatObservationTime,
-} from "./environment-format";
+import { formatMeasurement, formatObservationTime } from "./environment-format";
 import { EnvironmentPill } from "./environment-pill";
 
 export type ReadingEvidence = FunctionReturnType<

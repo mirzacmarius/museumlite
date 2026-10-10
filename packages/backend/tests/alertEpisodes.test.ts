@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import { alertEpisodeErrorCodeFromError } from "../convex/utils/alertEpisodeErrors";
 import {
   addMember,
@@ -123,6 +124,17 @@ async function monitoredPaperStore(t: ConvexTest) {
         })
       ).notifications,
   };
+}
+
+/** The id of the store's open episode, failing the test when none is open. */
+async function openEpisodeId(store: {
+  monitoring: () => Promise<{
+    openEpisode: { _id: Id<"alertEpisodes"> } | null;
+  } | null>;
+}) {
+  const episodeId = (await store.monitoring())?.openEpisode?._id;
+  if (!episodeId) throw new Error("Expected an open episode");
+  return episodeId;
 }
 
 describe("environmental thresholds", () => {
@@ -903,8 +915,7 @@ describe("resolving an episode", () => {
     const store = await monitoredPaperStore(t);
     const start = Date.now() - HOUR;
     await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
-    const episodeId = (await store.monitoring())?.openEpisode?._id;
-    if (!episodeId) throw new Error("Expected an open episode");
+    const episodeId = await openEpisodeId(store);
 
     await store.manager.mutation(api.environmentalMonitoring.resolveEpisode, {
       episodeId,
@@ -949,8 +960,7 @@ describe("resolving an episode", () => {
     const store = await monitoredPaperStore(t);
     const start = Date.now() - 2 * HOUR;
     await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
-    const episodeId = (await store.monitoring())?.openEpisode?._id;
-    if (!episodeId) throw new Error("Expected an open episode");
+    const episodeId = await openEpisodeId(store);
     const resolve = (note: string) =>
       alertEpisodeErrorOf(
         store.manager.mutation(api.environmentalMonitoring.resolveEpisode, {
@@ -975,6 +985,40 @@ describe("resolving an episode", () => {
     );
   });
 
+  test("an episode that opened before later ended ones is still the open one", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    await store.manager.mutation(api.environmentalDevices.bindProbe, {
+      organizationId: store.organizationId,
+      deviceId: store.deviceId,
+      probeId: "probe-2",
+      locationId: store.locationId,
+    });
+    const base = Date.now() - 3 * HOUR;
+    for (const index of [1, 2, 3, 4, 5, 6]) {
+      await store.send({
+        readingId: `a${index}`,
+        observedAt: base + index * 10 * MINUTE,
+        humidity: 61,
+      });
+      await store.manager.mutation(api.environmentalMonitoring.resolveEpisode, {
+        episodeId: await openEpisodeId(store),
+        note: "Door left open during a delivery",
+      });
+    }
+
+    await sendReading(t, store.token, "probe-2", {
+      readingId: "b1",
+      observedAt: base,
+      humidity: 62,
+    });
+    const monitoring = await store.monitoring();
+
+    expect(monitoring?.condition).toBe("out_of_range");
+    expect(monitoring?.openEpisode?.startedAt).toBe(base);
+    expect(monitoring?.recentEpisodes).toHaveLength(5);
+  });
+
   test("staff who do not manage locations cannot resolve an episode", async () => {
     const t = createConvexTestWithRateLimiter();
     const store = await monitoredPaperStore(t);
@@ -983,8 +1027,7 @@ describe("resolving an episode", () => {
       observedAt: Date.now() - MINUTE,
       humidity: 61,
     });
-    const episodeId = (await store.monitoring())?.openEpisode?._id;
-    if (!episodeId) throw new Error("Expected an open episode");
+    const episodeId = await openEpisodeId(store);
     const viewerId = await addMember(t, store.organizationId, "viewer", [
       "locations.read",
     ]);
@@ -1114,8 +1157,7 @@ describe("episode evidence", () => {
       observedAt: start - 10 * MINUTE,
       humidity: 70,
     });
-    const episodeId = (await store.monitoring())?.openEpisode?._id;
-    if (!episodeId) throw new Error("Expected an open episode");
+    const episodeId = await openEpisodeId(store);
 
     const detail = await store.manager.query(
       api.environmentalMonitoring.getEpisode,
@@ -1159,8 +1201,7 @@ describe("episode evidence", () => {
       observedAt: Date.now() - MINUTE,
       humidity: 61,
     });
-    const episodeId = (await store.monitoring())?.openEpisode?._id;
-    if (!episodeId) throw new Error("Expected an open episode");
+    const episodeId = await openEpisodeId(store);
     const [viewerId, moverId] = await Promise.all([
       addMember(t, store.organizationId, "viewer", ["locations.read"]),
       addMember(t, store.organizationId, "mover", ["locations.update"]),

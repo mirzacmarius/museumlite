@@ -63,26 +63,33 @@ export const getLocationMonitoring = query({
     ) {
       return null;
     }
-    const [bindings, latestEpisodes, recentReadings] = await Promise.all([
-      ctx.db
-        .query("environmentalProbes")
-        .withIndex("by_location", (q) => q.eq("locationId", location._id))
-        .take(PROBE_LIMIT),
-      ctx.db
-        .query("alertEpisodes")
-        .withIndex("by_locationId_and_startedAt", (q) =>
-          q.eq("locationId", location._id),
-        )
-        .order("desc")
-        .take(RECENT_EPISODE_LIMIT + 1),
-      ctx.db
-        .query("environmentalReadings")
-        .withIndex("by_location_and_time", (q) =>
-          q.eq("locationId", location._id),
-        )
-        .order("desc")
-        .take(RECENT_READING_LIMIT),
-    ] as const);
+    const [bindings, openEpisode, latestEpisodes, recentReadings] =
+      await Promise.all([
+        ctx.db
+          .query("environmentalProbes")
+          .withIndex("by_location", (q) => q.eq("locationId", location._id))
+          .take(PROBE_LIMIT),
+        ctx.db
+          .query("alertEpisodes")
+          .withIndex("by_locationId_and_status", (q) =>
+            q.eq("locationId", location._id).eq("status", "open"),
+          )
+          .unique(),
+        ctx.db
+          .query("alertEpisodes")
+          .withIndex("by_locationId_and_startedAt", (q) =>
+            q.eq("locationId", location._id),
+          )
+          .order("desc")
+          .take(RECENT_EPISODE_LIMIT + 1),
+        ctx.db
+          .query("environmentalReadings")
+          .withIndex("by_location_and_time", (q) =>
+            q.eq("locationId", location._id),
+          )
+          .order("desc")
+          .take(RECENT_READING_LIMIT),
+      ] as const);
     const probes = await monitoredProbes(
       ctx,
       bindings.filter(
@@ -92,19 +99,15 @@ export const getLocationMonitoring = query({
       ),
       args.now,
     );
-    const openEpisode =
-      latestEpisodes.find((episode) => episode.status === "open") ?? null;
-    const thresholdsSet = !hasNoThresholds(location.environmentalThresholds);
-    const [openSummary, ...recentSummaries] = await summarizeEpisodes(
+    const endedEpisodes = latestEpisodes
+      .filter((episode) => episode.status !== "open")
+      .slice(0, RECENT_EPISODE_LIMIT);
+    const summaries = await summarizeEpisodes(
       ctx,
-      [
-        ...(openEpisode ? [openEpisode] : []),
-        ...latestEpisodes
-          .filter((episode) => episode.status !== "open")
-          .slice(0, RECENT_EPISODE_LIMIT),
-      ],
+      openEpisode ? [openEpisode, ...endedEpisodes] : endedEpisodes,
       args.now,
     );
+    const thresholdsSet = !hasNoThresholds(location.environmentalThresholds);
     return {
       condition: locationCondition({
         episodeOpen: openEpisode !== null,
@@ -115,12 +118,9 @@ export const getLocationMonitoring = query({
         ? (location.environmentalThresholds ?? null)
         : null,
       probes,
-      openEpisode: openEpisode ? (openSummary ?? null) : null,
-      recentEpisodes: openEpisode
-        ? recentSummaries
-        : [openSummary, ...recentSummaries].filter(
-            (summary) => summary !== undefined,
-          ),
+      openEpisode:
+        summaries.find((summary) => summary.status === "open") ?? null,
+      recentEpisodes: summaries.filter((summary) => summary.status !== "open"),
       recentReadings: await toReadingEvidence(ctx, recentReadings),
     };
   },
