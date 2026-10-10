@@ -124,6 +124,24 @@ _Avoid_: Notification (the per-recipient message)
 One email that groups a staff member's notifications from one Organization, sent daily or weekly at the local time they chose. When it is sent it lists only the notifications they may still read and still want emailed.
 _Avoid_: Summary, newsletter
 
+### Environmental monitoring
+
+**Reading**:
+One measurement of a Location's environment, from a probe of a registered device or a staff spot check, with the time it was observed and the time it arrived.
+_Avoid_: Alert (a reading outside the thresholds is evidence, not an alert)
+
+**Late reading**:
+A probe's reading observed before the latest reading already received from that probe. It is kept as evidence but never changes the current condition or an Alert episode's state.
+_Avoid_: Old reading, duplicate
+
+**Alert episode**:
+One sustained breach of a Location's environmental thresholds, from the first current Reading outside them until every source that showed it reads within them again, or a manager resolves it. Later Readings update it instead of raising new alerts; it notifies when it opens, escalates and recovers.
+_Avoid_: Alert (for one Reading), incident
+
+**Silent probe**:
+A bound probe with no Reading observed in the last two hours. A silent probe is never shown as in range.
+_Avoid_: Offline, healthy
+
 ### Library circulation
 
 These terms belong to the optional Library Module and never describe museum Objects.
