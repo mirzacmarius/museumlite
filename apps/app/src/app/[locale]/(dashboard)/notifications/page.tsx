@@ -31,6 +31,10 @@ import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { getNotificationCopy } from "@/lib/notification-copy";
 import { useCurrentLocale, useI18n } from "@/locales/client";
+import {
+  type NotificationEmailOutcome,
+  NotificationEmailStatus,
+} from "./notification-email-status";
 import { NotificationsPageSkeleton } from "./notifications-page-skeleton";
 
 type FilterType = "all" | "unread";
@@ -56,6 +60,7 @@ interface NotificationItem {
   relatedEntityId?: string;
   createdAt: number;
   category?: string;
+  email: NotificationEmailOutcome | null;
 }
 
 interface CategoryTone {
@@ -497,14 +502,20 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
     </div>
   );
 
-  if (link)
-    return (
-      <Link href={link} className="block">
-        {body}
-      </Link>
-    );
-
-  return body;
+  return (
+    <div>
+      {link ? (
+        <Link href={link} className="block">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
+      {notification.email ? (
+        <NotificationEmailStatus email={notification.email} />
+      ) : null}
+    </div>
+  );
 }
 
 export default function NotificationsPage() {
