@@ -9221,6 +9221,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job} er fullført",
+        batchJobFailed: "{job} er fullført med {count} feil",
         newAccessionRequiresApproval: "Ny tilvekst krever godkjenning",
         accessionApproved: "Tilvekst godkjent",
         accessionRequiresYourApproval:

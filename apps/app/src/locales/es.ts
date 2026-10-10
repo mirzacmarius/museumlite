@@ -9353,6 +9353,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job}: proceso completado",
+        batchJobFailed: "{job}: proceso completado con {count} errores",
         newAccessionRequiresApproval:
           "Nueva adquisición pendiente de aprobación",
         accessionApproved: "Adquisición aprobada",

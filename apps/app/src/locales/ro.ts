@@ -10053,6 +10053,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job}: operațiune finalizată",
+        batchJobFailed: "{job}: operațiune finalizată cu {count} erori",
         newAccessionRequiresApproval:
           "O nouă intrare în colecție necesită aprobare",
         accessionApproved: "Intrare în colecție aprobată",

@@ -9019,6 +9019,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job} completed successfully",
+        batchJobFailed: "{job} completed with {count} errors",
         newAccessionRequiresApproval: "New Accession Requires Approval",
         accessionApproved: "Accession Approved",
         accessionRequiresYourApproval: "Accession Requires Your Approval",

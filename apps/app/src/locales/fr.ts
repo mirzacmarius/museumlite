@@ -9317,6 +9317,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job} : traitement terminé",
+        batchJobFailed: "{job} : traitement terminé avec {count} erreurs",
         newAccessionRequiresApproval:
           "Nouvelle entrée en collection à approuver",
         accessionApproved: "Entrée en collection approuvée",
