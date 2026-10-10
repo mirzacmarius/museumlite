@@ -392,7 +392,7 @@ function ProceedsByCurrency({
   return (
     <div className="space-y-0.5">
       {totals.byCurrency.length === 0 ? (
-        <p className="text-lg font-bold text-black sm:text-2xl">—</p>
+        <p className="text-lg font-bold text-black sm:text-2xl">{"—"}</p>
       ) : (
         totals.byCurrency.map((entry) => (
           <p

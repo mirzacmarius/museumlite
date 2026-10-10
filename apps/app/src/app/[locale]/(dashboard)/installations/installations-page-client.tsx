@@ -96,6 +96,10 @@ const priorityColor: Record<TaskPriority, string> = {
 export function InstallationsPageClient() {
   const t = useScopedI18n("untranslatedDashboard.installations");
   const actionErrorMessage = useActionErrorMessage();
+  const taskFailed = (
+    err: unknown,
+    key: "taskCreateFailed" | "taskUpdateFailed",
+  ) => toast.error(actionErrorMessage(err, t(key)));
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const canUseInstallations = useCapabilities().isAvailable("installations");
@@ -219,9 +223,7 @@ export function InstallationsPageClient() {
                           toast.success(t("taskCreated"));
                           setCreateDialogOpen(false);
                         } catch (err) {
-                          toast.error(
-                            actionErrorMessage(err, t("taskCreateFailed")),
-                          );
+                          taskFailed(err, "taskCreateFailed");
                         }
                       }}
                     />
@@ -355,12 +357,7 @@ export function InstallationsPageClient() {
                                   }
                                   toast.success(t("taskUpdated"));
                                 } catch (err) {
-                                  toast.error(
-                                    actionErrorMessage(
-                                      err,
-                                      t("taskUpdateFailed"),
-                                    ),
-                                  );
+                                  taskFailed(err, "taskUpdateFailed");
                                 }
                               }}
                             >

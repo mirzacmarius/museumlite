@@ -87,15 +87,14 @@ const PROPER_NAMES = new Set([
 for (const [locale, dictionary] of Object.entries({ es, fr, no, ro })) {
   test(`${locale} translates every phrase instead of repeating the English`, () => {
     const translations = flattenTranslations(dictionary);
-    const untranslated = Object.entries(english)
-      .filter(
-        ([key, value]) =>
-          translations[key] === value &&
-          words(value).length >= 2 &&
-          !isTechnical(value) &&
-          !PROPER_NAMES.has(key),
-      )
-      .map(([key]) => key);
+    const untranslated = Object.entries(english).flatMap(([key, value]) =>
+      translations[key] === value &&
+      words(value).length >= 2 &&
+      !isTechnical(value) &&
+      !PROPER_NAMES.has(key)
+        ? [key]
+        : [],
+    );
     expect(untranslated).toEqual([]);
   });
 }
@@ -153,23 +152,21 @@ for (const [locale, dictionary] of Object.entries({ es, fr, no, ro })) {
     const translations = flattenTranslations(dictionary);
     const drifted = GLOSSARY_TERMS.flatMap(
       ({ english: term, accepted, avoided, exceptions }) =>
-        Object.entries(english)
-          .filter(([key, value]) => {
-            if (
-              !term.test(value.replace(/\{[^{}]+\}/g, "")) ||
-              OWN_VOCABULARY.test(key) ||
-              isTechnical(value) ||
-              exceptions?.has(key)
-            ) {
-              return false;
-            }
-            const translated = translations[key] ?? "";
-            return (
-              accepted?.[locale as Locale].test(translated) === false ||
-              avoided?.[locale as Locale].test(translated) === true
-            );
-          })
-          .map(([key]) => key),
+        Object.entries(english).flatMap(([key, value]) => {
+          if (
+            !term.test(value.replace(/\{[^{}]+\}/g, "")) ||
+            OWN_VOCABULARY.test(key) ||
+            isTechnical(value) ||
+            exceptions?.has(key)
+          ) {
+            return [];
+          }
+          const translated = translations[key] ?? "";
+          return accepted?.[locale as Locale].test(translated) === false ||
+            avoided?.[locale as Locale].test(translated) === true
+            ? [key]
+            : [];
+        }),
     );
     expect(drifted).toEqual([]);
   });
@@ -194,13 +191,13 @@ const ITEM_NAMESPACES =
 for (const [locale, dictionary] of Object.entries({ en, es, fr, no, ro })) {
   test(`${locale} never calls an object an item outside the Library Module`, () => {
     const itemWord = ITEM_WORDS[locale as keyof typeof ITEM_WORDS];
-    const items = Object.entries(flattenTranslations(dictionary))
-      .filter(
-        ([key, value]) =>
-          !ITEM_NAMESPACES.test(key) &&
-          itemWord.test(value.replace(/\{[^{}]+\}/g, "")),
-      )
-      .map(([key]) => key);
+    const items = Object.entries(flattenTranslations(dictionary)).flatMap(
+      ([key, value]) =>
+        !ITEM_NAMESPACES.test(key) &&
+        itemWord.test(value.replace(/\{[^{}]+\}/g, ""))
+          ? [key]
+          : [],
+    );
     expect(items).toEqual([]);
   });
 }
