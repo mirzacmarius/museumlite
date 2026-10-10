@@ -31,7 +31,10 @@ export async function objectStage(
     .take(LOAN_LINKS_CHECKED);
   for (const link of links) {
     const loan = await ctx.db.get(link.loanId);
-    if (loan?.organizationId === object.organizationId && loan.type === "incoming")
+    if (
+      loan?.organizationId === object.organizationId &&
+      loan.type === "incoming"
+    )
       return "borrowed";
   }
   return "collection";

@@ -285,10 +285,7 @@ export const updateProfile = mutation({
   args: { profileId: v.id("documentationProfiles"), ...profileDefinitionArgs },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { profile, userId } = await loadProfileForChange(
-      ctx,
-      args.profileId,
-    );
+    const { profile, userId } = await loadProfileForChange(ctx, args.profileId);
     const definition = profileDefinition(args);
     await ctx.db.patch(profile._id, {
       ...definition,
@@ -312,10 +309,7 @@ export const archiveProfile = mutation({
   args: { profileId: v.id("documentationProfiles") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { profile, userId } = await loadProfileForChange(
-      ctx,
-      args.profileId,
-    );
+    const { profile, userId } = await loadProfileForChange(ctx, args.profileId);
     if (profile.status === "archived") return null;
     await ctx.db.patch(profile._id, {
       status: "archived",
@@ -337,10 +331,7 @@ export const restoreProfile = mutation({
   args: { profileId: v.id("documentationProfiles") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { profile, userId } = await loadProfileForChange(
-      ctx,
-      args.profileId,
-    );
+    const { profile, userId } = await loadProfileForChange(ctx, args.profileId);
     if (profile.status === "active") return null;
     await requireActiveProfileSlot(ctx, profile.organizationId);
     await ctx.db.patch(profile._id, {
@@ -546,10 +537,7 @@ export const startCheck = mutation({
   },
 });
 
-async function loadCheck(
-  ctx: MutationCtx,
-  checkId: Id<"documentationChecks">,
-) {
+async function loadCheck(ctx: MutationCtx, checkId: Id<"documentationChecks">) {
   const check = await ctx.db.get(checkId);
   if (!check) throw qualityError("CHECK_NOT_FOUND", "Check not found");
   const userId = await requireQualityAccess(ctx, check.organizationId);
@@ -804,10 +792,7 @@ export const acceptFinding = mutation({
   args: { findingId: v.id("documentationFindings"), note: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { finding, userId } = await loadFindingForReview(
-      ctx,
-      args.findingId,
-    );
+    const { finding, userId } = await loadFindingForReview(ctx, args.findingId);
     if (finding.status !== "open")
       throw qualityError(
         "FINDING_STATUS_CHANGED",
@@ -840,10 +825,7 @@ export const reopenFinding = mutation({
   args: { findingId: v.id("documentationFindings") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { finding, userId } = await loadFindingForReview(
-      ctx,
-      args.findingId,
-    );
+    const { finding, userId } = await loadFindingForReview(ctx, args.findingId);
     if (finding.status !== "accepted")
       throw qualityError(
         "FINDING_STATUS_CHANGED",
@@ -926,7 +908,10 @@ export const getFinding = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const findingId = ctx.db.normalizeId("documentationFindings", args.findingId);
+    const findingId = ctx.db.normalizeId(
+      "documentationFindings",
+      args.findingId,
+    );
     const finding = findingId ? await ctx.db.get(findingId) : null;
     if (
       !finding ||

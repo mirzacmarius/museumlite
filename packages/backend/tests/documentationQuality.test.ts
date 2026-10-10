@@ -1,13 +1,13 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
   type QualityErrorData,
   qualityErrorFromError,
 } from "../convex/utils/documentationQualityErrors";
+import { normalizeIdentifier } from "../convex/utils/identifiers";
 import { notificationEntityHref } from "../convex/utils/notificationLinks";
 import { workErrorFromError } from "../convex/utils/workErrors";
-import { normalizeIdentifier } from "../convex/utils/identifiers";
 import {
   authedForUser,
   type ConvexTest,
@@ -259,6 +259,8 @@ async function holdUnderOpenEntry(
   });
 }
 
+const MAX_CHECK_PAGES = 1000;
+
 /** Starts a check as `member`, runs it to the end and returns its summary. */
 async function runCheck(
   t: ConvexTest,
@@ -269,7 +271,7 @@ async function runCheck(
   const checkId = await member.mutation(api.documentationQuality.startCheck, {
     organizationId,
   });
-  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  await t.finishAllScheduledFunctions(vi.runAllTimers, MAX_CHECK_PAGES);
   const overview = await member.query(
     api.documentationQuality.getCheckOverview,
     { organizationId },
@@ -375,10 +377,9 @@ test("a profile without an object type applies to every type, and edits, archive
   await admin.mutation(api.documentationQuality.archiveProfile, {
     profileId,
   });
-  let { profiles } = await admin.query(
-    api.documentationQuality.listProfiles,
-    { organizationId },
-  );
+  let { profiles } = await admin.query(api.documentationQuality.listProfiles, {
+    organizationId,
+  });
   expect(profiles).toEqual([
     expect.objectContaining({
       _id: profileId,
@@ -427,9 +428,9 @@ test("profile definitions are validated with coded errors", async () => {
 
   for (let index = 0; index < 20; index++)
     await create({ name: `Profile ${index}` });
-  expect(await qualityFailureOf(create({ name: "One too many" }))).toMatchObject(
-    { code: "PROFILE_LIMIT_REACHED" },
-  );
+  expect(
+    await qualityFailureOf(create({ name: "One too many" })),
+  ).toMatchObject({ code: "PROFILE_LIMIT_REACHED" });
 });
 
 test("members without the documentation quality capability are refused and outsiders learn nothing", async () => {
@@ -626,12 +627,12 @@ test("duplicate identifiers are surfaced without renumbering and reviewed throug
     register: "catalog",
     paginationOpts: { numItems: 10, cursor: null },
   });
-  expect(register.page.map((row) => [row.identifier, row.review?.note])).toEqual(
-    [
-      ["Old-01", "Both register entries are historical; kept as recorded."],
-      [" old-01 ", "Both register entries are historical; kept as recorded."],
-    ],
-  );
+  expect(
+    register.page.map((row) => [row.identifier, row.review?.note]),
+  ).toEqual([
+    ["Old-01", "Both register entries are historical; kept as recorded."],
+    [" old-01 ", "Both register entries are historical; kept as recorded."],
+  ]);
 
   // Reviewing the accession duplicates in the identifier register is enough.
   for (const recordId of [accessionA, accessionB])
@@ -851,7 +852,9 @@ test("orphan references are reported as stored and the references are kept", asy
   const selfParent = await insertObject(t, organizationId, adminId, {
     accessionNumber: "1960.2",
   });
-  await t.run((ctx) => ctx.db.patch(selfParent, { parentObjectId: selfParent }));
+  await t.run((ctx) =>
+    ctx.db.patch(selfParent, { parentObjectId: selfParent }),
+  );
   const accessionId = await insertAccession(t, organizationId, {
     accessionNumber: "1960.A",
     collectionId: goneObject,
@@ -868,7 +871,12 @@ test("orphan references are reported as stored and the references are kept", asy
   );
   const summary = orphans.map((finding) =>
     finding.kind === "orphan_reference"
-      ? [finding.subject.id, finding.field, finding.referencedId, finding.problem]
+      ? [
+          finding.subject.id,
+          finding.field,
+          finding.referencedId,
+          finding.problem,
+        ]
       : null,
   );
   expect(summary).toEqual(
@@ -883,8 +891,11 @@ test("orphan references are reported as stored and the references are kept", asy
   );
   expect(summary).toHaveLength(6);
   expect(
-    (await officer.query(api.collections.getObjectDetail, { collectionId: orphan }))
-      ?.collection,
+    (
+      await officer.query(api.collections.getObjectDetail, {
+        collectionId: orphan,
+      })
+    )?.collection,
   ).toMatchObject({
     parentObjectId: foreign.objectId,
     currentLocationId: goneLocation,
@@ -987,9 +998,10 @@ test("a repaired finding resolves on the next check and reopens if the gap retur
   expect(await runCheck(t, officer, organizationId)).toMatchObject({
     resolved: 1,
   });
-  expect(await onlyFinding(officer, organizationId, "resolved")).toMatchObject(
-    { resolvedCheckNumber: 2, standing: false },
-  );
+  expect(await onlyFinding(officer, organizationId, "resolved")).toMatchObject({
+    resolvedCheckNumber: 2,
+    standing: false,
+  });
 
   await t.run((ctx) =>
     ctx.db.patch(objectId, { currentLocationId: undefined }),
@@ -1293,14 +1305,14 @@ test("repair work on a finding is assigned as a case task that reaches the owner
   };
 
   expect(
-    (
-      await officer.query(api.caseTasks.listAssignableMembers, caseRef)
-    ).map((member) => member.userId),
+    (await officer.query(api.caseTasks.listAssignableMembers, caseRef)).map(
+      (member) => member.userId,
+    ),
   ).toEqual(expect.arrayContaining([adminId, officerId, ownerId]));
   expect(
-    (
-      await officer.query(api.caseTasks.listAssignableMembers, caseRef)
-    ).map((member) => member.userId),
+    (await officer.query(api.caseTasks.listAssignableMembers, caseRef)).map(
+      (member) => member.userId,
+    ),
   ).not.toContain(viewerId);
   const ineligible = await officer
     .mutation(api.caseTasks.create, {
@@ -1323,10 +1335,12 @@ test("repair work on a finding is assigned as a case task that reaches the owner
   });
 
   expect(
-    (await owner.query(api.caseTasks.listMyWork, {
-      organizationId,
-      paginationOpts: { numItems: 10, cursor: null },
-    })).page,
+    (
+      await owner.query(api.caseTasks.listMyWork, {
+        organizationId,
+        paginationOpts: { numItems: 10, cursor: null },
+      })
+    ).page,
   ).toMatchObject([
     {
       _id: taskId,
@@ -1372,4 +1386,179 @@ test("repair work on a finding is assigned as a case task that reaches the owner
       (error) => error,
     );
   expect(foreignCase).not.toBeNull();
+});
+
+test("a check of a large collection runs in bounded pages and reports complete, deterministic results", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    ...LOCATED,
+  });
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    name: "Described paintings",
+    objectType: "Painting",
+    stages: ["collection"],
+    requirements: ["description"],
+  });
+  const locationId = await t.run((ctx) =>
+    ctx.db.insert("locations", {
+      organizationId,
+      name: "Store",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
+  const total = 1200;
+  for (let batch = 0; batch < total; batch += 200)
+    await t.run(async (ctx) => {
+      for (let index = batch; index < batch + 200; index++) {
+        // 30 objects share one identifier, so the group spans pages.
+        const accessionNumber =
+          index < 30 ? "SHARED-1" : `2000.${String(index).padStart(4, "0")}`;
+        await ctx.db.insert("collections", {
+          organizationId,
+          accessionNumber,
+          normalizedIdentifier: normalizeIdentifier(accessionNumber),
+          title: `Object ${index}`,
+          objectType: index % 3 === 0 ? "Painting" : "Print",
+          status: "active",
+          catalogedBy: adminId,
+          catalogedAt: 1,
+          currentLocationId: index % 2 === 0 ? locationId : undefined,
+        });
+      }
+    });
+
+  const check = await runCheck(t, officer, organizationId);
+
+  // Odd objects lack a location (600); every third object is an
+  // undescribed painting (400); one identifier is shared by 30 objects.
+  expect(check).toMatchObject({
+    status: "completed",
+    checkedRecords: total,
+    detected: 600 + 400 + 1,
+    opened: 1001,
+  });
+  const duplicates = await findings(
+    officer,
+    organizationId,
+    "open",
+    "duplicate_identifier",
+  );
+  expect(duplicates).toMatchObject([
+    { normalizedIdentifier: "shared-1", recordCount: 30 },
+  ]);
+  expect(
+    duplicates[0]?.kind === "duplicate_identifier" &&
+      duplicates[0].records.length,
+  ).toBe(10);
+
+  const rerun = await runCheck(t, officer, organizationId);
+  expect(rerun).toMatchObject({
+    detected: 1001,
+    opened: 0,
+    reopened: 0,
+    resolved: 0,
+  });
+});
+
+test("purging an organization without permanent evidence removes its quality records", async () => {
+  const { t, adminId, organizationId } = await setup();
+  await t.run(async (ctx) => {
+    await ctx.db.patch(organizationId, { type: "library" });
+    const profileId = await ctx.db.insert("documentationProfiles", {
+      organizationId,
+      name: "Located",
+      stages: ["collection"],
+      requirements: ["current_location"],
+      status: "active",
+      version: 1,
+      createdBy: adminId,
+      createdAt: 1,
+      updatedBy: adminId,
+      updatedAt: 1,
+    });
+    await ctx.db.insert("documentationChecks", {
+      organizationId,
+      number: 1,
+      status: "completed",
+      requestedBy: adminId,
+      actorId: adminId,
+      profiles: [],
+      partiesChecked: false,
+      identifierIndexIncomplete: false,
+      phase: 0,
+      cursor: null,
+      checkpoint: 1,
+      attempts: 1,
+      checkedRecords: 0,
+      detected: 0,
+      opened: 0,
+      reopened: 0,
+      resolved: 0,
+      startedAt: 1,
+      updatedAt: 1,
+    });
+    await ctx.db.insert("documentationFindings", {
+      organizationId,
+      key: "missing_evidence:seeded",
+      kind: "missing_evidence",
+      // Objects are permanent evidence, so the seeded one lives elsewhere.
+      objectId: await ctx.db.insert("collections", {
+        organizationId: await ctx.db.insert("organizations", {
+          name: "Elsewhere",
+          slug: "elsewhere",
+          type: "museum",
+        }),
+        accessionNumber: "X-1",
+        title: "Elsewhere",
+        status: "active",
+        catalogedBy: adminId,
+        catalogedAt: 1,
+      }),
+      objectIdentifier: "X-1",
+      objectTitle: "Elsewhere",
+      stage: "collection",
+      profileId,
+      profileName: "Located",
+      missing: ["current_location"],
+      status: "open",
+      standing: true,
+      signature: "current_location",
+      firstCheckNumber: 1,
+      lastCheckNumber: 1,
+      firstDetectedAt: 1,
+      lastDetectedAt: 1,
+    });
+  });
+
+  await t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+    organizationIds: [organizationId],
+    dryRun: false,
+  });
+
+  expect(
+    await t.run(async (ctx) => ({
+      profiles: await ctx.db
+        .query("documentationProfiles")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(1),
+      checks: await ctx.db
+        .query("documentationChecks")
+        .withIndex("by_organization_and_number", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(1),
+      findings: await ctx.db
+        .query("documentationFindings")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .take(1),
+    })),
+  ).toEqual({ profiles: [], checks: [], findings: [] });
 });

@@ -423,9 +423,9 @@ describe("sites CRUD operations", () => {
       incomplete: false,
       locations: [{ id: eastWingId, name: "East wing" }],
     });
-    expect(
-      (await authed.query(api.sites.get, { siteId }))?.isActive,
-    ).toBe(true);
+    expect((await authed.query(api.sites.get, { siteId }))?.isActive).toBe(
+      true,
+    );
 
     await t.run((ctx) => ctx.db.patch(eastWingId, { isActive: false }));
     expect(await refusal()).toMatchObject({
@@ -438,9 +438,9 @@ describe("sites CRUD operations", () => {
       ctx.db.patch(objectId, { currentLocationId: otherLocationId }),
     );
     expect(await refusal()).toBeNull();
-    expect(
-      (await authed.query(api.sites.get, { siteId }))?.isActive,
-    ).toBe(false);
+    expect((await authed.query(api.sites.get, { siteId }))?.isActive).toBe(
+      false,
+    );
   });
 
   test("should not archive primary site", async () => {

@@ -302,7 +302,11 @@ export const documentationFindingDocValidator = v.union(
     ...findingBaseFields,
     ...missingEvidenceFields,
   }),
-  v.object({ ...findingSystemFields, ...findingBaseFields, ...legacyLinkFields }),
+  v.object({
+    ...findingSystemFields,
+    ...findingBaseFields,
+    ...legacyLinkFields,
+  }),
   v.object({
     ...findingSystemFields,
     ...findingBaseFields,

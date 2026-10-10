@@ -8,6 +8,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { resolveCase } from "./auditLog";
+import { CAPABILITY_MATRIX } from "./utils/capabilities";
 import {
   type CaseTaskCaseType,
   type CaseTaskEvidenceReference,
@@ -16,7 +17,6 @@ import {
   caseTaskEvidenceReferenceValidator,
   caseTaskStatusValidator,
 } from "./utils/caseTaskValidators";
-import { CAPABILITY_MATRIX } from "./utils/capabilities";
 import { findingLabel, findingObjectIds } from "./utils/documentationFindings";
 import { hasFeatureAccess } from "./utils/featureGates";
 import {

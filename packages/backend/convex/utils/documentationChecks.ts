@@ -23,8 +23,8 @@ import {
   type LegacyPartyCandidate,
 } from "./partyLinks";
 import {
-  type BrokenReference,
   accessionReferenceProblems,
+  type BrokenReference,
   deaccessionReferenceProblems,
   objectReferenceProblems,
 } from "./recordReferences";
@@ -556,12 +556,14 @@ async function resolveUndetected(
 ): Promise<PageProgress> {
   const undetected = await ctx.db
     .query("documentationFindings")
-    .withIndex("by_organization_and_standing_and_kind_and_lastCheckNumber", (q) =>
-      q
-        .eq("organizationId", check.organizationId)
-        .eq("standing", true)
-        .eq("kind", kind)
-        .lt("lastCheckNumber", check.number),
+    .withIndex(
+      "by_organization_and_standing_and_kind_and_lastCheckNumber",
+      (q) =>
+        q
+          .eq("organizationId", check.organizationId)
+          .eq("standing", true)
+          .eq("kind", kind)
+          .lt("lastCheckNumber", check.number),
     )
     .take(pageSize);
   const now = Date.now();
