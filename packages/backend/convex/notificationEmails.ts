@@ -626,13 +626,14 @@ export const retry = mutation({
 });
 
 const SWEEP_BATCH = 100;
-const PURGE_INTENT_BATCH = 20;
+const PURGE_BATCH = 20;
 const PURGE_DOCUMENT_BUDGET = 400;
 
 /**
  * Cron entry point. Reschedules pending emails whose attempt is overdue (a
- * lost scheduled run or an expired in-flight lease), then starts the
- * retention purge when intents have aged out.
+ * lost scheduled run, a digest whose time passed unsent, or an expired
+ * in-flight lease), then starts the retention purge when email logs or
+ * intents have aged out.
  */
 export const sweep = internalMutation({
   args: {},
@@ -656,12 +657,16 @@ export const sweep = internalMutation({
       );
     }
 
-    const expired = await ctx.db
-      .query("notificationIntents")
-      .withIndex("by_creation_time", (q) =>
-        q.lt("_creationTime", now - DELIVERY_RETENTION_MS),
-      )
-      .first();
+    const cutoff = now - DELIVERY_RETENTION_MS;
+    const expired =
+      (await ctx.db
+        .query("notificationEmailDeliveries")
+        .withIndex("by_creation_time", (q) => q.lt("_creationTime", cutoff))
+        .first()) ??
+      (await ctx.db
+        .query("notificationIntents")
+        .withIndex("by_creation_time", (q) => q.lt("_creationTime", cutoff))
+        .first());
     if (expired) {
       await ctx.scheduler.runAfter(
         0,
@@ -673,7 +678,41 @@ export const sweep = internalMutation({
   },
 });
 
-/** Deletes an intent's email deliveries and attempts within `budget` deletes. */
+/**
+ * Deletes an email delivery with its attempts and, for a digest, its list of
+ * notifications, within `budget` deletes. Returns the budget left.
+ */
+async function purgeDelivery(
+  ctx: MutationCtx,
+  deliveryId: Id<"notificationEmailDeliveries">,
+  budget: number,
+) {
+  let remaining = budget;
+  const attempts = await ctx.db
+    .query("notificationEmailAttempts")
+    .withIndex("by_deliveryId_and_attemptNumber", (q) =>
+      q.eq("deliveryId", deliveryId),
+    )
+    .take(remaining);
+  for (const attempt of attempts) {
+    await ctx.db.delete(attempt._id);
+  }
+  remaining -= attempts.length;
+  if (remaining <= 0) return 0;
+  const items = await ctx.db
+    .query("notificationDigestItems")
+    .withIndex("by_deliveryId", (q) => q.eq("deliveryId", deliveryId))
+    .take(remaining);
+  for (const item of items) {
+    await ctx.db.delete(item._id);
+  }
+  remaining -= items.length;
+  if (remaining <= 0) return 0;
+  await ctx.db.delete(deliveryId);
+  return remaining - 1;
+}
+
+/** Deletes an intent and any email deliveries still kept for it within `budget` deletes. */
 async function purgeIntent(
   ctx: MutationCtx,
   intentId: Id<"notificationIntents">,
@@ -685,19 +724,7 @@ async function purgeIntent(
     .withIndex("by_intentId", (q) => q.eq("intentId", intentId))
     .take(remaining);
   for (const delivery of deliveries) {
-    const attempts = await ctx.db
-      .query("notificationEmailAttempts")
-      .withIndex("by_deliveryId_and_attemptNumber", (q) =>
-        q.eq("deliveryId", delivery._id),
-      )
-      .take(remaining);
-    for (const attempt of attempts) {
-      await ctx.db.delete(attempt._id);
-    }
-    remaining -= attempts.length;
-    if (remaining <= 0) return 0;
-    await ctx.db.delete(delivery._id);
-    remaining -= 1;
+    remaining = await purgeDelivery(ctx, delivery._id, remaining);
     if (remaining <= 0) return 0;
   }
   await ctx.db.delete(intentId);
@@ -705,26 +732,41 @@ async function purgeIntent(
 }
 
 /**
- * Retention: intents and their email logs are operational telemetry kept for
- * 30 days, which is also how long an idempotency key holds. In-app
- * notifications are kept until their recipient deletes them.
+ * Retention: intents, email deliveries (instant and digest) and their
+ * attempts are operational telemetry kept for 30 days, which is also how long
+ * an idempotency key holds. In-app notifications are kept until their
+ * recipient deletes them.
  */
 export const purgeExpired = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const intents = await ctx.db
-      .query("notificationIntents")
-      .withIndex("by_creation_time", (q) =>
-        q.lt("_creationTime", Date.now() - DELIVERY_RETENTION_MS),
-      )
-      .take(PURGE_INTENT_BATCH);
+    const cutoff = Date.now() - DELIVERY_RETENTION_MS;
     let budget = PURGE_DOCUMENT_BUDGET;
+    const deliveries = await ctx.db
+      .query("notificationEmailDeliveries")
+      .withIndex("by_creation_time", (q) => q.lt("_creationTime", cutoff))
+      .take(PURGE_BATCH);
+    for (const delivery of deliveries) {
+      budget = await purgeDelivery(ctx, delivery._id, budget);
+      if (budget <= 0) break;
+    }
+    const intents =
+      budget > 0
+        ? await ctx.db
+            .query("notificationIntents")
+            .withIndex("by_creation_time", (q) => q.lt("_creationTime", cutoff))
+            .take(PURGE_BATCH)
+        : [];
     for (const intent of intents) {
       budget = await purgeIntent(ctx, intent._id, budget);
       if (budget <= 0) break;
     }
-    if (budget <= 0 || intents.length === PURGE_INTENT_BATCH) {
+    if (
+      budget <= 0 ||
+      deliveries.length === PURGE_BATCH ||
+      intents.length === PURGE_BATCH
+    ) {
       await ctx.scheduler.runAfter(
         0,
         internal.notificationEmails.purgeExpired,

@@ -3,7 +3,11 @@ import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import type { EmailSchedule } from "../convex/utils/notificationPreferences";
 import type { NotificationCategory } from "../convex/utils/notificationTypes";
-import { addMember, emailChoices } from "./notificationFixtures";
+import {
+  addMember,
+  emailChoices,
+  notificationErrorOf,
+} from "./notificationFixtures";
 import {
   authedForUser,
   type ConvexTest,
@@ -21,7 +25,19 @@ interface SentEmail {
   text: string;
 }
 
+const DAY = 24 * 60 * 60 * 1000;
+
 const accepted = () => Response.json({ id: "email-fixture" }, { status: 200 });
+const refused = () =>
+  Response.json(
+    { name: "validation_error", message: "Invalid `to` field" },
+    { status: 422 },
+  );
+const unavailable = () =>
+  Response.json(
+    { name: "service_unavailable", message: "Try again later" },
+    { status: 503 },
+  );
 
 /** Stands in for the email provider; replies in order, then accepts. */
 function emailProvider(...replies: Array<() => Response>) {
@@ -84,6 +100,33 @@ async function revokePermission(
   });
 }
 
+async function grantPermissions(
+  t: ConvexTest,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+  permissionNames: string[],
+) {
+  await t.run(async (ctx) => {
+    const membership = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user_and_organization", (q) =>
+        q.eq("userId", userId).eq("organizationId", organizationId),
+      )
+      .unique();
+    if (!membership) throw new Error("Expected a membership");
+    for (const name of permissionNames) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name,
+        category: name.split(".")[0] ?? "organization",
+      });
+      await ctx.db.insert("rolePermissions", {
+        roleId: membership.roleId,
+        permissionId,
+      });
+    }
+  });
+}
+
 async function setupDigestThread(t: ConvexTest) {
   const author = await createOrgUserCollectionWithPermissions(t, [
     "collections.read",
@@ -111,6 +154,7 @@ async function setupDigestThread(t: ConvexTest) {
   const curator = authedForUser(t, curatorId);
   return {
     organizationId: author.organizationId,
+    author: authorClient,
     curatorId,
     curator,
     harbourMap,
@@ -431,5 +475,350 @@ describe("daily and weekly digests", () => {
       status: "cancelled",
       lastErrorCode: "recipient_removed",
     });
+  });
+
+  test("replaying the job that notified and the digest's own run sends one digest listing the notification once", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await grantPermissions(t, thread.curatorId, thread.organizationId, [
+      "organization.manage_settings",
+      "loans.read",
+    ]);
+    await thread.chooseEmail(["reminders"], DAILY_AT_EIGHT);
+    const sent = emailProvider();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("insurancePolicies", {
+        organizationId: thread.organizationId,
+        policyNumber: "POL-DIGEST",
+        carrier: "Fine Art Underwriters",
+        policyType: "scheduled",
+        coverageAmount: 1_000_000,
+        currency: "EUR",
+        effectiveDate: Date.now() - 100 * DAY,
+        expirationDate: Date.now() + 7 * DAY,
+        status: "active",
+        createdBy: thread.curatorId,
+        createdAt: Date.now(),
+      });
+    });
+
+    await t.mutation(internal.insurance.checkExpiringPoliciesInternal, {});
+    await t.mutation(internal.insurance.checkExpiringPoliciesInternal, {});
+    await advanceTo(t, "2026-10-13T12:00:00Z");
+    const [reminder] = await thread.center();
+    const deliveryId = reminder?.email?.deliveryId;
+    if (!deliveryId) throw new Error("Expected a digest");
+    await t.action(internal.notificationEmailsActions.attemptDelivery, {
+      deliveryId,
+      attempt: 1,
+    });
+    await t.mutation(internal.notificationEmails.sweep, {});
+    await advanceTo(t, "2026-10-13T13:00:00Z");
+    await t.mutation(internal.notificationEmails.sweep, {});
+    await runDueWork(t);
+
+    expect(sent).toHaveLength(1);
+    expect(
+      sent[0]?.text.match(/Insurance Policy Expiring in 7 Days/g),
+    ).toHaveLength(1);
+    expect(await thread.center()).toHaveLength(1);
+  });
+
+  test("a refused digest is reported on each of its notifications, and only its recipient can resend it", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    const sent = emailProvider(refused);
+    await thread.mentionCurator(thread.harbourMap);
+    await thread.mentionCurator(thread.bronzeBell);
+
+    await advanceTo(t, "2026-10-13T12:00:00Z");
+
+    const failed = await thread.center();
+    expect(failed.map(({ email }) => email)).toMatchObject([
+      { status: "failed_permanent", lastResponseStatus: 422 },
+      { status: "failed_permanent", lastResponseStatus: 422 },
+    ]);
+    const deliveryId = failed[0]?.email?.deliveryId;
+    if (!deliveryId) throw new Error("Expected a digest");
+    expect(failed[1]?.email?.deliveryId).toBe(deliveryId);
+    expect(
+      await notificationErrorOf(
+        thread.author.mutation(api.notificationEmails.retry, { deliveryId }),
+      ),
+    ).toBe("EMAIL_DELIVERY_NOT_FOUND");
+    expect(
+      await thread.author.query(api.notificationEmails.get, { deliveryId }),
+    ).toBeNull();
+
+    await thread.curator.mutation(api.notificationEmails.retry, { deliveryId });
+    await runDueWork(t);
+
+    expect(sent).toHaveLength(2);
+    expect(sent[0]?.idempotencyKey?.startsWith(`${deliveryId}:0:`)).toBe(true);
+    expect(sent[1]?.idempotencyKey?.startsWith(`${deliveryId}:1:`)).toBe(true);
+    expect(sent[1]?.text).toContain("Harbour Map");
+    expect(sent[1]?.text).toContain("Bronze Bell");
+    expect((await thread.center()).map(({ email }) => email)).toMatchObject([
+      { status: "succeeded", attemptCount: 2 },
+      { status: "succeeded", attemptCount: 2 },
+    ]);
+    const trace = await thread.curator.query(api.notificationEmails.get, {
+      deliveryId,
+    });
+    expect(
+      trace?.attempts.map(({ attemptNumber, outcome }) => ({
+        attemptNumber,
+        outcome,
+      })),
+    ).toEqual([
+      { attemptNumber: 2, outcome: "succeeded" },
+      { attemptNumber: 1, outcome: "failed_permanent" },
+    ]);
+    expect(
+      await notificationErrorOf(
+        thread.curator.mutation(api.notificationEmails.retry, { deliveryId }),
+      ),
+    ).toBe("EMAIL_DELIVERY_NOT_RETRYABLE");
+  });
+
+  test("a digest the provider cannot take yet is resent under the same key until it is accepted", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    const sent = emailProvider(unavailable);
+    await thread.mentionCurator(thread.harbourMap);
+
+    await advanceTo(t, "2026-10-13T12:00:00Z");
+    const [retrying] = await thread.center();
+    expect(retrying?.email).toMatchObject({
+      status: "pending",
+      attemptCount: 1,
+      lastResponseStatus: 503,
+    });
+    await advanceTo(t, "2026-10-13T12:01:00Z");
+
+    expect(sent).toHaveLength(2);
+    expect(sent[1]?.idempotencyKey).toBe(sent[0]?.idempotencyKey);
+    const [delivered] = await thread.center();
+    expect(delivered?.email).toMatchObject({
+      status: "succeeded",
+      attemptCount: 2,
+    });
+  });
+
+  test("changing the digest time moves the waiting digest to the new time", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    const sent = emailProvider();
+    await thread.mentionCurator(thread.harbourMap);
+
+    await thread.chooseEmail(["assignments"], {
+      cadence: "daily",
+      time: "18:00",
+      timezone: NEW_YORK,
+    });
+    expect((await thread.preferences())?.email.nextDigest).toEqual({
+      scheduledFor: Date.parse("2026-10-12T22:00:00Z"),
+      notificationCount: 1,
+    });
+    await advanceTo(t, "2026-10-12T22:00:00Z");
+    await advanceTo(t, "2026-10-13T12:00:00Z");
+
+    expect(sent.map(({ at }) => at)).toEqual([
+      Date.parse("2026-10-12T22:00:00Z"),
+    ]);
+  });
+
+  test("switching to instant email sends the waiting digest right away and then emails each notification", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    const sent = emailProvider();
+    await thread.mentionCurator(thread.harbourMap);
+    await advanceTo(t, "2026-10-12T15:00:00Z");
+
+    await thread.chooseEmail(["assignments"], { cadence: "instant" });
+    await runDueWork(t);
+    await thread.mentionCurator(thread.bronzeBell);
+    await runDueWork(t);
+
+    expect(sent.map(({ at, subject }) => ({ at, subject }))).toEqual([
+      {
+        at: Date.parse("2026-10-12T15:00:00Z"),
+        subject: "Your daily digest from Test Museum: 1 notification",
+      },
+      { at: Date.parse("2026-10-12T15:00:00Z"), subject: "You were mentioned" },
+    ]);
+    expect((await thread.preferences())?.email.nextDigest).toBeNull();
+  });
+
+  test("a digest time, weekday or time zone that does not exist is refused", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    const invalid: EmailSchedule[] = [
+      { cadence: "daily", time: "24:00", timezone: NEW_YORK },
+      { cadence: "daily", time: "8:00", timezone: NEW_YORK },
+      { cadence: "weekly", day: 7, time: "08:00", timezone: NEW_YORK },
+      { cadence: "weekly", day: 1.5, time: "08:00", timezone: NEW_YORK },
+      { cadence: "daily", time: "08:00", timezone: "Mars/Olympus" },
+    ];
+    for (const schedule of invalid) {
+      expect(
+        await notificationErrorOf(
+          thread.chooseEmail(["assignments"], schedule),
+        ),
+      ).toBe("DIGEST_SCHEDULE_INVALID");
+    }
+    expect((await thread.preferences())?.email.schedule).toEqual({
+      cadence: "instant",
+    });
+  });
+
+  test("a digest chosen before digests had a time sends nothing until the recipient saves one", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("notificationPreferences", {
+        userId: thread.curatorId,
+        organizationId: thread.organizationId,
+        emailEnabled: true,
+        emailDigestFrequency: "weekly",
+      });
+    });
+    const sent = emailProvider();
+
+    expect((await thread.preferences())?.email).toMatchObject({
+      schedule: { cadence: "weekly", day: 1, time: "08:00" },
+      digestUnscheduled: true,
+      nextDigest: null,
+    });
+    await thread.mentionCurator(thread.harbourMap);
+    await advanceTo(t, "2026-10-20T12:00:00Z");
+    expect(sent).toEqual([]);
+
+    await thread.chooseEmail(["assignments"], {
+      cadence: "weekly",
+      day: 1,
+      time: "09:00",
+      timezone: NEW_YORK,
+    });
+    expect((await thread.preferences())?.email.digestUnscheduled).toBe(false);
+    await thread.mentionCurator(thread.bronzeBell);
+    await advanceTo(t, "2026-10-26T13:00:00Z");
+
+    expect(sent.map(({ at }) => at)).toEqual([
+      Date.parse("2026-10-26T13:00:00Z"),
+    ]);
+    expect(sent[0]?.text).toContain("Bronze Bell");
+    expect(sent[0]?.text).not.toContain("Harbour Map");
+  });
+
+  test("more than one hundred notifications before one digest time are each emailed exactly once", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    const sent = emailProvider();
+
+    for (let index = 0; index < 101; index++) {
+      await thread.mentionCurator(thread.harbourMap);
+    }
+    expect((await thread.preferences())?.email.nextDigest).toEqual({
+      scheduledFor: Date.parse("2026-10-13T12:00:00Z"),
+      notificationCount: 101,
+    });
+    await advanceTo(t, "2026-10-13T12:00:00Z");
+
+    expect(sent.map(({ subject }) => subject).sort()).toEqual([
+      "Your daily digest from Test Museum: 1 notification",
+      "Your daily digest from Test Museum: 100 notifications",
+    ]);
+    expect(
+      sent.flatMap(
+        ({ text }) => text.match(/mentioned you on Harbour Map/g) ?? [],
+      ),
+    ).toHaveLength(101);
+    const center = await thread.curator.query(
+      api.notifications.getNotificationCenter,
+      { organizationId: thread.organizationId, limit: 200 },
+    );
+    expect(
+      center.notifications.every(({ email }) => email?.status === "succeeded"),
+    ).toBe(true);
+  });
+
+  test("digest logs older than 30 days are purged while the notifications stay", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    emailProvider();
+    await thread.mentionCurator(thread.harbourMap);
+    await advanceTo(t, "2026-10-13T12:00:00Z");
+    expect((await thread.center())[0]?.email?.status).toBe("succeeded");
+
+    await advanceTo(t, "2026-11-12T15:00:00Z");
+    await t.mutation(internal.notificationEmails.sweep, {});
+    await runDueWork(t);
+
+    const notifications = await thread.center();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]?.email).toBeNull();
+  });
+
+  test("purging an organization removes its digests and their notification lists", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    emailProvider();
+    await thread.mentionCurator(thread.harbourMap);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(thread.organizationId, { type: "library" });
+      for (const table of [
+        "auditLog",
+        "objectComments",
+        "collections",
+      ] as const) {
+        for (const row of await ctx.db
+          .query(table)
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", thread.organizationId),
+          )
+          .take(10)) {
+          await ctx.db.delete(row._id);
+        }
+      }
+    });
+
+    await t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+      organizationIds: [thread.organizationId],
+      dryRun: false,
+    });
+
+    const remaining = await t.run(async (ctx) => ({
+      deliveries: await ctx.db
+        .query("notificationEmailDeliveries")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", thread.organizationId),
+        )
+        .take(1),
+      items: await ctx.db
+        .query("notificationDigestItems")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", thread.organizationId),
+        )
+        .take(1),
+    }));
+    expect(remaining).toEqual({ deliveries: [], items: [] });
   });
 });
