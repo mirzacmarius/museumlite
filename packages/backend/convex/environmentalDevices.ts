@@ -242,6 +242,9 @@ export const list = query({
           locationId: v.id("locations"),
           locationName: v.string(),
           isActive: v.boolean(),
+          /** The probe's latest reading: when it was observed and received. */
+          lastObservedAt: v.optional(v.number()),
+          lastReceivedAt: v.optional(v.number()),
         }),
       ),
     }),
@@ -275,15 +278,21 @@ export const list = query({
           lastError: device.lastError,
           lastErrorAt: device.lastErrorAt,
           probes: await Promise.all(
-            probes.map(async (probe) => ({
-              _id: probe._id,
-              probeId: probe.probeId,
-              locationId: probe.locationId,
-              locationName:
-                (await ctx.db.get(probe.locationId))?.name ??
-                "Deleted location",
-              isActive: probe.isActive,
-            })),
+            probes.map(async (probe) => {
+              const [location, latest] = await Promise.all([
+                ctx.db.get(probe.locationId),
+                probe.lastReadingId ? ctx.db.get(probe.lastReadingId) : null,
+              ]);
+              return {
+                _id: probe._id,
+                probeId: probe.probeId,
+                locationId: probe.locationId,
+                locationName: location?.name ?? "Deleted location",
+                isActive: probe.isActive,
+                lastObservedAt: latest?.recordedAt,
+                lastReceivedAt: latest?.receivedAt,
+              };
+            }),
           ),
         };
       }),

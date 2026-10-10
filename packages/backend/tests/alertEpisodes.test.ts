@@ -687,6 +687,34 @@ describe("silent devices", () => {
     expect(monitoring?.probes[0]?.status).toBe("silent");
   });
 
+  test("device management tells a device's last request apart from its probes' last readings", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const observedAt = Date.now() - 3 * HOUR;
+    await store.send({ readingId: "r1", observedAt });
+
+    const failed = await sendReading(t, store.token, "unbound-probe", {
+      readingId: "r2",
+      observedAt: Date.now(),
+    });
+    const [device] = await store.manager.query(api.environmentalDevices.list, {
+      organizationId: store.organizationId,
+    });
+
+    expect(failed.status).toBe(401);
+    expect(device).toMatchObject({
+      lastError: "Unknown probe",
+      probes: [
+        expect.objectContaining({
+          probeId: "probe-1",
+          lastObservedAt: observedAt,
+        }),
+      ],
+    });
+    expect(device?.lastSeenAt).toBeGreaterThan(observedAt + 2 * HOUR);
+    expect(device?.probes[0]?.lastReceivedAt).toBeGreaterThan(observedAt);
+  });
+
   test("a revoked device no longer counts as monitoring the location", async () => {
     const t = createConvexTestWithRateLimiter();
     const store = await monitoredPaperStore(t);
@@ -808,10 +836,15 @@ describe("episode notifications follow each recipient's choices", () => {
       string,
       RequestInit,
     ];
-    expect(JSON.parse(String(request.body))).toMatchObject({
+    const email = JSON.parse(String(request.body));
+    expect(email).toMatchObject({
       to: ["conservator@example.test"],
       subject: "Environment out of range: Paper Store",
     });
+    expect(email.text).toContain(
+      "Relative humidity 61% above the 55% maximum.",
+    );
+    expect(email.text).toContain("/locations/episodes/");
   });
 });
 
