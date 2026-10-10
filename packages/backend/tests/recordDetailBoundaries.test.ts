@@ -68,7 +68,7 @@ test("a malformed object link or another record type's identifier reads as missi
   }
 });
 
-test("an object whose condition comes from an accepted assessment opens", async () => {
+test("an object whose condition comes from an accepted assessment opens, also for editing", async () => {
   const t = createConvexTest();
   const owner = await createOrgUserCollectionWithPermissions(t, [
     "collections.read",
@@ -92,6 +92,12 @@ test("an object whose condition comes from an accepted assessment opens", async 
 
   expect(detail?.collection.condition).toBe("Fair");
   expectMatchesReturns(collections.getObjectDetail, detail);
+
+  const editable = await user.query(api.collections.get, {
+    collectionId: owner.collectionId,
+  });
+  expect(editable?.condition).toBe("Fair");
+  expectMatchesReturns(collections.get, editable);
 });
 
 test("a member whose role cannot read objects gets a coded permission refusal", async () => {
