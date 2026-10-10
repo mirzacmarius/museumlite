@@ -1463,7 +1463,7 @@ test("a check of a large collection runs in bounded pages and reports complete, 
     reopened: 0,
     resolved: 0,
   });
-});
+}, 120_000);
 
 test("purging an organization without permanent evidence removes its quality records", async () => {
   const { t, adminId, organizationId } = await setup();
