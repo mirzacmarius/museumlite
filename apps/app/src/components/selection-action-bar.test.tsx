@@ -6,13 +6,16 @@ import { expect, test } from "vitest";
 import { SelectionActionBar } from "./selection-action-bar";
 
 /** A list with two selected loans and an action that clears the selection. */
-function SelectedLoans({ initial = 2 }: { initial?: number }) {
-  const [count, setCount] = useState(initial);
+function SelectedLoans() {
+  const [count, setCount] = useState(2);
   const listRef = useRef<HTMLElement>(null);
   return (
     <>
       <section ref={listRef} tabIndex={-1} aria-label="Loans">
-        <button type="button" onClick={() => setCount(count + 1)}>
+        <button
+          type="button"
+          onClick={() => setCount((current) => current + 1)}
+        >
           Select another
         </button>
       </section>
@@ -34,13 +37,15 @@ function SelectedLoans({ initial = 2 }: { initial?: number }) {
 
 test("the selected count is announced as the selection changes", async () => {
   const user = userEvent.setup();
-  render(<SelectedLoans initial={0} />);
+  render(<SelectedLoans />);
   const status = screen.getByRole("status");
+  expect(status.textContent).toBe("2 loans selected");
+
+  await user.click(screen.getByRole("button", { name: "Clear selection" }));
   expect(status.textContent).toBe("");
   expect(screen.queryByRole("region", { name: "Selected loans" })).toBeNull();
 
   await user.click(screen.getByRole("button", { name: "Select another" }));
-
   expect(status.textContent).toBe("1 loans selected");
   expect(screen.getByRole("region", { name: "Selected loans" })).toBeTruthy();
 });

@@ -33,11 +33,14 @@ const idle: RecordFormNoticeSession = {
   keepsDeviceCopy: true,
 };
 
+const NO_FIELD_ERRORS: Record<string, string> = {};
+const ignoreGoToField = () => {};
+
 /** A loan form whose fields show the errors of its last save. */
 function LoanForm({
   failure,
-  fieldErrors = {},
-  onGoToField = () => {},
+  fieldErrors = NO_FIELD_ERRORS,
+  onGoToField = ignoreGoToField,
 }: {
   failure: RecordSaveFailure | null;
   fieldErrors?: Record<string, string>;

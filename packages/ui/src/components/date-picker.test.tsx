@@ -4,12 +4,14 @@ import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { DatePicker } from "./date-picker";
 
+const LAST_OF_JANUARY = new Date(2026, 0, 31);
+
 test("the field is named by its label and the date it shows", () => {
   render(
     <DatePicker
       id="endDate"
       label="End date"
-      date={new Date(2026, 0, 31)}
+      date={LAST_OF_JANUARY}
       displayFormat="d MMM yyyy"
     />,
   );
@@ -44,7 +46,7 @@ test("opening the calendar starts on the chosen day, so arrow keys move from it"
     <DatePicker
       id="endDate"
       label="End date"
-      date={new Date(2026, 0, 31)}
+      date={LAST_OF_JANUARY}
       displayFormat="d MMM yyyy"
     />,
   );
