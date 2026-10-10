@@ -1,7 +1,11 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import { alertEpisodeErrorCodeFromError } from "../convex/utils/alertEpisodeErrors";
-import { addMember } from "./notificationFixtures";
+import {
+  addMember,
+  categoryChoices,
+  emailChoices,
+} from "./notificationFixtures";
 import {
   authedForUser,
   type ConvexTest,
@@ -30,6 +34,7 @@ async function alertEpisodeErrorOf(call: Promise<unknown>) {
 async function paperStore(t: ConvexTest) {
   const { organizationId, userId } = await createOrgUserWithPermissions(t, [
     "organization.manage_settings",
+    "organization.view_analytics",
     "locations.read",
     "locations.update",
   ]);
@@ -715,5 +720,258 @@ describe("silent devices", () => {
     expect(monitoring?.condition).toBe("no_thresholds");
     expect(monitoring?.thresholds).toBeNull();
     expect(monitoring?.openEpisode).toBeNull();
+  });
+});
+
+describe("episode notifications follow each recipient's choices", () => {
+  beforeEach(() => {
+    vi.stubEnv("RESEND_API_KEY", "re_fixture_key");
+    vi.stubEnv("RESEND_SENDER_EMAIL_AUTH", "notify@museum.example.test");
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  test("managers are told in the app, by email or in their digest as they chose, and not at all with alerts off", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const { organizationId } = store;
+    const [conservatorId, registrarId, curatorId] = await Promise.all(
+      ["conservator", "registrar", "curator"].map((username) =>
+        addMember(t, organizationId, username, [
+          "locations.read",
+          "locations.update",
+        ]),
+      ),
+    );
+    const conservator = authedForUser(t, conservatorId!);
+    const registrar = authedForUser(t, registrarId!);
+    const curator = authedForUser(t, curatorId!);
+    await conservator.mutation(api.notifications.updatePreferences, {
+      organizationId,
+      categories: emailChoices(["alerts"]),
+    });
+    await registrar.mutation(api.notifications.updatePreferences, {
+      organizationId,
+      categories: emailChoices(["alerts"]),
+      emailSchedule: { cadence: "daily", time: "08:00", timezone: "UTC" },
+    });
+    await curator.mutation(api.notifications.updatePreferences, {
+      organizationId,
+      categories: categoryChoices({ alerts: { enabled: false, email: false } }),
+    });
+    const provider = vi.fn(async () =>
+      Response.json({ id: "email-fixture" }, { status: 200 }),
+    );
+    vi.stubGlobal("fetch", provider);
+    vi.useFakeTimers();
+
+    await store.send({
+      readingId: "r1",
+      observedAt: Date.now() - MINUTE,
+      humidity: 61,
+    });
+    await t.finishAllScheduledFunctions(() => {
+      vi.advanceTimersByTime(0);
+    });
+    const centerOf = async (client: typeof conservator) =>
+      (
+        await client.query(api.notifications.getNotificationCenter, {
+          organizationId,
+        })
+      ).notifications;
+
+    expect(await centerOf(conservator)).toEqual([
+      expect.objectContaining({
+        title: "Environment out of range: Paper Store",
+        email: expect.objectContaining({ status: "succeeded" }),
+      }),
+    ]);
+    expect(await centerOf(registrar)).toEqual([
+      expect.objectContaining({
+        title: "Environment out of range: Paper Store",
+        email: expect.objectContaining({
+          status: "pending",
+          digest: expect.objectContaining({ cadence: "daily" }),
+        }),
+      }),
+    ]);
+    expect(await centerOf(curator)).toEqual([]);
+    expect(await centerOf(store.manager)).toEqual([
+      expect.objectContaining({ email: null }),
+    ]);
+    expect(provider).toHaveBeenCalledTimes(1);
+    const [, request] = provider.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      to: ["conservator@example.test"],
+      subject: "Environment out of range: Paper Store",
+    });
+  });
+});
+
+describe("who sees alert episodes", () => {
+  test("members who cannot read locations are neither notified nor shown the episode", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const { organizationId, locationId } = store;
+    const [movesOnlyId, viewerId] = await Promise.all([
+      addMember(t, organizationId, "mover", ["locations.update"]),
+      addMember(t, organizationId, "viewer", ["locations.read"]),
+    ]);
+    const outsider = await createOrgUserWithPermissions(t, [
+      "locations.read",
+      "locations.update",
+    ]);
+
+    await store.send({
+      readingId: "r1",
+      observedAt: Date.now() - MINUTE,
+      humidity: 61,
+    });
+    const centerOf = async (userId: typeof viewerId, orgId = organizationId) =>
+      (
+        await authedForUser(t, userId).query(
+          api.notifications.getNotificationCenter,
+          { organizationId: orgId },
+        )
+      ).notifications;
+    const monitoringFor = (userId: typeof viewerId) =>
+      authedForUser(t, userId).query(
+        api.environmentalMonitoring.getLocationMonitoring,
+        { locationId, now: Date.now() },
+      );
+
+    expect(await centerOf(movesOnlyId)).toEqual([]);
+    await expect(monitoringFor(movesOnlyId)).rejects.toThrow();
+    expect(await centerOf(viewerId)).toEqual([]);
+    expect((await monitoringFor(viewerId))?.condition).toBe("out_of_range");
+    expect(await monitoringFor(outsider.userId)).toBeNull();
+    expect(await centerOf(outsider.userId, outsider.organizationId)).toEqual(
+      [],
+    );
+    expect(
+      await t.query(api.environmentalMonitoring.getLocationMonitoring, {
+        locationId,
+        now: Date.now(),
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("resolving an episode", () => {
+  test("a location manager closes an open episode with a note and the next breach opens a new one", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const start = Date.now() - HOUR;
+    await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
+    const episodeId = (await store.monitoring())?.openEpisode?._id;
+    if (!episodeId) throw new Error("Expected an open episode");
+
+    await store.manager.mutation(api.environmentalMonitoring.resolveEpisode, {
+      episodeId,
+      note: "  Probe sat in a damp transit case; checked 48% by hand.  ",
+    });
+    const resolved = await store.monitoring();
+    await store.send({
+      readingId: "r2",
+      observedAt: start + 30 * MINUTE,
+      humidity: 62,
+    });
+    const reopened = await store.monitoring();
+    const activity = await store.manager.query(
+      api.audit.listOrganizationActivity,
+      { organizationId: store.organizationId, entityType: "alertEpisode" },
+    );
+
+    expect(resolved?.openEpisode).toBeNull();
+    expect(resolved?.recentEpisodes).toEqual([
+      expect.objectContaining({
+        _id: episodeId,
+        status: "resolved",
+        resolution: expect.objectContaining({
+          note: "Probe sat in a damp transit case; checked 48% by hand.",
+          resolvedByName: "Test User",
+        }),
+      }),
+    ]);
+    expect(reopened?.openEpisode?._id).not.toBe(episodeId);
+    expect(reopened?.openEpisode?.startedAt).toBe(start + 30 * MINUTE);
+    expect(await store.notifications()).toHaveLength(2);
+    expect(activity.activities).toContainEqual(
+      expect.objectContaining({
+        action: "resolved_alert_episode",
+        entityId: episodeId,
+      }),
+    );
+  });
+
+  test("resolving needs a note and an episode that is still open", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const start = Date.now() - 2 * HOUR;
+    await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
+    const episodeId = (await store.monitoring())?.openEpisode?._id;
+    if (!episodeId) throw new Error("Expected an open episode");
+    const resolve = (note: string) =>
+      alertEpisodeErrorOf(
+        store.manager.mutation(api.environmentalMonitoring.resolveEpisode, {
+          episodeId,
+          note,
+        }),
+      );
+
+    const withoutNote = await resolve("   ");
+    const tooLong = await resolve("x".repeat(1001));
+    await store.send({ readingId: "r2", observedAt: start + 5 * MINUTE });
+    await store.send({ readingId: "r3", observedAt: start + 40 * MINUTE });
+    const afterRecovery = await resolve("Checked by hand");
+
+    expect([withoutNote, tooLong]).toEqual([
+      "RESOLUTION_NOTE_INVALID",
+      "RESOLUTION_NOTE_INVALID",
+    ]);
+    expect(afterRecovery).toBe("EPISODE_NOT_OPEN");
+    expect((await store.monitoring())?.recentEpisodes[0]?.status).toBe(
+      "recovered",
+    );
+  });
+
+  test("staff who do not manage locations cannot resolve an episode", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    await store.send({
+      readingId: "r1",
+      observedAt: Date.now() - MINUTE,
+      humidity: 61,
+    });
+    const episodeId = (await store.monitoring())?.openEpisode?._id;
+    if (!episodeId) throw new Error("Expected an open episode");
+    const viewerId = await addMember(t, store.organizationId, "viewer", [
+      "locations.read",
+    ]);
+    const outsider = await createOrgUserWithPermissions(t, [
+      "locations.read",
+      "locations.update",
+    ]);
+
+    for (const caller of [
+      authedForUser(t, viewerId),
+      authedForUser(t, outsider.userId),
+      t,
+    ]) {
+      await expect(
+        caller.mutation(api.environmentalMonitoring.resolveEpisode, {
+          episodeId,
+          note: "Not mine to close",
+        }),
+      ).rejects.toThrow();
+    }
+    expect((await store.monitoring())?.openEpisode?.status).toBe("open");
   });
 });

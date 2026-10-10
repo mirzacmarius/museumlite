@@ -5,7 +5,11 @@ import { convexErrorData } from "./convexErrorData";
  * Stable codes for environmental monitoring failures staff can correct.
  * Clients map these to translated copy.
  */
-export const ALERT_EPISODE_ERROR_CODES = ["THRESHOLDS_INVALID"] as const;
+export const ALERT_EPISODE_ERROR_CODES = [
+  "THRESHOLDS_INVALID",
+  "EPISODE_NOT_OPEN",
+  "RESOLUTION_NOTE_INVALID",
+] as const;
 
 export type AlertEpisodeErrorCode = (typeof ALERT_EPISODE_ERROR_CODES)[number];
 

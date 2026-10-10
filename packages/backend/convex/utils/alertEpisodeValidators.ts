@@ -70,6 +70,14 @@ export const alertEpisodeFields = {
   lateReadingCount: v.number(),
   /** Every source that went out of range must recover before the episode. */
   sources: v.array(episodeSource),
+  /** Set when staff closed the episode instead of readings recovering it. */
+  resolution: v.optional(
+    v.object({
+      userId: v.id("users"),
+      note: v.string(),
+      resolvedAt: v.number(),
+    }),
+  ),
 };
 
 /** One reading as evidence: what was measured, by what, observed and received when. */
@@ -105,10 +113,17 @@ export const episodeSourceView = episodeSource.extend({
 /** An episode as staff see it, without its tenant and location keys. */
 export const alertEpisodeSummary = v
   .object(alertEpisodeFields)
-  .omit("organizationId", "locationId", "sources")
+  .omit("organizationId", "locationId", "sources", "resolution")
   .extend({
     _id: v.id("alertEpisodes"),
     sources: v.array(episodeSourceView),
+    resolution: v.optional(
+      v.object({
+        note: v.string(),
+        resolvedAt: v.number(),
+        resolvedByName: v.optional(v.string()),
+      }),
+    ),
   });
 
 export const probeStatus = v.union(

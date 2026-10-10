@@ -23,7 +23,10 @@ import {
 } from "./utils/alertEpisodeValidators";
 import { batchLookup } from "./utils/batchLookup";
 import { mutation } from "./utils/mutationBuilders";
-import { requireLocationAdminPermission } from "./utils/permissions";
+import {
+  requireLocationAdminPermission,
+  requirePermission,
+} from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
 
 const PROBE_LIMIT = 50;
@@ -201,20 +204,35 @@ async function summarizeEpisodes(
     ),
     "environmentalProbes",
   );
-  const devices = await batchLookup(
-    ctx,
-    [...probes.values()].map((probe) => probe.deviceId),
-    "environmentalDevices",
-  );
+  const [devices, resolvers] = await Promise.all([
+    batchLookup(
+      ctx,
+      [...probes.values()].map((probe) => probe.deviceId),
+      "environmentalDevices",
+    ),
+    batchLookup(
+      ctx,
+      episodes.flatMap((episode) =>
+        episode.resolution ? [episode.resolution.userId] : [],
+      ),
+      "users",
+    ),
+  ] as const);
   return episodes.map(
     ({
       organizationId: _organizationId,
       locationId: _locationId,
       _creationTime: _created,
       sources,
+      resolution,
       ...episode
     }) => ({
       ...episode,
+      resolution: resolution && {
+        note: resolution.note,
+        resolvedAt: resolution.resolvedAt,
+        resolvedByName: displayName(resolvers.get(resolution.userId)),
+      },
       sources: sources.map((source) => {
         const probe = source.probe ? probes.get(source.probe) : undefined;
         return {
@@ -229,6 +247,10 @@ async function summarizeEpisodes(
       }),
     }),
   );
+}
+
+function displayName(user: Doc<"users"> | undefined) {
+  return user?.name ?? user?.email;
 }
 
 async function toReadingEvidence(
@@ -257,7 +279,7 @@ async function toReadingEvidence(
       source: reading.source,
       deviceName: reading.sensorId,
       probeId: reading.sensorProbeId,
-      recordedByName: recorder?.name ?? recorder?.email,
+      recordedByName: displayName(recorder),
       outOfRange: reading.alertTriggered === true,
       late: reading.late === true,
     };
@@ -309,6 +331,49 @@ export const setThresholds = mutation({
         before: location.environmentalThresholds ?? null,
         after: args.thresholds,
       },
+    });
+    return null;
+  },
+});
+
+const RESOLUTION_NOTE_MAX_LENGTH = 1000;
+
+/**
+ * Closes an open episode on a manager's judgement, for example when its probe
+ * was moved or retired and conditions were checked another way. The note is
+ * kept with the episode. A later reading outside the thresholds opens a new
+ * episode.
+ */
+export const resolveEpisode = mutation({
+  args: { episodeId: v.id("alertEpisodes"), note: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, episode] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.episodeId),
+    ] as const);
+    if (!userId) throw new Error("Not authenticated");
+    if (!episode) throw new Error("Alert episode not found");
+    await requirePermission(ctx, episode.organizationId, "locations.update");
+    const note = args.note.trim();
+    if (!note || note.length > RESOLUTION_NOTE_MAX_LENGTH) {
+      throw alertEpisodeError("RESOLUTION_NOTE_INVALID");
+    }
+    if (episode.status !== "open") throw alertEpisodeError("EPISODE_NOT_OPEN");
+
+    const resolvedAt = Date.now();
+    await ctx.db.patch(episode._id, {
+      status: "resolved",
+      endedAt: resolvedAt,
+      resolution: { userId, note, resolvedAt },
+    });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: episode.organizationId,
+      userId,
+      action: "resolved_alert_episode",
+      entityType: "alertEpisode",
+      entityId: episode._id,
+      changes: { locationId: episode.locationId, note },
     });
     return null;
   },
