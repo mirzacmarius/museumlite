@@ -131,14 +131,15 @@ const GLOSSARY_TERMS: Array<{
     exceptions: new Set(["untranslatedDashboard.insurance.incidentLocation"]),
   },
   {
-    // An Accession is not an Acquisition: English that names only accessions
-    // never reads as an acquisition.
-    english: /^(?!.*acqui)(?!.*deaccession).*(?<!\p{L})accession/iu,
+    // An Accession is neither an Acquisition nor an Entry: English that names
+    // only accessions never reads as one of those.
+    english:
+      /^(?!.*acqui)(?!.*deaccession)(?!.*\b(entry|entries|intake|receiv|receipt)).*(?<!\p{L})accession/iu,
     avoided: {
-      es: /adquisici/iu,
-      fr: /acquisition/iu,
-      no: /erverv/iu,
-      ro: /achizi/iu,
+      es: /adquisici|(?<!\p{L})(entrada|ingreso)/iu,
+      fr: /acquisition|(?<!\p{L})entrée/iu,
+      no: /erverv|innlevering/iu,
+      ro: /achizi|(?<!\p{L})intr[aă]r/iu,
     },
   },
 ];

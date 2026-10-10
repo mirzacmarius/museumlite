@@ -3085,7 +3085,7 @@ export default {
       sizeMedium: 'Mediana (4" × 2,5")',
       sizeLarge: 'Grande (5" × 3")',
       showBorder: "Mostrar borde",
-      accessionFontSize: "Tamaño de fuente del número de ingreso",
+      accessionFontSize: "Tamaño de fuente del número de accesión",
       printInstructions: "Instrucciones de impresión",
       instructionPaperSize: "Usa papel tamaño carta o A4",
       instructionOrientation: "Selecciona la orientación vertical",
@@ -3389,9 +3389,9 @@ export default {
       documentUpload: "Subir documento",
       required: "obligatorio",
       collectionType: "Tipo de colección",
-      alternateAccessionNumbers: "Números de ingreso alternativos",
+      alternateAccessionNumbers: "Números de accesión alternativos",
       alternateAccessionNumbersHint:
-        "Números de ingreso históricos asignados anteriormente a este objeto",
+        "Números de accesión históricos asignados anteriormente a este objeto",
       parentObjectHint:
         "Vincula este objeto con un objeto principal (por ejemplo, un cofre que lo contiene)",
     },
@@ -4678,7 +4678,7 @@ export default {
     },
     caseTypes: {
       loan: "Préstamo",
-      accession: "Registro de ingreso",
+      accession: "Registro de accesión",
       deaccession: "Baja",
       exhibition: "Exposición",
       conservation: "Tratamiento de conservación",
@@ -5524,7 +5524,7 @@ export default {
     approval: {
       sourceExceptionLabel: "Origen no verificado: motivo de la excepción",
       sourceExceptionHint:
-        "Falta la verificación de origen requerida. Aprobar con un motivo registra una excepción autorizada, que se conserva con el ingreso y se audita.",
+        "Falta la verificación de origen requerida. Aprobar con un motivo registra una excepción autorizada, que se conserva con la accesión y se audita.",
       sourceExceptionRecorded: "Excepción autorizada",
       title: "Acciones de Aprobación",
       commentLabel: "Comentario (opcional)",
@@ -5573,7 +5573,7 @@ export default {
       loadMore: "Cargar más",
       shownOfTotal: "{loaded} de {total}",
       matchesShown: "Coincidencias mostradas: {loaded}",
-      noMatches: "No hay ingresos coincidentes en {step}",
+      noMatches: "No hay accesiones coincidentes en {step}",
       noAccessions: "Sin accesiones en {step}",
       unknownSource: "Fuente desconocida",
     },
@@ -5714,7 +5714,7 @@ export default {
     },
     registers: {
       catalog: "catálogo",
-      accession: "ingresos",
+      accession: "accesiones",
     },
     stages: {
       entry: "En custodia por una entrada",
@@ -5741,7 +5741,7 @@ export default {
       condition_assessment: "Evaluación del estado aceptada",
       image: "Fotografía",
       supporting_document: "Documento justificativo",
-      accession_record: "Registro de ingreso aprobado",
+      accession_record: "Registro de accesión aprobado",
       provenance_claim: "Afirmación de procedencia",
     },
     orphanFields: {
@@ -5758,14 +5758,14 @@ export default {
     },
     recordTypes: {
       object: "Objeto",
-      accession: "Registro de ingreso",
+      accession: "Registro de accesión",
       deaccession: "Baja",
     },
     objectTabs: {
       general: "General",
       physical: "Físico",
       media: "Medios",
-      accession: "Ingreso",
+      accession: "Accesión",
       placement: "Ubicación",
       provenance: "Procedencia",
     },
@@ -5810,11 +5810,11 @@ export default {
         "La comprobación {number} se canceló. Los hallazgos que detectó se mantienen; no resolvió ninguno.",
       phases: {
         catalog_identifiers: "identificadores del catálogo",
-        accession_identifiers: "identificadores de ingreso",
+        accession_identifiers: "identificadores de accesión",
         objects_active: "objetos",
         objects_loaned: "objetos prestados",
         objects_deaccessioned: "objetos dados de baja",
-        accessions: "registros de ingreso",
+        accessions: "registros de accesión",
         deaccessions: "bajas",
         resolve_duplicate_identifier: "identificadores duplicados corregidos",
         resolve_missing_evidence: "documentación completada",
@@ -7082,7 +7082,7 @@ export default {
         startDate: "Fecha de inicio:",
         endDate: "Fecha de finalización:",
         objectsOnLoan: "OBJETOS PRESTADOS",
-        accessionNumber: "N.º de ingreso",
+        accessionNumber: "N.º de accesión",
         titleDescription: "Título / descripción",
         insurance: "SEGURO",
         totalInsuranceValue: "Valor total asegurado:",
@@ -7180,7 +7180,7 @@ export default {
           "Los borradores deben enviarse antes de iniciar la aprobación.",
         workflowHistory: "Historial del flujo",
         workflowHistoryDescription:
-          "Eventos de aprobación completados para este ingreso.",
+          "Eventos de aprobación completados para esta accesión.",
         step: "Paso",
         workflow: "Flujo",
         decision: "Decisión",
@@ -7194,7 +7194,7 @@ export default {
         history: "Historial",
         draftObjectAwaitingReview: "Borrador de objeto pendiente de revisión.",
         reviewSummary:
-          "Revise los detalles del ingreso, el estado del flujo y las aprobaciones.",
+          "Revise los detalles de la accesión, el estado del flujo y las aprobaciones.",
         noActiveWorkflowStep: "No hay ningún paso activo en el flujo.",
         reviewCheckpoint: "Punto de control de revisión",
         sourceOnlyBlocker:
@@ -7219,20 +7219,20 @@ export default {
           "Use las notas para aportar contexto, no para repetir el campo de la fuente.",
         reviewSnapshot: "Resumen de revisión",
         snapshotDescription:
-          "Estos campos permanecerán visibles para el revisor en la página del ingreso.",
+          "Estos campos permanecerán visibles para el revisor en la página de la accesión.",
         sourcePreview: "Vista previa de la fuente",
         methodPreview: "Vista previa del método",
         notesLength: "Longitud de las notas",
         lockedIntakeDetails: "Detalles de recepción bloqueados",
         lockedDetailsDescription:
-          "Estos identificadores se establecen al crear el ingreso y son de solo lectura mientras está pendiente de revisión.",
-        accessionInformation: "Información del ingreso",
+          "Estos identificadores se establecen al crear la accesión y son de solo lectura mientras está pendiente de revisión.",
+        accessionInformation: "Información de la accesión",
         accessionDescription:
           "Edite la fuente, el método de adquisición, el contexto de valoración y las notas del personal antes de la aprobación.",
         sourceNameGuidance:
           "Indique la persona, sucesión, distribuidor, institución o referencia de origen que reconocerá el aprobador.",
         methodInterpretation:
-          "Esto determina cómo se interpretará el ingreso en la revisión y los informes.",
+          "Esto determina cómo se interpretará la accesión en la revisión y los informes.",
         noCostHint:
           "Déjelo en blanco si no se aplica ningún costo de adquisición.",
         notesGuidanceLong:
@@ -7241,13 +7241,13 @@ export default {
         noNotes: "No se han añadido notas",
         noSourceYet: "Aún no hay fuente",
       },
-      pendingAccession: "Ingreso pendiente",
-      editAccession: "Editar ingreso",
+      pendingAccession: "Accesión pendiente",
+      editAccession: "Editar accesión",
       updateIntakeDescription:
-        "Actualice el registro de recepción mientras siga pendiente. Una vez aprobado, el ingreso debe tratarse como un registro de flujo finalizado.",
-      notFoundWithPeriod: "No se encontró el ingreso.",
+        "Actualice el registro de recepción mientras siga pendiente. Una vez aprobada, la accesión debe tratarse como un registro de flujo finalizado.",
+      notFoundWithPeriod: "No se encontró la accesión.",
       pendingDraftOnly:
-        "Desde esta pantalla solo se pueden editar borradores de objetos de ingresos pendientes.",
+        "Desde esta pantalla solo se pueden editar borradores de objetos de accesiones pendientes.",
       selectOrganizationTransfers:
         "Cree o únase a una organización para ver las transferencias.",
       transferPermission:
@@ -7255,7 +7255,7 @@ export default {
       transfer: {
         receiver: "Receptor",
         requested: "Solicitado",
-        handling: "Gestión del ingreso",
+        handling: "Gestión de la accesión",
         reviewNotes: "Notas de revisión",
         executed: "Ejecutado",
         search: "Buscar transferencias",
@@ -7298,7 +7298,7 @@ export default {
         verificationRequired: "Se requiere verificar la fuente",
         blockerCleared: "Este impedimento ya se ha resuelto.",
         verifyBeforeApproval:
-          "Verifique al donante o la fuente antes de aprobar este ingreso.",
+          "Verifique al donante o la fuente antes de aprobar esta accesión.",
         verifiedShort: "Verificada",
         verifying: "Verificando…",
         verify: "Verificar",
@@ -7324,10 +7324,10 @@ export default {
           cancelled:
             "Ninguna transferencia cancelada coincide con esta búsqueda.",
         },
-        keepAccession: "Conservar el número de ingreso actual",
-        newAccession: "Generar un nuevo número de ingreso",
-        requestedAccession: "Número de ingreso solicitado: {number}",
-        manualAccession: "Se solicitó un número de ingreso manual",
+        keepAccession: "Conservar el número de accesión actual",
+        newAccession: "Generar un nuevo número de accesión",
+        requestedAccession: "Número de accesión solicitado: {number}",
+        manualAccession: "Se solicitó un número de accesión manual",
       },
       import: {
         fields: {
@@ -7517,7 +7517,7 @@ export default {
         accept: "Aceptar y completar la transferencia",
         cancel: "Cancelar solicitud",
         requestTitle: "Solicitud de traslado de objeto",
-        resultingAccessionNumber: "Número de ingreso resultante",
+        resultingAccessionNumber: "Número de accesión resultante",
         requestedAt: "Solicitado el",
         sourceApprovedAt: "Fuente aprobada el",
         targetReviewedAt: "Destino revisado el",
@@ -7612,7 +7612,7 @@ export default {
         recentActivity: "Actividad reciente",
         noRecentActivity: "No hay actividad reciente",
         approvedBy: "Aprobado por",
-        accession: "Ingreso",
+        accession: "Accesión",
         additionalNotes: "Notas adicionales",
         alreadyAttached: "Ya adjunto",
         altText: "Alt.:",
@@ -7665,10 +7665,11 @@ export default {
           "Mostrar información de valoración en la página pública.",
         leaveBlankPublicPath:
           "Déjelo en blanco para usar la ruta pública predeterminada.",
-        acquisitionNumberImmutable: "El número de ingreso no se puede cambiar.",
-        noAlternateNumbers: "No se añadieron números de ingreso alternativos.",
+        acquisitionNumberImmutable:
+          "El número de accesión no se puede cambiar.",
+        noAlternateNumbers: "No se añadieron números de accesión alternativos.",
         alternateNumberRemoveHint:
-          "Los números de ingreso alternativos existentes se pueden eliminar, pero no editar directamente.",
+          "Los números de accesión alternativos existentes se pueden eliminar, pero no editar directamente.",
         noImagesUploaded: "Aún no se han subido imágenes.",
         savedToObject: "Guardado con este objeto",
         conditionChangeNote: "Nota sobre el cambio de estado",
@@ -7697,7 +7698,7 @@ export default {
         draftExistsUnsaved:
           "El borrador existe, pero los últimos cambios de campos aún no se han guardado.",
         saveDraftDescription:
-          "Guardar borrador sube imágenes y documentos a esta solicitud de ingreso. Se enviarán para aprobación junto con el objeto.",
+          "Guardar borrador sube imágenes y documentos a esta solicitud de accesión. Se enviarán para aprobación junto con el objeto.",
         savingDraft: "Guardando borrador…",
         objectTitle: "Título del objeto",
         editRecordDescription:
@@ -7718,14 +7719,14 @@ export default {
         previousOwner: "Propietario anterior",
         previousOwners: "Propietarios anteriores",
         capturePreviousOwners:
-          "Registre los propietarios anteriores conocidos como contexto básico del ingreso.",
+          "Registre los propietarios anteriores conocidos como contexto básico de la accesión.",
         selectImagesAfterApproval:
           "Seleccione imágenes del objeto y elija cuál será la principal tras la aprobación.",
         editMediaMetadata: "Editar metadatos del medio",
         updateMediaMetadata:
           "Actualice los metadatos de este archivo multimedia.",
         recordIdentity: "Identificación del registro",
-        removeAlternateAccession: "Eliminar el número de ingreso alternativo",
+        removeAlternateAccession: "Eliminar el número de accesión alternativo",
         publicUrl: "URL pública",
         uploadImagesDescription:
           "Suba imágenes, asigne una imagen principal y gestione las miniaturas de la ficha del objeto.",
@@ -7836,7 +7837,7 @@ export default {
           "Materiales, dimensiones y estado de conservación del objeto.",
         optionalPublicSlug:
           "Identificador personalizado opcional para el acceso público.",
-        removeAltAccession: "Eliminar el número de ingreso alternativo",
+        removeAltAccession: "Eliminar el número de accesión alternativo",
         signatureDocumentDescription:
           "Documente firmas, sellos, etiquetas, grabados o marcas de coleccionista",
         file: "Archivo:",
@@ -7982,7 +7983,7 @@ export default {
         general: "General",
         physical: "Descripción física",
         media: "Medios",
-        accession: "Ingreso",
+        accession: "Accesión",
         provenance: "Procedencia e historial",
         valuation: "Valoración",
         placement: "Ubicación y relaciones",
@@ -8007,9 +8008,9 @@ export default {
       errorId: "ID del error:",
       tryAgain: "Intentar de nuevo",
       dashboard: "Panel",
-      failedToLoadAccessions: "No se pudieron cargar los ingresos",
+      failedToLoadAccessions: "No se pudieron cargar las accesiones",
       failedToLoadAccessionsDescription:
-        "No se pudo cargar el flujo de ingresos. Inténtelo de nuevo o vuelva al panel.",
+        "No se pudo cargar el flujo de accesiones. Inténtelo de nuevo o vuelva al panel.",
       failedToLoadCollections: "No se pudieron cargar los grupos de colección",
       failedToLoadCollectionsDescription:
         "No pudimos cargar sus grupos de colección. Inténtelo de nuevo o vuelva al panel.",
@@ -8576,7 +8577,7 @@ export default {
       viewAllGroups: "Ver los {count} grupos",
       liveMetrics: "Métricas en tiempo real",
       pendingTransferApprovals: "Transferencias pendientes de aprobación",
-      pendingAccessions: "Ingresos pendientes",
+      pendingAccessions: "Accesiones pendientes",
       pendingDeaccessions: "Bajas pendientes",
       pendingLoans: "Préstamos pendientes",
       newCollectionButton: "Nueva colección",
@@ -8591,7 +8592,7 @@ export default {
       locationDetailsUnavailable: "Detalles de ubicación no disponibles",
       objectCountInside: "{count} objetos dentro de {name}",
       noAssignedObjects: "No hay objetos asignados",
-      noAccession: "Sin número de ingreso",
+      noAccession: "Sin número de accesión",
       noObjectsInLocation: "No hay objetos en esta ubicación",
       directAndNestedCounts: "{direct} directos · {locations} ubicaciones",
       locationsAndObjects: "Ubicaciones y objetos",
@@ -8649,7 +8650,7 @@ export default {
       childUnitsIncluded:
         "Incluye los objetos de esta ubicación y sus unidades secundarias",
       objects: "objetos",
-      accessionNumber: "Número de ingreso",
+      accessionNumber: "Número de accesión",
       title: "Título",
       status: "Estado",
       noObjectsWithChildren:
@@ -8978,7 +8979,7 @@ export default {
       allowIncomingTransferRequestsDescription:
         "Al activarla, tu organización aparece en la búsqueda de destinos y acepta solicitudes de transferencia de objetos de otras organizaciones. Al desactivarla, tu organización queda oculta y se rechazan las transferencias.",
       automationsAndWorkflows: "Automatizaciones y flujos de trabajo",
-      accessionsApprovalWorkflow: "Flujo de aprobación de ingresos",
+      accessionsApprovalWorkflow: "Flujo de aprobación de accesiones",
       accessionsApprovalWorkflowDescription:
         "Al activarlo, las nuevas solicitudes de objetos se envían a los conservadores y administradores para su aprobación. Al desactivarlo, los objetos enviados se aprueban y publican de inmediato.",
       deaccessionsApprovalWorkflow: "Flujo de aprobación de bajas",
@@ -9244,15 +9245,15 @@ export default {
       code39: "Code 39",
       positionTheCodeWithinTheCameraViewToScan:
         "Coloca el código dentro del campo de visión de la cámara para escanearlo",
-      noMatchingCollectionsFound: "No se encontraron colecciones coincidentes.",
+      noMatchingCollectionsFound: "No se encontraron grupos de colección.",
       press: "Pulsa",
       toAdd: "para añadir",
-      typeToSearchCollections: "Escribe para buscar colecciones",
+      typeToSearchCollections: "Escriba para buscar grupos de colección",
       collections: "Colecciones",
       searchByAccessionNumberOrTitle:
         "Buscar por número de inventario o título...",
       scrollForMore: "Desplázate para ver más…",
-      loadingCollections: "Cargando colecciones...",
+      loadingCollections: "Cargando objetos...",
       collectionType: "Tipo de colección",
       determinesWhichSpecializedFieldsAreAvailableForThisItem:
         "Determina qué campos especializados están disponibles para este objeto",
@@ -9535,19 +9536,19 @@ export default {
       removeNamedItem: "Quitar {name}",
       itemSelected: "{count} objeto seleccionado",
       itemsSelected: "{count} objetos seleccionados",
-      searchAndSelectCollections: "Buscar y seleccionar colecciones",
-      noCollectionsFound: "No se encontraron colecciones",
+      searchAndSelectCollections: "Buscar y seleccionar objetos",
+      noCollectionsFound: "No se encontraron objetos",
       cannotDeleteCondition: "No se puede eliminar la condición",
       deleteCondition: "Eliminar condición",
       collection: "Colección",
       searchOrAdd: "Buscar o añadir",
       selectACollectionObject: "Seleccionar un objeto de colección",
       noCollectionsFoundMatchingYourSearch:
-        "Ninguna colección coincide con tu búsqueda",
-      noCollectionsAvailable: "No hay colecciones disponibles",
+        "Ningún objeto coincide con la búsqueda",
+      noCollectionsAvailable: "No hay objetos disponibles",
       selectOrAddMaterials: "Seleccionar o añadir materiales",
       addNamedItem: "Añadir {name}",
-      selectCollection: "Seleccionar colección",
+      selectCollection: "Seleccionar grupo de colección",
       primaryGroup: "Grupo principal",
       secondaryGroup: "Grupo secundario",
       makePrimary: "Hacer principal",
@@ -10165,7 +10166,7 @@ export default {
     groupFinancial: "Informes financieros",
     groupResearch: "Investigación",
     groupUnsupported: "No compatibles",
-    profileAccession: "Registro de ingresos",
+    profileAccession: "Registro de accesiones",
     profileDisposal: "Registro de bajas",
     profileCustody: "Registro de custodia",
     profileCondition: "Registro de estado de conservación",

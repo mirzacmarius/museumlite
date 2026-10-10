@@ -166,7 +166,7 @@ _Avoid_: Public image, published file
 
 ## Translations
 
-The accepted word for each term in the app's other locales. Use it wherever English names the term, and inflect it as the sentence needs. `apps/app/src/locales/translations.test.ts` checks Object and Location, that an Accession is never translated as an Acquisition, and that no locale calls an Object an item outside the Library Module.
+The accepted word for each term in the app's other locales. Use it wherever English names the term, and inflect it as the sentence needs. `apps/app/src/locales/translations.test.ts` checks Object and Location, that an Accession is never translated as an Acquisition or an Entry, and that no locale calls an Object an item outside the Library Module.
 
 | Term | Spanish | French | Norwegian | Romanian |
 | --- | --- | --- | --- | --- |
