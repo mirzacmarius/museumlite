@@ -48,7 +48,7 @@ export interface DispatchResult {
  * recipient's membership and read access to the related entity, then applies
  * their category and channel choices: in-app for an enabled category, plus
  * a durable email delivery when they chose instant email for it, or a place
- * in their next digest when they chose a daily or weekly digest (ADR 0008).
+ * in their next digest when they chose a daily or weekly digest (ADR 0010).
  */
 export async function dispatchNotification(
   ctx: MutationCtx,

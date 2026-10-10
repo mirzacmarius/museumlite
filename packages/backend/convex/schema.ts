@@ -2744,7 +2744,7 @@ export default defineSchema({
     "by_organizationId_and_idempotencyKey",
     ["organizationId", "idempotencyKey"],
   ),
-  // Instant and digest notification email on the shared delivery ledger (ADR 0004, 0007, 0008)
+  // Instant and digest notification email on the shared delivery ledger (ADR 0004, 0007, 0010)
   notificationEmailDeliveries: defineTable(notificationEmailDeliveryFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_intentId", ["intentId"])

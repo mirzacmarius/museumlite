@@ -79,7 +79,7 @@ const emailDeliveryFields = {
 /**
  * One email to one recipient on the delivery ledger: an instant email that
  * accompanies one notification, or a digest that groups the notifications
- * listed in `notificationDigestItems` (ADR 0008).
+ * listed in `notificationDigestItems` (ADR 0010).
  */
 export const notificationEmailDeliveryFields = v.union(
   v.object({
