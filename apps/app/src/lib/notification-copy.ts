@@ -161,6 +161,21 @@ function getTitleMatch(title: string): Match | null {
       (match) => ({ number: match[1] ?? "" }),
     ],
     [
+      /^Environment out of range: (.+)$/,
+      "environmentOutOfRange",
+      (match) => ({ location: match[1] ?? "" }),
+    ],
+    [
+      /^Environment still out of range: (.+)$/,
+      "environmentStillOutOfRange",
+      (match) => ({ location: match[1] ?? "" }),
+    ],
+    [
+      /^Environment back in range: (.+)$/,
+      "environmentBackInRange",
+      (match) => ({ location: match[1] ?? "" }),
+    ],
+    [
       /^SLA Breach: (.+) pending over (\d+) days$/,
       "slaBreach",
       (match) => ({ workflowType: match[1] ?? "", days: match[2] ?? "" }),
@@ -529,6 +544,84 @@ function getMessageMatch(message: string): Match | null {
   return null;
 }
 
+const ENVIRONMENT_COPY = "untranslatedComponents.notificationCopy.environment";
+const MEASURE_KEYS: Record<string, string> = {
+  Temperature: "temperature",
+  temperature: "temperature",
+  "Relative humidity": "humidity",
+  "relative humidity": "humidity",
+  Light: "lightLevel",
+  light: "lightLevel",
+  UV: "uvLevel",
+};
+const MEASUREMENT = String.raw`(-?\d+(?:\.\d+)?)(?: °C|%| lx)?`;
+const BREACH_ITEM = new RegExp(
+  `^(Temperature|Relative humidity|Light|UV) ${MEASUREMENT} (above|below) the ${MEASUREMENT} (?:maximum|minimum)$`,
+);
+const EXTREME_ITEM = new RegExp(
+  `^(Highest|Lowest) (temperature|relative humidity|light|UV) ${MEASUREMENT}$`,
+);
+
+/** Translates "a; b; c" item by item, or gives up when one is unknown. */
+function translateItems(
+  text: string,
+  item: RegExp,
+  toCopy: (match: RegExpExecArray) => string,
+) {
+  const parts = text.split("; ").map((part) => {
+    const match = item.exec(part);
+    return match ? toCopy(match) : null;
+  });
+  return parts.every((part) => part !== null) ? parts.join("; ") : null;
+}
+
+/**
+ * Alert episode messages list breaches ("Relative humidity 61% above the 55%
+ * maximum") or worst values ("Highest relative humidity 63%"), after an
+ * escalation or recovery sentence.
+ */
+function getEnvironmentMessage(
+  message: string,
+  translate: NotificationTranslator,
+): string | null {
+  const breach = (match: RegExpExecArray) =>
+    translate(
+      `${ENVIRONMENT_COPY}.breach.${MEASURE_KEYS[match[1] ?? ""]}${match[3] === "above" ? "Above" : "Below"}`,
+      { value: match[2] ?? "", limit: match[4] ?? "" },
+    );
+  const extreme = (match: RegExpExecArray) =>
+    translate(
+      `${ENVIRONMENT_COPY}.extreme.${MEASURE_KEYS[match[2] ?? ""]}${match[1]}`,
+      { value: match[3] ?? "" },
+    );
+  if (message === "Readings are back within the thresholds.") {
+    return translate(`${ENVIRONMENT_COPY}.backWithin`);
+  }
+  const recovery = /^Readings are back within the thresholds\. (.+)\.$/.exec(
+    message,
+  );
+  if (recovery) {
+    const extremes = translateItems(recovery[1] ?? "", EXTREME_ITEM, extreme);
+    return (
+      extremes && `${translate(`${ENVIRONMENT_COPY}.backWithin`)} ${extremes}.`
+    );
+  }
+  const escalation = /^Out of range for over (1 hour|24 hours)\. (.+)\.$/.exec(
+    message,
+  );
+  if (escalation) {
+    const breaches = translateItems(escalation[2] ?? "", BREACH_ITEM, breach);
+    const duration = escalation[1] === "1 hour" ? "overAnHour" : "overADay";
+    return (
+      breaches && `${translate(`${ENVIRONMENT_COPY}.${duration}`)} ${breaches}.`
+    );
+  }
+  const opened = /^(.+)\.$/.exec(message);
+  const breaches =
+    opened && translateItems(opened[1] ?? "", BREACH_ITEM, breach);
+  return breaches ? `${breaches}.` : null;
+}
+
 export function getNotificationCopy(
   notification: NotificationCopySource,
   translate: NotificationTranslator,
@@ -537,6 +630,19 @@ export function getNotificationCopy(
     return { title: notification.title, message: notification.message };
   }
   const titleMatch = getTitleMatch(notification.title);
+  if (notification.type === "environmental_alert") {
+    return {
+      title: titleMatch
+        ? translate(
+            `untranslatedComponents.${titleMatch.key}`,
+            titleMatch.values,
+          )
+        : notification.title,
+      message:
+        getEnvironmentMessage(notification.message, translate) ??
+        notification.message,
+    };
+  }
   const messageMatch = getMessageMatch(notification.message);
   const localizeValues = (match: Match | null) => {
     if (!match?.values) return match?.values;

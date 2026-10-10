@@ -407,7 +407,7 @@ export default {
         statusActive: "Aktiv",
         statusRevoked: "Tilbakekalt",
         created: "Opprettet",
-        lastSeen: "Sist sett",
+        lastRequest: "Siste forespørsel",
         noRequests: "Ingen autentiserte forespørsler",
         lastError: "Siste feil",
         rotateCredential: "Roter legitimasjon",
@@ -424,6 +424,9 @@ export default {
         probeIdPlaceholder: "probe-1",
         location: "Plassering",
         bindProbe: "Knytt probe",
+        noProbeReadings: "ingen målinger ennå",
+        lastReadingObserved: "siste måling",
+        lastReadingReceived: "mottatt",
       },
     },
     tabs: {
@@ -2807,6 +2810,150 @@ export default {
       overCapacity: "Over kapasitet",
       openToPublic: "Åpent for publikum",
       restrictedAccess: "Begrenset tilgang",
+      enteredValues: "Innskrevne verdier, ikke en måling",
+      readingObserved: "Målt {time}",
+      readingSilent: "Ingen ny måling: målt {time}",
+    },
+    environment: {
+      title: "Miljø",
+      editThresholds: "Endre grenseverdier",
+      conditions: {
+        out_of_range: "Utenfor grensene",
+        silent: "Taus probe",
+        awaiting_readings: "Venter på målinger",
+        no_thresholds: "Ikke vurdert",
+        in_range: "Innenfor grensene",
+        no_devices: "Ingen enhet måler her",
+      },
+      conditionDetails: {
+        out_of_range:
+          "Målingene er utenfor grenseverdiene. En varselsepisode følger dette avviket til hver probe som viste det, er innenfor grensene igjen.",
+        silent:
+          "En probe har ikke sendt noen måling på over {hours} timer, så forholdene her er ukjente.",
+        awaiting_readings:
+          "En tilknyttet probe har ikke sendt sin første måling ennå.",
+        no_thresholds:
+          "Målinger kommer inn, men ingenting vurderer dem før grenseverdier er satt.",
+        in_range:
+          "Alle prober målte innenfor grenseverdiene de siste {hours} timene.",
+        no_devices:
+          "Ingen probe fra en aktiv enhet er knyttet til denne plasseringen. Personalmålingene nedenfor er stikkprøver.",
+      },
+      policy:
+        "En episode eskaleres når målingene holder seg utenfor grenseverdiene i en time, og igjen etter et døgn. En probe regnes som gjenopprettet etter {minutes} minutter med målinger innenfor grensene og blir taus etter {hours} timer uten måling.",
+      measures: {
+        temperature: "Temperatur",
+        humidity: "Relativ fuktighet",
+        lightLevel: "Lys",
+        uvLevel: "UV",
+      },
+      notSet: "Ikke satt",
+      openEpisode: "Åpen varselsepisode",
+      outOfRangeSince: "Utenfor grenseverdiene siden {time} ({duration})",
+      resolve: "Avslutt",
+      viewEvidence: "Se dokumentasjon",
+      probes: "Prober",
+      noProbes: "Ingen probe er knyttet til denne plasseringen.",
+      probeLabel: "{device} · {probe}",
+      unknownDevice: "Ukjent enhet",
+      probeStatus: {
+        reporting: "Rapporterer",
+        silent: "Taus",
+        awaiting_first_reading: "Venter på første måling",
+        revoked: "Enhet tilbakekalt",
+      },
+      observedAt: "Målt: {time}",
+      receivedAt: "mottatt: {time}",
+      noReadingYet: "Ingen måling ennå",
+      deviceLastRequest: "Enhetens siste forespørsel: {time}",
+      deviceNoRequests: "Ingen forespørsler fra denne enheten ennå",
+      deviceLastError: "Enhetsfeil: {error}",
+      recentEpisodes: "Nylige episoder",
+      noEpisodes: "Ingen varselsepisoder ennå.",
+      recentReadings: "Siste målinger",
+      noReadings: "Ingen målinger ennå.",
+      outOfRange: "Utenfor grensene",
+      late: "Forsinket",
+      staffReading: "Personalmåling",
+      staffReadingBy: "Personalmåling av {name}",
+      staffReadings: "Personalmålinger",
+      importedReading: "Importert måling",
+      unknownStaff: "et tidligere medlem",
+      episodeStatus: {
+        open: "Åpen",
+        recovered: "Gjenopprettet",
+        resolved: "Avsluttet",
+      },
+      escalationLevel: {
+        hour: "over en time",
+        day: "over et døgn",
+      },
+      startedAt: "Startet",
+      lastReading: "Siste måling",
+      endedAt: "Sluttet",
+      lasted: "Varte {duration}",
+      openFor: "Åpen i {duration}",
+      readings: "Målinger",
+      readingCounts:
+        "{count} talt, {outOfRange} utenfor grensene, {late} forsinket",
+      breaches: "Overskredne grenser",
+      breach: {
+        above: "{measure} over maksimum på {limit}",
+        below: "{measure} under minimum på {limit}",
+      },
+      extreme: {
+        above: "høyeste {value}",
+        below: "laveste {value}",
+      },
+      sourcesHeading: "Gjenoppretting",
+      sourceRecovered: "Gjenopprettet {time}",
+      sourceRecovering: "Innenfor grensene siden {time}",
+      sourceSilent: "Taus, siste måling {time}",
+      sourceOutOfRange: "Utenfor grensene, siste måling {time}",
+      resolvedBy: "Avsluttet av {name} {time}",
+      thresholdsAtOpening:
+        "Grenseverdier da episoden startet: temperatur {temperature}, relativ fuktighet {humidity}.",
+      backToLocation: "Tilbake til {location}",
+      episodeTitle: "Varselsepisode: {location}",
+      evidenceHeading: "Målinger i denne episoden",
+      evidenceDescription:
+        "Alle målingene episoden telte, nyeste observasjon først. Forsinkede målinger kom etter en senere måling fra samme probe; de teller som dokumentasjon, men endrer aldri episoden.",
+      loadMoreReadings: "Last inn flere målinger",
+      thresholdsDialog: {
+        title: "Grenseverdier for miljø",
+        description:
+          "Målinger utenfor disse grensene åpner en varselsepisode. Nye grenser gjelder for senere målinger.",
+        fields: {
+          temperatureMin: "Laveste temperatur (°C)",
+          temperatureMax: "Høyeste temperatur (°C)",
+          humidityMin: "Laveste relative fuktighet (%)",
+          humidityMax: "Høyeste relative fuktighet (%)",
+        },
+        hint: "La et felt stå tomt for å ikke sette noen grense. Temperaturer går fra -100 til 100 °C og fuktighet fra 0 til 100 %.",
+        invalid:
+          "Skriv inn mulige målinger, med hvert minimum under sitt maksimum.",
+        failed: "Kunne ikke lagre grenseverdiene.",
+        cancel: "Avbryt",
+        save: "Lagre grenseverdier",
+      },
+      resolveDialog: {
+        title: "Avslutt varselsepisode",
+        description:
+          "Avslutt episoden når målingene ikke kan vise gjenoppretting, for eksempel etter at proben ble flyttet eller tatt ut av bruk. Er målingene fortsatt utenfor grensene, åpner neste måling en ny episode.",
+        note: "Notat",
+        notePlaceholder:
+          "Hva som ble kontrollert, og hvorfor episoden kan avsluttes",
+        noteRequired: "Skriv et notat på opptil 1000 tegn.",
+        failed: "Kunne ikke avslutte episoden.",
+        cancel: "Avbryt",
+        submit: "Avslutt episoden",
+      },
+      errors: {
+        thresholdsInvalid:
+          "Skriv inn mulige målinger, med hvert minimum under sitt maksimum.",
+        episodeNotOpen: "Denne episoden er allerede avsluttet.",
+        resolutionNoteInvalid: "Skriv et notat på opptil 1000 tegn.",
+      },
     },
     sidebar: {
       empty: "Ingen plasseringer ennå",
@@ -9891,6 +10038,10 @@ export default {
         transitDelayed: "Forsinket transport: {number}",
         slaBreach: "SLA-brudd: {workflowType} har ventet i over {days} dager",
         slaWarning: "SLA-varsel: {workflowType} har frist om {days} dager",
+        environmentOutOfRange: "Miljø utenfor grensene: {location}",
+        environmentStillOutOfRange:
+          "Miljø fortsatt utenfor grensene: {location}",
+        environmentBackInRange: "Miljø innenfor grensene igjen: {location}",
       },
       messages: {
         objectMoveExecuted:
@@ -10026,6 +10177,29 @@ export default {
       loanTypes: {
         incoming: "innkommende",
         outgoing: "utgående",
+      },
+      environment: {
+        overAnHour: "Utenfor grensene i over en time.",
+        overADay: "Utenfor grensene i over et døgn.",
+        backWithin: "Målingene er innenfor grenseverdiene igjen.",
+        breach: {
+          temperatureAbove: "Temperatur {value} °C over maksimum på {limit} °C",
+          temperatureBelow: "Temperatur {value} °C under minimum på {limit} °C",
+          humidityAbove:
+            "Relativ fuktighet {value} % over maksimum på {limit} %",
+          humidityBelow:
+            "Relativ fuktighet {value} % under minimum på {limit} %",
+          lightLevelAbove: "Lys {value} lx over maksimum på {limit} lx",
+          uvLevelAbove: "UV {value} over maksimum på {limit}",
+        },
+        extreme: {
+          temperatureHighest: "Høyeste temperatur {value} °C",
+          temperatureLowest: "Laveste temperatur {value} °C",
+          humidityHighest: "Høyeste relative fuktighet {value} %",
+          humidityLowest: "Laveste relative fuktighet {value} %",
+          lightLevelHighest: "Høyeste lysnivå {value} lx",
+          uvLevelHighest: "Høyeste UV {value}",
+        },
       },
     },
     searchLogic: {

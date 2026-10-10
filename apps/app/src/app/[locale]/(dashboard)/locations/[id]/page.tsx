@@ -18,6 +18,7 @@ import { useI18n, useScopedI18n } from "@/locales/client";
 import { AddChildLocationDialog } from "../_components/add-child-location-dialog/add-child-location-dialog";
 import { DeleteLocationDialog } from "../_components/delete-location-dialog";
 import { EditLocationDialog } from "../_components/edit-location-dialog/edit-location-dialog";
+import { LocationEnvironment } from "../_components/environment/location-environment";
 import { LocationActions } from "../_components/location-layout/location-actions";
 import { LocationLayoutContent } from "../_components/location-layout/location-layout-content";
 import { buildLocationPath } from "../_components/location-layout/location-layout-helpers";
@@ -151,6 +152,8 @@ function LocationDetailContent() {
               objectsAtLocation={objectsAtLocation ?? undefined}
               onSelectLocation={(id) => push(`/locations/${id}`)}
             />
+
+            <LocationEnvironment locationId={location._id} />
 
             {(location.address || location.coordinates || location.notes) && (
               <dl className="mt-8 grid gap-5 rounded-lg bg-muted/20 p-4 text-xs sm:grid-cols-2">

@@ -413,7 +413,7 @@ export default {
         statusActive: "Actif",
         statusRevoked: "Révoqué",
         created: "Créé",
-        lastSeen: "Dernière activité",
+        lastRequest: "Dernière requête",
         noRequests: "Aucune requête authentifiée",
         lastError: "Dernière erreur",
         rotateCredential: "Renouveler la clé",
@@ -430,6 +430,9 @@ export default {
         probeIdPlaceholder: "sonde-1",
         location: "Emplacement",
         bindProbe: "Associer la sonde",
+        noProbeReadings: "aucune mesure pour l'instant",
+        lastReadingObserved: "dernière mesure le",
+        lastReadingReceived: "reçue le",
       },
     },
     tabs: {
@@ -2895,6 +2898,151 @@ export default {
       overCapacity: "Au-dessus de la capacité",
       openToPublic: "Ouvert au public",
       restrictedAccess: "Accès restreint",
+      enteredValues: "Valeurs saisies, pas une mesure",
+      readingObserved: "Mesuré : {time}",
+      readingSilent: "Aucune mesure récente : mesuré {time}",
+    },
+    environment: {
+      title: "Environnement",
+      editThresholds: "Modifier les seuils",
+      conditions: {
+        out_of_range: "Hors seuils",
+        silent: "Sonde silencieuse",
+        awaiting_readings: "En attente de mesures",
+        no_thresholds: "Non évalué",
+        in_range: "Dans les seuils",
+        no_devices: "Aucun appareil ne mesure ici",
+      },
+      conditionDetails: {
+        out_of_range:
+          "Les mesures sont hors des seuils. Un épisode d'alerte suit ce dépassement jusqu'à ce que chaque sonde qui l'a montré revienne dans les seuils.",
+        silent:
+          "Une sonde n'a envoyé aucune mesure depuis plus de {hours} heures ; les conditions ici sont donc inconnues.",
+        awaiting_readings:
+          "Une sonde associée n'a pas encore envoyé sa première mesure.",
+        no_thresholds:
+          "Les mesures arrivent, mais rien ne les évalue tant que des seuils ne sont pas définis.",
+        in_range:
+          "Chaque sonde a envoyé une mesure dans les seuils au cours des {hours} dernières heures.",
+        no_devices:
+          "Aucune sonde d'un appareil actif n'est associée à cet emplacement. Les mesures du personnel ci-dessous sont des contrôles ponctuels.",
+      },
+      policy:
+        "Un épisode s'aggrave lorsque les mesures restent hors des seuils pendant une heure, puis de nouveau après un jour. Une sonde est rétablie après {minutes} minutes de mesures dans les seuils et devient silencieuse après {hours} heures sans mesure.",
+      measures: {
+        temperature: "Température",
+        humidity: "Humidité relative",
+        lightLevel: "Lumière",
+        uvLevel: "UV",
+      },
+      notSet: "Non défini",
+      openEpisode: "Épisode d'alerte ouvert",
+      outOfRangeSince: "Hors des seuils depuis le {time} ({duration})",
+      resolve: "Clore",
+      viewEvidence: "Voir les preuves",
+      probes: "Sondes",
+      noProbes: "Aucune sonde n'est associée à cet emplacement.",
+      probeLabel: "{device} · {probe}",
+      unknownDevice: "Appareil inconnu",
+      probeStatus: {
+        reporting: "Transmet",
+        silent: "Silencieuse",
+        awaiting_first_reading: "En attente de la première mesure",
+        revoked: "Appareil révoqué",
+      },
+      observedAt: "Mesuré : {time}",
+      receivedAt: "reçu : {time}",
+      noReadingYet: "Aucune mesure pour l'instant",
+      deviceLastRequest: "Dernière requête de l'appareil : {time}",
+      deviceNoRequests: "Aucune requête de cet appareil pour l'instant",
+      deviceLastError: "Erreur de l'appareil : {error}",
+      recentEpisodes: "Épisodes récents",
+      noEpisodes: "Aucun épisode d'alerte pour l'instant.",
+      recentReadings: "Dernières mesures",
+      noReadings: "Aucune mesure pour l'instant.",
+      outOfRange: "Hors seuils",
+      late: "En retard",
+      staffReading: "Mesure du personnel",
+      staffReadingBy: "Mesure du personnel par {name}",
+      staffReadings: "Mesures du personnel",
+      importedReading: "Mesure importée",
+      unknownStaff: "un ancien membre",
+      episodeStatus: {
+        open: "Ouvert",
+        recovered: "Rétabli",
+        resolved: "Clos",
+      },
+      escalationLevel: {
+        hour: "plus d'une heure",
+        day: "plus d'un jour",
+      },
+      startedAt: "Début",
+      lastReading: "Dernière mesure",
+      endedAt: "Fin",
+      lasted: "Durée : {duration}",
+      openFor: "Ouvert depuis {duration}",
+      readings: "Mesures",
+      readingCounts:
+        "{count} comptées, {outOfRange} hors des seuils, {late} en retard",
+      breaches: "Limites dépassées",
+      breach: {
+        above: "{measure} au-dessus du maximum de {limit}",
+        below: "{measure} en dessous du minimum de {limit}",
+      },
+      extreme: {
+        above: "maximum atteint : {value}",
+        below: "minimum atteint : {value}",
+      },
+      sourcesHeading: "Rétablissement",
+      sourceRecovered: "Rétablie {time}",
+      sourceRecovering: "Dans les seuils depuis {time}",
+      sourceSilent: "Silencieuse, dernière mesure {time}",
+      sourceOutOfRange: "Hors des seuils, dernière mesure {time}",
+      resolvedBy: "Clos par {name} le {time}",
+      thresholdsAtOpening:
+        "Seuils à l'ouverture de l'épisode : température {temperature}, humidité relative {humidity}.",
+      backToLocation: "Retour à {location}",
+      episodeTitle: "Épisode d'alerte : {location}",
+      evidenceHeading: "Mesures de cet épisode",
+      evidenceDescription:
+        "Toutes les mesures comptées par l'épisode, de la plus récente à la plus ancienne. Une mesure en retard est arrivée après une mesure plus récente de la même sonde ; elle compte comme preuve mais ne modifie jamais l'épisode.",
+      loadMoreReadings: "Charger plus de mesures",
+      thresholdsDialog: {
+        title: "Seuils environnementaux",
+        description:
+          "Les mesures hors de ces limites ouvrent un épisode d'alerte. Les nouvelles limites s'appliquent aux mesures suivantes.",
+        fields: {
+          temperatureMin: "Température minimale (°C)",
+          temperatureMax: "Température maximale (°C)",
+          humidityMin: "Humidité relative minimale (%)",
+          humidityMax: "Humidité relative maximale (%)",
+        },
+        hint: "Laissez un champ vide pour ne fixer aucune limite. Les températures vont de -100 à 100 °C et l'humidité de 0 à 100 %.",
+        invalid:
+          "Saisissez des mesures possibles, chaque minimum étant inférieur à son maximum.",
+        failed: "Impossible d'enregistrer les seuils.",
+        cancel: "Annuler",
+        save: "Enregistrer les seuils",
+      },
+      resolveDialog: {
+        title: "Clore l'épisode d'alerte",
+        description:
+          "Clôturez cet épisode lorsque les mesures ne peuvent pas montrer le rétablissement, par exemple après le déplacement ou le retrait de sa sonde. Si les mesures sont toujours hors des seuils, la suivante ouvre un nouvel épisode.",
+        note: "Note",
+        notePlaceholder:
+          "Ce qui a été vérifié et pourquoi l'épisode peut être clos",
+        noteRequired: "Rédigez une note de 1 000 caractères au maximum.",
+        failed: "Impossible de clore l'épisode.",
+        cancel: "Annuler",
+        submit: "Clore l'épisode",
+      },
+      errors: {
+        thresholdsInvalid:
+          "Saisissez des mesures possibles, chaque minimum étant inférieur à son maximum.",
+        episodeNotOpen: "Cet épisode est déjà terminé.",
+        resolutionNoteInvalid:
+          "Rédigez une note de 1 000 caractères au maximum.",
+      },
     },
     sidebar: {
       empty: "Aucun emplacement pour le moment",
@@ -10001,6 +10149,11 @@ export default {
         slaBreach:
           "Dépassement du délai SLA : {workflowType} en attente depuis plus de {days} jours",
         slaWarning: "Alerte SLA : échéance de {workflowType} dans {days} jours",
+        environmentOutOfRange: "Environnement hors seuils : {location}",
+        environmentStillOutOfRange:
+          "Environnement toujours hors seuils : {location}",
+        environmentBackInRange:
+          "Environnement revenu dans les seuils : {location}",
       },
       messages: {
         objectMoveExecuted:
@@ -10145,6 +10298,32 @@ export default {
       loanTypes: {
         incoming: "entrant",
         outgoing: "sortant",
+      },
+      environment: {
+        overAnHour: "Hors des seuils depuis plus d'une heure.",
+        overADay: "Hors des seuils depuis plus d'un jour.",
+        backWithin: "Les mesures sont revenues dans les seuils.",
+        breach: {
+          temperatureAbove:
+            "Température {value} °C au-dessus du maximum de {limit} °C",
+          temperatureBelow:
+            "Température {value} °C en dessous du minimum de {limit} °C",
+          humidityAbove:
+            "Humidité relative {value} % au-dessus du maximum de {limit} %",
+          humidityBelow:
+            "Humidité relative {value} % en dessous du minimum de {limit} %",
+          lightLevelAbove:
+            "Lumière {value} lx au-dessus du maximum de {limit} lx",
+          uvLevelAbove: "UV {value} au-dessus du maximum de {limit}",
+        },
+        extreme: {
+          temperatureHighest: "Température maximale {value} °C",
+          temperatureLowest: "Température minimale {value} °C",
+          humidityHighest: "Humidité relative maximale {value} %",
+          humidityLowest: "Humidité relative minimale {value} %",
+          lightLevelHighest: "Lumière maximale {value} lx",
+          uvLevelHighest: "UV maximal {value}",
+        },
       },
     },
     searchLogic: {

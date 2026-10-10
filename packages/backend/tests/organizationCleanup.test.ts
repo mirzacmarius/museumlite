@@ -399,6 +399,105 @@ describe("organizationCleanup", () => {
     expect(auditEntry?.entityId).toBe("missing-historical-collection");
   });
 
+  test("purging a library removes its environmental devices, probes and alert episodes", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createAdminOrganization(
+      t,
+      "Cleanup Environment Org",
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+      const locationId = await ctx.db.insert("locations", {
+        organizationId,
+        name: "Reading Room",
+        type: "room",
+        sortOrder: 0,
+        isActive: true,
+      });
+      const deviceId = await ctx.db.insert("environmentalDevices", {
+        organizationId,
+        name: "Reading room logger",
+        credentialPrefix: "env_cleanup0",
+        credentialHash: "0".repeat(64),
+        status: "active",
+        createdBy: userId,
+        createdAt: 1,
+      });
+      const probeId = await ctx.db.insert("environmentalProbes", {
+        organizationId,
+        deviceId,
+        probeId: "probe-1",
+        locationId,
+        isActive: true,
+        boundBy: userId,
+        boundAt: 1,
+      });
+      const episodeId = await ctx.db.insert("alertEpisodes", {
+        organizationId,
+        locationId,
+        status: "open",
+        startedAt: 2,
+        lastObservedAt: 2,
+        thresholds: { humidityMax: 55 },
+        breaches: [{ measure: "humidity", direction: "above" }],
+        ranges: { humidity: { min: 61, max: 61 } },
+        escalationLevel: 0,
+        readingCount: 1,
+        outOfRangeCount: 1,
+        lateReadingCount: 0,
+        sources: [{ probe: probeId, lastObservedAt: 2 }],
+      });
+      await ctx.db.insert("environmentalReadings", {
+        organizationId,
+        locationId,
+        humidity: 61,
+        recordedAt: 2,
+        source: "sensor",
+        sensorDeviceId: deviceId,
+        sensorProbeId: "probe-1",
+        externalReadingId: "r1",
+        alertTriggered: true,
+        episodeId,
+      });
+    });
+    const admin = authedForUser(t, userId);
+
+    const [dryRun] = await admin.mutation(
+      api.organizationCleanup.purgeOrganizations,
+      { organizationIds: [organizationId], dryRun: true },
+    );
+    await t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+      organizationIds: [organizationId],
+      dryRun: false,
+    });
+    const remaining = await t.run(async (ctx) => ({
+      environmentalDevices: (
+        await ctx.db.query("environmentalDevices").collect()
+      ).length,
+      environmentalProbes: (await ctx.db.query("environmentalProbes").collect())
+        .length,
+      alertEpisodes: (await ctx.db.query("alertEpisodes").collect()).length,
+      environmentalReadings: (
+        await ctx.db.query("environmentalReadings").collect()
+      ).length,
+    }));
+
+    expect(dryRun?.tableCounts).toEqual(
+      expect.arrayContaining([
+        { table: "environmentalDevices", count: 1 },
+        { table: "environmentalProbes", count: 1 },
+        { table: "alertEpisodes", count: 1 },
+        { table: "environmentalReadings", count: 1 },
+      ]),
+    );
+    expect(remaining).toEqual({
+      environmentalDevices: 0,
+      environmentalProbes: 0,
+      alertEpisodes: 0,
+      environmentalReadings: 0,
+    });
+  });
+
   test("purging a library removes its export jobs, projection data and metric aggregate entries", async () => {
     vi.useFakeTimers();
     const t = convexTest(schema, modules);

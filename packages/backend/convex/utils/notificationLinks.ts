@@ -26,6 +26,8 @@ export function notificationEntityHref(
       return "/installations";
     case "location":
       return `/locations/${entityId}`;
+    case "alertEpisode":
+      return `/locations/episodes/${entityId}`;
     case "move_request":
       return `/objects/move-requests/${entityId}`;
     case "documentationFinding":

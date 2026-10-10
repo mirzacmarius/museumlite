@@ -405,7 +405,7 @@ export default {
         statusActive: "Active",
         statusRevoked: "Revoked",
         created: "Created",
-        lastSeen: "Last seen",
+        lastRequest: "Last request",
         noRequests: "No authenticated requests",
         lastError: "Last error",
         rotateCredential: "Rotate credential",
@@ -422,6 +422,9 @@ export default {
         probeIdPlaceholder: "probe-1",
         location: "Location",
         bindProbe: "Bind probe",
+        noProbeReadings: "no readings yet",
+        lastReadingObserved: "last reading observed",
+        lastReadingReceived: "received",
       },
     },
     tabs: {
@@ -2121,6 +2124,148 @@ export default {
       overCapacity: "Over capacity",
       openToPublic: "Open to Public",
       restrictedAccess: "Restricted Access",
+      enteredValues: "Entered values, not a reading",
+      readingObserved: "Observed {time}",
+      readingSilent: "No recent reading: observed {time}",
+    },
+    environment: {
+      title: "Environment",
+      editThresholds: "Edit thresholds",
+      conditions: {
+        out_of_range: "Out of range",
+        silent: "Silent probe",
+        awaiting_readings: "Waiting for readings",
+        no_thresholds: "Not judged",
+        in_range: "In range",
+        no_devices: "No device reports here",
+      },
+      conditionDetails: {
+        out_of_range:
+          "Readings are outside the thresholds. An alert episode tracks this breach until every probe that showed it is back within them.",
+        silent:
+          "A probe has sent no reading for over {hours} hours, so the conditions here are unknown.",
+        awaiting_readings: "A bound probe has not sent its first reading yet.",
+        no_thresholds:
+          "Readings arrive, but nothing judges them until thresholds are set.",
+        in_range:
+          "Every probe reported within the thresholds in the last {hours} hours.",
+        no_devices:
+          "No probe of an active device is bound to this location. Staff readings below are spot checks.",
+      },
+      policy:
+        "An episode escalates when readings stay outside the thresholds for an hour, and again after a day. A probe recovers after {minutes} minutes of readings within them and turns silent after {hours} hours without a reading.",
+      measures: {
+        temperature: "Temperature",
+        humidity: "Relative humidity",
+        lightLevel: "Light",
+        uvLevel: "UV",
+      },
+      notSet: "Not set",
+      openEpisode: "Open alert episode",
+      outOfRangeSince: "Outside the thresholds since {time} ({duration})",
+      resolve: "Resolve",
+      viewEvidence: "View evidence",
+      probes: "Probes",
+      noProbes: "No probe is bound to this location.",
+      probeLabel: "{device} · {probe}",
+      unknownDevice: "Unknown device",
+      probeStatus: {
+        reporting: "Reporting",
+        silent: "Silent",
+        awaiting_first_reading: "Awaiting first reading",
+        revoked: "Device revoked",
+      },
+      observedAt: "Observed {time}",
+      receivedAt: "received {time}",
+      noReadingYet: "No reading yet",
+      deviceLastRequest: "Device's last request {time}",
+      deviceNoRequests: "No requests from this device yet",
+      deviceLastError: "Device error: {error}",
+      recentEpisodes: "Recent episodes",
+      noEpisodes: "No alert episodes yet.",
+      recentReadings: "Latest readings",
+      noReadings: "No readings yet.",
+      outOfRange: "Out of range",
+      late: "Late",
+      staffReading: "Staff reading",
+      staffReadingBy: "Staff reading by {name}",
+      staffReadings: "Staff readings",
+      importedReading: "Imported reading",
+      unknownStaff: "a former member",
+      episodeStatus: {
+        open: "Open",
+        recovered: "Recovered",
+        resolved: "Resolved",
+      },
+      escalationLevel: {
+        hour: "over an hour",
+        day: "over a day",
+      },
+      startedAt: "Started",
+      lastReading: "Latest reading",
+      endedAt: "Ended",
+      lasted: "Lasted {duration}",
+      openFor: "Open for {duration}",
+      readings: "Readings",
+      readingCounts:
+        "{count} counted, {outOfRange} outside the thresholds, {late} late",
+      breaches: "Breached limits",
+      breach: {
+        above: "{measure} above the {limit} maximum",
+        below: "{measure} below the {limit} minimum",
+      },
+      extreme: {
+        above: "highest {value}",
+        below: "lowest {value}",
+      },
+      sourcesHeading: "Recovery",
+      sourceRecovered: "Recovered {time}",
+      sourceRecovering: "Within the thresholds since {time}",
+      sourceSilent: "Silent, last reading {time}",
+      sourceOutOfRange: "Outside the thresholds, last reading {time}",
+      resolvedBy: "Resolved by {name} on {time}",
+      thresholdsAtOpening:
+        "Thresholds when the episode opened: temperature {temperature}, relative humidity {humidity}.",
+      backToLocation: "Back to {location}",
+      episodeTitle: "Alert episode: {location}",
+      evidenceHeading: "Readings in this episode",
+      evidenceDescription:
+        "Every reading the episode counted, newest observation first. Late readings arrived after a later one from the same probe; they count as evidence but never change the episode.",
+      loadMoreReadings: "Load more readings",
+      thresholdsDialog: {
+        title: "Environmental thresholds",
+        description:
+          "Readings outside these limits open an alert episode. New limits apply to later readings.",
+        fields: {
+          temperatureMin: "Minimum temperature (°C)",
+          temperatureMax: "Maximum temperature (°C)",
+          humidityMin: "Minimum relative humidity (%)",
+          humidityMax: "Maximum relative humidity (%)",
+        },
+        hint: "Leave a field empty to set no limit. Temperatures go from -100 to 100 °C and humidity from 0 to 100 %.",
+        invalid:
+          "Enter possible readings, with each minimum below its maximum.",
+        failed: "Could not save the thresholds.",
+        cancel: "Cancel",
+        save: "Save thresholds",
+      },
+      resolveDialog: {
+        title: "Resolve alert episode",
+        description:
+          "Close this episode when readings cannot show recovery, for example after its probe was moved or retired. If readings are still outside the thresholds, the next one opens a new episode.",
+        note: "Note",
+        notePlaceholder: "What was checked and why the episode can close",
+        noteRequired: "Write a note of up to 1,000 characters.",
+        failed: "Could not resolve the episode.",
+        cancel: "Cancel",
+        submit: "Resolve episode",
+      },
+      errors: {
+        thresholdsInvalid:
+          "Enter possible readings, with each minimum below its maximum.",
+        episodeNotOpen: "This episode has already ended.",
+        resolutionNoteInvalid: "Write a note of up to 1,000 characters.",
+      },
     },
     sidebar: {
       empty: "No locations yet",
@@ -9672,6 +9817,10 @@ export default {
         transitDelayed: "Transit Delayed: {number}",
         slaBreach: "SLA Breach: {workflowType} pending over {days} days",
         slaWarning: "SLA Warning: {workflowType} due in {days} days",
+        environmentOutOfRange: "Environment out of range: {location}",
+        environmentStillOutOfRange:
+          "Environment still out of range: {location}",
+        environmentBackInRange: "Environment back in range: {location}",
       },
       messages: {
         objectMoveExecuted:
@@ -9812,6 +9961,31 @@ export default {
       loanTypes: {
         incoming: "incoming",
         outgoing: "outgoing",
+      },
+      environment: {
+        overAnHour: "Out of range for over an hour.",
+        overADay: "Out of range for over a day.",
+        backWithin: "Readings are back within the thresholds.",
+        breach: {
+          temperatureAbove:
+            "Temperature {value} °C above the {limit} °C maximum",
+          temperatureBelow:
+            "Temperature {value} °C below the {limit} °C minimum",
+          humidityAbove:
+            "Relative humidity {value}% above the {limit}% maximum",
+          humidityBelow:
+            "Relative humidity {value}% below the {limit}% minimum",
+          lightLevelAbove: "Light {value} lx above the {limit} lx maximum",
+          uvLevelAbove: "UV {value} above the {limit} maximum",
+        },
+        extreme: {
+          temperatureHighest: "Highest temperature {value} °C",
+          temperatureLowest: "Lowest temperature {value} °C",
+          humidityHighest: "Highest relative humidity {value}%",
+          humidityLowest: "Lowest relative humidity {value}%",
+          lightLevelHighest: "Highest light {value} lx",
+          uvLevelHighest: "Highest UV {value}",
+        },
       },
     },
     searchLogic: {

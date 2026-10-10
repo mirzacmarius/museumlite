@@ -5,6 +5,8 @@ import {
   accessionReviewDecisionValidator,
   accessionStatusValidator,
 } from "./utils/accessionReview";
+import { environmentalThresholds } from "./utils/alertEpisodePolicy";
+import { alertEpisodeFields } from "./utils/alertEpisodeValidators";
 import {
   caseTaskCaseTypeValidator,
   caseTaskEvidenceReferenceValidator,
@@ -1506,16 +1508,7 @@ export default defineSchema({
     capacity: v.optional(v.number()), // Max number of objects this location can hold
     customFields: v.optional(v.record(v.string(), customFieldValue)),
     // Environmental thresholds for conservation monitoring
-    environmentalThresholds: v.optional(
-      v.object({
-        temperatureMin: v.optional(v.number()), // Celsius
-        temperatureMax: v.optional(v.number()),
-        humidityMin: v.optional(v.number()), // Percentage
-        humidityMax: v.optional(v.number()),
-        lightLevelMax: v.optional(v.number()), // Lux
-        uvLevelMax: v.optional(v.number()), // UV index
-      }),
-    ),
+    environmentalThresholds: v.optional(environmentalThresholds),
     // Location status for workflow control
     status: v.optional(
       v.union(
@@ -2293,9 +2286,12 @@ export default defineSchema({
     ),
     sensorId: v.optional(v.string()), // External sensor identifier
     notes: v.optional(v.string()),
-    // Alert tracking
+    // Alert tracking: outside the thresholds, and the episode it belongs to
     alertTriggered: v.optional(v.boolean()),
     alertId: v.optional(v.id("conservationAlerts")),
+    episodeId: v.optional(v.id("alertEpisodes")),
+    // Observed before the latest reading already accepted from its probe
+    late: v.optional(v.boolean()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_location", ["locationId"])
@@ -2304,7 +2300,8 @@ export default defineSchema({
       "sensorDeviceId",
       "sensorProbeId",
       "externalReadingId",
-    ]),
+    ])
+    .index("by_episodeId_and_recordedAt", ["episodeId", "recordedAt"]),
 
   environmentalDevices: defineTable({
     organizationId: v.id("organizations"),
@@ -2331,10 +2328,17 @@ export default defineSchema({
     isActive: v.boolean(),
     boundBy: v.id("users"),
     boundAt: v.number(),
+    // The latest reading in observation order; later arrivals observed earlier are late
+    lastReadingId: v.optional(v.id("environmentalReadings")),
   })
     .index("by_device_and_probe", ["deviceId", "probeId"])
     .index("by_organization_and_device", ["organizationId", "deviceId"])
     .index("by_location", ["locationId"]),
+
+  // Sustained breaches of a location's environmental thresholds (ADR 0013)
+  alertEpisodes: defineTable(alertEpisodeFields)
+    .index("by_locationId_and_status", ["locationId", "status"])
+    .index("by_locationId_and_startedAt", ["locationId", "startedAt"]),
 
   // Conservation treatment attachments (before/after photos, reports)
   conservationAttachments: defineTable({

@@ -417,7 +417,7 @@ export default {
         statusActive: "Activo",
         statusRevoked: "Revocado",
         created: "Creado",
-        lastSeen: "Última actividad",
+        lastRequest: "Última solicitud",
         noRequests: "Aún no hay solicitudes autenticadas",
         lastError: "Último error",
         rotateCredential: "Rotar credencial",
@@ -434,6 +434,9 @@ export default {
         probeIdPlaceholder: "sonda-1",
         location: "Ubicación",
         bindProbe: "Vincular sonda",
+        noProbeReadings: "aún sin lecturas",
+        lastReadingObserved: "última lectura medida el",
+        lastReadingReceived: "recibida el",
       },
     },
     tabs: {
@@ -2843,6 +2846,149 @@ export default {
       overCapacity: "Por encima de la capacidad",
       openToPublic: "Abierto al público",
       restrictedAccess: "Acceso restringido",
+      enteredValues: "Valores introducidos, no una lectura",
+      readingObserved: "Medido: {time}",
+      readingSilent: "Sin lectura reciente: medido {time}",
+    },
+    environment: {
+      title: "Condiciones ambientales",
+      editThresholds: "Editar umbrales",
+      conditions: {
+        out_of_range: "Fuera de rango",
+        silent: "Sonda silenciosa",
+        awaiting_readings: "Esperando lecturas",
+        no_thresholds: "Sin evaluar",
+        in_range: "Dentro de rango",
+        no_devices: "Ningún dispositivo mide aquí",
+      },
+      conditionDetails: {
+        out_of_range:
+          "Las lecturas están fuera de los umbrales. Un episodio de alerta sigue esta incidencia hasta que cada sonda que la mostró vuelva a estar dentro de ellos.",
+        silent:
+          "Una sonda no ha enviado ninguna lectura en más de {hours} horas, así que las condiciones aquí son desconocidas.",
+        awaiting_readings:
+          "Una sonda vinculada aún no ha enviado su primera lectura.",
+        no_thresholds:
+          "Llegan lecturas, pero nada las evalúa hasta que se definan umbrales.",
+        in_range:
+          "Todas las sondas informaron dentro de los umbrales en las últimas {hours} horas.",
+        no_devices:
+          "Ninguna sonda de un dispositivo activo está vinculada a esta ubicación. Las lecturas del personal de abajo son comprobaciones puntuales.",
+      },
+      policy:
+        "Un episodio se escala cuando las lecturas permanecen fuera de los umbrales durante una hora, y de nuevo tras un día. Una sonda se recupera tras {minutes} minutos de lecturas dentro de ellos y queda silenciosa tras {hours} horas sin lecturas.",
+      measures: {
+        temperature: "Temperatura",
+        humidity: "Humedad relativa",
+        lightLevel: "Luz",
+        uvLevel: "UV",
+      },
+      notSet: "Sin definir",
+      openEpisode: "Episodio de alerta abierto",
+      outOfRangeSince: "Fuera de los umbrales desde el {time} ({duration})",
+      resolve: "Cerrar",
+      viewEvidence: "Ver evidencias",
+      probes: "Sondas",
+      noProbes: "No hay ninguna sonda vinculada a esta ubicación.",
+      probeLabel: "{device} · {probe}",
+      unknownDevice: "Dispositivo desconocido",
+      probeStatus: {
+        reporting: "Informando",
+        silent: "Silenciosa",
+        awaiting_first_reading: "Esperando la primera lectura",
+        revoked: "Dispositivo revocado",
+      },
+      observedAt: "Medido: {time}",
+      receivedAt: "recibido: {time}",
+      noReadingYet: "Aún no hay lecturas",
+      deviceLastRequest: "Última solicitud del dispositivo: {time}",
+      deviceNoRequests: "Aún no hay solicitudes de este dispositivo",
+      deviceLastError: "Error del dispositivo: {error}",
+      recentEpisodes: "Episodios recientes",
+      noEpisodes: "Aún no hay episodios de alerta.",
+      recentReadings: "Últimas lecturas",
+      noReadings: "Aún no hay lecturas.",
+      outOfRange: "Fuera de rango",
+      late: "Tardía",
+      staffReading: "Lectura del personal",
+      staffReadingBy: "Lectura del personal de {name}",
+      staffReadings: "Lecturas del personal",
+      importedReading: "Lectura importada",
+      unknownStaff: "un antiguo miembro",
+      episodeStatus: {
+        open: "Abierto",
+        recovered: "Recuperado",
+        resolved: "Cerrado",
+      },
+      escalationLevel: {
+        hour: "más de una hora",
+        day: "más de un día",
+      },
+      startedAt: "Inicio",
+      lastReading: "Última lectura",
+      endedAt: "Fin",
+      lasted: "Duración: {duration}",
+      openFor: "Abierto desde hace {duration}",
+      readings: "Lecturas",
+      readingCounts:
+        "{count} contadas, {outOfRange} fuera de los umbrales, {late} tardías",
+      breaches: "Límites superados",
+      breach: {
+        above: "{measure} por encima del máximo de {limit}",
+        below: "{measure} por debajo del mínimo de {limit}",
+      },
+      extreme: {
+        above: "máximo alcanzado: {value}",
+        below: "mínimo alcanzado: {value}",
+      },
+      sourcesHeading: "Recuperación",
+      sourceRecovered: "Recuperada {time}",
+      sourceRecovering: "Dentro de los umbrales desde {time}",
+      sourceSilent: "Silenciosa, última lectura {time}",
+      sourceOutOfRange: "Fuera de los umbrales, última lectura {time}",
+      resolvedBy: "Cerrado por {name} el {time}",
+      thresholdsAtOpening:
+        "Umbrales al abrirse el episodio: temperatura {temperature}, humedad relativa {humidity}.",
+      backToLocation: "Volver a {location}",
+      episodeTitle: "Episodio de alerta: {location}",
+      evidenceHeading: "Lecturas de este episodio",
+      evidenceDescription:
+        "Todas las lecturas que contó el episodio, de la observación más reciente a la más antigua. Las lecturas tardías llegaron después de otra más reciente de la misma sonda; cuentan como evidencia, pero nunca cambian el episodio.",
+      loadMoreReadings: "Cargar más lecturas",
+      thresholdsDialog: {
+        title: "Umbrales ambientales",
+        description:
+          "Las lecturas fuera de estos límites abren un episodio de alerta. Los nuevos límites se aplican a las lecturas posteriores.",
+        fields: {
+          temperatureMin: "Temperatura mínima (°C)",
+          temperatureMax: "Temperatura máxima (°C)",
+          humidityMin: "Humedad relativa mínima (%)",
+          humidityMax: "Humedad relativa máxima (%)",
+        },
+        hint: "Deje un campo vacío para no fijar ningún límite. Las temperaturas van de -100 a 100 °C y la humedad de 0 a 100 %.",
+        invalid:
+          "Introduzca lecturas posibles, con cada mínimo por debajo de su máximo.",
+        failed: "No se pudieron guardar los umbrales.",
+        cancel: "Cancelar",
+        save: "Guardar umbrales",
+      },
+      resolveDialog: {
+        title: "Cerrar el episodio de alerta",
+        description:
+          "Cierre este episodio cuando las lecturas no puedan mostrar la recuperación, por ejemplo después de mover o retirar su sonda. Si las lecturas siguen fuera de los umbrales, la siguiente abre un nuevo episodio.",
+        note: "Nota",
+        notePlaceholder: "Qué se comprobó y por qué el episodio puede cerrarse",
+        noteRequired: "Escriba una nota de hasta 1000 caracteres.",
+        failed: "No se pudo cerrar el episodio.",
+        cancel: "Cancelar",
+        submit: "Cerrar episodio",
+      },
+      errors: {
+        thresholdsInvalid:
+          "Introduzca lecturas posibles, con cada mínimo por debajo de su máximo.",
+        episodeNotOpen: "Este episodio ya ha terminado.",
+        resolutionNoteInvalid: "Escriba una nota de hasta 1000 caracteres.",
+      },
     },
     sidebar: {
       empty: "Aún no hay ubicaciones",
@@ -10030,6 +10176,11 @@ export default {
         slaBreach:
           "Incumplimiento del SLA: {workflowType} pendiente desde hace más de {days} días",
         slaWarning: "Aviso de SLA: {workflowType} vence en {days} días",
+        environmentOutOfRange: "Condiciones fuera de rango: {location}",
+        environmentStillOutOfRange:
+          "Condiciones aún fuera de rango: {location}",
+        environmentBackInRange:
+          "Condiciones de nuevo dentro de rango: {location}",
       },
       messages: {
         objectMoveExecuted:
@@ -10173,6 +10324,31 @@ export default {
       loanTypes: {
         incoming: "entrante",
         outgoing: "saliente",
+      },
+      environment: {
+        overAnHour: "Fuera de rango durante más de una hora.",
+        overADay: "Fuera de rango durante más de un día.",
+        backWithin: "Las lecturas vuelven a estar dentro de los umbrales.",
+        breach: {
+          temperatureAbove:
+            "Temperatura {value} °C por encima del máximo de {limit} °C",
+          temperatureBelow:
+            "Temperatura {value} °C por debajo del mínimo de {limit} °C",
+          humidityAbove:
+            "Humedad relativa {value} % por encima del máximo de {limit} %",
+          humidityBelow:
+            "Humedad relativa {value} % por debajo del mínimo de {limit} %",
+          lightLevelAbove: "Luz {value} lx por encima del máximo de {limit} lx",
+          uvLevelAbove: "UV {value} por encima del máximo de {limit}",
+        },
+        extreme: {
+          temperatureHighest: "Temperatura máxima {value} °C",
+          temperatureLowest: "Temperatura mínima {value} °C",
+          humidityHighest: "Humedad relativa máxima {value} %",
+          humidityLowest: "Humedad relativa mínima {value} %",
+          lightLevelHighest: "Luz máxima {value} lx",
+          uvLevelHighest: "UV máximo {value}",
+        },
       },
     },
     searchLogic: {
