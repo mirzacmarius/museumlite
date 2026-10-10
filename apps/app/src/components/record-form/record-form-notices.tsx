@@ -27,17 +27,14 @@ export interface RecordFormNoticeSession {
   failure: RecordSaveFailure | null;
   retry: () => Promise<boolean>;
   saving: boolean;
+  keepsDeviceCopy: boolean;
 }
 
 interface RecordFormNoticesProps {
   session: RecordFormNoticeSession;
   fieldLabel: (field: string) => string;
-  /** Readable form of a colleague's value; null when it cannot be shown. */
-  formatValue?: (field: string, value: unknown) => string | null;
   /** Shows a field, switching tabs if needed, and focuses it. */
   onGoToField?: (field: string) => void;
-  /** Whether unsaved input is also kept on this device. */
-  keepsDeviceCopy: boolean;
 }
 
 function Notice({
@@ -74,7 +71,8 @@ function Notice({
   );
 }
 
-function defaultFormatValue(_field: string, value: unknown) {
+/** A colleague's value as text, when it is simple enough to show. */
+function shownValue(value: unknown) {
   if (typeof value === "string") return value.trim() || null;
   if (typeof value === "number" || typeof value === "boolean")
     return String(value);
@@ -89,9 +87,7 @@ function defaultFormatValue(_field: string, value: unknown) {
 export function RecordFormNotices({
   session,
   fieldLabel,
-  formatValue = defaultFormatValue,
   onGoToField,
-  keepsDeviceCopy,
 }: RecordFormNoticesProps) {
   const t = useScopedI18n("recordForm.notices");
   const locale = useCurrentLocale();
@@ -226,7 +222,11 @@ export function RecordFormNotices({
             </div>
           ) : null}
           {failure.kind === "denied" || failure.kind === "failed" ? (
-            <p>{keepsDeviceCopy ? t("inputKeptOnDevice") : t("inputKept")}</p>
+            <p>
+              {session.keepsDeviceCopy
+                ? t("inputKeptOnDevice")
+                : t("inputKept")}
+            </p>
           ) : null}
         </Notice>
       ) : null}
@@ -254,7 +254,7 @@ export function RecordFormNotices({
       ) : null}
 
       {Object.entries(session.overlaps).map(([field, theirValue]) => {
-        const shown = formatValue(field, theirValue);
+        const shown = shownValue(theirValue);
         return (
           <Notice
             key={field}
@@ -291,6 +291,19 @@ export function RecordFormNotices({
         );
       })}
     </div>
+  );
+}
+
+/** The record left the state in which this form may change it. */
+export function RecordLockedNotice({ message }: { message: string }) {
+  return (
+    <Notice
+      tone="warning"
+      role="alert"
+      icon={<AlertTriangle className="size-4" />}
+    >
+      <p>{message}</p>
+    </Notice>
   );
 }
 

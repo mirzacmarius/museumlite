@@ -22,6 +22,7 @@ import {
 } from "./utils/accessionReview";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { batchLookup } from "./utils/batchLookup";
+import { capabilityUnavailable } from "./utils/capabilities";
 import { appendCaseHistory, recentCaseHistory } from "./utils/caseHistory";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { enforceMediaQuota } from "./utils/featureGates";
@@ -51,6 +52,7 @@ import { accessionSourceAssertion, recordPartyLink } from "./utils/partyLinks";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
+  getCurrentUserOrganization,
   getUsersToNotifyForWorkflowStep,
   hasPermission,
   requirePermission,
@@ -372,6 +374,20 @@ export const generateDraftUploadUrl = mutation({
   },
 });
 
+/**
+ * Members whose role may not start accession review learn why; others get
+ * the legacy uncoded error, so outsiders learn nothing (ADR 0004).
+ */
+async function workflowInitiationRefusal(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const message = "Permission denied: cannot initiate accession workflow";
+  return (await getCurrentUserOrganization(ctx, organizationId))
+    ? capabilityUnavailable({ reason: "permission_missing", message })
+    : new Error(message);
+}
+
 const objectDraftSaveValidator = v.object({
   organizationId: v.id("organizations"),
   accessionId: v.optional(v.id("accessions")),
@@ -422,7 +438,7 @@ async function saveObjectDraftRecord(
     );
 
     if (!canInitiate) {
-      throw new Error("Permission denied: cannot initiate accession workflow");
+      throw await workflowInitiationRefusal(ctx, args.organizationId);
     }
   } else if (args.saveMode === "submit") {
     await requirePermission(ctx, args.organizationId, "collections.create");

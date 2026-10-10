@@ -1,3 +1,4 @@
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   type CollectionType,
   isCollectionType,
@@ -50,7 +51,7 @@ export function comparableObjectRequest(
 const objectRequestValuesSchema = collectionFormDataSchema.extend({
   draftMedia: z.array(
     z.object({
-      storageId: z.string(),
+      storageId: z.custom<Id<"_storage">>((value) => typeof value === "string"),
       fileName: z.string(),
       fileSize: z.number(),
       mimeType: z.string(),
@@ -65,7 +66,7 @@ export function parseObjectRequestValues(
   stored: unknown,
 ): ObjectRequestValues | null {
   const parsed = objectRequestValuesSchema.safeParse(stored);
-  return parsed.success ? (parsed.data as ObjectRequestValues) : null;
+  return parsed.success ? parsed.data : null;
 }
 
 /** Details are kept only for the collection type the draft now has. */

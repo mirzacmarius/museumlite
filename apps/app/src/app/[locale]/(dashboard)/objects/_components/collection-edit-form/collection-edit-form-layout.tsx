@@ -144,7 +144,6 @@ export function CollectionEditFormLayout({
                 session={session}
                 fieldLabel={fieldLabel}
                 onGoToField={goToField}
-                keepsDeviceCopy
               />
             }
             fieldErrors={session.fieldErrors}

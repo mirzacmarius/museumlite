@@ -2,9 +2,12 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { ArrowLeft, Lock, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { RecordFormNotices } from "@/components/record-form/record-form-notices";
+import {
+  RecordFormNotices,
+  RecordLockedNotice,
+} from "@/components/record-form/record-form-notices";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
@@ -85,23 +88,16 @@ export function EditLoanForm({ loanId, loan }: EditLoanFormProps) {
 
           <form onSubmit={handleSubmit} className="space-y-8" noValidate>
             {isLocked ? (
-              <div
-                role="alert"
-                className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300"
-              >
-                <Lock className="mt-0.5 size-4 shrink-0" />
-                <p>
-                  {tRoot("loans.actions.loanLockedDesc", {
-                    status: loan.status,
-                  })}
-                </p>
-              </div>
+              <RecordLockedNotice
+                message={tRoot("loans.actions.loanLockedDesc", {
+                  status: loan.status,
+                })}
+              />
             ) : null}
             <RecordFormNotices
               session={session}
               fieldLabel={fieldLabel}
               onGoToField={focusField}
-              keepsDeviceCopy
             />
 
             <EditLoanCoreInfoSection

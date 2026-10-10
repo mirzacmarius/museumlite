@@ -9430,8 +9430,10 @@ export default {
         "Your input is still in this form and kept on this device until you save or discard it.",
       useTheirs: "Use their value",
       keepMine: "Keep mine",
-      overlapValue: "{field} was also changed by someone else, to “{value}”.",
+      overlapValue: "{field} was also changed by someone else, to “{value}”",
       overlapChanged: "{field} was also changed by someone else.",
+      lockedWhileEditing:
+        "This record can no longer be edited here. Your input stays on screen so you can copy it.",
     },
     status: {
       unsaved: "Unsaved changes",
@@ -9440,6 +9442,9 @@ export default {
       partyLinked:
         "The lender or borrower comes from the linked party, so the name and contact are not edited here.",
       changeParty: "Change the party on the loan page",
+      partyNotLinked:
+        "No party is linked to this loan, so the name is typed here.",
+      linkParty: "Link a party on the loan page",
     },
     objectFields: {
       alternativeTitle: "Alternative title",

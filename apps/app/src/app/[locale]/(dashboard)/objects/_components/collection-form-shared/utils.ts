@@ -1,7 +1,14 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  type CollectionModuleId,
+  type CollectionType,
+  isCollectionModuleId,
+  isCollectionType,
+} from "@v1/backend/convex/utils/moduleCatalog";
 import type { FunctionReturnType } from "convex/server";
 import { z } from "zod";
+import { fieldErrorsFromZod } from "@/lib/record-form";
 import { parseStringListField } from "../../../../../../lib/string-list-field";
 import { toObjectDraftTypeDetails } from "../object-type-details/type-detail-values";
 import type {
@@ -237,7 +244,8 @@ export function comparableCollectionForm(
     parentObjectId: text(formData.parentObjectId),
     currentLocationId: text(formData.currentLocationId),
     collectionGroupId: text(formData.collectionGroupId),
-    collectionGroupIds: formData.collectionGroupIds ?? [],
+    // Membership is a set; which group is primary is its own field.
+    collectionGroupIds: [...(formData.collectionGroupIds ?? [])].sort(),
     alternateAccessionNumbers: formData.alternateAccessionNumbers ?? [],
     ownershipHistory: (formData.ownershipHistory ?? []).map(
       ({ localId: _localId, ...entry }) => entry,
@@ -323,10 +331,16 @@ export const collectionFormDataSchema = z.object({
   collectionGroupIds: z.array(z.string()).optional(),
   alternateAccessionNumbers: z.array(z.string()).optional(),
   ownershipHistory: z.array(ownershipEntrySchema).optional(),
-  collectionType: z.string().optional(),
+  collectionType: z
+    .custom<CollectionType>(
+      (value) => typeof value === "string" && isCollectionType(value),
+    )
+    .optional(),
   typeDetails: z
     .object({
-      collectionType: z.string(),
+      collectionType: z.custom<CollectionModuleId>(
+        (value) => typeof value === "string" && isCollectionModuleId(value),
+      ),
       fields: z.record(
         z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
       ),
@@ -340,28 +354,44 @@ export const collectionFormDataSchema = z.object({
   publicSlug: z.string().optional(),
 });
 
-/** Shared catalog checks; the server applies the same rules on save. */
+export interface CollectionFormRuleMessages {
+  titleRequired: string;
+  weightInvalid: string;
+  measurementInvalid: string;
+}
+
+/** Shared catalog rules; the server applies the same ones on save. */
+export function collectionFormRules(messages: CollectionFormRuleMessages) {
+  const measurement = z
+    .string()
+    .optional()
+    .refine(
+      (value) => parseOptionalMeasurement(value).isValid,
+      messages.measurementInvalid,
+    );
+  return z.object({
+    title: z
+      .string()
+      .refine((title) => title.trim().length > 0, messages.titleRequired),
+    dimensionWeight: z
+      .union([z.string(), z.number()])
+      .optional()
+      .refine(
+        (value) => parseOptionalWeight(value).isValid,
+        messages.weightInvalid,
+      ),
+    dimensionHeight: measurement,
+    dimensionWidth: measurement,
+    dimensionDepth: measurement,
+  });
+}
+
 export function validateCollectionFormData(
   formData: CollectionFormData,
-  messages: {
-    titleRequired: string;
-    weightInvalid: string;
-    measurementInvalid: string;
-  },
+  messages: CollectionFormRuleMessages,
 ): Record<string, string> {
-  const errors: Record<string, string> = {};
-  if (!formData.title.trim()) errors.title = messages.titleRequired;
-  if (!parseOptionalWeight(formData.dimensionWeight).isValid)
-    errors.dimensionWeight = messages.weightInvalid;
-  for (const field of [
-    "dimensionHeight",
-    "dimensionWidth",
-    "dimensionDepth",
-  ] as const) {
-    if (!parseOptionalMeasurement(formData[field]).isValid)
-      errors[field] = messages.measurementInvalid;
-  }
-  return errors;
+  const result = collectionFormRules(messages).safeParse(formData);
+  return result.success ? {} : fieldErrorsFromZod(result.error);
 }
 
 /** Where each catalog field is edited: its tab, and the input to focus. */

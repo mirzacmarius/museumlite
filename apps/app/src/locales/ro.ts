@@ -10493,8 +10493,10 @@ export default {
         "Datele introduse sunt încă în acest formular și sunt păstrate pe acest dispozitiv până când le salvați sau renunțați la ele.",
       useTheirs: "Folosește valoarea lor",
       keepMine: "Păstrează-o pe a mea",
-      overlapValue: "{field} a fost modificat și de altcineva, în „{value}”.",
+      overlapValue: "{field} a fost modificat și de altcineva, în „{value}”",
       overlapChanged: "{field} a fost modificat și de altcineva.",
+      lockedWhileEditing:
+        "Această înregistrare nu mai poate fi editată aici. Datele introduse rămân pe ecran ca să le puteți copia.",
     },
     status: {
       unsaved: "Modificări nesalvate",
@@ -10503,6 +10505,9 @@ export default {
       partyLinked:
         "Împrumutătorul sau împrumutatul provine de la partea asociată, așa că numele și contactul nu se editează aici.",
       changeParty: "Schimbați partea pe pagina împrumutului",
+      partyNotLinked:
+        "Nicio parte nu este asociată acestui împrumut, așa că numele se introduce aici.",
+      linkParty: "Asociați o parte pe pagina împrumutului",
     },
     objectFields: {
       alternativeTitle: "Titlu alternativ",

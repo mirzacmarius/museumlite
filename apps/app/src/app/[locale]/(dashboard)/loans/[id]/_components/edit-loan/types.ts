@@ -1,6 +1,7 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { isLoanCurrencyCode } from "@v1/backend/convex/utils/loanCurrency";
 import { z } from "zod";
+import { fieldErrorsFromZod } from "@/lib/record-form";
 import type { Loan } from "../types";
 
 /** Loan edit input; dates are epoch milliseconds so input can be stored. */
@@ -77,27 +78,51 @@ function parseAmount(value: string) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
-/** Client-side checks; `loans.update` applies the same rules. */
+interface EditLoanRuleMessages {
+  required: (field: EditLoanField) => string;
+  dateOrder: string;
+  amount: string;
+  currency: string;
+}
+
+/** Client-side rules; `loans.update` applies the same ones. */
+function editLoanRules(messages: EditLoanRuleMessages) {
+  return z
+    .object({
+      lenderBorrowerName: z
+        .string()
+        .refine(
+          (name) => name.trim().length > 0,
+          messages.required("lenderBorrowerName"),
+        ),
+      startDate: z.number(),
+      endDate: z.number().nullable(),
+      insuranceValue: z
+        .string()
+        .refine((amount) => parseAmount(amount) !== undefined, messages.amount),
+      currency: z
+        .string()
+        .refine(
+          (currency) => !currency.trim() || isLoanCurrencyCode(currency.trim()),
+          messages.currency,
+        ),
+    })
+    .superRefine((values, context) => {
+      if (values.endDate !== null && values.endDate < values.startDate)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["endDate"],
+          message: messages.dateOrder,
+        });
+    });
+}
+
 export function validateEditLoanForm(
   values: EditLoanFormData,
-  messages: {
-    required: (field: EditLoanField) => string;
-    dateOrder: string;
-    amount: string;
-    currency: string;
-  },
-): Partial<Record<EditLoanField, string>> {
-  const errors: Partial<Record<EditLoanField, string>> = {};
-  if (!values.lenderBorrowerName.trim())
-    errors.lenderBorrowerName = messages.required("lenderBorrowerName");
-  if (values.endDate !== null && values.endDate < values.startDate)
-    errors.endDate = messages.dateOrder;
-  if (parseAmount(values.insuranceValue) === undefined)
-    errors.insuranceValue = messages.amount;
-  const currency = values.currency.trim();
-  if (currency && !isLoanCurrencyCode(currency))
-    errors.currency = messages.currency;
-  return errors;
+  messages: EditLoanRuleMessages,
+): Record<string, string> {
+  const result = editLoanRules(messages).safeParse(values);
+  return result.success ? {} : fieldErrorsFromZod(result.error);
 }
 
 /** The `loans.update` arguments for the fields staff changed. */

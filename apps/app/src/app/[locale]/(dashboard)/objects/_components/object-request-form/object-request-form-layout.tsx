@@ -1,6 +1,9 @@
 "use client";
 
-import { RecordFormNotices } from "@/components/record-form/record-form-notices";
+import {
+  RecordFormNotices,
+  RecordLockedNotice,
+} from "@/components/record-form/record-form-notices";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { useI18n } from "@/locales/client";
 import { CollectionTypeChangeDialog } from "./collection-type-change-dialog";
@@ -149,12 +152,18 @@ export function ObjectRequestFormLayout({
             mode={mode}
             error={error}
             notices={
-              <RecordFormNotices
-                session={session}
-                fieldLabel={fieldLabel}
-                onGoToField={goToField}
-                keepsDeviceCopy
-              />
+              <div className="space-y-3">
+                {form.isLocked ? (
+                  <RecordLockedNotice
+                    message={tRoot("recordForm.notices.lockedWhileEditing")}
+                  />
+                ) : null}
+                <RecordFormNotices
+                  session={session}
+                  fieldLabel={fieldLabel}
+                  onGoToField={goToField}
+                />
+              </div>
             }
             fieldErrors={session.fieldErrors}
             tabs={tabs}

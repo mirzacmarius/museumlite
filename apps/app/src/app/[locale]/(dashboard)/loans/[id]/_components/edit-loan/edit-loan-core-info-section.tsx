@@ -75,20 +75,18 @@ export function EditLoanCoreInfoSection({
           </div>
         </div>
 
-        {isPartyLinked ? (
-          <p className="flex items-start gap-2 rounded-lg border border-border/60 bg-secondary/30 p-3 text-sm text-muted-foreground">
-            <Link2 className="mt-0.5 size-4 shrink-0" />
-            <span>
-              {tParty("partyLinked")}{" "}
-              <Link
-                href={partiesHref}
-                className="font-medium text-foreground underline underline-offset-4"
-              >
-                {tParty("changeParty")}
-              </Link>
-            </span>
-          </p>
-        ) : null}
+        <p className="flex items-start gap-2 rounded-lg border border-border/60 bg-secondary/30 p-3 text-sm text-muted-foreground">
+          <Link2 className="mt-0.5 size-4 shrink-0" />
+          <span>
+            {isPartyLinked ? tParty("partyLinked") : tParty("partyNotLinked")}{" "}
+            <Link
+              href={partiesHref}
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              {isPartyLinked ? tParty("changeParty") : tParty("linkParty")}
+            </Link>
+          </span>
+        </p>
 
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">

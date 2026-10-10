@@ -6,6 +6,8 @@
  * refuses a save based on an older version with EDIT_CONFLICT.
  */
 
+import type { ZodError } from "zod";
+
 /** A record as the form sees it, with the server version it was read at. */
 export interface RecordFormSnapshot<V> {
   values: V;
@@ -30,6 +32,17 @@ export type RecordSaveFailure =
   | { kind: "rejected"; message: string }
   /** Not saved for an unknown or passing reason; retrying may work. */
   | { kind: "failed"; message: string };
+
+/** The first message for each top-level field a Zod check rejected. */
+export function fieldErrorsFromZod(error: ZodError): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string" && !(field in errors))
+      errors[field] = issue.message;
+  }
+  return errors;
+}
 
 /** JSON with sorted object keys, so equal values always serialize alike. */
 export function stableStringify(value: unknown): string {
@@ -131,8 +144,7 @@ export type RecordFormAction<V> =
       type: "saveFailed";
       failure: RecordSaveFailure;
       fieldErrors: Record<string, string>;
-    }
-  | { type: "clearFailure" };
+    };
 
 export function initialRecordFormState<V>(values: V): RecordFormState<V> {
   return {
@@ -309,8 +321,6 @@ export function recordFormReducer<V>(
           failure: action.failure,
           fieldErrors: action.fieldErrors,
         };
-      case "clearFailure":
-        return { ...state, failure: null };
     }
   };
 }

@@ -645,6 +645,42 @@ describe("intake object drafts", () => {
     expect(refusal.code).toBe("RECORD_NOT_EDITABLE");
   });
 
+  test("submitting without the right to start review is refused as a permission, keeping the draft", async () => {
+    const t = createConvexTest();
+    const { organizationId, ana, accessionId } = await createIntakeDraft(t);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, {
+        settings: { accessionWorkflowEnabled: true },
+      });
+      const committee = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Committee",
+        isSystemRole: false,
+      });
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [{ stepNumber: 1, roleId: committee, name: "Committee" }],
+        canInitiateRoles: [committee],
+      });
+    });
+
+    const refusal = await capabilityFailureOf(
+      ana.mutation(api.accessions.saveObjectDraft, {
+        organizationId,
+        accessionId,
+        saveMode: "submit",
+        objectData: {
+          accessionNumber: "2026.4.1",
+          title: "Fishing net, tarred",
+        },
+      }),
+    );
+
+    expect(refusal).toMatchObject({ reason: "permission_missing" });
+    expect(await draftTitleOf(ana, accessionId)).toBe("Fishing net");
+  });
+
   test("a member who may only read cannot save a colleague's draft", async () => {
     const t = createConvexTest();
     const { organizationId, accessionId, target } = await createIntakeDraft(t);

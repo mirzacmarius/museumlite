@@ -45,9 +45,10 @@ import {
 } from "./object-request-values";
 import { useObjectRequestFormLocalMedia } from "./use-object-request-form-local-media";
 
-/** The pending accession whose object draft the form edits. */
+/** The accession whose object draft the form edits. */
 export interface ObjectRequestDraftSource {
   _id: Id<"accessions">;
+  status: string;
   draftObjectData?: ObjectDraftData;
   draftMedia?: DraftMediaItem[];
 }
@@ -80,6 +81,9 @@ export function useObjectRequestForm({
     currentOrganization?.settings?.locationTrackingEnabled ?? true;
   const accessionId = accession?._id;
   const isDraftEditMode = mode === "draft-edit";
+  // Only pending drafts are edited here; a draft accepted or withdrawn while
+  // open stays visible if it holds input, so nothing typed disappears.
+  const isLocked = isDraftEditMode && accession?.status !== "pending";
 
   const editState = useQuery(
     api.recordEdits.getEditState,
@@ -417,6 +421,8 @@ export function useObjectRequestForm({
     hasSavedFieldDraft,
     hasLocalMediaSelections: localMedia.hasLocalMediaSelections,
     isFormDirty,
+    isLocked,
+    hasUnsavedChanges,
     showUnsavedDialog: navigation.showUnsavedDialog,
     setShowUnsavedDialog: navigation.setShowUnsavedDialog,
     handleDiscardAndNavigate: navigation.handleDiscardAndNavigate,

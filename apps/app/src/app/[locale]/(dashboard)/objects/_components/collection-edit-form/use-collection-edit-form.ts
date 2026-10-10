@@ -26,7 +26,6 @@ import {
   EMPTY_EDIT_FORM,
   getStatusBadgeClass,
   normalizeOptionalString,
-  validateCollectionFormData,
   withLinkEntryLocalIds,
   withOwnershipEntryLocalIds,
 } from "../collection-form-shared/utils";
@@ -35,6 +34,7 @@ import {
   collectionEditValues,
   comparableCollectionEdit,
   parseCollectionEditValues,
+  validateCollectionEdit,
 } from "./collection-edit-values";
 import { useCollectionEditFormMedia } from "./use-collection-edit-form-media";
 import { useCollectionEditFormSubmit } from "./use-collection-edit-form-submit";
@@ -118,23 +118,13 @@ export function useCollectionEditForm() {
     [collection, collectionGroupsForCollection, editState],
   );
   const validate = useCallback(
-    (values: CollectionEditValues) => {
-      const errors = validateCollectionFormData(values, {
+    (values: CollectionEditValues) =>
+      validateCollectionEdit(values, latest?.values.condition, {
         titleRequired: t("form.errors.titleRequired"),
         weightInvalid: tErrors("weightInvalid"),
         measurementInvalid: tErrors("measurementInvalid"),
-      });
-      const recordedCondition = normalizeOptionalString(
-        latest?.values.condition,
-      );
-      if (
-        recordedCondition &&
-        normalizeOptionalString(values.condition) !== recordedCondition &&
-        !values.conditionChangeNote.trim()
-      )
-        errors.conditionChangeNote = tErrors("conditionNoteRequired");
-      return errors;
-    },
+        conditionNoteRequired: tErrors("conditionNoteRequired"),
+      }),
     [latest, t, tErrors],
   );
   const session = useRecordFormSession({

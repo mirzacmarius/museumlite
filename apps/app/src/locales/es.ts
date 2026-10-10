@@ -9791,8 +9791,10 @@ export default {
         "Lo que introdujo sigue en este formulario y se conserva en este dispositivo hasta que lo guarde o lo descarte.",
       useTheirs: "Usar su valor",
       keepMine: "Mantener el mío",
-      overlapValue: "Otra persona también cambió {field}, a “{value}”.",
+      overlapValue: "Otra persona también cambió {field}, a “{value}”",
       overlapChanged: "Otra persona también cambió {field}.",
+      lockedWhileEditing:
+        "Este registro ya no se puede editar aquí. Lo que introdujo sigue en pantalla para que pueda copiarlo.",
     },
     status: {
       unsaved: "Cambios sin guardar",
@@ -9801,6 +9803,9 @@ export default {
       partyLinked:
         "El prestamista o prestatario proviene de la parte vinculada, por lo que el nombre y el contacto no se editan aquí.",
       changeParty: "Cambiar la parte en la página del préstamo",
+      partyNotLinked:
+        "Este préstamo no tiene ninguna parte vinculada, así que el nombre se escribe aquí.",
+      linkParty: "Vincular una parte en la página del préstamo",
     },
     objectFields: {
       alternativeTitle: "Título alternativo",

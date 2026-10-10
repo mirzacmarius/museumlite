@@ -9759,8 +9759,10 @@ export default {
       useTheirs: "Utiliser leur valeur",
       keepMine: "Garder la mienne",
       overlapValue:
-        "{field} a aussi été modifié par quelqu'un d'autre, en « {value} ».",
+        "{field} a aussi été modifié par quelqu'un d'autre, en « {value} »",
       overlapChanged: "{field} a aussi été modifié par quelqu'un d'autre.",
+      lockedWhileEditing:
+        "Cette fiche ne peut plus être modifiée ici. Votre saisie reste affichée pour que vous puissiez la copier.",
     },
     status: {
       unsaved: "Modifications non enregistrées",
@@ -9769,6 +9771,9 @@ export default {
       partyLinked:
         "Le prêteur ou l'emprunteur provient de la partie liée ; le nom et le contact ne se modifient donc pas ici.",
       changeParty: "Changer la partie sur la page du prêt",
+      partyNotLinked:
+        "Aucune partie n'est liée à ce prêt ; le nom est donc saisi ici.",
+      linkParty: "Lier une partie sur la page du prêt",
     },
     objectFields: {
       alternativeTitle: "Titre alternatif",

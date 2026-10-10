@@ -9633,8 +9633,10 @@ export default {
         "Det du skrev, er fortsatt i dette skjemaet og lagres på denne enheten til du lagrer eller forkaster det.",
       useTheirs: "Bruk deres verdi",
       keepMine: "Behold min",
-      overlapValue: "{field} ble også endret av noen andre, til «{value}».",
+      overlapValue: "{field} ble også endret av noen andre, til «{value}»",
       overlapChanged: "{field} ble også endret av noen andre.",
+      lockedWhileEditing:
+        "Denne posten kan ikke lenger redigeres her. Det du skrev, blir stående på skjermen så du kan kopiere det.",
     },
     status: {
       unsaved: "Ulagrede endringer",
@@ -9643,6 +9645,9 @@ export default {
       partyLinked:
         "Långiver eller låntaker kommer fra den koblede parten, så navn og kontaktinformasjon redigeres ikke her.",
       changeParty: "Bytt part på lånesiden",
+      partyNotLinked:
+        "Ingen part er koblet til dette lånet, så navnet skrives inn her.",
+      linkParty: "Koble til en part på lånesiden",
     },
     objectFields: {
       alternativeTitle: "Alternativ tittel",

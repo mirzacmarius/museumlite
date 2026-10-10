@@ -243,7 +243,6 @@ export function useRecordFormSession<V>({
       (update: (values: V) => V) => dispatch({ type: "update", update }),
       [],
     ),
-    dirtyFields,
     isDirty,
     remote,
     overlaps: state.overlaps,
@@ -277,7 +276,8 @@ export function useRecordFormSession<V>({
     saving: state.saving,
     failure: state.failure,
     fieldErrors: state.fieldErrors,
-    clearFailure: useCallback(() => dispatch({ type: "clearFailure" }), []),
+    /** Whether unsaved input is also kept on this device. */
+    keepsDeviceCopy: Boolean(recoveryKey),
     save,
     retry,
   };

@@ -74,6 +74,11 @@ export function recordEditErrorFromError(
   return result;
 }
 
+/** Code-point order: stable across runtimes, unlike locale collation. */
+function compareText(left: string, right: string) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 /**
  * Empty strings, empty lists, null and undefined all read as "no value" in a
  * form, so they hash alike; object keys are sorted so field order is moot.
@@ -89,7 +94,7 @@ function canonicalValue(value: unknown): unknown {
         const canonical = canonicalValue(item);
         return canonical === undefined ? [] : [[key, canonical] as const];
       })
-      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
+      .sort(([left], [right]) => compareText(left, right));
     return entries.length === 0 ? undefined : Object.fromEntries(entries);
   }
   return value;
@@ -204,7 +209,11 @@ export async function objectEditVersion(
         id: membership.collectionGroupId,
         role: membership.role,
       }))
-      .sort((left, right) => (left.id < right.id ? -1 : 1)),
+      .sort(
+        (left, right) =>
+          compareText(left.id, right.id) ||
+          compareText(left.role ?? "", right.role ?? ""),
+      ),
   });
 }
 
