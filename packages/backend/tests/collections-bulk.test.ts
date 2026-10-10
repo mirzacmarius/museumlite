@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import { capabilityUnavailableFromError } from "../convex/utils/capabilities";
 import {
   authedForUser,
   createConvexTest,
@@ -231,4 +232,92 @@ test("bulkDeaccession counts permission failures without throwing", async () => 
     skipped: 0,
     failed: 2,
   });
+});
+
+/** Two catalogued objects and an active store in the member's organization. */
+async function createBulkMoveFixture(
+  t: ReturnType<typeof createConvexTest>,
+  permissions: string[],
+) {
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    permissions,
+    { slugPrefix: "bulk-move", organizationName: "Bulk Move Museum" },
+  );
+  const [objectA, objectB, storeId] = await t.run(async (ctx) =>
+    Promise.all([
+      ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "MOVE-001",
+        title: "Ship's bell",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+      ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "MOVE-002",
+        title: "Pilot's logbook",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+      ctx.db.insert("locations", {
+        organizationId,
+        name: "Store room B",
+        type: "room",
+        sortOrder: 0,
+        isActive: true,
+      }),
+    ]),
+  );
+  const authed = authedForUser(t, userId);
+  const locationsOf = async () =>
+    Promise.all(
+      [objectA, objectB].map(
+        async (collectionId) =>
+          (await authed.query(api.collections.get, { collectionId }))
+            ?.currentLocationId,
+      ),
+    );
+  return { authed, objectA, objectB, storeId, locationsOf };
+}
+
+test("staff who move objects can move several at once, as they move one", async () => {
+  const t = createConvexTest();
+  const { authed, objectA, objectB, storeId, locationsOf } =
+    await createBulkMoveFixture(t, [
+      "collections.read",
+      "locations.read",
+      "locations.update",
+    ]);
+
+  const result = await authed.mutation(api.collections.bulkUpdateLocation, {
+    collectionIds: [objectA, objectB],
+    locationId: storeId,
+  });
+
+  expect(result).toEqual({ updated: 2, failed: 0 });
+  expect(await locationsOf()).toEqual([storeId, storeId]);
+});
+
+test("a bulk move by staff who may not move objects is refused and nothing moves", async () => {
+  const t = createConvexTest();
+  const { authed, objectA, objectB, storeId, locationsOf } =
+    await createBulkMoveFixture(t, ["collections.read", "collections.update"]);
+
+  const refusal = await authed
+    .mutation(api.collections.bulkUpdateLocation, {
+      collectionIds: [objectA, objectB],
+      locationId: storeId,
+    })
+    .then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+  expect(capabilityUnavailableFromError(refusal)).toMatchObject({
+    reason: "permission_missing",
+  });
+  expect(await locationsOf()).toEqual([undefined, undefined]);
 });

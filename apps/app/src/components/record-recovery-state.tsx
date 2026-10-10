@@ -11,7 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useBackToResults } from "@/hooks/use-return-path";
 import {
@@ -80,6 +80,12 @@ export function RecordRecoveryState({
   const back = useBackToResults(listHref);
   const Icon = KIND_ICONS[kind];
   const canRetry = kind === "error" && onRetry !== undefined;
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  // This state replaces the record staff were working on; when focus went
+  // with it, start them on what happened and what they can do.
+  useEffect(() => {
+    if (document.activeElement === document.body) titleRef.current?.focus();
+  }, []);
 
   return (
     <div className="flex size-full items-center justify-center bg-background px-6 py-12">
@@ -92,8 +98,10 @@ export function RecordRecoveryState({
         </div>
         <div className="space-y-2">
           <h1
+            ref={titleRef}
             id="record-recovery-title"
-            className="text-lg font-semibold text-foreground"
+            tabIndex={-1}
+            className="text-lg font-semibold text-foreground outline-none"
           >
             {t(`${kind}.title`)}
           </h1>

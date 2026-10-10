@@ -9,7 +9,7 @@ import type { FunctionReturnType } from "convex/server";
 import { Building2, Package, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { type Ref, useEffect, useRef } from "react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useListReturnPath } from "@/hooks/use-return-path";
@@ -45,6 +45,7 @@ export function CollectionList({
   onAddToCollection,
   isFiltered = false,
   onClearFilters,
+  listRef,
 }: {
   organizationId: Id<"organizations">;
   collections: Array<{
@@ -74,6 +75,8 @@ export function CollectionList({
   /** Search or filters narrow the catalog, so an empty list means no match. */
   isFiltered?: boolean;
   onClearFilters?: () => void;
+  /** The listed objects; takes focus back when the selection bar closes. */
+  listRef: Ref<HTMLElement>;
 }) {
   const tRoot = useI18n();
   const t = useScopedI18n("objects");
@@ -200,103 +203,115 @@ export function CollectionList({
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto custom-scrollbar relative"
       >
-        {viewMode === "grid" ? (
-          <div className="p-4 sm:p-6">
-            {collections.length > 0 && (
-              <div className="mb-4 flex items-center gap-2">
-                <Checkbox
-                  checked={
-                    allSelected || (someSelected ? "indeterminate" : false)
-                  }
-                  onCheckedChange={(checked) => onSelectAll(checked === true)}
-                  aria-label={common("selectAllItems")}
-                />
-                <span className="text-sm text-muted-foreground">
-                  {allSelected
-                    ? common("allSelected")
-                    : someSelected
-                      ? common("selectedCount", { count: selectedIds.size })
-                      : common("selectAll")}
-                </span>
-              </div>
-            )}
-            <ObjectGridView
-              items={collections.map((item) => ({
-                _id: item._id as Id<"collections">,
-                accessionNumber: item.accessionNumber,
-                title: item.title,
-                objectType: item.objectType,
-                primaryImageUrl: item.primaryImageUrl,
-                status: item.status,
-              }))}
-              organizationId={organizationId}
-              returnPath={returnPath}
-              selectedIds={selectedIds}
-              onSelectItem={onSelectItem}
-            />
-          </div>
-        ) : (
-          <table className="w-full border-separate border-spacing-0 text-left text-xs">
-            <thead className="sticky top-0 z-10 bg-background/95 shadow-sm backdrop-blur-md">
-              <tr>
-                <th className="w-10 border-b border-border px-4 py-3">
+        <section
+          ref={listRef}
+          aria-label={t("title")}
+          tabIndex={-1}
+          className="outline-none"
+        >
+          {viewMode === "grid" ? (
+            <div className="p-4 sm:p-6">
+              {collections.length > 0 && (
+                <div className="mb-4 flex items-center gap-2">
                   <Checkbox
                     checked={
                       allSelected || (someSelected ? "indeterminate" : false)
                     }
                     onCheckedChange={(checked) => onSelectAll(checked === true)}
-                    className="border-input"
+                    aria-label={t("selectAllShown")}
                   />
-                </th>
-                {isColumnVisible(columns, "image") ? (
-                  <th className="w-16 border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                    {tRoot("objects.columnConfig.image")}
+                  <span className="text-sm text-muted-foreground">
+                    {allSelected
+                      ? common("allSelected")
+                      : someSelected
+                        ? common("selectedCount", { count: selectedIds.size })
+                        : common("selectAll")}
+                  </span>
+                </div>
+              )}
+              <ObjectGridView
+                items={collections.map((item) => ({
+                  _id: item._id as Id<"collections">,
+                  accessionNumber: item.accessionNumber,
+                  title: item.title,
+                  objectType: item.objectType,
+                  primaryImageUrl: item.primaryImageUrl,
+                  status: item.status,
+                }))}
+                organizationId={organizationId}
+                returnPath={returnPath}
+                selectedIds={selectedIds}
+                onSelectItem={onSelectItem}
+              />
+            </div>
+          ) : (
+            <table className="w-full border-separate border-spacing-0 text-left text-xs">
+              <thead className="sticky top-0 z-10 bg-background/95 shadow-sm backdrop-blur-md">
+                <tr>
+                  <th className="w-10 border-b border-border px-4 py-3">
+                    <Checkbox
+                      checked={
+                        allSelected || (someSelected ? "indeterminate" : false)
+                      }
+                      onCheckedChange={(checked) =>
+                        onSelectAll(checked === true)
+                      }
+                      aria-label={t("selectAllShown")}
+                      className="border-input"
+                    />
                   </th>
-                ) : null}
-                <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                  {tRoot(
-                    "untranslatedRecords.objects.detail.objectIdDescription",
-                  )}
-                </th>
-                {isColumnVisible(columns, "objectType") ? (
+                  {isColumnVisible(columns, "image") ? (
+                    <th className="w-16 border-b border-border px-4 py-3 font-medium text-muted-foreground">
+                      {tRoot("objects.columnConfig.image")}
+                    </th>
+                  ) : null}
                   <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                    {t("columnConfig.objectType")}
+                    {tRoot(
+                      "untranslatedRecords.objects.detail.objectIdDescription",
+                    )}
                   </th>
-                ) : null}
-                {isColumnVisible(columns, "location") ? (
+                  {isColumnVisible(columns, "objectType") ? (
+                    <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
+                      {t("columnConfig.objectType")}
+                    </th>
+                  ) : null}
+                  {isColumnVisible(columns, "location") ? (
+                    <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
+                      {tRoot("objects.filters.location")}
+                    </th>
+                  ) : null}
                   <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                    {tRoot("objects.filters.location")}
+                    {tRoot("untranslatedRecords.objects.detail.dateAcquired")}
                   </th>
-                ) : null}
-                <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                  {tRoot("untranslatedRecords.objects.detail.dateAcquired")}
-                </th>
-                {isColumnVisible(columns, "status") ? (
-                  <th className="border-b border-border px-4 py-3 text-right font-medium text-muted-foreground">
-                    {tRoot("objects.filters.status")}
+                  {isColumnVisible(columns, "status") ? (
+                    <th className="border-b border-border px-4 py-3 text-right font-medium text-muted-foreground">
+                      {tRoot("objects.filters.status")}
+                    </th>
+                  ) : null}
+                  <th className="w-10 border-b border-border px-4 py-3 font-medium text-muted-foreground">
+                    <span className="sr-only">{common("actions")}</span>
                   </th>
-                ) : null}
-                <th className="w-10 border-b border-border px-4 py-3 font-medium text-muted-foreground" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {collections.map((item) => (
-                <CollectionTableRow
-                  key={item._id}
-                  item={item as CollectionListItem}
-                  organizationId={organizationId}
-                  columns={columns}
-                  isSelected={selectedIds.has(item._id as Id<"collections">)}
-                  shouldEagerLoad={collections[0]?._id === item._id}
-                  returnPath={returnPath}
-                  onSelect={(selected: boolean) =>
-                    onSelectItem(item._id as Id<"collections">, selected)
-                  }
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {collections.map((item) => (
+                  <CollectionTableRow
+                    key={item._id}
+                    item={item as CollectionListItem}
+                    organizationId={organizationId}
+                    columns={columns}
+                    isSelected={selectedIds.has(item._id as Id<"collections">)}
+                    shouldEagerLoad={collections[0]?._id === item._id}
+                    returnPath={returnPath}
+                    onSelect={(selected: boolean) =>
+                      onSelectItem(item._id as Id<"collections">, selected)
+                    }
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
 
         <div ref={loadMoreRef} className="h-6 w-full" />
       </div>
@@ -373,6 +388,7 @@ function CollectionTableRow({
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(!!checked)}
           onClick={(e) => e.stopPropagation()}
+          aria-label={tRoot("objects.selectObject", { title: item.title })}
           className="border-input"
         />
       </td>
@@ -401,7 +417,10 @@ function CollectionTableRow({
           href={withReturnPath(`/objects/${item._id}`, returnPath)}
           className="flex flex-col group-hover:cursor-pointer"
         >
-          <span className="max-w-[200px] truncate font-medium text-foreground transition-colors">
+          <span
+            className="max-w-[200px] truncate font-medium text-foreground transition-colors"
+            title={item.title}
+          >
             {item.title}
           </span>
           {isColumnVisible(columns, "accessionNumber") ? (

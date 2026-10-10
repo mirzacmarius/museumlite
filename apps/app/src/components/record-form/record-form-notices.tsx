@@ -4,7 +4,7 @@ import { Button } from "@v1/ui/button";
 import { FormMessage } from "@v1/ui/form-message";
 import { cn } from "@v1/ui/utils";
 import { AlertTriangle, History, Info, RotateCcw } from "lucide-react";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useEffectEvent, useRef } from "react";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import type { RecordSaveFailure } from "@/lib/record-form";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -98,13 +98,38 @@ export function RecordFormNotices({
   );
   const fieldList = (fields: string[]) => fields.map(fieldLabel).join(", ");
   const { failure, remote, recoveryOffer } = session;
-  // A save is usually started far below these notices; bring its outcome
-  // into view and focus, like an error summary.
+  // A save refused for its fields takes staff to the first field to fix.
+  // Otherwise the save, usually started far below these notices, brings its
+  // outcome into view and focus, like an error summary.
   const noticesRef = useRef<HTMLDivElement>(null);
+  // Only a new failure moves focus, never a later render of the form.
+  const showFailure = useEffectEvent((failure: RecordSaveFailure) => {
+    const notices = noticesRef.current;
+    if (!notices) return;
+    const fields =
+      failure.kind === "invalid"
+        ? failure.fields
+        : failure.kind === "field"
+          ? [failure.field]
+          : [];
+    const shown = firstShownFieldInError(
+      notices.closest("form") ?? document.body,
+      fields,
+    );
+    if (shown) {
+      shown.focus();
+      return;
+    }
+    const [hidden] = fields;
+    if (hidden && onGoToField) {
+      onGoToField(hidden);
+      return;
+    }
+    notices.scrollIntoView({ block: "nearest" });
+    notices.focus({ preventScroll: true });
+  });
   useEffect(() => {
-    if (!failure) return;
-    noticesRef.current?.scrollIntoView({ block: "nearest" });
-    noticesRef.current?.focus({ preventScroll: true });
+    if (failure) showFailure(failure);
   }, [failure]);
   const reviewActions = (
     <>
@@ -307,14 +332,31 @@ export function RecordLockedNotice({ message }: { message: string }) {
   );
 }
 
+function fieldErrorId(field: string) {
+  return `${field}-error`;
+}
+
 /** Accessible link between an input and its error message. */
 export function fieldErrorProps(field: string, message: string | undefined) {
   return message
     ? {
         "aria-invalid": true as const,
-        "aria-describedby": `${field}-error`,
+        "aria-describedby": fieldErrorId(field),
       }
     : {};
+}
+
+/** The first input on screen, in reading order, described by a field's error. */
+function firstShownFieldInError(container: Element, fields: string[]) {
+  const errorIds = new Set(fields.map(fieldErrorId));
+  return Array.from(
+    container.querySelectorAll<HTMLElement>("[aria-describedby]"),
+  ).find((element) =>
+    element
+      .getAttribute("aria-describedby")
+      ?.split(/\s+/)
+      .some((id) => errorIds.has(id)),
+  );
 }
 
 /** A field's error, placed under its input. */
@@ -327,7 +369,7 @@ export function FieldError({
 }) {
   if (!message) return null;
   return (
-    <FormMessage className="text-xs" id={`${field}-error`}>
+    <FormMessage className="text-xs" id={fieldErrorId(field)}>
       {message}
     </FormMessage>
   );

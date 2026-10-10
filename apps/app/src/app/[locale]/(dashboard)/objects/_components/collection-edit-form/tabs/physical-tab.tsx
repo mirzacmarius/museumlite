@@ -54,8 +54,12 @@ export function CollectionEditPhysicalTab({
       >
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="materials">{tRoot("objects.form.materials")}</Label>
+            <Label id="materials-label" htmlFor="materials">
+              {tRoot("objects.form.materials")}
+            </Label>
             <MaterialsCombobox
+              id="materials"
+              aria-labelledby="materials-label"
               organizationId={currentOrganizationId}
               collectionId={typedCollectionId}
               value={

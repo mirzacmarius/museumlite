@@ -1554,6 +1554,7 @@ export default {
     statusRejected: "Rejected",
   },
   loans: {
+    searchLabel: "Search loans",
     title: "Loans",
     description: "Manage incoming and outgoing loan agreements",
     newLoan: "New Loan",
@@ -1611,6 +1612,7 @@ export default {
       statusDistribution: "Status Distribution",
     },
     table: {
+      select: "Select",
       type: "Type",
       loanIdTitle: "Loan ID & Title",
       partnerInstitution: "Partner Institution",
@@ -1627,9 +1629,9 @@ export default {
       loanNotFound: "Loan not found",
     },
     bulkActions: {
-      loan: "loan",
-      loansPlural: "loans",
-      selected: "selected",
+      clearSelection: "Clear selection",
+      loansSelected: "{count} loan{s} selected",
+      label: "Selected loans",
       approveSelected: "Approve Selected",
       cancelSelected: "Cancel Selected",
       export: "Export",
@@ -2490,6 +2492,10 @@ export default {
     close: "Close",
   },
   objects: {
+    backToObject: "Back to object",
+    selectObject: "Select {title}",
+    selectAllShown: "Select all shown objects",
+    searchLabel: "Search objects",
     title: "Object Catalog",
     description: "Browse and manage your objects",
     addObject: "Add Object",
@@ -2568,7 +2574,8 @@ export default {
       status: "Status",
     },
     bulkActions: {
-      itemsSelected: "{count} item{s} selected",
+      objectsSelected: "{count} object{s} selected",
+      label: "Selected objects",
       addToGroup: "Add to Group",
       moveLocation: "Move Location",
       export: "Export",
@@ -9034,6 +9041,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Sub-organizations can transfer objects within the same hierarchy.",
       notifications: "Notifications",
+      notificationsUnread: "Notifications, {count} unread",
       markAllRead: "Mark all read",
       viewAllNotifications: "View all notifications",
       loading: "Loading…",
@@ -9100,6 +9108,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "You have unsaved changes that will be lost if you leave this page. Would you like to save your changes first?",
       discardChanges: "Discard changes",
+      keepEditing: "Keep editing",
       enterCode: "Enter code",
       orContinueWithGoogle: "Or continue with Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:

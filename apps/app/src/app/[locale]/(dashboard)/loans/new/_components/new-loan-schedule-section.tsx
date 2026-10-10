@@ -4,7 +4,9 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { useState } from "react";
 import { LoanCurrencyInput } from "@/components/loan-currency-input";
+import { futureCalendarEndMonth } from "@/lib/format-date";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
@@ -21,6 +23,8 @@ export function NewLoanScheduleSection({
 }: NewLoanScheduleSectionProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("loans");
+  // Loans run into later years, beyond the calendar's default last month.
+  const [endMonth] = useState(futureCalendarEndMonth);
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -49,6 +53,7 @@ export function NewLoanScheduleSection({
               }))
             }
             placeholder={t("placeholders.selectDate")}
+            endMonth={endMonth}
           />
           <DatePicker
             label={tRoot("loans.actions.endDate")}
@@ -58,6 +63,7 @@ export function NewLoanScheduleSection({
               onFormDataChange((prev) => ({ ...prev, endDate: date }))
             }
             placeholder={t("placeholders.selectDate")}
+            endMonth={endMonth}
           />
         </div>
 

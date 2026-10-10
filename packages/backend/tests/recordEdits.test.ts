@@ -171,8 +171,14 @@ describe("catalog object edits", () => {
 
   test("a location move by a colleague outdates an open form", async () => {
     const t = createConvexTest();
-    const { organizationId, collectionId, ana, ben } =
+    const { organizationId, collectionId, ana } =
       await createCataloguedObject(t);
+    const lena = await addMember(
+      t,
+      organizationId,
+      ["collections.read", "locations.update"],
+      "Lena Store Manager",
+    );
     const target = { type: "object" as const, id: collectionId };
     const anaOpened = await editVersionOf(ana, target);
     const storeId = await t.run((ctx) =>
@@ -185,7 +191,7 @@ describe("catalog object edits", () => {
       }),
     );
 
-    await ben.mutation(api.collections.bulkUpdateLocation, {
+    await lena.mutation(api.collections.bulkUpdateLocation, {
       collectionIds: [collectionId],
       locationId: storeId,
     });

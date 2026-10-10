@@ -2137,6 +2137,7 @@ export default {
     },
   },
   loans: {
+    searchLabel: "Søk i lån",
     title: "Lån",
     description: "Administrer innkommende og utgående låneavtaler",
     newLoan: "Nytt Lån",
@@ -2191,6 +2192,7 @@ export default {
       unavailable: "Utilgjengelig",
     },
     table: {
+      select: "Velg",
       type: "Type",
       loanIdTitle: "Låne-ID og Tittel",
       partnerInstitution: "Partnerinstitusjon",
@@ -2207,9 +2209,9 @@ export default {
       loanNotFound: "Lån ikke funnet",
     },
     bulkActions: {
-      loan: "lån",
-      loansPlural: "lån",
-      selected: "valgt",
+      clearSelection: "Tøm valg",
+      loansSelected: "Valgte lån: {count}",
+      label: "Valgte lån",
       approveSelected: "Godkjenn Valgte",
       cancelSelected: "Kanseller Valgte",
       export: "Eksporter",
@@ -3078,6 +3080,10 @@ export default {
     close: "Lukk",
   },
   objects: {
+    backToObject: "Tilbake til objektet",
+    selectObject: "Velg {title}",
+    selectAllShown: "Velg alle viste objekter",
+    searchLabel: "Søk i objekter",
     qrLabel: {
       size1x1: "Lite kvadrat",
       showObjectName: "Vis objektnavn",
@@ -3183,7 +3189,8 @@ export default {
       status: "Status",
     },
     bulkActions: {
-      itemsSelected: "{count} element valgt",
+      objectsSelected: "Valgte objekter: {count}",
+      label: "Valgte objekter",
       addToGroup: "Legg til Gruppe",
       moveLocation: "Flytt Plassering",
       export: "Eksporter",
@@ -9232,6 +9239,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Underorganisasjoner kan overføre objekter innenfor samme hierarki.",
       notifications: "Varsler",
+      notificationsUnread: "Varsler, {count} uleste",
       markAllRead: "Merk alle som lest",
       viewAllNotifications: "Se alle varsler",
       loading: "Laster…",
@@ -9300,6 +9308,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "Du har ulagrede endringer som går tapt hvis du forlater denne siden. Vil du lagre dem først?",
       discardChanges: "Forkast endringer",
+      keepEditing: "Fortsett å redigere",
       enterCode: "Angi kode",
       orContinueWithGoogle: "Eller fortsett med Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:

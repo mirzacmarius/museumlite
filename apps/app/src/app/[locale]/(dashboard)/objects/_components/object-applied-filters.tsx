@@ -2,7 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
-import { useMemo } from "react";
+import { type RefObject, useMemo } from "react";
 import type {
   ObjectDisplayStatus,
   ObjectStatus,
@@ -38,6 +38,8 @@ interface ObjectAppliedFiltersProps {
   collectionGroups?: CollectionGroupOption[];
   onChange: (filters: Partial<ObjectAppliedFiltersValue>) => void;
   onClearAll: () => void;
+  /** Takes focus when the last filter is removed. */
+  returnFocusRef?: RefObject<HTMLElement | null>;
   hideCollectionGroupFilter?: boolean;
   className?: string;
 }
@@ -85,6 +87,7 @@ export function ObjectAppliedFilters({
   collectionGroups,
   onChange,
   onClearAll,
+  returnFocusRef,
   hideCollectionGroupFilter = false,
   className,
 }: ObjectAppliedFiltersProps) {
@@ -122,7 +125,11 @@ export function ObjectAppliedFilters({
   if (!showBar) return null;
 
   return (
-    <AppliedFiltersBar className={className}>
+    <AppliedFiltersBar
+      className={className}
+      onClearAll={onClearAll}
+      returnFocusRef={returnFocusRef}
+    >
       {filters.search !== "" && (
         <AppliedFilterChip
           label={common("search")}
@@ -181,12 +188,6 @@ export function ObjectAppliedFilters({
           onRemove={() => onChange({ collectionGroupId: "" })}
         />
       )}
-
-      <AppliedFilterChip
-        label={common("clearAll")}
-        onRemove={onClearAll}
-        className="text-foreground"
-      />
     </AppliedFiltersBar>
   );
 }

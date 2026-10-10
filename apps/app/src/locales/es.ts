@@ -2166,6 +2166,7 @@ export default {
     },
   },
   loans: {
+    searchLabel: "Buscar préstamos",
     title: "Préstamos",
     description: "Administrar acuerdos de préstamo entrantes y salientes",
     newLoan: "Nuevo Préstamo",
@@ -2463,9 +2464,9 @@ export default {
       loanNotFound: "Préstamo no encontrado",
     },
     bulkActions: {
-      loan: "préstamo",
-      loansPlural: "préstamos",
-      selected: "seleccionado",
+      clearSelection: "Limpiar selección",
+      loansSelected: "{count} préstamo{s} seleccionado{s}",
+      label: "Préstamos seleccionados",
       approveSelected: "Aprobar Seleccionados",
       cancelSelected: "Cancelar Seleccionados",
       export: "Exportar",
@@ -2525,6 +2526,7 @@ export default {
       actionRequired: "Acción requerida",
     },
     table: {
+      select: "Seleccionar",
       type: "Tipo",
       duration: "Duración",
       status: "Estado",
@@ -3121,6 +3123,10 @@ export default {
     close: "Cerrar",
   },
   objects: {
+    backToObject: "Volver al objeto",
+    selectObject: "Seleccionar {title}",
+    selectAllShown: "Seleccionar todos los objetos mostrados",
+    searchLabel: "Buscar objetos",
     qrLabel: {
       size1x1: "Cuadrado pequeño",
       showObjectName: "Mostrar nombre del objeto",
@@ -3226,7 +3232,8 @@ export default {
       status: "Estado",
     },
     bulkActions: {
-      itemsSelected: "{count} elemento{s} seleccionado{s}",
+      objectsSelected: "{count} objeto{s} seleccionado{s}",
+      label: "Objetos seleccionados",
       addToGroup: "Agregar a Grupo",
       moveLocation: "Mover Ubicación",
       export: "Exportar",
@@ -9352,6 +9359,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Las suborganizaciones pueden trasladar objetos dentro de la misma jerarquía.",
       notifications: "Notificaciones",
+      notificationsUnread: "Notificaciones, {count} sin leer",
       markAllRead: "Marcar todo como leído",
       viewAllNotifications: "Ver todas las notificaciones",
       loading: "Cargando…",
@@ -9423,6 +9431,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "Tienes cambios sin guardar que se perderán si sales de esta página. ¿Quieres guardarlos primero?",
       discardChanges: "Descartar cambios",
+      keepEditing: "Seguir editando",
       enterCode: "Introduce el código",
       orContinueWithGoogle: "O continúa con Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
