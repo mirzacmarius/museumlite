@@ -36,7 +36,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
                 <Link
                   href={withReturnPath(
                     `/${locale}/objects/${item.collectionId}`,
-                    `/loans/${loan._id}`,
+                    `/loans/${loan._id}?tab=objects`,
                   )}
                   className="hover:underline"
                 >

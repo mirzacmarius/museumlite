@@ -277,13 +277,18 @@ export function useLoanReturnFlow({
       });
       return;
     }
-    const firstMissing = loanItems
-      .filter((item) => state.selectedItemIds.has(item._id))
-      .flatMap((item) =>
-        receiptEvidenceProblems(evidenceByItem[item._id], loanType).map(
-          (problem) => receiptFieldId(item._id, problem),
-        ),
-      )[0];
+    let firstMissing: string | undefined;
+    for (const item of loanItems) {
+      if (!state.selectedItemIds.has(item._id)) continue;
+      const [problem] = receiptEvidenceProblems(
+        evidenceByItem[item._id],
+        loanType,
+      );
+      if (problem) {
+        firstMissing = receiptFieldId(item._id, problem);
+        break;
+      }
+    }
     if (firstMissing) {
       dispatch({ type: "showEvidenceProblems" });
       document.getElementById(firstMissing)?.focus();
