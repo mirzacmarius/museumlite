@@ -1,9 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import { query } from "../_generated/server";
 import { mutation } from "../utils/mutationBuilders";
+import { dispatchNotification } from "../utils/notificationDispatch";
 import { promoteNextHold } from "./holds";
 import {
   assertBorrowingLimitAllowsCheckout,
@@ -853,14 +853,13 @@ export const autoRenewEligibleItems = mutation({
         });
 
         if (account.userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await dispatchNotification(ctx, {
             organizationId: args.organizationId,
-            userId: account.userId,
             type: "library_auto_renewal",
+            recipients: [account.userId],
             title: "Item Auto-Renewed",
             message: `Your checkout of "${item?.title}" has been automatically renewed. New due date: ${new Date(newDueDate).toLocaleDateString()}`,
-            relatedEntityType: "circulation",
-            relatedEntityId: circulation._id,
+            related: { entityType: "circulation", entityId: circulation._id },
           });
         }
 
@@ -1212,14 +1211,16 @@ export const createRecall = mutation({
     ] as const);
     await Promise.all([
       account?.userId
-        ? ctx.runMutation(internal.audit.createNotificationInternal, {
+        ? dispatchNotification(ctx, {
             organizationId: circulation.organizationId,
-            userId: account.userId,
             type: "library_recall",
+            recipients: [account.userId],
             title: "Item Recalled",
             message: `"${item?.title}" has been recalled. Please return by ${new Date(finalDueDate).toLocaleDateString()}. Reason: ${args.reason}`,
-            relatedEntityType: "circulation",
-            relatedEntityId: args.circulationId,
+            related: {
+              entityType: "circulation",
+              entityId: args.circulationId,
+            },
           })
         : Promise.resolve(),
       ctx.db.patch(recallId, {

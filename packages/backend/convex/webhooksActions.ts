@@ -1,12 +1,8 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
-import {
-  type AttemptResult,
-  classifyAttempt,
-  signedDeliveryHeaders,
-  WEBHOOK_REQUEST_TIMEOUT_MS,
-} from "./utils/webhookDelivery";
+import { classifyAttempt, postWithTimeout } from "./utils/deliveryLedger";
+import { signedDeliveryHeaders } from "./utils/webhookDelivery";
 
 /**
  * Sends one claimed attempt. Stale, duplicate or replayed runs are rejected by
@@ -35,7 +31,10 @@ export const attemptDelivery = internalAction({
       deliveryId: args.deliveryId,
       timestamp: Math.floor(startedAt / 1000),
     });
-    const result = await postWithTimeout(claim.url, headers, claim.body);
+    const result = await postWithTimeout(claim.url, {
+      headers,
+      body: claim.body,
+    });
 
     await ctx.runMutation(internal.webhookDeliveries.recordAttemptResult, {
       ...args,
@@ -72,31 +71,3 @@ export const deliver = internalAction({
     return null;
   },
 });
-
-async function postWithTimeout(
-  url: string,
-  headers: Record<string, string>,
-  body: string,
-): Promise<AttemptResult> {
-  const controller = new AbortController();
-  const timer = setTimeout(
-    () => controller.abort(),
-    WEBHOOK_REQUEST_TIMEOUT_MS,
-  );
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body,
-      redirect: "manual",
-      signal: controller.signal,
-    });
-    return { kind: "response", status: response.status };
-  } catch {
-    return controller.signal.aborted
-      ? { kind: "timeout" }
-      : { kind: "network_error" };
-  } finally {
-    clearTimeout(timer);
-  }
-}

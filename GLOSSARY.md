@@ -106,6 +106,20 @@ _Avoid_: Ticket, request (as a general term)
 A unit of work waiting on a staff member, such as an installation task or an approval step on a Case.
 _Avoid_: To-do, job
 
+### Notifications
+
+**Notification**:
+A message to one staff member about an event in their Organization, shown in the notification center and, when they chose it, emailed. It reaches only current members who may read what it names.
+_Avoid_: Message, alert (Alerts is one category)
+
+**Notification category**:
+Approvals, Reminders, Alerts, Tasks or System. Each staff member chooses per category whether they are notified at all and whether they are also emailed.
+_Avoid_: Notification type (the specific event kind within a category)
+
+**Notification intent**:
+The record of one event that was notified about. Dispatching the same intent again notifies nobody, so each recipient hears about an event once.
+_Avoid_: Notification (the per-recipient message)
+
 ### Library circulation
 
 These terms belong to the optional Library Module and never describe museum Objects.

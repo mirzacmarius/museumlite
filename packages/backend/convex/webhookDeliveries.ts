@@ -7,6 +7,19 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  attemptOutcome,
+  claimStep,
+  DELIVERY_RETENTION_MS,
+  DELIVERY_SWEEP_GRACE_MS,
+  type DeliveryStatus,
+  deliveryStatus,
+  finishedWithoutSending,
+  isRetryableStatus,
+  ledgerProgress,
+  resultStep,
+  retrySeriesPatch,
+} from "./utils/deliveryLedger";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 import {
@@ -15,21 +28,14 @@ import {
   isSupportedWebhookEvent,
   MAX_WEBHOOKS_PER_ORGANIZATION,
   maxAttemptsFor,
-  retryDelayMs,
-  WEBHOOK_ATTEMPT_LEASE_MS,
   WEBHOOK_LAST_TRIGGERED_RESOLUTION_MS,
-  WEBHOOK_RETENTION_MS,
-  WEBHOOK_SWEEP_GRACE_MS,
   WEBHOOK_TEST_EVENT,
 } from "./utils/webhookDelivery";
 import { type WebhookErrorCode, webhookError } from "./utils/webhookErrors";
 import { emitWebhookEvent, recordWebhookEvent } from "./utils/webhookEvents";
 import {
   type WebhookDeliveryErrorCode,
-  type WebhookDeliveryStatus,
-  webhookAttemptOutcome,
   webhookDeliveryErrorCode,
-  webhookDeliveryStatus,
 } from "./utils/webhookValidators";
 
 const MANAGE_PERMISSION = "organization.manage_settings";
@@ -40,7 +46,7 @@ const deliverySummary = v.object({
   webhookId: v.id("webhooks"),
   webhookName: v.union(v.string(), v.null()),
   eventType: v.string(),
-  status: webhookDeliveryStatus,
+  status: deliveryStatus,
   attemptCount: v.number(),
   seriesAttempts: v.number(),
   maxAttempts: v.number(),
@@ -65,13 +71,8 @@ function toSummary(
     eventType: delivery.eventType,
     status: delivery.status,
     attemptCount: delivery.attemptCount,
-    seriesAttempts: delivery.attemptCount - delivery.seriesStartAttempt,
     maxAttempts: delivery.maxAttempts,
-    inFlight: delivery.inFlightSince !== undefined,
-    nextAttemptAt:
-      delivery.status === "pending" && delivery.inFlightSince === undefined
-        ? delivery.nextAttemptAt
-        : undefined,
+    ...ledgerProgress(delivery),
     lastAttemptAt: delivery.lastAttemptAt,
     lastResponseStatus: delivery.lastResponseStatus,
     lastErrorCode: delivery.lastErrorCode,
@@ -84,7 +85,7 @@ function deliveriesQuery(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   webhookId: Id<"webhooks"> | undefined,
-  status: WebhookDeliveryStatus | undefined,
+  status: DeliveryStatus | undefined,
 ) {
   const table = ctx.db.query("webhookDeliveries");
   if (webhookId && status) {
@@ -124,7 +125,7 @@ export const list = query({
   args: {
     organizationId: v.id("organizations"),
     webhookId: v.optional(v.id("webhooks")),
-    status: v.optional(webhookDeliveryStatus),
+    status: v.optional(deliveryStatus),
     paginationOpts: paginationOptsValidator,
   },
   returns: paginationResultValidator(deliverySummary),
@@ -179,7 +180,7 @@ export const get = query({
           attemptNumber: v.number(),
           startedAt: v.number(),
           durationMs: v.number(),
-          outcome: webhookAttemptOutcome,
+          outcome: attemptOutcome,
           responseStatus: v.optional(v.number()),
           errorCode: v.optional(webhookDeliveryErrorCode),
         }),
@@ -288,7 +289,7 @@ export const retry = mutation({
     ) {
       throw webhookError("DELIVERY_NOT_FOUND", "Delivery not found");
     }
-    if (delivery.status === "pending" || delivery.status === "succeeded") {
+    if (!isRetryableStatus(delivery.status)) {
       throw webhookError(
         "DELIVERY_NOT_RETRYABLE",
         "Only failed or cancelled deliveries can be retried",
@@ -301,16 +302,15 @@ export const retry = mutation({
       delivery.eventType,
     );
 
-    await ctx.db.patch(delivery._id, {
-      status: "pending",
-      seriesStartAttempt: delivery.attemptCount,
-      maxAttempts: maxAttemptsFor(delivery.eventType),
-      nextAttemptAt: Date.now(),
-      inFlightSince: undefined,
-      completedAt: undefined,
-      retryCount: delivery.retryCount + 1,
-      lastRetriedBy: userId,
-    });
+    await ctx.db.patch(
+      delivery._id,
+      retrySeriesPatch(
+        delivery,
+        userId,
+        maxAttemptsFor(delivery.eventType),
+        Date.now(),
+      ),
+    );
     await ctx.scheduler.runAfter(0, internal.webhooksActions.attemptDelivery, {
       deliveryId: delivery._id,
       attempt: delivery.attemptCount + 1,
@@ -417,12 +417,8 @@ async function finishWithoutSending(
   errorCode: WebhookDeliveryErrorCode,
 ) {
   await ctx.db.patch(delivery._id, {
-    status,
+    ...finishedWithoutSending(status, Date.now()),
     lastErrorCode: errorCode,
-    lastResponseStatus: undefined,
-    nextAttemptAt: undefined,
-    inFlightSince: undefined,
-    completedAt: Date.now(),
   });
   return { kind: "skip" as const };
 }
@@ -440,30 +436,21 @@ export const claimAttempt = internalMutation({
   returns: claimResult,
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
-    if (
-      !delivery ||
-      delivery.status !== "pending" ||
-      args.attempt !== delivery.attemptCount + 1
-    ) {
+    if (!delivery) {
       return { kind: "skip" as const };
     }
-    const now = Date.now();
-
-    if (delivery.inFlightSince !== undefined) {
+    const step = claimStep(delivery, args.attempt, Date.now());
+    if (step.kind === "stale") {
+      return { kind: "skip" as const };
+    }
+    if (step.lostAttempt) {
       await ctx.db.insert("webhookDeliveryAttempts", {
         organizationId: delivery.organizationId,
         deliveryId: delivery._id,
-        attemptNumber: delivery.attemptCount,
-        startedAt: delivery.inFlightSince,
-        durationMs: now - delivery.inFlightSince,
-        outcome: "failed_transient",
-        errorCode: "attempt_lost",
+        ...step.lostAttempt,
       });
     }
-    if (
-      delivery.attemptCount - delivery.seriesStartAttempt >=
-      delivery.maxAttempts
-    ) {
+    if (step.kind === "exhausted") {
       return await finishWithoutSending(
         ctx,
         delivery,
@@ -500,12 +487,7 @@ export const claimAttempt = internalMutation({
       );
     }
 
-    await ctx.db.patch(delivery._id, {
-      attemptCount: args.attempt,
-      inFlightSince: now,
-      lastAttemptAt: now,
-      nextAttemptAt: now + WEBHOOK_ATTEMPT_LEASE_MS,
-    });
+    await ctx.db.patch(delivery._id, step.patch);
     return {
       kind: "send" as const,
       url: webhook.url,
@@ -535,7 +517,7 @@ export const sweep = internalMutation({
       .withIndex("by_status_and_nextAttemptAt", (q) =>
         q
           .eq("status", "pending")
-          .lte("nextAttemptAt", now - WEBHOOK_SWEEP_GRACE_MS),
+          .lte("nextAttemptAt", now - DELIVERY_SWEEP_GRACE_MS),
       )
       .take(SWEEP_BATCH);
     for (const delivery of overdue) {
@@ -550,7 +532,7 @@ export const sweep = internalMutation({
     const expired = await ctx.db
       .query("webhookEvents")
       .withIndex("by_creation_time", (q) =>
-        q.lt("_creationTime", now - WEBHOOK_RETENTION_MS),
+        q.lt("_creationTime", now - DELIVERY_RETENTION_MS),
       )
       .first();
     if (expired) {
@@ -606,7 +588,7 @@ export const purgeExpired = internalMutation({
     const events = await ctx.db
       .query("webhookEvents")
       .withIndex("by_creation_time", (q) =>
-        q.lt("_creationTime", Date.now() - WEBHOOK_RETENTION_MS),
+        q.lt("_creationTime", Date.now() - DELIVERY_RETENTION_MS),
       )
       .take(PURGE_EVENT_BATCH);
     let budget = PURGE_DOCUMENT_BUDGET;
@@ -635,22 +617,21 @@ export const recordAttemptResult = internalMutation({
     attempt: v.number(),
     startedAt: v.number(),
     durationMs: v.number(),
-    outcome: webhookAttemptOutcome,
+    outcome: attemptOutcome,
     responseStatus: v.optional(v.number()),
     errorCode: v.optional(webhookDeliveryErrorCode),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
-    if (
-      !delivery ||
-      delivery.status !== "pending" ||
-      delivery.inFlightSince === undefined ||
-      args.attempt !== delivery.attemptCount
-    ) {
+    if (!delivery) {
       return null;
     }
     const now = Date.now();
+    const step = resultStep(delivery, args, now);
+    if (step.kind === "stale") {
+      return null;
+    }
     await ctx.db.insert("webhookDeliveryAttempts", {
       organizationId: delivery.organizationId,
       deliveryId: delivery._id,
@@ -662,34 +643,17 @@ export const recordAttemptResult = internalMutation({
       errorCode: args.errorCode,
     });
 
-    const result = {
-      inFlightSince: undefined,
-      lastResponseStatus: args.responseStatus,
+    await ctx.db.patch(delivery._id, {
+      ...step.patch,
       lastErrorCode: args.errorCode,
-    };
-    const attemptsInSeries =
-      delivery.attemptCount - delivery.seriesStartAttempt;
-    if (
-      args.outcome === "failed_transient" &&
-      attemptsInSeries < delivery.maxAttempts
-    ) {
-      const nextAttemptAt = now + retryDelayMs(attemptsInSeries);
-      await ctx.db.patch(delivery._id, { ...result, nextAttemptAt });
+    });
+    if (step.kind === "retry") {
       await ctx.scheduler.runAt(
-        nextAttemptAt,
+        step.nextAttemptAt,
         internal.webhooksActions.attemptDelivery,
         { deliveryId: delivery._id, attempt: delivery.attemptCount + 1 },
       );
-      return null;
-    }
-
-    await ctx.db.patch(delivery._id, {
-      ...result,
-      status: args.outcome,
-      nextAttemptAt: undefined,
-      completedAt: now,
-    });
-    if (args.outcome === "succeeded") {
+    } else if (args.outcome === "succeeded") {
       const webhook = await ctx.db.get(delivery.webhookId);
       if (
         webhook &&

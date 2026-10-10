@@ -34,6 +34,7 @@ import { countIndexedQuery } from "./utils/indexedCounts";
 import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import {
   accessionDraftMediaValidator,
@@ -302,22 +303,14 @@ export const create = mutation({
       );
 
       // Create notifications for approvers
-      await Promise.all(
-        Array.from(usersToNotify).map(async (approverId) => {
-          if (approverId !== userId) {
-            // Don't notify the creator
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: args.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "New Accession Requires Approval",
-              message: `Accession ${accessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-              relatedEntityType: "accession",
-              relatedEntityId: accessionId,
-            });
-          }
-        }),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: args.organizationId,
+        type: "workflow_pending",
+        recipients: usersToNotify.filter((approverId) => approverId !== userId),
+        title: "New Accession Requires Approval",
+        message: `Accession ${accessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+        related: { entityType: "accession", entityId: accessionId },
+      });
     }
 
     // If no workflow config, auto-create collection object
@@ -562,21 +555,16 @@ export const upsertObjectDraft = mutation({
           updatedWorkflowStep,
         );
 
-        await Promise.all(
-          Array.from(usersToNotify).map(async (approverId) => {
-            if (approverId !== userId) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: args.organizationId,
-                userId: approverId,
-                type: "workflow_pending",
-                title: "Object Request Requires Approval",
-                message: `Object request ${accessionNumber} is pending your approval.`,
-                relatedEntityType: "accession",
-                relatedEntityId: existing._id,
-              });
-            }
-          }),
-        );
+        await dispatchNotification(ctx, {
+          organizationId: args.organizationId,
+          type: "workflow_pending",
+          recipients: usersToNotify.filter(
+            (approverId) => approverId !== userId,
+          ),
+          title: "Object Request Requires Approval",
+          message: `Object request ${accessionNumber} is pending your approval.`,
+          related: { entityType: "accession", entityId: existing._id },
+        });
       }
 
       return existing._id;
@@ -681,21 +669,14 @@ export const upsertObjectDraft = mutation({
         nextWorkflowStep,
       );
 
-      await Promise.all(
-        Array.from(usersToNotify).map(async (approverId) => {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: args.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Object Request Requires Approval",
-              message: `Object request ${accessionNumber} is pending your approval.`,
-              relatedEntityType: "accession",
-              relatedEntityId: accessionId,
-            });
-          }
-        }),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: args.organizationId,
+        type: "workflow_pending",
+        recipients: usersToNotify.filter((approverId) => approverId !== userId),
+        title: "Object Request Requires Approval",
+        message: `Object request ${accessionNumber} is pending your approval.`,
+        related: { entityType: "accession", entityId: accessionId },
+      });
     }
 
     return accessionId;
@@ -1405,19 +1386,16 @@ export const submitForApproval = mutation({
           status: accession.status,
         },
       }),
-      ...Array.from(reviewers, (reviewerId) =>
-        reviewerId === userId
-          ? null
-          : ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: accession.organizationId,
-              userId: reviewerId,
-              type: "workflow_pending",
-              title: "Object Request Requires Approval",
-              message: `Object request ${accession.accessionNumber} is pending your approval.`,
-              relatedEntityType: "accession",
-              relatedEntityId: args.accessionId,
-            }),
-      ),
+      dispatchNotification(ctx, {
+        organizationId: accession.organizationId,
+        type: "workflow_pending",
+        recipients: Array.from(reviewers).filter(
+          (reviewerId) => reviewerId !== userId,
+        ),
+        title: "Object Request Requires Approval",
+        message: `Object request ${accession.accessionNumber} is pending your approval.`,
+        related: { entityType: "accession", entityId: args.accessionId },
+      }),
     ]);
 
     return null;
@@ -1594,14 +1572,13 @@ export const approve = mutation({
 
         const creatorId = getWorkflowCreatorRecipient(history, userId);
         if (creatorId && creatorId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await dispatchNotification(ctx, {
             organizationId: accession.organizationId,
-            userId: creatorId,
             type: "workflow_approved",
+            recipients: [creatorId],
             title: "Accession Approved",
             message: `Accession ${accession.accessionNumber} has been fully approved and added to the collection.`,
-            relatedEntityType: "accession",
-            relatedEntityId: args.accessionId,
+            related: { entityType: "accession", entityId: args.accessionId },
           });
         }
 
@@ -1684,21 +1661,16 @@ export const approve = mutation({
           .collect(),
       ] as const);
 
-      await Promise.all(
-        Array.from(userOrgs).map(async (userOrg) => {
-          if (userOrg.userId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: accession.organizationId,
-              userId: userOrg.userId,
-              type: "workflow_approved",
-              title: "Accession Approved",
-              message: `Accession ${accession.accessionNumber} has been approved and added to the collection.`,
-              relatedEntityType: "accession",
-              relatedEntityId: args.accessionId,
-            });
-          }
-        }),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: accession.organizationId,
+        type: "workflow_approved",
+        recipients: userOrgs.flatMap((userOrg) =>
+          userOrg.userId === userId ? [] : [userOrg.userId],
+        ),
+        title: "Accession Approved",
+        message: `Accession ${accession.accessionNumber} has been approved and added to the collection.`,
+        related: { entityType: "accession", entityId: args.accessionId },
+      });
 
       await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
         accessionId: args.accessionId,
@@ -1851,14 +1823,13 @@ export async function recordIntakeReviewDecision(
       },
     }),
     submitterId
-      ? ctx.runMutation(internal.audit.createNotificationInternal, {
+      ? dispatchNotification(ctx, {
           organizationId: accession.organizationId,
-          userId: submitterId,
           type: record.notificationType,
+          recipients: [submitterId],
           title: record.notificationTitle,
           message: `${record.notificationMessage(accession.accessionNumber)} Reason: ${reason}`,
-          relatedEntityType: "accession",
-          relatedEntityId: accession._id,
+          related: { entityType: "accession", entityId: accession._id },
         })
       : null,
   ]);
@@ -2189,31 +2160,20 @@ export const assign = mutation({
 
     // Send notification to assignee if different from current user
     if (args.userId !== currentUserId) {
-      // Get user who is assigning
       const assigningUser = await ctx.db.get(currentUserId);
       const assignedByName =
         assigningUser?.name ?? assigningUser?.email ?? "A team member";
-
-      // Get organization for building deep link
-      const org = await ctx.db.get(accession.organizationId);
-      const siteUrl = process.env.SITE_URL;
-      const taskUrl =
-        org && siteUrl
-          ? `${siteUrl}/${org.slug}/accessions/${args.accessionId}`
-          : undefined;
-
-      await ctx.runMutation(internal.notifications.sendNotification, {
+      await dispatchNotification(ctx, {
         organizationId: accession.organizationId,
-        userId: args.userId,
         type: "task_assigned",
+        recipients: [args.userId],
         title: "Accession Assigned",
         message: `You have been assigned to accession: ${accession.accessionNumber}`,
-        relatedEntityType: "accession",
-        relatedEntityId: args.accessionId,
-        emailData: {
+        related: { entityType: "accession", entityId: args.accessionId },
+        email: {
+          kind: "taskAssigned",
           taskTitle: `Accession ${accession.accessionNumber}`,
           assignedBy: assignedByName,
-          taskUrl,
         },
       });
     }

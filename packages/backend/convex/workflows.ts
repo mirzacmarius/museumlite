@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalQuery, type QueryCtx, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
@@ -834,31 +835,20 @@ export const assignDeaccession = mutation({
     ] as const);
 
     if (args.userId !== currentUserId) {
-      // Get user who is assigning
       const assigningUser = await ctx.db.get(currentUserId);
       const assignedByName =
         assigningUser?.name ?? assigningUser?.email ?? "A team member";
-
-      // Get organization for building deep link
-      const org = await ctx.db.get(deaccession.organizationId);
-      const siteUrl = process.env.SITE_URL;
-      const taskUrl =
-        org && siteUrl
-          ? `${siteUrl}/${org.slug}/deaccessions/${args.deaccessionId}`
-          : undefined;
-
-      await ctx.runMutation(internal.notifications.sendNotification, {
+      await dispatchNotification(ctx, {
         organizationId: deaccession.organizationId,
-        userId: args.userId,
         type: "task_assigned",
+        recipients: [args.userId],
         title: "Deaccession Assigned to You",
         message: `Deaccession ${deaccession.deaccessionNumber} has been assigned to you.`,
-        relatedEntityType: "deaccession",
-        relatedEntityId: args.deaccessionId,
-        emailData: {
+        related: { entityType: "deaccession", entityId: args.deaccessionId },
+        email: {
+          kind: "taskAssigned",
           taskTitle: `Deaccession ${deaccession.deaccessionNumber}`,
           assignedBy: assignedByName,
-          taskUrl,
         },
       });
     }
@@ -955,31 +945,20 @@ export const assignLoan = mutation({
     ] as const);
 
     if (args.userId !== currentUserId) {
-      // Get user who is assigning
       const assigningUser = await ctx.db.get(currentUserId);
       const assignedByName =
         assigningUser?.name ?? assigningUser?.email ?? "A team member";
-
-      // Get organization for building deep link
-      const org = await ctx.db.get(loan.organizationId);
-      const siteUrl = process.env.SITE_URL;
-      const taskUrl =
-        org && siteUrl
-          ? `${siteUrl}/${org.slug}/loans/${args.loanId}`
-          : undefined;
-
-      await ctx.runMutation(internal.notifications.sendNotification, {
+      await dispatchNotification(ctx, {
         organizationId: loan.organizationId,
-        userId: args.userId,
         type: "task_assigned",
+        recipients: [args.userId],
         title: "Loan Assigned to You",
         message: `Loan ${loan.loanNumber} has been assigned to you.`,
-        relatedEntityType: "loan",
-        relatedEntityId: args.loanId,
-        emailData: {
+        related: { entityType: "loan", entityId: args.loanId },
+        email: {
+          kind: "taskAssigned",
           taskTitle: `Loan ${loan.loanNumber}`,
           assignedBy: assignedByName,
-          taskUrl,
         },
       });
     }

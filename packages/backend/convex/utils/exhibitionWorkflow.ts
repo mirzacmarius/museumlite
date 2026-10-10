@@ -13,6 +13,7 @@ import {
 import { getExhibitionsForObject } from "./exhibitionParticipation";
 import { isExhibitionObjectOutcomeResolved } from "./exhibitionPhysicalHandoff";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
+import { dispatchNotification } from "./notificationDispatch";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
@@ -106,14 +107,13 @@ export async function approveExhibitionHandler(
       const creatorEntry = history.find((h) => h.step === 0);
       const creatorId = creatorEntry?.approvedBy;
       if (creatorId && creatorId !== userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
+        await dispatchNotification(ctx, {
           organizationId: exhibition.organizationId,
-          userId: creatorId,
           type: "workflow_approved",
+          recipients: [creatorId],
           title: "Exhibition Approved",
           message: `Exhibition "${exhibition.title}" has been approved.`,
-          relatedEntityType: "exhibition",
-          relatedEntityId: args.exhibitionId,
+          related: { entityType: "exhibition", entityId: args.exhibitionId },
         });
       }
     } else {
@@ -149,21 +149,14 @@ export async function approveExhibitionHandler(
         ),
       ] as const);
 
-      await Promise.all(
-        Array.from(usersToNotify).map(async (approverId) => {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: exhibition.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Exhibition Requires Your Approval",
-              message: `Exhibition "${exhibition.title}" is pending your approval at step ${nextStep}.`,
-              relatedEntityType: "exhibition",
-              relatedEntityId: args.exhibitionId,
-            });
-          }
-        }),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: exhibition.organizationId,
+        type: "workflow_pending",
+        recipients: usersToNotify.filter((approverId) => approverId !== userId),
+        title: "Exhibition Requires Your Approval",
+        message: `Exhibition "${exhibition.title}" is pending your approval at step ${nextStep}.`,
+        related: { entityType: "exhibition", entityId: args.exhibitionId },
+      });
     }
   } else {
     await Promise.all([
@@ -259,14 +252,13 @@ export async function rejectExhibitionHandler(
   const creatorEntry = history.find((h) => h.step === 0);
   const creatorId = creatorEntry?.approvedBy;
   if (creatorId && creatorId !== userId) {
-    await ctx.runMutation(internal.audit.createNotificationInternal, {
+    await dispatchNotification(ctx, {
       organizationId: exhibition.organizationId,
-      userId: creatorId,
       type: "workflow_rejected",
+      recipients: [creatorId],
       title: "Exhibition Rejected",
       message: `Exhibition "${exhibition.title}" has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
-      relatedEntityType: "exhibition",
-      relatedEntityId: args.exhibitionId,
+      related: { entityType: "exhibition", entityId: args.exhibitionId },
     });
   }
 

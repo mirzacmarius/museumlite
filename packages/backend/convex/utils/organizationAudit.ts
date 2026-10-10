@@ -12,16 +12,6 @@ export interface AuditLogParams {
   changes?: Record<string, unknown>;
 }
 
-export interface OrganizationNotificationParams {
-  organizationId: Id<"organizations">;
-  userId: Id<"users">;
-  type: string;
-  title: string;
-  message: string;
-  relatedEntityType: string;
-  relatedEntityId: string;
-}
-
 export async function logActionAndGetRecipients(
   ctx: MutationCtx,
   params: AuditLogParams,
@@ -36,19 +26,4 @@ export async function logActionAndGetRecipients(
   ] as const);
 
   return recipients;
-}
-
-export async function notifyOrganizationRecipients(
-  ctx: MutationCtx,
-  recipients: Iterable<Id<"users">>,
-  params: OrganizationNotificationParams,
-): Promise<void> {
-  await Promise.all(
-    Array.from(recipients).map((recipientId) =>
-      ctx.runMutation(internal.audit.createNotificationInternal, {
-        ...params,
-        userId: recipientId,
-      }),
-    ),
-  );
 }

@@ -1,19 +1,8 @@
 import { type Infer, v } from "convex/values";
-
-/**
- * `pending` waits for its next attempt. The other states are terminal until an
- * administrator retries: `failed_transient` used up its attempts on retryable
- * failures, `failed_permanent` was refused by the receiver or is unsendable,
- * and `cancelled` was never sent because the endpoint was revoked.
- */
-export const webhookDeliveryStatus = v.union(
-  v.literal("pending"),
-  v.literal("succeeded"),
-  v.literal("failed_transient"),
-  v.literal("failed_permanent"),
-  v.literal("cancelled"),
-);
-export type WebhookDeliveryStatus = Infer<typeof webhookDeliveryStatus>;
+import {
+  deliveryAttemptLedgerFields,
+  deliveryLedgerFields,
+} from "./deliveryLedger";
 
 /** Sanitized failure reasons; receiver error text is never stored. */
 export const webhookDeliveryErrorCode = v.union(
@@ -28,13 +17,6 @@ export const webhookDeliveryErrorCode = v.union(
   v.literal("endpoint_unsubscribed"),
 );
 export type WebhookDeliveryErrorCode = Infer<typeof webhookDeliveryErrorCode>;
-
-export const webhookAttemptOutcome = v.union(
-  v.literal("succeeded"),
-  v.literal("failed_transient"),
-  v.literal("failed_permanent"),
-);
-export type WebhookAttemptOutcome = Infer<typeof webhookAttemptOutcome>;
 
 export const webhookEventFields = {
   organizationId: v.id("organizations"),
@@ -51,31 +33,13 @@ export const webhookDeliveryFields = {
   webhookId: v.id("webhooks"),
   eventId: v.id("webhookEvents"),
   eventType: v.string(),
-  status: webhookDeliveryStatus,
-  /** Attempts sent across every attempt series; never decreases. */
-  attemptCount: v.number(),
-  /** `attemptCount` when the current series began (0, or at a manual retry). */
-  seriesStartAttempt: v.number(),
-  /** Attempts allowed in the current series. */
-  maxAttempts: v.number(),
-  /** Due time of the next attempt, or lease expiry while one is in flight. */
-  nextAttemptAt: v.optional(v.number()),
-  inFlightSince: v.optional(v.number()),
-  lastAttemptAt: v.optional(v.number()),
-  lastResponseStatus: v.optional(v.number()),
+  ...deliveryLedgerFields,
   lastErrorCode: v.optional(webhookDeliveryErrorCode),
-  retryCount: v.number(),
-  lastRetriedBy: v.optional(v.id("users")),
-  completedAt: v.optional(v.number()),
 };
 
 export const webhookDeliveryAttemptFields = {
   organizationId: v.id("organizations"),
   deliveryId: v.id("webhookDeliveries"),
-  attemptNumber: v.number(),
-  startedAt: v.number(),
-  durationMs: v.number(),
-  outcome: webhookAttemptOutcome,
-  responseStatus: v.optional(v.number()),
+  ...deliveryAttemptLedgerFields,
   errorCode: v.optional(webhookDeliveryErrorCode),
 };

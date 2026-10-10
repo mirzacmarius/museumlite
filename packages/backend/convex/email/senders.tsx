@@ -14,6 +14,8 @@ import {
 import { render } from "@react-email/render";
 import type { ReactNode } from "react";
 import { env } from "../env";
+import type { NotificationCategory } from "../utils/notificationTypes";
+import type { NotificationEmailDetails } from "../utils/notificationValidators";
 import { sendEmail } from "./index";
 import {
   emailBodyStyle,
@@ -339,13 +341,18 @@ function LoanNotificationEmail({
   loanUrl,
   locale,
   kind,
-}: LoanNotificationEmailOptions & { locale: EmailLocale; kind: LoanKind }) {
+  footer,
+}: LoanNotificationEmailOptions & {
+  locale: EmailLocale;
+  kind: LoanKind;
+  footer?: string;
+}) {
   const t = getEmailTranslations(locale)[kind];
   const viewUrl = loanUrl
     ? localizeInternalAppUrl(loanUrl, locale)
     : localizedSiteUrl(`/loans/${loanId}`, locale);
   return (
-    <EmailShell locale={locale} preview={t.preview}>
+    <EmailShell locale={locale} preview={t.preview} footer={footer}>
       <Greeting email={email} locale={locale} />
       <Text style={emailTextStyle}>{t.body}</Text>
       <Text style={emailTextStyle}>
@@ -416,10 +423,11 @@ function TaskAssignedEmail({
   dueDate,
   taskUrl,
   locale,
-}: TaskAssignedEmailOptions & { locale: EmailLocale }) {
+  footer,
+}: TaskAssignedEmailOptions & { locale: EmailLocale; footer?: string }) {
   const t = getEmailTranslations(locale).taskAssigned;
   return (
-    <EmailShell locale={locale} preview={t.preview}>
+    <EmailShell locale={locale} preview={t.preview} footer={footer}>
       <Greeting email={email} locale={locale} />
       <Text style={emailTextStyle}>{t.body}</Text>
       <Text style={emailTextStyle}>
@@ -626,4 +634,128 @@ export async function sendOrganizationDeletionFinalNoticeEmail(
     subject: text(t.subject, { organizationName: args.organizationName }),
     html,
   });
+}
+
+export interface NotificationEmailContent {
+  /** Recipient address, used in the greeting. */
+  email: string;
+  organizationName: string;
+  category: NotificationCategory;
+  title: string;
+  message: string;
+  /** App path of the notification's entity, without a locale. */
+  actionPath: string;
+  details?: NotificationEmailDetails;
+}
+
+function NotificationEmail({
+  email,
+  organizationName,
+  title,
+  message,
+  actionUrl,
+  settingsUrl,
+  footer,
+  locale,
+}: {
+  email: string;
+  organizationName: string;
+  title: string;
+  message: string;
+  actionUrl: string;
+  settingsUrl: string;
+  footer: string;
+  locale: EmailLocale;
+}) {
+  const t = getEmailTranslations(locale).notification;
+  return (
+    <EmailShell locale={locale} preview={title} footer={footer}>
+      <Greeting email={email} locale={locale} />
+      <Text style={emailTextStyle}>{text(t.intro, { organizationName })}</Text>
+      <Text style={emailTextStyle}>
+        <strong>{title}</strong>
+        <br />
+        {message}
+      </Text>
+      <Section style={emailButtonSectionStyle}>
+        <Button href={actionUrl} style={emailInvitationButtonStyle}>
+          {t.open}
+        </Button>
+      </Section>
+      <Text style={emailMutedTextStyle}>
+        <Link href={settingsUrl} style={emailLinkStyle}>
+          {t.manage}
+        </Link>
+      </Text>
+    </EmailShell>
+  );
+}
+
+function notificationEmailElement(
+  content: NotificationEmailContent,
+  locale: EmailLocale,
+) {
+  const t = getEmailTranslations(locale).notification;
+  const actionUrl = localizedSiteUrl(content.actionPath, locale);
+  const footer = text(t.footer, {
+    category: t.categories[content.category],
+    organizationName: content.organizationName,
+  });
+  const { details } = content;
+  if (details?.kind === "taskAssigned") {
+    return {
+      subject: getEmailTranslations(locale).taskAssigned.subject,
+      element: (
+        <TaskAssignedEmail
+          {...details}
+          email={content.email}
+          taskUrl={actionUrl}
+          locale={locale}
+          footer={footer}
+        />
+      ),
+    };
+  }
+  if (details) {
+    return {
+      subject: getEmailTranslations(locale)[details.kind].subject,
+      element: (
+        <LoanNotificationEmail
+          {...details}
+          email={content.email}
+          loanUrl={actionUrl}
+          locale={locale}
+          footer={footer}
+        />
+      ),
+    };
+  }
+  return {
+    subject: content.title,
+    element: (
+      <NotificationEmail
+        email={content.email}
+        organizationName={content.organizationName}
+        title={content.title}
+        message={content.message}
+        actionUrl={actionUrl}
+        settingsUrl={localizedSiteUrl("/settings/notifications", locale)}
+        footer={footer}
+        locale={locale}
+      />
+    ),
+  };
+}
+
+/** Subject, HTML and plain text of one notification email. */
+export async function renderNotificationEmail(
+  content: NotificationEmailContent,
+  locale: EmailLocale,
+) {
+  const { subject, element } = notificationEmailElement(content, locale);
+  const [html, plainText] = await Promise.all([
+    render(element),
+    render(element, { plainText: true }),
+  ]);
+  return { subject, html, text: plainText };
 }

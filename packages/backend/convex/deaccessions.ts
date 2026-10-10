@@ -34,6 +34,7 @@ import {
 import { countIndexedQuery } from "./utils/indexedCounts";
 import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
@@ -451,21 +452,14 @@ export async function createDeaccessionRecord(
       workflowState.firstStep ?? 1,
     );
 
-    await Promise.all(
-      usersToNotify.map((approverId) =>
-        approverId !== userId
-          ? ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: args.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "New Deaccession Requires Approval",
-              message: `Deaccession ${deaccessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-              relatedEntityType: "deaccession",
-              relatedEntityId: deaccessionId,
-            })
-          : Promise.resolve(),
-      ),
-    );
+    await dispatchNotification(ctx, {
+      organizationId: args.organizationId,
+      type: "workflow_pending",
+      recipients: usersToNotify.filter((approverId) => approverId !== userId),
+      title: "New Deaccession Requires Approval",
+      message: `Deaccession ${deaccessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+      related: { entityType: "deaccession", entityId: deaccessionId },
+    });
   }
 
   if (isAutoApproved) {
@@ -1311,14 +1305,16 @@ export const approve = mutation({
         // Notify users who were involved in the workflow (from history)
         const creatorId = getWorkflowCreatorRecipient(history, userId);
         if (creatorId && creatorId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await dispatchNotification(ctx, {
             organizationId: deaccession.organizationId,
-            userId: creatorId,
             type: "workflow_approved",
+            recipients: [creatorId],
             title: "Deaccession Approved",
             message: `Deaccession ${deaccession.deaccessionNumber} has been fully approved.`,
-            relatedEntityType: "deaccession",
-            relatedEntityId: args.deaccessionId,
+            related: {
+              entityType: "deaccession",
+              entityId: args.deaccessionId,
+            },
           });
         }
 
@@ -1396,21 +1392,16 @@ export const approve = mutation({
           .collect(),
       ] as const);
 
-      await Promise.all(
-        Array.from(userOrgs).map(async (userOrg) => {
-          if (userOrg.userId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: deaccession.organizationId,
-              userId: userOrg.userId,
-              type: "workflow_approved",
-              title: "Deaccession Approved",
-              message: `Deaccession ${deaccession.deaccessionNumber} has been approved.`,
-              relatedEntityType: "deaccession",
-              relatedEntityId: args.deaccessionId,
-            });
-          }
-        }),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: deaccession.organizationId,
+        type: "workflow_approved",
+        recipients: userOrgs.flatMap((userOrg) =>
+          userOrg.userId === userId ? [] : [userOrg.userId],
+        ),
+        title: "Deaccession Approved",
+        message: `Deaccession ${deaccession.deaccessionNumber} has been approved.`,
+        related: { entityType: "deaccession", entityId: args.deaccessionId },
+      });
 
       await applyApprovedCollectionStatus(ctx, deaccession, userId);
     }
@@ -1476,14 +1467,13 @@ export const reject = mutation({
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
     if (creatorId && creatorId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: deaccession.organizationId,
-        userId: creatorId,
         type: "workflow_rejected",
+        recipients: [creatorId],
         title: "Deaccession Rejected",
         message: `Deaccession ${deaccession.deaccessionNumber} has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
-        relatedEntityType: "deaccession",
-        relatedEntityId: args.deaccessionId,
+        related: { entityType: "deaccession", entityId: args.deaccessionId },
       });
     }
 
@@ -2237,23 +2227,18 @@ export const recordRegulatoryApproval = mutation({
       )
       .collect();
 
-    await Promise.all(
-      Array.from(userOrgs).map(async (userOrg) => {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: deaccession.organizationId,
-          userId: userOrg.userId,
-          type: args.approved
-            ? "regulatory_approval_granted"
-            : "regulatory_approval_denied",
-          title: args.approved
-            ? "Regulatory Approval Granted"
-            : "Regulatory Approval Denied",
-          message: `Regulatory approval for deaccession ${deaccession.deaccessionNumber} has been ${args.approved ? "granted" : "denied"}`,
-          relatedEntityType: "deaccession",
-          relatedEntityId: deaccession._id,
-        });
-      }),
-    );
+    await dispatchNotification(ctx, {
+      organizationId: deaccession.organizationId,
+      type: args.approved
+        ? "regulatory_approval_granted"
+        : "regulatory_approval_denied",
+      recipients: userOrgs.map((userOrg) => userOrg.userId),
+      title: args.approved
+        ? "Regulatory Approval Granted"
+        : "Regulatory Approval Denied",
+      message: `Regulatory approval for deaccession ${deaccession.deaccessionNumber} has been ${args.approved ? "granted" : "denied"}`,
+      related: { entityType: "deaccession", entityId: deaccession._id },
+    });
 
     return null;
   },

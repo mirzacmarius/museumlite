@@ -44,6 +44,7 @@ import {
   rejectLoanHandler,
 } from "./utils/loanWorkflow";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
 import { requireLinkableParty } from "./utils/parties";
@@ -278,21 +279,14 @@ export const create = mutation({
         workflowState.firstStep ?? 1,
       );
 
-      await Promise.all(
-        Array.from(usersToNotify).map(async (approverId) => {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: args.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "New Loan Requires Approval",
-              message: `Loan ${loanNumber} (${args.type}) is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-              relatedEntityType: "loan",
-              relatedEntityId: loanId,
-            });
-          }
-        }),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: args.organizationId,
+        type: "workflow_pending",
+        recipients: usersToNotify.filter((approverId) => approverId !== userId),
+        title: "New Loan Requires Approval",
+        message: `Loan ${loanNumber} (${args.type}) is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+        related: { entityType: "loan", entityId: loanId },
+      });
     } else {
       const userOrgs = await ctx.db
         .query("userOrganizations")
@@ -323,14 +317,13 @@ export const create = mutation({
             permissionNames.includes("loans.approve") &&
             userOrg.userId !== userId
           ) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
+            await dispatchNotification(ctx, {
               organizationId: args.organizationId,
-              userId: userOrg.userId,
               type: "workflow_pending",
+              recipients: [userOrg.userId],
               title: "New Loan Requires Approval",
               message: `Loan ${loanNumber} (${args.type}) is pending your approval.`,
-              relatedEntityType: "loan",
-              relatedEntityId: loanId,
+              related: { entityType: "loan", entityId: loanId },
             });
           }
         }),
@@ -1857,22 +1850,17 @@ export const checkLoanRemindersInternal = internalMutation({
             ? `Loan ${loan.loanNumber} is overdue for return`
             : `Loan ${loan.loanNumber} is due in ${matchedThreshold.days} ${matchedThreshold.days === 1 ? "day" : "days"}`;
 
-        await Promise.all(
-          orgMembers.map((member) =>
-            ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: loan.organizationId,
-              userId: member.userId,
-              type:
-                matchedThreshold.type === "overdue"
-                  ? "loan_overdue"
-                  : "loan_return_due_soon",
-              title: notificationTitle,
-              message: notificationMessage,
-              relatedEntityType: "loan",
-              relatedEntityId: loan._id,
-            }),
-          ),
-        );
+        await dispatchNotification(ctx, {
+          organizationId: loan.organizationId,
+          type:
+            matchedThreshold.type === "overdue"
+              ? "loan_overdue"
+              : "loan_return_due_soon",
+          recipients: orgMembers.map((member) => member.userId),
+          title: notificationTitle,
+          message: notificationMessage,
+          related: { entityType: "loan", entityId: loan._id },
+        });
 
         return { checked: true, created: true };
       }),
@@ -1977,21 +1965,16 @@ export const createConditionDispute = mutation({
         .collect(),
     ] as const);
 
-    await Promise.all(
-      Array.from(orgMembers).map(async (member) => {
-        if (member.userId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: loan.organizationId,
-            userId: member.userId,
-            type: "condition_dispute_created",
-            title: "Condition Dispute Reported",
-            message: `A condition dispute has been reported for loan ${loan.loanNumber}`,
-            relatedEntityType: "loan",
-            relatedEntityId: args.loanId,
-          });
-        }
-      }),
-    );
+    await dispatchNotification(ctx, {
+      organizationId: loan.organizationId,
+      type: "condition_dispute_created",
+      recipients: orgMembers.flatMap((member) =>
+        member.userId === userId ? [] : [member.userId],
+      ),
+      title: "Condition Dispute Reported",
+      message: `A condition dispute has been reported for loan ${loan.loanNumber}`,
+      related: { entityType: "loan", entityId: args.loanId },
+    });
 
     return disputeId;
   },
@@ -2039,14 +2022,13 @@ export const startDisputeInvestigation = mutation({
 
     // Notify the reporter
     if (dispute.reportedBy !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: dispute.organizationId,
-        userId: dispute.reportedBy,
         type: "condition_dispute_investigating",
+        recipients: [dispute.reportedBy],
         title: "Dispute Under Investigation",
         message: "Your condition dispute is now under investigation",
-        relatedEntityType: "loan",
-        relatedEntityId: dispute.loanId,
+        related: { entityType: "loan", entityId: dispute.loanId },
       });
     }
 
@@ -2189,14 +2171,13 @@ export const resolveConditionDispute = mutation({
 
     // Notify the reporter
     if (dispute.reportedBy !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: dispute.organizationId,
-        userId: dispute.reportedBy,
         type: "condition_dispute_resolved",
+        recipients: [dispute.reportedBy],
         title: "Dispute Resolved",
         message: "Your condition dispute has been resolved",
-        relatedEntityType: "loan",
-        relatedEntityId: dispute.loanId,
+        related: { entityType: "loan", entityId: dispute.loanId },
       });
     }
 
