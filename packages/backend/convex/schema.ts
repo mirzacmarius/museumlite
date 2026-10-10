@@ -2335,7 +2335,7 @@ export default defineSchema({
     .index("by_organization_and_device", ["organizationId", "deviceId"])
     .index("by_location", ["locationId"]),
 
-  // Sustained breaches of a location's environmental thresholds (ADR 0009)
+  // Sustained breaches of a location's environmental thresholds (ADR 0013)
   alertEpisodes: defineTable(alertEpisodeFields)
     .index("by_locationId_and_status", ["locationId", "status"])
     .index("by_locationId_and_startedAt", ["locationId", "startedAt"]),

@@ -43,7 +43,7 @@ export const alertEpisodeStatus = v.union(
 );
 
 /**
- * One sustained breach of a Location's thresholds (ADR 0009). Times named
+ * One sustained breach of a Location's thresholds (ADR 0013). Times named
  * `...At` without a note are observation times reported with the readings.
  */
 export const alertEpisodeFields = {

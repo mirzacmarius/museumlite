@@ -38,7 +38,7 @@ export interface Observation {
 
 /**
  * Stores an authenticated reading and applies it to its Location's alert
- * episode (ADR 0009). A current reading outside the thresholds opens an
+ * episode (ADR 0013). A current reading outside the thresholds opens an
  * episode when none is open, and later readings update, escalate and recover
  * it, each transition notifying the location's managers once. A late reading
  * only adds evidence to the open episode it was observed in.

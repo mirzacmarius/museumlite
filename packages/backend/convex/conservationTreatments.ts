@@ -2709,7 +2709,7 @@ export const listAssessmentSchedules = query({
 
 /**
  * An audited staff spot check. It is applied to the location's alert episode
- * like a device reading (ADR 0009): outside the thresholds it opens or updates
+ * like a device reading (ADR 0013): outside the thresholds it opens or updates
  * the episode, and within them it ends the breach that staff readings showed.
  */
 export const recordEnvironmentalReading = mutation({
