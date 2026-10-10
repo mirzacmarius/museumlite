@@ -164,7 +164,10 @@ export function claimStep(
           outcome: "failed_transient",
           errorCode: "attempt_lost",
         };
-  if (delivery.attemptCount - delivery.seriesStartAttempt >= delivery.maxAttempts) {
+  if (
+    delivery.attemptCount - delivery.seriesStartAttempt >=
+    delivery.maxAttempts
+  ) {
     return { kind: "exhausted", lostAttempt };
   }
   return {

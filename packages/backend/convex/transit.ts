@@ -7,6 +7,7 @@ import { type MutationCtx, query } from "./_generated/server";
 import { custodyConflict } from "./utils/custodyErrors";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { generateNextTransitNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 import {
@@ -480,21 +481,16 @@ async function notifyTransitStatusChange(
   const title = `Transit ${statusLabels[status] ?? status}: ${transitNumber}`;
   const message = description;
 
-  await Promise.all(
-    Array.from(userOrgs).map(async (userOrg) => {
-      if (userOrg.userId !== excludeUserId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId,
-          userId: userOrg.userId,
-          type: "transit_status_update",
-          title,
-          message,
-          relatedEntityType: "transitRecord",
-          relatedEntityId: transitRecordId,
-        });
-      }
-    }),
-  );
+  await dispatchNotification(ctx, {
+    organizationId,
+    type: "transit_status_update",
+    recipients: userOrgs
+      .map((userOrg) => userOrg.userId)
+      .filter((userId) => userId !== excludeUserId),
+    title,
+    message,
+    related: { entityType: "transitRecord", entityId: transitRecordId },
+  });
 }
 
 export const deleteTransitRecord = mutation({
@@ -1575,21 +1571,17 @@ export const checkUpcomingDeliveriesInternal = internalMutation({
             )
             .collect();
 
-          await Promise.all(
-            userOrgs.flatMap((userOrg) =>
-              upcomingDeliveries.map((transit) =>
-                ctx.runMutation(internal.audit.createNotificationInternal, {
-                  organizationId: org._id,
-                  userId: userOrg.userId,
-                  type: "transit_delivery_reminder",
-                  title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
-                  message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
-                  relatedEntityType: "transitRecord",
-                  relatedEntityId: transit._id,
-                }),
-              ),
-            ),
-          );
+          for (const transit of upcomingDeliveries) {
+            await dispatchNotification(ctx, {
+              organizationId: org._id,
+              type: "transit_delivery_reminder",
+              recipients: userOrgs.map((userOrg) => userOrg.userId),
+              title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
+              message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
+              related: { entityType: "transitRecord", entityId: transit._id },
+              idempotencyKey: `transit_delivery_reminder:${transit._id}:${transit.estimatedDeliveryDate}`,
+            });
+          }
         }
       }),
     );
@@ -1646,19 +1638,14 @@ export const checkDelayedTransitsInternal = internalMutation({
                 .collect(),
             ]);
 
-            await Promise.all(
-              userOrgs.map((userOrg) =>
-                ctx.runMutation(internal.audit.createNotificationInternal, {
-                  organizationId: org._id,
-                  userId: userOrg.userId,
-                  type: "transit_delayed",
-                  title: `Transit Delayed: ${transit.transitNumber}`,
-                  message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
-                  relatedEntityType: "transitRecord",
-                  relatedEntityId: transit._id,
-                }),
-              ),
-            );
+            await dispatchNotification(ctx, {
+              organizationId: org._id,
+              type: "transit_delayed",
+              recipients: userOrgs.map((userOrg) => userOrg.userId),
+              title: `Transit Delayed: ${transit.transitNumber}`,
+              message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
+              related: { entityType: "transitRecord", entityId: transit._id },
+            });
           }),
         );
       }),

@@ -157,7 +157,10 @@ export async function emailLocaleOf(ctx: QueryCtx, userId: Id<"users">) {
   const preference = await ctx.db
     .query("userPreferences")
     .withIndex("by_user_organization_key", (q) =>
-      q.eq("userId", userId).eq("organizationId", undefined).eq("key", "language"),
+      q
+        .eq("userId", userId)
+        .eq("organizationId", undefined)
+        .eq("key", "language"),
     )
     .unique();
   return parseEmailLocale(preference?.value);

@@ -202,6 +202,32 @@ describe("instant notification email", () => {
     });
   });
 
+  test("an email follows its recipient's language and opens the record it is about", async () => {
+    const t = createConvexTest();
+    const thread = await setupMentions(t);
+    await thread.curator.mutation(api.userPreferences.set, {
+      key: "language",
+      value: "fr",
+    });
+    await thread.curator.mutation(api.notifications.updatePreferences, {
+      organizationId: thread.organizationId,
+      categories: emailChoices(["assignments"]),
+    });
+    const fetchMock = providerReplies(accepted);
+    vi.useFakeTimers();
+
+    await thread.mentionCurator();
+    await drain(t);
+
+    const [request] = providerRequests(fetchMock);
+    expect(request?.body.html).toContain('lang="fr"');
+    expect(request?.body.html).toContain(`/fr/objects/${thread.collectionId}"`);
+    expect(request?.body.text).toContain("Ouvrir dans MuseumLite");
+    expect(request?.body.text).toContain(
+      "l’e-mail est activé pour les notifications Tâches",
+    );
+  });
+
   test("a retryable provider failure is resent under the same idempotency key until it is accepted", async () => {
     const t = createConvexTest();
     const thread = await setupMentions(t);
@@ -320,7 +346,8 @@ describe("instant notification email", () => {
     expect(
       await notificationErrorOf(
         thread.curator.mutation(api.notificationEmails.retry, {
-          deliveryId: notification?.email?.deliveryId as Id<"notificationEmailDeliveries">,
+          deliveryId: notification?.email
+            ?.deliveryId as Id<"notificationEmailDeliveries">,
         }),
       ),
     ).toBe("EMAIL_OFF_FOR_CATEGORY");
@@ -466,10 +493,65 @@ describe("instant notification email", () => {
       thread.organizationId,
     );
     expect(notifications).toHaveLength(2);
-    expect(notifications.map((notification) => notification.email?.status)).toEqual([
-      "succeeded",
-      undefined,
-    ]);
+    expect(
+      notifications.map((notification) => notification.email?.status),
+    ).toEqual(["succeeded", undefined]);
+  });
+  test("purging a library organization removes its intents and email logs", async () => {
+    const t = createConvexTest();
+    const thread = await setupMentions(t);
+    await thread.curator.mutation(api.notifications.updatePreferences, {
+      organizationId: thread.organizationId,
+      categories: emailChoices(["assignments"]),
+    });
+    providerReplies(refused);
+    vi.useFakeTimers();
+    await thread.mentionCurator();
+    await drain(t);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(thread.organizationId, { type: "library" });
+      for (const table of [
+        "auditLog",
+        "objectComments",
+        "collections",
+      ] as const) {
+        for (const row of await ctx.db
+          .query(table)
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", thread.organizationId),
+          )
+          .take(10)) {
+          await ctx.db.delete(row._id);
+        }
+      }
+    });
+
+    await t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+      organizationIds: [thread.organizationId],
+      dryRun: false,
+    });
+
+    const remaining = await t.run(async (ctx) => ({
+      intents: await ctx.db
+        .query("notificationIntents")
+        .withIndex("by_organizationId_and_idempotencyKey", (q) =>
+          q.eq("organizationId", thread.organizationId),
+        )
+        .take(1),
+      deliveries: await ctx.db
+        .query("notificationEmailDeliveries")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", thread.organizationId),
+        )
+        .take(1),
+      attempts: await ctx.db
+        .query("notificationEmailAttempts")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", thread.organizationId),
+        )
+        .take(1),
+    }));
+    expect(remaining).toEqual({ intents: [], deliveries: [], attempts: [] });
   });
 });
 

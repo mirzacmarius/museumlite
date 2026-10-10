@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { dispatchNotification } from "./notificationDispatch";
 import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
@@ -67,17 +68,14 @@ export async function requestLoanExtensionHandler(
   ] as const);
 
   await Promise.all([
-    ...Array.from(approvers).map((approverId) =>
-      ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: loan.organizationId,
-        userId: approverId,
-        type: "loan_extension_requested",
-        title: "Loan Extension Requested",
-        message: `Extension requested for loan ${loan.loanNumber}`,
-        relatedEntityType: "loan",
-        relatedEntityId: args.loanId,
-      }),
-    ),
+    dispatchNotification(ctx, {
+      organizationId: loan.organizationId,
+      type: "loan_extension_requested",
+      recipients: approvers,
+      title: "Loan Extension Requested",
+      message: `Extension requested for loan ${loan.loanNumber}`,
+      related: { entityType: "loan", entityId: args.loanId },
+    }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: loan.organizationId,
       userId,
@@ -134,14 +132,13 @@ export async function approveLoanExtensionHandler(
     ctx.db.patch(request.loanId, {
       endDate: request.newRequestedEndDate,
     }),
-    ctx.runMutation(internal.audit.createNotificationInternal, {
+    dispatchNotification(ctx, {
       organizationId: request.organizationId,
-      userId: request.requestedBy,
       type: "loan_extension_approved",
+      recipients: [request.requestedBy],
       title: "Loan Extension Approved",
       message: `Extension approved for loan ${loan.loanNumber}`,
-      relatedEntityType: "loan",
-      relatedEntityId: request.loanId,
+      related: { entityType: "loan", entityId: request.loanId },
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: request.organizationId,
@@ -193,14 +190,13 @@ export async function rejectLoanExtensionHandler(
       status: "rejected",
       rejectionReason: args.reason,
     }),
-    ctx.runMutation(internal.audit.createNotificationInternal, {
+    dispatchNotification(ctx, {
       organizationId: request.organizationId,
-      userId: request.requestedBy,
       type: "loan_extension_rejected",
+      recipients: [request.requestedBy],
       title: "Loan Extension Rejected",
       message: `Extension rejected for loan ${loan.loanNumber}: ${args.reason}`,
-      relatedEntityType: "loan",
-      relatedEntityId: request.loanId,
+      related: { entityType: "loan", entityId: request.loanId },
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: request.organizationId,

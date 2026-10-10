@@ -17,6 +17,7 @@ import {
 } from "./exhibitionParticipation";
 import { hasFeatureAccess } from "./featureGates";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
+import { dispatchNotification } from "./notificationDispatch";
 import {
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
@@ -488,21 +489,14 @@ export async function createExhibitionHandler(
       workflowState.firstStep ?? 1,
     );
 
-    await Promise.all(
-      Array.from(usersToNotify).map(async (approverId) => {
-        if (approverId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "New Exhibition Requires Approval",
-            message: `Exhibition "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-            relatedEntityType: "exhibition",
-            relatedEntityId: exhibitionId,
-          });
-        }
-      }),
-    );
+    await dispatchNotification(ctx, {
+      organizationId,
+      type: "workflow_pending",
+      recipients: usersToNotify.filter((approverId) => approverId !== userId),
+      title: "New Exhibition Requires Approval",
+      message: `Exhibition "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+      related: { entityType: "exhibition", entityId: exhibitionId },
+    });
   }
 
   return exhibitionId;

@@ -9,6 +9,7 @@ import {
 } from "../auditLog";
 import { appendCaseHistory } from "../utils/caseHistory";
 import { mutation } from "../utils/mutationBuilders";
+import { dispatchNotification } from "../utils/notificationDispatch";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -141,21 +142,17 @@ export const create = mutation({
         workflowState.firstStep ?? 1,
       );
 
-      await Promise.all(
-        usersToNotify.map((approverId) =>
-          approverId !== userId
-            ? ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: args.organizationId,
-                userId: approverId,
-                type: "workflow_pending",
-                title: "Acquisition Request Requires Approval",
-                message: `Acquisition request for "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-                relatedEntityType: "libraryAcquisitionRequest",
-                relatedEntityId: requestId,
-              })
-            : Promise.resolve(),
-        ),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: args.organizationId,
+        type: "workflow_pending",
+        recipients: usersToNotify.filter((approverId) => approverId !== userId),
+        title: "Acquisition Request Requires Approval",
+        message: `Acquisition request for "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+        related: {
+          entityType: "libraryAcquisitionRequest",
+          entityId: requestId,
+        },
+      });
     }
 
     return requestId;
@@ -769,14 +766,16 @@ export const approve = mutation({
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
         if (creatorId && creatorId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await dispatchNotification(ctx, {
             organizationId: request.organizationId,
-            userId: creatorId,
             type: "workflow_approved",
+            recipients: [creatorId],
             title: "Acquisition Request Approved",
             message: `Acquisition request for "${request.title}" has been approved.`,
-            relatedEntityType: "libraryAcquisitionRequest",
-            relatedEntityId: args.requestId,
+            related: {
+              entityType: "libraryAcquisitionRequest",
+              entityId: args.requestId,
+            },
           });
         }
       } else {
@@ -813,21 +812,19 @@ export const approve = mutation({
           ),
         ] as const);
 
-        await Promise.all(
-          Array.from(usersToNotify).map(async (approverId) => {
-            if (approverId !== userId) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: request.organizationId,
-                userId: approverId,
-                type: "workflow_pending",
-                title: "Acquisition Request Requires Your Approval",
-                message: `Acquisition request for "${request.title}" is pending your approval at step ${nextStep}.`,
-                relatedEntityType: "libraryAcquisitionRequest",
-                relatedEntityId: args.requestId,
-              });
-            }
-          }),
-        );
+        await dispatchNotification(ctx, {
+          organizationId: request.organizationId,
+          type: "workflow_pending",
+          recipients: usersToNotify.filter(
+            (approverId) => approverId !== userId,
+          ),
+          title: "Acquisition Request Requires Your Approval",
+          message: `Acquisition request for "${request.title}" is pending your approval at step ${nextStep}.`,
+          related: {
+            entityType: "libraryAcquisitionRequest",
+            entityId: args.requestId,
+          },
+        });
       }
     } else {
       await Promise.all([
@@ -931,14 +928,16 @@ export const reject = mutation({
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy ?? request.requestedBy;
     if (creatorId && creatorId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: request.organizationId,
-        userId: creatorId,
         type: "workflow_rejected",
+        recipients: [creatorId],
         title: "Acquisition Request Rejected",
         message: `Acquisition request for "${request.title}" has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
-        relatedEntityType: "libraryAcquisitionRequest",
-        relatedEntityId: args.requestId,
+        related: {
+          entityType: "libraryAcquisitionRequest",
+          entityId: args.requestId,
+        },
       });
     }
 

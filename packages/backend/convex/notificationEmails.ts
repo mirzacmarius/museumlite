@@ -3,13 +3,14 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, query } from "./_generated/server";
+import { emailLocaleOf, emailLocaleValidator } from "./userPreferences";
 import {
   attemptOutcome,
   claimStep,
-  deliveryStatus,
   DELIVERY_MAX_ATTEMPTS,
   DELIVERY_RETENTION_MS,
   DELIVERY_SWEEP_GRACE_MS,
+  deliveryStatus,
   finishedWithoutSending,
   isRetryableStatus,
   ledgerProgress,
@@ -17,11 +18,8 @@ import {
   retrySeriesPatch,
 } from "./utils/deliveryLedger";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { emailCadence, recipientAccess } from "./utils/notificationDispatch";
 import { notificationEmailChannel } from "./utils/notificationEmailChannel";
-import {
-  emailCadence,
-  recipientAccess,
-} from "./utils/notificationDispatch";
 import {
   type NotificationErrorCode,
   notificationError,
@@ -40,7 +38,6 @@ import {
   notificationEmailDetails,
   notificationEmailErrorCode,
 } from "./utils/notificationValidators";
-import { emailLocaleOf, emailLocaleValidator } from "./userPreferences";
 
 const DISPATCH_BATCH = 100;
 const ATTEMPT_HISTORY_LIMIT = 50;

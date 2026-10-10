@@ -134,7 +134,6 @@ export const NOTIFICATION_ENTITY_READ_PERMISSIONS = {
   conservation: "collections.read",
   conservationTreatment: "collections.read",
   conservationAlert: "collections.read",
-  installationTask: "collections.read",
   move_request: "collections.read",
   acquisition: "collections.read",
   libraryAcquisitionRequest: "collections.read",

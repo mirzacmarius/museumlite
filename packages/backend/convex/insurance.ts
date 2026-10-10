@@ -2399,19 +2399,14 @@ export const createAutoClaimForTransitDamage = internalMutation({
       ),
     ]);
 
-    await Promise.all(
-      coordinatorUserIds.map((userId) =>
-        ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: args.organizationId,
-          userId,
-          type: "insurance_auto_claim",
-          title: "Auto-Generated Insurance Claim",
-          message: `A draft insurance claim (${claimNumber}) has been created for transit damage detected during loan return. Please review and submit.`,
-          relatedEntityType: "insuranceClaim",
-          relatedEntityId: claimId,
-        }),
-      ),
-    );
+    await dispatchNotification(ctx, {
+      organizationId: args.organizationId,
+      type: "insurance_auto_claim",
+      recipients: coordinatorUserIds,
+      title: "Auto-Generated Insurance Claim",
+      message: `A draft insurance claim (${claimNumber}) has been created for transit damage detected during loan return. Please review and submit.`,
+      related: { entityType: "insuranceClaim", entityId: claimId },
+    });
 
     return claimId;
   },

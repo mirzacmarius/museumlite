@@ -73,4 +73,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "sweep-notification-emails",
+  { minutes: 5 },
+  internal.notificationEmails.sweep,
+  {},
+);
+
 export default crons;

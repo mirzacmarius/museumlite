@@ -133,9 +133,13 @@ export async function dispatchNotification(
   }
 
   if (emailsQueued > 0) {
-    await ctx.scheduler.runAfter(0, internal.notificationEmails.dispatchIntent, {
-      intentId,
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.notificationEmails.dispatchIntent,
+      {
+        intentId,
+      },
+    );
   }
   return { intentId, duplicate: false, notifiedUserIds };
 }

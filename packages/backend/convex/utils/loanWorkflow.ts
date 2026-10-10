@@ -10,6 +10,7 @@ import {
   ALLOWED_LOAN_TRANSITIONS,
   assertAllowedLoanTransition,
 } from "./loanStatusTransitions";
+import { dispatchNotification } from "./notificationDispatch";
 import {
   getOrganizationNotificationRecipients,
   getWorkflowCreatorRecipient,
@@ -150,29 +151,23 @@ export async function approveLoanHandler(
         ctx,
         args.loanId,
       );
-
-      // Build loan URL
-      const siteUrl = process.env.SITE_URL;
-      const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
-
       const creatorId = getWorkflowCreatorRecipient(history, userId);
       if (creatorId && creatorId !== userId) {
-        await ctx.runMutation(internal.notifications.sendNotification, {
+        await dispatchNotification(ctx, {
           organizationId: loan.organizationId,
-          userId: creatorId,
           type: "loan_approved",
+          recipients: [creatorId],
           title: "Loan Approved",
           message: `Loan ${loan.loanNumber} has been fully approved and is now active.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-          emailData: {
+          related: { entityType: "loan", entityId: args.loanId },
+          email: {
+            kind: "loanApproved",
             loanId: args.loanId,
             itemName,
             borrowerName: loan.lenderBorrowerName,
             startDate: loan.startDate,
             endDate: loan.endDate,
             itemCount,
-            loanUrl,
           },
         });
       }
@@ -231,33 +226,23 @@ export async function approveLoanHandler(
       getLoanEmailItemData(ctx, args.loanId),
     ] as const);
     const { itemName, itemCount } = loanItemData;
-
-    // Build loan URL (this will be used in the email deep link)
-    const siteUrl = process.env.SITE_URL;
-    const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
-
-    await Promise.all(
-      Array.from(recipients).map(async (recipientId) => {
-        await ctx.runMutation(internal.notifications.sendNotification, {
-          organizationId: loan.organizationId,
-          userId: recipientId,
-          type: "loan_approved",
-          title: "Loan Approved",
-          message: `Loan ${loan.loanNumber} has been approved and is now active.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-          emailData: {
-            loanId: args.loanId,
-            itemName,
-            borrowerName: loan.lenderBorrowerName,
-            startDate: loan.startDate,
-            endDate: loan.endDate,
-            itemCount,
-            loanUrl,
-          },
-        });
-      }),
-    );
+    await dispatchNotification(ctx, {
+      organizationId: loan.organizationId,
+      type: "loan_approved",
+      recipients,
+      title: "Loan Approved",
+      message: `Loan ${loan.loanNumber} has been approved and is now active.`,
+      related: { entityType: "loan", entityId: args.loanId },
+      email: {
+        kind: "loanApproved",
+        loanId: args.loanId,
+        itemName,
+        borrowerName: loan.lenderBorrowerName,
+        startDate: loan.startDate,
+        endDate: loan.endDate,
+        itemCount,
+      },
+    });
   }
 
   return null;
@@ -332,29 +317,23 @@ export async function rejectLoanHandler(
     }),
   ]);
   const { itemName, itemCount } = await getLoanEmailItemData(ctx, args.loanId);
-
-  // Build loan URL
-  const siteUrl = process.env.SITE_URL;
-  const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
-
   const creatorId = getWorkflowCreatorRecipient(history, userId);
   if (creatorId && creatorId !== userId) {
-    await ctx.runMutation(internal.notifications.sendNotification, {
+    await dispatchNotification(ctx, {
       organizationId: loan.organizationId,
-      userId: creatorId,
       type: "loan_rejected",
+      recipients: [creatorId],
       title: "Loan Rejected",
       message: `Loan ${loan.loanNumber} has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
-      relatedEntityType: "loan",
-      relatedEntityId: args.loanId,
-      emailData: {
+      related: { entityType: "loan", entityId: args.loanId },
+      email: {
+        kind: "loanRejected",
         loanId: args.loanId,
         itemName,
         borrowerName: loan.lenderBorrowerName,
         startDate: loan.startDate,
         endDate: loan.endDate,
         itemCount,
-        loanUrl,
       },
     });
   }

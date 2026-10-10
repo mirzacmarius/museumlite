@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { notificationEntityHref } from "@v1/backend/convex/utils/notificationLinks";
 import { Button } from "@v1/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
@@ -11,7 +12,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { getNotificationCopy } from "@/lib/notification-copy";
-import { notificationEntityHref } from "@v1/backend/convex/utils/notificationLinks";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { useOrganization } from "./organization-provider";
 

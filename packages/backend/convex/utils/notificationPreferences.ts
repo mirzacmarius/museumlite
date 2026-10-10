@@ -73,13 +73,13 @@ export function channelPolicy(
     preferences?.emailCategories ?? LEGACY_EMAIL_CATEGORIES,
   );
   const entries = NOTIFICATION_CATEGORIES.map((category) => {
-    const enabled =
-      preferences?.[CATEGORY_ENABLED_FIELDS[category]] !== false;
+    const enabled = preferences?.[CATEGORY_ENABLED_FIELDS[category]] !== false;
     return [
       category,
       {
         enabled,
-        email: enabled && emailCadence !== null && emailCategories.has(category),
+        email:
+          enabled && emailCadence !== null && emailCategories.has(category),
       },
     ] as const;
   });

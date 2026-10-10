@@ -3,7 +3,6 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { NOTIFICATION_TYPES } from "./notifications";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds } from "./utils/batchLookup";
@@ -19,9 +18,11 @@ import {
   requireTargetTransferLocation,
 } from "./utils/institutionTransferEvidence";
 import { mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { isUnaccessionedEntryObject } from "./utils/objectEntryLifecycle";
 import {
   getCurrentUserOrganization,
+  getUserIdsWithPermission,
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
@@ -1369,6 +1370,12 @@ export const createRequest = mutation({
       requestedAt: Date.now(),
     });
 
+    const settingsManagers = await getUserIdsWithPermission(
+      ctx,
+      collection.organizationId,
+      "organization.manage_settings",
+      { excludeUserId: userId },
+    );
     await Promise.all([
       ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
@@ -1383,15 +1390,13 @@ export const createRequest = mutation({
           requestedAccessionNumber,
         },
       }),
-      ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
+      dispatchNotification(ctx, {
         organizationId: collection.organizationId,
-        permission: "organization.manage_settings",
-        type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
+        type: "move_request_created",
+        recipients: settingsManagers,
         title: `Object Move Request: ${collection.accessionNumber}`,
         message: `${collection.title} requires administrator approval before it can be moved to another organization.`,
-        relatedEntityType: "move_request",
-        relatedEntityId: requestId,
-        excludeUserId: userId,
+        related: { entityType: "move_request", entityId: requestId },
       }),
     ]);
 
@@ -1806,16 +1811,21 @@ export const approve = mutation({
           deaccessionId,
         },
       }),
-      ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
-        organizationId: request.targetOrganizationId,
-        permission: "organization.manage_settings",
-        type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
-        title: `Incoming Transfer Request: ${collection.accessionNumber}`,
-        message: `${collection.title} is awaiting acceptance before the transfer is completed.`,
-        relatedEntityType: "move_request",
-        relatedEntityId: args.requestId,
-        excludeUserId: userId,
-      }),
+      getUserIdsWithPermission(
+        ctx,
+        request.targetOrganizationId,
+        "organization.manage_settings",
+        { excludeUserId: userId },
+      ).then((targetManagers) =>
+        dispatchNotification(ctx, {
+          organizationId: request.targetOrganizationId,
+          type: "move_request_created",
+          recipients: targetManagers,
+          title: `Incoming Transfer Request: ${collection.accessionNumber}`,
+          message: `${collection.title} is awaiting acceptance before the transfer is completed.`,
+          related: { entityType: "move_request", entityId: args.requestId },
+        }),
+      ),
     ] as const);
 
     return null;
@@ -2005,17 +2015,16 @@ export const accept = mutation({
     ] as const);
 
     if (request.requestedBy !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: request.sourceOrganizationId,
-        userId: request.requestedBy,
-        type: NOTIFICATION_TYPES.MOVE_REQUEST_APPROVED,
+        type: "move_request_approved",
+        recipients: [request.requestedBy],
         title: "Object Move Approved",
         message:
           finalAccessionNumber === request.sourceAccessionNumber
             ? "Your object move request has been approved and executed."
             : `Your object move request has been approved. The new accession number is ${finalAccessionNumber}.`,
-        relatedEntityType: "move_request",
-        relatedEntityId: args.requestId,
+        related: { entityType: "move_request", entityId: args.requestId },
       });
     }
 
@@ -2098,16 +2107,15 @@ export const reject = mutation({
     ]);
 
     if (request.requestedBy !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: request.sourceOrganizationId,
-        userId: request.requestedBy,
         type: "workflow_rejected",
+        recipients: [request.requestedBy],
         title: isTargetReview
           ? "Incoming Transfer Rejected"
           : "Object Move Rejected",
         message: reviewNotes,
-        relatedEntityType: "move_request",
-        relatedEntityId: args.requestId,
+        related: { entityType: "move_request", entityId: args.requestId },
       });
     }
 

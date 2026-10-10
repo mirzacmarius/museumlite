@@ -11,6 +11,7 @@ import { appendCaseHistory } from "./utils/caseHistory";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -670,21 +671,14 @@ export const create = mutation({
         workflowState.firstStep ?? 1,
       );
 
-      await Promise.all(
-        usersToNotify.map((approverId) =>
-          approverId !== userId
-            ? ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: collection.organizationId,
-                userId: approverId,
-                type: "workflow_pending",
-                title: "New Conservation Treatment Requires Approval",
-                message: `Conservation treatment "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-                relatedEntityType: "conservationTreatment",
-                relatedEntityId: treatmentId,
-              })
-            : Promise.resolve(),
-        ),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: collection.organizationId,
+        type: "workflow_pending",
+        recipients: usersToNotify.filter((approverId) => approverId !== userId),
+        title: "New Conservation Treatment Requires Approval",
+        message: `Conservation treatment "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+        related: { entityType: "conservationTreatment", entityId: treatmentId },
+      });
     }
 
     return treatmentId;
@@ -794,14 +788,16 @@ export const approve = mutation({
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
         if (creatorId && creatorId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await dispatchNotification(ctx, {
             organizationId: treatment.organizationId,
-            userId: creatorId,
             type: "workflow_approved",
+            recipients: [creatorId],
             title: "Conservation Treatment Approved",
             message: `Conservation treatment "${treatment.title}" has been approved.`,
-            relatedEntityType: "conservationTreatment",
-            relatedEntityId: args.treatmentId,
+            related: {
+              entityType: "conservationTreatment",
+              entityId: args.treatmentId,
+            },
           });
         }
       } else {
@@ -837,21 +833,19 @@ export const approve = mutation({
           ),
         ] as const);
 
-        await Promise.all(
-          Array.from(usersToNotify).map(async (approverId) => {
-            if (approverId !== userId) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: treatment.organizationId,
-                userId: approverId,
-                type: "workflow_pending",
-                title: "Conservation Treatment Requires Your Approval",
-                message: `Conservation treatment "${treatment.title}" is pending your approval at step ${nextStep}.`,
-                relatedEntityType: "conservationTreatment",
-                relatedEntityId: args.treatmentId,
-              });
-            }
-          }),
-        );
+        await dispatchNotification(ctx, {
+          organizationId: treatment.organizationId,
+          type: "workflow_pending",
+          recipients: usersToNotify.filter(
+            (approverId) => approverId !== userId,
+          ),
+          title: "Conservation Treatment Requires Your Approval",
+          message: `Conservation treatment "${treatment.title}" is pending your approval at step ${nextStep}.`,
+          related: {
+            entityType: "conservationTreatment",
+            entityId: args.treatmentId,
+          },
+        });
       }
     } else {
       await Promise.all([
@@ -950,14 +944,16 @@ export const reject = mutation({
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
     if (creatorId && creatorId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: treatment.organizationId,
-        userId: creatorId,
         type: "workflow_rejected",
+        recipients: [creatorId],
         title: "Conservation Treatment Rejected",
         message: `Conservation treatment "${treatment.title}" has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
-        relatedEntityType: "conservationTreatment",
-        relatedEntityId: args.treatmentId,
+        related: {
+          entityType: "conservationTreatment",
+          entityId: args.treatmentId,
+        },
       });
     }
 
@@ -1991,7 +1987,7 @@ export const checkOverdueTreatmentsInternal = internalMutation({
                   createdAt: now,
                 });
 
-                const usersToNotify: string[] = [];
+                const usersToNotify: Array<Id<"users">> = [];
 
                 if (rule.notifyUsers?.length) {
                   usersToNotify.push(...rule.notifyUsers);
@@ -2014,20 +2010,17 @@ export const checkOverdueTreatmentsInternal = internalMutation({
                   }
                 }
 
-                const uniqueUsers = [...new Set(usersToNotify)];
-                await Promise.all(
-                  uniqueUsers.map((notifyUserId) =>
-                    ctx.runMutation(internal.audit.createNotificationInternal, {
-                      organizationId: org._id,
-                      userId: notifyUserId as typeof treatment.performedBy,
-                      type: "conservation_alert",
-                      title: "Overdue Treatment Alert",
-                      message: `Treatment "${treatment.title}" is overdue and requires attention.`,
-                      relatedEntityType: "conservationAlert",
-                      relatedEntityId: alertId,
-                    }),
-                  ),
-                );
+                await dispatchNotification(ctx, {
+                  organizationId: org._id,
+                  type: "conservation_alert",
+                  recipients: usersToNotify,
+                  title: "Overdue Treatment Alert",
+                  message: `Treatment "${treatment.title}" is overdue and requires attention.`,
+                  related: {
+                    entityType: "conservationAlert",
+                    entityId: alertId,
+                  },
+                });
               }),
             );
           }),
@@ -2136,7 +2129,7 @@ export const checkAssessmentsDueInternal = internalMutation({
                   createdAt: now,
                 });
 
-                const usersToNotify: string[] = [];
+                const usersToNotify: Array<Id<"users">> = [];
 
                 if (rule.notifyUsers?.length) {
                   usersToNotify.push(...rule.notifyUsers);
@@ -2159,20 +2152,17 @@ export const checkAssessmentsDueInternal = internalMutation({
                   }
                 }
 
-                const uniqueUsers = [...new Set(usersToNotify)];
-                await Promise.all(
-                  uniqueUsers.map((notifyUserId) =>
-                    ctx.runMutation(internal.audit.createNotificationInternal, {
-                      organizationId: org._id,
-                      userId: notifyUserId as typeof collection.catalogedBy,
-                      type: "conservation_alert",
-                      title: "Assessment Due Alert",
-                      message: `Object "${collection.title}" requires a conservation assessment.`,
-                      relatedEntityType: "conservationAlert",
-                      relatedEntityId: alertId,
-                    }),
-                  ),
-                );
+                await dispatchNotification(ctx, {
+                  organizationId: org._id,
+                  type: "conservation_alert",
+                  recipients: usersToNotify,
+                  title: "Assessment Due Alert",
+                  message: `Object "${collection.title}" requires a conservation assessment.`,
+                  related: {
+                    entityType: "conservationAlert",
+                    entityId: alertId,
+                  },
+                });
               }),
             );
           }),

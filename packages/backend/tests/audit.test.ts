@@ -1338,126 +1338,6 @@ describe("audit (notifications & activity)", () => {
     });
   });
 
-  describe("createNotification", () => {
-    test("should create notification for current user", async () => {
-      const t = convexTest(schema, modules);
-
-      const { orgId, userId } = await t.run(async (ctx) => {
-        const [orgId, userId] = await Promise.all([
-          ctx.db.insert("organizations", {
-            name: "Test Org",
-            slug: "test-org",
-            type: "museum",
-          }),
-          ctx.db.insert("users", {
-            name: "Test User",
-            email: "test@example.com",
-          }),
-        ]);
-        return { orgId, userId };
-      });
-
-      const authed = authedForUser(t, userId);
-      const notificationId = await authed.mutation(
-        api.audit.createNotification,
-        {
-          organizationId: orgId,
-          type: "info",
-          title: "Test Notification",
-          message: "This is a test notification",
-        },
-      );
-
-      expect(notificationId).toBeDefined();
-
-      const notification = await t.run(async (ctx) => {
-        return await ctx.db.get(notificationId);
-      });
-
-      expect(notification?.userId).toBe(userId);
-      expect(notification?.title).toBe("Test Notification");
-      expect(notification?.read).toBe(false);
-    });
-
-    test("should include related entity info", async () => {
-      const t = convexTest(schema, modules);
-
-      const { orgId, userId } = await t.run(async (ctx) => {
-        const [orgId, userId] = await Promise.all([
-          ctx.db.insert("organizations", {
-            name: "Test Org",
-            slug: "test-org",
-            type: "museum",
-          }),
-          ctx.db.insert("users", {
-            name: "Test User",
-            email: "test@example.com",
-          }),
-        ]);
-        return { orgId, userId };
-      });
-
-      const authed = authedForUser(t, userId);
-      const notificationId = await authed.mutation(
-        api.audit.createNotification,
-        {
-          organizationId: orgId,
-          type: "info",
-          title: "Accession Created",
-          message: "A new accession was created",
-          relatedEntityType: "accession",
-          relatedEntityId: "acc_123",
-        },
-      );
-
-      const notification = await t.run(async (ctx) => {
-        return await ctx.db.get(notificationId);
-      });
-
-      expect(notification?.relatedEntityType).toBe("accession");
-      expect(notification?.relatedEntityId).toBe("acc_123");
-    });
-  });
-
-  describe("createNotificationInternal", () => {
-    test("should create notification for any user", async () => {
-      const t = convexTest(schema, modules);
-
-      const { orgId, targetUserId } = await t.run(async (ctx) => {
-        const [orgId, targetUserId] = await Promise.all([
-          ctx.db.insert("organizations", {
-            name: "Test Org",
-            slug: "test-org",
-            type: "museum",
-          }),
-          ctx.db.insert("users", {
-            name: "Target User",
-            email: "target@example.com",
-          }),
-        ]);
-        return { orgId, targetUserId };
-      });
-
-      const notificationId = await t.mutation(
-        internal.audit.createNotificationInternal,
-        {
-          organizationId: orgId,
-          userId: targetUserId,
-          type: "alert",
-          title: "Important Notice",
-          message: "This is an important notification",
-        },
-      );
-
-      const notification = await t.run(async (ctx) => {
-        return await ctx.db.get(notificationId);
-      });
-
-      expect(notification?.userId).toBe(targetUserId);
-      expect(notification?.title).toBe("Important Notice");
-    });
-  });
-
   describe("markRead", () => {
     test("should mark notification as read", async () => {
       const t = convexTest(schema, modules);
@@ -1478,14 +1358,16 @@ describe("audit (notifications & activity)", () => {
       });
 
       const authed = authedForUser(t, userId);
-      const notificationId = await authed.mutation(
-        api.audit.createNotification,
-        {
+      const notificationId = await t.run((ctx) =>
+        ctx.db.insert("notifications", {
           organizationId: orgId,
-          type: "info",
+          userId,
+          type: "system_announcement",
           title: "Test",
           message: "Test message",
-        },
+          read: false,
+          createdAt: Date.now(),
+        }),
       );
 
       await authed.mutation(api.audit.markRead, {
@@ -1521,15 +1403,16 @@ describe("audit (notifications & activity)", () => {
         return { orgId, user1Id, user2Id };
       });
 
-      const authedUser1 = authedForUser(t, user1Id);
-      const notificationId = await authedUser1.mutation(
-        api.audit.createNotification,
-        {
+      const notificationId = await t.run((ctx) =>
+        ctx.db.insert("notifications", {
           organizationId: orgId,
-          type: "info",
+          userId: user1Id,
+          type: "system_announcement",
           title: "Test",
           message: "Test message",
-        },
+          read: false,
+          createdAt: Date.now(),
+        }),
       );
 
       await expect(
