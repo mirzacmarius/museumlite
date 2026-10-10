@@ -46,6 +46,14 @@ function localTimestamp(formatter: Intl.DateTimeFormat, timestamp: number) {
   );
 }
 
+/**
+ * The wall-clock time `timestamp` shows in `timezone`, as a timestamp to
+ * format in UTC.
+ */
+export function wallClockTime(timestamp: number, timezone: string) {
+  return localTimestamp(dateFormatter(timezone), timestamp);
+}
+
 export function isTimeZone(timezone: string): boolean {
   try {
     dateFormatter(timezone).format(0);

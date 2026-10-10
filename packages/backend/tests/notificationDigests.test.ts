@@ -235,6 +235,10 @@ describe("daily and weekly digests", () => {
     expect(digest?.subject).toContain("daily digest");
     expect(digest?.text).toContain("Test User mentioned you on Harbour Map");
     expect(digest?.text).toContain("Test User mentioned you on Bronze Bell");
+    // Each notification shows its local time in the digest's time zone.
+    const text = digest?.text.replace(/\s+/g, " ");
+    expect(text).toContain("Oct 12, 2026, 10:00 AM");
+    expect(text).toContain("Oct 12, 2026, 1:00 PM");
     expect(
       (await thread.center()).map((notification) => notification.email),
     ).toMatchObject([

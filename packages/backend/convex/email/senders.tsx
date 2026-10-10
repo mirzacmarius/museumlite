@@ -14,6 +14,7 @@ import {
 import { render } from "@react-email/render";
 import type { ReactNode } from "react";
 import { env } from "../env";
+import { wallClockTime } from "../utils/calendarSchedule";
 import {
   NOTIFICATION_CATEGORIES,
   type NotificationCategory,
@@ -109,6 +110,34 @@ const emailDateFormatters: Record<EmailLocale, Intl.DateTimeFormat> = {
     year: "numeric",
     month: "long",
     day: "numeric",
+  }),
+};
+
+const digestTimeFormatters: Record<EmailLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat(emailDateLocales.en, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  fr: new Intl.DateTimeFormat(emailDateLocales.fr, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  es: new Intl.DateTimeFormat(emailDateLocales.es, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  no: new Intl.DateTimeFormat(emailDateLocales.no, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  ro: new Intl.DateTimeFormat(emailDateLocales.ro, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
   }),
 };
 
@@ -803,17 +832,12 @@ function NotificationDigestEmail({
   const messages = getEmailTranslations(locale);
   const t = messages.digest;
   const { organizationName, cadence } = content;
-  const formatTime = new Intl.DateTimeFormat(emailDateLocales[locale], {
-    timeZone: content.timezone,
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-  const groups = NOTIFICATION_CATEGORIES.map((category) => ({
-    category,
-    notifications: content.notifications.filter(
+  const groups = NOTIFICATION_CATEGORIES.flatMap((category) => {
+    const notifications = content.notifications.filter(
       (notification) => notification.category === category,
-    ),
-  })).filter((group) => group.notifications.length > 0);
+    );
+    return notifications.length > 0 ? [{ category, notifications }] : [];
+  });
   return (
     <EmailShell
       locale={locale}
@@ -844,7 +868,9 @@ function NotificationDigestEmail({
               {notification.message}
               <br />
               <span style={emailMutedTextStyle}>
-                {formatTime.format(notification.createdAt)}
+                {digestTimeFormatters[locale].format(
+                  wallClockTime(notification.createdAt, content.timezone),
+                )}
               </span>
             </Text>
           ))}
