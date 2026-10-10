@@ -9,6 +9,18 @@ import { useCapabilityErrorMessage } from "./use-capability-error-message";
 export function useWorkErrorMessage() {
   const t = useScopedI18n("caseTasks.errors");
   const capabilityMessage = useCapabilityErrorMessage();
+  const evidenceRequiredMessage = (kind: string | undefined) => {
+    switch (kind) {
+      case "conditionAssessment":
+        return t("evidenceRequired.conditionAssessment");
+      case "media":
+        return t("evidenceRequired.media");
+      case "movement":
+        return t("evidenceRequired.movement");
+      default:
+        return t("evidenceRequired.auditEntry");
+    }
+  };
   return (error: unknown) => {
     const data = workErrorFromError(error);
     if (!data) return capabilityMessage(error) ?? t("fallback");
@@ -37,6 +49,14 @@ export function useWorkErrorMessage() {
         return t("limitReached");
       case "INVALID_INPUT":
         return t("invalidInput");
+      case "EVIDENCE_REQUIRED":
+        return evidenceRequiredMessage(data.evidenceKind);
+      case "CASE_NOT_ACCEPTED":
+        return t("caseNotAccepted");
+      case "RECIPE_NOT_FOUND":
+        return t("recipeNotFound");
+      case "RECIPE_INVALID":
+        return t("recipeInvalid");
     }
   };
 }

@@ -192,6 +192,7 @@ export default {
       data: "Import/Export de données",
       metrics: "État des indicateurs",
       loanAgreements: "Contrats de prêt",
+      preparationRecipes: "Recettes de préparation",
     },
     roles: {
       title: "Gestion des Rôles",
@@ -4907,6 +4908,76 @@ export default {
         "Cet enregistrement ne peut pas être cité. Choisissez un enregistrement validé de cette organisation.",
       limitReached: "Ce dossier ou cette tâche a atteint sa limite.",
       invalidInput: "Vérifiez les champs obligatoires et réessayez.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Liez d’abord un constat d’état accepté à cette tâche.",
+        media:
+          "Liez d’abord un fichier, par exemple une photographie, à cette tâche.",
+        movement: "Liez d’abord le mouvement enregistré à cette tâche.",
+        auditEntry: "Liez d’abord l’événement d’audit à cette tâche.",
+      },
+      caseNotAccepted:
+        "Les recettes s’appliquent une fois le dossier accepté, jusqu’à son retour, sa clôture ou son annulation.",
+      recipeNotFound:
+        "Cette recette n’est plus disponible. Actualisez la page.",
+      recipeInvalid: "Vérifiez les champs signalés de la recette.",
+    },
+    suggestion: {
+      badge: "Suggérée",
+      origin: {
+        intake_accepted:
+          "Suggérée par « {recipe} » après l’acceptation de la réception",
+        loan_approved: "Suggérée par « {recipe} » après l’approbation du prêt",
+        exhibition_approved:
+          "Suggérée par « {recipe} » après l’approbation de l’exposition",
+      },
+      withdrawn:
+        "Retirée parce que le prêt a été annulé. Restaurez-la si le travail reste nécessaire.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Nécessite un constat d’état accepté lié comme preuve avant de pouvoir être terminée.",
+        media:
+          "Nécessite un fichier, par exemple une photographie, lié comme preuve avant de pouvoir être terminée.",
+        movement:
+          "Nécessite le mouvement enregistré lié comme preuve avant de pouvoir être terminée.",
+        auditEntry:
+          "Nécessite un événement d’audit lié comme preuve avant de pouvoir être terminée.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Constat d’état lié comme preuve.",
+        media: "Fichier lié comme preuve.",
+        movement: "Mouvement enregistré lié comme preuve.",
+        auditEntry: "Événement d’audit lié comme preuve.",
+      },
+      restore: "Restaurer la suggestion",
+      restored: "Suggestion restaurée",
+      dismiss: "Écarter la suggestion",
+      dismissDescription:
+        "La tâche reste dans le dossier et ne sera plus suggérée. Vous pourrez la restaurer plus tard.",
+    },
+    preparation: {
+      title: "Préparation",
+      description: {
+        intake_accepted:
+          "Des recettes suggèrent ces tâches quand une réception est acceptée. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
+        loan_approved:
+          "Des recettes suggèrent ces tâches quand un prêt est approuvé. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
+        exhibition_approved:
+          "Des recettes suggèrent ces tâches quand une exposition est approuvée. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
+      },
+      states: {
+        suggested: "Suggérée",
+        ready: "Pas encore suggérée",
+        no_owner:
+          "En attente d’un responsable pouvant travailler sur ce dossier",
+        limit_reached: "Ce dossier a atteint sa limite de tâches",
+      },
+      apply: "Suggérer {count} tâche(s) manquante(s)",
+      applying: "Suggestion en cours…",
+      applied: "{count} tâche(s) suggérée(s)",
+      nothingToApply: "Chaque étape a déjà une tâche.",
+      skipped:
+        "{count} étape(s) attendent encore un responsable pouvant travailler sur ce dossier, ou de la place dans le dossier.",
     },
     myWork: {
       title: "Mon travail",
@@ -4922,6 +4993,139 @@ export default {
       assignedCasesEmpty: "Aucun dossier ouvert ne vous est attribué.",
       assignedTruncated: "Affichage des 50 premiers dossiers attribués.",
       since: "Depuis le",
+    },
+  },
+  preparationRecipes: {
+    title: "Recettes de préparation",
+    description:
+      "Quand une réception est acceptée ou qu’un prêt ou une exposition est approuvé, les recettes actives suggèrent dans le dossier des tâches avec responsable et échéance. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état ; ceux-ci s’enregistrent dans leurs propres processus.",
+    add: "Nouvelle recette",
+    loading: "Chargement des recettes…",
+    empty:
+      "Aucune recette pour l’instant. Créez-en une à partir d’un modèle sous Nouvelle recette.",
+    noAttestation:
+      "Terminer une tâche suggérée enregistre seulement que le travail est fait.",
+    stepCount: "{count} étape(s)",
+    evidenceShort: "preuve : {kind}",
+    statuses: {
+      active: "Active",
+      paused: "En pause",
+      archived: "Archivée",
+    },
+    triggers: {
+      intake_accepted: "Réception acceptée",
+      loan_approved: "Prêt approuvé",
+      exhibition_approved: "Exposition approuvée",
+    },
+    triggerHints: {
+      intake_accepted:
+        "S’applique quand une réception est acceptée dans la collection. Les échéances comptent à partir de l’acceptation.",
+      loan_approved:
+        "S’applique quand un prêt est approuvé. Les échéances comptent à partir de l’approbation ou du début ou de la fin du prêt.",
+      exhibition_approved:
+        "S’applique quand une exposition est approuvée. Les échéances comptent à partir de l’approbation ou de son ouverture ou de sa clôture.",
+    },
+    directions: {
+      any: "Prêts entrants et sortants",
+      outgoing: "Prêts sortants",
+      incoming: "Prêts entrants",
+    },
+    actions: {
+      edit: "Modifier",
+      pause: "Mettre en pause",
+      resume: "Reprendre",
+      archive: "Archiver",
+      restore: "Restaurer",
+    },
+    toasts: {
+      saved: "Recette enregistrée",
+      paused: "Recette mise en pause",
+      resumed: "Recette reprise",
+      archived: "Recette archivée",
+      restored: "Recette restaurée en pause",
+    },
+    starters: {
+      intake: {
+        label: "Cataloguer, photographier et constater l’état",
+        name: "Cataloguer, photographier et constater l’état",
+        catalog: "Compléter la notice du catalogue",
+        photograph: "Photographier l’objet",
+        condition: "Enregistrer un constat d’état",
+      },
+      transport: {
+        label: "Emballer, assurer et organiser le transport",
+        name: "Emballer, assurer et organiser le transport",
+        condition: "Constat d’état avant l’envoi",
+        insurance: "Confirmer la couverture d’assurance",
+        pack: "Emballer les objets",
+        transport: "Réserver le transport",
+      },
+      return: {
+        label: "Préparer le retour",
+        name: "Préparer le retour",
+        transport: "Réserver le transport de retour",
+        condition: "Constat d’état au retour",
+        move: "Enregistrer le mouvement de retour",
+      },
+      blank: {
+        label: "Recette vide",
+      },
+    },
+    dialog: {
+      addTitle: "Nouvelle recette",
+      editTitle: "Modifier la recette",
+      description:
+        "Chaque étape devient une tâche du dossier, confiée à un membre pouvant y travailler. Si l’événement est répété ou corrigé, chaque étape garde une seule tâche.",
+      name: "Nom",
+      trigger: "Suggérer quand",
+      triggerLocked:
+        "L’événement ne peut plus changer une fois la recette créée. Créez-en une autre.",
+      direction: "Prêts",
+      steps: "Étapes",
+      step: "Étape {number}",
+      stepReference: "Étape {number} : {title}",
+      untitled: "Étape sans titre",
+      stepTitle: "Titre de la tâche",
+      stepDescription: "Description",
+      evidence: "Preuve que le travail est fait",
+      noEvidence: "Aucune requise",
+      owner: "Responsable",
+      owners: {
+        caseAssignee: "Membre affecté au dossier",
+        approver: "Membre qui l’a accepté",
+        member: "Un membre désigné",
+      },
+      ownerMember: "Membre",
+      chooseMember: "Choisir un membre",
+      ownerFallback:
+        "Si le responsable choisi ne peut pas travailler sur le dossier, la tâche revient au membre affecté au dossier, puis au membre qui l’a accepté. Une étape sans un tel membre attend que quelqu’un applique à nouveau la recette.",
+      due: "Échéance",
+      noDue: "Sans échéance",
+      anchors: {
+        event: "À partir de l’acceptation",
+        start: "À partir du début ou de l’ouverture",
+        end: "À partir de la fin ou de la clôture",
+      },
+      offsetDays: "Jours",
+      offsetHint: "Un nombre négatif compte à rebours depuis cette date.",
+      dependsOn: "Attend",
+      addStep: "Ajouter une étape",
+      removeStep: "Supprimer l’étape",
+      moveUp: "Monter l’étape",
+      moveDown: "Descendre l’étape",
+      cancel: "Annuler",
+      save: "Enregistrer",
+      saving: "Enregistrement…",
+      errors: {
+        name: "Donnez à la recette un nom de 120 caractères au plus.",
+        steps: "Une recette compte de 1 à 10 étapes.",
+        title: "Donnez à l’étape un titre de 200 caractères au plus.",
+        description: "La description ne peut dépasser 2 000 caractères.",
+        owner: "Choisissez un membre pouvant travailler sur ces dossiers.",
+        due: "Indiquez un nombre entier de jours entre -365 et 365.",
+        dependsOn:
+          "Une étape ne peut attendre que des étapes situées au-dessus.",
+      },
     },
   },
   notificationsPage: {

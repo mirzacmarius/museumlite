@@ -43,7 +43,8 @@
           "packages/backend/convex/utils/exhibitionCrud.ts",
           "packages/backend/convex/partyLinks.ts",
           "packages/backend/convex/partyDuplicates.ts",
-          "packages/backend/convex/utils/provenance.ts"
+          "packages/backend/convex/utils/provenance.ts",
+          "packages/backend/convex/preparationRecipes.ts"
         ],
         "rules": ["react-doctor/async-defer-await"]
       },

@@ -97,11 +97,13 @@ async function normalizeSteps(
   const caseType = TRIGGER_CASE_TYPES[trigger];
   let nextStepNumber = firstStepNumber;
   const keys: string[] = [];
+  const keptKeys = new Set<string>();
   for (const [index, input] of inputs.entries()) {
     if (input.key === undefined) {
       keys.push(`s${nextStepNumber++}`);
-    } else if (existingKeys.has(input.key) && !keys.includes(input.key)) {
+    } else if (existingKeys.has(input.key) && !keptKeys.has(input.key)) {
       keys.push(input.key);
+      keptKeys.add(input.key);
     } else {
       throw recipeInvalid("steps", "Unknown step", index);
     }
@@ -331,6 +333,11 @@ export const create = mutation({
         "loanDirection",
         "Only loan recipes have a direction",
       );
+    if ((await unarchivedRecipeCount(ctx, organizationId)) >= MAX_RECIPES)
+      throw workError(
+        "LIMIT_REACHED",
+        "This organization has too many recipes",
+      );
     const { steps, nextStepNumber } = await normalizeSteps(
       ctx,
       organizationId,
@@ -339,11 +346,6 @@ export const create = mutation({
       new Set(),
       1,
     );
-    if ((await unarchivedRecipeCount(ctx, organizationId)) >= MAX_RECIPES)
-      throw workError(
-        "LIMIT_REACHED",
-        "This organization has too many recipes",
-      );
     const now = Date.now();
     const recipeId = await ctx.db.insert("preparationRecipes", {
       organizationId,
@@ -598,7 +600,7 @@ export const applyToCase = mutation({
     ),
   }),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    // Case access refuses anonymous callers before anything is read.
     await loadCase(ctx, args.organizationId, args.caseType, args.caseId);
     await requirePermission(
       ctx,
@@ -610,6 +612,6 @@ export const applyToCase = mutation({
         "CASE_NOT_ACCEPTED",
         "Recipes apply once the case is accepted and until it ends",
       );
-    return await suggestPreparation(ctx, args, userId);
+    return await suggestPreparation(ctx, args, await requireUserId(ctx));
   },
 });

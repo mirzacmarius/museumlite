@@ -190,6 +190,7 @@ export default {
       data: "Dataimport/-eksport",
       metrics: "Målingsstatus",
       loanAgreements: "Låneavtaler",
+      preparationRecipes: "Forberedelsesoppskrifter",
     },
     roles: {
       title: "Rollehåndtering",
@@ -4893,6 +4894,75 @@ export default {
         "Den posten kan ikke brukes. Velg en godkjent post fra denne organisasjonen.",
       limitReached: "Saken eller oppgaven har nådd grensen.",
       invalidInput: "Kontroller de obligatoriske feltene og prøv igjen.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Koble først en godkjent tilstandsvurdering til denne oppgaven.",
+        media:
+          "Koble først en fil, for eksempel et fotografi, til denne oppgaven.",
+        movement: "Koble først den registrerte flyttingen til denne oppgaven.",
+        auditEntry: "Koble først revisjonshendelsen til denne oppgaven.",
+      },
+      caseNotAccepted:
+        "Oppskrifter gjelder når saken er godkjent, til den er returnert, avsluttet eller kansellert.",
+      recipeNotFound:
+        "Denne oppskriften er ikke lenger tilgjengelig. Last inn siden på nytt.",
+      recipeInvalid: "Kontroller de markerte feltene i oppskriften.",
+    },
+    suggestion: {
+      badge: "Foreslått",
+      origin: {
+        intake_accepted:
+          "Foreslått av «{recipe}» etter at mottaket ble godkjent",
+        loan_approved: "Foreslått av «{recipe}» etter at lånet ble godkjent",
+        exhibition_approved:
+          "Foreslått av «{recipe}» etter at utstillingen ble godkjent",
+      },
+      withdrawn:
+        "Trukket tilbake fordi lånet ble kansellert. Gjenopprett den hvis arbeidet fortsatt trengs.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Trenger en godkjent tilstandsvurdering koblet som dokumentasjon før den kan fullføres.",
+        media:
+          "Trenger en fil, for eksempel et fotografi, koblet som dokumentasjon før den kan fullføres.",
+        movement:
+          "Trenger den registrerte flyttingen koblet som dokumentasjon før den kan fullføres.",
+        auditEntry:
+          "Trenger en revisjonshendelse koblet som dokumentasjon før den kan fullføres.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Tilstandsvurdering er koblet som dokumentasjon.",
+        media: "Fil er koblet som dokumentasjon.",
+        movement: "Registrert flytting er koblet som dokumentasjon.",
+        auditEntry: "Revisjonshendelse er koblet som dokumentasjon.",
+      },
+      restore: "Gjenopprett forslaget",
+      restored: "Forslaget er gjenopprettet",
+      dismiss: "Avvis forslaget",
+      dismissDescription:
+        "Oppgaven blir stående i saken og blir ikke foreslått igjen. Du kan gjenopprette den senere.",
+    },
+    preparation: {
+      title: "Forberedelse",
+      description: {
+        intake_accepted:
+          "Oppskrifter foreslår disse oppgavene når et mottak blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
+        loan_approved:
+          "Oppskrifter foreslår disse oppgavene når et lån blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
+        exhibition_approved:
+          "Oppskrifter foreslår disse oppgavene når en utstilling blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
+      },
+      states: {
+        suggested: "Foreslått",
+        ready: "Ikke foreslått ennå",
+        no_owner: "Venter på en ansvarlig som kan arbeide med denne saken",
+        limit_reached: "Saken har nådd grensen for antall oppgaver",
+      },
+      apply: "Foreslå {count} manglende oppgave(r)",
+      applying: "Foreslår…",
+      applied: "{count} oppgave(r) foreslått",
+      nothingToApply: "Hvert trinn har allerede en oppgave.",
+      skipped:
+        "{count} trinn mangler fortsatt en ansvarlig som kan arbeide med saken, eller plass i saken.",
     },
     myWork: {
       title: "Mitt arbeid",
@@ -4908,6 +4978,138 @@ export default {
       assignedCasesEmpty: "Ingen åpne saker er tildelt deg.",
       assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
+    },
+  },
+  preparationRecipes: {
+    title: "Forberedelsesoppskrifter",
+    description:
+      "Når et mottak blir godkjent, eller et lån eller en utstilling blir godkjent, foreslår aktive oppskrifter oppgaver med ansvarlig og frist i saken. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand; de registreres i sine egne arbeidsflyter.",
+    add: "Ny oppskrift",
+    loading: "Laster oppskrifter…",
+    empty:
+      "Ingen oppskrifter ennå. Opprett en fra et utgangspunkt under Ny oppskrift.",
+    noAttestation:
+      "Å fullføre en foreslått oppgave registrerer bare at arbeidet er gjort.",
+    stepCount: "{count} trinn",
+    evidenceShort: "dokumentasjon: {kind}",
+    statuses: {
+      active: "Aktiv",
+      paused: "Satt på pause",
+      archived: "Arkivert",
+    },
+    triggers: {
+      intake_accepted: "Mottak godkjent",
+      loan_approved: "Lån godkjent",
+      exhibition_approved: "Utstilling godkjent",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Kjøres når et mottak blir godkjent i samlingen. Frister regnes fra godkjenningen.",
+      loan_approved:
+        "Kjøres når et lån blir godkjent. Frister regnes fra godkjenningen eller fra lånets start eller slutt.",
+      exhibition_approved:
+        "Kjøres når en utstilling blir godkjent. Frister regnes fra godkjenningen eller fra åpningen eller avslutningen.",
+    },
+    directions: {
+      any: "Inngående og utgående lån",
+      outgoing: "Utgående lån",
+      incoming: "Inngående lån",
+    },
+    actions: {
+      edit: "Rediger",
+      pause: "Sett på pause",
+      resume: "Fortsett",
+      archive: "Arkiver",
+      restore: "Gjenopprett",
+    },
+    toasts: {
+      saved: "Oppskriften er lagret",
+      paused: "Oppskriften er satt på pause",
+      resumed: "Oppskriften er aktiv igjen",
+      archived: "Oppskriften er arkivert",
+      restored: "Oppskriften er gjenopprettet på pause",
+    },
+    starters: {
+      intake: {
+        label: "Katalogiser, fotografer og vurder tilstand",
+        name: "Katalogiser, fotografer og vurder tilstand",
+        catalog: "Fullfør katalogposten",
+        photograph: "Fotografer objektet",
+        condition: "Registrer en tilstandsvurdering",
+      },
+      transport: {
+        label: "Pakk, forsikre og ordne transport",
+        name: "Pakk, forsikre og ordne transport",
+        condition: "Tilstandskontroll før utsending",
+        insurance: "Bekreft forsikringsdekningen",
+        pack: "Pakk objektene",
+        transport: "Bestill transport",
+      },
+      return: {
+        label: "Forbered returen",
+        name: "Forbered returen",
+        transport: "Bestill returtransport",
+        condition: "Tilstandskontroll ved retur",
+        move: "Registrer returflyttingen",
+      },
+      blank: {
+        label: "Tom oppskrift",
+      },
+    },
+    dialog: {
+      addTitle: "Ny oppskrift",
+      editTitle: "Rediger oppskrift",
+      description:
+        "Hvert trinn blir en oppgave i saken, med et medlem som kan arbeide med den som ansvarlig. Gjentas eller rettes hendelsen, beholdes én oppgave per trinn.",
+      name: "Navn",
+      trigger: "Foreslå når",
+      triggerLocked:
+        "Hendelsen kan ikke endres etter at oppskriften er opprettet. Opprett heller en ny oppskrift.",
+      direction: "Lån",
+      steps: "Trinn",
+      step: "Trinn {number}",
+      stepReference: "Trinn {number}: {title}",
+      untitled: "Trinn uten tittel",
+      stepTitle: "Oppgavetittel",
+      stepDescription: "Beskrivelse",
+      evidence: "Dokumentasjon som viser at det er gjort",
+      noEvidence: "Ikke påkrevd",
+      owner: "Ansvarlig",
+      owners: {
+        caseAssignee: "Medlemmet saken er tildelt",
+        approver: "Medlemmet som godkjente den",
+        member: "Et bestemt medlem",
+      },
+      ownerMember: "Medlem",
+      chooseMember: "Velg et medlem",
+      ownerFallback:
+        "Hvis den valgte ansvarlige ikke kan arbeide med saken, blir medlemmet saken er tildelt ansvarlig, deretter medlemmet som godkjente den. Et trinn uten et slikt medlem venter til noen bruker oppskriften igjen.",
+      due: "Frist",
+      noDue: "Ingen frist",
+      anchors: {
+        event: "Fra godkjenningen",
+        start: "Fra start eller åpning",
+        end: "Fra slutt eller avslutning",
+      },
+      offsetDays: "Dager",
+      offsetHint: "Negative tall teller bakover fra den datoen.",
+      dependsOn: "Venter på",
+      addStep: "Legg til trinn",
+      removeStep: "Fjern trinn",
+      moveUp: "Flytt trinnet opp",
+      moveDown: "Flytt trinnet ned",
+      cancel: "Avbryt",
+      save: "Lagre oppskrift",
+      saving: "Lagrer…",
+      errors: {
+        name: "Gi oppskriften et navn på opptil 120 tegn.",
+        steps: "En oppskrift trenger 1 til 10 trinn.",
+        title: "Gi trinnet en tittel på opptil 200 tegn.",
+        description: "Beskrivelsen kan være på opptil 2 000 tegn.",
+        owner: "Velg et medlem som kan arbeide med disse sakene.",
+        due: "Bruk et helt antall dager mellom -365 og 365.",
+        dependsOn: "Et trinn kan bare vente på trinn over seg.",
+      },
     },
   },
   notificationsPage: {

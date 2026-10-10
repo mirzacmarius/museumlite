@@ -253,10 +253,11 @@ async function assignmentMessages(
   const center = await member.query(api.notifications.getNotificationCenter, {
     organizationId,
   });
-  return center.notifications
-    .filter((notification) => notification.type === "task_assigned")
-    .map((notification) => notification.message)
-    .sort();
+  const messages: string[] = [];
+  for (const notification of center.notifications)
+    if (notification.type === "task_assigned")
+      messages.push(notification.message);
+  return messages.sort();
 }
 
 test("approving a loan suggests the recipe's steps as owned, dated tasks with their dependencies", async () => {
@@ -1240,12 +1241,18 @@ test("owners who chose instant email get one email per suggested step, however o
   });
   await drain();
 
-  const emails = (fetchMock.mock.calls as unknown as [string, RequestInit][])
-    .map(
-      ([, init]) =>
-        JSON.parse(String(init.body)) as { to: string[]; text: string },
-    )
-    .filter((email) => email.to.includes("rita@example.test"));
+  const emails: Array<{ text: string }> = [];
+  for (const [, init] of fetchMock.mock.calls as unknown as [
+    string,
+    RequestInit,
+  ][]) {
+    const email = JSON.parse(String(init.body)) as {
+      to: string[];
+      text: string;
+    };
+    // Each notification email has one recipient.
+    if (email.to[0] === "rita@example.test") emails.push(email);
+  }
   expect(emails).toHaveLength(2);
   expect(emails.map((email) => email.text).join("\n")).toContain(
     "Assigned by: Pack, insure and arrange transport",

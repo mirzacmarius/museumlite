@@ -195,6 +195,7 @@ export default {
       data: "Importar/Exportar datos",
       metrics: "Estado de métricas",
       loanAgreements: "Contratos de préstamo",
+      preparationRecipes: "Recetas de preparación",
     },
     roles: {
       title: "Gestión de Roles",
@@ -4957,6 +4958,73 @@ export default {
         "Ese registro no se puede citar. Elija un registro aceptado de esta organización.",
       limitReached: "Este caso o esta tarea ha alcanzado su límite.",
       invalidInput: "Revise los campos obligatorios e inténtelo de nuevo.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Primero vincule a esta tarea una evaluación del estado aceptada.",
+        media:
+          "Primero vincule a esta tarea un archivo, por ejemplo una fotografía.",
+        movement: "Primero vincule a esta tarea el movimiento registrado.",
+        auditEntry: "Primero vincule a esta tarea el evento de auditoría.",
+      },
+      caseNotAccepted:
+        "Las recetas se aplican cuando el caso está aceptado, hasta que se devuelve, se cierra o se cancela.",
+      recipeNotFound: "Esta receta ya no está disponible. Actualice la página.",
+      recipeInvalid: "Revise los campos marcados de la receta.",
+    },
+    suggestion: {
+      badge: "Sugerida",
+      origin: {
+        intake_accepted: "Sugerida por «{recipe}» tras aceptar la recepción",
+        loan_approved: "Sugerida por «{recipe}» tras aprobar el préstamo",
+        exhibition_approved:
+          "Sugerida por «{recipe}» tras aprobar la exposición",
+      },
+      withdrawn:
+        "Retirada porque el préstamo se canceló. Restáurela si el trabajo sigue siendo necesario.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Necesita una evaluación del estado aceptada vinculada como evidencia antes de completarse.",
+        media:
+          "Necesita un archivo, por ejemplo una fotografía, vinculado como evidencia antes de completarse.",
+        movement:
+          "Necesita el movimiento registrado vinculado como evidencia antes de completarse.",
+        auditEntry:
+          "Necesita un evento de auditoría vinculado como evidencia antes de completarse.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Evaluación del estado vinculada como evidencia.",
+        media: "Archivo vinculado como evidencia.",
+        movement: "Movimiento registrado vinculado como evidencia.",
+        auditEntry: "Evento de auditoría vinculado como evidencia.",
+      },
+      restore: "Restaurar la sugerencia",
+      restored: "Sugerencia restaurada",
+      dismiss: "Descartar la sugerencia",
+      dismissDescription:
+        "La tarea permanece en el caso y no se volverá a sugerir. Puede restaurarla más adelante.",
+    },
+    preparation: {
+      title: "Preparación",
+      description: {
+        intake_accepted:
+          "Las recetas sugieren estas tareas cuando se acepta una recepción. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
+        loan_approved:
+          "Las recetas sugieren estas tareas cuando se aprueba un préstamo. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
+        exhibition_approved:
+          "Las recetas sugieren estas tareas cuando se aprueba una exposición. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
+      },
+      states: {
+        suggested: "Sugerida",
+        ready: "Aún no sugerida",
+        no_owner: "Esperando un responsable que pueda trabajar en este caso",
+        limit_reached: "Este caso alcanzó su límite de tareas",
+      },
+      apply: "Sugerir {count} tarea(s) pendiente(s)",
+      applying: "Sugiriendo…",
+      applied: "{count} tarea(s) sugerida(s)",
+      nothingToApply: "Cada paso ya tiene una tarea.",
+      skipped:
+        "{count} paso(s) aún necesitan un responsable que pueda trabajar en este caso, o espacio en el caso.",
     },
     myWork: {
       title: "Mi trabajo",
@@ -4972,6 +5040,138 @@ export default {
       assignedCasesEmpty: "No tiene casos abiertos asignados.",
       assignedTruncated: "Se muestran los primeros 50 casos asignados.",
       since: "Desde",
+    },
+  },
+  preparationRecipes: {
+    title: "Recetas de preparación",
+    description:
+      "Cuando se acepta una recepción o se aprueba un préstamo o una exposición, las recetas activas sugieren en el caso tareas con responsable y fecha límite. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación; estos se registran en sus propios flujos.",
+    add: "Nueva receta",
+    loading: "Cargando recetas…",
+    empty:
+      "Aún no hay recetas. Cree una a partir de un punto de partida en Nueva receta.",
+    noAttestation:
+      "Completar una tarea sugerida solo registra que el trabajo está hecho.",
+    stepCount: "{count} paso(s)",
+    evidenceShort: "evidencia: {kind}",
+    statuses: {
+      active: "Activa",
+      paused: "En pausa",
+      archived: "Archivada",
+    },
+    triggers: {
+      intake_accepted: "Recepción aceptada",
+      loan_approved: "Préstamo aprobado",
+      exhibition_approved: "Exposición aprobada",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Se aplica cuando se acepta una recepción en la colección. Las fechas límite cuentan desde la aceptación.",
+      loan_approved:
+        "Se aplica cuando se aprueba un préstamo. Las fechas límite cuentan desde la aprobación o desde el inicio o el fin del préstamo.",
+      exhibition_approved:
+        "Se aplica cuando se aprueba una exposición. Las fechas límite cuentan desde la aprobación o desde su apertura o cierre.",
+    },
+    directions: {
+      any: "Préstamos entrantes y salientes",
+      outgoing: "Préstamos salientes",
+      incoming: "Préstamos entrantes",
+    },
+    actions: {
+      edit: "Editar",
+      pause: "Pausar",
+      resume: "Reanudar",
+      archive: "Archivar",
+      restore: "Restaurar",
+    },
+    toasts: {
+      saved: "Receta guardada",
+      paused: "Receta en pausa",
+      resumed: "Receta reanudada",
+      archived: "Receta archivada",
+      restored: "Receta restaurada en pausa",
+    },
+    starters: {
+      intake: {
+        label: "Catalogar, fotografiar y evaluar el estado",
+        name: "Catalogar, fotografiar y evaluar el estado",
+        catalog: "Completar el registro de catálogo",
+        photograph: "Fotografiar el objeto",
+        condition: "Registrar una evaluación del estado",
+      },
+      transport: {
+        label: "Embalar, asegurar y organizar el transporte",
+        name: "Embalar, asegurar y organizar el transporte",
+        condition: "Revisión del estado antes del envío",
+        insurance: "Confirmar la cobertura del seguro",
+        pack: "Embalar los objetos",
+        transport: "Reservar el transporte",
+      },
+      return: {
+        label: "Preparar la devolución",
+        name: "Preparar la devolución",
+        transport: "Reservar el transporte de vuelta",
+        condition: "Revisión del estado a la vuelta",
+        move: "Registrar el movimiento de vuelta",
+      },
+      blank: {
+        label: "Receta en blanco",
+      },
+    },
+    dialog: {
+      addTitle: "Nueva receta",
+      editTitle: "Editar receta",
+      description:
+        "Cada paso se convierte en una tarea del caso, a cargo de un miembro que pueda trabajar en él. Si el evento se repite o se corrige, cada paso conserva una sola tarea.",
+      name: "Nombre",
+      trigger: "Sugerir cuando",
+      triggerLocked:
+        "El evento no puede cambiar una vez creada la receta. Cree otra receta.",
+      direction: "Préstamos",
+      steps: "Pasos",
+      step: "Paso {number}",
+      stepReference: "Paso {number}: {title}",
+      untitled: "Paso sin título",
+      stepTitle: "Título de la tarea",
+      stepDescription: "Descripción",
+      evidence: "Evidencia de que se hizo",
+      noEvidence: "No se requiere",
+      owner: "Responsable",
+      owners: {
+        caseAssignee: "Miembro asignado al caso",
+        approver: "Miembro que lo aceptó",
+        member: "Un miembro concreto",
+      },
+      ownerMember: "Miembro",
+      chooseMember: "Elija un miembro",
+      ownerFallback:
+        "Si el responsable elegido no puede trabajar en el caso, la tarea pasa al miembro asignado al caso y, después, al miembro que lo aceptó. Un paso sin ese miembro espera hasta que alguien vuelva a aplicar la receta.",
+      due: "Fecha límite",
+      noDue: "Sin fecha límite",
+      anchors: {
+        event: "Desde la aceptación",
+        start: "Desde el inicio o la apertura",
+        end: "Desde el fin o el cierre",
+      },
+      offsetDays: "Días",
+      offsetHint: "Los números negativos cuentan hacia atrás desde esa fecha.",
+      dependsOn: "Espera a",
+      addStep: "Añadir paso",
+      removeStep: "Quitar paso",
+      moveUp: "Subir el paso",
+      moveDown: "Bajar el paso",
+      cancel: "Cancelar",
+      save: "Guardar receta",
+      saving: "Guardando…",
+      errors: {
+        name: "Dé a la receta un nombre de hasta 120 caracteres.",
+        steps: "Una receta necesita de 1 a 10 pasos.",
+        title: "Dé al paso un título de hasta 200 caracteres.",
+        description: "La descripción puede tener hasta 2000 caracteres.",
+        owner: "Elija un miembro que pueda trabajar en estos casos.",
+        due: "Use un número entero de días entre -365 y 365.",
+        dependsOn: "Un paso solo puede esperar a pasos anteriores.",
+      },
     },
   },
   notificationsPage: {

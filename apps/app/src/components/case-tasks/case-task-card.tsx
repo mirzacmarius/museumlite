@@ -1,10 +1,16 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
-import { ExternalLink, Link2 } from "lucide-react";
+import { useMutation } from "convex/react";
+import { CheckCircle2, ExternalLink, Link2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
+import { useWorkErrorMessage } from "@/hooks/use-work-error-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { type CaseTask, CaseTaskActions } from "./case-task-actions";
 import { caseHref, evidenceHref } from "./case-task-links";
@@ -53,14 +59,86 @@ function CaseTaskHeader({
           </Link>
         ) : null}
       </div>
-      <span
-        className={cn(
-          "shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium",
-          STATUS_STYLES[task.status],
-        )}
+      <div className="flex shrink-0 items-center gap-1.5">
+        {task.suggestion ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:text-violet-300">
+            <Sparkles className="size-3" />
+            {t("suggestion.badge")}
+          </span>
+        ) : null}
+        <span
+          className={cn(
+            "rounded-full border px-2 py-0.5 text-[11px] font-medium",
+            STATUS_STYLES[task.status],
+          )}
+        >
+          {t(`status.${task.status}`)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Where a suggested task came from and the evidence it still needs. */
+function CaseTaskSuggestionNotes({ task }: { task: CaseTask }) {
+  const t = useScopedI18n("caseTasks");
+  const locale = useCurrentLocale();
+  const { suggestion, requiredEvidence } = task;
+  if (!suggestion) return null;
+  return (
+    <div className="space-y-1 text-xs text-muted-foreground">
+      <p>
+        {t(`suggestion.origin.${suggestion.trigger}`, {
+          recipe: suggestion.recipeName,
+        })}{" "}
+        <ClientDate
+          timestamp={suggestion.eventAt}
+          locale={locale}
+          options={DUE_DATE_OPTIONS}
+        />
+      </p>
+      {suggestion.withdrawnReason ? <p>{t("suggestion.withdrawn")}</p> : null}
+      {requiredEvidence && isOpen(task) ? (
+        requiredEvidence.linked ? (
+          <p className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+            <CheckCircle2 className="size-3" />
+            {t(`suggestion.evidenceLinked.${requiredEvidence.kind}`)}
+          </p>
+        ) : (
+          <p className="text-amber-700 dark:text-amber-300">
+            {t(`suggestion.evidenceNeeded.${requiredEvidence.kind}`)}
+          </p>
+        )
+      ) : null}
+    </div>
+  );
+}
+
+function RestoreSuggestionButton({ taskId }: { taskId: Id<"caseTasks"> }) {
+  const t = useScopedI18n("caseTasks");
+  const errorMessage = useWorkErrorMessage();
+  const restore = useMutation(api.caseTasks.restoreSuggestion);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await restore({ taskId });
+            toast.success(t("suggestion.restored"));
+          } catch (error) {
+            toast.error(errorMessage(error));
+          } finally {
+            setBusy(false);
+          }
+        }}
       >
-        {t(`status.${task.status}`)}
-      </span>
+        {t("suggestion.restore")}
+      </Button>
     </div>
   );
 }
@@ -220,9 +298,13 @@ export function CaseTaskCard({
       <CaseTaskHeader task={task} showCaseLink={showCaseLink} />
       <CaseTaskPeople task={task} now={now} />
       <CaseTaskNotes task={task} />
+      <CaseTaskSuggestionNotes task={task} />
       <CaseTaskEvidenceList task={task} />
       {canManage && isOpen(task) ? (
         <CaseTaskActions task={task} organizationId={organizationId} />
+      ) : null}
+      {canManage && task.suggestion && task.status === "cancelled" ? (
+        <RestoreSuggestionButton taskId={task._id} />
       ) : null}
     </li>
   );
