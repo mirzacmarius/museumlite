@@ -975,3 +975,86 @@ describe("resolving an episode", () => {
     expect((await store.monitoring())?.openEpisode?.status).toBe("open");
   });
 });
+
+describe("staff readings", () => {
+  test("a staff reading outside the thresholds opens an episode and an in-range spot check ends it", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await paperStore(t);
+    await store.manager.mutation(api.environmentalMonitoring.setThresholds, {
+      locationId: store.locationId,
+      thresholds: PAPER_STORE_THRESHOLDS,
+    });
+    const conservatorId = await addMember(
+      t,
+      store.organizationId,
+      "conservator",
+      ["collections.update", "locations.read"],
+    );
+    const conservator = authedForUser(t, conservatorId);
+    const record = (humidity: number) =>
+      conservator.mutation(
+        api.conservationTreatments.recordEnvironmentalReading,
+        { locationId: store.locationId, source: "manual", humidity },
+      );
+
+    const breach = await record(61);
+    const opened = await store.manager.query(
+      api.environmentalMonitoring.getLocationMonitoring,
+      { locationId: store.locationId, now: Date.now() },
+    );
+    const check = await record(48);
+    const recovered = await store.manager.query(
+      api.environmentalMonitoring.getLocationMonitoring,
+      { locationId: store.locationId, now: Date.now() },
+    );
+    const alerts = await t.run((ctx) =>
+      ctx.db.query("conservationAlerts").collect(),
+    );
+
+    expect(breach).toMatchObject({
+      alertTriggered: true,
+      episodeId: opened?.openEpisode?._id,
+      violations: ["Relative humidity 61% above the 55% maximum"],
+    });
+    expect(opened?.openEpisode?.sources).toEqual([
+      expect.objectContaining({ silent: false }),
+    ]);
+    expect(opened?.openEpisode?.sources[0]?.probeId).toBeUndefined();
+    expect(check.episodeId).toBe(breach.episodeId);
+    expect(recovered?.openEpisode).toBeNull();
+    expect(recovered?.recentEpisodes[0]?.status).toBe("recovered");
+    expect(recovered?.recentReadings[0]).toMatchObject({
+      source: "manual",
+      recordedByName: "conservator",
+      humidity: 48,
+    });
+    expect(alerts).toEqual([]);
+  });
+
+  test("a staff spot check within the thresholds cannot recover a probe's breach", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const conservatorId = await addMember(
+      t,
+      store.organizationId,
+      "conservator",
+      ["collections.update", "locations.read"],
+    );
+    await store.send({
+      readingId: "r1",
+      observedAt: Date.now() - MINUTE,
+      humidity: 61,
+    });
+
+    await authedForUser(t, conservatorId).mutation(
+      api.conservationTreatments.recordEnvironmentalReading,
+      { locationId: store.locationId, source: "manual", humidity: 48 },
+    );
+    const monitoring = await store.monitoring();
+
+    expect(monitoring?.openEpisode).toMatchObject({
+      status: "open",
+      readingCount: 2,
+    });
+  });
+});

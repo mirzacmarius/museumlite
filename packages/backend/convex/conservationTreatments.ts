@@ -11,6 +11,8 @@ import {
   readWorkflowHistoryPage,
   workflowHistoryPageValidator,
 } from "./auditLog";
+import { describeBreach } from "./utils/alertEpisodePolicy";
+import { acceptReading } from "./utils/alertEpisodes";
 import { batchLookup } from "./utils/batchLookup";
 import { appendCaseHistory } from "./utils/caseHistory";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
@@ -2705,6 +2707,11 @@ export const listAssessmentSchedules = query({
 // ENVIRONMENTAL MONITORING FUNCTIONS
 // ============================================
 
+/**
+ * An audited staff spot check. It is applied to the location's alert episode
+ * like a device reading (ADR 0009): outside the thresholds it opens or updates
+ * the episode, and within them it ends the breach that staff readings showed.
+ */
 export const recordEnvironmentalReading = mutation({
   args: {
     locationId: v.id("locations"),
@@ -2718,7 +2725,7 @@ export const recordEnvironmentalReading = mutation({
   returns: v.object({
     readingId: v.id("environmentalReadings"),
     alertTriggered: v.boolean(),
-    alertId: v.optional(v.id("conservationAlerts")),
+    episodeId: v.optional(v.id("alertEpisodes")),
     violations: v.array(v.string()),
   }),
   handler: async (ctx, args) => {
@@ -2732,99 +2739,19 @@ export const recordEnvironmentalReading = mutation({
 
     await requirePermission(ctx, location.organizationId, "collections.update");
 
-    // Check thresholds and generate violations
-    const violations: string[] = [];
-    const thresholds = location.environmentalThresholds;
-
-    if (thresholds) {
-      if (
-        args.temperature !== undefined &&
-        thresholds.temperatureMin !== undefined &&
-        args.temperature < thresholds.temperatureMin
-      ) {
-        violations.push(
-          `Temperature ${args.temperature}°C below minimum ${thresholds.temperatureMin}°C`,
-        );
-      }
-      if (
-        args.temperature !== undefined &&
-        thresholds.temperatureMax !== undefined &&
-        args.temperature > thresholds.temperatureMax
-      ) {
-        violations.push(
-          `Temperature ${args.temperature}°C above maximum ${thresholds.temperatureMax}°C`,
-        );
-      }
-      if (
-        args.humidity !== undefined &&
-        thresholds.humidityMin !== undefined &&
-        args.humidity < thresholds.humidityMin
-      ) {
-        violations.push(
-          `Humidity ${args.humidity}% below minimum ${thresholds.humidityMin}%`,
-        );
-      }
-      if (
-        args.humidity !== undefined &&
-        thresholds.humidityMax !== undefined &&
-        args.humidity > thresholds.humidityMax
-      ) {
-        violations.push(
-          `Humidity ${args.humidity}% above maximum ${thresholds.humidityMax}%`,
-        );
-      }
-      if (
-        args.lightLevel !== undefined &&
-        thresholds.lightLevelMax !== undefined &&
-        args.lightLevel > thresholds.lightLevelMax
-      ) {
-        violations.push(
-          `Light level ${args.lightLevel} lux exceeds maximum ${thresholds.lightLevelMax} lux`,
-        );
-      }
-      if (
-        args.uvLevel !== undefined &&
-        thresholds.uvLevelMax !== undefined &&
-        args.uvLevel > thresholds.uvLevelMax
-      ) {
-        violations.push(
-          `UV level ${args.uvLevel} exceeds maximum ${thresholds.uvLevelMax}`,
-        );
-      }
-    }
-
-    const alertTriggered = violations.length > 0;
-    let alertId: Id<"conservationAlerts"> | undefined;
-
-    // Create alert if thresholds exceeded
-    if (alertTriggered) {
-      alertId = await ctx.db.insert("conservationAlerts", {
-        organizationId: location.organizationId,
-        alertType: "environmental_alert",
-        title: `Environmental Alert: ${location.name}`,
-        description: violations.join(". "),
-        priority: violations.length >= 2 ? "high" : "medium",
-        status: "active",
-        createdAt: Date.now(),
-      });
-    }
-
     const recordedAt = Date.now();
-    const readingId = await ctx.db.insert("environmentalReadings", {
-      organizationId: location.organizationId,
-      locationId: args.locationId,
-      temperature: args.temperature,
-      humidity: args.humidity,
-      lightLevel: args.lightLevel,
-      uvLevel: args.uvLevel,
-      recordedAt,
+    const { readingId, episodeId, breaches } = await acceptReading(ctx, {
+      location,
+      source: { kind: "staff", userId },
       observedAt: recordedAt,
       receivedAt: recordedAt,
-      recordedBy: userId ?? undefined,
-      source: "manual",
+      values: {
+        temperature: args.temperature,
+        humidity: args.humidity,
+        lightLevel: args.lightLevel,
+        uvLevel: args.uvLevel,
+      },
       notes: args.notes,
-      alertTriggered,
-      alertId,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -2845,9 +2772,9 @@ export const recordEnvironmentalReading = mutation({
 
     return {
       readingId,
-      alertTriggered,
-      alertId,
-      violations,
+      alertTriggered: breaches.length > 0,
+      episodeId,
+      violations: breaches.map(describeBreach),
     };
   },
 });
