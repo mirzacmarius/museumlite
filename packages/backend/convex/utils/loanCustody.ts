@@ -208,9 +208,14 @@ async function resolveReturnDestination(
   );
 }
 
-async function assertLenderExitNotBlockedByExhibition(
+/**
+ * Refuses a custody exit while the object is installed on, or not yet back
+ * from, an exhibition without a recorded return exception.
+ */
+export async function assertExitNotBlockedByExhibition(
   ctx: MutationCtx,
   collectionId: Id<"collections">,
+  message = "Cannot return an object to the lender while its exhibition outcome is unresolved",
 ) {
   const participants = await ctx.db
     .query("exhibitionObjects")
@@ -223,14 +228,11 @@ async function assertLenderExitNotBlockedByExhibition(
       participant.returnException === undefined,
   );
   if (blocking) {
-    throw custodyConflict(
-      "EXHIBITION_OUTCOME_UNRESOLVED",
-      "Cannot return an object to the lender while its exhibition outcome is unresolved",
-    );
+    throw custodyConflict("EXHIBITION_OUTCOME_UNRESOLVED", message);
   }
 }
 
-function observedSourceMatches(
+export function observedSourceMatches(
   observedFromLocationId: Id<"locations"> | null | undefined,
   currentLocationId: Id<"locations"> | undefined,
 ) {
@@ -260,7 +262,7 @@ async function recordIncomingLenderExit(
     movementKind?: Extract<MovementKind, "loan_return" | "transit_receipt">;
   },
 ) {
-  await assertLenderExitNotBlockedByExhibition(ctx, collectionId);
+  await assertExitNotBlockedByExhibition(ctx, collectionId);
   const collection = await ctx.db.get(collectionId);
   if (
     !observedSourceMatches(

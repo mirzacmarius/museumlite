@@ -5443,6 +5443,222 @@ export default {
     },
     allTypes: "Tous les types",
   },
+  objectEntries: {
+    title: "Entrées",
+    description:
+      "Biens reçus en dépôt avant toute décision d’acquisition. Recevoir un bien ne l’acquiert ni ne l’inscrit jamais à l’inventaire.",
+    workbench: {
+      label: "Entrées",
+      description:
+        "Dépôts temporaires, décisions d’acquisition et restitutions.",
+    },
+    receive: "Recevoir un bien",
+    empty: "Aucun bien n’a encore été reçu au titre d’une entrée.",
+    emptyFiltered: "Aucune entrée n’a ce statut.",
+    loadMore: "Charger plus",
+    allStatuses: "Tous les statuts",
+    overdue: "En retard",
+    noPermission: "Vous n’avez pas l’autorisation de consulter les entrées.",
+    noReceivePermission:
+      "Vous n’avez pas l’autorisation de recevoir des biens.",
+    status: {
+      in_custody: "En dépôt",
+      acquisition_review: "Acquisition à l’examen",
+      accessioned: "Inscrit à l’inventaire",
+      exited: "Restitué",
+    },
+    purposes: {
+      acquisition: "Proposé à l’acquisition",
+      identification: "Identification ou demande d’avis",
+      deposit: "Dépôt pour mise en sécurité",
+      research: "Recherche ou étude",
+      other: "Autre",
+    },
+    columns: {
+      entry: "Entrée",
+      object: "Objet",
+      depositor: "Déposant",
+      received: "Reçu",
+      status: "Statut",
+      due: "Échéance",
+      responsible: "Responsable",
+    },
+    fields: {
+      entryNumber: "Numéro d’entrée",
+      entryNumberHint:
+        "Laissez vide pour une numérotation automatique, par exemple TE-2026-0001.",
+      purpose: "Motif",
+      purposeNote: "Précisions sur le motif",
+      depositor: "Déposant",
+      depositorParty: "Déposant parmi les parties",
+      owner: "Propriétaire",
+      ownerParty: "Propriétaire parmi les parties",
+      ownerSameAsDepositor: "Le déposant est le propriétaire",
+      ownerHint:
+        "Laissez vide si la propriété n’est pas établie. Une acquisition exige un propriétaire enregistré.",
+      receivedAt: "Reçu le",
+      location: "Lieu de réception",
+      chooseLocation: "Choisissez un lieu",
+      condition: "État à la réception",
+      conditionHint: "Décrivez l’état à la réception, y compris les dommages.",
+      responsible: "Membre du personnel responsable",
+      chooseMember: "Choisissez un membre du personnel",
+      responsibilityTerms: "Conditions de responsabilité et d’assurance",
+      decisionDueAt: "Décision attendue le",
+      returnDueAt: "Restitution prévue le",
+      notes: "Notes",
+      objectTitle: "Titre de l’objet",
+      objectName: "Désignation de l’objet",
+      objectDescription: "Description",
+    },
+    sections: {
+      property: "Bien",
+      parties: "Déposant et propriétaire",
+      custody: "Garde",
+      dates: "Échéances",
+    },
+    receiveForm: {
+      title: "Recevoir un bien",
+      description:
+        "Enregistrez l’entrée d’un bien : qui l’a apporté, pourquoi, où il est conservé et dans quel état. Il reste hors collection tant qu’aucune acquisition n’est approuvée.",
+      submit: "Enregistrer la réception",
+      saving: "Enregistrement…",
+      success: "Entrée {entryNumber} enregistrée",
+    },
+    detail: {
+      back: "Entrées",
+      notFound: "Entrée introuvable",
+      object: "Objet",
+      openObject: "Ouvrir l’objet",
+      receivedBy: "Reçu par {name}",
+      currentLocation: "Emplacement actuel",
+      noLocation: "Aucun emplacement enregistré",
+      notRecorded: "Non enregistré",
+      ownerNotRecorded: "Non établi",
+      ownerNeeded:
+        "Aucun propriétaire n’est enregistré. Enregistrez-le dans Modifier les détails avant d’engager une acquisition.",
+      acquisition: "Acquisition",
+      noAcquisition: "Aucune acquisition n’a été engagée.",
+      openAccession: "Ouvrir l’inscription {number}",
+      acquisitionDraft:
+        "Brouillon : joignez les preuves de propriété et soumettez-le à approbation, ou retirez-le.",
+      acquisitionPending:
+        "En attente d’approbation selon la politique d’inscription.",
+      acquisitionWithdrawn:
+        "Retirée. Restituez le bien à son destinataire ou engagez une nouvelle acquisition.",
+      accessionedOn: "Inscrit à l’inventaire le {date}",
+      exit: "Sortie",
+      exitedTo: "Restitué à {name}",
+      exitedOn: "Remis le {date}",
+      reference: "Référence",
+      recordedBy: "Enregistré par {name}",
+    },
+    actions: {
+      beginAcquisition: "Engager l’acquisition",
+      withdrawAcquisition: "Retirer l’acquisition",
+      recordExit: "Enregistrer la sortie",
+      edit: "Modifier les détails",
+      cancel: "Annuler",
+      save: "Enregistrer",
+      saving: "Enregistrement…",
+    },
+    acquisition: {
+      title: "Engager l’acquisition",
+      description:
+        "Ouvre une inscription en brouillon pour cet objet, avec {owner} comme origine du titre de propriété. L’objet n’est inscrit qu’après approbation selon la politique d’inscription.",
+      method: "Mode d’acquisition",
+      accessionNumber: "Numéro d’inventaire",
+      accessionNumberHint:
+        "Laissez vide pour utiliser la numérotation configurée.",
+      cost: "Coût",
+      notes: "Notes",
+      submit: "Créer l’inscription en brouillon",
+      success: "Inscription en brouillon créée",
+      methods: {
+        purchase: "Achat",
+        gift: "Don manuel",
+        transfer: "Transfert",
+        donation: "Donation",
+        bequest: "Legs",
+        other: "Autre",
+      },
+    },
+    exitDialog: {
+      title: "Enregistrer la sortie",
+      description:
+        "Remettez le bien à son destinataire. L’objet quitte la garde et est retiré des vues courantes ; rien n’est radié de l’inventaire.",
+      recipient: "Destinataire",
+      recipientParty: "Destinataire parmi les parties",
+      exitedAt: "Remis le",
+      reference: "Référence du reçu ou de la signature",
+      notes: "Notes",
+      observedAt: "Le personnel a confirmé que l’objet se trouve à {location}",
+      submit: "Enregistrer la sortie",
+      success: "Sortie enregistrée",
+    },
+    withdrawDialog: {
+      title: "Retirer l’acquisition",
+      description:
+        "L’inscription en brouillon est retirée avec votre motif et conservée dans son historique. Le bien reste en dépôt au titre de cette entrée.",
+      reason: "Motif",
+      submit: "Retirer l’acquisition",
+      success: "Acquisition retirée",
+    },
+    editDialog: {
+      title: "Modifier les détails de l’entrée",
+      description:
+        "Les faits de la réception restent tels qu’enregistrés. Modifiez le déposant ou le propriétaire dans Parties.",
+      success: "Entrée mise à jour",
+    },
+    objectNotice: {
+      temporary: "Dépôt temporaire : hors collection",
+      temporaryDetail:
+        "Conservé au titre de l’entrée {entryNumber} ({purpose}), déposé par {depositor}.",
+      accessioned: "Reçu au titre de l’entrée {entryNumber}",
+      exited: "Restitué au titre de l’entrée {entryNumber}",
+      openEntry: "Ouvrir l’entrée",
+    },
+    accessionLink: "Reçu au titre de l’entrée {entryNumber}",
+    accessionObject:
+      "L’objet a été enregistré à la réception du bien. Il entre dans la collection lorsque cette inscription est approuvée.",
+    errors: {
+      entryNotFound: "Cette entrée n’existe plus.",
+      depositorRequired: "Indiquez qui a déposé le bien.",
+      titleRequired: "Donnez un titre à l’objet.",
+      conditionRequired: "Décrivez l’état à la réception.",
+      textTooLong:
+        "Un des champs est trop long. Raccourcissez-le et réessayez.",
+      datesInvalid:
+        "Vérifiez les dates : les échéances et les sorties ne peuvent pas précéder la réception, et aucune date ne peut être future.",
+      responsibleNotMember:
+        "Le membre du personnel responsable doit appartenir à cette organisation.",
+      numberInUse:
+        "Ce numéro est déjà utilisé par une autre entrée ou un autre objet. Choisissez-en un autre.",
+      numberingExhausted:
+        "La numérotation automatique n’a trouvé que des numéros utilisés. Saisissez un numéro d’entrée.",
+      notInCustody: "Cette entrée a déjà une acquisition en cours.",
+      acquisitionOpen:
+        "Une acquisition est en cours pour cette entrée. Retirez-la avant d’enregistrer une sortie.",
+      entryClosed: "Cette entrée est close et ne peut plus être modifiée.",
+      ownerRequired:
+        "Enregistrez le propriétaire avant d’engager une acquisition ; seul le propriétaire peut transmettre la propriété.",
+      recipientRequired: "Indiquez qui a reçu le bien.",
+      temporaryCustody:
+        "Cet objet est conservé au titre d’une entrée et ne fait pas partie de la collection. Inscrivez-le d’abord à l’inventaire.",
+      entryExited:
+        "Le bien a déjà quitté la garde ; cette acquisition ne peut donc pas être restaurée.",
+      objectRecordedOnEntry:
+        "Cet objet a été enregistré à l’entrée. Modifiez plutôt la fiche de l’objet.",
+      numberInvalid:
+        "Un numéro d’entrée doit compter de 1 à 256 caractères visibles.",
+      acquisitionInReview:
+        "Cette acquisition est à l’examen ; ses examinateurs décident de son retrait.",
+      reasonRequired: "Indiquez un motif.",
+      exitRequired:
+        "Cet objet est conservé au titre d’une entrée. Enregistrez sa sortie sur l’entrée au lieu de le retirer.",
+      fallback: "L’entrée n’a pas pu être enregistrée. Réessayez.",
+    },
+  },
   objectPicker: {
     loading: "Chargement…",
     loadMore: "Charger plus",
@@ -5820,8 +6036,10 @@ export default {
       lender: "Prêteur",
       borrower: "Emprunteur",
       owner: "Propriétaire",
+      custodian: "Dépositaire",
       appraiser: "Expert",
       recipient: "Destinataire",
+      depositor: "Déposant",
     },
     holderTypes: {
       privatePerson: "Personne",
@@ -5838,6 +6056,8 @@ export default {
       deaccession: "Désaccession",
       appraisal: "Estimation",
       collection: "Objet",
+      entry: "Entrée",
+      provenanceClaim: "Assertion de provenance",
     },
     picker: {
       placeholder: "Sélectionner ou créer une personne ou une institution",
@@ -5969,6 +6189,282 @@ export default {
       reviewAlreadyResolved:
         "Quelqu'un a déjà vérifié cette suggestion. Actualisez pour voir la décision.",
       fallback: "L'action n'a pas pu aboutir. Actualisez puis réessayez.",
+    },
+  },
+  provenance: {
+    title: "Assertions de provenance",
+    description:
+      "Assertions datées sur les détenteurs successifs de cet objet, chacune avec ses sources et son degré de confiance. Les corrections et les assertions contradictoires sont conservées, jamais écrasées.",
+    record: "Enregistrer une assertion",
+    empty: "Aucune assertion de provenance n'est encore enregistrée.",
+    loading: "Chargement de la provenance…",
+    withdrawn:
+      "Cet objet est retiré. Restaurez-le pour enregistrer ou examiner sa provenance.",
+    truncated:
+      "Seules les {count} assertions les plus récentes sont affichées.",
+    history: "Assertions corrigées et rétractées ({count})",
+    roles: {
+      owner: "Propriétaire",
+      custodian: "Dépositaire",
+    },
+    partyKinds: {
+      named: "Détenteur nommé",
+      anonymous: "Détenteur anonyme",
+      unknown: "Détenteur inconnu",
+    },
+    methods: {
+      purchase: "Achat",
+      auction: "Vente aux enchères",
+      gift: "Don",
+      bequest: "Legs",
+      inheritance: "Héritage",
+      exchange: "Échange",
+      commission: "Commande",
+      fieldCollection: "Collecte de terrain",
+      confiscation: "Confiscation",
+      restitution: "Restitution",
+      other: "Autre",
+    },
+    confidence: {
+      documented: "Documentée",
+      probable: "Probable",
+      possible: "Possible",
+      unassessed: "Non évaluée",
+    },
+    reviewStatus: {
+      unreviewed: "En attente d'examen",
+      accepted: "Acceptée",
+      disputed: "Contestée",
+      rejected: "Rejetée",
+    },
+    dates: {
+      undated: "Dates non indiquées",
+      range: "{start} – {end}",
+      from: "À partir de {start}",
+      until: "Jusqu'à {end}",
+      openStart: "… – {end}",
+      decade: "années {year}",
+      circa: "vers {date}",
+      notAfter: "au plus tard en {date}",
+      notBefore: "pas avant {date}",
+      uncertain: "{date} ?",
+    },
+    card: {
+      statement: "Telle qu'énoncée",
+      place: "Lieu : {place}",
+      method: "Mode : {method}",
+      recordedBy: "Enregistrée par {name}",
+      reviewedBy: "Examinée par {name}",
+      reviewNote: "Note d'examen : {note}",
+      reviewHistory: "Historique des examens ({count})",
+      reviewEntry: "{decision} par {name}",
+      contradicts: "Contredit : {statement}",
+      contradictsEarlier: "Contredit une version antérieure de : {statement}",
+      contradictedBy: "Contredite par : {statement}",
+      corrects: "Corrige une assertion antérieure",
+      corrected: "Corrigée",
+      retracted: "Rétractée",
+      reason: "Motif : {reason}",
+      identifiedAs: "Identifié comme {name}",
+      partyArchived: "Partie archivée",
+      correct: "Corriger",
+      retract: "Rétracter",
+      addEvidence: "Ajouter une source",
+      review: "Examiner",
+      someone: "un membre du personnel",
+    },
+    evidence: {
+      title: "Sources",
+      none: "Aucune source citée.",
+      kind: "Source",
+      kinds: {
+        citation: "Citation",
+        media: "Fichier de cet objet",
+      },
+      citation: "Citation",
+      citationPlaceholder:
+        "Par exemple : Christie's, Londres, catalogue de vente, 12 mai 1925",
+      url: "Lien vers la source (facultatif)",
+      excerpt: "Extrait (facultatif)",
+      excerptPlaceholder: "Ce que dit la source, cité tel quel",
+      locator: "Page, folio ou lot (facultatif)",
+      file: "Fichier",
+      filePlaceholder: "Choisir un fichier",
+      noFiles:
+        "Cet objet n'a pas encore de fichiers. Téléversez-les d'abord dans l'onglet Médias.",
+      restrictedFile: "Un fichier auquel vous n'avez pas accès",
+      fileUnavailable: "Fichier plus disponible",
+      open: "Ouvrir",
+      quote: "« {excerpt} »",
+      locatorLabel: "à {locator}",
+      retracted: "Rétractée : {reason}",
+      retract: "Rétracter",
+      retractReason: "Motif de la rétractation",
+      retractConfirm: "Rétracter la source",
+      retractDescription:
+        "La source reste attachée à l'assertion, marquée comme rétractée avec votre motif.",
+      retractedToast: "Source rétractée",
+      add: "Ajouter une source",
+      remove: "Retirer la source",
+      addTitle: "Ajouter une source",
+      addDescription:
+        "Citez une source qui étaye cette assertion. Les sources sont conservées telles qu'enregistrées ; une source erronée peut être rétractée avec un motif.",
+      save: "Ajouter la source",
+      added: "Source ajoutée",
+    },
+    form: {
+      recordTitle: "Enregistrer une assertion de provenance",
+      recordDescription:
+        "Rédigez l'assertion telle que la source ou votre recherche l'énonce. Laissez de côté ce que la source ne donne pas ; rien n'est complété à votre place.",
+      correctTitle: "Corriger l'assertion",
+      correctDescription:
+        "La correction remplace cette assertion dans la provenance actuelle. L'originale reste dans l'historique avec votre motif, et ses sources sont reprises.",
+      reason: "Motif de la correction",
+      reasonPlaceholder: "Par exemple : le livre de stock indique 1936",
+      statement: "Assertion telle qu'énoncée",
+      statementPlaceholder:
+        "Par exemple : Paul Rosenberg, Paris, au plus tard en 1937 ; vendu à …",
+      role: "Rôle du détenteur",
+      roleNotStated: "Non indiqué",
+      partyKind: "Détenteur",
+      partyText: "Nom tel que donné par la source",
+      partyDescription: "Description (facultatif)",
+      partyDescriptionPlaceholder:
+        "Par exemple : collection particulière, Suisse",
+      identifyParty: "Identifier comme partie (facultatif)",
+      identifyNeedsRole:
+        "Indiquez le rôle du détenteur pour l'identifier comme partie.",
+      method: "Mode d'acquisition par le détenteur",
+      methodNotStated: "Non indiqué",
+      place: "Lieu (facultatif)",
+      startDate: "À partir de",
+      endDate: "Jusqu'à",
+      confidence: "Confiance",
+      confidenceHint: "Une assertion documentée nécessite au moins une source.",
+      contradicts: "Contredit une assertion existante",
+      contradictsNone: "Non",
+      evidence: "Sources",
+      evidenceCarried:
+        "Les sources actuelles de l'assertion sont reprises. Ajoutez ici les nouvelles.",
+      save: "Enregistrer l'assertion",
+      saving: "Enregistrement…",
+      recorded: "Assertion enregistrée",
+      corrected: "Assertion corrigée",
+      requiredFields: "Renseignez l'assertion et les champs obligatoires.",
+      invalidDate:
+        "Vérifiez les dates : saisissez les éléments exigés par la précision et, pour une décennie, sa première année.",
+      cancel: "Annuler",
+    },
+    dateInput: {
+      precision: "Connue au",
+      precisions: {
+        none: "Non indiquée",
+        day: "Jour",
+        month: "Mois",
+        year: "Année",
+        decade: "Décennie",
+      },
+      year: "Année",
+      month: "Mois",
+      day: "Jour",
+      qualifier: "Nuance",
+      qualifiers: {
+        exact: "Telle qu'indiquée",
+        circa: "Vers (circa)",
+        notAfter: "Au plus tard (à cette date ou avant)",
+        notBefore: "Pas avant (à cette date ou après)",
+      },
+      uncertain: "La source est incertaine",
+      decadeHint:
+        "Saisissez la première année de la décennie, par exemple 1920.",
+    },
+    retract: {
+      title: "Rétracter l'assertion ?",
+      description:
+        "Rétractez une assertion enregistrée par erreur, par exemple sur le mauvais objet. Elle reste dans l'historique avec votre motif.",
+      reason: "Motif",
+      confirm: "Rétracter l'assertion",
+      done: "Assertion rétractée",
+    },
+    review: {
+      title: "Examiner l'assertion",
+      description:
+        "Votre décision est enregistrée avec l'assertion. Son libellé et ses sources ne changent pas.",
+      decision: "Décision",
+      decisions: {
+        accepted: "Accepter",
+        disputed: "Contester",
+        rejected: "Rejeter",
+      },
+      note: "Note",
+      notePlaceholder: "Pourquoi l'assertion est-elle contestée ou rejetée ?",
+      noteRequired: "Ajoutez une note pour contester ou rejeter une assertion.",
+      confirm: "Enregistrer la décision",
+      recorded: "Examen enregistré",
+    },
+    identify: {
+      title: "Identifier le détenteur",
+      description:
+        "Reliez le détenteur nommé dans cette assertion à une fiche de partie. Le libellé de l'assertion ne change pas.",
+      party: "Partie",
+      confirm: "Identifier",
+      linked: "Détenteur identifié",
+      remove: "Retirer l'identification",
+      removeReason: "Motif du retrait",
+      removeConfirm: "Retirer",
+      removed: "Identification retirée",
+    },
+    queue: {
+      title: "Assertions de provenance à examiner",
+      statuses: {
+        unreviewed: "En attente d'examen",
+        disputed: "Contestées",
+      },
+      empty: "Aucune assertion en attente.",
+      contradicts: "Contredit une autre assertion",
+      loading: "Chargement…",
+      loadMore: "Charger plus",
+    },
+    legacy: {
+      title: "Texte de provenance antérieur",
+      description:
+        "Provenance non structurée antérieure aux assertions, conservée telle qu'écrite. Enregistrez-en des assertions au fil de votre recherche.",
+      verifiedBy: "Vérifié par {source}",
+      recordFrom: "Enregistrer comme assertion",
+    },
+    errors: {
+      objectNotFound:
+        "Cet objet n'est plus disponible. Actualisez et réessayez.",
+      objectWithdrawn:
+        "Cet objet est retiré. Restaurez-le avant de modifier sa provenance.",
+      claimNotFound:
+        "Cette assertion n'est plus disponible. Actualisez et réessayez.",
+      claimSuperseded:
+        "Cette assertion a déjà été corrigée ou rétractée. Actualisez pour voir l'assertion en vigueur.",
+      statementRequired: "Rédigez l'assertion telle qu'énoncée.",
+      partyNameRequired:
+        "Saisissez le nom du détenteur tel que la source le donne.",
+      partyInvalid:
+        "Seul un détenteur nommé dont le rôle est indiqué peut être identifié comme partie, et un détenteur inconnu n'a pas de description.",
+      dateInvalid:
+        "Une date n'est pas valide. Vérifiez les éléments exigés par sa précision et le calendrier.",
+      dateOrderInvalid: "La date de fin précède la date de début.",
+      textTooLong:
+        "Un des champs est trop long. Raccourcissez-le et réessayez.",
+      contradictionInvalid:
+        "Une assertion ne peut contredire qu'une assertion en vigueur sur le même objet.",
+      evidenceRequired:
+        "Une assertion documentée nécessite au moins une source. Ajoutez une source ou choisissez une confiance plus faible (par une correction si l'assertion est déjà enregistrée).",
+      evidenceInvalid:
+        "Vérifiez les sources : une citation nécessite son texte, un lien doit commencer par http:// ou https://, et un fichier doit appartenir à cet objet.",
+      evidenceLimit: "Cette assertion a déjà le nombre maximal de sources.",
+      evidenceNotFound:
+        "Cette source n'est plus disponible. Actualisez et réessayez.",
+      evidenceRetracted: "Cette source a déjà été rétractée.",
+      reasonRequired: "Indiquez un motif.",
+      reviewNoteRequired:
+        "Ajoutez une note pour contester ou rejeter une assertion.",
+      fallback: "L'action n'a pas pu être effectuée. Actualisez et réessayez.",
     },
   },
   trackedImport: {
@@ -6584,11 +7080,7 @@ export default {
         actionDetailsColumn: "Détails de l’action",
         noAuditLogs: "Aucun journal d’audit trouvé",
         loadOlderLogs: "Charger les journaux plus anciens…",
-        provenanceHistory: "Provenance et historique",
-        noProvenance:
-          "Aucun historique de provenance ou d’exposition enregistré.",
         provenanceAndHistory: "Provenance et historique",
-        verifiedBy: "Vérifié par",
         placement: "Emplacement",
         noParent: "Aucun objet parent associé.",
         childObjects: "Objets enfants",
@@ -8925,7 +9417,8 @@ export default {
         taskDueSoon:
           "La tâche « {title} » arrive à échéance dans moins de 24 heures",
         taskBlocked: "La tâche « {title} » est bloquée : {reason}",
-        taskReadyForReview: "La tâche « {title} » est prête pour votre relecture",
+        taskReadyForReview:
+          "La tâche « {title} » est prête pour votre relecture",
         taskReturned: "La tâche « {title} » a été renvoyée pour modifications",
         taskApproved: "La tâche « {title} » a été approuvée",
         transitExpectedTomorrow:

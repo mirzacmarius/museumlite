@@ -6,14 +6,23 @@
  *
  *   bun run qa:seed
  *
- * Writes .local-qa/credentials.json (gitignored, mode 0600). Nothing here
- * touches a cloud deployment.
+ * Writes .local-qa/credentials.json (gitignored, mode 0600). The account signs
+ * in through the app's real login page. Nothing here touches a cloud
+ * deployment.
  */
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { localOnlyEnv, readState, root, run, stateDir } from "./lib.mjs";
+import {
+  credentialsPath,
+  localOnlyEnv,
+  QA_AUTH_PROVIDER,
+  qaAppUrl,
+  readState,
+  root,
+  run,
+  signInQaUser,
+} from "./lib.mjs";
 
 const { state } = readState();
 
@@ -28,7 +37,7 @@ const authEnv = {
     .trimEnd()
     .replace(/\n/g, " "),
   JWKS: JSON.stringify({ keys: [{ use: "sig", alg: "RS256", ...jwk }] }),
-  SITE_URL: process.env.QA_APP_URL ?? "http://localhost:3000",
+  SITE_URL: qaAppUrl(),
 };
 
 for (const [name, value] of Object.entries(authEnv)) {
@@ -40,7 +49,7 @@ for (const [name, value] of Object.entries(authEnv)) {
       "set",
       `${name}=${value}`,
     ],
-    { stdio: "ignore", env: localOnlyEnv() },
+    { stdio: ["ignore", "ignore", "inherit"], env: localOnlyEnv() },
   );
   if (status !== 0) {
     console.error(`✗ Failed to set ${name} on the local backend`);
@@ -48,21 +57,13 @@ for (const [name, value] of Object.entries(authEnv)) {
   }
 }
 
-const { ConvexHttpClient } = await import(
-  pathToFileURL(join(root, "node_modules/convex/dist/esm/browser/index.js"))
-    .href
-);
-const { api } = await import(
-  pathToFileURL(join(root, "packages/backend/convex/_generated/api.js")).href
-);
-
-const email = `qa-${randomBytes(4).toString("hex")}@example.test`;
+const userTag = randomBytes(4).toString("hex");
+const email = `qa-${userTag}@example.test`;
 const password = randomBytes(18).toString("base64url");
-const client = new ConvexHttpClient(state.url);
 
-// Public password sign-up now requires email verification, which the local
-// backend cannot deliver. Create the account through Convex Auth's internal
-// store (it hashes the secret), then sign in through the public flow.
+// Public sign-up emails a verification code the local backend cannot deliver,
+// so create the account through Convex Auth's internal store (it hashes the
+// secret) under the login page's provider, with the email already verified.
 const accountStatus = run(
   "node",
   [
@@ -72,43 +73,37 @@ const accountStatus = run(
     JSON.stringify({
       args: {
         type: "createAccountFromCredentials",
-        provider: "password",
+        provider: QA_AUTH_PROVIDER,
         account: { id: email, secret: password },
-        profile: { email },
+        profile: { email, emailVerified: true },
         shouldLinkViaEmail: false,
         shouldLinkViaPhone: false,
       },
     }),
   ],
-  { stdio: "ignore", env: localOnlyEnv() },
+  { stdio: ["ignore", "ignore", "inherit"], env: localOnlyEnv() },
 );
 if (accountStatus !== 0) {
   console.error("✗ Failed to create the QA account on the local backend");
   process.exit(accountStatus);
 }
 
-const signedIn = await client.action(api.auth.signIn, {
-  provider: "password",
-  params: { email, password, flow: "signIn" },
-});
-if (!signedIn.tokens?.token) {
-  console.error("✗ Sign-in did not return a session token");
-  process.exit(1);
-}
-client.setAuth(signedIn.tokens.token);
+const { client, api } = await signInQaUser(state.url, email, password);
 
+// A username and an organization let sign-in land on the dashboard instead of
+// onboarding.
+await client.mutation(api.users.updateUsername, { username: `qa${userTag}` });
 const organizationId = await client.mutation(api.organizations.create, {
   name: "QA Museum",
   slug: `qa-museum-${randomBytes(2).toString("hex")}`,
   type: "museum",
 });
 
-const credentialsPath = join(stateDir, "credentials.json");
 writeFileSync(
   credentialsPath,
   JSON.stringify({ email, password, organizationId }, null, 2),
 );
 chmodSync(credentialsPath, 0o600);
 console.log(
-  `✓ QA user ${email} created; credentials in .local-qa/credentials.json`,
+  `✓ QA user ${email} created; sign in at ${qaAppUrl()}/en/login with .local-qa/credentials.json`,
 );

@@ -34,9 +34,16 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const params = useParams();
   const locale = params?.locale as string;
   const t = useScopedI18n("untranslatedDashboard.dashboardHeader");
+  const tEntries = useScopedI18n("objectEntries");
 
   const getPageTitle = (path: string) => {
-    const cleanPath = path.replace(`/${locale}`, "") || "/";
+    // Strip only a leading locale segment: "/entries" also contains "/en".
+    const cleanPath =
+      path === `/${locale}`
+        ? "/"
+        : path.startsWith(`/${locale}/`)
+          ? path.slice(locale.length + 1)
+          : path;
 
     if (cleanPath === "/" || cleanPath === "") return t("overview");
     if (cleanPath === "/objects/new") return t("newObject");
@@ -46,9 +53,13 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
     if (cleanPath === "/exhibitions/new") return t("newExhibition");
     if (/^\/exhibitions\/[^/]+\/edit$/.test(cleanPath))
       return t("editExhibition");
-    if (/^\/exhibitions\/[^/]+$/.test(cleanPath))
-      return t("exhibitionDetails");
+    if (/^\/exhibitions\/[^/]+$/.test(cleanPath)) return t("exhibitionDetails");
     if (cleanPath.startsWith("/exhibitions")) return t("exhibitions");
+    if (cleanPath === "/accessions/entries") return tEntries("title");
+    if (cleanPath === "/accessions/entries/new")
+      return tEntries("receiveForm.title");
+    if (/^\/accessions\/entries\/[^/]+$/.test(cleanPath))
+      return tEntries("columns.entry");
 
     const segment = cleanPath.split("/").pop();
     if (segment && pageTitleKeys[segment]) {

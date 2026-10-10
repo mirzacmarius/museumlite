@@ -1,11 +1,11 @@
 "use client";
 
 import { cn } from "@v1/ui/utils";
-import { ArrowRightLeft, LayoutGrid } from "lucide-react";
+import { ArrowRightLeft, Inbox, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/locales/client";
 
-type AccessionsWorkbenchView = "overview" | "transfers";
+type AccessionsWorkbenchView = "overview" | "entries" | "transfers";
 
 type AccessionsWorkbenchNavProps = {
   activeView: AccessionsWorkbenchView;
@@ -13,24 +13,14 @@ type AccessionsWorkbenchNavProps = {
   pendingTransfers: number | string;
 };
 
-const navItems = [
-  {
-    view: "overview",
-    href: "/accessions",
-    labelKey: "untranslatedRecords.accessions.workbench.overview",
-    descriptionKey:
-      "untranslatedRecords.accessions.workbench.overviewDescription",
-    icon: LayoutGrid,
-  },
-  {
-    view: "transfers",
-    href: "/accessions/transfers",
-    labelKey: "untranslatedRecords.accessions.workbench.transfers",
-    descriptionKey:
-      "untranslatedRecords.accessions.workbench.transfersDescription",
-    icon: ArrowRightLeft,
-  },
-] as const;
+interface WorkbenchNavItem {
+  view: AccessionsWorkbenchView;
+  href: string;
+  label: string;
+  description: string;
+  icon: typeof LayoutGrid;
+  metric?: number | string;
+}
 
 export function AccessionsWorkbenchNav({
   activeView,
@@ -38,14 +28,39 @@ export function AccessionsWorkbenchNav({
   pendingTransfers,
 }: AccessionsWorkbenchNavProps) {
   const tRoot = useI18n();
-  const metrics = {
-    overview: pendingAccessions,
-    transfers: pendingTransfers,
-  };
+  const navItems: WorkbenchNavItem[] = [
+    {
+      view: "overview",
+      href: "/accessions",
+      label: tRoot("untranslatedRecords.accessions.workbench.overview"),
+      description: tRoot(
+        "untranslatedRecords.accessions.workbench.overviewDescription",
+      ),
+      icon: LayoutGrid,
+      metric: pendingAccessions,
+    },
+    {
+      view: "entries",
+      href: "/accessions/entries",
+      label: tRoot("objectEntries.workbench.label"),
+      description: tRoot("objectEntries.workbench.description"),
+      icon: Inbox,
+    },
+    {
+      view: "transfers",
+      href: "/accessions/transfers",
+      label: tRoot("untranslatedRecords.accessions.workbench.transfers"),
+      description: tRoot(
+        "untranslatedRecords.accessions.workbench.transfersDescription",
+      ),
+      icon: ArrowRightLeft,
+      metric: pendingTransfers,
+    },
+  ];
 
   return (
     <div className="mb-6 rounded-2xl border border-border/60 bg-card/70 p-3">
-      <div className="grid gap-2 md:grid-cols-2">
+      <div className="grid gap-2 md:grid-cols-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeView === item.view;
@@ -73,15 +88,17 @@ export function AccessionsWorkbenchNav({
                   <Icon className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">{tRoot(item.labelKey)}</p>
+                  <p className="text-sm font-medium">{item.label}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {tRoot(item.descriptionKey)}
+                    {item.description}
                   </p>
                 </div>
               </div>
-              <div className="shrink-0 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs font-medium text-foreground">
-                {metrics[item.view]}
-              </div>
+              {item.metric === undefined ? null : (
+                <div className="shrink-0 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs font-medium text-foreground">
+                  {item.metric}
+                </div>
+              )}
             </Link>
           );
         })}

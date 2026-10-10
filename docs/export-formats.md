@@ -16,9 +16,11 @@ Cancellation invalidates in-flight workers. Resume/retry continues from the last
 
 Derived files expire after seven days. Bounded cleanup removes artifact/chunk storage, retaining job and manifest metadata. Permanent museum source evidence remains unchanged. Additive schema versions require an explicit new version; existing version 1 parsers should ignore unknown JSON properties and use CSV headers rather than positions.
 
-## Register profiles (profile version 1)
+## Register profiles (profile version 2)
 
 Registers are institutional outputs built on the same job engine: `accession`, `disposal`, `custody` and `condition`. Each is a MuseumLite interchange profile with a fixed, typed column schema. They make no SPECTRUM, LIDO, accreditation or other conformance claim; profiles MuseumLite cannot produce (for example SPECTRUM or LIDO XML) are shown as unavailable and cannot be requested.
+
+Profile version 2 added temporary-entry events (`entry_received`, `entry_exit`, `entry_condition`) to the custody and condition registers; columns are unchanged.
 
 Access: the requester needs a plan with reporting (Pro or Enterprise) and `collections.read`; custody registers also need `locations.read` and `loans.read`, and condition registers `loans.read`, because they include location and loan evidence. Every continuation and download rechecks these. Criteria are fixed at request creation: `fromDate`/`toDate` (UTC epoch milliseconds, inclusive, applied to the profile's event date), `status` (`pending`, `approved` or `rejected`; accession and disposal only), `asOf` (UTC epoch milliseconds, not in the future) and `objectId` (one object the organization holds, or one it transferred out). Invalid criteria are refused with the stable code `REGISTER_CRITERIA_INVALID`; an `objectId` outside the organization is refused as a filter outside the organization.
 
@@ -82,11 +84,11 @@ Approved records without decision checks predate them and are `legacy` with the 
 
 ### custody
 
-One row per custody event. Objects are visited in creation order, then objects transferred out of the organization (latest executed transfer each), so history stays in the source organization's register. Within an object rows follow evidence source and recording order; sort by `eventAt` for a chronological view. `eventType` is `movement`, `loan_dispatched`, `loan_returned` (outgoing loans), `lender_exit` (a borrowed object returned to its lender), `transfer_departure` or `transfer_arrival`. Movements wholly within another organization's locations are not exported; a reference to another organization's location is left empty and listed in `notRecorded`. An empty location means unknown.
+One row per custody event. Objects are visited in creation order, then objects transferred out of the organization (latest executed transfer each), so history stays in the source organization's register. Within an object rows follow evidence source and recording order; sort by `eventAt` for a chronological view. `eventType` is `movement`, `loan_dispatched`, `loan_returned` (outgoing loans), `lender_exit` (a borrowed object returned to its lender), `transfer_departure`, `transfer_arrival`, `entry_received` (property received into temporary custody under an entry; `counterparty` is the depositor and `reason` the entry purpose) or `entry_exit` (unaccessioned property handed to its recipient). Entry exits are custody events, never disposals, so they do not appear in the disposal register. Movements wholly within another organization's locations are not exported; a reference to another organization's location is left empty and listed in `notRecorded`. An empty location means unknown.
 
 | Column | Type | Meaning |
 | --- | --- | --- |
-| eventId | id | Evidence record (`locationHistory`, `loanItems`, `loanCustodyExits` or `organizationTransferCustodyEvents`, per `evidenceSource`) |
+| eventId | id | Evidence record (`locationHistory`, `loanItems`, `loanCustodyExits`, `organizationTransferCustodyEvents` or `objectEntries`, per `evidenceSource`) |
 | evidenceSource | text | Evidence table |
 | eventType | text | See above |
 | eventAt | utcEpochMs | When the event happened |
@@ -97,16 +99,16 @@ One row per custody event. Objects are visited in creation order, then objects t
 | authorizedBy | id | Authorizing user of a guarded movement |
 | reason | text | Movement reason |
 | loanId | id | Loan for loan handoffs and lender exits |
-| counterparty | text | Borrower, lender or exit recipient |
+| counterparty | text | Borrower, lender, depositor or exit recipient |
 | moveRequestId, transitItemId, transferRequestId | id | Linked request, transit item or transfer |
 
 ### condition
 
-One row per accepted condition assessment, loan condition report or legacy condition. Draft assessments are excluded. Assessments and conditions stored on the object record follow the object on institution transfer, so they appear in the register of the organization that now holds the object; loan condition reports stay with the loan's organization. `eventType` is `assessment_accepted`, `loan_condition_report`, `legacy_condition_change` (a catalogue condition edit) or `legacy_condition_snapshot` (an undated condition on the object record, with `assessedAt`, `assessorId` and `recordedAt` in `notRecorded`; omitted when a date range is set).
+One row per accepted condition assessment, loan condition report, condition stated at entry or legacy condition. Draft assessments are excluded. Assessments and conditions stored on the object record follow the object on institution transfer, so they appear in the register of the organization that now holds the object; loan condition reports stay with the loan's organization. `eventType` is `assessment_accepted`, `loan_condition_report`, `entry_condition` (the condition recorded when property was received under an entry, `reportDirection` `in`), `legacy_condition_change` (a catalogue condition edit) or `legacy_condition_snapshot` (an undated condition on the object record, with `assessedAt`, `assessorId` and `recordedAt` in `notRecorded`; omitted when a date range is set).
 
 | Column | Type | Meaning |
 | --- | --- | --- |
-| eventId | id | Assessment or loan report; empty for conditions stored on the object record |
+| eventId | id | Assessment, loan report or entry; empty for conditions stored on the object record |
 | evidenceSource | text | Evidence table or object field |
 | eventType | text | See above |
 | assessedAt | utcEpochMs | When the condition was observed |
@@ -117,7 +119,7 @@ One row per accepted condition assessment, loan condition report or legacy condi
 | assessorId | id | Assessor |
 | acceptedAt, acceptedBy | utcEpochMs, id | Acceptance of a retained assessment |
 | loanId | id | Loan of a loan condition report |
-| reportDirection | text | `out` or `in` for loan reports |
+| reportDirection | text | `out` or `in` for loan reports; `in` for entry conditions |
 
 Register pages read at most 25 register records, or 25 objects and 200 evidence records (in batches of 20, stopping at about 128 KiB of row data), and continue mid-object across pages. A record with more than 200 approval steps, an object with more than 100 transfer requests, lender exits or identifier reviews, or a loan object with more than 20 condition reports fails visibly with a processing-limit error rather than truncating. An object transferred during capture may be omitted from that run's custody or condition register.
 

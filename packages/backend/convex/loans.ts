@@ -45,6 +45,7 @@ import {
 } from "./utils/loanWorkflow";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
+import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
 import { requireLinkableParty } from "./utils/parties";
 import { loanPrimaryRole, recordPartyLink } from "./utils/partyLinks";
 import {
@@ -237,6 +238,7 @@ export const create = mutation({
           if (collection.status !== "active") {
             throw new Error(`Collection ${item.collectionId} is not active`);
           }
+          await assertAccessionedIfEntered(ctx, item.collectionId);
 
           await assertCollectionNotOnLoan(
             ctx,
@@ -393,6 +395,7 @@ export const addItems = mutation({
         if (collection.status !== "active") {
           throw new Error(`Collection ${collectionId} is not active`);
         }
+        await assertAccessionedIfEntered(ctx, collectionId);
 
         await assertCollectionNotOnLoan(
           ctx,

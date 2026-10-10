@@ -8,7 +8,7 @@ export type RegisterCell = string | number | boolean | null;
 export type RegisterRow = Record<string, RegisterCell>;
 
 /** Bumped whenever a profile's columns or row semantics change. */
-export const REGISTER_PROFILE_VERSION = 1;
+export const REGISTER_PROFILE_VERSION = 2;
 export const REGISTER_GENERATOR = "MuseumLite register export";
 export const REGISTER_PROFILES: readonly RegisterProfile[] = [
   "accession",
@@ -146,9 +146,9 @@ export const REGISTER_CONSISTENCY: Record<RegisterProfile, string> = {
   disposal:
     "One row per deaccession record registered in MuseumLite at or before asOf, ordered by dateDeaccessioned. category separates policy deaccessions from institution transfers and legacy loan-return records. Deaccession rows are mutable: descriptive values and status are captured at capturedAt; columns suffixed AsOf are derived from timestamps and append-only case history at or before asOf.",
   custody:
-    "One row per append-only custody event recorded at or before asOf: movements, loan dispatches and returns, lender exits and institution transfer handoffs. Rows are grouped by object (object creation order, then objects transferred out of the organization), then by evidence source and recording order; sort by eventAt for a chronological view. Locations and events held by another organization are not exported.",
+    "One row per append-only custody event recorded at or before asOf: movements, loan dispatches and returns, lender exits, institution transfer handoffs, and receipts into and exits from temporary custody under an entry. Rows are grouped by object (object creation order, then objects transferred out of the organization), then by evidence source and recording order; sort by eventAt for a chronological view. Locations and events held by another organization are not exported.",
   condition:
-    "One row per accepted condition assessment (acceptedAt at or before asOf), loan condition report and legacy condition change. Draft assessments are excluded. Assessments and conditions stored on the object record follow the object on institution transfer, so they appear in the register of the organization that now holds them; loan condition reports stay with the loan's organization. Legacy conditions predating retained assessments are marked legacy; their dates and assessors are reported in notRecorded when MuseumLite never recorded them. Rows are grouped by object, then by evidence source.",
+    "One row per accepted condition assessment (acceptedAt at or before asOf), loan condition report, condition stated at entry and legacy condition change. Draft assessments are excluded. Assessments and conditions stored on the object record follow the object on institution transfer, so they appear in the register of the organization that now holds them; loan condition reports stay with the loan's organization. Legacy conditions predating retained assessments are marked legacy; their dates and assessors are reported in notRecorded when MuseumLite never recorded them. Rows are grouped by object, then by evidence source.",
 };
 
 /** Empty cells listed in notRecorded were never recorded, or not recorded by asOf. */

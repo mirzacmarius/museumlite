@@ -9,8 +9,11 @@ export const partyRoleValidator = v.union(
   v.literal("lender"),
   v.literal("borrower"),
   v.literal("owner"),
+  /** Held the Object without asserted title (provenance claims). */
+  v.literal("custodian"),
   v.literal("appraiser"),
   v.literal("recipient"),
+  v.literal("depositor"),
 );
 
 export type PartyRole = Infer<typeof partyRoleValidator>;
@@ -20,16 +23,20 @@ export const PARTY_ROLES: readonly PartyRole[] = [
   "lender",
   "borrower",
   "owner",
+  "custodian",
   "appraiser",
   "recipient",
+  "depositor",
 ];
 
 export const partyTargetTypeValidator = v.union(
   v.literal("accession"),
   v.literal("loan"),
   v.literal("deaccession"),
+  v.literal("provenanceClaim"),
   v.literal("appraisal"),
   v.literal("collection"),
+  v.literal("entry"),
 );
 
 export type PartyTargetType = Infer<typeof partyTargetTypeValidator>;
@@ -39,8 +46,13 @@ export const partyTargetValidator = v.union(
   v.object({ type: v.literal("accession"), id: v.id("accessions") }),
   v.object({ type: v.literal("loan"), id: v.id("loans") }),
   v.object({ type: v.literal("deaccession"), id: v.id("deaccessions") }),
+  v.object({
+    type: v.literal("provenanceClaim"),
+    id: v.id("provenanceClaims"),
+  }),
   v.object({ type: v.literal("appraisal"), id: v.id("appraisals") }),
   v.object({ type: v.literal("collection"), id: v.id("collections") }),
+  v.object({ type: v.literal("entry"), id: v.id("objectEntries") }),
 );
 
 export type PartyTarget = Infer<typeof partyTargetValidator>;
@@ -49,8 +61,10 @@ export const partyTargetIdValidator = v.union(
   v.id("accessions"),
   v.id("loans"),
   v.id("deaccessions"),
+  v.id("provenanceClaims"),
   v.id("appraisals"),
   v.id("collections"),
+  v.id("objectEntries"),
 );
 
 const partyLinkFields = {
@@ -63,7 +77,11 @@ const partyLinkFields = {
   contactSnapshot: v.optional(v.string()),
   /** The name as written on the procedure record, kept when it differs. */
   assertedName: v.optional(v.string()),
-  effectiveFrom: v.number(),
+  /**
+   * When the role starts. Absent when the linked record keeps the role's
+   * dates itself as partial historical dates (provenance claims, ADR 0006).
+   */
+  effectiveFrom: v.optional(v.number()),
   effectiveTo: v.optional(v.number()),
   origin: v.union(v.literal("staff"), v.literal("backfill")),
   createdBy: v.optional(v.id("users")),
@@ -93,6 +111,11 @@ export const partyLinkDocumentValidator = v.union(
   }),
   v.object({
     ...partyLinkFields,
+    targetType: v.literal("provenanceClaim"),
+    targetId: v.id("provenanceClaims"),
+  }),
+  v.object({
+    ...partyLinkFields,
     targetType: v.literal("appraisal"),
     targetId: v.id("appraisals"),
   }),
@@ -100,6 +123,11 @@ export const partyLinkDocumentValidator = v.union(
     ...partyLinkFields,
     targetType: v.literal("collection"),
     targetId: v.id("collections"),
+  }),
+  v.object({
+    ...partyLinkFields,
+    targetType: v.literal("entry"),
+    targetId: v.id("objectEntries"),
   }),
 );
 

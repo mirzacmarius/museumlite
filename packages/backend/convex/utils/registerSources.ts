@@ -851,6 +851,91 @@ const lenderExitSource: EvidenceSource = async (
   return sourceResult(rows, docs, limit);
 };
 
+/** Receipt into and exit from temporary custody under an entry. */
+const entryHandoffSource: EvidenceSource = async (
+  ctx,
+  scope,
+  subject,
+  after,
+  limit,
+  cache,
+) => {
+  const collectionId = subject.object._id;
+  const docs = await ctx.db
+    .query("objectEntries")
+    .withIndex("by_collection", (q) =>
+      after === null
+        ? q.eq("collectionId", collectionId)
+        : q.eq("collectionId", collectionId).gt("_creationTime", after),
+    )
+    .take(limit);
+  const rows: RegisterRow[] = [];
+  for (const entry of docs) {
+    if (entry.organizationId !== scope.organizationId) continue;
+    const handoffs = [
+      {
+        eventType: "entry_received",
+        at: entry.receivedAt,
+        recordedAt: entry._creationTime,
+        actor: entry.receivedBy,
+        side: "to" as const,
+        locationId: entry.receivedLocationId,
+        counterparty: entry.depositorName,
+        reason: entry.purpose,
+      },
+      ...(entry.exit
+        ? [
+            {
+              eventType: "entry_exit",
+              at: entry.exit.exitedAt,
+              recordedAt: entry.exit.recordedAt,
+              actor: entry.exit.recordedBy,
+              side: "from" as const,
+              locationId: entry.exit.fromLocationId,
+              counterparty: entry.exit.recipientName,
+              reason: null,
+            },
+          ]
+        : []),
+    ];
+    for (const handoff of handoffs) {
+      if (
+        handoff.recordedAt > scope.asOf ||
+        !inDateRange(scope.criteria, handoff.at)
+      )
+        continue;
+      const notRecorded: string[] = [];
+      const { location } = await cachedLocation(
+        ctx,
+        scope,
+        cache,
+        handoff.locationId,
+      );
+      rows.push(
+        registerRow(
+          "custody",
+          {
+            eventId: entry._id,
+            evidenceSource: "objectEntries",
+            eventType: handoff.eventType,
+            eventAt: handoff.at,
+            ...subjectColumns(scope, subject, notRecorded),
+            ...locationColumns(handoff.side, location, notRecorded),
+            actorId: handoff.actor,
+            reason: handoff.reason,
+            counterparty: handoff.counterparty,
+            recordedAt: handoff.recordedAt,
+            evidenceStatus: "recorded",
+            capturedAt: scope.capturedAt,
+          },
+          notRecorded,
+        ),
+      );
+    }
+  }
+  return sourceResult(rows, docs, limit);
+};
+
 const transferHandoffSource: EvidenceSource = async (
   ctx,
   scope,
@@ -1027,6 +1112,55 @@ const loanConditionReportSource: EvidenceSource = async (
   return sourceResult(rows, docs, limit, scanned);
 };
 
+/** Condition stated when property was received under an entry. */
+const entryConditionSource: EvidenceSource = async (
+  ctx,
+  scope,
+  subject,
+  after,
+  limit,
+) => {
+  const collectionId = subject.object._id;
+  const docs = await ctx.db
+    .query("objectEntries")
+    .withIndex("by_collection", (q) =>
+      after === null
+        ? q.eq("collectionId", collectionId)
+        : q.eq("collectionId", collectionId).gt("_creationTime", after),
+    )
+    .take(limit);
+  const rows: RegisterRow[] = [];
+  for (const entry of docs) {
+    if (
+      entry.organizationId !== scope.organizationId ||
+      entry._creationTime > scope.asOf ||
+      !inDateRange(scope.criteria, entry.receivedAt)
+    )
+      continue;
+    const notRecorded: string[] = [];
+    rows.push(
+      registerRow(
+        "condition",
+        {
+          eventId: entry._id,
+          evidenceSource: "objectEntries",
+          eventType: "entry_condition",
+          assessedAt: entry.receivedAt,
+          ...subjectColumns(scope, subject, notRecorded),
+          condition: entry.conditionAtEntry,
+          assessorId: entry.receivedBy,
+          reportDirection: "in",
+          recordedAt: entry._creationTime,
+          evidenceStatus: "recorded",
+          capturedAt: scope.capturedAt,
+        },
+        notRecorded,
+      ),
+    );
+  }
+  return sourceResult(rows, docs, limit);
+};
+
 /** Conditions held on the object record itself, before retained assessments. */
 const legacyConditionSource: EvidenceSource = async (_ctx, scope, subject) => {
   const object = subject.object;
@@ -1093,10 +1227,12 @@ const SUBJECT_SOURCES: Record<"custody" | "condition", EvidenceSource[]> = {
     loanHandoffSource,
     lenderExitSource,
     transferHandoffSource,
+    entryHandoffSource,
   ],
   condition: [
     assessmentSource,
     loanConditionReportSource,
+    entryConditionSource,
     legacyConditionSource,
   ],
 };

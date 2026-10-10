@@ -37,6 +37,7 @@ import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
+import { objectEntryFields } from "./utils/objectEntryValidators";
 import {
   partyDuplicateReviewDocumentValidator,
   partyLinkDocumentValidator,
@@ -49,6 +50,11 @@ import {
   projectionGenerationFields,
   projectionUnavailableReason,
 } from "./utils/projectionValidators";
+import {
+  provenanceClaimDocumentValidator,
+  provenanceEvidenceDocumentValidator,
+  provenanceReviewDocumentValidator,
+} from "./utils/provenanceValidators";
 import {
   webhookDeliveryAttemptFields,
   webhookDeliveryFields,
@@ -707,6 +713,14 @@ export default defineSchema({
     "scopeKey",
   ]),
 
+  // Temporary entry number counter tracking (MUS-644)
+  objectEntryCounters: defineTable({
+    organizationId: v.id("organizations"),
+    year: v.number(),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization_and_year", ["organizationId", "year"]),
+
   // Deaccession number counter tracking
   deaccessionCounters: defineTable({
     organizationId: v.id("organizations"),
@@ -1130,6 +1144,8 @@ export default defineSchema({
         }),
       ),
     ),
+    // Temporary entry the accessioned object was received under (MUS-644).
+    entryId: v.optional(v.id("objectEntries")),
     // Latest reviewer decision on an intake (MUS-673): returned to draft,
     // withdrawn, or restored from withdrawal. Full trail is in case history.
     reviewDecision: v.optional(accessionReviewDecisionValidator),
@@ -1187,10 +1203,29 @@ export default defineSchema({
     .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_donor_account", ["donorAccountId"])
     .index("by_assigned_to", ["assignedTo"])
+    .index("by_entry", ["entryId"])
     .searchIndex("search_accessions", {
       searchField: "accessionNumber",
       filterFields: ["organizationId", "status"],
     }),
+
+  // Receipt of property into custody without asserting title (MUS-644). The
+  // object exists from entry; the entry closes by accession or recorded exit.
+  // Never deleted (ADR 0002).
+  objectEntries: defineTable(objectEntryFields)
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_receivedAt", ["organizationId", "receivedAt"])
+    .index("by_organization_and_status_and_receivedAt", [
+      "organizationId",
+      "status",
+      "receivedAt",
+    ])
+    .index("by_organization_and_normalizedEntryNumber", [
+      "organizationId",
+      "normalizedEntryNumber",
+    ])
+    .index("by_collection", ["collectionId"])
+    .index("by_accession", ["accessionId"]),
 
   identifierConflictReviews: defineTable({
     organizationId: v.id("organizations"),
@@ -4572,6 +4607,31 @@ export default defineSchema({
   partyDuplicateReviews: defineTable(partyDuplicateReviewDocumentValidator)
     .index("by_organization_and_pairKey", ["organizationId", "pairKey"])
     .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // Provenance claims (MUS-643): immutable assertions about an Object's
+  // holders. Corrections supersede; contradictory claims stay for review
+  // (ADR 0006).
+  provenanceClaims: defineTable(provenanceClaimDocumentValidator)
+    .index("by_organization_and_objectId_and_supersededAt", [
+      "organizationId",
+      "objectId",
+      "supersededAt",
+    ])
+    .index("by_organization_and_reviewStatus_and_supersededAt", [
+      "organizationId",
+      "reviewStatus",
+      "supersededAt",
+    ]),
+
+  // Sources cited for provenance claims; retracted, never deleted.
+  provenanceEvidence: defineTable(provenanceEvidenceDocumentValidator)
+    .index("by_organization_and_objectId", ["organizationId", "objectId"])
+    .index("by_organization_and_claimId", ["organizationId", "claimId"]),
+
+  // Every review decision on a provenance claim, appended in order.
+  provenanceReviews: defineTable(provenanceReviewDocumentValidator)
+    .index("by_organization_and_objectId", ["organizationId", "objectId"])
+    .index("by_organization_and_claimId", ["organizationId", "claimId"]),
 
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),
