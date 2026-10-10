@@ -13,8 +13,8 @@ import {
 } from "@v1/ui/select";
 import { Search, Shield } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
+import { MoneyCell } from "@/components/money-cell";
 import { useScopedI18n } from "@/locales/client";
-import { MoneyCell } from "./money-cell";
 import {
   type ClaimStatus,
   claimStatusColor,

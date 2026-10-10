@@ -7,6 +7,7 @@ import { useMutation, useQuery } from "convex/react";
 import NextImage from "next/image";
 import { useState } from "react";
 import { z } from "zod";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useI18n } from "@/locales/client";
 
 type RightsStatus = NonNullable<Doc<"mediaFiles">["rightsStatus"]>;
@@ -63,6 +64,7 @@ export function MediaPublicationPanel({
   item,
 }: MediaPublicationPanelProps) {
   const t = useI18n();
+  const actionErrorMessage = useActionErrorMessage();
   const review = useQuery(api.mediaPublications.getReview, { mediaId });
   const updateRights = useMutation(api.media.updateRights);
   const approve = useMutation(api.mediaPublications.approve);
@@ -97,9 +99,7 @@ export function MediaPublicationPanel({
     } catch (cause) {
       updateState(
         "error",
-        cause instanceof Error
-          ? cause.message
-          : t("mediaPage.publication.failed"),
+        actionErrorMessage(cause, t("mediaPage.publication.failed")),
       );
     } finally {
       updateState("isSaving", false);

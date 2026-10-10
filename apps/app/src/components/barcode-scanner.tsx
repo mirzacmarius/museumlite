@@ -33,6 +33,8 @@ type ScannerStatus =
   | "error"
   | "permission-denied";
 
+const LABELS = "untranslatedComponents.labels";
+
 export function BarcodeScanner({
   onScanSuccess,
   onScanError,
@@ -80,10 +82,10 @@ export function BarcodeScanner({
       });
 
       setFlashEnabled(!flashEnabled);
-    } catch (_error) {
-      setErrorMessage("Flash not supported on this device");
+    } catch {
+      setErrorMessage(translate(`${LABELS}.flashNotSupported`));
     }
-  }, [flashEnabled]);
+  }, [flashEnabled, translate]);
 
   const startScanner = useCallback(async () => {
     if (disabled || status === "scanning" || isCleaningUpRef.current) return;
@@ -130,10 +132,7 @@ export function BarcodeScanner({
 
       setStatus("scanning");
     } catch (error) {
-      const errorMsg =
-        error instanceof Error
-          ? error.message
-          : translate("untranslatedComponents.labels.failedToStartScanner");
+      const errorMsg = error instanceof Error ? error.message : String(error);
 
       if (errorMsg.includes("Permission") || errorMsg.includes("NotAllowed")) {
         setStatus("permission-denied");
@@ -144,7 +143,7 @@ export function BarcodeScanner({
         );
       } else {
         setStatus("error");
-        setErrorMessage(errorMsg);
+        setErrorMessage(translate(`${LABELS}.failedToStartScanner`));
       }
 
       if (onScanError) {

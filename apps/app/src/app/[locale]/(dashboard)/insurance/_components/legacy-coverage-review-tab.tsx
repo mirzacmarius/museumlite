@@ -22,10 +22,10 @@ import { useReducer, useState } from "react";
 import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { CurrencyInput, isCurrencyCode } from "@/components/currency-input";
+import { MoneyCell } from "@/components/money-cell";
 import { PermissionGate } from "@/components/permission-gate";
 import { useValuationErrorMessage } from "@/hooks/use-valuation-error-message";
 import { useScopedI18n } from "@/locales/client";
-import { MoneyCell } from "./money-cell";
 
 type Review = FunctionReturnType<
   typeof api.insuranceCoverageReviews.list

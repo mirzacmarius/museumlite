@@ -113,8 +113,8 @@ export default {
   collections: {
     createPage: {
       description:
-        "Grupează obiectele înrudite și alege cine gestionează colecția.",
-      detailsTitle: "Detaliile colecției",
+        "Grupați obiecte înrudite și alegeți cine gestionează grupul de colecție.",
+      detailsTitle: "Detaliile grupului de colecție",
       managementTitle: "Administrare",
       optional: "Opțional",
       objectsHint: "Poți adăuga obiecte după crearea grupului de colecții.",
@@ -170,14 +170,15 @@ export default {
       selected: "Selectate ({count}):",
       importButton: "Importă obiectele",
       errorSelectOne: "Selectează cel puțin un obiect",
-      errorAddFailed: "Adăugarea obiectelor în colecție a eșuat",
-      errorRemoveFailed: "Eliminarea obiectului din colecție a eșuat",
+      errorAddFailed: "Obiectele nu au putut fi adăugate în grupul de colecție",
+      errorRemoveFailed:
+        "Obiectul nu a putut fi eliminat din grupul de colecție",
     },
-    noItems: "Nu există obiecte în această colecție",
+    noItems: "Nu există obiecte în acest grup de colecție",
     removeDialog: {
-      title: "Elimină din colecție",
+      title: "Elimină din grupul de colecție",
       description:
-        "Sigur vrei să elimini „{title}” din această colecție? Obiectul nu va fi șters, ci doar eliminat din colecție.",
+        "Eliminați „{title}” din acest grup de colecție? Obiectul nu este șters, ci doar eliminat din grup.",
       remove: "Elimină",
     },
     form: {
@@ -185,7 +186,7 @@ export default {
       nameRequired: "*",
       namePlaceholder: "ex.: Artefacte din Egiptul antic",
       descriptionLabel: "Descriere",
-      descriptionPlaceholder: "Descrie această colecție...",
+      descriptionPlaceholder: "Descrieți acest grup de colecție...",
       curatorLabel: "Curator",
       curatorPlaceholder: "Selectează un curator (opțional)",
       noCurator: "Fără curator",
@@ -193,26 +194,28 @@ export default {
       managedByRoleLabel: "Gestionată de rolul",
       managedByRolePlaceholder: "Orice rol poate gestiona (opțional)",
       anyRole: "Orice rol poate gestiona",
-      roleHint: "Limitează editarea colecției la utilizatorii cu un anumit rol",
+      roleHint:
+        "Limitați editarea acestui grup de colecție la utilizatorii cu un anumit rol",
       creating: "Se creează...",
-      createButton: "Creează colecția",
+      createButton: "Creează grupul de colecție",
       updating: "Se actualizează...",
-      updateButton: "Actualizează colecția",
+      updateButton: "Actualizează grupul de colecție",
       nameError: "Numele este obligatoriu",
-      createError: "Crearea colecției a eșuat. Încearcă din nou.",
-      updateError: "Actualizarea colecției a eșuat. Încearcă din nou.",
+      createError: "Grupul de colecție nu a putut fi creat. Încercați din nou.",
+      updateError:
+        "Grupul de colecție nu a putut fi actualizat. Încercați din nou.",
     },
     delete: {
       dangerZone: "Zonă de risc",
-      title: "Șterge această colecție",
+      title: "Șterge acest grup de colecție",
       description:
-        "Legăturile obiectelor cu această colecție vor fi eliminate, dar obiectele nu vor fi șterse.",
+        "Obiectele din acest grup de colecție sunt dezasociate, nu șterse.",
       button: "Șterge",
-      dialogTitle: "Șterge colecția",
+      dialogTitle: "Șterge grupul de colecție",
       dialogDescription:
-        "Sigur vrei să ștergi „{name}”? Legăturile obiectelor cu această colecție vor fi eliminate, dar obiectele nu vor fi șterse.",
+        "Ștergeți „{name}”? Obiectele din acest grup de colecție sunt dezasociate, nu șterse.",
       deleting: "Se șterge...",
-      deleteButton: "Șterge colecția",
+      deleteButton: "Șterge grupul de colecție",
     },
     csvImport: {
       title: "Importă obiecte din CSV",
@@ -238,7 +241,6 @@ export default {
       previewDescription:
         "{count} rânduri sunt gata de importat din {filename}",
       importButton: "Importă {count} obiecte",
-      validationErrors: "{count} erori de validare",
       tableHeaders: {
         number: "#",
         accession: "Nr. accesiune",
@@ -250,12 +252,6 @@ export default {
       },
       autoAccession: "(automat)",
       showingRows: "Se afișează 20 din {count} rânduri",
-      importing: "Se importă obiectele...",
-      progress: "Procesate: {current} din {total}",
-      complete: "Import finalizat",
-      successMessage: "S-au importat cu succes {count} obiecte",
-      issuesMessage: "Au apărut probleme la {count} rânduri",
-      importMore: "Importă mai multe",
       viewCollections: "Vezi colecțiile",
     },
     mediaImport: {
@@ -298,15 +294,8 @@ export default {
       filesSelected: "Au fost selectate {count} fișiere",
       clearAll: "Șterge tot",
       startImport: "Începe importul",
-      importing: "Se importă fișierele media...",
-      uploadingProgress: "Se încarcă {current} din {total}",
       doNotClose:
         "Nu închide această fereastră până la finalizarea importului.",
-      complete: "Import finalizat",
-      processed: "S-au procesat {count} fișiere",
-      mapped: "Asociate",
-      unmapped: "Neasociate",
-      uploadErrors: "Erori la încărcare",
       reviewUnmapped: "Verifică {count} fișiere neasociate",
       reviewTitle: "Verifică fișierele neasociate",
       filesNeedAttention: "{count} fișiere necesită atenție",
@@ -471,7 +460,6 @@ export default {
     createCatalogEntry: "Creează Intrare în Catalog",
     quickAction: "Acțiune Rapidă",
     accessionsWorkflow: "Flux de Lucru Accesiuni",
-    reviewIncomingItems: "Revizuiește Articolele Intrate",
     approved: "Aprobat",
     processing: "În Procesare",
     rejected: "Respins",
@@ -611,7 +599,7 @@ export default {
       loanSettings: "Setări Împrumut",
       enableDetailedConditionReports: "Activează Rapoarte Detaliate de Stare",
       detailedConditionReportsHint:
-        "Solicită rapoarte detaliate de stare cu fotografii pentru articolele împrumutate",
+        "Solicită rapoarte detaliate de stare cu fotografii pentru obiectele împrumutate",
       saveChanges: "Salvează Modificările",
       saving: "Se salvează...",
       organizationNameRequired: "Numele organizației este obligatoriu",
@@ -819,51 +807,11 @@ export default {
       title: "Webhook-uri",
       description:
         "Configurează webhook-uri pentru a primi notificări în timp real despre evenimentele din organizația ta",
-      createButton: "Creează Webhook",
       noWebhooks: "Nu s-au găsit webhook-uri",
-      urlLabel: "URL Webhook",
       urlPlaceholder: "https://...",
-      secretLabel: "Secret (Opțional)",
-      secretPlaceholder: "Secret pentru semnătura webhook",
-      eventsLabel: "Evenimente",
       selectEvents: "Selectează evenimentele...",
-      urlRequired: "URL-ul este obligatoriu",
-      createFailed:
-        "Nu s-a putut crea webhook-ul. Te rugăm să încerci din nou.",
-      updateFailed:
-        "Nu s-a putut actualiza webhook-ul. Te rugăm să încerci din nou.",
-      deleteFailed:
-        "Nu s-a putut șterge webhook-ul. Te rugăm să încerci din nou.",
       testSuccess: "Succes ({statusCode})",
       testFailed: "Test eșuat. Verifică URL-ul și încearcă din nou.",
-      lastTriggered: "Ultima declanșare",
-      neverTriggered: "Niciodată declanșat",
-      status: {
-        active: "Activ",
-        inactive: "Inactiv",
-        failing: "Eșuează",
-      },
-      testButton: "Testează",
-      statusBadge: {
-        active: "Activ",
-        inactive: "Inactiv",
-        failing: "Eșuează",
-      },
-      confirm: {
-        revoke: {
-          title: "Revocă Webhook",
-          description: "Acest webhook nu va mai primi evenimente. Ești sigur?",
-          cancel: "Anulează",
-          confirm: "Revocă",
-        },
-        delete: {
-          title: "Șterge Webhook",
-          description:
-            "Acest webhook va fi șters definitiv. Această acțiune nu poate fi anulată.",
-          cancel: "Anulează",
-          confirm: "Șterge",
-        },
-      },
 
       addButton: "Adaugă webhook",
       test: "Testează",
@@ -890,151 +838,6 @@ export default {
       createWebhook: "Creează webhook",
       cancel: "Anulează",
       delete: "Șterge",
-    },
-    modules: {
-      title: "Module",
-      description: "Activează sau dezactivează modulele pentru organizația ta",
-      modulesLabel: "Module",
-      enableModule: "Activează Modul",
-      disableModule: "Dezactivează Modul",
-      manageIntegrations: "Gestionează Integrările",
-      moduleInfo: "Informații Modul",
-      comingSoon: "În curând",
-      locked: "Blocat",
-      lockedDescription:
-        "Activează modulul {module} pentru a debloca această funcționalitate",
-      enabled: "Activat",
-      requiresIntegration: "Necesită integrarea {integration}.",
-      unlockIntegration:
-        "Activează integrarea {integration} pentru a debloca acest modul.",
-      viewIntegrations: "Vezi Integrările",
-      noPermission:
-        "Nu ai permisiunea de a gestiona modulele. Contactează administratorul.",
-      selectOrganization:
-        "Selectează o organizație pentru a gestiona modulele.",
-      moduleDisabled: "Acest modul nu este activat pentru organizația ta.",
-      accounts: {
-        name: "Conturi și CRM",
-        description:
-          "Gestionează donatori, creditori, instituții, contacte, documente și relații.",
-      },
-      inventory_valuation: {
-        name: "Evaluarea inventarului",
-        description:
-          "Urmărește totalurile de evaluare ale colecției pentru artă, vin și vehicule în Analytics.",
-      },
-      library: {
-        title: "Bibliotecă",
-        description: "Gestionează catalogul bibliotecii, membrii și circulația",
-        longDescription:
-          "Modulul de bibliotecă oferă instrumente complete pentru gestionarea colecțiilor de cărți și resurse media.",
-      },
-      conservation: {
-        title: "Conservare",
-        description: "Planifică și documentează lucrările de conservare",
-        longDescription:
-          "Modulul de conservare ajută la planificarea, executarea și documentarea tuturor activităților de conservare și restaurare.",
-      },
-    },
-    billing: {
-      title: "Facturare",
-      description: "Gestionează abonamentul și plățile",
-      currentPlan: "În prezent ești pe planul",
-      plan: "plan",
-      monthly: "Lunar",
-      yearly: "Anual",
-      free: "Gratuit",
-      freeDescription: "Câteva funcții, gratuit pentru totdeauna.",
-      perMonth: "lună",
-      perYear: "an",
-      current: "Curent",
-      upgrade: "Actualizează",
-      switchPlan: "Schimbă planul",
-      manageSubscription: "Gestionează Abonamentul",
-      manage: "Gestionează",
-      manageDescription:
-        "Actualizează metoda de plată, adresa de facturare și multe altele.",
-      invoices: "Facturi",
-      paymentMethod: "Metodă de Plată",
-      billingEmail: "Email Facturare",
-      redirectPortal: "Vei fi redirecționat către portalul de clienți Polar.",
-      managedByOrg:
-        "Abonamentele sunt administrate de proprietarul organizației.",
-      nextBillingDate: "Următoarea Dată de Facturare",
-      cancelSubscription: "Anulează Abonamentul",
-      expires: "Expiră",
-      renews: "Se reînnoiește",
-      on: "pe",
-      noChargeTest:
-        "Nu vei fi taxat pentru testarea upgrade-ului abonamentului.",
-      subscriptionCancelled: "Abonament Anulat",
-      subscriptionActive: "Abonament Activ",
-      pastDue: "Restant",
-      trialing: "În Perioada de Probacă",
-    },
-    users: {
-      title: "Utilizatori",
-      description: "Invită și gestionează utilizatorii din organizația ta",
-      usersLabel: "Utilizatori",
-      inviteUser: "Invită Utilizator",
-      inviteDialog: {
-        title: "Invită Utilizator Nou",
-        description:
-          "Introdu adresa de email a utilizatorului pe care doriți să-l invitați.",
-        emailLabel: "Adresă Email",
-        emailPlaceholder: "email@exemplu.com",
-        roleLabel: "Rol",
-        cancel: "Anulează",
-        invite: "Invită",
-        resend: "Retrimite",
-        success: "Invitație trimisă cu succes!",
-        error: "Nu s-a putut trimite invitația. Te rugăm să încerci din nou.",
-      },
-      owner: "Proprietar",
-      admin: "Admin",
-      editor: "Editor",
-      viewer: "Vizualizator",
-      pending: "În Așteptare",
-      invitePending: "Invitație În Așteptare",
-      inviteSent: "Invitație Trimisă",
-      roleUpdated: "Rol actualizat cu succes",
-      inviteResent: "Invitație retransmisă",
-    },
-    integrations: {
-      title: "Integrări",
-      description: "Conectează aplicații și servicii externe",
-      integrationsLabel: "Integrări",
-      browseIntegrations: "Răsfoiește Integrările",
-      connected: "Conectat",
-      notConnected: "Neconectat",
-      configure: "Configurează",
-      disconnect: "Deconectează",
-      enableIntegration: "Activează Integrarea",
-      enableSuccess: "Integrare activată cu succes",
-      enableError:
-        "Nu s-a putut activa integrarea. Te rugăm să încerci din nou.",
-      disableSuccess: "Integrare dezactivată cu succes",
-      disableError:
-        "Nu s-a putut dezactiva integrarea. Te rugăm să încerci din nou.",
-      library: {
-        title: "Bibliotecă",
-        description:
-          "Activează modulul de bibliotecă pentru a gestiona cărțile și resursele media",
-      },
-    },
-    activity: {
-      title: "Jurnal Activitate",
-      description: "Vezi activitatea recentă din organizația ta",
-      filters: {
-        all: "Toate",
-        user: "Utilizator",
-        action: "Acțiune",
-        dateRange: "Interval de Date",
-      },
-      searchPlaceholder: "Caută activitate...",
-      noActivity: "Nicio activitate",
-      loadMore: "Încarcă Mai Multe",
-      export: "Exportă",
     },
     data: {
       importJobs: {
@@ -1188,72 +991,22 @@ export default {
     loading: "Se încarcă...",
     saving: "Se salvează...",
     creating: "Se creează...",
-    error: "Eroare",
-    success: "Succes",
     cancel: "Anulează",
     save: "Salvează",
     delete: "Șterge",
     edit: "Editează",
     create: "Creează",
-    update: "Actualizează",
-    add: "Adaugă",
-    remove: "Elimină",
     search: "Caută",
     filter: "Filtrează",
-    clear: "Șterge",
     clearAll: "Șterge tot",
     close: "Închide",
-    confirm: "Confirmă",
-    back: "Înapoi",
-    next: "Următorul",
-    previous: "Anterior",
-    yes: "Da",
-    no: "Nu",
-    all: "Toate",
-    none: "Niciunul",
     unknown: "Necunoscut",
-    select: "Selectează",
     selected: "Selectat",
-    enabled: "Activat",
-    disabled: "Dezactivat",
     active: "Activ",
     inactive: "Inactiv",
-    optional: "Opțional",
-    required: "Obligatoriu",
-    name: "Nume",
-    description: "Descriere",
-    title: "Titlu",
-    date: "Dată",
     status: "Stare",
     actions: "Acțiuni",
     saveChanges: "Salvează Modificările",
-    discardChanges: "Renunță la Modificări",
-    discardChangesDialog: {
-      title: "Renunță la Modificări",
-      description:
-        "Ai modificări nesalvate. Ești sigur că vrei să renunți la ele?",
-      cancel: "Anulează",
-      discard: "Renunță",
-    },
-    deleteDialog: {
-      title: "Confirmă Ștergerea",
-      description:
-        "Ești sigur că vrei să ștergi acest element? Această acțiune nu poate fi anulată.",
-      cancel: "Anulează",
-      delete: "Șterge",
-    },
-    notFound: {
-      title: "Nu s-a Găsit",
-      description: "Resursa solicată nu a fost găsită.",
-      back: "Înapoi la Tablou de Bord",
-    },
-    serverError: {
-      title: "Eroare de Server",
-      description: "A apărut o eroare pe server. Te rugăm să încerci din nou.",
-      retry: "Reîncearcă",
-    },
-    validationError: "Eroare de validare",
-    unknownError: "A apărut o eroare necunoscută",
     noResults: "Nu s-au găsit rezultate",
     toast: {
       exportSuccess: "Export reușit",
@@ -1292,53 +1045,21 @@ export default {
       documentDeleted: "Document șters",
       documentDeleteFailed: "Ștergerea documentului a eșuat",
       selectLocation: "Selectează o locație",
-      itemsMoved: "S-au mutat cu succes {count} obiect(e)",
-      itemsMoveFailed: "Mutarea obiectelor a eșuat",
+      itemsMoved: "Obiecte mutate: {count}",
       selectCollectionGroup: "Selectează un grup de colecții",
-      itemsAddedToGroup: "S-au adăugat cu succes {count} obiect(e) în grup",
-      itemsAddToGroupFailed: "Adăugarea obiectelor în grup a eșuat",
+      itemsAddedToGroup: "Obiecte adăugate în grupul de colecție: {count}",
+      itemsAddToGroupFailed:
+        "Obiectele nu au putut fi adăugate în grupul de colecție",
       selectDeaccessionReason: "Indică motivul scoaterii din colecție",
-      itemsDeaccessioned: "S-au scos cu succes {count} obiect(e) din colecție",
+      itemsDeaccessioned: "Obiecte scoase din colecție: {count}",
       someItemsSkipped:
-        "{count} obiect(e) au fost omise (fac parte dintr-un împrumut activ)",
+        "Omise pentru că fac parte dintr-un împrumut activ: {count}",
       failedOnLoan:
         "Operația a eșuat pentru {count} obiect(e) (este posibil să fie împrumutate)",
       itemsDeaccessionFailed: "Scoaterea obiectelor din colecție a eșuat",
       imageOrderUpdated: "Ordinea imaginilor a fost actualizată",
       imageOrderUpdateFailed: "Actualizarea ordinii imaginilor a eșuat",
     },
-    export: {
-      title: "Exportă",
-      description: "Exportă datele în format CSV",
-      preparing: "Se pregătește exportul...",
-      ready: "Exportul este gata",
-      download: "Descarcă",
-      error: "Eroare la export",
-    },
-    import: {
-      title: "Importă",
-      description: "Importă date din fișier CSV",
-      dropzone: "Trage și aruncă fișierul CSV aici",
-      uploading: "Se încarcă...",
-      success: "Import reușit",
-      error: "Eroare la import",
-    },
-    bulkActions: {
-      title: "Acțiuni în Masă",
-      selected: "{count} selectate",
-      all: "Selectează Tot",
-      none: "Deselectează Tot",
-      delete: "Șterge Selectate",
-      export: "Exportă Selectate",
-      processing: "Se procesează...",
-      success: "{count} elemente procesate",
-      error: "Eroare la procesare",
-    },
-    copy: "Copiază",
-    copied: "Copiat!",
-    download: "Descarcă",
-    settings: "Setări",
-    language: "Limba",
     createOrganization: "Creează Organizație",
 
     updating: "Se actualizează...",
@@ -1363,6 +1084,7 @@ export default {
     gridView: "Vizualizare grilă",
     backToList: "Înapoi la listă",
     tryAgain: "Încearcă din nou",
+    currencyNotRecorded: "Moneda nu este înregistrată",
   },
   objects: {
     backToObject: "Înapoi la obiect",
@@ -1411,24 +1133,10 @@ export default {
     newObject: "Obiect Nou",
     editObject: "Editează Obiect",
     deleteObject: "Șterge Obiect",
-    objectDetails: "Detalii Obiect",
-    status: {
-      on_view: "În Vitrină",
-      in_storage: "În Depozit",
-      on_loan: "Împrumutat",
-      in_conservation: "În Conservare",
-      pending: "În Așteptare",
-      accessioned: "Accesionat",
-      deaccessioned: "Dezaccesionat",
-    },
     tabs: {
-      details: "Detalii",
       provenance: "Proveniență",
-      condition: "Stare",
-      valuation: "Valoare",
       conservation: "Conservare",
       loans: "Împrumuturi",
-      related: "Conexe",
       media: "Media",
       archive: "Arhivă",
       logs: "Jurnale",
@@ -1442,14 +1150,6 @@ export default {
       automotive: "Detalii despre vehicul",
       naturalHistory: "Istorie naturală",
     },
-    messages: {
-      created: "Obiect creat cu succes",
-      updated: "Obiect actualizat cu succes",
-      deleted: "Obiect șters cu succes",
-      error: "Eroare la salvarea obiectului",
-      notFound: "Obiectul nu a fost găsit",
-      confirmDelete: "Ești sigur că vrei să ștergi acest obiect?",
-    },
     actions: {
       emptyTrash: "Golește coșul",
       emptyingTrash: "Se golește...",
@@ -1459,49 +1159,6 @@ export default {
     },
     error: {
       failedToEmptyTrash: "Golirea obiectelor șterse a eșuat",
-    },
-    print: {
-      title: "Printează Etichete",
-      preview: "Previzualizare Etichetă",
-      settings: "Setări Printare",
-      template: "Șablon",
-      includeImages: "Include Imagini",
-      print: "Printează Etichetele",
-      printing: "Se printează...",
-      success: "Etichetele au fost trimise la printare",
-      error: "Eroare la printare",
-    },
-    archive: {
-      title: "Arhivă",
-      description: "Documente și materiale arhivă",
-      noDocuments: "Nu există documente arhivate",
-      uploadNew: "Încarcă un document nou",
-    },
-    logs: {
-      title: "Jurnal Modificări",
-      description: "Istoria modificărilor pentru acest obiect",
-      noLogs: "Nu există modificări înregistrate",
-      action: "Acțiune",
-      user: "Utilizator",
-      timestamp: "Dată/Ora",
-      changes: "Modificări",
-      details: "Detalii",
-      unknownUser: "Utilizator Necunoscut",
-    },
-    digitalAssets: {
-      title: "Active Digitale",
-      description: "Imagini și fișiere media",
-      noAssets: "Nu există active digitale",
-      uploadNew: "Încarcă un fișier nou",
-    },
-    exhibitions: {
-      title: "Expoziții",
-      description: "Expoziții care includ acest obiect",
-      noExhibitions: "Acest obiect nu a fost inclus în nicio expoziție",
-      now: "Acum",
-      open: "Deschis",
-      past: "Trecut",
-      loan: "Împrumut",
     },
 
     addObject: "Adaugă obiect",
@@ -1539,21 +1196,21 @@ export default {
     emptyState: {
       noObjectsFound: "Nu s-au găsit obiecte",
       addFirstObject: "Adaugă primul obiect",
-      noObjectsInCollection: "Nu există încă obiecte în această colecție",
-      addObjectsToCollection: "Adaugă obiecte în colecție",
+      noObjectsInCollection: "Nu există încă obiecte în acest grup de colecție",
+      addObjectsToCollection: "Adaugă obiecte în grupul de colecție",
       addObjectsToCollectionDescription:
-        "Selectează obiecte catalogate existente pentru a le include în această colecție. Un obiect poate face parte din mai multe colecții.",
+        "Selectați obiecte catalogate de inclus în acest grup de colecție. Un obiect poate face parte din mai multe grupuri de colecție.",
     },
     collectionGroup: {
-      addObjectsTitle: "Adaugă obiecte în colecție",
+      addObjectsTitle: "Adaugă obiecte în grupul de colecție",
       addObjectsDescription:
-        "Alege obiectele care fac parte din colecția „{name}”. Obiectele bifate sunt incluse.",
+        "Alegeți obiectele care fac parte din grupul de colecție „{name}”. Obiectele bifate sunt incluse.",
       searchAndSelectObjects: "Caută și selectează obiecte…",
       multiCollectionHint:
-        "Un obiect poate face parte din mai multe colecții. Debifează-l pentru a-l elimina doar din această colecție.",
+        "Un obiect poate face parte din mai multe grupuri de colecție. Debifați-l pentru a-l elimina doar din acest grup.",
       saveMembership: "Salvează selecția",
       addObjectsButton: "Adaugă obiecte",
-      viewingCollection: "Colecție: {name}",
+      viewingCollection: "Grup de colecție: {name}",
     },
     table: {
       selectAllItems: "Selectează toate obiectele",
@@ -1594,8 +1251,7 @@ export default {
       },
       moveLocation: {
         title: "Mută la locație",
-        description:
-          "Obiecte selectate pentru mutare: {count}. Alege o locație nouă.",
+        description: "Mută obiectele selectate ({count}) într-o locație nouă.",
         label: "Locație nouă",
         placeholder: "Selectează o locație",
         selectLocation: "Selectează o locație",
@@ -1606,7 +1262,7 @@ export default {
       deaccession: {
         title: "Scoatere în masă din colecție",
         description:
-          "Obiecte selectate pentru scoaterea din colecția activă: {count}.",
+          "Urmează să scoți din colecția activă obiectele selectate ({count}).",
         onLoanWarning:
           "Obiectele aflate în prezent în împrumut nu pot fi scoase din colecție și vor fi omise.",
         label: "Motivul scoaterii din colecție",
@@ -1622,7 +1278,7 @@ export default {
       printLabels: {
         title: "Printează etichete QR",
         description:
-          "Generează etichete QR pentru obiectele selectate: {count}.",
+          "Generează etichete QR pentru obiectele selectate ({count}).",
         loadingLabels: "Se încarcă etichetele...",
         noLabels: "Nu există etichete de afișat",
       },
@@ -1637,15 +1293,14 @@ export default {
       copyObjectLink: "Copiază linkul",
       linkCopied: "Link copiat!",
       exportToPdf: "Exportă în PDF",
-      requestLoan: "Solicită împrumut",
       deleteConfirm:
         "Sigur vrei să ștergi „{title}”? Obiectul va fi marcat ca scos din colecție.",
       deleteTitle: "Șterge obiectul",
       deleteObject: "Șterge obiectul",
       deleting: "Se șterge...",
       editObject: "Editează obiectul",
-      selectOrganization: "Selectează o organizație pentru a vedea colecțiile.",
-      collections: "Colecții",
+      selectOrganization: "Selectați o organizație pentru a-i vedea obiectele.",
+      collections: "Obiecte",
       public: "Public",
       private: "Privat",
       currentObject: "Obiectul curent",
@@ -1664,7 +1319,6 @@ export default {
       loadMore: "Încarcă mai multe",
       showing: "Se afișează",
       items: "obiecte",
-      itemsMore: "obiecte (mai sunt disponibile)",
     },
     form: {
       basicInformation: "Informații de bază",
@@ -1694,7 +1348,7 @@ export default {
       parentObject: "Obiect părinte",
       parentObjectHint:
         "Asociază acest obiect cu un obiect părinte (de ex., un cufăr care conține acest obiect)",
-      collectionGroup: "Colecție",
+      collectionGroup: "Grup de colecție",
       collectionGroupHint: "Adaugă acest obiect într-un grup de colecții",
       description: "Descriere",
       provenance: "Proveniență",
@@ -1722,7 +1376,7 @@ export default {
         dimensions: "ex.: 50 x 60 cm",
         location: "Selectează o locație (opțional)",
         parentObject: "Selectează un obiect părinte (opțional)",
-        collection: "Selectează o colecție (opțional)",
+        collection: "Selectați un grup de colecție (opțional)",
         description: "Introdu o descriere detaliată",
         provenance: "Introdu informații despre proveniență",
         exhibitionHistory: "Introdu istoricul expozițiilor",
@@ -1792,10 +1446,12 @@ export default {
         failedToDeleteMedia: "Ștergerea fișierului media a eșuat",
         failedToUpdateMedia: "Actualizarea fișierului media a eșuat",
         failedToGenerateUploadUrl: "Generarea URL-ului de încărcare a eșuat",
+        uploadFailed: "Fișierul nu a putut fi încărcat. Încercați din nou.",
+        failedToUploadDocuments:
+          "Documentele nu au putut fi încărcate. Încercați din nou.",
       },
       toasts: {
         noDataToExport: "Nu există date de exportat",
-        exportedItems: "Obiecte exportate: {count}",
       },
     },
     printView: {
@@ -1905,6 +1561,18 @@ export default {
       printedOn: "Printează la data de",
       print: "Printează",
     },
+    withdrawal: {
+      restore: "Readu în catalog",
+      restored: "Obiectul a fost readus în catalogul obișnuit.",
+      restoreFailed:
+        "Obiectul nu a putut fi readus în catalog. Reîmprospătați și încercați din nou.",
+      withdrawn: "Obiectul a fost retras din catalogul obișnuit.",
+      noticeLabel: "Notificare de retragere",
+      noticeTitle: "Retras din catalogul obișnuit",
+      reason: "Motiv: {reason}",
+      legacyReasonMissing:
+        "Motivul acestei retrageri mai vechi nu a fost înregistrat. Registrul și dovezile asociate rămân așa cum au fost păstrate; verificați înregistrările sursă înainte de a readuce obiectul în catalog.",
+    },
   },
   accessionReview: {
     status: {
@@ -1962,48 +1630,24 @@ export default {
         "Nu puteți lua această decizie pentru pasul de evaluare curent.",
       fallback:
         "Decizia nu a putut fi salvată. Reîmprospătați și încercați din nou.",
+      sourceVerificationRequired:
+        "Sursa trebuie verificată înainte ca această cerere să poată fi aprobată. Verificați sursa sau aprobați cu motivul excepției.",
     },
   },
   accessions: {
     title: "Accesiuni",
-    description: "Gestionează intrările în colecție",
+    description: "Gestionează obiectele care intră și aprobarea lor",
     newAccession: "Accesiune Nouă",
-    editAccession: "Editează Accesiune",
-    deleteAccession: "Șterge Accesiune",
-    accessionDetails: "Detalii Accesiune",
-    pendingAccessions: "Accesiuni În Așteptare",
-    pendingApprovals: "Aprobări În Așteptare",
-    noPendingAssignments: "Nu există atribuții în așteptare",
-    tabs: {
-      pending: "În Așteptare",
-      approved: "Aprobat",
-      rejected: "Respins",
-      all: "Toate",
-    },
     status: {
       pending: "În Așteptare",
       approved: "Aprobat",
       rejected: "Respins",
     },
     actions: {
-      approve: "Aprobă",
-      reject: "Respinge",
-      review: "Revizuiește",
-
       emptyTrash: "Golește coșul de gunoi",
       emptyingTrash: "Se golește...",
       emptyTrashConfirm:
         "Ștergi toate cele {count} accesiuni respinse? Această acțiune nu poate fi anulată.",
-    },
-    messages: {
-      approved: "Accesiune aprobată cu succes",
-      rejected: "Accesiune respinsă",
-      created: "Accesiune creată cu succes",
-      updated: "Accesiune actualizată cu succes",
-      deleted: "Accesiune ștearsă cu succes",
-      error: "Eroare la salvarea accesiunii",
-      notFound: "Accesiunea nu a fost găsită",
-      confirmDelete: "Ești sigur că vrei să ștergi această accesiune?",
     },
 
     addObject: "Adaugă obiect",
@@ -2078,7 +1722,7 @@ export default {
     approval: {
       sourceExceptionLabel: "Sursă neverificată: motivul excepției",
       sourceExceptionHint:
-        "Lipsește verificarea obligatorie a sursei. Aprobarea cu un motiv înregistrează o excepție autorizată, păstrată cu achiziția și auditată.",
+        "Lipsește verificarea obligatorie a sursei. Aprobarea cu un motiv înregistrează o excepție autorizată, păstrată împreună cu accesiunea și auditată.",
       sourceExceptionRecorded: "Excepție autorizată",
       title: "Acțiuni de aprobare",
       commentLabel: "Comentariu (opțional)",
@@ -2119,13 +1763,15 @@ export default {
       failedToEmptyTrash: "Golirea coșului cu accesiuni respinse a eșuat",
       failedToUpdate: "Actualizarea accesiunii a eșuat. Încearcă din nou.",
       sourceRequired: "Sursa este obligatorie",
+      failedToCreate:
+        "Accesiunea nu a putut fi creată. Verificați datele și încercați din nou.",
     },
     kanban: {
       loading: "Se încarcă…",
       loadMore: "Încarcă mai multe",
       shownOfTotal: "{loaded} din {total}",
       matchesShown: "Potriviri afișate: {loaded}",
-      noMatches: "Nicio achiziție potrivită în {step}",
+      noMatches: "Nicio accesiune potrivită în {step}",
       noAccessions: "Nu există accesiuni la pasul {step}",
       unknownSource: "Sursă necunoscută",
     },
@@ -2150,13 +1796,6 @@ export default {
       rowsReady: "{count} rânduri gata de importat din {filename}",
       importButton: "Importă {count} accesiuni",
       cancel: "Anulează",
-      validationErrors: "{count} erori de validare",
-      importing: "Se importă accesiunile...",
-      progress: "Procesate {current} din {total}",
-      complete: "Import finalizat",
-      successMessage: "{count} accesiuni au fost importate cu succes",
-      issuesMessage: "{count} rânduri au avut probleme",
-      importMore: "Importă mai multe",
       viewAccessions: "Vezi accesiunile",
       tableHeaders: {
         number: "#",
@@ -2170,28 +1809,30 @@ export default {
       autoAccession: "(automat)",
       showingRows: "Se afișează 20 din {count} rânduri",
     },
+    catalogNumber: {
+      title: "Numărul de catalog la publicare",
+      optionalLabel: "Numărul de catalog la publicare (opțional)",
+      defaultHint:
+        "Implicit este numărul de accesiune. Alegeți un număr de catalog liber dacă acesta este deja folosit în catalog; fiecare registru își păstrează propriul număr permanent.",
+      planned:
+        "Număr de catalog planificat: {identifier}. Numărul {accessionNumber} din registrul de accesiuni rămâne permanent. Dacă este deja folosit în catalog, alegeți alt număr de catalog pentru obiectul nou. Disponibilitatea se verifică din nou la publicarea obiectului.",
+      fieldLabel: "Numărul de catalog al obiectului nou",
+      select: "Selectează numărul de catalog",
+      selected:
+        "Numărul de catalog a fost selectat. Numărul de accesiune permanent rămâne neschimbat.",
+      failed:
+        "Numărul de catalog nu a putut fi selectat. Reîmprospătați și încercați din nou.",
+      loading: "Se încarcă numerotarea catalogului…",
+    },
   },
   loans: {
     searchLabel: "Caută împrumuturi",
     title: "Împrumuturi",
     description: "Gestionează împrumuturile de colecție",
     newLoan: "Împrumut Nou",
-    editLoan: "Editează Împrumut",
-    deleteLoan: "Șterge Împrumut",
-    loanDetails: "Detalii Împrumut",
-    incomingLoans: "Împrumuturi Intrare",
-    outgoingLoans: "Împrumuturi Ieșire",
-    tabs: {
-      incoming: "Intrare",
-      outgoing: "Ieșire",
-      all: "Toate",
-    },
     status: {
-      pending: "În Așteptare",
-      approved: "Aprobat",
       active: "Activ",
       returned: "Returnat",
-      rejected: "Respins",
       cancelled: "Anulat",
       draft: "Ciornă",
 
@@ -2199,13 +1840,7 @@ export default {
       dispatched: "Expediat",
     },
     actions: {
-      approve: "Aprobă",
-      reject: "Respinge",
-      return: "Marchează Returnat",
       cancel: "Anulează",
-      renew: "Renovează",
-      review: "Revizuiește",
-      facilityReviewPending: "Revizuirea Facilităților în Așteptare",
 
       approveLoan: "Aprobă împrumutul",
       cancelLoan: "Anulează împrumutul",
@@ -2215,21 +1850,21 @@ export default {
       markAsReturned: "Marchează ca returnat",
       copyLoanNumber: "Copiază numărul împrumutului",
       markAsReturnedConfirm:
-        "Sigur vrei să marchezi acest împrumut ca returnat? Starea tuturor obiectelor asociate din colecție va fi actualizată.",
-      returnLoanItems: "Returnează obiectele împrumutate",
+        "Sigur vrei să marchezi acest împrumut ca returnat? Starea tuturor obiectelor din împrumut va fi actualizată.",
+      returnLoanItems: "Returnează obiectele",
       selectItemsToReturn: "Selectează obiectele de returnat",
       selectItemsToReturnDesc:
-        "Selectează obiectele de returnat. Dacă sunt returnate toate, starea împrumutului va deveni „Returned”.",
+        "Selectează obiectele de returnat. Dacă sunt returnate toate, starea împrumutului va deveni „Returnat”.",
       selectAllItems: "Selectează tot",
       someItemsReturned: "Unele obiecte au fost deja returnate",
       returnedItemsInfo:
-        "Obiectele marcate „RETURNED” au fost deja returnate și nu pot fi selectate din nou. Pot fi returnate doar obiectele care sunt încă împrumutate.",
+        "Obiectele marcate „RETURNAT” au fost deja returnate și nu pot fi selectate din nou. Pot fi returnate doar obiectele care sunt încă împrumutate.",
       confirmFullReturn: "Confirmă returnarea completă",
       confirmPartialReturn: "Confirmă returnarea parțială",
       fullReturnTitle:
         "Urmează să returnezi toate cele {count} {items} din acest împrumut.",
       fullReturnDescription:
-        "Împrumutul va fi marcat „Returned”, iar starea tuturor obiectelor din colecție va reveni la „active”.",
+        "Împrumutul va fi marcat „Returnat”, iar toate obiectele sale vor reveni la starea „Activ”.",
       partialReturnTitle:
         "Urmează să returnezi {returnCount} din {totalCount} {items} din acest împrumut.",
       partialReturnDescription:
@@ -2249,15 +1884,14 @@ export default {
       removeItem: "Elimină obiectul",
       addItemsToLoan: "Adaugă obiecte la împrumut",
       searchSelectCollections:
-        "Caută și selectează colecțiile pe care vrei să le adaugi la acest împrumut",
-      loadingCollections: "Se încarcă colecțiile...",
-      noCollectionsFound: "Nu s-au găsit colecții care să corespundă căutării",
-      noAvailableCollections: "Nu există colecții disponibile pentru adăugare",
+        "Caută și selectează obiecte de adăugat la acest împrumut",
+      noCollectionsFound: "Niciun obiect nu corespunde căutării",
+      noAvailableCollections: "Nu există obiecte disponibile de adăugat",
       selectedCount: "Selectate ({count})",
       clearAll: "Șterge selecția",
       addItems: "Adaugă obiecte",
       continueAction: "Continuă",
-      returnLoanItem: "Returnează obiectul împrumutat",
+      returnLoanItem: "Returnează obiectul",
       conditionInLabel: "Starea la returnare (opțional)",
       notesLabel: "Note (opțional)",
       confirmReturn: "Confirmă returnarea",
@@ -2287,32 +1921,15 @@ export default {
       internalNotes: "Note interne",
       saveChanges: "Salvează modificările",
       saving: "Se salvează...",
-      loanCreated: "Împrumut creat",
-      submittedForApproval: "Trimis spre aprobare",
-      curatorialReviewCompleted: "Verificare curatorială finalizată",
-      facilitiesReviewCompleted: "Verificarea spațiilor finalizată",
-      conservationReviewCompleted: "Verificarea conservării finalizată",
-      readyForDispatch: "Pregătit pentru expediere",
-      stepCompleted: "Pasul {step} a fost finalizat",
       noActivityRecorded: "Nu a fost înregistrată nicio activitate.",
       borrowerContext: "Contextul împrumutatului",
-      relationshipStatus: "Starea relației",
-      preferredPartner: "Partener preferat",
-      incidentsIn: "{count} incidente în {years} ani",
-      registrarContact: "Contact registrator",
-      seniorRegistrar: "Registrator principal",
       transportStatus: "Starea transportului",
       noTransportRecords: "Nu există înregistrări de transport",
       loanAgreement: "Acord de împrumut",
       loanAgreementPreview:
         "Previzualizează, printează sau trimite prin email documentul acordului de împrumut.",
-      countersigned: "Contrasemnat",
-      costs: "Costuri",
-      allCostsToBorne: "Toate costurile sunt suportate de împrumutat",
-      wallToWallInsurance: "Asigurare integrală activă",
       documents: "Documente ({count})",
       noDocumentsUploaded: "Nu a fost încărcat niciun document.",
-      uploadFacilityReport: "Încarcă raportul spațiilor...",
       objectsTab: "Obiecte ({count})",
       addObject: "Adaugă obiect",
       noObjectsInLoan: "Nu există obiecte în acest împrumut.",
@@ -2321,55 +1938,15 @@ export default {
       onLoan: "Împrumutat",
       returned: "Returnat",
       stable: "Stabilă",
-      artistUnknown: "Artist necunoscut • ulei pe pânză",
-      facilityTab: "Raportul spațiilor",
       reviewRequired: "Necesită verificare",
-      reviewLogs: "Jurnale de verificare",
-      climateControl: "Control climatic (Galeria 4)",
       temperature: "Temperatură",
-      relativeHumidity: "Umiditate relativă",
-      lightLevel: "Nivel de iluminare (lux)",
-      deviatingSlightly: "Ușoară abatere (+4%)",
-      securityAccess: "Securitate și acces",
-      guardPresence: "Pază permanentă, 24/7",
-      confirmed: "Confirmat",
-      cctvCoverage: "Acoperire CCTV",
-      fireSuppression: "Sistem de stingere a incendiilor",
-      dryPipePreAction: "Sistem cu conducte uscate / preacțiune",
-      displayCases: "Vitrine",
-      acrylicAlarmed: "Acrilice, cu alarmă",
-      registrarNote: "Notă a registratorului",
-      retrofittedGallery:
-        "MoMA a echipat Galeria 4 cu senzori noi de vibrații în T3 2023. Aprobată pentru împrumuturi de mare valoare.",
-      logisticsTab: "Ambalare și expediere",
-      cratingPlan: "Plan de ambalare în lăzi",
-      standardPaintingCrate: "Ladă standard pentru picturi",
-      slottedTravelFrame: "Cadru de transport cu fante",
-      pendingSize: "Dimensiune în așteptare",
-      configure: "Configurează",
-      transportAgent: "Agent de transport",
-      fineArtShipping: "Transport de opere de artă",
-      serviceLevel: "Nivelul serviciului",
-      tarmacSupervision: "Supraveghere pe pistă",
-      route: "Rută",
-      courier: "Curier",
       activityLog: "Jurnal de activitate",
       overview: "Prezentare generală și {type}",
-      approvalWorkflow: "Flux de aprobare",
       request: "Solicitare",
-      rec: "Registrator:",
-      curatorial: "Curatoriere",
-      app: "Aprob.:",
-      facilities: "Spații",
-      reviewing: "În curs de verificare",
       pending: "În așteptare",
-      dispatch: "Expediere",
       locked: "Blocat",
       borrowerDetails: "Detaliile împrumutatului",
       institution: "Instituție",
-      exhibitionSpace: "Spațiu expozițional",
-      theRobertBMenschelGalleries: "Galeriile Robert B. Menschel",
-      floorWingEnvironment: "Etajul 4, aripa de vest (mediu controlat)",
       createNewLoan: "Creează un împrumut nou",
       registerNewLoan: "Înregistrează un împrumut nou primit sau acordat.",
       basicInformation: "Informații de bază",
@@ -2380,9 +1957,7 @@ export default {
       nameInstitution: "Nume / instituție",
       required: "*",
       scheduleTerms: "Calendar și condiții",
-      loanItemsSection: "Obiecte împrumutate",
-      selectCollections: "Selectează colecțiile",
-      selectedItems: "Selectate ({count})",
+      selectCollections: "Selectează obiecte",
       summary: "Rezumat",
       type: "Tip",
       lender: "Creditor",
@@ -2398,16 +1973,16 @@ export default {
       lenderBorrowerRequired:
         "Numele creditorului/împrumutatului este obligatoriu",
       someCollectionsNoLongerAvailable:
-        "Unele colecții selectate nu mai sunt disponibile și au fost eliminate. Încearcă din nou.",
+        "Unele obiecte selectate nu mai sunt disponibile și au fost eliminate. Încearcă din nou.",
       collectionsAlreadyInActiveLoans:
-        "Următoarele colecții sunt deja incluse în împrumuturi active sau în așteptare și trebuie eliminate: {names}. Elimină-le înainte de a crea împrumutul.",
+        "Aceste obiecte fac deja parte dintr-un împrumut activ sau în așteptare: {names}. Elimină-le înainte de a crea împrumutul.",
       failedToCreateLoan: "Crearea împrumutului a eșuat. Încearcă din nou.",
       alreadyInActiveLoan:
-        "Una sau mai multe colecții selectate fac deja parte dintr-un împrumut activ sau în așteptare. Elimină-le și încearcă din nou.",
+        "Unul sau mai multe obiecte selectate fac deja parte dintr-un împrumut activ sau în așteptare. Elimină-le și încearcă din nou.",
       doesNotBelongToOrganization:
-        "Una sau mai multe colecții selectate nu aparțin acestei organizații. Reîncarcă pagina și încearcă din nou.",
+        "Unul sau mai multe obiecte selectate nu mai sunt disponibile. Reîmprospătează pagina și încearcă din nou.",
       notActive:
-        "Una sau mai multe colecții selectate nu sunt active. Selectează doar colecții active.",
+        "Unul sau mai multe obiecte selectate nu sunt active. Selectează doar obiecte active.",
       exportedLoans: "Împrumuturi exportate: {count}",
       loansApproved: "Împrumuturi aprobate: {count}",
       someLoansSkipped: "Împrumuturi omise: {count}",
@@ -2419,16 +1994,13 @@ export default {
       failedToCancel: "Anularea împrumutului a eșuat",
       failedToDispatch: "Expedierea împrumutului a eșuat",
       failedToReturn: "Returnarea împrumutului a eșuat",
-      failedToAddItems: "Adăugarea obiectelor la împrumut a eșuat",
-      failedToRemoveItem: "Eliminarea obiectului din împrumut a eșuat",
-      failedToReturnItem: "Returnarea obiectului a eșuat",
-      pleaseSelectAtLeastOneCollection: "Selectează cel puțin o colecție",
-      alreadyInLoan:
-        "Este deja inclus în împrumutul cu starea {status} și numărul {loanNumber}",
+      failedToAddItems: "Obiectele nu au putut fi adăugate la împrumut",
+      failedToRemoveItem: "Obiectul nu a putut fi eliminat din împrumut",
+      failedToReturnItem: "Obiectul nu a putut fi returnat",
+      pleaseSelectAtLeastOneCollection: "Selectează cel puțin un obiect",
+      alreadyInLoan: "Deja în împrumutul {loanNumber} ({status})",
       outgoing: "Acordat",
       incoming: "Primit",
-      international: "Internațional",
-      trusted: "DE ÎNCREDERE",
       totalValue: "Valoare totală:",
       loanManifest: "Manifestul împrumutului",
       printDispatchManifest: "Printează manifestul de expediere",
@@ -2445,30 +2017,8 @@ export default {
       condition: "Stare",
       releasedByRegistrar: "Predat de (registrator)",
       receivedByShipper: "Primit de (transportator)",
-      pendingFacilityReportApproval:
-        "În așteptarea aprobării raportului spațiilor",
-      youAreAboutToReturn:
-        "Urmează să returnezi toate cele {count} {items} din acest împrumut.",
-      willMarkLoanAsReturned:
-        "Împrumutul va fi marcat „Returned”, iar starea tuturor obiectelor din colecție va reveni la „active”.",
-      youAreAboutToReturnPartial:
-        "Urmează să returnezi {count} din {total} {items} din acest împrumut.",
-      partialReturnDesc:
-        "Aceasta este o returnare parțială. Împrumutul își va păstra starea „{status}”, iar doar obiectele selectate vor fi marcate ca returnate. Cele {remaining} {items} rămase vor continua să fie împrumutate.",
       areYouSureYouWantToProceed: "Sigur vrei să continui?",
       conservation: "Conservare",
-    },
-    messages: {
-      created: "Împrumut creat cu succes",
-      updated: "Împrumut actualizat cu succes",
-      deleted: "Împrumut șters cu succes",
-      approved: "Împrumut aprobat cu succes",
-      rejected: "Împrumut respins",
-      returned: "Împrumut returnat cu succes",
-      error: "Eroare la salvarea împrumutului",
-      notFound: "Împrumutul nu a fost găsit",
-      confirmDelete: "Ești sigur că vrei să ștergi acest împrumut?",
-      noLoans: "Nu există împrumuturi de revizuit",
     },
 
     createLoan: "Creează împrumut",
@@ -2487,7 +2037,7 @@ export default {
       termsEdit: "Condiții, restricții sau cerințe specifice împrumutului...",
       notes: "Note pentru personal...",
       notesEdit: "Note suplimentare pentru personal...",
-      collections: "Caută și selectează colecții...",
+      collections: "Caută și selectează obiecte...",
       searchAccession: "Caută numărul de accesiune...",
       searchCollections: "Caută după numărul de accesiune sau titlu...",
       conditionOut: "Starea la predare",
@@ -2863,7 +2413,8 @@ export default {
       profile: "Profil",
       stage: "Etapă",
       missing: "Lipsește",
-      recordedCondition: "Text despre stare din fișă, păstrat așa cum a fost scris",
+      recordedCondition:
+        "Text despre stare din fișă, păstrat așa cum a fost scris",
       recordedProvenance:
         "Text despre proveniență din fișă, păstrat așa cum a fost scris",
       record: "Fișă",
@@ -2877,8 +2428,7 @@ export default {
       openTab: "Deschideți fila {tab}: {requirements}",
       repairIntro:
         "Corectați fișa acolo unde este ținută. Verificarea următoare închide constatarea când lipsa a dispărut.",
-      linkPartyHint:
-        "Confirmați sau asociați partea în panoul Părți al fișei.",
+      linkPartyHint: "Confirmați sau asociați partea în panoul Părți al fișei.",
       linkPartyUnavailable:
         "Asocierea unei părți necesită modulul Conturi și permisiunea de a edita părți. Atribuiți sarcina cuiva care poate.",
       duplicateHint:
@@ -2898,7 +2448,8 @@ export default {
       findingNotFound: "Această constatare nu mai există.",
       findingStatusChanged:
         "Constatarea s-a schimbat între timp. Reîncărcați pentru a vedea starea actuală.",
-      reviewNoteRequired: "Introduceți un motiv de cel mult 2.000 de caractere.",
+      reviewNoteRequired:
+        "Introduceți un motiv de cel mult 2.000 de caractere.",
       identifierIndexIncomplete:
         "Completați indexul identificatorilor înainte de a examina duplicatele.",
       duplicateGroupTooLarge:
@@ -2959,7 +2510,7 @@ export default {
       ownerHint:
         "Lasă gol când proprietatea nu este stabilită. O achiziție necesită un proprietar înregistrat.",
       receivedAt: "Primit la",
-      location: "Locul de primire",
+      location: "Locația de primire",
       chooseLocation: "Alege o locație",
       condition: "Starea la primire",
       conditionHint:
@@ -3126,6 +2677,7 @@ export default {
     loadMore: "Încarcă mai multe",
     refineSearch:
       "Mai multe obiecte se potrivesc. Restrângeți căutarea pentru a reduce lista.",
+    selectParent: "Selectați un obiect părinte...",
   },
   valuation: {
     title: "Evaluare",
@@ -3222,32 +2774,16 @@ export default {
   deaccessions: {
     loadedResults: "Număr pentru rezultatele încărcate",
     loadMore: "Încarcă mai multe",
-    title: "Dezaccesiuni",
-    description: "Gestionează eliminările din colecție",
-    newDeaccession: "Dezaccesiune Nouă",
-    editDeaccession: "Editează Dezaccesiune",
-    deleteDeaccession: "Șterge Dezaccesiune",
-    deaccessionDetails: "Detalii Dezaccesiune",
-    pendingDeaccessions: "Dezaccesiuni În Așteptare",
-    pendingApprovals: "Aprobări În Așteptare",
-    tabs: {
-      pending: "În Așteptare",
-      approved: "Aprobat",
-      rejected: "Respins",
-      completed: "Finalizat",
-      all: "Toate",
-    },
+    title: "Înregistrări de scoatere din colecție",
+    description: "Obiecte scoase definitiv din colecție.",
     status: {
       pending: "În Așteptare",
       approved: "Aprobat",
       rejected: "Respins",
-      pendingApproval: "În Așteptare Aprobare",
-      completed: "Finalizat",
     },
     actions: {
       approve: "Aprobă",
       reject: "Respinge",
-      review: "Revizuiește",
 
       exportReport: "Exportă raportul",
       loadMore: "Încarcă mai multe",
@@ -3264,17 +2800,6 @@ export default {
       creating: "Se creează...",
       update: "Actualizează dezafectarea",
       updating: "Se actualizează...",
-    },
-    messages: {
-      approved: "Dezaccesiune aprobată cu succes",
-      rejected: "Dezaccesiune respinsă",
-      created: "Dezaccesiune creată cu succes",
-      updated: "Dezaccesiune actualizată cu succes",
-      deleted: "Dezaccesiune ștearsă cu succes",
-      error: "Eroare la salvarea dezaccesiunii",
-      notFound: "Dezaccesiunea nu a fost găsită",
-      confirmDelete: "Ești sigur că vrei să ștergi această dezaccesiune?",
-      noDeaccessions: "Nu există dezaccesiuni de revizuit",
     },
 
     noOrg: {
@@ -3323,7 +2848,7 @@ export default {
       methodLabel: "Metodă",
       disposition: "Destinație",
       notes: "Note",
-      collectionObject: "Obiectul colecției",
+      collectionObject: "Obiect",
       workflowHistory: "Istoricul fluxului de lucru",
       approvalAction: "Acțiune de aprobare",
       commentLabel: "Comentariu (opțional)",
@@ -3331,6 +2856,7 @@ export default {
       created: "Creat",
       step: "Pasul {step} - aprobat",
       unknown: "Necunoscut",
+      awaitingReview: "În așteptarea evaluării",
     },
     stages: {
       eyebrow: "Etapele scoaterii din evidență",
@@ -3433,8 +2959,8 @@ export default {
     form: {
       selectOrg: "Selectează o organizație pentru a crea dezafectări.",
       selectOrgEdit: "Selectează o organizație pentru a edita dezafectările.",
-      collectionLabel: "Obiectul colecției",
-      collectionPlaceholder: "Selectează un obiect din colecție",
+      collectionLabel: "Obiect",
+      collectionPlaceholder: "Selectați un obiect",
       deaccessionNumber: "Număr de dezafectare",
       deaccessionNumberPlaceholder:
         "Generat automat dacă este lăsat necompletat",
@@ -3465,7 +2991,7 @@ export default {
       proceedsNotes: "Note despre încasări",
       proceedsNotesPlaceholder: "Note suplimentare despre încasări...",
       errors: {
-        collectionRequired: "Colecția este obligatorie",
+        collectionRequired: "Selectați un obiect",
         reasonRequired: "Motivul este obligatoriu",
         createFailed: "Crearea dezafectării a eșuat. Încearcă din nou.",
         updateFailed: "Actualizarea dezafectării a eșuat. Încearcă din nou.",
@@ -3507,6 +3033,7 @@ export default {
       proceedsNotes: "Note despre încasări",
       stepApproved: "Pasul {step} a fost aprobat",
       created: "Creat",
+      proceedsWithoutCurrency: "Încasări fără monedă înregistrată: {count}",
     },
     placeholders: {
       searchObjects: "Caută dezafectări...",
@@ -3515,6 +3042,7 @@ export default {
       selectDisposition: "de ex., Vândut unui colecționar privat",
       addNotes: "Note suplimentare despre această dezafectare...",
     },
+    withdrawnObjects: "Obiecte retrase",
   },
   locations: {
     movements: {
@@ -3616,16 +3144,11 @@ export default {
       },
     },
     locations: "Locații",
-    title: "Locații",
-    description: "Gestionează locațiile de depozitare și expunere",
-    newLocation: "Locație Nouă",
-    editLocation: "Editează Locație",
     deleteLocation: "Șterge Locație",
     deleteBlockedByChildren:
       "Această locație are încă sub-locații active. Mută sau șterge mai întâi sub-locațiile.",
     deleteRequiresDeaccession:
       "{count} obiect(e) din această locație vor fi trimise în fluxul de dezaccesionare înainte ca locația să fie ștearsă.",
-    locationDetails: "Detalii Locație",
     locationName: "Nume locație",
     type: "Tip",
     address: "Adresă",
@@ -3923,31 +3446,8 @@ export default {
         typeRequired: "Te rugăm să selectezi un tip de locație",
         createFailed: "Crearea locației a eșuat",
       },
-    },
-    tabs: {
-      all: "Toate",
-      building: "Clădire",
-      floor: "Etaj",
-      room: "Cameră",
-      rack: "Raft",
-      shelf: "Raft",
-      bin: "Coș",
-      other: "Altă",
-    },
-    status: {
-      pending: "În Așteptare",
-      approved: "Aprobat",
-      rejected: "Respins",
-    },
-    messages: {
-      created: "Locație creată cu succes",
-      updated: "Locație actualizată cu succes",
-      deleted: "Locație ștearsă cu succes",
-      error: "Eroare la salvarea locației",
-      notFound: "Locația nu a fost găsită",
-      confirmDelete: "Ești sigur că vrei să ștergi această locație?",
-      cannotEditNotPending:
-        "Nu se poate edita o locație care nu este în așteptare",
+      imageUploadFailed:
+        "Fotografia locației nu a putut fi încărcată. Încercați din nou.",
     },
 
     timeline: "Istoricul locației",
@@ -4045,15 +3545,6 @@ export default {
     title: "Expoziții",
     description: "Planifică și gestionează expozițiile",
     newExhibition: "Expoziție Nouă",
-    editExhibition: "Editează Expoziție",
-    deleteExhibition: "Șterge Expoziție",
-    exhibitionDetails: "Detalii Expoziție",
-    tabs: {
-      now: "Acum",
-      upcoming: "Viitoare",
-      past: "Trecute",
-      all: "Toate",
-    },
     status: {
       now: "Acum",
       upcoming: "Viitoare",
@@ -4067,14 +3558,6 @@ export default {
       active: "Activă",
       closed: "Închisă",
       rejected: "Respinsă",
-    },
-    messages: {
-      created: "Expoziție creată cu succes",
-      updated: "Expoziție actualizată cu succes",
-      deleted: "Expoziție ștearsă cu succes",
-      error: "Eroare la salvarea expoziției",
-      notFound: "Expoziția nu a fost găsită",
-      confirmDelete: "Ești sigur că vrei să ștergi această expoziție?",
     },
 
     searchPlaceholder: "Caută după titlu, locație sau note...",
@@ -4193,7 +3676,7 @@ export default {
       loanVenuePlaceholder: "Introdu numele locației",
       notesLabel: "Note",
       notesPlaceholder: "Adaugă note despre această expoziție...",
-      selectObject: "Selectează un obiect din colecție",
+      selectObject: "Selectați un obiect",
       scheduleConflict: "A fost detectată o suprapunere în program",
       scheduleConflictDescription:
         "Acest obiect este deja programat pentru datele selectate:",
@@ -4296,28 +3779,6 @@ export default {
     title: "Conservare",
     description: "Gestionează tratamentele de conservare",
     newTreatment: "Tratament Nou",
-    editTreatment: "Editează Tratament",
-    deleteTreatment: "Șterge Tratament",
-    treatmentDetails: "Detalii Tratament",
-    tabs: {
-      active: "Activ",
-      completed: "Finalizat",
-      all: "Toate",
-    },
-    status: {
-      pending: "În Așteptare",
-      in_progress: "În Curs",
-      completed: "Finalizat",
-      on_hold: "Pauză",
-    },
-    messages: {
-      created: "Tratament creat cu succes",
-      updated: "Tratament actualizat cu succes",
-      deleted: "Tratament șters cu succes",
-      error: "Eroare la salvarea tratamentului",
-      notFound: "Tratamentul nu a fost găsit",
-      confirmDelete: "Ești sigur că vrei să ștergi acest tratament?",
-    },
 
     searchPlaceholder: "Caută după titlu, descriere sau note...",
     loading: "Se încarcă...",
@@ -4347,7 +3808,7 @@ export default {
       description: "Descriere",
       notes: "Note",
       details: "Detalii",
-      collectionObject: "Obiectul colecției",
+      collectionObject: "Obiect",
       datePerformed: "Data efectuării",
       performedBy: "Efectuat de",
       unknownObject: "Obiect necunoscut",
@@ -4366,7 +3827,7 @@ export default {
         "Înregistrează un tratament de conservare sau o evaluare nouă",
       editTitle: "Editează înregistrarea tratamentului",
       editSubtitle: "Actualizează detaliile pentru",
-      collectionObject: "Obiectul colecției",
+      collectionObject: "Obiect",
       treatmentType: "Tipul tratamentului",
       selectType: "Selectează tipul",
       datePerformed: "Data efectuării",
@@ -4609,7 +4070,6 @@ export default {
         noItemsDescription: "Adaugă primul element în catalogul bibliotecii",
         noItemsFiltered: "Nu s-au găsit elemente",
         tryAdjustSearch: "Încearcă să ajustezi căutarea sau filtrele",
-        addFirstItem: "Adaugă Primul Element",
       },
       labels: {
         copiesAvailable: "Copii Disponibile",
@@ -4622,7 +4082,6 @@ export default {
         back: "Înapoi la Catalog",
         selectOrganization: "Selectează o Organizație",
         notEnabled: "Biblioteca Nu Este Activată",
-        enableIntegration: "Activează Integrarea",
         basicInfo: "Informații de Bază",
         itemType: "Tip Element",
         language: "Limba",
@@ -4660,13 +4119,6 @@ export default {
         internalNotes: "Note Interne",
         saveAsDraft: "Salvează Ciornă",
         cancel: "Anulează",
-        selectType: "Selectează tipul",
-        objects: "Obiecte",
-        accessions: "Accesiuni",
-        locations: "Locații",
-        accounts: "Conturi",
-        loans: "Împrumuturi",
-        downloadTemplate: "Descarcă Șablon",
         createFailed:
           "Nu s-a putut crea elementul. Te rugăm să încerci din nou.",
 
@@ -4772,56 +4224,16 @@ export default {
       title: "Circulație",
       description: "Împrumută și returnează elemente",
       tabs: {
-        checkOut: "Împrumut",
-        checkIn: "Returnare",
-        renewals: "Renovări",
-        holds: "Rezervații",
-        all: "Toate",
-
         overdue: "Cu termen depășit",
         activeCheckouts: "Împrumuturi active",
       },
-      status: {
-        checkedOut: "Împrumutat",
-        available: "Disponibil",
-        onHold: "Rezervat",
-        overdue: "Restant",
-        lost: "Pierdut",
-      },
-      filters: {
-        all: "Toate",
-        checkedOut: "Împrumutate",
-        available: "Disponibile",
-        onHold: "Rezervate",
-        overdue: "Restante",
-        lost: "Pierdute",
-      },
       actions: {
-        checkOut: "Împrumută",
         checkIn: "Returnează",
         renew: "Renovează",
-        placeHold: "Rezervă",
-        cancelHold: "Anulează Rezervare",
-        reportLost: "Raportează Pierdut",
-        markReturned: "Marchează Returnat",
 
         confirmCheckout: "Confirmă împrumutul",
         confirmCheckin: "Confirmă returnarea",
         done: "Gata",
-      },
-      messages: {
-        checkedOut: "Element împrumutat cu succes",
-        checkedIn: "Element returnat cu succes",
-        renewed: "Element renovat cu succes",
-        holdPlaced: "Rezervare plasată cu succes",
-        holdCancelled: "Rezervare anulată cu succes",
-        lostReported: "Element marcat ca pierdut",
-        error: "Eroare la procesarea circulației",
-        patronNotFound: "Membrul nu a fost găsit",
-        itemNotFound: "Elementul nu a fost găsit",
-        itemNotAvailable: "Elementul nu este disponibil",
-        confirmCheckIn: "Confirmi returnarea acestui element?",
-        confirmCheckOut: "Confirmi împrumutul acestui element?",
       },
 
       scanBarcode: "Scanează codul de bare",
@@ -4870,12 +4282,6 @@ export default {
     fines: {
       title: "Amenzi",
       description: "Gestionează amenzile și plățile",
-      tabs: {
-        outstanding: "Restante",
-        paid: "Plătite",
-        waived: "Retrase",
-        all: "Toate",
-      },
       status: {
         outstanding: "Restant",
         paid: "Plătit",
@@ -4884,23 +4290,11 @@ export default {
         forgiven: "Anulată",
       },
       filters: {
-        all: "Toate",
-        outstanding: "Restante",
-        paid: "Plătite",
-        waived: "Retrase",
-
         allStatus: "Toate stările",
       },
       actions: {
         pay: "Plătește",
         waive: "Retrage",
-      },
-      messages: {
-        paid: "Amendă plătită cu succes",
-        waived: "Amendă retrasă cu succes",
-        error: "Eroare la procesarea amenzii",
-        confirmPay: "Confirmi plata acestei amenzi?",
-        confirmWaive: "Ești sigur că vrei să retragi această amendă?",
       },
 
       noOrganization: "Nu a fost găsită nicio organizație",
@@ -5025,33 +4419,8 @@ export default {
   analytics: {
     title: "Analitice",
     description: "Vizualizează metricile și rapoartele colecției",
-    dateRange: "Interval de Date",
-    last30Days: "Ultimele 30 de Zile",
-    last90Days: "Ultimele 90 de Zile",
-    lastYear: "Ultimul An",
-    allTime: "Tot Timpul",
-    custom: "Personalizat",
-    startDate: "Data de Început",
-    endDate: "Data de Sfârșit",
-    export: "Exportă",
-    exportReport: "Exportă Raport",
-    refresh: "Reîmprospătează",
-    noData: "Nu există date disponibile",
-    summary: "Rezumat",
-    details: "Detalii",
-    inventoryValuation: {
-      title: "Valoare Inventar",
-      description: "Valoarea totală estimată a colecției",
-      totalValue: "Valoare Totală",
-      byCategory: "După Categorie",
-      fineArt: "Artă",
-      wine: "Vin",
-      vehicles: "Vehicule",
-      other: "Altul",
-    },
     compliance: {
       title: "Raport Conformitate",
-      description: "Starea conformității și auditurilor",
       accessions: "Accesiuni",
       deaccessions: "Dezafectări",
       recentActivity: "Activitate Recentă",
@@ -5074,13 +4443,6 @@ export default {
     },
     auditTrail: {
       title: "Jurnal Audit",
-      description: "Urmărește toate modificările din sistem",
-      filters: "Filtre",
-      allActions: "Toate Acțiunile",
-      user: "Utilizator",
-      action: "Acțiune",
-      exportCSV: "Exportă CSV",
-      noEntries: "Nu există intrări în jurnal",
 
       totalEvents: "Număr total de evenimente",
       recentActivity: "Activitate recentă",
@@ -5089,35 +4451,8 @@ export default {
       events: "evenimente",
       justNow: "Chiar acum",
     },
-    loans: {
-      title: "Împrumuturi",
-      description: "Metricile împrumuturilor și utilizării",
-      active: "Active",
-      pending: "În Așteptare",
-      overdue: "Restante",
-      returned: "Returnate",
-      totalLoans: "Total Împrumuturi",
-    },
-    objects: {
-      title: "Obiecte",
-      description: "Metricile colecției și utilizării",
-      total: "Total Obiecte",
-      onView: "În Vitrină",
-      inStorage: "În Depozit",
-      onLoan: "Împrumutate",
-      conservation: "În Conservare",
-    },
     reportExports: {
       title: "Exporturi Rapoarte",
-      description: "Descarcă rapoarte detaliate ale colecției",
-      selectReport: "Selectează Raportul",
-      inventory: "Inventar",
-      loans: "Împrumuturi",
-      compliance: "Conformitate",
-      locations: "Locații",
-      board: "Consiliu",
-      insurance: "Asigurare",
-      format: "Format",
       csv: {
         generated: "Generat",
         unavailable: "Indisponibil",
@@ -5246,11 +4581,6 @@ export default {
           utilization: "Grad de ocupare",
         },
       },
-      pdf: "PDF",
-      export: "Exportă",
-      exporting: "Se exportă...",
-      success: "Raport exportat cu succes",
-      error: "Eroare la export",
 
       boardReport: "Raport pentru consiliu",
       insuranceReport: "Raport de asigurare",
@@ -5391,30 +4721,9 @@ export default {
     description: "Gestionează conturile și creditorii",
     newAccount: "Cont Nou",
     editAccount: "Editează Cont",
-    deleteAccount: "Șterge Cont",
-    accountDetails: "Detalii Cont",
     moduleDisabled: "Modulul Conturi nu este activat pentru organizația ta.",
     enableModule: "Activează Modulul Conturi",
-    tabs: {
-      details: "Detalii",
-      loans: "Împrumuturi",
-      contacts: "Contacte",
-      documents: "Documente",
-      activity: "Activitate",
-      facilities: "Facilități",
-      notes: "Note",
-    },
-    status: {
-      active: "Activ",
-      inactive: "Inactiv",
-      pending: "În Așteptare",
-    },
     filters: {
-      all: "Toate",
-      active: "Active",
-      inactive: "Inactive",
-      pending: "În Așteptare",
-
       allTypes: "Toate tipurile",
       lenders: "Creditori",
       borrowers: "Împrumutați",
@@ -5422,33 +4731,8 @@ export default {
       institutions: "Instituții",
       patrons: "Membri ai bibliotecii",
     },
-    typeLabels: {
-      lender: "Creditor",
-      borrower: "Împrumutător",
-      museum: "Muzeu",
-      gallery: "Galerie",
-      collector: "Colecționar",
-      insurance: "Asigurare",
-      shipper: "Transportator",
-      other: "Altul",
-    },
-    messages: {
-      created: "Cont creat cu succes",
-      updated: "Cont actualizat cu succes",
-      deleted: "Cont șters cu succes",
-      error: "Eroare la salvarea contului",
-      notFound: "Contul nu a fost găsit",
-      confirmDelete: "Ești sigur că vrei să ștergi acest cont?",
-      accountNotFound: "Contul nu a fost găsit",
-    },
     form: {
       businessName: "Nume Firmă",
-      primaryContact: "Persoană de Contact",
-      addressLabel: "Adresa",
-      phoneNumber: "Număr de Telefon",
-      emailAddress: "Adresă Email",
-      saveAccount: "Salvează Contul",
-      cancel: "Anulează",
 
       businessInformation: "Informații despre firmă",
       personalInformation: "Informații personale",
@@ -5485,11 +4769,11 @@ export default {
         email: "contact@exemplu.ro",
         streetAddress: "Strada Principală 123",
         addressLine2: "Apartamentul 100",
-        city: "New York",
+        city: "Cluj-Napoca",
         zipCode: "010001",
         country: "Statele Unite",
-        contactName: "John Doe",
-        contactEmail: "john@example.com",
+        contactName: "Ion Popescu",
+        contactEmail: "ion@exemplu.ro",
         notes: "Note suplimentare despre acest cont...",
         accountType: "Selectează tipul contului",
         title: "de ex., director",
@@ -5505,17 +4789,6 @@ export default {
         createFailed: "Crearea contului a eșuat. Încearcă din nou.",
         updateFailed: "Actualizarea contului a eșuat. Încearcă din nou.",
       },
-    },
-    facilities: {
-      title: "Facilități",
-      description: "Instalații de conservare și depozitare",
-      noFacilities: "Nu există facilități înregistrate",
-      addFacility: "Adaugă Facilitate",
-      active: "Activă",
-      inactive: "Inactivă",
-      pending: "În Așteptare",
-      approved: "Aprobată",
-      rejected: "Respinsă",
     },
 
     patronsTitle: "Membrii bibliotecii",
@@ -5688,86 +4961,11 @@ export default {
       },
     },
   },
-  notifications: {
-    title: "Notificări",
-    description: "Notificări și actualizări",
-    all: "Toate",
-    unread: "Necitite",
-    read: "Citite",
-    markAsRead: "Marchează ca Citit",
-    markAllAsRead: "Marchează Tot ca Citit",
-    delete: "Șterge",
-    deleteAll: "Șterge Tot",
-    empty: "Nu ai notificări",
-    emptyDescription: "Vei vedea notificările aici când le primești",
-    filters: {
-      all: "Toate",
-      unread: "Necitite",
-      read: "Citite",
-    },
-    types: {
-      system: "Sistem",
-      loan: "Împrumut",
-      accession: "Accesiune",
-      deaccession: "Dezaccesiune",
-      conservation: "Conservare",
-      exhibition: "Expoziție",
-      object: "Obiect",
-      user: "Utilizator",
-    },
-    actions: {
-      view: "Vezi",
-      dismiss: "Respinge",
-      actionRequired: "Acțiune Necesară",
-    },
-  },
   assignments: {
-    title: "Atribuiri",
-    description: "Gestionează sarcinile și responsabilitățile",
-    tabs: {
-      my: "Atribuirile Mele",
-      team: "Echipa",
-      all: "Toate",
-    },
-    status: {
-      pending: "În Așteptare",
-      in_progress: "În Curs",
-      completed: "Finalizat",
-      overdue: "Restant",
-    },
-    filters: {
-      all: "Toate",
-      pending: "În Așteptare",
-      in_progress: "În Curs",
-      completed: "Finalizat",
-      overdue: "Restante",
-    },
-    actions: {
-      create: "Creează Atribuire",
-      complete: "Finalizează",
-      delete: "Șterge",
-    },
-    messages: {
-      created: "Atribuire creată cu succes",
-      updated: "Atribuire actualizată cu succes",
-      deleted: "Atribuire ștearsă cu succes",
-      completed: "Atribuire finalizată cu succes",
-      error: "Eroare la salvarea atribuirii",
-      confirmDelete: "Ești sigur că vrei să ștergi această atribuire?",
-      noAssignments: "Nu ai atribuiri",
-      noPendingAssignments: "Nu există atribuții în așteptare",
-    },
-    priorities: {
-      low: "Scăzută",
-      medium: "Medie",
-      high: "Ridicată",
-      urgent: "Urgentă",
-    },
-
     pendingApprovals: "Aprobări în așteptare",
     noPendingAssignments: "Nu există atribuiri în așteptare",
     allCaughtUpDescription:
-      "Totul este la zi! Revino mai târziu pentru elemente noi care necesită aprobare.",
+      "Totul este la zi. Revino mai târziu pentru dosare noi care așteaptă aprobarea ta.",
     typeLabels: {
       accession: "Accesiune",
       accessions: "Accesiuni",
@@ -5780,28 +4978,6 @@ export default {
       conservation: "Conservare",
     },
     stepNumber: "Pasul {step}",
-  },
-  media: {
-    title: "Media",
-    description: "Gestionează fișierele media",
-    tabs: {
-      images: "Imagini",
-      documents: "Documente",
-      videos: "Video",
-      all: "Toate",
-    },
-    actions: {
-      upload: "Încarcă",
-      download: "Descarcă",
-      delete: "Șterge",
-      preview: "Previzualizare",
-    },
-    messages: {
-      uploaded: "Fișier încărcat cu succes",
-      deleted: "Fișier șters cu succes",
-      error: "Eroare la procesarea fișierului",
-      confirmDelete: "Ești sigur că vrei să ștergi acest fișier?",
-    },
   },
   objectTypeDetails: {
     section: {
@@ -5873,34 +5049,7 @@ export default {
   workflows: {
     title: "Fluxuri de Lucru",
     description: "Automatizează procesele",
-    newWorkflow: "Flux Nou",
     editWorkflow: "Editează Flux",
-    deleteWorkflow: "Șterge Flux",
-    tabs: {
-      all: "Toate",
-      active: "Active",
-      inactive: "Inactive",
-    },
-    status: {
-      active: "Activ",
-      inactive: "Inactiv",
-      draft: "Ciornă",
-    },
-    actions: {
-      activate: "Activează",
-      deactivate: "Dezactivează",
-      run: "Rulează",
-      history: "Istoric",
-    },
-    messages: {
-      created: "Flux creat cu succes",
-      updated: "Flux actualizat cu succes",
-      deleted: "Flux șters cu succes",
-      activated: "Flux activat",
-      deactivated: "Flux dezactivat",
-      error: "Eroare la salvarea fluxului",
-      confirmDelete: "Ești sigur că vrei să ștergi acest flux?",
-    },
 
     configureSteps:
       "Configurează pașii de aprobare și permisiunile de inițiere.",
@@ -5964,38 +5113,14 @@ export default {
     pendingInvitationsCount: "Invitații în așteptare: {count}",
     noPendingInvitations: "Nu există invitații în așteptare",
     loadingInvitations: "Se încarcă invitațiile...",
-    invitedEmail: "Email Invitat",
     expires: "Expiră {date}",
     expired: "Expirat",
     resend: "Retrimite",
-    resending: "Se retrimite...",
-    resendSuccess: "Invitație retrimisă cu succes",
     resendFailed:
       "Nu s-a putut retrimite invitația. Te rugăm să încerci din nou.",
     cancelInvitation: "Anulează",
     cancelConfirm: "Ești sigur că vrei să anulezi această invitație?",
-    cancelSuccess: "Invitație anulată cu succes",
     cancelFailed: "Nu s-a putut anula invitația. Te rugăm să încerci din nou.",
-  },
-  public: {
-    collection: "Colecție",
-    exploreCollection: "Explorează colecția noastră disponibilă public",
-    searchPlaceholder: "Caută după titlu, artist sau număr de accesie...",
-    objectType: "Tip Obiect",
-    culture: "Cultură",
-    period: "Perioadă",
-    allTypes: "Toate Tipurile",
-    allCultures: "Toate Culturile",
-    allPeriods: "Toate Perioadele",
-    clearFilters: "Șterge Filtrele",
-    itemsFound: "elemente găsite",
-    noItemsFound: "Nu s-au găsit elemente",
-    tryAdjustFilters: "Încearcă să ajustezi filtrele sau căutarea",
-    noPublicItems: "Această colecție nu are elemente vizibile public",
-    loadingCollection: "Se încarcă colecția...",
-    objectNotFound: "Obiectul nu a fost găsit",
-    backToCollection: "Înapoi la Colecție",
-    noImage: "Fără Imagine",
   },
   scan: {
     title: "Scanează Obiecte",
@@ -7461,7 +6586,7 @@ export default {
     empty: {
       title: "Nu ai încă sarcini",
       description:
-        "Aici vor apărea obiectele pe care le cataloghezi sau care așteaptă aprobarea ta",
+        "Aici apar obiectele pe care le cataloghezi și dosarele care așteaptă aprobarea ta",
       catalogNew: "Cataloghează un obiect nou",
     },
     card: {
@@ -8130,7 +7255,6 @@ export default {
         printAgreement: "Imprimă contractul",
       },
       items: {
-        countTitle: "Obiecte împrumutate ({count})",
         selectedCount: "Selectate ({count})",
         conditionOutOptional: "Starea la predare (opțional)",
         conditionOut: "Starea la predare:",
@@ -8143,9 +7267,8 @@ export default {
         noLoanHistory: "Acest obiect nu are istoric de împrumuturi",
         documentsCount: "Documente ({count})",
         condition: "Stare",
-        objectsPaintings: "Obiecte (picturi)",
-        searchCollections: "Căutați și selectați colecții *",
-        loadingCollections: "Se încarcă colecțiile…",
+        searchCollections: "Caută și selectează obiecte *",
+        loadingCollections: "Se încarcă obiectele…",
         lenderUpper: "ÎMPRUMUTĂTOR:",
         museumUpper: "MUZEU/INSTITUȚIE:",
         uploadedBy: "Încărcat de {name}",
@@ -8189,14 +7312,13 @@ export default {
         sourceCheck: "Verificarea sursei",
         approvalWorkflow: "Flux de aprobare",
         linkedObject: "Obiect asociat",
-        linkedObjectDescription:
-          "Această intrare a creat deja o fișă de colecție.",
+        linkedObjectDescription: "Această accesiune și-a creat deja obiectul.",
         openCreatedObject: "Deschide obiectul creat",
         draftsMustBeSubmitted:
           "Ciornele trebuie trimise înainte de începerea aprobării.",
         workflowHistory: "Istoricul fluxului",
         workflowHistoryDescription:
-          "Etape de aprobare încheiate pentru această intrare.",
+          "Etape de aprobare încheiate pentru această accesiune.",
         step: "Etapă",
         workflow: "Flux",
         decision: "Decizie",
@@ -8210,11 +7332,12 @@ export default {
         history: "Istoric",
         draftObjectAwaitingReview: "Ciornă de obiect în așteptarea revizuirii.",
         reviewSummary:
-          "Revizuiți detaliile intrării, starea fluxului și activitatea de aprobare.",
+          "Revizuiți detaliile accesiunii, starea fluxului și activitatea de aprobare.",
         noActiveWorkflowStep: "Nu există niciun pas activ în flux.",
         reviewCheckpoint: "Punct de verificare a revizuirii",
         sourceOnlyBlocker:
           "Verificarea sursei este singurul impediment înainte de continuarea acestui dosar.",
+        review: "Evaluare",
       },
       approval: {
         noteGuidance:
@@ -8235,20 +7358,20 @@ export default {
           "Folosiți notele pentru context, nu pentru a repeta câmpul sursei.",
         reviewSnapshot: "Rezumatul revizuirii",
         snapshotDescription:
-          "Aceste câmpuri vor rămâne vizibile evaluatorului pe pagina intrării.",
+          "Aceste câmpuri vor rămâne vizibile evaluatorului pe pagina accesiunii.",
         sourcePreview: "Previzualizare sursă",
         methodPreview: "Previzualizare metodă",
         notesLength: "Lungimea notelor",
         lockedIntakeDetails: "Detalii de primire blocate",
         lockedDetailsDescription:
-          "Acești identificatori sunt setați la crearea intrării și rămân doar pentru citire pe durata evaluării.",
-        accessionInformation: "Informații despre intrare",
+          "Acești identificatori sunt setați la crearea accesiunii și rămân doar pentru citire pe durata evaluării.",
+        accessionInformation: "Informații despre accesiune",
         accessionDescription:
           "Editați sursa, metoda de achiziție, contextul evaluării și notele personalului înainte de aprobare.",
         sourceNameGuidance:
           "Indicați persoana, succesiunea, comerciantul, instituția sau referința sursei pe care aprobatorul o va recunoaște.",
         methodInterpretation:
-          "Acest lucru influențează modul în care intrarea este interpretată la evaluare și în rapoarte.",
+          "Acest lucru influențează modul în care accesiunea este interpretată la evaluare și în rapoarte.",
         noCostHint:
           "Lăsați necompletat dacă nu se aplică niciun cost de achiziție.",
         notesGuidanceLong:
@@ -8257,13 +7380,13 @@ export default {
         noNotes: "Nu au fost adăugate note",
         noSourceYet: "Nicio sursă încă",
       },
-      pendingAccession: "Intrare în așteptare",
-      editAccession: "Editează intrarea",
+      pendingAccession: "Accesiune în așteptare",
+      editAccession: "Editează accesiunea",
       updateIntakeDescription:
-        "Actualizați fișa de primire cât timp este în așteptare. După aprobare, intrarea trebuie tratată ca o înregistrare finalizată a fluxului.",
-      notFoundWithPeriod: "Intrarea nu a fost găsită.",
+        "Actualizați fișa de primire cât timp este în așteptare. După aprobare, accesiunea trebuie tratată ca o înregistrare finalizată a fluxului.",
+      notFoundWithPeriod: "Accesiunea nu a fost găsită.",
       pendingDraftOnly:
-        "Din acest ecran pot fi editate doar ciornele de obiecte ale intrărilor în așteptare.",
+        "Din acest ecran pot fi editate doar ciornele de obiecte ale accesiunilor în așteptare.",
       selectOrganizationTransfers:
         "Creați sau alăturați-vă unei organizații pentru a vedea transferurile.",
       transferPermission:
@@ -8271,7 +7394,7 @@ export default {
       transfer: {
         receiver: "Destinatar",
         requested: "Solicitat",
-        handling: "Gestionarea intrării",
+        handling: "Gestionarea accesiunii",
         reviewNotes: "Note de evaluare",
         executed: "Executat",
         search: "Caută transferuri",
@@ -8314,7 +7437,7 @@ export default {
         verificationRequired: "Este necesară verificarea sursei",
         blockerCleared: "Acest impediment a fost deja eliminat.",
         verifyBeforeApproval:
-          "Verificați donatorul sau sursa înainte de a aproba această intrare.",
+          "Verificați donatorul sau sursa înainte de a aproba această accesiune.",
         verifiedShort: "Verificată",
         verifying: "Se verifică…",
         verify: "Verificați",
@@ -8337,10 +7460,10 @@ export default {
           rejected: "Niciun transfer respins nu corespunde căutării.",
           cancelled: "Niciun transfer anulat nu corespunde căutării.",
         },
-        keepAccession: "Păstrați numărul actual de intrare",
-        newAccession: "Generați un număr nou de intrare",
-        requestedAccession: "Număr de intrare solicitat: {number}",
-        manualAccession: "A fost solicitat un număr de intrare manual",
+        keepAccession: "Păstrați numărul actual de accesiune",
+        newAccession: "Generați un număr nou de accesiune",
+        requestedAccession: "Număr de accesiune solicitat: {number}",
+        manualAccession: "A fost solicitat un număr de accesiune manual",
       },
       import: {
         fields: {
@@ -8504,11 +7627,11 @@ export default {
       },
       delete: {
         confirm:
-          "Sigur doriți să ștergeți „{name}”? Obiectele din această colecție vor fi deconectate, dar nu vor fi șterse.",
+          "Ștergeți „{name}”? Obiectele din acest grup de colecție sunt dezasociate, nu șterse.",
       },
       remove: {
         confirm:
-          "Sigur doriți să eliminați „{name}” din această colecție? Obiectul nu va fi șters, ci doar eliminat din această colecție.",
+          "Eliminați „{name}” din acest grup de colecție? Obiectul nu este șters, ci doar eliminat din grup.",
       },
       detail: {
         selectedCount: "Selectate ({count}):",
@@ -8614,14 +7737,14 @@ export default {
         inscriptionsMarks: "Inscripții și marcaje",
         noInscriptions: "Nu sunt documentate inscripții.",
         overallCondition: "Stare generală",
-        historyRelatedItems: "Istoric și elemente asociate",
+        historyRelatedItems: "Istoric și înregistrări asociate",
         recordContext: "Contextul fișei",
         recordVerified: "Fișă verificată",
         relatedObjects: "Obiecte asociate",
         recentActivity: "Activitate recentă",
         noRecentActivity: "Nicio activitate recentă",
         approvedBy: "Aprobat de",
-        accession: "Intrare",
+        accession: "Accesiune",
         additionalNotes: "Note suplimentare",
         alreadyAttached: "Deja atașat",
         altText: "Alt.:",
@@ -8658,7 +7781,7 @@ export default {
           "Aveți modificări nesalvate ale câmpurilor în mai multe file.",
         mediaAlreadyApplied: "Modificările media sunt deja aplicate.",
         noUnsavedChanges: "Nu există modificări nesalvate ale câmpurilor.",
-        collectionNotFound: "Colecția nu a fost găsită",
+        collectionNotFound: "Obiectul nu a fost găsit",
         selectOrganization: "Selectați o organizație pentru a edita obiecte.",
       },
       form: {
@@ -8709,7 +7832,7 @@ export default {
         draftExistsUnsaved:
           "Ciorna există, dar cele mai recente modificări ale câmpurilor nu sunt încă salvate.",
         saveDraftDescription:
-          "Salvarea ciornei încarcă imaginile și documentele în această solicitare de intrare. Acestea sunt trimise spre aprobare împreună cu obiectul.",
+          "Salvarea ciornei încarcă imaginile și documentele în această solicitare de accesiune. Acestea sunt trimise spre aprobare împreună cu obiectul.",
         savingDraft: "Se salvează ciorna…",
         objectTitle: "Titlul obiectului",
         editRecordDescription:
@@ -8731,13 +7854,13 @@ export default {
         previousOwner: "Proprietar anterior",
         previousOwners: "Proprietari anteriori",
         capturePreviousOwners:
-          "Înregistrați foștii proprietari cunoscuți ca informații de context pentru intrare.",
+          "Înregistrați foștii proprietari cunoscuți ca informații de context pentru accesiune.",
         selectImagesAfterApproval:
           "Selectați imaginile obiectului și alegeți care va deveni principală după aprobare.",
         editMediaMetadata: "Editează metadatele media",
         updateMediaMetadata: "Actualizați metadatele acestui fișier media.",
         recordIdentity: "Identitatea fișei",
-        removeAlternateAccession: "Eliminați numărul alternativ de intrare",
+        removeAlternateAccession: "Eliminați numărul alternativ de accesiune",
         publicUrl: "Adresă URL publică",
         uploadImagesDescription:
           "Încărcați imagini, atribuiți o imagine principală și gestionați miniaturile fișei obiectului.",
@@ -8823,13 +7946,13 @@ export default {
         noneAvailable: "Nu există grupuri de colecții disponibile",
         addObjects:
           "Adăugați {count} obiect(e) selectat(e) într-un grup de colecție.",
-        itemsCount: "({count} elemente)",
+        itemsCount: "({count} obiecte)",
       },
       loading: {
         loans: "Se încarcă împrumuturile…",
         logs: "Se încarcă jurnalele…",
         treatments: "Se încarcă tratamentele…",
-        collections: "Se încarcă colecțiile…",
+        collections: "Se încarcă obiectele…",
         more: "în plus",
         default: "Se încarcă…",
       },
@@ -8848,7 +7971,7 @@ export default {
           "Detalii despre material, dimensiuni și starea obiectului.",
         optionalPublicSlug:
           "Identificator personalizat opțional pentru acces public.",
-        removeAltAccession: "Eliminați numărul alternativ de intrare",
+        removeAltAccession: "Eliminați numărul alternativ de accesiune",
         signatureDocumentDescription:
           "Documentați semnături, ștampile, etichete, gravuri sau marcaje de colecționar",
         file: "Fișier:",
@@ -8918,6 +8041,8 @@ export default {
         unknownOrganization: "Organizație necunoscută",
         unknownUser: "Utilizator necunoscut",
         to: "la",
+        numberOnApproval: "Se generează la aprobarea cererii",
+        useRequestedAccessionNumber: "Folosește numărul de accesiune solicitat",
       },
       roles: {
         curator: "Curator",
@@ -8940,8 +8065,8 @@ export default {
         expandNode: "Extindeți {name}",
       },
       bulk: {
-        failedMove: "Mutarea a {count} element(e) a eșuat",
-        exported: "S-au exportat {count} element(e)",
+        failedMove: "Obiecte care nu au putut fi mutate: {count}",
+        exported: "Obiecte exportate: {count}",
       },
       draft: {
         saved: "Ciornă salvată",
@@ -8967,7 +8092,7 @@ export default {
         catalogedDate: "Data catalogării",
       },
       collection: {
-        noneAssigned: "Neatribuit unei colecții",
+        noneAssigned: "Nu face parte din niciun grup de colecție",
       },
       request: {
         editTitle: "Editați obiectul",
@@ -9017,12 +8142,12 @@ export default {
       errorId: "ID eroare:",
       tryAgain: "Încearcă din nou",
       dashboard: "Tablou de bord",
-      failedToLoadAccessions: "Încărcarea intrărilor a eșuat",
+      failedToLoadAccessions: "Încărcarea accesiunilor a eșuat",
       failedToLoadAccessionsDescription:
-        "Fluxul intrărilor nu a putut fi încărcat. Încercați din nou sau reveniți la tabloul de bord.",
-      failedToLoadCollections: "Încărcarea colecțiilor a eșuat",
+        "Fluxul accesiunilor nu a putut fi încărcat. Încercați din nou sau reveniți la tabloul de bord.",
+      failedToLoadCollections: "Grupurile de colecție nu au putut fi încărcate",
       failedToLoadCollectionsDescription:
-        "Colecțiile nu au putut fi încărcate. Încercați din nou sau reveniți la tabloul de bord.",
+        "Nu am putut încărca grupurile de colecție. Încercați din nou sau reveniți la tabloul de bord.",
       failedToLoadLoans: "Încărcarea împrumuturilor a eșuat",
       failedToLoadLoansDescription:
         "Împrumuturile nu au putut fi încărcate. Încercați din nou sau reveniți la tabloul de bord.",
@@ -9482,36 +8607,36 @@ export default {
         return: "Retur",
       },
       handoffs: {
-        title: "Receipt and installation",
-        loading: "Loading transit handoffs…",
-        notFound: "Transit record not found.",
-        backToList: "Back to transit log",
-        linkedLoan: "Linked loan:",
-        linkedExhibition: "Linked exhibition:",
+        title: "Primire și instalare",
+        loading: "Se încarcă predările transportului…",
+        notFound: "Transportul nu a fost găsit.",
+        backToList: "Înapoi la registrul transporturilor",
+        linkedLoan: "Împrumut asociat:",
+        linkedExhibition: "Expoziție asociată:",
         carrierVsReceiptHint:
-          "Carrier delivery status does not record custody acceptance. Mark carrier arrival, then record accountable receipt (and installation when linked to an exhibition).",
-        outstandingReceipt: "{count} item(s) awaiting receipt",
-        outstandingInstallation: "{count} awaiting installation",
-        markCarrierArrived: "Mark carrier arrival",
-        observedFrom: "Observed source location",
+          "Starea de livrare a transportatorului nu înregistrează preluarea în custodie. Marcați sosirea transportatorului, apoi înregistrați primirea asumată (și instalarea, când transportul este legat de o expoziție).",
+        outstandingReceipt: "Așteaptă primirea: {count}",
+        outstandingInstallation: "Așteaptă instalarea: {count}",
+        markCarrierArrived: "Marchează sosirea transportatorului",
+        observedFrom: "Locația sursă observată",
         installationDestination: "Destinația instalării",
-        receiptDestination: "Receipt destination",
-        conditionNotes: "Condition at receipt",
-        conditionPlaceholder: "Condition summary or notes",
-        recordReceipt: "Record accountable receipt",
-        recordInstallation: "Record exhibition installation",
-        viewObject: "View object",
-        receiptRecorded: "Receipt movement recorded",
-        installationRecorded: "Installation movement recorded",
-        actionFailed: "Handoff failed",
+        receiptDestination: "Destinația primirii",
+        conditionNotes: "Starea la primire",
+        conditionPlaceholder: "Rezumat sau note despre stare",
+        recordReceipt: "Înregistrează primirea asumată",
+        recordInstallation: "Înregistrează instalarea în expoziție",
+        viewObject: "Vezi obiectul",
+        receiptRecorded: "Mișcare de primire înregistrată",
+        installationRecorded: "Mișcare de instalare înregistrată",
+        actionFailed: "Predarea nu a putut fi înregistrată. Încearcă din nou.",
         itemStatus: {
-          pending: "Pending pickup",
-          in_transit: "In transit",
-          delivered: "Legacy carrier delivered",
-          arrived: "Carrier arrived (not accepted)",
-          received: "Receipt recorded",
-          damaged: "Damaged",
-          missing: "Missing",
+          pending: "În așteptarea ridicării",
+          in_transit: "În tranzit",
+          delivered: "Livrat de transportator (istoric)",
+          arrived: "Sosit cu transportatorul (neacceptat)",
+          received: "Primire înregistrată",
+          damaged: "Deteriorat",
+          missing: "Lipsă",
         },
       },
     },
@@ -9537,7 +8662,7 @@ export default {
         analytics: "Analize",
         assignments: "Munca mea",
         conservation: "Conservare",
-        deaccessions: "Dezafectări",
+        deaccessions: "Scoateri din colecție",
         exhibitions: "Expoziții",
         insurance: "Asigurări",
         installations: "Instalări",
@@ -9551,6 +8676,8 @@ export default {
         settings: "Setări",
         transit: "Registrul transporturilor",
         transfers: "Transferuri",
+        collections: "Grupuri de colecție",
+        library: "Bibliotecă",
       },
     },
     dashboardBilling: {
@@ -9586,7 +8713,7 @@ export default {
       viewAllGroups: "Vezi toate cele {count} grupuri",
       liveMetrics: "Indicatori în timp real",
       pendingTransferApprovals: "Transferuri în așteptarea aprobării",
-      pendingAccessions: "Intrări în așteptare",
+      pendingAccessions: "Accesiuni în așteptare",
       pendingDeaccessions: "Scoaterea din colecție în așteptare",
       pendingLoans: "Împrumuturi în așteptare",
       newCollectionButton: "Colecție nouă",
@@ -9601,7 +8728,7 @@ export default {
       locationDetailsUnavailable: "Detaliile locației nu sunt disponibile",
       objectCountInside: "{count} obiecte în {name}",
       noAssignedObjects: "Niciun obiect atribuit",
-      noAccession: "Fără număr de intrare",
+      noAccession: "Fără număr de accesiune",
       noObjectsInLocation: "Nu există obiecte în această locație",
       directAndNestedCounts: "{direct} directe · {locations} locații",
       locationsAndObjects: "Locații și obiecte",
@@ -9700,7 +8827,7 @@ export default {
       movedOutTo: "mutat de aici la",
       unknownLocation: "locație necunoscută",
       by: "de",
-      childrenLabel: "Copiii locației {name}",
+      childrenLabel: "Locații din {name}",
     },
     accountsImport: {
       moreErrors: "mai multe",
@@ -9981,7 +9108,7 @@ export default {
       allowIncomingTransferRequestsDescription:
         "Când este activată, organizația apare în căutarea destinațiilor și acceptă solicitări de transfer de obiecte de la alte organizații. Când este dezactivată, organizația este ascunsă, iar transferurile sunt refuzate.",
       automationsAndWorkflows: "Automatizări și fluxuri de lucru",
-      accessionsApprovalWorkflow: "Flux de aprobare a intrărilor în colecție",
+      accessionsApprovalWorkflow: "Flux de aprobare a accesiunilor",
       accessionsApprovalWorkflowDescription:
         "Când este activat, solicitările noi de obiecte sunt trimise curatorului și administratorului spre aprobare. Când este dezactivat, obiectele trimise sunt aprobate și publicate imediat.",
       deaccessionsApprovalWorkflow:
@@ -10249,15 +9376,16 @@ export default {
       code39: "Code 39",
       positionTheCodeWithinTheCameraViewToScan:
         "Poziționează codul în câmpul vizual al camerei pentru a-l scana",
-      noMatchingCollectionsFound: "Nu s-au găsit colecții corespunzătoare.",
+      noMatchingCollectionsFound:
+        "Nu s-au găsit grupuri de colecție potrivite.",
       press: "Apasă",
       toAdd: "pentru a adăuga",
-      typeToSearchCollections: "Tastează pentru a căuta colecții",
+      typeToSearchCollections: "Tastați pentru a căuta grupuri de colecție",
       collections: "Colecții",
       searchByAccessionNumberOrTitle:
         "Caută după numărul de inventar sau titlu...",
       scrollForMore: "Derulează pentru mai multe…",
-      loadingCollections: "Se încarcă colecțiile...",
+      loadingCollections: "Se încarcă obiectele...",
       collectionType: "Tipul colecției",
       determinesWhichSpecializedFieldsAreAvailableForThisItem:
         "Stabilește ce câmpuri specializate sunt disponibile pentru acest obiect",
@@ -10271,12 +9399,12 @@ export default {
       objects: "Obiecte",
       collectionGroups: "Grupuri de colecții",
       loans: "Împrumuturi",
-      accessions: "Intrări în colecție",
+      accessions: "Accesiuni",
       locations: "Locații",
       create: "Creează",
       newObject: "Obiect nou",
       n: "⌘N",
-      newAccession: "Intrare nouă în colecție",
+      newAccession: "Accesiune nouă",
       newLoan: "Împrumut nou",
       newCollectionGroup: "Grup nou de colecții",
       documentationQuality: "Calitatea documentației",
@@ -10534,21 +9662,21 @@ export default {
       turnOffFlash: "Oprește blițul",
       turnOnFlash: "Pornește blițul",
       removeNamedItem: "Elimină {name}",
-      itemSelected: "{count} element selectat",
-      itemsSelected: "{count} elemente selectate",
-      searchAndSelectCollections: "Caută și selectează colecții",
-      noCollectionsFound: "Nu s-au găsit colecții",
+      itemSelected: "{count} obiect selectat",
+      itemsSelected: "{count} obiecte selectate",
+      searchAndSelectCollections: "Caută și selectează obiecte",
+      noCollectionsFound: "Nu s-au găsit obiecte",
       cannotDeleteCondition: "Starea nu poate fi ștearsă",
       deleteCondition: "Șterge starea",
       collection: "Colecție",
       searchOrAdd: "Caută sau adaugă",
       selectACollectionObject: "Selectează un obiect din colecție",
       noCollectionsFoundMatchingYourSearch:
-        "Nicio colecție nu corespunde căutării tale",
-      noCollectionsAvailable: "Nu există colecții disponibile",
+        "Niciun obiect nu corespunde căutării",
+      noCollectionsAvailable: "Nu există obiecte disponibile",
       selectOrAddMaterials: "Selectează sau adaugă materiale",
       addNamedItem: "Adaugă {name}",
-      selectCollection: "Selectează colecția",
+      selectCollection: "Selectează grupul de colecție",
       primaryGroup: "Grup principal",
       secondaryGroup: "Grup secundar",
       makePrimary: "Setează ca principal",
@@ -10560,7 +9688,7 @@ export default {
       noOrganization: "Nicio organizație",
       noObjectsFound: "Nu s-au găsit obiecte",
       selectOrAddTypes: "Selectează sau adaugă tipuri",
-      qrCodeForAccession: "Cod QR pentru intrarea în colecție {accession}",
+      qrCodeForAccession: "Cod QR pentru accesiunea {accession}",
       filter: "Filtrează",
       filters: "Filtre",
       uploading: "Se încarcă",
@@ -10587,6 +9715,9 @@ export default {
       skipToSearch: "Sari la căutare",
       cannotDeleteMaterial: "Materialul nu poate fi șters",
       deleteMaterial: "Șterge materialul",
+      currentLocationOption: "{location} (actuală)",
+      flashNotSupported:
+        "Camera acestui dispozitiv nu permite controlul blițului.",
     },
     auth: {
       noAccountYet: "Nu ai încă un cont?",
@@ -10675,9 +9806,9 @@ export default {
       loanReturned: "Împrumut returnat",
       loanRequested: "Împrumut solicitat",
       loanUpdated: "Împrumut actualizat",
-      accessionApproved: "Intrare în colecție aprobată",
-      accessionRejected: "Intrare în colecție respinsă",
-      accessionReceived: "Intrare în colecție primită",
+      accessionApproved: "Accesiune aprobată",
+      accessionRejected: "Accesiune respinsă",
+      accessionReceived: "Accesiune primită",
       deaccessionApproved: "Scoatere din colecție aprobată",
       deaccessionRejected: "Scoatere din colecție respinsă",
       deaccessionProposed: "Scoatere din colecție propusă",
@@ -10727,6 +9858,11 @@ export default {
     donorCreate: {
       duplicateEmail:
         "Există deja un donator cu această adresă de e-mail: {donor}",
+      invalidEmail: "Introduceți o adresă de e-mail validă.",
+      placeholder: "Selectați sau adăugați donatori...",
+      unknownDonors: "Donatori necunoscuți",
+      unknownDonorsHint:
+        "Folosiți când obiectul a fost donat de un donator nenumit",
     },
     navigation: {
       patronManagement: "Gestionarea cititorilor",
@@ -10737,7 +9873,7 @@ export default {
       objectCatalog: "Catalogul obiectelor",
       locationTracking: "Locații și urmărire",
       scan: "Scanează",
-      accessions: "Intrări în colecție",
+      accessions: "Accesiuni",
       deaccessions: "Scoateri din colecție",
       conservation: "Conservare",
       insurance: "Asigurări",
@@ -10819,13 +9955,11 @@ export default {
       titles: {
         batchJobSucceeded: "{job}: operațiune finalizată",
         batchJobFailed: "{job}: operațiune finalizată cu {count} erori",
-        newAccessionRequiresApproval:
-          "O nouă intrare în colecție necesită aprobare",
-        accessionApproved: "Intrare în colecție aprobată",
-        accessionRequiresYourApproval:
-          "Intrarea în colecție necesită aprobarea ta",
-        accessionRejected: "Intrare în colecție respinsă",
-        accessionAssigned: "Intrare în colecție atribuită",
+        newAccessionRequiresApproval: "O nouă accesiune necesită aprobare",
+        accessionApproved: "Accesiune aprobată",
+        accessionRequiresYourApproval: "Accesiunea necesită aprobarea ta",
+        accessionRejected: "Accesiune respinsă",
+        accessionAssigned: "Accesiune atribuită",
         objectRequestRequiresApproval:
           "Solicitarea privind obiectul necesită aprobare",
         newDeaccessionRequiresApproval:
@@ -10882,8 +10016,7 @@ export default {
         assessmentDue: "Evaluare scadentă: {title}",
         insurancePolicyExpiring: "Polița de asigurare expiră în {days} zile",
         loanPendingApproval: "Împrumut în așteptarea aprobării: {number}",
-        accessionPendingApproval:
-          "Intrare în colecție în așteptarea aprobării: {number}",
+        accessionPendingApproval: "Accesiune în așteptarea aprobării: {number}",
         deaccessionPendingApproval:
           "Scoatere din colecție în așteptarea aprobării: {number}",
         exhibitionPendingApproval:
@@ -10912,7 +10045,7 @@ export default {
         objectOnLoanCannotMove:
           "Acest obiect este împrumutat în prezent și nu poate fi transferat.",
         pendingLocationMoveRequest:
-          "Există deja o solicitare în așteptare pentru mutarea obiectului.",
+          "Obiectul are deja o solicitare în așteptare de mutare într-o altă locație.",
         pendingOrganizationMoveRequest:
           "Există deja o solicitare în așteptare pentru transferul obiectului către o altă organizație.",
         objectNotFound: "Obiectul nu a fost găsit.",
@@ -10923,15 +10056,15 @@ export default {
         sameOrganizationTransfer:
           "Nu poți transfera un obiect către organizația din care face deja parte.",
         accessionPendingAtStep:
-          "Intrarea în colecție {number} așteaptă aprobarea ta la pasul {step}.",
+          "Accesiunea {number} așteaptă aprobarea ta la pasul {step}.",
         deaccessionPendingAtStep:
           "Scoaterea din colecție {number} așteaptă aprobarea ta la pasul {step}.",
         accessionFullyApproved:
-          "Intrarea în colecție {number} a fost aprobată integral și adăugată în colecție.",
+          "Accesiunea {number} a fost aprobată integral și adăugată în colecție.",
         accessionApproved:
-          "Intrarea în colecție {number} a fost aprobată și adăugată în colecție.",
-        accessionRejected: "Intrarea în colecție {number} a fost respinsă.",
-        accessionAssigned: "Ți-a fost atribuită intrarea în colecție: {number}",
+          "Accesiunea {number} a fost aprobată și adăugată în colecție.",
+        accessionRejected: "Accesiunea {number} a fost respinsă.",
+        accessionAssigned: "Ți-a fost atribuită accesiunea: {number}",
         objectRequestPending:
           "Solicitarea privind obiectul {number} așteaptă aprobarea ta.",
         deaccessionFullyApproved:
@@ -10943,7 +10076,7 @@ export default {
         newApprovalRequest:
           "Un nou proces de tipul {workflowType} necesită analiza și aprobarea ta.",
         batchJobProcessed:
-          "Au fost procesate {successCount} din {totalItems} elemente.",
+          "Au fost procesate {successCount} din {totalItems} obiecte.",
         taskAssigned: "Ți-a fost atribuită sarcina: {title}",
         taskDueSoon:
           "Sarcina „{title}” ajunge la termen în mai puțin de 24 de ore",
@@ -11010,7 +10143,7 @@ export default {
         exhibitionApproved: "Expoziția „{title}” a fost aprobată.",
         exhibitionRejected: "Expoziția „{title}” a fost respinsă.",
         accessionRejectedWithReason:
-          "Intrarea în colecție {number} a fost respinsă. Motiv: {reason}",
+          "Accesiunea {number} a fost respinsă. Motiv: {reason}",
         deaccessionRejectedWithReason:
           "Scoaterea din colecție {number} a fost respinsă. Motiv: {reason}",
         loanRejectedWithReason:
@@ -11027,7 +10160,7 @@ export default {
           "Disputa ta privind starea de conservare a fost soluționată",
       },
       workflowTypes: {
-        accession: "intrare în colecție",
+        accession: "accesiune",
         deaccession: "scoatere din colecție",
         loan: "împrumut",
         exhibition: "expoziție",
@@ -11445,6 +10578,46 @@ export default {
       draftMedia: "Fotografii și documente",
       alternateNumberExists:
         "Acest număr de accesiune alternativ este deja în listă.",
+    },
+  },
+  workflowApprovals: {
+    errors: {
+      workflowNotConfigured:
+        "Acest pas de aprobare nu este configurat corect. Roagă un administrator să verifice setările fluxului de lucru, apoi încearcă din nou.",
+      approvalNotPermitted:
+        "Acest pas este atribuit unui alt rol de aprobator. Roagă o persoană desemnată pentru acest pas să îl verifice.",
+      alreadyApproved:
+        "Aprobarea ta este deja înregistrată. Dosarul rămâne în așteptare până când îl aprobă ceilalți aprobatori.",
+    },
+  },
+  identifiers: {
+    registers: {
+      catalog: "registrul catalogului",
+      accession: "registrul de accesiuni",
+    },
+    errors: {
+      invalid:
+        "Folosiți între 1 și 256 de caractere vizibile pentru număr. Numerele istorice existente rămân neschimbate.",
+      inUse:
+        "{identifier} este deja folosit în {register}. Deschideți acea fișă sau alegeți un număr liber; fișele istorice nu sunt niciodată renumerotate sau comasate.",
+      reviewRequired:
+        "Finalizați revizuirea identificatorilor pentru {register} în Setări › Preferințe înainte de a atribui numere noi.",
+      numberingNotConfigured:
+        "Generarea numerelor nu este configurată. Introduceți un număr sau cereți unui administrator să configureze numerotarea în Setări › Preferințe.",
+      numberingExhausted:
+        "Formatul de numerotare a generat în mod repetat numere deja folosite în {register}. Cereți unui administrator să verifice formatul sau contorul în Setări › Preferințe.",
+      catalogNumberLocked:
+        "Doar o accesiune nepublicată, aflată în evaluare, își poate schimba numărul de catalog planificat. Numerele de registru publicate sunt permanente.",
+    },
+    hint: {
+      needsIndexing:
+        "Finalizați indexarea identificatorilor înainte de a atribui numere noi.",
+      openReview: "Deschide revizuirea identificatorilor",
+      inUse:
+        "Alte fișe din {register} folosesc deja acest număr. Pentru o fișă nouă, alegeți un număr liber. Majusculele și spațiile din jur nu fac un număr unic.",
+      moreMatches: "Mai multe potriviri sunt în revizuirea identificatorilor.",
+      permanentInDraft:
+        "Acest număr permanent se păstrează când editați ciorna.",
     },
   },
 };

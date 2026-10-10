@@ -34,6 +34,8 @@ import { IdentifierAvailabilityHint } from "@/components/identifier-availability
 import { useOrganization } from "@/components/organization-provider";
 import { PartyPicker, usePartyPickerAccess } from "@/components/party-picker";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useIdentifierErrorMessage } from "@/hooks/use-identifier-error-message";
 import { usePartyErrorMessage } from "@/hooks/use-party-error-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
@@ -187,6 +189,7 @@ function AccessionIdentityFields({
   setFormData: SetFormData;
 }) {
   const { currentOrganizationId } = useOrganization();
+  const tCatalog = useScopedI18n("accessions.catalogNumber");
   return (
     <>
       <div className="space-y-2">
@@ -213,9 +216,7 @@ function AccessionIdentityFields({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="catalogIdentifier">
-          Catalog number on publication (optional)
-        </Label>
+        <Label htmlFor="catalogIdentifier">{tCatalog("optionalLabel")}</Label>
         <Input
           id="catalogIdentifier"
           value={formData.catalogIdentifier}
@@ -227,9 +228,7 @@ function AccessionIdentityFields({
           }
         />
         <p className="text-xs text-muted-foreground">
-          Defaults to the accession number. Select an unused catalog number if
-          the catalog already uses the accession number; each register preserves
-          its own permanent number.
+          {tCatalog("defaultHint")}
         </p>
         <IdentifierAvailabilityHint
           organizationId={currentOrganizationId}
@@ -490,6 +489,8 @@ export default function NewAccessionPage() {
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
   const partyErrorMessage = usePartyErrorMessage();
+  const identifierMessage = useIdentifierErrorMessage();
+  const actionErrorMessage = useActionErrorMessage();
   const generateUploadUrl = useMutation(api.accessions.generateDraftUploadUrl);
   const [state, dispatch] = useReducer(
     newAccessionPageReducer,
@@ -643,9 +644,8 @@ export default function NewAccessionPage() {
         type: "setError",
         value: partyErrorFromError(err)
           ? partyErrorMessage(err)
-          : err instanceof Error
-            ? err.message
-            : t("form.sourceRequiredError"),
+          : (identifierMessage(err) ??
+            actionErrorMessage(err, t("error.failedToCreate"))),
       });
       dispatch({ type: "setIsSubmitting", value: false });
     }

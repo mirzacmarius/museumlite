@@ -54,6 +54,152 @@ for (const [locale, dictionary] of Object.entries({ en, es, fr, no, ro })) {
       ).toEqual(interpolationValues(value));
     }
   });
+
+  test(`${locale} has no translations that English lacks`, () => {
+    const orphans = Object.keys(flattenTranslations(dictionary)).filter(
+      (key) => !(key in english),
+    );
+    expect(orphans).toEqual([]);
+  });
+}
+
+/** Words of three or more letters, without interpolation values. */
+function words(value: string): string[] {
+  return value.replace(/\{[^{}]+\}/g, " ").match(/\p{L}{3,}/gu) ?? [];
+}
+
+/**
+ * URLs, addresses, field names such as `accessionNumber` and lists of CSV
+ * values read the same everywhere.
+ */
+function isTechnical(value: string): boolean {
+  return /:\/\/|@|\b\p{Ll}+\p{Lu}\p{L}*|^\p{Ll}+(, \p{Ll}+)+$/u.test(value);
+}
+
+/** Proper names kept in English in every language. */
+const PROPER_NAMES = new Set([
+  "library.catalog.new.lcClassification",
+  "library.settings.libraryOfCongress",
+  "untranslatedDashboard.settings.libraryOfCongress",
+  "untranslatedRecords.collections.import.templates.tms",
+]);
+
+for (const [locale, dictionary] of Object.entries({ es, fr, no, ro })) {
+  test(`${locale} translates every phrase instead of repeating the English`, () => {
+    const translations = flattenTranslations(dictionary);
+    const untranslated = Object.entries(english).flatMap(([key, value]) =>
+      translations[key] === value &&
+      words(value).length >= 2 &&
+      !isTechnical(value) &&
+      !PROPER_NAMES.has(key)
+        ? [key]
+        : [],
+    );
+    expect(untranslated).toEqual([]);
+  });
+}
+
+type Locale = "es" | "fr" | "no" | "ro";
+
+/**
+ * Each locale's word for a glossary term (GLOSSARY.md, Translations). Where
+ * English names the term, the translation uses the accepted word and never
+ * the word for a different term.
+ */
+const GLOSSARY_TERMS: Array<{
+  english: RegExp;
+  accepted?: Record<Locale, RegExp>;
+  avoided?: Record<Locale, RegExp>;
+  exceptions?: ReadonlySet<string>;
+}> = [
+  {
+    english: /(?<!\p{L})objects?(?!\p{L})/iu,
+    accepted: { es: /objeto/iu, fr: /objet/iu, no: /objekt/iu, ro: /obiect/iu },
+    // French collection records call an object's name its "dénomination".
+    exceptions: new Set(["documentationQuality.requirements.object_name"]),
+  },
+  {
+    english: /(?<!\p{L})locations?(?!\p{L})/iu,
+    accepted: {
+      es: /ubicaci/iu,
+      fr: /emplacement/iu,
+      no: /plassering|sted/iu,
+      ro: /loca[tț]i/iu,
+    },
+    // The place an insurance incident happened is not a Location record.
+    exceptions: new Set(["untranslatedDashboard.insurance.incidentLocation"]),
+  },
+  {
+    // An Accession is neither an Acquisition nor an Entry: English that names
+    // only accessions never reads as one of those.
+    english:
+      /^(?!.*acqui)(?!.*deaccession)(?!.*\b(entry|entries|intake|receiv|receipt)).*(?<!\p{L})accession/iu,
+    avoided: {
+      es: /adquisici|(?<!\p{L})(entrada|ingreso)/iu,
+      fr: /acquisition|(?<!\p{L})entrée/iu,
+      no: /erverv|innlevering/iu,
+      ro: /achizi|(?<!\p{L})intr[aă]r/iu,
+    },
+  },
+];
+
+/** Optional modules, the Library Module and reports name their own fields. */
+const OWN_VOCABULARY =
+  /^(modules\.|library\.|analytics\.|untranslatedDashboard\.analytics\.)/;
+
+for (const [locale, dictionary] of Object.entries({ es, fr, no, ro })) {
+  test(`${locale} uses the glossary's word wherever English names a glossary term`, () => {
+    const translations = flattenTranslations(dictionary);
+    const drifted = GLOSSARY_TERMS.flatMap(
+      ({ english: term, accepted, avoided, exceptions }) =>
+        Object.entries(english).flatMap(([key, value]) => {
+          if (
+            !term.test(value.replace(/\{[^{}]+\}/g, "")) ||
+            OWN_VOCABULARY.test(key) ||
+            isTechnical(value) ||
+            exceptions?.has(key)
+          ) {
+            return [];
+          }
+          const translated = translations[key] ?? "";
+          return accepted?.[locale as Locale].test(translated) === false ||
+            avoided?.[locale as Locale].test(translated) === true
+            ? [key]
+            : [];
+        }),
+    );
+    expect(drifted).toEqual([]);
+  });
+}
+
+/**
+ * GLOSSARY.md reserves Item for library circulation. Outside the Library
+ * Module, staff never read the "item" words below for an Object.
+ */
+const ITEM_WORDS = {
+  en: /(?<!\p{L})items?(?!\p{L})/iu,
+  es: /(?<!\p{L})(artículos?|elementos?)(?!\p{L})/iu,
+  fr: /(?<!\p{L})(articles?|éléments?)(?!\p{L})/iu,
+  no: /(?<!\p{L})(artikkel\p{L}*|artikl\p{L}*|element\p{L}*)(?!\p{L})/iu,
+  ro: /(?<!\p{L})(articol\p{L}*|element\p{L}*)(?!\p{L})/iu,
+};
+
+/** Library circulation, developer tools, reports and provenance evidence items. */
+const ITEM_NAMESPACES =
+  /^(library\.|modules\.library|untranslatedDashboard\.settings\.|developer\.|settings\.developer\.|settings\.data\.|analytics\.|untranslatedDashboard\.analytics\.|exportJobs\.|registerReports\.|provenance\.)/;
+
+for (const [locale, dictionary] of Object.entries({ en, es, fr, no, ro })) {
+  test(`${locale} never calls an object an item outside the Library Module`, () => {
+    const itemWord = ITEM_WORDS[locale as keyof typeof ITEM_WORDS];
+    const items = Object.entries(flattenTranslations(dictionary)).flatMap(
+      ([key, value]) =>
+        !ITEM_NAMESPACES.test(key) &&
+        itemWord.test(value.replace(/\{[^{}]+\}/g, ""))
+          ? [key]
+          : [],
+    );
+    expect(items).toEqual([]);
+  });
 }
 
 function sourceFiles(directory: string): string[] {

@@ -3,6 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { accessionReviewErrorFromError } from "@v1/backend/convex/utils/accessionReview";
+import { workflowApprovalErrorFromError } from "@v1/backend/convex/utils/workflowApprovalErrors";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
@@ -11,9 +12,10 @@ import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useAccessionReviewMessage } from "@/hooks/use-accession-review-message";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
-import { RejectIntakeDialog } from "./reject-intake-dialog";
 import { useObjectDraftErrorMessage } from "../../../objects/_components/object-type-details/use-object-draft-error-message";
+import { RejectIntakeDialog } from "./reject-intake-dialog";
 
 interface ApprovalWorkflowProps {
   accessionId: string;
@@ -30,66 +32,43 @@ interface ApprovalErrorMessage {
   description: string;
 }
 
-function extractConvexErrorMessage(message: string) {
-  const uncaughtPrefix = "Uncaught Error:";
-  const uncaughtIndex = message.indexOf(uncaughtPrefix);
-  const normalizedMessage =
-    uncaughtIndex >= 0
-      ? message.slice(uncaughtIndex + uncaughtPrefix.length).trim()
-      : message.trim();
-
-  return normalizedMessage
-    .replace(/\s+at handler[\s\S]*$/u, "")
-    .replace(/\s+Called by client[\s\S]*$/u, "")
-    .trim();
-}
-
+/** What staff can do about a refused approval; server error text is never shown. */
 function getApprovalErrorMessage(
   err: unknown,
   t: ReturnType<typeof useScopedI18n>,
+  capabilityMessage: (error: unknown) => string | null,
 ): ApprovalErrorMessage {
-  const fallbackMessage =
-    err instanceof Error ? extractConvexErrorMessage(err.message) : "";
-
   if (
-    fallbackMessage.includes("Source verification is required before approval")
+    accessionReviewErrorFromError(err)?.code === "SOURCE_VERIFICATION_REQUIRED"
   ) {
     return {
       title: t("approval.errors.sourceVerificationRequiredTitle"),
       description: t("approval.errors.sourceVerificationRequiredDescription"),
     };
   }
-
-  if (
-    fallbackMessage.includes("Permission denied: cannot approve at this step")
-  ) {
-    return {
-      title: t("approval.errors.permissionDeniedTitle"),
-      description: t("approval.errors.permissionDeniedDescription"),
-    };
+  switch (workflowApprovalErrorFromError(err)?.code) {
+    case "APPROVAL_NOT_PERMITTED":
+      return {
+        title: t("approval.errors.permissionDeniedTitle"),
+        description: t("approval.errors.permissionDeniedDescription"),
+      };
+    case "ALREADY_APPROVED":
+      return {
+        title: t("approval.errors.alreadyApprovedTitle"),
+        description: t("approval.errors.alreadyApprovedDescription"),
+      };
+    case "WORKFLOW_NOT_CONFIGURED":
+      return {
+        title: t("approval.errors.workflowConfigurationTitle"),
+        description: t("approval.errors.workflowConfigurationDescription"),
+      };
+    case undefined:
+      return {
+        title: t("approval.errors.defaultTitle"),
+        description:
+          capabilityMessage(err) ?? t("approval.errors.defaultDescription"),
+      };
   }
-
-  if (fallbackMessage.includes("You have already approved this step")) {
-    return {
-      title: t("approval.errors.alreadyApprovedTitle"),
-      description: t("approval.errors.alreadyApprovedDescription"),
-    };
-  }
-
-  if (
-    fallbackMessage.includes("Workflow has no approval steps configured") ||
-    fallbackMessage.includes("Current workflow step is not configured")
-  ) {
-    return {
-      title: t("approval.errors.workflowConfigurationTitle"),
-      description: t("approval.errors.workflowConfigurationDescription"),
-    };
-  }
-
-  return {
-    title: t("approval.errors.defaultTitle"),
-    description: fallbackMessage || t("approval.errors.defaultDescription"),
-  };
 }
 
 export function ApprovalWorkflow({
@@ -105,6 +84,7 @@ export function ApprovalWorkflow({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<ApprovalErrorMessage | null>(null);
   const describeDraftError = useObjectDraftErrorMessage();
+  const capabilityMessage = useCapabilityErrorMessage();
 
   const accession = useQuery(
     api.accessions.get,
@@ -150,16 +130,19 @@ export function ApprovalWorkflow({
       setExceptionReason("");
     } catch (err) {
       const draftError = describeDraftError(err);
-      const approvalError = getApprovalErrorMessage(err, t);
+      const reviewCode = accessionReviewErrorFromError(err)?.code;
       setError(
         draftError
           ? {
               title: t("approval.errors.defaultTitle"),
               description: draftError,
             }
-          : accessionReviewErrorFromError(err)
-            ? { ...approvalError, description: reviewMessage(err) }
-            : approvalError,
+          : reviewCode && reviewCode !== "SOURCE_VERIFICATION_REQUIRED"
+            ? {
+                title: t("approval.errors.defaultTitle"),
+                description: reviewMessage(err),
+              }
+            : getApprovalErrorMessage(err, t, capabilityMessage),
       );
     } finally {
       setIsSubmitting(false);

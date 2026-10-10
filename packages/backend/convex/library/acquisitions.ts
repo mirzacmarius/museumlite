@@ -15,6 +15,7 @@ import {
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
 } from "../utils/permissions";
+import { workflowApprovalError } from "../utils/workflowApprovalErrors";
 import { getWorkflowConfig } from "../utils/workflowConfigs";
 import { resolveWorkflowStepState } from "../utils/workflowSteps";
 import { requireLibraryPermission } from "./utils/permissions";
@@ -89,7 +90,10 @@ export const create = mutation({
     );
 
     if (workflowConfig && workflowState.firstStep === undefined) {
-      throw new Error("Workflow has no approval steps configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      );
     }
 
     const now = Date.now();
@@ -714,10 +718,16 @@ export const approve = mutation({
       const currentStep = workflowState.currentStep;
 
       if (currentStep === undefined) {
-        throw new Error("Workflow has no approval steps configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Workflow has no approval steps configured",
+        );
       }
       if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-        throw new Error("Current workflow step is not configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Current workflow step is not configured",
+        );
       }
 
       const canApprove = await canApproveAtStep(
@@ -728,7 +738,10 @@ export const approve = mutation({
       );
 
       if (!canApprove) {
-        throw new Error("Permission denied: cannot approve at this step");
+        throw workflowApprovalError(
+          "APPROVAL_NOT_PERMITTED",
+          "Permission denied: cannot approve at this step",
+        );
       }
 
       const history = [...(request.workflowHistory ?? [])];
@@ -781,7 +794,10 @@ export const approve = mutation({
       } else {
         const nextStep = workflowState.nextStep;
         if (nextStep === undefined) {
-          throw new Error("Next workflow step is not configured");
+          throw workflowApprovalError(
+            "WORKFLOW_NOT_CONFIGURED",
+            "Next workflow step is not configured",
+          );
         }
         const [, usersToNotify] = await Promise.all([
           Promise.all([

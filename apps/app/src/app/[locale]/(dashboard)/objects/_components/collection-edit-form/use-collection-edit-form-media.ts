@@ -7,6 +7,7 @@ import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { getMediaSignature } from "../collection-form-shared/utils";
 
 type CollectionMediaItem = FunctionReturnType<typeof api.media.list>[number];
@@ -30,6 +31,7 @@ export function useCollectionEditFormMedia({
   setError,
   t,
 }: UseCollectionEditFormMediaOptions) {
+  const actionErrorMessage = useActionErrorMessage();
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
   const createMedia = useMutation(api.media.create);
   const setPrimary = useMutation(api.media.setPrimary);
@@ -139,20 +141,12 @@ export function useCollectionEditFormMedia({
           );
         } catch (err) {
           setError(
-            err instanceof Error
-              ? err.message
-              : t("form.errors.failedToCreateMedia"),
+            actionErrorMessage(err, t("form.errors.failedToCreateMedia")),
           );
         }
       },
-      onUploadError: (uploadError) => {
-        setError(
-          uploadError &&
-            typeof uploadError === "object" &&
-            "message" in uploadError
-            ? String(uploadError.message)
-            : "Upload failed",
-        );
+      onUploadError: () => {
+        setError(t("form.errors.uploadFailed"));
       },
     },
   );
@@ -214,13 +208,19 @@ export function useCollectionEditFormMedia({
       } catch (err) {
         console.error("Error uploading documents:", err);
         setError(
-          err instanceof Error
-            ? `Failed to upload documents: ${err.message}`
-            : "Failed to upload documents",
+          actionErrorMessage(err, t("form.errors.failedToUploadDocuments")),
         );
       }
     },
-    [collection, createMedia, generateUploadUrl, setError, typedCollectionId],
+    [
+      actionErrorMessage,
+      collection,
+      createMedia,
+      generateUploadUrl,
+      setError,
+      t,
+      typedCollectionId,
+    ],
   );
 
   const handleFileSelect = useCallback(
@@ -243,14 +243,10 @@ export function useCollectionEditFormMedia({
           cameraInputRef.current.value = "";
         }
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : t("form.errors.failedToProcessFile"),
-        );
+        setError(actionErrorMessage(err, t("form.errors.failedToProcessFile")));
       }
     },
-    [setError, startUpload, t],
+    [actionErrorMessage, setError, startUpload, t],
   );
 
   const handleDocumentSelect = useCallback(
@@ -270,13 +266,11 @@ export function useCollectionEditFormMedia({
         }
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : t("form.errors.failedToProcessDocument"),
+          actionErrorMessage(err, t("form.errors.failedToProcessDocument")),
         );
       }
     },
-    [handleDocumentUpload, setError, t],
+    [actionErrorMessage, handleDocumentUpload, setError, t],
   );
 
   const handleSetPrimary = useCallback(
@@ -285,14 +279,10 @@ export function useCollectionEditFormMedia({
       try {
         await setPrimary({ mediaId: mediaId as Id<"mediaFiles"> });
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : t("form.errors.failedToSetPrimary"),
-        );
+        setError(actionErrorMessage(err, t("form.errors.failedToSetPrimary")));
       }
     },
-    [setError, setPrimary, t],
+    [actionErrorMessage, setError, setPrimary, t],
   );
 
   return {

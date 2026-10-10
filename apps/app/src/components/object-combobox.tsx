@@ -33,7 +33,7 @@ export function ObjectCombobox({
   collectionId,
   value,
   onValueChange,
-  placeholder = "Select parent object...",
+  placeholder,
   disabled = false,
 }: ObjectComboboxProps) {
   const translate = useI18n();
@@ -78,7 +78,9 @@ export function ObjectCombobox({
               {selectedObject.title} ({selectedObject.accessionNumber})
             </span>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">
+              {placeholder ?? tPicker("selectParent")}
+            </span>
           )}
           <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>

@@ -57,6 +57,7 @@ import {
   VALUATION_MAX_AGE_MS,
 } from "./utils/valuation";
 import { valuationError } from "./utils/valuationErrors";
+import { workflowApprovalError } from "./utils/workflowApprovalErrors";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
@@ -365,7 +366,10 @@ export async function createDeaccessionRecord(
   );
 
   if (workflowConfig && workflowState.firstStep === undefined) {
-    throw new Error("Workflow has no approval steps configured");
+    throw workflowApprovalError(
+      "WORKFLOW_NOT_CONFIGURED",
+      "Workflow has no approval steps configured",
+    );
   }
 
   // Without an approval workflow the initiator's request becomes the decision
@@ -1149,7 +1153,10 @@ export const submitForApproval = mutation({
     );
 
     if (workflowConfig && workflowState.firstStep === undefined) {
-      throw new Error("Workflow has no approval steps configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      );
     }
 
     // Reset workflow step if needed
@@ -1208,10 +1215,16 @@ export const approve = mutation({
       const currentStep = workflowState.currentStep;
 
       if (currentStep === undefined) {
-        throw new Error("Workflow has no approval steps configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Workflow has no approval steps configured",
+        );
       }
       if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-        throw new Error("Current workflow step is not configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Current workflow step is not configured",
+        );
       }
 
       const canApprove = await canApproveAtStep(
@@ -1222,14 +1235,20 @@ export const approve = mutation({
       );
 
       if (!canApprove) {
-        throw new Error("Permission denied: cannot approve at this step");
+        throw workflowApprovalError(
+          "APPROVAL_NOT_PERMITTED",
+          "Permission denied: cannot approve at this step",
+        );
       }
 
       const currentStepConfig = workflowConfig.steps.find(
         (step) => step.stepNumber === currentStep,
       );
       if (!currentStepConfig) {
-        throw new Error("Current workflow step is not configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Current workflow step is not configured",
+        );
       }
 
       // Check if this is the last step

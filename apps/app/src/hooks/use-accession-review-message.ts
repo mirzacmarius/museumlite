@@ -22,6 +22,8 @@ export function useAccessionReviewMessage() {
         return t("reasonTooLong");
       case "NOT_PERMITTED":
         return t("notPermitted");
+      case "SOURCE_VERIFICATION_REQUIRED":
+        return t("sourceVerificationRequired");
       case undefined:
         return fallback ?? t("fallback");
     }

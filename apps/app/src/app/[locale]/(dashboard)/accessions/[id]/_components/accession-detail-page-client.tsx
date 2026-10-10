@@ -10,6 +10,8 @@ import { Suspense, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { RecordRecoveryState } from "@/components/record-recovery-state";
 import { useAccessionReviewMessage } from "@/hooks/use-accession-review-message";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useIdentifierErrorMessage } from "@/hooks/use-identifier-error-message";
 import { useRecordViewState } from "@/hooks/use-return-path";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { AccessionCatalogIdentifier } from "./accession-catalog-identifier";
@@ -26,6 +28,8 @@ export function AccessionDetailPageClient() {
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
   const tCommon = useScopedI18n("common");
+  const identifierMessage = useIdentifierErrorMessage();
+  const actionErrorMessage = useActionErrorMessage();
   const reviewMessage = useAccessionReviewMessage();
   const submitForApproval = useMutation(api.accessions.submitForApproval);
   const verifySource = useMutation(api.accessions.verifySource);
@@ -196,9 +200,11 @@ export function AccessionDetailPageClient() {
       setDraftActionError(
         accessionReviewErrorFromError(err)
           ? reviewMessage(err)
-          : err instanceof Error
-            ? err.message
-            : tRoot("untranslatedRecords.accessions.errors.submitDraft"),
+          : (identifierMessage(err) ??
+              actionErrorMessage(
+                err,
+                tRoot("untranslatedRecords.accessions.errors.submitDraft"),
+              )),
       );
     } finally {
       setIsSubmittingDraft(false);
@@ -215,9 +221,10 @@ export function AccessionDetailPageClient() {
       refresh();
     } catch (err) {
       setDraftActionError(
-        err instanceof Error
-          ? err.message
-          : tRoot("untranslatedRecords.accessions.errors.verifySource"),
+        actionErrorMessage(
+          err,
+          tRoot("untranslatedRecords.accessions.errors.verifySource"),
+        ),
       );
     } finally {
       setIsVerifyingSource(false);
@@ -255,11 +262,15 @@ export function AccessionDetailPageClient() {
   };
 
   return (
-    <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background">
+    // On phones the hero is taller than the screen, so the whole page scrolls;
+    // from md up the hero stays put and only the content scrolls.
+    <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background max-md:overflow-y-auto">
       <AccessionDetailHeroBanner {...detailProps} />
-      <div className="flex-1 overflow-y-auto">
+      <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
         {accession.status === "pending" && !accession.collectionId ? (
-          <Suspense fallback={<p>Loading catalog numbering…</p>}>
+          <Suspense
+            fallback={<p>{tRoot("accessions.catalogNumber.loading")}</p>}
+          >
             <AccessionCatalogIdentifier
               accessionId={accession._id}
               organizationId={accession.organizationId}

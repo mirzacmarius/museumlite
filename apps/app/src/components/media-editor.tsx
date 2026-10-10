@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Crop, PixelCrop } from "react-image-crop";
 import { toast } from "sonner";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useI18n } from "@/locales/client";
 import { applyMediaEditsToCanvas } from "./media-editor-canvas-utils";
 import { MediaEditorControls } from "./media-editor-controls";
@@ -124,6 +125,7 @@ export function MediaEditor({
   watermarkSettings,
 }: MediaEditorProps) {
   const translate = useI18n();
+  const actionErrorMessage = useActionErrorMessage();
   const [state, dispatch] = useReducer(mediaEditorReducer, undefined, () =>
     createInitialMediaEditorState({
       watermarkEnabled: watermarkSettings?.isEnabled ?? false,
@@ -242,14 +244,16 @@ export function MediaEditor({
       onClose();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : translate("untranslatedComponents.mediaEditor.saveFailed"),
+        actionErrorMessage(
+          error,
+          translate("untranslatedComponents.mediaEditor.saveFailed"),
+        ),
       );
     } finally {
       dispatch({ type: "setIsSaving", value: false });
     }
   }, [
+    actionErrorMessage,
     applyEdits,
     state.completedCrop,
     state.rotation,

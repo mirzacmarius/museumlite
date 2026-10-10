@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useOrganization } from "@/components/organization-provider";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useI18n } from "@/locales/client";
 import {
   type EditMetadata,
@@ -29,6 +30,7 @@ export function MediaEditorDialog({
   onSaved,
 }: MediaEditorDialogProps) {
   const translate = useI18n();
+  const actionErrorMessage = useActionErrorMessage();
   const { currentOrganizationId } = useOrganization();
   const isSavingRef = useRef(false);
 
@@ -153,17 +155,19 @@ export function MediaEditorDialog({
         onClose();
       } catch (error) {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : translate(
-                "untranslatedComponents.mediaEditor.failedToSaveEditedMedia",
-              ),
+          actionErrorMessage(
+            error,
+            translate(
+              "untranslatedComponents.mediaEditor.failedToSaveEditedMedia",
+            ),
+          ),
         );
       } finally {
         isSavingRef.current = false;
       }
     },
     [
+      actionErrorMessage,
       mediaId,
       currentOrganizationId,
       mediaFile,

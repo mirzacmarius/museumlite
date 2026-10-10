@@ -35,7 +35,8 @@ import {
   returnLoanHandler,
   returnLoanItemHandler,
 } from "./utils/loanLifecycle";
-import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
+import { loanObjectError } from "./utils/loanObjectErrors";
+import { isCollectionOnLoan } from "./utils/loanOccupancy";
 import {
   approveLoanHandler,
   bulkApproveLoansHandler,
@@ -63,6 +64,7 @@ import {
 } from "./utils/recordEdits";
 import { claimStorageOwnership } from "./utils/uploadOwnership";
 import { emitWebhookEvent } from "./utils/webhookEvents";
+import { workflowApprovalError } from "./utils/workflowApprovalErrors";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
@@ -152,7 +154,10 @@ export const create = mutation({
     );
 
     if (workflowConfig && workflowState.firstStep === undefined) {
-      throw new Error("Workflow has no approval steps configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      );
     }
 
     // Store creator in workflow history for notification purposes
@@ -232,26 +237,22 @@ export const create = mutation({
       await Promise.all(
         dedupedItems.map(async (item) => {
           const collection = await ctx.db.get(item.collectionId);
-          if (!collection) {
-            throw new Error(`Collection ${item.collectionId} not found`);
+          if (
+            !collection ||
+            collection.organizationId !== args.organizationId
+          ) {
+            throw loanObjectError("OBJECT_UNAVAILABLE");
           }
-
-          if (collection.organizationId !== args.organizationId) {
-            throw new Error(
-              `Collection ${item.collectionId} does not belong to organization`,
-            );
+          if (
+            collection.status === "loaned" ||
+            (await isCollectionOnLoan(ctx, item.collectionId))
+          ) {
+            throw loanObjectError("OBJECT_ON_ACTIVE_LOAN");
           }
-
           if (collection.status !== "active") {
-            throw new Error(`Collection ${item.collectionId} is not active`);
+            throw loanObjectError("OBJECT_NOT_ACTIVE");
           }
           await assertAccessionedIfEntered(ctx, item.collectionId);
-
-          await assertCollectionNotOnLoan(
-            ctx,
-            item.collectionId,
-            `Collection ${item.collectionId} is already in an active loan`,
-          );
 
           await ctx.db.insert("loanItems", {
             loanId,
@@ -381,26 +382,19 @@ export const addItems = mutation({
     await Promise.all(
       uniqueCollectionIds.map(async (collectionId) => {
         const collection = await ctx.db.get(collectionId);
-        if (!collection) {
-          throw new Error(`Collection ${collectionId} not found`);
+        if (!collection || collection.organizationId !== loan.organizationId) {
+          throw loanObjectError("OBJECT_UNAVAILABLE");
         }
-
-        if (collection.organizationId !== loan.organizationId) {
-          throw new Error(
-            `Collection ${collectionId} does not belong to organization`,
-          );
+        if (
+          collection.status === "loaned" ||
+          (await isCollectionOnLoan(ctx, collectionId))
+        ) {
+          throw loanObjectError("OBJECT_ON_ACTIVE_LOAN");
         }
-
         if (collection.status !== "active") {
-          throw new Error(`Collection ${collectionId} is not active`);
+          throw loanObjectError("OBJECT_NOT_ACTIVE");
         }
         await assertAccessionedIfEntered(ctx, collectionId);
-
-        await assertCollectionNotOnLoan(
-          ctx,
-          collectionId,
-          `Collection ${collectionId} is already in an active loan`,
-        );
 
         // Create loan item
         await ctx.db.insert("loanItems", {

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { RecordedValue } from "@/components/recorded-value";
-import { formatCurrency, formatNumber } from "@/lib/format-number";
+import { formatMoney, formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<
@@ -215,7 +215,8 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
                   )}
                   {entry.provider && <span>{entry.provider}</span>}
                   {entry.cost && (
-                    <span>{formatCurrency(entry.cost, locale, "USD")}</span>
+                    // Maintenance costs are stored without a currency.
+                    <span>{formatMoney(entry.cost, locale, undefined)}</span>
                   )}
                 </div>
               </div>

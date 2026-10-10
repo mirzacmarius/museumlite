@@ -4,6 +4,7 @@ import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
+import { getLoanStatusLabel } from "@/lib/record-enum-labels";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { SelectedCollectionItem } from "./selected-collection-item";
 
@@ -91,7 +92,10 @@ export function NewLoanItemsSection({
                   (item) => item.collectionId === collection._id,
                 );
                 const issueMessage = issueInfo
-                  ? `Already in ${issueInfo.status} loan ${issueInfo.loanNumber}`
+                  ? tRoot("loans.actions.alreadyInLoan", {
+                      status: getLoanStatusLabel(issueInfo.status, tRoot),
+                      loanNumber: issueInfo.loanNumber,
+                    })
                   : undefined;
 
                 return (

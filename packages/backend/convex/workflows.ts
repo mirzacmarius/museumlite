@@ -7,6 +7,7 @@ import { internalQuery, type QueryCtx, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
+import { workflowApprovalError } from "./utils/workflowApprovalErrors";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
@@ -689,7 +690,10 @@ export const recordStepApproval = internalMutation({
       .first();
 
     if (existing) {
-      throw new Error("User has already approved this step");
+      throw workflowApprovalError(
+        "ALREADY_APPROVED",
+        "User has already approved this step",
+      );
     }
 
     return await ctx.db.insert("workflowStepApprovals", {

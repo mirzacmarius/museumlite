@@ -40,7 +40,7 @@ export default {
     unknownLegacyActor: "Legacy actor identity unknown",
 
     receiptRequirement:
-      "Enter condition notes or select an accepted assessment for every selected item, and confirm each required return destination.",
+      "Enter condition notes or select an accepted assessment for every selected object, and confirm each required return destination.",
     handoffTimeline: "Handoff timeline",
     installationTask: "Complete linked installation task (optional)",
     assessmentLabel: "Condition assessment",
@@ -136,7 +136,7 @@ export default {
       "Please select an organization from the dropdown above to view the dashboard.",
     departmentsAndCollections: "Departments & Collections",
     viewCollection: "View Collection",
-    items: "Items",
+    items: "Objects",
     groups: "Groups",
     loaned: "Loaned",
     allCollectionGroups: "All Collection Groups",
@@ -144,7 +144,6 @@ export default {
     createCatalogEntry: "Create catalog entry",
     quickAction: "Quick Action",
     accessionsWorkflow: "Accessions Workflow",
-    reviewIncomingItems: "Review incoming items",
     approved: "Approved",
     processing: "Processing",
     rejected: "Rejected",
@@ -282,7 +281,7 @@ export default {
       loanSettings: "Loan Settings",
       enableDetailedConditionReports: "Enable Detailed Condition Reports",
       detailedConditionReportsHint:
-        "Require detailed condition reports with photos for loan items",
+        "Require detailed condition reports with photos for objects on loan",
       saveChanges: "Save Changes",
       saving: "Saving...",
       organizationNameRequired: "Organization name is required",
@@ -1536,7 +1535,7 @@ export default {
   },
   kpi: {
     totalObjects: "Total Objects",
-    itemsOnDisplay: "Items on Display",
+    itemsOnDisplay: "Objects on Display",
     objectsOnLoan: "Objects on Loan",
     activeLoans: "Active Loans",
     pendingAccessions: "Pending Accessions",
@@ -1547,7 +1546,7 @@ export default {
     pendingApprovals: "Pending Approvals",
     noPendingAssignments: "No pending assignments",
     allCaughtUpDescription:
-      "You're all caught up! Check back later for new items requiring approval.",
+      "You're all caught up. Check back later for new cases awaiting your approval.",
     typeLabels: {
       accession: "Accession",
       accessions: "Accessions",
@@ -1590,7 +1589,7 @@ export default {
       termsEdit: "Specific loan terms, restrictions, or requirements...",
       notes: "Staff notes...",
       notesEdit: "Additional notes for staff...",
-      collections: "Search and select collections...",
+      collections: "Search and select objects...",
       searchAccession: "Search accession number...",
       searchCollections: "Search by accession number or title...",
       conditionOut: "Condition when leaving",
@@ -1614,7 +1613,7 @@ export default {
     kpis: {
       activeLoans: "Active Loans",
       loadedActiveLoans: "Active loans in loaded results",
-      loadedItems: "Items in loaded loans",
+      loadedItems: "Objects in loaded loans",
       objectsInTransit: "Objects in Transit",
       totalInsuredValue: "Total Insured Value",
       expiringAgreements: "Expiring Agreements",
@@ -1634,8 +1633,8 @@ export default {
       partnerInstitution: "Partner Institution",
       duration: "Duration",
       status: "Status",
-      items: "item",
-      itemsPlural: "items",
+      items: "object",
+      itemsPlural: "objects",
     },
     emptyState: {
       noLoansFound: "No loans found",
@@ -1658,7 +1657,7 @@ export default {
         startDate: "Start Date",
         endDate: "End Date",
         status: "Status",
-        items: "Items",
+        items: "Objects",
       },
     },
     pagination: {
@@ -1693,54 +1692,52 @@ export default {
       markAsReturned: "Mark as Returned",
       copyLoanNumber: "Copy loan number",
       markAsReturnedConfirm:
-        "Are you sure you want to mark this loan as returned? This will update the status of all associated collection items.",
-      returnLoanItems: "Return Loan Items",
-      selectItemsToReturn: "Select Items to Return",
+        "Are you sure you want to mark this loan as returned? This updates the status of every object on the loan.",
+      returnLoanItems: "Return Objects",
+      selectItemsToReturn: "Select Objects to Return",
       selectItemsToReturnDesc:
-        'Select which items to return. If all items are returned, the loan status will be updated to "Returned".',
+        'Select which objects to return. If all objects are returned, the loan status will be updated to "Returned".',
       selectAllItems: "Select All",
-      someItemsReturned: "Some items are already returned",
+      someItemsReturned: "Some objects are already returned",
       returnedItemsInfo:
-        'Items marked as "RETURNED" have already been returned and cannot be selected again. Only items that are still on loan can be returned.',
+        'Objects marked "RETURNED" have already been returned and cannot be selected again. Only objects still on loan can be returned.',
       confirmFullReturn: "Confirm Full Return",
       confirmPartialReturn: "Confirm Partial Return",
       fullReturnTitle:
         "You are about to return all {count} {items} from this loan.",
       fullReturnDescription:
-        'This will mark the loan as "Returned" and update the status of all collection items back to "active".',
+        'This marks the loan as "Returned" and sets every object on the loan back to "Active".',
       partialReturnTitle:
         "You are about to return {returnCount} of {totalCount} {items} from this loan.",
       partialReturnDescription:
-        "This is a partial return. The loan will remain in its current status and only the selected items will be marked as returned.",
+        "This is a partial return. The loan keeps its current status and only the selected objects are marked as returned.",
       remainingItems: "The remaining {count} {items} will stay on loan.",
       confirmProceed: "Are you sure you want to proceed?",
-      returnAllItems: "Return All Items",
+      returnAllItems: "Return All Objects",
       goBack: "Go Back",
       returning: "Returning...",
       loanActions: "Loan Actions",
-      selectAtLeastOne: "Please select at least one item to return.",
+      selectAtLeastOne: "Select at least one object to return.",
       keepLoan: "Keep Loan",
       cancel: "Cancel",
-      removeLoanItem: "Remove Item from Loan",
+      removeLoanItem: "Remove Object from Loan",
       removeItemConfirm:
-        "Are you sure you want to remove this item from the loan? This action cannot be undone.",
-      removeItem: "Remove Item",
-      addItemsToLoan: "Add Items to Loan",
-      searchSelectCollections:
-        "Search and select collections to add to this loan",
-      loadingCollections: "Loading collections...",
-      noCollectionsFound: "No collections found matching your search",
-      noAvailableCollections: "No available collections to add",
+        "Are you sure you want to remove this object from the loan? This action cannot be undone.",
+      removeItem: "Remove Object",
+      addItemsToLoan: "Add Objects to Loan",
+      searchSelectCollections: "Search and select objects to add to this loan",
+      noCollectionsFound: "No objects match your search",
+      noAvailableCollections: "No objects available to add",
       selectedCount: "Selected ({count})",
       clearAll: "Clear all",
-      addItems: "Add Items",
+      addItems: "Add Objects",
       continueAction: "Continue",
-      returnLoanItem: "Return Loan Item",
+      returnLoanItem: "Return Object",
       conditionInLabel: "Condition In (Optional)",
       notesLabel: "Notes (Optional)",
       confirmReturn: "Confirm Return",
-      noItemsInLoan: "No items in this loan",
-      loanItems: "Loan Items ({count})",
+      noItemsInLoan: "No objects on this loan",
+      loanItems: "Objects on Loan ({count})",
       returnItem: "Return",
       loanLocked: "Loan Locked",
       loanLockedDesc:
@@ -1765,32 +1762,15 @@ export default {
       internalNotes: "Internal Notes",
       saveChanges: "Save Changes",
       saving: "Saving...",
-      loanCreated: "Loan created",
-      submittedForApproval: "Submitted for approval",
-      curatorialReviewCompleted: "Curatorial review completed",
-      facilitiesReviewCompleted: "Facilities review completed",
-      conservationReviewCompleted: "Conservation review completed",
-      readyForDispatch: "Ready for dispatch",
-      stepCompleted: "Step {step} completed",
       noActivityRecorded: "No activity recorded yet.",
       borrowerContext: "Borrower Context",
-      relationshipStatus: "Relationship Status",
-      preferredPartner: "Preferred Partner",
-      incidentsIn: "{count} Incidents in {years} years",
-      registrarContact: "Registrar Contact",
-      seniorRegistrar: "Senior Registrar",
       transportStatus: "Transport Status",
       noTransportRecords: "No transport records",
       loanAgreement: "Loan Agreement",
       loanAgreementPreview:
         "Preview, print, or email the loan agreement document.",
-      countersigned: "Countersigned",
-      costs: "Costs",
-      allCostsToBorne: "All costs to be borne by Borrower",
-      wallToWallInsurance: "Wall-to-wall insurance coverage active",
       documents: "Documents ({count})",
       noDocumentsUploaded: "No documents uploaded yet.",
-      uploadFacilityReport: "Upload Facility Report...",
       objectsTab: "Objects ({count})",
       addObject: "Add Object",
       noObjectsInLoan: "No objects in this loan.",
@@ -1799,58 +1779,16 @@ export default {
       onLoan: "On Loan",
       returned: "Returned",
       stable: "Stable",
-      artistUnknown: "Artist Unknown • Oil on canvas",
-      facilityTab: "Facility Report",
       reviewRequired: "Review Required",
-      facilityReviewPending:
-        "The environmental readings from the gallery show slight humidity fluctuations. Conservation approval is pending.",
-      reviewLogs: "Review Logs",
-      climateControl: "Climate Control (Gallery 4)",
       temperature: "Temperature",
-      relativeHumidity: "Relative Humidity",
-      lightLevel: "Light Level (Lux)",
-      deviatingSlightly: "Deviating slightly (+4%)",
-      securityAccess: "Security & Access",
-      guardPresence: "24/7 Guard Presence",
-      confirmed: "Confirmed",
-      cctvCoverage: "CCTV Coverage",
-      fireSuppression: "Fire Suppression",
-      dryPipePreAction: "Dry Pipe / Pre-action",
-      displayCases: "Display Cases",
-      acrylicAlarmed: "Acrylic, Alarmed",
-      registrarNote: "Registrar Note",
-      retrofittedGallery:
-        "MoMA has retrofitted Gallery 4 with new vibration sensors in Q3 2023. Approved for high-value loans.",
-      logisticsTab: "Crating & Shipping",
-      cratingPlan: "Crating Plan",
-      standardPaintingCrate: "Standard Painting Crate",
-      slottedTravelFrame: "Slotted Travel Frame",
-      pendingSize: "Pending Size",
-      configure: "Configure",
-      transportAgent: "Transport Agent",
-      fineArtShipping: "Fine Art Shipping",
-      serviceLevel: "Service Level",
-      tarmacSupervision: "Tarmac Supervision",
-      route: "Route",
-      courier: "Courier",
       activityLog: "Activity Log",
       overview: "Overview & {type}",
-      approvalWorkflow: "Approval Workflow",
       request: "Request",
-      rec: "Rec:",
-      curatorial: "Curatorial",
-      app: "App:",
-      facilities: "Facilities",
-      reviewing: "Reviewing",
       conservation: "Conservation",
       pending: "Pending",
-      dispatch: "Dispatch",
       locked: "Locked",
       borrowerDetails: "Borrower Details",
       institution: "Institution",
-      exhibitionSpace: "Exhibition Space",
-      theRobertBMenschelGalleries: "The Robert B. Menschel Galleries",
-      floorWingEnvironment: "Floor 4, Wing West (Environment controlled)",
       createNewLoan: "Create New Loan",
       registerNewLoan: "Register a new incoming or outgoing loan record.",
       basicInformation: "Basic Information",
@@ -1861,9 +1799,7 @@ export default {
       nameInstitution: "Name / Institution",
       required: "*",
       scheduleTerms: "Schedule & Terms",
-      loanItemsSection: "Loan Items",
-      selectCollections: "Select Collections",
-      selectedItems: "Selected ({count})",
+      selectCollections: "Select Objects",
       summary: "Summary",
       type: "Type",
       lender: "Lender",
@@ -1877,16 +1813,16 @@ export default {
       pleaseSelectOrgToEdit: "Please select an organization to edit loans.",
       lenderBorrowerRequired: "Lender/Borrower name is required",
       someCollectionsNoLongerAvailable:
-        "Some selected collections are no longer available and have been removed. Please try again.",
+        "Some selected objects are no longer available and were removed. Try again.",
       collectionsAlreadyInActiveLoans:
-        "The following collections are already in active or pending loans and must be removed: {names}. Please remove them before creating the loan.",
+        "These objects are already on an active or pending loan: {names}. Remove them before creating the loan.",
       failedToCreateLoan: "Failed to create loan. Please try again.",
       alreadyInActiveLoan:
-        "One or more selected collections are already in an active or pending loan. Please remove them and try again.",
+        "One or more selected objects are already on an active or pending loan. Remove them and try again.",
       doesNotBelongToOrganization:
-        "One or more selected collections don't belong to this organization. Please refresh and try again.",
+        "One or more selected objects are no longer available. Refresh and try again.",
       notActive:
-        "One or more selected collections are not active. Please select only active collections.",
+        "One or more selected objects are not active. Select only active objects.",
       exportedLoans: "Exported {count} loan{plural}",
       loansApproved: "{count} loan{plural} approved",
       someLoansSkipped: "{count} loan{plural} skipped",
@@ -1898,15 +1834,13 @@ export default {
       failedToCancel: "Failed to cancel loan",
       failedToDispatch: "Failed to dispatch loan",
       failedToReturn: "Failed to return loan",
-      failedToAddItems: "Failed to add items to loan",
-      failedToRemoveItem: "Failed to remove item from loan",
-      failedToReturnItem: "Failed to return item",
-      pleaseSelectAtLeastOneCollection: "Please select at least one collection",
-      alreadyInLoan: "Already in {status} loan {loanNumber}",
+      failedToAddItems: "Could not add the objects to the loan",
+      failedToRemoveItem: "Could not remove the object from the loan",
+      failedToReturnItem: "Could not return the object",
+      pleaseSelectAtLeastOneCollection: "Select at least one object",
+      alreadyInLoan: "Already on loan {loanNumber} ({status})",
       outgoing: "Outgoing",
       incoming: "Incoming",
-      international: "International",
-      trusted: "TRUSTED",
       totalValue: "Total Value:",
       loanManifest: "Loan Manifest",
       printDispatchManifest: "Print Dispatch Manifest",
@@ -1917,21 +1851,12 @@ export default {
       pageOf: "Page {page} of {total}",
       lenderLabel: "Lender",
       borrowerConsignee: "Borrower (Consignee)",
-      loanItemsTable: "Loan Items",
+      loanItemsTable: "Objects on Loan",
       accNo: "Acc. No",
       objectTitle: "Object Title",
       condition: "Condition",
       releasedByRegistrar: "Released By (Registrar)",
       receivedByShipper: "Received By (Shipper)",
-      pendingFacilityReportApproval: "Pending Facility Report Approval",
-      youAreAboutToReturn:
-        "You are about to return all {count} {items} from this loan.",
-      willMarkLoanAsReturned:
-        'This will mark the loan as "Returned" and update the status of all collection items back to "active".',
-      youAreAboutToReturnPartial:
-        "You are about to return {count} of {total} {items} from this loan.",
-      partialReturnDesc:
-        'This is a partial return. The loan will remain "{status}" and only the selected items will be marked as returned. The remaining {remaining} {items} will stay on loan.',
       areYouSureYouWantToProceed: "Are you sure you want to proceed?",
     },
   },
@@ -2103,7 +2028,7 @@ export default {
     storageUnits: "Storage Units",
     objectsAtThisLocation: "Objects at this Location",
     total: "Total",
-    items: "items",
+    items: "objects",
     noObjectsAtLocation: "No objects at this location",
     notes: "Notes",
     importCSV: "Import CSV",
@@ -2383,7 +2308,7 @@ export default {
       vitrineCountPlaceholder: "e.g., 4",
       wallCountLabel: "Walls",
       wallCountPlaceholder: "e.g., 6",
-      wallItemsPerWallLabel: "Items per Wall",
+      wallItemsPerWallLabel: "Objects per Wall",
       wallItemsPerWallPlaceholder: "e.g., 3",
       cabinetCountLabel: "Cabinets",
       cabinetCountPlaceholder: "e.g., 12",
@@ -2414,6 +2339,7 @@ export default {
         typeRequired: "Please select a location type",
         createFailed: "Failed to create location",
       },
+      imageUploadFailed: "The location photo could not be uploaded. Try again.",
     },
     move: {
       title: "Move Location",
@@ -2583,13 +2509,13 @@ export default {
     setAsPrimary: "Set as primary",
     unavailable: "Unavailable",
     unknown: "Unknown",
-    cannotDeaccession: "Cannot deaccession - item is on active loan",
+    cannotDeaccession: "Cannot deaccession: the object is on an active loan",
     active: "Active",
     inactive: "Inactive",
     pending: "Pending",
     noResults: "No results found",
     selectAll: "Select all",
-    selectAllItems: "Select all items",
+    selectAllItems: "Select all objects",
     selected: "selected",
     selectedCount: "{count} selected",
     allSelected: "All selected",
@@ -2632,23 +2558,24 @@ export default {
       documentDeleted: "Document deleted",
       documentDeleteFailed: "Failed to delete document",
       selectLocation: "Please select a location",
-      itemsMoved: "Successfully moved {count} item(s)",
-      itemsMoveFailed: "Failed to move items",
+      itemsMoved: "Objects moved: {count}",
       selectCollectionGroup: "Please select a collection group",
-      itemsAddedToGroup: "Successfully added {count} item(s) to group",
-      itemsAddToGroupFailed: "Failed to add items to group",
+      itemsAddedToGroup: "Objects added to the collection group: {count}",
+      itemsAddToGroupFailed:
+        "Could not add the objects to the collection group",
       selectDeaccessionReason: "Please provide a reason for deaccessioning",
       itemsAwaitingDecision:
         "{count} deaccession request(s) are awaiting an approval decision",
-      itemsDeaccessioned: "Successfully deaccessioned {count} item(s)",
-      someItemsSkipped: "{count} item(s) were skipped (on active loan)",
+      itemsDeaccessioned: "Objects deaccessioned: {count}",
+      someItemsSkipped: "Skipped because they are on an active loan: {count}",
       failedOnLoan: "{count} failed (may be on loan)",
-      itemsDeaccessionFailed: "Failed to deaccession items",
+      itemsDeaccessionFailed: "Could not deaccession the objects",
       imageOrderUpdated: "Image order updated",
       imageOrderUpdateFailed: "Failed to update image order",
     },
 
     close: "Close",
+    currencyNotRecorded: "Currency not recorded",
   },
   objects: {
     backToObject: "Back to object",
@@ -2695,24 +2622,24 @@ export default {
     emptyState: {
       noObjectsFound: "No objects found",
       addFirstObject: "Add Your First Object",
-      noObjectsInCollection: "No objects in this collection yet",
-      addObjectsToCollection: "Add objects to the collection",
+      noObjectsInCollection: "No objects in this collection group yet",
+      addObjectsToCollection: "Add objects to the collection group",
       addObjectsToCollectionDescription:
-        "Select existing catalog objects to include in this collection. Objects can belong to multiple collections.",
+        "Select catalog objects to include in this collection group. An object can belong to several collection groups.",
     },
     collectionGroup: {
-      addObjectsTitle: "Add objects to collection",
+      addObjectsTitle: "Add objects to collection group",
       addObjectsDescription:
-        "Choose which objects belong in the “{name}” collection. Checked objects are included.",
+        "Choose which objects belong in the “{name}” collection group. Checked objects are included.",
       searchAndSelectObjects: "Search and select objects…",
       multiCollectionHint:
-        "Objects can belong to several collections at once. Uncheck to remove from this collection only.",
+        "An object can belong to several collection groups at once. Uncheck it to remove it from this group only.",
       saveMembership: "Save selection",
       addObjectsButton: "Add objects",
-      viewingCollection: "Collection: {name}",
+      viewingCollection: "Collection group: {name}",
     },
     table: {
-      selectAllItems: "Select all items",
+      selectAllItems: "Select all objects",
       allSelected: "All selected",
       quickActions: "Quick actions",
     },
@@ -2760,31 +2687,31 @@ export default {
       },
       moveLocation: {
         title: "Move to Location",
-        description: "Move {count} selected item{s} to a new location.",
+        description: "Move the selected objects ({count}) to a new location.",
         label: "New Location",
         placeholder: "Select a location",
         selectLocation: "Please select a location",
         moving: "Moving...",
-        moveItems: "Move Items",
-        failed: "Failed to move items",
+        moveItems: "Move Objects",
+        failed: "Could not move the objects",
       },
       deaccession: {
         title: "Bulk Deaccession",
         description:
-          "You are about to deaccession {count} item{s}. This action will remove them from your active collection.",
+          "You are about to deaccession the selected objects ({count}). They will leave the active collection.",
         onLoanWarning:
-          "Items currently on loan cannot be deaccessioned and will be skipped.",
+          "Objects currently on loan cannot be deaccessioned and will be skipped.",
         label: "Reason for Deaccessioning",
-        placeholder: "Enter the reason for deaccessioning these items...",
+        placeholder: "Enter the reason for deaccessioning these objects...",
         provideReason: "Please provide a reason for deaccessioning",
         processing: "Processing...",
-        deaccessionItems: "Deaccession Items",
-        failed: "Failed to deaccession items",
+        deaccessionItems: "Deaccession Objects",
+        failed: "Could not deaccession the objects",
         failedOnLoan: "{count} failed (may be on loan)",
       },
       printLabels: {
         title: "Print QR Labels",
-        description: "Generate QR labels for {count} selected item{s}.",
+        description: "Generate QR labels for the selected objects ({count}).",
         loadingLabels: "Loading labels...",
         noLabels: "No labels to display",
       },
@@ -2799,15 +2726,14 @@ export default {
       copyObjectLink: "Copy Link",
       linkCopied: "Link Copied!",
       exportToPdf: "Export to PDF",
-      requestLoan: "Request Loan",
       deleteConfirm:
         'Are you sure you want to delete "{title}"? This will mark the object as deaccessioned.',
       deleteTitle: "Delete Object",
       deleteObject: "Delete Object",
       deleting: "Deleting...",
       editObject: "Edit Object",
-      selectOrganization: "Please select an organization to view collections.",
-      collections: "Collections",
+      selectOrganization: "Select an organization to view its objects.",
+      collections: "Objects",
       public: "Public",
       private: "Private",
       currentObject: "Current object",
@@ -2860,8 +2786,7 @@ export default {
     pagination: {
       loadMore: "Load More",
       showing: "Showing",
-      items: "items",
-      itemsMore: "items (more available)",
+      items: "objects",
     },
     tabs: {
       general: "General",
@@ -2907,7 +2832,7 @@ export default {
       parentObject: "Parent Object",
       parentObjectHint:
         "Link this object to a parent object (e.g., a treasure chest containing this object)",
-      collectionGroup: "Collection",
+      collectionGroup: "Collection group",
       collectionGroupHint: "Add this object to a collection group",
       description: "Description",
       provenance: "Provenance",
@@ -2935,7 +2860,7 @@ export default {
         dimensions: "e.g., 50 x 60 cm",
         location: "Select a location (optional)",
         parentObject: "Select parent object (optional)",
-        collection: "Select collection (optional)",
+        collection: "Select a collection group (optional)",
         description: "Enter detailed description",
         provenance: "Enter provenance information",
         exhibitionHistory: "Enter exhibition history",
@@ -2953,7 +2878,8 @@ export default {
         photographer: "Photographer name",
         copyright: "Copyright information",
         collectionGroup: "Select a collection group...",
-        deaccessionReason: "Enter the reason for deaccessioning these items...",
+        deaccessionReason:
+          "Enter the reason for deaccessioning these objects...",
         donationInfoLong:
           "Information about the donation circumstances, conditions, or context",
         ownershipNotes: "How was it acquired, any relevant details...",
@@ -2992,7 +2918,8 @@ export default {
         titleRequired: "Title is required",
         saveFailed: "Failed to save object. Please try again.",
         updateFailed: "Failed to update object. Please try again.",
-        cannotDeaccession: "Cannot deaccession - item is on active loan",
+        cannotDeaccession:
+          "Cannot deaccession: the object is on an active loan",
         selectOrganization: "Please select an organization to create objects.",
         failedToProcessFile: "Failed to process file selection",
         failedToProcessDocument: "Failed to process document selection",
@@ -3001,10 +2928,12 @@ export default {
         failedToDeleteMedia: "Failed to delete media",
         failedToUpdateMedia: "Failed to update media",
         failedToGenerateUploadUrl: "Failed to generate upload URL",
+        uploadFailed: "The file could not be uploaded. Try again.",
+        failedToUploadDocuments:
+          "The documents could not be uploaded. Try again.",
       },
       toasts: {
         noDataToExport: "No data to export",
-        exportedItems: "Exported {count} item{s}",
       },
     },
     printView: {
@@ -3114,12 +3043,23 @@ export default {
       printedOn: "Printed on",
       print: "Print",
     },
+    withdrawal: {
+      restore: "Restore to catalog",
+      restored: "Object restored to the routine catalog.",
+      restoreFailed: "The object could not be restored. Refresh and try again.",
+      withdrawn: "Object withdrawn from the routine catalog.",
+      noticeLabel: "Withdrawal notice",
+      noticeTitle: "Withdrawn from the routine catalog",
+      reason: "Reason: {reason}",
+      legacyReasonMissing:
+        "The reason for this earlier withdrawal was not recorded. The register and linked evidence remain as stored; review the source records before restoring.",
+    },
   },
   collections: {
     createPage: {
       description:
-        "Group related objects and choose who manages the collection.",
-      detailsTitle: "Collection details",
+        "Group related objects and choose who manages the collection group.",
+      detailsTitle: "Collection group details",
       managementTitle: "Management",
       optional: "Optional",
       objectsHint: "You can add objects after creating the collection group.",
@@ -3134,7 +3074,7 @@ export default {
     back: "Back",
     backToCollections: "Back to Collection Groups",
     backToCollection: "Back to Collection Group",
-    items: "items",
+    items: "objects",
     created: "Created",
     redirecting: "Redirecting...",
     notFound: "Collection group not found",
@@ -3152,7 +3092,7 @@ export default {
     selectOrganizationImport:
       "Please select an organization to import objects.",
     selectOrganizationContinue: "Select an organization to continue.",
-    loadingItems: "Loading items...",
+    loadingItems: "Loading objects...",
     settings: "Settings",
     importExisting: "Import Existing",
     newObject: "New Object",
@@ -3174,14 +3114,15 @@ export default {
       selected: "Selected ({count}):",
       importButton: "Import Objects",
       errorSelectOne: "Please select at least one object",
-      errorAddFailed: "Failed to add items to collection",
-      errorRemoveFailed: "Failed to remove item from collection",
+      errorAddFailed: "Could not add the objects to the collection group",
+      errorRemoveFailed:
+        "Could not remove the object from the collection group",
     },
-    noItems: "No items in this collection",
+    noItems: "No objects in this collection group",
     removeDialog: {
-      title: "Remove from Collection",
+      title: "Remove from Collection Group",
       description:
-        'Are you sure you want to remove "{title}" from this collection? The object will not be deleted, only removed from this collection.',
+        'Remove "{title}" from this collection group? The object is not deleted, only removed from this group.',
       remove: "Remove",
     },
     form: {
@@ -3189,7 +3130,7 @@ export default {
       nameRequired: "*",
       namePlaceholder: "e.g., Ancient Egyptian Artifacts",
       descriptionLabel: "Description",
-      descriptionPlaceholder: "Describe this collection...",
+      descriptionPlaceholder: "Describe this collection group...",
       curatorLabel: "Curator",
       curatorPlaceholder: "Select a curator (optional)",
       noCurator: "No curator",
@@ -3198,26 +3139,26 @@ export default {
       managedByRolePlaceholder: "Any role can manage (optional)",
       anyRole: "Any role can manage",
       roleHint:
-        "Restrict who can edit this collection to users with a specific role",
+        "Restrict editing of this collection group to users with a specific role",
       creating: "Creating...",
-      createButton: "Create Collection",
+      createButton: "Create Collection Group",
       updating: "Updating...",
-      updateButton: "Update Collection",
+      updateButton: "Update Collection Group",
       nameError: "Name is required",
-      createError: "Failed to create collection. Please try again.",
-      updateError: "Failed to update collection. Please try again.",
+      createError: "The collection group could not be created. Try again.",
+      updateError: "The collection group could not be updated. Try again.",
     },
     delete: {
       dangerZone: "Danger Zone",
-      title: "Delete this collection",
+      title: "Delete this collection group",
       description:
-        "Objects in this collection will be unlinked but not deleted.",
+        "Objects in this collection group are unlinked, not deleted.",
       button: "Delete",
-      dialogTitle: "Delete Collection",
+      dialogTitle: "Delete Collection Group",
       dialogDescription:
-        'Are you sure you want to delete "{name}"? Objects in this collection will be unlinked but not deleted.',
+        'Delete "{name}"? Objects in this collection group are unlinked, not deleted.',
       deleting: "Deleting...",
-      deleteButton: "Delete Collection",
+      deleteButton: "Delete Collection Group",
     },
     csvImport: {
       title: "Import Objects from CSV",
@@ -3585,7 +3526,7 @@ export default {
       description: "Description",
       notes: "Notes",
       details: "Details",
-      collectionObject: "Collection Object",
+      collectionObject: "Object",
       datePerformed: "Date Performed",
       performedBy: "Performed By",
       unknownObject: "Unknown Object",
@@ -3603,7 +3544,7 @@ export default {
       newSubtitle: "Log a new conservation treatment or assessment",
       editTitle: "Edit Treatment Record",
       editSubtitle: "Update details for",
-      collectionObject: "Collection Object",
+      collectionObject: "Object",
       treatmentType: "Treatment Type",
       selectType: "Select type",
       datePerformed: "Date Performed",
@@ -3808,7 +3749,7 @@ export default {
       loanVenuePlaceholder: "Enter venue name",
       notesLabel: "Notes",
       notesPlaceholder: "Add notes about this exhibition...",
-      selectObject: "Please select a collection object",
+      selectObject: "Select an object",
       scheduleConflict: "Schedule Conflict Detected",
       scheduleConflictDescription:
         "This object is already scheduled during the selected dates:",
@@ -4746,7 +4687,7 @@ export default {
     empty: {
       title: "No assignments yet",
       description:
-        "Items you catalog or have pending approvals will appear here",
+        "Objects you catalog and cases awaiting your approval appear here",
       catalogNew: "Catalog New Object",
     },
     card: {
@@ -5520,11 +5461,13 @@ export default {
       reasonTooLong: "Keep the reason under 2,000 characters.",
       notPermitted: "You can't make this decision for the current review step.",
       fallback: "The decision could not be saved. Refresh and try again.",
+      sourceVerificationRequired:
+        "Source verification is required before this request can be approved. Verify the source, or approve with a reason for the exception.",
     },
   },
   accessions: {
     title: "Accessions",
-    description: "Manage incoming items and approval workflow",
+    description: "Manage incoming objects and their approval",
     newAccession: "New Accession",
     addObject: "Add Object",
     searchPlaceholder: "Search accessions...",
@@ -5646,6 +5589,8 @@ export default {
       failedToEmptyTrash: "Failed to empty rejected accessions",
       failedToUpdate: "Failed to update accession. Please try again.",
       sourceRequired: "Source is required",
+      failedToCreate:
+        "The accession could not be created. Check the details and try again.",
     },
     kanban: {
       loading: "Loading…",
@@ -5689,6 +5634,21 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Showing 20 of {count} rows",
+    },
+    catalogNumber: {
+      title: "Catalog number on publication",
+      optionalLabel: "Catalog number on publication (optional)",
+      defaultHint:
+        "Defaults to the accession number. Choose an unused catalog number if the catalog already uses the accession number; each register keeps its own permanent number.",
+      planned:
+        "Planned catalog number: {identifier}. The accession register number {accessionNumber} stays permanent. If the catalog already uses it, choose a different catalog number for the new object. Availability is checked again when the object is published.",
+      fieldLabel: "Catalog number for the new object",
+      select: "Select catalog number",
+      selected:
+        "Catalog number selected. The permanent accession number is unchanged.",
+      failed:
+        "The catalog number could not be selected. Refresh and try again.",
+      loading: "Loading catalog numbering…",
     },
   },
 
@@ -5892,7 +5852,8 @@ export default {
       started: "Check started",
       resumed: "Check resumed",
       cancelledToast: "Check cancelled",
-      noProfiles: "No active profiles, so missing documentation was not checked.",
+      noProfiles:
+        "No active profiles, so missing documentation was not checked.",
       partiesNotChecked:
         "Party links were not checked because the Accounts module is off.",
       identifierIndexIncomplete:
@@ -5954,7 +5915,8 @@ export default {
       accepted: "Accepted as an exception",
       reviewedBy: "Accepted by {name} on {date}",
       unknownReviewer: "a former member",
-      earlierReview: "Accepted earlier; what the check found has changed since:",
+      earlierReview:
+        "Accepted earlier; what the check found has changed since:",
       reopen: "Reopen",
       reopened: "Finding reopened",
       reviewedInRegister:
@@ -6004,7 +5966,8 @@ export default {
       profileNotFound: "This profile no longer exists.",
       checkRunning: "A check is already running.",
       checkNotFound: "This check no longer exists.",
-      checkNotResumable: "Only the latest stopped or stalled check can be resumed.",
+      checkNotResumable:
+        "Only the latest stopped or stalled check can be resumed.",
       findingNotFound: "This finding no longer exists.",
       findingStatusChanged:
         "This finding changed meanwhile. Reload to see its current state.",
@@ -6231,6 +6194,7 @@ export default {
     loading: "Loading…",
     loadMore: "Load more",
     refineSearch: "More objects match. Refine the search to narrow the list.",
+    selectParent: "Select a parent object...",
   },
   valuation: {
     title: "Valuation",
@@ -6325,7 +6289,7 @@ export default {
     loadedResults: "Counts for loaded results",
     loadMore: "Load more",
     title: "Deaccession Records",
-    description: "Items permanently removed from collection.",
+    description: "Objects permanently removed from the collection.",
     noOrg: {
       title: "No Organization Found",
       description: "You need to create an organization to manage deaccessions.",
@@ -6395,7 +6359,7 @@ export default {
       methodLabel: "Method",
       disposition: "Disposition",
       notes: "Notes",
-      collectionObject: "Collection Object",
+      collectionObject: "Object",
       workflowHistory: "Workflow History",
       approvalAction: "Approval Action",
       commentLabel: "Comment (optional)",
@@ -6403,6 +6367,7 @@ export default {
       created: "Created",
       step: "Step {step} - Approved",
       unknown: "Unknown",
+      awaitingReview: "Awaiting review",
     },
     stages: {
       eyebrow: "Disposal stages",
@@ -6503,8 +6468,8 @@ export default {
     form: {
       selectOrg: "Please select an organization to create deaccessions.",
       selectOrgEdit: "Please select an organization to edit deaccessions.",
-      collectionLabel: "Collection Object",
-      collectionPlaceholder: "Select a collection object",
+      collectionLabel: "Object",
+      collectionPlaceholder: "Select an object",
       deaccessionNumber: "Deaccession Number",
       deaccessionNumberPlaceholder: "Auto-generated if left empty",
       deaccessionNumberHint:
@@ -6534,7 +6499,7 @@ export default {
       proceedsNotes: "Proceeds Notes",
       proceedsNotesPlaceholder: "Additional notes about the proceeds...",
       errors: {
-        collectionRequired: "Collection is required",
+        collectionRequired: "Select an object",
         reasonRequired: "Reason is required",
         createFailed: "Failed to create deaccession. Please try again.",
         updateFailed: "Failed to update deaccession. Please try again.",
@@ -6576,6 +6541,7 @@ export default {
       proceedsNotes: "Proceeds Notes",
       stepApproved: "Step {step} Approved",
       created: "Created",
+      proceedsWithoutCurrency: "Proceeds without a recorded currency: {count}",
     },
     placeholders: {
       searchObjects: "Search deaccessions...",
@@ -6584,6 +6550,7 @@ export default {
       selectDisposition: "e.g., Sold to private collector",
       addNotes: "Additional notes about this deaccession...",
     },
+    withdrawnObjects: "Withdrawn objects",
   },
   scan: {
     title: "Scan Objects",
@@ -7145,21 +7112,19 @@ export default {
         printAgreement: "Print Agreement",
       },
       items: {
-        countTitle: "Loan Items ({count})",
         selectedCount: "Selected ({count})",
         conditionOutOptional: "Condition Out (Optional)",
         conditionOut: "Condition Out:",
         conditionIn: "Condition In:",
-        conditionHint: "This condition will be applied to all selected items",
-        noItems: "No items in this loan",
+        conditionHint: "This condition will be applied to all selected objects",
+        noItems: "No objects on this loan",
         noObjects: "No objects in this loan.",
         loanHistory: "Loan History",
         noLoanHistory: "No loan history for this object",
         documentsCount: "Documents ({count})",
         condition: "Condition",
-        objectsPaintings: "Objects (Paintings)",
-        searchCollections: "Search and Select Collections *",
-        loadingCollections: "Loading collections…",
+        searchCollections: "Search and Select Objects *",
+        loadingCollections: "Loading objects…",
         lenderUpper: "LENDER:",
         museumUpper: "MUSEUM/INSTITUTION:",
         uploadedBy: "Uploaded by {name}",
@@ -7204,7 +7169,7 @@ export default {
         approvalWorkflow: "Approval workflow",
         linkedObject: "Linked object",
         linkedObjectDescription:
-          "This accession already created a collection record.",
+          "This accession has already created its object.",
         openCreatedObject: "Open created object",
         draftsMustBeSubmitted:
           "Drafts must be submitted before approval can begin.",
@@ -7229,6 +7194,7 @@ export default {
         reviewCheckpoint: "Review checkpoint",
         sourceOnlyBlocker:
           "Source verification is the only blocker before this record can move forward.",
+        review: "Review",
       },
       approval: {
         noteGuidance:
@@ -7364,8 +7330,8 @@ export default {
           notes: "Notes",
         },
         fieldDescriptions: {
-          dateReceived: "Date the item was received",
-          source: "Source or donor of the item",
+          dateReceived: "Date the object was received",
+          source: "Source or donor of the object",
           method: "Acquisition method (purchase, donation, etc.)",
           accessionNumber: "Unique identifier (auto-generated if empty)",
           cost: "Acquisition cost",
@@ -7515,11 +7481,11 @@ export default {
       },
       delete: {
         confirm:
-          'Are you sure you want to delete "{name}"? Objects in this collection will be unlinked but not deleted.',
+          'Delete "{name}"? Objects in this collection group are unlinked, not deleted.',
       },
       remove: {
         confirm:
-          'Are you sure you want to remove "{name}" from this collection? The object will not be deleted, only removed from this collection.',
+          'Remove "{name}" from this collection group? The object is not deleted, only removed from this group.',
       },
       detail: {
         selectedCount: "Selected ({count}):",
@@ -7624,7 +7590,7 @@ export default {
         inscriptionsMarks: "Inscriptions & Marks",
         noInscriptions: "No inscriptions documented.",
         overallCondition: "Overall Condition",
-        historyRelatedItems: "History and related items",
+        historyRelatedItems: "History and related records",
         recordContext: "Record Context",
         recordVerified: "Record Verified",
         relatedObjects: "Related Objects",
@@ -7666,7 +7632,7 @@ export default {
         unsavedAcrossTabs: "You have unsaved field changes across tabs.",
         mediaAlreadyApplied: "Media changes are already applied.",
         noUnsavedChanges: "No unsaved field changes.",
-        collectionNotFound: "Collection not found",
+        collectionNotFound: "Object not found",
         selectOrganization: "Please select an organization to edit objects.",
       },
       form: {
@@ -7819,13 +7785,13 @@ export default {
       groups: {
         noneAvailable: "No collection groups available",
         addObjects: "Add {count} selected object(s) to a collection group.",
-        itemsCount: "({count} items)",
+        itemsCount: "({count} objects)",
       },
       loading: {
         loans: "Loading loans…",
         logs: "Loading logs…",
         treatments: "Loading treatments…",
-        collections: "Loading collections…",
+        collections: "Loading objects…",
         more: "more",
         default: "Loading…",
       },
@@ -7912,6 +7878,8 @@ export default {
         unknownOrganization: "Unknown organization",
         unknownUser: "Unknown user",
         to: "to",
+        numberOnApproval: "Generated when the request is approved",
+        useRequestedAccessionNumber: "Use the requested accession number",
       },
       roles: {
         curator: "Curator",
@@ -7934,8 +7902,8 @@ export default {
         expandNode: "Expand {name}",
       },
       bulk: {
-        failedMove: "Failed to move {count} item(s)",
-        exported: "Exported {count} item(s)",
+        failedMove: "Objects that could not be moved: {count}",
+        exported: "Objects exported: {count}",
       },
       draft: {
         saved: "Draft saved",
@@ -7961,7 +7929,7 @@ export default {
         catalogedDate: "Cataloged date",
       },
       collection: {
-        noneAssigned: "Not assigned to a collection",
+        noneAssigned: "Not in a collection group",
       },
       request: {
         editTitle: "Edit object",
@@ -8014,9 +7982,9 @@ export default {
       failedToLoadAccessions: "Failed to load accessions",
       failedToLoadAccessionsDescription:
         "We couldn't load your accessions workflow. Please try again or return to the dashboard.",
-      failedToLoadCollections: "Failed to load collections",
+      failedToLoadCollections: "Could not load collection groups",
       failedToLoadCollectionsDescription:
-        "We couldn't load your collections. Please try again or return to the dashboard.",
+        "We couldn't load your collection groups. Try again or return to the dashboard.",
       failedToLoadLoans: "Failed to load loans",
       failedToLoadLoansDescription:
         "We couldn't load your loans. Please try again or return to the dashboard.",
@@ -8440,7 +8408,7 @@ export default {
       originToDestination: "Origin → destination",
       pickup: "Pickup",
       estimatedArrival: "ETA",
-      items: "Items",
+      items: "Objects",
       noRecordsYet: "No transit records yet",
       noRecordsDescription:
         "Log a shipment or movement to start tracking transit activity.",
@@ -8482,8 +8450,8 @@ export default {
         linkedExhibition: "Linked exhibition:",
         carrierVsReceiptHint:
           "Carrier delivery status does not record custody acceptance. Mark carrier arrival, then record accountable receipt (and installation when linked to an exhibition).",
-        outstandingReceipt: "{count} item(s) awaiting receipt",
-        outstandingInstallation: "{count} awaiting installation",
+        outstandingReceipt: "Awaiting receipt: {count}",
+        outstandingInstallation: "Awaiting installation: {count}",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
         installationDestination: "Installation destination",
@@ -8495,7 +8463,7 @@ export default {
         viewObject: "View object",
         receiptRecorded: "Receipt movement recorded",
         installationRecorded: "Installation movement recorded",
-        actionFailed: "Handoff failed",
+        actionFailed: "The handoff could not be recorded. Try again.",
         itemStatus: {
           pending: "Pending pickup",
           in_transit: "In transit",
@@ -8543,6 +8511,8 @@ export default {
         settings: "Settings",
         transit: "Transit log",
         transfers: "Transfers",
+        collections: "Collection groups",
+        library: "Library",
       },
     },
     dashboardBilling: {
@@ -8664,7 +8634,7 @@ export default {
       vitrines: "Vitrines",
       wallMountedDisplay: "Wall Mounted Display",
       wallsConfigured: "walls configured",
-      item: "item",
+      item: "object",
       perWall: "per wall",
       cabinets: "Cabinets",
       shelves: "Shelves",
@@ -8690,7 +8660,7 @@ export default {
       movedOutTo: "moved out to",
       unknownLocation: "unknown location",
       by: "by",
-      childrenLabel: "{name} children",
+      childrenLabel: "Locations inside {name}",
     },
     accountsImport: {
       moreErrors: "more",
@@ -9226,17 +9196,17 @@ export default {
       code39: "Code 39",
       positionTheCodeWithinTheCameraViewToScan:
         "Position the code within the camera view to scan",
-      noMatchingCollectionsFound: "No matching collections found.",
+      noMatchingCollectionsFound: "No matching collection groups found.",
       press: "Press",
       toAdd: "to add",
-      typeToSearchCollections: "Type to search collections",
+      typeToSearchCollections: "Type to search collection groups",
       collections: "Collections",
       searchByAccessionNumberOrTitle: "Search by accession number or title...",
       scrollForMore: "Scroll for more…",
-      loadingCollections: "Loading collections...",
+      loadingCollections: "Loading objects...",
       collectionType: "Collection Type",
       determinesWhichSpecializedFieldsAreAvailableForThisItem:
-        "Determines which specialized fields are available for this item",
+        "Determines which specialized fields are available for this object",
       openCommandPalette: "Open command palette",
       searchObjects: "Search objects…",
       typeACommandOrSearch: "Type a command or search…",
@@ -9295,7 +9265,7 @@ export default {
       thisObjectCannotBeMovedYet: "This object cannot be moved yet",
       approvalRequired: "Approval Required",
       thisSaleRequires: "This sale requires",
-      beforeTheItemIsMarkedAsSold: "before the item is marked as sold.",
+      beforeTheItemIsMarkedAsSold: "before the object is marked as sold.",
       noApprovalWorkflow: "No Approval Workflow",
       thisSaleWillBeAutomaticallyApproved:
         "This sale will be automatically approved.",
@@ -9503,21 +9473,20 @@ export default {
       turnOffFlash: "Turn Off Flash",
       turnOnFlash: "Turn On Flash",
       removeNamedItem: "Remove {name}",
-      itemSelected: "{count} item selected",
-      itemsSelected: "{count} items selected",
-      searchAndSelectCollections: "Search And Select Collections",
-      noCollectionsFound: "No Collections Found",
+      itemSelected: "{count} object selected",
+      itemsSelected: "{count} objects selected",
+      searchAndSelectCollections: "Search and select objects",
+      noCollectionsFound: "No objects found",
       cannotDeleteCondition: "Cannot Delete Condition",
       deleteCondition: "Delete Condition",
       collection: "Collection",
       searchOrAdd: "Search Or Add",
       selectACollectionObject: "Select A Collection Object",
-      noCollectionsFoundMatchingYourSearch:
-        "No Collections Found Matching Your Search",
-      noCollectionsAvailable: "No Collections Available",
+      noCollectionsFoundMatchingYourSearch: "No objects match your search",
+      noCollectionsAvailable: "No objects available",
       selectOrAddMaterials: "Select Or Add Materials",
       addNamedItem: "Add {name}",
-      selectCollection: "Select Collection",
+      selectCollection: "Select Collection Group",
       primaryGroup: "Primary group",
       secondaryGroup: "Secondary group",
       makePrimary: "Make primary",
@@ -9553,6 +9522,8 @@ export default {
       skipToSearch: "Skip To Search",
       cannotDeleteMaterial: "Cannot Delete Material",
       deleteMaterial: "Delete Material",
+      currentLocationOption: "{location} (current)",
+      flashNotSupported: "This device's camera has no flash control.",
     },
     auth: {
       noAccountYet: "No account yet?",
@@ -9682,6 +9653,10 @@ export default {
     },
     donorCreate: {
       duplicateEmail: "A donor with this email already exists: {donor}",
+      invalidEmail: "Enter a valid email address.",
+      placeholder: "Select or add donors...",
+      unknownDonors: "Unknown donors",
+      unknownDonorsHint: "Use when the object was donated by an unnamed donor",
     },
     navigation: {
       patronManagement: "Patron Management",
@@ -9736,10 +9711,10 @@ export default {
         "Shows some minor signs of use or age. Wear is normal, no visible damage.",
       good: "Good",
       goodDescription:
-        "Item is aged or faded and may show minor damage but remains structurally sound.",
+        "Object is aged or faded and may show minor damage but remains structurally sound.",
       poor: "Poor",
       poorDescription:
-        "Item exhibits severe damage or heavy use and would require extensive stabilization, restoration or conservation.",
+        "Object exhibits severe damage or heavy use and would require extensive stabilization, restoration or conservation.",
     },
     metadata: {
       description:
@@ -9884,7 +9859,7 @@ export default {
           "Regulatory approval for deaccession {number} has been {status}",
         newApprovalRequest:
           "A new {workflowType} requires your review and approval.",
-        batchJobProcessed: "Processed {successCount} of {totalItems} items.",
+        batchJobProcessed: "Processed {successCount} of {totalItems} objects.",
         taskAssigned: "You have been assigned to: {title}",
         taskDueSoon: 'Task "{title}" is due in less than 24 hours',
         taskBlocked: 'Task "{title}" has been blocked: {reason}',
@@ -9930,11 +9905,11 @@ export default {
         conservationAssessmentDue:
           'Object "{title}" requires a conservation assessment.',
         insurancePolicyExpiring:
-          "Policy {policyNumber} ({carrier}) covering {count} items worth {value} expires in {days} days.",
+          "Policy {policyNumber} ({carrier}) covering {count} objects worth {value} expires in {days} days.",
         insurancePolicyExpiringValued:
-          "Policy {policyNumber} ({carrier}) covering {count} items valued at {values} expires in {days} days.",
+          "Policy {policyNumber} ({carrier}) covering {count} objects valued at {values} expires in {days} days.",
         insurancePolicyExpiringUnvalued:
-          "Policy {policyNumber} ({carrier}) covering {count} items expires in {days} days.",
+          "Policy {policyNumber} ({carrier}) covering {count} objects expires in {days} days.",
         autoGeneratedInsuranceClaim:
           "A draft insurance claim ({claimNumber}) has been created for transit damage detected during loan return. Please review and submit.",
         acquisitionPendingAtStep:
@@ -10373,6 +10348,43 @@ export default {
       draftMedia: "Photos and documents",
       alternateNumberExists:
         "This alternate accession number is already listed.",
+    },
+  },
+  workflowApprovals: {
+    errors: {
+      workflowNotConfigured:
+        "This approval step is not set up correctly. Ask an administrator to review the workflow settings, then try again.",
+      approvalNotPermitted:
+        "This step is assigned to a different approver role. Ask someone assigned to this step to review it.",
+      alreadyApproved:
+        "Your approval is already recorded. The case stays pending until the remaining approvers approve it.",
+    },
+  },
+  identifiers: {
+    registers: { catalog: "catalog register", accession: "accession register" },
+    errors: {
+      invalid:
+        "Use 1 to 256 visible characters for the number. Existing historical numbers stay unchanged.",
+      inUse:
+        "{identifier} is already used in the {register}. Open that record or choose an unused number; historical records are never renumbered or merged.",
+      reviewRequired:
+        "Complete the identifier review for the {register} in Settings › Preferences before assigning new numbers.",
+      numberingNotConfigured:
+        "Number generation is not set up. Enter a number, or ask an administrator to set up numbering in Settings › Preferences.",
+      numberingExhausted:
+        "The numbering format kept producing numbers already used in the {register}. Ask an administrator to review the format or counter in Settings › Preferences.",
+      catalogNumberLocked:
+        "Only an unpublished accession under review can change its planned catalog number. Published register numbers are permanent.",
+    },
+    hint: {
+      needsIndexing:
+        "Complete identifier indexing before assigning new numbers.",
+      openReview: "Open identifier review",
+      inUse:
+        "Other records in the {register} already use this number. For a new record, choose an unused number. Capitalization and surrounding spaces do not make a number unique.",
+      moreMatches: "More matches are listed in identifier review.",
+      permanentInDraft:
+        "This permanent number is kept when you edit the draft.",
     },
   },
 } as const;

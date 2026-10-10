@@ -31,6 +31,17 @@ const accessionStatusKeys: Record<string, string> = {
   draft: "untranslatedRecords.objects.status.draft",
 };
 
+const locationTypeKeys: Record<string, string> = {
+  building: "locations.form.locationTypes.building",
+  room: "locations.form.locationTypes.room",
+  gallery: "locations.form.locationTypes.gallery",
+  storage: "locations.form.locationTypes.storage",
+  cabinet: "locations.form.locationTypes.cabinet",
+  shelf: "locations.form.locationTypes.shelf",
+  vault: "locations.form.locationTypes.vault",
+  other: "locations.form.locationTypes.other",
+};
+
 function translateKnownEnum(
   value: string,
   translations: Record<string, string>,
@@ -62,4 +73,9 @@ export function getAccessionStatusLabel(
   tRoot: Translator,
 ): string {
   return translateKnownEnum(status, accessionStatusKeys, tRoot);
+}
+
+/** A built-in location type in the app locale; an organization's own types read as entered. */
+export function getLocationTypeLabel(type: string, tRoot: Translator): string {
+  return translateKnownEnum(type, locationTypeKeys, tRoot);
 }

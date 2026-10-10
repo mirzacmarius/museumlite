@@ -10,7 +10,7 @@ import { DollarSign, FileCheck, History, Shield, Truck } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { RecordedValue } from "@/components/recorded-value";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatCurrency } from "@/lib/format-number";
+import { formatMoney } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
@@ -300,11 +300,7 @@ function FineArtProvenanceSection({ details }: { details: FineArtDetails }) {
                 {entry.salePrice && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t("salePrice")}:{" "}
-                    {formatCurrency(
-                      entry.salePrice,
-                      locale,
-                      entry.currency || "USD",
-                    )}
+                    {formatMoney(entry.salePrice, locale, entry.currency)}
                     {entry.auctionHouse && ` ${t("at")} ${entry.auctionHouse}`}
                   </p>
                 )}

@@ -4,6 +4,7 @@ import { recordEditErrorFromError } from "@v1/backend/convex/utils/recordEdits";
 import { ConvexError } from "convex/values";
 import { useCallback } from "react";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
+import { useIdentifierErrorMessage } from "@/hooks/use-identifier-error-message";
 import type { RecordSaveFailure } from "@/lib/record-form";
 import { useScopedI18n } from "@/locales/client";
 
@@ -38,6 +39,7 @@ export function useRecordSaveFailure({
 }) {
   const t = useScopedI18n("recordForm.errors");
   const capabilityMessage = useCapabilityErrorMessage();
+  const identifierMessage = useIdentifierErrorMessage();
 
   return useCallback(
     (error: unknown): RecordSaveFailure => {
@@ -100,10 +102,12 @@ export function useRecordSaveFailure({
             }
           : { kind: "rejected", message: described.message };
       }
+      const identifier = identifierMessage(error);
+      if (identifier) return { kind: "rejected", message: identifier };
       const explanation = serverExplanation(error);
       if (explanation) return { kind: "rejected", message: explanation };
       return { kind: "failed", message: t("saveFailed") };
     },
-    [capabilityMessage, describe, fieldLabel, t],
+    [capabilityMessage, describe, fieldLabel, identifierMessage, t],
   );
 }

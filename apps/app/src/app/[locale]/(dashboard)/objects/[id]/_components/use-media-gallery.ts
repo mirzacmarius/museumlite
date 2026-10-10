@@ -6,6 +6,7 @@ import { type LightboxImage, useLightbox } from "@v1/ui/image-lightbox";
 import { useMutation, useQuery } from "convex/react";
 import { type DragEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useScopedI18n } from "@/locales/client";
 import {
   type CollectionLink,
@@ -26,6 +27,7 @@ export function useMediaGallery({
   const t = useScopedI18n("common.toast");
   const common = useScopedI18n("common");
   const formErrors = useScopedI18n("objects.form.errors");
+  const actionErrorMessage = useActionErrorMessage();
 
   const media = useQuery(
     api.media.list,
@@ -94,9 +96,7 @@ export function useMediaGallery({
     try {
       await setPrimary({ mediaId: mediaId as Id<"mediaFiles"> });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : formErrors("failedToSetPrimary"),
-      );
+      setError(actionErrorMessage(err, formErrors("failedToSetPrimary")));
     }
   };
 
@@ -113,9 +113,7 @@ export function useMediaGallery({
       await updateMedia({ mediaId, ...updates });
       setEditingMedia(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : formErrors("failedToUpdateMedia"),
-      );
+      setError(actionErrorMessage(err, formErrors("failedToUpdateMedia")));
     }
   };
 

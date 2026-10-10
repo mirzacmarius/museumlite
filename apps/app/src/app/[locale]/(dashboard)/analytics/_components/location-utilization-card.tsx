@@ -21,6 +21,7 @@ import {
   Package,
 } from "lucide-react";
 import type * as React from "react";
+import { getLocationTypeLabel } from "@/lib/record-enum-labels";
 import { useI18n } from "@/locales/client";
 
 interface LocationUtilizationCardProps {
@@ -228,23 +229,13 @@ function LocationTypeOverview({
   items: LocationUtilizationData["byType"];
 }) {
   const t = useI18n();
-  const locationTypeLabels: Record<string, string> = {
-    building: t("locations.form.locationTypes.building"),
-    room: t("locations.form.locationTypes.room"),
-    gallery: t("locations.form.locationTypes.gallery"),
-    storage: t("locations.form.locationTypes.storage"),
-    cabinet: t("locations.form.locationTypes.cabinet"),
-    shelf: t("locations.form.locationTypes.shelf"),
-    vault: t("locations.form.locationTypes.vault"),
-    other: t("locations.form.locationTypes.other"),
-  };
   return (
     <div className="space-y-3">
       {items.slice(0, 8).map((item) => (
         <div key={item.type} className="space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground capitalize">
-              {locationTypeLabels[item.type] ?? item.type}
+              {getLocationTypeLabel(item.type, t)}
             </span>
             <span className="font-mono text-muted-foreground">
               {item.totalOccupied}/{item.totalCapacity}{" "}

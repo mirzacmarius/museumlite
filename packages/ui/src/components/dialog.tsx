@@ -123,7 +123,8 @@ const DialogTitle = ({
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      // Clear of the close button, so long translated titles wrap before it.
+      "px-6 text-lg font-semibold leading-tight tracking-tight sm:px-0 sm:pe-6",
       className,
     )}
     {...props}

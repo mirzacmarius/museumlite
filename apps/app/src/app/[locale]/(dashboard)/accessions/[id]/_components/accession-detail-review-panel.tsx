@@ -27,7 +27,7 @@ export function AccessionDetailReviewPanel({
 
   return (
     <SectionCard
-      eyebrow="Review"
+      eyebrow={tRoot("untranslatedRecords.accessions.detail.review")}
       title={reviewRailTitle}
       description={reviewRailDescription}
     >

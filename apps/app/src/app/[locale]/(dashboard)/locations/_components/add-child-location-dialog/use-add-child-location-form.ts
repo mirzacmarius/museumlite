@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useScopedI18n } from "@/locales/client";
 import {
   hasCustomFieldValues,
@@ -31,6 +32,7 @@ export function useAddChildLocationForm({
   onSuccess,
 }: UseAddChildLocationFormOptions) {
   const t = useScopedI18n("locations.form");
+  const actionErrorMessage = useActionErrorMessage();
   const [name, setName] = useState("");
   const [locationCode, setLocationCode] = useState("");
   const [type, setType] = useState("");
@@ -149,7 +151,7 @@ export function useAddChildLocationForm({
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("errors.createFailed"));
+      setError(actionErrorMessage(err, t("errors.createFailed")));
     } finally {
       setIsSubmitting(false);
     }
@@ -196,12 +198,8 @@ export function useAddChildLocationForm({
       }
 
       setLocationImageId(storageId);
-    } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Failed to upload location image",
-      );
+    } catch {
+      setError(t("imageUploadFailed"));
       URL.revokeObjectURL(nextPreviewUrl);
       setLocationImagePreviewUrl(null);
     } finally {

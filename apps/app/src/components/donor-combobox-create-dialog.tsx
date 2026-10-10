@@ -140,7 +140,11 @@ export function DonorComboboxCreateDialog({
                 }}
                 onBlur={() => {
                   if (!validateDonorEmail(newDonorForm.email.trim())) {
-                    setEmailError("Please enter a valid email address");
+                    setEmailError(
+                      translate(
+                        "untranslatedComponents.donorCreate.invalidEmail",
+                      ),
+                    );
                   } else {
                     setEmailError(null);
                   }

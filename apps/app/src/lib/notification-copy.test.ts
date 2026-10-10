@@ -95,7 +95,7 @@ describe("getNotificationCopy", () => {
       ),
     ).toEqual({
       title: "Modification en masse : traitement terminé avec 2 erreurs",
-      message: "3 éléments sur 5 traités.",
+      message: "3 objets sur 5 traités.",
     });
   });
 

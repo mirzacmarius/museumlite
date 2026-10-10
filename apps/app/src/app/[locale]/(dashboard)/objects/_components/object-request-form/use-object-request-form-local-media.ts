@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import type { DraftMediaItem } from "../collection-form-shared/types";
 
 export function useObjectRequestFormLocalMedia({
@@ -16,6 +17,7 @@ export function useObjectRequestFormLocalMedia({
   setError: (error: string | null) => void;
   t: (key: string) => string;
 }) {
+  const actionErrorMessage = useActionErrorMessage();
   const generateDraftUploadUrl = useMutation(
     api.accessions.generateDraftUploadUrl,
   );
@@ -78,14 +80,10 @@ export function useObjectRequestFormLocalMedia({
           cameraInputRef.current.value = "";
         }
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : t("form.errors.failedToProcessFile"),
-        );
+        setError(actionErrorMessage(err, t("form.errors.failedToProcessFile")));
       }
     },
-    [setError, t],
+    [actionErrorMessage, setError, t],
   );
 
   const handleDeleteImage = useCallback((fileId: string) => {
@@ -123,13 +121,11 @@ export function useObjectRequestFormLocalMedia({
         }
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : t("form.errors.failedToProcessDocument"),
+          actionErrorMessage(err, t("form.errors.failedToProcessDocument")),
         );
       }
     },
-    [setError, t],
+    [actionErrorMessage, setError, t],
   );
 
   const handleDeleteDocument = useCallback((docId: string) => {

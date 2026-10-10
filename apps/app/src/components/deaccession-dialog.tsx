@@ -16,10 +16,12 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer } from "react";
 import { toast } from "sonner";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useI18n } from "@/locales/client";
 import { DeaccessionArchiveDeleteForm } from "./deaccession-archive-delete-form";
 import {
   getDeaccessionDialogCopy,
+  RemovalValidationError,
   submitDeaccession,
 } from "./deaccession-dialog-submit";
 import type {
@@ -122,6 +124,7 @@ export function DeaccessionDialog({
   initialRemovalType = null,
 }: DeaccessionDialogProps) {
   const translate = useI18n();
+  const capabilityMessage = useCapabilityErrorMessage();
   const [state, dispatch] = useReducer(
     deaccessionDialogReducer,
     initialDeaccessionDialogState,
@@ -193,7 +196,7 @@ export function DeaccessionDialog({
       onOpenChange(false);
 
       if (result.kind === "archive") {
-        toast.success("Object withdrawn to the archive.");
+        toast.success(translate("objects.withdrawal.withdrawn"));
         return;
       }
       if (result.kind === "move") {
@@ -206,9 +209,10 @@ export function DeaccessionDialog({
       dispatch({
         type: "setError",
         value:
-          err instanceof Error
+          err instanceof RemovalValidationError
             ? err.message
-            : translate("untranslatedComponents.deaccession.processFailed"),
+            : (capabilityMessage(err) ??
+              translate("untranslatedComponents.deaccession.processFailed")),
       });
     } finally {
       dispatch({ type: "setIsSubmitting", value: false });

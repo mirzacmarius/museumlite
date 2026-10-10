@@ -17,6 +17,7 @@ import {
 } from "./notificationRecipients";
 import { canApproveAtStep, requirePermission } from "./permissions";
 import { suggestPreparation, withdrawPreparation } from "./preparation";
+import { workflowApprovalError } from "./workflowApprovalErrors";
 import { getWorkflowConfig } from "./workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
@@ -77,10 +78,16 @@ export async function approveLoanHandler(
     const currentStep = workflowState.currentStep;
 
     if (currentStep === undefined) {
-      throw new Error("Workflow has no approval steps configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      );
     }
     if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-      throw new Error("Current workflow step is not configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Current workflow step is not configured",
+      );
     }
 
     const canApprove = await canApproveAtStep(
@@ -91,14 +98,20 @@ export async function approveLoanHandler(
     );
 
     if (!canApprove) {
-      throw new Error("Permission denied: cannot approve at this step");
+      throw workflowApprovalError(
+        "APPROVAL_NOT_PERMITTED",
+        "Permission denied: cannot approve at this step",
+      );
     }
 
     const currentStepConfig = workflowConfig.steps.find(
       (step) => step.stepNumber === currentStep,
     );
     if (!currentStepConfig) {
-      throw new Error("Current workflow step is not configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Current workflow step is not configured",
+      );
     }
 
     const { approvalDecision, approvalMode } = await recordWorkflowStepApproval(

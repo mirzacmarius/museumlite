@@ -360,13 +360,10 @@ export function useEditLocationForm(
       }
 
       dispatch({ type: "setLocationImageId", value: storageId });
-    } catch (uploadError) {
+    } catch {
       dispatch({
         type: "setError",
-        value:
-          uploadError instanceof Error
-            ? uploadError.message
-            : "Failed to upload location image",
+        value: t("imageUploadFailed"),
       });
       URL.revokeObjectURL(nextPreviewUrl);
       dispatch({ type: "setLocationImagePreviewUrl", value: null });

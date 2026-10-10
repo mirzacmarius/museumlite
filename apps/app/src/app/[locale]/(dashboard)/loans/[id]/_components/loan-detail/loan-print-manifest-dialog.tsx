@@ -9,6 +9,7 @@ import {
 } from "@v1/ui/dialog";
 import { Printer } from "lucide-react";
 import { ClientCurrentDate } from "@/components/client-date";
+import { useOrganization } from "@/components/organization-provider";
 import { useI18n } from "@/locales/client";
 import type { Loan } from "../types";
 
@@ -26,6 +27,14 @@ export function LoanPrintManifestDialog({
   onOpenChange,
 }: LoanPrintManifestDialogProps) {
   const tRoot = useI18n();
+  const { currentOrganization } = useOrganization();
+  const institutionName = currentOrganization?.name ?? "";
+  const institutionInitials = institutionName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* [PRINT-EXEMPT] Light zinc colors intentionally used for PDF/print output */}
@@ -54,10 +63,10 @@ export function LoanPrintManifestDialog({
               <div>
                 <div className="flex items-center gap-2 text-muted-foreground mb-2">
                   <div className="size-6 bg-cyan-600 rounded flex items-center justify-center text-white font-bold text-xs">
-                    NM
+                    {institutionInitials}
                   </div>
                   <span className="text-[10px] uppercase tracking-widest font-semibold">
-                    National Museum
+                    {institutionName}
                   </span>
                 </div>
                 <h1 className="text-2xl font-serif text-zinc-900 font-semibold tracking-tight leading-none">
@@ -86,7 +95,7 @@ export function LoanPrintManifestDialog({
                 <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">
                   {tRoot("loans.actions.lender")}
                 </h4>
-                <p>National Museum</p>
+                <p>{institutionName}</p>
               </div>
               <div>
                 <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">

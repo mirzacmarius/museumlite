@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
+import { getLocationTypeLabel } from "@/lib/record-enum-labels";
 import { useI18n } from "@/locales/client";
 
 interface LocationSelectorProps {
@@ -75,19 +76,22 @@ export function LocationSelector({
     return aPath.localeCompare(bPath);
   });
 
+  const withType = (location: { name: string; type: string }) =>
+    `${location.name} (${getLocationTypeLabel(location.type, translate)})`;
+
   const formatLocationLabel = (location: {
     name: string;
     type: string;
     path: Array<{ name: string; type: string }>;
   }) => {
     if (location.path.length <= 1) {
-      return `${location.name} (${location.type})`;
+      return withType(location);
     }
     const pathString = location.path
       .slice(0, -1)
       .map((p) => p.name)
       .join(" → ");
-    return `${pathString} → ${location.name} (${location.type})`;
+    return `${pathString} → ${withType(location)}`;
   };
 
   const formatLocationPathLabel = (
@@ -102,14 +106,14 @@ export function LocationSelector({
     }
 
     if (path.length <= 1) {
-      return `${currentLocation.name} (${currentLocation.type})`;
+      return withType(currentLocation);
     }
 
     const pathString = path
       .slice(0, -1)
       .map((p) => p.name)
       .join(" → ");
-    return `${pathString} → ${currentLocation.name} (${currentLocation.type})`;
+    return `${pathString} → ${withType(currentLocation)}`;
   };
 
   const hasSelectedLocation =
@@ -129,7 +133,9 @@ export function LocationSelector({
   const selectedLabel = selectedLocation
     ? formatLocationLabel(selectedLocation)
     : shouldShowCurrentInactiveLocation
-      ? `${formatLocationPathLabel(currentLocationPath)} (current)`
+      ? translate("untranslatedComponents.labels.currentLocationOption", {
+          location: formatLocationPathLabel(currentLocationPath),
+        })
       : (placeholder ??
         translate("untranslatedComponents.labels.selectALocation"));
 

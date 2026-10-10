@@ -157,7 +157,7 @@ export function EditCollectionPageClient() {
     onSave: handleAutoSave,
     enabled: state.isInitialized && !!state.formData.name.trim(),
     debounceMs: 2000,
-    onError: (err) => dispatch({ type: "setError", value: err.message }),
+    onError: () => dispatch({ type: "setError", value: t("form.updateError") }),
   });
 
   useBeforeUnload(isDirty);

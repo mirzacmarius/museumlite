@@ -297,21 +297,19 @@ function ObjectDetailView({
           <ObjectEntryNotice collectionId={collectionId} />
           {isWithdrawn ? (
             <section
-              aria-label="Archive register"
+              aria-label={t("withdrawal.noticeLabel")}
               className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-4"
             >
               <h2 className="text-sm font-semibold text-foreground">
-                Withdrawn from routine catalog
+                {t("withdrawal.noticeTitle")}
               </h2>
               {withdrawalReason ? (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Reason: {withdrawalReason}
+                  {t("withdrawal.reason", { reason: withdrawalReason })}
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                  Legacy withdrawal reason is unavailable. Existing register and
-                  linked evidence remain as stored; review source records before
-                  restoring.
+                  {t("withdrawal.legacyReasonMissing")}
                 </p>
               )}
             </section>

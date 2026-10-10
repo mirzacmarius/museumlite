@@ -22,11 +22,13 @@ import { useState } from "react";
 import { CollectionSelector } from "@/components/collection-selector";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 export default function NewDeaccessionPage() {
   const { push, back } = useRouter();
   const t = useScopedI18n("deaccessions");
+  const actionErrorMessage = useActionErrorMessage();
   const { currentOrganizationId } = useOrganization();
   const createDeaccession = useMutation(api.deaccessions.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,9 +78,7 @@ export default function NewDeaccessionPage() {
       push("/deaccessions");
     } catch (err) {
       console.error("Error creating deaccession:", err);
-      setError(
-        err instanceof Error ? err.message : t("form.errors.createFailed"),
-      );
+      setError(actionErrorMessage(err, t("form.errors.createFailed")));
       setIsSubmitting(false);
     }
   };

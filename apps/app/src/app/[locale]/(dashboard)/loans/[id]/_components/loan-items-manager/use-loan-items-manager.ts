@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useMemo, useState } from "react";
 import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
+import { useLoanObjectErrorMessage } from "@/hooks/use-loan-object-error-message";
 import {
   type SelectableObject,
   useObjectSearchSelection,
@@ -26,6 +27,7 @@ export function useLoanItemsManager({
   loanStatus,
 }: UseLoanItemsManagerOptions) {
   const tActions = useScopedI18n("loans.actions");
+  const loanObjectErrorMessage = useLoanObjectErrorMessage();
   const custodyConflictMessage = useCustodyConflictMessage();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
@@ -101,9 +103,7 @@ export function useLoanItemsManager({
       setConditionOut("");
       setIsAddDialogOpen(false);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : tActions("failedToAddItems"),
-      );
+      setError(loanObjectErrorMessage(err) ?? tActions("failedToAddItems"));
     }
   };
 
@@ -114,10 +114,8 @@ export function useLoanItemsManager({
         loanId: loanId as Id<"loans">,
         loanItemIds: [loanItemId as Id<"loanItems">],
       });
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : tActions("failedToRemoveItem"),
-      );
+    } catch {
+      setError(tActions("failedToRemoveItem"));
     }
   };
 

@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
+
+import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   capabilityUnavailable,
   permissionMissingMessage,
 } from "@v1/backend/convex/utils/capabilities";
-import { screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { useRef } from "react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
@@ -50,7 +51,7 @@ async function chooseRoomBAndMove() {
   await user.click(
     await screen.findByRole("option", { name: "Store > Room B" }),
   );
-  await user.click(screen.getByRole("button", { name: "Move Items" }));
+  await user.click(screen.getByRole("button", { name: "Move Objects" }));
 }
 
 test("a move the server refuses is explained in the dialog, which keeps the choice", async () => {

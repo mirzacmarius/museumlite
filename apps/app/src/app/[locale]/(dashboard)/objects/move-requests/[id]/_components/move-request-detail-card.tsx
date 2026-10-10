@@ -70,7 +70,7 @@ export function MoveRequestDetailCard({
               {tRoot("untranslatedRecords.accessions.transfer.handling")}
             </Label>
             <p className="mt-1">
-              {formatMoveRequestAccessionMode(request.accessionMode)}
+              {formatMoveRequestAccessionMode(request.accessionMode, tRoot)}
             </p>
           </div>
           <div>
@@ -166,7 +166,9 @@ export function MoveRequestDetailCard({
               </Label>
               <p className="mt-1">
                 {request.approvedSourceLocation === null
-                  ? tRoot("untranslatedRecords.objects.transfer.noRecordedLocation")
+                  ? tRoot(
+                      "untranslatedRecords.objects.transfer.noRecordedLocation",
+                    )
                   : (request.approvedSourceLocation?.name ??
                     tRoot(
                       "untranslatedRecords.objects.moveRequest.unknownOrganization",
@@ -177,7 +179,9 @@ export function MoveRequestDetailCard({
           {request.acceptedTargetLocation && (
             <div>
               <Label className="text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.transfer.receivingLocation")}
+                {tRoot(
+                  "untranslatedRecords.objects.transfer.receivingLocation",
+                )}
               </Label>
               <p className="mt-1">{request.acceptedTargetLocation.name}</p>
             </div>
@@ -186,11 +190,15 @@ export function MoveRequestDetailCard({
             request.transferScopeSnapshot.collectionGroupIds.length > 0 && (
               <div>
                 <Label className="text-muted-foreground">
-                  {tRoot("untranslatedRecords.objects.transfer.priorGroupLinks")}
+                  {tRoot(
+                    "untranslatedRecords.objects.transfer.priorGroupLinks",
+                  )}
                 </Label>
                 <p className="mt-1 text-sm text-white/60">
                   {request.transferScopeSnapshot.collectionGroupIds.length}{" "}
-                  {tRoot("untranslatedRecords.objects.transfer.priorGroupLinksCount")}
+                  {tRoot(
+                    "untranslatedRecords.objects.transfer.priorGroupLinksCount",
+                  )}
                 </p>
               </div>
             )}

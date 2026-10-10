@@ -34,6 +34,7 @@ import { ClientDate } from "@/components/client-date";
 import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -86,6 +87,7 @@ const statusColor: Record<string, string> = {
 
 export function TransitPageClient() {
   const t = useScopedI18n("untranslatedDashboard.transit");
+  const actionErrorMessage = useActionErrorMessage();
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const canUseTransit = useCapabilities().isAvailable("transit");
@@ -125,7 +127,9 @@ export function TransitPageClient() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-          <h3 className="text-lg font-semibold">{t("noOrganizationSelected")}</h3>
+            <h3 className="text-lg font-semibold">
+              {t("noOrganizationSelected")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t("selectOrganizationDescription")}
             </p>
@@ -148,9 +152,7 @@ export function TransitPageClient() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
               <h2 className="page-title">{t("title")}</h2>
-              <p className="page-description">
-                {t("description")}
-              </p>
+              <p className="page-description">{t("description")}</p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
               <PermissionGate permission="loans.create">
@@ -179,9 +181,7 @@ export function TransitPageClient() {
                           setDialogOpen(false);
                         } catch (err) {
                           toast.error(
-                            err instanceof Error
-                              ? err.message
-                              : t("recordCreateFailed"),
+                            actionErrorMessage(err, t("recordCreateFailed")),
                           );
                         }
                       }}
@@ -455,9 +455,15 @@ function TransitForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="incoming">{t("typeOptions.incoming")}</SelectItem>
-            <SelectItem value="outgoing">{t("typeOptions.outgoing")}</SelectItem>
-            <SelectItem value="internal">{t("typeOptions.internal")}</SelectItem>
+            <SelectItem value="incoming">
+              {t("typeOptions.incoming")}
+            </SelectItem>
+            <SelectItem value="outgoing">
+              {t("typeOptions.outgoing")}
+            </SelectItem>
+            <SelectItem value="internal">
+              {t("typeOptions.internal")}
+            </SelectItem>
             <SelectItem value="return">{t("typeOptions.return")}</SelectItem>
           </SelectContent>
         </Select>

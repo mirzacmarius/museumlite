@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 import { usePermissions } from "./permission-gate";
 
 export function IdentifierAvailabilityHint({
@@ -18,6 +19,7 @@ export function IdentifierAvailabilityHint({
   existingId?: Id<"accessions">;
 }) {
   const { hasPermission } = usePermissions();
+  const t = useScopedI18n("identifiers");
   const result = useQuery(
     api.identifiers.inspect,
     organizationId && identifier.trim() && hasPermission("collections.read")
@@ -30,20 +32,15 @@ export function IdentifierAvailabilityHint({
     <div className="space-y-1 text-xs" aria-live="polite">
       {result.needsBackfill ? (
         <p>
-          Complete identifier indexing in{" "}
+          {t("hint.needsIndexing")}{" "}
           <Link className="underline" href="/settings/preferences">
-            Settings &gt; Preferences
-          </Link>{" "}
-          before assigning new numbers.
+            {t("hint.openReview")}
+          </Link>
         </p>
       ) : null}
       {matches.length > 0 ? (
         <>
-          <p>
-            Existing {register} records use this number. For a new record,
-            choose an unused number. Capitalization and surrounding spaces do
-            not make a number unique.
-          </p>
+          <p>{t("hint.inUse", { register: t(`registers.${register}`) })}</p>
           <ul className="space-y-1">
             {matches.slice(0, 10).map((row) => (
               <li key={row._id}>
@@ -56,9 +53,7 @@ export function IdentifierAvailabilityHint({
               </li>
             ))}
           </ul>
-          {matches.length > 10 ? (
-            <p>More matches are available in identifier review.</p>
-          ) : null}
+          {matches.length > 10 ? <p>{t("hint.moreMatches")}</p> : null}
         </>
       ) : null}
     </div>

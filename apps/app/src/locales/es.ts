@@ -43,7 +43,7 @@ export default {
     unknownLegacyActor: "Identidad histórica del responsable desconocida",
 
     receiptRequirement:
-      "Introduzca notas de estado o seleccione una evaluación aceptada para cada elemento seleccionado y confirme cada destino de devolución obligatorio.",
+      "Introduzca notas de estado o seleccione una evaluación aceptada para cada objeto seleccionado y confirme cada destino de devolución obligatorio.",
     handoffTimeline: "Cronología de entregas",
     installationTask: "Completar tarea de instalación vinculada (opcional)",
     assessmentLabel: "Evaluación del estado",
@@ -142,15 +142,14 @@ export default {
       "Por favor selecciona una organización del menú desplegable arriba para ver el panel de control.",
     departmentsAndCollections: "Departamentos y Colecciones",
     viewCollection: "Ver Colección",
-    items: "Elementos",
+    items: "Objetos",
     groups: "Grupos",
     loaned: "Prestado",
     allCollectionGroups: "Todos los Grupos de Colecciones",
     addNewObject: "Agregar Nuevo Objeto",
     createCatalogEntry: "Crear entrada de catálogo",
     quickAction: "Acción Rápida",
-    accessionsWorkflow: "Flujo de Trabajo de Adquisiciones",
-    reviewIncomingItems: "Revisar elementos entrantes",
+    accessionsWorkflow: "Flujo de Trabajo de Accesiones",
     approved: "Aprobado",
     processing: "Procesando",
     rejected: "Rechazado",
@@ -291,7 +290,7 @@ export default {
       enableDetailedConditionReports:
         "Habilitar Informes de Condición Detallados",
       detailedConditionReportsHint:
-        "Requerir informes de condición detallados con fotos para artículos en préstamo",
+        "Exigir informes de estado detallados con fotos para los objetos en préstamo",
       saveChanges: "Guardar Cambios",
       saving: "Guardando...",
       organizationNameRequired: "El nombre de la organización es obligatorio",
@@ -577,7 +576,7 @@ export default {
       },
       title: "Importar/Exportar datos",
       objects: "Objetos",
-      accessions: "Adquisiciones",
+      accessions: "Accesiones",
       locations: "Ubicaciones",
       accounts: "Cuentas",
       loans: "Préstamos",
@@ -1172,17 +1171,13 @@ export default {
     pendingInvitationsCount: "{count} invitación{plural} pendiente{plural}",
     noPendingInvitations: "No hay invitaciones pendientes",
     loadingInvitations: "Cargando invitaciones...",
-    invitedEmail: "Correo Electrónico Invitado",
     expires: "Expira {date}",
     expired: "Expirado",
     resend: "Reenviar",
-    resending: "Reenviando...",
-    resendSuccess: "Invitación reenviada con éxito",
     resendFailed:
       "Error al reenviar la invitación. Por favor, inténtelo de nuevo.",
     cancelInvitation: "Cancelar",
     cancelConfirm: "¿Está seguro de que desea cancelar esta invitación?",
-    cancelSuccess: "Invitación cancelada con éxito",
     cancelFailed:
       "Error al cancelar la invitación. Por favor, inténtelo de nuevo.",
   },
@@ -1402,16 +1397,9 @@ export default {
         deletedLoanItems: "{count} artículo(s) de préstamo eliminado(s)",
         updatedCollections:
           "{count} colección(es) actualizada(s) con estado activo",
-        button: "Eliminar todos los préstamos",
-        deleting: "Eliminando...",
         dialog: {
           title: "¿Eliminar todos los préstamos?",
-          description: "Esto eliminará permanentemente:",
           willDelete: "Se eliminarán permanentemente:",
-          warning:
-            "Esta acción no se puede deshacer. ¿Estás absolutamente seguro?",
-          cancel: "Cancelar",
-          confirm: "Sí, eliminar todos los préstamos",
 
           allLoans: "Todos los préstamos de tu organización",
           allLoanItems: "Todos los elementos prestados",
@@ -1561,7 +1549,7 @@ export default {
       organization: "Organización",
       collection: "Colección",
       loan: "Préstamo",
-      accession: "Adquisición",
+      accession: "Accesión",
       deaccession: "Desaccesión",
       location: "Ubicación",
       user: "Usuario",
@@ -1590,7 +1578,7 @@ export default {
     itemsOnDisplay: "Objetos en Exhibición",
     objectsOnLoan: "Objetos en Préstamo",
     activeLoans: "Préstamos Activos",
-    pendingAccessions: "Adquisiciones Pendientes",
+    pendingAccessions: "Accesiones Pendientes",
     totalLocations: "Ubicaciones Totales",
     totalCollectionGroups: "Grupos de Colección",
   },
@@ -1598,14 +1586,14 @@ export default {
     pendingApprovals: "Aprobaciones Pendientes",
     noPendingAssignments: "No hay asignaciones pendientes",
     allCaughtUpDescription:
-      "¡Estás al día! Vuelve más tarde para nuevos elementos que requieren aprobación.",
+      "Estás al día. Vuelve más tarde para ver nuevos casos que esperan tu aprobación.",
     typeLabels: {
-      accessions: "Adquisiciones",
+      accessions: "Accesiones",
       loans: "Préstamos",
       exhibitions: "Exposiciones",
       conservation: "Conservación",
 
-      accession: "Adquisición",
+      accession: "Accesión",
       deaccession: "Desaccesión",
       deaccessions: "Bajas",
       loan: "Préstamo",
@@ -1615,8 +1603,8 @@ export default {
   },
   newArrivals: {
     title: "Nuevas Llegadas",
-    noRecentAccessions: "No hay adquisiciones recientes",
-    description: "Las nuevas adquisiciones aparecerán aquí",
+    noRecentAccessions: "No hay accesiones recientes",
+    description: "Las nuevas accesiones aparecerán aquí",
     statusProcessing: "Procesando",
     statusCataloged: "Catalogado",
     statusRejected: "Rechazado",
@@ -1897,7 +1885,7 @@ export default {
         pages: "Páginas",
         format: "Formato",
         classification: "Clasificación",
-        deweyDecimal: "Dewey Decimal",
+        deweyDecimal: "Decimal Dewey",
         lcClassification: "Biblioteca del Congreso",
         categories: "Categorías",
         genres: "Géneros",
@@ -2204,7 +2192,7 @@ export default {
         "Términos específicos del préstamo, restricciones o requisitos...",
       notes: "Notas del personal...",
       notesEdit: "Notas adicionales para el personal...",
-      collections: "Buscar y seleccionar colecciones...",
+      collections: "Buscar y seleccionar objetos...",
       searchAccession: "Buscar número de acceso...",
       searchCollections: "Buscar por número de acceso o título...",
       conditionOut: "Condición al salir",
@@ -2226,55 +2214,53 @@ export default {
       markAsReturned: "Marcar como devuelto",
       copyLoanNumber: "Copiar número de préstamo",
       markAsReturnedConfirm:
-        "¿Está seguro de que desea marcar este préstamo como devuelto? Esto actualizará el estado de todos los elementos de la colección asociados.",
-      returnLoanItems: "Devolver artículos del préstamo",
-      selectItemsToReturn: "Seleccionar artículos a devolver",
+        "¿Seguro que desea marcar este préstamo como devuelto? Se actualizará el estado de todos los objetos del préstamo.",
+      returnLoanItems: "Devolver objetos",
+      selectItemsToReturn: "Seleccionar objetos para devolver",
       selectItemsToReturnDesc:
-        'Seleccione los artículos a devolver. Si se devuelven todos los artículos, el estado del préstamo se actualizará a "Devuelto".',
+        'Seleccione los objetos que se devuelven. Si se devuelven todos, el estado del préstamo pasará a "Devuelto".',
       selectAllItems: "Seleccionar todo",
-      someItemsReturned: "Algunos artículos ya han sido devueltos",
+      someItemsReturned: "Algunos objetos ya se han devuelto",
       returnedItemsInfo:
-        "Los artículos marcados como DEVUELTOS ya han sido devueltos y no pueden ser seleccionados nuevamente. Solo los artículos que aún están en préstamo pueden ser devueltos.",
+        "Los objetos marcados como DEVUELTOS ya se han devuelto y no se pueden volver a seleccionar. Solo se pueden devolver los objetos que siguen en préstamo.",
       confirmFullReturn: "Confirmar devolución completa",
       confirmPartialReturn: "Confirmar devolución parcial",
       fullReturnTitle:
         "Estás a punto de devolver los {count} {items} de este préstamo.",
       fullReturnDescription:
-        'Esto marcará el préstamo como "Devuelto" y actualizará el estado de todos los artículos de la colección a "activo".',
+        'El préstamo se marcará como "Devuelto" y todos sus objetos volverán al estado "Activo".',
       partialReturnTitle:
         "Estás a punto de devolver {returnCount} de {totalCount} {items} de este préstamo.",
       partialReturnDescription:
-        "Esta es una devolución parcial. El préstamo permanecerá en su estado actual y solo los artículos seleccionados se marcarán como devueltos.",
+        "Es una devolución parcial. El préstamo mantiene su estado actual y solo los objetos seleccionados se marcan como devueltos.",
       remainingItems: "Los {count} {items} restantes permanecerán en préstamo.",
       confirmProceed: "¿Estás seguro de que deseas continuar?",
-      returnAllItems: "Devolver todos los artículos",
+      returnAllItems: "Devolver todos los objetos",
       goBack: "Atrás",
       returning: "Devolviendo...",
       loanActions: "Acciones de préstamo",
-      selectAtLeastOne: "Por favor selecciona al menos un artículo a devolver.",
+      selectAtLeastOne: "Seleccione al menos un objeto para devolver.",
       keepLoan: "Mantener préstamo",
       cancel: "Cancelar",
-      removeLoanItem: "Eliminar artículo del préstamo",
+      removeLoanItem: "Quitar objeto del préstamo",
       removeItemConfirm:
-        "¿Estás seguro de que deseas eliminar este artículo del préstamo? Esta acción no se puede deshacer.",
-      removeItem: "Eliminar artículo",
-      addItemsToLoan: "Agregar artículos al préstamo",
+        "¿Seguro que desea quitar este objeto del préstamo? Esta acción no se puede deshacer.",
+      removeItem: "Quitar objeto",
+      addItemsToLoan: "Añadir objetos al préstamo",
       searchSelectCollections:
-        "Buscar y seleccionar colecciones para agregar a este préstamo",
-      loadingCollections: "Cargando colecciones...",
-      noCollectionsFound:
-        "No se encontraron colecciones que coincidan con tu búsqueda",
-      noAvailableCollections: "No hay colecciones disponibles para agregar",
+        "Busque y seleccione objetos para añadirlos a este préstamo",
+      noCollectionsFound: "Ningún objeto coincide con la búsqueda",
+      noAvailableCollections: "No hay objetos disponibles para añadir",
       selectedCount: "Seleccionado ({count})",
       clearAll: "Limpiar todo",
-      addItems: "Agregar artículos",
+      addItems: "Añadir objetos",
       continueAction: "Continuar",
-      returnLoanItem: "Devolver artículo del préstamo",
+      returnLoanItem: "Devolver objeto",
       conditionInLabel: "Condición al recibir (Opcional)",
       notesLabel: "Notas (Opcional)",
       confirmReturn: "Confirmar devolución",
-      noItemsInLoan: "No hay artículos en este préstamo",
-      loanItems: "Artículos del préstamo ({count})",
+      noItemsInLoan: "No hay objetos en este préstamo",
+      loanItems: "Objetos del préstamo ({count})",
       returnItem: "Devolver",
       loanLocked: "Préstamo bloqueado",
       loanLockedDesc:
@@ -2299,32 +2285,15 @@ export default {
       internalNotes: "Notas internas",
       saveChanges: "Guardar cambios",
       saving: "Guardando...",
-      loanCreated: "Préstamo creado",
-      submittedForApproval: "Enviado para aprobación",
-      curatorialReviewCompleted: "Revisión curatorial completada",
-      facilitiesReviewCompleted: "Revisión de instalaciones completada",
-      conservationReviewCompleted: "Revisión de conservación completada",
-      readyForDispatch: "Listo para envío",
-      stepCompleted: "Paso {step} completado",
       noActivityRecorded: "No hay actividad registrada.",
       borrowerContext: "Contexto del prestatario",
-      relationshipStatus: "Estado de la relación",
-      preferredPartner: "Socio preferido",
-      incidentsIn: "{count} incidentes en {years} años",
-      registrarContact: "Contacto del registrador",
-      seniorRegistrar: "Registrador principal",
       transportStatus: "Estado del transporte",
       noTransportRecords: "Sin registros de transporte",
       loanAgreement: "Acuerdo de préstamo",
       loanAgreementPreview:
         "Previsualiza, imprime o envía por correo electrónico el documento de acuerdo de préstamo.",
-      countersigned: "Contrafirmado",
-      costs: "Costos",
-      allCostsToBorne: "Todos los costos a cargo del prestatario",
-      wallToWallInsurance: "Cobertura de seguro de pared a pared activa",
       documents: "Documentos ({count})",
       noDocumentsUploaded: "No hay documentos cargados.",
-      uploadFacilityReport: "Cargar informe de instalación...",
       objectsTab: "Objetos ({count})",
       addObject: "Agregar objeto",
       noObjectsInLoan: "No hay objetos en este préstamo.",
@@ -2333,58 +2302,16 @@ export default {
       onLoan: "En préstamo",
       returned: "Devuelto",
       stable: "Estable",
-      artistUnknown: "Artista desconocido • Óleo sobre lienzo",
-      facilityTab: "Informe de instalación",
       reviewRequired: "Revisión requerida",
-      facilityReviewPending:
-        "Las lecturas ambientales de la galería muestran ligeras fluctuaciones de humedad. La aprobación de conservación está pendiente.",
-      reviewLogs: "Ver registros",
-      climateControl: "Control climático (Galería 4)",
       temperature: "Temperatura",
-      relativeHumidity: "Humedad relativa",
-      lightLevel: "Nivel de luz (Lux)",
-      deviatingSlightly: "Desviación ligera (+4%)",
-      securityAccess: "Seguridad y acceso",
-      guardPresence: "Presencia de guardia 24/7",
-      confirmed: "Confirmado",
-      cctvCoverage: "Cobertura CCTV",
-      fireSuppression: "Supresión de incendios",
-      dryPipePreAction: "Tubería seca / Preacción",
-      displayCases: "Vitrinas de exhibición",
-      acrylicAlarmed: "Acrílico, alarma",
-      registrarNote: "Nota del registrador",
-      retrofittedGallery:
-        "MoMA ha retrofitado la Galería 4 con nuevos sensores de vibración en Q3 2023. Aprobado para préstamos de alto valor.",
-      logisticsTab: "Embalaje y envío",
-      cratingPlan: "Plan de embalaje",
-      standardPaintingCrate: "Caja de pintura estándar",
-      slottedTravelFrame: "Marco de viaje ranurado",
-      pendingSize: "Tamaño pendiente",
-      configure: "Configurar",
-      transportAgent: "Agente de transporte",
-      fineArtShipping: "Envío de obras de arte",
-      serviceLevel: "Nivel de servicio",
-      tarmacSupervision: "Supervisión de tarmac",
-      route: "Ruta",
-      courier: "Mensajero",
       activityLog: "Registro de actividad",
       overview: "Descripción general y {type}",
-      approvalWorkflow: "Flujo de aprobación",
       request: "Solicitud",
-      rec: "Rec:",
-      curatorial: "Curatorial",
-      app: "App:",
-      facilities: "Instalaciones",
-      reviewing: "En revisión",
       conservation: "Conservación",
       pending: "Pendiente",
-      dispatch: "Envío",
       locked: "Bloqueado",
       borrowerDetails: "Detalles del prestatario",
       institution: "Institución",
-      exhibitionSpace: "Espacio de exhibición",
-      theRobertBMenschelGalleries: "Las galerías Robert B. Menschel",
-      floorWingEnvironment: "Piso 4, Ala Oeste (Ambiente controlado)",
       createNewLoan: "Crear nuevo préstamo",
       registerNewLoan: "Registrar un nuevo préstamo entrante o saliente.",
       basicInformation: "Información básica",
@@ -2395,9 +2322,7 @@ export default {
       nameInstitution: "Nombre / Institución",
       required: "*",
       scheduleTerms: "Cronograma y términos",
-      loanItemsSection: "Artículos del préstamo",
-      selectCollections: "Seleccionar colecciones",
-      selectedItems: "Seleccionado ({count})",
+      selectCollections: "Seleccionar objetos",
       summary: "Resumen",
       type: "Tipo",
       lender: "Prestamista",
@@ -2413,17 +2338,17 @@ export default {
       lenderBorrowerRequired:
         "El nombre del prestamista/prestatario es requerido",
       someCollectionsNoLongerAvailable:
-        "Algunas colecciones seleccionadas ya no están disponibles y han sido eliminadas. Por favor intenta de nuevo.",
+        "Algunos objetos seleccionados ya no están disponibles y se han quitado. Inténtelo de nuevo.",
       collectionsAlreadyInActiveLoans:
-        "Las siguientes colecciones ya están en préstamos activos o pendientes y deben ser eliminadas: {names}. Por favor elimínalas antes de crear el préstamo.",
+        "Estos objetos ya están en un préstamo activo o pendiente: {names}. Quítelos antes de crear el préstamo.",
       failedToCreateLoan:
         "Error al crear el préstamo. Por favor intenta de nuevo.",
       alreadyInActiveLoan:
-        "Una o más colecciones seleccionadas ya están en un préstamo activo o pendiente. Por favor elimínalas e intenta de nuevo.",
+        "Uno o más de los objetos seleccionados ya están en un préstamo activo o pendiente. Quítelos e inténtelo de nuevo.",
       doesNotBelongToOrganization:
-        "Una o más colecciones seleccionadas no pertenecen a esta organización. Por favor actualiza e intenta de nuevo.",
+        "Uno o más de los objetos seleccionados ya no están disponibles. Actualice e inténtelo de nuevo.",
       notActive:
-        "Una o más colecciones seleccionadas no están activas. Por favor selecciona solo colecciones activas.",
+        "Uno o más de los objetos seleccionados no están activos. Seleccione solo objetos activos.",
       exportedLoans: "{count} préstamo{plural} exportado{plural}",
       loansApproved: "{count} préstamo{plural} aprobado{plural}",
       someLoansSkipped: "{count} préstamo{plural} omitido{plural}",
@@ -2435,16 +2360,13 @@ export default {
       failedToCancel: "Error al cancelar el préstamo",
       failedToDispatch: "Error al enviar el préstamo",
       failedToReturn: "Error al devolver el préstamo",
-      failedToAddItems: "Error al agregar artículos al préstamo",
-      failedToRemoveItem: "Error al eliminar el artículo del préstamo",
-      failedToReturnItem: "Error al devolver el artículo",
-      pleaseSelectAtLeastOneCollection:
-        "Por favor selecciona al menos una colección",
-      alreadyInLoan: "Ya en préstamo {status} {loanNumber}",
+      failedToAddItems: "No se pudieron añadir los objetos al préstamo",
+      failedToRemoveItem: "No se pudo quitar el objeto del préstamo",
+      failedToReturnItem: "No se pudo devolver el objeto",
+      pleaseSelectAtLeastOneCollection: "Seleccione al menos un objeto",
+      alreadyInLoan: "Ya está en el préstamo {loanNumber} ({status})",
       outgoing: "Saliente",
       incoming: "Entrante",
-      international: "Internacional",
-      trusted: "CONFIABLE",
       loanManifest: "Manifiesto de préstamo",
       printDispatchManifest: "Imprimir manifiesto de envío",
       print: "Imprimir",
@@ -2454,22 +2376,12 @@ export default {
       pageOf: "Página {page} de {total}",
       lenderLabel: "Prestamista",
       borrowerConsignee: "Prestatario (Consignatario)",
-      loanItemsTable: "Artículos del préstamo",
+      loanItemsTable: "Objetos del préstamo",
       accNo: "N° Acc.",
       objectTitle: "Título del objeto",
       condition: "Condición",
       releasedByRegistrar: "Liberado por (Registrador)",
       receivedByShipper: "Recibido por (Transportista)",
-      pendingFacilityReportApproval:
-        "Aprobación del informe de instalación pendiente",
-      youAreAboutToReturn:
-        "Estás a punto de devolver los {count} {items} de este préstamo.",
-      willMarkLoanAsReturned:
-        "Esto marcará el préstamo como Devuelto y actualizará el estado de todos los artículos de la colección a activo.",
-      youAreAboutToReturnPartial:
-        "Estás a punto de devolver {count} de {total} {items} de este préstamo.",
-      partialReturnDesc:
-        "Esta es una devolución parcial. El préstamo permanecerá {status} y solo los artículos seleccionados serán marcados como devueltos. Los {remaining} {items} restantes permanecerán en préstamo.",
       areYouSureYouWantToProceed: "¿Estás seguro de que deseas continuar?",
 
       totalValue: "Valor total:",
@@ -2495,7 +2407,7 @@ export default {
         startDate: "Fecha de Inicio",
         endDate: "Fecha de Fin",
         status: "Estado",
-        items: "Artículos",
+        items: "Objetos",
       },
     },
     pagination: {
@@ -2548,10 +2460,10 @@ export default {
       type: "Tipo",
       duration: "Duración",
       status: "Estado",
-      itemsPlural: "elementos",
+      itemsPlural: "objetos",
       loanIdTitle: "ID y título del préstamo",
       partnerInstitution: "Institución asociada",
-      items: "elemento",
+      items: "objeto",
     },
     charts: {
       statusDistribution: "Distribución por estado",
@@ -2825,7 +2737,7 @@ export default {
     storageUnits: "Unidades de Almacenamiento",
     objectsAtThisLocation: "Objetos en esta Ubicación",
     total: "Total",
-    items: "elementos",
+    items: "objetos",
     noObjectsAtLocation: "No hay objetos en esta ubicación",
     notes: "Notas",
     importCSV: "Importar CSV",
@@ -3140,6 +3052,8 @@ export default {
         typeRequired: "Por favor seleccione un tipo de ubicación",
         createFailed: "Error al crear la ubicación",
       },
+      imageUploadFailed:
+        "No se pudo subir la foto de la ubicación. Inténtelo de nuevo.",
     },
     move: {
       title: "Mover Ubicación",
@@ -3210,13 +3124,13 @@ export default {
     unavailable: "No disponible",
     unknown: "Desconocido",
     cannotDeaccession:
-      "No se puede desaccesionar - elemento en préstamo activo",
+      "No se puede desaccesionar: el objeto está en un préstamo activo",
     active: "Activo",
     inactive: "Inactivo",
     pending: "Pendiente",
     noResults: "No se encontraron resultados",
     selectAll: "Seleccionar todo",
-    selectAllItems: "Seleccionar todos los elementos",
+    selectAllItems: "Seleccionar todos los objetos",
     selected: "seleccionado",
     selectedCount: "{count} seleccionado(s)",
     allSelected: "Todo seleccionado",
@@ -3260,21 +3174,19 @@ export default {
       documentDeleted: "Documento eliminado",
       documentDeleteFailed: "Error al eliminar documento",
       selectLocation: "Por favor selecciona una ubicación",
-      itemsMoved: "{count} elemento(s) movido(s) exitosamente",
-      itemsMoveFailed: "Error al mover elementos",
+      itemsMoved: "Objetos movidos: {count}",
       selectCollectionGroup: "Por favor selecciona un grupo de colección",
-      itemsAddedToGroup:
-        "{count} elemento(s) agregado(s) al grupo exitosamente",
-      itemsAddToGroupFailed: "Error al agregar elementos al grupo",
+      itemsAddedToGroup: "Objetos añadidos al grupo de colección: {count}",
+      itemsAddToGroupFailed:
+        "No se pudieron añadir los objetos al grupo de colección",
       selectDeaccessionReason:
         "Por favor proporciona una razón para la desaccesión",
       itemsAwaitingDecision:
         "{count} solicitud(es) de desaccesión pendientes de decisión de aprobación",
-      itemsDeaccessioned: "{count} elemento(s) desaccesionado(s) exitosamente",
-      someItemsSkipped:
-        "{count} elemento(s) fueron omitidos (en préstamo activo)",
+      itemsDeaccessioned: "Objetos desaccesionados: {count}",
+      someItemsSkipped: "Omitidos por estar en un préstamo activo: {count}",
       failedOnLoan: "{count} fallaron (pueden estar en préstamo)",
-      itemsDeaccessionFailed: "Error al desaccesionar elementos",
+      itemsDeaccessionFailed: "No se pudieron desaccesionar los objetos",
       imageOrderUpdated: "Orden de imágenes actualizado",
       imageOrderUpdateFailed: "Error al actualizar orden de imágenes",
     },
@@ -3282,6 +3194,7 @@ export default {
     saveChanges: "Guardar Cambios",
     updating: "Actualizando...",
     close: "Cerrar",
+    currencyNotRecorded: "Moneda no registrada",
   },
   objects: {
     backToObject: "Volver al objeto",
@@ -3318,7 +3231,7 @@ export default {
       sizeMedium: 'Mediana (4" × 2,5")',
       sizeLarge: 'Grande (5" × 3")',
       showBorder: "Mostrar borde",
-      accessionFontSize: "Tamaño de fuente del número de ingreso",
+      accessionFontSize: "Tamaño de fuente del número de accesión",
       printInstructions: "Instrucciones de impresión",
       instructionPaperSize: "Usa papel tamaño carta o A4",
       instructionOrientation: "Selecciona la orientación vertical",
@@ -3366,13 +3279,13 @@ export default {
       noObjectsFound: "No se encontraron objetos",
       addFirstObject: "Agrega Tu Primer Objeto",
 
-      noObjectsInCollection: "Esta colección todavía no tiene objetos",
-      addObjectsToCollection: "Añadir objetos a la colección",
+      noObjectsInCollection: "Este grupo de colección todavía no tiene objetos",
+      addObjectsToCollection: "Añadir objetos al grupo de colección",
       addObjectsToCollectionDescription:
-        "Selecciona objetos catalogados para incluirlos en esta colección. Los objetos pueden pertenecer a varias colecciones.",
+        "Seleccione objetos catalogados para incluirlos en este grupo de colección. Un objeto puede pertenecer a varios grupos de colección.",
     },
     table: {
-      selectAllItems: "Seleccionar todos los elementos",
+      selectAllItems: "Seleccionar todos los objetos",
       allSelected: "Todos seleccionados",
       quickActions: "Acciones rápidas",
     },
@@ -3387,7 +3300,7 @@ export default {
       checkbox: "Casilla de verificación",
       image: "Imagen",
       titleColumn: "Título",
-      accessionNumber: "N° de Accesión",
+      accessionNumber: "N.º de accesión",
       location: "Ubicación",
       objectType: "Tipo de Objeto",
       status: "Estado",
@@ -3421,49 +3334,26 @@ export default {
       moveLocation: {
         title: "Mover a Ubicación",
         description:
-          "Mover {count} elemento{s} seleccionado{s} a una nueva ubicación.",
+          "Mover los objetos seleccionados ({count}) a una nueva ubicación.",
         label: "Nueva Ubicación",
         placeholder: "Selecciona una ubicación",
         selectLocation: "Por favor selecciona una ubicación",
         moving: "Moviendo...",
-        moveItems: "Mover elementos",
-        failed: "Error al mover elementos",
-      },
-      export: {
-        title: "Exportar Objetos",
-        description:
-          "Exportar los {count} elementos seleccionados como archivo CSV.",
-        exporting: "Exportando...",
-        exportButton: "Exportar CSV",
+        moveItems: "Mover objetos",
+        failed: "No se pudieron mover los objetos",
       },
       deaccession: {
         title: "Desaccesión en Masa",
         description:
-          "Estás a punto de desaccesionar {count} elemento{s}. Esta acción los eliminará de tu colección activa.",
+          "Va a desaccesionar los objetos seleccionados ({count}). Saldrán de la colección activa.",
         onLoanWarning:
-          "Los elementos actualmente en préstamo no pueden ser desaccesionados y serán omitidos.",
+          "Los objetos que están en préstamo no se pueden desaccesionar y se omitirán.",
         label: "Razón de la Desaccesión",
-        placeholder: "Ingresa la razón para desaccesionar estos elementos...",
+        placeholder: "Indique el motivo para desaccesionar estos objetos...",
         provideReason: "Por favor proporciona una razón para la desaccesión",
         processing: "Procesando...",
-        deaccessionItems: "Desaccesionar Elementos",
-        failed: "Error al desaccesionar elementos",
-        deaccessioning: "Desaccesionando...",
-        deaccessionButton: "Desaccesionar Objetos",
-        selectReason: "Debes seleccionar una razón",
-        reasonLabel: "Razón de Desaccesión",
-        reasonPlaceholder: "Selecciona una razón...",
-        reasons: {
-          sold: "Vendido",
-          exchanged: "Intercambiado",
-          destroyed: "Destruido",
-          lost: "Perdido",
-          stolen: "Robado",
-          returned: "Devuelto al propietario original",
-          other: "Otro",
-        },
-        noteLabel: "Notas (opcional)",
-        notePlaceholder: "Agregar contexto adicional...",
+        deaccessionItems: "Desaccesionar objetos",
+        failed: "No se pudieron desaccesionar los objetos",
 
         failedOnLoan: "{count} fallaron (pueden estar en préstamo)",
       },
@@ -3471,73 +3361,14 @@ export default {
       printLabels: {
         title: "Imprimir etiquetas QR",
         description:
-          "Generar etiquetas QR para la selección de {count} elemento{s}.",
+          "Generar etiquetas QR para los objetos seleccionados ({count}).",
         loadingLabels: "Cargando etiquetas...",
         noLabels: "No hay etiquetas que mostrar",
       },
     },
     detail: {
-      overview: "Descripción General",
-      media: "Medios",
-      conservation: "Conservación",
-      history: "Historial",
-      provenance: "Procedencia",
-      donations: "Donaciones",
-      links: "Enlaces",
-      exhibitionHistory: "Historial de Exhibiciones",
-      loanHistory: "Historial de Préstamos",
-      locationHistory: "Historial de Ubicaciones",
-      conditionReports: "Informes de Condición",
-      print: "Imprimir",
-      edit: "Editar",
-      imageOf: "Imagen de",
-      deaccessionedBadge: "Desaccesionado",
-      onLoanBadge: "En Préstamo",
-      accessionNumber: "Número de Accesión",
-      alternateId: "Identificador Alterno",
-      title: "Título",
-      objectType: "Tipo de Objeto",
-      objectName: "Nombre del Objeto",
-      creator: "Creador",
-      culture: "Cultura",
-      period: "Período",
-      dateCreated: "Fecha de Creación",
-      materials: "Materiales",
-      technique: "Técnica",
-      dimensions: "Dimensiones",
-      weight: "Peso",
-      condition: "Condición",
-      inscriptions: "Inscripciones",
-      creditLine: "Línea de Crédito",
-      description: "Descripción",
-      provenanceInfo: "Información de Procedencia",
       parentObject: "Objeto Padre",
-      currentLocation: "Ubicación Actual",
-      collectionGroup: "Grupo de Colección",
       onDisplay: "En exhibición",
-      searchable: "Buscable",
-      publicUrlSlug: "URL Pública",
-      notSearchable: "No Buscable",
-      isSearchable: "Buscable",
-      tags: "Etiquetas",
-      noDonations: "No se registraron donaciones",
-      noDonor: "Sin Donante",
-      donated: "Donado",
-      donationContext: "Contexto de la Donación",
-      noLinks: "No hay enlaces",
-      noExhibitions: "No hay historial de exhibiciones",
-      noLoans: "Sin historial de préstamos",
-      noLocationHistory: "Sin historial de ubicaciones",
-      noConditionReports: "Sin informes de condición",
-      movedTo: "Movido a",
-      deletingObject: "Eliminando objeto...",
-      deleteButton: "Eliminar Objeto",
-      cancelDelete: "Cancelar",
-      deleteDialogTitle: "Eliminar Objeto",
-      deleteDialogDescription:
-        "¿Estás seguro de que quieres eliminar este objeto? Esta acción no se puede deshacer.",
-      cannotDeleteOnLoan:
-        "No se puede eliminar - el objeto está en préstamo activo",
       share: "Compartir",
       printRecord: "Imprimir Registro",
       printPreview: "Vista Previa de Impresión",
@@ -3545,14 +3376,12 @@ export default {
       copyObjectLink: "Copiar Enlace del Objeto",
       linkCopied: "¡Enlace Copiado!",
       exportToPdf: "Exportar a PDF",
-      requestLoan: "Solicitar Préstamo",
       deleteTitle: "Eliminar Objeto",
       deleteObject: "Eliminar Objeto",
       deleting: "Eliminando...",
       editObject: "Editar Objeto",
-      selectOrganization:
-        "Por favor selecciona una organización para ver las colecciones.",
-      collections: "Colecciones",
+      selectOrganization: "Seleccione una organización para ver sus objetos.",
+      collections: "Objetos",
       public: "Público",
       private: "Privado",
       currentObject: "Objeto actual",
@@ -3573,37 +3402,21 @@ export default {
     pagination: {
       loadMore: "Cargar Más",
       showing: "Mostrando",
-      items: "elementos",
-      itemsMore: "elementos (más disponibles)",
+      items: "objetos",
     },
     form: {
-      identification: "Identificación",
-      physical: "Descripción Física",
-      context: "Contexto",
-      ownership: "Propiedad",
-      documentation: "Documentación",
-      organization: "Organización",
-      advanced: "Avanzado",
       accessionNumber: "Número de Accesión",
-      alternateId: "Identificador Alterno",
       title: "Título",
-      objectType: "Tipo de Objeto",
       objectName: "Nombre del Objeto",
       creator: "Creador/Artista",
       culture: "Cultura",
       period: "Período",
       dateCreated: "Fecha de Creación",
       materials: "Materiales",
-      technique: "Técnica",
       dimensions: "Dimensiones",
-      weight: "Peso",
       condition: "Condición",
-      inscriptions: "Inscripciones",
-      creditLine: "Línea de Crédito",
-      location: "Ubicación",
       parentObject: "Objeto Padre",
-      collection: "Colección",
-      collectionGroup: "Grupo de Colección",
+      collectionGroup: "Grupo de colección",
       collectionGroupHint: "Agregar este objeto a un grupo de colección",
       description: "Descripción",
       provenance: "Procedencia",
@@ -3631,7 +3444,7 @@ export default {
         dimensions: "ej., 50 x 60 cm",
         location: "Selecciona una ubicación (opcional)",
         parentObject: "Selecciona objeto padre (opcional)",
-        collection: "Selecciona colección (opcional)",
+        collection: "Seleccione un grupo de colección (opcional)",
         description: "Ingresa descripción detallada",
         provenance: "Ingresa información de procedencia",
         exhibitionHistory: "Ingresa historial de exhibiciones",
@@ -3650,7 +3463,7 @@ export default {
         copyright: "Información de derechos de autor",
         collectionGroup: "Selecciona un grupo de colección...",
         deaccessionReason:
-          "Ingresa la razón para desaccesionar estos elementos...",
+          "Indique el motivo para desaccesionar estos objetos...",
         donationInfoLong:
           "Información sobre las circunstancias, condiciones o contexto de la donación",
         ownershipNotes: "¿Cómo fue adquirido, cualquier detalle relevante...",
@@ -3693,7 +3506,7 @@ export default {
         updateFailed:
           "Error al actualizar el objeto. Por favor intenta de nuevo.",
         cannotDeaccession:
-          "No se puede desaccesionar - el elemento está en préstamo activo",
+          "No se puede desaccesionar: el objeto está en un préstamo activo",
         selectOrganization:
           "Por favor selecciona una organización para crear objetos.",
         failedToProcessFile: "Error al procesar la selección de archivo",
@@ -3703,10 +3516,12 @@ export default {
         failedToDeleteMedia: "Error al eliminar medio",
         failedToUpdateMedia: "Error al actualizar medio",
         failedToGenerateUploadUrl: "Error al generar URL de carga",
+        uploadFailed: "No se pudo subir el archivo. Inténtelo de nuevo.",
+        failedToUploadDocuments:
+          "No se pudieron subir los documentos. Inténtelo de nuevo.",
       },
       toasts: {
         noDataToExport: "No hay datos para exportar",
-        exportedItems: "Exportados {count} elemento{s}",
       },
 
       basicInformation: "Información Básica",
@@ -3720,9 +3535,9 @@ export default {
       documentUpload: "Subir documento",
       required: "obligatorio",
       collectionType: "Tipo de colección",
-      alternateAccessionNumbers: "Números de ingreso alternativos",
+      alternateAccessionNumbers: "Números de accesión alternativos",
       alternateAccessionNumbersHint:
-        "Números de ingreso históricos asignados anteriormente a este objeto",
+        "Números de accesión históricos asignados anteriormente a este objeto",
       parentObjectHint:
         "Vincula este objeto con un objeto principal (por ejemplo, un cofre que lo contiene)",
     },
@@ -3853,29 +3668,41 @@ export default {
         "La URL del archivo no está disponible o ha caducado.",
     },
     collectionGroup: {
-      addObjectsTitle: "Añadir objetos a la colección",
+      addObjectsTitle: "Añadir objetos al grupo de colección",
       addObjectsDescription:
-        "Elige qué objetos pertenecen a la colección «{name}». Se incluirán los que estén marcados.",
+        "Elija qué objetos pertenecen al grupo de colección «{name}». Se incluyen los marcados.",
       searchAndSelectObjects: "Buscar y seleccionar objetos…",
       multiCollectionHint:
-        "Los objetos pueden pertenecer a varias colecciones. Desmarca un objeto para quitarlo solo de esta colección.",
+        "Un objeto puede pertenecer a varios grupos de colección a la vez. Desmárquelo para quitarlo solo de este grupo.",
       saveMembership: "Guardar selección",
       addObjectsButton: "Añadir objetos",
-      viewingCollection: "Colección: {name}",
+      viewingCollection: "Grupo de colección: {name}",
+    },
+    withdrawal: {
+      restore: "Restaurar al catálogo",
+      restored: "Objeto restaurado al catálogo habitual.",
+      restoreFailed:
+        "No se pudo restaurar el objeto. Actualice e inténtelo de nuevo.",
+      withdrawn: "Objeto retirado del catálogo habitual.",
+      noticeLabel: "Aviso de retirada",
+      noticeTitle: "Retirado del catálogo habitual",
+      reason: "Motivo: {reason}",
+      legacyReasonMissing:
+        "No se registró el motivo de esta retirada anterior. El registro y las pruebas vinculadas se conservan tal como se guardaron; revise los registros de origen antes de restaurar.",
     },
   },
   collections: {
     createPage: {
       description:
-        "Agrupa objetos relacionados y elige quién gestiona la colección.",
-      detailsTitle: "Detalles de la colección",
+        "Agrupe objetos relacionados y elija quién gestiona el grupo de colección.",
+      detailsTitle: "Detalles del grupo de colección",
       managementTitle: "Gestión",
       optional: "Opcional",
       objectsHint:
         "Puedes añadir objetos después de crear el grupo de colecciones.",
     },
     title: "Grupos de Colecciones",
-    description: "Administra grupos de colecciones de objetos",
+    description: "Gestione grupos de objetos de su colección",
     importCSV: "Importar CSV",
     newCollection: "Nuevo Grupo de Colecciones",
     searchPlaceholder: "Buscar grupos de colecciones...",
@@ -3884,7 +3711,7 @@ export default {
     back: "Atrás",
     backToCollections: "Volver a Grupos de Colecciones",
     backToCollection: "Volver al Grupo de Colecciones",
-    items: "elementos",
+    items: "objetos",
     created: "Creado",
     redirecting: "Redirigiendo...",
     notFound: "Grupo de colecciones no encontrado",
@@ -3902,7 +3729,7 @@ export default {
     selectOrganizationImport:
       "Por favor selecciona una organización para importar objetos.",
     selectOrganizationContinue: "Selecciona una organización para continuar.",
-    loadingItems: "Cargando elementos...",
+    loadingItems: "Cargando objetos...",
     settings: "Configuración",
     importExisting: "Importar Existentes",
     newObject: "Nuevo Objeto",
@@ -3924,14 +3751,14 @@ export default {
       selected: "Seleccionado ({count}):",
       importButton: "Importar Objetos",
       errorSelectOne: "Por favor selecciona al menos un objeto",
-      errorAddFailed: "Error al agregar elementos a la colección",
-      errorRemoveFailed: "Error al eliminar elementos de la colección",
+      errorAddFailed: "No se pudieron añadir los objetos al grupo de colección",
+      errorRemoveFailed: "No se pudo quitar el objeto del grupo de colección",
     },
-    noItems: "No hay elementos en esta colección",
+    noItems: "No hay objetos en este grupo de colección",
     removeDialog: {
-      title: "Eliminar de la Colección",
+      title: "Quitar del grupo de colección",
       description:
-        '¿Estás seguro de que quieres eliminar "{title}" de esta colección? El objeto no será eliminado, solo se quitará de esta colección.',
+        "¿Quitar «{title}» de este grupo de colección? El objeto no se elimina, solo se quita de este grupo.",
       remove: "Eliminar",
     },
     form: {
@@ -3939,7 +3766,7 @@ export default {
       nameRequired: "*",
       namePlaceholder: "ej., Artefactos Egipcios Antiguos",
       descriptionLabel: "Descripción",
-      descriptionPlaceholder: "Describe esta colección...",
+      descriptionPlaceholder: "Describa este grupo de colección...",
       curatorLabel: "Curador",
       curatorPlaceholder: "Selecciona un curador (opcional)",
       noCurator: "Sin curador",
@@ -3948,27 +3775,28 @@ export default {
       managedByRolePlaceholder: "Cualquier rol puede administrar (opcional)",
       anyRole: "Cualquier rol puede administrar",
       roleHint:
-        "Restringe quién puede editar esta colección a usuarios con un rol específico",
+        "Limite la edición de este grupo de colección a usuarios con un rol específico",
       creating: "Creando...",
-      createButton: "Crear Colección",
+      createButton: "Crear grupo de colección",
       updating: "Actualizando...",
-      updateButton: "Actualizar Colección",
+      updateButton: "Actualizar grupo de colección",
       nameError: "El nombre es obligatorio",
-      createError: "Error al crear la colección. Por favor intenta de nuevo.",
+      createError:
+        "No se pudo crear el grupo de colección. Inténtelo de nuevo.",
       updateError:
-        "Error al actualizar la colección. Por favor intenta de nuevo.",
+        "No se pudo actualizar el grupo de colección. Inténtelo de nuevo.",
     },
     delete: {
       dangerZone: "Zona de Peligro",
-      title: "Eliminar esta colección",
+      title: "Eliminar este grupo de colección",
       description:
-        "Los objetos de esta colección se desvincularán pero no se eliminarán.",
+        "Los objetos de este grupo de colección se desvinculan, no se eliminan.",
       button: "Eliminar",
-      dialogTitle: "Eliminar Colección",
+      dialogTitle: "Eliminar grupo de colección",
       dialogDescription:
-        '¿Estás seguro de que quieres eliminar "{name}"? Los objetos de esta colección se desvincularán pero no se eliminarán.',
+        "¿Eliminar «{name}»? Los objetos de este grupo de colección se desvinculan, no se eliminan.",
       deleting: "Eliminando...",
-      deleteButton: "Eliminar Colección",
+      deleteButton: "Eliminar grupo de colección",
     },
     csvImport: {
       title: "Importar Objetos desde CSV",
@@ -3995,7 +3823,7 @@ export default {
       importButton: "Importar {count} Objetos",
       tableHeaders: {
         number: "#",
-        accession: "N° de Accesión",
+        accession: "N.º de accesión",
         title: "Título",
         creator: "Creador",
         type: "Tipo",
@@ -4347,7 +4175,7 @@ export default {
       description: "Descripción",
       notes: "Notas",
       details: "Detalles",
-      collectionObject: "Objeto de Colección",
+      collectionObject: "Objeto",
       datePerformed: "Fecha Realizada",
       performedBy: "Realizado Por",
       unknownObject: "Objeto Desconocido",
@@ -4366,7 +4194,7 @@ export default {
         "Registrar un nuevo tratamiento o evaluación de conservación",
       editTitle: "Editar Registro de Tratamiento",
       editSubtitle: "Actualizar detalles para",
-      collectionObject: "Objeto de Colección",
+      collectionObject: "Objeto",
       treatmentType: "Tipo de Tratamiento",
       selectType: "Seleccionar tipo",
       datePerformed: "Fecha Realizada",
@@ -4572,7 +4400,7 @@ export default {
       loanVenuePlaceholder: "Ingresa el nombre del lugar",
       notesLabel: "Notas",
       notesPlaceholder: "Añade notas sobre esta exposición...",
-      selectObject: "Por favor selecciona un objeto de colección",
+      selectObject: "Seleccione un objeto",
       scheduleConflict: "Conflicto de Horario Detectado",
       scheduleConflictDescription:
         "Este objeto ya está programado durante las fechas seleccionadas:",
@@ -4592,7 +4420,7 @@ export default {
       legacyReviewDescription:
         "Esta exposición tiene un vínculo histórico que debe revisarse antes de editar sus objetos.",
       legacyReviewReason: "Estado histórico",
-      anchor_only: "Solo existe el vínculo histórico",
+      anchor_only: "Solo existe el vínculo histórico con el objeto",
       anchor_and_members: "El objeto histórico ya está en la lista",
       anchor_missing_from_members:
         "El objeto histórico falta en la lista de participantes",
@@ -4961,7 +4789,7 @@ export default {
     empty: {
       title: "Sin asignaciones aún",
       description:
-        "Los objetos que catalogue o pendientes de aprobación aparecerán aquí",
+        "Aquí aparecen los objetos que catalogue y los casos pendientes de su aprobación",
       catalogNew: "Catalogar Nuevo Objeto",
     },
     card: {
@@ -4996,7 +4824,7 @@ export default {
     },
     caseTypes: {
       loan: "Préstamo",
-      accession: "Registro de ingreso",
+      accession: "Registro de accesión",
       deaccession: "Baja",
       exhibition: "Exposición",
       conservation: "Tratamiento de conservación",
@@ -5751,25 +5579,26 @@ export default {
         "No puede tomar esta decisión en el paso de revisión actual.",
       fallback:
         "No se pudo guardar la decisión. Actualice e inténtelo de nuevo.",
+      sourceVerificationRequired:
+        "Hay que verificar la fuente antes de aprobar esta solicitud. Verifique la fuente o apruebe indicando el motivo de la excepción.",
     },
   },
   accessions: {
-    title: "Adquisiciones",
-    description:
-      "Gestionar elementos entrantes y flujo de trabajo de aprobación",
-    newAccession: "Nueva Adquisición",
+    title: "Accesiones",
+    description: "Gestione los objetos entrantes y su aprobación",
+    newAccession: "Nueva Accesión",
     addObject: "Agregar Objeto",
-    searchPlaceholder: "Buscar adquisiciones...",
+    searchPlaceholder: "Buscar accesiones...",
     importCSV: "Importar CSV",
-    backToAccessions: "Volver a Adquisiciones",
+    backToAccessions: "Volver a Accesiones",
     selectOrganization: "Seleccionar una Organización",
     selectOrganizationDescription:
-      "Por favor selecciona una organización para ver las adquisiciones.",
+      "Por favor selecciona una organización para ver las accesiones.",
     noOrganizationTitle: "No se Encontró Organización",
     noOrganizationDescription:
-      "Necesitas crear una organización para comenzar a gestionar adquisiciones.",
+      "Necesitas crear una organización para comenzar a gestionar accesiones.",
     createOrganization: "Crear Organización",
-    accessionNotFound: "Adquisición no encontrada",
+    accessionNotFound: "Accesión no encontrada",
     loading: "Cargando...",
     status: {
       pending: "Pendiente",
@@ -5785,10 +5614,10 @@ export default {
       emptyTrash: "Vaciar papelera",
       emptyingTrash: "Vaciando...",
       emptyTrashConfirm:
-        "¿Eliminar las {count} adquisiciones rechazadas? Esta acción no se puede deshacer.",
+        "¿Eliminar las {count} accesiones rechazadas? Esta acción no se puede deshacer.",
     },
     form: {
-      accessionNumber: "Número de Adquisición",
+      accessionNumber: "Número de Accesión",
       accessionNumberPlaceholder: "Auto-generado si está vacío",
       accessionNumberHint:
         "Dejar vacío para generar automáticamente según el formato de la organización",
@@ -5805,7 +5634,7 @@ export default {
       cost: "Costo",
       costPlaceholder: "0.00",
       notes: "Notas",
-      notesPlaceholder: "Notas adicionales sobre esta adquisición...",
+      notesPlaceholder: "Notas adicionales sobre esta accesión...",
       supportingDocuments: "Documentos de Respaldo",
       documentsLabel: "Suelta documentos aquí o haz clic para subir",
       documentsSublabel: "PDF, Word o imágenes hasta 20MB cada uno",
@@ -5822,8 +5651,8 @@ export default {
       cancel: "Cancelar",
       creating: "Creando...",
       updating: "Actualizando...",
-      createAccession: "Crear Adquisición",
-      updateAccession: "Actualizar Adquisición",
+      createAccession: "Crear Accesión",
+      updateAccession: "Actualizar Accesión",
       sourceRequiredError: "Se requiere Fuente o Cuenta Donante/Fuente",
     },
     detail: {
@@ -5833,16 +5662,15 @@ export default {
       approvedBy: "Aprobado Por",
       workflowHistory: "Historial del Flujo de Trabajo",
       cannotEditNotPending:
-        "No se puede editar una adquisición que no está pendiente",
-      backToAccession: "Volver a la Adquisición",
-      accessionNumberCannotChange:
-        "El número de adquisición no se puede cambiar",
+        "No se puede editar una accesión que no está pendiente",
+      backToAccession: "Volver a la Accesión",
+      accessionNumberCannotChange: "El número de accesión no se puede cambiar",
       dateReceivedCannotChange: "La fecha de recepción no se puede cambiar",
     },
     approval: {
       sourceExceptionLabel: "Origen no verificado: motivo de la excepción",
       sourceExceptionHint:
-        "Falta la verificación de origen requerida. Aprobar con un motivo registra una excepción autorizada, que se conserva con el ingreso y se audita.",
+        "Falta la verificación de origen requerida. Aprobar con un motivo registra una excepción autorizada, que se conserva con la accesión y se audita.",
       sourceExceptionRecorded: "Excepción autorizada",
       title: "Acciones de Aprobación",
       commentLabel: "Comentario (opcional)",
@@ -5851,54 +5679,55 @@ export default {
       approve: "Aprobar",
       approveStep: "Aprobar Paso {step}",
       reject: "Rechazar",
-      rejectDialogTitle: "Rechazar Adquisición",
+      rejectDialogTitle: "Rechazar Accesión",
       rejectDialogDescription:
-        "¿Estás seguro de que quieres rechazar esta adquisición? Esta acción no se puede deshacer.",
-      rejectAccession: "Rechazar Adquisición",
+        "¿Estás seguro de que quieres rechazar esta accesión? Esta acción no se puede deshacer.",
+      rejectAccession: "Rechazar Accesión",
       errors: {
         defaultTitle: "No se pudo completar la aprobación",
         defaultDescription:
-          "Revisa los detalles de la adquisición e inténtalo de nuevo.",
+          "Revisa los detalles de la accesión e inténtalo de nuevo.",
         sourceVerificationRequiredTitle:
           "La verificación de la fuente sigue siendo obligatoria",
         sourceVerificationRequiredDescription:
-          "Esta adquisición no puede aprobarse todavía porque el paso obligatorio de verificación de la fuente no se ha completado. Termina esa revisión primero y vuelve a intentar la aprobación.",
+          "Esta accesión no puede aprobarse todavía porque el paso obligatorio de verificación de la fuente no se ha completado. Termina esa revisión primero y vuelve a intentar la aprobación.",
         permissionDeniedTitle: "No puedes aprobar este paso",
         permissionDeniedDescription:
-          "Este paso del flujo de trabajo está asignado a otro rol aprobador. Pide a alguien asignado a este paso que revise la adquisición.",
+          "Este paso del flujo de trabajo está asignado a otro rol aprobador. Pide a alguien asignado a este paso que revise la accesión.",
         alreadyApprovedTitle: "Ya aprobaste este paso",
         alreadyApprovedDescription:
-          "Tu aprobación ya está registrada. Si se requieren más aprobaciones, la adquisición seguirá pendiente hasta que los revisores restantes la aprueben.",
+          "Tu aprobación ya está registrada. Si se requieren más aprobaciones, la accesión seguirá pendiente hasta que los revisores restantes la aprueben.",
         workflowConfigurationTitle: "El flujo de aprobación necesita atención",
         workflowConfigurationDescription:
-          "Esta adquisición no puede aprobarse porque el paso del flujo no está configurado correctamente. Revisa la configuración del flujo de trabajo y vuelve a intentarlo.",
+          "Esta accesión no puede aprobarse porque el paso del flujo no está configurado correctamente. Revisa la configuración del flujo de trabajo y vuelve a intentarlo.",
       },
     },
     error: {
-      failedToLoad: "Error al Cargar Adquisiciones",
-      unexpectedError:
-        "Ocurrió un error inesperado al cargar las adquisiciones.",
-      failedToApprove: "Error al aprobar la adquisición",
-      failedToReject: "Error al rechazar la adquisición",
-      failedToEmptyTrash: "Error al eliminar las adquisiciones rechazadas",
+      failedToLoad: "Error al Cargar Accesiones",
+      unexpectedError: "Ocurrió un error inesperado al cargar las accesiones.",
+      failedToApprove: "Error al aprobar la accesión",
+      failedToReject: "Error al rechazar la accesión",
+      failedToEmptyTrash: "Error al eliminar las accesiones rechazadas",
       failedToUpdate:
-        "Error al actualizar la adquisición. Por favor, inténtalo de nuevo.",
+        "Error al actualizar la accesión. Por favor, inténtalo de nuevo.",
       sourceRequired: "La fuente es obligatoria",
+      failedToCreate:
+        "No se pudo crear la accesión. Revise los datos e inténtelo de nuevo.",
     },
     kanban: {
       loading: "Cargando…",
       loadMore: "Cargar más",
       shownOfTotal: "{loaded} de {total}",
       matchesShown: "Coincidencias mostradas: {loaded}",
-      noMatches: "No hay ingresos coincidentes en {step}",
-      noAccessions: "Sin adquisiciones en {step}",
+      noMatches: "No hay accesiones coincidentes en {step}",
+      noAccessions: "Sin accesiones en {step}",
       unknownSource: "Fuente desconocida",
     },
     import: {
       backToValidation: "Volver a la validación",
-      title: "Importar Adquisiciones desde CSV",
+      title: "Importar Accesiones desde CSV",
       description:
-        "Sube un archivo CSV con los datos de adquisición. Columnas requeridas: dateReceived, source, method.",
+        "Sube un archivo CSV con los datos de accesión. Columnas requeridas: dateReceived, source, method.",
       downloadTemplate: "Descargar Plantilla",
       dropZone: "Suelta el archivo CSV aquí o haz clic para subir",
       maxRows: "Máximo 1000 filas por importación",
@@ -5913,12 +5742,12 @@ export default {
       dateFormatHint: "AAAA-MM-DD o cualquier fecha analizable",
       previewTitle: "Vista Previa de Importación",
       rowsReady: "{count} filas listas para importar desde {filename}",
-      importButton: "Importar {count} Adquisiciones",
+      importButton: "Importar {count} Accesiones",
       cancel: "Cancelar",
-      viewAccessions: "Ver Adquisiciones",
+      viewAccessions: "Ver Accesiones",
       tableHeaders: {
         number: "#",
-        accession: "N° de Adquisición",
+        accession: "N.º de accesión",
         dateReceived: "Fecha de Recepción",
         source: "Fuente",
         method: "Método",
@@ -5927,6 +5756,21 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Mostrando 20 de {count} filas",
+    },
+    catalogNumber: {
+      title: "Número de catálogo al publicar",
+      optionalLabel: "Número de catálogo al publicar (opcional)",
+      defaultHint:
+        "Por defecto es el número de accesión. Elija un número de catálogo libre si el catálogo ya usa el número de accesión; cada registro conserva su propio número permanente.",
+      planned:
+        "Número de catálogo previsto: {identifier}. El número del registro de accesiones {accessionNumber} es permanente. Si el catálogo ya lo usa, elija otro número de catálogo para el nuevo objeto. La disponibilidad se vuelve a comprobar al publicar el objeto.",
+      fieldLabel: "Número de catálogo del nuevo objeto",
+      select: "Seleccionar número de catálogo",
+      selected:
+        "Número de catálogo seleccionado. El número de accesión permanente no cambia.",
+      failed:
+        "No se pudo seleccionar el número de catálogo. Actualice e inténtelo de nuevo.",
+      loading: "Cargando la numeración del catálogo…",
     },
   },
 
@@ -5961,7 +5805,7 @@ export default {
     goToList: {
       objects: "Ir a objetos",
       loans: "Ir a préstamos",
-      accessions: "Ir a adquisiciones",
+      accessions: "Ir a accesiones",
       deaccessions: "Ir a desaccesiones",
       locations: "Ir a ubicaciones",
       conservation: "Ir a conservación",
@@ -6016,7 +5860,7 @@ export default {
     },
     registers: {
       catalog: "catálogo",
-      accession: "ingresos",
+      accession: "accesiones",
     },
     stages: {
       entry: "En custodia por una entrada",
@@ -6027,8 +5871,7 @@ export default {
     stageHints: {
       entry:
         "Recibido para identificación, depósito o estudio de adquisición, sin registrar en el inventario.",
-      collection:
-        "Objetos registrados o catalogados, incluidos los prestados.",
+      collection: "Objetos registrados o catalogados, incluidos los prestados.",
       borrowed: "Objetos en custodia por un préstamo recibido.",
       deaccessioned:
         "Objetos retirados de la colección; sus registros se conservan.",
@@ -6044,7 +5887,7 @@ export default {
       condition_assessment: "Evaluación del estado aceptada",
       image: "Fotografía",
       supporting_document: "Documento justificativo",
-      accession_record: "Registro de ingreso aprobado",
+      accession_record: "Registro de accesión aprobado",
       provenance_claim: "Afirmación de procedencia",
     },
     orphanFields: {
@@ -6061,14 +5904,14 @@ export default {
     },
     recordTypes: {
       object: "Objeto",
-      accession: "Registro de ingreso",
+      accession: "Registro de accesión",
       deaccession: "Baja",
     },
     objectTabs: {
       general: "General",
       physical: "Físico",
       media: "Medios",
-      accession: "Ingreso",
+      accession: "Accesión",
       placement: "Ubicación",
       provenance: "Procedencia",
     },
@@ -6113,11 +5956,11 @@ export default {
         "La comprobación {number} se canceló. Los hallazgos que detectó se mantienen; no resolvió ninguno.",
       phases: {
         catalog_identifiers: "identificadores del catálogo",
-        accession_identifiers: "identificadores de ingreso",
+        accession_identifiers: "identificadores de accesión",
         objects_active: "objetos",
         objects_loaned: "objetos prestados",
         objects_deaccessioned: "objetos dados de baja",
-        accessions: "registros de ingreso",
+        accessions: "registros de accesión",
         deaccessions: "bajas",
         resolve_duplicate_identifier: "identificadores duplicados corregidos",
         resolve_missing_evidence: "documentación completada",
@@ -6150,7 +5993,8 @@ export default {
       empty:
         "Aún no hay perfiles. Sin ellos, las comprobaciones siguen informando de identificadores duplicados, vínculos con partes y referencias rotas.",
       allTypes: "Todos los tipos de objeto",
-      objectTypeHint: "Los tipos de objeto vienen de Configuración › Preferencias.",
+      objectTypeHint:
+        "Los tipos de objeto vienen de Configuración › Preferencias.",
       addTitle: "Añadir perfil de documentación",
       editTitle: "Editar perfil de documentación",
       dialogDescription:
@@ -6244,7 +6088,8 @@ export default {
     },
     errors: {
       fallback: "Algo salió mal. Inténtalo de nuevo.",
-      profileInvalid: "Revisa el nombre, las etapas y los requisitos del perfil.",
+      profileInvalid:
+        "Revisa el nombre, las etapas y los requisitos del perfil.",
       profileLimitReached:
         "Una organización puede tener como máximo 20 perfiles activos. Archiva uno primero.",
       profileNotFound: "Este perfil ya no existe.",
@@ -6482,6 +6327,7 @@ export default {
     loadMore: "Cargar más",
     refineSearch:
       "Hay más objetos que coinciden. Afine la búsqueda para acotar la lista.",
+    selectParent: "Seleccione un objeto principal...",
   },
   valuation: {
     title: "Valoración",
@@ -6577,8 +6423,8 @@ export default {
   deaccessions: {
     loadedResults: "Recuentos de resultados cargados",
     loadMore: "Cargar más",
-    title: "Registros de Desaccesión",
-    description: "Elementos permanentemente removidos de la colección.",
+    title: "Registros de baja",
+    description: "Objetos retirados permanentemente de la colección.",
     noOrg: {
       title: "No se Encontró Organización",
       description:
@@ -6650,7 +6496,7 @@ export default {
       methodLabel: "Método",
       disposition: "Disposición",
       notes: "Notas",
-      collectionObject: "Objeto de Colección",
+      collectionObject: "Objeto",
       workflowHistory: "Historial del Flujo de Trabajo",
       approvalAction: "Acción de Aprobación",
       commentLabel: "Comentario (opcional)",
@@ -6658,6 +6504,7 @@ export default {
       created: "Creado",
       step: "Paso {step} - Aprobado",
       unknown: "Desconocido",
+      awaitingReview: "Pendiente de revisión",
     },
     stages: {
       eyebrow: "Etapas de baja",
@@ -6761,8 +6608,8 @@ export default {
         "Por favor selecciona una organización para crear desaccesiones.",
       selectOrgEdit:
         "Por favor selecciona una organización para editar desaccesiones.",
-      collectionLabel: "Objeto de Colección",
-      collectionPlaceholder: "Seleccionar un objeto de colección",
+      collectionLabel: "Objeto",
+      collectionPlaceholder: "Seleccione un objeto",
       deaccessionNumber: "Número de Desaccesión",
       deaccessionNumberPlaceholder: "Generado automáticamente si se deja vacío",
       deaccessionNumberHint:
@@ -6792,7 +6639,7 @@ export default {
       proceedsNotes: "Notas de Ingresos",
       proceedsNotesPlaceholder: "Notas adicionales sobre los ingresos...",
       errors: {
-        collectionRequired: "La colección es requerida",
+        collectionRequired: "Seleccione un objeto",
         reasonRequired: "La razón es requerida",
         createFailed:
           "Error al crear la desaccesión. Por favor intenta de nuevo.",
@@ -6836,6 +6683,7 @@ export default {
       proceedsNotes: "Notas de Ingresos",
       stepApproved: "Paso {step} Aprobado",
       created: "Creado",
+      proceedsWithoutCurrency: "Ingresos sin moneda registrada: {count}",
     },
     placeholders: {
       searchObjects: "Buscar desaccesiones...",
@@ -6844,6 +6692,7 @@ export default {
       selectDisposition: "ej., Vendido a coleccionista privado",
       addNotes: "Notas adicionales sobre esta desaccesión...",
     },
+    withdrawnObjects: "Objetos retirados",
   },
   parties: {
     roles: {
@@ -6866,7 +6715,7 @@ export default {
       phone: "Mismo teléfono",
     },
     targetTypes: {
-      accession: "Adquisición",
+      accession: "Accesión",
       loan: "Préstamo",
       deaccession: "Desaccesión",
       appraisal: "Tasación",
@@ -6971,7 +6820,7 @@ export default {
         "Registros que nombran a una parte solo en texto o que hacen referencia a una cuenta sin un vínculo tipificado. Confirme cada vínculo; se conserva la redacción original.",
       recordType: "Tipo de registro",
       kinds: {
-        accession: "Adquisiciones",
+        accession: "Accesiones",
         loan: "Préstamos",
         deaccession: "Desaccesiones",
       },
@@ -7379,7 +7228,7 @@ export default {
         startDate: "Fecha de inicio:",
         endDate: "Fecha de finalización:",
         objectsOnLoan: "OBJETOS PRESTADOS",
-        accessionNumber: "N.º de ingreso",
+        accessionNumber: "N.º de accesión",
         titleDescription: "Título / descripción",
         insurance: "SEGURO",
         totalInsuranceValue: "Valor total asegurado:",
@@ -7414,7 +7263,6 @@ export default {
         printAgreement: "Imprimir el contrato",
       },
       items: {
-        countTitle: "Objetos prestados ({count})",
         selectedCount: "Seleccionados ({count})",
         conditionOutOptional: "Estado a la salida (opcional)",
         conditionOut: "Estado a la salida:",
@@ -7427,9 +7275,8 @@ export default {
         noLoanHistory: "No hay historial de préstamos para este objeto",
         documentsCount: "Documentos ({count})",
         condition: "Estado",
-        objectsPaintings: "Objetos (pinturas)",
-        searchCollections: "Buscar y seleccionar colecciones *",
-        loadingCollections: "Cargando colecciones…",
+        searchCollections: "Buscar y seleccionar objetos *",
+        loadingCollections: "Cargando objetos…",
         lenderUpper: "PRESTADOR:",
         museumUpper: "MUSEO/INSTITUCIÓN:",
         uploadedBy: "Subido por {name}",
@@ -7473,14 +7320,13 @@ export default {
         sourceCheck: "Verificación de la fuente",
         approvalWorkflow: "Flujo de aprobación",
         linkedObject: "Objeto vinculado",
-        linkedObjectDescription:
-          "Este ingreso ya creó un registro de colección.",
+        linkedObjectDescription: "Esta accesión ya ha creado su objeto.",
         openCreatedObject: "Abrir el objeto creado",
         draftsMustBeSubmitted:
           "Los borradores deben enviarse antes de iniciar la aprobación.",
         workflowHistory: "Historial del flujo",
         workflowHistoryDescription:
-          "Eventos de aprobación completados para este ingreso.",
+          "Eventos de aprobación completados para esta accesión.",
         step: "Paso",
         workflow: "Flujo",
         decision: "Decisión",
@@ -7494,11 +7340,12 @@ export default {
         history: "Historial",
         draftObjectAwaitingReview: "Borrador de objeto pendiente de revisión.",
         reviewSummary:
-          "Revise los detalles del ingreso, el estado del flujo y las aprobaciones.",
+          "Revise los detalles de la accesión, el estado del flujo y las aprobaciones.",
         noActiveWorkflowStep: "No hay ningún paso activo en el flujo.",
         reviewCheckpoint: "Punto de control de revisión",
         sourceOnlyBlocker:
           "La verificación de la fuente es el único impedimento para continuar con este registro.",
+        review: "Revisión",
       },
       approval: {
         noteGuidance:
@@ -7519,20 +7366,20 @@ export default {
           "Use las notas para aportar contexto, no para repetir el campo de la fuente.",
         reviewSnapshot: "Resumen de revisión",
         snapshotDescription:
-          "Estos campos permanecerán visibles para el revisor en la página del ingreso.",
+          "Estos campos permanecerán visibles para el revisor en la página de la accesión.",
         sourcePreview: "Vista previa de la fuente",
         methodPreview: "Vista previa del método",
         notesLength: "Longitud de las notas",
         lockedIntakeDetails: "Detalles de recepción bloqueados",
         lockedDetailsDescription:
-          "Estos identificadores se establecen al crear el ingreso y son de solo lectura mientras está pendiente de revisión.",
-        accessionInformation: "Información del ingreso",
+          "Estos identificadores se establecen al crear la accesión y son de solo lectura mientras está pendiente de revisión.",
+        accessionInformation: "Información de la accesión",
         accessionDescription:
           "Edite la fuente, el método de adquisición, el contexto de valoración y las notas del personal antes de la aprobación.",
         sourceNameGuidance:
           "Indique la persona, sucesión, distribuidor, institución o referencia de origen que reconocerá el aprobador.",
         methodInterpretation:
-          "Esto determina cómo se interpretará el ingreso en la revisión y los informes.",
+          "Esto determina cómo se interpretará la accesión en la revisión y los informes.",
         noCostHint:
           "Déjelo en blanco si no se aplica ningún costo de adquisición.",
         notesGuidanceLong:
@@ -7541,13 +7388,13 @@ export default {
         noNotes: "No se han añadido notas",
         noSourceYet: "Aún no hay fuente",
       },
-      pendingAccession: "Ingreso pendiente",
-      editAccession: "Editar ingreso",
+      pendingAccession: "Accesión pendiente",
+      editAccession: "Editar accesión",
       updateIntakeDescription:
-        "Actualice el registro de recepción mientras siga pendiente. Una vez aprobado, el ingreso debe tratarse como un registro de flujo finalizado.",
-      notFoundWithPeriod: "No se encontró el ingreso.",
+        "Actualice el registro de recepción mientras siga pendiente. Una vez aprobada, la accesión debe tratarse como un registro de flujo finalizado.",
+      notFoundWithPeriod: "No se encontró la accesión.",
       pendingDraftOnly:
-        "Desde esta pantalla solo se pueden editar borradores de objetos de ingresos pendientes.",
+        "Desde esta pantalla solo se pueden editar borradores de objetos de accesiones pendientes.",
       selectOrganizationTransfers:
         "Cree o únase a una organización para ver las transferencias.",
       transferPermission:
@@ -7555,7 +7402,7 @@ export default {
       transfer: {
         receiver: "Receptor",
         requested: "Solicitado",
-        handling: "Gestión del ingreso",
+        handling: "Gestión de la accesión",
         reviewNotes: "Notas de revisión",
         executed: "Ejecutado",
         search: "Buscar transferencias",
@@ -7598,7 +7445,7 @@ export default {
         verificationRequired: "Se requiere verificar la fuente",
         blockerCleared: "Este impedimento ya se ha resuelto.",
         verifyBeforeApproval:
-          "Verifique al donante o la fuente antes de aprobar este ingreso.",
+          "Verifique al donante o la fuente antes de aprobar esta accesión.",
         verifiedShort: "Verificada",
         verifying: "Verificando…",
         verify: "Verificar",
@@ -7624,10 +7471,10 @@ export default {
           cancelled:
             "Ninguna transferencia cancelada coincide con esta búsqueda.",
         },
-        keepAccession: "Conservar el número de ingreso actual",
-        newAccession: "Generar un nuevo número de ingreso",
-        requestedAccession: "Número de ingreso solicitado: {number}",
-        manualAccession: "Se solicitó un número de ingreso manual",
+        keepAccession: "Conservar el número de accesión actual",
+        newAccession: "Generar un nuevo número de accesión",
+        requestedAccession: "Número de accesión solicitado: {number}",
+        manualAccession: "Se solicitó un número de accesión manual",
       },
       import: {
         fields: {
@@ -7795,11 +7642,11 @@ export default {
       },
       delete: {
         confirm:
-          "¿Seguro que quiere eliminar «{name}»? Los objetos de esta colección se desvincularán, pero no se eliminarán.",
+          "¿Eliminar «{name}»? Los objetos de este grupo de colección se desvinculan, no se eliminan.",
       },
       remove: {
         confirm:
-          "¿Seguro que quiere quitar «{name}» de esta colección? El objeto no se eliminará, solo se quitará de esta colección.",
+          "¿Quitar «{name}» de este grupo de colección? El objeto no se elimina, solo se quita de este grupo.",
       },
       detail: {
         selectedCount: "Seleccionados ({count}):",
@@ -7817,7 +7664,7 @@ export default {
         accept: "Aceptar y completar la transferencia",
         cancel: "Cancelar solicitud",
         requestTitle: "Solicitud de traslado de objeto",
-        resultingAccessionNumber: "Número de ingreso resultante",
+        resultingAccessionNumber: "Número de accesión resultante",
         requestedAt: "Solicitado el",
         sourceApprovedAt: "Fuente aprobada el",
         targetReviewedAt: "Destino revisado el",
@@ -7905,14 +7752,14 @@ export default {
         inscriptionsMarks: "Inscripciones y marcas",
         noInscriptions: "No hay inscripciones documentadas.",
         overallCondition: "Estado general",
-        historyRelatedItems: "Historial y elementos relacionados",
+        historyRelatedItems: "Historial y registros relacionados",
         recordContext: "Contexto del registro",
         recordVerified: "Registro verificado",
         relatedObjects: "Objetos relacionados",
         recentActivity: "Actividad reciente",
         noRecentActivity: "No hay actividad reciente",
         approvedBy: "Aprobado por",
-        accession: "Ingreso",
+        accession: "Accesión",
         additionalNotes: "Notas adicionales",
         alreadyAttached: "Ya adjunto",
         altText: "Alt.:",
@@ -7949,7 +7796,7 @@ export default {
           "Hay cambios de campos sin guardar en varias pestañas.",
         mediaAlreadyApplied: "Los cambios de medios ya se aplicaron.",
         noUnsavedChanges: "No hay cambios de campos sin guardar.",
-        collectionNotFound: "No se encontró la colección",
+        collectionNotFound: "No se encontró el objeto",
         selectOrganization: "Seleccione una organización para editar objetos.",
       },
       form: {
@@ -7965,10 +7812,11 @@ export default {
           "Mostrar información de valoración en la página pública.",
         leaveBlankPublicPath:
           "Déjelo en blanco para usar la ruta pública predeterminada.",
-        acquisitionNumberImmutable: "El número de ingreso no se puede cambiar.",
-        noAlternateNumbers: "No se añadieron números de ingreso alternativos.",
+        acquisitionNumberImmutable:
+          "El número de accesión no se puede cambiar.",
+        noAlternateNumbers: "No se añadieron números de accesión alternativos.",
         alternateNumberRemoveHint:
-          "Los números de ingreso alternativos existentes se pueden eliminar, pero no editar directamente.",
+          "Los números de accesión alternativos existentes se pueden eliminar, pero no editar directamente.",
         noImagesUploaded: "Aún no se han subido imágenes.",
         savedToObject: "Guardado con este objeto",
         conditionChangeNote: "Nota sobre el cambio de estado",
@@ -7997,7 +7845,7 @@ export default {
         draftExistsUnsaved:
           "El borrador existe, pero los últimos cambios de campos aún no se han guardado.",
         saveDraftDescription:
-          "Guardar borrador sube imágenes y documentos a esta solicitud de ingreso. Se enviarán para aprobación junto con el objeto.",
+          "Guardar borrador sube imágenes y documentos a esta solicitud de accesión. Se enviarán para aprobación junto con el objeto.",
         savingDraft: "Guardando borrador…",
         objectTitle: "Título del objeto",
         editRecordDescription:
@@ -8018,14 +7866,14 @@ export default {
         previousOwner: "Propietario anterior",
         previousOwners: "Propietarios anteriores",
         capturePreviousOwners:
-          "Registre los propietarios anteriores conocidos como contexto básico del ingreso.",
+          "Registre los propietarios anteriores conocidos como contexto básico de la accesión.",
         selectImagesAfterApproval:
           "Seleccione imágenes del objeto y elija cuál será la principal tras la aprobación.",
         editMediaMetadata: "Editar metadatos del medio",
         updateMediaMetadata:
           "Actualice los metadatos de este archivo multimedia.",
         recordIdentity: "Identificación del registro",
-        removeAlternateAccession: "Eliminar el número de ingreso alternativo",
+        removeAlternateAccession: "Eliminar el número de accesión alternativo",
         publicUrl: "URL pública",
         uploadImagesDescription:
           "Suba imágenes, asigne una imagen principal y gestione las miniaturas de la ficha del objeto.",
@@ -8111,13 +7959,13 @@ export default {
         noneAvailable: "No hay grupos de colección disponibles",
         addObjects:
           "Añadir {count} objeto(s) seleccionado(s) a un grupo de colección.",
-        itemsCount: "({count} elementos)",
+        itemsCount: "({count} objetos)",
       },
       loading: {
         loans: "Cargando préstamos…",
         logs: "Cargando registros…",
         treatments: "Cargando tratamientos…",
-        collections: "Cargando colecciones…",
+        collections: "Cargando objetos…",
         more: "más",
         default: "Cargando…",
       },
@@ -8136,7 +7984,7 @@ export default {
           "Materiales, dimensiones y estado de conservación del objeto.",
         optionalPublicSlug:
           "Identificador personalizado opcional para el acceso público.",
-        removeAltAccession: "Eliminar el número de ingreso alternativo",
+        removeAltAccession: "Eliminar el número de accesión alternativo",
         signatureDocumentDescription:
           "Documente firmas, sellos, etiquetas, grabados o marcas de coleccionista",
         file: "Archivo:",
@@ -8206,6 +8054,8 @@ export default {
         unknownOrganization: "Organización desconocida",
         unknownUser: "Usuario desconocido",
         to: "a",
+        numberOnApproval: "Se genera al aprobar la solicitud",
+        useRequestedAccessionNumber: "Usar el número de accesión solicitado",
       },
       roles: {
         curator: "Conservador",
@@ -8228,8 +8078,8 @@ export default {
         expandNode: "Expandir {name}",
       },
       bulk: {
-        failedMove: "No se pudieron mover {count} elemento(s)",
-        exported: "Se exportaron {count} elemento(s)",
+        failedMove: "Objetos que no se pudieron mover: {count}",
+        exported: "Objetos exportados: {count}",
       },
       draft: {
         saved: "Borrador guardado",
@@ -8255,7 +8105,7 @@ export default {
         catalogedDate: "Fecha de catalogación",
       },
       collection: {
-        noneAssigned: "No asignado a una colección",
+        noneAssigned: "No pertenece a ningún grupo de colección",
       },
       request: {
         editTitle: "Editar objeto",
@@ -8280,7 +8130,7 @@ export default {
         general: "General",
         physical: "Descripción física",
         media: "Medios",
-        accession: "Ingreso",
+        accession: "Accesión",
         provenance: "Procedencia e historial",
         valuation: "Valoración",
         placement: "Ubicación y relaciones",
@@ -8305,12 +8155,12 @@ export default {
       errorId: "ID del error:",
       tryAgain: "Intentar de nuevo",
       dashboard: "Panel",
-      failedToLoadAccessions: "No se pudieron cargar los ingresos",
+      failedToLoadAccessions: "No se pudieron cargar las accesiones",
       failedToLoadAccessionsDescription:
-        "No se pudo cargar el flujo de ingresos. Inténtelo de nuevo o vuelva al panel.",
-      failedToLoadCollections: "No se pudieron cargar las colecciones",
+        "No se pudo cargar el flujo de accesiones. Inténtelo de nuevo o vuelva al panel.",
+      failedToLoadCollections: "No se pudieron cargar los grupos de colección",
       failedToLoadCollectionsDescription:
-        "No se pudieron cargar las colecciones. Inténtelo de nuevo o vuelva al panel.",
+        "No pudimos cargar sus grupos de colección. Inténtelo de nuevo o vuelva al panel.",
       failedToLoadLoans: "No se pudieron cargar los préstamos",
       failedToLoadLoansDescription:
         "No se pudieron cargar los préstamos. Inténtelo de nuevo o vuelva al panel.",
@@ -8770,36 +8620,36 @@ export default {
         return: "Devolución",
       },
       handoffs: {
-        title: "Receipt and installation",
-        loading: "Loading transit handoffs…",
-        notFound: "Transit record not found.",
-        backToList: "Back to transit log",
-        linkedLoan: "Linked loan:",
-        linkedExhibition: "Linked exhibition:",
+        title: "Recepción e instalación",
+        loading: "Cargando las entregas del traslado…",
+        notFound: "No se encontró el traslado.",
+        backToList: "Volver al registro de traslados",
+        linkedLoan: "Préstamo vinculado:",
+        linkedExhibition: "Exposición vinculada:",
         carrierVsReceiptHint:
-          "Carrier delivery status does not record custody acceptance. Mark carrier arrival, then record accountable receipt (and installation when linked to an exhibition).",
-        outstandingReceipt: "{count} item(s) awaiting receipt",
-        outstandingInstallation: "{count} awaiting installation",
-        markCarrierArrived: "Mark carrier arrival",
-        observedFrom: "Observed source location",
+          "El estado de entrega del transportista no registra la aceptación de la custodia. Marque la llegada del transportista y después registre la recepción responsable (y la instalación si el traslado está vinculado a una exposición).",
+        outstandingReceipt: "Pendientes de recepción: {count}",
+        outstandingInstallation: "Pendientes de instalación: {count}",
+        markCarrierArrived: "Marcar llegada del transportista",
+        observedFrom: "Ubicación de origen observada",
         installationDestination: "Destino de instalación",
-        receiptDestination: "Receipt destination",
-        conditionNotes: "Condition at receipt",
-        conditionPlaceholder: "Condition summary or notes",
-        recordReceipt: "Record accountable receipt",
-        recordInstallation: "Record exhibition installation",
-        viewObject: "View object",
-        receiptRecorded: "Receipt movement recorded",
-        installationRecorded: "Installation movement recorded",
-        actionFailed: "Handoff failed",
+        receiptDestination: "Destino de recepción",
+        conditionNotes: "Estado de conservación al recibirlo",
+        conditionPlaceholder: "Resumen o notas del estado",
+        recordReceipt: "Registrar recepción responsable",
+        recordInstallation: "Registrar instalación en la exposición",
+        viewObject: "Ver objeto",
+        receiptRecorded: "Movimiento de recepción registrado",
+        installationRecorded: "Movimiento de instalación registrado",
+        actionFailed: "No se pudo registrar la entrega. Inténtalo de nuevo.",
         itemStatus: {
-          pending: "Pending pickup",
-          in_transit: "In transit",
-          delivered: "Legacy carrier delivered",
-          arrived: "Carrier arrived (not accepted)",
-          received: "Receipt recorded",
-          damaged: "Damaged",
-          missing: "Missing",
+          pending: "Pendiente de recogida",
+          in_transit: "En tránsito",
+          delivered: "Entregado por el transportista (histórico)",
+          arrived: "Llegó con el transportista (sin aceptar)",
+          received: "Recepción registrada",
+          damaged: "Dañado",
+          missing: "Desaparecido",
         },
       },
     },
@@ -8819,7 +8669,7 @@ export default {
       exhibitionDetails: "Detalles de la exposición",
       exhibitions: "Exposiciones",
       pageTitles: {
-        accessions: "Adquisiciones",
+        accessions: "Accesiones",
         accounts: "Cuentas",
         activity: "Actividad",
         analytics: "Analítica",
@@ -8836,9 +8686,11 @@ export default {
         organizations: "Organizaciones",
         portal: "Portal",
         scan: "Escaneo",
-        settings: "Ajustes",
+        settings: "Configuración",
         transit: "Registro de traslados",
         transfers: "Traslados",
+        collections: "Grupos de colección",
+        library: "Biblioteca",
       },
     },
     dashboardBilling: {
@@ -8874,7 +8726,7 @@ export default {
       viewAllGroups: "Ver los {count} grupos",
       liveMetrics: "Métricas en tiempo real",
       pendingTransferApprovals: "Transferencias pendientes de aprobación",
-      pendingAccessions: "Ingresos pendientes",
+      pendingAccessions: "Accesiones pendientes",
       pendingDeaccessions: "Bajas pendientes",
       pendingLoans: "Préstamos pendientes",
       newCollectionButton: "Nueva colección",
@@ -8889,7 +8741,7 @@ export default {
       locationDetailsUnavailable: "Detalles de ubicación no disponibles",
       objectCountInside: "{count} objetos dentro de {name}",
       noAssignedObjects: "No hay objetos asignados",
-      noAccession: "Sin número de ingreso",
+      noAccession: "Sin número de accesión",
       noObjectsInLocation: "No hay objetos en esta ubicación",
       directAndNestedCounts: "{direct} directos · {locations} ubicaciones",
       locationsAndObjects: "Ubicaciones y objetos",
@@ -8947,7 +8799,7 @@ export default {
       childUnitsIncluded:
         "Incluye los objetos de esta ubicación y sus unidades secundarias",
       objects: "objetos",
-      accessionNumber: "Número de ingreso",
+      accessionNumber: "Número de accesión",
       title: "Título",
       status: "Estado",
       noObjectsWithChildren:
@@ -8961,7 +8813,7 @@ export default {
       vitrines: "Vitrinas",
       wallMountedDisplay: "Exposición mural",
       wallsConfigured: "paredes configuradas",
-      item: "artículo",
+      item: "objeto",
       perWall: "por pared",
       cabinets: "Armarios",
       shelves: "Estantes",
@@ -8988,7 +8840,7 @@ export default {
       movedOutTo: "trasladado a",
       unknownLocation: "ubicación desconocida",
       by: "por",
-      childrenLabel: "Elementos secundarios de {name}",
+      childrenLabel: "Ubicaciones dentro de {name}",
     },
     accountsImport: {
       moreErrors: "más",
@@ -9276,7 +9128,7 @@ export default {
       allowIncomingTransferRequestsDescription:
         "Al activarla, tu organización aparece en la búsqueda de destinos y acepta solicitudes de transferencia de objetos de otras organizaciones. Al desactivarla, tu organización queda oculta y se rechazan las transferencias.",
       automationsAndWorkflows: "Automatizaciones y flujos de trabajo",
-      accessionsApprovalWorkflow: "Flujo de aprobación de ingresos",
+      accessionsApprovalWorkflow: "Flujo de aprobación de accesiones",
       accessionsApprovalWorkflowDescription:
         "Al activarlo, las nuevas solicitudes de objetos se envían a los conservadores y administradores para su aprobación. Al desactivarlo, los objetos enviados se aprueban y publican de inmediato.",
       deaccessionsApprovalWorkflow: "Flujo de aprobación de bajas",
@@ -9542,15 +9394,15 @@ export default {
       code39: "Code 39",
       positionTheCodeWithinTheCameraViewToScan:
         "Coloca el código dentro del campo de visión de la cámara para escanearlo",
-      noMatchingCollectionsFound: "No se encontraron colecciones coincidentes.",
+      noMatchingCollectionsFound: "No se encontraron grupos de colección.",
       press: "Pulsa",
       toAdd: "para añadir",
-      typeToSearchCollections: "Escribe para buscar colecciones",
+      typeToSearchCollections: "Escriba para buscar grupos de colección",
       collections: "Colecciones",
       searchByAccessionNumberOrTitle:
         "Buscar por número de inventario o título...",
       scrollForMore: "Desplázate para ver más…",
-      loadingCollections: "Cargando colecciones...",
+      loadingCollections: "Cargando objetos...",
       collectionType: "Tipo de colección",
       determinesWhichSpecializedFieldsAreAvailableForThisItem:
         "Determina qué campos especializados están disponibles para este objeto",
@@ -9564,12 +9416,12 @@ export default {
       objects: "Objetos",
       collectionGroups: "Grupos de colecciones",
       loans: "Préstamos",
-      accessions: "Adquisiciones",
+      accessions: "Accesiones",
       locations: "Ubicaciones",
       create: "Crear",
       newObject: "Nuevo objeto",
       n: "⌘N",
-      newAccession: "Nueva adquisición",
+      newAccession: "Nueva accesión",
       newLoan: "Nuevo préstamo",
       newCollectionGroup: "Nuevo grupo de colecciones",
       documentationQuality: "Calidad de la documentación",
@@ -9831,21 +9683,21 @@ export default {
       turnOffFlash: "Apagar el flash",
       turnOnFlash: "Encender el flash",
       removeNamedItem: "Quitar {name}",
-      itemSelected: "{count} elemento seleccionado",
-      itemsSelected: "{count} elementos seleccionados",
-      searchAndSelectCollections: "Buscar y seleccionar colecciones",
-      noCollectionsFound: "No se encontraron colecciones",
+      itemSelected: "{count} objeto seleccionado",
+      itemsSelected: "{count} objetos seleccionados",
+      searchAndSelectCollections: "Buscar y seleccionar objetos",
+      noCollectionsFound: "No se encontraron objetos",
       cannotDeleteCondition: "No se puede eliminar la condición",
       deleteCondition: "Eliminar condición",
       collection: "Colección",
       searchOrAdd: "Buscar o añadir",
       selectACollectionObject: "Seleccionar un objeto de colección",
       noCollectionsFoundMatchingYourSearch:
-        "Ninguna colección coincide con tu búsqueda",
-      noCollectionsAvailable: "No hay colecciones disponibles",
+        "Ningún objeto coincide con la búsqueda",
+      noCollectionsAvailable: "No hay objetos disponibles",
       selectOrAddMaterials: "Seleccionar o añadir materiales",
       addNamedItem: "Añadir {name}",
-      selectCollection: "Seleccionar colección",
+      selectCollection: "Seleccionar grupo de colección",
       primaryGroup: "Grupo principal",
       secondaryGroup: "Grupo secundario",
       makePrimary: "Hacer principal",
@@ -9857,7 +9709,7 @@ export default {
       noOrganization: "Ninguna organización",
       noObjectsFound: "No se encontraron objetos",
       selectOrAddTypes: "Seleccionar o añadir tipos",
-      qrCodeForAccession: "Código QR de la adquisición {accession}",
+      qrCodeForAccession: "Código QR de la accesión {accession}",
       filter: "Filtrar",
       filters: "Filtros",
       uploading: "Subiendo",
@@ -9884,6 +9736,9 @@ export default {
       skipToSearch: "Saltar a la búsqueda",
       cannotDeleteMaterial: "No se puede eliminar el material",
       deleteMaterial: "Eliminar material",
+      currentLocationOption: "{location} (actual)",
+      flashNotSupported:
+        "La cámara de este dispositivo no permite controlar el flash.",
     },
     auth: {
       noAccountYet: "¿Aún no tienes una cuenta?",
@@ -9979,9 +9834,9 @@ export default {
       loanReturned: "Préstamo devuelto",
       loanRequested: "Préstamo solicitado",
       loanUpdated: "Préstamo actualizado",
-      accessionApproved: "Adquisición aprobada",
-      accessionRejected: "Adquisición rechazada",
-      accessionReceived: "Adquisición recibida",
+      accessionApproved: "Accesión aprobada",
+      accessionRejected: "Accesión rechazada",
+      accessionReceived: "Accesión recibida",
       deaccessionApproved: "Baja patrimonial aprobada",
       deaccessionRejected: "Baja patrimonial rechazada",
       deaccessionProposed: "Baja patrimonial propuesta",
@@ -10029,6 +9884,10 @@ export default {
     donorCreate: {
       duplicateEmail:
         "Ya existe un donante con este correo electrónico: {donor}",
+      invalidEmail: "Introduzca una dirección de correo electrónico válida.",
+      placeholder: "Seleccione o añada donantes...",
+      unknownDonors: "Donantes desconocidos",
+      unknownDonorsHint: "Úselo cuando el objeto lo donó un donante sin nombre",
     },
     navigation: {
       patronManagement: "Gestión de usuarios",
@@ -10039,8 +9898,8 @@ export default {
       objectCatalog: "Catálogo de objetos",
       locationTracking: "Ubicación y seguimiento",
       scan: "Escanear",
-      accessions: "Adquisiciones",
-      deaccessions: "Bajas de colección",
+      accessions: "Accesiones",
+      deaccessions: "Bajas",
       conservation: "Conservación",
       insurance: "Seguros",
       loansTransport: "Préstamos y transporte",
@@ -10122,12 +9981,11 @@ export default {
       titles: {
         batchJobSucceeded: "{job}: proceso completado",
         batchJobFailed: "{job}: proceso completado con {count} errores",
-        newAccessionRequiresApproval:
-          "Nueva adquisición pendiente de aprobación",
-        accessionApproved: "Adquisición aprobada",
-        accessionRequiresYourApproval: "La adquisición requiere tu aprobación",
-        accessionRejected: "Adquisición rechazada",
-        accessionAssigned: "Adquisición asignada",
+        newAccessionRequiresApproval: "Nueva accesión pendiente de aprobación",
+        accessionApproved: "Accesión aprobada",
+        accessionRequiresYourApproval: "La accesión requiere tu aprobación",
+        accessionRejected: "Accesión rechazada",
+        accessionAssigned: "Accesión asignada",
         objectRequestRequiresApproval:
           "Solicitud sobre un objeto pendiente de aprobación",
         newDeaccessionRequiresApproval:
@@ -10184,8 +10042,7 @@ export default {
         assessmentDue: "Evaluación pendiente: {title}",
         insurancePolicyExpiring: "La póliza de seguro vence en {days} días",
         loanPendingApproval: "Préstamo pendiente de aprobación: {number}",
-        accessionPendingApproval:
-          "Adquisición pendiente de aprobación: {number}",
+        accessionPendingApproval: "Accesión pendiente de aprobación: {number}",
         deaccessionPendingApproval:
           "Baja de colección pendiente de aprobación: {number}",
         exhibitionPendingApproval:
@@ -10226,15 +10083,15 @@ export default {
         sameOrganizationTransfer:
           "No puedes trasladar un objeto a su organización actual.",
         accessionPendingAtStep:
-          "La adquisición {number} está pendiente de tu aprobación en el paso {step}.",
+          "La accesión {number} está pendiente de tu aprobación en el paso {step}.",
         deaccessionPendingAtStep:
           "La baja de colección {number} está pendiente de tu aprobación en el paso {step}.",
         accessionFullyApproved:
-          "La adquisición {number} ha sido aprobada por completo y se ha añadido a la colección.",
+          "La accesión {number} ha sido aprobada por completo y se ha añadido a la colección.",
         accessionApproved:
-          "La adquisición {number} ha sido aprobada y añadida a la colección.",
-        accessionRejected: "La adquisición {number} ha sido rechazada.",
-        accessionAssigned: "Se te ha asignado la adquisición: {number}",
+          "La accesión {number} ha sido aprobada y añadida a la colección.",
+        accessionRejected: "La accesión {number} ha sido rechazada.",
+        accessionAssigned: "Se te ha asignado la accesión: {number}",
         objectRequestPending:
           "La solicitud sobre el objeto {number} está pendiente de tu aprobación.",
         deaccessionFullyApproved:
@@ -10246,7 +10103,7 @@ export default {
         newApprovalRequest:
           "Un nuevo proceso de tipo {workflowType} requiere tu revisión y aprobación.",
         batchJobProcessed:
-          "Se procesaron {successCount} de {totalItems} elementos.",
+          "Se procesaron {successCount} de {totalItems} objetos.",
         taskAssigned: "Se te ha asignado la tarea: {title}",
         taskDueSoon: "La tarea «{title}» vence en menos de 24 horas",
         taskBlocked: "La tarea «{title}» se ha bloqueado: {reason}",
@@ -10311,7 +10168,7 @@ export default {
         exhibitionApproved: "La exposición «{title}» ha sido aprobada.",
         exhibitionRejected: "La exposición «{title}» ha sido rechazada.",
         accessionRejectedWithReason:
-          "La adquisición {number} ha sido rechazada. Motivo: {reason}",
+          "La accesión {number} ha sido rechazada. Motivo: {reason}",
         deaccessionRejectedWithReason:
           "La baja de colección {number} ha sido rechazada. Motivo: {reason}",
         loanRejectedWithReason:
@@ -10328,7 +10185,7 @@ export default {
           "La discrepancia que notificaste sobre el estado de conservación se ha resuelto",
       },
       workflowTypes: {
-        accession: "adquisición",
+        accession: "accesión",
         deaccession: "baja de colección",
         loan: "préstamo",
         exhibition: "exposición",
@@ -10488,7 +10345,7 @@ export default {
     groupFinancial: "Informes financieros",
     groupResearch: "Investigación",
     groupUnsupported: "No compatibles",
-    profileAccession: "Registro de ingresos",
+    profileAccession: "Registro de accesiones",
     profileDisposal: "Registro de bajas",
     profileCustody: "Registro de custodia",
     profileCondition: "Registro de estado de conservación",
@@ -10748,6 +10605,46 @@ export default {
       draftMedia: "Fotos y documentos",
       alternateNumberExists:
         "Este número de accesión alternativo ya está en la lista.",
+    },
+  },
+  workflowApprovals: {
+    errors: {
+      workflowNotConfigured:
+        "Este paso de aprobación no está configurado correctamente. Pida a un administrador que revise la configuración del flujo de trabajo y vuelva a intentarlo.",
+      approvalNotPermitted:
+        "Este paso está asignado a otro rol aprobador. Pida a alguien asignado a este paso que lo revise.",
+      alreadyApproved:
+        "Su aprobación ya está registrada. El caso sigue pendiente hasta que lo aprueben los demás aprobadores.",
+    },
+  },
+  identifiers: {
+    registers: {
+      catalog: "registro del catálogo",
+      accession: "registro de accesiones",
+    },
+    errors: {
+      invalid:
+        "Use entre 1 y 256 caracteres visibles para el número. Los números históricos existentes no cambian.",
+      inUse:
+        "{identifier} ya se usa en el {register}. Abra esa ficha o elija un número libre; las fichas históricas nunca se renumeran ni se fusionan.",
+      reviewRequired:
+        "Complete la revisión de identificadores del {register} en Configuración › Preferencias antes de asignar números nuevos.",
+      numberingNotConfigured:
+        "La generación de números no está configurada. Introduzca un número o pida a un administrador que configure la numeración en Configuración › Preferencias.",
+      numberingExhausted:
+        "El formato de numeración siguió generando números ya usados en el {register}. Pida a un administrador que revise el formato o el contador en Configuración › Preferencias.",
+      catalogNumberLocked:
+        "Solo una accesión sin publicar y en revisión puede cambiar su número de catálogo previsto. Los números de registro publicados son permanentes.",
+    },
+    hint: {
+      needsIndexing:
+        "Complete la indexación de identificadores antes de asignar números nuevos.",
+      openReview: "Abrir la revisión de identificadores",
+      inUse:
+        "Otras fichas del {register} ya usan este número. Para una ficha nueva, elija un número libre. Las mayúsculas y los espacios alrededor no hacen que un número sea distinto.",
+      moreMatches: "Hay más coincidencias en la revisión de identificadores.",
+      permanentInDraft:
+        "Este número permanente se conserva al editar el borrador.",
     },
   },
 } as const;

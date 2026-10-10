@@ -36,6 +36,8 @@ export const ACCESSION_REVIEW_CODES = [
   "REASON_REQUIRED",
   "REASON_TOO_LONG",
   "NOT_PERMITTED",
+  /** Required source verification is missing and no exception reason was given. */
+  "SOURCE_VERIFICATION_REQUIRED",
 ] as const;
 
 export const MAX_REVIEW_REASON_LENGTH = 2000;
