@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
@@ -59,6 +59,12 @@ import {
   keepDraftPrimaryUnlessPermitted,
   normalizeDraftMediaPrimary,
 } from "./utils/primaryMedia";
+import {
+  assertCurrentEditVersion,
+  objectDraftEditVersion,
+  recordEditError,
+  requireFieldValue,
+} from "./utils/recordEdits";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
@@ -366,276 +372,142 @@ export const generateDraftUploadUrl = mutation({
   },
 });
 
-export const upsertObjectDraft = mutation({
-  args: {
-    organizationId: v.id("organizations"),
-    accessionId: v.optional(v.id("accessions")),
-    saveMode: v.union(v.literal("draft"), v.literal("submit")),
-    objectData: objectDraftDataValidator,
-    draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
-  },
-  returns: v.id("accessions"),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+const objectDraftSaveValidator = v.object({
+  organizationId: v.id("organizations"),
+  accessionId: v.optional(v.id("accessions")),
+  saveMode: v.union(v.literal("draft"), v.literal("submit")),
+  objectData: objectDraftDataValidator,
+  draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
+  /** From `recordEdits.getEditState`; a stale version is refused. */
+  expectedEditVersion: v.optional(v.string()),
+});
 
-    const accessionWorkflowEnabled = await isAccessionWorkflowEnabled(
+/**
+ * Saves the intake form's object draft, creating the pending accession on the
+ * first save. Submitting starts review, or approves at once without a
+ * workflow.
+ */
+async function saveObjectDraftRecord(
+  ctx: MutationCtx,
+  args: Infer<typeof objectDraftSaveValidator>,
+): Promise<Id<"accessions">> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
+  const accessionWorkflowEnabled = await isAccessionWorkflowEnabled(
+    ctx,
+    args.organizationId,
+  );
+  const workflowConfig = accessionWorkflowEnabled
+    ? await getWorkflowConfig(ctx, args.organizationId, "accession")
+    : null;
+
+  await validateObjectReferences(ctx, args.organizationId, args.objectData);
+  const normalizedObjectData = {
+    ...args.objectData,
+    title: args.objectData.title.trim(),
+  };
+  const submittedDraftMedia =
+    args.draftMedia && normalizeDraftMediaPrimary(args.draftMedia);
+
+  requireFieldValue("title", normalizedObjectData.title);
+
+  if (args.saveMode === "submit" && accessionWorkflowEnabled) {
+    const canInitiate = await canInitiateWorkflow(
       ctx,
       args.organizationId,
-    );
-    const workflowConfig = accessionWorkflowEnabled
-      ? await getWorkflowConfig(ctx, args.organizationId, "accession")
-      : null;
-
-    await validateObjectReferences(ctx, args.organizationId, args.objectData);
-    const normalizedObjectData = {
-      ...args.objectData,
-      title: args.objectData.title.trim(),
-    };
-    const submittedDraftMedia =
-      args.draftMedia && normalizeDraftMediaPrimary(args.draftMedia);
-
-    if (normalizedObjectData.title.length === 0) {
-      throw new Error("Title is required");
-    }
-
-    if (args.saveMode === "submit" && accessionWorkflowEnabled) {
-      const canInitiate = await canInitiateWorkflow(
-        ctx,
-        args.organizationId,
-        "accession",
-      );
-
-      if (!canInitiate) {
-        throw new Error(
-          "Permission denied: cannot initiate accession workflow",
-        );
-      }
-    } else if (args.saveMode === "submit") {
-      await requirePermission(ctx, args.organizationId, "collections.create");
-    }
-
-    const source = getDraftDisplaySource(normalizedObjectData);
-    const workflowState = resolveWorkflowStepState(
-      workflowConfig?.steps,
-      undefined,
+      "accession",
     );
 
-    if (
-      args.saveMode === "submit" &&
-      workflowConfig &&
-      workflowState.firstStep === undefined
-    ) {
-      throw new Error("Workflow has no approval steps configured");
+    if (!canInitiate) {
+      throw new Error("Permission denied: cannot initiate accession workflow");
     }
-
-    const nextWorkflowStep =
-      args.saveMode === "submit" && workflowConfig
-        ? (workflowState.firstStep ?? 1)
-        : 0;
-    const shouldAutoApproveSubmit =
-      args.saveMode === "submit" && !workflowConfig;
-
-    if (args.accessionId) {
-      const existing = await ctx.db.get(args.accessionId);
-      if (!existing) {
-        throw new Error("Accession not found");
-      }
-      if (existing.organizationId !== args.organizationId) {
-        throw new Error("Accession does not belong to this organization");
-      }
-      if (existing.status !== "pending") {
-        throw new Error("Only pending accessions can be updated");
-      }
-      assertNoEntryObjectDraft(existing);
-
-      await requirePermission(ctx, args.organizationId, "collections.update");
-      await validateObjectDraftTypeDetails(
-        ctx,
-        args.organizationId,
-        args.objectData,
-      );
-      const draftMedia =
-        submittedDraftMedia &&
-        (await keepDraftPrimaryUnlessPermitted(
-          ctx,
-          args.organizationId,
-          existing.draftMedia,
-          submittedDraftMedia,
-        ));
-
-      const updatedWorkflowStep = shouldAutoApproveSubmit
-        ? undefined
-        : existing.workflowStep && existing.workflowStep > 0
-          ? existing.workflowStep
-          : nextWorkflowStep;
-
-      const accessionNumber = normalizedObjectData.accessionNumber?.trim()
-        ? normalizedObjectData.accessionNumber
-        : existing.accessionNumber;
-      if (accessionNumber !== existing.accessionNumber) {
-        throw new ConvexError(
-          "An existing accession identifier is permanent. Keep the original number; record historical conflicts in Settings > Preferences instead of renumbering.",
-        );
-      }
-
-      await ensureAccessionNumberAvailable(
-        ctx,
-        args.organizationId,
-        accessionNumber,
-        existing._id,
-      );
-
-      for (const media of draftMedia ?? [])
-        await claimStorageOwnership(ctx, {
-          storageId: media.storageId,
-          organizationId: args.organizationId,
-          uploadedBy: userId,
-          expectedFileSize: media.fileSize,
-          expectedMimeType: media.mimeType,
-          ownerType: "accessionDraft",
-          ownerId: existing._id,
-        });
-      const submittedAt = Date.now();
-      await Promise.all([
-        ctx.db.patch(existing._id, {
-          accessionNumber,
-          normalizedIdentifier: normalizeIdentifier(accessionNumber),
-          source,
-          notes: normalizedObjectData.description?.trim() || existing.notes,
-          status: shouldAutoApproveSubmit ? "approved" : existing.status,
-          approvedBy: shouldAutoApproveSubmit ? userId : existing.approvedBy,
-          approvedAt: shouldAutoApproveSubmit
-            ? submittedAt
-            : existing.approvedAt,
-          workflowStep: updatedWorkflowStep,
-          draftObjectData: {
-            ...normalizedObjectData,
-            accessionNumber,
-          },
-          draftMedia: draftMedia ?? existing.draftMedia,
-        }),
-        syncAccessionSearchDocument(ctx, existing._id),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: args.organizationId,
-          userId,
-          action:
-            args.saveMode === "submit"
-              ? "submitted_object_accession"
-              : "saved_object_draft",
-          entityType: "accession",
-          entityId: existing._id,
-          changes: {
-            accessionNumber,
-            saveMode: args.saveMode,
-            workflowStep: updatedWorkflowStep,
-            status: shouldAutoApproveSubmit ? "approved" : existing.status,
-            title: normalizedObjectData.title,
-          },
-        }),
-      ] as const);
-
-      if (shouldAutoApproveSubmit) {
-        await ctx.runMutation(
-          internal.accessions.createCollectionFromAccession,
-          {
-            accessionId: existing._id,
-          },
-        );
-      }
-
-      if (args.saveMode === "submit" && workflowConfig) {
-        if (updatedWorkflowStep === undefined) {
-          throw new Error("Workflow step is required for accession workflow");
-        }
-        if (updatedWorkflowStep === existing.workflowStep) {
-          return existing._id;
-        }
-
-        const usersToNotify = await getUsersToNotifyForWorkflowStep(
-          ctx,
-          args.organizationId,
-          "accession",
-          updatedWorkflowStep,
-        );
-
-        await Promise.all(
-          Array.from(usersToNotify).map(async (approverId) => {
-            if (approverId !== userId) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: args.organizationId,
-                userId: approverId,
-                type: "workflow_pending",
-                title: "Object Request Requires Approval",
-                message: `Object request ${accessionNumber} is pending your approval.`,
-                relatedEntityType: "accession",
-                relatedEntityId: existing._id,
-              });
-            }
-          }),
-        );
-      }
-
-      return existing._id;
-    }
-
+  } else if (args.saveMode === "submit") {
     await requirePermission(ctx, args.organizationId, "collections.create");
+  }
+
+  const source = getDraftDisplaySource(normalizedObjectData);
+  const workflowState = resolveWorkflowStepState(
+    workflowConfig?.steps,
+    undefined,
+  );
+
+  if (
+    args.saveMode === "submit" &&
+    workflowConfig &&
+    workflowState.firstStep === undefined
+  ) {
+    throw new Error("Workflow has no approval steps configured");
+  }
+
+  const nextWorkflowStep =
+    args.saveMode === "submit" && workflowConfig
+      ? (workflowState.firstStep ?? 1)
+      : 0;
+  const shouldAutoApproveSubmit = args.saveMode === "submit" && !workflowConfig;
+
+  if (args.accessionId) {
+    const existing = await ctx.db.get(args.accessionId);
+    if (!existing) {
+      throw new Error("Accession not found");
+    }
+    if (existing.organizationId !== args.organizationId) {
+      throw new Error("Accession does not belong to this organization");
+    }
+    await requirePermission(ctx, args.organizationId, "collections.update");
+    if (existing.status !== "pending") {
+      throw recordEditError(
+        "RECORD_NOT_EDITABLE",
+        "Only pending accessions can be updated",
+      );
+    }
+    assertNoEntryObjectDraft(existing);
+    assertCurrentEditVersion(
+      await objectDraftEditVersion(existing),
+      args.expectedEditVersion,
+    );
+
     await validateObjectDraftTypeDetails(
       ctx,
       args.organizationId,
       args.objectData,
     );
-
-    let accessionNumber = normalizedObjectData.accessionNumber?.trim()
-      ? normalizedObjectData.accessionNumber
-      : undefined;
-    if (!accessionNumber) {
-      accessionNumber = await generateUniqueAccessionNumber(
+    const draftMedia =
+      submittedDraftMedia &&
+      (await keepDraftPrimaryUnlessPermitted(
         ctx,
         args.organizationId,
+        existing.draftMedia,
+        submittedDraftMedia,
+      ));
+
+    const updatedWorkflowStep = shouldAutoApproveSubmit
+      ? undefined
+      : existing.workflowStep && existing.workflowStep > 0
+        ? existing.workflowStep
+        : nextWorkflowStep;
+
+    const accessionNumber = normalizedObjectData.accessionNumber?.trim()
+      ? normalizedObjectData.accessionNumber
+      : existing.accessionNumber;
+    if (accessionNumber !== existing.accessionNumber) {
+      throw recordEditError(
+        "IDENTIFIER_PERMANENT",
+        "An existing accession identifier is permanent. Keep the original number; record historical conflicts in Settings > Preferences instead of renumbering.",
+        { field: "accessionNumber" },
       );
     }
-
-    const now = Date.now();
-    const workflowHistory = [
-      {
-        step: 0,
-        approvedBy: userId,
-        approvedAt: now,
-        comment:
-          args.saveMode === "submit"
-            ? "Submitted object request"
-            : "Saved object draft",
-      },
-    ];
 
     await ensureAccessionNumberAvailable(
       ctx,
       args.organizationId,
       accessionNumber,
+      existing._id,
     );
-    const accessionId = await ctx.db.insert("accessions", {
-      organizationId: args.organizationId,
-      accessionNumber,
-      normalizedIdentifier: normalizeIdentifier(accessionNumber),
-      dateReceived: now,
-      source,
-      method: "other",
-      notes: normalizedObjectData.description?.trim() || undefined,
-      status: shouldAutoApproveSubmit ? "approved" : "pending",
-      approvedBy: shouldAutoApproveSubmit ? userId : undefined,
-      approvedAt: shouldAutoApproveSubmit ? now : undefined,
-      workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
-      workflowHistory,
-      draftObjectData: {
-        ...normalizedObjectData,
-        accessionNumber,
-      },
-      draftMedia: submittedDraftMedia,
-    });
-    for (const media of submittedDraftMedia ?? [])
+
+    for (const media of draftMedia ?? [])
       await claimStorageOwnership(ctx, {
         storageId: media.storageId,
         organizationId: args.organizationId,
@@ -643,10 +515,26 @@ export const upsertObjectDraft = mutation({
         expectedFileSize: media.fileSize,
         expectedMimeType: media.mimeType,
         ownerType: "accessionDraft",
-        ownerId: accessionId,
+        ownerId: existing._id,
       });
+    const submittedAt = Date.now();
     await Promise.all([
-      syncAccessionSearchDocument(ctx, accessionId),
+      ctx.db.patch(existing._id, {
+        accessionNumber,
+        normalizedIdentifier: normalizeIdentifier(accessionNumber),
+        source,
+        notes: normalizedObjectData.description?.trim() || existing.notes,
+        status: shouldAutoApproveSubmit ? "approved" : existing.status,
+        approvedBy: shouldAutoApproveSubmit ? userId : existing.approvedBy,
+        approvedAt: shouldAutoApproveSubmit ? submittedAt : existing.approvedAt,
+        workflowStep: updatedWorkflowStep,
+        draftObjectData: {
+          ...normalizedObjectData,
+          accessionNumber,
+        },
+        draftMedia: draftMedia ?? existing.draftMedia,
+      }),
+      syncAccessionSearchDocument(ctx, existing._id),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: args.organizationId,
         userId,
@@ -655,29 +543,36 @@ export const upsertObjectDraft = mutation({
             ? "submitted_object_accession"
             : "saved_object_draft",
         entityType: "accession",
-        entityId: accessionId,
+        entityId: existing._id,
         changes: {
           accessionNumber,
           saveMode: args.saveMode,
-          workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
-          status: shouldAutoApproveSubmit ? "approved" : "pending",
+          workflowStep: updatedWorkflowStep,
+          status: shouldAutoApproveSubmit ? "approved" : existing.status,
           title: normalizedObjectData.title,
         },
       }),
-    ]);
+    ] as const);
 
     if (shouldAutoApproveSubmit) {
       await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
-        accessionId,
+        accessionId: existing._id,
       });
     }
 
     if (args.saveMode === "submit" && workflowConfig) {
+      if (updatedWorkflowStep === undefined) {
+        throw new Error("Workflow step is required for accession workflow");
+      }
+      if (updatedWorkflowStep === existing.workflowStep) {
+        return existing._id;
+      }
+
       const usersToNotify = await getUsersToNotifyForWorkflowStep(
         ctx,
         args.organizationId,
         "accession",
-        nextWorkflowStep,
+        updatedWorkflowStep,
       );
 
       await Promise.all(
@@ -690,15 +585,157 @@ export const upsertObjectDraft = mutation({
               title: "Object Request Requires Approval",
               message: `Object request ${accessionNumber} is pending your approval.`,
               relatedEntityType: "accession",
-              relatedEntityId: accessionId,
+              relatedEntityId: existing._id,
             });
           }
         }),
       );
     }
 
-    return accessionId;
+    return existing._id;
+  }
+
+  await requirePermission(ctx, args.organizationId, "collections.create");
+  await validateObjectDraftTypeDetails(
+    ctx,
+    args.organizationId,
+    args.objectData,
+  );
+
+  let accessionNumber = normalizedObjectData.accessionNumber?.trim()
+    ? normalizedObjectData.accessionNumber
+    : undefined;
+  if (!accessionNumber) {
+    accessionNumber = await generateUniqueAccessionNumber(
+      ctx,
+      args.organizationId,
+    );
+  }
+
+  const now = Date.now();
+  const workflowHistory = [
+    {
+      step: 0,
+      approvedBy: userId,
+      approvedAt: now,
+      comment:
+        args.saveMode === "submit"
+          ? "Submitted object request"
+          : "Saved object draft",
+    },
+  ];
+
+  await ensureAccessionNumberAvailable(
+    ctx,
+    args.organizationId,
+    accessionNumber,
+  );
+  const accessionId = await ctx.db.insert("accessions", {
+    organizationId: args.organizationId,
+    accessionNumber,
+    normalizedIdentifier: normalizeIdentifier(accessionNumber),
+    dateReceived: now,
+    source,
+    method: "other",
+    notes: normalizedObjectData.description?.trim() || undefined,
+    status: shouldAutoApproveSubmit ? "approved" : "pending",
+    approvedBy: shouldAutoApproveSubmit ? userId : undefined,
+    approvedAt: shouldAutoApproveSubmit ? now : undefined,
+    workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
+    workflowHistory,
+    draftObjectData: {
+      ...normalizedObjectData,
+      accessionNumber,
+    },
+    draftMedia: submittedDraftMedia,
+  });
+  for (const media of submittedDraftMedia ?? [])
+    await claimStorageOwnership(ctx, {
+      storageId: media.storageId,
+      organizationId: args.organizationId,
+      uploadedBy: userId,
+      expectedFileSize: media.fileSize,
+      expectedMimeType: media.mimeType,
+      ownerType: "accessionDraft",
+      ownerId: accessionId,
+    });
+  await Promise.all([
+    syncAccessionSearchDocument(ctx, accessionId),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action:
+        args.saveMode === "submit"
+          ? "submitted_object_accession"
+          : "saved_object_draft",
+      entityType: "accession",
+      entityId: accessionId,
+      changes: {
+        accessionNumber,
+        saveMode: args.saveMode,
+        workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
+        status: shouldAutoApproveSubmit ? "approved" : "pending",
+        title: normalizedObjectData.title,
+      },
+    }),
+  ]);
+
+  if (shouldAutoApproveSubmit) {
+    await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
+      accessionId,
+    });
+  }
+
+  if (args.saveMode === "submit" && workflowConfig) {
+    const usersToNotify = await getUsersToNotifyForWorkflowStep(
+      ctx,
+      args.organizationId,
+      "accession",
+      nextWorkflowStep,
+    );
+
+    await Promise.all(
+      Array.from(usersToNotify).map(async (approverId) => {
+        if (approverId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: approverId,
+            type: "workflow_pending",
+            title: "Object Request Requires Approval",
+            message: `Object request ${accessionNumber} is pending your approval.`,
+            relatedEntityType: "accession",
+            relatedEntityId: accessionId,
+          });
+        }
+      }),
+    );
+  }
+
+  return accessionId;
+}
+
+export const saveObjectDraft = mutation({
+  args: objectDraftSaveValidator.fields,
+  returns: v.object({
+    accessionId: v.id("accessions"),
+    editVersion: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const accessionId = await saveObjectDraftRecord(ctx, args);
+    const accession = await ctx.db.get(accessionId);
+    if (!accession) throw new Error("Draft disappeared during save");
+    return {
+      accessionId,
+      editVersion: await objectDraftEditVersion(accession),
+    };
   },
+});
+
+/** Earlier form of `saveObjectDraft` that returns only the accession id. */
+export const upsertObjectDraft = mutation({
+  args: objectDraftSaveValidator.fields,
+  returns: v.id("accessions"),
+  handler: (ctx, args) => saveObjectDraftRecord(ctx, args),
 });
 
 /**

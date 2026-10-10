@@ -53,6 +53,12 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import {
+  assertCurrentEditVersion,
+  loanEditVersion,
+  recordEditError,
+  requireFieldValue,
+} from "./utils/recordEdits";
 import { claimStorageOwnership } from "./utils/uploadOwnership";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
@@ -955,8 +961,10 @@ export const update = mutation({
     /** ISO 4217 code; an empty string clears it. */
     currency: v.optional(v.string()),
     notes: v.optional(v.string()),
+    /** From `recordEdits.getEditState`; a stale version is refused. */
+    expectedEditVersion: v.optional(v.string()),
   },
-  returns: v.null(),
+  returns: v.object({ editVersion: v.string() }),
   handler: async (ctx, args) => {
     const [userId, loan] = await Promise.all([
       getAuthUserId(ctx),
@@ -969,14 +977,36 @@ export const update = mutation({
       throw new Error("Loan not found");
     }
 
-    if (loan.status !== "pending") {
-      throw new Error("Can only update pending loans");
-    }
-
     await Promise.all([
       requireLoansAccess(ctx, loan.organizationId),
       requirePermission(ctx, loan.organizationId, "loans.update"),
     ]);
+    if (loan.status !== "pending") {
+      throw recordEditError(
+        "RECORD_NOT_EDITABLE",
+        "Can only update pending loans",
+      );
+    }
+    assertCurrentEditVersion(
+      await loanEditVersion(loan),
+      args.expectedEditVersion,
+    );
+    requireFieldValue("lenderBorrowerName", args.lenderBorrowerName);
+    if (loan.accountId) {
+      // The lender or borrower party names the loan (see partyLinks).
+      for (const field of [
+        "lenderBorrowerName",
+        "lenderBorrowerContact",
+      ] as const) {
+        const value = args[field];
+        if (value !== undefined && value !== (loan[field] ?? ""))
+          throw recordEditError(
+            "PARTY_MANAGED_FIELD",
+            "The linked party names this loan; change the party instead",
+            { field },
+          );
+      }
+    }
 
     const updates: {
       lenderBorrowerName?: string;
@@ -1010,12 +1040,18 @@ export const update = mutation({
       effectiveEndDate !== undefined &&
       effectiveEndDate < effectiveStartDate
     ) {
-      throw new Error("Loan end date cannot be before start date");
+      throw recordEditError(
+        "DATE_ORDER_INVALID",
+        "Loan end date cannot be before start date",
+        { field: args.endDate !== undefined ? "endDate" : "startDate" },
+      );
     }
 
     await ctx.db.patch(args.loanId, updates);
 
-    return null;
+    const updated = await ctx.db.get(args.loanId);
+    if (!updated) throw new Error("Loan disappeared during update");
+    return { editVersion: await loanEditVersion(updated) };
   },
 });
 
