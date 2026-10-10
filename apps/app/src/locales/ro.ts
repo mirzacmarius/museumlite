@@ -739,7 +739,7 @@ export default {
         statusActive: "Activ",
         statusRevoked: "Revocat",
         created: "Creat",
-        lastSeen: "Ultima activitate",
+        lastRequest: "Ultima solicitare",
         noRequests: "Nu există solicitări autentificate",
         lastError: "Ultima eroare",
         rotateCredential: "Rotește acreditarea",
@@ -756,6 +756,9 @@ export default {
         probeIdPlaceholder: "sondă-1",
         location: "Locație",
         bindProbe: "Asociază sonda",
+        noProbeReadings: "nicio măsurătoare încă",
+        lastReadingObserved: "ultima măsurătoare la",
+        lastReadingReceived: "primită la",
       },
     },
     tabs: {
@@ -3163,6 +3166,148 @@ export default {
       overCapacity: "Peste capacitate",
       openToPublic: "Deschis publicului",
       restrictedAccess: "Acces restricționat",
+      enteredValues: "Valori introduse, nu o măsurătoare",
+      readingObserved: "Măsurat: {time}",
+      readingSilent: "Nicio măsurătoare recentă: măsurat {time}",
+    },
+    environment: {
+      title: "Mediu",
+      editThresholds: "Editează pragurile",
+      conditions: {
+        out_of_range: "În afara pragurilor",
+        silent: "Sondă tăcută",
+        awaiting_readings: "Se așteaptă măsurători",
+        no_thresholds: "Neevaluat",
+        in_range: "În limite",
+        no_devices: "Niciun dispozitiv nu măsoară aici",
+      },
+      conditionDetails: {
+        out_of_range:
+          "Măsurătorile sunt în afara pragurilor. Un episod de alertă urmărește această depășire până când fiecare sondă care a arătat-o revine în limite.",
+        silent:
+          "O sondă nu a trimis nicio măsurătoare de peste {hours} ore, așa că condițiile de aici sunt necunoscute.",
+        awaiting_readings:
+          "O sondă asociată nu a trimis încă prima măsurătoare.",
+        no_thresholds:
+          "Sosesc măsurători, dar nimic nu le evaluează până când nu sunt setate praguri.",
+        in_range: "Fiecare sondă a raportat în limite în ultimele {hours} ore.",
+        no_devices:
+          "Nicio sondă a unui dispozitiv activ nu este asociată acestei locații. Măsurătorile personalului de mai jos sunt verificări punctuale.",
+      },
+      policy:
+        "Un episod este escaladat când măsurătorile rămân în afara pragurilor timp de o oră și din nou după o zi. O sondă este considerată revenită după {minutes} minute de măsurători în limite și devine tăcută după {hours} ore fără măsurători.",
+      measures: {
+        temperature: "Temperatură",
+        humidity: "Umiditate relativă",
+        lightLevel: "Lumină",
+        uvLevel: "UV",
+      },
+      notSet: "Nesetat",
+      openEpisode: "Episod de alertă deschis",
+      outOfRangeSince: "În afara pragurilor din {time} ({duration})",
+      resolve: "Închide",
+      viewEvidence: "Vezi dovezile",
+      probes: "Sonde",
+      noProbes: "Nicio sondă nu este asociată acestei locații.",
+      probeLabel: "{device} · {probe}",
+      unknownDevice: "Dispozitiv necunoscut",
+      probeStatus: {
+        reporting: "Raportează",
+        silent: "Tăcută",
+        awaiting_first_reading: "Așteaptă prima măsurătoare",
+        revoked: "Dispozitiv revocat",
+      },
+      observedAt: "Măsurat: {time}",
+      receivedAt: "primit: {time}",
+      noReadingYet: "Nicio măsurătoare încă",
+      deviceLastRequest: "Ultima solicitare a dispozitivului: {time}",
+      deviceNoRequests: "Nicio solicitare de la acest dispozitiv încă",
+      deviceLastError: "Eroare dispozitiv: {error}",
+      recentEpisodes: "Episoade recente",
+      noEpisodes: "Niciun episod de alertă încă.",
+      recentReadings: "Ultimele măsurători",
+      noReadings: "Nicio măsurătoare încă.",
+      outOfRange: "În afara pragurilor",
+      late: "Întârziată",
+      staffReading: "Măsurătoare a personalului",
+      staffReadingBy: "Măsurătoare a personalului de {name}",
+      staffReadings: "Măsurători ale personalului",
+      importedReading: "Măsurătoare importată",
+      unknownStaff: "un fost membru",
+      episodeStatus: {
+        open: "Deschis",
+        recovered: "Revenit",
+        resolved: "Închis",
+      },
+      escalationLevel: {
+        hour: "peste o oră",
+        day: "peste o zi",
+      },
+      startedAt: "Început",
+      lastReading: "Ultima măsurătoare",
+      endedAt: "Încheiat",
+      lasted: "A durat {duration}",
+      openFor: "Deschis de {duration}",
+      readings: "Măsurători",
+      readingCounts:
+        "{count} numărate, {outOfRange} în afara pragurilor, {late} întârziate",
+      breaches: "Limite depășite",
+      breach: {
+        above: "{measure} peste maximul de {limit}",
+        below: "{measure} sub minimul de {limit}",
+      },
+      extreme: {
+        above: "valoarea cea mai mare: {value}",
+        below: "valoarea cea mai mică: {value}",
+      },
+      sourcesHeading: "Revenire",
+      sourceRecovered: "Revenită {time}",
+      sourceRecovering: "În limite din {time}",
+      sourceSilent: "Tăcută, ultima măsurătoare {time}",
+      sourceOutOfRange: "În afara pragurilor, ultima măsurătoare {time}",
+      resolvedBy: "Închis de {name} la {time}",
+      thresholdsAtOpening:
+        "Pragurile la deschiderea episodului: temperatură {temperature}, umiditate relativă {humidity}.",
+      backToLocation: "Înapoi la {location}",
+      episodeTitle: "Episod de alertă: {location}",
+      evidenceHeading: "Măsurătorile acestui episod",
+      evidenceDescription:
+        "Toate măsurătorile numărate de episod, cu cea mai recentă observație prima. Măsurătorile întârziate au sosit după una mai recentă de la aceeași sondă; contează ca dovezi, dar nu schimbă niciodată episodul.",
+      loadMoreReadings: "Încarcă mai multe măsurători",
+      thresholdsDialog: {
+        title: "Praguri de mediu",
+        description:
+          "Măsurătorile din afara acestor limite deschid un episod de alertă. Noile limite se aplică măsurătorilor ulterioare.",
+        fields: {
+          temperatureMin: "Temperatura minimă (°C)",
+          temperatureMax: "Temperatura maximă (°C)",
+          humidityMin: "Umiditatea relativă minimă (%)",
+          humidityMax: "Umiditatea relativă maximă (%)",
+        },
+        hint: "Lăsați un câmp gol pentru a nu seta nicio limită. Temperaturile sunt între -100 și 100 °C, iar umiditatea între 0 și 100 %.",
+        invalid:
+          "Introduceți măsurători posibile, cu fiecare minim sub maximul său.",
+        failed: "Pragurile nu au putut fi salvate.",
+        cancel: "Anulează",
+        save: "Salvează pragurile",
+      },
+      resolveDialog: {
+        title: "Închide episodul de alertă",
+        description:
+          "Închideți acest episod când măsurătorile nu pot arăta revenirea, de exemplu după ce sonda a fost mutată sau scoasă din uz. Dacă măsurătorile sunt încă în afara pragurilor, următoarea deschide un episod nou.",
+        note: "Notă",
+        notePlaceholder: "Ce s-a verificat și de ce episodul poate fi închis",
+        noteRequired: "Scrieți o notă de cel mult 1.000 de caractere.",
+        failed: "Episodul nu a putut fi închis.",
+        cancel: "Anulează",
+        submit: "Închide episodul",
+      },
+      errors: {
+        thresholdsInvalid:
+          "Introduceți măsurători posibile, cu fiecare minim sub maximul său.",
+        episodeNotOpen: "Acest episod s-a încheiat deja.",
+        resolutionNoteInvalid: "Scrieți o notă de cel mult 1.000 de caractere.",
+      },
     },
     sidebar: {
       empty: "Nicio locație încă",
@@ -9884,6 +10029,10 @@ export default {
           "Depășirea termenului SLA: {workflowType} în așteptare de peste {days} zile",
         slaWarning:
           "Avertizare SLA: {workflowType} ajunge la termen în {days} zile",
+        environmentOutOfRange: "Mediu în afara pragurilor: {location}",
+        environmentStillOutOfRange:
+          "Mediu încă în afara pragurilor: {location}",
+        environmentBackInRange: "Mediu revenit în limite: {location}",
       },
       messages: {
         objectMoveExecuted:
@@ -10029,6 +10178,30 @@ export default {
       loanTypes: {
         incoming: "primit",
         outgoing: "trimis",
+      },
+      environment: {
+        overAnHour: "În afara pragurilor de peste o oră.",
+        overADay: "În afara pragurilor de peste o zi.",
+        backWithin: "Măsurătorile au revenit în limite.",
+        breach: {
+          temperatureAbove:
+            "Temperatură {value} °C peste maximul de {limit} °C",
+          temperatureBelow: "Temperatură {value} °C sub minimul de {limit} °C",
+          humidityAbove:
+            "Umiditate relativă {value} % peste maximul de {limit} %",
+          humidityBelow:
+            "Umiditate relativă {value} % sub minimul de {limit} %",
+          lightLevelAbove: "Lumină {value} lx peste maximul de {limit} lx",
+          uvLevelAbove: "UV {value} peste maximul de {limit}",
+        },
+        extreme: {
+          temperatureHighest: "Temperatura maximă {value} °C",
+          temperatureLowest: "Temperatura minimă {value} °C",
+          humidityHighest: "Umiditatea relativă maximă {value} %",
+          humidityLowest: "Umiditatea relativă minimă {value} %",
+          lightLevelHighest: "Lumina maximă {value} lx",
+          uvLevelHighest: "UV maxim {value}",
+        },
       },
     },
     searchLogic: {

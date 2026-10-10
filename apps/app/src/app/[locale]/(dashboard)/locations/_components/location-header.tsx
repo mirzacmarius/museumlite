@@ -1,11 +1,14 @@
 "use client";
 
+import { SILENT_AFTER_MS } from "@v1/backend/convex/utils/alertEpisodePolicy";
 import { cn } from "@v1/ui/utils";
 import { Droplets, Thermometer } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { useCurrentMinute } from "@/hooks/use-current-minute";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { formatAge } from "./environment/environment-format";
 import { occupancyBar } from "./location-occupancy";
 import { LocationTypeIcon } from "./location-type-icon";
 
@@ -73,9 +76,21 @@ export function LocationHeader({
     typeof location.customFields?.humidity === "number"
       ? location.customFields.humidity
       : undefined;
-  const displayTemperature =
-    environmentalData?.temperature ?? storedTemperature;
-  const displayHumidity = environmentalData?.humidity ?? storedHumidity;
+  const now = useCurrentMinute();
+  const displayTemperature = environmentalData
+    ? environmentalData.temperature
+    : storedTemperature;
+  const displayHumidity = environmentalData
+    ? environmentalData.humidity
+    : storedHumidity;
+  const readingSilent =
+    environmentalData !== null &&
+    now !== null &&
+    now - environmentalData.recordedAt > SILENT_AFTER_MS;
+  const chipClassName = cn(
+    "inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 dark:border-white/10",
+    (readingSilent || !environmentalData) && "opacity-60",
+  );
   const getStatusBadge = () => {
     if (!location.isActive) {
       return {
@@ -152,7 +167,7 @@ export function LocationHeader({
             displayHumidity !== undefined ? (
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 {displayTemperature !== undefined ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 dark:border-white/10">
+                  <span className={chipClassName}>
                     <Thermometer className="size-3.5 text-blue-400" />
                     <span className="tabular-nums">
                       {displayTemperature.toFixed(1)}°C
@@ -160,13 +175,38 @@ export function LocationHeader({
                   </span>
                 ) : null}
                 {displayHumidity !== undefined ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 dark:border-white/10">
+                  <span className={chipClassName}>
                     <Droplets className="size-3.5 text-cyan-400" />
                     <span className="tabular-nums">
                       {displayHumidity.toFixed(0)}%
                     </span>
                   </span>
                 ) : null}
+                <span
+                  className={cn(
+                    readingSilent && "text-amber-600 dark:text-amber-400",
+                  )}
+                >
+                  {!environmentalData
+                    ? t("enteredValues")
+                    : now === null
+                      ? null
+                      : readingSilent
+                        ? t("readingSilent", {
+                            time: formatAge(
+                              environmentalData.recordedAt,
+                              now,
+                              locale,
+                            ),
+                          })
+                        : t("readingObserved", {
+                            time: formatAge(
+                              environmentalData.recordedAt,
+                              now,
+                              locale,
+                            ),
+                          })}
+                </span>
               </div>
             ) : null}
             {actions}

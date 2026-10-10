@@ -31,12 +31,11 @@ async function createReceiver(t: ReturnType<typeof convexTest>) {
         "organization.view_analytics",
         "collections.read",
         "collections.update",
+        "locations.read",
       ].map((name) =>
         ctx.db.insert("permissions", {
           name,
-          category: name.startsWith("organization")
-            ? "organization"
-            : "collections",
+          category: name.split(".")[0] ?? "collections",
         }),
       ),
     );
@@ -167,7 +166,7 @@ describe("POST /v1/environmental-readings", () => {
     expect(alerts).toHaveLength(0);
   });
 
-  test("deduplicates current alerts and keeps delayed breaches out of active alert state", async () => {
+  test("a retried breach opens one alert episode and a delayed breach does not join it", async () => {
     const t = createTestContext();
     const { organizationId, locationId, token, admin } =
       await createReceiver(t);
@@ -200,6 +199,10 @@ describe("POST /v1/environmental-readings", () => {
       api.conservationTreatments.getEnvironmentalSummary,
       { locationId },
     );
+    const monitoring = await admin.query(
+      api.environmentalMonitoring.getLocationMonitoring,
+      { locationId, now: Date.now() },
+    );
     const alerts = await admin.query(api.conservationTreatments.listAlerts, {
       organizationId,
     });
@@ -207,7 +210,12 @@ describe("POST /v1/environmental-readings", () => {
     expect(readings).toHaveLength(2);
     expect(summary.temperature.current).toBe(30);
     expect(summary.humidity.current).toBe(50);
-    expect(alerts).toHaveLength(1);
+    expect(monitoring?.openEpisode).toMatchObject({
+      startedAt: latestObservedAt,
+      readingCount: 1,
+      lateReadingCount: 0,
+    });
+    expect(alerts).toHaveLength(0);
     expect(readings[1]?.alertTriggered).toBe(true);
   });
 

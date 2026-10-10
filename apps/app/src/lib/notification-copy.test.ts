@@ -43,6 +43,47 @@ describe("getNotificationCopy", () => {
     });
   });
 
+  it("translates alert episode notifications measure by measure", () => {
+    const copy = (title: string, message: string) =>
+      getNotificationCopy(
+        { title, message, type: "environmental_alert" },
+        dictionaryTranslator(french),
+      );
+
+    expect(
+      copy(
+        "Environment out of range: Paper Store",
+        "Temperature 23.5 °C above the 22 °C maximum; Relative humidity 61% above the 55% maximum.",
+      ),
+    ).toEqual({
+      title: "Environnement hors seuils : Paper Store",
+      message:
+        "Température 23.5 °C au-dessus du maximum de 22 °C; Humidité relative 61 % au-dessus du maximum de 55 %.",
+    });
+    expect(
+      copy(
+        "Environment still out of range: Paper Store",
+        "Out of range for over 24 hours. Relative humidity 35% below the 40% minimum.",
+      ).message,
+    ).toBe(
+      "Hors des seuils depuis plus d'un jour. Humidité relative 35 % en dessous du minimum de 40 %.",
+    );
+    expect(
+      copy(
+        "Environment back in range: Paper Store",
+        "Readings are back within the thresholds. Highest relative humidity 63%; Lowest temperature 16 °C.",
+      ),
+    ).toEqual({
+      title: "Environnement revenu dans les seuils : Paper Store",
+      message:
+        "Les mesures sont revenues dans les seuils. Humidité relative maximale 63 %; Température minimale 16 °C.",
+    });
+    expect(
+      copy("Environment out of range: Paper Store", "Something unexpected.")
+        .message,
+    ).toBe("Something unexpected.");
+  });
+
   it("translates batch job outcomes with the job's own label", () => {
     expect(
       getNotificationCopy(
