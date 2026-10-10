@@ -2,7 +2,11 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { REGISTER_TOTALS } from "@v1/backend/convex/utils/registerProfiles";
+import {
+  REGISTER_FEATURES,
+  REGISTER_PERMISSIONS,
+  REGISTER_TOTALS,
+} from "@v1/backend/convex/utils/registerProfiles";
 import { Button } from "@v1/ui/button";
 import {
   Card,
@@ -25,6 +29,8 @@ import type { FunctionReturnType } from "convex/server";
 import { BookText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { ExportJobControl } from "@/components/export-job-control";
+import { usePermissions } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useRegisterProfileLabels } from "@/hooks/use-register-profile-labels";
 import { exportJobErrorKey } from "@/lib/export-job-error-copy";
 import { formatIsoTimestamp } from "@/lib/format-date";
@@ -54,6 +60,26 @@ const PROFILE_GROUPS: Array<{
   { label: "groupFinancial", profiles: ["valuation", "insurance"] },
   { label: "groupResearch", profiles: ["provenance"] },
 ];
+
+/**
+ * Why the member cannot run a profile, if they cannot: their role first,
+ * then the plan, as the capability matrix explains access.
+ */
+function useProfileUnavailability(organizationId: Id<"organizations">) {
+  const { hasPermission, isLoading } = usePermissions();
+  const { hasFeature } = useFeatureAccess();
+  return (profile: Profile): "role" | "plan" | undefined => {
+    if (isLoading) return undefined;
+    if (!REGISTER_PERMISSIONS[profile].every(hasPermission)) return "role";
+    if (
+      !REGISTER_FEATURES[profile].every((feature) =>
+        hasFeature(feature, organizationId),
+      )
+    )
+      return "plan";
+    return undefined;
+  };
+}
 
 /** Stable keys for preview rows; identical legacy rows get an occurrence suffix. */
 function keyedRows(rows: Preview["rows"]) {
@@ -101,6 +127,17 @@ export function RegisterExportsCard({
   };
 
   const profileLabels = useRegisterProfileLabels();
+  const unavailability = useProfileUnavailability(organizationId);
+  const profileOption = (id: Profile) => {
+    switch (unavailability(id)) {
+      case "role":
+        return t("profileNoRoleAccess", { profile: profileLabels[id] });
+      case "plan":
+        return t("profileNotInPlan", { profile: profileLabels[id] });
+      default:
+        return profileLabels[id];
+    }
+  };
   const { profile } = form;
   const criteria = criteriaFromForm(form);
   const source: RegisterSource = { kind: "register", profile, criteria };
@@ -158,8 +195,12 @@ export function RegisterExportsCard({
               {PROFILE_GROUPS.map((group) => (
                 <optgroup key={group.label} label={t(group.label)}>
                   {group.profiles.map((id) => (
-                    <option key={id} value={id}>
-                      {profileLabels[id]}
+                    <option
+                      key={id}
+                      value={id}
+                      disabled={unavailability(id) !== undefined}
+                    >
+                      {profileOption(id)}
                     </option>
                   ))}
                 </optgroup>

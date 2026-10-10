@@ -9672,6 +9672,8 @@ export default {
     profileValuation: "Informe de valoración (patronato)",
     profileInsurance: "Relación de seguros (aseguradora)",
     profileProvenance: "Informe de procedencia (investigación)",
+    profileNoRoleAccess: "{profile} (no disponible para su rol)",
+    profileNotInPlan: "{profile} (no incluido en su plan)",
     profileSpectrum: "SPECTRUM XML (no compatible)",
     profileLido: "LIDO XML (no compatible)",
     fromDate: "Desde",

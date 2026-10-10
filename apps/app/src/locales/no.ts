@@ -9519,6 +9519,8 @@ export default {
     profileValuation: "Verdsettelsesrapport (styret)",
     profileInsurance: "Forsikringsoversikt (forsikringsselskap)",
     profileProvenance: "Proveniensrapport (forskning)",
+    profileNoRoleAccess: "{profile} (ikke tilgjengelig for rollen din)",
+    profileNotInPlan: "{profile} (ikke med i abonnementet ditt)",
     profileSpectrum: "SPECTRUM XML (støttes ikke)",
     profileLido: "LIDO XML (støttes ikke)",
     fromDate: "Fra",

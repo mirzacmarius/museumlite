@@ -9635,6 +9635,8 @@ export default {
     profileValuation: "Rapport de valorisation (conseil)",
     profileInsurance: "État des garanties (assureur)",
     profileProvenance: "Rapport de provenance (recherche)",
+    profileNoRoleAccess: "{profile} (non disponible pour votre rôle)",
+    profileNotInPlan: "{profile} (non inclus dans votre offre)",
     profileSpectrum: "SPECTRUM XML (non pris en charge)",
     profileLido: "LIDO XML (non pris en charge)",
     fromDate: "Du",

@@ -10373,6 +10373,8 @@ export default {
     profileValuation: "Raport de evaluare (consiliu)",
     profileInsurance: "Listă de asigurare (asigurător)",
     profileProvenance: "Raport de proveniență (cercetare)",
+    profileNoRoleAccess: "{profile} (indisponibil pentru rolul dvs.)",
+    profileNotInPlan: "{profile} (nu este inclus în planul dvs.)",
     profileSpectrum: "SPECTRUM XML (neacceptat)",
     profileLido: "LIDO XML (neacceptat)",
     fromDate: "De la",

@@ -9316,6 +9316,8 @@ export default {
     profileValuation: "Valuation report (board)",
     profileInsurance: "Insurance schedule (insurer)",
     profileProvenance: "Provenance report (research)",
+    profileNoRoleAccess: "{profile} (not available to your role)",
+    profileNotInPlan: "{profile} (not in your plan)",
     profileSpectrum: "SPECTRUM XML (not supported)",
     profileLido: "LIDO XML (not supported)",
     fromDate: "From",
