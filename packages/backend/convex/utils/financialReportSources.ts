@@ -3,7 +3,10 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { classifyInventoryRecord } from "./collectionMetrics";
 import { normalizeCurrency } from "./currency";
-import { getPageInventoryEvidence } from "./indexedCounts";
+import {
+  getPageInventoryEvidence,
+  MAX_INVENTORY_LOAN_LINKS,
+} from "./indexedCounts";
 import {
   type CoverageTarget,
   coverageInterval,
@@ -70,7 +73,7 @@ async function currentValuationsAsOf(
     (left, right) =>
       APPRAISAL_PURPOSE_ORDER.indexOf(left.appraisalType) -
         APPRAISAL_PURPOSE_ORDER.indexOf(right.appraisalType) ||
-      (left.currency < right.currency ? -1 : 1),
+      left.currency.localeCompare(right.currency),
   );
   return { current, scanned: appraisals.length };
 }
@@ -119,6 +122,7 @@ export async function valuationPage(
     ctx,
     organizationId,
     objects,
+    `Register loan associations exceed processing limits (${MAX_INVENTORY_LOAN_LINKS} per object)`,
   );
   const rows: RegisterRow[] = [];
   let scanned = page.page.length;

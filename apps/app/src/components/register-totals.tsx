@@ -6,44 +6,13 @@ import {
   type RegisterProfile,
 } from "@v1/backend/convex/utils/registerProfiles";
 import type { FunctionReturnType } from "convex/server";
+import { useRegisterValueLabels } from "@/hooks/use-register-value-labels";
 import { type FormatLocale, formatMoney } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type Totals = NonNullable<
   FunctionReturnType<typeof api.exports.status>["totals"]
 >;
-
-/** Labels for the values of each column a profile's totals group by. */
-function useGroupValueLabels(): Record<string, Record<string, string>> {
-  const t = useScopedI18n("registerReports");
-  const tPurpose = useScopedI18n("valuation.purposes");
-  const tState = useScopedI18n(
-    "untranslatedDashboard.insurance.coverageTab.states",
-  );
-  return {
-    inventoryScope: {
-      owned: t("scopeOwned"),
-      incoming: t("scopeIncoming"),
-      unclassified: t("scopeUnclassified"),
-      excluded: t("scopeExcluded"),
-    },
-    purpose: {
-      insurance: tPurpose("insurance"),
-      replacement: tPurpose("replacement"),
-      market: tPurpose("market"),
-      fair_market: tPurpose("fair_market"),
-      liquidation: tPurpose("liquidation"),
-    },
-    stateAsOf: {
-      in_force: tState("in_force"),
-      not_started: tState("not_started"),
-      expired: tState("expired"),
-      policy_inactive: tState("policy_inactive"),
-      removed: tState("removed"),
-      needs_review: tState("needs_review"),
-    },
-  };
-}
 
 interface RegisterTotalsProps {
   profile: RegisterProfile;
@@ -57,7 +26,10 @@ interface RegisterTotalsProps {
 export function RegisterTotals({ profile, totals }: RegisterTotalsProps) {
   const t = useScopedI18n("registerReports");
   const locale = useCurrentLocale() as FormatLocale;
-  const valueLabels = useGroupValueLabels();
+  const valueLabels: Record<
+    string,
+    Record<string, string>
+  > = useRegisterValueLabels();
   const groupBy = REGISTER_TOTALS[profile]?.groupBy ?? [];
   const groupLabel = (group: Totals[number]["group"]) =>
     group

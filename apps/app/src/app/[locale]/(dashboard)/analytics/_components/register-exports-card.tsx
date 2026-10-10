@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   REGISTER_FEATURES,
   REGISTER_PERMISSIONS,
+  REGISTER_PROFILES,
   REGISTER_TOTALS,
 } from "@v1/backend/convex/utils/registerProfiles";
 import { Button } from "@v1/ui/button";
@@ -48,18 +49,22 @@ import { RegisterCriteriaFields } from "./register-criteria-fields";
 
 type Preview = FunctionReturnType<typeof api.registers.preview>;
 
-/** Profiles offered together in the picker. */
-const PROFILE_GROUPS: Array<{
-  label: "groupRegisters" | "groupFinancial" | "groupResearch";
-  profiles: readonly Profile[];
-}> = [
-  {
-    label: "groupRegisters",
-    profiles: ["accession", "disposal", "custody", "condition"],
-  },
-  { label: "groupFinancial", profiles: ["valuation", "insurance"] },
-  { label: "groupResearch", profiles: ["provenance"] },
+type ProfileGroup = "groupRegisters" | "groupFinancial" | "groupResearch";
+const PROFILE_GROUP_ORDER: readonly ProfileGroup[] = [
+  "groupRegisters",
+  "groupFinancial",
+  "groupResearch",
 ];
+/** The picker group of every profile, so a new profile cannot be left out. */
+const PROFILE_GROUPS: Record<Profile, ProfileGroup> = {
+  accession: "groupRegisters",
+  disposal: "groupRegisters",
+  custody: "groupRegisters",
+  condition: "groupRegisters",
+  valuation: "groupFinancial",
+  insurance: "groupFinancial",
+  provenance: "groupResearch",
+};
 
 /**
  * Why the member cannot run a profile, if they cannot: their role first,
@@ -192,9 +197,11 @@ export function RegisterExportsCard({
               }}
               className="h-9 w-full rounded-md border border-input bg-background px-2"
             >
-              {PROFILE_GROUPS.map((group) => (
-                <optgroup key={group.label} label={t(group.label)}>
-                  {group.profiles.map((id) => (
+              {PROFILE_GROUP_ORDER.map((group) => (
+                <optgroup key={group} label={t(group)}>
+                  {REGISTER_PROFILES.filter(
+                    (id) => PROFILE_GROUPS[id] === group,
+                  ).map((id) => (
                     <option
                       key={id}
                       value={id}

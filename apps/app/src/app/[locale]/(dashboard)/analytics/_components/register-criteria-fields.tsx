@@ -9,6 +9,7 @@ import { useQuery } from "convex/react";
 import { usePermissions } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useRegisterValueLabels } from "@/hooks/use-register-value-labels";
 import { useScopedI18n } from "@/locales/client";
 import {
   acceptsCriterion,
@@ -62,22 +63,10 @@ export function RegisterCriteriaFields({
   update,
 }: RegisterCriteriaFieldsProps) {
   const t = useScopedI18n("registerReports");
-  const tPurpose = useScopedI18n("valuation.purposes");
+  const valueLabels = useRegisterValueLabels();
   const accepts = (field: Parameters<typeof acceptsCriterion>[1]) =>
     acceptsCriterion(form.profile, field);
   const policies = usePolicyOptions(organizationId, accepts("policyId"));
-  const purposeLabels: Record<Purpose, string> = {
-    insurance: tPurpose("insurance"),
-    replacement: tPurpose("replacement"),
-    market: tPurpose("market"),
-    fair_market: tPurpose("fair_market"),
-    liquidation: tPurpose("liquidation"),
-  };
-  const scopeLabels: Record<InventoryScope, string> = {
-    owned: t("scopeOwned"),
-    incoming: t("scopeIncoming"),
-    unclassified: t("scopeUnclassified"),
-  };
   const statusLabels: Record<Status, string> = {
     pending: t("statusPending"),
     approved: t("statusApproved"),
@@ -146,7 +135,7 @@ export function RegisterCriteriaFields({
             <option value="">{t("purposeAny")}</option>
             {APPRAISAL_PURPOSE_ORDER.map((purpose) => (
               <option key={purpose} value={purpose}>
-                {purposeLabels[purpose]}
+                {valueLabels.purpose[purpose]}
               </option>
             ))}
           </select>
@@ -170,7 +159,7 @@ export function RegisterCriteriaFields({
             <option value="">{t("scopeAny")}</option>
             {INVENTORY_SCOPES.map((scope) => (
               <option key={scope} value={scope}>
-                {scopeLabels[scope]}
+                {valueLabels.inventoryScope[scope]}
               </option>
             ))}
           </select>

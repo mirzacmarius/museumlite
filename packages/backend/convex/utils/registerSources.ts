@@ -503,7 +503,7 @@ export async function disposalPage(
 }
 
 // ---------------------------------------------------------------------------
-// Object-subject registers (custody, condition)
+// Object-subject registers (custody, condition) and the provenance report
 // ---------------------------------------------------------------------------
 
 export interface Subject {

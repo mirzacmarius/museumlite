@@ -29,7 +29,7 @@ export const REGISTER_PROFILES: readonly RegisterProfile[] = [
   "provenance",
 ];
 /**
- * Member permissions each profile needs, besides the reporting feature.
+ * Member permissions each profile needs, besides its plan features.
  * Custody and condition registers include loan and location evidence.
  */
 export const REGISTER_PERMISSIONS: Record<RegisterProfile, readonly string[]> =
