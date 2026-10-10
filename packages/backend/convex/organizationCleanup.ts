@@ -146,6 +146,7 @@ const organizationScopedTables = [
   "installationTaskTemplates",
   "caseTasks",
   "caseTaskEvidence",
+  "preparationRecipes",
   "contacts",
   "accountRelationships",
   "partyLinks",

@@ -58,11 +58,12 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
-import { canReadRecord } from "./utils/recordAccess";
+import { suggestPreparation } from "./utils/preparation";
 import {
   keepDraftPrimaryUnlessPermitted,
   normalizeDraftMediaPrimary,
 } from "./utils/primaryMedia";
+import { canReadRecord } from "./utils/recordAccess";
 import {
   assertCurrentEditVersion,
   objectDraftEditVersion,
@@ -1639,6 +1640,15 @@ export const approve = mutation({
             accessionId: args.accessionId,
           },
         );
+        await suggestPreparation(
+          ctx,
+          {
+            organizationId: accession.organizationId,
+            caseType: "accession",
+            caseId: args.accessionId,
+          },
+          userId,
+        );
       } else {
         const nextStep = await prepareWorkflowStepAdvance(ctx, {
           organizationId: accession.organizationId,
@@ -1726,6 +1736,15 @@ export const approve = mutation({
       await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
         accessionId: args.accessionId,
       });
+      await suggestPreparation(
+        ctx,
+        {
+          organizationId: accession.organizationId,
+          caseType: "accession",
+          caseId: args.accessionId,
+        },
+        userId,
+      );
     }
 
     return null;

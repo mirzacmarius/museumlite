@@ -13,6 +13,7 @@ import { assertAllowedLoanTransition } from "./loanStatusTransitions";
 import { dispatchNotification } from "./notificationDispatch";
 import { logActionAndGetRecipients } from "./organizationAudit";
 import { requirePermission } from "./permissions";
+import { withdrawPreparation } from "./preparation";
 
 export async function returnLoanHandler(
   ctx: MutationCtx,
@@ -234,6 +235,16 @@ export async function cancelLoanHandler(
     }),
   ] as const);
 
+  await withdrawPreparation(
+    ctx,
+    {
+      organizationId: loan.organizationId,
+      caseType: "loan",
+      caseId: args.loanId,
+    },
+    userId,
+    "loan_cancelled",
+  );
   await dispatchNotification(ctx, {
     organizationId: loan.organizationId,
     type: "loan_cancelled",

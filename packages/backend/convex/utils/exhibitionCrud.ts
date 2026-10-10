@@ -24,6 +24,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./permissions";
+import { correctPreparation } from "./preparation";
 import { getWorkflowConfig } from "./workflowConfigs";
 import { resolveWorkflowStepState } from "./workflowSteps";
 
@@ -285,6 +286,16 @@ export async function updateExhibitionHandler(
       changes: { ...filteredUpdates, participants },
     }),
   ]);
+  if (args.startDate !== undefined || args.endDate !== undefined)
+    await correctPreparation(
+      ctx,
+      {
+        organizationId: exhibition.organizationId,
+        caseType: "exhibition",
+        caseId: args.id,
+      },
+      userId,
+    );
 
   return null;
 }

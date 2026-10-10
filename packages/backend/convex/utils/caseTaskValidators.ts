@@ -25,6 +25,14 @@ export const caseTaskStatusValidator = v.union(
 );
 export type CaseTaskStatus = Infer<typeof caseTaskStatusValidator>;
 
+export const caseTaskEvidenceKindValidator = v.union(
+  v.literal("conditionAssessment"),
+  v.literal("movement"),
+  v.literal("media"),
+  v.literal("auditEntry"),
+);
+export type CaseTaskEvidenceKind = Infer<typeof caseTaskEvidenceKindValidator>;
+
 /**
  * A typed pointer to an existing record that supports a task. Links cite
  * evidence; they never create or change it.
