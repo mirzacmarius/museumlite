@@ -180,6 +180,11 @@ export async function getExhibitionPhysicalHandoffSummary(
         deinstalledAt: obj.deinstalledAt,
         returnedAt: obj.returnedAt,
         originalLocationId: obj.originalLocationId,
+        // Where the object is recorded now: the observed source staff confirm.
+        currentLocationId:
+          collection?.organizationId === organizationId
+            ? collection.currentLocationId
+            : undefined,
       };
     }),
   );

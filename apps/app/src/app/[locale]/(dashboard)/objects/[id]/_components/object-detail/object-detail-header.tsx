@@ -3,22 +3,12 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@v1/ui/dropdown-menu";
-import {
   ArrowLeft,
   Check,
-  FileDown,
   Link2,
   Pencil,
   Printer,
   QrCode,
-  Send,
-  Share2,
   Tags,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,13 +29,13 @@ interface ObjectDetailHeaderProps {
   collectionsLabel: string;
   copyLinkLabel: string;
   linkCopiedLabel: string;
-  exportPdfLabel: string;
-  requestLoanLabel: string;
+  printRecordLabel: string;
   printLabel: string;
   printObjectLabel: string;
   editObjectLabel: string;
-  shareTitle: string;
 }
+
+const iconButtonClass = "size-8 text-muted-foreground hover:text-foreground";
 
 export function ObjectDetailHeader({
   collection,
@@ -59,12 +49,10 @@ export function ObjectDetailHeader({
   collectionsLabel,
   copyLinkLabel,
   linkCopiedLabel,
-  exportPdfLabel,
-  requestLoanLabel,
+  printRecordLabel,
   printLabel,
   printObjectLabel,
   editObjectLabel,
-  shareTitle,
 }: ObjectDetailHeaderProps) {
   const back = useBackToResultsLink("objects");
   const handleCopyLink = async () => {
@@ -76,63 +64,54 @@ export function ObjectDetailHeader({
     onLinkCopiedChange(true);
     setTimeout(() => onLinkCopiedChange(false), 2000);
   };
+  const copyLabel = linkCopied ? linkCopiedLabel : copyLinkLabel;
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
-      <div className="flex items-center gap-2 text-xs">
-        <Button variant="ghost" size="icon" className="size-7" asChild>
+    <header className="sticky top-0 z-50 flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border/60 bg-background/80 px-4 py-2 backdrop-blur-xl sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 text-xs">
+        <Button variant="ghost" size="icon" className="size-8 shrink-0" asChild>
           <Link href={back.href} aria-label={back.label} title={back.label}>
             <ArrowLeft className="size-4 text-muted-foreground" />
           </Link>
         </Button>
-        <span className="text-muted-foreground">{collectionsLabel}</span>
-        <span className="text-muted-foreground/50">/</span>
+        <span className="hidden text-muted-foreground sm:inline">
+          {collectionsLabel}
+        </span>
+        <span className="hidden text-muted-foreground/50 sm:inline">/</span>
         {collectionGroupName ? (
           <>
-            <span className="text-muted-foreground">{collectionGroupName}</span>
-            <span className="text-muted-foreground/50">/</span>
+            <span className="hidden text-muted-foreground sm:inline">
+              {collectionGroupName}
+            </span>
+            <span className="hidden text-muted-foreground/50 sm:inline">/</span>
           </>
         ) : null}
-        <span className="font-medium text-foreground">{collection.title}</span>
+        <span className="truncate font-medium text-foreground">
+          {collection.title}
+        </span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-muted-foreground hover:text-foreground"
-              title={shareTitle}
-            >
-              <Share2 className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={handleCopyLink}>
-              {linkCopied ? (
-                <Check className="mr-2 size-4 text-green-500" />
-              ) : (
-                <Link2 className="mr-2 size-4" />
-              )}
-              {linkCopied ? linkCopiedLabel : copyLinkLabel}
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FileDown className="mr-2 size-4" />
-              {exportPdfLabel}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Send className="mr-2 size-4" />
-              {requestLoanLabel}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground hover:text-foreground"
-          title={shareTitle}
+          className={iconButtonClass}
+          aria-label={copyLabel}
+          title={copyLabel}
+          onClick={handleCopyLink}
+        >
+          {linkCopied ? (
+            <Check className="size-4 text-green-500" />
+          ) : (
+            <Link2 className="size-4" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={iconButtonClass}
+          aria-label={printRecordLabel}
+          title={printRecordLabel}
           onClick={onPrintClick}
         >
           <Printer className="size-4" />
@@ -140,7 +119,8 @@ export function ObjectDetailHeader({
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground hover:text-foreground"
+          className={iconButtonClass}
+          aria-label={printObjectLabel}
           title={printObjectLabel}
           onClick={onObjectLabelClick}
         >
@@ -149,7 +129,8 @@ export function ObjectDetailHeader({
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground hover:text-foreground"
+          className={iconButtonClass}
+          aria-label={printLabel}
           title={printLabel}
           onClick={onQrLabelClick}
         >
@@ -157,7 +138,7 @@ export function ObjectDetailHeader({
         </Button>
         <div className="h-4 w-px bg-border" />
         <PermissionGate permission="collections.update">
-          <Button asChild>
+          <Button size="sm" asChild>
             <Link href={`/objects/${collectionId}/edit`}>
               <Pencil className="mr-2 size-3.5" />
               {editObjectLabel}

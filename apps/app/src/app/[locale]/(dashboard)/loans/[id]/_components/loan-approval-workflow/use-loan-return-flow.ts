@@ -2,6 +2,8 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useEffect, useReducer, useState } from "react";
+import type { Refusal } from "@/components/action-refusal";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useScopedI18n } from "@/locales/client";
 import type { LoanItem } from "../types";
@@ -25,7 +27,6 @@ interface UseLoanReturnFlowOptions {
   }) => Promise<unknown>;
   isSubmitting: boolean;
   setIsSubmitting: (value: boolean) => void;
-  setError: (value: string | null) => void;
 }
 
 interface ReturnFlowState {
@@ -33,6 +34,9 @@ interface ReturnFlowState {
   isConfirmDialogOpen: boolean;
   selectedItemIds: Set<string>;
   pendingReturnItemIds: string[];
+  /** Missing evidence is shown once staff have tried to continue. */
+  showEvidenceProblems: boolean;
+  refusal: Refusal | null;
 }
 
 type ReturnFlowAction =
@@ -41,16 +45,19 @@ type ReturnFlowAction =
   | { type: "setReturnDialogOpen"; value: boolean }
   | { type: "setConfirmDialogOpen"; value: boolean }
   | { type: "setSelectedItemIds"; value: Set<string> }
-  | { type: "syncDialogState" }
+  | { type: "syncDialogState"; isSubmitting: boolean }
   | { type: "pruneReturnedItems"; loanItems: LoanItem[] }
+  | { type: "showEvidenceProblems" }
   | { type: "resetAfterReturn" }
-  | { type: "closeConfirmOnError" };
+  | { type: "refused"; refusal: Refusal };
 
 const initialReturnFlowState: ReturnFlowState = {
   isReturnDialogOpen: false,
   isConfirmDialogOpen: false,
   selectedItemIds: new Set(),
   pendingReturnItemIds: [],
+  showEvidenceProblems: false,
+  refusal: null,
 };
 
 function returnFlowReducer(
@@ -63,6 +70,8 @@ function returnFlowReducer(
         ...state,
         selectedItemIds: new Set(),
         isReturnDialogOpen: true,
+        showEvidenceProblems: false,
+        refusal: null,
       };
     case "openConfirmDialog":
       return {
@@ -70,6 +79,7 @@ function returnFlowReducer(
         pendingReturnItemIds: action.pendingReturnItemIds,
         isReturnDialogOpen: false,
         isConfirmDialogOpen: true,
+        refusal: null,
       };
     case "setReturnDialogOpen":
       return { ...state, isReturnDialogOpen: action.value };
@@ -78,7 +88,13 @@ function returnFlowReducer(
     case "setSelectedItemIds":
       return { ...state, selectedItemIds: action.value };
     case "syncDialogState": {
-      if (!state.isReturnDialogOpen && !state.isConfirmDialogOpen) {
+      // A return in flight keeps its selection, so a refusal can reopen the
+      // dialog with everything staff entered.
+      if (
+        !action.isSubmitting &&
+        !state.isReturnDialogOpen &&
+        !state.isConfirmDialogOpen
+      ) {
         if (
           state.selectedItemIds.size === 0 &&
           state.pendingReturnItemIds.length === 0
@@ -111,10 +127,17 @@ function returnFlowReducer(
 
       return changed ? { ...state, selectedItemIds: nextSelected } : state;
     }
+    case "showEvidenceProblems":
+      return { ...state, showEvidenceProblems: true, refusal: null };
     case "resetAfterReturn":
       return initialReturnFlowState;
-    case "closeConfirmOnError":
-      return { ...state, isConfirmDialogOpen: false, isReturnDialogOpen: true };
+    case "refused":
+      return {
+        ...state,
+        refusal: action.refusal,
+        isConfirmDialogOpen: false,
+        isReturnDialogOpen: true,
+      };
   }
 }
 
@@ -125,6 +148,38 @@ export interface LoanReceiptEvidence {
   incomingConditionAssessmentId?: string;
 }
 
+/** Receipt evidence an item still needs before it can be returned. */
+export type ReceiptEvidenceProblem = "condition" | "destination";
+
+/** Element id of an item's receipt field; its error is `<id>-error`. */
+export function receiptFieldId(
+  itemId: string,
+  part: "condition" | "destination" | "assessment" | "origin",
+) {
+  return `return-${itemId}-${part}`;
+}
+
+function receiptEvidenceProblems(
+  evidence: LoanReceiptEvidence | undefined,
+  loanType: "incoming" | "outgoing",
+): ReceiptEvidenceProblem[] {
+  const problems: ReceiptEvidenceProblem[] = [];
+  if (
+    !evidence?.conditionIn?.trim() &&
+    !evidence?.incomingConditionAssessmentId
+  ) {
+    problems.push("condition");
+  }
+  if (
+    loanType === "outgoing" &&
+    evidence?.confirmReturnToOrigin !== true &&
+    !evidence?.destinationLocationId
+  ) {
+    problems.push("destination");
+  }
+  return problems;
+}
+
 export function useLoanReturnFlow({
   loanId,
   organizationId,
@@ -133,9 +188,9 @@ export function useLoanReturnFlow({
   returnLoan,
   isSubmitting,
   setIsSubmitting,
-  setError,
 }: UseLoanReturnFlowOptions) {
   const t = useScopedI18n("loans.actions");
+  const capabilityMessage = useCapabilityErrorMessage();
   const custodyConflictMessage = useCustodyConflictMessage();
   const [state, dispatch] = useReducer(
     returnFlowReducer,
@@ -149,8 +204,8 @@ export function useLoanReturnFlow({
   const hasMultipleItems = loanItems.length > 1;
 
   useEffect(() => {
-    dispatch({ type: "syncDialogState" });
-  }, [state.isReturnDialogOpen, state.isConfirmDialogOpen]);
+    dispatch({ type: "syncDialogState", isSubmitting });
+  }, [state.isReturnDialogOpen, state.isConfirmDialogOpen, isSubmitting]);
 
   useEffect(() => {
     dispatch({ type: "pruneReturnedItems", loanItems });
@@ -158,7 +213,6 @@ export function useLoanReturnFlow({
 
   const handleReturn = async (itemIdsToReturn: string[] = []) => {
     setIsSubmitting(true);
-    setError(null);
     try {
       const targetIds: string[] = [...itemIdsToReturn];
       if (targetIds.length === 0) {
@@ -192,8 +246,14 @@ export function useLoanReturnFlow({
       });
       dispatch({ type: "resetAfterReturn" });
     } catch (err) {
-      setError(custodyConflictMessage(err, t("failedToReturn")));
-      dispatch({ type: "closeConfirmOnError" });
+      dispatch({
+        type: "refused",
+        refusal: {
+          message:
+            capabilityMessage(err) ??
+            custodyConflictMessage(err, t("failedToReturn")),
+        },
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -203,9 +263,30 @@ export function useLoanReturnFlow({
     dispatch({ type: "openReturnDialog" });
   };
 
+  const evidenceProblemsFor = (itemId: string) =>
+    state.showEvidenceProblems && state.selectedItemIds.has(itemId)
+      ? receiptEvidenceProblems(evidenceByItem[itemId], loanType)
+      : [];
+
+  /** Confirms the return once every selected item has its evidence. */
   const handleProceedToConfirm = () => {
     if (state.selectedItemIds.size === 0) {
-      setError(t("selectAtLeastOne"));
+      dispatch({
+        type: "refused",
+        refusal: { message: t("selectAtLeastOne") },
+      });
+      return;
+    }
+    const firstMissing = loanItems
+      .filter((item) => state.selectedItemIds.has(item._id))
+      .flatMap((item) =>
+        receiptEvidenceProblems(evidenceByItem[item._id], loanType).map(
+          (problem) => receiptFieldId(item._id, problem),
+        ),
+      )[0];
+    if (firstMissing) {
+      dispatch({ type: "showEvidenceProblems" });
+      document.getElementById(firstMissing)?.focus();
       return;
     }
 
@@ -214,21 +295,6 @@ export function useLoanReturnFlow({
       pendingReturnItemIds: Array.from(state.selectedItemIds),
     });
   };
-
-  const canProceed =
-    state.selectedItemIds.size > 0 &&
-    Array.from(state.selectedItemIds).every((itemId) => {
-      const evidence = evidenceByItem[itemId];
-      return (
-        !!evidence &&
-        !!(
-          evidence.conditionIn?.trim() || evidence.incomingConditionAssessmentId
-        ) &&
-        (loanType === "incoming" ||
-          evidence.confirmReturnToOrigin === true ||
-          !!evidence.destinationLocationId)
-      );
-    });
 
   const outstandingItemCount = loanItems.filter(
     (item) => !isLoanItemReturned(item),
@@ -255,7 +321,8 @@ export function useLoanReturnFlow({
     setSelectedItemIds: (value: Set<string>) =>
       dispatch({ type: "setSelectedItemIds", value }),
     pendingReturnItemIds: state.pendingReturnItemIds,
-    canProceed,
+    evidenceProblemsFor,
+    refusal: state.refusal,
     outstandingItemCount,
     isFullReturn,
     handleReturn,

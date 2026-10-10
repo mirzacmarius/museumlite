@@ -66,8 +66,8 @@ export function ObjectDetailHero({
   const activeImage = heroLightboxImages[activeImageIndex];
 
   return (
-    <div className="border-b border-border/60 bg-secondary/10 p-8">
-      <div className="mx-auto flex max-w-5xl items-start gap-8">
+    <div className="border-b border-border/60 bg-secondary/10 p-4 sm:p-8">
+      <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-start sm:gap-8">
         <div className="shrink-0">
           <button
             type="button"
@@ -90,10 +90,10 @@ export function ObjectDetailHero({
                 alt={activeImage?.title || collection.title}
                 width={192}
                 height={192}
-                className="size-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+                className="size-32 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02] sm:size-48"
               />
             ) : (
-              <div className="flex size-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
+              <div className="flex size-32 items-center justify-center rounded-xl border border-border/60 bg-secondary sm:size-48">
                 <ImageIcon className="size-12 text-muted-foreground" />
               </div>
             )}
@@ -143,7 +143,7 @@ export function ObjectDetailHero({
           onClose={() => onHeroLightboxOpenChange(false)}
         />
 
-        <div className="flex-1 space-y-4">
+        <div className="min-w-0 flex-1 space-y-4">
           {pendingMoveRequest ? (
             <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -200,7 +200,7 @@ export function ObjectDetailHero({
               </div>
             ) : null}
 
-            <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
+            <div className="break-all rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
               {collection.accessionNumber}
             </div>
 
@@ -214,12 +214,12 @@ export function ObjectDetailHero({
             ))}
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="break-words text-2xl font-semibold tracking-tight">
             {collection.title}
           </h1>
 
           {collection.description ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="break-words text-sm text-muted-foreground">
               {collection.description}
             </p>
           ) : null}
@@ -236,8 +236,8 @@ export function ObjectDetailHero({
                   isOnDisplay ? "text-emerald-400" : "text-muted-foreground",
                 )}
               >
-                <MapPin className="size-4" />
-                <span>{locationString}</span>
+                <MapPin className="size-4 shrink-0" />
+                <span className="break-words">{locationString}</span>
               </div>
             ) : null}
             {collection.creator ? (

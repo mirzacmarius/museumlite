@@ -920,6 +920,32 @@ export const authorizeReturnException = mutation({
   handler: async (ctx, args) => authorizeReturnExceptionHandler(ctx, args),
 });
 
+const physicalHandoffParticipantValidator = v.object({
+  exhibitionObjectId: v.id("exhibitionObjects"),
+  collectionId: v.id("collections"),
+  collectionTitle: v.optional(v.string()),
+  collectionAccessionNumber: v.optional(v.string()),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("installed"),
+    v.literal("deinstalled"),
+    v.literal("returned"),
+  ),
+  role: v.union(v.literal("featured"), v.literal("participant")),
+  order: v.number(),
+  hasReturnException: v.boolean(),
+  installationMovementId: v.optional(v.id("locationHistory")),
+  returnMovementId: v.optional(v.id("locationHistory")),
+  installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+  deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+  returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+  installedAt: v.optional(v.number()),
+  deinstalledAt: v.optional(v.number()),
+  returnedAt: v.optional(v.number()),
+  originalLocationId: v.optional(v.id("locations")),
+  currentLocationId: v.optional(v.id("locations")),
+});
+
 export const getPhysicalHandoffSummary = query({
   args: { exhibitionId: v.id("exhibitions") },
   returns: v.object({
@@ -944,66 +970,8 @@ export const getPhysicalHandoffSummary = query({
         notes: v.optional(v.string()),
       }),
     ),
-    participants: v.array(
-      v.object({
-        exhibitionObjectId: v.id("exhibitionObjects"),
-        collectionId: v.id("collections"),
-        collectionTitle: v.optional(v.string()),
-        collectionAccessionNumber: v.optional(v.string()),
-        status: v.union(
-          v.literal("pending"),
-          v.literal("installed"),
-          v.literal("deinstalled"),
-          v.literal("returned"),
-        ),
-        role: v.union(v.literal("featured"), v.literal("participant")),
-        order: v.number(),
-        hasReturnException: v.boolean(),
-        installationMovementId: v.optional(v.id("locationHistory")),
-        returnMovementId: v.optional(v.id("locationHistory")),
-        installationConditionAssessmentId: v.optional(
-          v.id("conditionAssessments"),
-        ),
-        deinstallationConditionAssessmentId: v.optional(
-          v.id("conditionAssessments"),
-        ),
-        returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
-        installedAt: v.optional(v.number()),
-        deinstalledAt: v.optional(v.number()),
-        returnedAt: v.optional(v.number()),
-        originalLocationId: v.optional(v.id("locations")),
-      }),
-    ),
-    outstanding: v.array(
-      v.object({
-        exhibitionObjectId: v.id("exhibitionObjects"),
-        collectionId: v.id("collections"),
-        collectionTitle: v.optional(v.string()),
-        collectionAccessionNumber: v.optional(v.string()),
-        status: v.union(
-          v.literal("pending"),
-          v.literal("installed"),
-          v.literal("deinstalled"),
-          v.literal("returned"),
-        ),
-        role: v.union(v.literal("featured"), v.literal("participant")),
-        order: v.number(),
-        hasReturnException: v.boolean(),
-        installationMovementId: v.optional(v.id("locationHistory")),
-        returnMovementId: v.optional(v.id("locationHistory")),
-        installationConditionAssessmentId: v.optional(
-          v.id("conditionAssessments"),
-        ),
-        deinstallationConditionAssessmentId: v.optional(
-          v.id("conditionAssessments"),
-        ),
-        returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
-        installedAt: v.optional(v.number()),
-        deinstalledAt: v.optional(v.number()),
-        returnedAt: v.optional(v.number()),
-        originalLocationId: v.optional(v.id("locations")),
-      }),
-    ),
+    participants: v.array(physicalHandoffParticipantValidator),
+    outstanding: v.array(physicalHandoffParticipantValidator),
   }),
   handler: async (ctx, args) => {
     const exhibition = await ctx.db.get(args.exhibitionId);

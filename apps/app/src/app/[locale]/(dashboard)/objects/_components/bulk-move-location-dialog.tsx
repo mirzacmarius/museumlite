@@ -20,8 +20,9 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
-import { type RefObject, useEffect, useId, useRef, useState } from "react";
+import { type RefObject, useId, useState } from "react";
 import { toast } from "sonner";
+import { ActionRefusal, type Refusal } from "@/components/action-refusal";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
@@ -55,12 +56,8 @@ export function BulkMoveLocationDialog({
   const custodyConflictMessage = useCustodyConflictMessage();
   // A refused move is explained in the dialog, where staff can change the
   // location or cancel; each refusal takes focus, even a repeated one.
-  const [refusal, setRefusal] = useState<{ message: string } | null>(null);
-  const refusalRef = useRef<HTMLParagraphElement>(null);
+  const [refusal, setRefusal] = useState<Refusal | null>(null);
   const refusalId = useId();
-  useEffect(() => {
-    if (refusal) refusalRef.current?.focus();
-  }, [refusal]);
   const handleOpenChange = (next: boolean) => {
     if (!next) setRefusal(null);
     onOpenChange(next);
@@ -149,17 +146,7 @@ export function BulkMoveLocationDialog({
                 ))}
               </SelectContent>
             </Select>
-            {refusal ? (
-              <p
-                ref={refusalRef}
-                id={refusalId}
-                role="alert"
-                tabIndex={-1}
-                className="text-sm text-destructive outline-none"
-              >
-                {refusal.message}
-              </p>
-            ) : null}
+            <ActionRefusal refusal={refusal} id={refusalId} />
           </div>
         </div>
 

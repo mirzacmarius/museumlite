@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { AlertCircle, ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import { useBackToResultsLink } from "@/components/record-recovery-state";
 import { useI18n, useScopedI18n } from "@/locales/client";
@@ -25,32 +25,29 @@ export function LoanDetailHeader({
   const back = useBackToResultsLink("loans");
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
-      <div className="flex items-center gap-2 text-xs">
-        <Button variant="ghost" size="icon" className="size-7" asChild>
+    <header className="sticky top-0 z-50 flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border/60 bg-background/80 px-4 py-2 backdrop-blur-xl sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 text-xs">
+        <Button variant="ghost" size="icon" className="size-8 shrink-0" asChild>
           <Link href={back.href} aria-label={back.label} title={back.label}>
             <ArrowLeft className="size-4 text-muted-foreground" />
           </Link>
         </Button>
-        <span className="text-muted-foreground flex items-center gap-2">
+        <span className="hidden text-muted-foreground sm:inline">
           {tRoot("loans.title")}
         </span>
-        <span className="text-muted-foreground/50">/</span>
-        <span className="text-muted-foreground">
+        <span className="hidden text-muted-foreground/50 sm:inline">/</span>
+        <span className="hidden text-muted-foreground sm:inline">
           {loan.type === "incoming"
             ? tActions("incoming")
             : tActions("outgoing")}
         </span>
-        <span className="text-muted-foreground/50">/</span>
-        <span className="font-medium text-foreground">{loan.loanNumber}</span>
+        <span className="hidden text-muted-foreground/50 sm:inline">/</span>
+        <span className="truncate font-medium text-foreground">
+          {loan.loanNumber}
+        </span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded text-[10px] font-medium text-amber-600 dark:text-amber-500">
-          <AlertCircle className="size-3" />
-          {tActions("pendingFacilityReportApproval")}
-        </div>
-        <div className="h-4 w-px bg-border" />
+      <div className="flex shrink-0 items-center gap-2">
         <LoanAgreement
           loanId={loan._id}
           organizationId={loan.organizationId}

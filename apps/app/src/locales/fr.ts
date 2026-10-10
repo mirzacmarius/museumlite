@@ -44,10 +44,17 @@ export default {
       "Saisissez des notes d’état ou sélectionnez une évaluation acceptée pour chaque objet sélectionné, puis confirmez chaque destination de retour requise.",
     handoffTimeline: "Chronologie des remises",
     installationTask: "Terminer la tâche d’installation liée (facultatif)",
+    assessmentLabel: "Évaluation de l'état",
+    receiptNotes: "Notes sur l'état à la réception",
+    receiptErrors: {
+      condition:
+        "Ajoutez des notes sur l'état ou choisissez une évaluation acceptée.",
+      destination:
+        "Confirmez l'origine enregistrée ou choisissez une destination.",
+    },
 
     selectAccepted: "Sélectionner une évaluation de l’état acceptée",
     returnDestination: "Destination du retour",
-    conditionEvidence: "Preuve de l’état",
     confirmOrigin: "Confirmer le retour à l’origine enregistrée",
 
     title: "Évaluations de l'état",
@@ -81,7 +88,15 @@ export default {
     draftStatus: "Brouillon à examiner",
     accept: "Valider l'évaluation",
     loading: "Chargement des évaluations…",
-    validation: "Saisissez la date, l'état, le résumé et chaque observation.",
+    saving: "Enregistrement du brouillon…",
+    observationNumber: "Observation {number}",
+    errors: {
+      date: "Choisissez une date qui n'est pas dans le futur.",
+      condition: "Saisissez l'état.",
+      summary: "Saisissez un résumé.",
+      area: "Saisissez la zone.",
+      observation: "Décrivez ce que vous avez observé.",
+    },
     draftSaved: "Brouillon enregistré. Un responsable peut le valider.",
     saveFailed: "Impossible d'enregistrer le brouillon. Réessayez.",
     accepted: "Évaluation validée. L'état courant a été actualisé.",
@@ -2336,6 +2351,7 @@ export default {
         "Êtes-vous sûr de vouloir annuler ce prêt ? Cette action est irréversible.",
       dispatchLoan: "Expédier le prêt",
       markAsReturned: "Marquer comme retourné",
+      copyLoanNumber: "Copier le numéro de prêt",
       markAsReturnedConfirm:
         "Êtes-vous sûr de vouloir marquer ce prêt comme retourné ? Cela mettra à jour le statut de tous les éléments de la collection associés.",
       returnLoanItems: "Retourner les articles du prêt",
@@ -4289,7 +4305,15 @@ export default {
       exceptionRecorded: "Exception de retour enregistrée",
       installMovementRecorded: "Mouvement d'installation enregistré",
       returnMovementRecorded: "Mouvement de retour enregistré",
-      actionFailed: "Échec de la remise",
+      actionFailed: "La remise n'a pas pu être enregistrée. Réessayez.",
+      recordAssessment: "Enregistrer une évaluation",
+      saving: "Enregistrement…",
+      errors: {
+        assessment: "Choisissez une évaluation de l'état acceptée.",
+        installationDestination: "Choisissez où l'objet est installé.",
+        returnDestination: "Choisissez où l'objet est rendu.",
+        exceptionReason: "Expliquez l'exception en au moins 10 caractères.",
+      },
       status: {
         pending: "Installation en attente",
         installed: "Installé",
@@ -8103,14 +8127,17 @@ export default {
       exhibitionDetails: "Détails de l’exposition",
       exhibitions: "Expositions",
       pageTitles: {
+        accessions: "Acquisitions",
         accounts: "Comptes",
         activity: "Activité",
         analytics: "Analyses",
         assignments: "Mon travail",
         conservation: "Conservation",
+        deaccessions: "Déclassements",
         exhibitions: "Expositions",
         insurance: "Assurance",
         installations: "Montages",
+        loans: "Prêts",
         locations: "Emplacements",
         media: "Médias",
         notifications: "Notifications",

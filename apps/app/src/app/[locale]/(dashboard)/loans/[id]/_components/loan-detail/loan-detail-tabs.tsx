@@ -27,9 +27,10 @@ export function LoanDetailTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <div className="sticky top-0 z-40 border-b border-border/60 bg-background/80 px-8 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl">
-          <TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b-0 bg-transparent p-0">
+      <div className="sticky top-0 z-40 border-b border-border/60 bg-background/80 px-4 backdrop-blur-md sm:px-8">
+        {/* On a phone the tabs scroll sideways inside their bar, not the page. */}
+        <div className="mx-auto max-w-7xl overflow-x-auto">
+          <TabsList className="h-auto w-max min-w-full justify-start gap-6 rounded-none border-b-0 bg-transparent p-0">
             <TabsTrigger
               value="overview"
               className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
@@ -49,10 +50,9 @@ export function LoanDetailTabs({
             </TabsTrigger>
             <TabsTrigger
               value="facility"
-              className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none flex items-center gap-1.5"
+              className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
             >
               {tActions("facilityTab")}
-              <span className="size-1.5 rounded-full bg-amber-500" />
             </TabsTrigger>
             <TabsTrigger
               value="logistics"
@@ -70,7 +70,7 @@ export function LoanDetailTabs({
         </div>
       </div>
 
-      <div className="p-8 max-w-7xl mx-auto min-h-[500px]">
+      <div className="mx-auto min-h-[500px] max-w-7xl p-4 sm:p-8">
         <TabsContent
           value="overview"
           className="space-y-8 mt-0 focus-visible:ring-0"
