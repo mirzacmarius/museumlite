@@ -65,6 +65,13 @@ const PROFILE_GROUPS: Record<Profile, ProfileGroup> = {
   insurance: "groupFinancial",
   provenance: "groupResearch",
 };
+const PROFILES_BY_GROUP: Record<ProfileGroup, Profile[]> = {
+  groupRegisters: [],
+  groupFinancial: [],
+  groupResearch: [],
+};
+for (const profile of REGISTER_PROFILES)
+  PROFILES_BY_GROUP[PROFILE_GROUPS[profile]].push(profile);
 
 /**
  * Why the member cannot run a profile, if they cannot: their role first,
@@ -199,9 +206,7 @@ export function RegisterExportsCard({
             >
               {PROFILE_GROUP_ORDER.map((group) => (
                 <optgroup key={group} label={t(group)}>
-                  {REGISTER_PROFILES.filter(
-                    (id) => PROFILE_GROUPS[id] === group,
-                  ).map((id) => (
+                  {PROFILES_BY_GROUP[group].map((id) => (
                     <option
                       key={id}
                       value={id}

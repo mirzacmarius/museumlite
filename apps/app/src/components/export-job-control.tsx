@@ -33,6 +33,31 @@ const RESUMABLE_STATUSES = new Set<ExportStatus>([
   "cancelled",
 ]);
 
+/** Translated label of an export job's status. */
+function useExportStatusLabel() {
+  const t = useScopedI18n("exportJobs");
+  return (status: ExportStatus) => {
+    switch (status) {
+      case "selecting":
+        return t("statusSelecting");
+      case "queued":
+        return t("statusQueued");
+      case "running":
+        return t("statusRunning");
+      case "finalizing":
+        return t("statusFinalizing");
+      case "completed":
+        return t("statusCompleted");
+      case "cancelled":
+        return t("statusCancelled");
+      case "failed":
+        return t("statusFailed");
+      case "expired":
+        return t("statusExpired");
+    }
+  };
+}
+
 interface ExportJobControlProps {
   organizationId: Id<"organizations">;
   source: FunctionArgs<typeof api.exports.create>["source"];
@@ -47,6 +72,7 @@ export function ExportJobControl({
 }: ExportJobControlProps) {
   const t = useScopedI18n("exportJobs");
   const registerLabels = useRegisterProfileLabels();
+  const statusLabel = useExportStatusLabel();
   const create = useMutation(api.exports.create);
   const append = useMutation(api.exports.appendSelection);
   const start = useMutation(api.exports.start);
@@ -162,26 +188,6 @@ export function ExportJobControl({
     a.download = `${source.kind === "register" ? `register-${source.profile}` : "export"}-${jobId}.${extension}`;
     a.click();
     URL.revokeObjectURL(url);
-  }
-  function statusLabel(status: ExportStatus) {
-    switch (status) {
-      case "selecting":
-        return t("statusSelecting");
-      case "queued":
-        return t("statusQueued");
-      case "running":
-        return t("statusRunning");
-      case "finalizing":
-        return t("statusFinalizing");
-      case "completed":
-        return t("statusCompleted");
-      case "cancelled":
-        return t("statusCancelled");
-      case "failed":
-        return t("statusFailed");
-      case "expired":
-        return t("statusExpired");
-    }
   }
   if (!sourceAllowed) return null;
   return (

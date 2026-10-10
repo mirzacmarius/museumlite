@@ -56,7 +56,7 @@ export function mergeRegisterTotals(
         : entry,
     );
   }
-  return [...merged.values()].sort(compareEntries);
+  return Array.from(merged.values()).sort(compareEntries);
 }
 
 /**

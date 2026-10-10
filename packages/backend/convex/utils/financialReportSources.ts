@@ -62,14 +62,14 @@ async function currentValuationsAsOf(
     throw new ConvexError(
       `Register appraisals exceed processing limits (${MAX_APPRAISALS_PER_OBJECT} per object)`,
     );
-  const recorded = appraisals
-    .filter(
-      (appraisal) =>
-        appraisal.organizationId === organizationId &&
-        appraisal.createdAt <= asOf,
+  const recorded: Doc<"appraisals">[] = [];
+  for (const appraisal of appraisals)
+    if (
+      appraisal.organizationId === organizationId &&
+      appraisal.createdAt <= asOf
     )
-    .map((appraisal) => appraisalAsOf(appraisal, asOf));
-  const current = [...selectCurrentValuations(recorded).values()].sort(
+      recorded.push(appraisalAsOf(appraisal, asOf));
+  const current = Array.from(selectCurrentValuations(recorded).values()).sort(
     (left, right) =>
       APPRAISAL_PURPOSE_ORDER.indexOf(left.appraisalType) -
         APPRAISAL_PURPOSE_ORDER.indexOf(right.appraisalType) ||

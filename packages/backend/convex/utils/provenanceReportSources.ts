@@ -76,20 +76,20 @@ async function objectClaims(
  * most recently superseded first.
  */
 function claimsAsOf(claims: Claim[], asOf: number) {
-  return claims
-    .filter((claim) => claim.createdAt <= asOf)
-    .map((claim) => claimAsOf(claim, asOf))
-    .sort((left, right) => {
-      const leftCurrent = left.supersededAt === undefined;
-      if (leftCurrent !== (right.supersededAt === undefined))
-        return leftCurrent ? -1 : 1;
-      const order = leftCurrent
-        ? provenanceClaimSortKey(left) - provenanceClaimSortKey(right) ||
-          left.createdAt - right.createdAt
-        : (right.supersededAt ?? 0) - (left.supersededAt ?? 0) ||
-          right.createdAt - left.createdAt;
-      return order || (left._id < right._id ? -1 : 1);
-    });
+  const recorded: Claim[] = [];
+  for (const claim of claims)
+    if (claim.createdAt <= asOf) recorded.push(claimAsOf(claim, asOf));
+  return recorded.sort((left, right) => {
+    const leftCurrent = left.supersededAt === undefined;
+    if (leftCurrent !== (right.supersededAt === undefined))
+      return leftCurrent ? -1 : 1;
+    const order = leftCurrent
+      ? provenanceClaimSortKey(left) - provenanceClaimSortKey(right) ||
+        left.createdAt - right.createdAt
+      : (right.supersededAt ?? 0) - (left.supersededAt ?? 0) ||
+        right.createdAt - left.createdAt;
+    return order || (left._id < right._id ? -1 : 1);
+  });
 }
 
 /** The latest review decision made by as-of. */
