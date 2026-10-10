@@ -285,6 +285,9 @@ export const setThresholds = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!isValidClimateThresholds(args.thresholds)) {
+      throw alertEpisodeError("THRESHOLDS_INVALID");
+    }
     const [userId, location] = await Promise.all([
       getAuthUserId(ctx),
       ctx.db.get(args.locationId),
@@ -296,9 +299,6 @@ export const setThresholds = mutation({
       location.organizationId,
       "locations.update",
     );
-    if (!isValidClimateThresholds(args.thresholds)) {
-      throw alertEpisodeError("THRESHOLDS_INVALID");
-    }
 
     const { lightLevelMax, uvLevelMax } =
       location.environmentalThresholds ?? {};

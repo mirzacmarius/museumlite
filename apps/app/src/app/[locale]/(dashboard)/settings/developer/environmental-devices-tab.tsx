@@ -28,9 +28,10 @@ import {
   Thermometer,
 } from "lucide-react";
 import { type FormEvent, useReducer } from "react";
+import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { writeTextToClipboard } from "@/lib/clipboard";
-import { useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ClientDateText } from "./developer-shared";
 
 type EnvironmentalDevice = FunctionReturnType<
@@ -39,6 +40,11 @@ type EnvironmentalDevice = FunctionReturnType<
 type EnvironmentalLocation = FunctionReturnType<
   typeof api.environmentalDevices.listLocations
 >[number];
+
+const READING_TIME_FORMAT: Intl.DateTimeFormatOptions = {
+  dateStyle: "medium",
+  timeStyle: "short",
+};
 
 interface ProbeFormState {
   probeId: string;
@@ -480,6 +486,7 @@ function EnvironmentalDeviceCard({
 
 function DeviceSummary({ device }: { device: EnvironmentalDevice }) {
   const t = useScopedI18n("settings.developer.environmentalDevices");
+  const locale = useCurrentLocale();
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2">
@@ -501,7 +508,12 @@ function DeviceSummary({ device }: { device: EnvironmentalDevice }) {
         </span>
         {device.lastSeenAt ? (
           <span>
-            {t("lastSeen")} <ClientDateText timestamp={device.lastSeenAt} />
+            {t("lastRequest")}{" "}
+            <ClientDate
+              timestamp={device.lastSeenAt}
+              locale={locale}
+              options={READING_TIME_FORMAT}
+            />
           </span>
         ) : (
           <span>{t("noRequests")}</span>
@@ -582,6 +594,7 @@ function DeviceActions({
 
 function BoundProbes({ probes }: { probes: EnvironmentalDevice["probes"] }) {
   const t = useScopedI18n("settings.developer.environmentalDevices");
+  const locale = useCurrentLocale();
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-medium">{t("boundProbes")}</h4>
@@ -598,6 +611,31 @@ function BoundProbes({ probes }: { probes: EnvironmentalDevice["probes"] }) {
               <span>→</span>
               <span>{probe.locationName}</span>
               {!probe.isActive && <span>({t("inactive")})</span>}
+              <span>·</span>
+              {probe.lastObservedAt === undefined ? (
+                <span>{t("noProbeReadings")}</span>
+              ) : (
+                <>
+                  <span>
+                    {t("lastReadingObserved")}{" "}
+                    <ClientDate
+                      timestamp={probe.lastObservedAt}
+                      locale={locale}
+                      options={READING_TIME_FORMAT}
+                    />
+                  </span>
+                  {probe.lastReceivedAt !== undefined ? (
+                    <span>
+                      {t("lastReadingReceived")}{" "}
+                      <ClientDate
+                        timestamp={probe.lastReceivedAt}
+                        locale={locale}
+                        options={READING_TIME_FORMAT}
+                      />
+                    </span>
+                  ) : null}
+                </>
+              )}
             </li>
           ))}
         </ul>

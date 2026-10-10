@@ -197,9 +197,12 @@ async function updateEpisode(
       status: "recovered",
       endedAt: observedAt,
     });
+    const extremes = describeExtremes(evidence.breaches, evidence.ranges);
     await notifyManagers(ctx, location, episode._id, "recovered", {
       title: `Environment back in range: ${location.name}`,
-      message: `Readings are back within the thresholds. ${describeExtremes(evidence.breaches, evidence.ranges)}.`,
+      message: extremes
+        ? `Readings are back within the thresholds. ${extremes}.`
+        : "Readings are back within the thresholds.",
     });
     return;
   }

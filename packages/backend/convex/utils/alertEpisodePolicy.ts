@@ -153,10 +153,9 @@ export function mergeBreaches(
       (other) =>
         other.measure === kind.measure && other.direction === kind.direction,
     );
-  return LIMITS.filter(seen).map(({ measure, direction }) => ({
-    measure,
-    direction,
-  }));
+  return LIMITS.flatMap(({ measure, direction }) =>
+    seen({ measure, direction }) ? [{ measure, direction }] : [],
+  );
 }
 
 export interface ObservedRange {
