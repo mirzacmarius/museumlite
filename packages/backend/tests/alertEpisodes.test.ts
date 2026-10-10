@@ -451,4 +451,269 @@ describe("alert episodes", () => {
       ranges: { humidity: { min: 61, max: 64 } },
     });
   });
+  test("readings back within the thresholds for 30 minutes recover the episode once", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const start = Date.now() - 2 * HOUR;
+
+    await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
+    await store.send({ readingId: "r2", observedAt: start + 10 * MINUTE });
+    await store.send({ readingId: "r3", observedAt: start + 25 * MINUTE });
+    const recovering = await store.monitoring();
+    await store.send({
+      readingId: "r4",
+      observedAt: start + 40 * MINUTE,
+      humidity: 52,
+    });
+    await store.send({ readingId: "r5", observedAt: start + 50 * MINUTE });
+    const monitoring = await store.monitoring();
+    const notifications = await store.notifications();
+
+    expect(recovering?.openEpisode?.status).toBe("open");
+    expect(monitoring?.openEpisode).toBeNull();
+    expect(monitoring?.recentEpisodes).toEqual([
+      expect.objectContaining({
+        status: "recovered",
+        startedAt: start,
+        endedAt: start + 40 * MINUTE,
+        readingCount: 4,
+        outOfRangeCount: 1,
+      }),
+    ]);
+    expect(notifications).toHaveLength(2);
+    expect(notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Environment back in range: Paper Store",
+          message:
+            "Readings are back within the thresholds. Highest relative humidity 61%.",
+          relatedEntityId: recovering?.openEpisode?._id,
+        }),
+      ]),
+    );
+  });
+
+  test("a breach while recovering keeps the same episode open", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const start = Date.now() - 2 * HOUR;
+
+    await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
+    await store.send({ readingId: "r2", observedAt: start + 10 * MINUTE });
+    await store.send({
+      readingId: "r3",
+      observedAt: start + 20 * MINUTE,
+      humidity: 58,
+    });
+    await store.send({ readingId: "r4", observedAt: start + 30 * MINUTE });
+    await store.send({ readingId: "r5", observedAt: start + 50 * MINUTE });
+    const stillOpen = await store.monitoring();
+    await store.send({ readingId: "r6", observedAt: start + 60 * MINUTE });
+    const monitoring = await store.monitoring();
+
+    expect(stillOpen?.openEpisode?.readingCount).toBe(5);
+    expect(monitoring?.recentEpisodes).toEqual([
+      expect.objectContaining({
+        status: "recovered",
+        endedAt: start + 60 * MINUTE,
+      }),
+    ]);
+    expect(await store.notifications()).toHaveLength(2);
+  });
+
+  test("a late reading neither escalates nor interrupts recovery", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const start = Date.now() - 4 * HOUR;
+
+    await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
+    await store.send({ readingId: "r3", observedAt: start + 2 * HOUR });
+    await store.send({
+      readingId: "r2",
+      observedAt: start + 90 * MINUTE,
+      humidity: 66,
+    });
+    const afterLateBreach = await store.monitoring();
+    await store.send({
+      readingId: "r4",
+      observedAt: start + 2 * HOUR + 30 * MINUTE,
+    });
+    const monitoring = await store.monitoring();
+
+    expect(afterLateBreach?.openEpisode).toMatchObject({
+      escalationLevel: 0,
+      lateReadingCount: 1,
+    });
+    expect(monitoring?.recentEpisodes).toEqual([
+      expect.objectContaining({
+        status: "recovered",
+        endedAt: start + 2 * HOUR + 30 * MINUTE,
+        escalationLevel: 0,
+      }),
+    ]);
+  });
+
+  test("every probe that went out of range must recover before the episode does", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    await store.manager.mutation(api.environmentalDevices.bindProbe, {
+      organizationId: store.organizationId,
+      deviceId: store.deviceId,
+      probeId: "probe-2",
+      locationId: store.locationId,
+    });
+    const second = (reading: ReadingInput) =>
+      sendReading(t, store.token, "probe-2", reading);
+    const start = Date.now() - 3 * HOUR;
+
+    await store.send({ readingId: "a1", observedAt: start, humidity: 61 });
+    await second({
+      readingId: "b1",
+      observedAt: start + 5 * MINUTE,
+      humidity: 62,
+    });
+    await store.send({ readingId: "a2", observedAt: start + 10 * MINUTE });
+    await store.send({ readingId: "a3", observedAt: start + 45 * MINUTE });
+    await second({ readingId: "b2", observedAt: start + 50 * MINUTE });
+    const firstRecovered = await store.monitoring();
+    await second({ readingId: "b3", observedAt: start + 80 * MINUTE });
+    const monitoring = await store.monitoring();
+
+    expect(firstRecovered?.openEpisode?.status).toBe("open");
+    expect(monitoring?.recentEpisodes).toEqual([
+      expect.objectContaining({
+        status: "recovered",
+        endedAt: start + 80 * MINUTE,
+      }),
+    ]);
+  });
+
+  test("readings from a probe that stayed in range cannot recover a silent one", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    await store.manager.mutation(api.environmentalDevices.bindProbe, {
+      organizationId: store.organizationId,
+      deviceId: store.deviceId,
+      probeId: "probe-2",
+      locationId: store.locationId,
+    });
+    const start = Date.now() - 3 * HOUR;
+
+    await store.send({ readingId: "a1", observedAt: start, humidity: 61 });
+    for (const minutes of [5, 40, 80, 120]) {
+      await sendReading(t, store.token, "probe-2", {
+        readingId: `b${minutes}`,
+        observedAt: start + minutes * MINUTE,
+      });
+    }
+    const monitoring = await store.monitoring();
+
+    expect(monitoring?.openEpisode).toMatchObject({
+      status: "open",
+      readingCount: 5,
+    });
+  });
+});
+
+describe("silent devices", () => {
+  test("a probe with no reading for over two hours is silent, never in range", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const now = Date.now();
+
+    await store.send({ readingId: "r1", observedAt: now - 30 * MINUTE });
+    const reporting = await store.monitoring(now);
+    const silent = await store.monitoring(now + 2 * HOUR);
+
+    expect(reporting?.condition).toBe("in_range");
+    expect(reporting?.probes).toEqual([
+      expect.objectContaining({
+        probeId: "probe-1",
+        deviceName: "Store logger",
+        status: "reporting",
+        latest: expect.objectContaining({ observedAt: now - 30 * MINUTE }),
+      }),
+    ]);
+    expect(silent?.condition).toBe("silent");
+    expect(silent?.probes[0]?.status).toBe("silent");
+  });
+
+  test("a newly bound probe awaits its first reading, then turns silent", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const now = Date.now();
+
+    const awaiting = await store.monitoring(now);
+    const silent = await store.monitoring(now + 3 * HOUR);
+
+    expect(awaiting?.condition).toBe("awaiting_readings");
+    expect(awaiting?.probes[0]).toMatchObject({
+      status: "awaiting_first_reading",
+      latest: null,
+    });
+    expect(silent?.condition).toBe("silent");
+  });
+
+  test("an open episode whose probe stops reporting stays open and shows the silence", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const now = Date.now();
+
+    await store.send({
+      readingId: "r1",
+      observedAt: now - 3 * HOUR,
+      humidity: 61,
+    });
+    const monitoring = await store.monitoring(now);
+
+    expect(monitoring?.condition).toBe("out_of_range");
+    expect(monitoring?.openEpisode).toMatchObject({
+      status: "open",
+      escalationLevel: 0,
+      sources: [
+        expect.objectContaining({
+          probeId: "probe-1",
+          deviceName: "Store logger",
+          lastObservedAt: now - 3 * HOUR,
+          silent: true,
+        }),
+      ],
+    });
+    expect(monitoring?.probes[0]?.status).toBe("silent");
+  });
+
+  test("a revoked device no longer counts as monitoring the location", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    await store.send({ readingId: "r1", observedAt: Date.now() - MINUTE });
+
+    await store.manager.mutation(api.environmentalDevices.revoke, {
+      organizationId: store.organizationId,
+      deviceId: store.deviceId,
+    });
+    const monitoring = await store.monitoring();
+
+    expect(monitoring?.condition).toBe("no_devices");
+    expect(monitoring?.probes[0]?.status).toBe("revoked");
+  });
+
+  test("readings without thresholds are shown but not judged", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    await store.manager.mutation(api.environmentalMonitoring.setThresholds, {
+      locationId: store.locationId,
+      thresholds: {},
+    });
+
+    await store.send({
+      readingId: "r1",
+      observedAt: Date.now() - MINUTE,
+      humidity: 90,
+    });
+    const monitoring = await store.monitoring();
+
+    expect(monitoring?.condition).toBe("no_thresholds");
+    expect(monitoring?.thresholds).toBeNull();
+    expect(monitoring?.openEpisode).toBeNull();
+  });
 });

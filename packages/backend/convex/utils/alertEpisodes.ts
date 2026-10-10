@@ -5,9 +5,11 @@ import {
   breachesOf,
   describeBreach,
   describeEscalation,
+  describeExtremes,
   escalationLevelAfter,
   type MeasuredValues,
   mergeBreaches,
+  RECOVERY_AFTER_MS,
   widenRanges,
 } from "./alertEpisodePolicy";
 import { dispatchNotification } from "./notificationDispatch";
@@ -164,6 +166,7 @@ async function openEpisode(
     readingCount: 1,
     outOfRangeCount: 1,
     lateReadingCount: 0,
+    sources: trackSource([], observation, true),
   });
   await notifyManagers(ctx, location, episodeId, "opened", {
     title: `Environment out of range: ${location.name}`,
@@ -178,30 +181,81 @@ async function updateEpisode(
   observation: Observation,
   breaches: Breach[],
 ) {
+  const { location, observedAt } = observation;
+  const evidence = withEvidence(episode, observation, breaches);
+  const sources = trackSource(
+    episode.sources,
+    observation,
+    breaches.length > 0,
+  );
+  const lastObservedAt = Math.max(episode.lastObservedAt, observedAt);
+  if (sources.every((source) => source.recoveredAt !== undefined)) {
+    await ctx.db.patch(episode._id, {
+      ...evidence,
+      lastObservedAt,
+      sources,
+      status: "recovered",
+      endedAt: observedAt,
+    });
+    await notifyManagers(ctx, location, episode._id, "recovered", {
+      title: `Environment back in range: ${location.name}`,
+      message: `Readings are back within the thresholds. ${describeExtremes(evidence.breaches, evidence.ranges)}.`,
+    });
+    return;
+  }
+
   const level =
     breaches.length > 0
-      ? escalationLevelAfter(observation.observedAt - episode.startedAt)
+      ? escalationLevelAfter(observedAt - episode.startedAt)
       : 0;
   const escalates = level > episode.escalationLevel;
   await ctx.db.patch(episode._id, {
-    ...withEvidence(episode, observation, breaches),
-    lastObservedAt: Math.max(episode.lastObservedAt, observation.observedAt),
-    ...(escalates
-      ? { escalationLevel: level, escalatedAt: observation.observedAt }
-      : {}),
+    ...evidence,
+    lastObservedAt,
+    sources,
+    ...(escalates ? { escalationLevel: level, escalatedAt: observedAt } : {}),
   });
   if (escalates) {
-    await notifyManagers(
-      ctx,
-      observation.location,
-      episode._id,
-      `escalated:${level}`,
-      {
-        title: `Environment still out of range: ${observation.location.name}`,
-        message: `Out of range for over ${describeEscalation(level)}. ${describeBreaches(breaches)}.`,
-      },
-    );
+    await notifyManagers(ctx, location, episode._id, `escalated:${level}`, {
+      title: `Environment still out of range: ${location.name}`,
+      message: `Out of range for over ${describeEscalation(level)}. ${describeBreaches(breaches)}.`,
+    });
   }
+}
+
+/**
+ * Records a current reading against the sources that went out of range. A
+ * breach (re)starts its source's recovery; a probe recovers after in-range
+ * readings spanning RECOVERY_AFTER_MS, and a staff spot check within the
+ * thresholds recovers the staff source at once. Sources that stayed in range
+ * are not tracked, so they can never recover a breach another source showed.
+ */
+function trackSource(
+  sources: Doc<"alertEpisodes">["sources"],
+  observation: Observation,
+  outOfRange: boolean,
+): Doc<"alertEpisodes">["sources"] {
+  const { source, observedAt } = observation;
+  const probe = source.kind === "probe" ? source.probe._id : undefined;
+  const tracked = sources.find((entry) => entry.probe === probe);
+  const others = sources.filter((entry) => entry !== tracked);
+  if (outOfRange) return [...others, { probe, lastObservedAt: observedAt }];
+  if (!tracked) return sources;
+  if (tracked.recoveredAt !== undefined) {
+    return [...others, { ...tracked, lastObservedAt: observedAt }];
+  }
+  const inRangeSince = tracked.inRangeSince ?? observedAt;
+  const recovered =
+    source.kind === "staff" || observedAt - inRangeSince >= RECOVERY_AFTER_MS;
+  return [
+    ...others,
+    {
+      probe,
+      lastObservedAt: observedAt,
+      inRangeSince,
+      recoveredAt: recovered ? observedAt : undefined,
+    },
+  ];
 }
 
 function describeBreaches(breaches: Breach[]) {

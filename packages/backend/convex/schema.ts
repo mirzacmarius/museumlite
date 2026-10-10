@@ -2322,10 +2322,9 @@ export default defineSchema({
     .index("by_location", ["locationId"]),
 
   // Sustained breaches of a location's environmental thresholds (ADR 0009)
-  alertEpisodes: defineTable(alertEpisodeFields).index(
-    "by_locationId_and_status",
-    ["locationId", "status"],
-  ),
+  alertEpisodes: defineTable(alertEpisodeFields)
+    .index("by_locationId_and_status", ["locationId", "status"])
+    .index("by_locationId_and_startedAt", ["locationId", "startedAt"]),
 
   // Conservation treatment attachments (before/after photos, reports)
   conservationAttachments: defineTable({

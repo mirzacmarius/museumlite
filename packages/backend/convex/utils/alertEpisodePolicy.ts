@@ -118,12 +118,16 @@ export function breachesOf(
 
 const MEASURE_TEXT: Record<
   EnvironmentalMeasure,
-  { name: string; unit: string }
+  { name: string; inSentence: string; unit: string }
 > = {
-  temperature: { name: "Temperature", unit: " °C" },
-  humidity: { name: "Relative humidity", unit: "%" },
-  lightLevel: { name: "Light", unit: " lx" },
-  uvLevel: { name: "UV", unit: "" },
+  temperature: { name: "Temperature", inSentence: "temperature", unit: " °C" },
+  humidity: {
+    name: "Relative humidity",
+    inSentence: "relative humidity",
+    unit: "%",
+  },
+  lightLevel: { name: "Light", inSentence: "light", unit: " lx" },
+  uvLevel: { name: "UV", inSentence: "UV", unit: "" },
 };
 
 function formatMeasurement(value: number) {
@@ -198,4 +202,87 @@ export function escalationLevelAfter(elapsedMs: number) {
 export function describeEscalation(level: number) {
   const hours = (ESCALATION_AFTER_MS[level - 1] ?? 0) / HOUR_MS;
   return hours === 1 ? "1 hour" : `${hours} hours`;
+}
+
+/**
+ * How long a probe that went out of range must report only in-range readings,
+ * from its first in-range one, before it counts as recovered.
+ */
+export const RECOVERY_AFTER_MS = 30 * MINUTE_MS;
+
+/**
+ * English source text for the worst value of each breached measure, for
+ * example "Highest relative humidity 63%".
+ */
+export function describeExtremes(
+  breaches: readonly BreachKind[],
+  ranges: ObservedRanges,
+) {
+  return breaches
+    .flatMap(({ measure, direction }) => {
+      const range = ranges[measure];
+      if (!range) return [];
+      const { inSentence, unit } = MEASURE_TEXT[measure];
+      const [extreme, value] =
+        direction === "above" ? ["Highest", range.max] : ["Lowest", range.min];
+      return [`${extreme} ${inSentence} ${formatMeasurement(value)}${unit}`];
+    })
+    .join("; ");
+}
+
+/**
+ * A probe is silent when it has sent no reading observed in the last two
+ * hours, counting from its binding until its first reading. Silence never
+ * recovers or escalates an episode, and a silent probe is never in range.
+ */
+export const SILENT_AFTER_MS = 2 * HOUR_MS;
+
+export type ProbeStatus =
+  | "reporting"
+  | "silent"
+  | "awaiting_first_reading"
+  | "revoked";
+
+export function probeStatus(
+  probe: {
+    deviceRevoked: boolean;
+    boundAt: number;
+    latestObservedAt: number | undefined;
+  },
+  now: number,
+): ProbeStatus {
+  if (probe.deviceRevoked) return "revoked";
+  const quietSince = probe.latestObservedAt ?? probe.boundAt;
+  if (now - quietSince > SILENT_AFTER_MS) return "silent";
+  return probe.latestObservedAt === undefined
+    ? "awaiting_first_reading"
+    : "reporting";
+}
+
+export type LocationCondition =
+  | "out_of_range"
+  | "silent"
+  | "awaiting_readings"
+  | "no_thresholds"
+  | "in_range"
+  | "no_devices";
+
+/**
+ * How a Location's environment stands, worst first: an open episode, then a
+ * silent or not yet reporting probe, then readings with nothing to judge them
+ * against. It is in range only when every probe reports within its limits.
+ */
+export function locationCondition(state: {
+  episodeOpen: boolean;
+  probeStatuses: readonly ProbeStatus[];
+  thresholdsSet: boolean;
+}): LocationCondition {
+  if (state.episodeOpen) return "out_of_range";
+  const monitoring = state.probeStatuses.filter(
+    (status) => status !== "revoked",
+  );
+  if (monitoring.length === 0) return "no_devices";
+  if (monitoring.includes("silent")) return "silent";
+  if (monitoring.includes("awaiting_first_reading")) return "awaiting_readings";
+  return state.thresholdsSet ? "in_range" : "no_thresholds";
 }

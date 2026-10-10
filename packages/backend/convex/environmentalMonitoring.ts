@@ -6,12 +6,19 @@ import { type QueryCtx, query } from "./_generated/server";
 import { alertEpisodeError } from "./utils/alertEpisodeErrors";
 import {
   climateThresholds,
+  ESCALATION_AFTER_MS,
   environmentalThresholds,
   hasNoThresholds,
   isValidClimateThresholds,
+  locationCondition,
+  probeStatus,
+  RECOVERY_AFTER_MS,
+  SILENT_AFTER_MS,
 } from "./utils/alertEpisodePolicy";
 import {
   alertEpisodeSummary,
+  locationCondition as locationConditionValidator,
+  monitoredProbe,
   readingEvidence,
 } from "./utils/alertEpisodeValidators";
 import { batchLookup } from "./utils/batchLookup";
@@ -19,24 +26,41 @@ import { mutation } from "./utils/mutationBuilders";
 import { requireLocationAdminPermission } from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
 
-const locationCondition = v.union(
-  v.literal("out_of_range"),
-  v.literal("no_devices"),
-);
+const PROBE_LIMIT = 50;
+const RECENT_EPISODE_LIMIT = 5;
+const RECENT_READING_LIMIT = 10;
+
+const monitoringPolicy = v.object({
+  silentAfterMs: v.number(),
+  recoveryAfterMs: v.number(),
+  escalationAfterMs: v.array(v.number()),
+});
+
+/** The fixed timings of ADR 0009, so the interface can explain them. */
+const MONITORING_POLICY = {
+  silentAfterMs: SILENT_AFTER_MS,
+  recoveryAfterMs: RECOVERY_AFTER_MS,
+  escalationAfterMs: [...ESCALATION_AFTER_MS],
+};
 
 /**
- * What staff need to judge a Location's environment: its thresholds and
- * whether its devices currently report.
+ * What staff need to judge a Location's environment at `now`: its condition,
+ * thresholds, bound probes with their latest readings and health, the open
+ * alert episode, recent episodes and the latest readings as evidence.
  */
 export const getLocationMonitoring = query({
   args: { locationId: v.id("locations"), now: v.number() },
   returns: v.union(
     v.object({
-      condition: locationCondition,
+      condition: locationConditionValidator,
       thresholds: v.union(environmentalThresholds, v.null()),
+      probes: v.array(monitoredProbe),
       openEpisode: v.union(alertEpisodeSummary, v.null()),
+      /** The location's latest ended episodes, newest first. */
+      recentEpisodes: v.array(alertEpisodeSummary),
       /** The location's latest readings, newest observation first. */
       recentReadings: v.array(readingEvidence),
+      policy: monitoringPolicy,
     }),
     v.null(),
   ),
@@ -48,33 +72,164 @@ export const getLocationMonitoring = query({
     ) {
       return null;
     }
-    const openEpisode = await ctx.db
-      .query("alertEpisodes")
-      .withIndex("by_locationId_and_status", (q) =>
-        q.eq("locationId", location._id).eq("status", "open"),
-      )
-      .unique();
-    const recentReadings = await ctx.db
-      .query("environmentalReadings")
-      .withIndex("by_location_and_time", (q) =>
-        q.eq("locationId", location._id),
-      )
-      .order("desc")
-      .take(RECENT_READING_LIMIT);
+    const [bindings, latestEpisodes, recentReadings] = await Promise.all([
+      ctx.db
+        .query("environmentalProbes")
+        .withIndex("by_location", (q) => q.eq("locationId", location._id))
+        .take(PROBE_LIMIT),
+      ctx.db
+        .query("alertEpisodes")
+        .withIndex("by_locationId_and_startedAt", (q) =>
+          q.eq("locationId", location._id),
+        )
+        .order("desc")
+        .take(RECENT_EPISODE_LIMIT + 1),
+      ctx.db
+        .query("environmentalReadings")
+        .withIndex("by_location_and_time", (q) =>
+          q.eq("locationId", location._id),
+        )
+        .order("desc")
+        .take(RECENT_READING_LIMIT),
+    ] as const);
+    const probes = await monitoredProbes(
+      ctx,
+      bindings.filter(
+        (binding) =>
+          binding.isActive &&
+          binding.organizationId === location.organizationId,
+      ),
+      args.now,
+    );
+    const openEpisode =
+      latestEpisodes.find((episode) => episode.status === "open") ?? null;
+    const thresholdsSet = !hasNoThresholds(location.environmentalThresholds);
+    const [openSummary, ...recentSummaries] = await summarizeEpisodes(
+      ctx,
+      [
+        ...(openEpisode ? [openEpisode] : []),
+        ...latestEpisodes
+          .filter((episode) => episode.status !== "open")
+          .slice(0, RECENT_EPISODE_LIMIT),
+      ],
+      args.now,
+    );
     return {
-      condition: openEpisode
-        ? ("out_of_range" as const)
-        : ("no_devices" as const),
-      thresholds: hasNoThresholds(location.environmentalThresholds)
-        ? null
-        : (location.environmentalThresholds ?? null),
-      openEpisode: openEpisode && episodeSummary(openEpisode),
+      condition: locationCondition({
+        episodeOpen: openEpisode !== null,
+        probeStatuses: probes.map((probe) => probe.status),
+        thresholdsSet,
+      }),
+      thresholds: thresholdsSet
+        ? (location.environmentalThresholds ?? null)
+        : null,
+      probes,
+      openEpisode: openEpisode ? (openSummary ?? null) : null,
+      recentEpisodes: openEpisode
+        ? recentSummaries
+        : [openSummary, ...recentSummaries].filter(
+            (summary) => summary !== undefined,
+          ),
       recentReadings: await toReadingEvidence(ctx, recentReadings),
+      policy: MONITORING_POLICY,
     };
   },
 });
 
-const RECENT_READING_LIMIT = 10;
+async function monitoredProbes(
+  ctx: QueryCtx,
+  bindings: Doc<"environmentalProbes">[],
+  now: number,
+) {
+  const [devices, latestReadings] = await Promise.all([
+    batchLookup(
+      ctx,
+      bindings.map((binding) => binding.deviceId),
+      "environmentalDevices",
+    ),
+    batchLookup(
+      ctx,
+      bindings.flatMap((binding) =>
+        binding.lastReadingId ? [binding.lastReadingId] : [],
+      ),
+      "environmentalReadings",
+    ),
+  ] as const);
+  const evidence = new Map(
+    (await toReadingEvidence(ctx, [...latestReadings.values()])).map(
+      (reading) => [reading._id, reading],
+    ),
+  );
+  return bindings.flatMap((binding) => {
+    const device = devices.get(binding.deviceId);
+    if (!device) return [];
+    const latest = binding.lastReadingId
+      ? (evidence.get(binding.lastReadingId) ?? null)
+      : null;
+    return [
+      {
+        _id: binding._id,
+        probeId: binding.probeId,
+        deviceName: device.name,
+        status: probeStatus(
+          {
+            deviceRevoked: device.status === "revoked",
+            boundAt: binding.boundAt,
+            latestObservedAt: latest?.observedAt,
+          },
+          now,
+        ),
+        latest,
+        deviceLastRequestAt: device.lastSeenAt,
+        deviceLastError: device.lastError,
+        deviceLastErrorAt: device.lastErrorAt,
+      },
+    ];
+  });
+}
+
+/** Episodes for staff, with each tracked probe named and checked for silence. */
+async function summarizeEpisodes(
+  ctx: QueryCtx,
+  episodes: Doc<"alertEpisodes">[],
+  now: number,
+) {
+  const probes = await batchLookup(
+    ctx,
+    episodes.flatMap((episode) =>
+      episode.sources.flatMap((source) => (source.probe ? [source.probe] : [])),
+    ),
+    "environmentalProbes",
+  );
+  const devices = await batchLookup(
+    ctx,
+    [...probes.values()].map((probe) => probe.deviceId),
+    "environmentalDevices",
+  );
+  return episodes.map(
+    ({
+      organizationId: _organizationId,
+      locationId: _locationId,
+      _creationTime: _created,
+      sources,
+      ...episode
+    }) => ({
+      ...episode,
+      sources: sources.map((source) => {
+        const probe = source.probe ? probes.get(source.probe) : undefined;
+        return {
+          ...source,
+          probeId: probe?.probeId,
+          deviceName: probe ? devices.get(probe.deviceId)?.name : undefined,
+          silent:
+            episode.status === "open" &&
+            source.probe !== undefined &&
+            now - source.lastObservedAt > SILENT_AFTER_MS,
+        };
+      }),
+    }),
+  );
+}
 
 async function toReadingEvidence(
   ctx: QueryCtx,
@@ -107,15 +262,6 @@ async function toReadingEvidence(
       late: reading.late === true,
     };
   });
-}
-
-function episodeSummary({
-  organizationId: _organizationId,
-  locationId: _locationId,
-  _creationTime: _created,
-  ...episode
-}: Doc<"alertEpisodes">) {
-  return episode;
 }
 
 /**
