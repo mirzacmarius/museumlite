@@ -31,22 +31,7 @@ type CollectionListItem = FunctionReturnType<
   typeof api.collections.list
 >["page"][number];
 
-export function CollectionList({
-  organizationId,
-  collections,
-  collectionsStatus,
-  viewMode,
-  columns,
-  selectedIds,
-  onSelectItem,
-  onSelectAll,
-  onLoadMore,
-  activeCollectionGroup,
-  onAddToCollection,
-  isFiltered = false,
-  onClearFilters,
-  listRef,
-}: {
+interface CollectionListProps {
   organizationId: Id<"organizations">;
   collections: Array<{
     _id: string;
@@ -82,7 +67,24 @@ export function CollectionList({
   onClearFilters?: () => void;
   /** The listed objects; takes focus back when the selection bar closes. */
   listRef: Ref<HTMLElement>;
-}) {
+}
+
+export function CollectionList({
+  organizationId,
+  collections,
+  collectionsStatus,
+  viewMode,
+  columns,
+  selectedIds,
+  onSelectItem,
+  onSelectAll,
+  onLoadMore,
+  activeCollectionGroup,
+  onAddToCollection,
+  isFiltered = false,
+  onClearFilters,
+  listRef,
+}: CollectionListProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("objects");
   const tList = useScopedI18n("listState");
