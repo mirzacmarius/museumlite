@@ -40,7 +40,6 @@ export interface DispatchResult {
   intentId: Id<"notificationIntents">;
   /** True when the key was already dispatched and nothing was written. */
   duplicate: boolean;
-  notifiedUserIds: Array<Id<"users">>;
 }
 
 /**
@@ -64,7 +63,7 @@ export async function dispatchNotification(
       )
       .first();
     if (existing) {
-      return { intentId: existing._id, duplicate: true, notifiedUserIds: [] };
+      return { intentId: existing._id, duplicate: true };
     }
   }
 
@@ -86,7 +85,6 @@ export async function dispatchNotification(
     : null;
   const emailAvailable = notificationEmailChannel().kind !== "unavailable";
   const now = Date.now();
-  const notifiedUserIds: Array<Id<"users">> = [];
   let emailsQueued = 0;
 
   for (const userId of new Set(dispatch.recipients)) {
@@ -109,7 +107,6 @@ export async function dispatchNotification(
       createdAt: now,
       intentId,
     });
-    notifiedUserIds.push(userId);
 
     switch (emailCadence(policy, category, dispatch.type)) {
       case "instant":
@@ -141,7 +138,7 @@ export async function dispatchNotification(
       },
     );
   }
-  return { intentId, duplicate: false, notifiedUserIds };
+  return { intentId, duplicate: false };
 }
 
 /** Whether a recipient's choices let this type reach them at all. */

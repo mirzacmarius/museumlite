@@ -2,6 +2,11 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
+  addMember,
+  categoryChoices,
+  notificationErrorOf,
+} from "./notificationFixtures";
+import {
   authedForUser,
   type ConvexTest,
   createConvexTest,
@@ -11,42 +16,6 @@ import {
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 8, 17, 12);
-
-async function addMember(
-  t: ConvexTest,
-  organizationId: Id<"organizations">,
-  username: string,
-  permissionNames: string[],
-) {
-  return await t.run(async (ctx) => {
-    const [userId, roleId] = await Promise.all([
-      ctx.db.insert("users", {
-        name: username,
-        username,
-        email: `${username}@example.test`,
-      }),
-      ctx.db.insert("roles", {
-        organizationId,
-        name: `${username} role`,
-        isSystemRole: false,
-      }),
-    ]);
-    for (const name of permissionNames) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name,
-        category: name.split(".")[0] ?? "collections",
-      });
-      await ctx.db.insert("rolePermissions", { roleId, permissionId });
-    }
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-    return userId;
-  });
-}
 
 async function setupCommentThread(t: ConvexTest) {
   const author = await createOrgUserCollectionWithPermissions(t, [
@@ -62,28 +31,6 @@ async function setupCommentThread(t: ConvexTest) {
     authorClient: authedForUser(t, author.userId),
     registrarId,
     curatorId,
-  };
-}
-
-type CategoryChoice = { enabled: boolean; email: boolean };
-type CategoryName =
-  | "approvals"
-  | "reminders"
-  | "alerts"
-  | "assignments"
-  | "system";
-
-function categoryChoices(
-  overrides: Partial<Record<CategoryName, CategoryChoice>> = {},
-): Record<CategoryName, CategoryChoice> {
-  const inAppOnly = { enabled: true, email: false };
-  return {
-    approvals: inAppOnly,
-    reminders: inAppOnly,
-    alerts: inAppOnly,
-    assignments: inAppOnly,
-    system: inAppOnly,
-    ...overrides,
   };
 }
 
@@ -229,5 +176,69 @@ describe("each logical event notifies once", () => {
     expect(await notificationTypesFor(t, userId, organizationId)).toEqual([
       "insurance_expiry",
     ]);
+  });
+
+  test("rerunning the service-level check does not repeat a breach it already reported", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    const t = createConvexTest();
+    const { organizationId, userId, roleId } =
+      await createOrgUserWithPermissions(t, ["loans.read", "loans.approve"], {
+        subscriptionTier: "pro",
+      });
+    await t.run(async (ctx) => {
+      await ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "LN-SLA-1",
+        type: "outgoing",
+        lenderBorrowerName: "Harbour Museum",
+        startDate: NOW - 10 * DAY,
+        status: "pending",
+      });
+      await ctx.db.insert("workflowSlaConfigs", {
+        organizationId,
+        workflowType: "loan",
+        slaDays: 5,
+        escalateToRoleId: roleId,
+        isActive: true,
+        createdBy: userId,
+        createdAt: NOW - 20 * DAY,
+      });
+    });
+
+    await t.mutation(internal.workflowSla.checkSlaBreaches, { organizationId });
+    vi.advanceTimersByTime(12 * 60 * 60 * 1000);
+    await t.mutation(internal.workflowSla.checkSlaBreaches, { organizationId });
+
+    expect(await notificationTypesFor(t, userId, organizationId)).toEqual([
+      "sla_breach_loan",
+    ]);
+  });
+});
+
+describe("notification preferences belong to members", () => {
+  test("someone outside the organization can neither read nor change its preferences", async () => {
+    const t = createConvexTest();
+    const home = await createOrgUserWithPermissions(t, ["collections.read"]);
+    const outsider = await createOrgUserWithPermissions(
+      t,
+      ["collections.read"],
+      { slugPrefix: "other-museum" },
+    );
+    const client = authedForUser(t, outsider.userId);
+
+    expect(
+      await client.query(api.notifications.getPreferences, {
+        organizationId: home.organizationId,
+      }),
+    ).toBeNull();
+    expect(
+      await notificationErrorOf(
+        client.mutation(api.notifications.updatePreferences, {
+          organizationId: home.organizationId,
+          categories: categoryChoices(),
+        }),
+      ),
+    ).toBe("NOT_ORGANIZATION_MEMBER");
   });
 });

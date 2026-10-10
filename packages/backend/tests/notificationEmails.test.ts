@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import { notificationErrorCodeFromError } from "../convex/utils/notificationErrors";
+import {
+  addMember,
+  emailChoices,
+  notificationErrorOf,
+} from "./notificationFixtures";
 import {
   authedForUser,
   type ConvexTest,
@@ -12,12 +16,6 @@ import {
 const PROVIDER_URL = "https://api.resend.com/emails";
 
 type FetchCall = [string, RequestInit | undefined];
-type CategoryName =
-  | "approvals"
-  | "reminders"
-  | "alerts"
-  | "assignments"
-  | "system";
 
 function providerRequests(fetchMock: ReturnType<typeof vi.fn>) {
   return (fetchMock.mock.calls as FetchCall[]).map(([url, init]) => ({
@@ -31,58 +29,6 @@ function providerRequests(fetchMock: ReturnType<typeof vi.fn>) {
       text: string;
     },
   }));
-}
-
-function emailChoices(emailed: CategoryName[]) {
-  const categories = [
-    "approvals",
-    "reminders",
-    "alerts",
-    "assignments",
-    "system",
-  ] as const;
-  return Object.fromEntries(
-    categories.map((category) => [
-      category,
-      { enabled: true, email: emailed.includes(category) },
-    ]),
-  ) as Record<CategoryName, { enabled: boolean; email: boolean }>;
-}
-
-async function addMember(
-  t: ConvexTest,
-  organizationId: Id<"organizations">,
-  username: string,
-  permissionNames: string[],
-) {
-  return await t.run(async (ctx) => {
-    const [userId, roleId] = await Promise.all([
-      ctx.db.insert("users", {
-        name: username,
-        username,
-        email: `${username}@example.test`,
-      }),
-      ctx.db.insert("roles", {
-        organizationId,
-        name: `${username} role`,
-        isSystemRole: false,
-      }),
-    ]);
-    for (const name of permissionNames) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name,
-        category: name.split(".")[0] ?? "collections",
-      });
-      await ctx.db.insert("rolePermissions", { roleId, permissionId });
-    }
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-    return userId;
-  });
 }
 
 async function setupMentions(t: ConvexTest) {
@@ -105,15 +51,6 @@ async function setupMentions(t: ConvexTest) {
         content,
       }),
   };
-}
-
-async function notificationErrorOf(call: Promise<unknown>) {
-  try {
-    await call;
-  } catch (error) {
-    return notificationErrorCodeFromError(error) ?? error;
-  }
-  throw new Error("Expected the call to be rejected");
 }
 
 function providerReplies(...responses: Array<() => Response>) {

@@ -17,8 +17,6 @@ export type NotificationEmailChannel =
   | { kind: "fixture"; url: string; from: string }
   | { kind: "unavailable" };
 
-export type NotificationEmailChannelKind = NotificationEmailChannel["kind"];
-
 function loopbackUrl(value: string) {
   try {
     const url = new URL(value);
