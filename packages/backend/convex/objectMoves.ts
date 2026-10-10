@@ -1786,6 +1786,12 @@ export const approve = mutation({
       userId,
     );
 
+    const targetManagers = await getUserIdsWithPermission(
+      ctx,
+      request.targetOrganizationId,
+      "organization.manage_settings",
+      { excludeUserId: userId },
+    );
     const now = Date.now();
     await Promise.all([
       ctx.db.patch(args.requestId, {
@@ -1811,21 +1817,14 @@ export const approve = mutation({
           deaccessionId,
         },
       }),
-      getUserIdsWithPermission(
-        ctx,
-        request.targetOrganizationId,
-        "organization.manage_settings",
-        { excludeUserId: userId },
-      ).then((targetManagers) =>
-        dispatchNotification(ctx, {
-          organizationId: request.targetOrganizationId,
-          type: "move_request_created",
-          recipients: targetManagers,
-          title: `Incoming Transfer Request: ${collection.accessionNumber}`,
-          message: `${collection.title} is awaiting acceptance before the transfer is completed.`,
-          related: { entityType: "move_request", entityId: args.requestId },
-        }),
-      ),
+      dispatchNotification(ctx, {
+        organizationId: request.targetOrganizationId,
+        type: "move_request_created",
+        recipients: targetManagers,
+        title: `Incoming Transfer Request: ${collection.accessionNumber}`,
+        message: `${collection.title} is awaiting acceptance before the transfer is completed.`,
+        related: { entityType: "move_request", entityId: args.requestId },
+      }),
     ] as const);
 
     return null;
