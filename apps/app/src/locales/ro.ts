@@ -7551,6 +7551,9 @@ export default {
     loading: "Se încarcă rețetele…",
     empty:
       "Nu există încă rețete. Creați una pornind de la un model din Rețetă nouă.",
+    notificationsHint:
+      "Fiecare responsabil este anunțat o singură dată pentru fiecare sarcină sugerată, în categoria Sarcini.",
+    notificationsLink: "Setări de notificare",
     noAttestation:
       "Finalizarea unei sarcini sugerate înregistrează doar că lucrarea este făcută.",
     stepCount: "{count} pas(i)",

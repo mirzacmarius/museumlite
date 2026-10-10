@@ -4988,6 +4988,9 @@ export default {
     loading: "Laster oppskrifter…",
     empty:
       "Ingen oppskrifter ennå. Opprett en fra et utgangspunkt under Ny oppskrift.",
+    notificationsHint:
+      "Hver ansvarlig varsles én gang per foreslått oppgave, i kategorien Oppgaver.",
+    notificationsLink: "Varslingsinnstillinger",
     noAttestation:
       "Å fullføre en foreslått oppgave registrerer bare at arbeidet er gjort.",
     stepCount: "{count} trinn",

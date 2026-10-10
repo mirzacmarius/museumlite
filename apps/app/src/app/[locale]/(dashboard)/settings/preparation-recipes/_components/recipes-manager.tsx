@@ -21,6 +21,7 @@ import {
   Plus,
   RotateCcw,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -31,6 +32,12 @@ import { draftOfRecipe, type Recipe, type RecipeDraft } from "./recipe-draft";
 import { STARTERS, type StarterId, useRecipeStarter } from "./recipe-starters";
 
 type RecipeStatus = Recipe["status"];
+
+/** The recipe being edited, or none for a new one, and its starting draft. */
+interface RecipeEditor {
+  recipe?: Recipe;
+  draft: RecipeDraft;
+}
 
 function statusToast(from: RecipeStatus, to: RecipeStatus) {
   if (from === "archived") return "toasts.restored";
@@ -166,10 +173,7 @@ export function RecipesManager({
   const setStatus = useMutation(api.preparationRecipes.setStatus);
   const starterDraft = useRecipeStarter();
   const triggers = useAvailableTriggers();
-  const [editor, setEditor] = useState<{
-    recipe?: Recipe;
-    draft: RecipeDraft;
-  } | null>(null);
+  const [editor, setEditor] = useState<RecipeEditor | null>(null);
   const [busyId, setBusyId] = useState<Id<"preparationRecipes"> | null>(null);
 
   // Loan starters open as exhibition recipes when only exhibitions are included.
@@ -217,6 +221,15 @@ export function RecipesManager({
           <h2 className="text-lg font-semibold">{t("title")}</h2>
           <p className="max-w-2xl text-sm text-muted-foreground">
             {t("description")}
+          </p>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            {t("notificationsHint")}{" "}
+            <Link
+              href="/notifications/settings"
+              className="underline hover:text-foreground"
+            >
+              {t("notificationsLink")}
+            </Link>
           </p>
         </div>
         <DropdownMenu>

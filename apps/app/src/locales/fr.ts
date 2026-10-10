@@ -5003,6 +5003,9 @@ export default {
     loading: "Chargement des recettes…",
     empty:
       "Aucune recette pour l’instant. Créez-en une à partir d’un modèle sous Nouvelle recette.",
+    notificationsHint:
+      "Chaque responsable est averti une seule fois par tâche suggérée, dans sa catégorie Tâches.",
+    notificationsLink: "Paramètres de notification",
     noAttestation:
       "Terminer une tâche suggérée enregistre seulement que le travail est fait.",
     stepCount: "{count} étape(s)",

@@ -4833,6 +4833,9 @@ export default {
     add: "New recipe",
     loading: "Loading recipes…",
     empty: "No recipes yet. Create one from a starting point under New recipe.",
+    notificationsHint:
+      "Each owner is notified once per suggested task, in their Tasks category.",
+    notificationsLink: "Notification settings",
     noAttestation:
       "Completing a suggested task records only that the work is done.",
     stepCount: "{count} step(s)",

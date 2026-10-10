@@ -91,11 +91,7 @@ function CaseTaskSuggestionNotes({ task }: { task: CaseTask }) {
         {t(`suggestion.origin.${suggestion.trigger}`, {
           recipe: suggestion.recipeName,
         })}{" "}
-        <ClientDate
-          timestamp={suggestion.eventAt}
-          locale={locale}
-          options={DUE_DATE_OPTIONS}
-        />
+        · <ClientDate timestamp={suggestion.eventAt} locale={locale} />
       </p>
       {suggestion.withdrawnReason ? <p>{t("suggestion.withdrawn")}</p> : null}
       {requiredEvidence && isOpen(task) ? (

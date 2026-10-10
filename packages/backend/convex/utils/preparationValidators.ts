@@ -9,6 +9,12 @@ export const preparationTriggerValidator = v.union(
 );
 export type PreparationTrigger = Infer<typeof preparationTriggerValidator>;
 
+export const PREPARATION_TRIGGERS: readonly PreparationTrigger[] = [
+  "intake_accepted",
+  "loan_approved",
+  "exhibition_approved",
+];
+
 export const preparationRecipeStatusValidator = v.union(
   v.literal("active"),
   v.literal("paused"),

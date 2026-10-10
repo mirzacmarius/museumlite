@@ -1264,3 +1264,171 @@ test("owners who chose instant email get one email per suggested step, however o
     emails.filter((email) => email.text.includes("Pack the objects")),
   ).toHaveLength(1);
 });
+
+test("an intake accepted at creation, without an approval workflow, suggests its recipe", async () => {
+  const { admin, organizationId, adminId } = await setup();
+  await admin.mutation(api.preparationRecipes.create, {
+    organizationId,
+    recipe: INTAKE_RECIPE,
+  });
+
+  const accessionId = await admin.mutation(api.accessions.create, {
+    organizationId,
+    accessionNumber: "2026.7",
+    dateReceived: Date.UTC(2026, 9, 1),
+    source: "Gift of B. Donor",
+    method: "gift",
+  });
+
+  // Nobody is assigned to a new intake, so its creator, who accepted it, owns the work.
+  const view = await admin.query(api.caseTasks.listForCase, {
+    organizationId,
+    caseType: "accession",
+    caseId: accessionId,
+  });
+  expect(view.tasks.map(({ title, ownerId }) => ({ title, ownerId }))).toEqual([
+    { title: "Complete the catalog record", ownerId: adminId },
+    { title: "Photograph the object", ownerId: adminId },
+    { title: "Record a condition assessment", ownerId: adminId },
+  ]);
+});
+
+test("an exhibition accepted at creation, without an approval workflow, suggests its recipe to its creator", async () => {
+  const { t, admin, organizationId, adminId } = await setup();
+  await admin.mutation(api.preparationRecipes.create, {
+    organizationId,
+    recipe: RETURN_RECIPE,
+  });
+  const lampId = await t.run((ctx) =>
+    ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "OBJ-2",
+      title: "Harbour lamp",
+      status: "active",
+      catalogedBy: adminId,
+      catalogedAt: 1,
+    }),
+  );
+
+  const exhibitionId = await admin.mutation(api.exhibitions.create, {
+    organizationId,
+    title: "Harbour lights",
+    startDate: OPENING,
+    endDate: CLOSING,
+    isCurrent: false,
+    participants: [{ collectionId: lampId, role: "featured" }],
+  });
+
+  const view = await admin.query(api.caseTasks.listForCase, {
+    organizationId,
+    caseType: "exhibition",
+    caseId: exhibitionId,
+  });
+  expect(
+    view.tasks.map(({ title, ownerId, dueDate }) => ({
+      title,
+      ownerId,
+      dueDate,
+    })),
+  ).toEqual([
+    {
+      title: "Book return transport",
+      ownerId: adminId,
+      dueDate: CLOSING - 21 * DAY,
+    },
+    {
+      title: "Condition check after deinstallation",
+      ownerId: adminId,
+      dueDate: CLOSING + 2 * DAY,
+    },
+  ]);
+});
+
+test("suggestions of a paused recipe still follow a corrected date", async () => {
+  const { admin, organizationId, cases } = await setup();
+  const recipeId = await admin.mutation(api.preparationRecipes.create, {
+    organizationId,
+    recipe: RETURN_RECIPE,
+  });
+  await admin.mutation(api.exhibitions.approve, {
+    exhibitionId: cases.exhibitionId,
+  });
+  await admin.mutation(api.preparationRecipes.setStatus, {
+    recipeId,
+    status: "paused",
+  });
+
+  const newClosing = Date.UTC(2027, 7, 31);
+  await admin.mutation(api.exhibitions.update, {
+    id: cases.exhibitionId,
+    endDate: newClosing,
+  });
+
+  const view = await admin.query(api.caseTasks.listForCase, {
+    organizationId,
+    caseType: "exhibition",
+    caseId: cases.exhibitionId,
+  });
+  expect(view.tasks.map((task) => task.dueDate)).toEqual([
+    newClosing - 21 * DAY,
+    newClosing + 2 * DAY,
+  ]);
+});
+
+test("a case at its task limit reports the steps it could not suggest", async () => {
+  const { t, admin, registrar, organizationId, registrarId, cases } =
+    await setup();
+  await t.run(async (ctx) => {
+    for (let index = 0; index < 99; index++)
+      await ctx.db.insert("caseTasks", {
+        organizationId,
+        caseType: "loan",
+        caseId: cases.loanId,
+        title: `Existing work ${index}`,
+        ownerId: registrarId,
+        queueDueAt: Number.MAX_SAFE_INTEGER,
+        status: "todo",
+        open: true,
+        dependsOnTaskIds: [],
+        createdBy: registrarId,
+        createdAt: 1,
+        updatedAt: 1,
+      });
+  });
+  await admin.mutation(api.preparationRecipes.create, {
+    organizationId,
+    recipe: TRANSPORT_RECIPE,
+  });
+
+  await admin.mutation(api.loans.approve, { loanId: cases.loanId });
+
+  const caseRef = {
+    organizationId,
+    caseType: "loan" as const,
+    caseId: cases.loanId,
+  };
+  const view = await registrar.query(api.preparationRecipes.getForCase, caseRef);
+  expect(view.recipes[0]?.steps.map((step) => step.state)).toEqual([
+    "suggested",
+    "limit_reached",
+    "limit_reached",
+  ]);
+  expect(
+    await registrar.mutation(api.preparationRecipes.applyToCase, caseRef),
+  ).toEqual({
+    suggested: 0,
+    existing: 1,
+    skipped: [
+      {
+        recipeName: "Pack, insure and arrange transport",
+        stepTitle: "Confirm insurance cover",
+        reason: "limit_reached",
+      },
+      {
+        recipeName: "Pack, insure and arrange transport",
+        stepTitle: "Pack the objects",
+        reason: "limit_reached",
+      },
+    ],
+  });
+});

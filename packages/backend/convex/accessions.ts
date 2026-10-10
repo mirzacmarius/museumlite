@@ -144,6 +144,29 @@ async function generateUniqueAccessionNumber(
 /**
  * Create accession record
  */
+/**
+ * An accepted intake: publishes its object into the collection and suggests
+ * the preparation recipes that follow intake acceptance (ADR 0012).
+ */
+async function completeIntakeAcceptance(
+  ctx: MutationCtx,
+  accession: Pick<Doc<"accessions">, "_id" | "organizationId">,
+  actorId: Id<"users">,
+) {
+  await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
+    accessionId: accession._id,
+  });
+  await suggestPreparation(
+    ctx,
+    {
+      organizationId: accession.organizationId,
+      caseType: "accession",
+      caseId: accession._id,
+    },
+    actorId,
+  );
+}
+
 export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -322,11 +345,13 @@ export const create = mutation({
       });
     }
 
-    // If no workflow config, auto-create collection object
+    // Without a workflow the intake is accepted as it is created.
     if (!workflowConfig) {
-      await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
-        accessionId,
-      });
+      await completeIntakeAcceptance(
+        ctx,
+        { _id: accessionId, organizationId: args.organizationId },
+        userId,
+      );
     }
 
     return accessionId;
@@ -566,9 +591,7 @@ async function saveObjectDraftRecord(
     ] as const);
 
     if (shouldAutoApproveSubmit) {
-      await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
-        accessionId: existing._id,
-      });
+      await completeIntakeAcceptance(ctx, existing, userId);
     }
 
     if (args.saveMode === "submit" && workflowConfig) {
@@ -685,9 +708,11 @@ async function saveObjectDraftRecord(
   ]);
 
   if (shouldAutoApproveSubmit) {
-    await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
-      accessionId,
-    });
+    await completeIntakeAcceptance(
+      ctx,
+      { _id: accessionId, organizationId: args.organizationId },
+      userId,
+    );
   }
 
   if (args.saveMode === "submit" && workflowConfig) {
@@ -1634,21 +1659,7 @@ export const approve = mutation({
           });
         }
 
-        await ctx.runMutation(
-          internal.accessions.createCollectionFromAccession,
-          {
-            accessionId: args.accessionId,
-          },
-        );
-        await suggestPreparation(
-          ctx,
-          {
-            organizationId: accession.organizationId,
-            caseType: "accession",
-            caseId: args.accessionId,
-          },
-          userId,
-        );
+        await completeIntakeAcceptance(ctx, accession, userId);
       } else {
         const nextStep = await prepareWorkflowStepAdvance(ctx, {
           organizationId: accession.organizationId,
@@ -1733,18 +1744,7 @@ export const approve = mutation({
         related: { entityType: "accession", entityId: args.accessionId },
       });
 
-      await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
-        accessionId: args.accessionId,
-      });
-      await suggestPreparation(
-        ctx,
-        {
-          organizationId: accession.organizationId,
-          caseType: "accession",
-          caseId: args.accessionId,
-        },
-        userId,
-      );
+      await completeIntakeAcceptance(ctx, accession, userId);
     }
 
     return null;

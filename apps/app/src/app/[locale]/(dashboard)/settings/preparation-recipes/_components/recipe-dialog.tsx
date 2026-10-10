@@ -2,7 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import type { PreparationTrigger } from "@v1/backend/convex/utils/preparationValidators";
+import {
+  PREPARATION_TRIGGERS,
+  type PreparationTrigger,
+} from "@v1/backend/convex/utils/preparationValidators";
 import { workErrorFromError } from "@v1/backend/convex/utils/workErrors";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
@@ -45,7 +48,6 @@ import {
   recipeInput,
   type StepDraft,
   type StepField,
-  TRIGGERS,
   withEarlierDependencies,
 } from "./recipe-draft";
 
@@ -413,7 +415,7 @@ export function RecipeDialog({
   });
   const errors = serverErrors ?? (submitted ? draftErrors(draft) : null);
   // An edited recipe keeps its trigger even if the plan no longer includes it.
-  const triggerOptions = TRIGGERS.filter(
+  const triggerOptions = PREPARATION_TRIGGERS.filter(
     (trigger) => triggers.includes(trigger) || trigger === draft.trigger,
   );
 
@@ -499,7 +501,9 @@ export function RecipeDialog({
               <Select
                 value={draft.trigger}
                 onValueChange={(value) => {
-                  const trigger = TRIGGERS.find((option) => option === value);
+                  const trigger = PREPARATION_TRIGGERS.find(
+                    (option) => option === value,
+                  );
                   if (!trigger) return;
                   const anchors = anchorsFor(trigger);
                   setDraft((current) => ({

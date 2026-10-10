@@ -13,11 +13,6 @@ export type Recipe = FunctionReturnType<
   typeof api.preparationRecipes.list
 >[number];
 
-export const TRIGGERS: PreparationTrigger[] = [
-  "intake_accepted",
-  "loan_approved",
-  "exhibition_approved",
-];
 export const EVIDENCE_KINDS: CaseTaskEvidenceKind[] = [
   "conditionAssessment",
   "media",

@@ -5050,6 +5050,9 @@ export default {
     loading: "Cargando recetas…",
     empty:
       "Aún no hay recetas. Cree una a partir de un punto de partida en Nueva receta.",
+    notificationsHint:
+      "Cada responsable recibe un solo aviso por tarea sugerida, en su categoría Tareas.",
+    notificationsLink: "Configuración de notificaciones",
     noAttestation:
       "Completar una tarea sugerida solo registra que el trabajo está hecho.",
     stepCount: "{count} paso(s)",

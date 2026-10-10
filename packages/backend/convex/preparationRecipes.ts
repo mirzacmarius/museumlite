@@ -1,8 +1,8 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import {
   CASE_CONFIG,
   canWorkWith,
@@ -32,6 +32,7 @@ import {
 } from "./utils/preparation";
 import {
   loanDirectionValidator,
+  PREPARATION_TRIGGERS,
   type PreparationStep,
   type PreparationStepInput,
   type PreparationTrigger,
@@ -49,8 +50,8 @@ const MAX_NAME_LENGTH = 120;
 const MAX_TITLE_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_OFFSET_DAYS = 365;
-/** Recipes listed in settings, archived ones included. */
-const MAX_LISTED = 200;
+/** Archived recipes listed per trigger, newest first. */
+const ARCHIVED_LISTED = 50;
 const MEMBER_SCAN = 200;
 
 const TRIGGER_FEATURES = {
@@ -65,12 +66,6 @@ function recipeInvalid(
   stepIndex?: number,
 ) {
   return workError("RECIPE_INVALID", message, { field, stepIndex });
-}
-
-async function requireUserId(ctx: QueryCtx) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Not authenticated");
-  return userId;
 }
 
 function recipeName(value: string) {
@@ -96,20 +91,18 @@ async function normalizeSteps(
     throw recipeInvalid("steps", "A recipe needs 1-10 steps");
   const caseType = TRIGGER_CASE_TYPES[trigger];
   let nextStepNumber = firstStepNumber;
-  const keys: string[] = [];
   const keptKeys = new Set<string>();
+  const steps: PreparationStep[] = [];
   for (const [index, input] of inputs.entries()) {
+    let key = `s${nextStepNumber}`;
     if (input.key === undefined) {
-      keys.push(`s${nextStepNumber++}`);
+      nextStepNumber++;
     } else if (existingKeys.has(input.key) && !keptKeys.has(input.key)) {
-      keys.push(input.key);
+      key = input.key;
       keptKeys.add(input.key);
     } else {
       throw recipeInvalid("steps", "Unknown step", index);
     }
-  }
-  const steps: PreparationStep[] = [];
-  for (const [index, input] of inputs.entries()) {
     const title = input.title.trim();
     if (!title || title.length > MAX_TITLE_LENGTH)
       throw recipeInvalid("title", "A step needs a title", index);
@@ -152,29 +145,53 @@ async function normalizeSteps(
         index,
       );
     steps.push({
-      key: keys[index] ?? `s${nextStepNumber++}`,
+      key,
       title,
       description,
       evidence: input.evidence,
       owner: input.owner,
       due: input.due,
-      dependsOn: dependsOn.flatMap((position) => keys[position] ?? []),
+      // Earlier steps are already in `steps`.
+      dependsOn: dependsOn.flatMap((position) => steps[position]?.key ?? []),
     });
   }
   return { steps, nextStepNumber };
 }
 
-async function unarchivedRecipeCount(
+/** Recipes in one status, newest first, at most `limit` per trigger. */
+async function recipesWithStatus(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  status: Doc<"preparationRecipes">["status"],
+  limit: number,
+) {
+  const perTrigger = await Promise.all(
+    PREPARATION_TRIGGERS.map((trigger) =>
+      ctx.db
+        .query("preparationRecipes")
+        .withIndex("by_organizationId_and_trigger_and_status", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("trigger", trigger)
+            .eq("status", status),
+        )
+        .order("desc")
+        .take(limit),
+    ),
+  );
+  return perTrigger.flat();
+}
+
+/** Active and paused recipes; never more than MAX_RECIPES in all. */
+async function unarchivedRecipes(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
 ) {
-  const recipes = await ctx.db
-    .query("preparationRecipes")
-    .withIndex("by_organizationId", (q) =>
-      q.eq("organizationId", organizationId),
-    )
-    .take(MAX_RECIPES * 10);
-  return recipes.filter((recipe) => recipe.status !== "archived").length;
+  const [active, paused] = await Promise.all([
+    recipesWithStatus(ctx, organizationId, "active", MAX_RECIPES),
+    recipesWithStatus(ctx, organizationId, "paused", MAX_RECIPES),
+  ]);
+  return [...active, ...paused];
 }
 
 async function logRecipeEvent(
@@ -219,19 +236,21 @@ const recipeValidator = v.object({
   updatedAt: v.number(),
 });
 
-/** Every recipe of the organization: active, then paused, then archived. */
+/**
+ * The organization's recipes: active, then paused, then the most recently
+ * created archived ones.
+ */
 export const list = query({
   args: { organizationId: v.id("organizations") },
   returns: v.array(recipeValidator),
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    await requireAuthenticatedUser(ctx);
     await requirePermission(ctx, args.organizationId, SETTINGS_PERMISSION);
-    const recipes = await ctx.db
-      .query("preparationRecipes")
-      .withIndex("by_organizationId", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .take(MAX_LISTED);
+    const [unarchived, archived] = await Promise.all([
+      unarchivedRecipes(ctx, args.organizationId),
+      recipesWithStatus(ctx, args.organizationId, "archived", ARCHIVED_LISTED),
+    ]);
+    const recipes = [...unarchived, ...archived];
     const owners = new Map<Id<"users">, Promise<Doc<"users"> | null>>();
     const ownerName = async (userId: Id<"users">) => {
       let owner = owners.get(userId);
@@ -279,7 +298,7 @@ export const listOwnerCandidates = query({
   },
   returns: v.array(v.object({ userId: v.id("users"), name: v.string() })),
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    await requireAuthenticatedUser(ctx);
     await requirePermission(ctx, args.organizationId, SETTINGS_PERMISSION);
     const caseType = TRIGGER_CASE_TYPES[args.trigger];
     const memberships = await ctx.db
@@ -322,7 +341,7 @@ export const create = mutation({
   },
   returns: v.id("preparationRecipes"),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const { organizationId, recipe } = args;
     await requirePermission(ctx, organizationId, SETTINGS_PERMISSION);
     const feature = TRIGGER_FEATURES[recipe.trigger];
@@ -333,7 +352,7 @@ export const create = mutation({
         "loanDirection",
         "Only loan recipes have a direction",
       );
-    if ((await unarchivedRecipeCount(ctx, organizationId)) >= MAX_RECIPES)
+    if ((await unarchivedRecipes(ctx, organizationId)).length >= MAX_RECIPES)
       throw workError(
         "LIMIT_REACHED",
         "This organization has too many recipes",
@@ -390,7 +409,7 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const recipe = await loadRecipeForSettings(ctx, args.recipeId);
     if (recipe.status === "archived")
       throw workError("STATUS_CHANGED", "Restore the recipe before editing it");
@@ -442,12 +461,13 @@ export const setStatus = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
+    const userId = await requireAuthenticatedUser(ctx);
     const recipe = await loadRecipeForSettings(ctx, args.recipeId);
     if (recipe.status === args.status) return null;
     if (
       recipe.status === "archived" &&
-      (await unarchivedRecipeCount(ctx, recipe.organizationId)) >= MAX_RECIPES
+      (await unarchivedRecipes(ctx, recipe.organizationId)).length >=
+        MAX_RECIPES
     )
       throw workError(
         "LIMIT_REACHED",
@@ -532,7 +552,7 @@ export const getForCase = query({
     ),
   }),
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    await requireAuthenticatedUser(ctx);
     await loadCase(ctx, args.organizationId, args.caseType, args.caseId);
     const event = await acceptedCaseEvent(ctx, args);
     if (!event) return { event: null, canApply: false, recipes: [] };
@@ -612,6 +632,10 @@ export const applyToCase = mutation({
         "CASE_NOT_ACCEPTED",
         "Recipes apply once the case is accepted and until it ends",
       );
-    return await suggestPreparation(ctx, args, await requireUserId(ctx));
+    return await suggestPreparation(
+      ctx,
+      args,
+      await requireAuthenticatedUser(ctx),
+    );
   },
 });

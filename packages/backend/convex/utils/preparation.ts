@@ -125,7 +125,8 @@ export async function acceptedCaseEvent(
         ...ref,
         trigger: "exhibition_approved",
         eventAt,
-        approverId: exhibition.approvedBy,
+        // Without a workflow, creating the exhibition accepted it.
+        approverId: exhibition.approvedBy ?? exhibition.createdBy,
         dates: {
           event: eventAt,
           start: exhibition.startDate,
@@ -227,8 +228,9 @@ export async function suggestedTaskWithKey(
     .first();
 }
 
-export async function caseTaskCount(ctx: QueryCtx, ref: PreparationCaseRef) {
-  const tasks = await ctx.db
+/** The case's tasks; a case holds at most MAX_TASKS_PER_CASE. */
+async function tasksOnCase(ctx: QueryCtx, ref: PreparationCaseRef) {
+  return await ctx.db
     .query("caseTasks")
     .withIndex("by_organization_and_caseType_and_caseId", (q) =>
       q
@@ -237,7 +239,10 @@ export async function caseTaskCount(ctx: QueryCtx, ref: PreparationCaseRef) {
         .eq("caseId", ref.caseId),
     )
     .take(MAX_TASKS_PER_CASE);
-  return tasks.length;
+}
+
+export async function caseTaskCount(ctx: QueryCtx, ref: PreparationCaseRef) {
+  return (await tasksOnCase(ctx, ref)).length;
 }
 
 export type SkipReason = "no_owner" | "limit_reached";
@@ -371,28 +376,6 @@ export async function suggestPreparation(
   ref: PreparationCaseRef,
   actorId: Id<"users">,
 ): Promise<PreparationOutcome> {
-  return await applyRecipes(ctx, ref, actorId, { addMissing: true });
-}
-
-/**
- * Brings existing suggestions in line with corrected case dates. Unlike
- * `suggestPreparation` it adds nothing, so a date change never brings in
- * steps nobody applied.
- */
-export async function correctPreparation(
-  ctx: MutationCtx,
-  ref: PreparationCaseRef,
-  actorId: Id<"users">,
-) {
-  await applyRecipes(ctx, ref, actorId, { addMissing: false });
-}
-
-async function applyRecipes(
-  ctx: MutationCtx,
-  ref: PreparationCaseRef,
-  actorId: Id<"users">,
-  { addMissing }: { addMissing: boolean },
-): Promise<PreparationOutcome> {
   const outcome: PreparationOutcome = {
     suggested: 0,
     existing: 0,
@@ -430,7 +413,6 @@ async function applyRecipes(
         );
         continue;
       }
-      if (!addMissing) continue;
       const skip = (reason: SkipReason) =>
         outcome.skipped.push({
           recipeName: recipe.name,
@@ -464,6 +446,38 @@ async function applyRecipes(
 }
 
 /**
+ * Moves the due dates of the case's open suggestions with its corrected
+ * dates, unless staff changed them. Suggestions of paused or archived
+ * recipes follow too; nothing is added, so a date change never brings in
+ * steps nobody applied.
+ */
+export async function correctPreparation(
+  ctx: MutationCtx,
+  ref: PreparationCaseRef,
+  actorId: Id<"users">,
+) {
+  const event = await acceptedCaseEvent(ctx, ref);
+  if (!event) return;
+  const recipes = new Map<
+    Id<"preparationRecipes">,
+    Promise<Doc<"preparationRecipes"> | null>
+  >();
+  for (const task of await tasksOnCase(ctx, ref)) {
+    const suggestion = task.suggestion;
+    if (!suggestion || !isOpenStatus(task.status)) continue;
+    let recipe = recipes.get(suggestion.recipeId);
+    if (!recipe) {
+      recipe = ctx.db.get(suggestion.recipeId);
+      recipes.set(suggestion.recipeId, recipe);
+    }
+    const step = (await recipe)?.steps.find(
+      (candidate) => candidate.key === suggestion.stepKey,
+    );
+    if (step) await keepSuggestionCurrent(ctx, task, step, event, [], actorId);
+  }
+}
+
+/**
  * Withdraws the suggestions nobody has started when their event is reversed,
  * such as an approved loan cancelled before dispatch. Started, blocked or
  * reviewed tasks and tasks with linked evidence stay for staff to close.
@@ -474,16 +488,7 @@ export async function withdrawPreparation(
   actorId: Id<"users">,
   reason: "loan_cancelled",
 ) {
-  const tasks = await ctx.db
-    .query("caseTasks")
-    .withIndex("by_organization_and_caseType_and_caseId", (q) =>
-      q
-        .eq("organizationId", ref.organizationId)
-        .eq("caseType", ref.caseType)
-        .eq("caseId", ref.caseId),
-    )
-    .take(MAX_TASKS_PER_CASE);
-  for (const task of tasks) {
+  for (const task of await tasksOnCase(ctx, ref)) {
     if (!task.suggestion || task.status !== "todo" || task.startedAt) continue;
     const evidence = await ctx.db
       .query("caseTaskEvidence")
