@@ -233,7 +233,11 @@ function WhereToRepair({ view }: { view: FindingView }) {
   }
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">{t("detail.repairIntro")}</p>
+      <p className="text-sm text-muted-foreground">
+        {finding.kind === "duplicate_identifier"
+          ? t("detail.duplicateHint")
+          : t("detail.repairIntro")}
+      </p>
       <ul className="space-y-2 text-sm">{links}</ul>
       {finding.kind === "legacy_link" ? (
         <p className="text-xs text-muted-foreground">
@@ -242,18 +246,14 @@ function WhereToRepair({ view }: { view: FindingView }) {
             : t("detail.linkPartyUnavailable")}
         </p>
       ) : null}
-      {finding.kind === "duplicate_identifier" ? (
-        <p className="text-xs text-muted-foreground">
-          {t("detail.duplicateHint")}{" "}
-          {hasPermission("organization.manage_settings") ? (
-            <Link
-              href="/settings/preferences"
-              className="underline underline-offset-2"
-            >
-              {t("detail.identifierRegister")}
-            </Link>
-          ) : null}
-        </p>
+      {finding.kind === "duplicate_identifier" &&
+      hasPermission("organization.manage_settings") ? (
+        <Link
+          href="/settings/preferences"
+          className="inline-block text-xs underline underline-offset-2"
+        >
+          {t("detail.identifierRegister")}
+        </Link>
       ) : null}
     </div>
   );

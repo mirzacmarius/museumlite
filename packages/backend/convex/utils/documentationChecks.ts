@@ -2,11 +2,13 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { evaluateCapability } from "./capabilities";
-import type {
-  FindingDetail,
-  FindingKind,
-  FindingReview,
-  IdentifierCarry,
+import {
+  CHECK_PHASES,
+  type CheckPhase,
+  type FindingDetail,
+  type FindingKind,
+  type FindingReview,
+  type IdentifierCarry,
 } from "./documentationQualityValidators";
 import {
   objectEvidence,
@@ -33,28 +35,6 @@ type Check = Doc<"documentationChecks">;
 
 /** Records read per page; a page that fails is retried with fewer. */
 export const CHECK_PAGE_SIZE = 25;
-/** A running check with no committed page for this long can be resumed. */
-export const CHECK_STALE_AFTER_MS = 10 * 60 * 1000;
-
-/**
- * One phase per scan, in order. Resolve phases run last, so only a check
- * that read every record closes findings it did not detect again.
- */
-export const CHECK_PHASES = [
-  "catalog_identifiers",
-  "accession_identifiers",
-  "objects_active",
-  "objects_loaned",
-  "objects_deaccessioned",
-  "accessions",
-  "deaccessions",
-  "resolve_duplicate_identifier",
-  "resolve_missing_evidence",
-  "resolve_legacy_link",
-  "resolve_orphan_reference",
-] as const;
-
-export type CheckPhase = (typeof CHECK_PHASES)[number];
 
 interface PageStats {
   rows: number;
@@ -601,6 +581,10 @@ function runPhase(
       return scanObjects(ctx, check, "loaned", pageSize, stats);
     case "objects_deaccessioned":
       return scanObjects(ctx, check, "deaccessioned", pageSize, stats);
+    case "accessions":
+      return scanAccessions(ctx, check, pageSize, stats);
+    case "deaccessions":
+      return scanDeaccessions(ctx, check, pageSize, stats);
     case "resolve_duplicate_identifier":
       return resolveUndetected(
         ctx,
@@ -609,10 +593,6 @@ function runPhase(
         pageSize,
         stats,
       );
-    case "accessions":
-      return scanAccessions(ctx, check, pageSize, stats);
-    case "deaccessions":
-      return scanDeaccessions(ctx, check, pageSize, stats);
     case "resolve_missing_evidence":
       return resolveUndetected(ctx, check, "missing_evidence", pageSize, stats);
     case "resolve_legacy_link":
@@ -626,7 +606,7 @@ function runPhase(
 }
 
 /** Whether `userId` may still run checks: delayed pages recheck access. */
-export async function mayRunChecks(
+async function mayRunChecks(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
   userId: Id<"users">,
@@ -654,6 +634,10 @@ export async function scheduleCheckPage(
     checkId,
     expectedCheckpoint,
   });
+}
+
+function nextPhase(phase: CheckPhase) {
+  return CHECK_PHASES[CHECK_PHASES.indexOf(phase) + 1] ?? "finished";
 }
 
 /**
@@ -686,8 +670,8 @@ export async function applyCheckPage(
     });
     return "done" as const;
   }
-  const phase = CHECK_PHASES[check.phase];
-  if (!phase) {
+  const { phase } = check;
+  if (phase === "finished") {
     await ctx.db.patch(check._id, {
       status: "completed",
       finishedAt: now,
@@ -705,7 +689,7 @@ export async function applyCheckPage(
   const progress = await runPhase(ctx, check, phase, pageSize, stats);
   const checkpoint = check.checkpoint + 1;
   await ctx.db.patch(check._id, {
-    phase: progress.done ? check.phase + 1 : check.phase,
+    phase: progress.done ? nextPhase(phase) : phase,
     cursor: progress.cursor,
     carry: progress.carry,
     checkpoint,

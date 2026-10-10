@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { CHECK_STALE_AFTER_MS } from "@v1/backend/convex/utils/documentationQualityValidators";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -20,8 +21,6 @@ type CheckView = NonNullable<
   >["current"]
 >;
 
-/** Matches the backend: a running check idle this long can be resumed. */
-const STALE_AFTER_MS = 10 * 60 * 1000;
 const CLOCK_INTERVAL_MS = 30 * 1000;
 
 function useClock() {
@@ -111,7 +110,8 @@ export function CheckPanel({
   const now = useClock();
   const current = overview?.current ?? null;
   const stalled =
-    current?.status === "running" && now - current.updatedAt > STALE_AFTER_MS;
+    current?.status === "running" &&
+    now - current.updatedAt > CHECK_STALE_AFTER_MS;
 
   async function run(command: () => Promise<unknown>, success: string) {
     setIsWorking(true);

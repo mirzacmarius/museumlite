@@ -20,8 +20,6 @@ import {
 import {
   applyCheckPage,
   CHECK_PAGE_SIZE,
-  CHECK_PHASES,
-  CHECK_STALE_AFTER_MS,
   identifierGroup,
   markCheckPageFailed,
   normalizeObjectType,
@@ -33,7 +31,10 @@ import {
 } from "./utils/documentationFindings";
 import { qualityError } from "./utils/documentationQualityErrors";
 import {
+  CHECK_PHASES,
+  CHECK_STALE_AFTER_MS,
   checkFailureCodeValidator,
+  checkPhaseValidator,
   checkStatusValidator,
   DOCUMENTATION_REQUIREMENTS,
   DOCUMENTATION_STAGES,
@@ -57,7 +58,7 @@ import { canReadRecord } from "./utils/recordAccess";
 
 const QUALITY_PERMISSIONS = CAPABILITY_MATRIX.documentation_quality.permissions;
 const PROFILE_MANAGE_PERMISSION = "organization.manage_settings";
-export const MAX_ACTIVE_PROFILES = 20;
+const MAX_ACTIVE_PROFILES = 20;
 const MAX_ARCHIVED_PROFILES_LISTED = 100;
 const MAX_PROFILE_NAME_LENGTH = 120;
 const MAX_OBJECT_TYPE_LENGTH = 200;
@@ -361,7 +362,7 @@ const checkViewValidator = v.object({
   number: v.number(),
   status: checkStatusValidator,
   /** The phase being read, or `finished`. */
-  phase: v.string(),
+  phase: checkPhaseValidator,
   phaseIndex: v.number(),
   phaseCount: v.number(),
   requestedByName: v.optional(v.string()),
@@ -387,8 +388,11 @@ async function toCheckView(ctx: QueryCtx, check: Doc<"documentationChecks">) {
     _id: check._id,
     number: check.number,
     status: check.status,
-    phase: CHECK_PHASES[check.phase] ?? "finished",
-    phaseIndex: Math.min(check.phase, CHECK_PHASES.length),
+    phase: check.phase,
+    phaseIndex:
+      check.phase === "finished"
+        ? CHECK_PHASES.length
+        : CHECK_PHASES.indexOf(check.phase),
     phaseCount: CHECK_PHASES.length,
     requestedByName: requester?.name ?? requester?.email ?? undefined,
     profileCount: check.profiles.length,
@@ -512,7 +516,7 @@ export const startCheck = mutation({
         "accounts",
       ),
       identifierIndexIncomplete,
-      phase: 0,
+      phase: CHECK_PHASES[0],
       cursor: null,
       checkpoint: 0,
       attempts: 1,

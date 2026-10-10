@@ -1490,7 +1490,7 @@ test("purging an organization without permanent evidence removes its quality rec
       profiles: [],
       partiesChecked: false,
       identifierIndexIncomplete: false,
-      phase: 0,
+      phase: "finished",
       cursor: null,
       checkpoint: 1,
       attempts: 1,

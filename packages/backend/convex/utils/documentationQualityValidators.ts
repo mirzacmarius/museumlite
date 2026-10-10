@@ -66,6 +66,35 @@ export const identifierRegisterValidator = v.union(
   v.literal("accession"),
 );
 
+/**
+ * One phase per scan, in order. Resolve phases run last, so only a check
+ * that read every record closes findings it did not detect again. A check
+ * stores its phase by name, so a resumed check stays in the same scan.
+ */
+export const CHECK_PHASES = [
+  "catalog_identifiers",
+  "accession_identifiers",
+  "objects_active",
+  "objects_loaned",
+  "objects_deaccessioned",
+  "accessions",
+  "deaccessions",
+  "resolve_duplicate_identifier",
+  "resolve_missing_evidence",
+  "resolve_legacy_link",
+  "resolve_orphan_reference",
+] as const;
+
+export type CheckPhase = (typeof CHECK_PHASES)[number];
+
+export const checkPhaseValidator = v.union(
+  ...CHECK_PHASES.map((phase) => v.literal(phase)),
+  v.literal("finished"),
+);
+
+/** A running check with no committed page for this long can be resumed. */
+export const CHECK_STALE_AFTER_MS = 10 * 60 * 1000;
+
 export const CHECK_STATUSES = [
   "running",
   "completed",
@@ -121,7 +150,7 @@ export const documentationCheckFields = {
   partiesChecked: v.boolean(),
   /** Identifiers not yet indexed are left out of duplicate detection. */
   identifierIndexIncomplete: v.boolean(),
-  phase: v.number(),
+  phase: checkPhaseValidator,
   cursor: v.union(v.string(), v.null()),
   carry: v.optional(identifierCarryValidator),
   checkpoint: v.number(),
