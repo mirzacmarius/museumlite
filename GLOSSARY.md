@@ -163,3 +163,24 @@ _Avoid_: Borrower (a loans party), member, user
 **Public rendition**:
 An approved, version-specific derivative of a single file that may be shown publicly. Publishing an Object does not publish its attachments.
 _Avoid_: Public image, published file
+
+## Translations
+
+The accepted word for each term in the app's other locales. Use it wherever English names the term, and inflect it as the sentence needs. `apps/app/src/locales/translations.test.ts` checks Object and Location, that an Accession is never translated as an Acquisition, and that no locale calls an Object an item outside the Library Module.
+
+| Term | Spanish | French | Norwegian | Romanian |
+| --- | --- | --- | --- | --- |
+| Object | objeto | objet | objekt | obiect |
+| Collection group | grupo de colección | groupe de collection | samlingsgruppe | grup de colecție |
+| Location | ubicación | emplacement | plassering | locație |
+| Entry | entrada | entrée | innlevering | intrare |
+| Acquisition | adquisición | acquisition | erverv | achiziție |
+| Accession | accesión | accession | aksesjon | accesiune |
+| Custody | custodia | garde | forvaring | custodie |
+| Withdrawal | retirada | retrait | tilbaketrekking | retragere |
+| Party | parte | partie | part | parte |
+| Case | caso | dossier | sak | dosar |
+| Task | tarea | tâche | oppgave | sarcină |
+| Notification | notificación | notification | varsel | notificare |
+
+Norwegian uses _gjenstand_ for property received under an Entry, as Spanish uses _bien_ and Romanian _bun_; the Object recorded for it is still _objekt_.

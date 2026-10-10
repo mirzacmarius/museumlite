@@ -30,6 +30,18 @@ Prefer simple, colocated code. Create abstractions when they remove real duplica
 - Right-align timestamps with `text-white/60` and relative formatting
 - Format activity as "You [action] [entity] [identifier]"
 
+## Localization
+
+The app ships English, Spanish, French, Norwegian and Romanian (`apps/app/src/locales/`). Use the glossary's words, including its Translations table, and keep each rule below:
+
+- **Dictionaries.** `en.ts` is the source. Every key exists in every locale with the same interpolation values, no locale keeps keys English lacks, and no locale repeats an English phrase (`translations.test.ts`). Nothing falls back to English at runtime; a missing translation fails the tests instead. A path without a supported locale prefix is served in the saved or browser language when the app has it, otherwise English (`proxy.ts`).
+- **Errors.** Never show server error text: production replaces a plain `Error` with "Server Error", and the text is English anyway. Throw a coded `ConvexError` for user-recoverable failures and map the code to copy in a hook. `useActionErrorMessage` explains custody conflicts, approval refusals, case tasks, loan objects and missing capabilities, then falls back to the caller's translated message. Record forms use `useRecordSaveFailure`, which also explains identifier refusals.
+- **Stored values.** Names, notes and other text staff entered are shown as entered. Backend enum values (statuses, location types) go through `lib/record-enum-labels.ts`; an organization's own values, such as a custom location type, read as stored. Notifications: known English titles and messages are localized by `lib/notification-copy.ts`, others read as stored. Email chrome is localized, but generic notification email bodies are still the stored English text.
+- **Dates and numbers.** Format with `lib/format-date.ts`, `lib/format-number.ts` and `lib/relative-time-formatters.ts` in the app locale (Norwegian is `nb-NO`). Calendar dates entered as `yyyy-MM-dd` display in UTC (`CALENDAR_DATE_OPTIONS`).
+- **Money.** Show an amount in its recorded currency with `formatMoney` or `MoneyCell`. Never assume a currency: without one, show the bare number and say "Currency not recorded". Total per currency (`totalsByCurrency`); never add or convert across currencies.
+- **Counts.** There are no plural keys. Do not add English `{s}` suffixes; write count-neutral copy such as "Awaiting receipt: {count}" that reads correctly in every locale.
+- **Long text.** Translations run up to about a third longer than English. Labels and buttons wrap rather than truncate; where a single line must truncate, the full text stays in the accessible name or `title`. Check new screens at 360 px in Norwegian or Romanian.
+
 ## File locations
 
 | Task | Location |
