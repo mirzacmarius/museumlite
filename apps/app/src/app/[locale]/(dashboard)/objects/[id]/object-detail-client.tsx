@@ -67,7 +67,6 @@ export function ObjectDetailClient(props: ObjectDetailClientProps) {
 }
 
 interface ObjectDetailViewState {
-  activeTab: TabId;
   isHeroLightboxOpen: boolean;
   isPrintModalOpen: boolean;
   isObjectLabelModalOpen: boolean;
@@ -77,7 +76,6 @@ interface ObjectDetailViewState {
 }
 
 type ObjectDetailViewAction =
-  | { type: "setActiveTab"; value: TabId }
   | { type: "setHeroLightboxOpen"; value: boolean }
   | { type: "setPrintModalOpen"; value: boolean }
   | { type: "setObjectLabelModalOpen"; value: boolean }
@@ -86,7 +84,6 @@ type ObjectDetailViewAction =
   | { type: "setQrCodeUrl"; value: string };
 
 const initialObjectDetailViewState: ObjectDetailViewState = {
-  activeTab: "general",
   isHeroLightboxOpen: false,
   isPrintModalOpen: false,
   isObjectLabelModalOpen: false,
@@ -100,8 +97,6 @@ function objectDetailViewReducer(
   action: ObjectDetailViewAction,
 ): ObjectDetailViewState {
   switch (action.type) {
-    case "setActiveTab":
-      return { ...state, activeTab: action.value };
     case "setHeroLightboxOpen":
       return { ...state, isHeroLightboxOpen: action.value };
     case "setPrintModalOpen":
@@ -146,18 +141,18 @@ function ObjectDetailView({
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
   const heroImage = objectDetail?.heroImage ?? null;
-  // A `?tab=` link opens that tab when the object has it.
-  const [requestedTab] = useQueryState(
+  // The open tab lives in the URL (`?tab=`), so a reload, a shared link or
+  // Back from another page returns to it.
+  const [requestedTab, setRequestedTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(OBJECT_TAB_IDS),
+    parseAsStringLiteral(OBJECT_TAB_IDS).withOptions({
+      history: "replace",
+      scroll: false,
+    }),
   );
   const [state, dispatch] = useReducer(
     objectDetailViewReducer,
-    requestedTab,
-    (tab): ObjectDetailViewState => ({
-      ...initialObjectDetailViewState,
-      activeTab: tab ?? initialObjectDetailViewState.activeTab,
-    }),
+    initialObjectDetailViewState,
   );
   const featureOrganizationId =
     collection?.organizationId ?? currentOrganizationId ?? undefined;
@@ -202,14 +197,11 @@ function ObjectDetailView({
     isLocationTrackingEnabled,
   ]);
 
-  useEffect(() => {
-    if (!tabs.some((tab) => tab.id === state.activeTab)) {
-      dispatch({
-        type: "setActiveTab",
-        value: tabs[0]?.id ?? "general",
-      });
-    }
-  }, [state.activeTab, tabs]);
+  const defaultTab = tabs[0]?.id ?? "general";
+  const activeTab: TabId =
+    requestedTab && tabs.some((tab) => tab.id === requestedTab)
+      ? requestedTab
+      : defaultTab;
 
   useEffect(() => {
     dispatch({
@@ -295,12 +287,10 @@ function ObjectDetailView({
           collectionsLabel={t("detail.collections")}
           copyLinkLabel={t("detail.copyObjectLink")}
           linkCopiedLabel={t("detail.linkCopied")}
-          exportPdfLabel={t("detail.exportToPdf")}
-          requestLoanLabel={t("detail.requestLoan")}
+          printRecordLabel={t("detail.printRecord")}
           printLabel={t("detail.printLabel")}
           printObjectLabel={t("detail.printObjectLabel")}
           editObjectLabel={t("detail.editObject")}
-          shareTitle={common("share")}
         />
 
         <div className="flex-1 overflow-y-auto">
@@ -345,9 +335,9 @@ function ObjectDetailView({
 
           <ObjectDetailTabPanel
             tabs={tabs}
-            activeTab={state.activeTab}
+            activeTab={activeTab}
             onActiveTabChange={(value) =>
-              dispatch({ type: "setActiveTab", value })
+              void setRequestedTab(value === defaultTab ? null : value)
             }
             collection={collection}
             collectionId={collectionId}

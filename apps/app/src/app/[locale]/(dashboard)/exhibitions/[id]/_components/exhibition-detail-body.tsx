@@ -11,10 +11,10 @@ import { ExhibitionPhysicalHandoffsPanel } from "./exhibition-physical-handoffs-
 export function ExhibitionDetailBody(props: ExhibitionDetailViewProps) {
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-4xl px-6 py-8 pb-20">
+      <div className="mx-auto max-w-4xl px-4 py-6 pb-20 sm:px-6 sm:py-8">
         <ExhibitionDetailStats {...props} />
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="space-y-6 md:col-span-2">
+          <div className="min-w-0 space-y-6 md:col-span-2">
             <ExhibitionDetailOverviewPanel {...props} />
             <ExhibitionPhysicalHandoffsPanel
               exhibitionId={props.exhibitionId}

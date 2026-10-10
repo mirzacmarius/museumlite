@@ -28,10 +28,14 @@ const router: AppRouterInstance = {
 
 /**
  * Renders a component on an app page, as under `/en/...`: Next's route
- * hooks read `url`, and the English dictionary is loaded. `rerender` keeps
- * the page.
+ * hooks read `url` (and `params` for dynamic segments such as `id`), and the
+ * English dictionary is loaded. `rerender` keeps the page.
  */
-export async function renderOnPage(ui: ReactElement, url = "/en") {
+export async function renderOnPage(
+  ui: ReactElement,
+  url = "/en",
+  params: Record<string, string> = {},
+) {
   const { pathname, searchParams } = new URL(url, "http://localhost");
   const locale = pathname.split("/")[1] ?? "en";
   function Page({ children }: { children: ReactNode }) {
@@ -39,7 +43,7 @@ export async function renderOnPage(ui: ReactElement, url = "/en") {
       <AppRouterContext.Provider value={router}>
         <PathnameContext.Provider value={pathname}>
           <SearchParamsContext.Provider value={searchParams}>
-            <PathParamsContext.Provider value={{ locale }}>
+            <PathParamsContext.Provider value={{ ...params, locale }}>
               <I18nProviderClient locale={locale}>
                 <span data-testid={READY} hidden />
                 {children}

@@ -18,6 +18,11 @@ interface LocationSelectorProps {
   onValueChange: (value: string) => void;
   placeholder?: string;
   allowNone?: boolean;
+  /** Lets a `<Label htmlFor>` name the control. */
+  id?: string;
+  disabled?: boolean;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }
 
 export function LocationSelector({
@@ -26,6 +31,9 @@ export function LocationSelector({
   onValueChange,
   placeholder,
   allowNone = true,
+  id,
+  disabled,
+  ...aria
 }: LocationSelectorProps) {
   const translate = useI18n();
   const locations = useQuery(
@@ -44,7 +52,7 @@ export function LocationSelector({
   if (locations === undefined) {
     return (
       <Select value={value} onValueChange={onValueChange} disabled>
-        <SelectTrigger>
+        <SelectTrigger id={id} {...aria}>
           <SelectValue
             placeholder={translate(
               "untranslatedComponents.labels.loadingLocations",
@@ -129,8 +137,13 @@ export function LocationSelector({
     <Select
       value={value || (allowNone ? "__none__" : undefined)}
       onValueChange={(val) => onValueChange(val === "__none__" ? "" : val)}
+      disabled={disabled}
     >
-      <SelectTrigger>
+      <SelectTrigger
+        id={id}
+        className="h-auto min-h-9 whitespace-normal text-left [&>span]:line-clamp-none"
+        {...aria}
+      >
         <SelectValue
           placeholder={
             placeholder ??

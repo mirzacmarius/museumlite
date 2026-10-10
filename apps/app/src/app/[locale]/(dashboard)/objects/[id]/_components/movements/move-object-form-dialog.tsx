@@ -17,22 +17,43 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
 import { toast } from "sonner";
+import { ActionRefusal, type Refusal } from "@/components/action-refusal";
 import { LocationSelector } from "@/components/location-selector";
+import {
+  FieldError,
+  fieldErrorProps,
+  focusFirstFieldInError,
+} from "@/components/record-form/record-form-notices";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useScopedI18n } from "@/locales/client";
 import { movementIssueLabel } from "./movement-labels";
 
 export type MoveDialogMode = "direct" | "request";
 
+const DESTINATION_FIELD = "move-destination";
+const REASON_FIELD = "move-reason";
+
+interface MoveFieldErrors {
+  [DESTINATION_FIELD]?: string;
+  [REASON_FIELD]?: string;
+}
+
 interface MoveFormState {
   toLocationId: string;
   reason: string;
   notes: string;
   override: boolean;
-  error: string | null;
+  fieldErrors: MoveFieldErrors;
+  refusal: Refusal | null;
   isSubmitting: boolean;
+  /**
+   * After a refusal because the object moved, the dialog shows and uses its
+   * latest recorded location, which staff confirm by moving again.
+   */
+  followRecordedSource: boolean;
 }
 
 type MoveFormAction =
@@ -40,16 +61,19 @@ type MoveFormAction =
   | { type: "reasonChanged"; value: string }
   | { type: "notesChanged"; value: string }
   | { type: "overrideChanged"; value: boolean }
-  | { type: "errorChanged"; value: string | null }
-  | { type: "submittingChanged"; value: boolean };
+  | { type: "invalid"; fieldErrors: MoveFieldErrors }
+  | { type: "submitted" }
+  | { type: "refused"; refusal: Refusal; sourceChanged: boolean };
 
 const initialMoveFormState: MoveFormState = {
   toLocationId: "",
   reason: "",
   notes: "",
   override: false,
-  error: null,
+  fieldErrors: {},
+  refusal: null,
   isSubmitting: false,
+  followRecordedSource: false,
 };
 
 function moveFormReducer(
@@ -58,17 +82,34 @@ function moveFormReducer(
 ): MoveFormState {
   switch (action.type) {
     case "destinationChanged":
-      return { ...state, toLocationId: action.value, override: false };
+      return {
+        ...state,
+        toLocationId: action.value,
+        override: false,
+        fieldErrors: { ...state.fieldErrors, [DESTINATION_FIELD]: undefined },
+      };
     case "reasonChanged":
-      return { ...state, reason: action.value };
+      return {
+        ...state,
+        reason: action.value,
+        fieldErrors: { ...state.fieldErrors, [REASON_FIELD]: undefined },
+      };
     case "notesChanged":
       return { ...state, notes: action.value };
     case "overrideChanged":
       return { ...state, override: action.value };
-    case "errorChanged":
-      return { ...state, error: action.value };
-    case "submittingChanged":
-      return { ...state, isSubmitting: action.value };
+    case "invalid":
+      return { ...state, fieldErrors: action.fieldErrors, refusal: null };
+    case "submitted":
+      return { ...state, fieldErrors: {}, refusal: null, isSubmitting: true };
+    case "refused":
+      return {
+        ...state,
+        refusal: action.refusal,
+        isSubmitting: false,
+        followRecordedSource:
+          state.followRecordedSource || action.sourceChanged,
+      };
   }
 }
 
@@ -91,8 +132,19 @@ export function MoveObjectFormDialog({
 }: MoveObjectFormDialogProps) {
   const t = useScopedI18n("locations.movements");
   const tCommon = useScopedI18n("common");
+  const capabilityMessage = useCapabilityErrorMessage();
   const custodyConflictMessage = useCustodyConflictMessage();
   const [state, dispatch] = useReducer(moveFormReducer, initialMoveFormState);
+  // The source is where staff saw the object when they opened the dialog. If
+  // it moves meanwhile, the server refuses rather than recording an
+  // observation nobody made.
+  const [openedSource] = useState(() => ({
+    id: currentLocationId ?? null,
+    label: currentLocationLabel,
+  }));
+  const source = state.followRecordedSource
+    ? { id: currentLocationId ?? null, label: currentLocationLabel }
+    : openedSource;
 
   const moveObject = useMutation(api.locations.moveObject);
   const createMoveRequest = useMutation(api.locations.createMoveRequest);
@@ -115,19 +167,18 @@ export function MoveObjectFormDialog({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    dispatch({ type: "errorChanged", value: null });
+    const fieldErrors: MoveFieldErrors = {};
     if (!state.toLocationId) {
-      dispatch({
-        type: "errorChanged",
-        value: t("dialog.selectDestinationError"),
-      });
-      return;
+      fieldErrors[DESTINATION_FIELD] = t("dialog.selectDestinationError");
     }
     if (!isDirect && !state.reason.trim()) {
-      dispatch({ type: "errorChanged", value: t("dialog.reasonRequired") });
+      fieldErrors[REASON_FIELD] = t("dialog.reasonRequired");
+    }
+    if (focusFirstFieldInError({ ...fieldErrors })) {
+      dispatch({ type: "invalid", fieldErrors });
       return;
     }
-    dispatch({ type: "submittingChanged", value: true });
+    dispatch({ type: "submitted" });
     try {
       if (isDirect) {
         await moveObject({
@@ -135,7 +186,7 @@ export function MoveObjectFormDialog({
           toLocationId: state.toLocationId as Id<"locations">,
           reason: state.reason.trim() || undefined,
           notes: state.notes.trim() || undefined,
-          expectedFromLocationId: currentLocationId ?? null,
+          expectedFromLocationId: source.id,
           overrideStatus: state.override || undefined,
           overrideCapacity: state.override || undefined,
         });
@@ -152,14 +203,15 @@ export function MoveObjectFormDialog({
       onClose();
     } catch (submitError) {
       dispatch({
-        type: "errorChanged",
-        value: custodyConflictFromError(submitError)
-          ? custodyConflictMessage(submitError)
-          : submitError instanceof Error
-            ? submitError.message
-            : t("dialog.failed"),
+        type: "refused",
+        refusal: {
+          message:
+            capabilityMessage(submitError) ??
+            custodyConflictMessage(submitError, t("dialog.failed")),
+        },
+        sourceChanged:
+          custodyConflictFromError(submitError)?.code === "SOURCE_CHANGED",
       });
-      dispatch({ type: "submittingChanged", value: false });
     }
   };
 
@@ -168,7 +220,7 @@ export function MoveObjectFormDialog({
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[520px]">
-        <form onSubmit={handleSubmit}>
+        <form noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
               {isDirect ? t("dialog.directTitle") : t("dialog.requestTitle")}
@@ -180,35 +232,35 @@ export function MoveObjectFormDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {state.error && (
-              <div
-                role="alert"
-                className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
-              >
-                {state.error}
-              </div>
-            )}
             <div className="space-y-1">
               <span className="text-xs text-muted-foreground">
                 {t("dialog.observedSource")}
               </span>
-              <p className="break-words text-sm">{currentLocationLabel}</p>
+              <p className="break-words text-sm">{source.label}</p>
             </div>
+            <ActionRefusal refusal={state.refusal} />
             <div className="space-y-2">
-              <Label htmlFor="move-destination">
+              <Label htmlFor={DESTINATION_FIELD}>
                 {t("dialog.destination")} *
               </Label>
-              <div id="move-destination">
-                <LocationSelector
-                  organizationId={organizationId}
-                  value={state.toLocationId}
-                  onValueChange={(value) =>
-                    dispatch({ type: "destinationChanged", value })
-                  }
-                  placeholder={t("dialog.destinationPlaceholder")}
-                  allowNone={false}
-                />
-              </div>
+              <LocationSelector
+                id={DESTINATION_FIELD}
+                organizationId={organizationId}
+                value={state.toLocationId}
+                onValueChange={(value) =>
+                  dispatch({ type: "destinationChanged", value })
+                }
+                placeholder={t("dialog.destinationPlaceholder")}
+                allowNone={false}
+                {...fieldErrorProps(
+                  DESTINATION_FIELD,
+                  state.fieldErrors[DESTINATION_FIELD],
+                )}
+              />
+              <FieldError
+                field={DESTINATION_FIELD}
+                message={state.fieldErrors[DESTINATION_FIELD]}
+              />
               {state.toLocationId && preflight === undefined && (
                 <p className="text-xs text-muted-foreground" aria-live="polite">
                   {t("dialog.checking")}
@@ -245,18 +297,25 @@ export function MoveObjectFormDialog({
                 )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="move-reason">
+              <Label htmlFor={REASON_FIELD}>
                 {t("dialog.reason")}
                 {isDirect ? "" : " *"}
               </Label>
               <Input
-                id="move-reason"
+                id={REASON_FIELD}
                 value={state.reason}
                 onChange={(event) =>
                   dispatch({ type: "reasonChanged", value: event.target.value })
                 }
                 placeholder={t("dialog.reasonPlaceholder")}
-                required={!isDirect}
+                {...fieldErrorProps(
+                  REASON_FIELD,
+                  state.fieldErrors[REASON_FIELD],
+                )}
+              />
+              <FieldError
+                field={REASON_FIELD}
+                message={state.fieldErrors[REASON_FIELD]}
               />
             </div>
             <div className="space-y-2">

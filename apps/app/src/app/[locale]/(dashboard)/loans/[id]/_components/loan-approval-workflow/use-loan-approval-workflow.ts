@@ -32,7 +32,6 @@ export function useLoanApprovalWorkflow(loanId: string) {
     returnLoan,
     isSubmitting,
     setIsSubmitting,
-    setError,
   });
 
   return {

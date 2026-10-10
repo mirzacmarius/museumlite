@@ -10,10 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { Label } from "@v1/ui/label";
 import { cn } from "@v1/ui/utils";
 import { Info } from "lucide-react";
 import type { ReactNode } from "react";
+import { ActionRefusal, type Refusal } from "@/components/action-refusal";
 import { useScopedI18n } from "@/locales/client";
 import type { LoanItem } from "../types";
 import { getNonReturnedItemIds, isLoanItemReturned } from "./loan-item-utils";
@@ -25,8 +25,8 @@ interface ReturnItemSelectionDialogProps {
   selectedItemIds: Set<string>;
   setSelectedItemIds: (ids: Set<string>) => void;
   onProceed: () => void;
-  canProceed: boolean;
-  validationMessage: string;
+  /** Why the last attempt did not go through, shown in the dialog. */
+  refusal: Refusal | null;
   renderEvidence: (item: LoanItem) => ReactNode;
 }
 
@@ -37,62 +37,70 @@ export function ReturnItemSelectionDialog({
   selectedItemIds,
   setSelectedItemIds,
   onProceed,
-  canProceed,
-  validationMessage,
+  refusal,
   renderEvidence,
 }: ReturnItemSelectionDialogProps) {
   const t = useScopedI18n("loans.actions");
+  const evidenceT = useScopedI18n("conditionAssessments");
   const hasSomeReturned = loanItems.some((item) => isLoanItemReturned(item));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl"
+        // A dialog reopened to explain a refusal starts on the refusal.
+        onOpenAutoFocus={(event) => {
+          if (refusal) event.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{t("returnLoanItems")}</DialogTitle>
           <DialogDescription>{t("selectItemsToReturnDesc")}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm font-medium">
-                {t("selectItemsToReturn")}
-              </Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => {
-                  setSelectedItemIds(new Set(getNonReturnedItemIds(loanItems)));
-                }}
-              >
-                {t("selectAllItems")}
-              </Button>
-            </div>
-            {hasSomeReturned && (
-              <div className="flex items-start gap-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
-                <Info className="size-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 text-blue-800 dark:text-blue-200">
-                  <p className="font-medium mb-1">{t("someItemsReturned")}</p>
-                  <p className="text-xs">{t("returnedItemsInfo")}</p>
-                </div>
+        <div className="space-y-4 py-2">
+          <ActionRefusal refusal={refusal} />
+          <p className="text-sm text-muted-foreground">
+            {evidenceT("receiptRequirement")}
+          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-medium">{t("selectItemsToReturn")}</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedItemIds(new Set(getNonReturnedItemIds(loanItems)));
+              }}
+            >
+              {t("selectAllItems")}
+            </Button>
+          </div>
+          {hasSomeReturned && (
+            <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm dark:border-blue-800 dark:bg-blue-950/30">
+              <Info className="mt-0.5 size-4 shrink-0 text-blue-600 dark:text-blue-400" />
+              <div className="flex-1 text-blue-800 dark:text-blue-200">
+                <p className="mb-1 font-medium">{t("someItemsReturned")}</p>
+                <p className="text-xs">{t("returnedItemsInfo")}</p>
               </div>
-            )}
-            <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
-              {loanItems.map((item) => {
-                const isReturned = isLoanItemReturned(item);
+            </div>
+          )}
+          <ul className="divide-y rounded-lg border">
+            {loanItems.map((item) => {
+              const isReturned = isLoanItemReturned(item);
+              const checkboxId = `return-item-${item._id}`;
 
-                return (
-                  <div
-                    key={item._id}
-                    className={cn(
-                      "flex flex-wrap items-center gap-3 p-3",
-                      isReturned
-                        ? "opacity-50 bg-muted/40 border-l-4 border-l-blue-500"
-                        : "hover:bg-muted/50",
-                    )}
-                  >
+              return (
+                <li
+                  key={item._id}
+                  className={cn(
+                    "space-y-3 p-3",
+                    isReturned &&
+                      "border-l-4 border-l-blue-500 bg-muted/40 opacity-60",
+                  )}
+                >
+                  <div className="flex items-start gap-3">
                     <Checkbox
-                      id={`item-${item._id}`}
+                      id={checkboxId}
+                      className="mt-0.5"
                       checked={selectedItemIds.has(item._id) && !isReturned}
                       disabled={isReturned}
                       onCheckedChange={(checked) => {
@@ -106,55 +114,45 @@ export function ReturnItemSelectionDialog({
                         setSelectedItemIds(newSet);
                       }}
                     />
-                    <Label
-                      htmlFor={`item-${item._id}`}
+                    <label
+                      htmlFor={checkboxId}
                       className={cn(
-                        "flex-1",
+                        "min-w-0 flex-1 text-sm",
                         isReturned ? "cursor-not-allowed" : "cursor-pointer",
                       )}
                     >
-                      <div className="flex items-center gap-2">
+                      <span className="flex flex-wrap items-center gap-2">
                         <span
                           className={cn(
-                            "font-medium",
+                            "break-all font-mono text-xs font-medium",
                             isReturned && "line-through",
                           )}
                         >
                           {item.accessionNumber}
                         </span>
                         {isReturned && (
-                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                          <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             {t("returned")}
                           </span>
                         )}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
+                      </span>{" "}
+                      <span className="block break-words text-foreground">
                         {item.title}
-                      </div>
+                      </span>
                       {isReturned && item.conditionIn && (
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <span className="mt-1 block text-xs text-muted-foreground">
                           {t("conditionInLabel")}: {item.conditionIn}
-                        </div>
+                        </span>
                       )}
-                    </Label>
-                    {selectedItemIds.has(item._id) && !isReturned
-                      ? renderEvidence(item)
-                      : null}
+                    </label>
                   </div>
-                );
-              })}
-            </div>
-            {selectedItemIds.size > 0 && !canProceed ? (
-              <p className="text-sm text-muted-foreground">
-                {validationMessage}
-              </p>
-            ) : null}
-            {selectedItemIds.size === 0 && (
-              <p className="text-sm text-destructive">
-                {t("selectAtLeastOne")}
-              </p>
-            )}
-          </div>
+                  {selectedItemIds.has(item._id) && !isReturned
+                    ? renderEvidence(item)
+                    : null}
+                </li>
+              );
+            })}
+          </ul>
         </div>
         <DialogFooter>
           <Button
@@ -166,11 +164,7 @@ export function ReturnItemSelectionDialog({
           >
             {t("cancel")}
           </Button>
-          <Button
-            onClick={onProceed}
-            disabled={!canProceed}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
+          <Button onClick={onProceed} className="bg-blue-600 hover:bg-blue-700">
             {t("continueAction")}
           </Button>
         </DialogFooter>

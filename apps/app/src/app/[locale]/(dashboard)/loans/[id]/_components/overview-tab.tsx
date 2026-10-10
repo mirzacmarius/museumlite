@@ -1,9 +1,9 @@
 "use client";
 
-import { Check, FileText, Shield, Upload } from "lucide-react";
+import { FileText, Shield } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { TargetPartyLinks } from "@/components/target-party-links";
-import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { LoanApprovalWorkflow } from "./loan-approval-workflow/loan-approval-workflow";
 import type { Loan, LoanDocument } from "./types";
 
@@ -15,12 +15,10 @@ interface OverviewTabProps {
 export function OverviewTab({ loan, documents }: OverviewTabProps) {
   const tRoot = useI18n();
   const locale = useCurrentLocale();
-  const tActions = useScopedI18n("loans.actions");
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Left: Approval Pipeline */}
-      <div className="col-span-2 space-y-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="min-w-0 space-y-6 md:col-span-2">
         {/* Loan Workflow Actions */}
         <LoanApprovalWorkflow
           key={loan._id}
@@ -32,157 +30,21 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
           organizationId={loan.organizationId}
           writePermission="loans.update"
         />
-        {/* Status Flow */}
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6">
-            {tRoot("loans.actions.approvalWorkflow")}
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
+          <h3 className="mb-4 text-sm font-semibold text-foreground">
+            {tRoot("loans.actions.borrowerDetails")}
           </h3>
-          <div className="relative">
-            <div className="absolute top-4 left-0 w-full h-0.5 bg-secondary z-0" />
-            <div className="relative z-10 grid grid-cols-5 gap-4">
-              {/* Step 1 */}
-              <div className="flex flex-col gap-2">
-                <div className="size-8 rounded-full bg-cyan-600 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
-                  <Check className="size-3.5" strokeWidth={3} />
-                </div>
-                <div className="pr-4">
-                  <p className="text-xs font-semibold text-foreground">
-                    {tRoot("loans.actions.request")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tRoot("loans.actions.rec")}{" "}
-                    <ClientDate
-                      timestamp={loan.startDate}
-                      locale={locale}
-                      options={{ month: "short", day: "numeric" }}
-                    />
-                  </p>
-                </div>
-              </div>
-              {/* Step 2 */}
-              <div className="flex flex-col gap-2">
-                <div className="size-8 rounded-full bg-cyan-600 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
-                  <Check className="size-3.5" strokeWidth={3} />
-                </div>
-                <div className="pr-4">
-                  <p className="text-xs font-semibold text-foreground">
-                    {tRoot("loans.actions.curatorial")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tRoot("loans.actions.app")}{" "}
-                    <ClientDate
-                      timestamp={loan.startDate}
-                      locale={locale}
-                      options={{ month: "short", day: "numeric" }}
-                    />
-                  </p>
-                </div>
-              </div>
-              {/* Step 3 */}
-              <div className="flex flex-col gap-2">
-                <div className="size-8 rounded-full bg-amber-500 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-amber-900/20 animate-pulse">
-                  <span className="text-[10px] font-bold">3</span>
-                </div>
-                <div className="pr-4">
-                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-500">
-                    {tRoot("loans.actions.facilities")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tRoot("loans.actions.reviewing")}
-                  </p>
-                </div>
-              </div>
-              {/* Step 4 */}
-              <div className="flex flex-col gap-2">
-                <div className="size-8 rounded-full bg-secondary border-4 border-background flex items-center justify-center text-muted-foreground z-10">
-                  <span className="text-[10px] font-bold">4</span>
-                </div>
-                <div className="pr-4">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {tRoot("loans.actions.conservation")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tRoot("loans.filters.pending")}
-                  </p>
-                </div>
-              </div>
-              {/* Step 5 */}
-              <div className="flex flex-col gap-2">
-                <div className="size-8 rounded-full bg-secondary border-4 border-background flex items-center justify-center text-muted-foreground z-10">
-                  <span className="text-[10px] font-bold">5</span>
-                </div>
-                <div className="pr-4">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {tRoot("loans.actions.dispatch")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tRoot("loans.actions.locked")}
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {tRoot("loans.actions.institution")}
           </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">
-              {tRoot("loans.actions.borrowerDetails")}
-            </h3>
-            <span className="text-xs font-mono text-muted-foreground">
-              MOMA-NY-001
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-y-6 gap-x-12">
-            <div>
-              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                {tRoot("loans.actions.institution")}
-              </div>
-              <p className="text-sm text-foreground mt-1">
-                {loan.lenderBorrowerName}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {loan.lenderBorrowerContact}
-              </p>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                {tRoot("loans.actions.exhibitionSpace")}
-              </div>
-              <p className="text-sm text-foreground mt-1">
-                {tRoot("loans.actions.theRobertBMenschelGalleries")}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {tRoot("loans.actions.floorWingEnvironment")}
-              </p>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                {tRoot("loans.actions.loanAgreement")}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900">
-                  <Check className="size-3" />
-                  {tRoot("loans.actions.countersigned")}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {tRoot("library.acquisitions.labels.on")}{" "}
-                  <ClientDate timestamp={loan.startDate} locale={locale} />
-                </span>
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                {tRoot("loans.actions.costs")}
-              </div>
-              <p className="text-sm text-foreground mt-1">
-                {tRoot("loans.actions.allCostsToBorne")}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {tRoot("loans.actions.wallToWallInsurance")}
-              </p>
-            </div>
-          </div>
+          <p className="mt-1 break-words text-sm text-foreground">
+            {loan.lenderBorrowerName}
+          </p>
+          {loan.lenderBorrowerContact ? (
+            <p className="break-words text-xs text-muted-foreground">
+              {loan.lenderBorrowerContact}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -245,19 +107,6 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
                 {tRoot("loans.actions.noDocumentsUploaded")}
               </p>
             )}
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group opacity-60"
-            >
-              <div className="size-8 rounded bg-secondary text-muted-foreground flex items-center justify-center shrink-0 border border-dashed border-border">
-                <Upload className="size-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground italic">
-                  {tActions("uploadFacilityReport")}
-                </p>
-              </div>
-            </button>
           </div>
         </div>
       </div>

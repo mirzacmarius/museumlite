@@ -374,9 +374,9 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     defaultColumns,
     collections,
     collectionsStatus,
-    loadMore: () => {
+    loadMore: ({ remember }: { remember: boolean }) => {
       loadMore(NEXT_OBJECTS_PAGE_SIZE);
-      catalogView.loadMore();
+      if (remember) catalogView.loadMore();
     },
     collectionGroups,
     locations,

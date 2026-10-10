@@ -12,6 +12,10 @@ interface AcceptedConditionAssessmentSelectorProps {
   value: string;
   onValueChange: (value: string) => void;
   disabled?: boolean;
+  /** Lets a `<Label htmlFor>` name the control instead of its default name. */
+  id?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }
 
 export function AcceptedConditionAssessmentSelector({
@@ -19,6 +23,8 @@ export function AcceptedConditionAssessmentSelector({
   value,
   onValueChange,
   disabled,
+  id,
+  ...aria
 }: AcceptedConditionAssessmentSelectorProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("conditionAssessments");
@@ -36,11 +42,13 @@ export function AcceptedConditionAssessmentSelector({
   return (
     <div className="space-y-2">
       <select
-        aria-label={t("selectAccepted")}
+        id={id}
+        aria-label={id ? undefined : t("selectAccepted")}
+        {...aria}
         value={value}
         onChange={(event) => onValueChange(event.target.value)}
         disabled={disabled || status === "LoadingFirstPage"}
-        className="w-full rounded-md border border-border bg-background p-2 text-sm"
+        className="min-h-9 w-full rounded-md border border-input bg-background p-2 text-sm"
       >
         <option value="">{t("selectAccepted")}</option>
         {acceptedAssessments.map((assessment) => (

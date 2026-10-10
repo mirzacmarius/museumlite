@@ -113,14 +113,15 @@ export function CommandPalette() {
           "untranslatedComponents.labels.openCommandPalette",
         )}
         aria-keyshortcuts="Meta+K Ctrl+K"
-        className="relative h-9 w-full justify-start rounded-[0.5rem] bg-background text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
+        // On a phone the trigger is an icon, so notifications stay on screen.
+        className="relative size-9 justify-center rounded-[0.5rem] bg-background px-0 text-sm font-normal text-muted-foreground shadow-none sm:w-full sm:justify-start sm:px-3 sm:pr-12 md:w-40 lg:w-64"
         onClick={() => setOpen(true)}
       >
-        <Search className="mr-2 size-4" />
+        <Search className="size-4 sm:mr-2" />
         <span className="hidden lg:inline-flex">
           {translate("untranslatedComponents.labels.searchObjects")}
         </span>
-        <span className="inline-flex lg:hidden">
+        <span className="hidden sm:inline-flex lg:hidden">
           {translate("untranslatedComponents.labels.search")}
         </span>
         <kbd className="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">

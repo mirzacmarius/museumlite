@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import * as exhibitions from "../convex/exhibitions";
+import { expectMatchesReturns } from "./returnsValidation";
 import {
   authedForUser,
   createConvexTest,
@@ -702,4 +704,57 @@ test("historical exhibition summary retains handoff evidence without exposing an
   expect(summary.participants[0]?.collectionTitle).toBeUndefined();
   expect(summary.participants[0]?.collectionAccessionNumber).toBeUndefined();
   expect(summary.participants[0]?.collectionId).toBe(fixture.collectionId);
+});
+
+test("the handoff summary says where each object is recorded now, so staff confirm the observed source", async () => {
+  const t = createConvexTest();
+  const fixture = await createHandoffFixture(t);
+  const before = await fixture.authed.query(
+    api.exhibitions.getPhysicalHandoffSummary,
+    { exhibitionId: fixture.exhibitionId },
+  );
+  expect(before.participants[0]?.currentLocationId).toBe(
+    fixture.storageLocationId,
+  );
+
+  await fixture.authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId: fixture.exhibitionObjectId,
+    observedFromLocationId: before.participants[0]?.currentLocationId ?? null,
+    installationConditionAssessmentId: fixture.acceptedAssessmentId,
+  });
+
+  const after = await fixture.authed.query(
+    api.exhibitions.getPhysicalHandoffSummary,
+    { exhibitionId: fixture.exhibitionId },
+  );
+  expect(after.participants[0]?.currentLocationId).toBe(
+    fixture.galleryLocationId,
+  );
+  expectMatchesReturns(exhibitions.getPhysicalHandoffSummary, after);
+});
+
+test("an object with no recorded original location returns by default to where it was installed from", async () => {
+  const t = createConvexTest();
+  const fixture = await createHandoffFixture(t);
+  await t.run((ctx) =>
+    ctx.db.patch(fixture.exhibitionObjectId, { originalLocationId: undefined }),
+  );
+  await fixture.authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId: fixture.exhibitionObjectId,
+    observedFromLocationId: fixture.storageLocationId,
+    installationConditionAssessmentId: fixture.acceptedAssessmentId,
+  });
+  await fixture.authed.mutation(api.exhibitions.deinstallObject, {
+    exhibitionObjectId: fixture.exhibitionObjectId,
+    deinstallationConditionAssessmentId: fixture.acceptedAssessmentId,
+  });
+
+  const summary = await fixture.authed.query(
+    api.exhibitions.getPhysicalHandoffSummary,
+    { exhibitionId: fixture.exhibitionId },
+  );
+
+  expect(summary.participants[0]?.returnLocationId).toBe(
+    fixture.storageLocationId,
+  );
 });

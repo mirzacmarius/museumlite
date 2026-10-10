@@ -83,7 +83,7 @@ export default function LoanDetailPage() {
               activeTab={activeTab}
               onTabChange={setActiveTab}
             />
-            <div className="mx-auto max-w-7xl px-8 pb-10">
+            <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-8">
               <CaseTaskPanel
                 organizationId={loan.organizationId}
                 caseType="loan"

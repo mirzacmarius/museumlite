@@ -9,14 +9,17 @@ import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 
 const pageTitleKeys: Record<string, string> = {
+  accessions: "accessions",
   accounts: "accounts",
   activity: "activity",
   analytics: "analytics",
   assignments: "assignments",
   conservation: "conservation",
+  deaccessions: "deaccessions",
   exhibitions: "exhibitions",
   insurance: "insurance",
   installations: "installations",
+  loans: "loans",
   locations: "locations",
   media: "media",
   notifications: "notifications",
@@ -33,6 +36,8 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const params = useParams();
   const locale = params?.locale as string;
+  // A record page names its section; the record's identifier means nothing.
+  const recordId = typeof params?.id === "string" ? params.id : undefined;
   const t = useScopedI18n("untranslatedDashboard.dashboardHeader");
   const tEntries = useScopedI18n("objectEntries");
   const tQuality = useScopedI18n("documentationQuality");
@@ -67,7 +72,10 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
       return tQuality("detail.headerTitle");
     if (cleanPath === "/settings/preparation-recipes") return tRecipes("title");
 
-    const segment = cleanPath.split("/").pop();
+    const segment = cleanPath
+      .split("/")
+      .filter((part) => part !== recordId)
+      .pop();
     if (segment && pageTitleKeys[segment]) {
       return t(`pageTitles.${pageTitleKeys[segment]}`);
     }
@@ -77,26 +85,28 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-xl transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="-ml-1" />
+    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <div className="flex min-w-0 items-center gap-2">
+        <SidebarTrigger className="-ml-1 shrink-0" />
         <Separator
           orientation="vertical"
           className="mr-2 data-[orientation=vertical]:h-4"
         />
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground flex items-center gap-2">
-            <Building2 className="size-3.5" />
-            {currentOrganization?.name ?? "MuseumLite"}
+        <div className="flex min-w-0 items-center gap-2 text-xs">
+          <span className="hidden min-w-0 items-center gap-2 text-muted-foreground sm:flex">
+            <Building2 className="size-3.5 shrink-0" />
+            <span className="truncate">
+              {currentOrganization?.name ?? "MuseumLite"}
+            </span>
           </span>
-          <span className="text-muted-foreground/60">/</span>
-          <span className="font-medium text-foreground">
+          <span className="hidden text-muted-foreground/60 sm:inline">/</span>
+          <span className="truncate font-medium text-foreground">
             {getPageTitle(pathname)}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">{children}</div>
+      <div className="flex shrink-0 items-center gap-3">{children}</div>
     </header>
   );
 }

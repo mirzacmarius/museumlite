@@ -128,7 +128,7 @@ export function ObjectDetailTabPanel({
 }: ObjectDetailTabPanelProps) {
   const tRoot = useI18n();
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-8">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="w-full">
         <div className="mb-6 flex flex-wrap items-center gap-x-1 gap-y-2">
           {tabs.map((tab) => (
@@ -137,6 +137,7 @@ export function ObjectDetailTabPanel({
               variant={activeTab === tab.id ? "default" : "ghost"}
               size="sm"
               className="px-2"
+              aria-pressed={activeTab === tab.id}
               onClick={() => onActiveTabChange(tab.id)}
             >
               {tRoot(tab.label)}

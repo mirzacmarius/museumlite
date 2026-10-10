@@ -359,6 +359,19 @@ function firstShownFieldInError(container: Element, fields: string[]) {
   );
 }
 
+/**
+ * Focuses the first field with an error, in the order `errors` was built
+ * (reading order); keys are the fields' element ids. False when none.
+ */
+export function focusFirstFieldInError(
+  errors: Record<string, string | undefined>,
+) {
+  const first = Object.keys(errors).find((field) => errors[field]);
+  if (!first) return false;
+  document.getElementById(first)?.focus();
+  return true;
+}
+
 /** A field's error, placed under its input. */
 export function FieldError({
   field,

@@ -37,8 +37,8 @@ export function CollectionEditFormHeader({
 }: CollectionEditFormHeaderProps) {
   const tRoot = useI18n();
   return (
-    <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background/90 px-6 backdrop-blur-xl">
-      <div className="flex items-center gap-2 text-xs">
+    <header className="z-20 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border/60 bg-background/90 px-4 py-2 backdrop-blur-xl sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 text-xs">
         <Button
           type="button"
           variant="ghost"
@@ -52,14 +52,16 @@ export function CollectionEditFormHeader({
             aria-hidden="true"
           />
         </Button>
-        <span className="text-muted-foreground">{t("detail.collections")}</span>
-        <span className="text-muted-foreground/50">/</span>
-        <span className="font-medium text-foreground">
+        <span className="hidden text-muted-foreground sm:inline">
+          {t("detail.collections")}
+        </span>
+        <span className="hidden text-muted-foreground/50 sm:inline">/</span>
+        <span className="truncate font-medium text-foreground">
           {tRoot("untranslatedRecords.objects.edit.editObject")}
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <PermissionGate permission="collections.update">
           {collection.status === "active" && !hasActiveLoan ? (
             <Button
