@@ -2586,6 +2586,7 @@ export default {
       locations: "Mergi la locații",
       conservation: "Mergi la conservare",
       entries: "Mergi la intrări",
+      documentationQuality: "Mergi la calitatea documentației",
     },
     pageNotFound: {
       title: "Pagina nu a fost găsită",
@@ -2611,6 +2612,275 @@ export default {
       identifier: "Identificator (A–Z)",
     },
     allTypes: "Toate tipurile",
+  },
+  documentationQuality: {
+    title: "Calitatea documentației",
+    description:
+      "Verificați fișele după profilurile de documentare ale instituției și examinați identificatorii duplicați, documentația lipsă, legăturile nesigure cu părți și referințele rupte. Verificările nu modifică niciodată o fișă: personalul corectează fișele acolo unde sunt ținute, iar verificarea următoare confirmă corectura.",
+    tabs: {
+      findings: "Constatări",
+      profiles: "Profiluri",
+    },
+    kind: "Tipul constatării",
+    allKinds: "Toate tipurile",
+    kinds: {
+      duplicate_identifier: "Identificator duplicat",
+      missing_evidence: "Documentație lipsă",
+      legacy_link: "Legătură nesigură cu o parte",
+      orphan_reference: "Referință ruptă",
+    },
+    statuses: {
+      open: "Deschisă",
+      accepted: "Excepție acceptată",
+      resolved: "Rezolvată",
+    },
+    registers: {
+      catalog: "catalog",
+      accession: "accesiuni",
+    },
+    stages: {
+      entry: "În custodie printr-o intrare",
+      collection: "În colecție",
+      borrowed: "Împrumutat de la terți",
+      deaccessioned: "Scos din inventar",
+    },
+    stageHints: {
+      entry:
+        "Primit pentru identificare, depozit sau evaluarea achiziției și neînregistrat în inventar.",
+      collection:
+        "Obiecte înregistrate în inventar sau catalogate, inclusiv cele împrumutate altora.",
+      borrowed: "Obiecte aflate în custodie printr-un împrumut primit.",
+      deaccessioned: "Obiecte scoase din colecție; fișele lor se păstrează.",
+    },
+    requirements: {
+      object_name: "Denumirea obiectului",
+      maker: "Autor",
+      production_date: "Datare",
+      materials: "Materiale",
+      dimensions: "Dimensiuni",
+      description: "Descriere",
+      current_location: "Locația actuală",
+      condition_assessment: "Evaluare a stării acceptată",
+      image: "Fotografie",
+      supporting_document: "Document justificativ",
+      accession_record: "Înregistrare în inventar aprobată",
+      provenance_claim: "Afirmație de proveniență",
+    },
+    orphanFields: {
+      parentObject: "Obiect părinte",
+      currentLocation: "Locația actuală",
+      collectionGroup: "Grup de colecții",
+      object: "Obiect",
+      donorAccount: "Contul donatorului",
+    },
+    orphanProblems: {
+      missing: "nu mai există",
+      other_organization: "aparține altei organizații",
+      self: "trimite la fișa însăși",
+    },
+    recordTypes: {
+      object: "Obiect",
+      accession: "Înregistrare în inventar",
+      deaccession: "Scoatere din inventar",
+    },
+    objectTabs: {
+      general: "General",
+      physical: "Fizic",
+      media: "Media",
+      accession: "Accesiune",
+      placement: "Amplasare",
+      provenance: "Proveniență",
+    },
+    summary: {
+      duplicateIdentifier:
+        "„{identifier}” este folosit de {count} fișe în registrul de {register}",
+      missingEvidence: "{identifier} {title}: lipsește {missing}",
+      legacyName: "{label} numește „{name}” fără o parte asociată",
+      legacyAccount: "{label} trimite la o parte fără o legătură confirmată",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "Nicio constatare deschisă. Rulați o verificare pentru a căuta excepții de documentare.",
+        accepted: "Nicio excepție acceptată.",
+        resolved: "Încă nu există constatări rezolvate.",
+      },
+      emptyKind: "Nicio constatare de acest tip: {kind}.",
+      reopened: "Redeschisă",
+      detectedBy: "Verificarea {number}",
+      resolvedBy: "Rezolvată de verificarea {number}",
+    },
+    check: {
+      title: "Verificare de calitate",
+      loading: "Se încarcă…",
+      never:
+        "Nu a rulat încă nicio verificare. O verificare citește fiecare fișă în pași limitați și enumeră ce găsește.",
+      running:
+        "Verificarea {number} rulează: pasul {step} din {steps} ({phase}), {records} fișe verificate până acum.",
+      stalled:
+        "Verificarea {number} nu a mai avansat de peste zece minute. Reluați-o sau anulați-o și porniți din nou.",
+      completed:
+        "Verificarea {number} s-a încheiat pe {date}: {records} fișe verificate, {detected} constatări ({opened} noi, {reopened} redeschise), {resolved} rezolvate.",
+      failed: "Verificarea {number} s-a oprit în timpul etapei: {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "Membrul care a rulat-o nu mai are acces. Reluați-o pentru a continua cu accesul dumneavoastră.",
+        PAGE_FAILED:
+          "O fișă nu a putut fi verificată. Reluați verificarea pentru a încerca din nou de unde s-a oprit.",
+      },
+      cancelled:
+        "Verificarea {number} a fost anulată. Constatările găsite rămân; nu a rezolvat niciuna.",
+      phases: {
+        catalog_identifiers: "identificatori de catalog",
+        accession_identifiers: "identificatori de accesiune",
+        objects_active: "obiecte",
+        objects_loaned: "obiecte împrumutate",
+        objects_deaccessioned: "obiecte scoase din inventar",
+        accessions: "înregistrări în inventar",
+        deaccessions: "scoateri din inventar",
+        resolve_duplicate_identifier: "identificatori duplicați corectați",
+        resolve_missing_evidence: "documentație completată",
+        resolve_legacy_link: "legături cu părți confirmate",
+        resolve_orphan_reference: "referințe reparate",
+        finished: "încheiată",
+      },
+      run: "Rulează verificarea",
+      resume: "Reia",
+      cancel: "Anulează verificarea",
+      started: "Verificare pornită",
+      resumed: "Verificare reluată",
+      cancelledToast: "Verificare anulată",
+      noProfiles:
+        "Niciun profil activ, așa că documentația lipsă nu a fost verificată.",
+      partiesNotChecked:
+        "Legăturile cu părți nu au fost verificate, deoarece modulul Conturi este dezactivat.",
+      identifierIndexIncomplete:
+        "Unii identificatori nu sunt încă indexați, așa că duplicatele dintre ei nu au fost verificate.",
+      identifierIndexLink: "Completați indexul identificatorilor",
+      neverChanges:
+        "Verificările nu renumerotează, nu combină și nu completează niciodată fișe.",
+    },
+    profiles: {
+      loading: "Se încarcă profilurile…",
+      description:
+        "Un profil arată ce documentație trebuie să aibă obiectele de un anumit tip în anumite etape. Fiecare verificare aplică profilurile active; cele arhivate se păstrează.",
+      add: "Adaugă profil",
+      readOnly: "Administratorii modifică profilurile.",
+      empty:
+        "Încă nu există profiluri. Fără ele, verificările semnalează totuși identificatorii duplicați, legăturile cu părți și referințele rupte.",
+      allTypes: "Toate tipurile de obiecte",
+      objectTypeHint: "Tipurile de obiecte provin din Setări › Preferințe.",
+      addTitle: "Adaugă profil de documentare",
+      editTitle: "Editează profilul de documentare",
+      dialogDescription:
+        "Alegeți ce obiecte acoperă profilul și ce trebuie să aibă. Verificarea următoare îl aplică.",
+      fields: {
+        name: "Nume",
+        objectType: "Tip de obiect",
+        stages: "Etape",
+        requirements: "Documentație cerută",
+      },
+      errors: {
+        name: "Introduceți un nume de cel mult 120 de caractere.",
+        stages: "Alegeți cel puțin o etapă.",
+        requirements: "Alegeți cel puțin o cerință.",
+      },
+      cancel: "Anulează",
+      save: "Salvează profilul",
+      saving: "Se salvează…",
+      saved: "Profil salvat",
+      edit: "Editează",
+      archive: "Arhivează",
+      restore: "Restaurează",
+      archived: "Profil arhivat",
+      restored: "Profil restaurat",
+      archivedBadge: "Arhivat",
+    },
+    review: {
+      title: "Examinare",
+      openHint:
+        "Corectați fișa și rulați o verificare sau acceptați constatarea ca excepție, cu un motiv.",
+      acceptAction: "Acceptă ca excepție",
+      acceptTitle: "Acceptă ca excepție",
+      acceptDescription:
+        "Fișa rămâne neschimbată. Indicați motivul, de exemplu de ce documentația nu poate exista. Constatarea se redeschide dacă o verificare ulterioară găsește altceva.",
+      acceptDuplicateDescription:
+        "Fiecare fișă își păstrează identificatorul. Motivul este înregistrat ca examinare a conflictului de identificator pentru fiecare fișă care îl folosește.",
+      note: "Motiv",
+      noteRequired: "Introduceți un motiv.",
+      cancel: "Anulează",
+      accept: "Acceptă",
+      saving: "Se salvează…",
+      accepted: "Acceptată ca excepție",
+      reviewedBy: "Acceptată de {name} pe {date}",
+      unknownReviewer: "un fost membru",
+      earlierReview:
+        "Acceptată anterior; ce a găsit verificarea s-a schimbat între timp:",
+      reopen: "Redeschide",
+      reopened: "Constatare redeschisă",
+      reviewedInRegister:
+        "Examinată în registrul identificatorilor. Dacă o altă fișă începe să folosească identificatorul, constatarea se redeschide.",
+      resolved: "Verificarea {number} nu a mai găsit-o pe {date}.",
+    },
+    detail: {
+      headerTitle: "Constatare",
+      back: "Înapoi la calitatea documentației",
+      detection:
+        "Găsită prima dată de verificarea {first}; ultima dată de verificarea {last}.",
+      foundTitle: "Ce a găsit verificarea",
+      repairTitle: "Unde se corectează",
+      notRecorded: "Neînregistrat",
+      register: "Registru",
+      identifier: "Identificatorul așa cum a fost înregistrat",
+      records: "Fișe care îl folosesc ({count})",
+      moreRecords: "Și încă {count}.",
+      object: "Obiect",
+      profile: "Profil",
+      stage: "Etapă",
+      missing: "Lipsește",
+      recordedCondition: "Text despre stare din fișă, păstrat așa cum a fost scris",
+      recordedProvenance:
+        "Text despre proveniență din fișă, păstrat așa cum a fost scris",
+      record: "Fișă",
+      assertedName: "Numele așa cum a fost scris",
+      existingParty: "Cont menționat",
+      suggestedRole: "Rol",
+      field: "Referință",
+      storedReference: "Valoarea salvată",
+      problem: "Problemă",
+      recordUnavailable: "{record} nu mai este disponibil.",
+      openTab: "Deschideți fila {tab}: {requirements}",
+      repairIntro:
+        "Corectați fișa acolo unde este ținută. Verificarea următoare închide constatarea când lipsa a dispărut.",
+      linkPartyHint:
+        "Confirmați sau asociați partea în panoul Părți al fișei.",
+      linkPartyUnavailable:
+        "Asocierea unei părți necesită modulul Conturi și permisiunea de a edita părți. Atribuiți sarcina cuiva care poate.",
+      duplicateHint:
+        "Nimic nu se renumerotează. Deschideți fiecare fișă pentru a le compara sau acceptați duplicatul pe baza dovezilor istorice.",
+      identifierRegister: "Deschideți registrul identificatorilor",
+    },
+    errors: {
+      fallback: "A apărut o eroare. Încercați din nou.",
+      profileInvalid: "Verificați numele, etapele și cerințele profilului.",
+      profileLimitReached:
+        "O organizație poate avea cel mult 20 de profiluri active. Arhivați mai întâi unul.",
+      profileNotFound: "Acest profil nu mai există.",
+      checkRunning: "O verificare rulează deja.",
+      checkNotFound: "Această verificare nu mai există.",
+      checkNotResumable:
+        "Doar ultima verificare oprită sau blocată poate fi reluată.",
+      findingNotFound: "Această constatare nu mai există.",
+      findingStatusChanged:
+        "Constatarea s-a schimbat între timp. Reîncărcați pentru a vedea starea actuală.",
+      reviewNoteRequired: "Introduceți un motiv de cel mult 2.000 de caractere.",
+      identifierIndexIncomplete:
+        "Completați indexul identificatorilor înainte de a examina duplicatele.",
+      duplicateGroupTooLarge:
+        "Prea multe fișe folosesc acest identificator pentru a fi examinate deodată. Examinați-le în registrul identificatorilor.",
+      reviewedInIdentifierRegister:
+        "Identificatorii duplicați se examinează în registrul identificatorilor.",
+    },
   },
   objectEntries: {
     title: "Intrări",
@@ -7055,6 +7325,7 @@ export default {
       deaccession: "Scoatere din inventar",
       exhibition: "Expoziție",
       conservation: "Tratament de conservare",
+      documentationFinding: "Constatare de documentare",
     },
     fields: {
       title: "Titlu",
@@ -9232,6 +9503,16 @@ export default {
       updateSite: "Actualizează site-ul",
       archiveSiteConfirm: "Sigur doriți să arhivați acest site?",
       failedArchiveSite: "Nu s-a putut arhiva site-ul",
+      siteInUseTitle: "Acest site este încă folosit",
+      siteInUseDescription:
+        "Arhivarea nu trebuie să lase locații sau obiecte sub un site inactiv. Rezolvați mai întâi aceste puncte; nu s-a modificat nimic.",
+      siteInUseLocations:
+        "Locații active pe acest site: {count}. Ștergeți-le mai întâi din Locații.",
+      siteInUseObjects:
+        "Obiecte aflate încă în locațiile acestui site: {count}. Mutați-le mai întâi în altă locație.",
+      siteInUseIncomplete:
+        "Acest site are prea multe locații sau obiecte pentru a fi verificat deodată, așa că nu poate fi arhivat aici.",
+      siteInUseClose: "Închide",
       systemRole: "(Sistem)",
       siteManagement: "Gestionarea site-urilor",
       physicalLocationBranches:
@@ -9618,6 +9899,7 @@ export default {
       newAccession: "Intrare nouă în colecție",
       newLoan: "Împrumut nou",
       newCollectionGroup: "Grup nou de colecții",
+      documentationQuality: "Calitatea documentației",
       navigation: "Navigare",
       dashboard: "Tablou de bord",
       library: "Bibliotecă",
@@ -10069,6 +10351,7 @@ export default {
       locked: "Indisponibil",
       overview: "Prezentare generală",
       myWork: "Munca mea",
+      documentationQuality: "Calitatea documentației",
       objectCatalog: "Catalogul obiectelor",
       locationTracking: "Locații și urmărire",
       scan: "Scanează",

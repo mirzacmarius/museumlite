@@ -3,6 +3,7 @@ import {
   Archive,
   Box,
   Building2,
+  ClipboardCheck,
   CreditCard,
   FilePlus,
   LayoutDashboard,
@@ -73,6 +74,11 @@ export function buildCommandPaletteActions({
     { labelKey: "objects", href: "/objects", icon: Box },
     { labelKey: "collectionGroups", href: "/collections", icon: Archive },
     { labelKey: "accessions", href: "/accessions", icon: Building2 },
+    ...when(isOpen("documentation_quality"), {
+      labelKey: "documentationQuality",
+      href: capabilityRoute("documentation_quality"),
+      icon: ClipboardCheck,
+    }),
     ...when(isOpen("loans"), {
       labelKey: "loans",
       href: capabilityRoute("loans"),

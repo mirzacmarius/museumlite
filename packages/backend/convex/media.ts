@@ -31,6 +31,10 @@ import {
 import { buildStorageStats } from "./utils/projectionReports";
 import { projectionUnavailableResult } from "./utils/projectionValidators";
 import { revokePublicRendition } from "./utils/publicMedia";
+import {
+  accessionReferenceProblems,
+  objectReferenceProblems,
+} from "./utils/recordReferences";
 import { getRelatedEntityOrganization } from "./utils/relatedEntityIntegrity";
 import {
   claimStorageOwnership,
@@ -1884,6 +1888,18 @@ export const getRightsSummary = query({
   },
 });
 
+const OBJECT_REFERENCE_ISSUES = {
+  parentObject: "Parent object is missing or belongs to another organization",
+  currentLocation: "Location is missing or belongs to another organization",
+  collectionGroup:
+    "Collection group is missing or belongs to another organization",
+} as const;
+
+const ACCESSION_REFERENCE_ISSUES = {
+  object: "Object is missing or belongs to another organization",
+  donorAccount: "Donor account is missing or belongs to another organization",
+} as const;
+
 export const reviewIntegrity = query({
   args: {
     organizationId: v.id("organizations"),
@@ -2051,31 +2067,21 @@ export const reviewIntegrity = query({
         )
         .paginate(paginationOpts);
       for (const record of result.page) {
-        if (record.parentObjectId) {
-          const parent = await ctx.db.get(record.parentObjectId);
-          if (
-            !parent ||
-            parent.organizationId !== args.organizationId ||
-            parent._id === record._id
-          )
-            add(
-              record._id,
-              record.title,
-              record.parentObjectId,
-              "Parent object is missing or belongs to another organization",
-            );
-        }
-        await checkLocation(record._id, record.title, record.currentLocationId);
-        if (record.collectionGroupId) {
-          const group = await ctx.db.get(record.collectionGroupId);
-          if (!group || group.organizationId !== args.organizationId)
-            add(
-              record._id,
-              record.title,
-              record.collectionGroupId,
-              "Collection group is missing or belongs to another organization",
-            );
-        }
+        const problems = await objectReferenceProblems(ctx, record);
+        for (const problem of problems)
+          add(
+            record._id,
+            record.title,
+            problem.referencedId,
+            OBJECT_REFERENCE_ISSUES[problem.field],
+          );
+        // Locations that still exist may be unavailable for moves.
+        if (!problems.some((problem) => problem.field === "currentLocation"))
+          await checkLocation(
+            record._id,
+            record.title,
+            record.currentLocationId,
+          );
       }
       return {
         issues,
@@ -2154,16 +2160,13 @@ export const reviewIntegrity = query({
         ]);
         for (const storageId of storageIds)
           await checkBlob(record._id, record.accessionNumber, storageId);
-        if (record.donorAccountId) {
-          const account = await ctx.db.get(record.donorAccountId);
-          if (!account || account.organizationId !== args.organizationId)
-            add(
-              record._id,
-              record.accessionNumber,
-              record.donorAccountId,
-              "Donor account is missing or belongs to another organization",
-            );
-        }
+        for (const problem of await accessionReferenceProblems(ctx, record))
+          add(
+            record._id,
+            record.accessionNumber,
+            problem.referencedId,
+            ACCESSION_REFERENCE_ISSUES[problem.field],
+          );
       }
       return {
         issues,

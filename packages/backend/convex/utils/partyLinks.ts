@@ -407,6 +407,79 @@ export async function hasPartyLinkHistory(
   return false;
 }
 
+/** A record that names a Party in its own fields, for the legacy review. */
+export interface LegacyPartyCandidate {
+  target: PartyTarget;
+  label: string;
+  /** The name as written on the record. */
+  assertedName?: string;
+  contact?: string;
+  date: number;
+  /** Roles the Party may hold on the record, primary role first. */
+  roles: readonly PartyRole[];
+  /** An account the record references without a typed link. */
+  existingAccountId?: Id<"accounts">;
+}
+
+export function accessionLegacyCandidate(
+  accession: Doc<"accessions">,
+): LegacyPartyCandidate {
+  return {
+    target: { type: "accession", id: accession._id },
+    label: accession.accessionNumber,
+    assertedName: accessionSourceAssertion(accession.source),
+    date: accession.dateReceived,
+    roles: ACCESSION_PARTY_ROLES,
+    existingAccountId: accession.donorAccountId,
+  };
+}
+
+export function loanLegacyCandidate(loan: Doc<"loans">): LegacyPartyCandidate {
+  return {
+    target: { type: "loan", id: loan._id },
+    label: loan.loanNumber,
+    assertedName: loan.lenderBorrowerName.trim() || undefined,
+    contact: loan.lenderBorrowerContact?.trim() || undefined,
+    date: loan.startDate,
+    roles: loanPartyRoles(loan.type),
+    existingAccountId: loan.accountId,
+  };
+}
+
+export function deaccessionLegacyCandidate(
+  deaccession: Doc<"deaccessions">,
+): LegacyPartyCandidate | null {
+  if (!deaccession.exitRecord) return null;
+  return {
+    target: { type: "deaccession", id: deaccession._id },
+    label: deaccession.deaccessionNumber,
+    assertedName: deaccession.exitRecord.recipient,
+    date: deaccession.exitRecord.exitDate,
+    roles: ["recipient"],
+  };
+}
+
+/**
+ * True when a record names a Party only in text, or references an account
+ * without a typed link, and has never had a link in those roles. Records
+ * with any link history (current or ended) have been reviewed. Nothing is
+ * linked automatically.
+ */
+export async function awaitsLegacyPartyReview(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  candidate: LegacyPartyCandidate,
+) {
+  if (candidate.roles.length === 0) return false;
+  if (!candidate.assertedName && !candidate.existingAccountId) return false;
+  return !(await hasPartyLinkHistory(
+    ctx,
+    organizationId,
+    candidate.target,
+    candidate.roles,
+  ));
+}
+
 /**
  * Keeps the record's own party reference in step with a mirrored role's
  * link on records that are still open for edits. Ending a link clears the

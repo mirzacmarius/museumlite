@@ -4774,6 +4774,7 @@ export default {
       deaccession: "Radiation",
       exhibition: "Exposition",
       conservation: "Traitement de conservation",
+      documentationFinding: "Constat de documentation",
     },
     fields: {
       title: "Titre",
@@ -5544,6 +5545,7 @@ export default {
       locations: "Aller aux emplacements",
       conservation: "Aller à la conservation",
       entries: "Aller aux entrées",
+      documentationQuality: "Aller à la qualité de la documentation",
     },
     pageNotFound: {
       title: "Page introuvable",
@@ -5570,6 +5572,276 @@ export default {
       identifier: "Identifiant (A–Z)",
     },
     allTypes: "Tous les types",
+  },
+  documentationQuality: {
+    title: "Qualité de la documentation",
+    description:
+      "Vérifiez les fiches au regard des profils de documentation de l’institution et examinez les identifiants en double, la documentation manquante, les liens incertains vers des parties et les références rompues. Les vérifications ne modifient jamais une fiche : le personnel corrige les fiches là où elles sont tenues, et la vérification suivante confirme la correction.",
+    tabs: {
+      findings: "Constats",
+      profiles: "Profils",
+    },
+    kind: "Type de constat",
+    allKinds: "Tous les types",
+    kinds: {
+      duplicate_identifier: "Identifiant en double",
+      missing_evidence: "Documentation manquante",
+      legacy_link: "Lien incertain vers une partie",
+      orphan_reference: "Référence rompue",
+    },
+    statuses: {
+      open: "Ouvert",
+      accepted: "Exception acceptée",
+      resolved: "Résolu",
+    },
+    registers: {
+      catalog: "catalogue",
+      accession: "inventaire",
+    },
+    stages: {
+      entry: "Détenu sous une entrée",
+      collection: "Dans la collection",
+      borrowed: "Emprunté",
+      deaccessioned: "Désaccessionné",
+    },
+    stageHints: {
+      entry:
+        "Reçu pour identification, dépôt ou examen d’acquisition, sans inscription à l’inventaire.",
+      collection:
+        "Objets inscrits à l’inventaire ou catalogués, y compris ceux prêtés.",
+      borrowed: "Objets détenus au titre d’un prêt entrant.",
+      deaccessioned:
+        "Objets sortis de la collection ; leurs fiches sont conservées.",
+    },
+    requirements: {
+      object_name: "Dénomination",
+      maker: "Auteur",
+      production_date: "Date de réalisation",
+      materials: "Matériaux",
+      dimensions: "Dimensions",
+      description: "Description",
+      current_location: "Emplacement actuel",
+      condition_assessment: "Constat d’état accepté",
+      image: "Photographie",
+      supporting_document: "Document justificatif",
+      accession_record: "Inscription à l’inventaire approuvée",
+      provenance_claim: "Assertion de provenance",
+    },
+    orphanFields: {
+      parentObject: "Objet parent",
+      currentLocation: "Emplacement actuel",
+      collectionGroup: "Groupe de collections",
+      object: "Objet",
+      donorAccount: "Compte du donateur",
+    },
+    orphanProblems: {
+      missing: "n’existe plus",
+      other_organization: "appartient à une autre organisation",
+      self: "renvoie à la fiche elle-même",
+    },
+    recordTypes: {
+      object: "Objet",
+      accession: "Inscription",
+      deaccession: "Désaccession",
+    },
+    objectTabs: {
+      general: "Général",
+      physical: "Physique",
+      media: "Médias",
+      accession: "Inscription",
+      placement: "Emplacement",
+      provenance: "Provenance",
+    },
+    summary: {
+      duplicateIdentifier:
+        "« {identifier} » est partagé par {count} fiches ({register})",
+      missingEvidence: "{identifier} {title} : manque {missing}",
+      legacyName: "{label} cite « {name} » sans partie liée",
+      legacyAccount: "{label} renvoie à une partie sans lien confirmé",
+      orphanReference: "{label} : {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "Aucun constat ouvert. Lancez une vérification pour rechercher des exceptions de documentation.",
+        accepted: "Aucune exception acceptée.",
+        resolved: "Aucun constat résolu pour l’instant.",
+      },
+      emptyKind: "Aucun constat de ce type : {kind}.",
+      reopened: "Rouvert",
+      detectedBy: "Vérification {number}",
+      resolvedBy: "Résolu par la vérification {number}",
+    },
+    check: {
+      title: "Vérification de qualité",
+      loading: "Chargement…",
+      never:
+        "Aucune vérification n’a encore été lancée. Une vérification lit chaque fiche par étapes limitées et liste ce qu’elle trouve.",
+      running:
+        "La vérification {number} est en cours : étape {step} sur {steps} ({phase}), {records} fiches vérifiées jusqu’ici.",
+      stalled:
+        "La vérification {number} n’a pas progressé depuis plus de dix minutes. Reprenez-la, ou annulez-la et recommencez.",
+      completed:
+        "La vérification {number} s’est terminée le {date} : {records} fiches vérifiées, {detected} constats ({opened} nouveaux, {reopened} rouverts), {resolved} résolus.",
+      failed: "La vérification {number} s’est arrêtée pendant : {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "Le membre qui l’a lancée n’y a plus accès. Reprenez-la pour continuer avec votre accès.",
+        PAGE_FAILED:
+          "Une fiche n’a pas pu être vérifiée. Reprenez la vérification pour réessayer à partir de l’endroit où elle s’est arrêtée.",
+      },
+      cancelled:
+        "La vérification {number} a été annulée. Les constats détectés sont conservés ; aucun n’a été résolu.",
+      phases: {
+        catalog_identifiers: "identifiants du catalogue",
+        accession_identifiers: "identifiants d’inventaire",
+        objects_active: "objets",
+        objects_loaned: "objets prêtés",
+        objects_deaccessioned: "objets désaccessionnés",
+        accessions: "inscriptions",
+        deaccessions: "désaccessions",
+        resolve_duplicate_identifier: "doublons d’identifiants corrigés",
+        resolve_missing_evidence: "documentation complétée",
+        resolve_legacy_link: "liens vers des parties confirmés",
+        resolve_orphan_reference: "références réparées",
+        finished: "terminée",
+      },
+      run: "Lancer une vérification",
+      resume: "Reprendre",
+      cancel: "Annuler la vérification",
+      started: "Vérification lancée",
+      resumed: "Vérification reprise",
+      cancelledToast: "Vérification annulée",
+      noProfiles:
+        "Aucun profil actif : la documentation manquante n’a pas été vérifiée.",
+      partiesNotChecked:
+        "Les liens vers des parties n’ont pas été vérifiés, car le module Comptes est désactivé.",
+      identifierIndexIncomplete:
+        "Certains identifiants ne sont pas encore indexés ; les doublons parmi eux n’ont pas été vérifiés.",
+      identifierIndexLink: "Compléter l’index des identifiants",
+      neverChanges:
+        "Les vérifications ne renumérotent, ne fusionnent et ne complètent jamais les fiches.",
+    },
+    profiles: {
+      loading: "Chargement des profils…",
+      description:
+        "Un profil indique la documentation que les objets d’un type doivent avoir à certaines étapes. Chaque vérification applique les profils actifs ; les profils archivés sont conservés.",
+      add: "Ajouter un profil",
+      readOnly: "Les administrateurs modifient les profils.",
+      empty:
+        "Aucun profil pour l’instant. Sans profil, les vérifications signalent tout de même les identifiants en double, les liens vers des parties et les références rompues.",
+      allTypes: "Tous les types d’objets",
+      objectTypeHint: "Les types d’objets proviennent de Paramètres › Préférences.",
+      addTitle: "Ajouter un profil de documentation",
+      editTitle: "Modifier le profil de documentation",
+      dialogDescription:
+        "Choisissez les objets couverts par le profil et ce qu’ils doivent avoir. La vérification suivante l’applique.",
+      fields: {
+        name: "Nom",
+        objectType: "Type d’objet",
+        stages: "Étapes",
+        requirements: "Documentation requise",
+      },
+      errors: {
+        name: "Saisissez un nom de 120 caractères au plus.",
+        stages: "Choisissez au moins une étape.",
+        requirements: "Choisissez au moins une exigence.",
+      },
+      cancel: "Annuler",
+      save: "Enregistrer le profil",
+      saving: "Enregistrement…",
+      saved: "Profil enregistré",
+      edit: "Modifier",
+      archive: "Archiver",
+      restore: "Restaurer",
+      archived: "Profil archivé",
+      restored: "Profil restauré",
+      archivedBadge: "Archivé",
+    },
+    review: {
+      title: "Examen",
+      openHint:
+        "Corrigez la fiche puis lancez une vérification, ou acceptez ce constat comme exception en indiquant la raison.",
+      acceptAction: "Accepter comme exception",
+      acceptTitle: "Accepter comme exception",
+      acceptDescription:
+        "La fiche reste inchangée. Indiquez la raison, par exemple pourquoi la documentation ne peut pas exister. Le constat est rouvert si une vérification ultérieure trouve autre chose.",
+      acceptDuplicateDescription:
+        "Chaque fiche conserve son identifiant. Votre raison est enregistrée comme examen de conflit d’identifiant pour chaque fiche qui le partage.",
+      note: "Raison",
+      noteRequired: "Indiquez une raison.",
+      cancel: "Annuler",
+      accept: "Accepter",
+      saving: "Enregistrement…",
+      accepted: "Accepté comme exception",
+      reviewedBy: "Accepté par {name} le {date}",
+      unknownReviewer: "un ancien membre",
+      earlierReview:
+        "Accepté précédemment ; ce que la vérification a trouvé a changé depuis :",
+      reopen: "Rouvrir",
+      reopened: "Constat rouvert",
+      reviewedInRegister:
+        "Examiné dans le registre des identifiants. Si une autre fiche se met à partager l’identifiant, ce constat est rouvert.",
+      resolved: "La vérification {number} ne l’a plus trouvé le {date}.",
+    },
+    detail: {
+      headerTitle: "Constat",
+      back: "Retour à la qualité de la documentation",
+      detection:
+        "Trouvé d’abord par la vérification {first} ; dernièrement par la vérification {last}.",
+      foundTitle: "Ce que la vérification a trouvé",
+      repairTitle: "Où corriger",
+      notRecorded: "Non renseigné",
+      register: "Registre",
+      identifier: "Identifiant tel qu’enregistré",
+      records: "Fiches qui le partagent ({count})",
+      moreRecords: "Et {count} de plus.",
+      object: "Objet",
+      profile: "Profil",
+      stage: "Étape",
+      missing: "Manquant",
+      recordedCondition: "Texte d’état sur la fiche, conservé tel qu’écrit",
+      recordedProvenance:
+        "Texte de provenance sur la fiche, conservé tel qu’écrit",
+      record: "Fiche",
+      assertedName: "Nom tel qu’écrit",
+      existingParty: "Compte référencé",
+      suggestedRole: "Rôle",
+      field: "Référence",
+      storedReference: "Valeur enregistrée",
+      problem: "Problème",
+      recordUnavailable: "{record} n’est plus disponible.",
+      openTab: "Ouvrir l’onglet {tab} : {requirements}",
+      repairIntro:
+        "Corrigez la fiche là où elle est tenue. La vérification suivante clôt ce constat lorsque la lacune a disparu.",
+      linkPartyHint:
+        "Confirmez ou liez la partie dans le panneau Parties de la fiche.",
+      linkPartyUnavailable:
+        "Lier une partie nécessite le module Comptes et l’autorisation de modifier les parties. Confiez cette tâche à quelqu’un qui le peut.",
+      duplicateHint:
+        "Rien n’est renuméroté. Ouvrez chaque fiche pour les comparer, ou acceptez le doublon avec les éléments historiques.",
+      identifierRegister: "Ouvrir le registre des identifiants",
+    },
+    errors: {
+      fallback: "Une erreur s’est produite. Réessayez.",
+      profileInvalid: "Vérifiez le nom, les étapes et les exigences du profil.",
+      profileLimitReached:
+        "Une organisation peut avoir au plus 20 profils actifs. Archivez-en un d’abord.",
+      profileNotFound: "Ce profil n’existe plus.",
+      checkRunning: "Une vérification est déjà en cours.",
+      checkNotFound: "Cette vérification n’existe plus.",
+      checkNotResumable:
+        "Seule la dernière vérification arrêtée ou bloquée peut être reprise.",
+      findingNotFound: "Ce constat n’existe plus.",
+      findingStatusChanged:
+        "Ce constat a changé entre-temps. Rechargez pour voir son état actuel.",
+      reviewNoteRequired: "Indiquez une raison de 2 000 caractères au plus.",
+      identifierIndexIncomplete:
+        "Complétez l’index des identifiants avant d’examiner les doublons.",
+      duplicateGroupTooLarge:
+        "Trop de fiches partagent cet identifiant pour un examen en une fois. Examinez-les dans le registre des identifiants.",
+      reviewedInIdentifierRegister:
+        "Les identifiants en double s’examinent dans le registre des identifiants.",
+    },
   },
   objectEntries: {
     title: "Entrées",
@@ -8490,6 +8762,16 @@ export default {
       updateSite: "Mettre à jour le site",
       archiveSiteConfirm: "Voulez-vous vraiment archiver ce site ?",
       failedArchiveSite: "Échec de l’archivage du site",
+      siteInUseTitle: "Ce site est encore utilisé",
+      siteInUseDescription:
+        "L’archivage ne doit pas laisser d’emplacements ni d’objets sous un site inactif. Réglez d’abord ces points ; rien n’a été modifié.",
+      siteInUseLocations:
+        "Emplacements actifs sur ce site : {count}. Supprimez-les d’abord dans Emplacements.",
+      siteInUseObjects:
+        "Objets encore placés dans les emplacements de ce site : {count}. Déplacez-les d’abord vers un autre emplacement.",
+      siteInUseIncomplete:
+        "Ce site compte trop d’emplacements ou d’objets pour être vérifié en une fois ; il ne peut pas être archivé ici.",
+      siteInUseClose: "Fermer",
       systemRole: "(Système)",
       siteManagement: "Gestion des sites",
       physicalLocationBranches:
@@ -8881,6 +9163,7 @@ export default {
       newAccession: "Nouvelle entrée",
       newLoan: "Nouveau prêt",
       newCollectionGroup: "Nouveau groupe de collections",
+      documentationQuality: "Qualité de la documentation",
       navigation: "Navigation",
       dashboard: "Tableau de bord",
       library: "Bibliothèque",
@@ -9339,6 +9622,7 @@ export default {
       locked: "Indisponible",
       overview: "Vue d’ensemble",
       myWork: "Mon travail",
+      documentationQuality: "Qualité de la documentation",
       objectCatalog: "Catalogue des objets",
       locationTracking: "Emplacements et suivi",
       scan: "Scanner",

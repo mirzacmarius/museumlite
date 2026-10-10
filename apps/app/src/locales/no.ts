@@ -4761,6 +4761,7 @@ export default {
       deaccession: "Avhending",
       exhibition: "Utstilling",
       conservation: "Konserveringsbehandling",
+      documentationFinding: "Dokumentasjonsfunn",
     },
     fields: {
       title: "Tittel",
@@ -5519,6 +5520,7 @@ export default {
       locations: "Gå til steder",
       conservation: "Gå til konservering",
       entries: "Gå til innleveringer",
+      documentationQuality: "Gå til dokumentasjonskvalitet",
     },
     pageNotFound: {
       title: "Fant ikke siden",
@@ -5544,6 +5546,273 @@ export default {
       identifier: "Identifikator (A–Å)",
     },
     allTypes: "Alle typer",
+  },
+  documentationQuality: {
+    title: "Dokumentasjonskvalitet",
+    description:
+      "Kontroller postene mot institusjonens dokumentasjonsprofiler og gå gjennom dupliserte identifikatorer, manglende dokumentasjon, usikre partskoblinger og brutte referanser. Kontroller endrer aldri en post: de ansatte retter postene der de føres, og neste kontroll bekrefter rettingen.",
+    tabs: {
+      findings: "Funn",
+      profiles: "Profiler",
+    },
+    kind: "Type funn",
+    allKinds: "Alle typer",
+    kinds: {
+      duplicate_identifier: "Duplisert identifikator",
+      missing_evidence: "Manglende dokumentasjon",
+      legacy_link: "Usikker partskobling",
+      orphan_reference: "Brutt referanse",
+    },
+    statuses: {
+      open: "Åpen",
+      accepted: "Godtatt unntak",
+      resolved: "Løst",
+    },
+    registers: {
+      catalog: "katalog",
+      accession: "aksesjons",
+    },
+    stages: {
+      entry: "I forvaring under en innlevering",
+      collection: "I samlingen",
+      borrowed: "Innlånt",
+      deaccessioned: "Avhendet",
+    },
+    stageHints: {
+      entry:
+        "Mottatt for identifisering, deponering eller ervervsvurdering og ikke aksesjonert.",
+      collection: "Aksesjonerte eller katalogiserte objekter, også utlånte.",
+      borrowed: "Objekter i forvaring under et innlån.",
+      deaccessioned: "Objekter fjernet fra samlingen; postene deres beholdes.",
+    },
+    requirements: {
+      object_name: "Objektnavn",
+      maker: "Produsent",
+      production_date: "Datering",
+      materials: "Materialer",
+      dimensions: "Mål",
+      description: "Beskrivelse",
+      current_location: "Nåværende sted",
+      condition_assessment: "Godkjent tilstandsvurdering",
+      image: "Fotografi",
+      supporting_document: "Støttedokument",
+      accession_record: "Godkjent aksesjon",
+      provenance_claim: "Provenienspåstand",
+    },
+    orphanFields: {
+      parentObject: "Overordnet objekt",
+      currentLocation: "Nåværende sted",
+      collectionGroup: "Samlingsgruppe",
+      object: "Objekt",
+      donorAccount: "Giverkonto",
+    },
+    orphanProblems: {
+      missing: "finnes ikke lenger",
+      other_organization: "tilhører en annen organisasjon",
+      self: "peker på posten selv",
+    },
+    recordTypes: {
+      object: "Objekt",
+      accession: "Aksesjon",
+      deaccession: "Avhending",
+    },
+    objectTabs: {
+      general: "Generelt",
+      physical: "Fysisk",
+      media: "Media",
+      accession: "Aksesjon",
+      placement: "Plassering",
+      provenance: "Proveniens",
+    },
+    summary: {
+      duplicateIdentifier:
+        "«{identifier}» deles av {count} poster i {register}registeret",
+      missingEvidence: "{identifier} {title}: mangler {missing}",
+      legacyName: "{label} nevner «{name}» uten koblet part",
+      legacyAccount: "{label} viser til en part uten bekreftet kobling",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "Ingen åpne funn. Kjør en kontroll for å se etter dokumentasjonsunntak.",
+        accepted: "Ingen godtatte unntak.",
+        resolved: "Ingen løste funn ennå.",
+      },
+      emptyKind: "Ingen funn av denne typen: {kind}.",
+      reopened: "Gjenåpnet",
+      detectedBy: "Kontroll {number}",
+      resolvedBy: "Løst av kontroll {number}",
+    },
+    check: {
+      title: "Kvalitetskontroll",
+      loading: "Laster…",
+      never:
+        "Ingen kontroll er kjørt ennå. En kontroll leser hver post i avgrensede trinn og lister det den finner.",
+      running:
+        "Kontroll {number} kjører: trinn {step} av {steps} ({phase}), {records} poster kontrollert så langt.",
+      stalled:
+        "Kontroll {number} har ikke kommet videre på over ti minutter. Gjenoppta den, eller avbryt og start på nytt.",
+      completed:
+        "Kontroll {number} ble ferdig {date}: {records} poster kontrollert, {detected} funn ({opened} nye, {reopened} gjenåpnet), {resolved} løst.",
+      failed: "Kontroll {number} stoppet under: {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "Medlemmet som kjørte den, har ikke lenger tilgang. Gjenoppta den for å fortsette med din tilgang.",
+        PAGE_FAILED:
+          "En post kunne ikke kontrolleres. Gjenoppta for å prøve igjen der den stoppet.",
+      },
+      cancelled:
+        "Kontroll {number} ble avbrutt. Funnene den gjorde, beholdes; den løste ingen.",
+      phases: {
+        catalog_identifiers: "katalogidentifikatorer",
+        accession_identifiers: "aksesjonsidentifikatorer",
+        objects_active: "objekter",
+        objects_loaned: "utlånte objekter",
+        objects_deaccessioned: "avhendede objekter",
+        accessions: "aksesjoner",
+        deaccessions: "avhendinger",
+        resolve_duplicate_identifier: "rettede identifikatordubletter",
+        resolve_missing_evidence: "utfylt dokumentasjon",
+        resolve_legacy_link: "bekreftede partskoblinger",
+        resolve_orphan_reference: "reparerte referanser",
+        finished: "ferdig",
+      },
+      run: "Kjør kontroll",
+      resume: "Gjenoppta",
+      cancel: "Avbryt kontroll",
+      started: "Kontroll startet",
+      resumed: "Kontroll gjenopptatt",
+      cancelledToast: "Kontroll avbrutt",
+      noProfiles:
+        "Ingen aktive profiler, så manglende dokumentasjon ble ikke kontrollert.",
+      partiesNotChecked:
+        "Partskoblinger ble ikke kontrollert fordi Kontoer-modulen er av.",
+      identifierIndexIncomplete:
+        "Noen identifikatorer er ikke indeksert ennå, så dubletter blant dem ble ikke kontrollert.",
+      identifierIndexLink: "Fullfør identifikatorindeksen",
+      neverChanges:
+        "Kontroller nummererer aldri om, slår aldri sammen og fyller aldri ut poster.",
+    },
+    profiles: {
+      loading: "Laster profiler…",
+      description:
+        "En profil sier hvilken dokumentasjon objekter av en type trenger i gitte faser. Hver kontroll bruker de aktive profilene; arkiverte beholdes.",
+      add: "Legg til profil",
+      readOnly: "Administratorer endrer profiler.",
+      empty:
+        "Ingen profiler ennå. Uten profil rapporterer kontroller fortsatt dupliserte identifikatorer, partskoblinger og brutte referanser.",
+      allTypes: "Alle objekttyper",
+      objectTypeHint: "Objekttypene hentes fra Innstillinger › Preferanser.",
+      addTitle: "Legg til dokumentasjonsprofil",
+      editTitle: "Rediger dokumentasjonsprofil",
+      dialogDescription:
+        "Velg hvilke objekter profilen gjelder og hva de må ha. Neste kontroll bruker den.",
+      fields: {
+        name: "Navn",
+        objectType: "Objekttype",
+        stages: "Faser",
+        requirements: "Påkrevd dokumentasjon",
+      },
+      errors: {
+        name: "Skriv et navn på opptil 120 tegn.",
+        stages: "Velg minst én fase.",
+        requirements: "Velg minst ett krav.",
+      },
+      cancel: "Avbryt",
+      save: "Lagre profil",
+      saving: "Lagrer…",
+      saved: "Profil lagret",
+      edit: "Rediger",
+      archive: "Arkiver",
+      restore: "Gjenopprett",
+      archived: "Profil arkivert",
+      restored: "Profil gjenopprettet",
+      archivedBadge: "Arkivert",
+    },
+    review: {
+      title: "Gjennomgang",
+      openHint:
+        "Rett posten og kjør en kontroll, eller godta dette som et unntak med en begrunnelse.",
+      acceptAction: "Godta som unntak",
+      acceptTitle: "Godta som unntak",
+      acceptDescription:
+        "Posten forblir som den er. Oppgi begrunnelsen, for eksempel hvorfor dokumentasjonen ikke kan finnes. Funnet gjenåpnes hvis en senere kontroll finner noe annet.",
+      acceptDuplicateDescription:
+        "Hver post beholder identifikatoren sin. Begrunnelsen din lagres som en gjennomgang av identifikatorkonflikten for hver post som deler den.",
+      note: "Begrunnelse",
+      noteRequired: "Oppgi en begrunnelse.",
+      cancel: "Avbryt",
+      accept: "Godta",
+      saving: "Lagrer…",
+      accepted: "Godtatt som unntak",
+      reviewedBy: "Godtatt av {name} {date}",
+      unknownReviewer: "et tidligere medlem",
+      earlierReview:
+        "Godtatt tidligere; det kontrollen fant, har endret seg siden:",
+      reopen: "Gjenåpne",
+      reopened: "Funnet gjenåpnet",
+      reviewedInRegister:
+        "Gjennomgått i identifikatorregisteret. Hvis en annen post begynner å dele identifikatoren, gjenåpnes funnet.",
+      resolved: "Kontroll {number} fant ikke dette lenger {date}.",
+    },
+    detail: {
+      headerTitle: "Funn",
+      back: "Tilbake til dokumentasjonskvalitet",
+      detection:
+        "Først funnet av kontroll {first}; sist funnet av kontroll {last}.",
+      foundTitle: "Hva kontrollen fant",
+      repairTitle: "Hvor det rettes",
+      notRecorded: "Ikke registrert",
+      register: "Register",
+      identifier: "Identifikator slik den er registrert",
+      records: "Poster som deler den ({count})",
+      moreRecords: "Og {count} til.",
+      object: "Objekt",
+      profile: "Profil",
+      stage: "Fase",
+      missing: "Mangler",
+      recordedCondition: "Tilstandstekst på posten, beholdt slik den er skrevet",
+      recordedProvenance:
+        "Provenienstekst på posten, beholdt slik den er skrevet",
+      record: "Post",
+      assertedName: "Navn slik det er skrevet",
+      existingParty: "Konto det vises til",
+      suggestedRole: "Rolle",
+      field: "Referanse",
+      storedReference: "Lagret verdi",
+      problem: "Problem",
+      recordUnavailable: "{record} er ikke lenger tilgjengelig.",
+      openTab: "Åpne fanen {tab}: {requirements}",
+      repairIntro:
+        "Rett posten der den føres. Neste kontroll lukker dette funnet når mangelen er borte.",
+      linkPartyHint: "Bekreft eller koble parten i postens Parter-panel.",
+      linkPartyUnavailable:
+        "Å koble en part krever Kontoer-modulen og tillatelse til å redigere parter. Tildel dette til noen som kan.",
+      duplicateHint:
+        "Ingenting nummereres om. Åpne hver post for å sammenligne dem, eller godta dubletten med de historiske opplysningene.",
+      identifierRegister: "Åpne identifikatorregisteret",
+    },
+    errors: {
+      fallback: "Noe gikk galt. Prøv igjen.",
+      profileInvalid: "Kontroller profilens navn, faser og krav.",
+      profileLimitReached:
+        "En organisasjon kan ha høyst 20 aktive profiler. Arkiver én først.",
+      profileNotFound: "Denne profilen finnes ikke lenger.",
+      checkRunning: "En kontroll kjører allerede.",
+      checkNotFound: "Denne kontrollen finnes ikke lenger.",
+      checkNotResumable:
+        "Bare den siste stoppede eller fastlåste kontrollen kan gjenopptas.",
+      findingNotFound: "Dette funnet finnes ikke lenger.",
+      findingStatusChanged:
+        "Dette funnet er endret i mellomtiden. Last inn på nytt for å se gjeldende status.",
+      reviewNoteRequired: "Oppgi en begrunnelse på opptil 2 000 tegn.",
+      identifierIndexIncomplete:
+        "Fullfør identifikatorindeksen før du går gjennom dubletter.",
+      duplicateGroupTooLarge:
+        "For mange poster deler denne identifikatoren til å gå gjennom på én gang. Gå gjennom dem i identifikatorregisteret.",
+      reviewedInIdentifierRegister:
+        "Dupliserte identifikatorer gås gjennom i identifikatorregisteret.",
+    },
   },
   objectEntries: {
     title: "Innleveringer",
@@ -8411,6 +8680,16 @@ export default {
       updateSite: "Oppdater sted",
       archiveSiteConfirm: "Er du sikker på at du vil arkivere dette stedet?",
       failedArchiveSite: "Kunne ikke arkivere stedet",
+      siteInUseTitle: "Dette stedet er fortsatt i bruk",
+      siteInUseDescription:
+        "Arkivering må ikke etterlate plasseringer eller objekter under et inaktivt sted. Løs dette først; ingenting ble endret.",
+      siteInUseLocations:
+        "Aktive plasseringer på dette stedet: {count}. Slett dem under Plassering og sporing først.",
+      siteInUseObjects:
+        "Objekter som fortsatt står på plasseringer på dette stedet: {count}. Flytt dem til en annen plassering først.",
+      siteInUseIncomplete:
+        "Dette stedet har for mange plasseringer eller objekter til å kontrolleres på én gang, så det kan ikke arkiveres her.",
+      siteInUseClose: "Lukk",
       systemRole: "(System)",
       siteManagement: "Stedsadministrasjon",
       physicalLocationBranches:
@@ -8794,6 +9073,7 @@ export default {
       newAccession: "Ny tilvekst",
       newLoan: "Nytt lån",
       newCollectionGroup: "Ny samlingsgruppe",
+      documentationQuality: "Dokumentasjonskvalitet",
       navigation: "Navigasjon",
       dashboard: "Dashbord",
       library: "Bibliotek",
@@ -9240,6 +9520,7 @@ export default {
       locked: "Utilgjengelig",
       overview: "Oversikt",
       myWork: "Mitt arbeid",
+      documentationQuality: "Dokumentasjonskvalitet",
       objectCatalog: "Objektkatalog",
       locationTracking: "Plassering og sporing",
       scan: "Skann",
