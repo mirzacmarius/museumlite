@@ -12,6 +12,10 @@ import type { ReactElement, ReactNode } from "react";
 import { I18nProviderClient } from "@/locales/client";
 
 const READY = "translations-ready";
+// A test file's first render imports the whole dictionary cold, which took
+// over a second on a busy CI runner, past findBy's 1 s default. Stay under
+// vitest's 5 s test timeout so a load that never ends still fails here.
+const DICTIONARY_TIMEOUT_MS = 4000;
 
 const router: AppRouterInstance = {
   back: () => {},
@@ -53,6 +57,8 @@ export async function renderOnPage(
 
   // The dictionary provider suspends until the dictionary has loaded.
   const result = await act(async () => render(ui, { wrapper: Page }));
-  await screen.findByTestId(READY);
+  await screen.findByTestId(READY, undefined, {
+    timeout: DICTIONARY_TIMEOUT_MS,
+  });
   return result;
 }
