@@ -3,6 +3,10 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
+  DEFAULT_DIGEST_DAY,
+  DEFAULT_DIGEST_TIME,
+} from "@v1/backend/convex/utils/notificationPreferences";
+import {
   NOTIFICATION_CATEGORIES,
   type NotificationCategory,
 } from "@v1/backend/convex/utils/notificationTypes";
@@ -34,8 +38,6 @@ type CategoryMatrix = Preferences["categories"];
 type EmailSchedule = Preferences["email"]["schedule"];
 type Cadence = EmailSchedule["cadence"];
 
-const DEFAULT_DIGEST_TIME = "08:00";
-const DEFAULT_DIGEST_DAY = 1;
 const NEXT_DIGEST_OPTIONS: Intl.DateTimeFormatOptions = {
   weekday: "short",
   month: "short",

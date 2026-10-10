@@ -52,8 +52,9 @@ export const emailSchedule = v.union(
 export type EmailSchedule = Infer<typeof emailSchedule>;
 export type DigestSchedule = Exclude<EmailSchedule, { cadence: "instant" }>;
 
-const DEFAULT_DIGEST_TIME = "08:00";
-const DEFAULT_DIGEST_DAY = 1;
+/** Offered for a new digest choice: 08:00 on Monday. */
+export const DEFAULT_DIGEST_TIME = "08:00";
+export const DEFAULT_DIGEST_DAY = 1;
 
 const CATEGORY_ENABLED_FIELDS = {
   approvals: "enableApprovals",

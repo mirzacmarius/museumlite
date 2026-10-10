@@ -233,7 +233,12 @@ async function recipientEmail(
   delivery: Doc<"notificationEmailDeliveries">,
 ): Promise<
   | { kind: "ineligible"; reason: Ineligibility }
-  | { kind: "eligible"; to: string; policy: ChannelPolicy }
+  | {
+      kind: "eligible";
+      to: string;
+      preferences: Doc<"notificationPreferences"> | null;
+      policy: ChannelPolicy;
+    }
 > {
   const recipient = await access.check(delivery.userId, null);
   if (recipient.kind !== "allowed") {
@@ -245,12 +250,16 @@ async function recipientEmail(
   if (notificationEmailChannel().kind === "unavailable") {
     return { kind: "ineligible", reason: "channel_unavailable" };
   }
+  const preferences = await storedPreferences(
+    ctx,
+    delivery.userId,
+    delivery.organizationId,
+  );
   return {
     kind: "eligible",
     to: recipient.user.email,
-    policy: channelPolicy(
-      await storedPreferences(ctx, delivery.userId, delivery.organizationId),
-    ),
+    preferences,
+    policy: channelPolicy(preferences),
   };
 }
 
@@ -337,6 +346,12 @@ async function listFingerprint(ids: readonly string[]) {
   ).join("");
 }
 
+interface DigestExclusion {
+  itemId: Id<"notificationDigestItems">;
+  /** Undefined when a notification left out before is listed again. */
+  reason: Ineligibility | undefined;
+}
+
 /**
  * A digest lists the notifications it collected that may still be emailed,
  * each checked again like an instant email. `exclusions` records why the
@@ -344,12 +359,6 @@ async function listFingerprint(ids: readonly string[]) {
  * a resend of the same list is deduplicated, and a shorter list after an
  * access change is a new email rather than a refused one.
  */
-interface DigestExclusion {
-  itemId: Id<"notificationDigestItems">;
-  /** Undefined when a notification left out before is listed again. */
-  reason: Ineligibility | undefined;
-}
-
 async function digestMessage(
   ctx: MutationCtx,
   delivery: DigestDelivery,
@@ -393,15 +402,9 @@ async function digestMessage(
       exclusions,
     };
   }
-  const preferences = await storedPreferences(
-    ctx,
-    delivery.userId,
-    delivery.organizationId,
-  );
+  const savedTimezone = recipient.preferences?.timezone;
   const timezone =
-    preferences?.timezone && isTimeZone(preferences.timezone)
-      ? preferences.timezone
-      : "UTC";
+    savedTimezone && isTimeZone(savedTimezone) ? savedTimezone : "UTC";
   const fingerprint = await listFingerprint(listed.map(({ _id }) => _id));
   return {
     message: {
@@ -429,6 +432,16 @@ async function digestMessage(
     },
     exclusions,
   };
+}
+
+/** What to send for a delivery now, with a digest's left-out notifications. */
+async function emailMessage(
+  ctx: MutationCtx,
+  delivery: Doc<"notificationEmailDeliveries">,
+): Promise<{ message: EmailMessage; exclusions: DigestExclusion[] }> {
+  return delivery.kind === "digest"
+    ? await digestMessage(ctx, delivery)
+    : { message: await instantMessage(ctx, delivery), exclusions: [] };
 }
 
 async function finishWithoutSending(
@@ -494,15 +507,9 @@ export const claimAttempt = internalMutation({
         "attempt_lost",
       );
     }
-    let message: EmailMessage;
-    if (delivery.kind === "digest") {
-      const digest = await digestMessage(ctx, delivery);
-      for (const { itemId, reason } of digest.exclusions) {
-        await ctx.db.patch(itemId, { excludedReason: reason });
-      }
-      message = digest.message;
-    } else {
-      message = await instantMessage(ctx, delivery);
+    const { message, exclusions } = await emailMessage(ctx, delivery);
+    for (const { itemId, reason } of exclusions) {
+      await ctx.db.patch(itemId, { excludedReason: reason });
     }
     if (message.kind === "ineligible") {
       return await finishWithoutSending(
@@ -604,10 +611,7 @@ export const retry = mutation({
     if (!isRetryableStatus(delivery.status)) {
       throw notificationError("EMAIL_DELIVERY_NOT_RETRYABLE");
     }
-    const message =
-      delivery.kind === "digest"
-        ? (await digestMessage(ctx, delivery)).message
-        : await instantMessage(ctx, delivery);
+    const { message } = await emailMessage(ctx, delivery);
     if (message.kind === "ineligible") {
       throw notificationError(RETRY_BLOCKED[message.reason]);
     }

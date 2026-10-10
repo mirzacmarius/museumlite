@@ -443,6 +443,30 @@ describe("daily and weekly digests", () => {
     expect(mention?.email?.digest?.excludedReason).toBe("access_revoked");
   });
 
+  test("a notification its recipient deletes before the digest is not emailed", async () => {
+    vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
+    const t = createConvexTest();
+    const thread = await setupDigestThread(t);
+    await thread.chooseEmail(["assignments"], DAILY_AT_EIGHT);
+    const sent = emailProvider();
+    await thread.mentionCurator(thread.harbourMap);
+    await thread.mentionCurator(thread.bronzeBell);
+    const [bronzeBell] = await thread.center();
+    if (!bronzeBell) throw new Error("Expected a notification");
+
+    await thread.curator.mutation(api.notifications.deleteNotification, {
+      notificationId: bronzeBell._id,
+    });
+    await advanceTo(t, "2026-10-13T12:00:00Z");
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.text).toContain("Harbour Map");
+    expect(sent[0]?.text).not.toContain("Bronze Bell");
+    expect(sent[0]?.subject).toBe(
+      "Your daily digest from Test Museum: 1 notification",
+    );
+  });
+
   test("a recipient who leaves the organization before the digest is not emailed", async () => {
     vi.setSystemTime(new Date("2026-10-12T14:00:00Z"));
     const t = createConvexTest();
