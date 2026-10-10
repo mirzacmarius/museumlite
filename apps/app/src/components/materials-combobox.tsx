@@ -13,6 +13,10 @@ import { MaterialsComboboxDeleteDialog } from "./materials-combobox-delete-dialo
 import { MaterialsComboboxListContent } from "./materials-combobox-list-content";
 
 interface MaterialsComboboxProps {
+  /** Lets a form focus the field, e.g. to show an error. */
+  id?: string;
+  /** The visible label's id, which names the field. */
+  "aria-labelledby"?: string;
   organizationId?: string;
   collectionId?: string;
   value?: string[];
@@ -35,6 +39,8 @@ export function MaterialsCombobox({
   onValueChange,
   placeholder,
   disabled = false,
+  id,
+  "aria-labelledby": ariaLabelledBy,
 }: MaterialsComboboxProps) {
   const translate = useI18n();
   const [open, setOpen] = React.useState(false);
@@ -166,7 +172,9 @@ export function MaterialsCombobox({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div
+            id={id}
             role="combobox"
+            aria-labelledby={ariaLabelledBy}
             aria-expanded={open}
             aria-controls={listId}
             tabIndex={disabled ? -1 : 0}

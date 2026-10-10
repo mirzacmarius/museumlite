@@ -3,7 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { usePaginatedQuery } from "convex/react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useListState } from "@/hooks/use-list-state";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { LoanListFilters } from "./loan-list-filters";
@@ -16,6 +16,7 @@ import { useLoanListBulkActions } from "./use-loan-list-bulk-actions";
 
 export function LoanList({ organizationId }: LoanListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
+  const tableRef = useRef<HTMLTableElement>(null);
   const list = useListState(loanListState);
   const { status: statusFilter, type: typeFilter } = list.state.filters;
   const searchQuery = list.state.search;
@@ -114,6 +115,7 @@ export function LoanList({ organizationId }: LoanListProps) {
           returnPath={returnPath}
           selectedIds={selectedIds}
           onToggleSelection={toggleSelection}
+          tableRef={tableRef}
         />
 
         {!isLoading && typedLoansPage.length > 0 && (
@@ -123,6 +125,7 @@ export function LoanList({ organizationId }: LoanListProps) {
             onBulkApprove={handleBulkApprove}
             onBulkCancel={handleBulkCancel}
             onExport={handleExport}
+            returnFocusRef={tableRef}
           />
         )}
       </div>

@@ -83,13 +83,13 @@ export function InsuranceClaimsTab({
       </div>
 
       <DataTable
+        label={t("claims")}
         loading={loading}
         data={claims}
         columns={[
           {
             key: "claimNumber",
             label: t("claim"),
-            className: "min-w-0 flex-[1.25]",
             render: (claim: InsuranceClaimRow) => (
               <span className="truncate font-semibold text-foreground">
                 {claim.claimNumber}
@@ -99,7 +99,6 @@ export function InsuranceClaimsTab({
           {
             key: "policyNumber",
             label: t("policy"),
-            className: "min-w-0 flex-[1.5]",
             render: (claim: InsuranceClaimRow) => (
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-muted-foreground">
@@ -114,7 +113,6 @@ export function InsuranceClaimsTab({
           {
             key: "incidentType",
             label: t("incident"),
-            className: "min-w-0 flex-[1.1]",
             render: (claim: InsuranceClaimRow) => (
               <span className="truncate capitalize">
                 {t(
@@ -129,7 +127,7 @@ export function InsuranceClaimsTab({
           {
             key: "incidentDate",
             label: t("date"),
-            className: "w-32 flex-none",
+            className: "w-32",
             render: (claim: InsuranceClaimRow) => (
               <ClientDate timestamp={claim.incidentDate} locale={locale} />
             ),
@@ -137,7 +135,7 @@ export function InsuranceClaimsTab({
           {
             key: "claimedAmount",
             label: t("claimed"),
-            className: "w-36 flex-none",
+            className: "w-36",
             render: (claim: InsuranceClaimRow) => (
               <MoneyCell
                 value={claim.claimedAmount}
@@ -150,7 +148,7 @@ export function InsuranceClaimsTab({
           {
             key: "status",
             label: t("status"),
-            className: "w-36 flex-none",
+            className: "w-36",
             render: (claim: InsuranceClaimRow) => (
               <Badge
                 variant="outline"

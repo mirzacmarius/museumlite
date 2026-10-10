@@ -195,6 +195,7 @@ export default {
       data: "Importar/Exportar datos",
       metrics: "Estado de métricas",
       loanAgreements: "Contratos de préstamo",
+      preparationRecipes: "Recetas de preparación",
     },
     roles: {
       title: "Gestión de Roles",
@@ -2169,6 +2170,7 @@ export default {
     },
   },
   loans: {
+    searchLabel: "Buscar préstamos",
     title: "Préstamos",
     description: "Administrar acuerdos de préstamo entrantes y salientes",
     newLoan: "Nuevo Préstamo",
@@ -2466,9 +2468,9 @@ export default {
       loanNotFound: "Préstamo no encontrado",
     },
     bulkActions: {
-      loan: "préstamo",
-      loansPlural: "préstamos",
-      selected: "seleccionado",
+      clearSelection: "Limpiar selección",
+      loansSelected: "{count} préstamo{s} seleccionado{s}",
+      label: "Préstamos seleccionados",
       approveSelected: "Aprobar Seleccionados",
       cancelSelected: "Cancelar Seleccionados",
       export: "Exportar",
@@ -2528,6 +2530,7 @@ export default {
       actionRequired: "Acción requerida",
     },
     table: {
+      select: "Seleccionar",
       type: "Tipo",
       duration: "Duración",
       status: "Estado",
@@ -3267,6 +3270,10 @@ export default {
     close: "Cerrar",
   },
   objects: {
+    backToObject: "Volver al objeto",
+    selectObject: "Seleccionar {title}",
+    selectAllShown: "Seleccionar todos los objetos mostrados",
+    searchLabel: "Buscar objetos",
     qrLabel: {
       size1x1: "Cuadrado pequeño",
       showObjectName: "Mostrar nombre del objeto",
@@ -3372,7 +3379,8 @@ export default {
       status: "Estado",
     },
     bulkActions: {
-      itemsSelected: "{count} elemento{s} seleccionado{s}",
+      objectsSelected: "{count} objeto{s} seleccionado{s}",
+      label: "Objetos seleccionados",
       addToGroup: "Agregar a Grupo",
       moveLocation: "Mover Ubicación",
       export: "Exportar",
@@ -4970,6 +4978,7 @@ export default {
       deaccession: "Baja",
       exhibition: "Exposición",
       conservation: "Tratamiento de conservación",
+      documentationFinding: "Hallazgo de documentación",
     },
     fields: {
       title: "Título",
@@ -5095,6 +5104,73 @@ export default {
         "Ese registro no se puede citar. Elija un registro aceptado de esta organización.",
       limitReached: "Este caso o esta tarea ha alcanzado su límite.",
       invalidInput: "Revise los campos obligatorios e inténtelo de nuevo.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Primero vincule a esta tarea una evaluación del estado aceptada.",
+        media:
+          "Primero vincule a esta tarea un archivo, por ejemplo una fotografía.",
+        movement: "Primero vincule a esta tarea el movimiento registrado.",
+        auditEntry: "Primero vincule a esta tarea el evento de auditoría.",
+      },
+      caseNotAccepted:
+        "Las recetas se aplican cuando el caso está aceptado, hasta que se devuelve, se cierra o se cancela.",
+      recipeNotFound: "Esta receta ya no está disponible. Actualice la página.",
+      recipeInvalid: "Revise los campos marcados de la receta.",
+    },
+    suggestion: {
+      badge: "Sugerida",
+      origin: {
+        intake_accepted: "Sugerida por «{recipe}» tras aceptar la recepción",
+        loan_approved: "Sugerida por «{recipe}» tras aprobar el préstamo",
+        exhibition_approved:
+          "Sugerida por «{recipe}» tras aprobar la exposición",
+      },
+      withdrawn:
+        "Retirada porque el préstamo se canceló. Restáurela si el trabajo sigue siendo necesario.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Necesita una evaluación del estado aceptada vinculada como evidencia antes de completarse.",
+        media:
+          "Necesita un archivo, por ejemplo una fotografía, vinculado como evidencia antes de completarse.",
+        movement:
+          "Necesita el movimiento registrado vinculado como evidencia antes de completarse.",
+        auditEntry:
+          "Necesita un evento de auditoría vinculado como evidencia antes de completarse.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Evaluación del estado vinculada como evidencia.",
+        media: "Archivo vinculado como evidencia.",
+        movement: "Movimiento registrado vinculado como evidencia.",
+        auditEntry: "Evento de auditoría vinculado como evidencia.",
+      },
+      restore: "Restaurar la sugerencia",
+      restored: "Sugerencia restaurada",
+      dismiss: "Descartar la sugerencia",
+      dismissDescription:
+        "La tarea permanece en el caso y no se volverá a sugerir. Puede restaurarla más adelante.",
+    },
+    preparation: {
+      title: "Preparación",
+      description: {
+        intake_accepted:
+          "Las recetas sugieren estas tareas cuando se acepta una recepción. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
+        loan_approved:
+          "Las recetas sugieren estas tareas cuando se aprueba un préstamo. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
+        exhibition_approved:
+          "Las recetas sugieren estas tareas cuando se aprueba una exposición. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
+      },
+      states: {
+        suggested: "Sugerida",
+        ready: "Aún no sugerida",
+        no_owner: "Esperando un responsable que pueda trabajar en este caso",
+        limit_reached: "Este caso alcanzó su límite de tareas",
+      },
+      apply: "Sugerir {count} tarea(s) pendiente(s)",
+      applying: "Sugiriendo…",
+      applied: "{count} tarea(s) sugerida(s)",
+      nothingToApply: "Cada paso ya tiene una tarea.",
+      skipped:
+        "{count} paso(s) aún necesitan un responsable que pueda trabajar en este caso, o espacio en el caso.",
     },
     myWork: {
       title: "Mi trabajo",
@@ -5110,6 +5186,141 @@ export default {
       assignedCasesEmpty: "No tiene casos abiertos asignados.",
       assignedTruncated: "Se muestran los primeros 50 casos asignados.",
       since: "Desde",
+    },
+  },
+  preparationRecipes: {
+    title: "Recetas de preparación",
+    description:
+      "Cuando se acepta una recepción o se aprueba un préstamo o una exposición, las recetas activas sugieren en el caso tareas con responsable y fecha límite. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación; estos se registran en sus propios flujos.",
+    add: "Nueva receta",
+    loading: "Cargando recetas…",
+    empty:
+      "Aún no hay recetas. Cree una a partir de un punto de partida en Nueva receta.",
+    notificationsHint:
+      "Cada responsable recibe un solo aviso por tarea sugerida, en su categoría Tareas.",
+    notificationsLink: "Configuración de notificaciones",
+    noAttestation:
+      "Completar una tarea sugerida solo registra que el trabajo está hecho.",
+    stepCount: "{count} paso(s)",
+    evidenceShort: "evidencia: {kind}",
+    statuses: {
+      active: "Activa",
+      paused: "En pausa",
+      archived: "Archivada",
+    },
+    triggers: {
+      intake_accepted: "Recepción aceptada",
+      loan_approved: "Préstamo aprobado",
+      exhibition_approved: "Exposición aprobada",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Se aplica cuando se acepta una recepción en la colección. Las fechas límite cuentan desde la aceptación.",
+      loan_approved:
+        "Se aplica cuando se aprueba un préstamo. Las fechas límite cuentan desde la aprobación o desde el inicio o el fin del préstamo.",
+      exhibition_approved:
+        "Se aplica cuando se aprueba una exposición. Las fechas límite cuentan desde la aprobación o desde su apertura o cierre.",
+    },
+    directions: {
+      any: "Préstamos entrantes y salientes",
+      outgoing: "Préstamos salientes",
+      incoming: "Préstamos entrantes",
+    },
+    actions: {
+      edit: "Editar",
+      pause: "Pausar",
+      resume: "Reanudar",
+      archive: "Archivar",
+      restore: "Restaurar",
+    },
+    toasts: {
+      saved: "Receta guardada",
+      paused: "Receta en pausa",
+      resumed: "Receta reanudada",
+      archived: "Receta archivada",
+      restored: "Receta restaurada en pausa",
+    },
+    starters: {
+      intake: {
+        label: "Catalogar, fotografiar y evaluar el estado",
+        name: "Catalogar, fotografiar y evaluar el estado",
+        catalog: "Completar el registro de catálogo",
+        photograph: "Fotografiar el objeto",
+        condition: "Registrar una evaluación del estado",
+      },
+      transport: {
+        label: "Embalar, asegurar y organizar el transporte",
+        name: "Embalar, asegurar y organizar el transporte",
+        condition: "Revisión del estado antes del envío",
+        insurance: "Confirmar la cobertura del seguro",
+        pack: "Embalar los objetos",
+        transport: "Reservar el transporte",
+      },
+      return: {
+        label: "Preparar la devolución",
+        name: "Preparar la devolución",
+        transport: "Reservar el transporte de vuelta",
+        condition: "Revisión del estado a la vuelta",
+        move: "Registrar el movimiento de vuelta",
+      },
+      blank: {
+        label: "Receta en blanco",
+      },
+    },
+    dialog: {
+      addTitle: "Nueva receta",
+      editTitle: "Editar receta",
+      description:
+        "Cada paso se convierte en una tarea del caso, a cargo de un miembro que pueda trabajar en él. Si el evento se repite o se corrige, cada paso conserva una sola tarea.",
+      name: "Nombre",
+      trigger: "Sugerir cuando",
+      triggerLocked:
+        "El evento no puede cambiar una vez creada la receta. Cree otra receta.",
+      direction: "Préstamos",
+      steps: "Pasos",
+      step: "Paso {number}",
+      stepReference: "Paso {number}: {title}",
+      untitled: "Paso sin título",
+      stepTitle: "Título de la tarea",
+      stepDescription: "Descripción",
+      evidence: "Evidencia de que se hizo",
+      noEvidence: "No se requiere",
+      owner: "Responsable",
+      owners: {
+        caseAssignee: "Miembro asignado al caso",
+        approver: "Miembro que lo aceptó",
+        member: "Un miembro concreto",
+      },
+      ownerMember: "Miembro",
+      chooseMember: "Elija un miembro",
+      ownerFallback:
+        "Si el responsable elegido no puede trabajar en el caso, la tarea pasa al miembro asignado al caso y, después, al miembro que lo aceptó. Un paso sin ese miembro espera hasta que alguien vuelva a aplicar la receta.",
+      due: "Fecha límite",
+      noDue: "Sin fecha límite",
+      anchors: {
+        event: "Desde la aceptación",
+        start: "Desde el inicio o la apertura",
+        end: "Desde el fin o el cierre",
+      },
+      offsetDays: "Días",
+      offsetHint: "Los números negativos cuentan hacia atrás desde esa fecha.",
+      dependsOn: "Espera a",
+      addStep: "Añadir paso",
+      removeStep: "Quitar paso",
+      moveUp: "Subir el paso",
+      moveDown: "Bajar el paso",
+      cancel: "Cancelar",
+      save: "Guardar receta",
+      saving: "Guardando…",
+      errors: {
+        name: "Dé a la receta un nombre de hasta 120 caracteres.",
+        steps: "Una receta necesita de 1 a 10 pasos.",
+        title: "Dé al paso un título de hasta 200 caracteres.",
+        description: "La descripción puede tener hasta 2000 caracteres.",
+        owner: "Elija un miembro que pueda trabajar en estos casos.",
+        due: "Use un número entero de días entre -365 y 365.",
+        dependsOn: "Un paso solo puede esperar a pasos anteriores.",
+      },
     },
   },
   notificationsPage: {
@@ -5733,6 +5944,7 @@ export default {
       locations: "Ir a ubicaciones",
       conservation: "Ir a conservación",
       entries: "Ir a entradas",
+      documentationQuality: "Ir a calidad de la documentación",
     },
     pageNotFound: {
       title: "Página no encontrada",
@@ -5758,6 +5970,277 @@ export default {
       identifier: "Identificador (A–Z)",
     },
     allTypes: "Todos los tipos",
+  },
+  documentationQuality: {
+    title: "Calidad de la documentación",
+    description:
+      "Comprueba los registros con los perfiles de documentación de la institución y revisa identificadores duplicados, documentación que falta, vínculos dudosos con partes y referencias rotas. Las comprobaciones nunca cambian un registro: el personal corrige los registros donde se llevan, y la siguiente comprobación confirma la corrección.",
+    tabs: {
+      findings: "Hallazgos",
+      profiles: "Perfiles",
+    },
+    kind: "Tipo de hallazgo",
+    allKinds: "Todos los tipos",
+    kinds: {
+      duplicate_identifier: "Identificador duplicado",
+      missing_evidence: "Documentación que falta",
+      legacy_link: "Vínculo dudoso con una parte",
+      orphan_reference: "Referencia rota",
+    },
+    statuses: {
+      open: "Abierto",
+      accepted: "Excepción aceptada",
+      resolved: "Resuelto",
+    },
+    registers: {
+      catalog: "catálogo",
+      accession: "ingresos",
+    },
+    stages: {
+      entry: "En custodia por una entrada",
+      collection: "En la colección",
+      borrowed: "En préstamo recibido",
+      deaccessioned: "Dado de baja",
+    },
+    stageHints: {
+      entry:
+        "Recibido para identificación, depósito o estudio de adquisición, sin registrar en el inventario.",
+      collection:
+        "Objetos registrados o catalogados, incluidos los prestados.",
+      borrowed: "Objetos en custodia por un préstamo recibido.",
+      deaccessioned:
+        "Objetos retirados de la colección; sus registros se conservan.",
+    },
+    requirements: {
+      object_name: "Nombre del objeto",
+      maker: "Autor",
+      production_date: "Fecha de creación",
+      materials: "Materiales",
+      dimensions: "Dimensiones",
+      description: "Descripción",
+      current_location: "Ubicación actual",
+      condition_assessment: "Evaluación del estado aceptada",
+      image: "Fotografía",
+      supporting_document: "Documento justificativo",
+      accession_record: "Registro de ingreso aprobado",
+      provenance_claim: "Afirmación de procedencia",
+    },
+    orphanFields: {
+      parentObject: "Objeto principal",
+      currentLocation: "Ubicación actual",
+      collectionGroup: "Grupo de colecciones",
+      object: "Objeto",
+      donorAccount: "Cuenta del donante",
+    },
+    orphanProblems: {
+      missing: "ya no existe",
+      other_organization: "pertenece a otra organización",
+      self: "apunta al propio registro",
+    },
+    recordTypes: {
+      object: "Objeto",
+      accession: "Registro de ingreso",
+      deaccession: "Baja",
+    },
+    objectTabs: {
+      general: "General",
+      physical: "Físico",
+      media: "Medios",
+      accession: "Ingreso",
+      placement: "Ubicación",
+      provenance: "Procedencia",
+    },
+    summary: {
+      duplicateIdentifier:
+        "«{identifier}» lo comparten {count} registros del registro de {register}",
+      missingEvidence: "{identifier} {title}: falta {missing}",
+      legacyName: "{label} nombra a «{name}» sin una parte vinculada",
+      legacyAccount: "{label} remite a una parte sin un vínculo confirmado",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "No hay hallazgos abiertos. Ejecuta una comprobación para buscar excepciones de documentación.",
+        accepted: "No hay excepciones aceptadas.",
+        resolved: "Aún no hay hallazgos resueltos.",
+      },
+      emptyKind: "No hay hallazgos de este tipo: {kind}.",
+      reopened: "Reabierto",
+      detectedBy: "Comprobación {number}",
+      resolvedBy: "Resuelto por la comprobación {number}",
+    },
+    check: {
+      title: "Comprobación de calidad",
+      loading: "Cargando…",
+      never:
+        "Aún no se ha ejecutado ninguna comprobación. Una comprobación lee cada registro en pasos acotados y enumera lo que encuentra.",
+      running:
+        "La comprobación {number} está en curso: paso {step} de {steps} ({phase}), {records} registros comprobados hasta ahora.",
+      stalled:
+        "La comprobación {number} no avanza desde hace más de diez minutos. Reanúdala, o cancélala y empieza de nuevo.",
+      completed:
+        "La comprobación {number} terminó el {date}: {records} registros comprobados, {detected} hallazgos ({opened} nuevos, {reopened} reabiertos), {resolved} resueltos.",
+      failed: "La comprobación {number} se detuvo durante: {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "El miembro que la ejecutó ya no tiene acceso. Reanúdala para continuar con tu acceso.",
+        PAGE_FAILED:
+          "No se pudo comprobar un registro. Reanúdala para volver a intentarlo desde donde se detuvo.",
+      },
+      cancelled:
+        "La comprobación {number} se canceló. Los hallazgos que detectó se mantienen; no resolvió ninguno.",
+      phases: {
+        catalog_identifiers: "identificadores del catálogo",
+        accession_identifiers: "identificadores de ingreso",
+        objects_active: "objetos",
+        objects_loaned: "objetos prestados",
+        objects_deaccessioned: "objetos dados de baja",
+        accessions: "registros de ingreso",
+        deaccessions: "bajas",
+        resolve_duplicate_identifier: "identificadores duplicados corregidos",
+        resolve_missing_evidence: "documentación completada",
+        resolve_legacy_link: "vínculos con partes confirmados",
+        resolve_orphan_reference: "referencias reparadas",
+        finished: "terminada",
+      },
+      run: "Ejecutar comprobación",
+      resume: "Reanudar",
+      cancel: "Cancelar comprobación",
+      started: "Comprobación iniciada",
+      resumed: "Comprobación reanudada",
+      cancelledToast: "Comprobación cancelada",
+      noProfiles:
+        "No hay perfiles activos, así que no se comprobó la documentación que falta.",
+      partiesNotChecked:
+        "No se comprobaron los vínculos con partes porque el módulo Cuentas está desactivado.",
+      identifierIndexIncomplete:
+        "Algunos identificadores aún no están indexados, así que no se comprobaron los duplicados entre ellos.",
+      identifierIndexLink: "Completar el índice de identificadores",
+      neverChanges:
+        "Las comprobaciones nunca renumeran, fusionan ni completan registros.",
+    },
+    profiles: {
+      loading: "Cargando perfiles…",
+      description:
+        "Un perfil indica qué documentación necesitan los objetos de un tipo en determinadas etapas. Cada comprobación aplica los perfiles activos; los archivados se conservan.",
+      add: "Añadir perfil",
+      readOnly: "Los administradores cambian los perfiles.",
+      empty:
+        "Aún no hay perfiles. Sin ellos, las comprobaciones siguen informando de identificadores duplicados, vínculos con partes y referencias rotas.",
+      allTypes: "Todos los tipos de objeto",
+      objectTypeHint: "Los tipos de objeto vienen de Configuración › Preferencias.",
+      addTitle: "Añadir perfil de documentación",
+      editTitle: "Editar perfil de documentación",
+      dialogDescription:
+        "Elige qué objetos cubre el perfil y qué deben tener. La siguiente comprobación lo aplica.",
+      fields: {
+        name: "Nombre",
+        objectType: "Tipo de objeto",
+        stages: "Etapas",
+        requirements: "Documentación exigida",
+      },
+      errors: {
+        name: "Escribe un nombre de hasta 120 caracteres.",
+        stages: "Elige al menos una etapa.",
+        requirements: "Elige al menos un requisito.",
+      },
+      cancel: "Cancelar",
+      save: "Guardar perfil",
+      saving: "Guardando…",
+      saved: "Perfil guardado",
+      edit: "Editar",
+      archive: "Archivar",
+      restore: "Restaurar",
+      archived: "Perfil archivado",
+      restored: "Perfil restaurado",
+      archivedBadge: "Archivado",
+    },
+    review: {
+      title: "Revisión",
+      openHint:
+        "Corrige el registro y ejecuta una comprobación, o acepta esto como excepción con un motivo.",
+      acceptAction: "Aceptar como excepción",
+      acceptTitle: "Aceptar como excepción",
+      acceptDescription:
+        "El registro queda como está. Indica el motivo, por ejemplo por qué la documentación no puede existir. El hallazgo se reabre si una comprobación posterior encuentra algo distinto.",
+      acceptDuplicateDescription:
+        "Cada registro conserva su identificador. Tu motivo se guarda como revisión de conflicto de identificador para cada registro que lo comparte.",
+      note: "Motivo",
+      noteRequired: "Indica un motivo.",
+      cancel: "Cancelar",
+      accept: "Aceptar",
+      saving: "Guardando…",
+      accepted: "Aceptado como excepción",
+      reviewedBy: "Aceptado por {name} el {date}",
+      unknownReviewer: "un antiguo miembro",
+      earlierReview:
+        "Aceptado anteriormente; lo que encontró la comprobación ha cambiado desde entonces:",
+      reopen: "Reabrir",
+      reopened: "Hallazgo reabierto",
+      reviewedInRegister:
+        "Revisado en el registro de identificadores. Si otro registro empieza a compartir el identificador, este hallazgo se reabre.",
+      resolved: "La comprobación {number} ya no lo encontró el {date}.",
+    },
+    detail: {
+      headerTitle: "Hallazgo",
+      back: "Volver a calidad de la documentación",
+      detection:
+        "Encontrado primero por la comprobación {first}; por última vez por la comprobación {last}.",
+      foundTitle: "Qué encontró la comprobación",
+      repairTitle: "Dónde corregir",
+      notRecorded: "Sin registrar",
+      register: "Registro",
+      identifier: "Identificador tal como se registró",
+      records: "Registros que lo comparten ({count})",
+      moreRecords: "Y {count} más.",
+      object: "Objeto",
+      profile: "Perfil",
+      stage: "Etapa",
+      missing: "Falta",
+      recordedCondition:
+        "Texto de estado en el registro, conservado tal como se escribió",
+      recordedProvenance:
+        "Texto de procedencia en el registro, conservado tal como se escribió",
+      record: "Registro",
+      assertedName: "Nombre tal como se escribió",
+      existingParty: "Cuenta referida",
+      suggestedRole: "Función",
+      field: "Referencia",
+      storedReference: "Valor guardado",
+      problem: "Problema",
+      recordUnavailable: "{record} ya no está disponible.",
+      openTab: "Abrir la pestaña {tab}: {requirements}",
+      repairIntro:
+        "Corrige el registro donde se lleva. La siguiente comprobación cierra este hallazgo cuando la carencia desaparece.",
+      linkPartyHint:
+        "Confirma o vincula la parte en el panel Partes del registro.",
+      linkPartyUnavailable:
+        "Vincular una parte requiere el módulo Cuentas y permiso para editar partes. Asígnalo a alguien que pueda hacerlo.",
+      duplicateHint:
+        "No se renumera nada. Abre cada registro para compararlos, o acepta el duplicado con las pruebas históricas.",
+      identifierRegister: "Abrir el registro de identificadores",
+    },
+    errors: {
+      fallback: "Algo salió mal. Inténtalo de nuevo.",
+      profileInvalid: "Revisa el nombre, las etapas y los requisitos del perfil.",
+      profileLimitReached:
+        "Una organización puede tener como máximo 20 perfiles activos. Archiva uno primero.",
+      profileNotFound: "Este perfil ya no existe.",
+      checkRunning: "Ya hay una comprobación en curso.",
+      checkNotFound: "Esta comprobación ya no existe.",
+      checkNotResumable:
+        "Solo se puede reanudar la última comprobación detenida o estancada.",
+      findingNotFound: "Este hallazgo ya no existe.",
+      findingStatusChanged:
+        "Este hallazgo cambió entretanto. Recarga para ver su estado actual.",
+      reviewNoteRequired: "Indica un motivo de hasta 2.000 caracteres.",
+      identifierIndexIncomplete:
+        "Completa el índice de identificadores antes de revisar duplicados.",
+      duplicateGroupTooLarge:
+        "Demasiados registros comparten este identificador para revisarlos a la vez. Revísalos en el registro de identificadores.",
+      reviewedInIdentifierRegister:
+        "Los identificadores duplicados se revisan en el registro de identificadores.",
+    },
   },
   objectEntries: {
     title: "Entradas",
@@ -8665,6 +9148,16 @@ export default {
       updateSite: "Actualizar sitio",
       archiveSiteConfirm: "¿Seguro que quieres archivar este sitio?",
       failedArchiveSite: "No se pudo archivar el sitio",
+      siteInUseTitle: "Este sitio sigue en uso",
+      siteInUseDescription:
+        "Archivar no debe dejar ubicaciones ni objetos bajo un sitio inactivo. Resuelve esto primero; no se ha cambiado nada.",
+      siteInUseLocations:
+        "Ubicaciones activas en este sitio: {count}. Elimínalas primero en Ubicaciones.",
+      siteInUseObjects:
+        "Objetos todavía colocados en las ubicaciones de este sitio: {count}. Muévelos primero a otra ubicación.",
+      siteInUseIncomplete:
+        "Este sitio tiene demasiadas ubicaciones u objetos para comprobarlos a la vez, así que no se puede archivar aquí.",
+      siteInUseClose: "Cerrar",
       systemRole: "(Sistema)",
       siteManagement: "Gestión de sitios",
       physicalLocationBranches:
@@ -9054,6 +9547,7 @@ export default {
       newAccession: "Nueva adquisición",
       newLoan: "Nuevo préstamo",
       newCollectionGroup: "Nuevo grupo de colecciones",
+      documentationQuality: "Calidad de la documentación",
       navigation: "Navegación",
       dashboard: "Panel",
       library: "Biblioteca",
@@ -9214,6 +9708,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Las suborganizaciones pueden trasladar objetos dentro de la misma jerarquía.",
       notifications: "Notificaciones",
+      notificationsUnread: "Notificaciones, {count} sin leer",
       markAllRead: "Marcar todo como leído",
       viewAllNotifications: "Ver todas las notificaciones",
       loading: "Cargando…",
@@ -9285,6 +9780,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "Tienes cambios sin guardar que se perderán si sales de esta página. ¿Quieres guardarlos primero?",
       discardChanges: "Descartar cambios",
+      keepEditing: "Seguir editando",
       enterCode: "Introduce el código",
       orContinueWithGoogle: "O continúa con Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
@@ -9514,6 +10010,7 @@ export default {
       locked: "No disponible",
       overview: "Resumen",
       myWork: "Mi trabajo",
+      documentationQuality: "Calidad de la documentación",
       objectCatalog: "Catálogo de objetos",
       locationTracking: "Ubicación y seguimiento",
       scan: "Escanear",
@@ -9951,21 +10448,30 @@ export default {
       "El archivo de exportación no está disponible. Reintente o cree una nueva exportación.",
     reportsNote:
       "Los resúmenes de informes siguientes contienen respuestas actuales de KPI y listas limitadas de elementos recientes o próximos. Use las exportaciones completas de catálogo y auditoría anteriores para obtener conjuntos de datos de origen conciliados.",
-    sourceRegister: "Registro: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} filas de registro · {scanned} registros examinados · {pages} páginas",
+      "{rows} filas · {scanned} registros examinados · {pages} páginas",
     errorRegisterCriteria:
-      "Revise los criterios del registro: las fechas deben ser válidas, la fecha inicial no puede ser posterior a la final, la fecha de referencia no puede estar en el futuro y el estado solo se aplica a los registros de ingresos y bajas.",
+      "Revise los criterios: las fechas deben ser válidas, la fecha inicial no puede ser posterior a la final, la fecha de referencia no puede estar en el futuro, una moneda debe ser un código de tres letras como EUR, y cada registro o informe solo acepta sus propios criterios.",
   },
   registerReports: {
-    title: "Registros institucionales",
+    title: "Registros e informes",
     description:
-      "Genere registros de ingresos, bajas, custodia y estado de conservación a partir de la evidencia registrada. Cada archivo tiene un esquema de columnas tipado y un manifiesto con los criterios, la fecha de referencia y el generador.",
-    profile: "Registro",
+      "Genere registros, un informe de valoración para el patronato, una relación para la aseguradora y un informe de investigación de procedencia a partir de la evidencia registrada. Cada archivo tiene un esquema de columnas tipado y un manifiesto con los criterios, la fecha de referencia, la versión del perfil y los totales por moneda, si los hay.",
+    profile: "Registro o informe",
+    groupRegisters: "Registros",
+    groupFinancial: "Informes financieros",
+    groupResearch: "Investigación",
+    groupUnsupported: "No compatibles",
     profileAccession: "Registro de ingresos",
     profileDisposal: "Registro de bajas",
     profileCustody: "Registro de custodia",
     profileCondition: "Registro de estado de conservación",
+    profileValuation: "Informe de valoración (patronato)",
+    profileInsurance: "Relación de seguros (aseguradora)",
+    profileProvenance: "Informe de procedencia (investigación)",
+    profileNoRoleAccess: "{profile} (no disponible para su rol)",
+    profileNotInPlan: "{profile} (no incluido en su plan)",
     profileSpectrum: "SPECTRUM XML (no compatible)",
     profileLido: "LIDO XML (no compatible)",
     fromDate: "Desde",
@@ -9975,22 +10481,44 @@ export default {
     statusPending: "Pendiente",
     statusApproved: "Aprobado",
     statusRejected: "Rechazado",
+    purpose: "Finalidad",
+    purposeAny: "Cualquier finalidad",
+    currency: "Moneda",
+    currencyPlaceholder: "Cualquiera, o EUR",
+    inventoryScope: "Ámbito del inventario",
+    scopeAny: "Cualquier ámbito",
+    scopeOwned: "En propiedad",
+    scopeIncoming: "Entrante (no en propiedad)",
+    scopeUnclassified: "Propiedad sin clasificar",
+    scopeExcluded: "Fuera del inventario",
+    policy: "Póliza",
+    policyAny: "Todas las pólizas",
+    policyOption: "{number} · {carrier}",
     asOf: "A fecha de",
     asOfHint:
-      "Deje A fecha de vacío para usar el momento en que se crea el registro. Se excluye la evidencia registrada después de esa fecha. Las fechas y la fecha de referencia están en UTC.",
+      "Deje A fecha de vacío para usar el momento en que se crea el archivo. Se excluye la evidencia registrada después de esa fecha, y la validez y la cobertura se evalúan en ese momento. Las fechas y la fecha de referencia están en UTC.",
     preview: "Vista previa",
     previewing: "Cargando vista previa",
-    previewLabel: "Vista previa del registro",
+    previewLabel: "Vista previa",
     previewSummary:
       "Se muestran {shown} de {rows} filas de la primera página ({scanned} registros examinados).",
     previewMore:
-      "Hay más filas; cree el registro para obtener el archivo completo.",
+      "Hay más filas; cree el archivo para obtener el registro o informe completo.",
     previewEmpty: "La primera página no tiene filas para estos criterios.",
     notRecordedNote:
       "Las celdas vacías indicadas en notRecorded nunca se registraron en MuseumLite. Las filas marcadas como legacy son anteriores a la evidencia estructurada.",
+    totalsPreviewNote:
+      "Los totales por moneda abarcan todo el archivo. Aparecen en el archivo completado más abajo y en su manifiesto.",
     exportLabel: "Crear archivo de {profile}",
+    totalsTitle: "Totales por moneda",
+    totalsNone: "Este archivo no contiene importes.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} sin una moneda reconocida, no sumados",
+    totalsNotStated: "Sin indicar",
+    totalsNote:
+      "Sumas de las filas de este archivo, por grupo y moneda. Los importes en monedas distintas nunca se suman entre sí; las filas sin una moneda reconocida se cuentan, pero no se suman.",
     unsupportedNote:
-      "Los registros usan un perfil de intercambio documentado de MuseumLite. No constituyen una declaración de conformidad con SPECTRUM, LIDO ni acreditación, y los perfiles no compatibles no se pueden generar.",
+      "Los registros e informes usan perfiles de intercambio documentados de MuseumLite. No constituyen una declaración de conformidad con SPECTRUM, LIDO ni acreditación, y los perfiles no compatibles no se pueden generar.",
   },
   projectionHealth: {
     unavailable: {
@@ -10101,6 +10629,100 @@ export default {
       title: "Trabajos recientes",
       rows: "{rows} filas",
       discrepancies: "{count} diferencias",
+    },
+  },
+  recordForm: {
+    errors: {
+      conflict:
+        "No se guardó: otra persona cambió este registro después de que usted lo abriera. Sus cambios siguen aquí.",
+      notEditable:
+        "Este registro ya no se puede editar aquí, por lo que sus cambios no se guardaron.",
+      required: "{field} es obligatorio.",
+      identifierPermanent:
+        "Un número de accesión asignado es permanente. Conserve el número original.",
+      relatedRecordUnavailable:
+        "La selección de {field} no está disponible en esta organización. Elija otra.",
+      parentIsSelf: "Un objeto no puede ser su propio objeto principal.",
+      conditionSetByAssessment:
+        "El estado actual proviene de una evaluación de estado aceptada. Registre una nueva evaluación para cambiarlo.",
+      conditionNoteRequired: "Explique el cambio de estado en la nota.",
+      dateOrderInvalid:
+        "La fecha de finalización debe ser igual o posterior a la fecha de inicio.",
+      partyManagedField:
+        "Este dato proviene de la parte vinculada. Cambie la parte en el panel Partes.",
+      amountInvalid: "Introduzca un importe de 0 o más.",
+      measurementInvalid: "Introduzca un número de 0 o más.",
+      weightInvalid:
+        "Introduzca el peso como un número de 0 o más, opcionalmente con una unidad, como 200 g o 2 kg.",
+      invalid: "Algunos campos requieren atención antes de guardar.",
+      saveFailed:
+        "No se pudieron guardar sus cambios. Compruebe su conexión e inténtelo de nuevo.",
+    },
+    notices: {
+      recoveredTitle: "Se encontraron cambios sin guardar",
+      recoveredBody: "Los cambios en {fields} de {time} no se guardaron.",
+      recoveredChanged:
+        "Este registro ha cambiado desde entonces. Tras restaurar, podrá revisar lo que cambió antes de guardar.",
+      restore: "Restaurar mis cambios",
+      discardRecovered: "Descartarlos",
+      changedByOthers: "Cambiado por otra persona: {fields}.",
+      remoteChanged:
+        "Otra persona guardó cambios en {fields} mientras usted editaba.",
+      remoteKeepsYours:
+        "Sus cambios se conservan. Continúe desde la versión más reciente antes de guardar.",
+      remoteOverlap:
+        "Usted también cambió {fields}. Se conservan sus valores; después de continuar puede usar los de la otra persona.",
+      applyLatest: "Mantener mis cambios en la versión más reciente",
+      discardMine: "Descartar mis cambios",
+      retry: "Reintentar",
+      goToField: "Ir a {field}",
+      inputKept: "Lo que introdujo sigue en este formulario.",
+      inputKeptOnDevice:
+        "Lo que introdujo sigue en este formulario y se conserva en este dispositivo hasta que lo guarde o lo descarte.",
+      useTheirs: "Usar su valor",
+      keepMine: "Mantener el mío",
+      overlapValue: "Otra persona también cambió {field}, a “{value}”",
+      overlapChanged: "Otra persona también cambió {field}.",
+      lockedWhileEditing:
+        "Este registro ya no se puede editar aquí. Lo que introdujo sigue en pantalla para que pueda copiarlo.",
+    },
+    status: {
+      unsaved: "Cambios sin guardar",
+    },
+    loan: {
+      partyLinked:
+        "El prestamista o prestatario proviene de la parte vinculada, por lo que el nombre y el contacto no se editan aquí.",
+      changeParty: "Cambiar la parte en la página del préstamo",
+      partyNotLinked:
+        "Este préstamo no tiene ninguna parte vinculada, así que el nombre se escribe aquí.",
+      linkParty: "Vincular una parte en la página del préstamo",
+    },
+    objectFields: {
+      alternativeTitle: "Título alternativo",
+      measuredDimensions: "Dimensiones medidas",
+      measuredDimensionsHint:
+        "Alto, ancho y profundidad numéricos en una sola unidad, usados para ordenar, informes y exportaciones.",
+      height: "Alto",
+      width: "Ancho",
+      depth: "Profundidad",
+      dimensionUnit: "Unidad",
+      weightUnit: "Unidad de peso",
+      inscriptionMarks: "Marcas individuales",
+      inscriptionMarksHint:
+        "Anote cada firma, sello, etiqueta u otra marca en su propia fila.",
+      inscriptionMarkLabel: "Marca",
+      inscriptionMarkDescription: "Descripción",
+      addInscriptionMark: "Añadir marca",
+      removeInscriptionMark: "Quitar marca",
+      tagsHint: "Pulse Intro o Tab después de cada etiqueta.",
+      legalRestrictions: "Restricciones legales",
+      legalRestrictionsHint:
+        "El uso, la exhibición o la reproducción de este objeto están restringidos legalmente.",
+      typeDetails: "Detalles específicos del tipo",
+      isHighResDownloadable: "Descarga en alta resolución",
+      draftMedia: "Fotos y documentos",
+      alternateNumberExists:
+        "Este número de accesión alternativo ya está en la lista.",
     },
   },
 } as const;

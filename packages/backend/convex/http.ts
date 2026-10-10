@@ -177,6 +177,7 @@ for (const path of ["/exports/download", "/exports/manifest"]) {
             sha256: job.sha256,
             expiresAt: job.expiresAt,
             failedAttempts: job.failedAttempts,
+            totals: job.totals,
           });
           const chunks: Array<{
             sequence: number;

@@ -88,10 +88,14 @@ export function LoanListFilters({
       <div className="flex items-center">
         <div className="group relative w-full sm:w-auto">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="size-3.5 text-muted-foreground transition-colors group-focus-within:text-cyan-500" />
+            <Search
+              aria-hidden="true"
+              className="size-3.5 text-muted-foreground transition-colors group-focus-within:text-cyan-500"
+            />
           </div>
           <Input
             type="text"
+            aria-label={t("searchLabel")}
             className="block w-full rounded-lg border border-border/60 bg-card p-2 pl-9 text-xs outline-none transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 sm:w-48"
             placeholder={t("searchPlaceholder")}
             value={searchQuery}

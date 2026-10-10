@@ -4,21 +4,34 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Banknote, Calendar } from "lucide-react";
+import { useState } from "react";
 import { LoanCurrencyInput } from "@/components/loan-currency-input";
+import {
+  FieldError,
+  fieldErrorProps,
+} from "@/components/record-form/record-form-notices";
+import { futureCalendarEndMonth } from "@/lib/format-date";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { EditLoanFormData } from "./types";
 
 interface EditLoanScheduleSectionProps {
   formData: EditLoanFormData;
   onChange: (updates: Partial<EditLoanFormData>) => void;
+  fieldErrors: Record<string, string>;
 }
 
 export function EditLoanScheduleSection({
   formData,
   onChange,
+  fieldErrors,
 }: EditLoanScheduleSectionProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("loans.placeholders");
+  const startDate = new Date(formData.startDate);
+  const endDate =
+    formData.endDate === null ? undefined : new Date(formData.endDate);
+  // Loans run into later years, beyond the calendar's default last month.
+  const [endMonth] = useState(futureCalendarEndMonth);
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -28,28 +41,42 @@ export function EditLoanScheduleSection({
       </h2>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <DatePicker
-          label={
-            <>
-              {tRoot("loans.actions.startDate")}{" "}
-              <span className="text-destructive">*</span>
-            </>
-          }
-          id="startDate"
-          date={formData.startDate}
-          onSelect={(date: Date | undefined) =>
-            onChange({ startDate: date ?? formData.startDate })
-          }
-          placeholder={t("selectStartDate")}
-        />
+        <div className="space-y-2">
+          <DatePicker
+            label={
+              <>
+                {tRoot("loans.actions.startDate")}{" "}
+                <span className="text-destructive">*</span>
+              </>
+            }
+            id="startDate"
+            className="mx-0 w-full sm:w-44"
+            date={startDate}
+            onSelect={(date: Date | undefined) =>
+              onChange({ startDate: date?.getTime() ?? formData.startDate })
+            }
+            placeholder={t("selectStartDate")}
+            endMonth={endMonth}
+            {...fieldErrorProps("startDate", fieldErrors.startDate)}
+          />
+          <FieldError field="startDate" message={fieldErrors.startDate} />
+        </div>
 
-        <DatePicker
-          label={tRoot("loans.actions.endDate")}
-          id="endDate"
-          date={formData.endDate}
-          onSelect={(date: Date | undefined) => onChange({ endDate: date })}
-          placeholder={t("selectEndDate")}
-        />
+        <div className="space-y-2">
+          <DatePicker
+            label={tRoot("loans.actions.endDate")}
+            id="endDate"
+            className="mx-0 w-full sm:w-44"
+            date={endDate}
+            onSelect={(date: Date | undefined) =>
+              onChange({ endDate: date?.getTime() ?? null })
+            }
+            placeholder={t("selectEndDate")}
+            endMonth={endMonth}
+            {...fieldErrorProps("endDate", fieldErrors.endDate)}
+          />
+          <FieldError field="endDate" message={fieldErrors.endDate} />
+        </div>
 
         <div className="grid grid-cols-[1fr_8rem] items-start gap-4 md:col-span-2">
           <div className="space-y-2">
@@ -62,18 +89,31 @@ export function EditLoanScheduleSection({
                 id="insuranceValue"
                 type="number"
                 step="0.01"
+                min="0"
                 value={formData.insuranceValue}
                 onChange={(e) => onChange({ insuranceValue: e.target.value })}
                 placeholder="0.00"
                 className="pl-9 bg-background"
+                {...fieldErrorProps(
+                  "insuranceValue",
+                  fieldErrors.insuranceValue,
+                )}
               />
             </div>
+            <FieldError
+              field="insuranceValue"
+              message={fieldErrors.insuranceValue}
+            />
           </div>
-          <LoanCurrencyInput
-            id="currency"
-            value={formData.currency}
-            onChange={(currency) => onChange({ currency })}
-          />
+          <div className="space-y-2">
+            <LoanCurrencyInput
+              id="currency"
+              value={formData.currency}
+              onChange={(currency) => onChange({ currency })}
+              {...fieldErrorProps("currency", fieldErrors.currency)}
+            />
+            <FieldError field="currency" message={fieldErrors.currency} />
+          </div>
         </div>
       </div>
     </div>

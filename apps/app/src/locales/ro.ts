@@ -517,6 +517,7 @@ export default {
       data: "Import/Export Date",
       metrics: "Starea indicatorilor",
       loanAgreements: "Contracte de împrumut",
+      preparationRecipes: "Rețete de pregătire",
     },
     roles: {
       title: "Gestionare Roluri",
@@ -1351,6 +1352,10 @@ export default {
     tryAgain: "Încearcă din nou",
   },
   objects: {
+    backToObject: "Înapoi la obiect",
+    selectObject: "Selectează {title}",
+    selectAllShown: "Selectează toate obiectele afișate",
+    searchLabel: "Caută obiecte",
     qrLabel: {
       size1x1: "Pătrat mic",
       showObjectName: "Afișează numele obiectului",
@@ -1559,7 +1564,8 @@ export default {
       status: "Stare",
     },
     bulkActions: {
-      itemsSelected: "Obiecte selectate: {count}",
+      objectsSelected: "Obiecte selectate: {count}",
+      label: "Obiecte selectate",
       addToGroup: "Adaugă în grup",
       moveLocation: "Mută locația",
       export: "Exportă",
@@ -2153,6 +2159,7 @@ export default {
     },
   },
   loans: {
+    searchLabel: "Caută împrumuturi",
     title: "Împrumuturi",
     description: "Gestionează împrumuturile de colecție",
     newLoan: "Împrumut Nou",
@@ -2496,6 +2503,7 @@ export default {
       statusDistribution: "Distribuția stărilor",
     },
     table: {
+      select: "Selectează",
       type: "Tip",
       loanIdTitle: "ID-ul și titlul împrumutului",
       partnerInstitution: "Instituție parteneră",
@@ -2512,11 +2520,11 @@ export default {
       loanNotFound: "Împrumut negăsit",
     },
     bulkActions: {
-      loan: "împrumut",
-      loansPlural: "împrumuturi",
-      selected: "selectate",
+      clearSelection: "Golește selecția",
+      loansSelected: "Împrumuturi selectate: {count}",
+      label: "Împrumuturi selectate",
       approveSelected: "Aprobă selecția",
-      cancelSelected: "Anulează selecția",
+      cancelSelected: "Anulează împrumuturile selectate",
       export: "Exportă",
       csvHeaders: {
         loanNumber: "Număr împrumut",
@@ -2589,6 +2597,7 @@ export default {
       locations: "Mergi la locații",
       conservation: "Mergi la conservare",
       entries: "Mergi la intrări",
+      documentationQuality: "Mergi la calitatea documentației",
     },
     pageNotFound: {
       title: "Pagina nu a fost găsită",
@@ -2614,6 +2623,275 @@ export default {
       identifier: "Identificator (A–Z)",
     },
     allTypes: "Toate tipurile",
+  },
+  documentationQuality: {
+    title: "Calitatea documentației",
+    description:
+      "Verificați fișele după profilurile de documentare ale instituției și examinați identificatorii duplicați, documentația lipsă, legăturile nesigure cu părți și referințele rupte. Verificările nu modifică niciodată o fișă: personalul corectează fișele acolo unde sunt ținute, iar verificarea următoare confirmă corectura.",
+    tabs: {
+      findings: "Constatări",
+      profiles: "Profiluri",
+    },
+    kind: "Tipul constatării",
+    allKinds: "Toate tipurile",
+    kinds: {
+      duplicate_identifier: "Identificator duplicat",
+      missing_evidence: "Documentație lipsă",
+      legacy_link: "Legătură nesigură cu o parte",
+      orphan_reference: "Referință ruptă",
+    },
+    statuses: {
+      open: "Deschisă",
+      accepted: "Excepție acceptată",
+      resolved: "Rezolvată",
+    },
+    registers: {
+      catalog: "catalog",
+      accession: "accesiuni",
+    },
+    stages: {
+      entry: "În custodie printr-o intrare",
+      collection: "În colecție",
+      borrowed: "Împrumutat de la terți",
+      deaccessioned: "Scos din inventar",
+    },
+    stageHints: {
+      entry:
+        "Primit pentru identificare, depozit sau evaluarea achiziției și neînregistrat în inventar.",
+      collection:
+        "Obiecte înregistrate în inventar sau catalogate, inclusiv cele împrumutate altora.",
+      borrowed: "Obiecte aflate în custodie printr-un împrumut primit.",
+      deaccessioned: "Obiecte scoase din colecție; fișele lor se păstrează.",
+    },
+    requirements: {
+      object_name: "Denumirea obiectului",
+      maker: "Autor",
+      production_date: "Datare",
+      materials: "Materiale",
+      dimensions: "Dimensiuni",
+      description: "Descriere",
+      current_location: "Locația actuală",
+      condition_assessment: "Evaluare a stării acceptată",
+      image: "Fotografie",
+      supporting_document: "Document justificativ",
+      accession_record: "Înregistrare în inventar aprobată",
+      provenance_claim: "Afirmație de proveniență",
+    },
+    orphanFields: {
+      parentObject: "Obiect părinte",
+      currentLocation: "Locația actuală",
+      collectionGroup: "Grup de colecții",
+      object: "Obiect",
+      donorAccount: "Contul donatorului",
+    },
+    orphanProblems: {
+      missing: "nu mai există",
+      other_organization: "aparține altei organizații",
+      self: "trimite la fișa însăși",
+    },
+    recordTypes: {
+      object: "Obiect",
+      accession: "Înregistrare în inventar",
+      deaccession: "Scoatere din inventar",
+    },
+    objectTabs: {
+      general: "General",
+      physical: "Fizic",
+      media: "Media",
+      accession: "Accesiune",
+      placement: "Amplasare",
+      provenance: "Proveniență",
+    },
+    summary: {
+      duplicateIdentifier:
+        "„{identifier}” este folosit de {count} fișe în registrul de {register}",
+      missingEvidence: "{identifier} {title}: lipsește {missing}",
+      legacyName: "{label} numește „{name}” fără o parte asociată",
+      legacyAccount: "{label} trimite la o parte fără o legătură confirmată",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "Nicio constatare deschisă. Rulați o verificare pentru a căuta excepții de documentare.",
+        accepted: "Nicio excepție acceptată.",
+        resolved: "Încă nu există constatări rezolvate.",
+      },
+      emptyKind: "Nicio constatare de acest tip: {kind}.",
+      reopened: "Redeschisă",
+      detectedBy: "Verificarea {number}",
+      resolvedBy: "Rezolvată de verificarea {number}",
+    },
+    check: {
+      title: "Verificare de calitate",
+      loading: "Se încarcă…",
+      never:
+        "Nu a rulat încă nicio verificare. O verificare citește fiecare fișă în pași limitați și enumeră ce găsește.",
+      running:
+        "Verificarea {number} rulează: pasul {step} din {steps} ({phase}), {records} fișe verificate până acum.",
+      stalled:
+        "Verificarea {number} nu a mai avansat de peste zece minute. Reluați-o sau anulați-o și porniți din nou.",
+      completed:
+        "Verificarea {number} s-a încheiat pe {date}: {records} fișe verificate, {detected} constatări ({opened} noi, {reopened} redeschise), {resolved} rezolvate.",
+      failed: "Verificarea {number} s-a oprit în timpul etapei: {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "Membrul care a rulat-o nu mai are acces. Reluați-o pentru a continua cu accesul dumneavoastră.",
+        PAGE_FAILED:
+          "O fișă nu a putut fi verificată. Reluați verificarea pentru a încerca din nou de unde s-a oprit.",
+      },
+      cancelled:
+        "Verificarea {number} a fost anulată. Constatările găsite rămân; nu a rezolvat niciuna.",
+      phases: {
+        catalog_identifiers: "identificatori de catalog",
+        accession_identifiers: "identificatori de accesiune",
+        objects_active: "obiecte",
+        objects_loaned: "obiecte împrumutate",
+        objects_deaccessioned: "obiecte scoase din inventar",
+        accessions: "înregistrări în inventar",
+        deaccessions: "scoateri din inventar",
+        resolve_duplicate_identifier: "identificatori duplicați corectați",
+        resolve_missing_evidence: "documentație completată",
+        resolve_legacy_link: "legături cu părți confirmate",
+        resolve_orphan_reference: "referințe reparate",
+        finished: "încheiată",
+      },
+      run: "Rulează verificarea",
+      resume: "Reia",
+      cancel: "Anulează verificarea",
+      started: "Verificare pornită",
+      resumed: "Verificare reluată",
+      cancelledToast: "Verificare anulată",
+      noProfiles:
+        "Niciun profil activ, așa că documentația lipsă nu a fost verificată.",
+      partiesNotChecked:
+        "Legăturile cu părți nu au fost verificate, deoarece modulul Conturi este dezactivat.",
+      identifierIndexIncomplete:
+        "Unii identificatori nu sunt încă indexați, așa că duplicatele dintre ei nu au fost verificate.",
+      identifierIndexLink: "Completați indexul identificatorilor",
+      neverChanges:
+        "Verificările nu renumerotează, nu combină și nu completează niciodată fișe.",
+    },
+    profiles: {
+      loading: "Se încarcă profilurile…",
+      description:
+        "Un profil arată ce documentație trebuie să aibă obiectele de un anumit tip în anumite etape. Fiecare verificare aplică profilurile active; cele arhivate se păstrează.",
+      add: "Adaugă profil",
+      readOnly: "Administratorii modifică profilurile.",
+      empty:
+        "Încă nu există profiluri. Fără ele, verificările semnalează totuși identificatorii duplicați, legăturile cu părți și referințele rupte.",
+      allTypes: "Toate tipurile de obiecte",
+      objectTypeHint: "Tipurile de obiecte provin din Setări › Preferințe.",
+      addTitle: "Adaugă profil de documentare",
+      editTitle: "Editează profilul de documentare",
+      dialogDescription:
+        "Alegeți ce obiecte acoperă profilul și ce trebuie să aibă. Verificarea următoare îl aplică.",
+      fields: {
+        name: "Nume",
+        objectType: "Tip de obiect",
+        stages: "Etape",
+        requirements: "Documentație cerută",
+      },
+      errors: {
+        name: "Introduceți un nume de cel mult 120 de caractere.",
+        stages: "Alegeți cel puțin o etapă.",
+        requirements: "Alegeți cel puțin o cerință.",
+      },
+      cancel: "Anulează",
+      save: "Salvează profilul",
+      saving: "Se salvează…",
+      saved: "Profil salvat",
+      edit: "Editează",
+      archive: "Arhivează",
+      restore: "Restaurează",
+      archived: "Profil arhivat",
+      restored: "Profil restaurat",
+      archivedBadge: "Arhivat",
+    },
+    review: {
+      title: "Examinare",
+      openHint:
+        "Corectați fișa și rulați o verificare sau acceptați constatarea ca excepție, cu un motiv.",
+      acceptAction: "Acceptă ca excepție",
+      acceptTitle: "Acceptă ca excepție",
+      acceptDescription:
+        "Fișa rămâne neschimbată. Indicați motivul, de exemplu de ce documentația nu poate exista. Constatarea se redeschide dacă o verificare ulterioară găsește altceva.",
+      acceptDuplicateDescription:
+        "Fiecare fișă își păstrează identificatorul. Motivul este înregistrat ca examinare a conflictului de identificator pentru fiecare fișă care îl folosește.",
+      note: "Motiv",
+      noteRequired: "Introduceți un motiv.",
+      cancel: "Anulează",
+      accept: "Acceptă",
+      saving: "Se salvează…",
+      accepted: "Acceptată ca excepție",
+      reviewedBy: "Acceptată de {name} pe {date}",
+      unknownReviewer: "un fost membru",
+      earlierReview:
+        "Acceptată anterior; ce a găsit verificarea s-a schimbat între timp:",
+      reopen: "Redeschide",
+      reopened: "Constatare redeschisă",
+      reviewedInRegister:
+        "Examinată în registrul identificatorilor. Dacă o altă fișă începe să folosească identificatorul, constatarea se redeschide.",
+      resolved: "Verificarea {number} nu a mai găsit-o pe {date}.",
+    },
+    detail: {
+      headerTitle: "Constatare",
+      back: "Înapoi la calitatea documentației",
+      detection:
+        "Găsită prima dată de verificarea {first}; ultima dată de verificarea {last}.",
+      foundTitle: "Ce a găsit verificarea",
+      repairTitle: "Unde se corectează",
+      notRecorded: "Neînregistrat",
+      register: "Registru",
+      identifier: "Identificatorul așa cum a fost înregistrat",
+      records: "Fișe care îl folosesc ({count})",
+      moreRecords: "Și încă {count}.",
+      object: "Obiect",
+      profile: "Profil",
+      stage: "Etapă",
+      missing: "Lipsește",
+      recordedCondition: "Text despre stare din fișă, păstrat așa cum a fost scris",
+      recordedProvenance:
+        "Text despre proveniență din fișă, păstrat așa cum a fost scris",
+      record: "Fișă",
+      assertedName: "Numele așa cum a fost scris",
+      existingParty: "Cont menționat",
+      suggestedRole: "Rol",
+      field: "Referință",
+      storedReference: "Valoarea salvată",
+      problem: "Problemă",
+      recordUnavailable: "{record} nu mai este disponibil.",
+      openTab: "Deschideți fila {tab}: {requirements}",
+      repairIntro:
+        "Corectați fișa acolo unde este ținută. Verificarea următoare închide constatarea când lipsa a dispărut.",
+      linkPartyHint:
+        "Confirmați sau asociați partea în panoul Părți al fișei.",
+      linkPartyUnavailable:
+        "Asocierea unei părți necesită modulul Conturi și permisiunea de a edita părți. Atribuiți sarcina cuiva care poate.",
+      duplicateHint:
+        "Nimic nu se renumerotează. Deschideți fiecare fișă pentru a le compara sau acceptați duplicatul pe baza dovezilor istorice.",
+      identifierRegister: "Deschideți registrul identificatorilor",
+    },
+    errors: {
+      fallback: "A apărut o eroare. Încercați din nou.",
+      profileInvalid: "Verificați numele, etapele și cerințele profilului.",
+      profileLimitReached:
+        "O organizație poate avea cel mult 20 de profiluri active. Arhivați mai întâi unul.",
+      profileNotFound: "Acest profil nu mai există.",
+      checkRunning: "O verificare rulează deja.",
+      checkNotFound: "Această verificare nu mai există.",
+      checkNotResumable:
+        "Doar ultima verificare oprită sau blocată poate fi reluată.",
+      findingNotFound: "Această constatare nu mai există.",
+      findingStatusChanged:
+        "Constatarea s-a schimbat între timp. Reîncărcați pentru a vedea starea actuală.",
+      reviewNoteRequired: "Introduceți un motiv de cel mult 2.000 de caractere.",
+      identifierIndexIncomplete:
+        "Completați indexul identificatorilor înainte de a examina duplicatele.",
+      duplicateGroupTooLarge:
+        "Prea multe fișe folosesc acest identificator pentru a fi examinate deodată. Examinați-le în registrul identificatorilor.",
+      reviewedInIdentifierRegister:
+        "Identificatorii duplicați se examinează în registrul identificatorilor.",
+    },
   },
   objectEntries: {
     title: "Intrări",
@@ -7200,6 +7478,7 @@ export default {
       deaccession: "Scoatere din inventar",
       exhibition: "Expoziție",
       conservation: "Tratament de conservare",
+      documentationFinding: "Constatare de documentare",
     },
     fields: {
       title: "Titlu",
@@ -7325,6 +7604,73 @@ export default {
         "Înregistrarea nu poate fi citată. Alegeți o înregistrare acceptată din această organizație.",
       limitReached: "Dosarul sau sarcina a atins limita.",
       invalidInput: "Verificați câmpurile obligatorii și încercați din nou.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Legați mai întâi o evaluare a stării acceptată de această sarcină.",
+        media:
+          "Legați mai întâi un fișier, de exemplu o fotografie, de această sarcină.",
+        movement: "Legați mai întâi mutarea înregistrată de această sarcină.",
+        auditEntry: "Legați mai întâi evenimentul de audit de această sarcină.",
+      },
+      caseNotAccepted:
+        "Rețetele se aplică după ce dosarul este acceptat, până când este returnat, închis sau anulat.",
+      recipeNotFound:
+        "Această rețetă nu mai este disponibilă. Reîncărcați pagina.",
+      recipeInvalid: "Verificați câmpurile marcate ale rețetei.",
+    },
+    suggestion: {
+      badge: "Sugerată",
+      origin: {
+        intake_accepted: "Sugerată de „{recipe}” după acceptarea primirii",
+        loan_approved: "Sugerată de „{recipe}” după aprobarea împrumutului",
+        exhibition_approved: "Sugerată de „{recipe}” după aprobarea expoziției",
+      },
+      withdrawn:
+        "Retrasă deoarece împrumutul a fost anulat. Restaurați-o dacă lucrarea este încă necesară.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Are nevoie de o evaluare a stării acceptată, legată ca dovadă, înainte de a putea fi finalizată.",
+        media:
+          "Are nevoie de un fișier, de exemplu o fotografie, legat ca dovadă, înainte de a putea fi finalizată.",
+        movement:
+          "Are nevoie de mutarea înregistrată, legată ca dovadă, înainte de a putea fi finalizată.",
+        auditEntry:
+          "Are nevoie de un eveniment de audit, legat ca dovadă, înainte de a putea fi finalizată.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Evaluarea stării este legată ca dovadă.",
+        media: "Fișierul este legat ca dovadă.",
+        movement: "Mutarea înregistrată este legată ca dovadă.",
+        auditEntry: "Evenimentul de audit este legat ca dovadă.",
+      },
+      restore: "Restaurează sugestia",
+      restored: "Sugestia a fost restaurată",
+      dismiss: "Respinge sugestia",
+      dismissDescription:
+        "Sarcina rămâne în dosar și nu va mai fi sugerată. O puteți restaura mai târziu.",
+    },
+    preparation: {
+      title: "Pregătire",
+      description: {
+        intake_accepted:
+          "Rețetele sugerează aceste sarcini când o primire este acceptată. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
+        loan_approved:
+          "Rețetele sugerează aceste sarcini când un împrumut este aprobat. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
+        exhibition_approved:
+          "Rețetele sugerează aceste sarcini când o expoziție este aprobată. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
+      },
+      states: {
+        suggested: "Sugerată",
+        ready: "Încă nesugerată",
+        no_owner: "Așteaptă un responsabil care poate lucra la acest dosar",
+        limit_reached: "Acest dosar a atins limita de sarcini",
+      },
+      apply: "Sugerează {count} sarcină(i) lipsă",
+      applying: "Se sugerează…",
+      applied: "{count} sarcină(i) sugerată(e)",
+      nothingToApply: "Fiecare pas are deja o sarcină.",
+      skipped:
+        "{count} pas(i) au încă nevoie de un responsabil care poate lucra la acest dosar sau de loc în dosar.",
     },
     myWork: {
       title: "Munca mea",
@@ -7340,6 +7686,141 @@ export default {
       assignedCasesEmpty: "Nu aveți dosare deschise atribuite.",
       assignedTruncated: "Se afișează primele 50 de dosare atribuite.",
       since: "Din",
+    },
+  },
+  preparationRecipes: {
+    title: "Rețete de pregătire",
+    description:
+      "Când o primire este acceptată sau un împrumut ori o expoziție este aprobată, rețetele active sugerează în dosar sarcini cu responsabil și termen. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea; acestea se înregistrează în propriile fluxuri.",
+    add: "Rețetă nouă",
+    loading: "Se încarcă rețetele…",
+    empty:
+      "Nu există încă rețete. Creați una pornind de la un model din Rețetă nouă.",
+    notificationsHint:
+      "Fiecare responsabil este anunțat o singură dată pentru fiecare sarcină sugerată, în categoria Sarcini.",
+    notificationsLink: "Setări de notificare",
+    noAttestation:
+      "Finalizarea unei sarcini sugerate înregistrează doar că lucrarea este făcută.",
+    stepCount: "{count} pas(i)",
+    evidenceShort: "dovadă: {kind}",
+    statuses: {
+      active: "Activă",
+      paused: "În pauză",
+      archived: "Arhivată",
+    },
+    triggers: {
+      intake_accepted: "Primire acceptată",
+      loan_approved: "Împrumut aprobat",
+      exhibition_approved: "Expoziție aprobată",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Se aplică atunci când o primire este acceptată în colecție. Termenele se calculează de la acceptare.",
+      loan_approved:
+        "Se aplică atunci când un împrumut este aprobat. Termenele se calculează de la aprobare sau de la începutul ori sfârșitul împrumutului.",
+      exhibition_approved:
+        "Se aplică atunci când o expoziție este aprobată. Termenele se calculează de la aprobare sau de la deschiderea ori închiderea ei.",
+    },
+    directions: {
+      any: "Împrumuturi primite și acordate",
+      outgoing: "Împrumuturi acordate",
+      incoming: "Împrumuturi primite",
+    },
+    actions: {
+      edit: "Editează",
+      pause: "Pune pe pauză",
+      resume: "Reia",
+      archive: "Arhivează",
+      restore: "Restaurează",
+    },
+    toasts: {
+      saved: "Rețeta a fost salvată",
+      paused: "Rețeta a fost pusă pe pauză",
+      resumed: "Rețeta a fost reluată",
+      archived: "Rețeta a fost arhivată",
+      restored: "Rețeta a fost restaurată, pe pauză",
+    },
+    starters: {
+      intake: {
+        label: "Catalogare, fotografiere și evaluarea stării",
+        name: "Catalogare, fotografiere și evaluarea stării",
+        catalog: "Completați fișa de catalog",
+        photograph: "Fotografiați obiectul",
+        condition: "Înregistrați o evaluare a stării",
+      },
+      transport: {
+        label: "Ambalare, asigurare și transport",
+        name: "Ambalare, asigurare și transport",
+        condition: "Verificarea stării înainte de expediere",
+        insurance: "Confirmați acoperirea asigurării",
+        pack: "Ambalați obiectele",
+        transport: "Rezervați transportul",
+      },
+      return: {
+        label: "Pregătirea returului",
+        name: "Pregătirea returului",
+        transport: "Rezervați transportul de retur",
+        condition: "Verificarea stării la retur",
+        move: "Înregistrați mutarea de retur",
+      },
+      blank: {
+        label: "Rețetă goală",
+      },
+    },
+    dialog: {
+      addTitle: "Rețetă nouă",
+      editTitle: "Editează rețeta",
+      description:
+        "Fiecare pas devine o sarcină în dosar, cu un membru care poate lucra la el ca responsabil. Dacă evenimentul se repetă sau este corectat, fiecare pas păstrează o singură sarcină.",
+      name: "Nume",
+      trigger: "Sugerează când",
+      triggerLocked:
+        "Evenimentul nu se mai poate schimba după crearea rețetei. Creați altă rețetă.",
+      direction: "Împrumuturi",
+      steps: "Pași",
+      step: "Pasul {number}",
+      stepReference: "Pasul {number}: {title}",
+      untitled: "Pas fără titlu",
+      stepTitle: "Titlul sarcinii",
+      stepDescription: "Descriere",
+      evidence: "Dovada că a fost făcut",
+      noEvidence: "Nu este necesară",
+      owner: "Responsabil",
+      owners: {
+        caseAssignee: "Membrul atribuit dosarului",
+        approver: "Membrul care l-a acceptat",
+        member: "Un anumit membru",
+      },
+      ownerMember: "Membru",
+      chooseMember: "Alegeți un membru",
+      ownerFallback:
+        "Dacă responsabilul ales nu poate lucra la dosar, sarcina revine membrului atribuit dosarului, apoi membrului care l-a acceptat. Un pas fără un astfel de membru așteaptă până când cineva aplică din nou rețeta.",
+      due: "Termen",
+      noDue: "Fără termen",
+      anchors: {
+        event: "De la acceptare",
+        start: "De la început sau deschidere",
+        end: "De la sfârșit sau închidere",
+      },
+      offsetDays: "Zile",
+      offsetHint: "Numerele negative numără înapoi de la acea dată.",
+      dependsOn: "Așteaptă",
+      addStep: "Adaugă pas",
+      removeStep: "Elimină pasul",
+      moveUp: "Mută pasul mai sus",
+      moveDown: "Mută pasul mai jos",
+      cancel: "Anulează",
+      save: "Salvează rețeta",
+      saving: "Se salvează…",
+      errors: {
+        name: "Dați rețetei un nume de cel mult 120 de caractere.",
+        steps: "O rețetă are nevoie de 1 până la 10 pași.",
+        title: "Dați pasului un titlu de cel mult 200 de caractere.",
+        description: "Descrierea poate avea cel mult 2.000 de caractere.",
+        owner: "Alegeți un membru care poate lucra la aceste dosare.",
+        due: "Folosiți un număr întreg de zile între -365 și 365.",
+        dependsOn: "Un pas poate aștepta doar pașii de deasupra lui.",
+      },
     },
   },
   notificationsPage: {
@@ -9377,6 +9858,16 @@ export default {
       updateSite: "Actualizează site-ul",
       archiveSiteConfirm: "Sigur doriți să arhivați acest site?",
       failedArchiveSite: "Nu s-a putut arhiva site-ul",
+      siteInUseTitle: "Acest site este încă folosit",
+      siteInUseDescription:
+        "Arhivarea nu trebuie să lase locații sau obiecte sub un site inactiv. Rezolvați mai întâi aceste puncte; nu s-a modificat nimic.",
+      siteInUseLocations:
+        "Locații active pe acest site: {count}. Ștergeți-le mai întâi din Locații.",
+      siteInUseObjects:
+        "Obiecte aflate încă în locațiile acestui site: {count}. Mutați-le mai întâi în altă locație.",
+      siteInUseIncomplete:
+        "Acest site are prea multe locații sau obiecte pentru a fi verificat deodată, așa că nu poate fi arhivat aici.",
+      siteInUseClose: "Închide",
       systemRole: "(Sistem)",
       siteManagement: "Gestionarea site-urilor",
       physicalLocationBranches:
@@ -9763,6 +10254,7 @@ export default {
       newAccession: "Intrare nouă în colecție",
       newLoan: "Împrumut nou",
       newCollectionGroup: "Grup nou de colecții",
+      documentationQuality: "Calitatea documentației",
       navigation: "Navigare",
       dashboard: "Tablou de bord",
       library: "Bibliotecă",
@@ -9923,6 +10415,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Suborganizațiile pot transfera obiecte în cadrul aceleiași ierarhii.",
       notifications: "Notificări",
+      notificationsUnread: "Notificări, {count} necitite",
       markAllRead: "Marchează totul ca citit",
       viewAllNotifications: "Vezi toate notificările",
       loading: "Se încarcă…",
@@ -9992,6 +10485,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "Ai modificări nesalvate care se vor pierde dacă părăsești această pagină. Dorești să le salvezi mai întâi?",
       discardChanges: "Renunță la modificări",
+      keepEditing: "Continuă editarea",
       enterCode: "Introdu codul",
       orContinueWithGoogle: "Sau continuă cu Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
@@ -10214,6 +10708,7 @@ export default {
       locked: "Indisponibil",
       overview: "Prezentare generală",
       myWork: "Munca mea",
+      documentationQuality: "Calitatea documentației",
       objectCatalog: "Catalogul obiectelor",
       locationTracking: "Locații și urmărire",
       scan: "Scanează",
@@ -10648,21 +11143,30 @@ export default {
       "Fișierul de export nu este disponibil. Reîncercați sau creați un export nou.",
     reportsNote:
       "Rezumatele de rapoarte de mai jos conțin răspunsurile KPI curente și liste limitate de elemente recente sau viitoare. Folosiți exporturile complete ale catalogului și auditului de mai sus pentru seturi de date sursă reconciliate.",
-    sourceRegister: "Registru: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} rânduri de registru · {scanned} înregistrări examinate · {pages} pagini",
+      "{rows} rânduri · {scanned} înregistrări examinate · {pages} pagini",
     errorRegisterCriteria:
-      "Verificați criteriile registrului: datele trebuie să fie valide, data de început nu poate fi după data de sfârșit, data de referință nu poate fi în viitor, iar statusul se aplică doar registrelor de accesiune și de dezafectare.",
+      "Verificați criteriile: datele trebuie să fie valide, data de început nu poate fi după data de sfârșit, data de referință nu poate fi în viitor, o monedă trebuie să fie un cod de trei litere, de exemplu EUR, iar fiecare registru sau raport acceptă doar propriile criterii.",
   },
   registerReports: {
-    title: "Registre instituționale",
+    title: "Registre și rapoarte",
     description:
-      "Generați registre de accesiune, dezafectare, custodie și stare de conservare din dovezile înregistrate. Fiecare fișier are o schemă de coloane tipizată și un manifest cu criteriile, data de referință și generatorul.",
-    profile: "Registru",
+      "Generați registre, un raport de evaluare pentru consiliu, o listă pentru asigurător și un raport de cercetare a provenienței din dovezile înregistrate. Fiecare fișier are o schemă de coloane tipizată și un manifest cu criteriile, data de referință, versiunea profilului și, dacă există, totalurile pe monede.",
+    profile: "Registru sau raport",
+    groupRegisters: "Registre",
+    groupFinancial: "Rapoarte financiare",
+    groupResearch: "Cercetare",
+    groupUnsupported: "Neacceptate",
     profileAccession: "Registru de accesiune",
     profileDisposal: "Registru de dezafectare",
     profileCustody: "Registru de custodie",
     profileCondition: "Registru de stare de conservare",
+    profileValuation: "Raport de evaluare (consiliu)",
+    profileInsurance: "Listă de asigurare (asigurător)",
+    profileProvenance: "Raport de proveniență (cercetare)",
+    profileNoRoleAccess: "{profile} (indisponibil pentru rolul dvs.)",
+    profileNotInPlan: "{profile} (nu este inclus în planul dvs.)",
     profileSpectrum: "SPECTRUM XML (neacceptat)",
     profileLido: "LIDO XML (neacceptat)",
     fromDate: "De la",
@@ -10672,22 +11176,44 @@ export default {
     statusPending: "În așteptare",
     statusApproved: "Aprobat",
     statusRejected: "Respins",
+    purpose: "Scop",
+    purposeAny: "Orice scop",
+    currency: "Monedă",
+    currencyPlaceholder: "Oricare, sau EUR",
+    inventoryScope: "Sfera inventarului",
+    scopeAny: "Orice sferă",
+    scopeOwned: "În proprietate",
+    scopeIncoming: "Intrat (nu în proprietate)",
+    scopeUnclassified: "Proprietate neclasificată",
+    scopeExcluded: "În afara inventarului",
+    policy: "Poliță",
+    policyAny: "Toate polițele",
+    policyOption: "{number} · {carrier}",
     asOf: "La data de",
     asOfHint:
-      "Lăsați La data de gol pentru a folosi momentul creării registrului. Dovezile înregistrate după acest moment sunt excluse. Datele și momentul de referință sunt în UTC.",
+      "Lăsați La data de gol pentru a folosi momentul creării fișierului. Dovezile înregistrate după acest moment sunt excluse, iar valabilitatea și acoperirea sunt evaluate la acel moment. Datele și momentul de referință sunt în UTC.",
     preview: "Previzualizare",
     previewing: "Se încarcă previzualizarea",
-    previewLabel: "Previzualizarea registrului",
+    previewLabel: "Previzualizare",
     previewSummary:
       "Se afișează {shown} din {rows} rânduri din prima pagină ({scanned} înregistrări examinate).",
     previewMore:
-      "Urmează mai multe rânduri; creați registrul pentru fișierul complet.",
+      "Urmează mai multe rânduri; creați fișierul pentru registrul sau raportul complet.",
     previewEmpty: "Prima pagină nu are rânduri pentru aceste criterii.",
     notRecordedNote:
       "Celulele goale numite în notRecorded nu au fost niciodată înregistrate în MuseumLite. Rândurile marcate legacy sunt anterioare dovezilor structurate.",
+    totalsPreviewNote:
+      "Totalurile pe monede acoperă întregul fișier. Apar pe fișierul finalizat de mai jos și în manifestul său.",
     exportLabel: "Creați fișierul {profile}",
+    totalsTitle: "Totaluri pe monede",
+    totalsNone: "Fișierul nu conține sume.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} fără o monedă recunoscută, neadunate",
+    totalsNotStated: "Nespecificat",
+    totalsNote:
+      "Sumele rândurilor din acest fișier, pe grup și monedă. Sumele în monede diferite nu se adună niciodată; rândurile fără o monedă recunoscută sunt numărate, dar nu adunate.",
     unsupportedNote:
-      "Registrele folosesc un profil de schimb MuseumLite documentat. Ele nu reprezintă o declarație de conformitate SPECTRUM, LIDO sau de acreditare, iar profilurile neacceptate nu pot fi generate.",
+      "Registrele și rapoartele folosesc profiluri de schimb MuseumLite documentate. Ele nu reprezintă o declarație de conformitate SPECTRUM, LIDO sau de acreditare, iar profilurile neacceptate nu pot fi generate.",
   },
   projectionHealth: {
     unavailable: {
@@ -10800,6 +11326,100 @@ export default {
       title: "Lucrări recente",
       rows: "{rows} rânduri",
       discrepancies: "{count} diferențe",
+    },
+  },
+  recordForm: {
+    errors: {
+      conflict:
+        "Nu s-a salvat: altcineva a modificat această înregistrare după ce ați deschis-o. Modificările dvs. sunt încă aici.",
+      notEditable:
+        "Această înregistrare nu mai poate fi editată aici, așa că modificările dvs. nu au fost salvate.",
+      required: "{field} este obligatoriu.",
+      identifierPermanent:
+        "Un număr de accesiune atribuit este permanent. Păstrați numărul original.",
+      relatedRecordUnavailable:
+        "Selecția pentru {field} nu este disponibilă în această organizație. Alegeți alta.",
+      parentIsSelf: "Un obiect nu poate fi propriul obiect părinte.",
+      conditionSetByAssessment:
+        "Starea actuală provine dintr-o evaluare a stării acceptată. Înregistrați o evaluare nouă pentru a o schimba.",
+      conditionNoteRequired: "Explicați schimbarea stării în notă.",
+      dateOrderInvalid:
+        "Data de încheiere trebuie să fie aceeași sau ulterioară datei de început.",
+      partyManagedField:
+        "Această informație provine de la partea asociată. Schimbați partea din panoul Părți.",
+      amountInvalid: "Introduceți o sumă de 0 sau mai mare.",
+      measurementInvalid: "Introduceți un număr de 0 sau mai mare.",
+      weightInvalid:
+        "Introduceți greutatea ca număr de 0 sau mai mare, opțional cu o unitate, de exemplu 200 g sau 2 kg.",
+      invalid: "Unele câmpuri trebuie corectate înainte de salvare.",
+      saveFailed:
+        "Modificările dvs. nu au putut fi salvate. Verificați conexiunea și încercați din nou.",
+    },
+    notices: {
+      recoveredTitle: "Au fost găsite modificări nesalvate",
+      recoveredBody: "Modificările la {fields} ({time}) nu au fost salvate.",
+      recoveredChanged:
+        "Această înregistrare s-a schimbat între timp. După restaurare, puteți verifica ce s-a schimbat înainte de a salva.",
+      restore: "Restaurează modificările mele",
+      discardRecovered: "Renunță la ele",
+      changedByOthers: "Modificat de altcineva: {fields}.",
+      remoteChanged:
+        "Altcineva a salvat modificări la {fields} în timp ce editați.",
+      remoteKeepsYours:
+        "Modificările dvs. sunt păstrate. Continuați de la cea mai recentă versiune înainte de a salva.",
+      remoteOverlap:
+        "Ați modificat și {fields}. Valorile dvs. sunt păstrate; apoi le puteți folosi pe ale lor.",
+      applyLatest: "Păstrează modificările mele pe cea mai recentă versiune",
+      discardMine: "Renunță la modificările mele",
+      retry: "Încearcă din nou",
+      goToField: "Mergi la {field}",
+      inputKept: "Datele introduse sunt încă în acest formular.",
+      inputKeptOnDevice:
+        "Datele introduse sunt încă în acest formular și sunt păstrate pe acest dispozitiv până când le salvați sau renunțați la ele.",
+      useTheirs: "Folosește valoarea lor",
+      keepMine: "Păstrează-o pe a mea",
+      overlapValue: "{field} a fost modificat și de altcineva, în „{value}”",
+      overlapChanged: "{field} a fost modificat și de altcineva.",
+      lockedWhileEditing:
+        "Această înregistrare nu mai poate fi editată aici. Datele introduse rămân pe ecran ca să le puteți copia.",
+    },
+    status: {
+      unsaved: "Modificări nesalvate",
+    },
+    loan: {
+      partyLinked:
+        "Împrumutătorul sau împrumutatul provine de la partea asociată, așa că numele și contactul nu se editează aici.",
+      changeParty: "Schimbați partea pe pagina împrumutului",
+      partyNotLinked:
+        "Nicio parte nu este asociată acestui împrumut, așa că numele se introduce aici.",
+      linkParty: "Asociați o parte pe pagina împrumutului",
+    },
+    objectFields: {
+      alternativeTitle: "Titlu alternativ",
+      measuredDimensions: "Dimensiuni măsurate",
+      measuredDimensionsHint:
+        "Înălțime, lățime și adâncime numerice într-o singură unitate, folosite la sortare, rapoarte și exporturi.",
+      height: "Înălțime",
+      width: "Lățime",
+      depth: "Adâncime",
+      dimensionUnit: "Unitate",
+      weightUnit: "Unitate de greutate",
+      inscriptionMarks: "Mărci individuale",
+      inscriptionMarksHint:
+        "Notați fiecare semnătură, ștampilă, etichetă sau altă marcă pe un rând separat.",
+      inscriptionMarkLabel: "Marcă",
+      inscriptionMarkDescription: "Descriere",
+      addInscriptionMark: "Adaugă marcă",
+      removeInscriptionMark: "Elimină marca",
+      tagsHint: "Apăsați Enter sau Tab după fiecare etichetă.",
+      legalRestrictions: "Restricții legale",
+      legalRestrictionsHint:
+        "Utilizarea, expunerea sau reproducerea acestui obiect sunt restricționate legal.",
+      typeDetails: "Detalii specifice tipului",
+      isHighResDownloadable: "Descărcare la rezoluție înaltă",
+      draftMedia: "Fotografii și documente",
+      alternateNumberExists:
+        "Acest număr de accesiune alternativ este deja în listă.",
     },
   },
 };

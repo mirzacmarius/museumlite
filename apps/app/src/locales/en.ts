@@ -190,6 +190,7 @@ export default {
       data: "Data Import/Export",
       metrics: "Metrics health",
       loanAgreements: "Loan agreements",
+      preparationRecipes: "Preparation recipes",
     },
     roles: {
       title: "Role Management",
@@ -1557,6 +1558,7 @@ export default {
     statusRejected: "Rejected",
   },
   loans: {
+    searchLabel: "Search loans",
     title: "Loans",
     description: "Manage incoming and outgoing loan agreements",
     newLoan: "New Loan",
@@ -1614,6 +1616,7 @@ export default {
       statusDistribution: "Status Distribution",
     },
     table: {
+      select: "Select",
       type: "Type",
       loanIdTitle: "Loan ID & Title",
       partnerInstitution: "Partner Institution",
@@ -1630,9 +1633,9 @@ export default {
       loanNotFound: "Loan not found",
     },
     bulkActions: {
-      loan: "loan",
-      loansPlural: "loans",
-      selected: "selected",
+      clearSelection: "Clear selection",
+      loansSelected: "{count} loan{s} selected",
+      label: "Selected loans",
       approveSelected: "Approve Selected",
       cancelSelected: "Cancel Selected",
       export: "Export",
@@ -2635,6 +2638,10 @@ export default {
     close: "Close",
   },
   objects: {
+    backToObject: "Back to object",
+    selectObject: "Select {title}",
+    selectAllShown: "Select all shown objects",
+    searchLabel: "Search objects",
     title: "Object Catalog",
     description: "Browse and manage your objects",
     addObject: "Add Object",
@@ -2713,7 +2720,8 @@ export default {
       status: "Status",
     },
     bulkActions: {
-      itemsSelected: "{count} item{s} selected",
+      objectsSelected: "{count} object{s} selected",
+      label: "Selected objects",
       addToGroup: "Add to Group",
       moveLocation: "Move Location",
       export: "Export",
@@ -4756,6 +4764,7 @@ export default {
       deaccession: "Deaccession",
       exhibition: "Exhibition",
       conservation: "Conservation treatment",
+      documentationFinding: "Documentation finding",
     },
     fields: {
       title: "Title",
@@ -4878,6 +4887,73 @@ export default {
         "That record is not available to cite. Choose an accepted record from this organization.",
       limitReached: "This case or task has reached its limit.",
       invalidInput: "Check the required fields and try again.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Link an accepted condition assessment to this task first.",
+        media: "Link a file, such as a photograph, to this task first.",
+        movement: "Link the recorded move to this task first.",
+        auditEntry: "Link the audit event to this task first.",
+      },
+      caseNotAccepted:
+        "Recipes apply once the case is accepted, until it is returned, closed or cancelled.",
+      recipeNotFound: "This recipe is no longer available. Refresh the page.",
+      recipeInvalid: "Check the highlighted fields of the recipe.",
+    },
+    suggestion: {
+      badge: "Suggested",
+      origin: {
+        intake_accepted:
+          "Suggested by “{recipe}” after the intake was accepted",
+        loan_approved: "Suggested by “{recipe}” after the loan was approved",
+        exhibition_approved:
+          "Suggested by “{recipe}” after the exhibition was approved",
+      },
+      withdrawn:
+        "Withdrawn because the loan was cancelled. Restore it if the work is still needed.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Needs an accepted condition assessment linked as evidence before it can be completed.",
+        media:
+          "Needs a file, such as a photograph, linked as evidence before it can be completed.",
+        movement:
+          "Needs the recorded move linked as evidence before it can be completed.",
+        auditEntry:
+          "Needs an audit event linked as evidence before it can be completed.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Condition assessment linked as evidence.",
+        media: "File linked as evidence.",
+        movement: "Recorded move linked as evidence.",
+        auditEntry: "Audit event linked as evidence.",
+      },
+      restore: "Restore suggestion",
+      restored: "Suggestion restored",
+      dismiss: "Dismiss suggestion",
+      dismissDescription:
+        "The task stays on the case and is not suggested again. You can restore it later.",
+    },
+    preparation: {
+      title: "Preparation",
+      description: {
+        intake_accepted:
+          "Recipes suggest these tasks when an intake is accepted. Suggestions never record receipt, installation, title or condition.",
+        loan_approved:
+          "Recipes suggest these tasks when a loan is approved. Suggestions never record receipt, installation, title or condition.",
+        exhibition_approved:
+          "Recipes suggest these tasks when an exhibition is approved. Suggestions never record receipt, installation, title or condition.",
+      },
+      states: {
+        suggested: "Suggested",
+        ready: "Not suggested yet",
+        no_owner: "Waiting for an owner who can work on this case",
+        limit_reached: "This case has reached its task limit",
+      },
+      apply: "Suggest {count} missing task(s)",
+      applying: "Suggesting…",
+      applied: "{count} task(s) suggested",
+      nothingToApply: "Every step already has a task.",
+      skipped:
+        "{count} step(s) still need an owner who can work on this case, or room on the case.",
     },
     myWork: {
       title: "My work",
@@ -4893,6 +4969,140 @@ export default {
       assignedCasesEmpty: "No open cases are assigned to you.",
       assignedTruncated: "Showing the first 50 assigned cases.",
       since: "Since",
+    },
+  },
+  preparationRecipes: {
+    title: "Preparation recipes",
+    description:
+      "When an intake is accepted or a loan or exhibition is approved, active recipes suggest owned, dated tasks on the case. Suggestions never record receipt, installation, title or condition; staff record those in their own workflows.",
+    add: "New recipe",
+    loading: "Loading recipes…",
+    empty: "No recipes yet. Create one from a starting point under New recipe.",
+    notificationsHint:
+      "Each owner is notified once per suggested task, in their Tasks category.",
+    notificationsLink: "Notification settings",
+    noAttestation:
+      "Completing a suggested task records only that the work is done.",
+    stepCount: "{count} step(s)",
+    evidenceShort: "evidence: {kind}",
+    statuses: {
+      active: "Active",
+      paused: "Paused",
+      archived: "Archived",
+    },
+    triggers: {
+      intake_accepted: "Intake accepted",
+      loan_approved: "Loan approved",
+      exhibition_approved: "Exhibition approved",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Runs when an intake is accepted into the collection. Due dates count from the acceptance.",
+      loan_approved:
+        "Runs when a loan is approved. Due dates count from the approval or from the loan's start or end.",
+      exhibition_approved:
+        "Runs when an exhibition is approved. Due dates count from the approval or from its opening or closing.",
+    },
+    directions: {
+      any: "Incoming and outgoing loans",
+      outgoing: "Outgoing loans",
+      incoming: "Incoming loans",
+    },
+    actions: {
+      edit: "Edit",
+      pause: "Pause",
+      resume: "Resume",
+      archive: "Archive",
+      restore: "Restore",
+    },
+    toasts: {
+      saved: "Recipe saved",
+      paused: "Recipe paused",
+      resumed: "Recipe resumed",
+      archived: "Recipe archived",
+      restored: "Recipe restored as paused",
+    },
+    starters: {
+      intake: {
+        label: "Catalog, photograph and assess condition",
+        name: "Catalog, photograph and assess condition",
+        catalog: "Complete the catalog record",
+        photograph: "Photograph the object",
+        condition: "Record a condition assessment",
+      },
+      transport: {
+        label: "Pack, insure and arrange transport",
+        name: "Pack, insure and arrange transport",
+        condition: "Condition check before dispatch",
+        insurance: "Confirm insurance cover",
+        pack: "Pack the objects",
+        transport: "Book transport",
+      },
+      return: {
+        label: "Prepare the return",
+        name: "Prepare the return",
+        transport: "Book return transport",
+        condition: "Condition check on return",
+        move: "Record the return move",
+      },
+      blank: {
+        label: "Blank recipe",
+      },
+    },
+    dialog: {
+      addTitle: "New recipe",
+      editTitle: "Edit recipe",
+      description:
+        "Each step becomes a task on the case, owned by a member who can work on it. Repeating or correcting the event keeps one task per step.",
+      name: "Name",
+      trigger: "Suggest when",
+      triggerLocked:
+        "The event cannot change once the recipe exists. Create another recipe instead.",
+      direction: "Loans",
+      steps: "Steps",
+      step: "Step {number}",
+      stepReference: "Step {number}: {title}",
+      untitled: "Untitled step",
+      stepTitle: "Task title",
+      stepDescription: "Description",
+      evidence: "Evidence that shows it was done",
+      noEvidence: "None required",
+      owner: "Owner",
+      owners: {
+        caseAssignee: "Member assigned to the case",
+        approver: "Member who accepted it",
+        member: "A named member",
+      },
+      ownerMember: "Member",
+      chooseMember: "Choose a member",
+      ownerFallback:
+        "If the chosen owner cannot work on the case, the member assigned to the case owns the task, then the member who accepted it. A step without such a member waits until someone applies the recipe again.",
+      due: "Due",
+      noDue: "No due date",
+      anchors: {
+        event: "From the acceptance",
+        start: "From the start or opening",
+        end: "From the end or closing",
+      },
+      offsetDays: "Days",
+      offsetHint: "Negative numbers count back from that date.",
+      dependsOn: "Waits for",
+      addStep: "Add step",
+      removeStep: "Remove step",
+      moveUp: "Move step up",
+      moveDown: "Move step down",
+      cancel: "Cancel",
+      save: "Save recipe",
+      saving: "Saving…",
+      errors: {
+        name: "Give the recipe a name of up to 120 characters.",
+        steps: "A recipe needs 1 to 10 steps.",
+        title: "Give the step a title of up to 200 characters.",
+        description: "Keep the description to 2,000 characters.",
+        owner: "Choose a member who can work on these cases.",
+        due: "Use a whole number of days between -365 and 365.",
+        dependsOn: "A step can only wait for steps above it.",
+      },
     },
   },
   notificationsPage: {
@@ -5498,6 +5708,7 @@ export default {
       locations: "Go to locations",
       conservation: "Go to conservation",
       entries: "Go to entries",
+      documentationQuality: "Go to documentation quality",
     },
     pageNotFound: {
       title: "Page not found",
@@ -5523,6 +5734,267 @@ export default {
       identifier: "Identifier (A–Z)",
     },
     allTypes: "All types",
+  },
+  documentationQuality: {
+    title: "Documentation quality",
+    description:
+      "Check records against the institution's documentation profiles and review duplicate identifiers, missing documentation, uncertain party links and broken references. Checks never change a record: staff repair records where they are kept, and the next check confirms the repair.",
+    tabs: {
+      findings: "Findings",
+      profiles: "Profiles",
+    },
+    kind: "Kind of finding",
+    allKinds: "All kinds",
+    kinds: {
+      duplicate_identifier: "Duplicate identifier",
+      missing_evidence: "Missing documentation",
+      legacy_link: "Uncertain party link",
+      orphan_reference: "Broken reference",
+    },
+    statuses: {
+      open: "Open",
+      accepted: "Accepted exception",
+      resolved: "Resolved",
+    },
+    registers: {
+      catalog: "catalog",
+      accession: "accession",
+    },
+    stages: {
+      entry: "Held under an entry",
+      collection: "In the collection",
+      borrowed: "Borrowed",
+      deaccessioned: "Deaccessioned",
+    },
+    stageHints: {
+      entry:
+        "Received for identification, deposit or acquisition review and not accessioned.",
+      collection: "Accessioned or catalogued objects, including those on loan.",
+      borrowed: "Objects held under an incoming loan.",
+      deaccessioned: "Objects removed from the collection; their records stay.",
+    },
+    requirements: {
+      object_name: "Object name",
+      maker: "Maker",
+      production_date: "Date made",
+      materials: "Materials",
+      dimensions: "Dimensions",
+      description: "Description",
+      current_location: "Current location",
+      condition_assessment: "Accepted condition assessment",
+      image: "Photograph",
+      supporting_document: "Supporting document",
+      accession_record: "Approved accession record",
+      provenance_claim: "Provenance claim",
+    },
+    orphanFields: {
+      parentObject: "Parent object",
+      currentLocation: "Current location",
+      collectionGroup: "Collection group",
+      object: "Object",
+      donorAccount: "Donor account",
+    },
+    orphanProblems: {
+      missing: "no longer exists",
+      other_organization: "belongs to another organization",
+      self: "points to the record itself",
+    },
+    recordTypes: {
+      object: "Object",
+      accession: "Accession",
+      deaccession: "Deaccession",
+    },
+    objectTabs: {
+      general: "General",
+      physical: "Physical",
+      media: "Media",
+      accession: "Accession",
+      placement: "Placement",
+      provenance: "Provenance",
+    },
+    summary: {
+      duplicateIdentifier:
+        "“{identifier}” is shared by {count} records in the {register} register",
+      missingEvidence: "{identifier} {title}: missing {missing}",
+      legacyName: "{label} names “{name}” without a linked party",
+      legacyAccount: "{label} references a party without a confirmed link",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "No open findings. Run a check to look for documentation exceptions.",
+        accepted: "No accepted exceptions.",
+        resolved: "No resolved findings yet.",
+      },
+      emptyKind: "No findings of this kind: {kind}.",
+      reopened: "Reopened",
+      detectedBy: "Check {number}",
+      resolvedBy: "Resolved by check {number}",
+    },
+    check: {
+      title: "Quality check",
+      loading: "Loading…",
+      never:
+        "No check has run yet. A check reads every record in bounded steps and lists what it finds.",
+      running:
+        "Check {number} is running: step {step} of {steps} ({phase}), {records} records checked so far.",
+      stalled:
+        "Check {number} has made no progress for over ten minutes. Resume it, or cancel it and start again.",
+      completed:
+        "Check {number} finished {date}: {records} records checked, {detected} findings ({opened} new, {reopened} reopened), {resolved} resolved.",
+      failed: "Check {number} stopped while checking {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "The member who ran it no longer has access. Resume it to continue under your access.",
+        PAGE_FAILED:
+          "A record could not be checked. Resume it to try again from where it stopped.",
+      },
+      cancelled:
+        "Check {number} was cancelled. The findings it detected stay; it resolved none.",
+      phases: {
+        catalog_identifiers: "catalog identifiers",
+        accession_identifiers: "accession identifiers",
+        objects_active: "objects",
+        objects_loaned: "objects on loan",
+        objects_deaccessioned: "deaccessioned objects",
+        accessions: "accessions",
+        deaccessions: "deaccessions",
+        resolve_duplicate_identifier: "repaired duplicate identifiers",
+        resolve_missing_evidence: "repaired documentation",
+        resolve_legacy_link: "confirmed party links",
+        resolve_orphan_reference: "repaired references",
+        finished: "finished",
+      },
+      run: "Run check",
+      resume: "Resume",
+      cancel: "Cancel check",
+      started: "Check started",
+      resumed: "Check resumed",
+      cancelledToast: "Check cancelled",
+      noProfiles: "No active profiles, so missing documentation was not checked.",
+      partiesNotChecked:
+        "Party links were not checked because the Accounts module is off.",
+      identifierIndexIncomplete:
+        "Some identifiers are not indexed yet, so duplicates among them were not checked.",
+      identifierIndexLink: "Complete the identifier index",
+      neverChanges: "Checks never renumber, merge or fill in records.",
+    },
+    profiles: {
+      loading: "Loading profiles…",
+      description:
+        "A profile says what documentation objects of one type need at given stages. Each check applies the active profiles; archived ones are kept.",
+      add: "Add profile",
+      readOnly: "Administrators change profiles.",
+      empty:
+        "No profiles yet. Without one, checks still report duplicate identifiers, party links and broken references.",
+      allTypes: "All object types",
+      objectTypeHint: "Object types come from Settings › Preferences.",
+      addTitle: "Add documentation profile",
+      editTitle: "Edit documentation profile",
+      dialogDescription:
+        "Choose which objects the profile covers and what they must have. The next check applies it.",
+      fields: {
+        name: "Name",
+        objectType: "Object type",
+        stages: "Stages",
+        requirements: "Required documentation",
+      },
+      errors: {
+        name: "Enter a name of up to 120 characters.",
+        stages: "Choose at least one stage.",
+        requirements: "Choose at least one requirement.",
+      },
+      cancel: "Cancel",
+      save: "Save profile",
+      saving: "Saving…",
+      saved: "Profile saved",
+      edit: "Edit",
+      archive: "Archive",
+      restore: "Restore",
+      archived: "Profile archived",
+      restored: "Profile restored",
+      archivedBadge: "Archived",
+    },
+    review: {
+      title: "Review",
+      openHint:
+        "Repair the record and run a check, or accept this as an exception with a reason.",
+      acceptAction: "Accept as exception",
+      acceptTitle: "Accept as an exception",
+      acceptDescription:
+        "The record stays as it is. Give the reason, for example why the documentation cannot exist. The finding reopens if a later check finds something different.",
+      acceptDuplicateDescription:
+        "Every record keeps its identifier. Your reason is recorded as an identifier conflict review for each record that shares it.",
+      note: "Reason",
+      noteRequired: "Enter a reason.",
+      cancel: "Cancel",
+      accept: "Accept",
+      saving: "Saving…",
+      accepted: "Accepted as an exception",
+      reviewedBy: "Accepted by {name} on {date}",
+      unknownReviewer: "a former member",
+      earlierReview: "Accepted earlier; what the check found has changed since:",
+      reopen: "Reopen",
+      reopened: "Finding reopened",
+      reviewedInRegister:
+        "Reviewed in the identifier register. If another record starts sharing the identifier, this finding reopens.",
+      resolved: "Check {number} no longer found this on {date}.",
+    },
+    detail: {
+      headerTitle: "Finding",
+      back: "Back to documentation quality",
+      detection: "First found by check {first}; last found by check {last}.",
+      foundTitle: "What the check found",
+      repairTitle: "Where to repair",
+      notRecorded: "Not recorded",
+      register: "Register",
+      identifier: "Identifier as recorded",
+      records: "Records sharing it ({count})",
+      moreRecords: "And {count} more.",
+      object: "Object",
+      profile: "Profile",
+      stage: "Stage",
+      missing: "Missing",
+      recordedCondition: "Condition text on the record, kept as written",
+      recordedProvenance: "Provenance text on the record, kept as written",
+      record: "Record",
+      assertedName: "Name as written",
+      existingParty: "Account referenced",
+      suggestedRole: "Role",
+      field: "Reference",
+      storedReference: "Stored value",
+      problem: "Problem",
+      recordUnavailable: "{record} is no longer available.",
+      openTab: "Open the {tab} tab: {requirements}",
+      repairIntro:
+        "Repair the record where it is kept. The next check closes this finding when the gap is gone.",
+      linkPartyHint: "Confirm or link the party in the record's Parties panel.",
+      linkPartyUnavailable:
+        "Linking a party needs the Accounts module and permission to edit parties. Assign this to someone who can.",
+      duplicateHint:
+        "Nothing is renumbered. Open each record to compare them, or accept the duplicate with the historical evidence.",
+      identifierRegister: "Open the identifier register",
+    },
+    errors: {
+      fallback: "Something went wrong. Try again.",
+      profileInvalid: "Check the profile's name, stages and requirements.",
+      profileLimitReached:
+        "An organization can have at most 20 active profiles. Archive one first.",
+      profileNotFound: "This profile no longer exists.",
+      checkRunning: "A check is already running.",
+      checkNotFound: "This check no longer exists.",
+      checkNotResumable: "Only the latest stopped or stalled check can be resumed.",
+      findingNotFound: "This finding no longer exists.",
+      findingStatusChanged:
+        "This finding changed meanwhile. Reload to see its current state.",
+      reviewNoteRequired: "Enter a reason of up to 2,000 characters.",
+      identifierIndexIncomplete:
+        "Complete the identifier index before reviewing duplicates.",
+      duplicateGroupTooLarge:
+        "Too many records share this identifier to review at once. Review them in the identifier register.",
+      reviewedInIdentifierRegister:
+        "Duplicate identifiers are reviewed in the identifier register.",
+    },
   },
   objectEntries: {
     title: "Entries",
@@ -8372,6 +8844,16 @@ export default {
       updateSite: "Update Site",
       archiveSiteConfirm: "Are you sure you want to archive this site?",
       failedArchiveSite: "Failed to archive site",
+      siteInUseTitle: "This site is still in use",
+      siteInUseDescription:
+        "Archiving must not leave locations or objects under an inactive site. Resolve these first; nothing was changed.",
+      siteInUseLocations:
+        "Active locations at this site: {count}. Delete them in Locations first.",
+      siteInUseObjects:
+        "Objects still placed at this site's locations: {count}. Move them to another location first.",
+      siteInUseIncomplete:
+        "This site has too many locations or objects to check at once, so it cannot be archived here.",
+      siteInUseClose: "Close",
       systemRole: "(System)",
       siteManagement: "Site Management",
       physicalLocationBranches:
@@ -8749,6 +9231,7 @@ export default {
       newAccession: "New Accession",
       newLoan: "New Loan",
       newCollectionGroup: "New Collection Group",
+      documentationQuality: "Documentation quality",
       navigation: "Navigation",
       dashboard: "Dashboard",
       library: "Library",
@@ -8905,6 +9388,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Sub-organizations can transfer objects within the same hierarchy.",
       notifications: "Notifications",
+      notificationsUnread: "Notifications, {count} unread",
       markAllRead: "Mark all read",
       viewAllNotifications: "View all notifications",
       loading: "Loading…",
@@ -8971,6 +9455,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "You have unsaved changes that will be lost if you leave this page. Would you like to save your changes first?",
       discardChanges: "Discard changes",
+      keepEditing: "Keep editing",
       enterCode: "Enter code",
       orContinueWithGoogle: "Or continue with Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
@@ -9179,6 +9664,7 @@ export default {
       locked: "Unavailable",
       overview: "Overview",
       myWork: "My work",
+      documentationQuality: "Documentation quality",
       objectCatalog: "Object Catalog",
       locationTracking: "Location & Tracking",
       scan: "Scan",
@@ -9591,21 +10077,30 @@ export default {
       "The export file is not available. Retry or create a new export.",
     reportsNote:
       "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
-    sourceRegister: "Register: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} register rows · {scanned} records examined · {pages} pages",
+      "{rows} rows · {scanned} records examined · {pages} pages",
     errorRegisterCriteria:
-      "Check the register criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, and a status applies only to accession and disposal registers.",
+      "Check the criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, a currency must be a three-letter code such as EUR, and each register or report accepts only its own criteria.",
   },
   registerReports: {
-    title: "Institutional registers",
+    title: "Registers and reports",
     description:
-      "Generate accession, disposal, custody and condition registers from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time and generator.",
-    profile: "Register",
+      "Generate registers, a board valuation report, an insurer schedule and a provenance research report from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time, profile version and any currency totals.",
+    profile: "Register or report",
+    groupRegisters: "Registers",
+    groupFinancial: "Financial reports",
+    groupResearch: "Research",
+    groupUnsupported: "Not supported",
     profileAccession: "Accession register",
     profileDisposal: "Disposal register",
     profileCustody: "Custody register",
     profileCondition: "Condition register",
+    profileValuation: "Valuation report (board)",
+    profileInsurance: "Insurance schedule (insurer)",
+    profileProvenance: "Provenance report (research)",
+    profileNoRoleAccess: "{profile} (not available to your role)",
+    profileNotInPlan: "{profile} (not in your plan)",
     profileSpectrum: "SPECTRUM XML (not supported)",
     profileLido: "LIDO XML (not supported)",
     fromDate: "From",
@@ -9615,21 +10110,44 @@ export default {
     statusPending: "Pending",
     statusApproved: "Approved",
     statusRejected: "Rejected",
+    purpose: "Purpose",
+    purposeAny: "Any purpose",
+    currency: "Currency",
+    currencyPlaceholder: "Any, or EUR",
+    inventoryScope: "Inventory scope",
+    scopeAny: "Any scope",
+    scopeOwned: "Owned",
+    scopeIncoming: "Incoming (not owned)",
+    scopeUnclassified: "Ownership unclassified",
+    scopeExcluded: "Outside the inventory",
+    policy: "Policy",
+    policyAny: "All policies",
+    policyOption: "{number} · {carrier}",
     asOf: "As of",
     asOfHint:
-      "Leave As of empty to use the time the register is created. Evidence recorded after the as-of time is excluded. Dates and the as-of time are in UTC.",
+      "Leave As of empty to use the time the file is created. Evidence recorded after the as-of time is excluded, and validity and coverage are judged at that time. Dates and the as-of time are in UTC.",
     preview: "Preview",
     previewing: "Loading preview",
-    previewLabel: "Register preview",
+    previewLabel: "Preview",
     previewSummary:
       "Showing {shown} of {rows} rows from the first page ({scanned} records examined).",
-    previewMore: "More rows follow; create the register for the complete file.",
+    previewMore:
+      "More rows follow; create the file for the complete register or report.",
     previewEmpty: "The first page has no rows for these criteria.",
     notRecordedNote:
       "Empty cells named in notRecorded were never recorded in MuseumLite. Rows marked legacy predate structured evidence.",
+    totalsPreviewNote:
+      "Currency totals cover the whole file. They appear on the completed file below and in its manifest.",
     exportLabel: "Create {profile} file",
+    totalsTitle: "Totals by currency",
+    totalsNone: "No amounts in this file.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} without a recognised currency, not added",
+    totalsNotStated: "Not stated",
+    totalsNote:
+      "Sums of the rows in this file, per group and currency. Amounts in different currencies are never added together; rows without a recognised currency are counted, not summed.",
     unsupportedNote:
-      "Registers use a documented MuseumLite interchange profile. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
+      "Registers and reports use documented MuseumLite interchange profiles. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
   },
   projectionHealth: {
     unavailable: {
@@ -9738,6 +10256,99 @@ export default {
       title: "Recent jobs",
       rows: "{rows} rows",
       discrepancies: "{count} differences",
+    },
+  },
+  recordForm: {
+    errors: {
+      conflict:
+        "Not saved: someone else changed this record after you opened it. Your changes are still here.",
+      notEditable:
+        "This record can no longer be edited here, so your changes were not saved.",
+      required: "{field} is required.",
+      identifierPermanent:
+        "An assigned accession number is permanent. Keep the original number.",
+      relatedRecordUnavailable:
+        "The selected {field} is not available in this organization. Choose another.",
+      parentIsSelf: "An object cannot be its own parent object.",
+      conditionSetByAssessment:
+        "The current condition comes from an accepted condition assessment. Record a new assessment to change it.",
+      conditionNoteRequired: "Explain the condition change in the note.",
+      dateOrderInvalid: "The end date must be on or after the start date.",
+      partyManagedField:
+        "This comes from the linked party. Change the party in the Parties panel instead.",
+      amountInvalid: "Enter an amount of 0 or more.",
+      measurementInvalid: "Enter a number of 0 or more.",
+      weightInvalid:
+        "Enter the weight as a number of 0 or more, optionally with a unit, such as 200 g or 2 kg.",
+      invalid: "Some fields need attention before you can save.",
+      saveFailed:
+        "Your changes could not be saved. Check your connection and try again.",
+    },
+    notices: {
+      recoveredTitle: "Unsaved changes found",
+      recoveredBody: "Changes to {fields} from {time} were not saved.",
+      recoveredChanged:
+        "This record has changed since then. After restoring, you can review what changed before saving.",
+      restore: "Restore my changes",
+      discardRecovered: "Discard them",
+      changedByOthers: "Changed by someone else: {fields}.",
+      remoteChanged:
+        "Someone else saved changes to {fields} while you were editing.",
+      remoteKeepsYours:
+        "Your changes are kept. Continue from the latest version before saving.",
+      remoteOverlap:
+        "You also changed {fields}. Your values are kept; after continuing you can use theirs instead.",
+      applyLatest: "Keep my changes on the latest version",
+      discardMine: "Discard my changes",
+      retry: "Try again",
+      goToField: "Go to {field}",
+      inputKept: "Your input is still in this form.",
+      inputKeptOnDevice:
+        "Your input is still in this form and kept on this device until you save or discard it.",
+      useTheirs: "Use their value",
+      keepMine: "Keep mine",
+      overlapValue: "{field} was also changed by someone else, to “{value}”",
+      overlapChanged: "{field} was also changed by someone else.",
+      lockedWhileEditing:
+        "This record can no longer be edited here. Your input stays on screen so you can copy it.",
+    },
+    status: {
+      unsaved: "Unsaved changes",
+    },
+    loan: {
+      partyLinked:
+        "The lender or borrower comes from the linked party, so the name and contact are not edited here.",
+      changeParty: "Change the party on the loan page",
+      partyNotLinked:
+        "No party is linked to this loan, so the name is typed here.",
+      linkParty: "Link a party on the loan page",
+    },
+    objectFields: {
+      alternativeTitle: "Alternative title",
+      measuredDimensions: "Measured dimensions",
+      measuredDimensionsHint:
+        "Numeric height, width and depth in one unit, used for sorting, reports and exports.",
+      height: "Height",
+      width: "Width",
+      depth: "Depth",
+      dimensionUnit: "Unit",
+      weightUnit: "Weight unit",
+      inscriptionMarks: "Individual marks",
+      inscriptionMarksHint:
+        "List each signature, stamp, label or other mark on its own row.",
+      inscriptionMarkLabel: "Mark",
+      inscriptionMarkDescription: "Description",
+      addInscriptionMark: "Add mark",
+      removeInscriptionMark: "Remove mark",
+      tagsHint: "Press Enter or Tab after each tag.",
+      legalRestrictions: "Legal restrictions",
+      legalRestrictionsHint:
+        "Use, display or reproduction of this object is legally restricted.",
+      typeDetails: "Type-specific details",
+      isHighResDownloadable: "High-resolution download",
+      draftMedia: "Photos and documents",
+      alternateNumberExists:
+        "This alternate accession number is already listed.",
     },
   },
 } as const;

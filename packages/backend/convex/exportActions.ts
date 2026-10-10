@@ -7,6 +7,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction } from "./_generated/server";
 import { MAX_CHUNK_BYTES, MAX_EXPORT_BYTES } from "./utils/exportContract";
 import { encodeRows } from "./utils/exportEncoding";
+import { registerPageTotals } from "./utils/registerTotals";
 
 const hash = (bytes: Uint8Array) =>
   createHash("sha256").update(bytes).digest("hex");
@@ -87,6 +88,10 @@ export const process = internalAction({
             done: page.done,
             scanned: page.scanned,
             capturedAt: Date.now(),
+            totals:
+              job.source.kind === "register"
+                ? registerPageTotals(job.source.profile, page.rows)
+                : undefined,
           });
         } finally {
           if (!committed && storageId) await ctx.storage.delete(storageId);

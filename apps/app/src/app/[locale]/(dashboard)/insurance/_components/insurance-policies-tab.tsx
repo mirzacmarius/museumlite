@@ -110,13 +110,13 @@ export function InsurancePoliciesTab({
       </div>
 
       <DataTable
+        label={t("policies")}
         loading={loading}
         data={policies}
         columns={[
           {
             key: "policyNumber",
             label: t("policy"),
-            className: "min-w-0 flex-[1.35]",
             render: (policy: InsurancePolicyRow) => (
               <span className="truncate font-semibold text-foreground">
                 {policy.policyNumber}
@@ -126,7 +126,6 @@ export function InsurancePoliciesTab({
           {
             key: "carrier",
             label: t("carrier"),
-            className: "min-w-0 flex-[1.5]",
             render: (policy: InsurancePolicyRow) => (
               <span className="truncate">{policy.carrier}</span>
             ),
@@ -134,7 +133,7 @@ export function InsurancePoliciesTab({
           {
             key: "policyType",
             label: t("type"),
-            className: "w-28 flex-none",
+            className: "w-28",
             render: (policy: InsurancePolicyRow) => (
               <span className="capitalize">
                 {t(`policyType.${policy.policyType}`)}
@@ -144,7 +143,7 @@ export function InsurancePoliciesTab({
           {
             key: "coverageAmount",
             label: t("coverage"),
-            className: "w-36 flex-none",
+            className: "w-36",
             render: (policy: InsurancePolicyRow) => (
               <MoneyCell
                 value={policy.coverageAmount}
@@ -157,7 +156,7 @@ export function InsurancePoliciesTab({
           {
             key: "effectiveDate",
             label: t("effective"),
-            className: "w-28 flex-none",
+            className: "w-28",
             render: (policy: InsurancePolicyRow) => (
               <ClientDate timestamp={policy.effectiveDate} locale={locale} />
             ),
@@ -165,7 +164,7 @@ export function InsurancePoliciesTab({
           {
             key: "expirationDate",
             label: t("expires"),
-            className: "w-28 flex-none",
+            className: "w-28",
             render: (policy: InsurancePolicyRow) => (
               <ClientDate timestamp={policy.expirationDate} locale={locale} />
             ),
@@ -173,7 +172,7 @@ export function InsurancePoliciesTab({
           {
             key: "status",
             label: t("status"),
-            className: "w-32 flex-none",
+            className: "w-32",
             render: (policy: InsurancePolicyRow) => (
               <Badge
                 variant="outline"
@@ -189,12 +188,14 @@ export function InsurancePoliciesTab({
           {
             key: "coverageCount",
             label: t("coverages"),
-            className: "w-24 flex-none justify-end text-right",
+            align: "end",
+            className: "w-24",
           },
           {
             key: "claimsCount",
             label: t("claims"),
-            className: "w-20 flex-none justify-end text-right",
+            align: "end",
+            className: "w-20",
           },
         ]}
         emptyState={

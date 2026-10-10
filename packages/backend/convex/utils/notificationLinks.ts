@@ -30,6 +30,8 @@ export function notificationEntityHref(
       return `/locations/episodes/${entityId}`;
     case "move_request":
       return `/objects/move-requests/${entityId}`;
+    case "documentationFinding":
+      return `/documentation-quality/${entityId}`;
     default:
       return null;
   }

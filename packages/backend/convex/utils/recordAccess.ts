@@ -18,7 +18,7 @@ import {
 export async function canReadRecord(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  permission: string,
+  permission: string | readonly string[],
   options: { capability?: CapabilityId } = {},
 ): Promise<boolean> {
   const membership = await getCurrentUserOrganization(ctx, organizationId);
@@ -31,7 +31,10 @@ export async function canReadRecord(
       permission,
     );
   } else {
-    await requirePermission(ctx, organizationId, permission);
+    for (const name of typeof permission === "string"
+      ? [permission]
+      : permission)
+      await requirePermission(ctx, organizationId, name);
   }
   return true;
 }

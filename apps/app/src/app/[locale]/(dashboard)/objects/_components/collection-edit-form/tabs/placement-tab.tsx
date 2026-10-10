@@ -8,9 +8,13 @@ import type { FunctionReturnType } from "convex/server";
 import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { ObjectCombobox } from "@/components/object-combobox";
+import { FieldError } from "@/components/record-form/record-form-notices";
 import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type { CollectionFormTabProps } from "../../collection-form-shared/types";
+import {
+  type CollectionFormTabProps,
+  NO_FIELD_ERRORS,
+} from "../../collection-form-shared/types";
 
 type CollectionDoc = NonNullable<
   FunctionReturnType<typeof api.collections.get>
@@ -28,8 +32,10 @@ export function CollectionEditPlacementTab({
   updateField,
   placeholders,
   currentOrganizationId,
+  collection,
   typedCollectionId,
   resolvedCurrentLocationId,
+  fieldErrors = NO_FIELD_ERRORS,
 }: CollectionEditPlacementTabProps) {
   const tRoot = useI18n();
   return (
@@ -47,6 +53,8 @@ export function CollectionEditPlacementTab({
             </Label>
             <LocationSelector
               organizationId={currentOrganizationId}
+              // A recorded location changes through a move; it is not cleared here.
+              allowNone={!collection.currentLocationId}
               value={resolvedCurrentLocationId}
               onValueChange={(value) => {
                 updateField("currentLocationId", value);
@@ -55,6 +63,10 @@ export function CollectionEditPlacementTab({
                 }
               }}
               placeholder={placeholders("location")}
+            />
+            <FieldError
+              field="currentLocationId"
+              message={fieldErrors.currentLocationId}
             />
           </div>
 
@@ -65,10 +77,20 @@ export function CollectionEditPlacementTab({
             <CollectionGroupCombobox
               organizationId={currentOrganizationId}
               value={formData.collectionGroupIds}
-              onValueChange={(value) => updateField("collectionGroupIds", value)}
+              onValueChange={(value) =>
+                updateField("collectionGroupIds", value)
+              }
               primaryValue={formData.collectionGroupId}
-              onPrimaryChange={(value) => updateField("collectionGroupId", value)}
+              onPrimaryChange={(value) =>
+                updateField("collectionGroupId", value)
+              }
               placeholder={placeholders("collection")}
+            />
+            <FieldError
+              field="collectionGroupIds"
+              message={
+                fieldErrors.collectionGroupIds ?? fieldErrors.collectionGroupId
+              }
             />
           </div>
 
@@ -85,6 +107,10 @@ export function CollectionEditPlacementTab({
               value={formData.parentObjectId}
               onValueChange={(value) => updateField("parentObjectId", value)}
               placeholder={placeholders("parentObject")}
+            />
+            <FieldError
+              field="parentObjectId"
+              message={fieldErrors.parentObjectId}
             />
           </div>
 

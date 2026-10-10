@@ -75,6 +75,7 @@ export async function captureAuditEvidence(
     "organizationMoveRequest",
     "libraryAcquisitionRequest",
     "objectEntry",
+    "documentationFinding",
   ].includes(args.entityType)
     ? `${args.entityType}:${args.entityId}`
     : undefined;
@@ -84,6 +85,7 @@ export async function captureAuditEvidence(
     deaccession: "deaccessions",
     exhibition: "exhibitions",
     conservationTreatment: "conservationTreatments",
+    documentationFinding: "documentationFindings",
   } as const;
   for (const kind of Object.keys(references)) {
     if (caseId) break;

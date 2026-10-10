@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthActions } from "@convex-dev/auth/react";
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -62,6 +61,7 @@ import {
 import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
 import { useCapabilities } from "@/hooks/use-capabilities";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
 function getUserInitials(user: {
@@ -555,7 +555,7 @@ function AppSidebarClientInner({
   const { setOpen } = useCommandPalette();
   const { isMobile, setOpenMobile } = useSidebar();
   const user = usePreloadedQuery(preloadedUser);
-  const { signOut } = useAuthActions();
+  const signOut = useSignOut();
   const pathname = usePathname();
   const { replace } = useRouter();
 

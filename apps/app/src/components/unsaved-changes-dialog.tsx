@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
+import { buttonVariants } from "@v1/ui/button";
 import { useI18n } from "@/locales/client";
 
 interface UnsavedChangesDialogProps {
@@ -51,10 +52,17 @@ export function UnsavedChangesDialog({
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {/* The dialog opens on keeping the input, so Enter never loses it. */}
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onDiscard}>
-            {translate("untranslatedComponents.labels.discardChanges")}
+          <AlertDialogCancel>
+            {translate("untranslatedComponents.labels.keepEditing")}
           </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onDiscard}
+            className={buttonVariants({ variant: "destructive" })}
+          >
+            {translate("untranslatedComponents.labels.discardChanges")}
+          </AlertDialogAction>
           {onSave && (
             <AlertDialogAction onClick={handleSave} disabled={isSaving}>
               {isSaving

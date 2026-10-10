@@ -91,16 +91,22 @@ export function PreferencesSettingsForm({
       >
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-2">
-            <Label>{tDashboard("materials")}</Label>
+            <Label id="preferences-materials-label">
+              {tDashboard("materials")}
+            </Label>
             <MaterialsCombobox
+              aria-labelledby="preferences-materials-label"
               organizationId={currentOrganizationId}
               value={[]}
               placeholder={tDashboard("searchOrAddMaterials")}
             />
           </div>
           <div className="space-y-2">
-            <Label>{tDashboard("objectTypes")}</Label>
+            <Label id="preferences-object-types-label">
+              {tDashboard("objectTypes")}
+            </Label>
             <TypeCombobox
+              aria-labelledby="preferences-object-types-label"
               organizationId={currentOrganizationId}
               value={[]}
               placeholder={tDashboard("searchOrAddObjectTypes")}

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { appraisalPurposeValidator } from "./valuation";
 
 export const objectExportFilters = v.object({
   search: v.optional(v.string()),
@@ -52,7 +53,11 @@ export const registerProfile = v.union(
   v.literal("disposal"),
   v.literal("custody"),
   v.literal("condition"),
+  v.literal("valuation"),
+  v.literal("insurance"),
+  v.literal("provenance"),
 );
+/** Each profile accepts only some of these (see `REGISTER_CRITERIA_FIELDS`). */
 export const registerCriteria = v.object({
   fromDate: v.optional(v.number()),
   toDate: v.optional(v.number()),
@@ -61,6 +66,19 @@ export const registerCriteria = v.object({
   ),
   asOf: v.optional(v.number()),
   objectId: v.optional(v.id("collections")),
+  /** Appraisal purpose. */
+  purpose: v.optional(appraisalPurposeValidator),
+  /** ISO 4217 code, upper case. */
+  currency: v.optional(v.string()),
+  /** Operational inventory classification (`operational_inventory_v1`). */
+  inventoryScope: v.optional(
+    v.union(
+      v.literal("owned"),
+      v.literal("incoming"),
+      v.literal("unclassified"),
+    ),
+  ),
+  policyId: v.optional(v.id("insurancePolicies")),
 });
 export const exportSource = v.union(
   v.object({
@@ -73,6 +91,19 @@ export const exportSource = v.union(
     kind: v.literal("register"),
     profile: registerProfile,
     criteria: registerCriteria,
+  }),
+);
+/**
+ * Exact monetary totals of a report's rows, per group and currency. A null
+ * currency counts rows whose currency is missing or not recognised; their
+ * amounts are not summed, so its total is null.
+ */
+export const registerTotalsValidator = v.array(
+  v.object({
+    group: v.array(v.union(v.string(), v.null())),
+    currency: v.union(v.string(), v.null()),
+    total: v.union(v.string(), v.null()),
+    count: v.number(),
   }),
 );
 export const exportStatus = v.union(

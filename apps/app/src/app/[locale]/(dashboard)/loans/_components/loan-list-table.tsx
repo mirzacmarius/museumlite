@@ -6,6 +6,7 @@ import { Checkbox } from "@v1/ui/checkbox";
 import { DataTable } from "@v1/ui/data-table";
 import { ChevronRight, Handshake, Plus } from "lucide-react";
 import Link from "next/link";
+import type { Ref } from "react";
 import { PermissionGate } from "@/components/permission-gate";
 import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
@@ -34,6 +35,7 @@ interface LoanListTableProps {
   returnPath: string;
   selectedIds: Set<Id<"loans">>;
   onToggleSelection: (loanId: Id<"loans">) => void;
+  tableRef: Ref<HTMLTableElement>;
 }
 
 export function LoanListTable({
@@ -48,6 +50,7 @@ export function LoanListTable({
   returnPath,
   selectedIds,
   onToggleSelection,
+  tableRef,
 }: LoanListTableProps) {
   const t = useScopedI18n("loans");
   const tList = useScopedI18n("listState");
@@ -70,41 +73,48 @@ export function LoanListTable({
   return (
     <>
       <DataTable<LoanListRow>
+        ref={tableRef}
+        label={t("title")}
         loading={isLoading}
         data={loansPage}
         columns={[
           {
-            key: "checkbox",
-            label: "",
-            className: "w-12 flex-none justify-center px-3",
-            render: (loan) => {
-              const loanId = loan._id;
-              const isSelected = selectedIds.has(loanId);
-              return (
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={() => onToggleSelection(loanId)}
-                  onClick={(event) => event.stopPropagation()}
-                  aria-label={tRoot(
-                    "untranslatedRecords.loans.items.selectLoan",
-                    {
-                      number: loan.loanNumber,
-                    },
-                  )}
-                />
-              );
-            },
+            key: "select",
+            label: t("table.select"),
+            hideLabel: true,
+            interactive: true,
+            align: "center",
+            className: "w-12 px-3",
+            render: (loan) => (
+              <Checkbox
+                checked={selectedIds.has(loan._id)}
+                onCheckedChange={() => onToggleSelection(loan._id)}
+                aria-label={tRoot(
+                  "untranslatedRecords.loans.items.selectLoan",
+                  {
+                    number: loan.loanNumber,
+                  },
+                )}
+              />
+            ),
           },
           {
             key: "type",
             label: t("table.type"),
-            className: "w-20 flex-none justify-center px-3",
-            render: (loan) => getLoanTypeIcon(loan.type),
+            align: "center",
+            className: "w-20 px-3",
+            render: (loan) =>
+              getLoanTypeIcon(
+                loan.type,
+                loan.type === "incoming"
+                  ? t("filters.incoming")
+                  : t("filters.outgoing"),
+              ),
           },
           {
             key: "loanNumber",
             label: t("table.loanIdTitle"),
-            className: "min-w-0 flex-[1.45]",
+            rowHeader: true,
             render: (loan) => (
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-xs font-semibold">
@@ -122,13 +132,18 @@ export function LoanListTable({
           {
             key: "lenderBorrowerName",
             label: t("table.partnerInstitution"),
-            className: "min-w-0 flex-[1.25]",
             render: (loan) => (
               <div className="flex min-w-0 items-center gap-2">
-                <div className="flex size-5 shrink-0 items-center justify-center rounded bg-muted text-[9px] font-bold text-muted-foreground">
+                <div
+                  aria-hidden="true"
+                  className="flex size-5 shrink-0 items-center justify-center rounded bg-muted text-[9px] font-bold text-muted-foreground"
+                >
                   {getPartnerInitial(loan.lenderBorrowerName)}
                 </div>
-                <span className="min-w-0 truncate text-xs">
+                <span
+                  className="min-w-0 truncate text-xs"
+                  title={loan.lenderBorrowerName}
+                >
                   {loan.lenderBorrowerName}
                 </span>
               </div>
@@ -137,7 +152,7 @@ export function LoanListTable({
           {
             key: "duration",
             label: t("table.duration"),
-            className: "w-40 flex-none",
+            className: "w-40",
             render: (loan) => (
               <div className="text-xs text-foreground/80">
                 {formatLoanDateRange(loan.startDate, loan.endDate, locale)}
@@ -147,19 +162,17 @@ export function LoanListTable({
           {
             key: "status",
             label: t("table.status"),
-            className: "w-40 flex-none",
+            className: "w-52",
             render: (loan) => (
-              <span className="truncate text-xs text-foreground/80">
-                {getLoanStatusLabel(loan.status, statusLabels)}
-              </span>
-            ),
-          },
-          {
-            key: "action",
-            label: "",
-            className: "w-12 flex-none justify-center px-3 text-right",
-            render: () => (
-              <ChevronRight className="inline-block size-4 text-foreground/80" />
+              <div className="flex w-full items-center justify-between gap-2">
+                <span className="truncate text-xs text-foreground/80">
+                  {getLoanStatusLabel(loan.status, statusLabels)}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="size-4 shrink-0 text-foreground/80"
+                />
+              </div>
             ),
           },
         ]}

@@ -190,6 +190,7 @@ export default {
       data: "Dataimport/-eksport",
       metrics: "Målingsstatus",
       loanAgreements: "Låneavtaler",
+      preparationRecipes: "Forberedelsesoppskrifter",
     },
     roles: {
       title: "Rollehåndtering",
@@ -2140,6 +2141,7 @@ export default {
     },
   },
   loans: {
+    searchLabel: "Søk i lån",
     title: "Lån",
     description: "Administrer innkommende og utgående låneavtaler",
     newLoan: "Nytt Lån",
@@ -2194,6 +2196,7 @@ export default {
       unavailable: "Utilgjengelig",
     },
     table: {
+      select: "Velg",
       type: "Type",
       loanIdTitle: "Låne-ID og Tittel",
       partnerInstitution: "Partnerinstitusjon",
@@ -2210,9 +2213,9 @@ export default {
       loanNotFound: "Lån ikke funnet",
     },
     bulkActions: {
-      loan: "lån",
-      loansPlural: "lån",
-      selected: "valgt",
+      clearSelection: "Tøm valg",
+      loansSelected: "Valgte lån: {count}",
+      label: "Valgte lån",
       approveSelected: "Godkjenn Valgte",
       cancelSelected: "Kanseller Valgte",
       export: "Eksporter",
@@ -3225,6 +3228,10 @@ export default {
     close: "Lukk",
   },
   objects: {
+    backToObject: "Tilbake til objektet",
+    selectObject: "Velg {title}",
+    selectAllShown: "Velg alle viste objekter",
+    searchLabel: "Søk i objekter",
     qrLabel: {
       size1x1: "Lite kvadrat",
       showObjectName: "Vis objektnavn",
@@ -3330,7 +3337,8 @@ export default {
       status: "Status",
     },
     bulkActions: {
-      itemsSelected: "{count} element valgt",
+      objectsSelected: "Valgte objekter: {count}",
+      label: "Valgte objekter",
       addToGroup: "Legg til Gruppe",
       moveLocation: "Flytt Plassering",
       export: "Eksporter",
@@ -4908,6 +4916,7 @@ export default {
       deaccession: "Avhending",
       exhibition: "Utstilling",
       conservation: "Konserveringsbehandling",
+      documentationFinding: "Dokumentasjonsfunn",
     },
     fields: {
       title: "Tittel",
@@ -5032,6 +5041,75 @@ export default {
         "Den posten kan ikke brukes. Velg en godkjent post fra denne organisasjonen.",
       limitReached: "Saken eller oppgaven har nådd grensen.",
       invalidInput: "Kontroller de obligatoriske feltene og prøv igjen.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Koble først en godkjent tilstandsvurdering til denne oppgaven.",
+        media:
+          "Koble først en fil, for eksempel et fotografi, til denne oppgaven.",
+        movement: "Koble først den registrerte flyttingen til denne oppgaven.",
+        auditEntry: "Koble først revisjonshendelsen til denne oppgaven.",
+      },
+      caseNotAccepted:
+        "Oppskrifter gjelder når saken er godkjent, til den er returnert, avsluttet eller kansellert.",
+      recipeNotFound:
+        "Denne oppskriften er ikke lenger tilgjengelig. Last inn siden på nytt.",
+      recipeInvalid: "Kontroller de markerte feltene i oppskriften.",
+    },
+    suggestion: {
+      badge: "Foreslått",
+      origin: {
+        intake_accepted:
+          "Foreslått av «{recipe}» etter at mottaket ble godkjent",
+        loan_approved: "Foreslått av «{recipe}» etter at lånet ble godkjent",
+        exhibition_approved:
+          "Foreslått av «{recipe}» etter at utstillingen ble godkjent",
+      },
+      withdrawn:
+        "Trukket tilbake fordi lånet ble kansellert. Gjenopprett den hvis arbeidet fortsatt trengs.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Trenger en godkjent tilstandsvurdering koblet som dokumentasjon før den kan fullføres.",
+        media:
+          "Trenger en fil, for eksempel et fotografi, koblet som dokumentasjon før den kan fullføres.",
+        movement:
+          "Trenger den registrerte flyttingen koblet som dokumentasjon før den kan fullføres.",
+        auditEntry:
+          "Trenger en revisjonshendelse koblet som dokumentasjon før den kan fullføres.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Tilstandsvurdering er koblet som dokumentasjon.",
+        media: "Fil er koblet som dokumentasjon.",
+        movement: "Registrert flytting er koblet som dokumentasjon.",
+        auditEntry: "Revisjonshendelse er koblet som dokumentasjon.",
+      },
+      restore: "Gjenopprett forslaget",
+      restored: "Forslaget er gjenopprettet",
+      dismiss: "Avvis forslaget",
+      dismissDescription:
+        "Oppgaven blir stående i saken og blir ikke foreslått igjen. Du kan gjenopprette den senere.",
+    },
+    preparation: {
+      title: "Forberedelse",
+      description: {
+        intake_accepted:
+          "Oppskrifter foreslår disse oppgavene når et mottak blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
+        loan_approved:
+          "Oppskrifter foreslår disse oppgavene når et lån blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
+        exhibition_approved:
+          "Oppskrifter foreslår disse oppgavene når en utstilling blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
+      },
+      states: {
+        suggested: "Foreslått",
+        ready: "Ikke foreslått ennå",
+        no_owner: "Venter på en ansvarlig som kan arbeide med denne saken",
+        limit_reached: "Saken har nådd grensen for antall oppgaver",
+      },
+      apply: "Foreslå {count} manglende oppgave(r)",
+      applying: "Foreslår…",
+      applied: "{count} oppgave(r) foreslått",
+      nothingToApply: "Hvert trinn har allerede en oppgave.",
+      skipped:
+        "{count} trinn mangler fortsatt en ansvarlig som kan arbeide med saken, eller plass i saken.",
     },
     myWork: {
       title: "Mitt arbeid",
@@ -5047,6 +5125,141 @@ export default {
       assignedCasesEmpty: "Ingen åpne saker er tildelt deg.",
       assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
+    },
+  },
+  preparationRecipes: {
+    title: "Forberedelsesoppskrifter",
+    description:
+      "Når et mottak blir godkjent, eller et lån eller en utstilling blir godkjent, foreslår aktive oppskrifter oppgaver med ansvarlig og frist i saken. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand; de registreres i sine egne arbeidsflyter.",
+    add: "Ny oppskrift",
+    loading: "Laster oppskrifter…",
+    empty:
+      "Ingen oppskrifter ennå. Opprett en fra et utgangspunkt under Ny oppskrift.",
+    notificationsHint:
+      "Hver ansvarlig varsles én gang per foreslått oppgave, i kategorien Oppgaver.",
+    notificationsLink: "Varslingsinnstillinger",
+    noAttestation:
+      "Å fullføre en foreslått oppgave registrerer bare at arbeidet er gjort.",
+    stepCount: "{count} trinn",
+    evidenceShort: "dokumentasjon: {kind}",
+    statuses: {
+      active: "Aktiv",
+      paused: "Satt på pause",
+      archived: "Arkivert",
+    },
+    triggers: {
+      intake_accepted: "Mottak godkjent",
+      loan_approved: "Lån godkjent",
+      exhibition_approved: "Utstilling godkjent",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Kjøres når et mottak blir godkjent i samlingen. Frister regnes fra godkjenningen.",
+      loan_approved:
+        "Kjøres når et lån blir godkjent. Frister regnes fra godkjenningen eller fra lånets start eller slutt.",
+      exhibition_approved:
+        "Kjøres når en utstilling blir godkjent. Frister regnes fra godkjenningen eller fra åpningen eller avslutningen.",
+    },
+    directions: {
+      any: "Inngående og utgående lån",
+      outgoing: "Utgående lån",
+      incoming: "Inngående lån",
+    },
+    actions: {
+      edit: "Rediger",
+      pause: "Sett på pause",
+      resume: "Fortsett",
+      archive: "Arkiver",
+      restore: "Gjenopprett",
+    },
+    toasts: {
+      saved: "Oppskriften er lagret",
+      paused: "Oppskriften er satt på pause",
+      resumed: "Oppskriften er aktiv igjen",
+      archived: "Oppskriften er arkivert",
+      restored: "Oppskriften er gjenopprettet på pause",
+    },
+    starters: {
+      intake: {
+        label: "Katalogiser, fotografer og vurder tilstand",
+        name: "Katalogiser, fotografer og vurder tilstand",
+        catalog: "Fullfør katalogposten",
+        photograph: "Fotografer objektet",
+        condition: "Registrer en tilstandsvurdering",
+      },
+      transport: {
+        label: "Pakk, forsikre og ordne transport",
+        name: "Pakk, forsikre og ordne transport",
+        condition: "Tilstandskontroll før utsending",
+        insurance: "Bekreft forsikringsdekningen",
+        pack: "Pakk objektene",
+        transport: "Bestill transport",
+      },
+      return: {
+        label: "Forbered returen",
+        name: "Forbered returen",
+        transport: "Bestill returtransport",
+        condition: "Tilstandskontroll ved retur",
+        move: "Registrer returflyttingen",
+      },
+      blank: {
+        label: "Tom oppskrift",
+      },
+    },
+    dialog: {
+      addTitle: "Ny oppskrift",
+      editTitle: "Rediger oppskrift",
+      description:
+        "Hvert trinn blir en oppgave i saken, med et medlem som kan arbeide med den som ansvarlig. Gjentas eller rettes hendelsen, beholdes én oppgave per trinn.",
+      name: "Navn",
+      trigger: "Foreslå når",
+      triggerLocked:
+        "Hendelsen kan ikke endres etter at oppskriften er opprettet. Opprett heller en ny oppskrift.",
+      direction: "Lån",
+      steps: "Trinn",
+      step: "Trinn {number}",
+      stepReference: "Trinn {number}: {title}",
+      untitled: "Trinn uten tittel",
+      stepTitle: "Oppgavetittel",
+      stepDescription: "Beskrivelse",
+      evidence: "Dokumentasjon som viser at det er gjort",
+      noEvidence: "Ikke påkrevd",
+      owner: "Ansvarlig",
+      owners: {
+        caseAssignee: "Medlemmet saken er tildelt",
+        approver: "Medlemmet som godkjente den",
+        member: "Et bestemt medlem",
+      },
+      ownerMember: "Medlem",
+      chooseMember: "Velg et medlem",
+      ownerFallback:
+        "Hvis den valgte ansvarlige ikke kan arbeide med saken, blir medlemmet saken er tildelt ansvarlig, deretter medlemmet som godkjente den. Et trinn uten et slikt medlem venter til noen bruker oppskriften igjen.",
+      due: "Frist",
+      noDue: "Ingen frist",
+      anchors: {
+        event: "Fra godkjenningen",
+        start: "Fra start eller åpning",
+        end: "Fra slutt eller avslutning",
+      },
+      offsetDays: "Dager",
+      offsetHint: "Negative tall teller bakover fra den datoen.",
+      dependsOn: "Venter på",
+      addStep: "Legg til trinn",
+      removeStep: "Fjern trinn",
+      moveUp: "Flytt trinnet opp",
+      moveDown: "Flytt trinnet ned",
+      cancel: "Avbryt",
+      save: "Lagre oppskrift",
+      saving: "Lagrer…",
+      errors: {
+        name: "Gi oppskriften et navn på opptil 120 tegn.",
+        steps: "En oppskrift trenger 1 til 10 trinn.",
+        title: "Gi trinnet en tittel på opptil 200 tegn.",
+        description: "Beskrivelsen kan være på opptil 2 000 tegn.",
+        owner: "Velg et medlem som kan arbeide med disse sakene.",
+        due: "Bruk et helt antall dager mellom -365 og 365.",
+        dependsOn: "Et trinn kan bare vente på trinn over seg.",
+      },
     },
   },
   notificationsPage: {
@@ -5666,6 +5879,7 @@ export default {
       locations: "Gå til steder",
       conservation: "Gå til konservering",
       entries: "Gå til innleveringer",
+      documentationQuality: "Gå til dokumentasjonskvalitet",
     },
     pageNotFound: {
       title: "Fant ikke siden",
@@ -5691,6 +5905,273 @@ export default {
       identifier: "Identifikator (A–Å)",
     },
     allTypes: "Alle typer",
+  },
+  documentationQuality: {
+    title: "Dokumentasjonskvalitet",
+    description:
+      "Kontroller postene mot institusjonens dokumentasjonsprofiler og gå gjennom dupliserte identifikatorer, manglende dokumentasjon, usikre partskoblinger og brutte referanser. Kontroller endrer aldri en post: de ansatte retter postene der de føres, og neste kontroll bekrefter rettingen.",
+    tabs: {
+      findings: "Funn",
+      profiles: "Profiler",
+    },
+    kind: "Type funn",
+    allKinds: "Alle typer",
+    kinds: {
+      duplicate_identifier: "Duplisert identifikator",
+      missing_evidence: "Manglende dokumentasjon",
+      legacy_link: "Usikker partskobling",
+      orphan_reference: "Brutt referanse",
+    },
+    statuses: {
+      open: "Åpen",
+      accepted: "Godtatt unntak",
+      resolved: "Løst",
+    },
+    registers: {
+      catalog: "katalog",
+      accession: "aksesjons",
+    },
+    stages: {
+      entry: "I forvaring under en innlevering",
+      collection: "I samlingen",
+      borrowed: "Innlånt",
+      deaccessioned: "Avhendet",
+    },
+    stageHints: {
+      entry:
+        "Mottatt for identifisering, deponering eller ervervsvurdering og ikke aksesjonert.",
+      collection: "Aksesjonerte eller katalogiserte objekter, også utlånte.",
+      borrowed: "Objekter i forvaring under et innlån.",
+      deaccessioned: "Objekter fjernet fra samlingen; postene deres beholdes.",
+    },
+    requirements: {
+      object_name: "Objektnavn",
+      maker: "Produsent",
+      production_date: "Datering",
+      materials: "Materialer",
+      dimensions: "Mål",
+      description: "Beskrivelse",
+      current_location: "Nåværende sted",
+      condition_assessment: "Godkjent tilstandsvurdering",
+      image: "Fotografi",
+      supporting_document: "Støttedokument",
+      accession_record: "Godkjent aksesjon",
+      provenance_claim: "Provenienspåstand",
+    },
+    orphanFields: {
+      parentObject: "Overordnet objekt",
+      currentLocation: "Nåværende sted",
+      collectionGroup: "Samlingsgruppe",
+      object: "Objekt",
+      donorAccount: "Giverkonto",
+    },
+    orphanProblems: {
+      missing: "finnes ikke lenger",
+      other_organization: "tilhører en annen organisasjon",
+      self: "peker på posten selv",
+    },
+    recordTypes: {
+      object: "Objekt",
+      accession: "Aksesjon",
+      deaccession: "Avhending",
+    },
+    objectTabs: {
+      general: "Generelt",
+      physical: "Fysisk",
+      media: "Media",
+      accession: "Aksesjon",
+      placement: "Plassering",
+      provenance: "Proveniens",
+    },
+    summary: {
+      duplicateIdentifier:
+        "«{identifier}» deles av {count} poster i {register}registeret",
+      missingEvidence: "{identifier} {title}: mangler {missing}",
+      legacyName: "{label} nevner «{name}» uten koblet part",
+      legacyAccount: "{label} viser til en part uten bekreftet kobling",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "Ingen åpne funn. Kjør en kontroll for å se etter dokumentasjonsunntak.",
+        accepted: "Ingen godtatte unntak.",
+        resolved: "Ingen løste funn ennå.",
+      },
+      emptyKind: "Ingen funn av denne typen: {kind}.",
+      reopened: "Gjenåpnet",
+      detectedBy: "Kontroll {number}",
+      resolvedBy: "Løst av kontroll {number}",
+    },
+    check: {
+      title: "Kvalitetskontroll",
+      loading: "Laster…",
+      never:
+        "Ingen kontroll er kjørt ennå. En kontroll leser hver post i avgrensede trinn og lister det den finner.",
+      running:
+        "Kontroll {number} kjører: trinn {step} av {steps} ({phase}), {records} poster kontrollert så langt.",
+      stalled:
+        "Kontroll {number} har ikke kommet videre på over ti minutter. Gjenoppta den, eller avbryt og start på nytt.",
+      completed:
+        "Kontroll {number} ble ferdig {date}: {records} poster kontrollert, {detected} funn ({opened} nye, {reopened} gjenåpnet), {resolved} løst.",
+      failed: "Kontroll {number} stoppet under: {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "Medlemmet som kjørte den, har ikke lenger tilgang. Gjenoppta den for å fortsette med din tilgang.",
+        PAGE_FAILED:
+          "En post kunne ikke kontrolleres. Gjenoppta for å prøve igjen der den stoppet.",
+      },
+      cancelled:
+        "Kontroll {number} ble avbrutt. Funnene den gjorde, beholdes; den løste ingen.",
+      phases: {
+        catalog_identifiers: "katalogidentifikatorer",
+        accession_identifiers: "aksesjonsidentifikatorer",
+        objects_active: "objekter",
+        objects_loaned: "utlånte objekter",
+        objects_deaccessioned: "avhendede objekter",
+        accessions: "aksesjoner",
+        deaccessions: "avhendinger",
+        resolve_duplicate_identifier: "rettede identifikatordubletter",
+        resolve_missing_evidence: "utfylt dokumentasjon",
+        resolve_legacy_link: "bekreftede partskoblinger",
+        resolve_orphan_reference: "reparerte referanser",
+        finished: "ferdig",
+      },
+      run: "Kjør kontroll",
+      resume: "Gjenoppta",
+      cancel: "Avbryt kontroll",
+      started: "Kontroll startet",
+      resumed: "Kontroll gjenopptatt",
+      cancelledToast: "Kontroll avbrutt",
+      noProfiles:
+        "Ingen aktive profiler, så manglende dokumentasjon ble ikke kontrollert.",
+      partiesNotChecked:
+        "Partskoblinger ble ikke kontrollert fordi Kontoer-modulen er av.",
+      identifierIndexIncomplete:
+        "Noen identifikatorer er ikke indeksert ennå, så dubletter blant dem ble ikke kontrollert.",
+      identifierIndexLink: "Fullfør identifikatorindeksen",
+      neverChanges:
+        "Kontroller nummererer aldri om, slår aldri sammen og fyller aldri ut poster.",
+    },
+    profiles: {
+      loading: "Laster profiler…",
+      description:
+        "En profil sier hvilken dokumentasjon objekter av en type trenger i gitte faser. Hver kontroll bruker de aktive profilene; arkiverte beholdes.",
+      add: "Legg til profil",
+      readOnly: "Administratorer endrer profiler.",
+      empty:
+        "Ingen profiler ennå. Uten profil rapporterer kontroller fortsatt dupliserte identifikatorer, partskoblinger og brutte referanser.",
+      allTypes: "Alle objekttyper",
+      objectTypeHint: "Objekttypene hentes fra Innstillinger › Preferanser.",
+      addTitle: "Legg til dokumentasjonsprofil",
+      editTitle: "Rediger dokumentasjonsprofil",
+      dialogDescription:
+        "Velg hvilke objekter profilen gjelder og hva de må ha. Neste kontroll bruker den.",
+      fields: {
+        name: "Navn",
+        objectType: "Objekttype",
+        stages: "Faser",
+        requirements: "Påkrevd dokumentasjon",
+      },
+      errors: {
+        name: "Skriv et navn på opptil 120 tegn.",
+        stages: "Velg minst én fase.",
+        requirements: "Velg minst ett krav.",
+      },
+      cancel: "Avbryt",
+      save: "Lagre profil",
+      saving: "Lagrer…",
+      saved: "Profil lagret",
+      edit: "Rediger",
+      archive: "Arkiver",
+      restore: "Gjenopprett",
+      archived: "Profil arkivert",
+      restored: "Profil gjenopprettet",
+      archivedBadge: "Arkivert",
+    },
+    review: {
+      title: "Gjennomgang",
+      openHint:
+        "Rett posten og kjør en kontroll, eller godta dette som et unntak med en begrunnelse.",
+      acceptAction: "Godta som unntak",
+      acceptTitle: "Godta som unntak",
+      acceptDescription:
+        "Posten forblir som den er. Oppgi begrunnelsen, for eksempel hvorfor dokumentasjonen ikke kan finnes. Funnet gjenåpnes hvis en senere kontroll finner noe annet.",
+      acceptDuplicateDescription:
+        "Hver post beholder identifikatoren sin. Begrunnelsen din lagres som en gjennomgang av identifikatorkonflikten for hver post som deler den.",
+      note: "Begrunnelse",
+      noteRequired: "Oppgi en begrunnelse.",
+      cancel: "Avbryt",
+      accept: "Godta",
+      saving: "Lagrer…",
+      accepted: "Godtatt som unntak",
+      reviewedBy: "Godtatt av {name} {date}",
+      unknownReviewer: "et tidligere medlem",
+      earlierReview:
+        "Godtatt tidligere; det kontrollen fant, har endret seg siden:",
+      reopen: "Gjenåpne",
+      reopened: "Funnet gjenåpnet",
+      reviewedInRegister:
+        "Gjennomgått i identifikatorregisteret. Hvis en annen post begynner å dele identifikatoren, gjenåpnes funnet.",
+      resolved: "Kontroll {number} fant ikke dette lenger {date}.",
+    },
+    detail: {
+      headerTitle: "Funn",
+      back: "Tilbake til dokumentasjonskvalitet",
+      detection:
+        "Først funnet av kontroll {first}; sist funnet av kontroll {last}.",
+      foundTitle: "Hva kontrollen fant",
+      repairTitle: "Hvor det rettes",
+      notRecorded: "Ikke registrert",
+      register: "Register",
+      identifier: "Identifikator slik den er registrert",
+      records: "Poster som deler den ({count})",
+      moreRecords: "Og {count} til.",
+      object: "Objekt",
+      profile: "Profil",
+      stage: "Fase",
+      missing: "Mangler",
+      recordedCondition: "Tilstandstekst på posten, beholdt slik den er skrevet",
+      recordedProvenance:
+        "Provenienstekst på posten, beholdt slik den er skrevet",
+      record: "Post",
+      assertedName: "Navn slik det er skrevet",
+      existingParty: "Konto det vises til",
+      suggestedRole: "Rolle",
+      field: "Referanse",
+      storedReference: "Lagret verdi",
+      problem: "Problem",
+      recordUnavailable: "{record} er ikke lenger tilgjengelig.",
+      openTab: "Åpne fanen {tab}: {requirements}",
+      repairIntro:
+        "Rett posten der den føres. Neste kontroll lukker dette funnet når mangelen er borte.",
+      linkPartyHint: "Bekreft eller koble parten i postens Parter-panel.",
+      linkPartyUnavailable:
+        "Å koble en part krever Kontoer-modulen og tillatelse til å redigere parter. Tildel dette til noen som kan.",
+      duplicateHint:
+        "Ingenting nummereres om. Åpne hver post for å sammenligne dem, eller godta dubletten med de historiske opplysningene.",
+      identifierRegister: "Åpne identifikatorregisteret",
+    },
+    errors: {
+      fallback: "Noe gikk galt. Prøv igjen.",
+      profileInvalid: "Kontroller profilens navn, faser og krav.",
+      profileLimitReached:
+        "En organisasjon kan ha høyst 20 aktive profiler. Arkiver én først.",
+      profileNotFound: "Denne profilen finnes ikke lenger.",
+      checkRunning: "En kontroll kjører allerede.",
+      checkNotFound: "Denne kontrollen finnes ikke lenger.",
+      checkNotResumable:
+        "Bare den siste stoppede eller fastlåste kontrollen kan gjenopptas.",
+      findingNotFound: "Dette funnet finnes ikke lenger.",
+      findingStatusChanged:
+        "Dette funnet er endret i mellomtiden. Last inn på nytt for å se gjeldende status.",
+      reviewNoteRequired: "Oppgi en begrunnelse på opptil 2 000 tegn.",
+      identifierIndexIncomplete:
+        "Fullfør identifikatorindeksen før du går gjennom dubletter.",
+      duplicateGroupTooLarge:
+        "For mange poster deler denne identifikatoren til å gå gjennom på én gang. Gå gjennom dem i identifikatorregisteret.",
+      reviewedInIdentifierRegister:
+        "Dupliserte identifikatorer gås gjennom i identifikatorregisteret.",
+    },
   },
   objectEntries: {
     title: "Innleveringer",
@@ -8558,6 +9039,16 @@ export default {
       updateSite: "Oppdater sted",
       archiveSiteConfirm: "Er du sikker på at du vil arkivere dette stedet?",
       failedArchiveSite: "Kunne ikke arkivere stedet",
+      siteInUseTitle: "Dette stedet er fortsatt i bruk",
+      siteInUseDescription:
+        "Arkivering må ikke etterlate plasseringer eller objekter under et inaktivt sted. Løs dette først; ingenting ble endret.",
+      siteInUseLocations:
+        "Aktive plasseringer på dette stedet: {count}. Slett dem under Plassering og sporing først.",
+      siteInUseObjects:
+        "Objekter som fortsatt står på plasseringer på dette stedet: {count}. Flytt dem til en annen plassering først.",
+      siteInUseIncomplete:
+        "Dette stedet har for mange plasseringer eller objekter til å kontrolleres på én gang, så det kan ikke arkiveres her.",
+      siteInUseClose: "Lukk",
       systemRole: "(System)",
       siteManagement: "Stedsadministrasjon",
       physicalLocationBranches:
@@ -8941,6 +9432,7 @@ export default {
       newAccession: "Ny tilvekst",
       newLoan: "Nytt lån",
       newCollectionGroup: "Ny samlingsgruppe",
+      documentationQuality: "Dokumentasjonskvalitet",
       navigation: "Navigasjon",
       dashboard: "Dashbord",
       library: "Bibliotek",
@@ -9099,6 +9591,7 @@ export default {
       subOrganizationsCanTransferObjectsWithinTheSameHierarchy:
         "Underorganisasjoner kan overføre objekter innenfor samme hierarki.",
       notifications: "Varsler",
+      notificationsUnread: "Varsler, {count} uleste",
       markAllRead: "Merk alle som lest",
       viewAllNotifications: "Se alle varsler",
       loading: "Laster…",
@@ -9167,6 +9660,7 @@ export default {
       youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst:
         "Du har ulagrede endringer som går tapt hvis du forlater denne siden. Vil du lagre dem først?",
       discardChanges: "Forkast endringer",
+      keepEditing: "Fortsett å redigere",
       enterCode: "Angi kode",
       orContinueWithGoogle: "Eller fortsett med Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
@@ -9387,6 +9881,7 @@ export default {
       locked: "Utilgjengelig",
       overview: "Oversikt",
       myWork: "Mitt arbeid",
+      documentationQuality: "Dokumentasjonskvalitet",
       objectCatalog: "Objektkatalog",
       locationTracking: "Plassering og sporing",
       scan: "Skann",
@@ -9798,21 +10293,30 @@ export default {
       "Eksportfilen er ikke tilgjengelig. Prøv igjen eller opprett en ny eksport.",
     reportsNote:
       "Rapportsammendragene nedenfor inneholder gjeldende KPI-svar og begrensede lister over nylige eller kommende elementer. Bruk de fullstendige katalog- og revisjonseksportene ovenfor for avstemte kildedatasett.",
-    sourceRegister: "Register: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} registerrader · {scanned} poster undersøkt · {pages} sider",
+      "{rows} rader · {scanned} poster undersøkt · {pages} sider",
     errorRegisterCriteria:
-      "Kontroller registerkriteriene: datoene må være gyldige, startdatoen kan ikke være etter sluttdatoen, per-tidspunktet kan ikke være i fremtiden, og status gjelder bare aksesjons- og avhendingsregistre.",
+      "Kontroller kriteriene: datoene må være gyldige, startdatoen kan ikke være etter sluttdatoen, per-tidspunktet kan ikke være i fremtiden, en valuta må være en kode på tre bokstaver som EUR, og hvert register eller hver rapport godtar bare sine egne kriterier.",
   },
   registerReports: {
-    title: "Institusjonelle registre",
+    title: "Registre og rapporter",
     description:
-      "Lag aksesjons-, avhendings-, forvarings- og tilstandsregistre fra registrert dokumentasjon. Hver fil har et typet kolonneskjema og et manifest med kriteriene, per-tidspunktet og generatoren.",
-    profile: "Register",
+      "Lag registre, en verdsettelsesrapport for styret, en forsikringsoversikt for forsikringsselskapet og en proveniensrapport for forskning fra registrert dokumentasjon. Hver fil har et typet kolonneskjema og et manifest med kriteriene, per-tidspunktet, profilversjonen og eventuelle summer per valuta.",
+    profile: "Register eller rapport",
+    groupRegisters: "Registre",
+    groupFinancial: "Økonomirapporter",
+    groupResearch: "Forskning",
+    groupUnsupported: "Støttes ikke",
     profileAccession: "Aksesjonsregister",
     profileDisposal: "Avhendingsregister",
     profileCustody: "Forvaringsregister",
     profileCondition: "Tilstandsregister",
+    profileValuation: "Verdsettelsesrapport (styret)",
+    profileInsurance: "Forsikringsoversikt (forsikringsselskap)",
+    profileProvenance: "Proveniensrapport (forskning)",
+    profileNoRoleAccess: "{profile} (ikke tilgjengelig for rollen din)",
+    profileNotInPlan: "{profile} (ikke med i abonnementet ditt)",
     profileSpectrum: "SPECTRUM XML (støttes ikke)",
     profileLido: "LIDO XML (støttes ikke)",
     fromDate: "Fra",
@@ -9822,21 +10326,44 @@ export default {
     statusPending: "Venter",
     statusApproved: "Godkjent",
     statusRejected: "Avvist",
+    purpose: "Formål",
+    purposeAny: "Alle formål",
+    currency: "Valuta",
+    currencyPlaceholder: "Alle, eller EUR",
+    inventoryScope: "Beholdningsomfang",
+    scopeAny: "Alle omfang",
+    scopeOwned: "Eid",
+    scopeIncoming: "Innkommende (ikke eid)",
+    scopeUnclassified: "Eierskap uklassifisert",
+    scopeExcluded: "Utenfor beholdningen",
+    policy: "Polise",
+    policyAny: "Alle poliser",
+    policyOption: "{number} · {carrier}",
     asOf: "Per",
     asOfHint:
-      "La Per stå tomt for å bruke tidspunktet registeret opprettes. Dokumentasjon registrert etter dette tidspunktet utelates. Datoer og per-tidspunktet er i UTC.",
+      "La Per stå tomt for å bruke tidspunktet filen opprettes. Dokumentasjon registrert etter dette tidspunktet utelates, og gyldighet og dekning vurderes per dette tidspunktet. Datoer og per-tidspunktet er i UTC.",
     preview: "Forhåndsvis",
     previewing: "Laster forhåndsvisning",
-    previewLabel: "Forhåndsvisning av register",
+    previewLabel: "Forhåndsvisning",
     previewSummary:
       "Viser {shown} av {rows} rader fra første side ({scanned} poster undersøkt).",
-    previewMore: "Flere rader følger; opprett registeret for å få hele filen.",
+    previewMore:
+      "Flere rader følger; opprett filen for å få hele registeret eller rapporten.",
     previewEmpty: "Første side har ingen rader for disse kriteriene.",
     notRecordedNote:
       "Tomme celler som er oppført i notRecorded ble aldri registrert i MuseumLite. Rader merket legacy er eldre enn strukturert dokumentasjon.",
+    totalsPreviewNote:
+      "Summene per valuta dekker hele filen. De vises på den ferdige filen nedenfor og i manifestet.",
     exportLabel: "Opprett fil for {profile}",
+    totalsTitle: "Summer per valuta",
+    totalsNone: "Filen har ingen beløp.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} uten gjenkjent valuta, ikke summert",
+    totalsNotStated: "Ikke oppgitt",
+    totalsNote:
+      "Summer av radene i denne filen, per gruppe og valuta. Beløp i ulike valutaer legges aldri sammen; rader uten gjenkjent valuta telles, men summeres ikke.",
     unsupportedNote:
-      "Registrene bruker en dokumentert MuseumLite-utvekslingsprofil. De er ikke en erklæring om samsvar med SPECTRUM, LIDO eller akkreditering, og profiler som ikke støttes kan ikke lages.",
+      "Registrene og rapportene bruker dokumenterte MuseumLite-utvekslingsprofiler. De er ikke en erklæring om samsvar med SPECTRUM, LIDO eller akkreditering, og profiler som ikke støttes kan ikke lages.",
   },
   projectionHealth: {
     unavailable: {
@@ -9944,6 +10471,100 @@ export default {
       title: "Nylige jobber",
       rows: "{rows} rader",
       discrepancies: "{count} forskjeller",
+    },
+  },
+  recordForm: {
+    errors: {
+      conflict:
+        "Ikke lagret: noen andre endret denne posten etter at du åpnet den. Endringene dine er fortsatt her.",
+      notEditable:
+        "Denne posten kan ikke lenger redigeres her, så endringene dine ble ikke lagret.",
+      required: "{field} er påkrevd.",
+      identifierPermanent:
+        "Et tildelt aksesjonsnummer er permanent. Behold det opprinnelige nummeret.",
+      relatedRecordUnavailable:
+        "Valget i {field} er ikke tilgjengelig i denne organisasjonen. Velg et annet.",
+      parentIsSelf: "Et objekt kan ikke være sitt eget overordnede objekt.",
+      conditionSetByAssessment:
+        "Gjeldende tilstand kommer fra en godkjent tilstandsvurdering. Registrer en ny vurdering for å endre den.",
+      conditionNoteRequired: "Forklar tilstandsendringen i notatet.",
+      dateOrderInvalid:
+        "Sluttdatoen må være samme dag som eller etter startdatoen.",
+      partyManagedField:
+        "Dette kommer fra den koblede parten. Bytt part i Parter-panelet i stedet.",
+      amountInvalid: "Skriv inn et beløp på 0 eller mer.",
+      measurementInvalid: "Skriv inn et tall på 0 eller mer.",
+      weightInvalid:
+        "Skriv inn vekten som et tall på 0 eller mer, eventuelt med enhet, for eksempel 200 g eller 2 kg.",
+      invalid: "Noen felt må rettes før du kan lagre.",
+      saveFailed:
+        "Endringene dine kunne ikke lagres. Sjekk tilkoblingen og prøv igjen.",
+    },
+    notices: {
+      recoveredTitle: "Ulagrede endringer funnet",
+      recoveredBody: "Endringer i {fields} fra {time} ble ikke lagret.",
+      recoveredChanged:
+        "Denne posten er endret siden da. Etter gjenoppretting kan du se gjennom endringene før du lagrer.",
+      restore: "Gjenopprett endringene mine",
+      discardRecovered: "Forkast dem",
+      changedByOthers: "Endret av noen andre: {fields}.",
+      remoteChanged:
+        "Noen andre lagret endringer i {fields} mens du redigerte.",
+      remoteKeepsYours:
+        "Endringene dine beholdes. Fortsett fra nyeste versjon før du lagrer.",
+      remoteOverlap:
+        "Du endret også {fields}. Verdiene dine beholdes; etterpå kan du bruke deres i stedet.",
+      applyLatest: "Behold endringene mine på nyeste versjon",
+      discardMine: "Forkast endringene mine",
+      retry: "Prøv igjen",
+      goToField: "Gå til {field}",
+      inputKept: "Det du skrev, er fortsatt i dette skjemaet.",
+      inputKeptOnDevice:
+        "Det du skrev, er fortsatt i dette skjemaet og lagres på denne enheten til du lagrer eller forkaster det.",
+      useTheirs: "Bruk deres verdi",
+      keepMine: "Behold min",
+      overlapValue: "{field} ble også endret av noen andre, til «{value}»",
+      overlapChanged: "{field} ble også endret av noen andre.",
+      lockedWhileEditing:
+        "Denne posten kan ikke lenger redigeres her. Det du skrev, blir stående på skjermen så du kan kopiere det.",
+    },
+    status: {
+      unsaved: "Ulagrede endringer",
+    },
+    loan: {
+      partyLinked:
+        "Långiver eller låntaker kommer fra den koblede parten, så navn og kontaktinformasjon redigeres ikke her.",
+      changeParty: "Bytt part på lånesiden",
+      partyNotLinked:
+        "Ingen part er koblet til dette lånet, så navnet skrives inn her.",
+      linkParty: "Koble til en part på lånesiden",
+    },
+    objectFields: {
+      alternativeTitle: "Alternativ tittel",
+      measuredDimensions: "Målte dimensjoner",
+      measuredDimensionsHint:
+        "Høyde, bredde og dybde som tall i én enhet, brukt til sortering, rapporter og eksport.",
+      height: "Høyde",
+      width: "Bredde",
+      depth: "Dybde",
+      dimensionUnit: "Enhet",
+      weightUnit: "Vektenhet",
+      inscriptionMarks: "Enkeltmerker",
+      inscriptionMarksHint:
+        "Før opp hver signatur, stempel, etikett eller annet merke på egen rad.",
+      inscriptionMarkLabel: "Merke",
+      inscriptionMarkDescription: "Beskrivelse",
+      addInscriptionMark: "Legg til merke",
+      removeInscriptionMark: "Fjern merke",
+      tagsHint: "Trykk Enter eller Tab etter hvert stikkord.",
+      legalRestrictions: "Juridiske begrensninger",
+      legalRestrictionsHint:
+        "Bruk, visning eller gjengivelse av dette objektet er juridisk begrenset.",
+      typeDetails: "Typespesifikke detaljer",
+      isHighResDownloadable: "Nedlasting i høy oppløsning",
+      draftMedia: "Bilder og dokumenter",
+      alternateNumberExists:
+        "Dette alternative aksesjonsnummeret står allerede i listen.",
     },
   },
 } as const;

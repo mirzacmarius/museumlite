@@ -6,12 +6,15 @@ interface UseFormNavigationGuardOptions {
   hasUnsavedChanges: boolean;
   onNavigate: (href: string) => void;
   onSaveBeforeNavigate: () => Promise<boolean>;
+  /** Called when staff choose to leave without saving. */
+  onDiscard?: () => void;
 }
 
 export function useFormNavigationGuard({
   hasUnsavedChanges,
   onNavigate,
   onSaveBeforeNavigate,
+  onDiscard,
 }: UseFormNavigationGuardOptions) {
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
@@ -32,12 +35,13 @@ export function useFormNavigationGuard({
   );
 
   const handleDiscardAndNavigate = useCallback(() => {
+    onDiscard?.();
     if (pendingNavigation) {
       onNavigate(pendingNavigation);
     }
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
-  }, [onNavigate, pendingNavigation]);
+  }, [onDiscard, onNavigate, pendingNavigation]);
 
   const handleSaveAndNavigate = useCallback(async () => {
     const didSave = await onSaveBeforeNavigate();

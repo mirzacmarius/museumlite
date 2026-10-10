@@ -14,7 +14,7 @@ bun run qa:backend -- --stop           # stop the backend
 
 Sign in at `/en/login` with the email and password in `.local-qa/credentials.json`; the seeded account is verified and lands on the dashboard. If the login page cannot be driven, `bun run qa:session` writes fresh auth cookies to `.local-qa/storage-state.json` for Playwright (`browser.newContext({ storageState })`) or manual use. If the app runs on another port, set `QA_APP_PORT` for `qa:seed` and `qa:session` too.
 
-CI runs the same backend, deploy and seed in the `deploy` job of `.github/workflows/check.yml`, with the Linux backend binary pinned there.
+CI runs the same backend, deploy and seed as uncached steps in the `Check / check` job of `.github/workflows/check.yml` for backend and shared changes, with the Linux backend binary pinned there.
 
 ## Notification email
 

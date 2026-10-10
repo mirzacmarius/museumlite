@@ -36,8 +36,6 @@ export default function EditAccessionObjectPage() {
     );
   }
 
-  const canEditObjectDraft =
-    accession.status === "pending" && Boolean(accession.draftObjectData);
   const shouldEditAccessionFirst =
     accession.status === "pending" &&
     accession.workflowStep === 0 &&
@@ -47,7 +45,9 @@ export default function EditAccessionObjectPage() {
     redirect(`/accessions/${accessionId}/edit`);
   }
 
-  if (!canEditObjectDraft || !accession.draftObjectData) {
+  // The form itself keeps a draft that left pending on screen while it
+  // holds unsaved input; otherwise only pending drafts open here.
+  if (!accession.draftObjectData) {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
@@ -66,11 +66,9 @@ export default function EditAccessionObjectPage() {
       }
     >
       <ObjectRequestFormPage
+        key={accession._id}
         mode="draft-edit"
-        accessionId={accession._id}
-        initialDraftObjectData={accession.draftObjectData}
-        initialDraftMedia={accession.draftMedia}
-        initialDraftSavedAt={accession._creationTime}
+        accession={accession}
         backHref={`/accessions/${accessionId}`}
       />
     </Suspense>

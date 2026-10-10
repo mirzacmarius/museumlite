@@ -5,7 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import type { FunctionReturnType } from "convex/server";
 import type React from "react";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useI18n } from "@/locales/client";
 import type { ObjectTabDefinition } from "../../[id]/_components/object-tab-config";
 import type {
@@ -34,6 +34,9 @@ interface CollectionEditFormTab {
 
 interface CollectionEditFormTabShellProps {
   error: string | null;
+  /** Recovery, conflict and save notices for the record. */
+  notices: ReactNode;
+  fieldErrors: Record<string, string>;
   tabs: CollectionEditFormTab[];
   activeTab: CollectionEditTabId;
   onTabSelect: (tabId: CollectionEditTabId) => void;
@@ -70,6 +73,8 @@ interface CollectionEditFormTabShellProps {
 
 export function CollectionEditFormTabShell({
   error,
+  notices,
+  fieldErrors,
   tabs,
   activeTab,
   onTabSelect,
@@ -108,10 +113,12 @@ export function CollectionEditFormTabShell({
     placeholders,
     currentOrganizationId,
     isLocationTrackingEnabled,
+    fieldErrors,
   };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
+      <div className="mb-6">{notices}</div>
       {error ? (
         <div className="mb-6 rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}

@@ -1,12 +1,22 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  type CollectionModuleId,
+  type CollectionType,
+  isCollectionModuleId,
+  isCollectionType,
+} from "@v1/backend/convex/utils/moduleCatalog";
 import type { FunctionReturnType } from "convex/server";
+import { z } from "zod";
+import { fieldErrorsFromZod } from "@/lib/record-form";
 import { parseStringListField } from "../../../../../../lib/string-list-field";
 import { toObjectDraftTypeDetails } from "../object-type-details/type-detail-values";
 import type {
   CollectionFormData,
   DraftMediaItem,
+  InscriptionMarkEntry,
   LinkEntry,
+  ObjectDraftData,
   OwnershipEntry,
 } from "./types";
 
@@ -14,6 +24,9 @@ type CollectionDoc = NonNullable<
   FunctionReturnType<typeof api.collections.get>
 >;
 type MediaItem = NonNullable<FunctionReturnType<typeof api.media.list>>[number];
+
+/** Every key of `T`, so adding a field to the contract fails until mapped. */
+type EveryField<T> = { [K in keyof Required<T>]: T[K] };
 
 export function formatMeasurementValue(value?: number, unit?: string) {
   if (value === undefined) {
@@ -51,21 +64,37 @@ export function parseOptionalWeight(value?: string | number) {
     : { isValid: false as const, value: undefined, unit: undefined };
 }
 
+/** A measured dimension as typed: blank, or a number of 0 or more. */
+export function parseOptionalMeasurement(value?: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) return { isValid: true as const, value: undefined };
+  const parsed = Number(trimmed.replace(",", "."));
+  return Number.isFinite(parsed) && parsed >= 0
+    ? { isValid: true as const, value: parsed }
+    : { isValid: false as const, value: undefined };
+}
+
+function measurementText(value?: number) {
+  return value === undefined ? "" : String(value);
+}
+
 export function normalizeOptionalString(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : "";
 }
 
-export function createOwnershipEntryLocalId() {
+function createLocalId(prefix: string) {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
-    : `ownership-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    : `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function createOwnershipEntryLocalId() {
+  return createLocalId("ownership");
 }
 
 export function createLinkEntryLocalId() {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return createLocalId("link");
 }
 
 export function withOwnershipEntryLocalIds(entries?: OwnershipEntry[]) {
@@ -90,12 +119,36 @@ export function withLinkEntryLocalIds(entries?: LinkEntry[]) {
   );
 }
 
+export function withInscriptionMarkLocalIds(entries?: InscriptionMarkEntry[]) {
+  return (entries || []).map((entry) =>
+    entry.localId ? entry : { ...entry, localId: createLocalId("mark") },
+  );
+}
+
+/** Rows staff filled in, without the ids the editor uses for rows. */
+function savedInscriptionMarks(entries?: InscriptionMarkEntry[]) {
+  return (entries || []).flatMap(({ localId: _localId, ...mark }) =>
+    mark.label.trim() || mark.description.trim() ? [mark] : [],
+  );
+}
+
+function savedLinks(entries?: LinkEntry[]) {
+  return (entries || []).flatMap(({ localId: _localId, ...link }) =>
+    link.url.trim().length > 0 ? [link] : [],
+  );
+}
+
+function asList(value?: string | string[]) {
+  return Array.isArray(value) ? value : value ? [value] : [];
+}
+
 export function createEmptyFormData(
   prefilledCollectionGroupId?: string,
 ): CollectionFormData {
   return {
     accessionNumber: "",
     title: "",
+    alternativeTitle: "",
     creator: "",
     objectType: [],
     objectName: "",
@@ -103,19 +156,28 @@ export function createEmptyFormData(
     period: "",
     dateCreated: "",
     materials: [],
+    technique: "",
     dimensions: "",
+    dimensionHeight: "",
+    dimensionWidth: "",
+    dimensionDepth: "",
+    dimensionUnit: "",
     dimensionDiameter: "",
     dimensionWeight: "",
     weightUnit: "",
     description: "",
     condition: "",
     inscriptions: "",
+    inscriptionMarks: [],
+    tags: [],
     provenance: "",
     exhibitionHistory: "",
     donated_by: [],
     donated_date: "",
     donation_info: "",
     acquisitionMethod: "",
+    creditLine: "",
+    legalRestrictions: false,
     previous_owners: [],
     links: [{ url: "", label: "" }],
     parentObjectId: "",
@@ -136,43 +198,269 @@ export function createEmptyFormData(
   };
 }
 
-export function getFormSignature(formData: CollectionFormData) {
-  return JSON.stringify({
-    ...formData,
-    objectType: Array.isArray(formData.objectType)
-      ? formData.objectType
-      : formData.objectType
-        ? [formData.objectType]
-        : [],
-    materials: Array.isArray(formData.materials)
-      ? formData.materials
-      : formData.materials
-        ? [formData.materials]
-        : [],
-    donated_by: formData.donated_by || [],
-    previous_owners: formData.previous_owners || [],
-    collectionGroupIds: formData.collectionGroupIds || [],
-    alternateAccessionNumbers: formData.alternateAccessionNumbers || [],
-    ownershipHistory:
-      formData.ownershipHistory?.map(
-        ({ localId: _localId, ...entry }) => entry,
-      ) || [],
-    links:
-      formData.links?.map(({ localId: _localId, ...entry }) => entry) || [],
-    typeDetails: toObjectDraftTypeDetails(
-      formData.collectionType,
-      formData.typeDetails,
+/**
+ * The catalog values staff can see, by field: editor row ids and empty
+ * placeholder rows are not changes, and lists compare as lists.
+ */
+export function comparableCollectionForm(
+  formData: CollectionFormData,
+): Record<string, unknown> {
+  const text = (value?: string) => value ?? "";
+  return {
+    accessionNumber: text(formData.accessionNumber),
+    title: formData.title,
+    alternativeTitle: text(formData.alternativeTitle),
+    creator: text(formData.creator),
+    objectType: asList(formData.objectType),
+    objectName: text(formData.objectName),
+    culture: text(formData.culture),
+    period: text(formData.period),
+    dateCreated: text(formData.dateCreated),
+    materials: asList(formData.materials),
+    technique: text(formData.technique),
+    dimensions: text(formData.dimensions),
+    dimensionHeight: text(formData.dimensionHeight),
+    dimensionWidth: text(formData.dimensionWidth),
+    dimensionDepth: text(formData.dimensionDepth),
+    dimensionUnit: text(formData.dimensionUnit),
+    dimensionDiameter: text(formData.dimensionDiameter),
+    dimensionWeight: String(formData.dimensionWeight ?? ""),
+    weightUnit: text(formData.weightUnit),
+    description: text(formData.description),
+    condition: text(formData.condition),
+    inscriptions: text(formData.inscriptions),
+    inscriptionMarks: savedInscriptionMarks(formData.inscriptionMarks),
+    tags: formData.tags ?? [],
+    provenance: text(formData.provenance),
+    exhibitionHistory: text(formData.exhibitionHistory),
+    donated_by: formData.donated_by ?? [],
+    donated_date: text(formData.donated_date),
+    donation_info: text(formData.donation_info),
+    acquisitionMethod: text(formData.acquisitionMethod),
+    creditLine: text(formData.creditLine),
+    legalRestrictions: formData.legalRestrictions ?? false,
+    previous_owners: formData.previous_owners ?? [],
+    links: savedLinks(formData.links),
+    parentObjectId: text(formData.parentObjectId),
+    currentLocationId: text(formData.currentLocationId),
+    collectionGroupId: text(formData.collectionGroupId),
+    // Membership is a set; which group is primary is its own field.
+    collectionGroupIds: (formData.collectionGroupIds ?? []).toSorted(),
+    alternateAccessionNumbers: formData.alternateAccessionNumbers ?? [],
+    ownershipHistory: (formData.ownershipHistory ?? []).map(
+      ({ localId: _localId, ...entry }) => entry,
     ),
+    collectionType: formData.collectionType ?? "general",
+    typeDetails:
+      toObjectDraftTypeDetails(formData.collectionType, formData.typeDetails) ??
+      null,
+    displayStatus: text(formData.displayStatus),
+    isPubliclyVisible: formData.isPubliclyVisible ?? false,
+    isHighResDownloadable: formData.isHighResDownloadable ?? false,
+    isSearchable: formData.isSearchable ?? true,
+    isValuationVisible: formData.isValuationVisible ?? false,
+    publicSlug: text(formData.publicSlug),
+  };
+}
+
+const ownershipEntrySchema = z.object({
+  localId: z.string().optional(),
+  owner: z.string(),
+  startYear: z.string().optional(),
+  endYear: z.string().optional(),
+  description: z.string().optional(),
+  verified: z.boolean().optional(),
+  verificationSource: z.string().optional(),
+});
+
+/** Catalog input as kept on a device; used to read it back safely. */
+export const collectionFormDataSchema = z.object({
+  accessionNumber: z.string().optional(),
+  title: z.string(),
+  alternativeTitle: z.string().optional(),
+  creator: z.string().optional(),
+  objectType: z.union([z.string(), z.array(z.string())]).optional(),
+  objectName: z.string().optional(),
+  culture: z.string().optional(),
+  period: z.string().optional(),
+  dateCreated: z.string().optional(),
+  materials: z.union([z.string(), z.array(z.string())]).optional(),
+  technique: z.string().optional(),
+  dimensions: z.string().optional(),
+  dimensionHeight: z.string().optional(),
+  dimensionWidth: z.string().optional(),
+  dimensionDepth: z.string().optional(),
+  dimensionUnit: z.string().optional(),
+  dimensionDiameter: z.string().optional(),
+  dimensionWeight: z.union([z.string(), z.number()]).optional(),
+  weightUnit: z.string().optional(),
+  description: z.string().optional(),
+  condition: z.string().optional(),
+  inscriptions: z.string().optional(),
+  inscriptionMarks: z
+    .array(
+      z.object({
+        localId: z.string().optional(),
+        label: z.string(),
+        description: z.string(),
+      }),
+    )
+    .optional(),
+  tags: z.array(z.string()).optional(),
+  provenance: z.string().optional(),
+  exhibitionHistory: z.string().optional(),
+  donated_by: z.array(z.string()).optional(),
+  donated_date: z.string().optional(),
+  donation_info: z.string().optional(),
+  acquisitionMethod: z.string().optional(),
+  creditLine: z.string().optional(),
+  legalRestrictions: z.boolean().optional(),
+  previous_owners: z.array(z.string()).optional(),
+  links: z
+    .array(
+      z.object({
+        localId: z.string().optional(),
+        url: z.string(),
+        label: z.string().optional(),
+      }),
+    )
+    .optional(),
+  parentObjectId: z.string().optional(),
+  currentLocationId: z.string().optional(),
+  collectionGroupId: z.string().optional(),
+  collectionGroupIds: z.array(z.string()).optional(),
+  alternateAccessionNumbers: z.array(z.string()).optional(),
+  ownershipHistory: z.array(ownershipEntrySchema).optional(),
+  collectionType: z
+    .custom<CollectionType>(
+      (value) => typeof value === "string" && isCollectionType(value),
+    )
+    .optional(),
+  typeDetails: z
+    .object({
+      collectionType: z.custom<CollectionModuleId>(
+        (value) => typeof value === "string" && isCollectionModuleId(value),
+      ),
+      fields: z.record(
+        z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
+      ),
+    })
+    .optional(),
+  displayStatus: z.string().optional(),
+  isPubliclyVisible: z.boolean().optional(),
+  isHighResDownloadable: z.boolean().optional(),
+  isSearchable: z.boolean().optional(),
+  isValuationVisible: z.boolean().optional(),
+  publicSlug: z.string().optional(),
+});
+
+export interface CollectionFormRuleMessages {
+  titleRequired: string;
+  weightInvalid: string;
+  measurementInvalid: string;
+}
+
+/** Shared catalog rules; the server applies the same ones on save. */
+export function collectionFormRules(messages: CollectionFormRuleMessages) {
+  const measurement = z
+    .string()
+    .optional()
+    .refine(
+      (value) => parseOptionalMeasurement(value).isValid,
+      messages.measurementInvalid,
+    );
+  return z.object({
+    title: z
+      .string()
+      .refine((title) => title.trim().length > 0, messages.titleRequired),
+    dimensionWeight: z
+      .union([z.string(), z.number()])
+      .optional()
+      .refine(
+        (value) => parseOptionalWeight(value).isValid,
+        messages.weightInvalid,
+      ),
+    dimensionHeight: measurement,
+    dimensionWidth: measurement,
+    dimensionDepth: measurement,
   });
 }
 
+export function validateCollectionFormData(
+  formData: CollectionFormData,
+  messages: CollectionFormRuleMessages,
+): Record<string, string> {
+  const result = collectionFormRules(messages).safeParse(formData);
+  return result.success ? {} : fieldErrorsFromZod(result.error);
+}
+
+/** Where each catalog field is edited: its tab, and the input to focus. */
+export function collectionFieldLocation(field: string): {
+  tab: string | null;
+  elementId: string;
+} {
+  switch (field) {
+    case "title":
+      return { tab: null, elementId: "hero-title" };
+    case "description":
+      return { tab: null, elementId: "hero-description" };
+    case "materials":
+    case "technique":
+    case "condition":
+    case "conditionChangeNote":
+    case "dimensions":
+    case "dimensionHeight":
+    case "dimensionWidth":
+    case "dimensionDepth":
+    case "dimensionUnit":
+    case "dimensionDiameter":
+    case "dimensionWeight":
+    case "weightUnit":
+    case "inscriptions":
+    case "inscriptionMarks":
+      return { tab: "physical", elementId: field };
+    case "provenance":
+    case "exhibitionHistory":
+    case "ownershipHistory":
+    case "links":
+      return { tab: "provenance", elementId: field };
+    case "acquisitionMethod":
+    case "donated_by":
+    case "donated_date":
+    case "donation_info":
+    case "creditLine":
+    case "legalRestrictions":
+      return { tab: "accession", elementId: field };
+    case "parentObjectId":
+      return { tab: "placement", elementId: "placementParentObjectId" };
+    case "currentLocationId":
+      return { tab: "placement", elementId: "placementCurrentLocationId" };
+    case "collectionGroupId":
+    case "collectionGroupIds":
+      return { tab: "placement", elementId: "placementCollectionGroupId" };
+    case "displayStatus":
+    case "isPubliclyVisible":
+    case "isHighResDownloadable":
+    case "isSearchable":
+    case "isValuationVisible":
+    case "publicSlug":
+      return { tab: "digital", elementId: field };
+    default:
+      return { tab: "general", elementId: field };
+  }
+}
+
 export function createFormDataFromDraftObject(
-  draftObjectData: Partial<CollectionFormData> | undefined,
+  draftObjectData: Partial<ObjectDraftData> | undefined,
   prefilledCollectionGroupId?: string,
 ): CollectionFormData {
+  const empty = createEmptyFormData(prefilledCollectionGroupId);
   return {
-    ...createEmptyFormData(prefilledCollectionGroupId),
+    ...empty,
     ...draftObjectData,
+    parentObjectId: draftObjectData?.parentObjectId ?? "",
+    currentLocationId: draftObjectData?.currentLocationId ?? "",
+    collectionType: draftObjectData?.collectionType ?? empty.collectionType,
     objectType: Array.isArray(draftObjectData?.objectType)
       ? draftObjectData.objectType
       : [],
@@ -181,6 +469,7 @@ export function createFormDataFromDraftObject(
       : [],
     donated_by: draftObjectData?.donated_by || [],
     previous_owners: draftObjectData?.previous_owners || [],
+    tags: draftObjectData?.tags || [],
     collectionGroupIds:
       draftObjectData?.collectionGroupIds ||
       (draftObjectData?.collectionGroupId
@@ -194,11 +483,17 @@ export function createFormDataFromDraftObject(
     ownershipHistory: withOwnershipEntryLocalIds(
       draftObjectData?.ownershipHistory,
     ),
+    inscriptionMarks: withInscriptionMarkLocalIds(
+      draftObjectData?.inscriptionMarks,
+    ),
     links: withLinkEntryLocalIds(
       draftObjectData?.links && draftObjectData.links.length > 0
         ? draftObjectData.links
         : [{ url: "", label: "" }],
     ),
+    dimensionHeight: measurementText(draftObjectData?.dimensionHeight),
+    dimensionWidth: measurementText(draftObjectData?.dimensionWidth),
+    dimensionDepth: measurementText(draftObjectData?.dimensionDepth),
     dimensionWeight:
       typeof draftObjectData?.dimensionWeight === "number"
         ? formatWeightValue(
@@ -207,10 +502,13 @@ export function createFormDataFromDraftObject(
           )
         : "",
     weightUnit: draftObjectData?.weightUnit || "",
+    typeDetails: draftObjectData?.typeDetails,
   };
 }
 
-export function buildObjectDraftPayload(formData: CollectionFormData) {
+export function buildObjectDraftPayload(
+  formData: CollectionFormData,
+): ObjectDraftData {
   const parsedDimensionWeight = parseOptionalWeight(formData.dimensionWeight);
 
   if (!parsedDimensionWeight.isValid) {
@@ -219,11 +517,12 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
     );
   }
 
-  return {
+  const payload: EveryField<ObjectDraftData> = {
     accessionNumber: formData.accessionNumber?.trim()
       ? formData.accessionNumber
       : undefined,
     title: formData.title.trim(),
+    alternativeTitle: formData.alternativeTitle?.trim() || undefined,
     creator: formData.creator?.trim() || undefined,
     objectType: Array.isArray(formData.objectType)
       ? formData.objectType.filter(Boolean)
@@ -235,7 +534,12 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
     materials: Array.isArray(formData.materials)
       ? formData.materials.filter(Boolean)
       : [],
+    technique: formData.technique?.trim() || undefined,
     dimensions: formData.dimensions?.trim() || undefined,
+    dimensionHeight: parseOptionalMeasurement(formData.dimensionHeight).value,
+    dimensionWidth: parseOptionalMeasurement(formData.dimensionWidth).value,
+    dimensionDepth: parseOptionalMeasurement(formData.dimensionDepth).value,
+    dimensionUnit: formData.dimensionUnit?.trim() || undefined,
     dimensionDiameter: formData.dimensionDiameter?.trim() || undefined,
     dimensionWeight: parsedDimensionWeight.value,
     weightUnit:
@@ -247,6 +551,11 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
     description: formData.description?.trim() || undefined,
     condition: formData.condition?.trim() || undefined,
     inscriptions: formData.inscriptions?.trim() || undefined,
+    inscriptionMarks: savedInscriptionMarks(formData.inscriptionMarks),
+    tags:
+      formData.tags?.flatMap((tag) => (tag.trim() ? [tag.trim()] : [])) ?? [],
+    creditLine: formData.creditLine?.trim() || undefined,
+    legalRestrictions: formData.legalRestrictions ?? false,
     provenance: formData.provenance?.trim() || undefined,
     exhibitionHistory: formData.exhibitionHistory?.trim() || undefined,
     donated_by: formData.donated_by?.filter(Boolean) || [],
@@ -254,10 +563,7 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
     donation_info: formData.donation_info?.trim() || undefined,
     acquisitionMethod: formData.acquisitionMethod?.trim() || undefined,
     previous_owners: formData.previous_owners?.filter(Boolean) || [],
-    links:
-      formData.links?.flatMap(({ localId: _localId, ...link }) =>
-        link.url.trim().length > 0 ? [link] : [],
-      ) || undefined,
+    links: savedLinks(formData.links),
     parentObjectId: formData.parentObjectId
       ? (formData.parentObjectId as Id<"collections">)
       : undefined,
@@ -289,6 +595,7 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
     isValuationVisible: formData.isValuationVisible ?? false,
     publicSlug: formData.publicSlug?.trim() || undefined,
   };
+  return payload;
 }
 
 export function buildDraftMediaPayload(draftMedia: DraftMediaItem[]) {
@@ -332,6 +639,7 @@ export function createInitialFormData(
 
   return {
     title: collection.title,
+    alternativeTitle: collection.alternativeTitle || "",
     creator: collection.creator || "",
     objectType: objectTypeArray,
     objectName: collection.objectName || "",
@@ -339,23 +647,21 @@ export function createInitialFormData(
     period: collection.period || "",
     dateCreated: collection.dateCreated || "",
     materials: parseStringListField(collection.materials),
+    technique: collection.technique || "",
     dimensions: collection.dimensions || "",
-    dimensionDiameter:
-      collection.dimensionDiameter ||
-      (!collection.dimensionHeight &&
-      !collection.dimensionDepth &&
-      collection.dimensionWidth !== undefined
-        ? formatMeasurementValue(
-            collection.dimensionWidth,
-            collection.dimensionUnit,
-          )
-        : ""),
+    dimensionHeight: measurementText(collection.dimensionHeight),
+    dimensionWidth: measurementText(collection.dimensionWidth),
+    dimensionDepth: measurementText(collection.dimensionDepth),
+    dimensionUnit: collection.dimensionUnit || "",
+    dimensionDiameter: collection.dimensionDiameter || "",
     dimensionWeight: formatMeasurementValue(
-      collection.dimensionWeight,
+      collection.dimensionWeight ?? undefined,
       collection.weightUnit,
     ),
     weightUnit: collection.weightUnit || "",
     inscriptions: collection.inscriptions || "",
+    inscriptionMarks: withInscriptionMarkLocalIds(collection.inscriptionMarks),
+    tags: collection.tags || [],
     description: collection.description || "",
     condition: collection.condition || "",
     provenance: collection.provenance || "",
@@ -364,6 +670,8 @@ export function createInitialFormData(
     donated_date: collection.donated_date || "",
     donation_info: collection.donation_info || "",
     acquisitionMethod: collection.acquisitionMethod || "",
+    creditLine: collection.creditLine || "",
+    legalRestrictions: collection.legalRestrictions ?? false,
     previous_owners: collection.previous_owners || [],
     links:
       collection.links && collection.links.length > 0
@@ -416,39 +724,7 @@ export function getStatusBadgeClass(status: CollectionDoc["status"]) {
 }
 
 export const EMPTY_EDIT_FORM: CollectionFormData = {
-  title: "",
-  creator: "",
-  objectType: [],
-  objectName: "",
-  culture: "",
-  period: "",
-  dateCreated: "",
-  materials: [],
-  dimensions: "",
-  dimensionDiameter: "",
-  dimensionWeight: "",
-  weightUnit: "",
-  inscriptions: "",
-  description: "",
-  condition: "",
-  provenance: "",
-  exhibitionHistory: "",
-  donated_by: [],
-  donated_date: "",
-  donation_info: "",
-  acquisitionMethod: "",
-  previous_owners: [],
-  links: [{ localId: createLinkEntryLocalId(), url: "", label: "" }],
-  parentObjectId: "",
-  currentLocationId: "",
-  collectionGroupId: "",
-  collectionGroupIds: [],
-  alternateAccessionNumbers: [],
-  ownershipHistory: [],
-  displayStatus: undefined,
-  isPubliclyVisible: false,
-  isHighResDownloadable: false,
-  isSearchable: true,
-  isValuationVisible: false,
-  publicSlug: "",
+  ...createEmptyFormData(),
+  accessionNumber: undefined,
+  collectionType: undefined,
 };

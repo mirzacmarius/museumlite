@@ -7,6 +7,7 @@ import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useRef, useState } from "react";
+import { RegisterTotals } from "@/components/register-totals";
 import { env } from "@/env.mjs";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useRegisterProfileLabels } from "@/hooks/use-register-profile-labels";
@@ -32,6 +33,31 @@ const RESUMABLE_STATUSES = new Set<ExportStatus>([
   "cancelled",
 ]);
 
+/** Translated label of an export job's status. */
+function useExportStatusLabel() {
+  const t = useScopedI18n("exportJobs");
+  return (status: ExportStatus) => {
+    switch (status) {
+      case "selecting":
+        return t("statusSelecting");
+      case "queued":
+        return t("statusQueued");
+      case "running":
+        return t("statusRunning");
+      case "finalizing":
+        return t("statusFinalizing");
+      case "completed":
+        return t("statusCompleted");
+      case "cancelled":
+        return t("statusCancelled");
+      case "failed":
+        return t("statusFailed");
+      case "expired":
+        return t("statusExpired");
+    }
+  };
+}
+
 interface ExportJobControlProps {
   organizationId: Id<"organizations">;
   source: FunctionArgs<typeof api.exports.create>["source"];
@@ -46,6 +72,7 @@ export function ExportJobControl({
 }: ExportJobControlProps) {
   const t = useScopedI18n("exportJobs");
   const registerLabels = useRegisterProfileLabels();
+  const statusLabel = useExportStatusLabel();
   const create = useMutation(api.exports.create);
   const append = useMutation(api.exports.appendSelection);
   const start = useMutation(api.exports.start);
@@ -162,26 +189,6 @@ export function ExportJobControl({
     a.click();
     URL.revokeObjectURL(url);
   }
-  function statusLabel(status: ExportStatus) {
-    switch (status) {
-      case "selecting":
-        return t("statusSelecting");
-      case "queued":
-        return t("statusQueued");
-      case "running":
-        return t("statusRunning");
-      case "finalizing":
-        return t("statusFinalizing");
-      case "completed":
-        return t("statusCompleted");
-      case "cancelled":
-        return t("statusCancelled");
-      case "failed":
-        return t("statusFailed");
-      case "expired":
-        return t("statusExpired");
-    }
-  }
   if (!sourceAllowed) return null;
   return (
     <details className="border border-border rounded-md p-3 text-sm">
@@ -274,6 +281,14 @@ export function ExportJobControl({
               {job.error && (
                 <p role="alert">{t(exportJobErrorKey(job.error))}</p>
               )}
+              {job.status === "completed" &&
+                job.source.kind === "register" &&
+                job.totals && (
+                  <RegisterTotals
+                    profile={job.source.profile}
+                    totals={job.totals}
+                  />
+                )}
               <div className="flex gap-2 mt-2">
                 {CANCELLABLE_STATUSES.has(job.status) && (
                   <Button

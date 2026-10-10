@@ -8,6 +8,7 @@ import {
   ensureIdentifierAvailable,
   findIdentifierMatches,
   normalizeIdentifier,
+  recordIdentifierConflictReview,
 } from "./utils/identifiers";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
@@ -215,13 +216,12 @@ export const reviewConflict = mutation({
       );
     if (matches.length < 2)
       throw new ConvexError("No identifier conflict exists for this record.");
-    await ctx.db.insert("identifierConflictReviews", {
-      ...args,
+    await recordIdentifierConflictReview(ctx, {
+      organizationId: args.organizationId,
+      register: args.register,
+      record: row,
       note,
-      identifier: row.accessionNumber,
-      normalizedIdentifier: normalizeIdentifier(row.accessionNumber),
-      reviewedBy: userId,
-      reviewedAt: Date.now(),
+      userId,
     });
     return null;
   },

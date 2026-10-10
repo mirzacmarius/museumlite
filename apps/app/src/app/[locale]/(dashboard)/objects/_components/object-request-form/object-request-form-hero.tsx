@@ -3,9 +3,12 @@
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-
 import type * as React from "react";
 import type { RefObject } from "react";
+import {
+  FieldError,
+  fieldErrorProps,
+} from "@/components/record-form/record-form-notices";
 import { useI18n } from "@/locales/client";
 import { ObjectFormSummaryCards } from "../collection-form-shared/object-form-summary-cards";
 import {
@@ -28,6 +31,8 @@ interface ObjectRequestFormHeroProps {
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholders: (key: string) => string;
   onTitleChange: (value: string) => void;
+  /** Why the title cannot be saved, if it cannot. */
+  titleError?: string;
   onDescriptionChange: (value: string) => void;
   locationSummary: string;
   collectionSummary: string;
@@ -48,6 +53,7 @@ export function ObjectRequestFormHero({
   handleFileSelect,
   placeholders,
   onTitleChange,
+  titleError,
   onDescriptionChange,
   locationSummary,
   collectionSummary,
@@ -92,10 +98,12 @@ export function ObjectRequestFormHero({
               id="hero-title"
               value={formData.title}
               onChange={(event) => onTitleChange(event.target.value)}
+              {...fieldErrorProps("title", titleError)}
               placeholder={placeholders("title")}
               className="h-14 border-border/60 bg-background/90 text-xl font-semibold sm:text-2xl"
               required
             />
+            <FieldError field="title" message={titleError} />
           </div>
 
           <div className="space-y-2">
