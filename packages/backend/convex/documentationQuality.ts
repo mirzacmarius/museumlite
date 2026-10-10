@@ -21,6 +21,7 @@ import {
   applyCheckPage,
   CHECK_PAGE_SIZE,
   CHECK_PHASES,
+  CHECK_STALE_AFTER_MS,
   identifierGroup,
   markCheckPageFailed,
   normalizeObjectType,
@@ -538,6 +539,89 @@ export const startCheck = mutation({
       changes: { number, profiles: profiles.length },
     });
     return checkId;
+  },
+});
+
+async function loadCheck(
+  ctx: MutationCtx,
+  checkId: Id<"documentationChecks">,
+) {
+  const check = await ctx.db.get(checkId);
+  if (!check) throw qualityError("CHECK_NOT_FOUND", "Check not found");
+  const userId = await requireQualityAccess(ctx, check.organizationId);
+  return { check, userId };
+}
+
+/** Stops a check. Findings it detected stay; it closes none. */
+export const cancelCheck = mutation({
+  args: { checkId: v.id("documentationChecks") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { check, userId } = await loadCheck(ctx, args.checkId);
+    if (check.status !== "running" && check.status !== "failed") return null;
+    const now = Date.now();
+    await ctx.db.patch(check._id, {
+      status: "cancelled",
+      cancelledBy: userId,
+      finishedAt: now,
+      updatedAt: now,
+    });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: check.organizationId,
+      userId,
+      action: "documentation_check_cancelled",
+      entityType: "documentationCheck",
+      entityId: check._id,
+      changes: { number: check.number },
+    });
+    return null;
+  },
+});
+
+/**
+ * Continues the latest check from its last committed page, under the
+ * caller's access: after a failure, or when a running check has made no
+ * progress for a while (its continuation was lost).
+ */
+export const resumeCheck = mutation({
+  args: { checkId: v.id("documentationChecks") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { check, userId } = await loadCheck(ctx, args.checkId);
+    const now = Date.now();
+    const stalled =
+      check.status === "running" &&
+      check.updatedAt < now - CHECK_STALE_AFTER_MS;
+    const latest = await ctx.db
+      .query("documentationChecks")
+      .withIndex("by_organization_and_number", (q) =>
+        q.eq("organizationId", check.organizationId),
+      )
+      .order("desc")
+      .first();
+    if ((check.status !== "failed" && !stalled) || latest?._id !== check._id)
+      throw qualityError(
+        "CHECK_NOT_RESUMABLE",
+        "Only the latest failed or stalled check can be resumed",
+      );
+    await ctx.db.patch(check._id, {
+      status: "running",
+      actorId: userId,
+      attempts: check.attempts + 1,
+      failure: undefined,
+      finishedAt: undefined,
+      updatedAt: now,
+    });
+    await scheduleCheckPage(ctx, check._id, check.checkpoint);
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: check.organizationId,
+      userId,
+      action: "documentation_check_resumed",
+      entityType: "documentationCheck",
+      entityId: check._id,
+      changes: { number: check.number, checkpoint: check.checkpoint },
+    });
+    return null;
   },
 });
 

@@ -1105,3 +1105,155 @@ test("a finding opens with its repair context, and outsiders see nothing", async
     ),
   ).toMatchObject({ reason: "permission_missing" });
 });
+
+const LOCATED = {
+  name: "Located objects",
+  stages: ["collection" as const],
+  requirements: ["current_location" as const],
+};
+
+async function overviewOf(member: Staff, organizationId: Id<"organizations">) {
+  const { current } = await member.query(
+    api.documentationQuality.getCheckOverview,
+    { organizationId },
+  );
+  if (!current) throw new Error("No check");
+  return current;
+}
+
+test("one check runs at a time, and a cancelled check closes no findings", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    ...LOCATED,
+  });
+  const objectId = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "1990.1",
+  });
+  await runCheck(t, officer, organizationId);
+  const locationId = await t.run((ctx) =>
+    ctx.db.insert("locations", {
+      organizationId,
+      name: "Store A",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
+  await t.run((ctx) =>
+    ctx.db.patch(objectId, { currentLocationId: locationId }),
+  );
+
+  const checkId = await officer.mutation(api.documentationQuality.startCheck, {
+    organizationId,
+  });
+  expect(
+    await qualityFailureOf(
+      admin.mutation(api.documentationQuality.startCheck, { organizationId }),
+    ),
+  ).toMatchObject({ code: "CHECK_RUNNING" });
+  await admin.mutation(api.documentationQuality.cancelCheck, { checkId });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+  expect(await overviewOf(officer, organizationId)).toMatchObject({
+    _id: checkId,
+    status: "cancelled",
+    resolved: 0,
+  });
+  expect(await findings(officer, organizationId, "open")).toHaveLength(1);
+  expect(await runCheck(t, officer, organizationId)).toMatchObject({
+    number: 3,
+    status: "completed",
+    resolved: 1,
+  });
+});
+
+test("a check stops when its runner loses access and another member resumes it from the last page", async () => {
+  const { t, admin, officer, officerId, adminId, organizationId } =
+    await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    ...LOCATED,
+  });
+  for (let index = 0; index < 30; index++)
+    await insertObject(t, organizationId, adminId, {
+      accessionNumber: `1990.${index}`,
+    });
+  vi.useFakeTimers();
+  const checkId = await officer.mutation(api.documentationQuality.startCheck, {
+    organizationId,
+  });
+  for (let page = 0; page < 10; page++) {
+    vi.advanceTimersByTime(1);
+    await t.finishInProgressScheduledFunctions();
+    if ((await overviewOf(officer, organizationId)).checkedRecords > 0) break;
+  }
+  expect(await overviewOf(officer, organizationId)).toMatchObject({
+    phase: "objects_active",
+    checkedRecords: 25,
+  });
+  await t.run(async (ctx) => {
+    const membership = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user_and_organization", (q) =>
+        q.eq("userId", officerId).eq("organizationId", organizationId),
+      )
+      .unique();
+    if (!membership) throw new Error("Membership missing");
+    await ctx.db.delete(membership._id);
+  });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+  expect(await overviewOf(admin, organizationId)).toMatchObject({
+    _id: checkId,
+    status: "failed",
+    failureCode: "ACTOR_NOT_PERMITTED",
+    checkedRecords: 25,
+  });
+  expect(
+    await capabilityFailureOf(
+      officer.mutation(api.documentationQuality.resumeCheck, { checkId }),
+    ),
+  ).toMatchObject({ reason: "permission_missing" });
+
+  await admin.mutation(api.documentationQuality.resumeCheck, { checkId });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+  expect(await overviewOf(admin, organizationId)).toMatchObject({
+    status: "completed",
+    attempts: 2,
+    checkedRecords: 30,
+    detected: 30,
+    opened: 30,
+  });
+  expect(await findings(admin, organizationId)).toHaveLength(30);
+});
+
+test("a running check that stopped making progress can be resumed, but not before", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    ...LOCATED,
+  });
+  await insertObject(t, organizationId, adminId, { accessionNumber: "1990.1" });
+  vi.useFakeTimers();
+  const checkId = await officer.mutation(api.documentationQuality.startCheck, {
+    organizationId,
+  });
+  expect(
+    await qualityFailureOf(
+      officer.mutation(api.documentationQuality.resumeCheck, { checkId }),
+    ),
+  ).toMatchObject({ code: "CHECK_NOT_RESUMABLE" });
+
+  vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+  await officer.mutation(api.documentationQuality.resumeCheck, { checkId });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+  expect(await overviewOf(officer, organizationId)).toMatchObject({
+    status: "completed",
+    attempts: 2,
+    detected: 1,
+    opened: 1,
+  });
+});
