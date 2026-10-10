@@ -35,6 +35,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const locale = params?.locale as string;
   const t = useScopedI18n("untranslatedDashboard.dashboardHeader");
   const tEntries = useScopedI18n("objectEntries");
+  const tQuality = useScopedI18n("documentationQuality");
 
   const getPageTitle = (path: string) => {
     // Strip only a leading locale segment: "/entries" also contains "/en".
@@ -60,6 +61,9 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
       return tEntries("receiveForm.title");
     if (/^\/accessions\/entries\/[^/]+$/.test(cleanPath))
       return tEntries("columns.entry");
+    if (cleanPath === "/documentation-quality") return tQuality("title");
+    if (/^\/documentation-quality\/[^/]+$/.test(cleanPath))
+      return tQuality("detail.headerTitle");
 
     const segment = cleanPath.split("/").pop();
     if (segment && pageTitleKeys[segment]) {

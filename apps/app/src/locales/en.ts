@@ -5551,6 +5551,7 @@ export default {
       resolved: "Check {number} no longer found this on {date}.",
     },
     detail: {
+      headerTitle: "Finding",
       back: "Back to documentation quality",
       detection: "First found by check {first}; last found by check {last}.",
       foundTitle: "What the check found",

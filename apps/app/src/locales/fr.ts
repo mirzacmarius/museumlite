@@ -5742,6 +5742,7 @@ export default {
       resolved: "La vérification {number} ne l’a plus trouvé le {date}.",
     },
     detail: {
+      headerTitle: "Constat",
       back: "Retour à la qualité de la documentation",
       detection:
         "Trouvé d’abord par la vérification {first} ; dernièrement par la vérification {last}.",

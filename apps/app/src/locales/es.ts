@@ -5788,6 +5788,7 @@ export default {
       resolved: "La comprobación {number} ya no lo encontró el {date}.",
     },
     detail: {
+      headerTitle: "Hallazgo",
       back: "Volver a calidad de la documentación",
       detection:
         "Encontrado primero por la comprobación {first}; por última vez por la comprobación {last}.",

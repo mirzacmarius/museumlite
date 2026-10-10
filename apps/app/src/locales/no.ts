@@ -5716,6 +5716,7 @@ export default {
       resolved: "Kontroll {number} fant ikke dette lenger {date}.",
     },
     detail: {
+      headerTitle: "Funn",
       back: "Tilbake til dokumentasjonskvalitet",
       detection:
         "Først funnet av kontroll {first}; sist funnet av kontroll {last}.",

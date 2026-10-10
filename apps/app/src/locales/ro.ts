@@ -2823,6 +2823,7 @@ export default {
       resolved: "Verificarea {number} nu a mai găsit-o pe {date}.",
     },
     detail: {
+      headerTitle: "Constatare",
       back: "Înapoi la calitatea documentației",
       detection:
         "Găsită prima dată de verificarea {first}; ultima dată de verificarea {last}.",
