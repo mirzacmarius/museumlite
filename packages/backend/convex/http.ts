@@ -552,6 +552,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
   return json(result.duplicate ? 200 : 202, {
     accepted: true,
     duplicate: result.duplicate,
+    late: result.late === true,
   });
 });
 

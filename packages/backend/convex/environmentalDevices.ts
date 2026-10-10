@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
+import { acceptReading } from "./utils/alertEpisodes";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
@@ -297,16 +298,25 @@ export const listLocations = query({
   ),
   handler: async (ctx, args) => {
     await requireDeviceManagement(ctx, args.organizationId);
-    return await ctx.db
+    const activeLocations: Array<{
+      _id: Id<"locations">;
+      name: string;
+      type: string;
+    }> = [];
+    for await (const location of ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .take(500)
-      .then((locations) =>
-        locations.map(({ _id, name, type }) => ({ _id, name, type })),
-      );
+      )) {
+      if (!location.isActive) continue;
+      activeLocations.push({
+        _id: location._id,
+        name: location.name,
+        type: location.type,
+      });
+      if (activeLocations.length === 500) break;
+    }
+    return activeLocations;
   },
 });
 
@@ -359,6 +369,8 @@ export const ingest = internalMutation({
   returns: v.object({
     accepted: v.boolean(),
     duplicate: v.boolean(),
+    /** For an accepted reading: observed before the probe's latest one. */
+    late: v.optional(v.boolean()),
     conflict: v.boolean(),
     rateLimited: v.boolean(),
     error: v.union(
@@ -505,81 +517,19 @@ export const ingest = internalMutation({
       return {
         accepted: true,
         duplicate: true,
+        late: existing.late === true,
         conflict: false,
         rateLimited: false,
         error: null,
       };
     }
-    const violations: string[] = [];
-    const thresholds = location.environmentalThresholds;
-    const latestObservation = await ctx.db
-      .query("environmentalReadings")
-      .withIndex("by_location_and_time", (q) =>
-        q.eq("locationId", location._id),
-      )
-      .order("desc")
-      .first();
-    const isCurrentObservation =
-      !latestObservation || args.observedAt >= latestObservation.recordedAt;
-    if (
-      thresholds?.temperatureMin !== undefined &&
-      args.temperature < thresholds.temperatureMin
-    ) {
-      violations.push(
-        `Temperature ${args.temperature}°C below minimum ${thresholds.temperatureMin}°C`,
-      );
-    }
-    if (
-      thresholds?.temperatureMax !== undefined &&
-      args.temperature > thresholds.temperatureMax
-    ) {
-      violations.push(
-        `Temperature ${args.temperature}°C above maximum ${thresholds.temperatureMax}°C`,
-      );
-    }
-    if (
-      thresholds?.humidityMin !== undefined &&
-      args.humidity < thresholds.humidityMin
-    ) {
-      violations.push(
-        `Humidity ${args.humidity}% below minimum ${thresholds.humidityMin}%`,
-      );
-    }
-    if (
-      thresholds?.humidityMax !== undefined &&
-      args.humidity > thresholds.humidityMax
-    ) {
-      violations.push(
-        `Humidity ${args.humidity}% above maximum ${thresholds.humidityMax}%`,
-      );
-    }
-    let alertId: Id<"conservationAlerts"> | undefined;
-    if (violations.length > 0 && isCurrentObservation) {
-      alertId = await ctx.db.insert("conservationAlerts", {
-        organizationId: device.organizationId,
-        alertType: "environmental_alert",
-        title: `Environmental Alert: ${location.name}`,
-        description: violations.join(". "),
-        priority: violations.length >= 2 ? "high" : "medium",
-        status: "active",
-        createdAt: now,
-      });
-    }
-    await ctx.db.insert("environmentalReadings", {
-      organizationId: device.organizationId,
-      locationId: location._id,
-      temperature: args.temperature,
-      humidity: args.humidity,
-      recordedAt: args.observedAt,
+    const { late } = await acceptReading(ctx, {
+      location,
+      source: { kind: "probe", device, probe },
       observedAt: args.observedAt,
       receivedAt: now,
-      source: "sensor",
-      sensorId: device.name,
-      sensorDeviceId: device._id,
-      sensorProbeId: probe.probeId,
+      values: { temperature: args.temperature, humidity: args.humidity },
       externalReadingId: args.readingId,
-      alertTriggered: violations.length > 0,
-      alertId,
     });
     await ctx.db.patch(device._id, {
       lastSeenAt: now,
@@ -589,6 +539,7 @@ export const ingest = internalMutation({
     return {
       accepted: true,
       duplicate: false,
+      late,
       conflict: false,
       rateLimited: false,
       error: null,
