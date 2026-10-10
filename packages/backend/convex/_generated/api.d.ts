@@ -114,6 +114,7 @@ import type * as projections from "../projections.js";
 import type * as provenance from "../provenance.js";
 import type * as provenanceMigration from "../provenanceMigration.js";
 import type * as qrCodes from "../qrCodes.js";
+import type * as recordEdits from "../recordEdits.js";
 import type * as registers from "../registers.js";
 import type * as reporting from "../reporting.js";
 import type * as roles from "../roles.js";
@@ -253,6 +254,7 @@ import type * as utils_provenanceValidators from "../utils/provenanceValidators.
 import type * as utils_publicMedia from "../utils/publicMedia.js";
 import type * as utils_publicPortal from "../utils/publicPortal.js";
 import type * as utils_recordAccess from "../utils/recordAccess.js";
+import type * as utils_recordEdits from "../utils/recordEdits.js";
 import type * as utils_registerProfiles from "../utils/registerProfiles.js";
 import type * as utils_registerSources from "../utils/registerSources.js";
 import type * as utils_relatedEntityIntegrity from "../utils/relatedEntityIntegrity.js";
@@ -398,6 +400,7 @@ declare const fullApi: ApiFromModules<{
   provenance: typeof provenance;
   provenanceMigration: typeof provenanceMigration;
   qrCodes: typeof qrCodes;
+  recordEdits: typeof recordEdits;
   registers: typeof registers;
   reporting: typeof reporting;
   roles: typeof roles;
@@ -537,6 +540,7 @@ declare const fullApi: ApiFromModules<{
   "utils/publicMedia": typeof utils_publicMedia;
   "utils/publicPortal": typeof utils_publicPortal;
   "utils/recordAccess": typeof utils_recordAccess;
+  "utils/recordEdits": typeof utils_recordEdits;
   "utils/registerProfiles": typeof utils_registerProfiles;
   "utils/registerSources": typeof utils_registerSources;
   "utils/relatedEntityIntegrity": typeof utils_relatedEntityIntegrity;

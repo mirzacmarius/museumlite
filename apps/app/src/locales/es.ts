@@ -9889,4 +9889,98 @@ export default {
       discrepancies: "{count} diferencias",
     },
   },
+  recordForm: {
+    errors: {
+      conflict:
+        "No se guardó: otra persona cambió este registro después de que usted lo abriera. Sus cambios siguen aquí.",
+      notEditable:
+        "Este registro ya no se puede editar aquí, por lo que sus cambios no se guardaron.",
+      required: "{field} es obligatorio.",
+      identifierPermanent:
+        "Un número de accesión asignado es permanente. Conserve el número original.",
+      relatedRecordUnavailable:
+        "La selección de {field} no está disponible en esta organización. Elija otra.",
+      parentIsSelf: "Un objeto no puede ser su propio objeto principal.",
+      conditionSetByAssessment:
+        "El estado actual proviene de una evaluación de estado aceptada. Registre una nueva evaluación para cambiarlo.",
+      conditionNoteRequired: "Explique el cambio de estado en la nota.",
+      dateOrderInvalid:
+        "La fecha de finalización debe ser igual o posterior a la fecha de inicio.",
+      partyManagedField:
+        "Este dato proviene de la parte vinculada. Cambie la parte en el panel Partes.",
+      amountInvalid: "Introduzca un importe de 0 o más.",
+      measurementInvalid: "Introduzca un número de 0 o más.",
+      weightInvalid:
+        "Introduzca el peso como un número de 0 o más, opcionalmente con una unidad, como 200 g o 2 kg.",
+      invalid: "Algunos campos requieren atención antes de guardar.",
+      saveFailed:
+        "No se pudieron guardar sus cambios. Compruebe su conexión e inténtelo de nuevo.",
+    },
+    notices: {
+      recoveredTitle: "Se encontraron cambios sin guardar",
+      recoveredBody: "Los cambios en {fields} de {time} no se guardaron.",
+      recoveredChanged:
+        "Este registro ha cambiado desde entonces. Tras restaurar, podrá revisar lo que cambió antes de guardar.",
+      restore: "Restaurar mis cambios",
+      discardRecovered: "Descartarlos",
+      changedByOthers: "Cambiado por otra persona: {fields}.",
+      remoteChanged:
+        "Otra persona guardó cambios en {fields} mientras usted editaba.",
+      remoteKeepsYours:
+        "Sus cambios se conservan. Continúe desde la versión más reciente antes de guardar.",
+      remoteOverlap:
+        "Usted también cambió {fields}. Se conservan sus valores; después de continuar puede usar los de la otra persona.",
+      applyLatest: "Mantener mis cambios en la versión más reciente",
+      discardMine: "Descartar mis cambios",
+      retry: "Reintentar",
+      goToField: "Ir a {field}",
+      inputKept: "Lo que introdujo sigue en este formulario.",
+      inputKeptOnDevice:
+        "Lo que introdujo sigue en este formulario y se conserva en este dispositivo hasta que lo guarde o lo descarte.",
+      useTheirs: "Usar su valor",
+      keepMine: "Mantener el mío",
+      overlapValue: "Otra persona también cambió {field}, a “{value}”",
+      overlapChanged: "Otra persona también cambió {field}.",
+      lockedWhileEditing:
+        "Este registro ya no se puede editar aquí. Lo que introdujo sigue en pantalla para que pueda copiarlo.",
+    },
+    status: {
+      unsaved: "Cambios sin guardar",
+    },
+    loan: {
+      partyLinked:
+        "El prestamista o prestatario proviene de la parte vinculada, por lo que el nombre y el contacto no se editan aquí.",
+      changeParty: "Cambiar la parte en la página del préstamo",
+      partyNotLinked:
+        "Este préstamo no tiene ninguna parte vinculada, así que el nombre se escribe aquí.",
+      linkParty: "Vincular una parte en la página del préstamo",
+    },
+    objectFields: {
+      alternativeTitle: "Título alternativo",
+      measuredDimensions: "Dimensiones medidas",
+      measuredDimensionsHint:
+        "Alto, ancho y profundidad numéricos en una sola unidad, usados para ordenar, informes y exportaciones.",
+      height: "Alto",
+      width: "Ancho",
+      depth: "Profundidad",
+      dimensionUnit: "Unidad",
+      weightUnit: "Unidad de peso",
+      inscriptionMarks: "Marcas individuales",
+      inscriptionMarksHint:
+        "Anote cada firma, sello, etiqueta u otra marca en su propia fila.",
+      inscriptionMarkLabel: "Marca",
+      inscriptionMarkDescription: "Descripción",
+      addInscriptionMark: "Añadir marca",
+      removeInscriptionMark: "Quitar marca",
+      tagsHint: "Pulse Intro o Tab después de cada etiqueta.",
+      legalRestrictions: "Restricciones legales",
+      legalRestrictionsHint:
+        "El uso, la exhibición o la reproducción de este objeto están restringidos legalmente.",
+      typeDetails: "Detalles específicos del tipo",
+      isHighResDownloadable: "Descarga en alta resolución",
+      draftMedia: "Fotos y documentos",
+      alternateNumberExists:
+        "Este número de accesión alternativo ya está en la lista.",
+    },
+  },
 } as const;

@@ -9530,4 +9530,97 @@ export default {
       discrepancies: "{count} differences",
     },
   },
+  recordForm: {
+    errors: {
+      conflict:
+        "Not saved: someone else changed this record after you opened it. Your changes are still here.",
+      notEditable:
+        "This record can no longer be edited here, so your changes were not saved.",
+      required: "{field} is required.",
+      identifierPermanent:
+        "An assigned accession number is permanent. Keep the original number.",
+      relatedRecordUnavailable:
+        "The selected {field} is not available in this organization. Choose another.",
+      parentIsSelf: "An object cannot be its own parent object.",
+      conditionSetByAssessment:
+        "The current condition comes from an accepted condition assessment. Record a new assessment to change it.",
+      conditionNoteRequired: "Explain the condition change in the note.",
+      dateOrderInvalid: "The end date must be on or after the start date.",
+      partyManagedField:
+        "This comes from the linked party. Change the party in the Parties panel instead.",
+      amountInvalid: "Enter an amount of 0 or more.",
+      measurementInvalid: "Enter a number of 0 or more.",
+      weightInvalid:
+        "Enter the weight as a number of 0 or more, optionally with a unit, such as 200 g or 2 kg.",
+      invalid: "Some fields need attention before you can save.",
+      saveFailed:
+        "Your changes could not be saved. Check your connection and try again.",
+    },
+    notices: {
+      recoveredTitle: "Unsaved changes found",
+      recoveredBody: "Changes to {fields} from {time} were not saved.",
+      recoveredChanged:
+        "This record has changed since then. After restoring, you can review what changed before saving.",
+      restore: "Restore my changes",
+      discardRecovered: "Discard them",
+      changedByOthers: "Changed by someone else: {fields}.",
+      remoteChanged:
+        "Someone else saved changes to {fields} while you were editing.",
+      remoteKeepsYours:
+        "Your changes are kept. Continue from the latest version before saving.",
+      remoteOverlap:
+        "You also changed {fields}. Your values are kept; after continuing you can use theirs instead.",
+      applyLatest: "Keep my changes on the latest version",
+      discardMine: "Discard my changes",
+      retry: "Try again",
+      goToField: "Go to {field}",
+      inputKept: "Your input is still in this form.",
+      inputKeptOnDevice:
+        "Your input is still in this form and kept on this device until you save or discard it.",
+      useTheirs: "Use their value",
+      keepMine: "Keep mine",
+      overlapValue: "{field} was also changed by someone else, to “{value}”",
+      overlapChanged: "{field} was also changed by someone else.",
+      lockedWhileEditing:
+        "This record can no longer be edited here. Your input stays on screen so you can copy it.",
+    },
+    status: {
+      unsaved: "Unsaved changes",
+    },
+    loan: {
+      partyLinked:
+        "The lender or borrower comes from the linked party, so the name and contact are not edited here.",
+      changeParty: "Change the party on the loan page",
+      partyNotLinked:
+        "No party is linked to this loan, so the name is typed here.",
+      linkParty: "Link a party on the loan page",
+    },
+    objectFields: {
+      alternativeTitle: "Alternative title",
+      measuredDimensions: "Measured dimensions",
+      measuredDimensionsHint:
+        "Numeric height, width and depth in one unit, used for sorting, reports and exports.",
+      height: "Height",
+      width: "Width",
+      depth: "Depth",
+      dimensionUnit: "Unit",
+      weightUnit: "Weight unit",
+      inscriptionMarks: "Individual marks",
+      inscriptionMarksHint:
+        "List each signature, stamp, label or other mark on its own row.",
+      inscriptionMarkLabel: "Mark",
+      inscriptionMarkDescription: "Description",
+      addInscriptionMark: "Add mark",
+      removeInscriptionMark: "Remove mark",
+      tagsHint: "Press Enter or Tab after each tag.",
+      legalRestrictions: "Legal restrictions",
+      legalRestrictionsHint:
+        "Use, display or reproduction of this object is legally restricted.",
+      typeDetails: "Type-specific details",
+      isHighResDownloadable: "High-resolution download",
+      draftMedia: "Photos and documents",
+      alternateNumberExists:
+        "This alternate accession number is already listed.",
+    },
+  },
 } as const;

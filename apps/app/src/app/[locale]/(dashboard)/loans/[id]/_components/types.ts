@@ -34,6 +34,8 @@ export interface Loan {
   organizationId: Id<"organizations">;
   loanNumber: string;
   type: "incoming" | "outgoing";
+  /** The linked lender or borrower party, whose name the loan mirrors. */
+  accountId?: Id<"accounts">;
   lenderBorrowerName: string;
   lenderBorrowerContact?: string;
   startDate: number;

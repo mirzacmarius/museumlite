@@ -10,6 +10,8 @@ interface FormMessageProps {
   variant?: FormMessageVariant;
   className?: string;
   icon?: boolean;
+  /** Lets an input reference the message through `aria-describedby`. */
+  id?: string;
 }
 
 const variantStyles: Record<FormMessageVariant, string> = {
@@ -29,11 +31,13 @@ export function FormMessage({
   variant = "error",
   className,
   icon = true,
+  id,
 }: FormMessageProps) {
   if (!children) return null;
 
   return (
     <p
+      id={id}
       className={cn(
         "flex items-center gap-1.5 text-sm",
         variantStyles[variant],

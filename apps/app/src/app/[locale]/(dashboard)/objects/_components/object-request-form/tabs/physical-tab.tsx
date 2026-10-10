@@ -5,14 +5,27 @@ import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import {
+  FieldError,
+  fieldErrorProps,
+} from "@/components/record-form/record-form-notices";
 import { useI18n } from "@/locales/client";
+import {
+  InscriptionMarksField,
+  MeasuredDimensionsFields,
+  TechniqueField,
+} from "../../collection-form-shared/catalog-parity-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type { CollectionFormTabProps } from "../../collection-form-shared/types";
+import {
+  type CollectionFormTabProps,
+  NO_FIELD_ERRORS,
+} from "../../collection-form-shared/types";
 export function ObjectRequestPhysicalTab({
   formData,
   updateField,
   placeholders,
   currentOrganizationId,
+  fieldErrors = NO_FIELD_ERRORS,
 }: CollectionFormTabProps) {
   const tRoot = useI18n();
   return (
@@ -36,6 +49,8 @@ export function ObjectRequestPhysicalTab({
               onValueChange={(value) => updateField("materials", value)}
             />
           </div>
+
+          <TechniqueField formData={formData} updateField={updateField} />
 
           <div className="space-y-2">
             <Label htmlFor="condition">{tRoot("objects.form.condition")}</Label>
@@ -104,10 +119,24 @@ export function ObjectRequestPhysicalTab({
                     "untranslatedRecords.objects.examples.weight",
                     { value: "200gram or 2kg" },
                   )}
+                  {...fieldErrorProps(
+                    "dimensionWeight",
+                    fieldErrors.dimensionWeight,
+                  )}
+                />
+                <FieldError
+                  field="dimensionWeight"
+                  message={fieldErrors.dimensionWeight}
                 />
               </div>
             </div>
           </div>
+
+          <MeasuredDimensionsFields
+            formData={formData}
+            updateField={updateField}
+            fieldErrors={fieldErrors}
+          />
 
           <div className="space-y-2 md:col-span-2 xl:col-span-3">
             <Label htmlFor="inscriptions">
@@ -126,6 +155,11 @@ export function ObjectRequestPhysicalTab({
               )}
             />
           </div>
+
+          <InscriptionMarksField
+            formData={formData}
+            updateField={updateField}
+          />
         </div>
       </EditSection>
     </div>

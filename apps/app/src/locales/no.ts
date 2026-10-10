@@ -9732,4 +9732,98 @@ export default {
       discrepancies: "{count} forskjeller",
     },
   },
+  recordForm: {
+    errors: {
+      conflict:
+        "Ikke lagret: noen andre endret denne posten etter at du åpnet den. Endringene dine er fortsatt her.",
+      notEditable:
+        "Denne posten kan ikke lenger redigeres her, så endringene dine ble ikke lagret.",
+      required: "{field} er påkrevd.",
+      identifierPermanent:
+        "Et tildelt aksesjonsnummer er permanent. Behold det opprinnelige nummeret.",
+      relatedRecordUnavailable:
+        "Valget i {field} er ikke tilgjengelig i denne organisasjonen. Velg et annet.",
+      parentIsSelf: "Et objekt kan ikke være sitt eget overordnede objekt.",
+      conditionSetByAssessment:
+        "Gjeldende tilstand kommer fra en godkjent tilstandsvurdering. Registrer en ny vurdering for å endre den.",
+      conditionNoteRequired: "Forklar tilstandsendringen i notatet.",
+      dateOrderInvalid:
+        "Sluttdatoen må være samme dag som eller etter startdatoen.",
+      partyManagedField:
+        "Dette kommer fra den koblede parten. Bytt part i Parter-panelet i stedet.",
+      amountInvalid: "Skriv inn et beløp på 0 eller mer.",
+      measurementInvalid: "Skriv inn et tall på 0 eller mer.",
+      weightInvalid:
+        "Skriv inn vekten som et tall på 0 eller mer, eventuelt med enhet, for eksempel 200 g eller 2 kg.",
+      invalid: "Noen felt må rettes før du kan lagre.",
+      saveFailed:
+        "Endringene dine kunne ikke lagres. Sjekk tilkoblingen og prøv igjen.",
+    },
+    notices: {
+      recoveredTitle: "Ulagrede endringer funnet",
+      recoveredBody: "Endringer i {fields} fra {time} ble ikke lagret.",
+      recoveredChanged:
+        "Denne posten er endret siden da. Etter gjenoppretting kan du se gjennom endringene før du lagrer.",
+      restore: "Gjenopprett endringene mine",
+      discardRecovered: "Forkast dem",
+      changedByOthers: "Endret av noen andre: {fields}.",
+      remoteChanged:
+        "Noen andre lagret endringer i {fields} mens du redigerte.",
+      remoteKeepsYours:
+        "Endringene dine beholdes. Fortsett fra nyeste versjon før du lagrer.",
+      remoteOverlap:
+        "Du endret også {fields}. Verdiene dine beholdes; etterpå kan du bruke deres i stedet.",
+      applyLatest: "Behold endringene mine på nyeste versjon",
+      discardMine: "Forkast endringene mine",
+      retry: "Prøv igjen",
+      goToField: "Gå til {field}",
+      inputKept: "Det du skrev, er fortsatt i dette skjemaet.",
+      inputKeptOnDevice:
+        "Det du skrev, er fortsatt i dette skjemaet og lagres på denne enheten til du lagrer eller forkaster det.",
+      useTheirs: "Bruk deres verdi",
+      keepMine: "Behold min",
+      overlapValue: "{field} ble også endret av noen andre, til «{value}»",
+      overlapChanged: "{field} ble også endret av noen andre.",
+      lockedWhileEditing:
+        "Denne posten kan ikke lenger redigeres her. Det du skrev, blir stående på skjermen så du kan kopiere det.",
+    },
+    status: {
+      unsaved: "Ulagrede endringer",
+    },
+    loan: {
+      partyLinked:
+        "Långiver eller låntaker kommer fra den koblede parten, så navn og kontaktinformasjon redigeres ikke her.",
+      changeParty: "Bytt part på lånesiden",
+      partyNotLinked:
+        "Ingen part er koblet til dette lånet, så navnet skrives inn her.",
+      linkParty: "Koble til en part på lånesiden",
+    },
+    objectFields: {
+      alternativeTitle: "Alternativ tittel",
+      measuredDimensions: "Målte dimensjoner",
+      measuredDimensionsHint:
+        "Høyde, bredde og dybde som tall i én enhet, brukt til sortering, rapporter og eksport.",
+      height: "Høyde",
+      width: "Bredde",
+      depth: "Dybde",
+      dimensionUnit: "Enhet",
+      weightUnit: "Vektenhet",
+      inscriptionMarks: "Enkeltmerker",
+      inscriptionMarksHint:
+        "Før opp hver signatur, stempel, etikett eller annet merke på egen rad.",
+      inscriptionMarkLabel: "Merke",
+      inscriptionMarkDescription: "Beskrivelse",
+      addInscriptionMark: "Legg til merke",
+      removeInscriptionMark: "Fjern merke",
+      tagsHint: "Trykk Enter eller Tab etter hvert stikkord.",
+      legalRestrictions: "Juridiske begrensninger",
+      legalRestrictionsHint:
+        "Bruk, visning eller gjengivelse av dette objektet er juridisk begrenset.",
+      typeDetails: "Typespesifikke detaljer",
+      isHighResDownloadable: "Nedlasting i høy oppløsning",
+      draftMedia: "Bilder og dokumenter",
+      alternateNumberExists:
+        "Dette alternative aksesjonsnummeret står allerede i listen.",
+    },
+  },
 } as const;

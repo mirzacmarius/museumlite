@@ -5,7 +5,9 @@ export type {
   CollectionFormData,
   CollectionFormTabProps,
   DraftMediaItem,
+  InscriptionMarkEntry,
   LinkEntry,
+  ObjectDraftData,
   OwnershipEntry,
   UpdateCollectionFormField,
 } from "./types";
@@ -20,7 +22,6 @@ export {
   EMPTY_EDIT_FORM,
   formatMeasurementValue,
   formatWeightValue,
-  getFormSignature,
   getMediaSignature,
   getStatusBadgeClass,
   normalizeOptionalString,

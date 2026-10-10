@@ -54,6 +54,12 @@ import { requirePermission } from "./utils/permissions";
 import { getApprovedPublicMedia } from "./utils/publicMedia";
 import { findPublicPortalOrganization } from "./utils/publicPortal";
 import { canReadRecord } from "./utils/recordAccess";
+import {
+  assertCurrentEditVersion,
+  objectEditVersion,
+  recordEditError,
+  requireFieldValue,
+} from "./utils/recordEdits";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
 const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
@@ -69,7 +75,11 @@ async function validateCollectionReferences(
   if (references.parentObjectId) {
     const parent = await ctx.db.get(references.parentObjectId);
     if (!parent || parent.organizationId !== organizationId) {
-      throw new Error("Parent object not found in this organization");
+      throw recordEditError(
+        "RELATED_RECORD_UNAVAILABLE",
+        "Parent object not found in this organization",
+        { field: "parentObjectId" },
+      );
     }
   }
   if (references.currentLocationId) {
@@ -1646,9 +1656,10 @@ export const update = mutation({
     technique: v.optional(v.string()),
     dimensions: v.optional(v.string()),
     dimensionDiameter: v.optional(v.string()),
-    dimensionHeight: v.optional(v.number()),
-    dimensionWidth: v.optional(v.number()),
-    dimensionDepth: v.optional(v.number()),
+    /** Null clears a measured dimension. */
+    dimensionHeight: v.optional(v.union(v.number(), v.null())),
+    dimensionWidth: v.optional(v.union(v.number(), v.null())),
+    dimensionDepth: v.optional(v.union(v.number(), v.null())),
     dimensionWeight: v.optional(v.union(v.number(), v.null())),
     dimensionUnit: v.optional(v.string()),
     weightUnit: v.optional(v.string()),
@@ -1692,7 +1703,8 @@ export const update = mutation({
         }),
       ),
     ),
-    parentObjectId: v.optional(v.id("collections")),
+    /** Null removes the parent object. */
+    parentObjectId: v.optional(v.union(v.id("collections"), v.null())),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
     acquisitionMethod: v.optional(v.string()),
@@ -1703,8 +1715,10 @@ export const update = mutation({
     isValuationVisible: v.optional(v.boolean()),
     publicSlug: v.optional(v.string()),
     displayStatus: v.optional(v.string()),
+    /** From `recordEdits.getEditState`; a stale version is refused. */
+    expectedEditVersion: v.optional(v.string()),
   },
-  returns: v.null(),
+  returns: v.object({ editVersion: v.string() }),
   handler: async (ctx, args) => {
     const [userId, collection] = await Promise.all([
       getAuthUserId(ctx),
@@ -1723,13 +1737,37 @@ export const update = mutation({
       collection.organizationId,
       "collections.update",
     );
-    await validateCollectionReferences(ctx, collection.organizationId, args);
+    assertCurrentEditVersion(
+      await objectEditVersion(ctx, collection),
+      args.expectedEditVersion,
+    );
+    requireFieldValue("title", args.title);
     if (args.parentObjectId === args.collectionId)
-      throw new Error("Object cannot be its own parent");
-    if (args.collectionGroupId) {
-      const group = await ctx.db.get(args.collectionGroupId);
-      if (!group || group.organizationId !== collection.organizationId)
-        throw new Error("Collection group not found in this organization");
+      throw recordEditError(
+        "PARENT_IS_SELF",
+        "Object cannot be its own parent",
+        { field: "parentObjectId" },
+      );
+    await validateCollectionReferences(ctx, collection.organizationId, {
+      parentObjectId: args.parentObjectId ?? undefined,
+      currentLocationId: args.currentLocationId,
+    });
+    for (const [field, groupIds] of [
+      [
+        "collectionGroupId",
+        args.collectionGroupId ? [args.collectionGroupId] : [],
+      ],
+      ["collectionGroupIds", args.collectionGroupIds ?? []],
+    ] as const) {
+      for (const groupId of groupIds) {
+        const group = await ctx.db.get(groupId);
+        if (!group || group.organizationId !== collection.organizationId)
+          throw recordEditError(
+            "RELATED_RECORD_UNAVAILABLE",
+            "Collection group not found in this organization",
+            { field },
+          );
+      }
     }
 
     // Build update object - using any to avoid verbose type definition
@@ -1763,11 +1801,11 @@ export const update = mutation({
     if (args.dimensionDiameter !== undefined)
       updates.dimensionDiameter = args.dimensionDiameter;
     if (args.dimensionHeight !== undefined)
-      updates.dimensionHeight = args.dimensionHeight;
+      updates.dimensionHeight = args.dimensionHeight ?? undefined;
     if (args.dimensionWidth !== undefined)
-      updates.dimensionWidth = args.dimensionWidth;
+      updates.dimensionWidth = args.dimensionWidth ?? undefined;
     if (args.dimensionDepth !== undefined)
-      updates.dimensionDepth = args.dimensionDepth;
+      updates.dimensionDepth = args.dimensionDepth ?? undefined;
     if (args.dimensionWeight !== undefined)
       updates.dimensionWeight = args.dimensionWeight ?? undefined;
     if (args.dimensionUnit !== undefined)
@@ -1780,8 +1818,10 @@ export const update = mutation({
       const conditionChanged = previousCondition !== nextCondition;
 
       if (collection.currentConditionAssessmentId && conditionChanged) {
-        throw new Error(
+        throw recordEditError(
+          "CONDITION_SET_BY_ASSESSMENT",
           "Current condition is based on an accepted assessment. Record another assessment to change it.",
+          { field: "condition" },
         );
       }
 
@@ -1791,8 +1831,10 @@ export const update = mutation({
         const note = normalizeOptionalString(args.conditionChangeNote);
 
         if (previousCondition && !note) {
-          throw new Error(
+          throw recordEditError(
+            "CONDITION_NOTE_REQUIRED",
             "Condition change note is required when updating the condition.",
+            { field: "conditionChangeNote" },
           );
         }
 
@@ -1824,7 +1866,7 @@ export const update = mutation({
       updates.previous_owners = args.previous_owners;
     if (args.links !== undefined) updates.links = args.links;
     if (args.parentObjectId !== undefined)
-      updates.parentObjectId = args.parentObjectId;
+      updates.parentObjectId = args.parentObjectId ?? undefined;
     if (
       args.currentLocationId !== undefined &&
       args.currentLocationId === collection.currentLocationId
@@ -1904,7 +1946,9 @@ export const update = mutation({
       changes: updates,
     });
 
-    return null;
+    const updated = await ctx.db.get(args.collectionId);
+    if (!updated) throw new Error("Collection disappeared during update");
+    return { editVersion: await objectEditVersion(ctx, updated) };
   },
 });
 

@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@v1/ui/button";
 import { Icons } from "@v1/ui/icons";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { useI18n } from "@/locales/client";
 
 export function SignOut() {
   const translate = useI18n();
-  const { signOut } = useAuthActions();
+  const signOut = useSignOut();
 
   return (
     <Button

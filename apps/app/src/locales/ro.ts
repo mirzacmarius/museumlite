@@ -10592,4 +10592,98 @@ export default {
       discrepancies: "{count} diferențe",
     },
   },
+  recordForm: {
+    errors: {
+      conflict:
+        "Nu s-a salvat: altcineva a modificat această înregistrare după ce ați deschis-o. Modificările dvs. sunt încă aici.",
+      notEditable:
+        "Această înregistrare nu mai poate fi editată aici, așa că modificările dvs. nu au fost salvate.",
+      required: "{field} este obligatoriu.",
+      identifierPermanent:
+        "Un număr de accesiune atribuit este permanent. Păstrați numărul original.",
+      relatedRecordUnavailable:
+        "Selecția pentru {field} nu este disponibilă în această organizație. Alegeți alta.",
+      parentIsSelf: "Un obiect nu poate fi propriul obiect părinte.",
+      conditionSetByAssessment:
+        "Starea actuală provine dintr-o evaluare a stării acceptată. Înregistrați o evaluare nouă pentru a o schimba.",
+      conditionNoteRequired: "Explicați schimbarea stării în notă.",
+      dateOrderInvalid:
+        "Data de încheiere trebuie să fie aceeași sau ulterioară datei de început.",
+      partyManagedField:
+        "Această informație provine de la partea asociată. Schimbați partea din panoul Părți.",
+      amountInvalid: "Introduceți o sumă de 0 sau mai mare.",
+      measurementInvalid: "Introduceți un număr de 0 sau mai mare.",
+      weightInvalid:
+        "Introduceți greutatea ca număr de 0 sau mai mare, opțional cu o unitate, de exemplu 200 g sau 2 kg.",
+      invalid: "Unele câmpuri trebuie corectate înainte de salvare.",
+      saveFailed:
+        "Modificările dvs. nu au putut fi salvate. Verificați conexiunea și încercați din nou.",
+    },
+    notices: {
+      recoveredTitle: "Au fost găsite modificări nesalvate",
+      recoveredBody: "Modificările la {fields} ({time}) nu au fost salvate.",
+      recoveredChanged:
+        "Această înregistrare s-a schimbat între timp. După restaurare, puteți verifica ce s-a schimbat înainte de a salva.",
+      restore: "Restaurează modificările mele",
+      discardRecovered: "Renunță la ele",
+      changedByOthers: "Modificat de altcineva: {fields}.",
+      remoteChanged:
+        "Altcineva a salvat modificări la {fields} în timp ce editați.",
+      remoteKeepsYours:
+        "Modificările dvs. sunt păstrate. Continuați de la cea mai recentă versiune înainte de a salva.",
+      remoteOverlap:
+        "Ați modificat și {fields}. Valorile dvs. sunt păstrate; apoi le puteți folosi pe ale lor.",
+      applyLatest: "Păstrează modificările mele pe cea mai recentă versiune",
+      discardMine: "Renunță la modificările mele",
+      retry: "Încearcă din nou",
+      goToField: "Mergi la {field}",
+      inputKept: "Datele introduse sunt încă în acest formular.",
+      inputKeptOnDevice:
+        "Datele introduse sunt încă în acest formular și sunt păstrate pe acest dispozitiv până când le salvați sau renunțați la ele.",
+      useTheirs: "Folosește valoarea lor",
+      keepMine: "Păstrează-o pe a mea",
+      overlapValue: "{field} a fost modificat și de altcineva, în „{value}”",
+      overlapChanged: "{field} a fost modificat și de altcineva.",
+      lockedWhileEditing:
+        "Această înregistrare nu mai poate fi editată aici. Datele introduse rămân pe ecran ca să le puteți copia.",
+    },
+    status: {
+      unsaved: "Modificări nesalvate",
+    },
+    loan: {
+      partyLinked:
+        "Împrumutătorul sau împrumutatul provine de la partea asociată, așa că numele și contactul nu se editează aici.",
+      changeParty: "Schimbați partea pe pagina împrumutului",
+      partyNotLinked:
+        "Nicio parte nu este asociată acestui împrumut, așa că numele se introduce aici.",
+      linkParty: "Asociați o parte pe pagina împrumutului",
+    },
+    objectFields: {
+      alternativeTitle: "Titlu alternativ",
+      measuredDimensions: "Dimensiuni măsurate",
+      measuredDimensionsHint:
+        "Înălțime, lățime și adâncime numerice într-o singură unitate, folosite la sortare, rapoarte și exporturi.",
+      height: "Înălțime",
+      width: "Lățime",
+      depth: "Adâncime",
+      dimensionUnit: "Unitate",
+      weightUnit: "Unitate de greutate",
+      inscriptionMarks: "Mărci individuale",
+      inscriptionMarksHint:
+        "Notați fiecare semnătură, ștampilă, etichetă sau altă marcă pe un rând separat.",
+      inscriptionMarkLabel: "Marcă",
+      inscriptionMarkDescription: "Descriere",
+      addInscriptionMark: "Adaugă marcă",
+      removeInscriptionMark: "Elimină marca",
+      tagsHint: "Apăsați Enter sau Tab după fiecare etichetă.",
+      legalRestrictions: "Restricții legale",
+      legalRestrictionsHint:
+        "Utilizarea, expunerea sau reproducerea acestui obiect sunt restricționate legal.",
+      typeDetails: "Detalii specifice tipului",
+      isHighResDownloadable: "Descărcare la rezoluție înaltă",
+      draftMedia: "Fotografii și documente",
+      alternateNumberExists:
+        "Acest număr de accesiune alternativ este deja în listă.",
+    },
+  },
 };
