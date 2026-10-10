@@ -20,6 +20,11 @@ import {
   wineDetailFields,
 } from "./utils/collectionTypeDetailFields";
 import {
+  documentationCheckFields,
+  documentationFindingValidator,
+  documentationProfileFields,
+} from "./utils/documentationQualityValidators";
+import {
   exportFormat,
   exportSource,
   exportStatus,
@@ -4658,6 +4663,35 @@ export default defineSchema({
   provenanceReviews: defineTable(provenanceReviewDocumentValidator)
     .index("by_organization_and_objectId", ["organizationId", "objectId"])
     .index("by_organization_and_claimId", ["organizationId", "claimId"]),
+
+  // Documentation quality (MUS-654): an institution's completeness rules by
+  // object type and stage. Archived profiles are kept with their findings.
+  documentationProfiles: defineTable(documentationProfileFields).index(
+    "by_organization_and_status",
+    ["organizationId", "status"],
+  ),
+
+  // Bounded, resumable documentation checks; each page commits a checkpoint.
+  documentationChecks: defineTable(documentationCheckFields)
+    .index("by_organization_and_number", ["organizationId", "number"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // What checks found. Checks never repair records; a finding closes when a
+  // later check no longer detects it, or stays as a reviewed exception.
+  documentationFindings: defineTable(documentationFindingValidator)
+    .index("by_organization_and_key", ["organizationId", "key"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_status_and_kind", [
+      "organizationId",
+      "status",
+      "kind",
+    ])
+    .index("by_organization_and_standing_and_kind_and_lastCheckNumber", [
+      "organizationId",
+      "standing",
+      "kind",
+      "lastCheckNumber",
+    ]),
 
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),

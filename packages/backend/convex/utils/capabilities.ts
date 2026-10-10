@@ -28,6 +28,7 @@ export const CAPABILITY_IDS = [
   "accounts",
   "patrons",
   "library",
+  "documentation_quality",
   "administration",
 ] as const;
 
@@ -117,6 +118,11 @@ export const CAPABILITY_MATRIX = {
     module: "library",
     permissions: ["collections.read"],
     route: "/library",
+  },
+  // Checks only read collection records; repairs happen in the records.
+  documentation_quality: {
+    permissions: ["collections.read", "collections.update"],
+    route: "/documentation-quality",
   },
   administration: {
     permissions: ["organization.manage_settings"],
