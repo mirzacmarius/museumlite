@@ -9654,9 +9654,9 @@ export default {
       depth: "Dybde",
       dimensionUnit: "Enhet",
       weightUnit: "Vektenhet",
-      inscriptionMarks: "Merker og inskripsjoner",
+      inscriptionMarks: "Enkeltmerker",
       inscriptionMarksHint:
-        "Signaturer, stempler, etiketter og andre merker, ett per rad.",
+        "Før opp hver signatur, stempel, etikett eller annet merke på egen rad.",
       inscriptionMarkLabel: "Merke",
       inscriptionMarkDescription: "Beskrivelse",
       addInscriptionMark: "Legg til merke",

@@ -9780,9 +9780,9 @@ export default {
       depth: "Profondeur",
       dimensionUnit: "Unité",
       weightUnit: "Unité de poids",
-      inscriptionMarks: "Marques et inscriptions",
+      inscriptionMarks: "Marques individuelles",
       inscriptionMarksHint:
-        "Signatures, cachets, étiquettes et autres marques, une par ligne.",
+        "Indiquez chaque signature, cachet, étiquette ou autre marque sur sa propre ligne.",
       inscriptionMarkLabel: "Marque",
       inscriptionMarkDescription: "Description",
       addInscriptionMark: "Ajouter une marque",

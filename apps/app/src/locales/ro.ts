@@ -10514,9 +10514,9 @@ export default {
       depth: "Adâncime",
       dimensionUnit: "Unitate",
       weightUnit: "Unitate de greutate",
-      inscriptionMarks: "Mărci și inscripții",
+      inscriptionMarks: "Mărci individuale",
       inscriptionMarksHint:
-        "Semnături, ștampile, etichete și alte mărci, câte una pe rând.",
+        "Notați fiecare semnătură, ștampilă, etichetă sau altă marcă pe un rând separat.",
       inscriptionMarkLabel: "Marcă",
       inscriptionMarkDescription: "Descriere",
       addInscriptionMark: "Adaugă marcă",

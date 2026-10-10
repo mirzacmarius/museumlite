@@ -120,12 +120,14 @@ export function useEditLoanForm({ loanId, loan }: UseEditLoanFormOptions) {
   const isPartyLinked = loan.accountId !== undefined;
   const { save } = session;
   const saveLoan = useCallback(
-    () =>
-      save(async ({ values, changedFields, expectedEditVersion }) =>
-        updateLoan({
-          ...editLoanPatch(loanId, values, changedFields),
-          expectedEditVersion,
-        }),
+    (afterSave?: () => void) =>
+      save(
+        async ({ values, changedFields, expectedEditVersion }) =>
+          updateLoan({
+            ...editLoanPatch(loanId, values, changedFields),
+            expectedEditVersion,
+          }),
+        afterSave,
       ),
     [loanId, save, updateLoan],
   );
@@ -133,11 +135,12 @@ export function useEditLoanForm({ loanId, loan }: UseEditLoanFormOptions) {
     hasUnsavedChanges: session.isDirty,
     onNavigate: push,
     onSaveBeforeNavigate: saveLoan,
+    onDiscard: session.forgetInput,
   });
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (await saveLoan()) push(`/loans/${loanId}`);
+    await saveLoan(() => push(`/loans/${loanId}`));
   };
   const { update } = session;
   const onChange = useCallback(

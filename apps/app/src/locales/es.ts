@@ -9812,9 +9812,9 @@ export default {
       depth: "Profundidad",
       dimensionUnit: "Unidad",
       weightUnit: "Unidad de peso",
-      inscriptionMarks: "Marcas e inscripciones",
+      inscriptionMarks: "Marcas individuales",
       inscriptionMarksHint:
-        "Firmas, sellos, etiquetas y otras marcas, una por fila.",
+        "Anote cada firma, sello, etiqueta u otra marca en su propia fila.",
       inscriptionMarkLabel: "Marca",
       inscriptionMarkDescription: "Descripción",
       addInscriptionMark: "Añadir marca",

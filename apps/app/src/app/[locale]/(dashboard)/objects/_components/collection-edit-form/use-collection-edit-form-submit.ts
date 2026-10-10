@@ -32,12 +32,14 @@ export function useCollectionEditFormSubmit({
   const canUpdateObject = isDirty || hasMediaChanges;
 
   const saveRecord = useCallback(
-    () =>
-      save(({ values, changedFields, expectedEditVersion }) =>
-        updateCollection({
-          ...collectionUpdatePatch(typedCollectionId, values, changedFields),
-          expectedEditVersion,
-        }),
+    (afterSave?: () => void) =>
+      save(
+        ({ values, changedFields, expectedEditVersion }) =>
+          updateCollection({
+            ...collectionUpdatePatch(typedCollectionId, values, changedFields),
+            expectedEditVersion,
+          }),
+        afterSave,
       ),
     [save, typedCollectionId, updateCollection],
   );
@@ -50,9 +52,7 @@ export function useCollectionEditFormSubmit({
         return;
       }
 
-      if (await saveRecord()) {
-        push(`/objects/${collectionId}`);
-      }
+      await saveRecord(() => push(`/objects/${collectionId}`));
     },
     [collectionId, hasMediaChanges, isDirty, push, saveRecord],
   );

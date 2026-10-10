@@ -4,7 +4,7 @@ import { Button } from "@v1/ui/button";
 import { FormMessage } from "@v1/ui/form-message";
 import { cn } from "@v1/ui/utils";
 import { AlertTriangle, History, Info, RotateCcw } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import type { RecordSaveFailure } from "@/lib/record-form";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -102,6 +102,14 @@ export function RecordFormNotices({
   );
   const fieldList = (fields: string[]) => fields.map(fieldLabel).join(", ");
   const { failure, remote, recoveryOffer } = session;
+  // A save is usually started far below these notices; bring its outcome
+  // into view and focus, like an error summary.
+  const noticesRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!failure) return;
+    noticesRef.current?.scrollIntoView({ block: "nearest" });
+    noticesRef.current?.focus({ preventScroll: true });
+  }, [failure]);
   const reviewActions = (
     <>
       <Button type="button" size="sm" onClick={session.applyLatest}>
@@ -131,7 +139,11 @@ export function RecordFormNotices({
     ) : null;
 
   return (
-    <div className="space-y-3 empty:hidden">
+    <div
+      ref={noticesRef}
+      tabIndex={-1}
+      className="space-y-3 outline-none empty:hidden"
+    >
       {recoveryOffer ? (
         <Notice
           tone="info"

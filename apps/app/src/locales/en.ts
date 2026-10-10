@@ -9451,9 +9451,9 @@ export default {
       depth: "Depth",
       dimensionUnit: "Unit",
       weightUnit: "Weight unit",
-      inscriptionMarks: "Inscription marks",
+      inscriptionMarks: "Individual marks",
       inscriptionMarksHint:
-        "Signatures, stamps, labels and other marks, one per row.",
+        "List each signature, stamp, label or other mark on its own row.",
       inscriptionMarkLabel: "Mark",
       inscriptionMarkDescription: "Description",
       addInscriptionMark: "Add mark",

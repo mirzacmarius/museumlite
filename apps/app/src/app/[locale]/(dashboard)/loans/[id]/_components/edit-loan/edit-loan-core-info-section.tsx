@@ -106,7 +106,7 @@ export function EditLoanCoreInfoSection({
               placeholder={tRoot("loans.placeholders.institutionName")}
               readOnly={isPartyLinked}
               required
-              className="bg-background read-only:bg-secondary/40"
+              className="bg-background read-only:cursor-default read-only:bg-muted/60 read-only:text-muted-foreground"
               {...fieldErrorProps(
                 "lenderBorrowerName",
                 fieldErrors.lenderBorrowerName,
@@ -130,7 +130,7 @@ export function EditLoanCoreInfoSection({
               }
               placeholder={t("contactDetails")}
               readOnly={isPartyLinked}
-              className="bg-background read-only:bg-secondary/40"
+              className="bg-background read-only:cursor-default read-only:bg-muted/60 read-only:text-muted-foreground"
               {...fieldErrorProps(
                 "lenderBorrowerContact",
                 fieldErrors.lenderBorrowerContact,

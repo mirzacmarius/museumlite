@@ -46,6 +46,7 @@ export function EditLoanScheduleSection({
               </>
             }
             id="startDate"
+            className="mx-0 w-full sm:w-44"
             date={startDate}
             onSelect={(date: Date | undefined) =>
               onChange({ startDate: date?.getTime() ?? formData.startDate })
@@ -59,6 +60,7 @@ export function EditLoanScheduleSection({
           <DatePicker
             label={tRoot("loans.actions.endDate")}
             id="endDate"
+            className="mx-0 w-full sm:w-44"
             date={endDate}
             onSelect={(date: Date | undefined) =>
               onChange({ endDate: date?.getTime() ?? null })

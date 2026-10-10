@@ -10,7 +10,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -218,40 +218,48 @@ export function useObjectRequestForm({
 
   useBeforeUnload(hasUnsavedChanges);
 
-  /** Uploads new files and saves the draft; the accession id when saved. */
+  const savedAccessionIdRef = useRef<Id<"accessions"> | null>(null);
+  /**
+   * Uploads new files and saves the draft, then opens the accession when
+   * `openAfterSave`; a retry repeats both. True when saved.
+   */
   const runSave = useCallback(
-    async (saveMode: "draft" | "submit") => {
-      if (!currentOrganizationId) return null;
-      let savedAccessionId: Id<"accessions"> | null = null;
+    async (saveMode: "draft" | "submit", openAfterSave: boolean) => {
+      if (!currentOrganizationId) return false;
       setSavingAction(saveMode);
       setError(null);
-      const saved = await save(async ({ values, expectedEditVersion }) => {
-        const uploaded =
-          localFiles.length > 0 || selectedDocuments.length > 0
-            ? await uploadLocalMedia(primaryImageId)
-            : [];
-        const draftMedia = [...persistedDraftMedia, ...uploaded];
-        const result = await saveObjectDraft({
-          organizationId: currentOrganizationId,
-          accessionId,
-          saveMode,
-          objectData: buildObjectDraftPayload(values),
-          draftMedia:
-            draftMedia.length > 0
-              ? buildDraftMediaPayload(draftMedia)
-              : undefined,
-          expectedEditVersion,
-        });
-        savedAccessionId = result.accessionId;
-        clearLocalMedia();
-        setPrimaryImageChoice(null);
-        return {
-          editVersion: result.editVersion,
-          values: { ...values, draftMedia },
-        };
-      });
+      const saved = await save(
+        async ({ values, expectedEditVersion }) => {
+          const uploaded =
+            localFiles.length > 0 || selectedDocuments.length > 0
+              ? await uploadLocalMedia(primaryImageId)
+              : [];
+          const draftMedia = [...persistedDraftMedia, ...uploaded];
+          const result = await saveObjectDraft({
+            organizationId: currentOrganizationId,
+            accessionId,
+            saveMode,
+            objectData: buildObjectDraftPayload(values),
+            draftMedia:
+              draftMedia.length > 0
+                ? buildDraftMediaPayload(draftMedia)
+                : undefined,
+            expectedEditVersion,
+          });
+          savedAccessionIdRef.current = result.accessionId;
+          clearLocalMedia();
+          setPrimaryImageChoice(null);
+          return {
+            editVersion: result.editVersion,
+            values: { ...values, draftMedia },
+          };
+        },
+        openAfterSave
+          ? () => push(`/accessions/${savedAccessionIdRef.current}`)
+          : undefined,
+      );
       setSavingAction(null);
-      return saved ? savedAccessionId : null;
+      return saved;
     },
     [
       accessionId,
@@ -260,6 +268,7 @@ export function useObjectRequestForm({
       localFiles.length,
       persistedDraftMedia,
       primaryImageId,
+      push,
       save,
       saveObjectDraft,
       selectedDocuments.length,
@@ -268,33 +277,24 @@ export function useObjectRequestForm({
   );
 
   const handleSaveDraft = useCallback(
-    async ({
-      redirectToDetail = false,
-    }: {
-      redirectToDetail?: boolean;
-    } = {}) => {
-      const savedAccessionId = await runSave("draft");
-      if (savedAccessionId && redirectToDetail) {
-        push(`/accessions/${savedAccessionId}`);
-      }
-      return savedAccessionId !== null;
-    },
-    [push, runSave],
+    async ({ redirectToDetail = false }: { redirectToDetail?: boolean } = {}) =>
+      runSave("draft", redirectToDetail),
+    [runSave],
   );
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
-      const submittedAccessionId = await runSave("submit");
-      if (submittedAccessionId) push(`/accessions/${submittedAccessionId}`);
+      await runSave("submit", true);
     },
-    [push, runSave],
+    [runSave],
   );
 
   const navigation = useFormNavigationGuard({
     hasUnsavedChanges,
     onNavigate: push,
     onSaveBeforeNavigate: handleSaveDraft,
+    onDiscard: session.forgetInput,
   });
 
   const updateField = useCallback(

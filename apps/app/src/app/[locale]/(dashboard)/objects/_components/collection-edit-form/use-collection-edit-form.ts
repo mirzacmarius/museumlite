@@ -222,6 +222,7 @@ export function useCollectionEditForm() {
     hasUnsavedChanges: isFormDirty,
     onNavigate: submitState.push,
     onSaveBeforeNavigate: submitState.saveRecord,
+    onDiscard: session.forgetInput,
   });
 
   const updateField = useCallback(

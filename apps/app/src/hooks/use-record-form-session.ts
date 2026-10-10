@@ -170,12 +170,19 @@ export function useRecordFormSession<V>({
     };
   }, [comparable, latest, state.recovered]);
 
-  const lastRunRef = useRef<RecordSaveRun<V> | null>(null);
+  const lastSaveRef = useRef<{
+    run: RecordSaveRun<V>;
+    afterSave?: () => void;
+  } | null>(null);
   const { base, values } = state;
 
+  /**
+   * Saves the input with `run`, then calls `afterSave` (e.g. to open the
+   * record). A retry repeats both, so it does what staff first asked for.
+   */
   const save = useCallback(
-    async (run: RecordSaveRun<V>): Promise<boolean> => {
-      lastRunRef.current = run;
+    async (run: RecordSaveRun<V>, afterSave?: () => void): Promise<boolean> => {
+      lastSaveRef.current = { run, afterSave };
       if (!base) return false;
       const invalid = validate?.(values) ?? {};
       const invalidFields = Object.keys(invalid);
@@ -204,6 +211,7 @@ export function useRecordFormSession<V>({
           saved: result.values ?? values,
           editVersion: result.editVersion,
         });
+        afterSave?.();
         return true;
       } catch (error) {
         const failure = describeFailure(error);
@@ -222,8 +230,8 @@ export function useRecordFormSession<V>({
   );
 
   const retry = useCallback(async () => {
-    const run = lastRunRef.current;
-    return run ? save(run) : false;
+    const last = lastSaveRef.current;
+    return last ? save(last.run, last.afterSave) : false;
   }, [save]);
 
   return {
@@ -245,6 +253,11 @@ export function useRecordFormSession<V>({
     discardChanges: useCallback(() => {
       if (latest) dispatch({ type: "discardChanges", latest });
     }, [latest]),
+    /** Staff left without saving: drop the input and its device copy. */
+    forgetInput: useCallback(() => {
+      if (recoveryKey) removeRecoveredInput(recoveryKey);
+      if (latest) dispatch({ type: "discardChanges", latest });
+    }, [latest, recoveryKey]),
     takeTheirValue: useCallback(
       (field: string) => dispatch({ type: "takeTheirValue", field }),
       [],
