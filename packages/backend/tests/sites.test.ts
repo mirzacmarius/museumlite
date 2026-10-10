@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import { siteInUseFromError } from "../convex/utils/siteUsage";
 
 import { modules } from "./testSetup";
 
@@ -352,6 +353,94 @@ describe("sites CRUD operations", () => {
 
     const site = await t.run(async (ctx) => await ctx.db.get(siteId));
     expect(site?.isActive).toBe(false);
+  });
+
+  test("archiving a site that still has active locations or objects held there is refused with what to resolve", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgWithRole(t, [
+      "sites.read",
+      "sites.delete",
+    ]);
+    const authed = authedForUser(t, userId);
+    const { siteId, eastWingId, objectId, otherLocationId } = await t.run(
+      async (ctx) => {
+        const siteId = await ctx.db.insert("sites", {
+          organizationId,
+          name: "Annex",
+          isActive: true,
+          isPrimary: false,
+        });
+        const eastWingId = await ctx.db.insert("locations", {
+          organizationId,
+          siteId,
+          name: "East wing",
+          type: "building",
+          sortOrder: 0,
+          isActive: true,
+        });
+        const otherLocationId = await ctx.db.insert("locations", {
+          organizationId,
+          name: "Main store",
+          type: "room",
+          sortOrder: 1,
+          isActive: true,
+        });
+        const objectId = await ctx.db.insert("collections", {
+          organizationId,
+          accessionNumber: "1990.1",
+          title: "Chest",
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: 1,
+          currentLocationId: eastWingId,
+        });
+        await ctx.db.insert("collections", {
+          organizationId,
+          accessionNumber: "1990.2",
+          title: "Withdrawn chest",
+          status: "archived",
+          catalogedBy: userId,
+          catalogedAt: 1,
+          currentLocationId: eastWingId,
+        });
+        return { siteId, eastWingId, objectId, otherLocationId };
+      },
+    );
+    const refusal = async () => {
+      try {
+        await authed.mutation(api.sites.archive, { siteId });
+      } catch (error) {
+        return siteInUseFromError(error);
+      }
+      return null;
+    };
+
+    expect(await refusal()).toEqual({
+      code: "SITE_IN_USE",
+      message: expect.any(String),
+      activeLocations: 1,
+      objectsHeld: 1,
+      incomplete: false,
+      locations: [{ id: eastWingId, name: "East wing" }],
+    });
+    expect(
+      (await authed.query(api.sites.get, { siteId }))?.isActive,
+    ).toBe(true);
+
+    await t.run((ctx) => ctx.db.patch(eastWingId, { isActive: false }));
+    expect(await refusal()).toMatchObject({
+      activeLocations: 0,
+      objectsHeld: 1,
+      locations: [],
+    });
+
+    await t.run((ctx) =>
+      ctx.db.patch(objectId, { currentLocationId: otherLocationId }),
+    );
+    expect(await refusal()).toBeNull();
+    expect(
+      (await authed.query(api.sites.get, { siteId }))?.isActive,
+    ).toBe(false);
   });
 
   test("should not archive primary site", async () => {

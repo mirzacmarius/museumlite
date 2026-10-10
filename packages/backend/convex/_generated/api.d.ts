@@ -265,6 +265,7 @@ import type * as utils_registerProfiles from "../utils/registerProfiles.js";
 import type * as utils_registerSources from "../utils/registerSources.js";
 import type * as utils_relatedEntityIntegrity from "../utils/relatedEntityIntegrity.js";
 import type * as utils_reportSchedule from "../utils/reportSchedule.js";
+import type * as utils_siteUsage from "../utils/siteUsage.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_superAdmins from "../utils/superAdmins.js";
@@ -557,6 +558,7 @@ declare const fullApi: ApiFromModules<{
   "utils/registerSources": typeof utils_registerSources;
   "utils/relatedEntityIntegrity": typeof utils_relatedEntityIntegrity;
   "utils/reportSchedule": typeof utils_reportSchedule;
+  "utils/siteUsage": typeof utils_siteUsage;
   "utils/spectrum": typeof utils_spectrum;
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/superAdmins": typeof utils_superAdmins;

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
 import { requireCapability } from "./utils/permissions";
+import { siteInUse, siteUsage } from "./utils/siteUsage";
 
 /**
  * Create site
@@ -230,7 +231,10 @@ export const archive = mutation({
       "sites.delete",
     ]);
 
-    // Locations carry no siteId, so active locations cannot block deactivation.
+    // Archiving must not leave locations or held objects under an inactive site.
+    const usage = await siteUsage(ctx, site);
+    if (usage.activeLocations > 0 || usage.objectsHeld > 0 || usage.incomplete)
+      throw siteInUse(usage);
 
     await ctx.db.patch(args.siteId, { isActive: false });
 
