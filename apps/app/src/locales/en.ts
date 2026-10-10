@@ -4773,6 +4773,7 @@ export default {
       system: "System",
     },
     markAllRead: "Mark all as read",
+    settings: "Notification settings",
     empty: {
       noUnread: "No unread notifications",
       noNotifications: "No notifications",

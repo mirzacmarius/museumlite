@@ -7220,6 +7220,7 @@ export default {
       system: "Sistem",
     },
     markAllRead: "Marchează toate ca citite",
+    settings: "Setări pentru notificări",
     empty: {
       noUnread: "Nu ai notificări necitite",
       noNotifications: "Nu există notificări",

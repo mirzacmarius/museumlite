@@ -4990,6 +4990,7 @@ export default {
       system: "Sistema",
     },
     markAllRead: "Marcar todo como leído",
+    settings: "Ajustes de notificaciones",
     empty: {
       noUnread: "No hay notificaciones sin leer",
       noNotifications: "No hay notificaciones",

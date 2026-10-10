@@ -386,10 +386,14 @@ export default function NotificationSettingsPage() {
   }
 
   return (
-    <NotificationPreferencesForm
-      key={organizationId}
-      organizationId={organizationId}
-      preferences={preferences}
-    />
+    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
+      <div className="mx-auto w-full max-w-3xl">
+        <NotificationPreferencesForm
+          key={organizationId}
+          organizationId={organizationId}
+          preferences={preferences}
+        />
+      </div>
+    </div>
   );
 }

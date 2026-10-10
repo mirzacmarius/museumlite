@@ -745,7 +745,7 @@ function notificationEmailElement(
         title={content.title}
         message={content.message}
         actionUrl={actionUrl}
-        settingsUrl={localizedSiteUrl("/settings/notifications", locale)}
+        settingsUrl={localizedSiteUrl("/notifications/settings", locale)}
         footer={footer}
         locale={locale}
       />
@@ -860,7 +860,7 @@ function NotificationDigestEmail({
       </Section>
       <Text style={emailMutedTextStyle}>
         <Link
-          href={localizedSiteUrl("/settings/notifications", locale)}
+          href={localizedSiteUrl("/notifications/settings", locale)}
           style={emailLinkStyle}
         >
           {messages.notification.manage}

@@ -4939,6 +4939,7 @@ export default {
       system: "Système",
     },
     markAllRead: "Tout marquer comme lu",
+    settings: "Paramètres des notifications",
     empty: {
       noUnread: "Aucune notification non lue",
       noNotifications: "Aucune notification",

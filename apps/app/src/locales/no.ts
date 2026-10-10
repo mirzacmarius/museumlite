@@ -4925,6 +4925,7 @@ export default {
       system: "System",
     },
     markAllRead: "Merk alle som lest",
+    settings: "Varslingsinnstillinger",
     empty: {
       noUnread: "Ingen uleste varsler",
       noNotifications: "Ingen varsler",
