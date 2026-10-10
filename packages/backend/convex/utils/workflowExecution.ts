@@ -3,6 +3,7 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { dispatchNotification } from "./notificationDispatch";
 import { getUsersToNotifyForWorkflowStep } from "./permissions";
+import { workflowApprovalError } from "./workflowApprovalErrors";
 import {
   resolveWorkflowApprovalDecision,
   resolveWorkflowApprovalPolicy,
@@ -56,7 +57,10 @@ type WorkflowStepApprovalArgs = {
 
 function resolveNextWorkflowStep(toStep: number | undefined) {
   if (toStep === undefined) {
-    throw new Error("Next workflow step is not configured");
+    throw workflowApprovalError(
+      "WORKFLOW_NOT_CONFIGURED",
+      "Next workflow step is not configured",
+    );
   }
 
   return toStep;
@@ -162,7 +166,10 @@ export async function recordWorkflowStepApproval(
   });
 
   if (approvalDecision.userHasAlreadyApproved) {
-    throw new Error("You have already approved this step");
+    throw workflowApprovalError(
+      "ALREADY_APPROVED",
+      "You have already approved this step",
+    );
   }
 
   await ctx.runMutation(internal.workflows.recordStepApproval, {

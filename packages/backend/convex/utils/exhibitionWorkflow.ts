@@ -20,6 +20,7 @@ import {
   requirePermission,
 } from "./permissions";
 import { suggestPreparation } from "./preparation";
+import { workflowApprovalError } from "./workflowApprovalErrors";
 import { getWorkflowConfig } from "./workflowConfigs";
 import { resolveWorkflowStepState } from "./workflowSteps";
 
@@ -58,10 +59,16 @@ export async function approveExhibitionHandler(
     const currentStep = workflowState.currentStep;
 
     if (currentStep === undefined) {
-      throw new Error("Workflow has no approval steps configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      );
     }
     if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-      throw new Error("Current workflow step is not configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Current workflow step is not configured",
+      );
     }
 
     const canApprove = await canApproveAtStep(
@@ -72,7 +79,10 @@ export async function approveExhibitionHandler(
     );
 
     if (!canApprove) {
-      throw new Error("Permission denied: cannot approve at this step");
+      throw workflowApprovalError(
+        "APPROVAL_NOT_PERMITTED",
+        "Permission denied: cannot approve at this step",
+      );
     }
 
     const history = [...(exhibition.workflowHistory ?? [])];
@@ -129,7 +139,10 @@ export async function approveExhibitionHandler(
     } else {
       const nextStep = workflowState.nextStep;
       if (nextStep === undefined) {
-        throw new Error("Next workflow step is not configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Next workflow step is not configured",
+        );
       }
       const [, usersToNotify] = await Promise.all([
         Promise.all([

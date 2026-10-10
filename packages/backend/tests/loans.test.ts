@@ -15,6 +15,7 @@
 
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import { loanObjectErrorFromError } from "../convex/utils/loanObjectErrors";
 import {
   authedForUser,
   type ConvexTest,
@@ -446,7 +447,10 @@ test("(integrity) adding collection already on dispatched loan → throws (dispa
       startDate: Date.now(),
       collectionIds: [collectionId],
     }),
-  ).rejects.toThrow("already in an active loan");
+  ).rejects.toSatisfy(
+    (error) =>
+      loanObjectErrorFromError(error)?.code === "OBJECT_ON_ACTIVE_LOAN",
+  );
 });
 
 test("(integrity) create with endDate < startDate → throws", async () => {

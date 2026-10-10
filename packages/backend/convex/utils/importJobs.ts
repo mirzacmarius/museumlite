@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { convexErrorData } from "./convexErrorData";
 
 export const MAX_IMPORT_BATCH_ROWS = 100;
 export const MAX_IMPORT_TOTAL_ITEMS = 100_000;
@@ -335,7 +336,16 @@ export async function runTrackedImportBatch<Row extends { rowNumber?: number }>(
         errors: [],
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const data = convexErrorData(error);
+      const message =
+        typeof data === "object" &&
+        data !== null &&
+        "message" in data &&
+        typeof data.message === "string"
+          ? data.message
+          : error instanceof Error
+            ? error.message
+            : "Unknown error";
       outcome = {
         rowNumber,
         status: "failed",

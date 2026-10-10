@@ -25,6 +25,7 @@ import {
   requirePermission,
 } from "./permissions";
 import { correctPreparation, suggestPreparation } from "./preparation";
+import { workflowApprovalError } from "./workflowApprovalErrors";
 import { getWorkflowConfig } from "./workflowConfigs";
 import { resolveWorkflowStepState } from "./workflowSteps";
 
@@ -438,7 +439,10 @@ export async function createExhibitionHandler(
   );
 
   if (workflowConfig && workflowState.firstStep === undefined) {
-    throw new Error("Workflow has no approval steps configured");
+    throw workflowApprovalError(
+      "WORKFLOW_NOT_CONFIGURED",
+      "Workflow has no approval steps configured",
+    );
   }
 
   const workflowHistory = workflowConfig

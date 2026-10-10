@@ -1,8 +1,8 @@
-import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getNextCounterValue } from "./accessionCounter";
 import { accessionParser } from "./accessionNumberParser";
+import { identifierError } from "./identifierErrors";
 
 export type IdentifierRegister = "catalog" | "accession";
 
@@ -89,8 +89,10 @@ export async function ensureIdentifierAvailable(
         character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
     )
   ) {
-    throw new ConvexError(
+    throw identifierError(
+      "IDENTIFIER_INVALID",
       "Identifier must contain 1–256 visible characters. Existing historical identifiers remain unchanged.",
+      { register, identifier: value },
     );
   }
   const { matches, needsBackfill } = await findIdentifierMatches(
@@ -100,13 +102,17 @@ export async function ensureIdentifierAvailable(
     value,
   );
   if (matches.some((row) => row._id !== existingId)) {
-    throw new ConvexError(
+    throw identifierError(
+      "IDENTIFIER_IN_USE",
       `Identifier '${value}' already exists in the ${register} register. Open the existing record or choose an unused identifier. Historical records must not be renumbered or merged to resolve this conflict.`,
+      { register, identifier: value },
     );
   }
   if (needsBackfill) {
-    throw new ConvexError(
+    throw identifierError(
+      "IDENTIFIER_REVIEW_REQUIRED",
       `Identifier review required: complete the ${register} identifier index in Settings > Preferences before assigning new numbers.`,
+      { register },
     );
   }
   return key;
@@ -120,8 +126,10 @@ export async function generateConfiguredIdentifier(
   const organization = await ctx.db.get(organizationId);
   const template = organization?.settings?.accessionNumberFormat;
   if (!organization?.settings?.autoGenerateAccessionNumbers || !template) {
-    throw new ConvexError(
+    throw identifierError(
+      "NUMBERING_NOT_CONFIGURED",
       "Number generation is not configured. Supply an identifier or configure the institution's numbering format in Settings > Preferences.",
+      { register },
     );
   }
   const now = new Date();
@@ -155,8 +163,10 @@ export async function generateConfiguredIdentifier(
       return value;
     }
   }
-  throw new ConvexError(
+  throw identifierError(
+    "NUMBERING_EXHAUSTED",
     `Configured numbering format produced 25 occupied ${register} identifiers. Review the format or counter in Settings > Preferences.`,
+    { register },
   );
 }
 

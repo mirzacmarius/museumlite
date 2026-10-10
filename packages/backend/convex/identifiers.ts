@@ -4,6 +4,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
+import { identifierError } from "./utils/identifierErrors";
 import {
   ensureIdentifierAvailable,
   findIdentifierMatches,
@@ -241,8 +242,10 @@ export const assignCatalogIdentifier = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
     if (accession.status !== "pending" || accession.collectionId)
-      throw new ConvexError(
+      throw identifierError(
+        "CATALOG_NUMBER_LOCKED",
         "Only an unpublished pending accession can select a catalog identifier. Published register numbers are permanent.",
+        { register: "catalog" },
       );
     await ensureIdentifierAvailable(
       ctx,

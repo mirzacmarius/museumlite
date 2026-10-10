@@ -75,6 +75,7 @@ import {
   createAuthorizedUploadUrl,
   validateOwnedUploadSize,
 } from "./utils/uploadOwnership";
+import { workflowApprovalError } from "./utils/workflowApprovalErrors";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
@@ -244,7 +245,10 @@ export const create = mutation({
     );
 
     if (workflowConfig && workflowState.firstStep === undefined) {
-      throw new Error("Workflow has no approval steps configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      );
     }
 
     // Store creator in workflow history for notification purposes
@@ -475,7 +479,10 @@ async function saveObjectDraftRecord(
     workflowConfig &&
     workflowState.firstStep === undefined
   ) {
-    throw new Error("Workflow has no approval steps configured");
+    throw workflowApprovalError(
+      "WORKFLOW_NOT_CONFIGURED",
+      "Workflow has no approval steps configured",
+    );
   }
 
   const nextWorkflowStep =
@@ -1429,7 +1436,10 @@ export const submitForApproval = mutation({
     const firstApprovalStep = workflowState.firstStep;
 
     if (workflowConfig && firstApprovalStep === undefined) {
-      throw new Error("Workflow has no approval steps configured");
+      throw workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      );
     }
 
     const workflowStep = firstApprovalStep ?? 1;
@@ -1526,10 +1536,16 @@ export const approve = mutation({
       const currentStep = workflowState.currentStep;
 
       if (currentStep === undefined) {
-        throw new Error("Workflow has no approval steps configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Workflow has no approval steps configured",
+        );
       }
       if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-        throw new Error("Current workflow step is not configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Current workflow step is not configured",
+        );
       }
 
       const canApprove = await canApproveAtStep(
@@ -1540,7 +1556,10 @@ export const approve = mutation({
       );
 
       if (!canApprove) {
-        throw new Error("Permission denied: cannot approve at this step");
+        throw workflowApprovalError(
+          "APPROVAL_NOT_PERMITTED",
+          "Permission denied: cannot approve at this step",
+        );
       }
 
       // Drafts and existing-object accessions follow the same source rule.
@@ -1551,7 +1570,10 @@ export const approve = mutation({
         !accession.sourceVerificationException;
       const exceptionReason = args.sourceVerificationExceptionReason?.trim();
       if (sourceVerificationMissing && !exceptionReason) {
-        throw new Error("Source verification is required before approval");
+        throw accessionReviewError(
+          "SOURCE_VERIFICATION_REQUIRED",
+          "Source verification is required before approval",
+        );
       }
       if (!sourceVerificationMissing && exceptionReason) {
         throw new ConvexError(
@@ -1583,7 +1605,10 @@ export const approve = mutation({
         (s) => s.stepNumber === currentStep,
       );
       if (!currentStepConfig) {
-        throw new Error("Current workflow step is not configured");
+        throw workflowApprovalError(
+          "WORKFLOW_NOT_CONFIGURED",
+          "Current workflow step is not configured",
+        );
       }
 
       const { approvalDecision, approvalMode } =
