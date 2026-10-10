@@ -8,7 +8,9 @@ import dynamic from "next/dynamic";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useMemo, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { RecordRecoveryState } from "@/components/record-recovery-state";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useRecordViewState } from "@/hooks/use-return-path";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ObjectDetailHeader } from "./_components/object-detail/object-detail-header";
 import { ObjectDetailHero } from "./_components/object-detail/object-detail-hero";
@@ -174,7 +176,11 @@ function ObjectDetailView({
     api.objectMoves.getPendingForCollection,
     collection ? { collectionId } : "skip",
   );
-  const objectMedia = useQuery(api.media.list, { collectionId });
+  const objectMedia = useQuery(
+    api.media.list,
+    collection ? { collectionId } : "skip",
+  );
+  const viewState = useRecordViewState(collection);
 
   const tabs = useMemo(() => {
     return getObjectViewTabs({
@@ -246,9 +252,10 @@ function ObjectDetailView({
 
   if (!collection) {
     return (
-      <div className="flex size-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">{t("objectNotFound")}</p>
-      </div>
+      <RecordRecoveryState
+        kind={viewState === "removed" ? "removed" : "missing"}
+        list="objects"
+      />
     );
   }
 

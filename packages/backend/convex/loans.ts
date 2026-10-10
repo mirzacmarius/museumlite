@@ -54,6 +54,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 import { claimStorageOwnership } from "./utils/uploadOwnership";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
@@ -723,7 +724,8 @@ export const list = query({
  */
 export const get = query({
   args: {
-    loanId: v.id("loans"),
+    // A string, so malformed links and other tables' IDs read as missing.
+    loanId: v.string(),
   },
   returns: v.union(
     v.object({
@@ -812,15 +814,16 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const loan = await ctx.db.get(args.loanId);
-    if (!loan) {
+    const loanId = ctx.db.normalizeId("loans", args.loanId);
+    const loan = loanId ? await ctx.db.get(loanId) : null;
+    if (
+      !loan ||
+      !(await canReadRecord(ctx, loan.organizationId, "loans.read", {
+        capability: "loans",
+      }))
+    ) {
       return null;
     }
-
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.read"),
-    ]);
 
     let account:
       | {
@@ -864,7 +867,7 @@ export const get = query({
     // Get loan items
     const loanItems = await ctx.db
       .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
       .collect();
 
     // Enrich with collection details

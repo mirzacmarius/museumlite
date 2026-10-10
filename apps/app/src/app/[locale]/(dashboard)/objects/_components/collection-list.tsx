@@ -12,7 +12,9 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
+import { useListReturnPath } from "@/hooks/use-return-path";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
+import { withReturnPath } from "@/lib/return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { ObjectCatalogTableSkeleton } from "../loading";
 import { OBJECTS_SCROLL_PRELOAD_MARGIN } from "./collection-catalog-constants";
@@ -22,6 +24,7 @@ import {
   DEFAULT_COLUMN_CONFIG,
 } from "./column-config";
 import { ObjectActionsMenu, ObjectGridView } from "./object-grid-view";
+import { OBJECT_LIST_KEYS } from "./use-collection-catalog-list";
 import type { ViewMode } from "./view-toggle";
 
 type CollectionListItem = FunctionReturnType<
@@ -40,6 +43,8 @@ export function CollectionList({
   onLoadMore,
   activeCollectionGroup,
   onAddToCollection,
+  isFiltered = false,
+  onClearFilters,
 }: {
   organizationId: Id<"organizations">;
   collections: Array<{
@@ -66,9 +71,14 @@ export function CollectionList({
   onLoadMore: () => void;
   activeCollectionGroup?: { _id: Id<"collectionGroups">; name: string } | null;
   onAddToCollection?: () => void;
+  /** Search or filters narrow the catalog, so an empty list means no match. */
+  isFiltered?: boolean;
+  onClearFilters?: () => void;
 }) {
   const tRoot = useI18n();
   const t = useScopedI18n("objects");
+  const tList = useScopedI18n("listState");
+  const returnPath = useListReturnPath(OBJECT_LIST_KEYS);
   const common = useScopedI18n("common");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -124,6 +134,21 @@ export function CollectionList({
 
   if (collections.length === 0) {
     const isCollectionGroupView = Boolean(activeCollectionGroup);
+
+    if (isFiltered && onClearFilters) {
+      return (
+        <div className="flex h-64 flex-col items-center justify-center px-6 text-center">
+          <EmptyState
+            icon={Package}
+            title={tList("noMatch.title")}
+            description={tList("noMatch.description")}
+          />
+          <Button variant="outline" className="mt-4" onClick={onClearFilters}>
+            {tList("clearFilters")}
+          </Button>
+        </div>
+      );
+    }
 
     return (
       <div className="flex h-64 flex-col items-center justify-center px-6 text-center">
@@ -205,6 +230,7 @@ export function CollectionList({
                 status: item.status,
               }))}
               organizationId={organizationId}
+              returnPath={returnPath}
               selectedIds={selectedIds}
               onSelectItem={onSelectItem}
             />
@@ -262,6 +288,7 @@ export function CollectionList({
                   columns={columns}
                   isSelected={selectedIds.has(item._id as Id<"collections">)}
                   shouldEagerLoad={collections[0]?._id === item._id}
+                  returnPath={returnPath}
                   onSelect={(selected: boolean) =>
                     onSelectItem(item._id as Id<"collections">, selected)
                   }
@@ -296,6 +323,7 @@ function CollectionTableRow({
   isSelected,
   onSelect,
   shouldEagerLoad = false,
+  returnPath,
 }: {
   item: CollectionListItem;
   organizationId: Id<"organizations">;
@@ -303,6 +331,7 @@ function CollectionTableRow({
   isSelected: boolean;
   onSelect: (selected: boolean) => void;
   shouldEagerLoad?: boolean;
+  returnPath: string;
 }) {
   const tRoot = useI18n();
   const getStatusBadge = (status: string) => {
@@ -369,7 +398,7 @@ function CollectionTableRow({
       ) : null}
       <td className="px-4 py-3">
         <Link
-          href={`/objects/${item._id}`}
+          href={withReturnPath(`/objects/${item._id}`, returnPath)}
           className="flex flex-col group-hover:cursor-pointer"
         >
           <span className="max-w-[200px] truncate font-medium text-foreground transition-colors">

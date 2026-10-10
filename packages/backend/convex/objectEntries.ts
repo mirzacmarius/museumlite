@@ -53,6 +53,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 
 const MAX_NAME_LENGTH = 300;
 const MAX_TEXT_LENGTH = 4000;
@@ -548,13 +549,20 @@ async function toEntryView(ctx: QueryCtx, entry: Doc<"objectEntries">) {
 
 /** One entry with its object, acquisition case and exit, for staff who may read the collection. */
 export const get = query({
-  args: { entryId: v.id("objectEntries") },
+  args: {
+    // A string, so malformed links and other tables' IDs read as missing.
+    entryId: v.string(),
+  },
   returns: v.union(entryViewValidator, v.null()),
   handler: async (ctx, args) => {
-    await requireAuthenticatedUser(ctx);
-    const entry = await ctx.db.get(args.entryId);
-    if (!entry) return null;
-    await requirePermission(ctx, entry.organizationId, "collections.read");
+    const entryId = ctx.db.normalizeId("objectEntries", args.entryId);
+    const entry = entryId ? await ctx.db.get(entryId) : null;
+    if (
+      !entry ||
+      !(await canReadRecord(ctx, entry.organizationId, "collections.read"))
+    ) {
+      return null;
+    }
     return await toEntryView(ctx, entry);
   },
 });

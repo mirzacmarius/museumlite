@@ -56,6 +56,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 import {
   keepDraftPrimaryUnlessPermitted,
   normalizeDraftMediaPrimary,
@@ -969,7 +970,8 @@ export const getBoardCounts = query({
  */
 export const get = query({
   args: {
-    accessionId: v.id("accessions"),
+    // A string, so malformed links and other tables' IDs read as missing.
+    accessionId: v.string(),
   },
   returns: v.union(
     v.object({
@@ -1031,12 +1033,14 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const accession = await ctx.db.get(args.accessionId);
-    if (!accession) {
+    const accessionId = ctx.db.normalizeId("accessions", args.accessionId);
+    const accession = accessionId ? await ctx.db.get(accessionId) : null;
+    if (
+      !accession ||
+      !(await canReadRecord(ctx, accession.organizationId, "collections.read"))
+    ) {
       return null;
     }
-
-    await requirePermission(ctx, accession.organizationId, "collections.read");
 
     let canCurrentUserApprove = false;
     if (isAwaitingReview(accession)) {

@@ -9,6 +9,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import {
+  RecordRecoveryState,
+  useBackToResultsLink,
+} from "@/components/record-recovery-state";
+import { useRecordViewState } from "@/hooks/use-return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { AddChildLocationDialog } from "../_components/add-child-location-dialog/add-child-location-dialog";
 import { DeleteLocationDialog } from "../_components/delete-location-dialog";
@@ -46,8 +51,14 @@ function LocationDetailContent() {
   const { exhibitionLocations, storageLocations } = getVisibleSidebarLocations(
     allLocations ?? [],
   );
-  const locationArgs = currentOrganizationId ? { locationId } : "skip";
-  const location = useQuery(api.locations.get, locationArgs);
+  const location = useQuery(
+    api.locations.get,
+    currentOrganizationId ? { locationId } : "skip",
+  );
+  const viewState = useRecordViewState(location);
+  const back = useBackToResultsLink("locations");
+  // Related reads wait for the location so a missing or foreign one stays missing.
+  const locationArgs = location ? { locationId: location._id } : "skip";
   const environmentalData = useQuery(
     api.locations.getEnvironmentalReadings,
     locationArgs,
@@ -55,7 +66,7 @@ function LocationDetailContent() {
   const occupancy = useQuery(api.locations.getOccupancy, locationArgs);
   const objectsAtLocation = useQuery(
     api.locations.getObjectsAtLocation,
-    currentOrganizationId ? { locationId, includeDescendants: true } : "skip",
+    location ? { locationId: location._id, includeDescendants: true } : "skip",
   );
   const locationPath = buildLocationPath(allLocations ?? [], locationId);
 
@@ -78,11 +89,15 @@ function LocationDetailContent() {
         onSelectLocation={(id) => push(`/locations/${id}`)}
       />
       <div className="custom-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-background px-4 pb-6 pt-5 dark:bg-zinc-950 md:px-6">
-        <nav aria-label={tRoot("untranslatedDashboard.locationViews.path")} className="mb-5">
+        <nav
+          aria-label={tRoot("untranslatedDashboard.locationViews.path")}
+          className="mb-5"
+        >
           <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <li>
               <Link
-                href="/locations"
+                href={back.href}
+                title={back.fromResults ? back.label : undefined}
                 className="rounded-sm hover:text-foreground hover:underline focus-visible:outline focus-visible:outline-ring"
               >
                 {t("locations")}
@@ -114,9 +129,10 @@ function LocationDetailContent() {
         {location === undefined ? (
           <LocationContentSkeleton />
         ) : location === null ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            {t("locationNotFound")}
-          </p>
+          <RecordRecoveryState
+            kind={viewState === "removed" ? "removed" : "missing"}
+            list="locations"
+          />
         ) : (
           <>
             <LocationLayoutContent

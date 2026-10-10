@@ -2549,6 +2549,69 @@ export default {
       overdue: "Restante",
     },
   },
+  recordRecovery: {
+    missing: {
+      title: "Înregistrarea nu a fost găsită",
+      description:
+        "Linkul poate fi incomplet sau înregistrarea aparține unei organizații din care nu faceți parte.",
+    },
+    removed: {
+      title: "Această înregistrare nu mai este disponibilă",
+      description:
+        "A fost eliminată sau accesul dvs. s-a schimbat în timp ce o aveați deschisă.",
+    },
+    forbidden: {
+      title: "Nu aveți acces la această înregistrare",
+      description:
+        "Rolul dvs. în această organizație nu include permisiunea de a o vizualiza. Cereți acces unui administrator dacă aveți nevoie.",
+    },
+    unavailable: {
+      title: "Această funcționalitate nu este disponibilă",
+      description:
+        "Planul sau modulele activate ale organizației dvs. nu o includ. Deschideți lista pentru a vedea opțiunile.",
+    },
+    error: {
+      title: "Înregistrarea nu a putut fi încărcată",
+      description:
+        "Ceva nu a funcționat la încărcare. Încercați din nou sau reveniți la rezultate.",
+    },
+    backToResults: "Înapoi la rezultate",
+    tryAgain: "Încercați din nou",
+    errorId: "ID eroare: {id}",
+    goToList: {
+      objects: "Mergi la obiecte",
+      loans: "Mergi la împrumuturi",
+      accessions: "Mergi la accesiuni",
+      deaccessions: "Mergi la dezaccesiuni",
+      locations: "Mergi la locații",
+      conservation: "Mergi la conservare",
+      entries: "Mergi la intrări",
+    },
+    pageNotFound: {
+      title: "Pagina nu a fost găsită",
+      description: "Pagina deschisă nu există sau a fost mutată.",
+    },
+    goToDashboard: "Mergi la panou",
+  },
+  listState: {
+    clearFilters: "Șterge filtrele",
+    noMatch: {
+      title: "Nimic nu corespunde acestor filtre",
+      description:
+        "Modificați căutarea sau filtrele ori ștergeți-le pentru a vedea toată lista.",
+    },
+    loadMore: "Încarcă mai multe",
+    loading: "Se încarcă…",
+    shownOfTotal: "Se afișează {shown} din {total}",
+    matchesShown: "Potriviri afișate: {shown}",
+    sort: {
+      label: "Sortare",
+      newest: "Cele mai noi întâi",
+      oldest: "Cele mai vechi întâi",
+      identifier: "Identificator (A–Z)",
+    },
+    allTypes: "Toate tipurile",
+  },
   objectEntries: {
     title: "Intrări",
     description:
@@ -2632,7 +2695,6 @@ export default {
     },
     detail: {
       back: "Intrări",
-      notFound: "Intrarea nu a fost găsită",
       object: "Obiect",
       openObject: "Deschide obiectul",
       receivedBy: "Primit de {name}",

@@ -5513,6 +5513,68 @@ export default {
     },
   },
 
+  recordRecovery: {
+    missing: {
+      title: "Registro no encontrado",
+      description:
+        "Es posible que el enlace esté incompleto o que el registro pertenezca a una organización de la que usted no es miembro.",
+    },
+    removed: {
+      title: "Este registro ya no está disponible",
+      description: "Se eliminó, o su acceso cambió, mientras lo tenía abierto.",
+    },
+    forbidden: {
+      title: "No tiene acceso a este registro",
+      description:
+        "Su rol en esta organización no incluye permiso para verlo. Pida acceso a un administrador si lo necesita.",
+    },
+    unavailable: {
+      title: "Esta función no está disponible",
+      description:
+        "El plan o los módulos habilitados de su organización no la incluyen. Abra la lista para ver sus opciones.",
+    },
+    error: {
+      title: "No se pudo cargar este registro",
+      description:
+        "Algo salió mal al cargarlo. Inténtelo de nuevo o vuelva a sus resultados.",
+    },
+    backToResults: "Volver a los resultados",
+    tryAgain: "Intentar de nuevo",
+    errorId: "ID de error: {id}",
+    goToList: {
+      objects: "Ir a objetos",
+      loans: "Ir a préstamos",
+      accessions: "Ir a adquisiciones",
+      deaccessions: "Ir a desaccesiones",
+      locations: "Ir a ubicaciones",
+      conservation: "Ir a conservación",
+      entries: "Ir a entradas",
+    },
+    pageNotFound: {
+      title: "Página no encontrada",
+      description: "La página que abrió no existe o se ha movido.",
+    },
+    goToDashboard: "Ir al panel",
+  },
+  listState: {
+    clearFilters: "Borrar filtros",
+    noMatch: {
+      title: "Nada coincide con estos filtros",
+      description:
+        "Cambie la búsqueda o los filtros, o bórrelos para ver la lista completa.",
+    },
+    loadMore: "Cargar más",
+    loading: "Cargando…",
+    shownOfTotal: "Mostrando {shown} de {total}",
+    matchesShown: "Coincidencias mostradas: {shown}",
+    sort: {
+      label: "Ordenar",
+      newest: "Más recientes primero",
+      oldest: "Más antiguos primero",
+      identifier: "Identificador (A–Z)",
+    },
+    allTypes: "Todos los tipos",
+  },
   objectEntries: {
     title: "Entradas",
     description:
@@ -5597,7 +5659,6 @@ export default {
     },
     detail: {
       back: "Entradas",
-      notFound: "No se encontró la entrada",
       object: "Objeto",
       openObject: "Abrir objeto",
       receivedBy: "Recibido por {name}",

@@ -36,11 +36,13 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
+import { useListState } from "@/hooks/use-list-state";
 import {
   type ExhibitionScheduleStatus,
   getExhibitionScheduleStatus,
   matchesScheduleFilter,
 } from "@/lib/exhibition-schedule-status";
+import { defineListState } from "@/lib/list-state";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ExhibitionTimeline } from "./_components/exhibition-timeline";
 import {
@@ -50,15 +52,40 @@ import {
 
 type ExhibitionStatus = "all" | "current" | "upcoming" | "past";
 
+/**
+ * The exhibitions list URL: search, schedule and object filters. `schedule`
+ * stays separate from the metric drilldown's `status` and `asOf` keys.
+ */
+const exhibitionListState = defineListState({
+  filters: {
+    schedule: ["all", "current", "upcoming", "past"],
+    object: "text",
+  },
+  sorts: ["start"],
+  pageSize: 1,
+  maxDepth: 1,
+});
+
 export default function ExhibitionsPage() {
   const t = useScopedI18n("exhibitions");
   const { currentOrganizationId, isLoading } = useOrganization();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ExhibitionStatus>("all");
-  const [selectedObjectId, setSelectedObjectId] = useState<
-    string | undefined
-  >();
-  const [showFilters, setShowFilters] = useState(false);
+  const list = useListState(exhibitionListState);
+  const { searchInput, setSearchInput } = list;
+  const searchQuery = list.state.search;
+  const statusFilter: ExhibitionStatus = list.state.filters.schedule;
+  const requestedObjectId = list.state.filters.object;
+  // Resolve the linked object first, so a mistyped or foreign link reads as no filter.
+  const resolvedObject = useQuery(
+    api.collections.resolveId,
+    requestedObjectId ? { id: requestedObjectId } : "skip",
+  );
+  const selectedObjectId =
+    resolvedObject?.type === "collection" ? resolvedObject.id : undefined;
+  const isResolvingObject =
+    requestedObjectId !== "" && resolvedObject === undefined;
+  const [showFilters, setShowFilters] = useState(
+    statusFilter !== "all" || requestedObjectId !== "",
+  );
 
   const savedViewMode = useQuery(
     api.userPreferences.get,
@@ -108,14 +135,8 @@ export default function ExhibitionsPage() {
     );
   }
 
-  const hasActiveFilters =
-    searchQuery || statusFilter !== "all" || selectedObjectId;
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setStatusFilter("all");
-    setSelectedObjectId(undefined);
-  };
+  const hasActiveFilters = list.isFiltered;
+  const clearFilters = list.clear;
 
   return (
     <CapabilityGuard capability="exhibitions" featureName={t("title")}>
@@ -143,9 +164,11 @@ export default function ExhibitionsPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
+                      type="search"
+                      aria-label={t("searchPlaceholder")}
                       placeholder={t("searchPlaceholder")}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
                       className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                     />
                   </div>
@@ -185,7 +208,16 @@ export default function ExhibitionsPage() {
                       <Select
                         value={statusFilter}
                         onValueChange={(value) =>
-                          setStatusFilter(value as ExhibitionStatus)
+                          list.update({
+                            filters: {
+                              schedule:
+                                value === "current" ||
+                                value === "upcoming" ||
+                                value === "past"
+                                  ? value
+                                  : "all",
+                            },
+                          })
                         }
                       >
                         <SelectTrigger>
@@ -211,7 +243,9 @@ export default function ExhibitionsPage() {
                       <CollectionSelector
                         organizationId={currentOrganizationId}
                         value={selectedObjectId}
-                        onValueChange={setSelectedObjectId}
+                        onValueChange={(object) =>
+                          list.update({ filters: { object } })
+                        }
                         label={t("filters.object")}
                       />
                     </div>
@@ -221,13 +255,17 @@ export default function ExhibitionsPage() {
             </div>
 
             <Suspense fallback={<GridCardsSkeleton count={6} />}>
-              <ExhibitionList
-                organizationId={currentOrganizationId}
-                searchQuery={searchQuery}
-                statusFilter={statusFilter}
-                selectedObjectId={selectedObjectId}
-                viewMode={viewMode}
-              />
+              {isResolvingObject ? (
+                <GridCardsSkeleton count={6} />
+              ) : (
+                <ExhibitionList
+                  organizationId={currentOrganizationId}
+                  searchQuery={searchQuery}
+                  statusFilter={statusFilter}
+                  selectedObjectId={selectedObjectId}
+                  viewMode={viewMode}
+                />
+              )}
             </Suspense>
           </div>
         </div>

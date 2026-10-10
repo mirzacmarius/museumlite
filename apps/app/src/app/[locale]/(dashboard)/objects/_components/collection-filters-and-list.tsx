@@ -61,6 +61,8 @@ export function CollectionFiltersAndList({
           onLoadMore={catalog.loadMore}
           activeCollectionGroup={catalog.activeCollectionGroup}
           onAddToCollection={() => catalog.setShowAddToCollectionDialog(true)}
+          isFiltered={catalog.isFiltered}
+          onClearFilters={catalog.resetFilters}
         />
       </div>
 

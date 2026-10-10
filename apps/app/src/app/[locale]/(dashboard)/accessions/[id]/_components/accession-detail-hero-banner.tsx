@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
+import { useBackToResultsLink } from "@/components/record-recovery-state";
 import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import { useI18n } from "@/locales/client";
 import { formatAccessionMethodLabel, StatusTile } from "./accession-detail-ui";
@@ -34,12 +35,13 @@ export function AccessionDetailHeroBanner({
   getStatusColor,
 }: AccessionDetailViewProps) {
   const tRoot = useI18n();
+  const back = useBackToResultsLink("accessions");
   return (
     <>
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
           <Button variant="ghost" size="icon" className="size-7" asChild>
-            <Link href="/accessions">
+            <Link href={back.href} aria-label={back.label} title={back.label}>
               <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>

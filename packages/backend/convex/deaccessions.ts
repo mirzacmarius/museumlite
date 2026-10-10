@@ -1,9 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, query } from "./_generated/server";
+import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
   readWorkflowHistoryPage,
   workflowHistoryPageValidator,
@@ -28,6 +31,7 @@ import {
   resolveExitState,
   resolveProceedsState,
 } from "./utils/disposalPolicy";
+import { countIndexedQuery } from "./utils/indexedCounts";
 import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
@@ -42,6 +46,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
@@ -551,231 +556,273 @@ export const createInternal = internalMutation({
   },
 });
 
+const deaccessionListItemValidator = v.object({
+  _id: v.id("deaccessions"),
+  deaccessionNumber: v.string(),
+  collectionId: v.id("collections"),
+  collectionTitle: v.string(),
+  accessionNumber: v.optional(v.string()),
+  dateDeaccessioned: v.number(),
+  reason: v.string(),
+  method: v.union(
+    v.literal("sale"),
+    v.literal("donation"),
+    v.literal("destruction"),
+    v.literal("transfer"),
+  ),
+  targetCollectionStatus: targetCollectionStatusValidator,
+  status: v.union(
+    v.literal("pending"),
+    v.literal("approved"),
+    v.literal("rejected"),
+  ),
+  workflowStep: v.optional(v.number()),
+});
+
+async function toDeaccessionListItems(
+  ctx: QueryCtx,
+  rows: Doc<"deaccessions">[],
+) {
+  const collections = await batchLookup(
+    ctx,
+    rows.map((row) => row.collectionId),
+    "collections",
+  );
+  return rows.map((row) => {
+    const collection = collections.get(row.collectionId);
+    return {
+      _id: row._id,
+      deaccessionNumber: row.deaccessionNumber,
+      collectionId: row.collectionId,
+      collectionTitle: collection?.title || "Unknown object",
+      accessionNumber: collection?.accessionNumber,
+      dateDeaccessioned: row.dateDeaccessioned,
+      reason: row.reason,
+      method: row.method,
+      targetCollectionStatus: resolveTargetCollectionStatus(row),
+      status: row.status,
+      workflowStep: row.workflowStep,
+    };
+  });
+}
+
+/** Configured review steps, ascending; without a workflow, one review step. */
+async function getDeaccessionReviewSteps(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const config = await getWorkflowConfig(ctx, organizationId, "deaccession");
+  const steps = config?.steps.map((step) => step.stepNumber) ?? [];
+  return steps.length > 0
+    ? Array.from(new Set(steps)).toSorted((a, b) => a - b)
+    : [1];
+}
+
 /**
- * List deaccessions
+ * The workflowStep range each review column holds: from its step up to the
+ * next configured step. The first column also holds legacy rows without a
+ * step and the last holds rows beyond a shortened workflow, so every pending
+ * deaccession appears in exactly one column.
  */
-export const list = query({
+interface StepColumnRange {
+  stepNumber: number;
+  from?: number;
+  to?: number;
+}
+
+function stepColumnRanges(steps: number[]): StepColumnRange[] {
+  return steps.map((stepNumber, index) => ({
+    stepNumber,
+    from: index === 0 ? undefined : stepNumber,
+    to: steps[index + 1],
+  }));
+}
+
+function pendingStepQuery(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  range: StepColumnRange,
+) {
+  return ctx.db
+    .query("deaccessions")
+    .withIndex("by_organization_status_workflowStep_dateDeaccessioned", (q) => {
+      const pending = q
+        .eq("organizationId", organizationId)
+        .eq("status", "pending");
+      if (range.from !== undefined && range.to !== undefined) {
+        return pending
+          .gte("workflowStep", range.from)
+          .lt("workflowStep", range.to);
+      }
+      if (range.from !== undefined) {
+        return pending.gte("workflowStep", range.from);
+      }
+      if (range.to !== undefined) return pending.lt("workflowStep", range.to);
+      return pending;
+    });
+}
+
+function isInStepColumn(row: Doc<"deaccessions">, range: StepColumnRange) {
+  if (row.status !== "pending") return false;
+  const step = row.workflowStep;
+  if (range.from !== undefined && (step === undefined || step < range.from)) {
+    return false;
+  }
+  return range.to === undefined || step === undefined || step < range.to;
+}
+
+function matchesDeaccessionSearch(
+  row: Doc<"deaccessions">,
+  item: { collectionTitle: string; accessionNumber?: string },
+  search: string,
+) {
+  return [
+    row.deaccessionNumber,
+    row.reason,
+    row.disposition,
+    row.notes,
+    row.method,
+    item.collectionTitle,
+    item.accessionNumber,
+  ].some((value) => value?.toLowerCase().includes(search));
+}
+
+const deaccessionBoardColumnValidator = v.union(
+  v.object({ kind: v.literal("step"), step: v.number() }),
+  v.object({ kind: v.literal("approved") }),
+  v.object({ kind: v.literal("rejected") }),
+);
+
+/**
+ * One deaccession board column, paginated on the server, newest first within
+ * a step. A search reads the indexed search documents; for an organization
+ * whose records predate them, it matches within each page instead. Either way
+ * a page can hold fewer rows than requested while more remain.
+ */
+export const listBoardColumn = query({
   args: {
     organizationId: v.id("organizations"),
-    paginationOpts: paginationOptsValidator,
-    status: v.optional(
-      v.union(
-        v.literal("pending"),
-        v.literal("approved"),
-        v.literal("rejected"),
-      ),
-    ),
+    column: deaccessionBoardColumnValidator,
     search: v.optional(v.string()),
+    paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(
-      v.object({
-        _id: v.id("deaccessions"),
-        deaccessionNumber: v.string(),
-        collectionId: v.id("collections"),
-        collectionTitle: v.string(),
-        accessionNumber: v.optional(v.string()),
-        dateDeaccessioned: v.number(),
-        reason: v.string(),
-        method: v.union(
-          v.literal("sale"),
-          v.literal("donation"),
-          v.literal("destruction"),
-          v.literal("transfer"),
-        ),
-        targetCollectionStatus: targetCollectionStatusValidator,
-        status: v.union(
-          v.literal("pending"),
-          v.literal("approved"),
-          v.literal("rejected"),
-        ),
-        workflowStep: v.optional(v.number()),
-      }),
-    ),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(deaccessionListItemValidator),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
+    const column = args.column;
+    const status = column.kind === "step" ? "pending" : column.kind;
+    const steps = await getDeaccessionReviewSteps(ctx, args.organizationId);
+    const range =
+      column.kind === "step"
+        ? stepColumnRanges(steps).find(
+            (candidate) => candidate.stepNumber === column.step,
+          )
+        : undefined;
+    if (column.kind === "step" && !range) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+    const search = args.search?.trim().toLowerCase();
+    const hasSearchDocuments =
+      search !== undefined &&
+      search !== "" &&
+      (await ctx.db
+        .query("deaccessionSearchDocuments")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .first()) !== null;
 
-    const addCollectionInfo = async (page: Doc<"deaccessions">[]) => {
-      const collectionMap = await batchLookup(
+    if (search && hasSearchDocuments) {
+      const result = await ctx.db
+        .query("deaccessionSearchDocuments")
+        .withSearchIndex("search_text", (q) =>
+          q
+            .search("searchText", search)
+            .eq("organizationId", args.organizationId)
+            .eq("status", status),
+        )
+        .paginate(args.paginationOpts);
+      const rowsById = await batchLookup(
         ctx,
-        page.map((deaccession) => deaccession.collectionId),
-        "collections",
+        result.page.map((document) => document.deaccessionId),
+        "deaccessions",
       );
-
-      return page.map((deaccession) => {
-        const collection = collectionMap.get(deaccession.collectionId);
-
-        return {
-          ...deaccession,
-          collectionTitle: collection?.title || "",
-          accessionNumber: collection?.accessionNumber,
-        };
+      const rows = result.page.flatMap((document) => {
+        const row = rowsById.get(document.deaccessionId);
+        if (!row || row.organizationId !== args.organizationId) return [];
+        if (row.status !== status) return [];
+        if (range && !isInStepColumn(row, range)) return [];
+        return [row];
       });
-    };
+      return { ...result, page: await toDeaccessionListItems(ctx, rows) };
+    }
 
-    const serializePage = (
-      page: Awaited<ReturnType<typeof addCollectionInfo>>,
-    ) =>
-      page.map((item) => ({
-        _id: item._id,
-        deaccessionNumber: item.deaccessionNumber,
-        collectionId: item.collectionId,
-        collectionTitle: item.collectionTitle || "Unknown object",
-        accessionNumber: item.accessionNumber,
-        dateDeaccessioned: item.dateDeaccessioned,
-        reason: item.reason,
-        method: item.method,
-        targetCollectionStatus: resolveTargetCollectionStatus(item),
-        status: item.status,
-        workflowStep: item.workflowStep,
-      }));
-
-    const searchLower = args.search?.trim().toLowerCase();
-
-    if (!searchLower) {
-      if (args.status) {
-        const status = args.status;
-        const paginationResult = await ctx.db
+    const result = await (range
+      ? pendingStepQuery(ctx, args.organizationId, range)
+      : ctx.db
           .query("deaccessions")
           .withIndex("by_organization_and_status_and_dateDeaccessioned", (q) =>
             q.eq("organizationId", args.organizationId).eq("status", status),
           )
-          .order("desc")
-          .paginate(args.paginationOpts);
-
-        const page = await addCollectionInfo(paginationResult.page);
-
-        return {
-          page: serializePage(page),
-          isDone: paginationResult.isDone,
-          continueCursor: paginationResult.continueCursor,
-        };
-      }
-
-      const paginationResult = await ctx.db
-        .query("deaccessions")
-        .withIndex("by_organization_and_dateDeaccessioned", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .order("desc")
-        .paginate(args.paginationOpts);
-
-      const page = await addCollectionInfo(paginationResult.page);
-
-      return {
-        page: serializePage(page),
-        isDone: paginationResult.isDone,
-        continueCursor: paginationResult.continueCursor,
-      };
-    }
-
-    const hasSearchDocuments = await ctx.db
-      .query("deaccessionSearchDocuments")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    if (hasSearchDocuments) {
-      const paginationResult = args.status
-        ? await (() => {
-            const status = args.status;
-            return ctx.db
-              .query("deaccessionSearchDocuments")
-              .withSearchIndex("search_text", (q) =>
-                q
-                  .search("searchText", searchLower)
-                  .eq("organizationId", args.organizationId)
-                  .eq("status", status),
-              )
-              .paginate(args.paginationOpts);
-          })()
-        : await ctx.db
-            .query("deaccessionSearchDocuments")
-            .withSearchIndex("search_text", (q) =>
-              q
-                .search("searchText", searchLower)
-                .eq("organizationId", args.organizationId),
-            )
-            .paginate(args.paginationOpts);
-
-      const deaccessionsMap = await batchLookup(
-        ctx,
-        paginationResult.page.map(
-          (searchDocument) => searchDocument.deaccessionId,
-        ),
-        "deaccessions",
-      );
-      const deaccessions = paginationResult.page.flatMap((searchDocument) => {
-        const deaccession = deaccessionsMap.get(searchDocument.deaccessionId);
-        return deaccession ? [deaccession] : [];
-      });
-      const page = await addCollectionInfo(deaccessions);
-
-      return {
-        page: serializePage(page),
-        isDone: paginationResult.isDone,
-        continueCursor: paginationResult.continueCursor,
-      };
-    }
-
-    let allResults: Doc<"deaccessions">[];
-    if (args.status) {
-      const status = args.status;
-      allResults = await ctx.db
-        .query("deaccessions")
-        .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", status),
-        )
-        .collect();
-    } else {
-      allResults = await ctx.db
-        .query("deaccessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect();
-    }
-
-    const deaccessionsWithCollectionInfo = await addCollectionInfo(allResults);
-
-    // Apply search filter if provided
-    const filteredResults = deaccessionsWithCollectionInfo.filter(
-      (deaccession) => {
-        return (
-          deaccession.deaccessionNumber.toLowerCase().includes(searchLower) ||
-          deaccession.reason.toLowerCase().includes(searchLower) ||
-          deaccession.disposition?.toLowerCase().includes(searchLower) ||
-          deaccession.notes?.toLowerCase().includes(searchLower) ||
-          deaccession.collectionTitle.toLowerCase().includes(searchLower) ||
-          deaccession.accessionNumber?.toLowerCase().includes(searchLower) ||
-          deaccession.method.toLowerCase().includes(searchLower) ||
-          false
-        );
-      },
-    );
-
-    // Sort by date deaccessioned (newest first)
-    filteredResults.sort((a, b) => b.dateDeaccessioned - a.dateDeaccessioned);
-
-    // Handle pagination manually
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      filteredResults.length,
-    );
-    const page = filteredResults.slice(startIndex, endIndex);
-
+    )
+      .order("desc")
+      .paginate(args.paginationOpts);
+    const items = await toDeaccessionListItems(ctx, result.page);
     return {
-      page: serializePage(page),
-      isDone: endIndex >= filteredResults.length,
-      continueCursor: endIndex.toString(),
+      ...result,
+      page: search
+        ? items.filter((item, index) => {
+            const row = result.page[index];
+            return (
+              row !== undefined && matchesDeaccessionSearch(row, item, search)
+            );
+          })
+        : items,
+    };
+  },
+});
+
+/** Exact board totals, independent of which rows a client has loaded. */
+export const getBoardCounts = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    pending: v.number(),
+    approved: v.number(),
+    rejected: v.number(),
+    columns: v.array(v.object({ stepNumber: v.number(), count: v.number() })),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const ranges = stepColumnRanges(
+      await getDeaccessionReviewSteps(ctx, args.organizationId),
+    );
+    const countStatus = (status: "approved" | "rejected") =>
+      countIndexedQuery(
+        ctx.db
+          .query("deaccessions")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          ),
+      );
+    const [approved, rejected, columns] = await Promise.all([
+      countStatus("approved"),
+      countStatus("rejected"),
+      Promise.all(
+        ranges.map(async (range) => ({
+          stepNumber: range.stepNumber,
+          count: await countIndexedQuery(
+            pendingStepQuery(ctx, args.organizationId, range),
+          ),
+        })),
+      ),
+    ]);
+    return {
+      pending: columns.reduce((total, column) => total + column.count, 0),
+      approved,
+      rejected,
+      columns,
     };
   },
 });
@@ -874,7 +921,8 @@ export const getWorkflowSteps = query({
  */
 export const get = query({
   args: {
-    deaccessionId: v.id("deaccessions"),
+    // A string, so malformed links and other tables' IDs read as missing.
+    deaccessionId: v.string(),
   },
   returns: v.union(
     v.object({
@@ -923,16 +971,21 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const deaccession = await ctx.db.get(args.deaccessionId);
-    if (!deaccession) {
+    const deaccessionId = ctx.db.normalizeId(
+      "deaccessions",
+      args.deaccessionId,
+    );
+    const deaccession = deaccessionId ? await ctx.db.get(deaccessionId) : null;
+    if (
+      !deaccession ||
+      !(await canReadRecord(
+        ctx,
+        deaccession.organizationId,
+        "collections.read",
+      ))
+    ) {
       return null;
     }
-
-    await requirePermission(
-      ctx,
-      deaccession.organizationId,
-      "collections.read",
-    );
 
     const historyPreview = await recentCaseHistory(
       ctx,
