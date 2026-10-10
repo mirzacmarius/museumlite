@@ -192,6 +192,37 @@ const detailRecordCases: DetailRecordCase[] = [
       ),
     read: (caller, id) => caller.query(api.conservationTreatments.get, { id }),
   },
+  {
+    name: "an entry",
+    readPermission: "collections.read",
+    tier: "free",
+    insert: (t, owner) =>
+      t.run(async (ctx) => {
+        const receivedLocationId = await ctx.db.insert("locations", {
+          organizationId: owner.organizationId,
+          name: "Receiving room",
+          locationCode: "R-650",
+          type: "storage",
+          sortOrder: 0,
+          isActive: true,
+        });
+        return await ctx.db.insert("objectEntries", {
+          organizationId: owner.organizationId,
+          entryNumber: "TE-650",
+          normalizedEntryNumber: "te-650",
+          collectionId: owner.collectionId,
+          purpose: "identification",
+          depositorName: "Depositor",
+          receivedAt: Date.UTC(2026, 0, 1),
+          receivedBy: owner.userId,
+          receivedLocationId,
+          conditionAtEntry: "Stable",
+          responsibleUserId: owner.userId,
+          status: "in_custody",
+        });
+      }),
+    read: (caller, entryId) => caller.query(api.objectEntries.get, { entryId }),
+  },
 ];
 
 for (const recordCase of detailRecordCases) {

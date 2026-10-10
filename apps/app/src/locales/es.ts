@@ -5463,6 +5463,7 @@ export default {
       deaccessions: "Ir a desaccesiones",
       locations: "Ir a ubicaciones",
       conservation: "Ir a conservación",
+      entries: "Ir a entradas",
     },
     pageNotFound: {
       title: "Página no encontrada",
@@ -5573,7 +5574,6 @@ export default {
     },
     detail: {
       back: "Entradas",
-      notFound: "No se encontró la entrada",
       object: "Objeto",
       openObject: "Abrir objeto",
       receivedBy: "Recibido por {name}",

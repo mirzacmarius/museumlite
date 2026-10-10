@@ -18,6 +18,8 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useState } from "react";
 import { ClientDateFns } from "@/components/client-date";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import { useListReturnPath } from "@/hooks/use-return-path";
+import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { AccessionsWorkbenchNav } from "../../accessions-workbench-nav";
 import { EntryStatusBadge, entryDueAt } from "./entry-status-badge";
@@ -29,6 +31,7 @@ const ENTRY_STATUSES = [
   "exited",
 ] as const satisfies readonly EntryStatus[];
 const ALL = "all";
+const ENTRY_LIST_KEYS = ["status"] as const;
 
 export function EntriesPageClient({
   organizationId,
@@ -42,6 +45,7 @@ export function EntriesPageClient({
     "status",
     parseAsStringLiteral(ENTRY_STATUSES),
   );
+  const returnPath = useListReturnPath(ENTRY_LIST_KEYS);
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   const canReviewTransfers =
     !permissionsLoading && hasPermission("organization.manage_settings");
@@ -136,7 +140,10 @@ export function EntriesPageClient({
                 >
                   <td className="px-4 py-2 font-medium">
                     <Link
-                      href={`/accessions/entries/${entry.entryId}`}
+                      href={withReturnPath(
+                        `/accessions/entries/${entry.entryId}`,
+                        returnPath,
+                      )}
                       className="hover:underline"
                     >
                       {entry.entryNumber}

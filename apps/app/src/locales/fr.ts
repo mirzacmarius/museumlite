@@ -5416,6 +5416,7 @@ export default {
       deaccessions: "Aller aux désaccessions",
       locations: "Aller aux emplacements",
       conservation: "Aller à la conservation",
+      entries: "Aller aux entrées",
     },
     pageNotFound: {
       title: "Page introuvable",
@@ -5527,7 +5528,6 @@ export default {
     },
     detail: {
       back: "Entrées",
-      notFound: "Entrée introuvable",
       object: "Objet",
       openObject: "Ouvrir l’objet",
       receivedBy: "Reçu par {name}",

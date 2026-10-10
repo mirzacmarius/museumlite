@@ -5393,6 +5393,7 @@ export default {
       deaccessions: "Gå til deaksesjoner",
       locations: "Gå til steder",
       conservation: "Gå til konservering",
+      entries: "Gå til innleveringer",
     },
     pageNotFound: {
       title: "Fant ikke siden",
@@ -5503,7 +5504,6 @@ export default {
     },
     detail: {
       back: "Innleveringer",
-      notFound: "Fant ikke innleveringen",
       object: "Gjenstand",
       openObject: "Åpne gjenstand",
       receivedBy: "Mottatt av {name}",

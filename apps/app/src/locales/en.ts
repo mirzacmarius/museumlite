@@ -5231,6 +5231,7 @@ export default {
       deaccessions: "Go to deaccessions",
       locations: "Go to locations",
       conservation: "Go to conservation",
+      entries: "Go to entries",
     },
     pageNotFound: {
       title: "Page not found",
@@ -5340,7 +5341,6 @@ export default {
     },
     detail: {
       back: "Entries",
-      notFound: "Entry not found",
       object: "Object",
       openObject: "Open object",
       receivedBy: "Received by {name}",

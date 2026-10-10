@@ -2585,6 +2585,7 @@ export default {
       deaccessions: "Mergi la dezaccesiuni",
       locations: "Mergi la locații",
       conservation: "Mergi la conservare",
+      entries: "Mergi la intrări",
     },
     pageNotFound: {
       title: "Pagina nu a fost găsită",
@@ -2694,7 +2695,6 @@ export default {
     },
     detail: {
       back: "Intrări",
-      notFound: "Intrarea nu a fost găsită",
       object: "Obiect",
       openObject: "Deschide obiectul",
       receivedBy: "Primit de {name}",

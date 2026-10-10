@@ -27,6 +27,7 @@ const RECORD_LISTS = {
   deaccessions: "/deaccessions",
   locations: "/locations",
   conservation: "/conservation",
+  entries: "/accessions/entries",
 } as const;
 
 export type RecordList = keyof typeof RECORD_LISTS;
