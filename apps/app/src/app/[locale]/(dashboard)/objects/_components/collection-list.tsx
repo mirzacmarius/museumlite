@@ -69,7 +69,12 @@ export function CollectionList({
   selectedIds: Set<Id<"collections">>;
   onSelectItem: (id: Id<"collections">, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
-  onLoadMore: () => void;
+  /**
+   * Loads the next page. `remember` keeps the loaded depth in the URL, which
+   * only matters once staff have scrolled: rewriting the URL while results
+   * still fit on screen can cancel a tap on one of them.
+   */
+  onLoadMore: (options: { remember: boolean }) => void;
   activeCollectionGroup?: { _id: Id<"collectionGroups">; name: string } | null;
   onAddToCollection?: () => void;
   /** Search or filters narrow the catalog, so an empty list means no match. */
@@ -96,7 +101,7 @@ export function CollectionList({
   useEffect(() => {
     // An empty filtered page can still have older matching objects.
     if (collections.length === 0 && collectionsStatus === "CanLoadMore") {
-      onLoadMore();
+      onLoadMore({ remember: false });
     }
   }, [collections.length, collectionsStatus, onLoadMore]);
 
@@ -117,7 +122,7 @@ export function CollectionList({
           collectionsStatus === "CanLoadMore"
         ) {
           isAutoLoadingRef.current = true;
-          onLoadMore();
+          onLoadMore({ remember: root.scrollTop > 0 });
         }
       },
       {
