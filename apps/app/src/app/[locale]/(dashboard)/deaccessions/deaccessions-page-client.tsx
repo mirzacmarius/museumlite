@@ -230,7 +230,7 @@ function DeaccessionsReportDialog({
                 </p>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 print:gap-2">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 print:grid-cols-4 print:gap-2">
                 <div className="rounded border border-zinc-200 p-3 text-center">
                   <p className="text-2xl font-bold text-black">
                     {exportData.totals.count}
@@ -251,7 +251,7 @@ function DeaccessionsReportDialog({
                     {t("report.approved")}
                   </p>
                 </div>
-                <div className="rounded border border-zinc-200 p-3 text-center">
+                <div className="col-span-2 rounded border border-zinc-200 p-3 text-center sm:col-span-1">
                   <ProceedsByCurrency
                     items={exportData.items}
                     locale={locale}
@@ -392,12 +392,12 @@ function ProceedsByCurrency({
   return (
     <div className="space-y-0.5">
       {totals.byCurrency.length === 0 ? (
-        <p className="text-2xl font-bold text-black">—</p>
+        <p className="text-lg font-bold text-black sm:text-2xl">—</p>
       ) : (
         totals.byCurrency.map((entry) => (
           <p
             key={entry.currency}
-            className="text-2xl font-bold tabular-nums text-black"
+            className="text-lg font-bold tabular-nums text-black sm:text-2xl"
           >
             {formatMoney(entry.total, locale as FormatLocale, entry.currency)}
           </p>
