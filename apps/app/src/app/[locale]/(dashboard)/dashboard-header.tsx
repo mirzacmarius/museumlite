@@ -14,11 +14,13 @@ const pageTitleKeys: Record<string, string> = {
   activity: "activity",
   analytics: "analytics",
   assignments: "assignments",
+  collections: "collections",
   conservation: "conservation",
   deaccessions: "deaccessions",
   exhibitions: "exhibitions",
   insurance: "insurance",
   installations: "installations",
+  library: "library",
   loans: "loans",
   locations: "locations",
   media: "media",
@@ -72,16 +74,13 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
       return tQuality("detail.headerTitle");
     if (cleanPath === "/settings/preparation-recipes") return tRecipes("title");
 
-    const segment = cleanPath
+    // A page without its own title (new, edit, import, a record) is named by
+    // its section; route words are never shown as English titles.
+    const section = cleanPath
       .split("/")
-      .filter((part) => part !== recordId)
-      .pop();
-    if (segment && pageTitleKeys[segment]) {
-      return t(`pageTitles.${pageTitleKeys[segment]}`);
-    }
-    return segment
-      ? segment.charAt(0).toUpperCase() + segment.slice(1)
-      : t("overview");
+      .filter((part) => part && part !== recordId)
+      .findLast((part) => pageTitleKeys[part]);
+    return section ? t(`pageTitles.${pageTitleKeys[section]}`) : t("overview");
   };
 
   return (

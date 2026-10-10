@@ -25,3 +25,23 @@ test("a record's page names its section, not the record's identifier", async () 
   expect(header.textContent).toContain("Loans");
   expect(header.textContent).not.toMatch(/xd72hn0sxbhpgw8jn0kbaw19qx8g0cj3/i);
 });
+
+test.each([
+  ["/en/loans/new", "Loans"],
+  ["/en/accessions/import", "Accessions"],
+  ["/en/collections/new", "Collection groups"],
+  ["/en/library/fines", "Library"],
+])("%s is titled by its section, never by an English route word", async (url, title) => {
+  await renderOnPage(
+    <SidebarProvider>
+      <DashboardHeader>
+        <button type="button">Search</button>
+      </DashboardHeader>
+    </SidebarProvider>,
+    url,
+  );
+
+  const header = screen.getByRole("banner");
+  expect(header.textContent).toContain(title);
+  expect(header.textContent).not.toMatch(/\b(New|Import|Fines)\b/);
+});
