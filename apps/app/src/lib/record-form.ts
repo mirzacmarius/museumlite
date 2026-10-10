@@ -202,18 +202,23 @@ export function recordFormReducer<V>(
         const edited = new Set(
           differingFields(values, state.values, comparable),
         );
+        const fieldErrors = Object.fromEntries(
+          Object.entries(state.fieldErrors).filter(
+            ([field]) => !edited.has(field),
+          ),
+        );
+        // A field message goes once its field is edited; the summary goes
+        // once every field it listed has been.
+        const { failure } = state;
+        const resolved =
+          (failure?.kind === "field" && edited.has(failure.field)) ||
+          (failure?.kind === "invalid" &&
+            failure.fields.every((field) => !(field in fieldErrors)));
         return {
           ...state,
           values,
-          fieldErrors: Object.fromEntries(
-            Object.entries(state.fieldErrors).filter(
-              ([field]) => !edited.has(field),
-            ),
-          ),
-          failure:
-            state.failure?.kind === "field" && edited.has(state.failure.field)
-              ? null
-              : state.failure,
+          fieldErrors,
+          failure: resolved ? null : failure,
         };
       }
       case "applyLatest": {
