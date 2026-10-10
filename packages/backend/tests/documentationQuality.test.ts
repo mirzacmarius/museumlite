@@ -888,3 +888,220 @@ test("orphan references are reported as stored and the references are kept", asy
     currentLocationId: goneLocation,
   });
 });
+
+async function onlyFinding(
+  member: Staff,
+  organizationId: Id<"organizations">,
+  status: "open" | "accepted" | "resolved",
+) {
+  const [finding, ...rest] = await findings(member, organizationId, status);
+  expect(rest).toEqual([]);
+  if (!finding) throw new Error(`No ${status} finding`);
+  return finding;
+}
+
+test("an accepted exception keeps its reason until a later check finds something different", async () => {
+  const { t, admin, officer, officerId, adminId, organizationId } =
+    await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    ...PAINTINGS,
+  });
+  const objectId = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "1990.1",
+    objectType: "Painting",
+  });
+  await runCheck(t, officer, organizationId);
+  const finding = await onlyFinding(officer, organizationId, "open");
+
+  expect(
+    await qualityFailureOf(
+      officer.mutation(api.documentationQuality.acceptFinding, {
+        findingId: finding._id,
+        note: "  ",
+      }),
+    ),
+  ).toMatchObject({ code: "REVIEW_NOTE_REQUIRED" });
+  await officer.mutation(api.documentationQuality.acceptFinding, {
+    findingId: finding._id,
+    note: "Photography not permitted by the lender.",
+  });
+  expect(
+    await qualityFailureOf(
+      officer.mutation(api.documentationQuality.acceptFinding, {
+        findingId: finding._id,
+        note: "Again",
+      }),
+    ),
+  ).toMatchObject({ code: "FINDING_STATUS_CHANGED" });
+
+  expect(await runCheck(t, officer, organizationId)).toMatchObject({
+    detected: 1,
+    reopened: 0,
+  });
+  expect(await onlyFinding(officer, organizationId, "accepted")).toMatchObject({
+    review: {
+      note: "Photography not permitted by the lender.",
+      reviewedBy: officerId,
+    },
+  });
+
+  await addImage(t, organizationId, adminId, objectId);
+  expect(await runCheck(t, officer, organizationId)).toMatchObject({
+    reopened: 1,
+  });
+  expect(await onlyFinding(officer, organizationId, "open")).toMatchObject({
+    _id: finding._id,
+    missing: ["condition_assessment"],
+    review: { note: "Photography not permitted by the lender." },
+  });
+});
+
+test("a repaired finding resolves on the next check and reopens if the gap returns", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    name: "Located",
+    stages: ["collection"],
+    requirements: ["current_location"],
+  });
+  const objectId = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "1990.1",
+  });
+  await runCheck(t, officer, organizationId);
+  const locationId = await t.run((ctx) =>
+    ctx.db.insert("locations", {
+      organizationId,
+      name: "Store A",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
+  await t.run((ctx) =>
+    ctx.db.patch(objectId, { currentLocationId: locationId }),
+  );
+
+  expect(await runCheck(t, officer, organizationId)).toMatchObject({
+    resolved: 1,
+  });
+  expect(await onlyFinding(officer, organizationId, "resolved")).toMatchObject(
+    { resolvedCheckNumber: 2, standing: false },
+  );
+
+  await t.run((ctx) =>
+    ctx.db.patch(objectId, { currentLocationId: undefined }),
+  );
+  expect(await runCheck(t, officer, organizationId)).toMatchObject({
+    reopened: 1,
+    opened: 0,
+  });
+  expect(await onlyFinding(officer, organizationId, "open")).toMatchObject({
+    firstCheckNumber: 1,
+    lastCheckNumber: 3,
+  });
+});
+
+test("a mistaken acceptance can be withdrawn, except for duplicates reviewed in the identifier register", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    name: "Located paintings",
+    objectType: "Painting",
+    stages: ["collection"],
+    requirements: ["current_location"],
+  });
+  await insertObject(t, organizationId, adminId, {
+    accessionNumber: "A-1",
+    objectType: "Painting",
+  });
+  await insertObject(t, organizationId, adminId, { accessionNumber: "a-1" });
+  await runCheck(t, officer, organizationId);
+  const open = await findings(officer, organizationId);
+  const missing = open.find((finding) => finding.kind === "missing_evidence");
+  const duplicate = open.find(
+    (finding) => finding.kind === "duplicate_identifier",
+  );
+  if (!missing || !duplicate) throw new Error("Findings missing");
+  for (const finding of [missing, duplicate])
+    await officer.mutation(api.documentationQuality.acceptFinding, {
+      findingId: finding._id,
+      note: "Reviewed",
+    });
+
+  await officer.mutation(api.documentationQuality.reopenFinding, {
+    findingId: missing._id,
+  });
+  expect(
+    await qualityFailureOf(
+      officer.mutation(api.documentationQuality.reopenFinding, {
+        findingId: duplicate._id,
+      }),
+    ),
+  ).toMatchObject({ code: "REVIEWED_IN_IDENTIFIER_REGISTER" });
+  expect(
+    (await findings(officer, organizationId, "open")).map(
+      (finding) => finding._id,
+    ),
+  ).toEqual([missing._id]);
+});
+
+test("a finding opens with its repair context, and outsiders see nothing", async () => {
+  const { t, admin, officer, viewer, foreignAdmin, adminId, organizationId } =
+    await setup();
+  const partyId = await insertParty(t, organizationId, adminId, "Holm Estate");
+  const accessionId = await insertAccession(t, organizationId, {
+    accessionNumber: "1987.4",
+    source: "Holm family",
+    donorAccountId: partyId,
+  });
+  await runCheck(t, officer, organizationId);
+  const finding = await onlyFinding(officer, organizationId, "open");
+
+  expect(
+    await officer.query(api.documentationQuality.getFinding, {
+      findingId: finding._id,
+    }),
+  ).toMatchObject({
+    finding: {
+      _id: finding._id,
+      kind: "legacy_link",
+      assertedName: "Holm family",
+    },
+    records: [
+      { type: "accession", id: accessionId, label: "1987.4", available: true },
+    ],
+    existingPartyName: "Holm Estate",
+    canLinkParties: false,
+  });
+  expect(
+    await admin.query(api.documentationQuality.getFinding, {
+      findingId: finding._id,
+    }),
+  ).toMatchObject({ canLinkParties: true });
+  expect(
+    await foreignAdmin.query(api.documentationQuality.getFinding, {
+      findingId: finding._id,
+    }),
+  ).toBeNull();
+  expect(
+    await officer.query(api.documentationQuality.getFinding, {
+      findingId: "not-an-id",
+    }),
+  ).toBeNull();
+  expect(
+    await capabilityFailureOf(
+      viewer.query(api.documentationQuality.getFinding, {
+        findingId: finding._id,
+      }),
+    ),
+  ).toMatchObject({ reason: "permission_missing" });
+  expect(
+    await capabilityFailureOf(
+      foreignAdmin.mutation(api.documentationQuality.acceptFinding, {
+        findingId: finding._id,
+        note: "Not ours",
+      }),
+    ),
+  ).toMatchObject({ reason: "permission_missing" });
+});

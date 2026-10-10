@@ -46,7 +46,9 @@ import {
   recordIdentifierConflictReview,
 } from "./utils/identifiers";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { partyDisplayName } from "./utils/parties";
 import { hasPermission, requireCapability } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 
 const QUALITY_PERMISSIONS = CAPABILITY_MATRIX.documentation_quality.permissions;
 const PROFILE_MANAGE_PERMISSION = "organization.manage_settings";
@@ -739,5 +741,165 @@ export const acceptFinding = mutation({
       changes: { kind: finding.kind, key: finding.key, note },
     });
     return null;
+  },
+});
+
+/**
+ * Withdraws a mistaken acceptance. Duplicate identifiers follow their
+ * reviews in the identifier register instead.
+ */
+export const reopenFinding = mutation({
+  args: { findingId: v.id("documentationFindings") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { finding, userId } = await loadFindingForReview(
+      ctx,
+      args.findingId,
+    );
+    if (finding.status !== "accepted")
+      throw qualityError(
+        "FINDING_STATUS_CHANGED",
+        "Only an accepted finding can be reopened",
+      );
+    if (finding.kind === "duplicate_identifier")
+      throw qualityError(
+        "REVIEWED_IN_IDENTIFIER_REGISTER",
+        "Duplicate identifiers are reviewed in the identifier register",
+      );
+    await ctx.db.patch(finding._id, { status: "open", reopenedAt: Date.now() });
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: finding.organizationId,
+      userId,
+      action: "documentation_finding_reopened",
+      entityType: "documentationFinding",
+      entityId: finding._id,
+      changes: { kind: finding.kind, key: finding.key },
+    });
+    return null;
+  },
+});
+
+const findingRecordTypeValidator = v.union(
+  v.literal("object"),
+  v.literal("accession"),
+  v.literal("deaccession"),
+);
+
+type FindingRecordRef = {
+  type: "object" | "accession" | "deaccession";
+  id: string;
+};
+
+/** The records a finding is about, where staff repair them. */
+function findingRecords(
+  finding: Doc<"documentationFindings">,
+): FindingRecordRef[] {
+  switch (finding.kind) {
+    case "missing_evidence":
+      return [{ type: "object", id: finding.objectId }];
+    case "duplicate_identifier":
+      return finding.records.map((record) => ({
+        type: finding.register === "catalog" ? "object" : "accession",
+        id: record.id,
+      }));
+    case "legacy_link":
+      return [finding.target];
+    case "orphan_reference":
+      return [finding.subject];
+  }
+}
+
+async function readFindingRecord(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  ref: FindingRecordRef,
+) {
+  const table = {
+    object: "collections",
+    accession: "accessions",
+    deaccession: "deaccessions",
+  } as const;
+  const id = ctx.db.normalizeId(table[ref.type], ref.id);
+  const record = id ? await ctx.db.get(id) : null;
+  if (!record || record.organizationId !== organizationId)
+    return { ...ref, label: "", available: false };
+  if ("deaccessionNumber" in record)
+    return { ...ref, label: record.deaccessionNumber, available: true };
+  if ("title" in record)
+    return {
+      ...ref,
+      label: record.accessionNumber,
+      title: record.title,
+      available: true,
+    };
+  return { ...ref, label: record.accessionNumber, available: true };
+}
+
+/**
+ * A finding with its repair context: the records it is about as they are
+ * now, and what the viewer may do there. Null for unknown ids and other
+ * organizations' findings.
+ */
+export const getFinding = query({
+  args: { findingId: v.string() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      finding: documentationFindingDocValidator,
+      reviewedByName: v.optional(v.string()),
+      records: v.array(
+        v.object({
+          type: findingRecordTypeValidator,
+          id: v.string(),
+          label: v.string(),
+          title: v.optional(v.string()),
+          available: v.boolean(),
+        }),
+      ),
+      existingPartyName: v.optional(v.string()),
+      /** The viewer may confirm Party links on the record. */
+      canLinkParties: v.boolean(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const findingId = ctx.db.normalizeId("documentationFindings", args.findingId);
+    const finding = findingId ? await ctx.db.get(findingId) : null;
+    if (
+      !finding ||
+      !(await canReadRecord(ctx, finding.organizationId, QUALITY_PERMISSIONS, {
+        capability: "documentation_quality",
+      }))
+    )
+      return null;
+    const [organization, canWriteParties, reviewer, records, party] =
+      await Promise.all([
+        ctx.db.get(finding.organizationId),
+        hasPermission(ctx, finding.organizationId, "accounts.write"),
+        finding.review ? ctx.db.get(finding.review.reviewedBy) : null,
+        Promise.all(
+          findingRecords(finding).map((ref) =>
+            readFindingRecord(ctx, finding.organizationId, ref),
+          ),
+        ),
+        finding.kind === "legacy_link" && finding.existingAccountId
+          ? ctx.db.get(finding.existingAccountId)
+          : null,
+      ]);
+    return {
+      finding,
+      reviewedByName: reviewer?.name ?? reviewer?.email ?? undefined,
+      records,
+      existingPartyName:
+        party?.organizationId === finding.organizationId
+          ? partyDisplayName(party)
+          : undefined,
+      canLinkParties:
+        !!organization &&
+        isOrganizationModuleEnabled(
+          organizationAccess(organization),
+          "accounts",
+        ) &&
+        canWriteParties,
+    };
   },
 });
