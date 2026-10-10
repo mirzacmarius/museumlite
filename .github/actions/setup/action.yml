@@ -1,7 +1,7 @@
 name: Setup
 description: >-
   Install Bun (pinned), restore the bun install cache, and run a frozen
-  install. Use after actions/checkout in every job.
+  install. Use once after actions/checkout for non-documentation CI changes.
 
 runs:
   using: composite

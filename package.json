@@ -39,7 +39,8 @@
     "typecheck": "turbo typecheck",
     "typecheck:i18n": "turbo typecheck:i18n --filter=@v1/app",
     "typecheck:all": "bun run typecheck && bun run typecheck:i18n",
-    "check": "bun run lint && bun run react-doctor && bun run typecheck:all && bun run test",
+    "check": "bun run lint && bun run react-doctor && bun run typecheck:all && bun run test && bun run test:ci-policy",
+    "test:ci-policy": "node --test scripts/classify-ci.test.mjs scripts/turbo-cache.test.mjs",
     "react-doctor": "react-doctor -y --fail-on warning"
   },
   "devDependencies": {
