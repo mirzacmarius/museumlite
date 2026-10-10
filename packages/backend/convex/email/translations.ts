@@ -101,6 +101,13 @@ export interface EmailMessages {
       system: string;
     };
   };
+  digest: {
+    subject: { daily: string; weekly: string };
+    count: { one: string; other: string };
+    intro: { daily: string; weekly: string };
+    open: string;
+    footer: { daily: string; weekly: string };
+  };
   auth: {
     verificationSubject: string;
     verificationBody: string;
@@ -228,6 +235,24 @@ const messages: Record<EmailLocale, EmailMessages> = {
         alerts: "Alerts",
         assignments: "Tasks",
         system: "System",
+      },
+    },
+    digest: {
+      subject: {
+        daily: "Your daily digest from {organizationName}: {count}",
+        weekly: "Your weekly digest from {organizationName}: {count}",
+      },
+      count: { one: "{count} notification", other: "{count} notifications" },
+      intro: {
+        daily: "Here is your daily digest of {count} in {organizationName}.",
+        weekly: "Here is your weekly digest of {count} in {organizationName}.",
+      },
+      open: "Open your notifications",
+      footer: {
+        daily:
+          "You receive this digest because you chose a daily email digest for notifications in {organizationName}.",
+        weekly:
+          "You receive this digest because you chose a weekly email digest for notifications in {organizationName}.",
       },
     },
     auth: {
@@ -364,6 +389,27 @@ const messages: Record<EmailLocale, EmailMessages> = {
         system: "Système",
       },
     },
+    digest: {
+      subject: {
+        daily: "Votre récapitulatif quotidien de {organizationName} : {count}",
+        weekly:
+          "Votre récapitulatif hebdomadaire de {organizationName} : {count}",
+      },
+      count: { one: "{count} notification", other: "{count} notifications" },
+      intro: {
+        daily:
+          "Voici votre récapitulatif quotidien de {count} dans {organizationName}.",
+        weekly:
+          "Voici votre récapitulatif hebdomadaire de {count} dans {organizationName}.",
+      },
+      open: "Ouvrir vos notifications",
+      footer: {
+        daily:
+          "Vous recevez ce récapitulatif car vous avez choisi un récapitulatif quotidien par e-mail des notifications de {organizationName}.",
+        weekly:
+          "Vous recevez ce récapitulatif car vous avez choisi un récapitulatif hebdomadaire par e-mail des notifications de {organizationName}.",
+      },
+    },
     auth: {
       verificationSubject: "Votre code de vérification MuseumLite",
       verificationBody: "Votre code de vérification est {token}.",
@@ -493,6 +539,24 @@ const messages: Record<EmailLocale, EmailMessages> = {
         alerts: "Alertas",
         assignments: "Tareas",
         system: "Sistema",
+      },
+    },
+    digest: {
+      subject: {
+        daily: "Tu resumen diario de {organizationName}: {count}",
+        weekly: "Tu resumen semanal de {organizationName}: {count}",
+      },
+      count: { one: "{count} notificación", other: "{count} notificaciones" },
+      intro: {
+        daily: "Este es tu resumen diario con {count} en {organizationName}.",
+        weekly: "Este es tu resumen semanal con {count} en {organizationName}.",
+      },
+      open: "Abrir tus notificaciones",
+      footer: {
+        daily:
+          "Recibes este resumen porque elegiste un resumen diario por correo de las notificaciones de {organizationName}.",
+        weekly:
+          "Recibes este resumen porque elegiste un resumen semanal por correo de las notificaciones de {organizationName}.",
       },
     },
     auth: {
@@ -625,6 +689,26 @@ const messages: Record<EmailLocale, EmailMessages> = {
         system: "System",
       },
     },
+    digest: {
+      subject: {
+        daily: "Ditt daglige sammendrag fra {organizationName}: {count}",
+        weekly: "Ditt ukentlige sammendrag fra {organizationName}: {count}",
+      },
+      count: { one: "{count} varsel", other: "{count} varsler" },
+      intro: {
+        daily:
+          "Her er ditt daglige sammendrag med {count} i {organizationName}.",
+        weekly:
+          "Her er ditt ukentlige sammendrag med {count} i {organizationName}.",
+      },
+      open: "Åpne varslene dine",
+      footer: {
+        daily:
+          "Du får dette sammendraget fordi du har valgt et daglig sammendrag på e-post for varsler i {organizationName}.",
+        weekly:
+          "Du får dette sammendraget fordi du har valgt et ukentlig sammendrag på e-post for varsler i {organizationName}.",
+      },
+    },
     auth: {
       verificationSubject: "Din bekreftelseskode for MuseumLite",
       verificationBody: "Bekreftelseskoden din er {token}.",
@@ -752,6 +836,24 @@ const messages: Record<EmailLocale, EmailMessages> = {
         alerts: "Alerte",
         assignments: "Sarcini",
         system: "Sistem",
+      },
+    },
+    digest: {
+      subject: {
+        daily: "Rezumatul zilnic din {organizationName}: {count}",
+        weekly: "Rezumatul săptămânal din {organizationName}: {count}",
+      },
+      count: { one: "{count} notificare", other: "{count} notificări" },
+      intro: {
+        daily: "Iată rezumatul zilnic cu {count} din {organizationName}.",
+        weekly: "Iată rezumatul săptămânal cu {count} din {organizationName}.",
+      },
+      open: "Deschideți notificările",
+      footer: {
+        daily:
+          "Primiți acest rezumat deoarece ați ales un rezumat zilnic prin e-mail al notificărilor din {organizationName}.",
+        weekly:
+          "Primiți acest rezumat deoarece ați ales un rezumat săptămânal prin e-mail al notificărilor din {organizationName}.",
       },
     },
     auth: {

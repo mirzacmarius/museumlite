@@ -36,6 +36,7 @@ import {
 } from "./utils/movementValidators";
 import { notificationCategory } from "./utils/notificationTypes";
 import {
+  notificationDigestItemFields,
   notificationEmailAttemptFields,
   notificationEmailDeliveryFields,
   notificationIntentFields,
@@ -2738,15 +2739,24 @@ export default defineSchema({
     "by_organizationId_and_idempotencyKey",
     ["organizationId", "idempotencyKey"],
   ),
-  // Instant notification email on the shared delivery ledger (ADR 0004, 0007)
+  // Instant and digest notification email on the shared delivery ledger (ADR 0004, 0007, 0008)
   notificationEmailDeliveries: defineTable(notificationEmailDeliveryFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_intentId", ["intentId"])
     .index("by_notificationId", ["notificationId"])
-    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"]),
+    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"])
+    .index("by_userId_and_organizationId_and_scheduledFor", [
+      "userId",
+      "organizationId",
+      "scheduledFor",
+    ]),
   notificationEmailAttempts: defineTable(notificationEmailAttemptFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_deliveryId_and_attemptNumber", ["deliveryId", "attemptNumber"]),
+  notificationDigestItems: defineTable(notificationDigestItemFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_deliveryId", ["deliveryId"])
+    .index("by_notificationId", ["notificationId"]),
 
   // User notification preferences
   notificationPreferences: defineTable({
@@ -2776,6 +2786,9 @@ export default defineSchema({
         v.literal("never"),
       ),
     ),
+    // Local digest time ("08:00") and weekday (0 = Sunday) in `timezone`
+    emailDigestTime: v.optional(v.string()),
+    emailDigestDay: v.optional(v.number()),
 
     // Quiet hours (no notifications during these times)
     quietHoursEnabled: v.optional(v.boolean()),

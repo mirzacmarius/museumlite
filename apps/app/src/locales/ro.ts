@@ -7220,6 +7220,7 @@ export default {
       system: "Sistem",
     },
     markAllRead: "Marchează toate ca citite",
+    settings: "Setări pentru notificări",
     empty: {
       noUnread: "Nu ai notificări necitite",
       noNotifications: "Nu există notificări",
@@ -7238,6 +7239,13 @@ export default {
       retry: "Retrimite e-mailul",
       details: "Detaliile e-mailului",
       hideDetails: "Ascunde detaliile e-mailului",
+      digest: {
+        waitingDaily: "În așteptarea rezumatului zilnic {time}",
+        waitingWeekly: "În așteptarea rezumatului săptămânal {time}",
+        sentDaily: "Trimisă în rezumatul zilnic {time}",
+        sentWeekly: "Trimisă în rezumatul săptămânal {time}",
+        leftOut: "Nu a fost inclusă în rezumat",
+      },
       attempt: "Încercarea {number}",
       noAttempts: "Încă nu a fost trimis niciun e-mail.",
       duration: "{ms} ms",
@@ -7257,36 +7265,48 @@ export default {
         email_disabled: "E-mailul este dezactivat pentru această categorie",
         address_missing: "Contul tău nu are o adresă de e-mail",
         channel_unavailable: "Trimiterea e-mailurilor nu este configurată",
+        digest_empty: "Nimic din rezumat nu îți mai putea fi trimis",
       },
       errors: {
         EMAIL_DELIVERY_NOT_FOUND: "Acest e-mail nu mai este disponibil.",
-        EMAIL_DELIVERY_NOT_RETRYABLE: "Acest e-mail a fost deja livrat sau se trimite acum.",
-        EMAIL_OFF_FOR_CATEGORY: "Activează mai întâi e-mailul pentru această categorie în setările de notificare.",
-        EMAIL_ADDRESS_MISSING: "Adaugă mai întâi o adresă de e-mail în contul tău.",
-        EMAIL_CHANNEL_UNAVAILABLE: "Trimiterea e-mailurilor nu este configurată pentru această instalare.",
-        NOTIFICATION_ACCESS_REVOKED: "Nu mai poți vedea această înregistrare, așa că nu îți poate fi trimisă pe e-mail.",
+        EMAIL_DELIVERY_NOT_RETRYABLE:
+          "Acest e-mail a fost deja livrat sau se trimite acum.",
+        EMAIL_OFF_FOR_CATEGORY:
+          "Activează mai întâi e-mailul pentru această categorie în setările de notificare.",
+        EMAIL_ADDRESS_MISSING:
+          "Adaugă mai întâi o adresă de e-mail în contul tău.",
+        EMAIL_CHANNEL_UNAVAILABLE:
+          "Trimiterea e-mailurilor nu este configurată pentru această instalare.",
+        NOTIFICATION_ACCESS_REVOKED:
+          "Nu mai poți vedea această înregistrare, așa că nu îți poate fi trimisă pe e-mail.",
         NOT_ORGANIZATION_MEMBER: "Nu mai ești membru al acestei organizații.",
+        DIGEST_EMPTY:
+          "Nimic din acest rezumat nu îți mai poate fi trimis pe e-mail.",
         fallback: "E-mailul nu a putut fi retrimis. Încearcă mai târziu.",
       },
     },
   },
   notificationSettings: {
     title: "Preferințe de notificare",
-    description: "Alege ce notificări primești. E-mailul se trimite pe lângă notificarea din MuseumLite.",
+    description:
+      "Alege ce notificări primești. E-mailul se trimite pe lângă notificarea din MuseumLite.",
     notify: "Notifică-mă",
     email: "E-mail",
     categories: {
       approvals: {
         label: "Aprobări",
-        description: "Cereri care așteaptă aprobarea ta și decizii privind cererile tale",
+        description:
+          "Cereri care așteaptă aprobarea ta și decizii privind cererile tale",
       },
       reminders: {
         label: "Mementouri",
-        description: "Împrumuturi scadente, asigurări care expiră, livrări apropiate și avertizări de termen",
+        description:
+          "Împrumuturi scadente, asigurări care expiră, livrări apropiate și avertizări de termen",
       },
       alerts: {
         label: "Alerte",
-        description: "Alerte de conservare și stare, întârzieri, sarcini blocate și termene depășite",
+        description:
+          "Alerte de conservare și stare, întârzieri, sarcini blocate și termene depășite",
       },
       assignments: {
         label: "Sarcini",
@@ -7294,24 +7314,41 @@ export default {
       },
       system: {
         label: "Sistem",
-        description: "Expedierea și returnarea împrumuturilor, actualizări de transport, operațiuni în lot și anunțuri",
+        description:
+          "Expedierea și returnarea împrumuturilor, actualizări de transport, operațiuni în lot și anunțuri",
       },
     },
-    emailTo: "E-mailurile se trimit la {address} imediat ce este emisă o notificare.",
-    emailFixture: "Această instalare trimite e-mailurile de notificare către un punct de test, așa că nu ajung în inboxul tău.",
-    emailUnavailable: "Trimiterea e-mailurilor nu este configurată pentru această instalare, așa că notificările apar doar în MuseumLite.",
-    emailAddressMissing: "Contul tău nu are o adresă de e-mail, așa că notificările apar doar în MuseumLite.",
-    savedDigest: {
-      daily: "Ai ales anterior un rezumat zilnic. Rezumatele nu sunt încă disponibile, așa că nu se trimite niciunul. Salvează pentru a primi pe e-mail, pe loc, categoriile bifate mai jos.",
-      weekly: "Ai ales anterior un rezumat săptămânal. Rezumatele nu sunt încă disponibile, așa că nu se trimite niciunul. Salvează pentru a primi pe e-mail, pe loc, categoriile bifate mai jos.",
+    emailTo: "E-mailurile de notificare se trimit la {address}.",
+    emailFixture:
+      "Această instalare trimite e-mailurile de notificare către un punct de test, așa că nu ajung în inboxul tău.",
+    emailUnavailable:
+      "Trimiterea e-mailurilor nu este configurată pentru această instalare, așa că notificările apar doar în MuseumLite.",
+    emailAddressMissing:
+      "Contul tău nu are o adresă de e-mail, așa că notificările apar doar în MuseumLite.",
+    schedule: {
+      label: "Trimite e-mailul",
+      instant: "Pe măsură ce apar notificările",
+      daily: "Rezumat zilnic",
+      weekly: "Rezumat săptămânal",
+      day: "Ziua",
+      time: "Ora",
+      timezone: "Orele rezumatului folosesc fusul tău orar, {timezone}.",
+      timezoneChange:
+        "Rezumatul tău este setat pe {saved}. La salvare va trece pe fusul tău orar actual, {timezone}.",
+      unscheduled:
+        "Ai ales un rezumat înainte ca rezumatele să aibă o oră de trimitere, așa că nu se trimite. Verifică ziua și ora de mai jos și salvează pentru a începe să-l primești.",
+      next: "Următorul rezumat ({count} în așteptare):",
     },
     save: "Salvează preferințele",
     saving: "Se salvează...",
     saved: "Preferințele de notificare au fost salvate.",
     errors: {
       NOT_ORGANIZATION_MEMBER: "Nu ești membru al acestei organizații.",
-      EMAIL_CHANNEL_UNAVAILABLE: "Trimiterea e-mailurilor nu este configurată pentru această instalare, așa că e-mailul nu poate fi activat.",
-      EMAIL_ADDRESS_MISSING: "Adaugă o adresă de e-mail în cont înainte de a activa e-mailul.",
+      EMAIL_CHANNEL_UNAVAILABLE:
+        "Trimiterea e-mailurilor nu este configurată pentru această instalare, așa că e-mailul nu poate fi activat.",
+      EMAIL_ADDRESS_MISSING:
+        "Adaugă o adresă de e-mail în cont înainte de a activa e-mailul.",
+      DIGEST_SCHEDULE_INVALID: "Alege o zi și o oră valide pentru rezumat.",
       fallback: "Preferințele nu au putut fi salvate. Încearcă din nou.",
     },
   },

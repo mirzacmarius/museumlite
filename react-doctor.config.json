@@ -68,7 +68,7 @@
         "rules": ["react-doctor/no-pure-black-background"]
       },
       {
-        "files": ["packages/backend/convex/utils/reportSchedule.ts"],
+        "files": ["packages/backend/convex/utils/calendarSchedule.ts"],
         "rules": ["react-doctor/js-hoist-intl"]
       },
       {

@@ -605,17 +605,30 @@ export default function NotificationsPage() {
             </p>
           </div>
 
-          {unreadCount > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {unreadCount > 0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 border-border/60 dark:border-white/10"
+                onClick={handleMarkAllRead}
+              >
+                <CheckCheck className="mr-2 size-3.5" strokeWidth={1.75} />
+                {t("notificationsPage.markAllRead")}
+              </Button>
+            ) : null}
             <Button
+              asChild
               variant="outline"
               size="sm"
               className="h-8 border-border/60 dark:border-white/10"
-              onClick={handleMarkAllRead}
             >
-              <CheckCheck className="mr-2 size-3.5" strokeWidth={1.75} />
-              {t("notificationsPage.markAllRead")}
+              <Link href="/notifications/settings">
+                <Settings className="mr-2 size-3.5" strokeWidth={1.75} />
+                {t("notificationsPage.settings")}
+              </Link>
             </Button>
-          ) : null}
+          </div>
         </div>
 
         <UnreadPulseChips

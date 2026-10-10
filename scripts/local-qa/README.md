@@ -18,7 +18,7 @@ CI runs the same backend, deploy and seed in the `deploy` job of `.github/workfl
 
 ## Notification email
 
-The QA backend has no email provider, so Settings › Notifications reports email as unavailable. To exercise instant email without sending anything, run the loopback fixture and point the backend at it:
+The QA backend has no email provider, so Notification settings (`/notifications/settings`) reports email as unavailable. To exercise instant email without sending anything, run the loopback fixture and point the backend at it:
 
 ```bash
 bun run qa:email-fixture                    # 127.0.0.1:3745 (EMAIL_FIXTURE_PORT to change)
@@ -26,7 +26,9 @@ bun run convex:local -- env set NOTIFICATION_EMAIL_FIXTURE_URL=http://127.0.0.1:
 curl -X POST http://127.0.0.1:3745/mode -d refuse   # accept | refuse | unavailable
 ```
 
-The fixture answers like the provider (200 with an id, 422 refused, 503 unavailable) and logs each request to `.local-qa/email-fixture.jsonl`. Only loopback URLs are accepted; any other value turns email off.
+The fixture answers like the provider (200 with an id, 422 refused, 503 unavailable) and logs each request, with its plain text, to `.local-qa/email-fixture.jsonl`. Only loopback URLs are accepted; any other value turns email off.
+
+Daily and weekly digests go out at the digest time chosen in Notification settings, in the browser's time zone, so pick a time a minute or two ahead to watch one arrive. The five-minute `sweep-notification-emails` cron also sends a digest whose time passed while the backend was stopped.
 
 ## Rules
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * A loopback stand-in for the notification email provider, for local QA
- * only. It answers Resend-shaped requests and records them in
- * .local-qa/email-fixture.jsonl; nothing is sent anywhere.
+ * only. It answers Resend-shaped requests and records them, with their plain
+ * text, in .local-qa/email-fixture.jsonl; nothing is sent anywhere.
  *
  *   bun run qa:email-fixture                         listen on 127.0.0.1:3745
  *   EMAIL_FIXTURE_PORT=3755 bun run qa:email-fixture
@@ -76,6 +76,7 @@ createServer(async (request, response) => {
       idempotencyKey: request.headers["idempotency-key"],
       to: email.to,
       subject: email.subject,
+      text: email.text,
       status,
     })}\n`,
   );

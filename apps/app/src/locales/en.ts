@@ -4773,6 +4773,7 @@ export default {
       system: "System",
     },
     markAllRead: "Mark all as read",
+    settings: "Notification settings",
     empty: {
       noUnread: "No unread notifications",
       noNotifications: "No notifications",
@@ -4791,6 +4792,13 @@ export default {
       retry: "Retry email",
       details: "Email details",
       hideDetails: "Hide email details",
+      digest: {
+        waitingDaily: "Waiting for your daily digest {time}",
+        waitingWeekly: "Waiting for your weekly digest {time}",
+        sentDaily: "Emailed in your daily digest {time}",
+        sentWeekly: "Emailed in your weekly digest {time}",
+        leftOut: "Left out of your digest",
+      },
       attempt: "Attempt {number}",
       noAttempts: "No email has been sent yet.",
       duration: "{ms} ms",
@@ -4810,36 +4818,47 @@ export default {
         email_disabled: "Email is off for this category",
         address_missing: "Your account has no email address",
         channel_unavailable: "Email delivery is not set up",
+        digest_empty: "Nothing in the digest could still be emailed to you",
       },
       errors: {
         EMAIL_DELIVERY_NOT_FOUND: "This email is no longer available.",
-        EMAIL_DELIVERY_NOT_RETRYABLE: "This email was already delivered or is still being sent.",
-        EMAIL_OFF_FOR_CATEGORY: "Turn on email for this category in notification settings first.",
+        EMAIL_DELIVERY_NOT_RETRYABLE:
+          "This email was already delivered or is still being sent.",
+        EMAIL_OFF_FOR_CATEGORY:
+          "Turn on email for this category in notification settings first.",
         EMAIL_ADDRESS_MISSING: "Add an email address to your account first.",
-        EMAIL_CHANNEL_UNAVAILABLE: "Email delivery is not set up for this deployment.",
-        NOTIFICATION_ACCESS_REVOKED: "You can no longer view this record, so it cannot be emailed to you.",
-        NOT_ORGANIZATION_MEMBER: "You are no longer a member of this organization.",
+        EMAIL_CHANNEL_UNAVAILABLE:
+          "Email delivery is not set up for this deployment.",
+        NOTIFICATION_ACCESS_REVOKED:
+          "You can no longer view this record, so it cannot be emailed to you.",
+        NOT_ORGANIZATION_MEMBER:
+          "You are no longer a member of this organization.",
+        DIGEST_EMPTY: "Nothing in this digest can still be emailed to you.",
         fallback: "The email could not be queued again. Try again later.",
       },
     },
   },
   notificationSettings: {
     title: "Notification preferences",
-    description: "Choose which notifications you receive. Email is sent in addition to the notification in MuseumLite.",
+    description:
+      "Choose which notifications you receive. Email is sent in addition to the notification in MuseumLite.",
     notify: "Notify me",
     email: "Email",
     categories: {
       approvals: {
         label: "Approvals",
-        description: "Requests waiting for your approval and decisions on your requests",
+        description:
+          "Requests waiting for your approval and decisions on your requests",
       },
       reminders: {
         label: "Reminders",
-        description: "Loans coming due, expiring insurance, upcoming deliveries and deadline warnings",
+        description:
+          "Loans coming due, expiring insurance, upcoming deliveries and deadline warnings",
       },
       alerts: {
         label: "Alerts",
-        description: "Conservation and condition alerts, delays, blocked tasks and missed deadlines",
+        description:
+          "Conservation and condition alerts, delays, blocked tasks and missed deadlines",
       },
       assignments: {
         label: "Tasks",
@@ -4847,24 +4866,41 @@ export default {
       },
       system: {
         label: "System",
-        description: "Loan dispatch and returns, transit updates, batch jobs and announcements",
+        description:
+          "Loan dispatch and returns, transit updates, batch jobs and announcements",
       },
     },
-    emailTo: "Emails go to {address} as soon as a notification is sent.",
-    emailFixture: "This deployment sends notification email to a test endpoint, so messages do not reach your inbox.",
-    emailUnavailable: "Email delivery is not set up for this deployment, so notifications appear only in MuseumLite.",
-    emailAddressMissing: "Your account has no email address, so notifications appear only in MuseumLite.",
-    savedDigest: {
-      daily: "You chose a daily digest earlier. Digests are not available yet, so no digest emails are being sent. Save to receive the categories marked below by email as notifications happen.",
-      weekly: "You chose a weekly digest earlier. Digests are not available yet, so no digest emails are being sent. Save to receive the categories marked below by email as notifications happen.",
+    emailTo: "Notification emails go to {address}.",
+    emailFixture:
+      "This deployment sends notification email to a test endpoint, so messages do not reach your inbox.",
+    emailUnavailable:
+      "Email delivery is not set up for this deployment, so notifications appear only in MuseumLite.",
+    emailAddressMissing:
+      "Your account has no email address, so notifications appear only in MuseumLite.",
+    schedule: {
+      label: "Send email",
+      instant: "As notifications happen",
+      daily: "Daily digest",
+      weekly: "Weekly digest",
+      day: "Day",
+      time: "Time",
+      timezone: "Digest times are in your time zone, {timezone}.",
+      timezoneChange:
+        "Your digest is set in {saved}. Saving sets it to your current time zone, {timezone}.",
+      unscheduled:
+        "You chose a digest before digests had a delivery time, so it is not being sent. Check the day and time below and save to start receiving it.",
+      next: "Next digest ({count} waiting):",
     },
     save: "Save preferences",
     saving: "Saving...",
     saved: "Notification preferences saved.",
     errors: {
       NOT_ORGANIZATION_MEMBER: "You are not a member of this organization.",
-      EMAIL_CHANNEL_UNAVAILABLE: "Email delivery is not set up for this deployment, so email cannot be turned on.",
-      EMAIL_ADDRESS_MISSING: "Add an email address to your account before turning on email.",
+      EMAIL_CHANNEL_UNAVAILABLE:
+        "Email delivery is not set up for this deployment, so email cannot be turned on.",
+      EMAIL_ADDRESS_MISSING:
+        "Add an email address to your account before turning on email.",
+      DIGEST_SCHEDULE_INVALID: "Choose a valid day and time for your digest.",
       fallback: "Your preferences could not be saved. Try again.",
     },
   },

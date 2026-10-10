@@ -46,7 +46,58 @@ function reasonLabel(
       return t("reasons.address_missing");
     case "channel_unavailable":
       return t("reasons.channel_unavailable");
+    case "digest_empty":
+      return t("reasons.digest_empty");
   }
+}
+
+/** What happened to the email, for a notification emailed on its own. */
+function instantSummary(
+  email: NotificationEmailOutcome,
+  times: { completed: string; next: string },
+  t: Translate,
+) {
+  switch (email.status) {
+    case "succeeded":
+      return t("sent", { time: times.completed });
+    case "pending":
+      return email.attemptCount > 0 && !email.inFlight
+        ? t("retrying", { time: times.next })
+        : t("sending");
+    case "cancelled":
+      return t("notSent");
+    case "failed_transient":
+    case "failed_permanent":
+      return t("notDelivered");
+  }
+}
+
+/** What happened to the digest that carries the notification. */
+function digestSummary(
+  email: NotificationEmailOutcome,
+  digest: NonNullable<NotificationEmailOutcome["digest"]>,
+  times: { completed: string; next: string },
+  t: Translate,
+) {
+  const daily = digest.cadence === "daily";
+  if (digest.excludedReason) {
+    return t("digest.leftOut");
+  }
+  if (
+    email.status === "pending" &&
+    email.attemptCount === 0 &&
+    !email.inFlight
+  ) {
+    return daily
+      ? t("digest.waitingDaily", { time: times.next })
+      : t("digest.waitingWeekly", { time: times.next });
+  }
+  if (email.status === "succeeded") {
+    return daily
+      ? t("digest.sentDaily", { time: times.completed })
+      : t("digest.sentWeekly", { time: times.completed });
+  }
+  return instantSummary(email, times, t);
 }
 
 function outcomeLabel(
@@ -104,8 +155,9 @@ function EmailAttempts({ email }: { email: NotificationEmailOutcome }) {
 }
 
 /**
- * What happened to the email that accompanied a notification, with the
- * recipient's own retry for an email that failed or was not sent.
+ * What happened to the email that carried a notification, on its own or in
+ * a digest, with the recipient's own retry for an email that failed or was
+ * not sent. Retrying a digest resends every notification it still may list.
  */
 export function NotificationEmailStatus({
   email,
@@ -126,26 +178,23 @@ export function NotificationEmailStatus({
     addSuffix: true,
   });
 
+  const times = { completed: completedAt, next: nextAttempt };
+  const leftOut = email.digest?.excludedReason;
+  const summary = email.digest
+    ? digestSummary(email, email.digest, times, t)
+    : instantSummary(email, times, t);
   const retrying =
     email.status === "pending" && email.attemptCount > 0 && !email.inFlight;
-  const summary =
-    email.status === "succeeded"
-      ? t("sent", { time: completedAt })
-      : email.status === "pending"
-        ? retrying
-          ? t("retrying", { time: nextAttempt })
-          : t("sending")
-        : email.status === "cancelled"
-          ? t("notSent")
-          : t("notDelivered");
-  const reason =
-    email.status === "succeeded" || (email.status === "pending" && !retrying)
+  const reason = leftOut
+    ? reasonLabel(leftOut, undefined, t)
+    : email.status === "succeeded" || (email.status === "pending" && !retrying)
       ? null
       : reasonLabel(email.lastErrorCode, email.lastResponseStatus, t);
   const canRetry =
-    email.status === "failed_transient" ||
-    email.status === "failed_permanent" ||
-    email.status === "cancelled";
+    !leftOut &&
+    (email.status === "failed_transient" ||
+      email.status === "failed_permanent" ||
+      email.status === "cancelled");
 
   async function handleRetry() {
     setRetryError(null);
