@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
 import { deliveryStatus, ledgerProgress } from "./utils/deliveryLedger";
@@ -74,7 +74,7 @@ function outcomeOf(delivery: Doc<"notificationEmailDeliveries">) {
 async function emailOutcomeOf(
   ctx: QueryCtx,
   notificationId: Id<"notifications">,
-) {
+): Promise<Infer<typeof emailOutcome> | null> {
   const delivery = await ctx.db
     .query("notificationEmailDeliveries")
     .withIndex("by_notificationId", (q) =>

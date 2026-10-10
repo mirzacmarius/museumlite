@@ -120,3 +120,13 @@ function getClientNowSnapshot(): number | undefined {
 export function useClientNow() {
   return useClientSnapshot(getClientNowSnapshot, () => undefined);
 }
+
+const LOCAL_TIME_ZONE_FORMATTER = new Intl.DateTimeFormat();
+
+/** The browser's IANA time zone, used to save local schedules; "UTC" while rendering on the server. */
+export function useClientTimeZone() {
+  return useClientSnapshot(
+    () => LOCAL_TIME_ZONE_FORMATTER.resolvedOptions().timeZone || "UTC",
+    () => "UTC",
+  );
+}

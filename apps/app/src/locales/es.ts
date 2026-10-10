@@ -5008,6 +5008,13 @@ export default {
       retry: "Reintentar correo",
       details: "Detalles del correo",
       hideDetails: "Ocultar detalles del correo",
+      digest: {
+        waitingDaily: "En espera de tu resumen diario {time}",
+        waitingWeekly: "En espera de tu resumen semanal {time}",
+        sentDaily: "Enviada en tu resumen diario {time}",
+        sentWeekly: "Enviada en tu resumen semanal {time}",
+        leftOut: "No incluida en tu resumen",
+      },
       attempt: "Intento {number}",
       noAttempts: "Todavía no se ha enviado ningún correo.",
       duration: "{ms} ms",
@@ -5027,61 +5034,91 @@ export default {
         email_disabled: "El correo está desactivado para esta categoría",
         address_missing: "Tu cuenta no tiene dirección de correo",
         channel_unavailable: "El envío de correo no está configurado",
+        digest_empty: "Nada del resumen podía enviarse ya por correo",
       },
       errors: {
         EMAIL_DELIVERY_NOT_FOUND: "Este correo ya no está disponible.",
-        EMAIL_DELIVERY_NOT_RETRYABLE: "Este correo ya se entregó o se está enviando.",
-        EMAIL_OFF_FOR_CATEGORY: "Primero activa el correo para esta categoría en la configuración de notificaciones.",
-        EMAIL_ADDRESS_MISSING: "Primero añade una dirección de correo a tu cuenta.",
-        EMAIL_CHANNEL_UNAVAILABLE: "El envío de correo no está configurado en esta implementación.",
-        NOTIFICATION_ACCESS_REVOKED: "Ya no puedes ver este registro, así que no se te puede enviar por correo.",
+        EMAIL_DELIVERY_NOT_RETRYABLE:
+          "Este correo ya se entregó o se está enviando.",
+        EMAIL_OFF_FOR_CATEGORY:
+          "Primero activa el correo para esta categoría en la configuración de notificaciones.",
+        EMAIL_ADDRESS_MISSING:
+          "Primero añade una dirección de correo a tu cuenta.",
+        EMAIL_CHANNEL_UNAVAILABLE:
+          "El envío de correo no está configurado en esta implementación.",
+        NOTIFICATION_ACCESS_REVOKED:
+          "Ya no puedes ver este registro, así que no se te puede enviar por correo.",
         NOT_ORGANIZATION_MEMBER: "Ya no eres miembro de esta organización.",
+        DIGEST_EMPTY: "Ya no se puede enviar por correo nada de este resumen.",
         fallback: "No se pudo volver a enviar el correo. Inténtalo más tarde.",
       },
     },
   },
   notificationSettings: {
     title: "Preferencias de notificación",
-    description: "Elige qué notificaciones recibes. El correo se envía además de la notificación en MuseumLite.",
+    description:
+      "Elige qué notificaciones recibes. El correo se envía además de la notificación en MuseumLite.",
     notify: "Notificarme",
     email: "Correo",
     categories: {
       approvals: {
         label: "Aprobaciones",
-        description: "Solicitudes pendientes de tu aprobación y decisiones sobre tus solicitudes",
+        description:
+          "Solicitudes pendientes de tu aprobación y decisiones sobre tus solicitudes",
       },
       reminders: {
         label: "Recordatorios",
-        description: "Préstamos por vencer, seguros que caducan, entregas próximas y avisos de plazo",
+        description:
+          "Préstamos por vencer, seguros que caducan, entregas próximas y avisos de plazo",
       },
       alerts: {
         label: "Alertas",
-        description: "Alertas de conservación y estado, retrasos, tareas bloqueadas y plazos incumplidos",
+        description:
+          "Alertas de conservación y estado, retrasos, tareas bloqueadas y plazos incumplidos",
       },
       assignments: {
         label: "Tareas",
-        description: "Tareas asignadas a ti, revisiones, devoluciones y menciones",
+        description:
+          "Tareas asignadas a ti, revisiones, devoluciones y menciones",
       },
       system: {
         label: "Sistema",
-        description: "Envío y devolución de préstamos, actualizaciones de tránsito, trabajos por lotes y anuncios",
+        description:
+          "Envío y devolución de préstamos, actualizaciones de tránsito, trabajos por lotes y anuncios",
       },
     },
-    emailTo: "Los correos se envían a {address} en cuanto se emite una notificación.",
-    emailFixture: "Esta implementación envía los correos de notificación a un punto de prueba, así que no llegan a tu bandeja de entrada.",
-    emailUnavailable: "El envío de correo no está configurado en esta implementación, así que las notificaciones solo aparecen en MuseumLite.",
-    emailAddressMissing: "Tu cuenta no tiene dirección de correo, así que las notificaciones solo aparecen en MuseumLite.",
-    savedDigest: {
-      daily: "Elegiste antes un resumen diario. Los resúmenes aún no están disponibles, así que no se envía ninguno. Guarda para recibir por correo, en el momento, las categorías marcadas abajo.",
-      weekly: "Elegiste antes un resumen semanal. Los resúmenes aún no están disponibles, así que no se envía ninguno. Guarda para recibir por correo, en el momento, las categorías marcadas abajo.",
+    emailTo: "Los correos de notificación se envían a {address}.",
+    emailFixture:
+      "Esta implementación envía los correos de notificación a un punto de prueba, así que no llegan a tu bandeja de entrada.",
+    emailUnavailable:
+      "El envío de correo no está configurado en esta implementación, así que las notificaciones solo aparecen en MuseumLite.",
+    emailAddressMissing:
+      "Tu cuenta no tiene dirección de correo, así que las notificaciones solo aparecen en MuseumLite.",
+    schedule: {
+      label: "Enviar correo",
+      instant: "Según llegan las notificaciones",
+      daily: "Resumen diario",
+      weekly: "Resumen semanal",
+      day: "Día",
+      time: "Hora",
+      timezone: "Las horas del resumen siguen tu zona horaria, {timezone}.",
+      timezoneChange:
+        "Tu resumen está configurado en {saved}. Al guardar pasará a tu zona horaria actual, {timezone}.",
+      unscheduled:
+        "Elegiste un resumen antes de que los resúmenes tuvieran hora de envío, así que no se está enviando. Revisa el día y la hora de abajo y guarda para empezar a recibirlo.",
+      next: "Próximo resumen ({count} en espera):",
     },
     save: "Guardar preferencias",
     saving: "Guardando...",
     saved: "Preferencias de notificación guardadas.",
     errors: {
       NOT_ORGANIZATION_MEMBER: "No eres miembro de esta organización.",
-      EMAIL_CHANNEL_UNAVAILABLE: "El envío de correo no está configurado en esta implementación, así que no se puede activar el correo.",
-      EMAIL_ADDRESS_MISSING: "Añade una dirección de correo a tu cuenta antes de activar el correo.",
+      EMAIL_CHANNEL_UNAVAILABLE:
+        "El envío de correo no está configurado en esta implementación, así que no se puede activar el correo.",
+      EMAIL_ADDRESS_MISSING:
+        "Añade una dirección de correo a tu cuenta antes de activar el correo.",
+      DIGEST_SCHEDULE_INVALID:
+        "Elige un día y una hora válidos para tu resumen.",
       fallback: "No se pudieron guardar tus preferencias. Inténtalo de nuevo.",
     },
   },

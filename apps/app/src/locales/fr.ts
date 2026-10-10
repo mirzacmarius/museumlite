@@ -4957,6 +4957,13 @@ export default {
       retry: "Renvoyer l’e-mail",
       details: "Détails de l’e-mail",
       hideDetails: "Masquer les détails de l’e-mail",
+      digest: {
+        waitingDaily: "En attente de votre récapitulatif quotidien {time}",
+        waitingWeekly: "En attente de votre récapitulatif hebdomadaire {time}",
+        sentDaily: "Envoyé dans votre récapitulatif quotidien {time}",
+        sentWeekly: "Envoyé dans votre récapitulatif hebdomadaire {time}",
+        leftOut: "Non incluse dans votre récapitulatif",
+      },
       attempt: "Tentative {number}",
       noAttempts: "Aucun e-mail n’a encore été envoyé.",
       duration: "{ms} ms",
@@ -4976,61 +4983,95 @@ export default {
         email_disabled: "L’e-mail est désactivé pour cette catégorie",
         address_missing: "Votre compte n’a pas d’adresse e-mail",
         channel_unavailable: "L’envoi d’e-mails n’est pas configuré",
+        digest_empty:
+          "Plus rien dans le récapitulatif ne pouvait vous être envoyé",
       },
       errors: {
         EMAIL_DELIVERY_NOT_FOUND: "Cet e-mail n’est plus disponible.",
-        EMAIL_DELIVERY_NOT_RETRYABLE: "Cet e-mail a déjà été remis ou est en cours d’envoi.",
-        EMAIL_OFF_FOR_CATEGORY: "Activez d’abord l’e-mail pour cette catégorie dans les paramètres de notification.",
-        EMAIL_ADDRESS_MISSING: "Ajoutez d’abord une adresse e-mail à votre compte.",
-        EMAIL_CHANNEL_UNAVAILABLE: "L’envoi d’e-mails n’est pas configuré pour ce déploiement.",
-        NOTIFICATION_ACCESS_REVOKED: "Vous ne pouvez plus consulter cet enregistrement : il ne peut donc pas vous être envoyé par e-mail.",
-        NOT_ORGANIZATION_MEMBER: "Vous n’êtes plus membre de cette organisation.",
+        EMAIL_DELIVERY_NOT_RETRYABLE:
+          "Cet e-mail a déjà été remis ou est en cours d’envoi.",
+        EMAIL_OFF_FOR_CATEGORY:
+          "Activez d’abord l’e-mail pour cette catégorie dans les paramètres de notification.",
+        EMAIL_ADDRESS_MISSING:
+          "Ajoutez d’abord une adresse e-mail à votre compte.",
+        EMAIL_CHANNEL_UNAVAILABLE:
+          "L’envoi d’e-mails n’est pas configuré pour ce déploiement.",
+        NOTIFICATION_ACCESS_REVOKED:
+          "Vous ne pouvez plus consulter cet enregistrement : il ne peut donc pas vous être envoyé par e-mail.",
+        NOT_ORGANIZATION_MEMBER:
+          "Vous n’êtes plus membre de cette organisation.",
+        DIGEST_EMPTY:
+          "Plus rien dans ce récapitulatif ne peut vous être envoyé par e-mail.",
         fallback: "L’e-mail n’a pas pu être renvoyé. Réessayez plus tard.",
       },
     },
   },
   notificationSettings: {
     title: "Préférences de notification",
-    description: "Choisissez les notifications que vous recevez. L’e-mail s’ajoute à la notification dans MuseumLite.",
+    description:
+      "Choisissez les notifications que vous recevez. L’e-mail s’ajoute à la notification dans MuseumLite.",
     notify: "Me notifier",
     email: "E-mail",
     categories: {
       approvals: {
         label: "Approbations",
-        description: "Demandes en attente de votre approbation et décisions sur vos demandes",
+        description:
+          "Demandes en attente de votre approbation et décisions sur vos demandes",
       },
       reminders: {
         label: "Rappels",
-        description: "Prêts arrivant à échéance, assurances qui expirent, livraisons à venir et alertes de délai",
+        description:
+          "Prêts arrivant à échéance, assurances qui expirent, livraisons à venir et alertes de délai",
       },
       alerts: {
         label: "Alertes",
-        description: "Alertes de conservation et d’état, retards, tâches bloquées et délais dépassés",
+        description:
+          "Alertes de conservation et d’état, retards, tâches bloquées et délais dépassés",
       },
       assignments: {
         label: "Tâches",
-        description: "Tâches qui vous sont attribuées, relectures, retours et mentions",
+        description:
+          "Tâches qui vous sont attribuées, relectures, retours et mentions",
       },
       system: {
         label: "Système",
-        description: "Expédition et retour des prêts, suivi des transports, traitements par lots et annonces",
+        description:
+          "Expédition et retour des prêts, suivi des transports, traitements par lots et annonces",
       },
     },
-    emailTo: "Les e-mails sont envoyés à {address} dès qu’une notification est émise.",
-    emailFixture: "Ce déploiement envoie les e-mails de notification à un point de test : ils n’arrivent pas dans votre boîte de réception.",
-    emailUnavailable: "L’envoi d’e-mails n’est pas configuré pour ce déploiement : les notifications apparaissent uniquement dans MuseumLite.",
-    emailAddressMissing: "Votre compte n’a pas d’adresse e-mail : les notifications apparaissent uniquement dans MuseumLite.",
-    savedDigest: {
-      daily: "Vous aviez choisi un récapitulatif quotidien. Les récapitulatifs ne sont pas encore disponibles et aucun n’est envoyé. Enregistrez pour recevoir par e-mail, au fil de l’eau, les catégories cochées ci-dessous.",
-      weekly: "Vous aviez choisi un récapitulatif hebdomadaire. Les récapitulatifs ne sont pas encore disponibles et aucun n’est envoyé. Enregistrez pour recevoir par e-mail, au fil de l’eau, les catégories cochées ci-dessous.",
+    emailTo: "Les e-mails de notification sont envoyés à {address}.",
+    emailFixture:
+      "Ce déploiement envoie les e-mails de notification à un point de test : ils n’arrivent pas dans votre boîte de réception.",
+    emailUnavailable:
+      "L’envoi d’e-mails n’est pas configuré pour ce déploiement : les notifications apparaissent uniquement dans MuseumLite.",
+    emailAddressMissing:
+      "Votre compte n’a pas d’adresse e-mail : les notifications apparaissent uniquement dans MuseumLite.",
+    schedule: {
+      label: "Envoyer l’e-mail",
+      instant: "Au fil des notifications",
+      daily: "Récapitulatif quotidien",
+      weekly: "Récapitulatif hebdomadaire",
+      day: "Jour",
+      time: "Heure",
+      timezone:
+        "Les heures du récapitulatif suivent votre fuseau horaire, {timezone}.",
+      timezoneChange:
+        "Votre récapitulatif est réglé sur {saved}. En enregistrant, il passera à votre fuseau horaire actuel, {timezone}.",
+      unscheduled:
+        "Vous aviez choisi un récapitulatif avant que les récapitulatifs aient une heure d’envoi : il n’est donc pas envoyé. Vérifiez le jour et l’heure ci-dessous puis enregistrez pour commencer à le recevoir.",
+      next: "Prochain récapitulatif ({count} en attente) :",
     },
     save: "Enregistrer les préférences",
     saving: "Enregistrement...",
     saved: "Préférences de notification enregistrées.",
     errors: {
       NOT_ORGANIZATION_MEMBER: "Vous n’êtes pas membre de cette organisation.",
-      EMAIL_CHANNEL_UNAVAILABLE: "L’envoi d’e-mails n’est pas configuré pour ce déploiement : l’e-mail ne peut pas être activé.",
-      EMAIL_ADDRESS_MISSING: "Ajoutez une adresse e-mail à votre compte avant d’activer l’e-mail.",
+      EMAIL_CHANNEL_UNAVAILABLE:
+        "L’envoi d’e-mails n’est pas configuré pour ce déploiement : l’e-mail ne peut pas être activé.",
+      EMAIL_ADDRESS_MISSING:
+        "Ajoutez une adresse e-mail à votre compte avant d’activer l’e-mail.",
+      DIGEST_SCHEDULE_INVALID:
+        "Choisissez un jour et une heure valides pour votre récapitulatif.",
       fallback: "Vos préférences n’ont pas pu être enregistrées. Réessayez.",
     },
   },
