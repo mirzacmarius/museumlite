@@ -4824,6 +4824,7 @@ export default {
       deaccession: "Baja",
       exhibition: "Exposición",
       conservation: "Tratamiento de conservación",
+      documentationFinding: "Hallazgo de documentación",
     },
     fields: {
       title: "Título",
@@ -5549,6 +5550,7 @@ export default {
       locations: "Ir a ubicaciones",
       conservation: "Ir a conservación",
       entries: "Ir a entradas",
+      documentationQuality: "Ir a calidad de la documentación",
     },
     pageNotFound: {
       title: "Página no encontrada",
@@ -5574,6 +5576,276 @@ export default {
       identifier: "Identificador (A–Z)",
     },
     allTypes: "Todos los tipos",
+  },
+  documentationQuality: {
+    title: "Calidad de la documentación",
+    description:
+      "Comprueba los registros con los perfiles de documentación de la institución y revisa identificadores duplicados, documentación que falta, vínculos dudosos con partes y referencias rotas. Las comprobaciones nunca cambian un registro: el personal corrige los registros donde se llevan, y la siguiente comprobación confirma la corrección.",
+    tabs: {
+      findings: "Hallazgos",
+      profiles: "Perfiles",
+    },
+    kind: "Tipo de hallazgo",
+    allKinds: "Todos los tipos",
+    kinds: {
+      duplicate_identifier: "Identificador duplicado",
+      missing_evidence: "Documentación que falta",
+      legacy_link: "Vínculo dudoso con una parte",
+      orphan_reference: "Referencia rota",
+    },
+    statuses: {
+      open: "Abierto",
+      accepted: "Excepción aceptada",
+      resolved: "Resuelto",
+    },
+    registers: {
+      catalog: "catálogo",
+      accession: "ingresos",
+    },
+    stages: {
+      entry: "En custodia por una entrada",
+      collection: "En la colección",
+      borrowed: "En préstamo recibido",
+      deaccessioned: "Dado de baja",
+    },
+    stageHints: {
+      entry:
+        "Recibido para identificación, depósito o estudio de adquisición, sin registrar en el inventario.",
+      collection:
+        "Objetos registrados o catalogados, incluidos los prestados.",
+      borrowed: "Objetos en custodia por un préstamo recibido.",
+      deaccessioned:
+        "Objetos retirados de la colección; sus registros se conservan.",
+    },
+    requirements: {
+      object_name: "Nombre del objeto",
+      maker: "Autor",
+      production_date: "Fecha de creación",
+      materials: "Materiales",
+      dimensions: "Dimensiones",
+      description: "Descripción",
+      current_location: "Ubicación actual",
+      condition_assessment: "Evaluación del estado aceptada",
+      image: "Fotografía",
+      supporting_document: "Documento justificativo",
+      accession_record: "Registro de ingreso aprobado",
+      provenance_claim: "Afirmación de procedencia",
+    },
+    orphanFields: {
+      parentObject: "Objeto principal",
+      currentLocation: "Ubicación actual",
+      collectionGroup: "Grupo de colecciones",
+      object: "Objeto",
+      donorAccount: "Cuenta del donante",
+    },
+    orphanProblems: {
+      missing: "ya no existe",
+      other_organization: "pertenece a otra organización",
+      self: "apunta al propio registro",
+    },
+    recordTypes: {
+      object: "Objeto",
+      accession: "Registro de ingreso",
+      deaccession: "Baja",
+    },
+    objectTabs: {
+      general: "General",
+      physical: "Físico",
+      media: "Medios",
+      accession: "Ingreso",
+      placement: "Ubicación",
+      provenance: "Procedencia",
+    },
+    summary: {
+      duplicateIdentifier:
+        "«{identifier}» lo comparten {count} registros del registro de {register}",
+      missingEvidence: "{identifier} {title}: falta {missing}",
+      legacyName: "{label} nombra a «{name}» sin una parte vinculada",
+      legacyAccount: "{label} remite a una parte sin un vínculo confirmado",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "No hay hallazgos abiertos. Ejecuta una comprobación para buscar excepciones de documentación.",
+        accepted: "No hay excepciones aceptadas.",
+        resolved: "Aún no hay hallazgos resueltos.",
+      },
+      emptyKind: "No hay hallazgos de este tipo: {kind}.",
+      reopened: "Reabierto",
+      detectedBy: "Comprobación {number}",
+      resolvedBy: "Resuelto por la comprobación {number}",
+    },
+    check: {
+      title: "Comprobación de calidad",
+      loading: "Cargando…",
+      never:
+        "Aún no se ha ejecutado ninguna comprobación. Una comprobación lee cada registro en pasos acotados y enumera lo que encuentra.",
+      running:
+        "La comprobación {number} está en curso: paso {step} de {steps} ({phase}), {records} registros comprobados hasta ahora.",
+      stalled:
+        "La comprobación {number} no avanza desde hace más de diez minutos. Reanúdala, o cancélala y empieza de nuevo.",
+      completed:
+        "La comprobación {number} terminó el {date}: {records} registros comprobados, {detected} hallazgos ({opened} nuevos, {reopened} reabiertos), {resolved} resueltos.",
+      failed: "La comprobación {number} se detuvo durante: {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "El miembro que la ejecutó ya no tiene acceso. Reanúdala para continuar con tu acceso.",
+        PAGE_FAILED:
+          "No se pudo comprobar un registro. Reanúdala para volver a intentarlo desde donde se detuvo.",
+      },
+      cancelled:
+        "La comprobación {number} se canceló. Los hallazgos que detectó se mantienen; no resolvió ninguno.",
+      phases: {
+        catalog_identifiers: "identificadores del catálogo",
+        accession_identifiers: "identificadores de ingreso",
+        objects_active: "objetos",
+        objects_loaned: "objetos prestados",
+        objects_deaccessioned: "objetos dados de baja",
+        accessions: "registros de ingreso",
+        deaccessions: "bajas",
+        resolve_duplicate_identifier: "identificadores duplicados corregidos",
+        resolve_missing_evidence: "documentación completada",
+        resolve_legacy_link: "vínculos con partes confirmados",
+        resolve_orphan_reference: "referencias reparadas",
+        finished: "terminada",
+      },
+      run: "Ejecutar comprobación",
+      resume: "Reanudar",
+      cancel: "Cancelar comprobación",
+      started: "Comprobación iniciada",
+      resumed: "Comprobación reanudada",
+      cancelledToast: "Comprobación cancelada",
+      noProfiles:
+        "No hay perfiles activos, así que no se comprobó la documentación que falta.",
+      partiesNotChecked:
+        "No se comprobaron los vínculos con partes porque el módulo Cuentas está desactivado.",
+      identifierIndexIncomplete:
+        "Algunos identificadores aún no están indexados, así que no se comprobaron los duplicados entre ellos.",
+      identifierIndexLink: "Completar el índice de identificadores",
+      neverChanges:
+        "Las comprobaciones nunca renumeran, fusionan ni completan registros.",
+    },
+    profiles: {
+      loading: "Cargando perfiles…",
+      description:
+        "Un perfil indica qué documentación necesitan los objetos de un tipo en determinadas etapas. Cada comprobación aplica los perfiles activos; los archivados se conservan.",
+      add: "Añadir perfil",
+      readOnly: "Los administradores cambian los perfiles.",
+      empty:
+        "Aún no hay perfiles. Sin ellos, las comprobaciones siguen informando de identificadores duplicados, vínculos con partes y referencias rotas.",
+      allTypes: "Todos los tipos de objeto",
+      objectTypeHint: "Los tipos de objeto vienen de Configuración › Preferencias.",
+      addTitle: "Añadir perfil de documentación",
+      editTitle: "Editar perfil de documentación",
+      dialogDescription:
+        "Elige qué objetos cubre el perfil y qué deben tener. La siguiente comprobación lo aplica.",
+      fields: {
+        name: "Nombre",
+        objectType: "Tipo de objeto",
+        stages: "Etapas",
+        requirements: "Documentación exigida",
+      },
+      errors: {
+        name: "Escribe un nombre de hasta 120 caracteres.",
+        stages: "Elige al menos una etapa.",
+        requirements: "Elige al menos un requisito.",
+      },
+      cancel: "Cancelar",
+      save: "Guardar perfil",
+      saving: "Guardando…",
+      saved: "Perfil guardado",
+      edit: "Editar",
+      archive: "Archivar",
+      restore: "Restaurar",
+      archived: "Perfil archivado",
+      restored: "Perfil restaurado",
+      archivedBadge: "Archivado",
+    },
+    review: {
+      title: "Revisión",
+      openHint:
+        "Corrige el registro y ejecuta una comprobación, o acepta esto como excepción con un motivo.",
+      acceptAction: "Aceptar como excepción",
+      acceptTitle: "Aceptar como excepción",
+      acceptDescription:
+        "El registro queda como está. Indica el motivo, por ejemplo por qué la documentación no puede existir. El hallazgo se reabre si una comprobación posterior encuentra algo distinto.",
+      acceptDuplicateDescription:
+        "Cada registro conserva su identificador. Tu motivo se guarda como revisión de conflicto de identificador para cada registro que lo comparte.",
+      note: "Motivo",
+      noteRequired: "Indica un motivo.",
+      cancel: "Cancelar",
+      accept: "Aceptar",
+      saving: "Guardando…",
+      accepted: "Aceptado como excepción",
+      reviewedBy: "Aceptado por {name} el {date}",
+      unknownReviewer: "un antiguo miembro",
+      earlierReview:
+        "Aceptado anteriormente; lo que encontró la comprobación ha cambiado desde entonces:",
+      reopen: "Reabrir",
+      reopened: "Hallazgo reabierto",
+      reviewedInRegister:
+        "Revisado en el registro de identificadores. Si otro registro empieza a compartir el identificador, este hallazgo se reabre.",
+      resolved: "La comprobación {number} ya no lo encontró el {date}.",
+    },
+    detail: {
+      back: "Volver a calidad de la documentación",
+      detection:
+        "Encontrado primero por la comprobación {first}; por última vez por la comprobación {last}.",
+      foundTitle: "Qué encontró la comprobación",
+      repairTitle: "Dónde corregir",
+      notRecorded: "Sin registrar",
+      register: "Registro",
+      identifier: "Identificador tal como se registró",
+      records: "Registros que lo comparten ({count})",
+      moreRecords: "Y {count} más.",
+      object: "Objeto",
+      profile: "Perfil",
+      stage: "Etapa",
+      missing: "Falta",
+      recordedCondition:
+        "Texto de estado en el registro, conservado tal como se escribió",
+      recordedProvenance:
+        "Texto de procedencia en el registro, conservado tal como se escribió",
+      record: "Registro",
+      assertedName: "Nombre tal como se escribió",
+      existingParty: "Cuenta referida",
+      suggestedRole: "Función",
+      field: "Referencia",
+      storedReference: "Valor guardado",
+      problem: "Problema",
+      recordUnavailable: "{record} ya no está disponible.",
+      openTab: "Abrir la pestaña {tab}: {requirements}",
+      repairIntro:
+        "Corrige el registro donde se lleva. La siguiente comprobación cierra este hallazgo cuando la carencia desaparece.",
+      linkPartyHint:
+        "Confirma o vincula la parte en el panel Partes del registro.",
+      linkPartyUnavailable:
+        "Vincular una parte requiere el módulo Cuentas y permiso para editar partes. Asígnalo a alguien que pueda hacerlo.",
+      duplicateHint:
+        "No se renumera nada. Abre cada registro para compararlos, o acepta el duplicado con las pruebas históricas.",
+      identifierRegister: "Abrir el registro de identificadores",
+    },
+    errors: {
+      fallback: "Algo salió mal. Inténtalo de nuevo.",
+      profileInvalid: "Revisa el nombre, las etapas y los requisitos del perfil.",
+      profileLimitReached:
+        "Una organización puede tener como máximo 20 perfiles activos. Archiva uno primero.",
+      profileNotFound: "Este perfil ya no existe.",
+      checkRunning: "Ya hay una comprobación en curso.",
+      checkNotFound: "Esta comprobación ya no existe.",
+      checkNotResumable:
+        "Solo se puede reanudar la última comprobación detenida o estancada.",
+      findingNotFound: "Este hallazgo ya no existe.",
+      findingStatusChanged:
+        "Este hallazgo cambió entretanto. Recarga para ver su estado actual.",
+      reviewNoteRequired: "Indica un motivo de hasta 2.000 caracteres.",
+      identifierIndexIncomplete:
+        "Completa el índice de identificadores antes de revisar duplicados.",
+      duplicateGroupTooLarge:
+        "Demasiados registros comparten este identificador para revisarlos a la vez. Revísalos en el registro de identificadores.",
+      reviewedInIdentifierRegister:
+        "Los identificadores duplicados se revisan en el registro de identificadores.",
+    },
   },
   objectEntries: {
     title: "Entradas",
@@ -8481,6 +8753,16 @@ export default {
       updateSite: "Actualizar sitio",
       archiveSiteConfirm: "¿Seguro que quieres archivar este sitio?",
       failedArchiveSite: "No se pudo archivar el sitio",
+      siteInUseTitle: "Este sitio sigue en uso",
+      siteInUseDescription:
+        "Archivar no debe dejar ubicaciones ni objetos bajo un sitio inactivo. Resuelve esto primero; no se ha cambiado nada.",
+      siteInUseLocations:
+        "Ubicaciones activas en este sitio: {count}. Elimínalas primero en Ubicaciones.",
+      siteInUseObjects:
+        "Objetos todavía colocados en las ubicaciones de este sitio: {count}. Muévelos primero a otra ubicación.",
+      siteInUseIncomplete:
+        "Este sitio tiene demasiadas ubicaciones u objetos para comprobarlos a la vez, así que no se puede archivar aquí.",
+      siteInUseClose: "Cerrar",
       systemRole: "(Sistema)",
       siteManagement: "Gestión de sitios",
       physicalLocationBranches:
@@ -8870,6 +9152,7 @@ export default {
       newAccession: "Nueva adquisición",
       newLoan: "Nuevo préstamo",
       newCollectionGroup: "Nuevo grupo de colecciones",
+      documentationQuality: "Calidad de la documentación",
       navigation: "Navegación",
       dashboard: "Panel",
       library: "Biblioteca",
@@ -9330,6 +9613,7 @@ export default {
       locked: "No disponible",
       overview: "Resumen",
       myWork: "Mi trabajo",
+      documentationQuality: "Calidad de la documentación",
       objectCatalog: "Catálogo de objetos",
       locationTracking: "Ubicación y seguimiento",
       scan: "Escanear",

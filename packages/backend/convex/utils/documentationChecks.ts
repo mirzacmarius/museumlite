@@ -345,6 +345,10 @@ async function scanObjects(
       q.eq("organizationId", check.organizationId).eq("status", status),
     )
     .paginate({ cursor: check.cursor, numItems: pageSize });
+  const checkedProfiles = check.profiles.map((profile) => ({
+    ...profile,
+    stageSet: new Set(profile.stages),
+  }));
   for (const object of result.page) {
     stats.rows++;
     for (const problem of await objectReferenceProblems(ctx, object))
@@ -359,7 +363,7 @@ async function scanObjects(
         stats,
       );
     const objectType = normalizeObjectType(object.objectType ?? "");
-    const profiles = check.profiles.filter(
+    const profiles = checkedProfiles.filter(
       (profile) =>
         profile.normalizedObjectType === undefined ||
         profile.normalizedObjectType === objectType,
@@ -368,7 +372,7 @@ async function scanObjects(
     const stage = await objectStage(ctx, object);
     const missingOf = objectEvidence(ctx, object);
     for (const profile of profiles) {
-      if (!profile.stages.includes(stage)) continue;
+      if (!profile.stageSet.has(stage)) continue;
       const missing = await missingOf(profile.requirements);
       if (missing.length === 0) continue;
       await recordDetection(

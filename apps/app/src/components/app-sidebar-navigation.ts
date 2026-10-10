@@ -4,6 +4,7 @@ import {
   Bookmark,
   BookOpen,
   ChartColumn,
+  ClipboardCheck,
   Contact,
   Container,
   Database,
@@ -102,6 +103,10 @@ export function buildSidebarNavigation({
     { title: label("scan"), url: "/scan", icon: QrCode },
     { title: label("accessions"), url: "/accessions", icon: FileCheck },
     { title: label("deaccessions"), url: "/deaccessions", icon: FileX },
+    ...capabilityItem("documentation_quality", {
+      title: label("documentationQuality"),
+      icon: ClipboardCheck,
+    }),
     ...capabilityItem("conservation", {
       title: label("conservation"),
       icon: Activity,

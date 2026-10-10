@@ -23,6 +23,8 @@ const navigationLabels: Record<string, string> = {
   "untranslatedComponents.navigation.scan": "Scan",
   "untranslatedComponents.navigation.accessions": "Accessions",
   "untranslatedComponents.navigation.deaccessions": "Deaccessions",
+  "untranslatedComponents.navigation.documentationQuality":
+    "Documentation quality",
   "untranslatedComponents.navigation.conservation": "Conservation",
   "untranslatedComponents.navigation.insurance": "Insurance",
   "untranslatedComponents.navigation.loansTransport": "Loans & Transport",
@@ -120,6 +122,19 @@ describe("buildSidebarNavigation", () => {
     expect(navigationGroups.some((group) => group.title === "Library")).toBe(
       false,
     );
+  });
+
+  test("lists documentation quality for staff who maintain records and hides it from read-only roles", () => {
+    expect(
+      findItem(buildNavigation().topLevelNavigation, "Documentation quality"),
+    ).toMatchObject({ url: "/documentation-quality", locked: false });
+    expect(
+      allTitles(
+        buildNavigation({
+          documentation_quality: { status: "permission_missing" },
+        }),
+      ),
+    ).not.toContain("Documentation quality");
   });
 
   test("shows plan-gated workflows locked at their canonical routes", () => {

@@ -855,11 +855,18 @@ const findingRecordTypeValidator = v.union(
   v.literal("deaccession"),
 );
 
+interface FindingRecordView extends FindingRecordRef {
+  /** The record's identifier now; empty when it is no longer available. */
+  label: string;
+  title?: string;
+  available: boolean;
+}
+
 async function readFindingRecord(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   ref: FindingRecordRef,
-) {
+): Promise<FindingRecordView> {
   const table = {
     object: "collections",
     accession: "accessions",

@@ -40,6 +40,7 @@ describe("buildCommandPaletteActions", () => {
       "/objects",
       "/collections",
       "/accessions",
+      "/documentation-quality",
       "/loans",
       "/locations",
       "/library",

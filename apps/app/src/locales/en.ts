@@ -4611,6 +4611,7 @@ export default {
       deaccession: "Deaccession",
       exhibition: "Exhibition",
       conservation: "Conservation treatment",
+      documentationFinding: "Documentation finding",
     },
     fields: {
       title: "Title",
@@ -5317,6 +5318,7 @@ export default {
       locations: "Go to locations",
       conservation: "Go to conservation",
       entries: "Go to entries",
+      documentationQuality: "Go to documentation quality",
     },
     pageNotFound: {
       title: "Page not found",
@@ -5342,6 +5344,266 @@ export default {
       identifier: "Identifier (A–Z)",
     },
     allTypes: "All types",
+  },
+  documentationQuality: {
+    title: "Documentation quality",
+    description:
+      "Check records against the institution's documentation profiles and review duplicate identifiers, missing documentation, uncertain party links and broken references. Checks never change a record: staff repair records where they are kept, and the next check confirms the repair.",
+    tabs: {
+      findings: "Findings",
+      profiles: "Profiles",
+    },
+    kind: "Kind of finding",
+    allKinds: "All kinds",
+    kinds: {
+      duplicate_identifier: "Duplicate identifier",
+      missing_evidence: "Missing documentation",
+      legacy_link: "Uncertain party link",
+      orphan_reference: "Broken reference",
+    },
+    statuses: {
+      open: "Open",
+      accepted: "Accepted exception",
+      resolved: "Resolved",
+    },
+    registers: {
+      catalog: "catalog",
+      accession: "accession",
+    },
+    stages: {
+      entry: "Held under an entry",
+      collection: "In the collection",
+      borrowed: "Borrowed",
+      deaccessioned: "Deaccessioned",
+    },
+    stageHints: {
+      entry:
+        "Received for identification, deposit or acquisition review and not accessioned.",
+      collection: "Accessioned or catalogued objects, including those on loan.",
+      borrowed: "Objects held under an incoming loan.",
+      deaccessioned: "Objects removed from the collection; their records stay.",
+    },
+    requirements: {
+      object_name: "Object name",
+      maker: "Maker",
+      production_date: "Date made",
+      materials: "Materials",
+      dimensions: "Dimensions",
+      description: "Description",
+      current_location: "Current location",
+      condition_assessment: "Accepted condition assessment",
+      image: "Photograph",
+      supporting_document: "Supporting document",
+      accession_record: "Approved accession record",
+      provenance_claim: "Provenance claim",
+    },
+    orphanFields: {
+      parentObject: "Parent object",
+      currentLocation: "Current location",
+      collectionGroup: "Collection group",
+      object: "Object",
+      donorAccount: "Donor account",
+    },
+    orphanProblems: {
+      missing: "no longer exists",
+      other_organization: "belongs to another organization",
+      self: "points to the record itself",
+    },
+    recordTypes: {
+      object: "Object",
+      accession: "Accession",
+      deaccession: "Deaccession",
+    },
+    objectTabs: {
+      general: "General",
+      physical: "Physical",
+      media: "Media",
+      accession: "Accession",
+      placement: "Placement",
+      provenance: "Provenance",
+    },
+    summary: {
+      duplicateIdentifier:
+        "“{identifier}” is shared by {count} records in the {register} register",
+      missingEvidence: "{identifier} {title}: missing {missing}",
+      legacyName: "{label} names “{name}” without a linked party",
+      legacyAccount: "{label} references a party without a confirmed link",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "No open findings. Run a check to look for documentation exceptions.",
+        accepted: "No accepted exceptions.",
+        resolved: "No resolved findings yet.",
+      },
+      emptyKind: "No findings of this kind: {kind}.",
+      reopened: "Reopened",
+      detectedBy: "Check {number}",
+      resolvedBy: "Resolved by check {number}",
+    },
+    check: {
+      title: "Quality check",
+      loading: "Loading…",
+      never:
+        "No check has run yet. A check reads every record in bounded steps and lists what it finds.",
+      running:
+        "Check {number} is running: step {step} of {steps} ({phase}), {records} records checked so far.",
+      stalled:
+        "Check {number} has made no progress for over ten minutes. Resume it, or cancel it and start again.",
+      completed:
+        "Check {number} finished {date}: {records} records checked, {detected} findings ({opened} new, {reopened} reopened), {resolved} resolved.",
+      failed: "Check {number} stopped while checking {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "The member who ran it no longer has access. Resume it to continue under your access.",
+        PAGE_FAILED:
+          "A record could not be checked. Resume it to try again from where it stopped.",
+      },
+      cancelled:
+        "Check {number} was cancelled. The findings it detected stay; it resolved none.",
+      phases: {
+        catalog_identifiers: "catalog identifiers",
+        accession_identifiers: "accession identifiers",
+        objects_active: "objects",
+        objects_loaned: "objects on loan",
+        objects_deaccessioned: "deaccessioned objects",
+        accessions: "accessions",
+        deaccessions: "deaccessions",
+        resolve_duplicate_identifier: "repaired duplicate identifiers",
+        resolve_missing_evidence: "repaired documentation",
+        resolve_legacy_link: "confirmed party links",
+        resolve_orphan_reference: "repaired references",
+        finished: "finished",
+      },
+      run: "Run check",
+      resume: "Resume",
+      cancel: "Cancel check",
+      started: "Check started",
+      resumed: "Check resumed",
+      cancelledToast: "Check cancelled",
+      noProfiles: "No active profiles, so missing documentation was not checked.",
+      partiesNotChecked:
+        "Party links were not checked because the Accounts module is off.",
+      identifierIndexIncomplete:
+        "Some identifiers are not indexed yet, so duplicates among them were not checked.",
+      identifierIndexLink: "Complete the identifier index",
+      neverChanges: "Checks never renumber, merge or fill in records.",
+    },
+    profiles: {
+      loading: "Loading profiles…",
+      description:
+        "A profile says what documentation objects of one type need at given stages. Each check applies the active profiles; archived ones are kept.",
+      add: "Add profile",
+      readOnly: "Administrators change profiles.",
+      empty:
+        "No profiles yet. Without one, checks still report duplicate identifiers, party links and broken references.",
+      allTypes: "All object types",
+      objectTypeHint: "Object types come from Settings › Preferences.",
+      addTitle: "Add documentation profile",
+      editTitle: "Edit documentation profile",
+      dialogDescription:
+        "Choose which objects the profile covers and what they must have. The next check applies it.",
+      fields: {
+        name: "Name",
+        objectType: "Object type",
+        stages: "Stages",
+        requirements: "Required documentation",
+      },
+      errors: {
+        name: "Enter a name of up to 120 characters.",
+        stages: "Choose at least one stage.",
+        requirements: "Choose at least one requirement.",
+      },
+      cancel: "Cancel",
+      save: "Save profile",
+      saving: "Saving…",
+      saved: "Profile saved",
+      edit: "Edit",
+      archive: "Archive",
+      restore: "Restore",
+      archived: "Profile archived",
+      restored: "Profile restored",
+      archivedBadge: "Archived",
+    },
+    review: {
+      title: "Review",
+      openHint:
+        "Repair the record and run a check, or accept this as an exception with a reason.",
+      acceptAction: "Accept as exception",
+      acceptTitle: "Accept as an exception",
+      acceptDescription:
+        "The record stays as it is. Give the reason, for example why the documentation cannot exist. The finding reopens if a later check finds something different.",
+      acceptDuplicateDescription:
+        "Every record keeps its identifier. Your reason is recorded as an identifier conflict review for each record that shares it.",
+      note: "Reason",
+      noteRequired: "Enter a reason.",
+      cancel: "Cancel",
+      accept: "Accept",
+      saving: "Saving…",
+      accepted: "Accepted as an exception",
+      reviewedBy: "Accepted by {name} on {date}",
+      unknownReviewer: "a former member",
+      earlierReview: "Accepted earlier; what the check found has changed since:",
+      reopen: "Reopen",
+      reopened: "Finding reopened",
+      reviewedInRegister:
+        "Reviewed in the identifier register. If another record starts sharing the identifier, this finding reopens.",
+      resolved: "Check {number} no longer found this on {date}.",
+    },
+    detail: {
+      back: "Back to documentation quality",
+      detection: "First found by check {first}; last found by check {last}.",
+      foundTitle: "What the check found",
+      repairTitle: "Where to repair",
+      notRecorded: "Not recorded",
+      register: "Register",
+      identifier: "Identifier as recorded",
+      records: "Records sharing it ({count})",
+      moreRecords: "And {count} more.",
+      object: "Object",
+      profile: "Profile",
+      stage: "Stage",
+      missing: "Missing",
+      recordedCondition: "Condition text on the record, kept as written",
+      recordedProvenance: "Provenance text on the record, kept as written",
+      record: "Record",
+      assertedName: "Name as written",
+      existingParty: "Account referenced",
+      suggestedRole: "Role",
+      field: "Reference",
+      storedReference: "Stored value",
+      problem: "Problem",
+      recordUnavailable: "{record} is no longer available.",
+      openTab: "Open the {tab} tab: {requirements}",
+      repairIntro:
+        "Repair the record where it is kept. The next check closes this finding when the gap is gone.",
+      linkPartyHint: "Confirm or link the party in the record's Parties panel.",
+      linkPartyUnavailable:
+        "Linking a party needs the Accounts module and permission to edit parties. Assign this to someone who can.",
+      duplicateHint:
+        "Nothing is renumbered. Open each record to compare them, or accept the duplicate with the historical evidence.",
+      identifierRegister: "Open the identifier register",
+    },
+    errors: {
+      fallback: "Something went wrong. Try again.",
+      profileInvalid: "Check the profile's name, stages and requirements.",
+      profileLimitReached:
+        "An organization can have at most 20 active profiles. Archive one first.",
+      profileNotFound: "This profile no longer exists.",
+      checkRunning: "A check is already running.",
+      checkNotFound: "This check no longer exists.",
+      checkNotResumable: "Only the latest stopped or stalled check can be resumed.",
+      findingNotFound: "This finding no longer exists.",
+      findingStatusChanged:
+        "This finding changed meanwhile. Reload to see its current state.",
+      reviewNoteRequired: "Enter a reason of up to 2,000 characters.",
+      identifierIndexIncomplete:
+        "Complete the identifier index before reviewing duplicates.",
+      duplicateGroupTooLarge:
+        "Too many records share this identifier to review at once. Review them in the identifier register.",
+      reviewedInIdentifierRegister:
+        "Duplicate identifiers are reviewed in the identifier register.",
+    },
   },
   objectEntries: {
     title: "Entries",
@@ -8191,6 +8453,16 @@ export default {
       updateSite: "Update Site",
       archiveSiteConfirm: "Are you sure you want to archive this site?",
       failedArchiveSite: "Failed to archive site",
+      siteInUseTitle: "This site is still in use",
+      siteInUseDescription:
+        "Archiving must not leave locations or objects under an inactive site. Resolve these first; nothing was changed.",
+      siteInUseLocations:
+        "Active locations at this site: {count}. Delete them in Locations first.",
+      siteInUseObjects:
+        "Objects still placed at this site's locations: {count}. Move them to another location first.",
+      siteInUseIncomplete:
+        "This site has too many locations or objects to check at once, so it cannot be archived here.",
+      siteInUseClose: "Close",
       systemRole: "(System)",
       siteManagement: "Site Management",
       physicalLocationBranches:
@@ -8568,6 +8840,7 @@ export default {
       newAccession: "New Accession",
       newLoan: "New Loan",
       newCollectionGroup: "New Collection Group",
+      documentationQuality: "Documentation quality",
       navigation: "Navigation",
       dashboard: "Dashboard",
       library: "Library",
@@ -8998,6 +9271,7 @@ export default {
       locked: "Unavailable",
       overview: "Overview",
       myWork: "My work",
+      documentationQuality: "Documentation quality",
       objectCatalog: "Object Catalog",
       locationTracking: "Location & Tracking",
       scan: "Scan",

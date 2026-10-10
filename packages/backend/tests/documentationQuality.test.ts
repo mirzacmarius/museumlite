@@ -1197,10 +1197,11 @@ test("a check stops when its runner loses access and another member resumes it f
   const checkId = await officer.mutation(api.documentationQuality.startCheck, {
     organizationId,
   });
-  for (let page = 0; page < 10; page++) {
+  let checkedRecords = 0;
+  for (let page = 0; page < 10 && checkedRecords === 0; page++) {
     vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
-    if ((await overviewOf(officer, organizationId)).checkedRecords > 0) break;
+    ({ checkedRecords } = await overviewOf(officer, organizationId));
   }
   expect(await overviewOf(officer, organizationId)).toMatchObject({
     phase: "objects_active",
