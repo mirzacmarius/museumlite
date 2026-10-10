@@ -2,39 +2,55 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { custodyConflictFromError } from "@v1/backend/convex/utils/custodyErrors";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
+import { useFormNavigationGuard } from "@/hooks/use-form-navigation-guard";
+import { useRecordFormSession } from "@/hooks/use-record-form-session";
+import { useRecordSaveFailure } from "@/hooks/use-record-save-failure";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type {
+  CollectionEditTabId,
   CollectionFormData,
   OwnershipEntry,
 } from "../collection-form-shared/types";
-import { useFormNavigationGuard } from "../collection-form-shared/use-form-navigation-guard";
+import { useCollectionFieldLabel } from "../collection-form-shared/use-collection-field-label";
 import { useFormTabState } from "../collection-form-shared/use-form-tab-state";
 import {
-  createInitialFormData,
+  collectionFieldLocation,
   createOwnershipEntryLocalId,
-  getFormSignature,
+  EMPTY_EDIT_FORM,
   getStatusBadgeClass,
   normalizeOptionalString,
+  validateCollectionFormData,
   withLinkEntryLocalIds,
   withOwnershipEntryLocalIds,
 } from "../collection-form-shared/utils";
 import {
-  collectionEditFormSyncReducer,
-  initialCollectionEditFormSyncState,
-} from "./collection-edit-form-sync";
+  type CollectionEditValues,
+  collectionEditValues,
+  comparableCollectionEdit,
+  parseCollectionEditValues,
+} from "./collection-edit-values";
 import { useCollectionEditFormMedia } from "./use-collection-edit-form-media";
 import { useCollectionEditFormSubmit } from "./use-collection-edit-form-submit";
+
+const EMPTY_EDIT_VALUES: CollectionEditValues = {
+  ...EMPTY_EDIT_FORM,
+  conditionChangeNote: "",
+};
 
 export function useCollectionEditForm() {
   const tRoot = useI18n();
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
+  const tErrors = useScopedI18n("recordForm.errors");
+  const tFields = useScopedI18n("recordForm.objectFields");
   const params = useParams();
   const collectionId = params.id as string;
   const typedCollectionId = collectionId as Id<"collections">;
@@ -50,22 +66,22 @@ export function useCollectionEditForm() {
     api.collectionGroups.getGroupsForCollection,
     collectionId ? { collectionId: typedCollectionId } : "skip",
   );
+  const editState = useQuery(
+    api.recordEdits.getEditState,
+    collectionId
+      ? { target: { type: "object", id: typedCollectionId } }
+      : "skip",
+  );
   const pendingMoveRequest = useQuery(
     api.objectMoves.getPendingForCollection,
     collectionId ? { collectionId: typedCollectionId } : "skip",
   );
 
-  const [{ formData, isInitialized }, dispatchFormSync] = useReducer(
-    collectionEditFormSyncReducer,
-    initialCollectionEditFormSyncState,
-  );
   const { tabs, activeTab, setActiveTab } = useFormTabState(
     isLocationTrackingEnabled,
   );
-  const initialFormSignatureRef = useRef("");
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [alternateAccessionDraft, setAlternateAccessionDraft] = useState("");
-  const [conditionChangeNote, setConditionChangeNote] = useState("");
   const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
   const [editingOwnershipEntryId, setEditingOwnershipEntryId] = useState<
     string | null
@@ -73,6 +89,71 @@ export function useCollectionEditForm() {
   const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(
     null,
   );
+
+  const fieldLabel = useCollectionFieldLabel();
+  const custodyMessage = useCustodyConflictMessage();
+  const describeFailure = useRecordSaveFailure({
+    fieldLabel,
+    describe: useCallback(
+      (error: unknown) =>
+        // The only custody rules a catalog save meets are about its location.
+        custodyConflictFromError(error)
+          ? { message: custodyMessage(error), field: "currentLocationId" }
+          : null,
+      [custodyMessage],
+    ),
+  });
+
+  const latest = useMemo(
+    () =>
+      collection && collectionGroupsForCollection !== undefined && editState
+        ? {
+            values: collectionEditValues(
+              collection,
+              collectionGroupsForCollection,
+            ),
+            editVersion: editState.editVersion,
+          }
+        : undefined,
+    [collection, collectionGroupsForCollection, editState],
+  );
+  const validate = useCallback(
+    (values: CollectionEditValues) => {
+      const errors = validateCollectionFormData(values, {
+        titleRequired: t("form.errors.titleRequired"),
+        weightInvalid: tErrors("weightInvalid"),
+        measurementInvalid: tErrors("measurementInvalid"),
+      });
+      const recordedCondition = normalizeOptionalString(
+        latest?.values.condition,
+      );
+      if (
+        recordedCondition &&
+        normalizeOptionalString(values.condition) !== recordedCondition &&
+        !values.conditionChangeNote.trim()
+      )
+        errors.conditionChangeNote = tErrors("conditionNoteRequired");
+      return errors;
+    },
+    [latest, t, tErrors],
+  );
+  const session = useRecordFormSession({
+    latest,
+    initialValues: EMPTY_EDIT_VALUES,
+    comparable: comparableCollectionEdit,
+    recovery: collectionId
+      ? {
+          kind: "object",
+          recordId: collectionId,
+          parse: parseCollectionEditValues,
+        }
+      : null,
+    validate,
+    describeFailure,
+    invalidMessage: tErrors("invalid"),
+  });
+  const formData = session.values;
+  const { update } = session;
 
   const media = useQuery(
     api.media.list,
@@ -83,7 +164,7 @@ export function useCollectionEditForm() {
     collection: collection ?? null,
     typedCollectionId,
     media,
-    setError,
+    setError: setLocalError,
     t,
   });
 
@@ -113,59 +194,28 @@ export function useCollectionEditForm() {
   const hasActiveLoan =
     loans?.some((loan) => loan.status === "active") ?? false;
 
-  const initialConditionValue = normalizeOptionalString(collection?.condition);
-  const currentConditionValue = normalizeOptionalString(formData.condition);
+  const baseCondition = normalizeOptionalString(session.baseValues?.condition);
   const hasConditionChanged =
-    isInitialized && currentConditionValue !== initialConditionValue;
+    session.ready &&
+    normalizeOptionalString(formData.condition) !== baseCondition;
   const requiresConditionChangeNote =
-    hasConditionChanged && initialConditionValue.length > 0;
-  const isFormDirty =
-    isInitialized &&
-    getFormSignature(formData) !== initialFormSignatureRef.current;
-
-  useEffect(() => {
-    if (!collection || collectionGroupsForCollection === undefined) {
-      return;
-    }
-
-    const nextFormData = createInitialFormData(
-      collection,
-      collectionGroupsForCollection,
-    );
-    const nextSignature = getFormSignature(nextFormData);
-
-    if (!isInitialized) {
-      initialFormSignatureRef.current = nextSignature;
-      dispatchFormSync({ type: "sync_from_server", formData: nextFormData });
-      return;
-    }
-
-    if (!isFormDirty && nextSignature !== initialFormSignatureRef.current) {
-      initialFormSignatureRef.current = nextSignature;
-      dispatchFormSync({ type: "sync_from_server", formData: nextFormData });
-    }
-  }, [collection, collectionGroupsForCollection, isFormDirty, isInitialized]);
+    hasConditionChanged && baseCondition.length > 0;
+  const isFormDirty = session.isDirty;
 
   useBeforeUnload(isFormDirty);
 
+  const conditionChangeNote = formData.conditionChangeNote;
   useEffect(() => {
     if (!hasConditionChanged && conditionChangeNote) {
-      setConditionChangeNote("");
+      update((values) => ({ ...values, conditionChangeNote: "" }));
     }
-  }, [conditionChangeNote, hasConditionChanged]);
+  }, [conditionChangeNote, hasConditionChanged, update]);
 
   const submitState = useCollectionEditFormSubmit({
     collectionId,
     typedCollectionId,
-    formData,
-    initialFormSignatureRef,
-    isFormDirty,
+    session,
     hasMediaChanges: mediaState.hasMediaChanges,
-    hasConditionChanged,
-    requiresConditionChangeNote,
-    conditionChangeNote,
-    setError,
-    t,
   });
 
   const navigation = useFormNavigationGuard({
@@ -179,9 +229,14 @@ export function useCollectionEditForm() {
       field: K,
       value: CollectionFormData[K],
     ) => {
-      dispatchFormSync({ type: "update_field", field, value });
+      update((values) => ({ ...values, [field]: value }));
     },
-    [],
+    [update],
+  );
+  const setConditionChangeNote = useCallback(
+    (value: string) =>
+      update((values) => ({ ...values, conditionChangeNote: value })),
+    [update],
   );
 
   const createOwnershipEntry = useCallback(
@@ -221,16 +276,17 @@ export function useCollectionEditForm() {
 
     const existingValues = formData.alternateAccessionNumbers || [];
     if (existingValues.includes(nextValue)) {
-      setError("Alternate accession number already exists.");
+      setLocalError(tFields("alternateNumberExists"));
       return;
     }
 
     updateField("alternateAccessionNumbers", [...existingValues, nextValue]);
     setAlternateAccessionDraft("");
-    setError(null);
+    setLocalError(null);
   }, [
     alternateAccessionDraft,
     formData.alternateAccessionNumbers,
+    tFields,
     updateField,
   ]);
 
@@ -242,9 +298,19 @@ export function useCollectionEditForm() {
           (_, index) => index !== indexToRemove,
         ),
       );
-      setError(null);
+      setLocalError(null);
     },
     [formData.alternateAccessionNumbers, updateField],
+  );
+
+  const goToField = useCallback(
+    (field: string) => {
+      const { tab, elementId } = collectionFieldLocation(field);
+      const tabId = tabs.find((candidate) => candidate.id === tab)?.id;
+      if (tabId) setActiveTab(tabId as CollectionEditTabId);
+      requestAnimationFrame(() => document.getElementById(elementId)?.focus());
+    },
+    [setActiveTab, tabs],
   );
 
   const locationSummary =
@@ -266,12 +332,15 @@ export function useCollectionEditForm() {
     collection,
     collectionGroupsForCollection,
     pendingMoveRequest,
+    session,
+    fieldLabel,
+    goToField,
     formData,
     activeTab,
     setActiveTab,
     tabs,
-    isSubmitting: submitState.isSubmitting,
-    error,
+    isSubmitting: session.saving,
+    error: localError,
     alternateAccessionDraft,
     setAlternateAccessionDraft,
     conditionChangeNote,

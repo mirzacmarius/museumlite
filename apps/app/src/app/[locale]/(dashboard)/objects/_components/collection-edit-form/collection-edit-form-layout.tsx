@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { MediaEditorDialog } from "@/components/media-editor-dialog";
+import { RecordFormNotices } from "@/components/record-form/record-form-notices";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import {
   CollectionEditFormFooter,
@@ -39,6 +40,9 @@ export function CollectionEditFormLayout({
     isLocationTrackingEnabled,
     collection,
     pendingMoveRequest,
+    session,
+    fieldLabel,
+    goToField,
     formData,
     activeTab,
     setActiveTab,
@@ -100,7 +104,7 @@ export function CollectionEditFormLayout({
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <form id="object-edit-form" onSubmit={handleSubmit}>
+        <form id="object-edit-form" onSubmit={handleSubmit} noValidate>
           <CollectionEditFormHero
             collection={collection}
             formData={formData}
@@ -125,6 +129,7 @@ export function CollectionEditFormLayout({
             collectionSummary={collectionSummary}
             getStatusBadgeClass={getStatusBadgeClass}
             onTitleChange={(value) => updateField("title", value)}
+            titleError={session.fieldErrors.title}
             onDescriptionChange={(value) => updateField("description", value)}
             onTabSelect={setActiveTab}
             fileInputRef={fileInputRef}
@@ -134,6 +139,15 @@ export function CollectionEditFormLayout({
 
           <CollectionEditFormTabShell
             error={error}
+            notices={
+              <RecordFormNotices
+                session={session}
+                fieldLabel={fieldLabel}
+                onGoToField={goToField}
+                keepsDeviceCopy
+              />
+            }
+            fieldErrors={session.fieldErrors}
             tabs={tabs}
             activeTab={activeTab}
             onTabSelect={setActiveTab}

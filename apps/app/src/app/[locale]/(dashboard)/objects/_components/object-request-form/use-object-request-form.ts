@@ -3,56 +3,66 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
+  type CollectionType,
   isCollectionModuleId,
   isCollectionTypeEnabled,
 } from "@v1/backend/convex/utils/moduleCatalog";
-import { useQuery } from "convex/react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useFormNavigationGuard } from "@/hooks/use-form-navigation-guard";
+import { useRecordFormSession } from "@/hooks/use-record-form-session";
+import { useRecordSaveFailure } from "@/hooks/use-record-save-failure";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type {
+  CollectionEditTabId,
   CollectionFormData,
   DraftMediaItem,
+  ObjectDraftData,
 } from "../collection-form-shared/types";
-import { useFormNavigationGuard } from "../collection-form-shared/use-form-navigation-guard";
+import { useCollectionFieldLabel } from "../collection-form-shared/use-collection-field-label";
 import { useFormTabState } from "../collection-form-shared/use-form-tab-state";
 import {
-  createEmptyFormData,
-  createFormDataFromDraftObject,
-  getFormSignature,
+  buildDraftMediaPayload,
+  buildObjectDraftPayload,
+  collectionFieldLocation,
+  validateCollectionFormData,
 } from "../collection-form-shared/utils";
-import { resolveDraftPrimaryImageId } from "./draft-primary-image";
 import { useObjectDraftErrorMessage } from "../object-type-details/use-object-draft-error-message";
-import { objectRequestDraftReducer } from "./object-request-form-draft-reducer";
-import { useObjectRequestFormDraft } from "./use-object-request-form-draft";
+import { resolveDraftPrimaryImageId } from "./draft-primary-image";
+import {
+  collectionTypeChange,
+  comparableObjectRequest,
+  emptyObjectRequestValues,
+  type ObjectRequestValues,
+  objectRequestValuesFromDraft,
+  parseObjectRequestValues,
+  withCollectionType,
+} from "./object-request-values";
 import { useObjectRequestFormLocalMedia } from "./use-object-request-form-local-media";
-import { useObjectRequestFormSubmit } from "./use-object-request-form-submit";
+
+/** The pending accession whose object draft the form edits. */
+export interface ObjectRequestDraftSource {
+  _id: Id<"accessions">;
+  draftObjectData?: ObjectDraftData;
+  draftMedia?: DraftMediaItem[];
+}
 
 export interface UseObjectRequestFormOptions {
   mode?: "create" | "draft-edit";
-  accessionId?: Id<"accessions">;
-  initialDraftObjectData?: Partial<CollectionFormData>;
-  initialDraftMedia?: DraftMediaItem[];
-  initialDraftSavedAt?: number | null;
+  /** Live draft for `draft-edit`; the form follows colleagues' saves. */
+  accession?: ObjectRequestDraftSource;
   prefilledCollectionGroupId?: string;
   backHref?: string;
 }
 
 export function useObjectRequestForm({
   mode = "create",
-  accessionId,
-  initialDraftObjectData,
-  initialDraftMedia,
-  initialDraftSavedAt = null,
+  accession,
   prefilledCollectionGroupId,
   backHref,
 }: UseObjectRequestFormOptions) {
@@ -60,50 +70,91 @@ export function useObjectRequestForm({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
+  const tErrors = useScopedI18n("recordForm.errors");
   const collectionGroupId = prefilledCollectionGroupId;
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const { enabledModules } = useFeatureAccess();
+  const { push } = useRouter();
+  const saveObjectDraft = useMutation(api.accessions.saveObjectDraft);
   const isLocationTrackingEnabled =
     currentOrganization?.settings?.locationTrackingEnabled ?? true;
+  const accessionId = accession?._id;
+  const isDraftEditMode = mode === "draft-edit";
 
-  const initialForm = useMemo(
-    () => createEmptyFormData(collectionGroupId || undefined),
+  const editState = useQuery(
+    api.recordEdits.getEditState,
+    accessionId ? { target: { type: "objectDraft", id: accessionId } } : "skip",
+  );
+  const emptyValues = useMemo(
+    () => emptyObjectRequestValues(collectionGroupId),
     [collectionGroupId],
   );
+  const latest = useMemo(() => {
+    if (!isDraftEditMode) return { values: emptyValues, editVersion: null };
+    if (!accession?.draftObjectData || !editState) return undefined;
+    return {
+      values: objectRequestValuesFromDraft(
+        accession.draftObjectData,
+        accession.draftMedia,
+        collectionGroupId,
+      ),
+      editVersion: editState.editVersion,
+    };
+  }, [accession, collectionGroupId, editState, emptyValues, isDraftEditMode]);
 
-  const initialFormSignatureRef = useRef(getFormSignature(initialForm));
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setError] = useState<string | null>(null);
+  const [savingAction, setSavingAction] = useState<"draft" | "submit" | null>(
+    null,
+  );
+  const [pendingCollectionType, setPendingCollectionType] =
+    useState<CollectionType | null>(null);
 
-  const [
-    {
-      formData,
-      draftAccessionId: currentDraftAccessionId,
-      persistedDraftMedia,
-      draftSavedAt,
-      initialized: hasDraftInitialized,
-      pendingCollectionType,
-    },
-    dispatchDraft,
-  ] = useReducer(objectRequestDraftReducer, {
-    formData: initialForm,
-    draftAccessionId: accessionId ?? null,
-    persistedDraftMedia: initialDraftMedia ?? [],
-    draftSavedAt: initialDraftSavedAt,
-    initialized: false,
-    pendingCollectionType: null,
+  const fieldLabel = useCollectionFieldLabel();
+  const typeDetailsMessage = useObjectDraftErrorMessage();
+  const describeFailure = useRecordSaveFailure({
+    fieldLabel,
+    describe: useCallback(
+      (error: unknown) => {
+        const message = typeDetailsMessage(error);
+        return message ? { message, field: "typeDetails" } : null;
+      },
+      [typeDetailsMessage],
+    ),
   });
+  const validate = useCallback(
+    (values: ObjectRequestValues) =>
+      validateCollectionFormData(values, {
+        titleRequired: t("form.errors.titleRequired"),
+        weightInvalid: tErrors("weightInvalid"),
+        measurementInvalid: tErrors("measurementInvalid"),
+      }),
+    [t, tErrors],
+  );
+  const session = useRecordFormSession({
+    latest,
+    initialValues: emptyValues,
+    comparable: comparableObjectRequest,
+    recovery: {
+      kind: "objectDraft",
+      recordId: accessionId ?? "new",
+      parse: parseObjectRequestValues,
+    },
+    validate,
+    describeFailure,
+    invalidMessage: tErrors("invalid"),
+  });
+  const formData = session.values;
+  const { update, save } = session;
 
   const currentLocationPath = useQuery(
     api.locations.getLocationPath,
-    mode === "draft-edit" &&
-      isLocationTrackingEnabled &&
-      formData.currentLocationId
+    isDraftEditMode && isLocationTrackingEnabled && formData.currentLocationId
       ? { locationId: formData.currentLocationId as Id<"locations"> }
       : "skip",
   );
   const collectionGroups = useQuery(
     api.collectionGroups.list,
-    mode === "draft-edit" && currentOrganizationId
+    isDraftEditMode && currentOrganizationId
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
@@ -117,7 +168,6 @@ export function useObjectRequestForm({
     isLocationTrackingEnabled,
     typeDetailsTab,
   );
-  const describeError = useObjectDraftErrorMessage();
 
   const localMedia = useObjectRequestFormLocalMedia({
     currentOrganizationId,
@@ -126,6 +176,7 @@ export function useObjectRequestForm({
   });
   const {
     selectedFiles: localFiles,
+    selectedDocuments,
     uploadDraftMedia: uploadLocalMedia,
     clearLocalMediaSelections: clearLocalMedia,
   } = localMedia;
@@ -133,46 +184,167 @@ export function useObjectRequestForm({
   const [primaryImageChoice, setPrimaryImageChoice] = useState<string | null>(
     null,
   );
+  const persistedMedia = formData.draftMedia;
   const savedPrimaryImageId = resolveDraftPrimaryImageId({
     choice: null,
-    savedMedia: persistedDraftMedia,
+    savedMedia: persistedMedia,
     newImageIds: [],
   });
   const primaryImageId = resolveDraftPrimaryImageId({
     choice: primaryImageChoice,
-    savedMedia: persistedDraftMedia,
+    savedMedia: persistedMedia,
     newImageIds: localFiles.map((file) => file.id),
   });
-  const savedDraftMedia = useMemo(
+  const persistedDraftMedia = useMemo(
     () =>
-      persistedDraftMedia.map((item) => ({
+      persistedMedia.map((item) => ({
         ...item,
         isPrimary:
           item.mediaCategory === "image" && item.storageId === primaryImageId,
       })),
-    [persistedDraftMedia, primaryImageId],
+    [persistedMedia, primaryImageId],
   );
   const selectedFiles = localFiles.map((file) => ({
     ...file,
     isPrimary: file.id === primaryImageId,
   }));
-  const uploadDraftMedia = useCallback(
-    () => uploadLocalMedia(primaryImageId),
-    [primaryImageId, uploadLocalMedia],
-  );
-  const clearLocalMediaSelections = useCallback(() => {
-    clearLocalMedia();
-    setPrimaryImageChoice(null);
-  }, [clearLocalMedia]);
 
-  const isFormDirty =
-    getFormSignature(formData) !== initialFormSignatureRef.current ||
-    (savedPrimaryImageId !== null && primaryImageId !== savedPrimaryImageId);
+  const primaryChanged =
+    savedPrimaryImageId !== null && primaryImageId !== savedPrimaryImageId;
+  const isFormDirty = session.isDirty || primaryChanged;
   const hasUnsavedChanges = isFormDirty || localMedia.hasLocalMediaSelections;
-  const hasSavedFieldDraft = draftSavedAt !== null;
+  const hasSavedFieldDraft = isDraftEditMode;
   const isDraftCurrent = hasSavedFieldDraft && !isFormDirty;
-  const activeDraftAccessionId = currentDraftAccessionId;
-  const isDraftEditMode = mode === "draft-edit";
+
+  useBeforeUnload(hasUnsavedChanges);
+
+  /** Uploads new files and saves the draft; the accession id when saved. */
+  const runSave = useCallback(
+    async (saveMode: "draft" | "submit") => {
+      if (!currentOrganizationId) return null;
+      let savedAccessionId: Id<"accessions"> | null = null;
+      setSavingAction(saveMode);
+      setError(null);
+      const saved = await save(async ({ values, expectedEditVersion }) => {
+        const uploaded =
+          localFiles.length > 0 || selectedDocuments.length > 0
+            ? await uploadLocalMedia(primaryImageId)
+            : [];
+        const draftMedia = [...persistedDraftMedia, ...uploaded];
+        const result = await saveObjectDraft({
+          organizationId: currentOrganizationId,
+          accessionId,
+          saveMode,
+          objectData: buildObjectDraftPayload(values),
+          draftMedia:
+            draftMedia.length > 0
+              ? buildDraftMediaPayload(draftMedia)
+              : undefined,
+          expectedEditVersion,
+        });
+        savedAccessionId = result.accessionId;
+        clearLocalMedia();
+        setPrimaryImageChoice(null);
+        return {
+          editVersion: result.editVersion,
+          values: { ...values, draftMedia },
+        };
+      });
+      setSavingAction(null);
+      return saved ? savedAccessionId : null;
+    },
+    [
+      accessionId,
+      clearLocalMedia,
+      currentOrganizationId,
+      localFiles.length,
+      persistedDraftMedia,
+      primaryImageId,
+      save,
+      saveObjectDraft,
+      selectedDocuments.length,
+      uploadLocalMedia,
+    ],
+  );
+
+  const handleSaveDraft = useCallback(
+    async ({
+      redirectToDetail = false,
+    }: {
+      redirectToDetail?: boolean;
+    } = {}) => {
+      const savedAccessionId = await runSave("draft");
+      if (savedAccessionId && redirectToDetail) {
+        push(`/accessions/${savedAccessionId}`);
+      }
+      return savedAccessionId !== null;
+    },
+    [push, runSave],
+  );
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      const submittedAccessionId = await runSave("submit");
+      if (submittedAccessionId) push(`/accessions/${submittedAccessionId}`);
+    },
+    [push, runSave],
+  );
+
+  const navigation = useFormNavigationGuard({
+    hasUnsavedChanges,
+    onNavigate: push,
+    onSaveBeforeNavigate: handleSaveDraft,
+  });
+
+  const updateField = useCallback(
+    <K extends keyof CollectionFormData>(
+      field: K,
+      value: CollectionFormData[K],
+    ) => {
+      if (field !== "collectionType") {
+        update((values) => ({ ...values, [field]: value }));
+        return;
+      }
+      const change = collectionTypeChange(formData, value);
+      if (!change) return;
+      if (change.losesDetails) {
+        setPendingCollectionType(change.collectionType);
+        return;
+      }
+      update((values) => withCollectionType(values, change.collectionType));
+    },
+    [formData, update],
+  );
+  const confirmCollectionTypeChange = useCallback(() => {
+    if (pendingCollectionType)
+      update((values) => withCollectionType(values, pendingCollectionType));
+    setPendingCollectionType(null);
+  }, [pendingCollectionType, update]);
+  const cancelCollectionTypeChange = useCallback(
+    () => setPendingCollectionType(null),
+    [],
+  );
+
+  const goToField = useCallback(
+    (field: string) => {
+      const location =
+        field === "typeDetails" || field === "collectionType"
+          ? { tab: typeDetailsTab ?? "general", elementId: "collectionType" }
+          : field === "currentLocationId"
+            ? { tab: "general", elementId: "generalCurrentLocationId" }
+            : field === "collectionGroupId" || field === "collectionGroupIds"
+              ? { tab: "general", elementId: "generalCollectionGroupId" }
+              : collectionFieldLocation(field);
+      const tabId = tabs.find((candidate) => candidate.id === location.tab)?.id;
+      if (tabId) setActiveTab(tabId as CollectionEditTabId);
+      requestAnimationFrame(() =>
+        document.getElementById(location.elementId)?.focus(),
+      );
+    },
+    [setActiveTab, tabs, typeDetailsTab],
+  );
+
   const resolvedBackHref =
     backHref ||
     (isDraftEditMode && accessionId
@@ -198,115 +370,33 @@ export function useObjectRequestForm({
       .join(", ") ||
     tRoot("untranslatedRecords.objects.collection.noneAssigned");
 
-  useBeforeUnload(hasUnsavedChanges);
-
-  useEffect(() => {
-    if (hasDraftInitialized) {
-      return;
-    }
-
-    const nextFormData = initialDraftObjectData
-      ? createFormDataFromDraftObject(
-          initialDraftObjectData,
-          collectionGroupId || undefined,
-        )
-      : initialForm;
-
-    initialFormSignatureRef.current = getFormSignature(nextFormData);
-    dispatchDraft({
-      type: "INIT_FROM_PROPS",
-      formData: nextFormData,
-      draftAccessionId: accessionId ?? null,
-      persistedDraftMedia: initialDraftMedia ?? [],
-      draftSavedAt: initialDraftSavedAt,
-    });
-  }, [
-    accessionId,
-    collectionGroupId,
-    hasDraftInitialized,
-    initialForm,
-    initialDraftMedia,
-    initialDraftObjectData,
-    initialDraftSavedAt,
-  ]);
-
-  const draftState = useObjectRequestFormDraft({
-    currentOrganizationId,
-    activeDraftAccessionId,
-    formData,
-    persistedDraftMedia: savedDraftMedia,
-    initialFormSignatureRef,
-    dispatchDraft,
-    selectedFilesCount: selectedFiles.length,
-    selectedDocumentsCount: localMedia.selectedDocuments.length,
-    uploadDraftMedia,
-    clearLocalMediaSelections,
-    setError,
-    describeError,
-  });
-
-  const submitState = useObjectRequestFormSubmit({
-    currentOrganizationId,
-    activeDraftAccessionId,
-    formData,
-    persistedDraftMedia: savedDraftMedia,
-    selectedFilesCount: selectedFiles.length,
-    selectedDocumentsCount: localMedia.selectedDocuments.length,
-    uploadDraftMedia,
-    setError,
-    describeError,
-    t,
-    push: draftState.push,
-  });
-
-  const navigation = useFormNavigationGuard({
-    hasUnsavedChanges,
-    onNavigate: draftState.push,
-    onSaveBeforeNavigate: draftState.handleSaveDraft,
-  });
-
-  const updateField = useCallback(
-    <K extends keyof CollectionFormData>(
-      field: K,
-      value: CollectionFormData[K],
-    ) => {
-      dispatchDraft({ type: "update_field", field, value });
-    },
-    [],
-  );
-  const confirmCollectionTypeChange = useCallback(
-    () => dispatchDraft({ type: "confirm_collection_type_change" }),
-    [],
-  );
-  const cancelCollectionTypeChange = useCallback(
-    () => dispatchDraft({ type: "cancel_collection_type_change" }),
-    [],
-  );
-
   return {
     t,
     common,
     placeholders,
     currentOrganizationId,
-    activeDraftAccessionId,
+    activeDraftAccessionId: accessionId ?? null,
     organizationPrompt,
+    session,
+    fieldLabel,
+    goToField,
     formData,
     activeTab,
     setActiveTab,
     tabs,
-    error,
-    isSubmitting: submitState.isSubmitting,
-    isSavingDraft: draftState.isSavingDraft,
+    error: localError,
+    isSubmitting: savingAction === "submit",
+    isSavingDraft: savingAction === "draft",
     pageTitle,
     pageBadge,
     mode,
     resolvedBackHref,
     handleNavigate: navigation.handleNavigate,
-    handleSubmit: submitState.handleSubmit,
-    handleSaveDraft: draftState.handleSaveDraft,
+    handleSubmit,
+    handleSaveDraft,
     selectedFiles,
-    selectedDocuments: localMedia.selectedDocuments,
-    persistedDraftMedia: savedDraftMedia,
+    selectedDocuments,
+    persistedDraftMedia,
     fileInputRef: localMedia.fileInputRef,
     cameraInputRef: localMedia.cameraInputRef,
     documentInputRef: localMedia.documentInputRef,

@@ -9707,4 +9707,95 @@ export default {
       discrepancies: "{count} différences",
     },
   },
+  recordForm: {
+    errors: {
+      conflict:
+        "Non enregistré : quelqu'un d'autre a modifié cette fiche après que vous l'avez ouverte. Vos modifications sont toujours là.",
+      notEditable:
+        "Cette fiche ne peut plus être modifiée ici, vos modifications n'ont donc pas été enregistrées.",
+      required: "{field} est obligatoire.",
+      identifierPermanent:
+        "Un numéro d'accession attribué est définitif. Conservez le numéro d'origine.",
+      relatedRecordUnavailable:
+        "Le choix pour {field} n'est pas disponible dans cette organisation. Choisissez-en un autre.",
+      parentIsSelf: "Un objet ne peut pas être son propre objet parent.",
+      conditionSetByAssessment:
+        "L'état actuel provient d'un constat d'état accepté. Enregistrez un nouveau constat pour le modifier.",
+      conditionNoteRequired: "Expliquez le changement d'état dans la note.",
+      dateOrderInvalid:
+        "La date de fin doit être égale ou postérieure à la date de début.",
+      partyManagedField:
+        "Cette information provient de la partie liée. Changez plutôt la partie dans le panneau Parties.",
+      amountInvalid: "Saisissez un montant supérieur ou égal à 0.",
+      measurementInvalid: "Saisissez un nombre supérieur ou égal à 0.",
+      weightInvalid:
+        "Saisissez le poids sous forme de nombre supérieur ou égal à 0, éventuellement suivi d'une unité, par exemple 200 g ou 2 kg.",
+      invalid: "Certains champs doivent être corrigés avant l'enregistrement.",
+      saveFailed:
+        "Vos modifications n'ont pas pu être enregistrées. Vérifiez votre connexion et réessayez.",
+    },
+    notices: {
+      recoveredTitle: "Modifications non enregistrées trouvées",
+      recoveredBody:
+        "Les modifications de {fields} faites {time} n'ont pas été enregistrées.",
+      recoveredChanged:
+        "Cette fiche a changé depuis. Après la restauration, vous pourrez examiner les changements avant d'enregistrer.",
+      restore: "Restaurer mes modifications",
+      discardRecovered: "Les abandonner",
+      changedByOthers: "Modifié par quelqu'un d'autre : {fields}.",
+      remoteChanged:
+        "Quelqu'un d'autre a enregistré des modifications de {fields} pendant que vous modifiiez la fiche.",
+      remoteKeepsYours:
+        "Vos modifications sont conservées. Repartez de la dernière version avant d'enregistrer.",
+      remoteOverlap:
+        "Vous avez aussi modifié {fields}. Vos valeurs sont conservées ; vous pourrez ensuite reprendre les leurs.",
+      applyLatest: "Garder mes modifications sur la dernière version",
+      discardMine: "Abandonner mes modifications",
+      retry: "Réessayer",
+      goToField: "Aller à {field}",
+      inputKept: "Votre saisie est toujours dans ce formulaire.",
+      inputKeptOnDevice:
+        "Votre saisie est toujours dans ce formulaire et conservée sur cet appareil jusqu'à ce que vous l'enregistriez ou l'abandonniez.",
+      useTheirs: "Utiliser leur valeur",
+      keepMine: "Garder la mienne",
+      overlapValue:
+        "{field} a aussi été modifié par quelqu'un d'autre, en « {value} ».",
+      overlapChanged: "{field} a aussi été modifié par quelqu'un d'autre.",
+    },
+    status: {
+      unsaved: "Modifications non enregistrées",
+    },
+    loan: {
+      partyLinked:
+        "Le prêteur ou l'emprunteur provient de la partie liée ; le nom et le contact ne se modifient donc pas ici.",
+      changeParty: "Changer la partie sur la page du prêt",
+    },
+    objectFields: {
+      alternativeTitle: "Titre alternatif",
+      measuredDimensions: "Dimensions mesurées",
+      measuredDimensionsHint:
+        "Hauteur, largeur et profondeur chiffrées dans une même unité, utilisées pour le tri, les rapports et les exports.",
+      height: "Hauteur",
+      width: "Largeur",
+      depth: "Profondeur",
+      dimensionUnit: "Unité",
+      weightUnit: "Unité de poids",
+      inscriptionMarks: "Marques et inscriptions",
+      inscriptionMarksHint:
+        "Signatures, cachets, étiquettes et autres marques, une par ligne.",
+      inscriptionMarkLabel: "Marque",
+      inscriptionMarkDescription: "Description",
+      addInscriptionMark: "Ajouter une marque",
+      removeInscriptionMark: "Retirer la marque",
+      tagsHint: "Appuyez sur Entrée ou Tab après chaque mot-clé.",
+      legalRestrictions: "Restrictions légales",
+      legalRestrictionsHint:
+        "L'utilisation, l'exposition ou la reproduction de cet objet sont légalement restreintes.",
+      typeDetails: "Détails propres au type",
+      isHighResDownloadable: "Téléchargement haute résolution",
+      draftMedia: "Photos et documents",
+      alternateNumberExists:
+        "Ce numéro d'accession alternatif figure déjà dans la liste.",
+    },
+  },
 } as const;

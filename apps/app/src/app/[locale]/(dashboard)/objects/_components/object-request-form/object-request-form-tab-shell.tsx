@@ -3,7 +3,7 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { isCollectionModuleId } from "@v1/backend/convex/utils/moduleCatalog";
 import { Button } from "@v1/ui/button";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useI18n } from "@/locales/client";
 import type { ObjectTabDefinition } from "../../[id]/_components/object-tab-config";
 import { CollectionEditAccessionTab } from "../collection-edit-form/tabs/accession-tab";
@@ -35,6 +35,9 @@ interface ObjectRequestTab {
 interface ObjectRequestFormTabShellProps {
   mode: "create" | "draft-edit";
   error: string | null;
+  /** Recovery, conflict and save notices for the draft. */
+  notices: ReactNode;
+  fieldErrors: Record<string, string>;
   tabs: ObjectRequestTab[];
   activeTab: CollectionEditTabId;
   onTabSelect: (tabId: CollectionEditTabId) => void;
@@ -59,6 +62,8 @@ interface ObjectRequestFormTabShellProps {
 export function ObjectRequestFormTabShell({
   mode,
   error,
+  notices,
+  fieldErrors,
   tabs,
   activeTab,
   onTabSelect,
@@ -86,10 +91,12 @@ export function ObjectRequestFormTabShell({
     placeholders,
     currentOrganizationId,
     isLocationTrackingEnabled,
+    fieldErrors,
   };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
+      <div className="mb-6">{notices}</div>
       {error ? (
         <div className="mb-6 rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}

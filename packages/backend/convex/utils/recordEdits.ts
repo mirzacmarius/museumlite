@@ -85,8 +85,10 @@ function canonicalValue(value: unknown): unknown {
   }
   if (typeof value === "object") {
     const entries = Object.entries(value)
-      .map(([key, item]) => [key, canonicalValue(item)] as const)
-      .filter(([, item]) => item !== undefined)
+      .flatMap(([key, item]) => {
+        const canonical = canonicalValue(item);
+        return canonical === undefined ? [] : [[key, canonical] as const];
+      })
       .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
     return entries.length === 0 ? undefined : Object.fromEntries(entries);
   }

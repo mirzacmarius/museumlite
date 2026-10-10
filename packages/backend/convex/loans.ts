@@ -955,9 +955,11 @@ export const update = mutation({
     lenderBorrowerName: v.optional(v.string()),
     lenderBorrowerContact: v.optional(v.string()),
     startDate: v.optional(v.number()),
-    endDate: v.optional(v.number()),
+    /** Null clears it. */
+    endDate: v.optional(v.union(v.number(), v.null())),
     terms: v.optional(v.string()),
-    insuranceValue: v.optional(v.number()),
+    /** Null clears it. */
+    insuranceValue: v.optional(v.union(v.number(), v.null())),
     /** ISO 4217 code; an empty string clears it. */
     currency: v.optional(v.string()),
     notes: v.optional(v.string()),
@@ -1024,10 +1026,10 @@ export const update = mutation({
     if (args.lenderBorrowerContact !== undefined)
       updates.lenderBorrowerContact = args.lenderBorrowerContact;
     if (args.startDate !== undefined) updates.startDate = args.startDate;
-    if (args.endDate !== undefined) updates.endDate = args.endDate;
+    if (args.endDate !== undefined) updates.endDate = args.endDate ?? undefined;
     if (args.terms !== undefined) updates.terms = args.terms;
     if (args.insuranceValue !== undefined)
-      updates.insuranceValue = args.insuranceValue;
+      updates.insuranceValue = args.insuranceValue ?? undefined;
     if (args.currency !== undefined)
       updates.currency = normalizeLoanCurrency(args.currency);
     if (args.notes !== undefined) updates.notes = args.notes;

@@ -9,9 +9,12 @@ import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
 import { ArrowRightLeft } from "lucide-react";
 import Link from "next/link";
-
 import type * as React from "react";
 import type { RefObject } from "react";
+import {
+  FieldError,
+  fieldErrorProps,
+} from "@/components/record-form/record-form-notices";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { useI18n } from "@/locales/client";
 import { ObjectFormSummaryCards } from "../collection-form-shared/object-form-summary-cards";
@@ -46,6 +49,8 @@ interface CollectionEditFormHeroProps {
   collectionSummary: string;
   getStatusBadgeClass: (status: CollectionDoc["status"]) => string;
   onTitleChange: (value: string) => void;
+  /** Why the title cannot be saved, if it cannot. */
+  titleError?: string;
   onDescriptionChange: (value: string) => void;
   onTabSelect: (tabId: CollectionEditTabId) => void;
   fileInputRef: RefObject<HTMLInputElement | null>;
@@ -65,6 +70,7 @@ export function CollectionEditFormHero({
   collectionSummary,
   getStatusBadgeClass,
   onTitleChange,
+  titleError,
   onDescriptionChange,
   onTabSelect,
   fileInputRef,
@@ -146,10 +152,12 @@ export function CollectionEditFormHero({
               id="hero-title"
               value={formData.title}
               onChange={(event) => onTitleChange(event.target.value)}
+              {...fieldErrorProps("title", titleError)}
               placeholder={placeholders("title")}
               className="h-14 border-border/60 bg-background/90 text-xl font-semibold sm:text-2xl"
               required
             />
+            <FieldError field="title" message={titleError} />
           </div>
 
           <div className="space-y-2">

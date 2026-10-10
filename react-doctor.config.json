@@ -27,6 +27,7 @@
       {
         "files": [
           "packages/backend/convex/accountRelationships.ts",
+          "packages/backend/convex/accessions.ts",
           "packages/backend/convex/collections.ts",
           "packages/backend/convex/deaccessions.ts",
           "packages/backend/convex/mediaImports.ts",
@@ -38,6 +39,7 @@
           "packages/backend/convex/utils/exhibitionWorkflow.ts",
           "packages/backend/convex/utils/transitPhysicalHandoff.ts",
           "packages/backend/convex/exports.ts",
+          "packages/backend/convex/loans.ts",
           "packages/backend/convex/utils/exhibitionCrud.ts",
           "packages/backend/convex/partyLinks.ts",
           "packages/backend/convex/partyDuplicates.ts",

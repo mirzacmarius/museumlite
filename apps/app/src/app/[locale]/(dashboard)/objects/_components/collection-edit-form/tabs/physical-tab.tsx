@@ -6,9 +6,21 @@ import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import {
+  FieldError,
+  fieldErrorProps,
+} from "@/components/record-form/record-form-notices";
 import { useI18n } from "@/locales/client";
+import {
+  InscriptionMarksField,
+  MeasuredDimensionsFields,
+  TechniqueField,
+} from "../../collection-form-shared/catalog-parity-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type { CollectionFormTabProps } from "../../collection-form-shared/types";
+import {
+  type CollectionFormTabProps,
+  NO_FIELD_ERRORS,
+} from "../../collection-form-shared/types";
 export interface CollectionEditPhysicalTabProps extends CollectionFormTabProps {
   typedCollectionId?: Id<"collections">;
   hasConditionChanged?: boolean;
@@ -22,6 +34,7 @@ export function CollectionEditPhysicalTab({
   updateField,
   placeholders,
   currentOrganizationId,
+  fieldErrors = NO_FIELD_ERRORS,
   typedCollectionId,
   hasConditionChanged,
   requiresConditionChangeNote,
@@ -52,6 +65,8 @@ export function CollectionEditPhysicalTab({
             />
           </div>
 
+          <TechniqueField formData={formData} updateField={updateField} />
+
           <div className="space-y-2">
             <Label htmlFor="condition">{tRoot("objects.form.condition")}</Label>
             <ConditionCombobox
@@ -59,6 +74,7 @@ export function CollectionEditPhysicalTab({
               value={formData.condition || ""}
               onValueChange={(value) => updateField("condition", value)}
             />
+            <FieldError field="condition" message={fieldErrors.condition} />
             {hasConditionChanged ? (
               <div className="rounded-lg border border-dashed border-border/60 bg-secondary/10 p-3">
                 <p className="text-xs text-muted-foreground">
@@ -83,6 +99,14 @@ export function CollectionEditPhysicalTab({
                     placeholder={tRoot(
                       "untranslatedRecords.objects.form.explainChange",
                     )}
+                    {...fieldErrorProps(
+                      "conditionChangeNote",
+                      fieldErrors.conditionChangeNote,
+                    )}
+                  />
+                  <FieldError
+                    field="conditionChangeNote"
+                    message={fieldErrors.conditionChangeNote}
                   />
                   <p className="text-xs text-muted-foreground">
                     {requiresConditionChangeNote
@@ -156,10 +180,24 @@ export function CollectionEditPhysicalTab({
                     "untranslatedRecords.objects.examples.weight",
                     { value: "200gram or 2kg" },
                   )}
+                  {...fieldErrorProps(
+                    "dimensionWeight",
+                    fieldErrors.dimensionWeight,
+                  )}
+                />
+                <FieldError
+                  field="dimensionWeight"
+                  message={fieldErrors.dimensionWeight}
                 />
               </div>
             </div>
           </div>
+
+          <MeasuredDimensionsFields
+            formData={formData}
+            updateField={updateField}
+            fieldErrors={fieldErrors}
+          />
 
           <div className="space-y-2 md:col-span-2 xl:col-span-3">
             <Label htmlFor="inscriptions">
@@ -178,6 +216,11 @@ export function CollectionEditPhysicalTab({
               )}
             />
           </div>
+
+          <InscriptionMarksField
+            formData={formData}
+            updateField={updateField}
+          />
         </div>
       </EditSection>
     </div>

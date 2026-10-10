@@ -66,11 +66,9 @@ export default function EditAccessionObjectPage() {
       }
     >
       <ObjectRequestFormPage
+        key={accession._id}
         mode="draft-edit"
-        accessionId={accession._id}
-        initialDraftObjectData={accession.draftObjectData}
-        initialDraftMedia={accession.draftMedia}
-        initialDraftSavedAt={accession._creationTime}
+        accession={accession}
         backHref={`/accessions/${accessionId}`}
       />
     </Suspense>

@@ -356,6 +356,44 @@ describe("catalog object edits", () => {
     ).toMatchObject({ condition: "Good" });
   });
 
+  test("cleared measurements and parent object are saved as cleared", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId, collectionId, ana } =
+      await createCataloguedObject(t);
+    const parentId = await t.run((ctx) =>
+      ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "1998.12",
+        title: "Harbour series",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+    );
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      parentObjectId: parentId,
+      dimensionHeight: 61,
+      dimensionWidth: 92,
+      dimensionDepth: 3,
+      dimensionUnit: "cm",
+    });
+
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      parentObjectId: null,
+      dimensionHeight: null,
+      dimensionWidth: 90,
+      dimensionDepth: null,
+    });
+
+    const stored = await ana.query(api.collections.get, { collectionId });
+    expect(stored?.parentObjectId).toBeUndefined();
+    expect(stored?.dimensionHeight).toBeUndefined();
+    expect(stored?.dimensionDepth).toBeUndefined();
+    expect(stored).toMatchObject({ dimensionWidth: 90, dimensionUnit: "cm" });
+  });
+
   test("a member who may only read is refused at save and nothing changes", async () => {
     const t = createConvexTest();
     const { organizationId, collectionId } = await createCataloguedObject(t);
@@ -819,6 +857,33 @@ describe("loan edits", () => {
       lenderBorrowerName: "Bergen Maritime Museum",
       endDate: Date.UTC(2027, 2, 1),
     });
+  });
+
+  test("cleared dates, values and texts are saved as cleared", async () => {
+    const t = createConvexTest();
+    const { ana, loanId } = await createPendingLoan(t, {
+      linkedParty: false,
+    });
+    await ana.mutation(api.loans.update, {
+      loanId,
+      insuranceValue: 250000,
+      terms: "Climate-controlled display only.",
+      notes: "Courier required.",
+    });
+
+    await ana.mutation(api.loans.update, {
+      loanId,
+      endDate: null,
+      insuranceValue: null,
+      terms: "",
+      notes: "",
+    });
+
+    const loan = await ana.query(api.loans.get, { loanId });
+    expect(loan?.endDate).toBeUndefined();
+    expect(loan?.insuranceValue).toBeUndefined();
+    expect(loan?.terms ?? "").toBe("");
+    expect(loan?.notes ?? "").toBe("");
   });
 
   test("a loan that left pending is no longer editable here", async () => {

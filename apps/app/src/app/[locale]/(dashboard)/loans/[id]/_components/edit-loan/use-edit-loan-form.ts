@@ -3,92 +3,157 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { loanAgreementTemplateErrorFromError } from "@v1/backend/convex/utils/loanAgreementErrors";
-import { isLoanCurrencyCode } from "@v1/backend/convex/utils/loanCurrency";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import type React from "react";
+import { useCallback, useMemo } from "react";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useFormNavigationGuard } from "@/hooks/use-form-navigation-guard";
 import { useLoanAgreementTemplateErrorMessage } from "@/hooks/use-loan-agreement-template-error-message";
-import { useScopedI18n } from "@/locales/client";
+import { useRecordFormSession } from "@/hooks/use-record-form-session";
+import { useRecordSaveFailure } from "@/hooks/use-record-save-failure";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
-import { type EditLoanFormData, EMPTY_EDIT_LOAN_FORM } from "./types";
+import {
+  comparableEditLoanForm,
+  type EditLoanField,
+  type EditLoanFormData,
+  EMPTY_EDIT_LOAN_FORM,
+  editLoanFormValues,
+  editLoanPatch,
+  parseEditLoanForm,
+  validateEditLoanForm,
+} from "./types";
 
 interface UseEditLoanFormOptions {
-  loanId: string;
-  loan: Loan | null | undefined;
+  loanId: Id<"loans">;
+  loan: Loan;
 }
 
 export function useEditLoanForm({ loanId, loan }: UseEditLoanFormOptions) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
+  const tErrors = useScopedI18n("recordForm.errors");
   const tAgreementErrors = useScopedI18n("loanAgreementTemplates.errors");
+  const tCurrency = useScopedI18n("loanAgreementTemplates.currency");
   const agreementErrorMessage = useLoanAgreementTemplateErrorMessage();
   const { push } = useRouter();
   const updateLoan = useMutation(api.loans.update);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] =
-    useState<EditLoanFormData>(EMPTY_EDIT_LOAN_FORM);
+  const editState = useQuery(api.recordEdits.getEditState, {
+    target: { type: "loan", id: loanId },
+  });
 
-  useEffect(() => {
-    if (loan) {
-      setFormData({
-        lenderBorrowerName: loan.lenderBorrowerName || "",
-        lenderBorrowerContact: loan.lenderBorrowerContact || "",
-        startDate: new Date(loan.startDate),
-        endDate: loan.endDate ? new Date(loan.endDate) : undefined,
-        terms: loan.terms || "",
-        insuranceValue: loan.insuranceValue?.toString() || "",
-        currency: loan.currency ?? "",
-        notes: loan.notes || "",
-      });
-    }
-  }, [loan]);
+  const fieldLabel = useCallback(
+    (field: string) => {
+      switch (field as EditLoanField) {
+        case "lenderBorrowerName":
+          return `${loan.type === "incoming" ? tActions("lender") : tActions("borrower")} ${tRoot("collections.form.nameLabel")}`;
+        case "lenderBorrowerContact":
+          return tActions("contactInformation");
+        case "startDate":
+          return tActions("startDate");
+        case "endDate":
+          return tActions("endDate");
+        case "insuranceValue":
+          return tActions("insuranceValue");
+        case "currency":
+          return tCurrency("label");
+        case "terms":
+          return tActions("termsConditions");
+        case "notes":
+          return tActions("internalNotes");
+        default:
+          return field;
+      }
+    },
+    [loan.type, tActions, tCurrency, tRoot],
+  );
+  const describeFailure = useRecordSaveFailure({
+    fieldLabel,
+    describe: useCallback(
+      (error: unknown) => {
+        const agreementError = loanAgreementTemplateErrorFromError(error);
+        if (!agreementError) return null;
+        return {
+          message: agreementErrorMessage(error),
+          field: agreementError.code.includes("CURRENCY")
+            ? "currency"
+            : undefined,
+        };
+      },
+      [agreementErrorMessage],
+    ),
+  });
+  const validate = useCallback(
+    (values: EditLoanFormData) =>
+      validateEditLoanForm(values, {
+        required: (field) => tErrors("required", { field: fieldLabel(field) }),
+        dateOrder: tErrors("dateOrderInvalid"),
+        amount: tErrors("amountInvalid"),
+        currency: tAgreementErrors("invalidCurrency"),
+      }),
+    [fieldLabel, tAgreementErrors, tErrors],
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!formData.lenderBorrowerName.trim()) {
-      setError(tActions("lenderBorrowerRequired"));
-      return;
-    }
-    const currency = formData.currency.trim();
-    if (currency && !isLoanCurrencyCode(currency)) {
-      setError(tAgreementErrors("invalidCurrency"));
-      return;
-    }
+  const latest = useMemo(
+    () =>
+      editState
+        ? {
+            values: editLoanFormValues(loan),
+            editVersion: editState.editVersion,
+          }
+        : undefined,
+    [editState, loan],
+  );
+  const session = useRecordFormSession({
+    latest,
+    initialValues: EMPTY_EDIT_LOAN_FORM,
+    comparable: comparableEditLoanForm,
+    recovery: { kind: "loan", recordId: loanId, parse: parseEditLoanForm },
+    validate,
+    describeFailure,
+    invalidMessage: tErrors("invalid"),
+  });
+  useBeforeUnload(session.isDirty);
 
-    setIsSubmitting(true);
-    try {
-      await updateLoan({
-        loanId: loanId as Id<"loans">,
-        lenderBorrowerName: formData.lenderBorrowerName,
-        lenderBorrowerContact: formData.lenderBorrowerContact || undefined,
-        startDate: formData.startDate.getTime(),
-        endDate: formData.endDate ? formData.endDate.getTime() : undefined,
-        terms: formData.terms || undefined,
-        insuranceValue: formData.insuranceValue
-          ? Number.parseFloat(formData.insuranceValue)
-          : undefined,
-        // An empty currency clears a previously recorded one.
-        currency,
-        notes: formData.notes || undefined,
-      });
-      push(`/loans/${loanId}`);
-    } catch (err) {
-      console.error("Error updating loan:", err);
-      setError(
-        loanAgreementTemplateErrorFromError(err) || !(err instanceof Error)
-          ? agreementErrorMessage(err, tActions("failedToCreateLoan"))
-          : err.message,
-      );
-      setIsSubmitting(false);
-    }
+  const isLocked = loan.status !== "pending";
+  const isPartyLinked = loan.accountId !== undefined;
+  const { save } = session;
+  const saveLoan = useCallback(
+    () =>
+      save(async ({ values, changedFields, expectedEditVersion }) =>
+        updateLoan({
+          ...editLoanPatch(loanId, values, changedFields),
+          expectedEditVersion,
+        }),
+      ),
+    [loanId, save, updateLoan],
+  );
+  const navigation = useFormNavigationGuard({
+    hasUnsavedChanges: session.isDirty,
+    onNavigate: push,
+    onSaveBeforeNavigate: saveLoan,
+  });
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (await saveLoan()) push(`/loans/${loanId}`);
   };
+  const { update } = session;
+  const onChange = useCallback(
+    (changes: Partial<EditLoanFormData>) =>
+      update((values) => ({ ...values, ...changes })),
+    [update],
+  );
 
   return {
-    formData,
-    setFormData,
-    isSubmitting,
-    error,
+    session,
+    formData: session.values,
+    onChange,
+    fieldLabel,
+    isLocked,
+    isPartyLinked,
     handleSubmit,
+    navigation,
   };
 }

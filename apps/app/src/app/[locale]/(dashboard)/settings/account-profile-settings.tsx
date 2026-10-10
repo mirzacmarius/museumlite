@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthActions } from "@convex-dev/auth/react";
 import { useForm } from "@tanstack/react-form";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -14,12 +13,13 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 import { type ReactNode, useState } from "react";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { useScopedI18n } from "@/locales/client";
 
 export function AccountProfileSettings({ children }: { children?: ReactNode }) {
   const t = useScopedI18n("settings");
   const user = useQuery(api.users.getUser);
-  const { signOut } = useAuthActions();
+  const signOut = useSignOut();
   const updateUserImage = useMutation(api.users.updateUserImage);
   const updateUsername = useMutation(api.users.updateUsername);
   const updateName = useMutation(api.users.updateName);

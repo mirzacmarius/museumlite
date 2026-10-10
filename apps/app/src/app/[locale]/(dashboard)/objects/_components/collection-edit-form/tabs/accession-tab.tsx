@@ -11,6 +11,10 @@ import {
 } from "@v1/ui/select";
 import { DonationDetailsField } from "@/components/donation-details-field";
 import { useI18n } from "@/locales/client";
+import {
+  CreditLineField,
+  LegalRestrictionsField,
+} from "../../collection-form-shared/catalog-parity-fields";
 import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
@@ -74,6 +78,12 @@ export function CollectionEditAccessionTab({
             onDonationInfoChange={(value) =>
               updateField("donation_info", value)
             }
+          />
+
+          <CreditLineField formData={formData} updateField={updateField} />
+          <LegalRestrictionsField
+            formData={formData}
+            updateField={updateField}
           />
         </div>
       </EditSection>

@@ -65,4 +65,40 @@ describe("object draft form serialization", () => {
     expect(payload.ownershipHistory?.[0]).not.toHaveProperty("localId");
     expect(payload.links?.[0]).not.toHaveProperty("localId");
   });
+
+  test("keeps every catalog field an intake draft can hold", () => {
+    const formData = createFormDataFromDraftObject({
+      title: "Herring net",
+      alternativeTitle: "Sildegarn",
+      technique: "Knotted",
+      dimensionHeight: 120,
+      dimensionWidth: 340.5,
+      dimensionDepth: 4,
+      dimensionUnit: "cm",
+      inscriptionMarks: [
+        { label: "Owner's mark", description: "Burnt initials H.O." },
+      ],
+      tags: ["fishing", "coastal"],
+      creditLine: "Gift of the Olsen family, 2026",
+      legalRestrictions: true,
+    });
+
+    const payload = buildObjectDraftPayload(formData);
+
+    expect(payload).toMatchObject({
+      alternativeTitle: "Sildegarn",
+      technique: "Knotted",
+      dimensionHeight: 120,
+      dimensionWidth: 340.5,
+      dimensionDepth: 4,
+      dimensionUnit: "cm",
+      inscriptionMarks: [
+        { label: "Owner's mark", description: "Burnt initials H.O." },
+      ],
+      tags: ["fishing", "coastal"],
+      creditLine: "Gift of the Olsen family, 2026",
+      legalRestrictions: true,
+    });
+    expect(payload.inscriptionMarks?.[0]).not.toHaveProperty("localId");
+  });
 });
