@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api, internal } from "../convex/_generated/api";
+import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
@@ -13,11 +13,31 @@ function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   });
 }
 
+async function insertNotification(
+  t: ReturnType<typeof convexTest>,
+  notification: {
+    organizationId: Id<"organizations">;
+    userId: Id<"users">;
+    type: string;
+    title: string;
+    message: string;
+    relatedEntityType?: string;
+    relatedEntityId?: string;
+  },
+) {
+  return await t.run((ctx) =>
+    ctx.db.insert("notifications", {
+      ...notification,
+      read: false,
+      createdAt: Date.now(),
+    }),
+  );
+}
+
 /**
- * NOTE: The notifications module uses @convex-dev/auth's getAuthUserId() for authentication.
- * convex-test's `{ as: userId }` parameter doesn't fully mock the @convex-dev/auth session,
- * so we primarily test using internal mutations and direct database operations to verify
- * the business logic.
+ * These tests cover reading and managing stored notifications, so they insert
+ * rows directly. Dispatching (preferences, recipients, email) is covered by
+ * notificationDispatch.test.ts and notificationEmails.test.ts.
  */
 
 // ============================================
@@ -44,18 +64,15 @@ describe("notification center data structure", () => {
       }),
     ]);
     // Create notifications using sendNotification internal mutation
-    const notificationId = await t.mutation(
-      internal.notifications.sendNotification,
-      {
-        organizationId: orgId,
-        userId,
-        type: "loan_pending_approval",
-        title: "Loan Pending Approval",
-        message: "A new loan requires your review",
-        relatedEntityType: "loan",
-        relatedEntityId: "loan_123",
-      },
-    );
+    const notificationId = await insertNotification(t, {
+      organizationId: orgId,
+      userId,
+      type: "loan_pending_approval",
+      title: "Loan Pending Approval",
+      message: "A new loan requires your review",
+      relatedEntityType: "loan",
+      relatedEntityId: "loan_123",
+    });
 
     const notification = await t.run(async (ctx) => {
       return await ctx.db.get(notificationId);
@@ -92,7 +109,7 @@ describe("notification center data structure", () => {
       }),
     ]);
     // Create notifications of different types
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "loan_pending_approval",
@@ -100,7 +117,7 @@ describe("notification center data structure", () => {
       message: "Approval needed",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "task_assigned",
@@ -108,7 +125,7 @@ describe("notification center data structure", () => {
       message: "Task assigned",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "loan_due_soon",
@@ -237,7 +254,7 @@ describe("notification queries with indexes", () => {
         });
       }),
     ]);
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId: userId1,
       type: "loan_approved",
@@ -245,7 +262,7 @@ describe("notification queries with indexes", () => {
       message: "Your loan has been approved",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId: userId2,
       type: "loan_approved",
@@ -865,104 +882,6 @@ describe("notification preferences", () => {
 // Internal Notification Functions Tests
 // ============================================
 
-describe("sendNotification", () => {
-  test("should send notification to a single user", async () => {
-    const t = convexTest(schema, modules);
-
-    const [orgId, userId] = await Promise.all([
-      t.run(async (ctx) => {
-        return await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-      }),
-      t.run(async (ctx) => {
-        return await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-      }),
-    ]);
-    const notificationId = await t.mutation(
-      internal.notifications.sendNotification,
-      {
-        organizationId: orgId,
-        userId,
-        type: "loan_approved",
-        title: "Loan Approved",
-        message: "Your loan has been approved",
-        relatedEntityType: "loan",
-        relatedEntityId: "loan_123",
-      },
-    );
-
-    const notification = await t.run(async (ctx) => {
-      return await ctx.db.get(notificationId);
-    });
-
-    expect(notification).toBeDefined();
-    expect(notification?.userId).toBe(userId);
-    expect(notification?.type).toBe("loan_approved");
-    expect(notification?.title).toBe("Loan Approved");
-    expect(notification?.relatedEntityType).toBe("loan");
-    expect(notification?.relatedEntityId).toBe("loan_123");
-  });
-});
-
-describe("sendNotificationToUsers", () => {
-  test("should send notifications to multiple users", async () => {
-    const t = convexTest(schema, modules);
-
-    const [orgId, userIds] = await Promise.all([
-      t.run(async (ctx) => {
-        return await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-      }),
-      t.run(async (ctx) => {
-        const _ids = [];
-        return Promise.all(
-          Array.from({ length: 3 }, (_, i) =>
-            ctx.db.insert("users", {
-              name: `User ${i}`,
-              email: `user${i}@example.com`,
-            }),
-          ),
-        );
-      }),
-    ]);
-    const count = await t.mutation(
-      internal.notifications.sendNotificationToUsers,
-      {
-        organizationId: orgId,
-        userIds,
-        type: "system_announcement",
-        title: "System Announcement",
-        message: "Important system update",
-      },
-    );
-
-    expect(count).toBe(3);
-
-    await Promise.all(
-      userIds.map(async (notifyUserId) => {
-        const notifications = await t.run(async (ctx) => {
-          return await ctx.db
-            .query("notifications")
-            .withIndex("by_user", (q) => q.eq("userId", notifyUserId))
-            .collect();
-        });
-
-        expect(notifications).toHaveLength(1);
-        expect(notifications[0]?.title).toBe("System Announcement");
-      }),
-    );
-  });
-});
-
 // ============================================
 // Notification Category and Type Tests
 // ============================================
@@ -987,7 +906,7 @@ describe("notification categories", () => {
       }),
     ]);
     // Create approval type notifications
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "loan_pending_approval",
@@ -995,7 +914,7 @@ describe("notification categories", () => {
       message: "Loan needs approval",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "accession_approved",
@@ -1003,7 +922,7 @@ describe("notification categories", () => {
       message: "Accession was approved",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "exhibition_pending_approval",
@@ -1045,7 +964,7 @@ describe("notification categories", () => {
       }),
     ]);
     // Create reminder type notifications
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "loan_due_soon",
@@ -1053,7 +972,7 @@ describe("notification categories", () => {
       message: "Loan is due in 3 days",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "insurance_expiring",
@@ -1061,7 +980,7 @@ describe("notification categories", () => {
       message: "Insurance expires soon",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "loan_overdue",
@@ -1101,7 +1020,7 @@ describe("notification categories", () => {
       }),
     ]);
     // Create alert type notifications
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "condition_alert",
@@ -1109,7 +1028,7 @@ describe("notification categories", () => {
       message: "Item condition changed",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "environmental_alert",
@@ -1117,7 +1036,7 @@ describe("notification categories", () => {
       message: "Temperature out of range",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "capacity_alert",
@@ -1157,7 +1076,7 @@ describe("notification categories", () => {
       }),
     ]);
     // Create assignment type notifications
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "task_assigned",
@@ -1165,7 +1084,7 @@ describe("notification categories", () => {
       message: "New task assigned to you",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "task_completed",
@@ -1173,7 +1092,7 @@ describe("notification categories", () => {
       message: "Task was completed",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "comment_mention",
@@ -1213,7 +1132,7 @@ describe("notification categories", () => {
       }),
     ]);
     // Create system type notifications
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "batch_job_completed",
@@ -1221,7 +1140,7 @@ describe("notification categories", () => {
       message: "Your batch job finished",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "report_ready",
@@ -1229,7 +1148,7 @@ describe("notification categories", () => {
       message: "Your report is ready",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "system_announcement",
@@ -1271,7 +1190,7 @@ describe("notification category filtering", () => {
       }),
     ]);
     // Create mix of notifications
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "loan_pending_approval",
@@ -1279,7 +1198,7 @@ describe("notification category filtering", () => {
       message: "Needs approval",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "task_assigned",
@@ -1287,7 +1206,7 @@ describe("notification category filtering", () => {
       message: "Task assigned",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "accession_approved",
@@ -1349,7 +1268,7 @@ describe("notification category filtering", () => {
       }),
     ]);
     // Create mix of notifications
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "loan_due_soon",
@@ -1357,7 +1276,7 @@ describe("notification category filtering", () => {
       message: "Due soon",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "condition_alert",
@@ -1365,7 +1284,7 @@ describe("notification category filtering", () => {
       message: "Condition changed",
     });
 
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "insurance_expiring",
@@ -1419,7 +1338,7 @@ describe("notification category filtering", () => {
       }),
     ]);
     // Create unread alert
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "condition_alert",
@@ -1428,23 +1347,20 @@ describe("notification category filtering", () => {
     });
 
     // Create read alert
-    const readAlertId = await t.mutation(
-      internal.notifications.sendNotification,
-      {
-        organizationId: orgId,
-        userId,
-        type: "environmental_alert",
-        title: "Read Alert",
-        message: "Already seen",
-      },
-    );
+    const readAlertId = await insertNotification(t, {
+      organizationId: orgId,
+      userId,
+      type: "environmental_alert",
+      title: "Read Alert",
+      message: "Already seen",
+    });
 
     await t.run(async (ctx) => {
       await ctx.db.patch(readAlertId, { read: true });
     });
 
     // Create unread assignment (different category)
-    await t.mutation(internal.notifications.sendNotification, {
+    await insertNotification(t, {
       organizationId: orgId,
       userId,
       type: "task_assigned",
@@ -1513,7 +1429,7 @@ describe("notification type validation", () => {
 
     await Promise.all(
       Array.from(validTypes).map(async (type) => {
-        await t.mutation(internal.notifications.sendNotification, {
+        await insertNotification(t, {
           organizationId: orgId,
           userId,
           type,
@@ -1554,16 +1470,13 @@ describe("notification type validation", () => {
     // The schema allows any string for type, testing custom types
     const customType = "custom_notification_type";
 
-    const notificationId = await t.mutation(
-      internal.notifications.sendNotification,
-      {
-        organizationId: orgId,
-        userId,
-        type: customType,
-        title: "Custom Type",
-        message: "Custom notification",
-      },
-    );
+    const notificationId = await insertNotification(t, {
+      organizationId: orgId,
+      userId,
+      type: customType,
+      title: "Custom Type",
+      message: "Custom notification",
+    });
 
     const notification = await t.run(async (ctx) => {
       return await ctx.db.get(notificationId);
@@ -1596,16 +1509,13 @@ describe("notification read/unread state management", () => {
         });
       }),
     ]);
-    const notificationId = await t.mutation(
-      internal.notifications.sendNotification,
-      {
-        organizationId: orgId,
-        userId,
-        type: "task_assigned",
-        title: "New Task",
-        message: "You have a new task",
-      },
-    );
+    const notificationId = await insertNotification(t, {
+      organizationId: orgId,
+      userId,
+      type: "task_assigned",
+      title: "New Task",
+      message: "You have a new task",
+    });
 
     const notification = await t.run(async (ctx) => {
       return await ctx.db.get(notificationId);

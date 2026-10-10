@@ -1,6 +1,7 @@
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { dispatchNotification } from "./notificationDispatch";
 import { getUsersToNotifyForWorkflowStep } from "./permissions";
 import {
   resolveWorkflowApprovalDecision,
@@ -249,21 +250,16 @@ export async function recordWorkflowStepAdvance(
     getUsersToNotifyForWorkflowStep(ctx, organizationId, workflowType, toStep),
   ]).then(([, , notifyUsers]) => notifyUsers);
 
-  await Promise.all(
-    usersToNotify.map((approverId) =>
-      approverId !== performedBy
-        ? ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: notification.title,
-            message: notification.message,
-            relatedEntityType: workflowType,
-            relatedEntityId: entityId,
-          })
-        : Promise.resolve(),
+  await dispatchNotification(ctx, {
+    organizationId,
+    type: "workflow_pending",
+    recipients: usersToNotify.filter(
+      (approverId) => approverId !== performedBy,
     ),
-  );
+    title: notification.title,
+    message: notification.message,
+    related: { entityType: workflowType, entityId },
+  });
 
   return null;
 }

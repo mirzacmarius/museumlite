@@ -43,6 +43,21 @@ describe("getNotificationCopy", () => {
     });
   });
 
+  it("translates batch job outcomes with the job's own label", () => {
+    expect(
+      getNotificationCopy(
+        {
+          title: "Bulk Edit completed with 2 errors",
+          message: "Processed 3 of 5 items.",
+        },
+        dictionaryTranslator(french),
+      ),
+    ).toEqual({
+      title: "Modification en masse : traitement terminé avec 2 erreurs",
+      message: "3 éléments sur 5 traités.",
+    });
+  });
+
   it("localizes insurance policy value with one USD symbol", () => {
     expect(
       getNotificationCopy(

@@ -1,98 +1,69 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
-import { internalMutation, mutation } from "./utils/mutationBuilders";
-import { getUserIdsWithPermission } from "./utils/permissions";
-
-// ============================================
-// Notification Type Constants
-// ============================================
-
-export const NOTIFICATION_TYPES = {
-  // Workflow approvals
-  LOAN_PENDING_APPROVAL: "loan_pending_approval",
-  LOAN_APPROVED: "loan_approved",
-  LOAN_REJECTED: "loan_rejected",
-  ACCESSION_PENDING_APPROVAL: "accession_pending_approval",
-  ACCESSION_APPROVED: "accession_approved",
-  DEACCESSION_PENDING_APPROVAL: "deaccession_pending_approval",
-  DEACCESSION_APPROVED: "deaccession_approved",
-  EXHIBITION_PENDING_APPROVAL: "exhibition_pending_approval",
-  CONSERVATION_PENDING_APPROVAL: "conservation_pending_approval",
-
-  // Due dates and reminders
-  LOAN_DUE_SOON: "loan_due_soon",
-  LOAN_OVERDUE: "loan_overdue",
-  INSURANCE_EXPIRING: "insurance_expiring",
-  LICENSE_EXPIRING: "license_expiring",
-  ASSESSMENT_DUE: "assessment_due",
-
-  // Alerts
-  CONDITION_ALERT: "condition_alert",
-  ENVIRONMENTAL_ALERT: "environmental_alert",
-  CAPACITY_ALERT: "capacity_alert",
-
-  // Assignments
-  TASK_ASSIGNED: "task_assigned",
-  TASK_COMPLETED: "task_completed",
-  TASK_REVIEW_REQUESTED: "task_review_requested",
-  TASK_RETURNED: "task_returned",
-  MOVE_REQUEST_CREATED: "move_request_created",
-  MOVE_REQUEST_APPROVED: "move_request_approved",
-  COMMENT_MENTION: "comment_mention",
-
-  // System
-  BATCH_JOB_COMPLETED: "batch_job_completed",
-  REPORT_READY: "report_ready",
-  SYSTEM_ANNOUNCEMENT: "system_announcement",
-} as const;
-
-export const NOTIFICATION_CATEGORIES = {
-  approvals: [
-    "loan_pending_approval",
-    "loan_approved",
-    "loan_rejected",
-    "accession_pending_approval",
-    "accession_approved",
-    "deaccession_pending_approval",
-    "deaccession_approved",
-    "exhibition_pending_approval",
-    "conservation_pending_approval",
-    "move_request_created",
-    "move_request_approved",
-  ],
-  reminders: [
-    "loan_due_soon",
-    "loan_overdue",
-    "insurance_expiring",
-    "license_expiring",
-    "assessment_due",
-  ],
-  alerts: ["condition_alert", "environmental_alert", "capacity_alert"],
-  assignments: [
-    "task_assigned",
-    "task_completed",
-    "task_review_requested",
-    "task_returned",
-    "comment_mention",
-  ],
-  system: ["batch_job_completed", "report_ready", "system_announcement"],
-};
-
-const NOTIFICATION_TYPE_TO_CATEGORY = new Map<string, string>(
-  Object.entries(NOTIFICATION_CATEGORIES).flatMap(([category, types]) =>
-    types.map((type) => [type, category]),
-  ),
-);
+import { deliveryStatus, ledgerProgress } from "./utils/deliveryLedger";
+import { mutation } from "./utils/mutationBuilders";
+import { notificationEmailChannel } from "./utils/notificationEmailChannel";
+import { notificationError } from "./utils/notificationErrors";
+import {
+  categoryChannelMatrix,
+  channelPolicy,
+  preferenceFieldsFor,
+  storedPreferences,
+} from "./utils/notificationPreferences";
+import {
+  categoryOfType,
+  notificationCategory,
+} from "./utils/notificationTypes";
+import { notificationEmailErrorCode } from "./utils/notificationValidators";
+import { getCurrentUserOrganization } from "./utils/permissions";
 
 // ============================================
 // Enhanced Notification Queries
 // ============================================
 
+const emailOutcome = v.object({
+  deliveryId: v.id("notificationEmailDeliveries"),
+  status: deliveryStatus,
+  attemptCount: v.number(),
+  maxAttempts: v.number(),
+  seriesAttempts: v.number(),
+  inFlight: v.boolean(),
+  nextAttemptAt: v.optional(v.number()),
+  lastAttemptAt: v.optional(v.number()),
+  lastResponseStatus: v.optional(v.number()),
+  lastErrorCode: v.optional(notificationEmailErrorCode),
+  completedAt: v.optional(v.number()),
+});
+
+async function emailOutcomeOf(
+  ctx: QueryCtx,
+  notificationId: Id<"notifications">,
+) {
+  const delivery = await ctx.db
+    .query("notificationEmailDeliveries")
+    .withIndex("by_notificationId", (q) =>
+      q.eq("notificationId", notificationId),
+    )
+    .first();
+  if (!delivery) return null;
+  return {
+    deliveryId: delivery._id,
+    status: delivery.status,
+    attemptCount: delivery.attemptCount,
+    maxAttempts: delivery.maxAttempts,
+    ...ledgerProgress(delivery),
+    lastAttemptAt: delivery.lastAttemptAt,
+    lastResponseStatus: delivery.lastResponseStatus,
+    lastErrorCode: delivery.lastErrorCode,
+    completedAt: delivery.completedAt,
+  };
+}
+
 /**
- * Get notification center data with categories
+ * The caller's notifications in one organization, newest first, each with
+ * its category and the outcome of its email when one was sent.
  */
 export const getNotificationCenter = query({
   args: {
@@ -110,7 +81,8 @@ export const getNotificationCenter = query({
         relatedEntityType: v.optional(v.string()),
         relatedEntityId: v.optional(v.string()),
         createdAt: v.number(),
-        category: v.string(),
+        category: notificationCategory,
+        email: v.union(emailOutcome, v.null()),
       }),
     ),
     unreadCount: v.number(),
@@ -137,17 +109,20 @@ export const getNotificationCenter = query({
       .order("desc")
       .take(limit);
 
-    const categorizedNotifications = notifications.map((n) => ({
-      _id: n._id,
-      type: n.type,
-      title: n.title,
-      message: n.message,
-      read: n.read,
-      relatedEntityType: n.relatedEntityType,
-      relatedEntityId: n.relatedEntityId,
-      createdAt: n.createdAt,
-      category: getCategoryForType(n.type),
-    }));
+    const categorizedNotifications = await Promise.all(
+      notifications.map(async (n) => ({
+        _id: n._id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        read: n.read,
+        relatedEntityType: n.relatedEntityType,
+        relatedEntityId: n.relatedEntityId,
+        createdAt: n.createdAt,
+        category: categoryOfType(n.type),
+        email: await emailOutcomeOf(ctx, n._id),
+      })),
+    );
 
     const unreadNotifications = await ctx.db
       .query("notifications")
@@ -168,10 +143,7 @@ export const getNotificationCenter = query({
     };
 
     for (const n of unreadNotifications) {
-      const category = getCategoryForType(n.type);
-      if (category in unreadByCategory) {
-        unreadByCategory[category as keyof typeof unreadByCategory]++;
-      }
+      unreadByCategory[categoryOfType(n.type)]++;
     }
 
     return {
@@ -244,8 +216,6 @@ export const getNotificationsByCategory = query({
       throw new Error("Not authenticated");
     }
 
-    const categoryTypes = NOTIFICATION_CATEGORIES[args.category] ?? [];
-    const categoryTypeSet = new Set(categoryTypes);
     const limit = args.limit ?? 50;
 
     let notificationsQuery = ctx.db
@@ -266,7 +236,7 @@ export const getNotificationsByCategory = query({
 
     // Filter by category types
     const filtered = notifications
-      .filter((n) => categoryTypeSet.has(n.type))
+      .filter((n) => categoryOfType(n.type) === args.category)
       .slice(0, limit);
 
     return filtered.map((n) => ({
@@ -508,336 +478,13 @@ export const cleanupOldNotifications = mutation({
 });
 
 // ============================================
-// Internal: Send Notifications
-// ============================================
-
-/**
- * Internal: Send notification to a single user
- */
-export const sendNotification = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    userId: v.id("users"),
-    type: v.string(),
-    title: v.string(),
-    message: v.string(),
-    relatedEntityType: v.optional(v.string()),
-    relatedEntityId: v.optional(v.string()),
-    // Additional data for email templates
-    emailData: v.optional(
-      v.object({
-        // For loan notifications
-        loanId: v.optional(v.string()),
-        itemName: v.optional(v.string()),
-        borrowerName: v.optional(v.string()),
-        startDate: v.optional(v.union(v.number(), v.string())),
-        endDate: v.optional(v.union(v.number(), v.string())),
-        itemCount: v.optional(v.number()),
-        loanUrl: v.optional(v.string()),
-        // For task assignments
-        taskTitle: v.optional(v.string()),
-        assignedBy: v.optional(v.string()),
-        dueDate: v.optional(v.union(v.number(), v.string())),
-        taskUrl: v.optional(v.string()),
-      }),
-    ),
-  },
-  returns: v.id("notifications"),
-  handler: async (ctx, args) => {
-    const notificationId = await ctx.db.insert("notifications", {
-      organizationId: args.organizationId,
-      userId: args.userId,
-      type: args.type,
-      title: args.title,
-      message: args.message,
-      read: false,
-      relatedEntityType: args.relatedEntityType,
-      relatedEntityId: args.relatedEntityId,
-      createdAt: Date.now(),
-    });
-
-    // Send email notification if user has instant email enabled
-    await ctx.runMutation(internal.notifications.sendEmailNotification, {
-      organizationId: args.organizationId,
-      userId: args.userId,
-      type: args.type,
-      title: args.title,
-      message: args.message,
-      relatedEntityId: args.relatedEntityId,
-      emailData: args.emailData,
-    });
-
-    return notificationId;
-  },
-});
-
-/**
- * Internal: Send notification to multiple users
- */
-export const sendNotificationToUsers = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    userIds: v.array(v.id("users")),
-    type: v.string(),
-    title: v.string(),
-    message: v.string(),
-    relatedEntityType: v.optional(v.string()),
-    relatedEntityId: v.optional(v.string()),
-  },
-  returns: v.number(),
-  handler: async (ctx, args) => {
-    const now = Date.now();
-
-    await Promise.all(
-      Array.from(args.userIds).map(async (userId) => {
-        await ctx.db.insert("notifications", {
-          organizationId: args.organizationId,
-          userId,
-          type: args.type,
-          title: args.title,
-          message: args.message,
-          read: false,
-          relatedEntityType: args.relatedEntityType,
-          relatedEntityId: args.relatedEntityId,
-          createdAt: now,
-        });
-
-        // Send email notification if user has instant email enabled
-        await ctx.runMutation(internal.notifications.sendEmailNotification, {
-          organizationId: args.organizationId,
-          userId,
-          type: args.type,
-          title: args.title,
-          message: args.message,
-          relatedEntityId: args.relatedEntityId,
-        });
-      }),
-    );
-
-    return args.userIds.length;
-  },
-});
-
-/**
- * Internal: Send notification to all users with a specific permission
- */
-export const notifyUsersWithPermission = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    permission: v.string(),
-    type: v.string(),
-    title: v.string(),
-    message: v.string(),
-    relatedEntityType: v.optional(v.string()),
-    relatedEntityId: v.optional(v.string()),
-    excludeUserId: v.optional(v.id("users")),
-  },
-  returns: v.number(),
-  handler: async (ctx, args) => {
-    const userIds = await getUserIdsWithPermission(
-      ctx,
-      args.organizationId,
-      args.permission,
-      { excludeUserId: args.excludeUserId },
-    );
-
-    if (userIds.length === 0) {
-      return 0;
-    }
-
-    // Inline notification creation to avoid circular type reference
-    const now = Date.now();
-
-    await Promise.all(
-      Array.from(userIds).map(async (userId) => {
-        await ctx.db.insert("notifications", {
-          organizationId: args.organizationId,
-          userId,
-          type: args.type,
-          title: args.title,
-          message: args.message,
-          read: false,
-          relatedEntityType: args.relatedEntityType,
-          relatedEntityId: args.relatedEntityId,
-          createdAt: now,
-        });
-      }),
-    );
-
-    return userIds.length;
-  },
-});
-
-/**
- * Internal: Send loan due reminder
- */
-export const sendLoanDueReminder = internalMutation({
-  args: {
-    loanId: v.id("loans"),
-    daysUntilDue: v.number(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const loan = await ctx.db.get(args.loanId);
-    if (!loan) {
-      return null;
-    }
-
-    const type =
-      args.daysUntilDue <= 0
-        ? NOTIFICATION_TYPES.LOAN_OVERDUE
-        : NOTIFICATION_TYPES.LOAN_DUE_SOON;
-
-    const title =
-      args.daysUntilDue <= 0
-        ? `Loan Overdue: ${loan.loanNumber}`
-        : `Loan Due Soon: ${loan.loanNumber}`;
-
-    const message =
-      args.daysUntilDue <= 0
-        ? `Loan ${loan.loanNumber} is overdue and requires immediate attention.`
-        : `Loan ${loan.loanNumber} is due in ${args.daysUntilDue} days.`;
-
-    // Notify users with loan management permission
-    await ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
-      organizationId: loan.organizationId,
-      permission: "loans.update",
-      type,
-      title,
-      message,
-      relatedEntityType: "loan",
-      relatedEntityId: args.loanId,
-    });
-
-    return null;
-  },
-});
-
-/**
- * Internal: Send approval request notification
- */
-export const sendApprovalRequest = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    entityType: v.union(
-      v.literal("loan"),
-      v.literal("accession"),
-      v.literal("deaccession"),
-      v.literal("exhibition"),
-      v.literal("conservation"),
-      v.literal("move_request"),
-    ),
-    entityId: v.string(),
-    entityNumber: v.string(),
-    requestedByUserId: v.id("users"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const typeMap: Record<
-      string,
-      { type: string; title: string; permission: string }
-    > = {
-      loan: {
-        type: NOTIFICATION_TYPES.LOAN_PENDING_APPROVAL,
-        title: `Loan Pending Approval: ${args.entityNumber}`,
-        permission: "loans.approve",
-      },
-      accession: {
-        type: NOTIFICATION_TYPES.ACCESSION_PENDING_APPROVAL,
-        title: `Accession Pending Approval: ${args.entityNumber}`,
-        permission: "collections.approve_accession",
-      },
-      deaccession: {
-        type: NOTIFICATION_TYPES.DEACCESSION_PENDING_APPROVAL,
-        title: `Deaccession Pending Approval: ${args.entityNumber}`,
-        permission: "collections.approve_deaccession",
-      },
-      exhibition: {
-        type: NOTIFICATION_TYPES.EXHIBITION_PENDING_APPROVAL,
-        title: `Exhibition Pending Approval: ${args.entityNumber}`,
-        permission: "collections.approve_exhibition",
-      },
-      conservation: {
-        type: NOTIFICATION_TYPES.CONSERVATION_PENDING_APPROVAL,
-        title: `Conservation Treatment Pending: ${args.entityNumber}`,
-        permission: "collections.approve_conservation",
-      },
-      move_request: {
-        type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
-        title: `Move Request Created: ${args.entityNumber}`,
-        permission: "locations.update",
-      },
-    };
-
-    const config = typeMap[args.entityType];
-    if (!config) {
-      return null;
-    }
-
-    await ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
-      organizationId: args.organizationId,
-      permission: config.permission,
-      type: config.type,
-      title: config.title,
-      message: `A new ${args.entityType.replace("_", " ")} requires your review and approval.`,
-      relatedEntityType: args.entityType,
-      relatedEntityId: args.entityId,
-      excludeUserId: args.requestedByUserId,
-    });
-
-    return null;
-  },
-});
-
-/**
- * Internal: Send batch job completion notification
- */
-export const sendBatchJobCompleted = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    userId: v.id("users"),
-    jobId: v.id("batchJobs"),
-    jobType: v.string(),
-    totalItems: v.number(),
-    successCount: v.number(),
-    failureCount: v.number(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const jobTypeLabels: Record<string, string> = {
-      bulk_edit: "Bulk Edit",
-      bulk_move: "Bulk Move",
-      bulk_status_change: "Bulk Status Change",
-      bulk_delete: "Bulk Delete",
-      bulk_export: "Bulk Export",
-    };
-
-    const label = jobTypeLabels[args.jobType] ?? args.jobType;
-    const status =
-      args.failureCount === 0
-        ? "completed successfully"
-        : `completed with ${args.failureCount} errors`;
-
-    await ctx.runMutation(internal.notifications.sendNotification, {
-      organizationId: args.organizationId,
-      userId: args.userId,
-      type: NOTIFICATION_TYPES.BATCH_JOB_COMPLETED,
-      title: `${label} ${status}`,
-      message: `Processed ${args.successCount} of ${args.totalItems} items.`,
-      relatedEntityType: "batch_job",
-      relatedEntityId: args.jobId,
-    });
-
-    return null;
-  },
-});
-
-// ============================================
 // Notification Preferences
 // ============================================
 
 /**
- * Get notification preferences for current user
+ * The caller's category matrix for one organization and what their email
+ * channel can actually deliver: whether this deployment sends notification
+ * email, to which address, and a saved digest choice that is not delivered.
  */
 export const getPreferences = query({
   args: {
@@ -845,18 +492,16 @@ export const getPreferences = query({
   },
   returns: v.union(
     v.object({
-      enableApprovals: v.boolean(),
-      enableReminders: v.boolean(),
-      enableAlerts: v.boolean(),
-      enableAssignments: v.boolean(),
-      enableSystem: v.boolean(),
-      disabledTypes: v.array(v.string()),
-      emailEnabled: v.boolean(),
-      emailDigestFrequency: v.string(),
-      quietHoursEnabled: v.boolean(),
-      quietHoursStart: v.optional(v.string()),
-      quietHoursEnd: v.optional(v.string()),
-      timezone: v.optional(v.string()),
+      categories: categoryChannelMatrix,
+      email: v.object({
+        channel: v.union(
+          v.literal("provider"),
+          v.literal("fixture"),
+          v.literal("unavailable"),
+        ),
+        address: v.union(v.string(), v.null()),
+        savedDigest: v.union(v.literal("daily"), v.literal("weekly"), v.null()),
+      }),
     }),
     v.null(),
   ),
@@ -865,57 +510,40 @@ export const getPreferences = query({
     if (!userId) {
       return null;
     }
-
-    const prefs = await ctx.db
-      .query("notificationPreferences")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    // Return defaults if no preferences set
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      return null;
+    }
+    const [user, preferences] = await Promise.all([
+      ctx.db.get(userId),
+      storedPreferences(ctx, userId, args.organizationId),
+    ]);
+    const policy = channelPolicy(preferences);
     return {
-      enableApprovals: prefs?.enableApprovals ?? true,
-      enableReminders: prefs?.enableReminders ?? true,
-      enableAlerts: prefs?.enableAlerts ?? true,
-      enableAssignments: prefs?.enableAssignments ?? true,
-      enableSystem: prefs?.enableSystem ?? true,
-      disabledTypes: prefs?.disabledTypes ?? [],
-      emailEnabled: prefs?.emailEnabled ?? false,
-      emailDigestFrequency: prefs?.emailDigestFrequency ?? "never",
-      quietHoursEnabled: prefs?.quietHoursEnabled ?? false,
-      quietHoursStart: prefs?.quietHoursStart,
-      quietHoursEnd: prefs?.quietHoursEnd,
-      timezone: prefs?.timezone,
+      categories: policy.categories,
+      email: {
+        channel: notificationEmailChannel().kind,
+        address: user?.email ?? null,
+        savedDigest:
+          policy.emailCadence === "daily" || policy.emailCadence === "weekly"
+            ? policy.emailCadence
+            : null,
+      },
     };
   },
 });
 
 /**
- * Update notification preferences
+ * Replaces the caller's category matrix for one organization: which
+ * categories notify them, and which of those are also emailed.
  */
 export const updatePreferences = mutation({
   args: {
     organizationId: v.id("organizations"),
-    enableApprovals: v.optional(v.boolean()),
-    enableReminders: v.optional(v.boolean()),
-    enableAlerts: v.optional(v.boolean()),
-    enableAssignments: v.optional(v.boolean()),
-    enableSystem: v.optional(v.boolean()),
-    disabledTypes: v.optional(v.array(v.string())),
-    emailEnabled: v.optional(v.boolean()),
-    emailDigestFrequency: v.optional(
-      v.union(
-        v.literal("instant"),
-        v.literal("daily"),
-        v.literal("weekly"),
-        v.literal("never"),
-      ),
-    ),
-    quietHoursEnabled: v.optional(v.boolean()),
-    quietHoursStart: v.optional(v.string()),
-    quietHoursEnd: v.optional(v.string()),
-    timezone: v.optional(v.string()),
+    categories: categoryChannelMatrix,
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -923,281 +551,40 @@ export const updatePreferences = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw notificationError("NOT_ORGANIZATION_MEMBER");
+    }
+    const emailRequested = Object.values(args.categories).some(
+      (choice) => choice.enabled && choice.email,
+    );
+    if (emailRequested) {
+      if (notificationEmailChannel().kind === "unavailable") {
+        throw notificationError("EMAIL_CHANNEL_UNAVAILABLE");
+      }
+      const user = await ctx.db.get(userId);
+      if (!user?.email) {
+        throw notificationError("EMAIL_ADDRESS_MISSING");
+      }
+    }
 
-    const existing = await ctx.db
-      .query("notificationPreferences")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    const updates: Record<string, unknown> = { updatedAt: Date.now() };
-
-    if (args.enableApprovals !== undefined)
-      updates.enableApprovals = args.enableApprovals;
-    if (args.enableReminders !== undefined)
-      updates.enableReminders = args.enableReminders;
-    if (args.enableAlerts !== undefined)
-      updates.enableAlerts = args.enableAlerts;
-    if (args.enableAssignments !== undefined)
-      updates.enableAssignments = args.enableAssignments;
-    if (args.enableSystem !== undefined)
-      updates.enableSystem = args.enableSystem;
-    if (args.disabledTypes !== undefined)
-      updates.disabledTypes = args.disabledTypes;
-    if (args.emailEnabled !== undefined)
-      updates.emailEnabled = args.emailEnabled;
-    if (args.emailDigestFrequency !== undefined)
-      updates.emailDigestFrequency = args.emailDigestFrequency;
-    if (args.quietHoursEnabled !== undefined)
-      updates.quietHoursEnabled = args.quietHoursEnabled;
-    if (args.quietHoursStart !== undefined)
-      updates.quietHoursStart = args.quietHoursStart;
-    if (args.quietHoursEnd !== undefined)
-      updates.quietHoursEnd = args.quietHoursEnd;
-    if (args.timezone !== undefined) updates.timezone = args.timezone;
-
+    const fields = {
+      ...preferenceFieldsFor(args.categories),
+      updatedAt: Date.now(),
+    };
+    const existing = await storedPreferences(ctx, userId, args.organizationId);
     if (existing) {
-      await ctx.db.patch(existing._id, updates);
+      await ctx.db.patch(existing._id, fields);
     } else {
       await ctx.db.insert("notificationPreferences", {
         userId,
         organizationId: args.organizationId,
-        ...updates,
+        ...fields,
       });
     }
-
     return null;
-  },
-});
-
-/**
- * Check if a notification should be sent based on user preferences
- */
-export const shouldSendNotification = internalMutation({
-  args: {
-    userId: v.id("users"),
-    organizationId: v.id("organizations"),
-    notificationType: v.string(),
-  },
-  returns: v.boolean(),
-  handler: async (ctx, args) => {
-    const prefs = await ctx.db
-      .query("notificationPreferences")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    // If no preferences, allow all notifications
-    if (!prefs) {
-      return true;
-    }
-
-    // Check if type is explicitly disabled
-    if (prefs.disabledTypes?.includes(args.notificationType)) {
-      return false;
-    }
-
-    // Check category preferences
-    const category = getCategoryForType(args.notificationType);
-
-    switch (category) {
-      case "approvals":
-        return prefs.enableApprovals !== false;
-      case "reminders":
-        return prefs.enableReminders !== false;
-      case "alerts":
-        return prefs.enableAlerts !== false;
-      case "assignments":
-        return prefs.enableAssignments !== false;
-      case "system":
-        return prefs.enableSystem !== false;
-      default:
-        return true;
-    }
-  },
-});
-
-// ============================================
-// Helpers
-// ============================================
-
-function getCategoryForType(type: string): string {
-  return NOTIFICATION_TYPE_TO_CATEGORY.get(type) ?? "system";
-}
-
-/**
- * Get user email by user ID
- * Returns null if user not found or email not set
- */
-async function getUserEmail(
-  ctx: QueryCtx,
-  userId: Id<"users">,
-): Promise<string | null> {
-  const user = await ctx.db.get(userId);
-  if (!user) {
-    return null;
-  }
-  return user.email ?? null;
-}
-
-/**
- * Internal: Send email notification based on notification type
- * Checks user email preferences and sends appropriate email template
- */
-export const sendEmailNotification = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    userId: v.id("users"),
-    type: v.string(),
-    title: v.string(),
-    message: v.string(),
-    relatedEntityId: v.optional(v.string()),
-    // Additional data for email templates
-    emailData: v.optional(
-      v.object({
-        // For loan notifications
-        loanId: v.optional(v.string()),
-        itemName: v.optional(v.string()),
-        borrowerName: v.optional(v.string()),
-        startDate: v.optional(v.union(v.number(), v.string())),
-        endDate: v.optional(v.union(v.number(), v.string())),
-        itemCount: v.optional(v.number()),
-        loanUrl: v.optional(v.string()),
-        // For task assignments
-        taskTitle: v.optional(v.string()),
-        assignedBy: v.optional(v.string()),
-        dueDate: v.optional(v.union(v.number(), v.string())),
-        taskUrl: v.optional(v.string()),
-      }),
-    ),
-  },
-  returns: v.union(v.boolean(), v.null()),
-  handler: async (ctx, args) => {
-    // Get user preferences
-    const prefs = await ctx.db
-      .query("notificationPreferences")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    // Check if email notifications are enabled and set to instant delivery
-    const emailEnabled = prefs?.emailEnabled ?? false;
-    const emailDigestFrequency = prefs?.emailDigestFrequency ?? "never";
-
-    if (!emailEnabled || emailDigestFrequency !== "instant") {
-      return null; // Email not enabled or not instant, skip sending
-    }
-
-    // Get user email
-    const userEmail = await getUserEmail(ctx, args.userId);
-    if (!userEmail) {
-      return null; // No email address, cannot send
-    }
-
-    // Send appropriate email based on notification type via actions (runs in Node.js)
-    const emailData = args.emailData ?? {};
-
-    switch (args.type) {
-      case NOTIFICATION_TYPES.LOAN_APPROVED:
-        if (
-          emailData.loanId &&
-          emailData.itemName !== undefined &&
-          emailData.borrowerName &&
-          emailData.startDate !== undefined
-        ) {
-          await ctx.scheduler.runAfter(
-            0,
-            internal.email.actions.sendLoanApprovedEmailAction,
-            {
-              email: userEmail,
-              loanId: emailData.loanId,
-              itemName: emailData.itemName,
-              borrowerName: emailData.borrowerName,
-              startDate: emailData.startDate,
-              endDate: emailData.endDate,
-              itemCount: emailData.itemCount,
-              loanUrl: emailData.loanUrl,
-            },
-          );
-          return true;
-        }
-        break;
-
-      case NOTIFICATION_TYPES.LOAN_REJECTED:
-        if (
-          emailData.loanId &&
-          emailData.itemName !== undefined &&
-          emailData.borrowerName &&
-          emailData.startDate !== undefined
-        ) {
-          await ctx.scheduler.runAfter(
-            0,
-            internal.email.actions.sendLoanRejectedEmailAction,
-            {
-              email: userEmail,
-              loanId: emailData.loanId,
-              itemName: emailData.itemName,
-              borrowerName: emailData.borrowerName,
-              startDate: emailData.startDate,
-              endDate: emailData.endDate,
-              itemCount: emailData.itemCount,
-              loanUrl: emailData.loanUrl,
-            },
-          );
-          return true;
-        }
-        break;
-
-      case NOTIFICATION_TYPES.LOAN_PENDING_APPROVAL:
-        if (
-          emailData.loanId &&
-          emailData.itemName !== undefined &&
-          emailData.borrowerName &&
-          emailData.startDate !== undefined
-        ) {
-          await ctx.scheduler.runAfter(
-            0,
-            internal.email.actions.sendLoanPendingEmailAction,
-            {
-              email: userEmail,
-              loanId: emailData.loanId,
-              itemName: emailData.itemName,
-              borrowerName: emailData.borrowerName,
-              startDate: emailData.startDate,
-              endDate: emailData.endDate,
-              itemCount: emailData.itemCount,
-              loanUrl: emailData.loanUrl,
-            },
-          );
-          return true;
-        }
-        break;
-
-      case NOTIFICATION_TYPES.TASK_ASSIGNED:
-        if (emailData.taskTitle && emailData.assignedBy) {
-          await ctx.scheduler.runAfter(
-            0,
-            internal.email.actions.sendTaskAssignedEmailAction,
-            {
-              email: userEmail,
-              taskTitle: emailData.taskTitle,
-              assignedBy: emailData.assignedBy,
-              dueDate: emailData.dueDate,
-              taskUrl: emailData.taskUrl,
-            },
-          );
-          return true;
-        }
-        break;
-
-      default:
-        // Notification type not configured for email, skip
-        return null;
-    }
-
-    return null; // Missing required email data
   },
 });

@@ -4934,6 +4934,91 @@ export default {
     },
     viewAll: "Vis alle varsler",
     viewDetails: "Vis detaljer",
+    email: {
+      sent: "Sendt på e-post {time}",
+      sending: "Sender e-post",
+      retrying: "E-posten feilet, prøver igjen {time}",
+      notDelivered: "E-posten ble ikke levert",
+      notSent: "E-posten ble ikke sendt",
+      retry: "Send e-posten på nytt",
+      details: "E-postdetaljer",
+      hideDetails: "Skjul e-postdetaljer",
+      attempt: "Forsøk {number}",
+      noAttempts: "Ingen e-post er sendt ennå.",
+      duration: "{ms} ms",
+      outcome: {
+        succeeded: "Levert",
+        failed_transient: "Midlertidig feil",
+        failed_permanent: "Avvist",
+      },
+      reasons: {
+        http_error: "E-posttjenesten svarte HTTP {status}",
+        timeout: "E-posttjenesten svarte ikke innen 10 sekunder",
+        network_error: "Fikk ikke kontakt med e-posttjenesten",
+        attempt_lost: "Forsøket rapporterte ikke tilbake",
+        event_expired: "Varselet er ikke lenger lagret",
+        recipient_removed: "Du er ikke lenger medlem av denne organisasjonen",
+        access_revoked: "Du har ikke lenger tilgang til denne posten",
+        email_disabled: "E-post er slått av for denne kategorien",
+        address_missing: "Kontoen din har ingen e-postadresse",
+        channel_unavailable: "E-postutsending er ikke satt opp",
+      },
+      errors: {
+        EMAIL_DELIVERY_NOT_FOUND: "Denne e-posten er ikke lenger tilgjengelig.",
+        EMAIL_DELIVERY_NOT_RETRYABLE: "Denne e-posten er allerede levert eller blir sendt nå.",
+        EMAIL_OFF_FOR_CATEGORY: "Slå først på e-post for denne kategorien i varselinnstillingene.",
+        EMAIL_ADDRESS_MISSING: "Legg først til en e-postadresse på kontoen din.",
+        EMAIL_CHANNEL_UNAVAILABLE: "E-postutsending er ikke satt opp for dette miljøet.",
+        NOTIFICATION_ACCESS_REVOKED: "Du har ikke lenger tilgang til denne posten, så den kan ikke sendes til deg på e-post.",
+        NOT_ORGANIZATION_MEMBER: "Du er ikke lenger medlem av denne organisasjonen.",
+        fallback: "E-posten kunne ikke sendes på nytt. Prøv igjen senere.",
+      },
+    },
+  },
+  notificationSettings: {
+    title: "Varselinnstillinger",
+    description: "Velg hvilke varsler du får. E-post sendes i tillegg til varselet i MuseumLite.",
+    notify: "Varsle meg",
+    email: "E-post",
+    categories: {
+      approvals: {
+        label: "Godkjenninger",
+        description: "Forespørsler som venter på din godkjenning og avgjørelser om dine forespørsler",
+      },
+      reminders: {
+        label: "Påminnelser",
+        description: "Lån som forfaller, forsikringer som utløper, kommende leveranser og fristvarsler",
+      },
+      alerts: {
+        label: "Advarsler",
+        description: "Konserverings- og tilstandsvarsler, forsinkelser, blokkerte oppgaver og overskredne frister",
+      },
+      assignments: {
+        label: "Oppgaver",
+        description: "Oppgaver tildelt deg, gjennomganger, returer og omtaler",
+      },
+      system: {
+        label: "System",
+        description: "Utsending og retur av lån, transportoppdateringer, massejobber og kunngjøringer",
+      },
+    },
+    emailTo: "E-post sendes til {address} så snart et varsel sendes.",
+    emailFixture: "Dette miljøet sender varsel-e-post til et testendepunkt, så meldingene kommer ikke i innboksen din.",
+    emailUnavailable: "E-postutsending er ikke satt opp for dette miljøet, så varsler vises bare i MuseumLite.",
+    emailAddressMissing: "Kontoen din har ingen e-postadresse, så varsler vises bare i MuseumLite.",
+    savedDigest: {
+      daily: "Du valgte tidligere et daglig sammendrag. Sammendrag er ikke tilgjengelige ennå, så ingen sendes. Lagre for å få kategoriene som er merket nedenfor på e-post etter hvert som varslene kommer.",
+      weekly: "Du valgte tidligere et ukentlig sammendrag. Sammendrag er ikke tilgjengelige ennå, så ingen sendes. Lagre for å få kategoriene som er merket nedenfor på e-post etter hvert som varslene kommer.",
+    },
+    save: "Lagre innstillinger",
+    saving: "Lagrer...",
+    saved: "Varselinnstillingene er lagret.",
+    errors: {
+      NOT_ORGANIZATION_MEMBER: "Du er ikke medlem av denne organisasjonen.",
+      EMAIL_CHANNEL_UNAVAILABLE: "E-postutsending er ikke satt opp for dette miljøet, så e-post kan ikke slås på.",
+      EMAIL_ADDRESS_MISSING: "Legg til en e-postadresse på kontoen din før du slår på e-post.",
+      fallback: "Innstillingene kunne ikke lagres. Prøv igjen.",
+    },
   },
   mediaPage: {
     publication: {
@@ -9198,6 +9283,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job} er fullført",
+        batchJobFailed: "{job} er fullført med {count} feil",
         newAccessionRequiresApproval: "Ny tilvekst krever godkjenning",
         accessionApproved: "Tilvekst godkjent",
         accessionRequiresYourApproval:

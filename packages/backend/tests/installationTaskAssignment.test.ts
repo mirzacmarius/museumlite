@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { workErrorFromError } from "../convex/utils/workErrors";
@@ -18,23 +18,10 @@ vi.mock("../convex/env", () => ({
   },
 }));
 
-const sent = vi.hoisted(() => ({
-  emails: [] as Array<{ to: string | string[]; html: string }>,
-}));
-
-vi.mock("../convex/email", () => ({
-  sendEmail: vi.fn(async (message: { to: string | string[]; html: string }) => {
-    sent.emails.push(message);
-    return { status: "success" };
-  }),
-}));
-
-beforeEach(() => {
-  sent.emails = [];
-});
-
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 const INSTALLER_PERMISSIONS = [
@@ -217,11 +204,25 @@ test("installation tasks reject assignees and dependencies from another organiza
 
 test("the assignment email links to the exhibition the task belongs to", async () => {
   vi.useFakeTimers();
+  vi.stubEnv("RESEND_API_KEY", "re_fixture_key");
+  vi.stubEnv("RESEND_SENDER_EMAIL_AUTH", "auth@example.test");
+  const provider = vi.fn(async () => Response.json({ id: "email-fixture" }));
+  vi.stubGlobal("fetch", provider);
   const { t, manager, organizationId, exhibitionId, taskId, installerId } =
     await setup();
+  const inAppOnly = { enabled: true, email: false };
   await authedForUser(t, installerId).mutation(
     api.notifications.updatePreferences,
-    { organizationId, emailEnabled: true, emailDigestFrequency: "instant" },
+    {
+      organizationId,
+      categories: {
+        approvals: inAppOnly,
+        reminders: inAppOnly,
+        alerts: inAppOnly,
+        assignments: { enabled: true, email: true },
+        system: inAppOnly,
+      },
+    },
   );
 
   await manager.mutation(api.installations.assignTask, {
@@ -230,13 +231,15 @@ test("the assignment email links to the exhibition the task belongs to", async (
   });
   await t.finishAllScheduledFunctions(() => vi.runAllTimers());
 
-  expect(sent.emails.map((email) => email.to)).toEqual([
-    "installer@example.test",
-  ]);
-  expect(sent.emails[0]?.html).toContain(
+  const emails = (provider.mock.calls as Array<[string, RequestInit]>).map(
+    ([, init]) =>
+      JSON.parse(String(init.body)) as { to: string[]; html: string },
+  );
+  expect(emails.map((email) => email.to)).toEqual([["installer@example.test"]]);
+  expect(emails[0]?.html).toContain(
     `https://museum.example.test/en/exhibitions/${exhibitionId}`,
   );
-  expect(sent.emails[0]?.html).not.toContain("/tasks");
+  expect(emails[0]?.html).not.toContain("/tasks");
   const task = await manager.query(api.installations.getTask, { taskId });
   expect(task?.assigneeId).toBe(installerId);
 });

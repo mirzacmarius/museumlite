@@ -16,6 +16,18 @@ Sign in at `/en/login` with the email and password in `.local-qa/credentials.jso
 
 CI runs the same backend, deploy and seed in the `deploy` job of `.github/workflows/check.yml`, with the Linux backend binary pinned there.
 
+## Notification email
+
+The QA backend has no email provider, so Settings › Notifications reports email as unavailable. To exercise instant email without sending anything, run the loopback fixture and point the backend at it:
+
+```bash
+bun run qa:email-fixture                    # 127.0.0.1:3745 (EMAIL_FIXTURE_PORT to change)
+bun run convex:local -- env set NOTIFICATION_EMAIL_FIXTURE_URL=http://127.0.0.1:3745/emails
+curl -X POST http://127.0.0.1:3745/mode -d refuse   # accept | refuse | unavailable
+```
+
+The fixture answers like the provider (200 with an id, 422 refused, 503 unavailable) and logs each request to `.local-qa/email-fixture.jsonl`. Only loopback URLs are accepted; any other value turns email off.
+
 ## Rules
 
 - Run every Convex CLI command through `bun run convex:local -- <args>`. It strips cloud variables and refuses to run unless the recorded target is loopback. A bare `convex` command uses `packages/backend/.env.local`, which points at the cloud.

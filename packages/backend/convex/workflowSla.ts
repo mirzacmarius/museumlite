@@ -4,7 +4,12 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalQuery, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
-import { requirePermission } from "./utils/permissions";
+import { dispatchNotification } from "./utils/notificationDispatch";
+import { slaNotificationType } from "./utils/notificationTypes";
+import {
+  getUserIdsWithPermission,
+  requirePermission,
+} from "./utils/permissions";
 
 const workflowTypeValidator = v.union(
   v.literal("accession"),
@@ -395,34 +400,39 @@ export const checkSlaBreaches = internalMutation({
           Array.from(items).map(async (item) => {
             if (item.createdAt < slaDueThreshold) {
               if (config.escalateToRoleId) {
-                await ctx.runMutation(
-                  internal.notifications.notifyUsersWithPermission,
-                  {
-                    organizationId: args.organizationId,
-                    permission: `${config.workflowType}s.approve`,
-                    type: `sla_breach_${config.workflowType}`,
-                    title: `SLA Breach: ${config.workflowType} pending over ${config.slaDays} days`,
-                    message: `A ${config.workflowType} has exceeded its SLA of ${config.slaDays} days and requires immediate attention.`,
-                    relatedEntityType: config.workflowType,
-                    relatedEntityId: item.id,
+                await dispatchNotification(ctx, {
+                  organizationId: args.organizationId,
+                  type: slaNotificationType("breach", config.workflowType),
+                  recipients: await getUserIdsWithPermission(
+                    ctx,
+                    args.organizationId,
+                    `${config.workflowType}s.approve`,
+                  ),
+                  title: `SLA Breach: ${config.workflowType} pending over ${config.slaDays} days`,
+                  message: `A ${config.workflowType} has exceeded its SLA of ${config.slaDays} days and requires immediate attention.`,
+                  related: {
+                    entityType: config.workflowType,
+                    entityId: item.id,
                   },
-                );
+                  idempotencyKey: `sla_breach:${config.workflowType}:${item.id}`,
+                });
               }
               return "breach" as const;
             }
             if (warningThreshold && item.createdAt < warningThreshold) {
-              await ctx.runMutation(
-                internal.notifications.notifyUsersWithPermission,
-                {
-                  organizationId: args.organizationId,
-                  permission: `${config.workflowType}s.approve`,
-                  type: `sla_warning_${config.workflowType}`,
-                  title: `SLA Warning: ${config.workflowType} due in ${config.warningDays} days`,
-                  message: `A ${config.workflowType} is approaching its SLA deadline. Please review soon.`,
-                  relatedEntityType: config.workflowType,
-                  relatedEntityId: item.id,
-                },
-              );
+              await dispatchNotification(ctx, {
+                organizationId: args.organizationId,
+                type: slaNotificationType("warning", config.workflowType),
+                recipients: await getUserIdsWithPermission(
+                  ctx,
+                  args.organizationId,
+                  `${config.workflowType}s.approve`,
+                ),
+                title: `SLA Warning: ${config.workflowType} due in ${config.warningDays} days`,
+                message: `A ${config.workflowType} is approaching its SLA deadline. Please review soon.`,
+                related: { entityType: config.workflowType, entityId: item.id },
+                idempotencyKey: `sla_warning:${config.workflowType}:${item.id}`,
+              });
               return "warning" as const;
             }
             return "none" as const;

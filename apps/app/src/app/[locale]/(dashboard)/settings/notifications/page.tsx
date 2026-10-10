@@ -2,57 +2,204 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  NOTIFICATION_CATEGORIES,
+  type NotificationCategory,
+} from "@v1/backend/convex/utils/notificationTypes";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
 import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { type FormEvent, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useNotificationPreferencesErrorMessage } from "@/hooks/use-notification-error-message";
 import { useScopedI18n } from "@/locales/client";
+
+type Preferences = NonNullable<
+  FunctionReturnType<typeof api.notifications.getPreferences>
+>;
+type CategoryMatrix = Preferences["categories"];
+
+type SaveState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "saved" }
+  | { kind: "failed"; message: string };
+
+function withoutEmail(categories: CategoryMatrix): CategoryMatrix {
+  return {
+    approvals: { ...categories.approvals, email: false },
+    reminders: { ...categories.reminders, email: false },
+    alerts: { ...categories.alerts, email: false },
+    assignments: { ...categories.assignments, email: false },
+    system: { ...categories.system, email: false },
+  };
+}
+
+function EmailChannelNotice({ email }: { email: Preferences["email"] }) {
+  const t = useScopedI18n("notificationSettings");
+  if (email.channel === "unavailable") {
+    return <p>{t("emailUnavailable")}</p>;
+  }
+  if (email.address === null) {
+    return <p>{t("emailAddressMissing")}</p>;
+  }
+  return (
+    <>
+      <p>
+        {email.channel === "fixture"
+          ? t("emailFixture")
+          : t("emailTo", { address: email.address })}
+      </p>
+      {email.savedDigest ? (
+        <p className="font-medium text-foreground">
+          {email.savedDigest === "daily"
+            ? t("savedDigest.daily")
+            : t("savedDigest.weekly")}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function CategoryRow({
+  category,
+  choice,
+  emailOffered,
+  onChange,
+}: {
+  category: NotificationCategory;
+  choice: CategoryMatrix[NotificationCategory];
+  emailOffered: boolean;
+  onChange: (choice: CategoryMatrix[NotificationCategory]) => void;
+}) {
+  const t = useScopedI18n("notificationSettings");
+  const notifyId = `notify-${category}`;
+  const emailId = `email-${category}`;
+  return (
+    <li className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-sm font-medium text-foreground">
+          {t(`categories.${category}.label`)}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {t(`categories.${category}.description`)}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-6">
+        <div className="flex items-center gap-2">
+          <Switch
+            id={notifyId}
+            checked={choice.enabled}
+            onCheckedChange={(enabled) =>
+              onChange({ enabled, email: enabled && choice.email })
+            }
+          />
+          <Label htmlFor={notifyId}>{t("notify")}</Label>
+        </div>
+        {emailOffered ? (
+          <div className="flex items-center gap-2">
+            <Switch
+              id={emailId}
+              checked={choice.email}
+              disabled={!choice.enabled}
+              onCheckedChange={(email) => onChange({ ...choice, email })}
+            />
+            <Label htmlFor={emailId}>{t("email")}</Label>
+          </div>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function NotificationPreferencesForm({
+  organizationId,
+  preferences,
+}: {
+  organizationId: Id<"organizations">;
+  preferences: Preferences;
+}) {
+  const t = useScopedI18n("notificationSettings");
+  const errorMessage = useNotificationPreferencesErrorMessage();
+  const updatePreferences = useMutation(api.notifications.updatePreferences);
+  const [edits, setEdits] = useState<Partial<CategoryMatrix>>({});
+  const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  const categories: CategoryMatrix = { ...preferences.categories, ...edits };
+  const emailOffered =
+    preferences.email.channel !== "unavailable" &&
+    preferences.email.address !== null;
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setSaveState({ kind: "saving" });
+    try {
+      await updatePreferences({
+        organizationId,
+        categories: emailOffered ? categories : withoutEmail(categories),
+      });
+      setEdits({});
+      setSaveState({ kind: "saved" });
+    } catch (error) {
+      setSaveState({ kind: "failed", message: errorMessage(error) });
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
+      </div>
+
+      <div className="space-y-2 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+        <EmailChannelNotice email={preferences.email} />
+      </div>
+
+      <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+        {NOTIFICATION_CATEGORIES.map((category) => (
+          <CategoryRow
+            key={category}
+            category={category}
+            choice={categories[category]}
+            emailOffered={emailOffered}
+            onChange={(choice) => {
+              setEdits((current) => ({ ...current, [category]: choice }));
+              setSaveState({ kind: "idle" });
+            }}
+          />
+        ))}
+      </ul>
+
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        <p role="status" className="text-sm text-muted-foreground">
+          {saveState.kind === "saved" ? t("saved") : null}
+        </p>
+        {saveState.kind === "failed" ? (
+          <p role="alert" className="text-sm text-destructive">
+            {saveState.message}
+          </p>
+        ) : null}
+        <Button type="submit" disabled={saveState.kind === "saving"}>
+          {saveState.kind === "saving" ? t("saving") : t("save")}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 export default function NotificationSettingsPage() {
   const tCommon = useScopedI18n("common");
   const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState({
-    emailEnabled: false,
-    emailDigestFrequency: "instant" as "instant" | "daily" | "weekly" | "never",
-  });
-
+  const organizationId = currentOrganizationId as Id<"organizations"> | null;
   const preferences = useQuery(
     api.notifications.getPreferences,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
+    organizationId ? { organizationId } : "skip",
   );
 
-  const updatePreferences = useMutation(api.notifications.updatePreferences);
-
-  useEffect(() => {
-    if (preferences) {
-      setFormData({
-        emailEnabled: preferences.emailEnabled,
-        emailDigestFrequency: preferences.emailDigestFrequency as
-          | "instant"
-          | "daily"
-          | "weekly"
-          | "never",
-      });
-    }
-  }, [preferences]);
-
-  if (!currentOrganizationId) {
+  if (!organizationId) {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
@@ -80,147 +227,11 @@ export default function NotificationSettingsPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
-    setIsSubmitting(true);
-
-    try {
-      await updatePreferences({
-        organizationId: currentOrganizationId as Id<"organizations">,
-        emailEnabled: formData.emailEnabled,
-        emailDigestFrequency: formData.emailDigestFrequency,
-      });
-      setSuccessMessage(t("notificationPreferencesSaved"));
-    } catch (err) {
-      console.error("Failed to update notification preferences:", err);
-      setError(t("notificationPreferencesUpdateFailed"));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
-    <div className="flex w-full flex-col gap-6">
-      <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-foreground">
-          {t("emailNotificationSettings")}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {t("emailNotificationSettingsDescription")}
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="rounded-lg border border-green-600 bg-green-50 dark:bg-green-950/30 p-3 text-sm text-green-600 dark:text-green-400">
-            {successMessage}
-          </div>
-        )}
-
-        {/* Email Notifications */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-medium">{t("emailNotifications")}</h2>
-          <div className="space-y-6">
-            {/* Email Enabled Toggle */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="emailEnabled">
-                    {t("enableEmailNotifications")}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {t("receiveEmailNotifications")}
-                  </p>
-                </div>
-                <Switch
-                  id="emailEnabled"
-                  checked={formData.emailEnabled}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, emailEnabled: checked }))
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Email Digest Frequency */}
-            <div className="space-y-2">
-              <Label htmlFor="emailDigestFrequency">
-                {t("emailDeliveryFrequency")}
-              </Label>
-              <Select
-                value={formData.emailDigestFrequency}
-                onValueChange={(
-                  value: "instant" | "daily" | "weekly" | "never",
-                ) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    emailDigestFrequency: value,
-                  }))
-                }
-                disabled={!formData.emailEnabled}
-              >
-                <SelectTrigger id="emailDigestFrequency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="instant">
-                    {t("instantEmail")}
-                  </SelectItem>
-                  <SelectItem value="daily">
-                    {t("dailyDigest")}
-                  </SelectItem>
-                  <SelectItem value="weekly">
-                    {t("weeklyDigest")}
-                  </SelectItem>
-                  <SelectItem value="never">{t("neverEmail")}</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {t("emailFrequencyDescription")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Event Types Info */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-medium">{t("emailEvents")}</h2>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {t("emailEventsDescription")}
-            </p>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary">•</span>
-                <span>
-                  <strong className="text-primary">{t("loanRequests")}</strong> {t("loanRequestsDescription")}
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary">•</span>
-                <span>
-                  <strong className="text-primary">{t("taskAssignments")}</strong> {t("taskAssignmentsDescription")}
-                </span>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end gap-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? t("saving") : t("saveEmailPreferences")}
-          </Button>
-        </div>
-      </form>
-    </div>
+    <NotificationPreferencesForm
+      key={organizationId}
+      organizationId={organizationId}
+      preferences={preferences}
+    />
   );
 }

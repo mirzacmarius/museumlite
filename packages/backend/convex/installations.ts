@@ -3,11 +3,11 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { env } from "./env";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { memberPermissionNames } from "./utils/memberPermissions";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
 import { workError } from "./utils/workErrors";
 
@@ -162,14 +162,13 @@ export const createTask = mutation({
     });
 
     if (args.assigneeId && args.assigneeId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: args.organizationId,
-        userId: args.assigneeId,
         type: "task_assigned",
+        recipients: [args.assigneeId],
         title: "New Task Assigned",
         message: `You have been assigned to: ${args.title}`,
-        relatedEntityType: "installationTask",
-        relatedEntityId: taskId,
+        related: { entityType: "exhibition", entityId: args.exhibitionId },
       });
     }
 
@@ -663,30 +662,21 @@ export const assignTask = mutation({
     ] as const);
 
     if (args.assigneeId && args.assigneeId !== userId) {
-      // Get user who is assigning the task
       const assigningUser = await ctx.db.get(userId);
       const assignedByName =
         assigningUser?.name ?? assigningUser?.email ?? "A team member";
-
-      // App routes are not organization-scoped; the exhibition page is the task's home.
-      const siteUrl = env.SITE_URL?.replace(/\/$/, "");
-      const taskUrl = siteUrl
-        ? `${siteUrl}/exhibitions/${task.exhibitionId}`
-        : undefined;
-
-      await ctx.runMutation(internal.notifications.sendNotification, {
+      await dispatchNotification(ctx, {
         organizationId: task.organizationId,
-        userId: args.assigneeId,
         type: "task_assigned",
+        recipients: [args.assigneeId],
         title: "Task Assigned",
         message: `You have been assigned to: ${task.title}`,
-        relatedEntityType: "installationTask",
-        relatedEntityId: args.taskId,
-        emailData: {
+        related: { entityType: "exhibition", entityId: task.exhibitionId },
+        email: {
+          kind: "taskAssigned",
           taskTitle: task.title,
           assignedBy: assignedByName,
           dueDate: task.dueDate,
-          taskUrl,
         },
       });
     }
@@ -1076,14 +1066,13 @@ export const applyTemplate = mutation({
     }
 
     if (args.assigneeId && args.assigneeId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: template.organizationId,
-        userId: args.assigneeId,
         type: "task_assigned",
+        recipients: [args.assigneeId],
         title: "New Task Assigned",
         message: `You have been assigned to: ${args.title ?? template.name}`,
-        relatedEntityType: "installationTask",
-        relatedEntityId: taskId,
+        related: { entityType: "exhibition", entityId: args.exhibitionId },
       });
     }
 
@@ -1610,14 +1599,13 @@ export const notifyAssignee = internalMutation({
     const task = await ctx.db.get(args.taskId);
     if (!task?.assigneeId) return null;
 
-    await ctx.runMutation(internal.audit.createNotificationInternal, {
+    await dispatchNotification(ctx, {
       organizationId: task.organizationId,
-      userId: task.assigneeId,
       type: "task_assigned",
+      recipients: [task.assigneeId],
       title: "Task Assigned",
       message: `You have been assigned to: ${task.title}`,
-      relatedEntityType: "installationTask",
-      relatedEntityId: args.taskId,
+      related: { entityType: "exhibition", entityId: task.exhibitionId },
     });
 
     return null;
@@ -1637,14 +1625,13 @@ export const notifyDueDate = internalMutation({
     const hoursUntilDue = (task.dueDate - now) / (1000 * 60 * 60);
 
     if (hoursUntilDue <= 24 && hoursUntilDue > 0) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await dispatchNotification(ctx, {
         organizationId: task.organizationId,
-        userId: task.assigneeId,
         type: "task_due_soon",
+        recipients: [task.assigneeId],
         title: "Task Due Soon",
         message: `Task "${task.title}" is due in less than 24 hours`,
-        relatedEntityType: "installationTask",
-        relatedEntityId: args.taskId,
+        related: { entityType: "exhibition", entityId: task.exhibitionId },
       });
     }
 
@@ -1668,19 +1655,14 @@ export const notifyBlocked = internalMutation({
       )
       .collect();
 
-    await Promise.all(
-      Array.from(userOrgs).map(async (userOrg) => {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: task.organizationId,
-          userId: userOrg.userId,
-          type: "task_blocked",
-          title: "Task Blocked",
-          message: `Task "${task.title}" has been blocked: ${task.blockedReason ?? "No reason provided"}`,
-          relatedEntityType: "installationTask",
-          relatedEntityId: args.taskId,
-        });
-      }),
-    );
+    await dispatchNotification(ctx, {
+      organizationId: task.organizationId,
+      type: "task_blocked",
+      recipients: userOrgs.map((userOrg) => userOrg.userId),
+      title: "Task Blocked",
+      message: `Task "${task.title}" has been blocked: ${task.blockedReason ?? "No reason provided"}`,
+      related: { entityType: "exhibition", entityId: task.exhibitionId },
+    });
 
     return null;
   },

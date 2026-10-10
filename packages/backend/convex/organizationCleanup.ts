@@ -406,9 +406,12 @@ interface DerivedDocuments {
   webhookEvents: Array<Doc<"webhookEvents">>;
   webhookDeliveries: Array<Doc<"webhookDeliveries">>;
   webhookDeliveryAttempts: Array<Doc<"webhookDeliveryAttempts">>;
+  notificationIntents: Array<Doc<"notificationIntents">>;
+  notificationEmailDeliveries: Array<Doc<"notificationEmailDeliveries">>;
+  notificationEmailAttempts: Array<Doc<"notificationEmailAttempts">>;
 }
 
-/** Export, projection, case-history and webhook delivery rows, read through organization or parent indexes. */
+/** Export, projection, case-history and delivery log rows, read through organization or parent indexes. */
 async function collectDerivedDocuments(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
@@ -423,6 +426,9 @@ async function collectDerivedDocuments(
     webhookEvents,
     webhookDeliveries,
     webhookDeliveryAttempts,
+    notificationIntents,
+    notificationEmailDeliveries,
+    notificationEmailAttempts,
   ] = await Promise.all([
     ctx.db
       .query("organizationProjectionStates")
@@ -474,6 +480,24 @@ async function collectDerivedDocuments(
       .collect(),
     ctx.db
       .query("webhookDeliveryAttempts")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("notificationIntents")
+      .withIndex("by_organizationId_and_idempotencyKey", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("notificationEmailDeliveries")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("notificationEmailAttempts")
       .withIndex("by_organizationId", (q) =>
         q.eq("organizationId", organizationId),
       )
@@ -545,6 +569,9 @@ async function collectDerivedDocuments(
     webhookEvents,
     webhookDeliveries,
     webhookDeliveryAttempts,
+    notificationIntents,
+    notificationEmailDeliveries,
+    notificationEmailAttempts,
   };
 }
 
