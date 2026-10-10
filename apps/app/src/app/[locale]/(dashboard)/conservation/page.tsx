@@ -1,35 +1,18 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Input } from "@v1/ui/input";
-import { useQuery } from "convex/react";
-import {
-  Box,
-  Calendar,
-  GalleryVerticalEnd,
-  Plus,
-  Search,
-  User,
-  Wrench,
-} from "lucide-react";
+import { GalleryVerticalEnd, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { CapabilityGuard } from "@/components/capability-guard";
-import {
-  DashboardListPageSkeleton,
-  GridCardsSkeleton,
-} from "@/components/dashboard-list-page-skeleton";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
+import { TreatmentList } from "./_components/treatment-list";
 
 export default function ConservationPage() {
   const t = useScopedI18n("conservation");
   const { currentOrganizationId, isLoading } = useOrganization();
-  const [searchQuery, setSearchQuery] = useState("");
 
   if (isLoading) {
     return <DashboardListPageSkeleton actionsCount={1} />;
@@ -72,150 +55,9 @@ export default function ConservationPage() {
             </PermissionGate>
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder={t("searchPlaceholder")}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                />
-              </div>
-            </div>
-
-            <TreatmentList
-              organizationId={currentOrganizationId}
-              searchQuery={searchQuery}
-            />
-          </div>
+          <TreatmentList organizationId={currentOrganizationId} />
         </div>
       </div>
     </CapabilityGuard>
-  );
-}
-
-function TreatmentList({
-  organizationId,
-  searchQuery,
-}: {
-  organizationId: string;
-  searchQuery: string;
-}) {
-  const t = useScopedI18n("conservation");
-  const treatments = useQuery(api.conservationTreatments.listByOrganization, {
-    organizationId: organizationId as Id<"organizations">,
-  });
-
-  if (treatments === undefined) {
-    return <GridCardsSkeleton count={6} />;
-  }
-
-  const filteredTreatments = treatments.filter((treatment) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      treatment.title.toLowerCase().includes(query) ||
-      treatment.description?.toLowerCase().includes(query) ||
-      treatment.notes?.toLowerCase().includes(query) ||
-      treatment.collectionTitle?.toLowerCase().includes(query) ||
-      treatment.performedByName?.toLowerCase().includes(query)
-    );
-  });
-
-  if (filteredTreatments.length === 0) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <Wrench className="size-12 text-muted-foreground" />
-        <div className="text-center">
-          <p className="text-muted-foreground">{t("noTreatmentsFound")}</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {searchQuery ? t("tryAdjustingSearch") : t("createFirstRecord")}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {filteredTreatments.map((treatment) => (
-        <TreatmentCard key={treatment._id} treatment={treatment} />
-      ))}
-    </div>
-  );
-}
-
-const TREATMENT_TYPE_STYLES: Record<string, string> = {
-  routine: "bg-muted text-muted-foreground border-border",
-  stabilization: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  restoration: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  cleaning: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-  repair: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-  assessment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  other: "bg-muted text-muted-foreground border-border",
-};
-
-interface Treatment {
-  _id: string;
-  treatmentType: string;
-  title: string;
-  description: string;
-  performedAt: number;
-  performedByName?: string;
-  collectionTitle?: string;
-}
-
-function TreatmentCard({ treatment }: { treatment: Treatment }) {
-  const locale = useCurrentLocale();
-  const typeStyle =
-    TREATMENT_TYPE_STYLES[treatment.treatmentType] ||
-    TREATMENT_TYPE_STYLES.other;
-  const performedAt = formatDate(new Date(treatment.performedAt), locale);
-
-  return (
-    <Link
-      href={`/conservation/${treatment._id}`}
-      className="group flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all hover:bg-muted/80 hover:border-border hover:shadow-lg hover:shadow-black/30"
-    >
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <span
-            className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${typeStyle}`}
-          >
-            {treatment.treatmentType}
-          </span>
-        </div>
-
-        <div>
-          <h3 className="font-semibold text-foreground group-hover:text-white line-clamp-2">
-            {treatment.title}
-          </h3>
-          <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
-            {treatment.description}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2 border-t border-border/50 pt-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="size-3.5 text-muted-foreground" />
-            <span>{performedAt}</span>
-          </div>
-          {treatment.performedByName && (
-            <div className="flex items-center gap-1.5">
-              <User className="size-3.5 text-muted-foreground" />
-              <span>{treatment.performedByName}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {treatment.collectionTitle && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground group-hover:text-muted-foreground transition-colors">
-          <Box className="size-3.5" />
-          <span className="truncate">{treatment.collectionTitle}</span>
-        </div>
-      )}
-    </Link>
   );
 }

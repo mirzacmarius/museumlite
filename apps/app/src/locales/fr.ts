@@ -5380,6 +5380,70 @@ export default {
     },
   },
 
+  recordRecovery: {
+    missing: {
+      title: "Enregistrement introuvable",
+      description:
+        "Le lien est peut-être incomplet, ou l'enregistrement appartient à une organisation dont vous n'êtes pas membre.",
+    },
+    removed: {
+      title: "Cet enregistrement n'est plus disponible",
+      description:
+        "Il a été supprimé, ou votre accès a changé, pendant que vous l'aviez ouvert.",
+    },
+    forbidden: {
+      title: "Vous n'avez pas accès à cet enregistrement",
+      description:
+        "Votre rôle dans cette organisation ne permet pas de le consulter. Demandez l'accès à un administrateur si nécessaire.",
+    },
+    unavailable: {
+      title: "Cette fonctionnalité n'est pas disponible",
+      description:
+        "L'offre ou les modules activés de votre organisation ne l'incluent pas. Ouvrez la liste pour voir vos options.",
+    },
+    error: {
+      title: "Impossible de charger cet enregistrement",
+      description:
+        "Une erreur s'est produite lors du chargement. Réessayez ou revenez à vos résultats.",
+    },
+    backToResults: "Retour aux résultats",
+    tryAgain: "Réessayer",
+    errorId: "ID d'erreur : {id}",
+    goToList: {
+      objects: "Aller aux objets",
+      loans: "Aller aux prêts",
+      accessions: "Aller aux acquisitions",
+      deaccessions: "Aller aux désaccessions",
+      locations: "Aller aux emplacements",
+      conservation: "Aller à la conservation",
+      entries: "Aller aux entrées",
+    },
+    pageNotFound: {
+      title: "Page introuvable",
+      description:
+        "La page que vous avez ouverte n'existe pas ou a été déplacée.",
+    },
+    goToDashboard: "Aller au tableau de bord",
+  },
+  listState: {
+    clearFilters: "Effacer les filtres",
+    noMatch: {
+      title: "Aucun résultat pour ces filtres",
+      description:
+        "Modifiez la recherche ou les filtres, ou effacez-les pour voir toute la liste.",
+    },
+    loadMore: "Charger plus",
+    loading: "Chargement…",
+    shownOfTotal: "{shown} affichés sur {total}",
+    matchesShown: "Résultats affichés : {shown}",
+    sort: {
+      label: "Trier",
+      newest: "Plus récents d'abord",
+      oldest: "Plus anciens d'abord",
+      identifier: "Identifiant (A–Z)",
+    },
+    allTypes: "Tous les types",
+  },
   objectEntries: {
     title: "Entrées",
     description:
@@ -5464,7 +5528,6 @@ export default {
     },
     detail: {
       back: "Entrées",
-      notFound: "Entrée introuvable",
       object: "Objet",
       openObject: "Ouvrir l’objet",
       receivedBy: "Reçu par {name}",

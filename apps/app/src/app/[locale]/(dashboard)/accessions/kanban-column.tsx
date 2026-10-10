@@ -15,6 +15,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { withReturnPath } from "@/lib/return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatAccessionMethodLabel } from "./[id]/_components/accession-detail-ui";
 
@@ -30,6 +31,8 @@ type KanbanColumnProps = {
   searchQuery: string;
   /** Exact column total; undefined while counts load. */
   total?: number;
+  /** The board view to return to from an accession. */
+  returnPath: string;
 };
 
 const PAGE_SIZE = 25;
@@ -90,6 +93,7 @@ export function KanbanColumn({
   roleName,
   searchQuery,
   total,
+  returnPath,
 }: KanbanColumnProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("accessions");
@@ -149,7 +153,10 @@ export function KanbanColumn({
               results.map((accession) => (
                 <Link
                   key={accession._id}
-                  href={`/accessions/${accession._id}`}
+                  href={withReturnPath(
+                    `/accessions/${accession._id}`,
+                    returnPath,
+                  )}
                   className="group block cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50"
                 >
                   <div className="mb-2 flex items-start justify-between">

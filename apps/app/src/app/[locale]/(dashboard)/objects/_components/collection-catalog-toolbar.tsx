@@ -1,13 +1,23 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { Plus, Search, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { ArrowUpDown, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { ObjectAppliedFilters } from "./object-applied-filters";
 import { ObjectFiltersDropdown } from "./object-filters-dropdown";
-import type { useCollectionCatalogList } from "./use-collection-catalog-list";
+import {
+  OBJECT_SORTS,
+  type useCollectionCatalogList,
+} from "./use-collection-catalog-list";
 
 interface CollectionCatalogToolbarProps {
   catalog: ReturnType<typeof useCollectionCatalogList>;
@@ -19,7 +29,10 @@ export function CollectionCatalogToolbar({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const collectionGroupT = useScopedI18n("objects.collectionGroup");
+  const tList = useScopedI18n("listState");
   const {
+    sort,
+    setSort,
     filters,
     setFilters,
     resetFilters,
@@ -96,6 +109,28 @@ export function CollectionCatalogToolbar({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
+          <Select
+            value={sort}
+            onValueChange={(value) => {
+              const next = OBJECT_SORTS.find((option) => option === value);
+              if (next) setSort(next);
+            }}
+          >
+            <SelectTrigger
+              aria-label={tList("sort.label")}
+              className="h-8 w-auto gap-1.5 text-xs"
+            >
+              <ArrowUpDown className="size-3.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {OBJECT_SORTS.map((option) => (
+                <SelectItem key={option} value={option} className="text-xs">
+                  {tList(`sort.${option}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <ObjectFiltersDropdown
             filters={{
               status: filters.status,

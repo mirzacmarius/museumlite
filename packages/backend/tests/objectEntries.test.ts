@@ -292,12 +292,12 @@ describe("entry validation and access", () => {
     expect((await getEntry(readerInMuseum, entryId)).entryNumber).toBe(
       "TE-2026-0001",
     );
-    await expect(
-      authedForUser(t, outsider.userId).query(api.objectEntries.get, {
+    expect(
+      await authedForUser(t, outsider.userId).query(api.objectEntries.get, {
         entryId,
       }),
-    ).rejects.toThrow();
-    await expect(t.query(api.objectEntries.get, { entryId })).rejects.toThrow();
+    ).toBeNull();
+    expect(await t.query(api.objectEntries.get, { entryId })).toBeNull();
   });
 
   test("reuses depositor and owner parties and records their roles on the entry", async () => {

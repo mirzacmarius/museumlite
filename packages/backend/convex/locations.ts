@@ -19,6 +19,7 @@ import {
   requireLocationAdminPermission,
   requirePermission,
 } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 import { claimStorageOwnership } from "./utils/uploadOwnership";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
@@ -459,7 +460,8 @@ export const list = query({
  */
 export const get = query({
   args: {
-    locationId: v.id("locations"),
+    // A string, so malformed links and other tables' IDs read as missing.
+    locationId: v.string(),
   },
   returns: v.union(
     v.object({
@@ -495,12 +497,14 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const location = await ctx.db.get(args.locationId);
-    if (!location) {
+    const locationId = ctx.db.normalizeId("locations", args.locationId);
+    const location = locationId ? await ctx.db.get(locationId) : null;
+    if (
+      !location ||
+      !(await canReadRecord(ctx, location.organizationId, "locations.read"))
+    ) {
       return null;
     }
-
-    await requirePermission(ctx, location.organizationId, "locations.read");
 
     const locationImageId =
       typeof location.customFields?.locationImageId === "string"
@@ -515,14 +519,14 @@ export const get = query({
       ctx.db
         .query("locations")
         .withIndex("by_parentLocation", (q) =>
-          q.eq("parentLocationId", args.locationId),
+          q.eq("parentLocationId", location._id),
         )
         .filter((q) => q.eq(q.field("isActive"), true))
         .collect(),
       ctx.db
         .query("collections")
         .withIndex("by_currentLocation", (q) =>
-          q.eq("currentLocationId", args.locationId),
+          q.eq("currentLocationId", location._id),
         )
         .collect(),
     ] as const);

@@ -277,11 +277,10 @@ test("withdrawing an intake with media, location and group retains it outside ac
     paginationOpts: { numItems: 10, cursor: null },
   });
   expect(objects.page).toEqual([]);
-  const deaccessions = await registrar.query(api.deaccessions.list, {
+  const deaccessions = await registrar.query(api.deaccessions.getBoardCounts, {
     organizationId,
-    paginationOpts: { numItems: 10, cursor: null },
   });
-  expect(deaccessions.page).toEqual([]);
+  expect(deaccessions).toMatchObject({ pending: 0, approved: 0, rejected: 0 });
 });
 
 test("only a reviewer for the current step can reject, and a refused rejection writes nothing", async () => {
