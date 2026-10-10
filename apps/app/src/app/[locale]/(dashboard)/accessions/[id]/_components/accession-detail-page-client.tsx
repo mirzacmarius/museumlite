@@ -262,9 +262,11 @@ export function AccessionDetailPageClient() {
   };
 
   return (
-    <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background">
+    // On phones the hero is taller than the screen, so the whole page scrolls;
+    // from md up the hero stays put and only the content scrolls.
+    <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background max-md:overflow-y-auto">
       <AccessionDetailHeroBanner {...detailProps} />
-      <div className="flex-1 overflow-y-auto">
+      <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
         {accession.status === "pending" && !accession.collectionId ? (
           <Suspense
             fallback={<p>{tRoot("accessions.catalogNumber.loading")}</p>}
