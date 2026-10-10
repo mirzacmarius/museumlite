@@ -13,6 +13,7 @@ import {
   requireUsableLocation,
 } from "./utils/locationIntegrity";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { assertEntryAllowsStatus } from "./utils/objectEntryLifecycle";
 import { requirePermission } from "./utils/permissions";
 
@@ -21,6 +22,14 @@ import { requirePermission } from "./utils/permissions";
 // ============================================
 
 const BATCH_CHUNK_SIZE = 50; // Process items in chunks to avoid timeouts
+
+const BATCH_JOB_LABELS: Record<Doc<"batchJobs">["jobType"], string> = {
+  bulk_edit: "Bulk Edit",
+  bulk_move: "Bulk Move",
+  bulk_status_change: "Bulk Status Change",
+  bulk_delete: "Bulk Delete",
+  bulk_export: "Bulk Export",
+};
 
 async function assertCollectionsBelongToOrg(
   ctx: MutationCtx,
@@ -596,15 +605,17 @@ export const processBatchJob = internalMutation({
         },
       );
     } else {
-      // Send completion notification
-      await ctx.runMutation(internal.notifications.sendBatchJobCompleted, {
+      const label = BATCH_JOB_LABELS[job.jobType];
+      await dispatchNotification(ctx, {
         organizationId: job.organizationId,
-        userId: job.createdBy,
-        jobId: args.jobId,
-        jobType: job.jobType,
-        totalItems: job.totalItems,
-        successCount,
-        failureCount,
+        type: "batch_job_completed",
+        recipients: [job.createdBy],
+        title:
+          failureCount === 0
+            ? `${label} completed successfully`
+            : `${label} completed with ${failureCount} errors`,
+        message: `Processed ${successCount} of ${job.totalItems} items.`,
+        related: { entityType: "batch_job", entityId: args.jobId },
       });
     }
 

@@ -4782,6 +4782,91 @@ export default {
     },
     viewAll: "View all notifications",
     viewDetails: "View details",
+    email: {
+      sent: "Emailed {time}",
+      sending: "Sending email",
+      retrying: "Email failed, retrying {time}",
+      notDelivered: "Email not delivered",
+      notSent: "Email not sent",
+      retry: "Retry email",
+      details: "Email details",
+      hideDetails: "Hide email details",
+      attempt: "Attempt {number}",
+      noAttempts: "No email has been sent yet.",
+      duration: "{ms} ms",
+      outcome: {
+        succeeded: "Delivered",
+        failed_transient: "Retryable failure",
+        failed_permanent: "Refused",
+      },
+      reasons: {
+        http_error: "The email service answered HTTP {status}",
+        timeout: "The email service did not answer within 10 seconds",
+        network_error: "The email service could not be reached",
+        attempt_lost: "The attempt did not report back",
+        event_expired: "The notification is no longer stored",
+        recipient_removed: "You are no longer a member of this organization",
+        access_revoked: "You can no longer view this record",
+        email_disabled: "Email is off for this category",
+        address_missing: "Your account has no email address",
+        channel_unavailable: "Email delivery is not set up",
+      },
+      errors: {
+        EMAIL_DELIVERY_NOT_FOUND: "This email is no longer available.",
+        EMAIL_DELIVERY_NOT_RETRYABLE: "This email was already delivered or is still being sent.",
+        EMAIL_OFF_FOR_CATEGORY: "Turn on email for this category in notification settings first.",
+        EMAIL_ADDRESS_MISSING: "Add an email address to your account first.",
+        EMAIL_CHANNEL_UNAVAILABLE: "Email delivery is not set up for this deployment.",
+        NOTIFICATION_ACCESS_REVOKED: "You can no longer view this record, so it cannot be emailed to you.",
+        NOT_ORGANIZATION_MEMBER: "You are no longer a member of this organization.",
+        fallback: "The email could not be queued again. Try again later.",
+      },
+    },
+  },
+  notificationSettings: {
+    title: "Notification preferences",
+    description: "Choose which notifications you receive. Email is sent in addition to the notification in MuseumLite.",
+    notify: "Notify me",
+    email: "Email",
+    categories: {
+      approvals: {
+        label: "Approvals",
+        description: "Requests waiting for your approval and decisions on your requests",
+      },
+      reminders: {
+        label: "Reminders",
+        description: "Loans coming due, expiring insurance, upcoming deliveries and deadline warnings",
+      },
+      alerts: {
+        label: "Alerts",
+        description: "Conservation and condition alerts, delays, blocked tasks and missed deadlines",
+      },
+      assignments: {
+        label: "Tasks",
+        description: "Tasks assigned to you, reviews, returns and mentions",
+      },
+      system: {
+        label: "System",
+        description: "Loan dispatch and returns, transit updates, batch jobs and announcements",
+      },
+    },
+    emailTo: "Emails go to {address} as soon as a notification is sent.",
+    emailFixture: "This deployment sends notification email to a test endpoint, so messages do not reach your inbox.",
+    emailUnavailable: "Email delivery is not set up for this deployment, so notifications appear only in MuseumLite.",
+    emailAddressMissing: "Your account has no email address, so notifications appear only in MuseumLite.",
+    savedDigest: {
+      daily: "You chose a daily digest earlier. Digests are not available yet, so no digest emails are being sent. Save to receive the categories marked below by email as notifications happen.",
+      weekly: "You chose a weekly digest earlier. Digests are not available yet, so no digest emails are being sent. Save to receive the categories marked below by email as notifications happen.",
+    },
+    save: "Save preferences",
+    saving: "Saving...",
+    saved: "Notification preferences saved.",
+    errors: {
+      NOT_ORGANIZATION_MEMBER: "You are not a member of this organization.",
+      EMAIL_CHANNEL_UNAVAILABLE: "Email delivery is not set up for this deployment, so email cannot be turned on.",
+      EMAIL_ADDRESS_MISSING: "Add an email address to your account before turning on email.",
+      fallback: "Your preferences could not be saved. Try again.",
+    },
   },
   mediaPage: {
     publication: {
@@ -5195,6 +5280,69 @@ export default {
     },
   },
 
+  recordRecovery: {
+    missing: {
+      title: "Record not found",
+      description:
+        "The link may be incomplete, or the record belongs to an organization you are not a member of.",
+    },
+    removed: {
+      title: "This record is no longer available",
+      description:
+        "It was removed, or your access changed, while you had it open.",
+    },
+    forbidden: {
+      title: "You do not have access to this record",
+      description:
+        "Your role in this organization does not include permission to view it. Ask an administrator if you need access.",
+    },
+    unavailable: {
+      title: "This feature is not available",
+      description:
+        "Your organization's plan or enabled modules do not include it. Open the list to see your options.",
+    },
+    error: {
+      title: "This record could not be loaded",
+      description:
+        "Something went wrong while loading it. Try again, or return to your results.",
+    },
+    backToResults: "Back to results",
+    tryAgain: "Try again",
+    errorId: "Error ID: {id}",
+    goToList: {
+      objects: "Go to objects",
+      loans: "Go to loans",
+      accessions: "Go to accessions",
+      deaccessions: "Go to deaccessions",
+      locations: "Go to locations",
+      conservation: "Go to conservation",
+      entries: "Go to entries",
+    },
+    pageNotFound: {
+      title: "Page not found",
+      description: "The page you opened does not exist or has moved.",
+    },
+    goToDashboard: "Go to dashboard",
+  },
+  listState: {
+    clearFilters: "Clear filters",
+    noMatch: {
+      title: "Nothing matches these filters",
+      description:
+        "Change the search or filters, or clear them to see the whole list.",
+    },
+    loadMore: "Load more",
+    loading: "Loading…",
+    shownOfTotal: "Showing {shown} of {total}",
+    matchesShown: "Matches shown: {shown}",
+    sort: {
+      label: "Sort",
+      newest: "Newest first",
+      oldest: "Oldest first",
+      identifier: "Identifier (A–Z)",
+    },
+    allTypes: "All types",
+  },
   objectEntries: {
     title: "Entries",
     description:
@@ -5278,7 +5426,6 @@ export default {
     },
     detail: {
       back: "Entries",
-      notFound: "Entry not found",
       object: "Object",
       openObject: "Open object",
       receivedBy: "Received by {name}",
@@ -8934,6 +9081,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job} completed successfully",
+        batchJobFailed: "{job} completed with {count} errors",
         newAccessionRequiresApproval: "New Accession Requires Approval",
         accessionApproved: "Accession Approved",
         accessionRequiresYourApproval: "Accession Requires Your Approval",

@@ -1,6 +1,5 @@
 "use client";
 
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useParams } from "next/navigation";
 import { Suspense } from "react";
 import { AccessionsPageSkeleton } from "../../accessions-page-skeleton";
@@ -11,7 +10,7 @@ export default function EntryDetailPage() {
   return (
     <div className="size-full overflow-y-auto">
       <Suspense fallback={<AccessionsPageSkeleton />}>
-        <EntryDetailClient entryId={params.id as Id<"objectEntries">} />
+        <EntryDetailClient entryId={params.id} />
       </Suspense>
     </div>
   );

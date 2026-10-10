@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { notificationEntityHref } from "@v1/backend/convex/utils/notificationLinks";
 import { Button } from "@v1/ui/button";
 import { EmptyState } from "@v1/ui/empty-state";
 import { cn } from "@v1/ui/utils";
@@ -29,8 +30,11 @@ import { type ReactNode, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { getNotificationCopy } from "@/lib/notification-copy";
-import { notificationEntityHref } from "@/lib/notification-links";
 import { useCurrentLocale, useI18n } from "@/locales/client";
+import {
+  type NotificationEmailOutcome,
+  NotificationEmailStatus,
+} from "./notification-email-status";
 import { NotificationsPageSkeleton } from "./notifications-page-skeleton";
 
 type FilterType = "all" | "unread";
@@ -56,6 +60,7 @@ interface NotificationItem {
   relatedEntityId?: string;
   createdAt: number;
   category?: string;
+  email: NotificationEmailOutcome | null;
 }
 
 interface CategoryTone {
@@ -291,7 +296,9 @@ function CategoryTabs({
   const t = useI18n();
 
   return (
-    <SegmentedControl ariaLabel={t("untranslatedDashboard.notifications.categories")}>
+    <SegmentedControl
+      ariaLabel={t("untranslatedDashboard.notifications.categories")}
+    >
       {CATEGORY_TABS.map(({ value, icon: Icon }) => {
         const count = value === "all" ? unreadCount : unreadByCategory[value];
         const tone = CATEGORY_TONES[value];
@@ -495,14 +502,20 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
     </div>
   );
 
-  if (link)
-    return (
-      <Link href={link} className="block">
-        {body}
-      </Link>
-    );
-
-  return body;
+  return (
+    <div>
+      {link ? (
+        <Link href={link} className="block">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
+      {notification.email ? (
+        <NotificationEmailStatus email={notification.email} />
+      ) : null}
+    </div>
+  );
 }
 
 export default function NotificationsPage() {
@@ -577,7 +590,8 @@ export default function NotificationsPage() {
               {unreadCount > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-normal tracking-normal text-primary">
                   <span className="size-1.5 animate-pulse rounded-full bg-current" />
-                  {unreadCount} {t("untranslatedDashboard.notifications.waiting")}
+                  {unreadCount}{" "}
+                  {t("untranslatedDashboard.notifications.waiting")}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-normal tracking-normal text-emerald-400">
@@ -622,7 +636,9 @@ export default function NotificationsPage() {
           onCategoryChange={setCategory}
         />
 
-        <SegmentedControl ariaLabel={t("untranslatedDashboard.notifications.readStatus")}>
+        <SegmentedControl
+          ariaLabel={t("untranslatedDashboard.notifications.readStatus")}
+        >
           <SegmentedButton
             pressed={filter === "all"}
             onClick={() => setFilter("all")}

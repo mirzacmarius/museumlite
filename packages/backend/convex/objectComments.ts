@@ -1,11 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
-import { NOTIFICATION_TYPES } from "./notifications";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
 
 const mentionPattern = /@([a-zA-Z0-9._-]+)/g;
@@ -133,33 +132,14 @@ export const create = mutation({
     if (mentionedUserIds.length > 0) {
       const author = await ctx.db.get(userId);
       const authorName = author?.name ?? author?.username ?? "Someone";
-
-      await Promise.all(
-        mentionedUserIds.map(async (mentionedUserId) => {
-          const shouldNotify = await ctx.runMutation(
-            internal.notifications.shouldSendNotification,
-            {
-              organizationId: object.organizationId,
-              userId: mentionedUserId,
-              notificationType: NOTIFICATION_TYPES.COMMENT_MENTION,
-            },
-          );
-
-          if (!shouldNotify) {
-            return;
-          }
-
-          await ctx.runMutation(internal.notifications.sendNotification, {
-            organizationId: object.organizationId,
-            userId: mentionedUserId,
-            type: NOTIFICATION_TYPES.COMMENT_MENTION,
-            title: "You were mentioned",
-            message: `${authorName} mentioned you on ${object.title}`,
-            relatedEntityType: "object",
-            relatedEntityId: args.objectId,
-          });
-        }),
-      );
+      await dispatchNotification(ctx, {
+        organizationId: object.organizationId,
+        type: "comment_mention",
+        recipients: mentionedUserIds,
+        title: "You were mentioned",
+        message: `${authorName} mentioned you on ${object.title}`,
+        related: { entityType: "object", entityId: args.objectId },
+      });
     }
 
     return commentId;

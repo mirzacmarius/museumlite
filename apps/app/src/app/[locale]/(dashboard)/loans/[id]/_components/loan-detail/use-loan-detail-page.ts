@@ -26,7 +26,7 @@ export function useLoanDetailPage() {
 
   const documents = useQuery(
     api.loans.listLoanDocuments,
-    loanId ? { loanId: loanId as Id<"loans"> } : "skip",
+    loan ? { loanId: loan._id } : "skip",
   ) as LoanDocument[] | undefined;
 
   const organization = useQuery(

@@ -37,6 +37,7 @@ import {
 import { PermissionGate } from "@/components/permission-gate";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
+import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 
 const LoadingPanel = () => (
@@ -366,6 +367,8 @@ interface ObjectGridItemProps {
     status: string;
   };
   organizationId: Id<"organizations">;
+  /** The catalog view to return to from the object. */
+  returnPath: string;
   isSelected?: boolean;
   onSelect?: (selected: boolean) => void;
   shouldEagerLoad?: boolean;
@@ -374,6 +377,7 @@ interface ObjectGridItemProps {
 function ObjectGridItem({
   item,
   organizationId,
+  returnPath,
   isSelected = false,
   onSelect,
   shouldEagerLoad = false,
@@ -431,7 +435,10 @@ function ObjectGridItem({
           />
         </div>
       )}
-      <Link href={`/objects/${item._id}`} className="block">
+      <Link
+        href={withReturnPath(`/objects/${item._id}`, returnPath)}
+        className="block"
+      >
         <div className="relative aspect-square overflow-hidden bg-background">
           {item.primaryImageUrl ? (
             <Image
@@ -521,6 +528,7 @@ export interface ObjectGridViewProps {
     status: string;
   }>;
   organizationId: Id<"organizations">;
+  returnPath: string;
   selectedIds?: Set<Id<"collections">>;
   onSelectItem?: (id: Id<"collections">, selected: boolean) => void;
 }
@@ -528,6 +536,7 @@ export interface ObjectGridViewProps {
 export function ObjectGridView({
   items,
   organizationId,
+  returnPath,
   selectedIds,
   onSelectItem,
 }: ObjectGridViewProps) {
@@ -538,6 +547,7 @@ export function ObjectGridView({
           <ObjectGridItem
             item={item}
             organizationId={organizationId}
+            returnPath={returnPath}
             isSelected={selectedIds?.has(item._id)}
             onSelect={
               onSelectItem

@@ -10,10 +10,8 @@ import {
   returnLoanItems,
 } from "./loanMovement";
 import { assertAllowedLoanTransition } from "./loanStatusTransitions";
-import {
-  logActionAndGetRecipients,
-  notifyOrganizationRecipients,
-} from "./organizationAudit";
+import { dispatchNotification } from "./notificationDispatch";
+import { logActionAndGetRecipients } from "./organizationAudit";
 import { requirePermission } from "./permissions";
 
 export async function returnLoanHandler(
@@ -77,14 +75,13 @@ export async function returnLoanHandler(
       }),
     ] as const);
 
-    await notifyOrganizationRecipients(ctx, recipients, {
+    await dispatchNotification(ctx, {
       organizationId: loan.organizationId,
-      userId,
       type: "loan_returned",
+      recipients,
       title: "Loan Returned",
       message: `Loan ${loan.loanNumber} has been returned.`,
-      relatedEntityType: "loan",
-      relatedEntityId: args.loanId,
+      related: { entityType: "loan", entityId: args.loanId },
     });
   } else {
     const recipients = await logActionAndGetRecipients(ctx, {
@@ -100,14 +97,13 @@ export async function returnLoanHandler(
       },
     });
 
-    await notifyOrganizationRecipients(ctx, recipients, {
+    await dispatchNotification(ctx, {
       organizationId: loan.organizationId,
-      userId,
       type: "loan_partial_return",
+      recipients,
       title: "Loan Items Returned",
       message: `${movement.returnedItemCount} of ${movement.totalItemCount} items from loan ${loan.loanNumber} have been returned.`,
-      relatedEntityType: "loan",
-      relatedEntityId: args.loanId,
+      related: { entityType: "loan", entityId: args.loanId },
     });
   }
 
@@ -166,14 +162,13 @@ export async function dispatchLoanHandler(
     }),
   ] as const);
 
-  await notifyOrganizationRecipients(ctx, recipients, {
+  await dispatchNotification(ctx, {
     organizationId: loan.organizationId,
-    userId,
     type: "loan_dispatched",
+    recipients,
     title: "Loan Dispatched",
     message: `Loan ${loan.loanNumber} has been dispatched.`,
-    relatedEntityType: "loan",
-    relatedEntityId: args.loanId,
+    related: { entityType: "loan", entityId: args.loanId },
   });
 
   return null;
@@ -239,14 +234,13 @@ export async function cancelLoanHandler(
     }),
   ] as const);
 
-  await notifyOrganizationRecipients(ctx, recipients, {
+  await dispatchNotification(ctx, {
     organizationId: loan.organizationId,
-    userId,
     type: "loan_cancelled",
+    recipients,
     title: "Loan Cancelled",
     message: `Loan ${loan.loanNumber} has been cancelled.`,
-    relatedEntityType: "loan",
-    relatedEntityId: args.loanId,
+    related: { entityType: "loan", entityId: args.loanId },
   });
 
   return null;

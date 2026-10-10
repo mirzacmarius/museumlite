@@ -53,6 +53,7 @@ import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 import { getApprovedPublicMedia } from "./utils/publicMedia";
 import { findPublicPortalOrganization } from "./utils/publicPortal";
+import { canReadRecord } from "./utils/recordAccess";
 import {
   assertCurrentEditVersion,
   objectEditVersion,
@@ -827,7 +828,8 @@ export const get = query({
 
 export const getObjectDetail = query({
   args: {
-    collectionId: v.id("collections"),
+    // A string, so malformed links and other tables' IDs read as missing.
+    collectionId: v.string(),
   },
   returns: v.union(
     v.object({
@@ -845,18 +847,20 @@ export const getObjectDetail = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    const collectionId = ctx.db.normalizeId("collections", args.collectionId);
     const [userId, collection] = await Promise.all([
       getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
+      collectionId ? ctx.db.get(collectionId) : null,
     ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    if (!collection) {
+    if (
+      !collection ||
+      !(await canReadRecord(ctx, collection.organizationId, "collections.read"))
+    ) {
       return null;
     }
-
-    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const [collectionGroup, locationPath, heroImage, verifier] =
       await Promise.all([
@@ -1350,6 +1354,14 @@ export const list = query({
     dateCreatedTo: v.optional(v.number()),
     catalogedFrom: v.optional(v.number()),
     catalogedTo: v.optional(v.number()),
+    // Newest first unless set; identifier order is the normalized identifier, A to Z.
+    sort: v.optional(
+      v.union(
+        v.literal("newest"),
+        v.literal("oldest"),
+        v.literal("identifier"),
+      ),
+    ),
   },
   returns: v.object({
     page: v.array(
@@ -1418,10 +1430,28 @@ export const list = query({
             .withIndex("by_organization", (q) =>
               q.eq("organizationId", args.organizationId),
             );
+    // Identifier order reads its own index; the page filter applies locations.
+    const status = args.status;
+    const identifierSource = status
+      ? ctx.db
+          .query("collections")
+          .withIndex(
+            "by_organization_and_status_and_normalizedIdentifier",
+            (q) =>
+              q.eq("organizationId", args.organizationId).eq("status", status),
+          )
+      : ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+            q.eq("organizationId", args.organizationId),
+          );
 
     // Filters may yield short or empty pages. The native cursor still advances,
     // and split metadata keeps reactive pages contiguous as records change.
-    const result = await source.order("desc").paginate({
+    const ordered = (
+      args.sort === "identifier" ? identifierSource : source
+    ).order(args.sort === "newest" || args.sort === undefined ? "desc" : "asc");
+    const result = await ordered.paginate({
       ...args.paginationOpts,
       maximumRowsRead: Math.min(
         args.paginationOpts.maximumRowsRead ?? 1000,

@@ -7,7 +7,7 @@ export function getRouteLocale(pathname: string): SupportedLocale | undefined {
   return supportedLocales.find((locale) => locale === segment);
 }
 
-function getUnlocalizedPath(pathname: string): string {
+export function getUnlocalizedPath(pathname: string): string {
   const locale = getRouteLocale(pathname);
   if (!locale) return pathname;
   return pathname.slice(locale.length + 1) || "/";

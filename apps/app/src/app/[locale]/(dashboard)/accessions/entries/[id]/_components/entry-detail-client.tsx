@@ -1,7 +1,6 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { isOpenEntryStatus } from "@v1/backend/convex/utils/objectEntryValidators";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
@@ -11,8 +10,13 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { ClientDateFns } from "@/components/client-date";
 import { usePermissions } from "@/components/permission-gate";
+import {
+  RecordRecoveryState,
+  useBackToResultsLink,
+} from "@/components/record-recovery-state";
 import { TargetPartyLinks } from "@/components/target-party-links";
 import { useClientDateFns } from "@/hooks/use-client-date-format";
+import { useRecordViewState } from "@/hooks/use-return-path";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { EntryStatusBadge } from "../../_components/entry-status-badge";
 import { BeginAcquisitionDialog } from "./begin-acquisition-dialog";
@@ -32,13 +36,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-export function EntryDetailClient({
-  entryId,
-}: {
-  entryId: Id<"objectEntries">;
-}) {
-  const t = useScopedI18n("objectEntries");
+export function EntryDetailClient({ entryId }: { entryId: string }) {
   const entry = useQuery(api.objectEntries.get, { entryId });
+  const viewState = useRecordViewState(entry);
 
   if (entry === undefined) {
     return (
@@ -49,9 +49,10 @@ export function EntryDetailClient({
   }
   if (entry === null) {
     return (
-      <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">{t("detail.notFound")}</p>
-      </div>
+      <RecordRecoveryState
+        kind={viewState === "removed" ? "removed" : "missing"}
+        list="entries"
+      />
     );
   }
   return <EntryDetail entry={entry} />;
@@ -62,6 +63,7 @@ function EntryDetail({ entry }: { entry: EntryView }) {
   const locale = useCurrentLocale();
   const { hasPermission } = usePermissions();
   const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
+  const back = useBackToResultsLink("entries");
   const canUpdate =
     isOpenEntryStatus(entry.status) && hasPermission("collections.update");
   const canBeginAcquisition =
@@ -95,11 +97,11 @@ function EntryDetail({ entry }: { entry: EntryView }) {
     <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
       <div>
         <Link
-          href="/accessions/entries"
+          href={back.href}
           className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          {t("detail.back")}
+          {back.fromResults ? back.label : t("detail.back")}
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

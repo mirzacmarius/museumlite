@@ -7,6 +7,7 @@ import { DataTable } from "@v1/ui/data-table";
 import { ChevronRight, Handshake, Plus } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
+import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
   formatLoanDateRange,
@@ -18,29 +19,42 @@ import type { LoanListRow, LoanStatus, LoanType } from "./types";
 
 interface LoanListTableProps {
   loansPage: LoanListRow[];
-  isLoading: boolean;
-  hasMore: boolean;
+  paginationStatus:
+    | "LoadingFirstPage"
+    | "CanLoadMore"
+    | "LoadingMore"
+    | "Exhausted";
   onLoadMore: () => void;
   statusFilter: LoanStatus;
   typeFilter: LoanType;
   searchQuery: string;
+  isFiltered: boolean;
+  onClearFilters: () => void;
+  /** The list view to return to from a loan. */
+  returnPath: string;
   selectedIds: Set<Id<"loans">>;
   onToggleSelection: (loanId: Id<"loans">) => void;
 }
 
 export function LoanListTable({
   loansPage,
-  isLoading,
-  hasMore,
+  paginationStatus,
   onLoadMore,
   statusFilter,
   typeFilter,
   searchQuery,
+  isFiltered,
+  onClearFilters,
+  returnPath,
   selectedIds,
   onToggleSelection,
 }: LoanListTableProps) {
   const t = useScopedI18n("loans");
+  const tList = useScopedI18n("listState");
   const tRoot = useI18n();
+  const isLoading = paginationStatus === "LoadingFirstPage";
+  const hasMore = paginationStatus === "CanLoadMore";
+  const isLoadingMore = paginationStatus === "LoadingMore";
   const locale = useCurrentLocale();
 
   const statusLabels = {
@@ -149,7 +163,7 @@ export function LoanListTable({
             ),
           },
         ]}
-        rowHref={(loan) => `/loans/${loan._id}`}
+        rowHref={(loan) => withReturnPath(`/loans/${loan._id}`, returnPath)}
         rowAriaLabel={(loan) =>
           tRoot("untranslatedRecords.loans.actions.viewLoan", {
             number: loan.loanNumber ?? loan._id,
@@ -182,7 +196,11 @@ export function LoanListTable({
                       )}
               </p>
             </div>
-            {statusFilter === "all" && typeFilter === "all" && (
+            {isFiltered ? (
+              <Button variant="outline" onClick={onClearFilters}>
+                {tList("clearFilters")}
+              </Button>
+            ) : (
               <PermissionGate permission="loans.create">
                 <Button asChild>
                   <Link href="/loans/new">
@@ -199,23 +217,17 @@ export function LoanListTable({
       {!isLoading && (loansPage.length > 0 || hasMore) && (
         <div className="flex items-center justify-between px-2 pt-2 text-xs text-muted-foreground">
           <span>{t("pagination.loaded", { count: loansPage.length })}</span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded border border-border/60 px-2 py-1 hover:bg-card/50 disabled:opacity-50"
-              disabled
-            >
-              {t("pagination.previous")}
-            </button>
-            <button
-              type="button"
-              className="rounded border border-border/60 px-2 py-1 hover:bg-card/50"
-              disabled={!hasMore}
+          {hasMore || isLoadingMore ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              disabled={isLoadingMore}
               onClick={onLoadMore}
             >
-              {t("pagination.next")}
-            </button>
-          </div>
+              {isLoadingMore ? tList("loading") : tList("loadMore")}
+            </Button>
+          ) : null}
         </div>
       )}
     </>

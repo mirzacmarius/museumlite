@@ -2,6 +2,8 @@ import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
+import { RecordRecoveryState } from "@/components/record-recovery-state";
+import { recordErrorKind } from "@/lib/record-recovery";
 import type { ObjectDetailData } from "./_components/types";
 import { ObjectDetailClient } from "./object-detail-client";
 
@@ -97,6 +99,10 @@ export default async function ObjectDetailPage({
       />
     );
   } catch (error) {
+    const recovery = recordErrorKind(error);
+    if (recovery !== "error") {
+      return <RecordRecoveryState kind={recovery} list="objects" />;
+    }
     if (!isMissingObjectDetailFunction(error)) {
       throw error;
     }

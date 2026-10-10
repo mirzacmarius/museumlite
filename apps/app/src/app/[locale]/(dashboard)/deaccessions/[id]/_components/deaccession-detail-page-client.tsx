@@ -7,6 +7,8 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganization } from "@/components/organization-provider";
+import { RecordRecoveryState } from "@/components/record-recovery-state";
+import { useRecordViewState } from "@/hooks/use-return-path";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { DeaccessionDetailBoardReportDialog } from "./deaccession-detail-board-report-dialog";
 import { DeaccessionDetailMainContent } from "./deaccession-detail-main-content";
@@ -57,10 +59,9 @@ function DeaccessionDetailPageInner({
 
   const workflowHistoryPage = useQuery(
     api.deaccessions.getWorkflowHistory,
-    deaccessionId
-      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
-      : "skip",
+    deaccession ? { deaccessionId: deaccession._id } : "skip",
   );
+  const viewState = useRecordViewState(deaccession);
 
   const workflowHistory = workflowHistoryPage?.entries;
 
@@ -95,18 +96,19 @@ function DeaccessionDetailPageInner({
     );
   }
 
+  if (deaccession === null) {
+    return (
+      <RecordRecoveryState
+        kind={viewState === "removed" ? "removed" : "missing"}
+        list="deaccessions"
+      />
+    );
+  }
+
   if (deaccession === undefined || collection === undefined) {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
-      </div>
-    );
-  }
-
-  if (deaccession === null) {
-    return (
-      <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">{t("detail.notFound")}</p>
       </div>
     );
   }

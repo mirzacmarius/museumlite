@@ -2549,6 +2549,69 @@ export default {
       overdue: "Restante",
     },
   },
+  recordRecovery: {
+    missing: {
+      title: "Înregistrarea nu a fost găsită",
+      description:
+        "Linkul poate fi incomplet sau înregistrarea aparține unei organizații din care nu faceți parte.",
+    },
+    removed: {
+      title: "Această înregistrare nu mai este disponibilă",
+      description:
+        "A fost eliminată sau accesul dvs. s-a schimbat în timp ce o aveați deschisă.",
+    },
+    forbidden: {
+      title: "Nu aveți acces la această înregistrare",
+      description:
+        "Rolul dvs. în această organizație nu include permisiunea de a o vizualiza. Cereți acces unui administrator dacă aveți nevoie.",
+    },
+    unavailable: {
+      title: "Această funcționalitate nu este disponibilă",
+      description:
+        "Planul sau modulele activate ale organizației dvs. nu o includ. Deschideți lista pentru a vedea opțiunile.",
+    },
+    error: {
+      title: "Înregistrarea nu a putut fi încărcată",
+      description:
+        "Ceva nu a funcționat la încărcare. Încercați din nou sau reveniți la rezultate.",
+    },
+    backToResults: "Înapoi la rezultate",
+    tryAgain: "Încercați din nou",
+    errorId: "ID eroare: {id}",
+    goToList: {
+      objects: "Mergi la obiecte",
+      loans: "Mergi la împrumuturi",
+      accessions: "Mergi la accesiuni",
+      deaccessions: "Mergi la dezaccesiuni",
+      locations: "Mergi la locații",
+      conservation: "Mergi la conservare",
+      entries: "Mergi la intrări",
+    },
+    pageNotFound: {
+      title: "Pagina nu a fost găsită",
+      description: "Pagina deschisă nu există sau a fost mutată.",
+    },
+    goToDashboard: "Mergi la panou",
+  },
+  listState: {
+    clearFilters: "Șterge filtrele",
+    noMatch: {
+      title: "Nimic nu corespunde acestor filtre",
+      description:
+        "Modificați căutarea sau filtrele ori ștergeți-le pentru a vedea toată lista.",
+    },
+    loadMore: "Încarcă mai multe",
+    loading: "Se încarcă…",
+    shownOfTotal: "Se afișează {shown} din {total}",
+    matchesShown: "Potriviri afișate: {shown}",
+    sort: {
+      label: "Sortare",
+      newest: "Cele mai noi întâi",
+      oldest: "Cele mai vechi întâi",
+      identifier: "Identificator (A–Z)",
+    },
+    allTypes: "Toate tipurile",
+  },
   objectEntries: {
     title: "Intrări",
     description:
@@ -2632,7 +2695,6 @@ export default {
     },
     detail: {
       back: "Intrări",
-      notFound: "Intrarea nu a fost găsită",
       object: "Obiect",
       openObject: "Deschide obiectul",
       receivedBy: "Primit de {name}",
@@ -7167,6 +7229,91 @@ export default {
     },
     viewAll: "Vezi toate notificările",
     viewDetails: "Vezi detaliile",
+    email: {
+      sent: "Trimis pe e-mail {time}",
+      sending: "Se trimite e-mailul",
+      retrying: "E-mailul a eșuat, se reîncearcă {time}",
+      notDelivered: "E-mailul nu a fost livrat",
+      notSent: "E-mailul nu a fost trimis",
+      retry: "Retrimite e-mailul",
+      details: "Detaliile e-mailului",
+      hideDetails: "Ascunde detaliile e-mailului",
+      attempt: "Încercarea {number}",
+      noAttempts: "Încă nu a fost trimis niciun e-mail.",
+      duration: "{ms} ms",
+      outcome: {
+        succeeded: "Livrat",
+        failed_transient: "Eșec temporar",
+        failed_permanent: "Refuzat",
+      },
+      reasons: {
+        http_error: "Serviciul de e-mail a răspuns HTTP {status}",
+        timeout: "Serviciul de e-mail nu a răspuns în 10 secunde",
+        network_error: "Serviciul de e-mail nu a putut fi contactat",
+        attempt_lost: "Încercarea nu și-a raportat rezultatul",
+        event_expired: "Notificarea nu mai este păstrată",
+        recipient_removed: "Nu mai ești membru al acestei organizații",
+        access_revoked: "Nu mai poți vedea această înregistrare",
+        email_disabled: "E-mailul este dezactivat pentru această categorie",
+        address_missing: "Contul tău nu are o adresă de e-mail",
+        channel_unavailable: "Trimiterea e-mailurilor nu este configurată",
+      },
+      errors: {
+        EMAIL_DELIVERY_NOT_FOUND: "Acest e-mail nu mai este disponibil.",
+        EMAIL_DELIVERY_NOT_RETRYABLE: "Acest e-mail a fost deja livrat sau se trimite acum.",
+        EMAIL_OFF_FOR_CATEGORY: "Activează mai întâi e-mailul pentru această categorie în setările de notificare.",
+        EMAIL_ADDRESS_MISSING: "Adaugă mai întâi o adresă de e-mail în contul tău.",
+        EMAIL_CHANNEL_UNAVAILABLE: "Trimiterea e-mailurilor nu este configurată pentru această instalare.",
+        NOTIFICATION_ACCESS_REVOKED: "Nu mai poți vedea această înregistrare, așa că nu îți poate fi trimisă pe e-mail.",
+        NOT_ORGANIZATION_MEMBER: "Nu mai ești membru al acestei organizații.",
+        fallback: "E-mailul nu a putut fi retrimis. Încearcă mai târziu.",
+      },
+    },
+  },
+  notificationSettings: {
+    title: "Preferințe de notificare",
+    description: "Alege ce notificări primești. E-mailul se trimite pe lângă notificarea din MuseumLite.",
+    notify: "Notifică-mă",
+    email: "E-mail",
+    categories: {
+      approvals: {
+        label: "Aprobări",
+        description: "Cereri care așteaptă aprobarea ta și decizii privind cererile tale",
+      },
+      reminders: {
+        label: "Mementouri",
+        description: "Împrumuturi scadente, asigurări care expiră, livrări apropiate și avertizări de termen",
+      },
+      alerts: {
+        label: "Alerte",
+        description: "Alerte de conservare și stare, întârzieri, sarcini blocate și termene depășite",
+      },
+      assignments: {
+        label: "Sarcini",
+        description: "Sarcini atribuite ție, verificări, returnări și mențiuni",
+      },
+      system: {
+        label: "Sistem",
+        description: "Expedierea și returnarea împrumuturilor, actualizări de transport, operațiuni în lot și anunțuri",
+      },
+    },
+    emailTo: "E-mailurile se trimit la {address} imediat ce este emisă o notificare.",
+    emailFixture: "Această instalare trimite e-mailurile de notificare către un punct de test, așa că nu ajung în inboxul tău.",
+    emailUnavailable: "Trimiterea e-mailurilor nu este configurată pentru această instalare, așa că notificările apar doar în MuseumLite.",
+    emailAddressMissing: "Contul tău nu are o adresă de e-mail, așa că notificările apar doar în MuseumLite.",
+    savedDigest: {
+      daily: "Ai ales anterior un rezumat zilnic. Rezumatele nu sunt încă disponibile, așa că nu se trimite niciunul. Salvează pentru a primi pe e-mail, pe loc, categoriile bifate mai jos.",
+      weekly: "Ai ales anterior un rezumat săptămânal. Rezumatele nu sunt încă disponibile, așa că nu se trimite niciunul. Salvează pentru a primi pe e-mail, pe loc, categoriile bifate mai jos.",
+    },
+    save: "Salvează preferințele",
+    saving: "Se salvează...",
+    saved: "Preferințele de notificare au fost salvate.",
+    errors: {
+      NOT_ORGANIZATION_MEMBER: "Nu ești membru al acestei organizații.",
+      EMAIL_CHANNEL_UNAVAILABLE: "Trimiterea e-mailurilor nu este configurată pentru această instalare, așa că e-mailul nu poate fi activat.",
+      EMAIL_ADDRESS_MISSING: "Adaugă o adresă de e-mail în cont înainte de a activa e-mailul.",
+      fallback: "Preferințele nu au putut fi salvate. Încearcă din nou.",
+    },
   },
   mediaPage: {
     publication: {
@@ -9968,6 +10115,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job}: operațiune finalizată",
+        batchJobFailed: "{job}: operațiune finalizată cu {count} erori",
         newAccessionRequiresApproval:
           "O nouă intrare în colecție necesită aprobare",
         accessionApproved: "Intrare în colecție aprobată",

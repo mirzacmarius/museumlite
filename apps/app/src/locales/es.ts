@@ -4999,6 +4999,91 @@ export default {
     },
     viewAll: "Ver todas las notificaciones",
     viewDetails: "Ver detalles",
+    email: {
+      sent: "Enviado por correo {time}",
+      sending: "Enviando correo",
+      retrying: "El correo falló; nuevo intento {time}",
+      notDelivered: "Correo no entregado",
+      notSent: "Correo no enviado",
+      retry: "Reintentar correo",
+      details: "Detalles del correo",
+      hideDetails: "Ocultar detalles del correo",
+      attempt: "Intento {number}",
+      noAttempts: "Todavía no se ha enviado ningún correo.",
+      duration: "{ms} ms",
+      outcome: {
+        succeeded: "Entregado",
+        failed_transient: "Error temporal",
+        failed_permanent: "Rechazado",
+      },
+      reasons: {
+        http_error: "El servicio de correo respondió HTTP {status}",
+        timeout: "El servicio de correo no respondió en 10 segundos",
+        network_error: "No se pudo contactar con el servicio de correo",
+        attempt_lost: "El intento no informó de su resultado",
+        event_expired: "La notificación ya no está almacenada",
+        recipient_removed: "Ya no eres miembro de esta organización",
+        access_revoked: "Ya no puedes ver este registro",
+        email_disabled: "El correo está desactivado para esta categoría",
+        address_missing: "Tu cuenta no tiene dirección de correo",
+        channel_unavailable: "El envío de correo no está configurado",
+      },
+      errors: {
+        EMAIL_DELIVERY_NOT_FOUND: "Este correo ya no está disponible.",
+        EMAIL_DELIVERY_NOT_RETRYABLE: "Este correo ya se entregó o se está enviando.",
+        EMAIL_OFF_FOR_CATEGORY: "Primero activa el correo para esta categoría en la configuración de notificaciones.",
+        EMAIL_ADDRESS_MISSING: "Primero añade una dirección de correo a tu cuenta.",
+        EMAIL_CHANNEL_UNAVAILABLE: "El envío de correo no está configurado en esta implementación.",
+        NOTIFICATION_ACCESS_REVOKED: "Ya no puedes ver este registro, así que no se te puede enviar por correo.",
+        NOT_ORGANIZATION_MEMBER: "Ya no eres miembro de esta organización.",
+        fallback: "No se pudo volver a enviar el correo. Inténtalo más tarde.",
+      },
+    },
+  },
+  notificationSettings: {
+    title: "Preferencias de notificación",
+    description: "Elige qué notificaciones recibes. El correo se envía además de la notificación en MuseumLite.",
+    notify: "Notificarme",
+    email: "Correo",
+    categories: {
+      approvals: {
+        label: "Aprobaciones",
+        description: "Solicitudes pendientes de tu aprobación y decisiones sobre tus solicitudes",
+      },
+      reminders: {
+        label: "Recordatorios",
+        description: "Préstamos por vencer, seguros que caducan, entregas próximas y avisos de plazo",
+      },
+      alerts: {
+        label: "Alertas",
+        description: "Alertas de conservación y estado, retrasos, tareas bloqueadas y plazos incumplidos",
+      },
+      assignments: {
+        label: "Tareas",
+        description: "Tareas asignadas a ti, revisiones, devoluciones y menciones",
+      },
+      system: {
+        label: "Sistema",
+        description: "Envío y devolución de préstamos, actualizaciones de tránsito, trabajos por lotes y anuncios",
+      },
+    },
+    emailTo: "Los correos se envían a {address} en cuanto se emite una notificación.",
+    emailFixture: "Esta implementación envía los correos de notificación a un punto de prueba, así que no llegan a tu bandeja de entrada.",
+    emailUnavailable: "El envío de correo no está configurado en esta implementación, así que las notificaciones solo aparecen en MuseumLite.",
+    emailAddressMissing: "Tu cuenta no tiene dirección de correo, así que las notificaciones solo aparecen en MuseumLite.",
+    savedDigest: {
+      daily: "Elegiste antes un resumen diario. Los resúmenes aún no están disponibles, así que no se envía ninguno. Guarda para recibir por correo, en el momento, las categorías marcadas abajo.",
+      weekly: "Elegiste antes un resumen semanal. Los resúmenes aún no están disponibles, así que no se envía ninguno. Guarda para recibir por correo, en el momento, las categorías marcadas abajo.",
+    },
+    save: "Guardar preferencias",
+    saving: "Guardando...",
+    saved: "Preferencias de notificación guardadas.",
+    errors: {
+      NOT_ORGANIZATION_MEMBER: "No eres miembro de esta organización.",
+      EMAIL_CHANNEL_UNAVAILABLE: "El envío de correo no está configurado en esta implementación, así que no se puede activar el correo.",
+      EMAIL_ADDRESS_MISSING: "Añade una dirección de correo a tu cuenta antes de activar el correo.",
+      fallback: "No se pudieron guardar tus preferencias. Inténtalo de nuevo.",
+    },
   },
   mediaPage: {
     publication: {
@@ -5428,6 +5513,68 @@ export default {
     },
   },
 
+  recordRecovery: {
+    missing: {
+      title: "Registro no encontrado",
+      description:
+        "Es posible que el enlace esté incompleto o que el registro pertenezca a una organización de la que usted no es miembro.",
+    },
+    removed: {
+      title: "Este registro ya no está disponible",
+      description: "Se eliminó, o su acceso cambió, mientras lo tenía abierto.",
+    },
+    forbidden: {
+      title: "No tiene acceso a este registro",
+      description:
+        "Su rol en esta organización no incluye permiso para verlo. Pida acceso a un administrador si lo necesita.",
+    },
+    unavailable: {
+      title: "Esta función no está disponible",
+      description:
+        "El plan o los módulos habilitados de su organización no la incluyen. Abra la lista para ver sus opciones.",
+    },
+    error: {
+      title: "No se pudo cargar este registro",
+      description:
+        "Algo salió mal al cargarlo. Inténtelo de nuevo o vuelva a sus resultados.",
+    },
+    backToResults: "Volver a los resultados",
+    tryAgain: "Intentar de nuevo",
+    errorId: "ID de error: {id}",
+    goToList: {
+      objects: "Ir a objetos",
+      loans: "Ir a préstamos",
+      accessions: "Ir a adquisiciones",
+      deaccessions: "Ir a desaccesiones",
+      locations: "Ir a ubicaciones",
+      conservation: "Ir a conservación",
+      entries: "Ir a entradas",
+    },
+    pageNotFound: {
+      title: "Página no encontrada",
+      description: "La página que abrió no existe o se ha movido.",
+    },
+    goToDashboard: "Ir al panel",
+  },
+  listState: {
+    clearFilters: "Borrar filtros",
+    noMatch: {
+      title: "Nada coincide con estos filtros",
+      description:
+        "Cambie la búsqueda o los filtros, o bórrelos para ver la lista completa.",
+    },
+    loadMore: "Cargar más",
+    loading: "Cargando…",
+    shownOfTotal: "Mostrando {shown} de {total}",
+    matchesShown: "Coincidencias mostradas: {shown}",
+    sort: {
+      label: "Ordenar",
+      newest: "Más recientes primero",
+      oldest: "Más antiguos primero",
+      identifier: "Identificador (A–Z)",
+    },
+    allTypes: "Todos los tipos",
+  },
   objectEntries: {
     title: "Entradas",
     description:
@@ -5512,7 +5659,6 @@ export default {
     },
     detail: {
       back: "Entradas",
-      notFound: "No se encontró la entrada",
       object: "Objeto",
       openObject: "Abrir objeto",
       receivedBy: "Recibido por {name}",
@@ -9268,6 +9414,8 @@ export default {
     },
     notificationCopy: {
       titles: {
+        batchJobSucceeded: "{job}: proceso completado",
+        batchJobFailed: "{job}: proceso completado con {count} errores",
         newAccessionRequiresApproval:
           "Nueva adquisición pendiente de aprobación",
         accessionApproved: "Adquisición aprobada",

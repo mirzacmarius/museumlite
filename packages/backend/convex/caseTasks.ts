@@ -22,6 +22,8 @@ import {
   rolePermissionNames,
 } from "./utils/memberPermissions";
 import { mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
+import type { NotificationEntityType } from "./utils/notificationTypes";
 import { hasPermission, requirePermission } from "./utils/permissions";
 import { workError } from "./utils/workErrors";
 
@@ -43,8 +45,7 @@ interface CaseConfig {
   /** Key that files task audit events under the case (see auditEvidence). */
   auditKey: string;
   /** Entity type used by notification links to open the case. */
-  notificationEntityType: string;
-  path: string;
+  notificationEntityType: NotificationEntityType;
 }
 
 const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
@@ -54,21 +55,18 @@ const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
     feature: "loans",
     auditKey: "loanId",
     notificationEntityType: "loan",
-    path: "/loans",
   },
   accession: {
     readPermission: "collections.read",
     workPermission: "collections.update",
     auditKey: "accessionId",
     notificationEntityType: "accession",
-    path: "/accessions",
   },
   deaccession: {
     readPermission: "collections.read",
     workPermission: "collections.update",
     auditKey: "deaccessionId",
     notificationEntityType: "deaccession",
-    path: "/deaccessions",
   },
   exhibition: {
     readPermission: "collections.read",
@@ -76,7 +74,6 @@ const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
     feature: "exhibitions",
     auditKey: "exhibitionId",
     notificationEntityType: "exhibition",
-    path: "/exhibitions",
   },
   conservation: {
     readPermission: "collections.read",
@@ -84,7 +81,6 @@ const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
     feature: "conservation",
     auditKey: "conservationTreatmentId",
     notificationEntityType: "conservationTreatment",
-    path: "/conservation",
   },
 };
 
@@ -417,7 +413,11 @@ async function notifyTaskUser(
     >;
     recipientId: Id<"users">;
     actorId: Id<"users">;
-    type: string;
+    type:
+      | "task_assigned"
+      | "task_review_requested"
+      | "task_completed"
+      | "task_returned";
     title: string;
     message: string;
   },
@@ -425,23 +425,25 @@ async function notifyTaskUser(
   if (args.recipientId === args.actorId) return;
   const config = CASE_CONFIG[args.task.caseType];
   const actor = await ctx.db.get(args.actorId);
-  const siteUrl = process.env.SITE_URL?.replace(/\/$/, "");
-  await ctx.runMutation(internal.notifications.sendNotification, {
+  await dispatchNotification(ctx, {
     organizationId: args.task.organizationId,
-    userId: args.recipientId,
     type: args.type,
+    recipients: [args.recipientId],
     title: args.title,
     message: args.message,
-    relatedEntityType: config.notificationEntityType,
-    relatedEntityId: args.task.caseId,
-    emailData: {
-      taskTitle: args.task.title,
-      assignedBy: displayName(actor) ?? "A team member",
-      dueDate: args.task.dueDate,
-      taskUrl: siteUrl
-        ? `${siteUrl}${config.path}/${args.task.caseId}`
-        : undefined,
+    related: {
+      entityType: config.notificationEntityType,
+      entityId: args.task.caseId,
     },
+    email:
+      args.type === "task_assigned"
+        ? {
+            kind: "taskAssigned",
+            taskTitle: args.task.title,
+            assignedBy: displayName(actor) ?? "A team member",
+            dueDate: args.task.dueDate,
+          }
+        : undefined,
   });
 }
 

@@ -9,6 +9,7 @@ interface LoanListFiltersProps {
   statusFilter: LoanStatus;
   typeFilter: LoanType;
   searchQuery: string;
+  onShowAll: () => void;
   onStatusFilterChange: (status: LoanStatus) => void;
   onTypeFilterChange: (type: LoanType) => void;
   onSearchQueryChange: (query: string) => void;
@@ -18,6 +19,7 @@ export function LoanListFilters({
   statusFilter,
   typeFilter,
   searchQuery,
+  onShowAll,
   onStatusFilterChange,
   onTypeFilterChange,
   onSearchQueryChange,
@@ -30,9 +32,10 @@ export function LoanListFilters({
         <div className="flex min-w-max self-start rounded-lg bg-muted p-1">
           <button
             type="button"
-            onClick={() => onTypeFilterChange("all")}
+            onClick={onShowAll}
+            aria-pressed={typeFilter === "all" && statusFilter === "all"}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
-              typeFilter === "all"
+              typeFilter === "all" && statusFilter === "all"
                 ? "bg-card shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
@@ -42,6 +45,7 @@ export function LoanListFilters({
           <button
             type="button"
             onClick={() => onTypeFilterChange("outgoing")}
+            aria-pressed={typeFilter === "outgoing"}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
               typeFilter === "outgoing"
                 ? "bg-card shadow-sm"
@@ -53,6 +57,7 @@ export function LoanListFilters({
           <button
             type="button"
             onClick={() => onTypeFilterChange("incoming")}
+            aria-pressed={typeFilter === "incoming"}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
               typeFilter === "incoming"
                 ? "bg-card shadow-sm"
@@ -63,7 +68,12 @@ export function LoanListFilters({
           </button>
           <button
             type="button"
-            onClick={() => onStatusFilterChange("pending")}
+            onClick={() =>
+              onStatusFilterChange(
+                statusFilter === "pending" ? "all" : "pending",
+              )
+            }
+            aria-pressed={statusFilter === "pending"}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
               statusFilter === "pending"
                 ? "bg-card shadow-sm"

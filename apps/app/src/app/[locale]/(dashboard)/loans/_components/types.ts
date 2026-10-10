@@ -12,12 +12,6 @@ export type LoanType = "incoming" | "outgoing" | "all";
 
 export interface LoanListProps {
   organizationId: string;
-  statusFilter: LoanStatus;
-  typeFilter: LoanType;
-  searchQuery: string;
-  onStatusFilterChange: (status: LoanStatus) => void;
-  onTypeFilterChange: (type: LoanType) => void;
-  onSearchQueryChange: (query: string) => void;
 }
 
 export interface LoanListRow extends Record<string, unknown> {

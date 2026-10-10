@@ -3,6 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { AlertCircle, ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
+import { useBackToResultsLink } from "@/components/record-recovery-state";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { LoanAgreement } from "../loan-agreement/loan-agreement";
 import type { Loan } from "../types";
@@ -21,12 +22,13 @@ export function LoanDetailHeader({
   const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
   const common = useScopedI18n("common");
+  const back = useBackToResultsLink("loans");
 
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
       <div className="flex items-center gap-2 text-xs">
         <Button variant="ghost" size="icon" className="size-7" asChild>
-          <Link href="/loans">
+          <Link href={back.href} aria-label={back.label} title={back.label}>
             <ArrowLeft className="size-4 text-muted-foreground" />
           </Link>
         </Button>

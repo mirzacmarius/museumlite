@@ -33,6 +33,12 @@ import {
   movementKindValidator,
   moveRequestConflictValidator,
 } from "./utils/movementValidators";
+import { notificationCategory } from "./utils/notificationTypes";
+import {
+  notificationEmailAttemptFields,
+  notificationEmailDeliveryFields,
+  notificationIntentFields,
+} from "./utils/notificationValidators";
 import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
@@ -1394,6 +1400,12 @@ export default defineSchema({
       "status",
       "dateDeaccessioned",
     ])
+    .index("by_organization_status_workflowStep_dateDeaccessioned", [
+      "organizationId",
+      "status",
+      "workflowStep",
+      "dateDeaccessioned",
+    ])
     .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_regulatory_token", ["regulatoryApprovalToken"])
     .index("by_assigned_to", ["assignedTo"]),
@@ -2203,7 +2215,11 @@ export default defineSchema({
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
     .index("by_performedAt", ["performedAt"])
-    .index("by_organization_and_status", ["organizationId", "status"]),
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_treatmentType", [
+      "organizationId",
+      "treatmentType",
+    ]),
 
   // Assessment schedules for periodic condition checks
   assessmentSchedules: defineTable({
@@ -2698,6 +2714,8 @@ export default defineSchema({
     relatedEntityType: v.optional(v.string()),
     relatedEntityId: v.optional(v.string()),
     createdAt: v.number(),
+    // The dispatched intent this notification delivers; absent on older rows
+    intentId: v.optional(v.id("notificationIntents")),
   })
     .index("by_user", ["userId"])
     .index("by_organization", ["organizationId"])
@@ -2714,6 +2732,21 @@ export default defineSchema({
       "read",
     ]),
 
+  // Notification intents: one per dispatched event, deduplicated by key
+  notificationIntents: defineTable(notificationIntentFields).index(
+    "by_organizationId_and_idempotencyKey",
+    ["organizationId", "idempotencyKey"],
+  ),
+  // Instant notification email on the shared delivery ledger (ADR 0004, 0007)
+  notificationEmailDeliveries: defineTable(notificationEmailDeliveryFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_intentId", ["intentId"])
+    .index("by_notificationId", ["notificationId"])
+    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"]),
+  notificationEmailAttempts: defineTable(notificationEmailAttemptFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_deliveryId_and_attemptNumber", ["deliveryId", "attemptNumber"]),
+
   // User notification preferences
   notificationPreferences: defineTable({
     userId: v.id("users"),
@@ -2728,6 +2761,9 @@ export default defineSchema({
 
     // Specific type overrides (takes precedence over category)
     disabledTypes: v.optional(v.array(v.string())),
+
+    // Categories that are also emailed; unset means the legacy single switch
+    emailCategories: v.optional(v.array(notificationCategory)),
 
     // Delivery preferences
     emailEnabled: v.optional(v.boolean()), // Default false

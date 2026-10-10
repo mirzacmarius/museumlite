@@ -3,8 +3,10 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useListState } from "@/hooks/use-list-state";
 import { useObjectFilters } from "@/hooks/use-url-filters";
+import { defineListState } from "@/lib/list-state";
 import {
   INITIAL_OBJECTS_PAGE_SIZE,
   NEXT_OBJECTS_PAGE_SIZE,
@@ -91,8 +93,61 @@ function catalogPreferencesReducer(
 
 const INVENTORY_METRIC_SCOPES = ["owned", "incoming", "unclassified"] as const;
 
+export const OBJECT_SORTS = ["newest", "oldest", "identifier"] as const;
+export type ObjectSort = (typeof OBJECT_SORTS)[number];
+
+/**
+ * The catalog's sort and loaded depth in the URL. Search and filters keep
+ * their existing keys, owned by `useObjectFilters`.
+ */
+const objectCatalogListState = defineListState({
+  filters: {},
+  sorts: OBJECT_SORTS,
+  pageSize: INITIAL_OBJECTS_PAGE_SIZE,
+  loadMoreSize: NEXT_OBJECTS_PAGE_SIZE,
+  maxDepth: 500,
+  search: false,
+});
+
+/** Every URL key that shapes the catalog view, for links back to it. */
+export const OBJECT_LIST_KEYS = [
+  "search",
+  "status",
+  "inventory",
+  "objectType",
+  "displayStatus",
+  "culture",
+  "period",
+  "materials",
+  "collectionGroupId",
+  "locationIds",
+  "locationId",
+  "catalogedFrom",
+  "catalogedTo",
+  "advancedFilters",
+  "filterCombinations",
+  ...objectCatalogListState.keys,
+];
+
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
-  const { filters, setFilters, resetFilters } = useObjectFilters();
+  const objectFilters = useObjectFilters();
+  const { filters, hasActiveFilters } = objectFilters;
+  const catalogView = useListState(objectCatalogListState);
+  const restartCatalogView = catalogView.update;
+  const setObjectFilters = objectFilters.setFilters;
+  const resetObjectFilters = objectFilters.resetFilters;
+  // A new search or filter starts again from the first page.
+  const setFilters = useCallback(
+    (next: Parameters<typeof setObjectFilters>[0]) => {
+      setObjectFilters(next);
+      restartCatalogView({});
+    },
+    [restartCatalogView, setObjectFilters],
+  );
+  const resetFilters = useCallback(() => {
+    resetObjectFilters();
+    restartCatalogView({});
+  }, [resetObjectFilters, restartCatalogView]);
   const [searchInput, setSearchInput] = useState(filters.search);
 
   const [selectedIds, setSelectedIds] = useState<Set<Id<"collections">>>(
@@ -212,8 +267,8 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     loadMore,
   } = usePaginatedQuery(
     api.collections.list,
-    { organizationId, ...exportFilters },
-    { initialNumItems: INITIAL_OBJECTS_PAGE_SIZE },
+    { organizationId, ...exportFilters, sort: catalogView.state.sort },
+    { initialNumItems: catalogView.state.show },
   );
 
   const shouldLoadFilterMetadata =
@@ -297,6 +352,9 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     filters,
     setFilters,
     resetFilters,
+    isFiltered: hasActiveFilters,
+    sort: catalogView.state.sort,
+    setSort: (sort: ObjectSort) => catalogView.update({ sort }),
     searchInput,
     setSearchInput,
     selectedIds,
@@ -316,7 +374,10 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     defaultColumns,
     collections,
     collectionsStatus,
-    loadMore: () => loadMore(NEXT_OBJECTS_PAGE_SIZE),
+    loadMore: () => {
+      loadMore(NEXT_OBJECTS_PAGE_SIZE);
+      catalogView.loadMore();
+    },
     collectionGroups,
     locations,
     objectTypeOptions,

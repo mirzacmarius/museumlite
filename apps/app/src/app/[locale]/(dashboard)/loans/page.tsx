@@ -5,22 +5,18 @@ import { Button } from "@v1/ui/button";
 import { useMutation } from "convex/react";
 import { Building2, Handshake, Plus } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { CapabilityGuard } from "@/components/capability-guard";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { LoanList } from "./_components/loan-list";
-import type { LoanStatus, LoanType } from "./_components/types";
 import { LoansPageSkeleton } from "./loans-page-skeleton";
 
 export default function LoansPage() {
   const t = useScopedI18n("loans");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
-  const [typeFilter, setTypeFilter] = useState<LoanType>("all");
-  const [searchQuery, setSearchQuery] = useState("");
 
   const exportLoans = useMutation(api.imports.exportLoans);
 
@@ -101,15 +97,7 @@ export default function LoansPage() {
             </div>
           </div>
 
-          <LoanList
-            organizationId={currentOrganizationId}
-            statusFilter={statusFilter}
-            typeFilter={typeFilter}
-            searchQuery={searchQuery}
-            onStatusFilterChange={setStatusFilter}
-            onTypeFilterChange={setTypeFilter}
-            onSearchQueryChange={setSearchQuery}
-          />
+          <LoanList organizationId={currentOrganizationId} />
         </div>
       </div>
     </CapabilityGuard>

@@ -13,6 +13,7 @@
     "convex:local": "node scripts/local-qa/convex-local.mjs",
     "qa:backend": "node scripts/local-qa/start-backend.mjs",
     "qa:app": "node scripts/local-qa/start-app.mjs",
+    "qa:email-fixture": "node scripts/local-qa/email-fixture.mjs",
     "qa:seed": "node scripts/local-qa/seed-qa-user.mjs",
     "qa:session": "node scripts/local-qa/session.mjs",
     "codegen:local": "node scripts/local-qa/convex-local.mjs codegen",
