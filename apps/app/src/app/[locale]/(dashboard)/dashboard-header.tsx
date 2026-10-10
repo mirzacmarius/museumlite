@@ -36,6 +36,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const t = useScopedI18n("untranslatedDashboard.dashboardHeader");
   const tEntries = useScopedI18n("objectEntries");
   const tQuality = useScopedI18n("documentationQuality");
+  const tRecipes = useScopedI18n("preparationRecipes");
 
   const getPageTitle = (path: string) => {
     // Strip only a leading locale segment: "/entries" also contains "/en".
@@ -64,6 +65,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
     if (cleanPath === "/documentation-quality") return tQuality("title");
     if (/^\/documentation-quality\/[^/]+$/.test(cleanPath))
       return tQuality("detail.headerTitle");
+    if (cleanPath === "/settings/preparation-recipes") return tRecipes("title");
 
     const segment = cleanPath.split("/").pop();
     if (segment && pageTitleKeys[segment]) {
