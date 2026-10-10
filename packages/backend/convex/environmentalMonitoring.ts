@@ -1,4 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
@@ -6,13 +10,11 @@ import { type QueryCtx, query } from "./_generated/server";
 import { alertEpisodeError } from "./utils/alertEpisodeErrors";
 import {
   climateThresholds,
-  ESCALATION_AFTER_MS,
   environmentalThresholds,
   hasNoThresholds,
   isValidClimateThresholds,
   locationCondition,
   probeStatus,
-  RECOVERY_AFTER_MS,
   SILENT_AFTER_MS,
 } from "./utils/alertEpisodePolicy";
 import {
@@ -33,19 +35,6 @@ const PROBE_LIMIT = 50;
 const RECENT_EPISODE_LIMIT = 5;
 const RECENT_READING_LIMIT = 10;
 
-const monitoringPolicy = v.object({
-  silentAfterMs: v.number(),
-  recoveryAfterMs: v.number(),
-  escalationAfterMs: v.array(v.number()),
-});
-
-/** The fixed timings of ADR 0009, so the interface can explain them. */
-const MONITORING_POLICY = {
-  silentAfterMs: SILENT_AFTER_MS,
-  recoveryAfterMs: RECOVERY_AFTER_MS,
-  escalationAfterMs: [...ESCALATION_AFTER_MS],
-};
-
 /**
  * What staff need to judge a Location's environment at `now`: its condition,
  * thresholds, bound probes with their latest readings and health, the open
@@ -63,7 +52,6 @@ export const getLocationMonitoring = query({
       recentEpisodes: v.array(alertEpisodeSummary),
       /** The location's latest readings, newest observation first. */
       recentReadings: v.array(readingEvidence),
-      policy: monitoringPolicy,
     }),
     v.null(),
   ),
@@ -134,7 +122,6 @@ export const getLocationMonitoring = query({
             (summary) => summary !== undefined,
           ),
       recentReadings: await toReadingEvidence(ctx, recentReadings),
-      policy: MONITORING_POLICY,
     };
   },
 });
@@ -335,6 +322,60 @@ export const setThresholds = mutation({
     return null;
   },
 });
+
+/**
+ * One episode and its location, for its evidence page. Malformed or foreign
+ * identifiers read as missing.
+ */
+export const getEpisode = query({
+  args: { episodeId: v.string(), now: v.number() },
+  returns: v.union(
+    v.object({
+      episode: alertEpisodeSummary,
+      location: v.object({ _id: v.id("locations"), name: v.string() }),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const episode = await readableEpisode(ctx, args.episodeId);
+    const location = episode && (await ctx.db.get(episode.locationId));
+    if (!episode || !location) return null;
+    const [summary] = await summarizeEpisodes(ctx, [episode], args.now);
+    return summary
+      ? {
+          episode: summary,
+          location: { _id: location._id, name: location.name },
+        }
+      : null;
+  },
+});
+
+/** The readings an episode counted, newest observation first. */
+export const listEpisodeReadings = query({
+  args: { episodeId: v.string(), paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(readingEvidence),
+  handler: async (ctx, args) => {
+    const episode = await readableEpisode(ctx, args.episodeId);
+    if (!episode) return { page: [], isDone: true, continueCursor: "" };
+    const result = await ctx.db
+      .query("environmentalReadings")
+      .withIndex("by_episodeId_and_recordedAt", (q) =>
+        q.eq("episodeId", episode._id),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts);
+    return { ...result, page: await toReadingEvidence(ctx, result.page) };
+  },
+});
+
+async function readableEpisode(ctx: QueryCtx, episodeId: string) {
+  const id = ctx.db.normalizeId("alertEpisodes", episodeId);
+  const episode = id ? await ctx.db.get(id) : null;
+  return episode &&
+    (await canReadRecord(ctx, episode.organizationId, "locations.read"))
+    ? episode
+    : null;
+}
 
 const RESOLUTION_NOTE_MAX_LENGTH = 1000;
 

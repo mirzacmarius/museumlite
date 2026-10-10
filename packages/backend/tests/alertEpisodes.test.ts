@@ -1058,3 +1058,112 @@ describe("staff readings", () => {
     });
   });
 });
+
+describe("episode evidence", () => {
+  test("an episode lists every reading it counted, newest observation first, late ones marked", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    const start = Date.now() - HOUR;
+    await store.send({ readingId: "r1", observedAt: start, humidity: 61 });
+    await store.send({
+      readingId: "r3",
+      observedAt: start + 20 * MINUTE,
+      humidity: 62,
+    });
+    await store.send({
+      readingId: "r2",
+      observedAt: start + 10 * MINUTE,
+      humidity: 64,
+    });
+    await store.send({ readingId: "r4", observedAt: start + 30 * MINUTE });
+    await store.send({
+      readingId: "r0",
+      observedAt: start - 10 * MINUTE,
+      humidity: 70,
+    });
+    const episodeId = (await store.monitoring())?.openEpisode?._id;
+    if (!episodeId) throw new Error("Expected an open episode");
+
+    const detail = await store.manager.query(
+      api.environmentalMonitoring.getEpisode,
+      { episodeId, now: Date.now() },
+    );
+    const firstPage = await store.manager.query(
+      api.environmentalMonitoring.listEpisodeReadings,
+      { episodeId, paginationOpts: { numItems: 2, cursor: null } },
+    );
+    const secondPage = await store.manager.query(
+      api.environmentalMonitoring.listEpisodeReadings,
+      {
+        episodeId,
+        paginationOpts: { numItems: 2, cursor: firstPage.continueCursor },
+      },
+    );
+
+    expect(detail).toMatchObject({
+      location: { _id: store.locationId, name: "Paper Store" },
+      episode: { _id: episodeId, status: "open", readingCount: 4 },
+    });
+    expect(
+      [...firstPage.page, ...secondPage.page].map((reading) => [
+        reading.observedAt - start,
+        reading.late,
+        reading.outOfRange,
+      ]),
+    ).toEqual([
+      [30 * MINUTE, false, false],
+      [20 * MINUTE, false, true],
+      [10 * MINUTE, true, true],
+      [0, false, true],
+    ]);
+  });
+
+  test("an episode is shown only to members who may read locations", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const store = await monitoredPaperStore(t);
+    await store.send({
+      readingId: "r1",
+      observedAt: Date.now() - MINUTE,
+      humidity: 61,
+    });
+    const episodeId = (await store.monitoring())?.openEpisode?._id;
+    if (!episodeId) throw new Error("Expected an open episode");
+    const [viewerId, moverId] = await Promise.all([
+      addMember(t, store.organizationId, "viewer", ["locations.read"]),
+      addMember(t, store.organizationId, "mover", ["locations.update"]),
+    ]);
+    const outsider = await createOrgUserWithPermissions(t, ["locations.read"]);
+    const detailFor = (client: ReturnType<typeof authedForUser> | ConvexTest) =>
+      client.query(api.environmentalMonitoring.getEpisode, {
+        episodeId,
+        now: Date.now(),
+      });
+    const readingsFor = (
+      client: ReturnType<typeof authedForUser> | ConvexTest,
+    ) =>
+      client.query(api.environmentalMonitoring.listEpisodeReadings, {
+        episodeId,
+        paginationOpts: { numItems: 10, cursor: null },
+      });
+
+    expect((await detailFor(authedForUser(t, viewerId)))?.episode._id).toBe(
+      episodeId,
+    );
+    expect((await readingsFor(authedForUser(t, viewerId))).page).toHaveLength(
+      1,
+    );
+    await expect(detailFor(authedForUser(t, moverId))).rejects.toThrow();
+    await expect(readingsFor(authedForUser(t, moverId))).rejects.toThrow();
+    expect(await detailFor(authedForUser(t, outsider.userId))).toBeNull();
+    expect((await readingsFor(authedForUser(t, outsider.userId))).page).toEqual(
+      [],
+    );
+    expect(await detailFor(t)).toBeNull();
+    expect(
+      await store.manager.query(api.environmentalMonitoring.getEpisode, {
+        episodeId: "not-an-episode",
+        now: Date.now(),
+      }),
+    ).toBeNull();
+  });
+});

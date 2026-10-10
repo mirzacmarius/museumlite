@@ -2287,7 +2287,8 @@ export default defineSchema({
       "sensorDeviceId",
       "sensorProbeId",
       "externalReadingId",
-    ]),
+    ])
+    .index("by_episodeId_and_recordedAt", ["episodeId", "recordedAt"]),
 
   environmentalDevices: defineTable({
     organizationId: v.id("organizations"),
