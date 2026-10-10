@@ -660,3 +660,231 @@ test("duplicate identifiers are surfaced without renumbering and reviewed throug
     )?.collection.accessionNumber,
   ).toBe(" old-01 ");
 });
+
+async function insertParty(
+  t: ConvexTest,
+  organizationId: Id<"organizations">,
+  userId: Id<"users">,
+  name: string,
+) {
+  return t.run((ctx) =>
+    ctx.db.insert("accounts", {
+      organizationId,
+      accountNumber: `ACC-${name.length}`,
+      accountType: "institution",
+      businessName: name,
+      createdBy: userId,
+      createdAt: 1,
+    }),
+  );
+}
+
+test("records that name a party only in text are surfaced until staff confirm a typed link", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  const partyId = await insertParty(
+    t,
+    organizationId,
+    adminId,
+    "Holm Family Collection",
+  );
+  const nameOnly = await insertAccession(t, organizationId, {
+    accessionNumber: "1987.4",
+    source: "Mrs. Edith Holm",
+  });
+  const unlinkedAccount = await insertAccession(t, organizationId, {
+    accessionNumber: "1999.2",
+    source: "Holm family",
+    donorAccountId: partyId,
+  });
+  const linked = await insertAccession(t, organizationId, {
+    accessionNumber: "2003.1",
+    source: "Holm Family Collection",
+  });
+  await admin.mutation(api.partyLinks.link, {
+    target: { type: "accession", id: linked },
+    accountId: partyId,
+    role: "donor",
+  });
+  const soldObject = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "1970.3",
+    status: "deaccessioned",
+  });
+  const deaccessionId = await t.run((ctx) =>
+    ctx.db.insert("deaccessions", {
+      organizationId,
+      collectionId: soldObject,
+      deaccessionNumber: "D-2012-2",
+      dateDeaccessioned: Date.UTC(2012, 0, 1),
+      reason: "Duplicate",
+      method: "sale",
+      status: "approved",
+      exitRecord: {
+        exitDate: Date.UTC(2012, 1, 1),
+        recipient: "Antique Dealer AS",
+        recordedBy: adminId,
+        recordedAt: Date.UTC(2012, 1, 1),
+      },
+    }),
+  );
+
+  await runCheck(t, officer, organizationId);
+
+  const legacy = await findings(officer, organizationId, "open", "legacy_link");
+  expect(legacy).toHaveLength(3);
+  expect(legacy).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        target: { type: "accession", id: nameOnly },
+        label: "1987.4",
+        assertedName: "Mrs. Edith Holm",
+        suggestedRole: "donor",
+      }),
+      expect.objectContaining({
+        target: { type: "accession", id: unlinkedAccount },
+        assertedName: "Holm family",
+        existingAccountId: partyId,
+      }),
+      expect.objectContaining({
+        target: { type: "deaccession", id: deaccessionId },
+        label: "D-2012-2",
+        assertedName: "Antique Dealer AS",
+        suggestedRole: "recipient",
+      }),
+    ]),
+  );
+
+  await admin.mutation(api.partyLinks.link, {
+    target: { type: "accession", id: nameOnly },
+    accountId: partyId,
+    role: "donor",
+  });
+  const second = await runCheck(t, officer, organizationId);
+
+  expect(second).toMatchObject({ number: 2, resolved: 1, opened: 0 });
+  expect(
+    (await findings(officer, organizationId, "resolved", "legacy_link")).map(
+      (finding) => finding.kind === "legacy_link" && finding.target.id,
+    ),
+  ).toEqual([nameOnly]);
+  expect(
+    (await officer.query(api.accessions.get, { accessionId: nameOnly }))
+      ?.source,
+  ).toBe("Mrs. Edith Holm");
+});
+
+test("without the Accounts module party links are not checked and earlier findings stand", async () => {
+  const { t, officer, organizationId } = await setup();
+  await insertAccession(t, organizationId, {
+    accessionNumber: "1987.4",
+    source: "Mrs. Edith Holm",
+  });
+  await runCheck(t, officer, organizationId);
+  await t.run((ctx) =>
+    ctx.db.patch(organizationId, { settings: { enabledModules: [] } }),
+  );
+
+  const check = await runCheck(t, officer, organizationId);
+
+  expect(check).toMatchObject({ partiesChecked: false, resolved: 0 });
+  expect(
+    await findings(officer, organizationId, "open", "legacy_link"),
+  ).toHaveLength(1);
+});
+
+test("orphan references are reported as stored and the references are kept", async () => {
+  const { t, officer, adminId, organizationId, foreignOrganizationId } =
+    await setup();
+  const foreign = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { name: "Foreign" });
+    const objectId = await ctx.db.insert("collections", {
+      organizationId: foreignOrganizationId,
+      accessionNumber: "F-1",
+      title: "Foreign object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: 1,
+    });
+    const groupId = await ctx.db.insert("collectionGroups", {
+      organizationId: foreignOrganizationId,
+      name: "Foreign group",
+      createdAt: 1,
+      createdBy: userId,
+    });
+    const accountId = await ctx.db.insert("accounts", {
+      organizationId: foreignOrganizationId,
+      accountNumber: "ACC-F",
+      accountType: "institution",
+      businessName: "Foreign donor",
+      createdBy: userId,
+      createdAt: 1,
+    });
+    return { objectId, groupId, accountId };
+  });
+  const goneLocation = await t.run(async (ctx) => {
+    const locationId = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Demolished store",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    });
+    await ctx.db.delete(locationId);
+    return locationId;
+  });
+  const goneObject = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "GONE-1",
+  });
+  await t.run((ctx) => ctx.db.delete(goneObject));
+  const orphan = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "1960.1",
+    title: "Lid",
+  });
+  await t.run((ctx) =>
+    ctx.db.patch(orphan, {
+      parentObjectId: foreign.objectId,
+      currentLocationId: goneLocation,
+      collectionGroupId: foreign.groupId,
+    }),
+  );
+  const selfParent = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "1960.2",
+  });
+  await t.run((ctx) => ctx.db.patch(selfParent, { parentObjectId: selfParent }));
+  const accessionId = await insertAccession(t, organizationId, {
+    accessionNumber: "1960.A",
+    collectionId: goneObject,
+    donorAccountId: foreign.accountId,
+  });
+
+  await runCheck(t, officer, organizationId);
+
+  const orphans = await findings(
+    officer,
+    organizationId,
+    "open",
+    "orphan_reference",
+  );
+  const summary = orphans.map((finding) =>
+    finding.kind === "orphan_reference"
+      ? [finding.subject.id, finding.field, finding.referencedId, finding.problem]
+      : null,
+  );
+  expect(summary).toEqual(
+    expect.arrayContaining([
+      [orphan, "parentObject", foreign.objectId, "other_organization"],
+      [orphan, "currentLocation", goneLocation, "missing"],
+      [orphan, "collectionGroup", foreign.groupId, "other_organization"],
+      [selfParent, "parentObject", selfParent, "self"],
+      [accessionId, "object", goneObject, "missing"],
+      [accessionId, "donorAccount", foreign.accountId, "other_organization"],
+    ]),
+  );
+  expect(summary).toHaveLength(6);
+  expect(
+    (await officer.query(api.collections.getObjectDetail, { collectionId: orphan }))
+      ?.collection,
+  ).toMatchObject({
+    parentObjectId: foreign.objectId,
+    currentLocationId: goneLocation,
+  });
+});

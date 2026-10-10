@@ -16,6 +16,18 @@ import {
 import { organizationAccess } from "./featureGates";
 import type { IdentifierRegister } from "./identifiers";
 import { memberPermissionNames } from "./memberPermissions";
+import {
+  accessionLegacyCandidate,
+  awaitsLegacyPartyReview,
+  deaccessionLegacyCandidate,
+  type LegacyPartyCandidate,
+} from "./partyLinks";
+import {
+  type BrokenReference,
+  accessionReferenceProblems,
+  deaccessionReferenceProblems,
+  objectReferenceProblems,
+} from "./recordReferences";
 
 type Check = Doc<"documentationChecks">;
 
@@ -34,8 +46,12 @@ export const CHECK_PHASES = [
   "objects_active",
   "objects_loaned",
   "objects_deaccessioned",
+  "accessions",
+  "deaccessions",
   "resolve_duplicate_identifier",
   "resolve_missing_evidence",
+  "resolve_legacy_link",
+  "resolve_orphan_reference",
 ] as const;
 
 export type CheckPhase = (typeof CHECK_PHASES)[number];
@@ -331,6 +347,17 @@ async function scanObjects(
     .paginate({ cursor: check.cursor, numItems: pageSize });
   for (const object of result.page) {
     stats.rows++;
+    for (const problem of await objectReferenceProblems(ctx, object))
+      await recordDetection(
+        ctx,
+        check,
+        orphanDetection(
+          { type: "object", id: object._id },
+          object.accessionNumber,
+          problem,
+        ),
+        stats,
+      );
     const objectType = normalizeObjectType(object.objectType ?? "");
     const profiles = check.profiles.filter(
       (profile) =>
@@ -365,6 +392,150 @@ async function scanObjects(
         stats,
       );
     }
+  }
+  return {
+    cursor: result.isDone ? null : result.continueCursor,
+    done: result.isDone,
+  };
+}
+
+type OrphanSubject = Extract<
+  FindingDetail,
+  { kind: "orphan_reference" }
+>["subject"];
+type OrphanField = Extract<
+  FindingDetail,
+  { kind: "orphan_reference" }
+>["field"];
+
+function orphanDetection(
+  subject: OrphanSubject,
+  label: string,
+  problem: BrokenReference<OrphanField>,
+): Detection {
+  return {
+    key: `orphan_reference:${subject.type}:${subject.id}:${problem.field}`,
+    signature: `${problem.problem}:${problem.referencedId}`,
+    detail: {
+      kind: "orphan_reference",
+      subject,
+      label,
+      field: problem.field,
+      referencedId: problem.referencedId,
+      problem: problem.problem,
+    },
+  };
+}
+
+/** A record naming a Party without a typed link, while Parties are on. */
+async function detectLegacyLink(
+  ctx: MutationCtx,
+  check: Check,
+  candidate: LegacyPartyCandidate | null,
+  stats: PageStats,
+) {
+  if (!check.partiesChecked || !candidate) return;
+  const { target } = candidate;
+  const [suggestedRole] = candidate.roles;
+  if (
+    !suggestedRole ||
+    (target.type !== "accession" && target.type !== "deaccession") ||
+    !(await awaitsLegacyPartyReview(ctx, check.organizationId, candidate))
+  )
+    return;
+  const account = candidate.existingAccountId
+    ? await ctx.db.get(candidate.existingAccountId)
+    : null;
+  const existingAccountId =
+    account?.organizationId === check.organizationId ? account._id : undefined;
+  await recordDetection(
+    ctx,
+    check,
+    {
+      key: `legacy_link:${target.type}:${target.id}`,
+      signature: `${candidate.assertedName ?? ""}|${existingAccountId ?? ""}`,
+      detail: {
+        kind: "legacy_link",
+        target,
+        label: candidate.label,
+        assertedName: candidate.assertedName,
+        existingAccountId,
+        suggestedRole,
+      },
+    },
+    stats,
+  );
+}
+
+async function scanAccessions(
+  ctx: MutationCtx,
+  check: Check,
+  pageSize: number,
+  stats: PageStats,
+): Promise<PageProgress> {
+  const result = await ctx.db
+    .query("accessions")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", check.organizationId),
+    )
+    .paginate({ cursor: check.cursor, numItems: pageSize });
+  for (const accession of result.page) {
+    stats.rows++;
+    for (const problem of await accessionReferenceProblems(ctx, accession))
+      await recordDetection(
+        ctx,
+        check,
+        orphanDetection(
+          { type: "accession", id: accession._id },
+          accession.accessionNumber,
+          problem,
+        ),
+        stats,
+      );
+    await detectLegacyLink(
+      ctx,
+      check,
+      accessionLegacyCandidate(accession),
+      stats,
+    );
+  }
+  return {
+    cursor: result.isDone ? null : result.continueCursor,
+    done: result.isDone,
+  };
+}
+
+async function scanDeaccessions(
+  ctx: MutationCtx,
+  check: Check,
+  pageSize: number,
+  stats: PageStats,
+): Promise<PageProgress> {
+  const result = await ctx.db
+    .query("deaccessions")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", check.organizationId),
+    )
+    .paginate({ cursor: check.cursor, numItems: pageSize });
+  for (const deaccession of result.page) {
+    stats.rows++;
+    for (const problem of await deaccessionReferenceProblems(ctx, deaccession))
+      await recordDetection(
+        ctx,
+        check,
+        orphanDetection(
+          { type: "deaccession", id: deaccession._id },
+          deaccession.deaccessionNumber,
+          problem,
+        ),
+        stats,
+      );
+    await detectLegacyLink(
+      ctx,
+      check,
+      deaccessionLegacyCandidate(deaccession),
+      stats,
+    );
   }
   return {
     cursor: result.isDone ? null : result.continueCursor,
@@ -432,8 +603,19 @@ function runPhase(
         pageSize,
         stats,
       );
+    case "accessions":
+      return scanAccessions(ctx, check, pageSize, stats);
+    case "deaccessions":
+      return scanDeaccessions(ctx, check, pageSize, stats);
     case "resolve_missing_evidence":
       return resolveUndetected(ctx, check, "missing_evidence", pageSize, stats);
+    case "resolve_legacy_link":
+      // Unchecked party links keep their findings as they were.
+      return check.partiesChecked
+        ? resolveUndetected(ctx, check, "legacy_link", pageSize, stats)
+        : Promise.resolve({ cursor: null, done: true });
+    case "resolve_orphan_reference":
+      return resolveUndetected(ctx, check, "orphan_reference", pageSize, stats);
   }
 }
 
