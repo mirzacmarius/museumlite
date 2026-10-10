@@ -18,6 +18,7 @@ import { usePermissions } from "@/components/permission-gate";
 import {
   FieldError,
   fieldErrorProps,
+  focusFirstFieldInError,
 } from "@/components/record-form/record-form-notices";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
@@ -30,6 +31,13 @@ type HandoffSummary = FunctionReturnType<
 >;
 type HandoffParticipant = HandoffSummary["participants"][number];
 type HandoffAction = "install" | "deinstall" | "return" | "exception";
+
+/** A field a handoff needs, and what to say when it is missing. */
+interface HandoffRequirement {
+  field: string;
+  missing: boolean;
+  message: string;
+}
 
 interface ExhibitionPhysicalHandoffsPanelProps {
   exhibitionId: string;
@@ -262,20 +270,16 @@ function ExhibitionHandoffActions({
   /** Records a handoff once its required fields are filled in. */
   async function submit(
     action: HandoffAction,
-    required: Array<[fieldId: string, missing: boolean, message: string]>,
+    requirements: HandoffRequirement[],
     run: () => Promise<unknown>,
   ) {
     setRefusal(null);
     const errors: Record<string, string> = {};
-    for (const [fieldId, missing, message] of required) {
-      if (missing) errors[fieldId] = message;
+    for (const { field, missing, message } of requirements) {
+      if (missing) errors[field] = message;
     }
     setFieldErrors(errors);
-    const [firstInvalid] = Object.keys(errors);
-    if (firstInvalid) {
-      document.getElementById(firstInvalid)?.focus();
-      return;
-    }
+    if (focusFirstFieldInError(errors)) return;
     setBusy(action);
     try {
       await run();
@@ -290,11 +294,11 @@ function ExhibitionHandoffActions({
     }
   }
 
-  const assessmentRequired: [string, boolean, string] = [
-    fields.assessment,
-    !draft.assessmentId,
-    t("errors.assessment"),
-  ];
+  const assessmentRequired: HandoffRequirement = {
+    field: fields.assessment,
+    missing: !draft.assessmentId,
+    message: t("errors.assessment"),
+  };
   const assessmentId = draft.assessmentId as Id<"conditionAssessments">;
   const exceptionTooShort =
     draft.exceptionReason.trim().length < MIN_EXCEPTION_REASON;
@@ -392,11 +396,11 @@ function ExhibitionHandoffActions({
               "install",
               [
                 assessmentRequired,
-                [
-                  fields.installationDestination,
-                  !draft.installationDestination,
-                  t("errors.installationDestination"),
-                ],
+                {
+                  field: fields.installationDestination,
+                  missing: !draft.installationDestination,
+                  message: t("errors.installationDestination"),
+                },
               ],
               () =>
                 installObject({
@@ -444,11 +448,11 @@ function ExhibitionHandoffActions({
                 "return",
                 [
                   assessmentRequired,
-                  [
-                    fields.returnDestination,
-                    !draft.returnDestination,
-                    t("errors.returnDestination"),
-                  ],
+                  {
+                    field: fields.returnDestination,
+                    missing: !draft.returnDestination,
+                    message: t("errors.returnDestination"),
+                  },
                 ],
                 () =>
                   returnObject({
@@ -490,11 +494,11 @@ function ExhibitionHandoffActions({
                 submit(
                   "exception",
                   [
-                    [
-                      fields.exceptionReason,
-                      exceptionTooShort,
-                      t("errors.exceptionReason"),
-                    ],
+                    {
+                      field: fields.exceptionReason,
+                      missing: exceptionTooShort,
+                      message: t("errors.exceptionReason"),
+                    },
                   ],
                   () =>
                     authorizeException({

@@ -15,6 +15,7 @@ import { usePermissions } from "@/components/permission-gate";
 import {
   FieldError,
   fieldErrorProps,
+  focusFirstFieldInError,
 } from "@/components/record-form/record-form-notices";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useClientNow } from "@/hooks/use-client-date-format";
@@ -145,11 +146,7 @@ export function ConditionAssessmentPanel({
     setNotice("");
     const errors = validate();
     setFieldErrors(errors);
-    const [firstInvalid] = Object.keys(errors);
-    if (firstInvalid) {
-      document.getElementById(firstInvalid)?.focus();
-      return;
-    }
+    if (focusFirstFieldInError(errors)) return;
     setBusy("save");
     try {
       await create({

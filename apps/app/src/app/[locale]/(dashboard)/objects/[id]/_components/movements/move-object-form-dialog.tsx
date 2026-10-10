@@ -24,6 +24,7 @@ import { LocationSelector } from "@/components/location-selector";
 import {
   FieldError,
   fieldErrorProps,
+  focusFirstFieldInError,
 } from "@/components/record-form/record-form-notices";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
@@ -173,10 +174,8 @@ export function MoveObjectFormDialog({
     if (!isDirect && !state.reason.trim()) {
       fieldErrors[REASON_FIELD] = t("dialog.reasonRequired");
     }
-    const [firstInvalid] = Object.keys(fieldErrors);
-    if (firstInvalid) {
+    if (focusFirstFieldInError({ ...fieldErrors })) {
       dispatch({ type: "invalid", fieldErrors });
-      document.getElementById(firstInvalid)?.focus();
       return;
     }
     dispatch({ type: "submitted" });

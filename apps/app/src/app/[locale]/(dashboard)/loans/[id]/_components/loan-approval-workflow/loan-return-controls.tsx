@@ -104,8 +104,9 @@ function ReceiptEvidenceFields({
   const destinationError = problems.includes("destination")
     ? evidenceT("receiptErrors.destination")
     : undefined;
-  const asksForDestination =
-    returnFlow.loanType === "outgoing" && returnFlow.organizationId;
+  // Outgoing loans come back into the museum; incoming ones leave to the lender.
+  const organizationId =
+    returnFlow.loanType === "outgoing" ? returnFlow.organizationId : undefined;
   const originKnown =
     item.dispatchOriginLocationId !== undefined && !item.dispatchOriginUnknown;
 
@@ -136,7 +137,7 @@ function ReceiptEvidenceFields({
           />
         </div>
       ) : null}
-      {asksForDestination ? (
+      {organizationId ? (
         <div className="space-y-3">
           {originKnown ? (
             <div className="flex items-center gap-3">
@@ -165,7 +166,7 @@ function ReceiptEvidenceFields({
               </Label>
               <LocationSelector
                 id={destinationField}
-                organizationId={returnFlow.organizationId as string}
+                organizationId={organizationId}
                 value={evidence.destinationLocationId ?? ""}
                 onValueChange={(value) =>
                   setEvidence({ destinationLocationId: value })
