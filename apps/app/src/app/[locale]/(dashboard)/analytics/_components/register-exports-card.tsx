@@ -2,10 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  REGISTER_PROFILES,
-  REGISTER_STATUS_PROFILES,
-} from "@v1/backend/convex/utils/registerProfiles";
+import { REGISTER_TOTALS } from "@v1/backend/convex/utils/registerProfiles";
 import { Button } from "@v1/ui/button";
 import {
   Card,
@@ -14,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@v1/ui/card";
-import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
   Table,
@@ -25,7 +21,7 @@ import {
   TableRow,
 } from "@v1/ui/table";
 import { useConvex } from "convex/react";
-import type { FunctionArgs, FunctionReturnType } from "convex/server";
+import type { FunctionReturnType } from "convex/server";
 import { BookText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { ExportJobControl } from "@/components/export-job-control";
@@ -33,33 +29,32 @@ import { useRegisterProfileLabels } from "@/hooks/use-register-profile-labels";
 import { exportJobErrorKey } from "@/lib/export-job-error-copy";
 import { formatIsoTimestamp } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
+import {
+  criteriaFromForm,
+  EMPTY_REGISTER_FORM,
+  hasValidCriteriaShape,
+  isProfile,
+  type Profile,
+  type RegisterForm,
+  type RegisterSource,
+} from "./register-criteria";
+import { RegisterCriteriaFields } from "./register-criteria-fields";
 
-type RegisterSource = Extract<
-  FunctionArgs<typeof api.exports.create>["source"],
-  { kind: "register" }
->;
-type Profile = RegisterSource["profile"];
-type Criteria = RegisterSource["criteria"];
-type Status = NonNullable<Criteria["status"]>;
 type Preview = FunctionReturnType<typeof api.registers.preview>;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+/** Profiles offered together in the picker. */
+const PROFILE_GROUPS: Array<{
+  label: "groupRegisters" | "groupFinancial" | "groupResearch";
+  profiles: readonly Profile[];
+}> = [
+  {
+    label: "groupRegisters",
+    profiles: ["accession", "disposal", "custody", "condition"],
+  },
+  { label: "groupFinancial", profiles: ["valuation", "insurance"] },
+  { label: "groupResearch", profiles: ["provenance"] },
+];
 
-function isProfile(value: string): value is Profile {
-  return REGISTER_PROFILES.some((profile) => profile === value);
-}
-function hasStatus(profile: Profile) {
-  return REGISTER_STATUS_PROFILES.includes(profile);
-}
-/** A `datetime-local` value read as UTC, like the date criteria. */
-function utcDateTime(value: string) {
-  if (!value) return undefined;
-  return Date.parse(`${value}Z`);
-}
-function isStatus(value: string): value is Status {
-  return ["pending", "approved", "rejected"].includes(value);
-}
-/** `YYYY-MM-DD` as the first or last UTC millisecond of that day. */
 /** Stable keys for preview rows; identical legacy rows get an occurrence suffix. */
 function keyedRows(rows: Preview["rows"]) {
   const seen = new Map<string, number>();
@@ -69,12 +64,6 @@ function keyedRows(rows: Preview["rows"]) {
     seen.set(base, occurrence);
     return { key: `${base}#${occurrence}`, row };
   });
-}
-function utcDay(value: string, endOfDay: boolean) {
-  if (!value) return undefined;
-  const start = Date.parse(`${value}T00:00:00Z`);
-  if (!Number.isFinite(start)) return undefined;
-  return endOfDay ? start + DAY_MS - 1 : start;
 }
 
 function formatCell(
@@ -87,15 +76,6 @@ function formatCell(
   return String(value);
 }
 
-interface RegisterForm {
-  profile: Profile;
-  /** `YYYY-MM-DD` UTC day, or empty. */
-  fromDate: string;
-  toDate: string;
-  status: Status | "";
-  /** `datetime-local` value read as UTC, or empty. */
-  asOf: string;
-}
 interface PreviewState {
   loading: boolean;
   key?: string;
@@ -113,42 +93,28 @@ export function RegisterExportsCard({
   const t = useScopedI18n("registerReports");
   const tExport = useScopedI18n("exportJobs");
   const convex = useConvex();
-  const [form, setForm] = useState<RegisterForm>({
-    profile: "accession",
-    fromDate: "",
-    toDate: "",
-    status: "",
-    asOf: "",
-  });
+  const [form, setForm] = useState<RegisterForm>(EMPTY_REGISTER_FORM);
   const [preview, setPreview] = useState<PreviewState>({ loading: false });
-  const { profile, fromDate, toDate, status, asOf } = form;
   const update = (patch: Partial<RegisterForm>) => {
     setForm((current) => ({ ...current, ...patch }));
     setPreview((current) => ({ ...current, error: undefined }));
   };
 
   const profileLabels = useRegisterProfileLabels();
-  const criteria: Criteria = {
-    fromDate: utcDay(fromDate, false),
-    toDate: utcDay(toDate, true),
-    status: hasStatus(profile) && status ? status : undefined,
-    asOf: utcDateTime(asOf),
-  };
+  const { profile } = form;
+  const criteria = criteriaFromForm(form);
   const source: RegisterSource = { kind: "register", profile, criteria };
   const sourceKey = JSON.stringify(source);
-  const criteriaValid =
-    (criteria.fromDate === undefined ||
-      criteria.toDate === undefined ||
-      criteria.fromDate <= criteria.toDate) &&
-    (criteria.asOf === undefined || Number.isFinite(criteria.asOf));
+  const criteriaValid = hasValidCriteriaShape(criteria);
   const shownPreview = preview.key === sourceKey ? preview.result : undefined;
   const previewing = preview.loading;
   const error = preview.error;
 
   async function runPreview() {
+    const now = Date.now();
     if (
       !criteriaValid ||
-      (criteria.asOf !== undefined && criteria.asOf > Date.now())
+      (criteria.asOf !== undefined && criteria.asOf > now)
     ) {
       setPreview({ loading: false, error: tExport("errorRegisterCriteria") });
       return;
@@ -159,6 +125,7 @@ export function RegisterExportsCard({
         organizationId,
         profile,
         criteria,
+        now,
       });
       setPreview({ loading: false, key: sourceKey, result });
     } catch (e) {
@@ -188,65 +155,30 @@ export function RegisterExportsCard({
               }}
               className="h-9 w-full rounded-md border border-input bg-background px-2"
             >
-              {REGISTER_PROFILES.map((id) => (
-                <option key={id} value={id}>
-                  {profileLabels[id]}
-                </option>
+              {PROFILE_GROUPS.map((group) => (
+                <optgroup key={group.label} label={t(group.label)}>
+                  {group.profiles.map((id) => (
+                    <option key={id} value={id}>
+                      {profileLabels[id]}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
-              <option value="spectrum" disabled>
-                {t("profileSpectrum")}
-              </option>
-              <option value="lido" disabled>
-                {t("profileLido")}
-              </option>
+              <optgroup label={t("groupUnsupported")}>
+                <option value="spectrum" disabled>
+                  {t("profileSpectrum")}
+                </option>
+                <option value="lido" disabled>
+                  {t("profileLido")}
+                </option>
+              </optgroup>
             </select>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="register-from">{t("fromDate")}</Label>
-            <Input
-              id="register-from"
-              type="date"
-              value={fromDate}
-              onChange={(e) => update({ fromDate: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="register-to">{t("toDate")}</Label>
-            <Input
-              id="register-to"
-              type="date"
-              value={toDate}
-              onChange={(e) => update({ toDate: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="register-status">{t("status")}</Label>
-            <select
-              id="register-status"
-              value={hasStatus(profile) ? status : ""}
-              disabled={!hasStatus(profile)}
-              onChange={(e) =>
-                update({
-                  status: isStatus(e.target.value) ? e.target.value : "",
-                })
-              }
-              className="h-9 w-full rounded-md border border-input bg-background px-2 disabled:opacity-50"
-            >
-              <option value="">{t("statusAny")}</option>
-              <option value="pending">{t("statusPending")}</option>
-              <option value="approved">{t("statusApproved")}</option>
-              <option value="rejected">{t("statusRejected")}</option>
-            </select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="register-as-of">{t("asOf")}</Label>
-            <Input
-              id="register-as-of"
-              type="datetime-local"
-              value={asOf}
-              onChange={(e) => update({ asOf: e.target.value })}
-            />
-          </div>
+          <RegisterCriteriaFields
+            organizationId={organizationId}
+            form={form}
+            update={update}
+          />
         </div>
         <p className="text-xs text-muted-foreground">{t("asOfHint")}</p>
         <div className="flex flex-wrap items-center gap-2">
@@ -313,6 +245,11 @@ export function RegisterExportsCard({
             <p className="text-xs text-muted-foreground">
               {t("notRecordedNote")}
             </p>
+            {REGISTER_TOTALS[profile] && (
+              <p className="text-xs text-muted-foreground">
+                {t("totalsPreviewNote")}
+              </p>
+            )}
           </section>
         )}
         {criteriaValid ? (

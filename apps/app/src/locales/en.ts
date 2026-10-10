@@ -9294,21 +9294,28 @@ export default {
       "The export file is not available. Retry or create a new export.",
     reportsNote:
       "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
-    sourceRegister: "Register: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} register rows · {scanned} records examined · {pages} pages",
+      "{rows} rows · {scanned} records examined · {pages} pages",
     errorRegisterCriteria:
-      "Check the register criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, and a status applies only to accession and disposal registers.",
+      "Check the criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, a currency must be a three-letter code such as EUR, and each register or report accepts only its own criteria.",
   },
   registerReports: {
-    title: "Institutional registers",
+    title: "Registers and reports",
     description:
-      "Generate accession, disposal, custody and condition registers from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time and generator.",
-    profile: "Register",
+      "Generate registers, a board valuation report, an insurer schedule and a provenance research report from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time, profile version and any currency totals.",
+    profile: "Register or report",
+    groupRegisters: "Registers",
+    groupFinancial: "Financial reports",
+    groupResearch: "Research",
+    groupUnsupported: "Not supported",
     profileAccession: "Accession register",
     profileDisposal: "Disposal register",
     profileCustody: "Custody register",
     profileCondition: "Condition register",
+    profileValuation: "Valuation report (board)",
+    profileInsurance: "Insurance schedule (insurer)",
+    profileProvenance: "Provenance report (research)",
     profileSpectrum: "SPECTRUM XML (not supported)",
     profileLido: "LIDO XML (not supported)",
     fromDate: "From",
@@ -9318,21 +9325,44 @@ export default {
     statusPending: "Pending",
     statusApproved: "Approved",
     statusRejected: "Rejected",
+    purpose: "Purpose",
+    purposeAny: "Any purpose",
+    currency: "Currency",
+    currencyPlaceholder: "Any, or EUR",
+    inventoryScope: "Inventory scope",
+    scopeAny: "Any scope",
+    scopeOwned: "Owned",
+    scopeIncoming: "Incoming (not owned)",
+    scopeUnclassified: "Ownership unclassified",
+    scopeExcluded: "Outside the inventory",
+    policy: "Policy",
+    policyAny: "All policies",
+    policyOption: "{number} · {carrier}",
     asOf: "As of",
     asOfHint:
-      "Leave As of empty to use the time the register is created. Evidence recorded after the as-of time is excluded. Dates and the as-of time are in UTC.",
+      "Leave As of empty to use the time the file is created. Evidence recorded after the as-of time is excluded, and validity and coverage are judged at that time. Dates and the as-of time are in UTC.",
     preview: "Preview",
     previewing: "Loading preview",
-    previewLabel: "Register preview",
+    previewLabel: "Preview",
     previewSummary:
       "Showing {shown} of {rows} rows from the first page ({scanned} records examined).",
-    previewMore: "More rows follow; create the register for the complete file.",
+    previewMore:
+      "More rows follow; create the file for the complete register or report.",
     previewEmpty: "The first page has no rows for these criteria.",
     notRecordedNote:
       "Empty cells named in notRecorded were never recorded in MuseumLite. Rows marked legacy predate structured evidence.",
+    totalsPreviewNote:
+      "Currency totals cover the whole file. They appear on the completed file below and in its manifest.",
     exportLabel: "Create {profile} file",
+    totalsTitle: "Totals by currency",
+    totalsNone: "No amounts in this file.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} without a recognised currency, not added",
+    totalsNotStated: "Not stated",
+    totalsNote:
+      "Sums of the rows in this file, per group and currency. Amounts in different currencies are never added together; rows without a recognised currency are counted, not summed.",
     unsupportedNote:
-      "Registers use a documented MuseumLite interchange profile. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
+      "Registers and reports use documented MuseumLite interchange profiles. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
   },
   projectionHealth: {
     unavailable: {

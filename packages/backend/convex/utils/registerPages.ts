@@ -1,8 +1,5 @@
 import type { QueryCtx } from "../_generated/server";
-import {
-  insuranceSchedulePage,
-  valuationPage,
-} from "./financialReportSources";
+import { insuranceSchedulePage, valuationPage } from "./financialReportSources";
 import { PROVENANCE_SOURCES } from "./provenanceReportSources";
 import {
   accessionPage,

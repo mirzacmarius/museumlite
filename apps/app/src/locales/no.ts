@@ -9497,21 +9497,28 @@ export default {
       "Eksportfilen er ikke tilgjengelig. Prøv igjen eller opprett en ny eksport.",
     reportsNote:
       "Rapportsammendragene nedenfor inneholder gjeldende KPI-svar og begrensede lister over nylige eller kommende elementer. Bruk de fullstendige katalog- og revisjonseksportene ovenfor for avstemte kildedatasett.",
-    sourceRegister: "Register: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} registerrader · {scanned} poster undersøkt · {pages} sider",
+      "{rows} rader · {scanned} poster undersøkt · {pages} sider",
     errorRegisterCriteria:
-      "Kontroller registerkriteriene: datoene må være gyldige, startdatoen kan ikke være etter sluttdatoen, per-tidspunktet kan ikke være i fremtiden, og status gjelder bare aksesjons- og avhendingsregistre.",
+      "Kontroller kriteriene: datoene må være gyldige, startdatoen kan ikke være etter sluttdatoen, per-tidspunktet kan ikke være i fremtiden, en valuta må være en kode på tre bokstaver som EUR, og hvert register eller hver rapport godtar bare sine egne kriterier.",
   },
   registerReports: {
-    title: "Institusjonelle registre",
+    title: "Registre og rapporter",
     description:
-      "Lag aksesjons-, avhendings-, forvarings- og tilstandsregistre fra registrert dokumentasjon. Hver fil har et typet kolonneskjema og et manifest med kriteriene, per-tidspunktet og generatoren.",
-    profile: "Register",
+      "Lag registre, en verdsettelsesrapport for styret, en forsikringsoversikt for forsikringsselskapet og en proveniensrapport for forskning fra registrert dokumentasjon. Hver fil har et typet kolonneskjema og et manifest med kriteriene, per-tidspunktet, profilversjonen og eventuelle summer per valuta.",
+    profile: "Register eller rapport",
+    groupRegisters: "Registre",
+    groupFinancial: "Økonomirapporter",
+    groupResearch: "Forskning",
+    groupUnsupported: "Støttes ikke",
     profileAccession: "Aksesjonsregister",
     profileDisposal: "Avhendingsregister",
     profileCustody: "Forvaringsregister",
     profileCondition: "Tilstandsregister",
+    profileValuation: "Verdsettelsesrapport (styret)",
+    profileInsurance: "Forsikringsoversikt (forsikringsselskap)",
+    profileProvenance: "Proveniensrapport (forskning)",
     profileSpectrum: "SPECTRUM XML (støttes ikke)",
     profileLido: "LIDO XML (støttes ikke)",
     fromDate: "Fra",
@@ -9521,21 +9528,44 @@ export default {
     statusPending: "Venter",
     statusApproved: "Godkjent",
     statusRejected: "Avvist",
+    purpose: "Formål",
+    purposeAny: "Alle formål",
+    currency: "Valuta",
+    currencyPlaceholder: "Alle, eller EUR",
+    inventoryScope: "Beholdningsomfang",
+    scopeAny: "Alle omfang",
+    scopeOwned: "Eid",
+    scopeIncoming: "Innkommende (ikke eid)",
+    scopeUnclassified: "Eierskap uklassifisert",
+    scopeExcluded: "Utenfor beholdningen",
+    policy: "Polise",
+    policyAny: "Alle poliser",
+    policyOption: "{number} · {carrier}",
     asOf: "Per",
     asOfHint:
-      "La Per stå tomt for å bruke tidspunktet registeret opprettes. Dokumentasjon registrert etter dette tidspunktet utelates. Datoer og per-tidspunktet er i UTC.",
+      "La Per stå tomt for å bruke tidspunktet filen opprettes. Dokumentasjon registrert etter dette tidspunktet utelates, og gyldighet og dekning vurderes per dette tidspunktet. Datoer og per-tidspunktet er i UTC.",
     preview: "Forhåndsvis",
     previewing: "Laster forhåndsvisning",
-    previewLabel: "Forhåndsvisning av register",
+    previewLabel: "Forhåndsvisning",
     previewSummary:
       "Viser {shown} av {rows} rader fra første side ({scanned} poster undersøkt).",
-    previewMore: "Flere rader følger; opprett registeret for å få hele filen.",
+    previewMore:
+      "Flere rader følger; opprett filen for å få hele registeret eller rapporten.",
     previewEmpty: "Første side har ingen rader for disse kriteriene.",
     notRecordedNote:
       "Tomme celler som er oppført i notRecorded ble aldri registrert i MuseumLite. Rader merket legacy er eldre enn strukturert dokumentasjon.",
+    totalsPreviewNote:
+      "Summene per valuta dekker hele filen. De vises på den ferdige filen nedenfor og i manifestet.",
     exportLabel: "Opprett fil for {profile}",
+    totalsTitle: "Summer per valuta",
+    totalsNone: "Filen har ingen beløp.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} uten gjenkjent valuta, ikke summert",
+    totalsNotStated: "Ikke oppgitt",
+    totalsNote:
+      "Summer av radene i denne filen, per gruppe og valuta. Beløp i ulike valutaer legges aldri sammen; rader uten gjenkjent valuta telles, men summeres ikke.",
     unsupportedNote:
-      "Registrene bruker en dokumentert MuseumLite-utvekslingsprofil. De er ikke en erklæring om samsvar med SPECTRUM, LIDO eller akkreditering, og profiler som ikke støttes kan ikke lages.",
+      "Registrene og rapportene bruker dokumenterte MuseumLite-utvekslingsprofiler. De er ikke en erklæring om samsvar med SPECTRUM, LIDO eller akkreditering, og profiler som ikke støttes kan ikke lages.",
   },
   projectionHealth: {
     unavailable: {

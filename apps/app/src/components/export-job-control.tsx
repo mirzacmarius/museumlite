@@ -7,6 +7,7 @@ import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useRef, useState } from "react";
+import { RegisterTotals } from "@/components/register-totals";
 import { env } from "@/env.mjs";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useRegisterProfileLabels } from "@/hooks/use-register-profile-labels";
@@ -274,6 +275,14 @@ export function ExportJobControl({
               {job.error && (
                 <p role="alert">{t(exportJobErrorKey(job.error))}</p>
               )}
+              {job.status === "completed" &&
+                job.source.kind === "register" &&
+                job.totals && (
+                  <RegisterTotals
+                    profile={job.source.profile}
+                    totals={job.totals}
+                  />
+                )}
               <div className="flex gap-2 mt-2">
                 {CANCELLABLE_STATUSES.has(job.status) && (
                   <Button

@@ -9613,21 +9613,28 @@ export default {
       "Le fichier d'export n'est pas disponible. Réessayez ou créez un nouvel export.",
     reportsNote:
       "Les synthèses de rapports ci-dessous contiennent les réponses KPI actuelles et des listes limitées d'éléments récents ou à venir. Utilisez les exports complets du catalogue et de l'audit ci-dessus pour obtenir des jeux de données source rapprochés.",
-    sourceRegister: "Registre : {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} lignes de registre · {scanned} enregistrements examinés · {pages} pages",
+      "{rows} lignes · {scanned} enregistrements examinés · {pages} pages",
     errorRegisterCriteria:
-      "Vérifiez les critères du registre : les dates doivent être valides, la date de début ne peut pas suivre la date de fin, la date de référence ne peut pas être dans le futur et un statut ne s'applique qu'aux registres d'inventaire et de cession.",
+      "Vérifiez les critères : les dates doivent être valides, la date de début ne peut pas suivre la date de fin, la date de référence ne peut pas être dans le futur, une devise doit être un code de trois lettres comme EUR, et chaque registre ou rapport n'accepte que ses propres critères.",
   },
   registerReports: {
-    title: "Registres institutionnels",
+    title: "Registres et rapports",
     description:
-      "Générez les registres d'inventaire, de cession, de garde et d'état de conservation à partir des preuves enregistrées. Chaque fichier a un schéma de colonnes typé et un manifeste indiquant les critères, la date de référence et le générateur.",
-    profile: "Registre",
+      "Générez des registres, un rapport de valorisation pour le conseil d'administration, un état pour l'assureur et un rapport de recherche de provenance à partir des preuves enregistrées. Chaque fichier a un schéma de colonnes typé et un manifeste indiquant les critères, la date de référence, la version du profil et, le cas échéant, les totaux par devise.",
+    profile: "Registre ou rapport",
+    groupRegisters: "Registres",
+    groupFinancial: "Rapports financiers",
+    groupResearch: "Recherche",
+    groupUnsupported: "Non pris en charge",
     profileAccession: "Registre d'inventaire",
     profileDisposal: "Registre des cessions",
     profileCustody: "Registre de garde",
     profileCondition: "Registre d'état de conservation",
+    profileValuation: "Rapport de valorisation (conseil)",
+    profileInsurance: "État des garanties (assureur)",
+    profileProvenance: "Rapport de provenance (recherche)",
     profileSpectrum: "SPECTRUM XML (non pris en charge)",
     profileLido: "LIDO XML (non pris en charge)",
     fromDate: "Du",
@@ -9637,23 +9644,45 @@ export default {
     statusPending: "En attente",
     statusApproved: "Approuvé",
     statusRejected: "Refusé",
+    purpose: "Finalité",
+    purposeAny: "Toutes les finalités",
+    currency: "Devise",
+    currencyPlaceholder: "Toutes, ou EUR",
+    inventoryScope: "Périmètre d'inventaire",
+    scopeAny: "Tous les périmètres",
+    scopeOwned: "En propriété",
+    scopeIncoming: "Entrant (hors propriété)",
+    scopeUnclassified: "Propriété non classée",
+    scopeExcluded: "Hors inventaire",
+    policy: "Police",
+    policyAny: "Toutes les polices",
+    policyOption: "{number} · {carrier}",
     asOf: "À la date du",
     asOfHint:
-      "Laissez À la date du vide pour utiliser le moment de création du registre. Les preuves enregistrées après cette date sont exclues. Les dates et l'heure de référence sont en UTC.",
+      "Laissez À la date du vide pour utiliser le moment de création du fichier. Les preuves enregistrées après cette date sont exclues, et la validité et la couverture sont évaluées à cette date. Les dates et l'heure de référence sont en UTC.",
     preview: "Aperçu",
     previewing: "Chargement de l'aperçu",
-    previewLabel: "Aperçu du registre",
+    previewLabel: "Aperçu",
     previewSummary:
       "{shown} lignes affichées sur {rows} de la première page ({scanned} enregistrements examinés).",
     previewMore:
-      "D'autres lignes suivent ; créez le registre pour obtenir le fichier complet.",
+      "D'autres lignes suivent ; créez le fichier pour obtenir le registre ou le rapport complet.",
     previewEmpty:
       "La première page ne contient aucune ligne pour ces critères.",
     notRecordedNote:
       "Les cellules vides nommées dans notRecorded n'ont jamais été enregistrées dans MuseumLite. Les lignes marquées legacy sont antérieures aux preuves structurées.",
+    totalsPreviewNote:
+      "Les totaux par devise portent sur tout le fichier. Ils apparaissent sur le fichier terminé ci-dessous et dans son manifeste.",
     exportLabel: "Créer le fichier {profile}",
+    totalsTitle: "Totaux par devise",
+    totalsNone: "Ce fichier ne contient aucun montant.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} sans devise reconnue, non additionnés",
+    totalsNotStated: "Non indiqué",
+    totalsNote:
+      "Sommes des lignes de ce fichier, par groupe et par devise. Les montants en devises différentes ne sont jamais additionnés ; les lignes sans devise reconnue sont comptées, mais pas additionnées.",
     unsupportedNote:
-      "Les registres utilisent un profil d'échange MuseumLite documenté. Ils ne constituent pas une déclaration de conformité SPECTRUM, LIDO ou d'accréditation, et les profils non pris en charge ne peuvent pas être générés.",
+      "Les registres et rapports utilisent des profils d'échange MuseumLite documentés. Ils ne constituent pas une déclaration de conformité SPECTRUM, LIDO ou d'accréditation, et les profils non pris en charge ne peuvent pas être générés.",
   },
   projectionHealth: {
     unavailable: {

@@ -9650,21 +9650,28 @@ export default {
       "El archivo de exportación no está disponible. Reintente o cree una nueva exportación.",
     reportsNote:
       "Los resúmenes de informes siguientes contienen respuestas actuales de KPI y listas limitadas de elementos recientes o próximos. Use las exportaciones completas de catálogo y auditoría anteriores para obtener conjuntos de datos de origen conciliados.",
-    sourceRegister: "Registro: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} filas de registro · {scanned} registros examinados · {pages} páginas",
+      "{rows} filas · {scanned} registros examinados · {pages} páginas",
     errorRegisterCriteria:
-      "Revise los criterios del registro: las fechas deben ser válidas, la fecha inicial no puede ser posterior a la final, la fecha de referencia no puede estar en el futuro y el estado solo se aplica a los registros de ingresos y bajas.",
+      "Revise los criterios: las fechas deben ser válidas, la fecha inicial no puede ser posterior a la final, la fecha de referencia no puede estar en el futuro, una moneda debe ser un código de tres letras como EUR, y cada registro o informe solo acepta sus propios criterios.",
   },
   registerReports: {
-    title: "Registros institucionales",
+    title: "Registros e informes",
     description:
-      "Genere registros de ingresos, bajas, custodia y estado de conservación a partir de la evidencia registrada. Cada archivo tiene un esquema de columnas tipado y un manifiesto con los criterios, la fecha de referencia y el generador.",
-    profile: "Registro",
+      "Genere registros, un informe de valoración para el patronato, una relación para la aseguradora y un informe de investigación de procedencia a partir de la evidencia registrada. Cada archivo tiene un esquema de columnas tipado y un manifiesto con los criterios, la fecha de referencia, la versión del perfil y los totales por moneda, si los hay.",
+    profile: "Registro o informe",
+    groupRegisters: "Registros",
+    groupFinancial: "Informes financieros",
+    groupResearch: "Investigación",
+    groupUnsupported: "No compatibles",
     profileAccession: "Registro de ingresos",
     profileDisposal: "Registro de bajas",
     profileCustody: "Registro de custodia",
     profileCondition: "Registro de estado de conservación",
+    profileValuation: "Informe de valoración (patronato)",
+    profileInsurance: "Relación de seguros (aseguradora)",
+    profileProvenance: "Informe de procedencia (investigación)",
     profileSpectrum: "SPECTRUM XML (no compatible)",
     profileLido: "LIDO XML (no compatible)",
     fromDate: "Desde",
@@ -9674,22 +9681,44 @@ export default {
     statusPending: "Pendiente",
     statusApproved: "Aprobado",
     statusRejected: "Rechazado",
+    purpose: "Finalidad",
+    purposeAny: "Cualquier finalidad",
+    currency: "Moneda",
+    currencyPlaceholder: "Cualquiera, o EUR",
+    inventoryScope: "Ámbito del inventario",
+    scopeAny: "Cualquier ámbito",
+    scopeOwned: "En propiedad",
+    scopeIncoming: "Entrante (no en propiedad)",
+    scopeUnclassified: "Propiedad sin clasificar",
+    scopeExcluded: "Fuera del inventario",
+    policy: "Póliza",
+    policyAny: "Todas las pólizas",
+    policyOption: "{number} · {carrier}",
     asOf: "A fecha de",
     asOfHint:
-      "Deje A fecha de vacío para usar el momento en que se crea el registro. Se excluye la evidencia registrada después de esa fecha. Las fechas y la fecha de referencia están en UTC.",
+      "Deje A fecha de vacío para usar el momento en que se crea el archivo. Se excluye la evidencia registrada después de esa fecha, y la validez y la cobertura se evalúan en ese momento. Las fechas y la fecha de referencia están en UTC.",
     preview: "Vista previa",
     previewing: "Cargando vista previa",
-    previewLabel: "Vista previa del registro",
+    previewLabel: "Vista previa",
     previewSummary:
       "Se muestran {shown} de {rows} filas de la primera página ({scanned} registros examinados).",
     previewMore:
-      "Hay más filas; cree el registro para obtener el archivo completo.",
+      "Hay más filas; cree el archivo para obtener el registro o informe completo.",
     previewEmpty: "La primera página no tiene filas para estos criterios.",
     notRecordedNote:
       "Las celdas vacías indicadas en notRecorded nunca se registraron en MuseumLite. Las filas marcadas como legacy son anteriores a la evidencia estructurada.",
+    totalsPreviewNote:
+      "Los totales por moneda abarcan todo el archivo. Aparecen en el archivo completado más abajo y en su manifiesto.",
     exportLabel: "Crear archivo de {profile}",
+    totalsTitle: "Totales por moneda",
+    totalsNone: "Este archivo no contiene importes.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} sin una moneda reconocida, no sumados",
+    totalsNotStated: "Sin indicar",
+    totalsNote:
+      "Sumas de las filas de este archivo, por grupo y moneda. Los importes en monedas distintas nunca se suman entre sí; las filas sin una moneda reconocida se cuentan, pero no se suman.",
     unsupportedNote:
-      "Los registros usan un perfil de intercambio documentado de MuseumLite. No constituyen una declaración de conformidad con SPECTRUM, LIDO ni acreditación, y los perfiles no compatibles no se pueden generar.",
+      "Los registros e informes usan perfiles de intercambio documentados de MuseumLite. No constituyen una declaración de conformidad con SPECTRUM, LIDO ni acreditación, y los perfiles no compatibles no se pueden generar.",
   },
   projectionHealth: {
     unavailable: {

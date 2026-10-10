@@ -17,6 +17,7 @@ import {
 } from "./registerExportHarness";
 
 const DAY = 24 * 60 * 60 * 1000;
+type RegisterSource = Extract<Source, { kind: "register" }>;
 
 afterEach(() => {
   vi.useRealTimers();
@@ -182,7 +183,8 @@ describe("board valuation report", () => {
       validityAsOf: "none",
       appraisalId: null,
       evidenceStatus: "recorded",
-      notRecorded: "purpose;currency;value;appraisalId;appraisalDate;appraiserName",
+      notRecorded:
+        "purpose;currency;value;appraisalId;appraisalDate;appraiserName",
     });
   });
 
@@ -407,7 +409,7 @@ describe("board valuation report", () => {
     const market = await appraise(marketOnly, "market", "EUR");
     await appraise(borrowed, "insurance", "EUR");
     vi.advanceTimersByTime(1000);
-    const preview = (criteria: Extract<Source, { kind: "register" }>["criteria"]) =>
+    const preview = (criteria: RegisterSource["criteria"]) =>
       f.user.query(api.registers.preview, {
         organizationId: f.organizationId,
         profile: "valuation",
@@ -449,19 +451,15 @@ describe("board valuation report", () => {
     const f = await fixture();
     const create = (
       requestKey: string,
-      profile: Extract<Source, { kind: "register" }>["profile"],
-      criteria: Record<string, unknown>,
+      profile: RegisterSource["profile"],
+      criteria: RegisterSource["criteria"],
     ) =>
       errorCodeOf(
         f.user.mutation(api.exports.create, {
           organizationId: f.organizationId,
           requestKey,
           format: "csv",
-          source: {
-            kind: "register",
-            profile,
-            criteria,
-          } as Source,
+          source: { kind: "register", profile, criteria },
         }),
       );
     for (const [requestKey, profile, criteria] of [
@@ -686,9 +684,7 @@ describe("insurer schedule", () => {
     expect(withoutCapture(rows)).toEqual(
       withoutCapture(decodeJsonl(await downloadText(f, jsonl.jobId))),
     );
-    expect(
-      rows.map((row) => [row.coverageId ?? null, row.stateAsOf]),
-    ).toEqual([
+    expect(rows.map((row) => [row.coverageId ?? null, row.stateAsOf])).toEqual([
       [vaseCover, "in_force"],
       [bowlCover, "in_force"],
       [loanCover, "in_force"],
@@ -820,9 +816,7 @@ describe("insurer schedule", () => {
       createdAt: T0 - 200 * DAY,
     });
     vi.advanceTimersByTime(1000);
-    const preview = (
-      criteria: Extract<Source, { kind: "register" }>["criteria"],
-    ) =>
+    const preview = (criteria: RegisterSource["criteria"]) =>
       f.user.query(api.registers.preview, {
         organizationId: f.organizationId,
         profile: "insurance",
@@ -841,9 +835,7 @@ describe("insurer schedule", () => {
     });
 
     const now = await preview({ policyId: ended });
-    expect(
-      now.rows.map((row) => [row.coverageId, row.stateAsOf]),
-    ).toEqual([
+    expect(now.rows.map((row) => [row.coverageId, row.stateAsOf])).toEqual([
       [reconciled, "expired"],
       [later, "expired"],
     ]);
@@ -1179,5 +1171,434 @@ describe("provenance research report", () => {
       notRecorded: "recordedAt",
     });
     expect(await downloadText(f, csv.jobId)).toContain(`"'=Sale catalogue"`);
+  });
+});
+
+describe("provenance research report as of a past time", () => {
+  test("shows claims, review decisions and evidence as they stood then, with contradictions following corrections", async () => {
+    const f = await fixture("pro", ["collections.read", "media.read"]);
+    const vase = await insertObject(f, { accessionNumber: "V", title: "Vase" });
+    const recordedAt = T0 + 1000;
+    const historicalAsOf = T0 + 2000;
+    const laterAt = T0 + 3000;
+    const original = await insertClaim(f, {
+      objectId: vase,
+      statement: "Owned by A",
+      partyKind: "named",
+      partyText: "A",
+      startDate: { precision: "year", year: 1900 },
+      createdAt: recordedAt,
+    });
+    const contradicting = await insertClaim(f, {
+      objectId: vase,
+      statement: "Owned by B",
+      partyKind: "named",
+      partyText: "B",
+      startDate: { precision: "year", year: 1950 },
+      contradictsClaimId: original,
+      reviewStatus: "accepted",
+      reviewedAt: laterAt,
+      reviewedBy: f.userId,
+      createdAt: recordedAt,
+    });
+    await f.t.run(async (ctx) => {
+      for (const [decision, reviewedAt, previousStatus] of [
+        ["disputed", recordedAt + 500, "unreviewed"],
+        ["accepted", laterAt, "disputed"],
+      ] as const)
+        await ctx.db.insert("provenanceReviews", {
+          organizationId: f.organizationId,
+          objectId: vase,
+          claimId: contradicting,
+          decision,
+          previousStatus,
+          note: decision === "disputed" ? "Dates disagree" : undefined,
+          reviewedBy: f.userId,
+          reviewedAt,
+        });
+    });
+    const firstSource = await insertCitation(f, {
+      objectId: vase,
+      claimId: original,
+      citation: "Letter",
+      linkedAt: recordedAt,
+      retractedAt: laterAt,
+      retractionReason: "Misread",
+    });
+    const correction = await insertClaim(f, {
+      objectId: vase,
+      statement: "Owned by A until 1901",
+      partyKind: "named",
+      partyText: "A",
+      startDate: { precision: "year", year: 1900 },
+      supersedesClaimId: original,
+      createdAt: laterAt,
+    });
+    await f.t.run((ctx) =>
+      ctx.db.patch(original, {
+        supersededAt: laterAt,
+        supersededBy: f.userId,
+        supersededByClaimId: correction,
+        supersessionReason: "End date found",
+      }),
+    );
+    const laterSource = await insertCitation(f, {
+      objectId: vase,
+      claimId: correction,
+      citation: "Will",
+      linkedAt: laterAt,
+    });
+    await f.t.run((ctx) =>
+      ctx.db.insert("provenanceClaims", {
+        organizationId: f.otherOrganizationId,
+        objectId: vase,
+        statement: "Their claim",
+        partyKind: "unknown",
+        confidence: "unassessed",
+        reviewStatus: "unreviewed",
+        createdBy: f.userId,
+        createdAt: recordedAt,
+      }),
+    );
+    vi.advanceTimersByTime(5000);
+    const preview = (asOf?: number) =>
+      f.user.query(api.registers.preview, {
+        organizationId: f.organizationId,
+        profile: "provenance",
+        criteria: { asOf },
+        now: Date.now(),
+      });
+
+    const then = await preview(historicalAsOf);
+    expect(
+      then.rows.map((row) => [
+        row.recordType,
+        row.claimId,
+        row.evidenceId,
+        row.currentAsOf,
+        row.contestedAsOf,
+        row.reviewStatusAsOf,
+        row.supersededByClaimId,
+        row.retractedAt,
+      ]),
+    ).toEqual([
+      ["claim", original, null, true, true, "unreviewed", null, null],
+      ["claim", contradicting, null, true, true, "disputed", null, null],
+      ["evidence", original, firstSource, true, null, null, null, null],
+    ]);
+    expect(then.rows[1]).toMatchObject({
+      reviewedAt: recordedAt + 500,
+      reviewNote: "Dates disagree",
+    });
+
+    const now = await preview();
+    expect(
+      now.rows.map((row) => [
+        row.recordType,
+        row.claimId,
+        row.evidenceId,
+        row.currentAsOf,
+        row.contestedAsOf,
+        row.reviewStatusAsOf,
+      ]),
+    ).toEqual([
+      ["claim", correction, null, true, true, "unreviewed"],
+      ["claim", contradicting, null, true, true, "accepted"],
+      ["claim", original, null, false, false, "unreviewed"],
+      ["evidence", original, firstSource, false, null, null],
+      ["evidence", correction, laterSource, true, null, null],
+    ]);
+    expect(now.rows[2]).toMatchObject({
+      supersededAt: laterAt,
+      supersededByClaimId: correction,
+      supersessionReason: "End date found",
+    });
+  });
+});
+
+describe("provenance research report paging", () => {
+  test("an object whose claims span several pages exports each claim once, in chronological order", async () => {
+    const f = await fixture("pro", ["collections.read", "media.read"]);
+    const archive = await insertObject(f, {
+      accessionNumber: "ARCH-1",
+      title: "Heavily researched",
+    });
+    await f.t.run(async (ctx) => {
+      // Recorded newest-first, so recording order differs from chronology.
+      for (let i = 59; i >= 0; i--)
+        await ctx.db.insert("provenanceClaims", {
+          organizationId: f.organizationId,
+          objectId: archive,
+          statement: `${String(i).padStart(2, "0")}:${"x".repeat(9000)}`,
+          partyKind: "unknown",
+          startDate: { precision: "year", year: 1800 + i },
+          confidence: "possible",
+          reviewStatus: "unreviewed",
+          createdBy: f.userId,
+          createdAt: T0 - 100 + i,
+        });
+    });
+    vi.advanceTimersByTime(1000);
+    const { jobId, job } = await runExport(
+      f,
+      provenanceReport,
+      "csv",
+      "many-claims",
+    );
+    expect(job.status).toBe("completed");
+    expect(job.rows).toBe(60);
+    expect(job.checkpoint).toBeGreaterThan(2);
+    const manifest = await downloadManifest(f, jobId);
+    const rows = decodeRegisterCsv(
+      await downloadText(f, jobId),
+      manifest.columns,
+    );
+    expect(rows.map((row) => String(row.statement).slice(0, 2))).toEqual(
+      Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")),
+    );
+  });
+});
+
+describe("provenance research report scope", () => {
+  test("an object criterion narrows the report to one object, and objects transferred out keep the claims recorded here", async () => {
+    const f = await fixture("pro", ["collections.read", "media.read"]);
+    const held = await insertObject(f, { accessionNumber: "H", title: "Held" });
+    const other = await insertObject(f, {
+      accessionNumber: "O",
+      title: "Other",
+    });
+    const departed = await insertObject(f, {
+      accessionNumber: "NOW-THEIRS",
+      title: "Their title now",
+      organizationId: f.otherOrganizationId,
+    });
+    await f.t.run((ctx) =>
+      ctx.db.insert("organizationMoveRequests", {
+        collectionId: departed,
+        sourceOrganizationId: f.organizationId,
+        targetOrganizationId: f.otherOrganizationId,
+        sourceAccessionNumber: "1985.2",
+        accessionMode: "keep",
+        reason: "Transfer",
+        status: "executed",
+        requestedBy: f.userId,
+        requestedAt: T0 - 400,
+      }),
+    );
+    const heldClaim = await insertClaim(f, {
+      objectId: held,
+      statement: "Held claim",
+      partyKind: "unknown",
+    });
+    await insertClaim(f, {
+      objectId: other,
+      statement: "Other claim",
+      partyKind: "unknown",
+    });
+    const departedClaim = await insertClaim(f, {
+      objectId: departed,
+      statement: "Recorded before the transfer",
+      partyKind: "unknown",
+    });
+    vi.advanceTimersByTime(1000);
+    const preview = (criteria: { objectId?: Id<"collections"> }) =>
+      f.user.query(api.registers.preview, {
+        organizationId: f.organizationId,
+        profile: "provenance",
+        criteria,
+        now: Date.now(),
+      });
+
+    const single = await preview({ objectId: held });
+    expect(single.rows.map((row) => row.claimId)).toEqual([heldClaim]);
+
+    const all = await preview({});
+    const departedRow = all.rows.find((row) => row.claimId === departedClaim);
+    expect(departedRow).toMatchObject({
+      objectId: departed,
+      objectAccessionNumber: "1985.2",
+      objectTitle: null,
+      notRecorded: "objectTitle;role;method;place;startDate;endDate",
+    });
+    expect(all.rows).toHaveLength(3);
+  });
+});
+
+async function revokePermission(f: Fixture, name: string) {
+  await f.t.run(async (ctx) => {
+    const permission = (await ctx.db.query("permissions").collect()).find(
+      (candidate) => candidate.name === name,
+    );
+    if (!permission) throw new Error(`permission ${name} missing`);
+    const grants = await ctx.db
+      .query("rolePermissions")
+      .withIndex("by_permission", (q) => q.eq("permissionId", permission._id))
+      .collect();
+    for (const grant of grants) await ctx.db.delete(grant._id);
+  });
+}
+
+describe("report access and recovery", () => {
+  test("each report needs its own permissions and plan", async () => {
+    const reader = await fixture("pro", ["collections.read"]);
+    const previewAs = (
+      f: Fixture,
+      profile: "valuation" | "insurance" | "provenance",
+    ) =>
+      f.user.query(api.registers.preview, {
+        organizationId: f.organizationId,
+        profile,
+        criteria: {},
+        now: Date.now(),
+      });
+    await expect(previewAs(reader, "valuation")).resolves.toMatchObject({
+      rows: [],
+    });
+    for (const profile of ["insurance", "provenance"] as const) {
+      await expect(previewAs(reader, profile)).rejects.toThrow(
+        /Permission denied/,
+      );
+      await expect(
+        reader.user.mutation(api.exports.create, {
+          organizationId: reader.organizationId,
+          requestKey: `denied-${profile}`,
+          format: "csv",
+          source: { kind: "register", profile, criteria: {} },
+        }),
+      ).rejects.toThrow(/Permission denied/);
+    }
+
+    const outsider = await reader.t.run((ctx) =>
+      ctx.db.insert("users", { email: "outsider@example.test" }),
+    );
+    await expect(
+      reader.t
+        .withIdentity({ subject: `${outsider}|test` })
+        .query(api.registers.preview, {
+          organizationId: reader.organizationId,
+          profile: "valuation",
+          criteria: {},
+          now: Date.now(),
+        }),
+    ).rejects.toThrow();
+
+    const free = await fixture("free", [
+      "collections.read",
+      "loans.read",
+      "media.read",
+    ]);
+    for (const profile of ["valuation", "insurance", "provenance"] as const)
+      await expect(previewAs(free, profile)).rejects.toThrow(
+        /Feature requires pro tier/,
+      );
+  });
+
+  test("a valuation export interrupted by revoked access resumes from its checkpoint without counting any total twice", async () => {
+    const f = await fixture("pro", ["collections.read"]);
+    await f.t.run(async (ctx) => {
+      for (let i = 0; i < 30; i++) {
+        const collectionId = await ctx.db.insert("collections", {
+          organizationId: f.organizationId,
+          accessionNumber: `OBJ-${String(i).padStart(2, "0")}`,
+          title: `Object ${i}`,
+          status: "active",
+          catalogedBy: f.userId,
+          catalogedAt: T0,
+        });
+        await ctx.db.insert("appraisals", {
+          organizationId: f.organizationId,
+          collectionId,
+          appraisalType: "insurance",
+          currency: "EUR",
+          value: 0.1,
+          appraisalDate: T0 - DAY,
+          appraiserName: "A. Valuer",
+          createdBy: f.userId,
+          createdAt: T0,
+        });
+      }
+    });
+    vi.advanceTimersByTime(1000);
+    const jobId = await f.user.mutation(api.exports.create, {
+      organizationId: f.organizationId,
+      requestKey: "interrupted",
+      format: "jsonl",
+      source: valuation,
+    });
+    vi.advanceTimersByTime(1);
+    await f.t.finishInProgressScheduledFunctions();
+    const firstPage = await f.user.query(api.exports.status, { jobId });
+    expect(firstPage.rows).toBe(25);
+    expect(firstPage.totals).toEqual([
+      {
+        group: ["owned", "insurance"],
+        currency: "EUR",
+        total: "2.5",
+        count: 25,
+      },
+    ]);
+
+    await f.t.run((ctx) => ctx.db.delete(f.membershipId));
+    await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+    const failed = await f.t.run((ctx) => ctx.db.get(jobId));
+    expect(failed?.status).toBe("failed");
+    expect(failed?.error).toMatch(/permission revoked/);
+
+    await f.t.run(async (ctx) => {
+      const role = await ctx.db
+        .query("roles")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", f.organizationId),
+        )
+        .first();
+      if (!role) throw new Error("role missing");
+      await ctx.db.insert("userOrganizations", {
+        userId: f.userId,
+        organizationId: f.organizationId,
+        roleId: role._id,
+        joinedAt: T0,
+      });
+    });
+    await f.user.mutation(api.exports.resume, { jobId });
+    await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+    const job = await f.user.query(api.exports.status, { jobId });
+    expect(job.status).toBe("completed");
+    expect(job.rows).toBe(30);
+    expect(job.totals).toEqual([
+      { group: ["owned", "insurance"], currency: "EUR", total: "3", count: 30 },
+    ]);
+    const rows = decodeJsonl(await downloadText(f, jobId));
+    expect(new Set(rows.map((row) => row.objectId)).size).toBe(30);
+  });
+
+  test("report jobs disappear from the list and stop downloading when the requester loses the report's permission", async () => {
+    const f = await fixture("pro", ["collections.read", "loans.read"]);
+    vi.advanceTimersByTime(1000);
+    const { jobId, job } = await runExport(
+      f,
+      insuranceSchedule,
+      "csv",
+      "schedule-then-revoked",
+    );
+    expect(job.status).toBe("completed");
+    expect(
+      (
+        await f.user.query(api.exports.list, {
+          organizationId: f.organizationId,
+        })
+      ).map((listed) => listed.jobId),
+    ).toEqual([jobId]);
+    await revokePermission(f, "loans.read");
+    expect(
+      await f.user.query(api.exports.list, {
+        organizationId: f.organizationId,
+      }),
+    ).toEqual([]);
+    expect(
+      (await f.user.fetch(`/exports/download?jobId=${jobId}`)).status,
+    ).toBe(403);
+    expect(
+      (await f.user.fetch(`/exports/manifest?jobId=${jobId}`)).status,
+    ).toBe(403);
   });
 });

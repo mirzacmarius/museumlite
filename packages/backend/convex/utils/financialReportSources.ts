@@ -340,7 +340,10 @@ export async function insuranceSchedulePage(
     if (currency === null) notRecorded.push("currency");
     if (interval.start === undefined) notRecorded.push("coverageStart");
     if (interval.end === undefined) notRecorded.push("coverageEnd");
-    if (support.status === "missing" || support.status === "currency_not_recorded")
+    if (
+      support.status === "missing" ||
+      support.status === "currency_not_recorded"
+    )
       notRecorded.push(...APPRAISAL_COLUMNS);
     rows.push(
       registerRow(

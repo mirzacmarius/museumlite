@@ -1240,7 +1240,10 @@ const legacyConditionSource: EvidenceSource = async (_ctx, scope, subject) => {
   return { rows, last: null, done: true, scanned: history.length };
 };
 
-export const SUBJECT_SOURCES: Record<"custody" | "condition", EvidenceSource[]> = {
+export const SUBJECT_SOURCES: Record<
+  "custody" | "condition",
+  EvidenceSource[]
+> = {
   custody: [
     movementSource,
     loanHandoffSource,

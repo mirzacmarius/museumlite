@@ -1,17 +1,17 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { requireExportAccess } from "./utils/exportAccess";
 import {
   exportColumnType,
   registerCriteria,
   registerProfile,
 } from "./utils/exportContract";
-import { requireExportAccess } from "./utils/exportAccess";
 import { requirePermission } from "./utils/permissions";
+import { readRegisterPage } from "./utils/registerPages";
 import {
   REGISTER_COLUMNS,
   REGISTER_PROFILE_VERSIONS,
 } from "./utils/registerProfiles";
-import { readRegisterPage } from "./utils/registerPages";
 import { validateRegisterCriteria } from "./utils/registerSources";
 
 const PREVIEW_ROWS = 10;

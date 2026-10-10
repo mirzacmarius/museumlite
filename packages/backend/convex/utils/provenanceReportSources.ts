@@ -232,7 +232,10 @@ const evidenceSource: EvidenceSource = async (
           evidenceKind: evidence.kind,
           ...(evidence.kind === "citation"
             ? { citation: evidence.citation, url: evidence.url ?? null }
-            : { mediaId: evidence.mediaId, fileName: evidence.fileNameSnapshot }),
+            : {
+                mediaId: evidence.mediaId,
+                fileName: evidence.fileNameSnapshot,
+              }),
           excerpt: evidence.excerpt ?? null,
           locator: evidence.locator ?? null,
           retractedAt: retracted ? (evidence.retractedAt ?? null) : null,
@@ -255,11 +258,7 @@ const evidenceSource: EvidenceSource = async (
  * record (ADR 0006). They are undated and belong to whoever holds the
  * object, so they are reported for held objects only.
  */
-const legacyProvenanceSource: EvidenceSource = async (
-  _ctx,
-  scope,
-  subject,
-) => {
+const legacyProvenanceSource: EvidenceSource = async (_ctx, scope, subject) => {
   const object = subject.object;
   const rows: RegisterRow[] = [];
   const legacyRow = (values: RegisterRow) => {
