@@ -135,3 +135,35 @@ test("a save that failed for no field's reason focuses the notice that explains 
     expect(document.activeElement?.contains(notice)).toBe(true),
   );
 });
+
+test("focus is not pulled back while staff work on a refused save", async () => {
+  const failure: RecordSaveFailure = {
+    kind: "invalid",
+    message: "Some fields need attention.",
+    fields: ["endDate"],
+  };
+  const fieldErrors = {
+    endDate: "The end date cannot be before the start date.",
+  };
+  const { rerender } = await renderOnPage(
+    <LoanForm failure={failure} fieldErrors={fieldErrors} />,
+  );
+  await waitFor(() =>
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "End date" }),
+    ),
+  );
+  const insurance = screen.getByRole("textbox", { name: "Insurance value" });
+  insurance.focus();
+
+  // The form renders again (staff type) with a new goToField each time.
+  rerender(
+    <LoanForm
+      failure={failure}
+      fieldErrors={fieldErrors}
+      onGoToField={() => {}}
+    />,
+  );
+
+  expect(document.activeElement).toBe(insurance);
+});

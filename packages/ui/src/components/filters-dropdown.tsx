@@ -2,6 +2,7 @@
 
 import { Check, ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import * as React from "react";
+import { useFocusOnLeave } from "../hooks/use-focus-on-leave";
 import { formatUiMessage, useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
@@ -280,14 +281,7 @@ export function AppliedFiltersBar({
     const chips = bar.querySelectorAll<HTMLElement>(CHIP_SELECTOR);
     (chips[removedIndex] ?? chips[removedIndex - 1])?.focus();
   });
-  // Runs before the bar leaves the page, while one of its buttons has focus.
-  React.useLayoutEffect(() => {
-    const bar = barRef.current;
-    return () => {
-      if (bar?.contains(document.activeElement))
-        returnFocusRef?.current?.focus();
-    };
-  }, [returnFocusRef]);
+  useFocusOnLeave(barRef, returnFocusRef);
 
   return (
     <AppliedFiltersBarContext.Provider value={context}>

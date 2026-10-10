@@ -2639,7 +2639,8 @@ export const bulkUpdateLocation = mutation({
       )
     )
       throw new Error("Collections must belong to one organization");
-    await requirePermission(ctx, organizationId, "collections.update");
+    // Moving objects needs the same permission one at a time or in bulk.
+    await requirePermission(ctx, organizationId, "locations.update");
     await requireUsableLocation(ctx, organizationId, args.locationId);
     for (const collection of collections) {
       if (collection)

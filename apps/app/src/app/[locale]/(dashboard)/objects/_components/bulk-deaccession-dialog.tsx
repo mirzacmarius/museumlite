@@ -25,7 +25,7 @@ interface BulkDeaccessionDialogProps {
   selectedIds: Id<"collections">[];
   onSuccess: () => void;
   /** Takes focus on close when the selection bar that opened it is gone. */
-  returnFocusRef: RefObject<HTMLElement | null>;
+  fallbackFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function BulkDeaccessionDialog({
@@ -33,7 +33,7 @@ export function BulkDeaccessionDialog({
   onOpenChange,
   selectedIds,
   onSuccess,
-  returnFocusRef,
+  fallbackFocusRef,
 }: BulkDeaccessionDialogProps) {
   const t = useScopedI18n("common.toast");
   const tDialog = useScopedI18n("objects.bulkDialogs.deaccession");
@@ -91,7 +91,7 @@ export function BulkDeaccessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent fallbackFocusRef={returnFocusRef}>
+      <DialogContent fallbackFocusRef={fallbackFocusRef}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="size-5 text-amber-500" />

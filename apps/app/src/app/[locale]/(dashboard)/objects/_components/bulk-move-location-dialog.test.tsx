@@ -38,7 +38,7 @@ function MoveSelected({ onSuccess = () => {} }: { onSuccess?: () => void }) {
         selectedIds={["o1", "o2"] as Id<"collections">[]}
         organizationId={"org" as Id<"organizations">}
         onSuccess={onSuccess}
-        returnFocusRef={listRef}
+        fallbackFocusRef={listRef}
       />
     </>
   );

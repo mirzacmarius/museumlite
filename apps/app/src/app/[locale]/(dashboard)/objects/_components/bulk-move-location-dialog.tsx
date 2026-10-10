@@ -33,7 +33,7 @@ interface BulkMoveLocationDialogProps {
   organizationId: Id<"organizations">;
   onSuccess: () => void;
   /** Takes focus on close when the selection bar that opened it is gone. */
-  returnFocusRef: RefObject<HTMLElement | null>;
+  fallbackFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function BulkMoveLocationDialog({
@@ -42,7 +42,7 @@ export function BulkMoveLocationDialog({
   selectedIds,
   organizationId,
   onSuccess,
-  returnFocusRef,
+  fallbackFocusRef,
 }: BulkMoveLocationDialogProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("common.toast");
@@ -113,7 +113,7 @@ export function BulkMoveLocationDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent fallbackFocusRef={returnFocusRef}>
+      <DialogContent fallbackFocusRef={fallbackFocusRef}>
         <DialogHeader>
           <DialogTitle>{tDialog("title")}</DialogTitle>
           <DialogDescription>

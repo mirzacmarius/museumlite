@@ -2,13 +2,8 @@
 
 import { Button } from "@v1/ui/button";
 import { X } from "lucide-react";
-import {
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-} from "react";
+import { useFocusOnLeave } from "@v1/ui/hooks";
+import { type ReactNode, type RefObject, useEffect, useRef } from "react";
 
 interface SelectionActionBarProps {
   /** Names the bar, e.g. "Selected loans". */
@@ -71,14 +66,7 @@ function SelectionActionPanel({
   children,
 }: Omit<SelectionActionBarProps, "count">) {
   const panelRef = useRef<HTMLElement>(null);
-  // Runs before the panel leaves the page, while its button still has focus.
-  useLayoutEffect(() => {
-    const panel = panelRef.current;
-    return () => {
-      if (panel?.contains(document.activeElement))
-        returnFocusRef.current?.focus();
-    };
-  }, [returnFocusRef]);
+  useFocusOnLeave(panelRef, returnFocusRef);
   // The bar floats over the list; a row that takes focus under it is
   // scrolled up into sight, once the browser's own focus scrolling is done.
   useEffect(() => {

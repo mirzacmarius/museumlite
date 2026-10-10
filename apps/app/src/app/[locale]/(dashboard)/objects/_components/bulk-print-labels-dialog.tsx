@@ -27,7 +27,7 @@ interface BulkPrintLabelsDialogProps {
   selectedIds: Id<"collections">[];
   onSuccess: () => void;
   /** Takes focus on close when the selection bar that opened it is gone. */
-  returnFocusRef: RefObject<HTMLElement | null>;
+  fallbackFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function BulkPrintLabelsDialog({
@@ -35,7 +35,7 @@ export function BulkPrintLabelsDialog({
   onOpenChange,
   selectedIds,
   onSuccess,
-  returnFocusRef,
+  fallbackFocusRef,
 }: BulkPrintLabelsDialogProps) {
   const t = useScopedI18n("objects.bulkDialogs.printLabels");
   const tQrLabel = useScopedI18n("objects.qrLabel");
@@ -84,7 +84,7 @@ export function BulkPrintLabelsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        fallbackFocusRef={returnFocusRef}
+        fallbackFocusRef={fallbackFocusRef}
         className="flex flex-col max-w-6xl w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0"
       >
         <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">

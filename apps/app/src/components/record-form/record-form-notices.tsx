@@ -4,7 +4,7 @@ import { Button } from "@v1/ui/button";
 import { FormMessage } from "@v1/ui/form-message";
 import { cn } from "@v1/ui/utils";
 import { AlertTriangle, History, Info, RotateCcw } from "lucide-react";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useEffectEvent, useRef } from "react";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import type { RecordSaveFailure } from "@/lib/record-form";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -102,9 +102,10 @@ export function RecordFormNotices({
   // Otherwise the save, usually started far below these notices, brings its
   // outcome into view and focus, like an error summary.
   const noticesRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  // Only a new failure moves focus, never a later render of the form.
+  const showFailure = useEffectEvent((failure: RecordSaveFailure) => {
     const notices = noticesRef.current;
-    if (!failure || !notices) return;
+    if (!notices) return;
     const fields =
       failure.kind === "invalid"
         ? failure.fields
@@ -126,7 +127,10 @@ export function RecordFormNotices({
     }
     notices.scrollIntoView({ block: "nearest" });
     notices.focus({ preventScroll: true });
-  }, [failure, onGoToField]);
+  });
+  useEffect(() => {
+    if (failure) showFailure(failure);
+  }, [failure]);
   const reviewActions = (
     <>
       <Button type="button" size="sm" onClick={session.applyLatest}>

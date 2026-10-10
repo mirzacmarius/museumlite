@@ -86,7 +86,7 @@ export function CollectionFiltersAndList({
         selectedIds={Array.from(catalog.selectedIds)}
         organizationId={organizationId}
         onSuccess={catalog.handleBulkSuccess}
-        returnFocusRef={listRef}
+        fallbackFocusRef={listRef}
       />
 
       <BulkDeaccessionDialog
@@ -94,7 +94,7 @@ export function CollectionFiltersAndList({
         onOpenChange={catalog.setShowBulkDeaccessionDialog}
         selectedIds={Array.from(catalog.selectedIds)}
         onSuccess={catalog.handleBulkSuccess}
-        returnFocusRef={listRef}
+        fallbackFocusRef={listRef}
       />
 
       <BulkAddToGroupDialog
@@ -103,7 +103,7 @@ export function CollectionFiltersAndList({
         selectedIds={Array.from(catalog.selectedIds)}
         organizationId={organizationId}
         onSuccess={catalog.handleBulkSuccess}
-        returnFocusRef={listRef}
+        fallbackFocusRef={listRef}
       />
 
       <BulkPrintLabelsDialog
@@ -111,7 +111,7 @@ export function CollectionFiltersAndList({
         onOpenChange={catalog.setShowBulkPrintLabelsDialog}
         selectedIds={Array.from(catalog.selectedIds)}
         onSuccess={catalog.handleBulkSuccess}
-        returnFocusRef={listRef}
+        fallbackFocusRef={listRef}
       />
 
       {catalog.activeCollectionGroup ? (
