@@ -254,6 +254,47 @@ export function coverageState(
   return "in_force";
 }
 
+/**
+ * The policy's status at a past or present time. Cancellation and suspension
+ * have no recorded time, so they apply as recorded now; whether the policy
+ * had started or expired is decided by its period, whatever status the daily
+ * reconciliation has recorded since.
+ */
+export function policyStatusAsOf(
+  policy: PolicyDates,
+  asOf: number,
+): Doc<"insurancePolicies">["status"] {
+  if (policy.status === "cancelled" || policy.status === "suspended") {
+    return policy.status;
+  }
+  if (asOf > policy.expirationDate) return "expired";
+  if (asOf < policy.effectiveDate) return "pending";
+  return "active";
+}
+
+/**
+ * The coverage's state at a past or present time, from its interval and its
+ * policy's status at that time. Removal has no recorded time, so a removed
+ * coverage is reported as removed at any time.
+ */
+export function coverageStateAsOf(
+  coverage: Doc<"insuranceCoverages">,
+  policy: Doc<"insurancePolicies"> | null,
+  asOf: number,
+): CoverageState {
+  if (coverage.status === "removed") return "removed";
+  if (coverageTarget(coverage) === null) return "needs_review";
+  if (!policy) return "policy_inactive";
+  const policyStatus = policyStatusAsOf(policy, asOf);
+  if (policyStatus === "cancelled" || policyStatus === "suspended") {
+    return "policy_inactive";
+  }
+  const { start, end } = coverageInterval(coverage, policy);
+  if (policyStatus === "expired" || asOf > end) return "expired";
+  if (policyStatus === "pending" || asOf < start) return "not_started";
+  return "in_force";
+}
+
 /** Objects read per covered loan or exhibition when deriving covered objects. */
 export const MAX_TARGET_MEMBERS = 500;
 

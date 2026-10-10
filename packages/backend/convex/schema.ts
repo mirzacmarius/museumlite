@@ -23,6 +23,7 @@ import {
   exportFormat,
   exportSource,
   exportStatus,
+  registerTotalsValidator,
 } from "./utils/exportContract";
 import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
 import {
@@ -4853,6 +4854,8 @@ export default defineSchema({
     expiresAt: v.number(),
     storageId: v.optional(v.id("_storage")),
     sha256: v.optional(v.string()),
+    // Report profiles with monetary columns: totals of the committed rows.
+    totals: v.optional(registerTotalsValidator),
   })
     .index("by_creatorId_and_requestKey", ["creatorId", "requestKey"])
     .index("by_organizationId_and_creatorId", ["organizationId", "creatorId"])
