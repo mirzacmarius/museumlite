@@ -99,12 +99,26 @@ _Avoid_: Feature (when the combination is meant)
 ### Work
 
 **Case**:
-A workflow record with its own approval history, such as a loan, transit record, exhibition, conservation treatment, accession, deaccession, move request or library acquisition request.
+A workflow record with its own approval history, such as a loan, transit record, exhibition, conservation treatment, accession, deaccession, move request, library acquisition request or documentation Finding.
 _Avoid_: Ticket, request (as a general term)
 
 **Task**:
 A unit of work waiting on a staff member, such as an installation task or an approval step on a Case.
 _Avoid_: To-do, job
+
+### Documentation quality
+
+**Documentation profile**:
+An institution's rule for the documentation Objects of one type need at given stages, such as a photograph and an accepted condition assessment for paintings in the collection.
+_Avoid_: Checklist, template
+
+**Quality check**:
+A bounded, resumable run that compares every collection record with the active Documentation profiles and the built-in checks. It records Findings and never changes a record.
+_Avoid_: Audit, scan
+
+**Finding**:
+A documentation exception a Quality check detected (a duplicate identifier, missing documentation, an uncertain Party link or a broken reference), kept with the values the check found. It stays open until a later check no longer detects it or a reviewer accepts it as an exception with a reason. Repair work on it is a Task with the Finding as its Case.
+_Avoid_: Issue, error, warning
 
 ### Notifications
 
