@@ -47,6 +47,32 @@ export async function findIdentifierMatches(
   };
 }
 
+/**
+ * Records that a record's historical duplicate identifier was reviewed and
+ * kept. The record and its identifier are never changed.
+ */
+export async function recordIdentifierConflictReview(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    register: IdentifierRegister;
+    record: Doc<"collections"> | Doc<"accessions">;
+    note: string;
+    userId: Id<"users">;
+  },
+) {
+  await ctx.db.insert("identifierConflictReviews", {
+    organizationId: args.organizationId,
+    register: args.register,
+    recordId: args.record._id,
+    note: args.note,
+    identifier: args.record.accessionNumber,
+    normalizedIdentifier: normalizeIdentifier(args.record.accessionNumber),
+    reviewedBy: args.userId,
+    reviewedAt: Date.now(),
+  });
+}
+
 export async function ensureIdentifierAvailable(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,

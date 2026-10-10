@@ -25,9 +25,11 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { useReducer, useState, useSyncExternalStore } from "react";
+import { useReducer, useState } from "react";
 import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
+import { useClientTimeZone } from "@/hooks/use-client-date-format";
+import { formatScheduleWeekday, SCHEDULE_WEEKDAYS } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface ScheduledReportsCardProps {
@@ -43,7 +45,6 @@ type ReportRun = FunctionReturnType<
 type ScheduleOption = "daily" | "weekly" | "monthly" | "quarterly";
 type OutputState = "generated" | "stored" | "unavailable";
 
-const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 const DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   year: "numeric",
   month: "short",
@@ -52,21 +53,6 @@ const DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   hour: "2-digit",
   minute: "2-digit",
 };
-const WEEKDAY_FORMATTERS: Record<
-  ReturnType<typeof useCurrentLocale>,
-  Intl.DateTimeFormat
-> = {
-  en: new Intl.DateTimeFormat("en", { weekday: "long", timeZone: "UTC" }),
-  fr: new Intl.DateTimeFormat("fr", { weekday: "long", timeZone: "UTC" }),
-  es: new Intl.DateTimeFormat("es", { weekday: "long", timeZone: "UTC" }),
-  no: new Intl.DateTimeFormat("no", { weekday: "long", timeZone: "UTC" }),
-  ro: new Intl.DateTimeFormat("ro", { weekday: "long", timeZone: "UTC" }),
-};
-const LOCAL_TIMEZONE_FORMATTER = new Intl.DateTimeFormat();
-const subscribeTimezone = () => () => {};
-const getClientTimezone = () =>
-  LOCAL_TIMEZONE_FORMATTER.resolvedOptions().timeZone || "UTC";
-const getServerTimezone = () => "UTC";
 
 export function ScheduledReportsCard({
   organizationId,
@@ -142,13 +128,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
 function ScheduledReportForm({ organizationId }: ScheduledReportsCardProps) {
   const t = useScopedI18n("analytics.scheduledReports");
   const locale = useCurrentLocale();
-  const weekdayFormatter = WEEKDAY_FORMATTERS[locale];
   const [state, dispatch] = useReducer(formReducer, INITIAL_FORM_STATE);
-  const timezone = useSyncExternalStore(
-    subscribeTimezone,
-    getClientTimezone,
-    getServerTimezone,
-  );
+  const timezone = useClientTimeZone();
   const createScheduledReport = useMutation(
     api.reporting.createScheduledReport,
   );
@@ -265,9 +246,9 @@ function ScheduledReportForm({ organizationId }: ScheduledReportsCardProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {WEEKDAYS.map((day) => (
+                {SCHEDULE_WEEKDAYS.map((day) => (
                   <SelectItem key={day} value={String(day)}>
-                    {weekdayFormatter.format(Date.UTC(2023, 0, 1 + day))}
+                    {formatScheduleWeekday(day, locale)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -345,8 +326,6 @@ function ScheduledReportList({
   reports: ScheduledReport[] | undefined;
 }) {
   const t = useScopedI18n("analytics.scheduledReports");
-  const locale = useCurrentLocale();
-  const weekdayFormatter = WEEKDAY_FORMATTERS[locale];
 
   if (reports === undefined) return <LoadingMessage message={t("loading")} />;
   if (reports.length === 0)
@@ -355,23 +334,13 @@ function ScheduledReportList({
   return (
     <ul className="space-y-3">
       {reports.map((report) => (
-        <ScheduledReportRow
-          key={report._id}
-          report={report}
-          weekdayFormatter={weekdayFormatter}
-        />
+        <ScheduledReportRow key={report._id} report={report} />
       ))}
     </ul>
   );
 }
 
-function ScheduledReportRow({
-  report,
-  weekdayFormatter,
-}: {
-  report: ScheduledReport;
-  weekdayFormatter: Intl.DateTimeFormat;
-}) {
+function ScheduledReportRow({ report }: { report: ScheduledReport }) {
   const t = useScopedI18n("analytics.scheduledReports");
   const locale = useCurrentLocale();
   const [isBusy, setIsBusy] = useState(false);
@@ -409,7 +378,7 @@ function ScheduledReportRow({
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          {describeSchedule(report, weekdayFormatter, t)}
+          {describeSchedule(report, locale, t)}
           {report.isActive && report.nextRunAt != null && (
             <>
               {" · "}
@@ -678,7 +647,7 @@ function LoadingMessage({ message }: { message: string }) {
 
 function describeSchedule(
   report: ScheduledReport,
-  weekdayFormatter: Intl.DateTimeFormat,
+  locale: string,
   t: ReturnType<typeof useScopedI18n>,
 ) {
   const at = report.scheduledTime ?? "09:00";
@@ -688,9 +657,7 @@ function describeSchedule(
       return t("summaryDaily", { time: at, timezone });
     case "weekly":
       return t("summaryWeekly", {
-        day: weekdayFormatter.format(
-          Date.UTC(2023, 0, 1 + (report.scheduledDay ?? 1)),
-        ),
+        day: formatScheduleWeekday(report.scheduledDay ?? 1, locale),
         time: at,
         timezone,
       });

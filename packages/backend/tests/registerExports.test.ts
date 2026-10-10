@@ -1,224 +1,23 @@
-import type { FunctionArgs } from "convex/server";
-import { ConvexError } from "convex/values";
-import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import schema from "../convex/schema";
-import { modules } from "./testSetup";
-
-type Source = FunctionArgs<typeof api.exports.create>["source"];
-type Cell = string | number | boolean | null;
-interface Column {
-  name: string;
-  type: string;
-}
-
-const T0 = Date.UTC(2026, 0, 1);
-
-async function fixture(
-  tier: "free" | "pro" | "enterprise" = "pro",
-  permissions = ["collections.read", "locations.read", "loans.read"],
-) {
-  vi.useFakeTimers();
-  vi.setSystemTime(T0);
-  const t = convexTest(schema, modules);
-  const ids = await t.run(async (ctx) => {
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Museum",
-      slug: "registers",
-      type: "museum",
-      subscriptionTier: tier,
-    });
-    const otherOrganizationId = await ctx.db.insert("organizations", {
-      name: "Other Museum",
-      slug: "other-registers",
-      type: "museum",
-      subscriptionTier: "pro",
-    });
-    const userId = await ctx.db.insert("users", {
-      email: "registrar@example.test",
-    });
-    const roleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "Registrar",
-      isSystemRole: false,
-    });
-    for (const name of permissions) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name,
-        category: "collections",
-      });
-      await ctx.db.insert("rolePermissions", { roleId, permissionId });
-    }
-    const membershipId = await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId,
-      roleId,
-      joinedAt: T0,
-    });
-    return { organizationId, otherOrganizationId, userId, membershipId };
-  });
-  return {
-    t,
-    ...ids,
-    user: t.withIdentity({ subject: `${ids.userId}|test` }),
-  };
-}
-type Fixture = Awaited<ReturnType<typeof fixture>>;
+import {
+  decodeJsonl,
+  decodeRegisterCsv,
+  downloadManifest,
+  downloadText,
+  errorCodeOf,
+  fixture,
+  insertObject,
+  runExport,
+  type Source,
+  T0,
+  withoutCapture,
+} from "./registerExportHarness";
 
 afterEach(() => {
   vi.useRealTimers();
 });
-
-async function insertObject(
-  f: Fixture,
-  fields: {
-    accessionNumber: string;
-    title: string;
-    organizationId?: Id<"organizations">;
-    condition?: string;
-    conditionHistory?: Array<{
-      condition: string;
-      changedAt: number;
-      changedBy: Id<"users">;
-      note?: string;
-    }>;
-    accessionNumberHistory?: Array<{
-      number: string;
-      validFrom: number;
-      validTo?: number;
-    }>;
-  },
-) {
-  return await f.t.run((ctx) =>
-    ctx.db.insert("collections", {
-      organizationId: f.organizationId,
-      status: "active",
-      catalogedBy: f.userId,
-      catalogedAt: T0,
-      ...fields,
-    }),
-  );
-}
-
-async function runExport(
-  f: Fixture,
-  source: Source,
-  format: "csv" | "jsonl",
-  requestKey: string,
-) {
-  const jobId = await f.user.mutation(api.exports.create, {
-    organizationId: f.organizationId,
-    requestKey,
-    format,
-    source,
-  });
-  await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
-  const job = await f.user.query(api.exports.status, { jobId });
-  return { jobId, job };
-}
-
-async function downloadText(f: Fixture, jobId: Id<"exportJobs">) {
-  const response = await f.user.fetch(`/exports/download?jobId=${jobId}`);
-  expect(response.status).toBe(200);
-  return await response.text();
-}
-
-async function downloadManifest(f: Fixture, jobId: Id<"exportJobs">) {
-  const response = await f.user.fetch(`/exports/manifest?jobId=${jobId}`);
-  expect(response.status).toBe(200);
-  return (await response.json()) as {
-    columns: Column[];
-    generator: Record<string, unknown>;
-    criteria: Record<string, unknown>;
-    effectiveAsOf: number;
-    organizationId: string;
-    requestedBy: string;
-    compatibility: string;
-  };
-}
-
-/** RFC 4180 reader that keeps whether each field was quoted. */
-function readCsv(text: string) {
-  const records: Array<Array<{ raw: string; quoted: boolean }>> = [];
-  let record: Array<{ raw: string; quoted: boolean }> = [];
-  let raw = "";
-  let quoted = false;
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (inQuotes) {
-      if (char === '"' && text[i + 1] === '"') {
-        raw += '"';
-        i++;
-      } else if (char === '"') inQuotes = false;
-      else raw += char;
-    } else if (char === '"') {
-      inQuotes = true;
-      quoted = true;
-    } else if (char === ",") {
-      record.push({ raw, quoted });
-      raw = "";
-      quoted = false;
-    } else if (char === "\r" && text[i + 1] === "\n") {
-      record.push({ raw, quoted });
-      records.push(record);
-      record = [];
-      raw = "";
-      quoted = false;
-      i++;
-    } else raw += char;
-  }
-  return records;
-}
-
-/** Decodes a register CSV using the manifest column schema. */
-function decodeRegisterCsv(text: string, columns: Column[]) {
-  const [header, ...records] = readCsv(text);
-  expect(header?.map((cell) => cell.raw)).toEqual(columns.map((c) => c.name));
-  return records.map((record) => {
-    const row: Record<string, Cell> = {};
-    columns.forEach((column, index) => {
-      const cell = record[index];
-      if (!cell) throw new Error("Missing CSV cell");
-      if (!cell.quoted && cell.raw === "") row[column.name] = null;
-      else if (column.type === "text" || column.type === "id")
-        row[column.name] = cell.raw.startsWith("'")
-          ? cell.raw.slice(1)
-          : cell.raw;
-      else if (column.type === "boolean")
-        row[column.name] = cell.raw === "true";
-      else row[column.name] = Number(cell.raw);
-    });
-    return row;
-  });
-}
-
-function decodeJsonl(text: string) {
-  return text
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line) as Record<string, Cell>);
-}
-
-async function errorCodeOf(promise: Promise<unknown>) {
-  try {
-    await promise;
-  } catch (error) {
-    if (!(error instanceof ConvexError)) throw error;
-    const data: unknown =
-      typeof error.data === "string" ? JSON.parse(error.data) : error.data;
-    return typeof data === "object" && data !== null && "code" in data
-      ? data.code
-      : undefined;
-  }
-  throw new Error("Expected the request to be refused");
-}
-
-function withoutCapture(rows: Array<Record<string, Cell>>) {
-  return rows.map(({ capturedAt: _capturedAt, ...rest }) => rest);
-}
 
 describe("accession register", () => {
   test("CSV and JSONL round-trip typed accession rows with explicit legacy and missing markers", async () => {
@@ -400,6 +199,7 @@ describe("accession register", () => {
       organizationId: f.organizationId,
       profile: "accession",
       criteria: { asOf: T0 + 500 },
+      now: Date.now(),
     });
     expect(preview.rows[0]).toMatchObject({
       objectAccessionNumber: "N3",
@@ -794,6 +594,7 @@ describe("custody register", () => {
       organizationId: f.organizationId,
       profile: "custody",
       criteria: { fromDate: t2 },
+      now: Date.now(),
     });
     expect(current.rows.map((row) => row.eventId)).toEqual([
       guardedMove,
@@ -811,6 +612,7 @@ describe("custody register", () => {
       organizationId: f.organizationId,
       profile: "custody",
       criteria: { objectId: departed },
+      now: Date.now(),
     });
     expect(departedOnly.rows.map((row) => row.eventId)).toEqual([
       departedEarly,
@@ -949,6 +751,7 @@ describe("condition register", () => {
       organizationId: f.organizationId,
       profile: "condition",
       criteria: { asOf: T0 + 500 },
+      now: Date.now(),
     });
     expect(beforeAcceptance.rows.map((row) => row.eventType)).toEqual([
       "loan_condition_report",
@@ -959,6 +762,7 @@ describe("condition register", () => {
       organizationId: f.organizationId,
       profile: "condition",
       criteria: { fromDate: T0 - 10000, toDate: T0 },
+      now: Date.now(),
     });
     expect(dated.rows.map((row) => row.eventType)).toEqual([
       "loan_condition_report",
@@ -984,6 +788,7 @@ describe("register authorization and recovery", () => {
       organizationId: f.organizationId,
       profile: "accession" as const,
       criteria: {},
+      now: T0,
     };
     await expect(
       asOutsider.query(api.registers.preview, previewArgs),
@@ -1036,6 +841,7 @@ describe("register authorization and recovery", () => {
       organizationId: f.organizationId,
       profile: "accession",
       criteria: {},
+      now: Date.now(),
     });
     expect(accession.rows).toEqual([]);
     for (const profile of ["custody", "condition"] as const) {
@@ -1044,6 +850,7 @@ describe("register authorization and recovery", () => {
           organizationId: f.organizationId,
           profile,
           criteria: {},
+          now: Date.now(),
         }),
       ).rejects.toThrow(/Permission denied/);
       await expect(
@@ -1126,6 +933,7 @@ describe("register authorization and recovery", () => {
         organizationId: f.organizationId,
         profile: "custody",
         criteria: { objectId: foreignObject },
+        now: Date.now(),
       }),
     ).rejects.toThrow(/Filter outside organization/);
     for (const [requestKey, criteria, profile] of [
@@ -1277,10 +1085,12 @@ describe("register authorization and recovery", () => {
           status: "pending",
         });
     });
+    vi.advanceTimersByTime(1000);
     const preview = await f.user.query(api.registers.preview, {
       organizationId: f.organizationId,
       profile: "accession",
       criteria: { status: "pending" },
+      now: Date.now(),
     });
     expect(preview.profileVersion).toBe(2);
     expect(preview.columns.slice(0, 3)).toEqual([

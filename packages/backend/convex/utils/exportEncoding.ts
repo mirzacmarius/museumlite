@@ -8,8 +8,9 @@ import {
   REGISTER_COLUMNS,
   REGISTER_CONSISTENCY,
   REGISTER_GENERATOR,
-  REGISTER_PROFILE_VERSION,
+  REGISTER_PROFILE_VERSIONS,
 } from "./registerProfiles";
+import { manifestTotals, type RegisterTotals } from "./registerTotals";
 
 export interface ExportColumn {
   name: string;
@@ -180,16 +181,18 @@ export function manifest(job: {
   sha256?: string;
   expiresAt: number;
   failedAttempts?: number;
+  totals?: RegisterTotals;
 }) {
-  const { organizationId, creatorId, ...frozen } = job;
+  const { organizationId, creatorId, totals, ...frozen } = job;
   if (job.source.kind === "register") {
     const { profile, criteria } = job.source;
+    const totalsSection = manifestTotals(profile, totals);
     return {
       ...frozen,
       generator: {
         name: REGISTER_GENERATOR,
         profile: `register.${profile}`,
-        profileVersion: REGISTER_PROFILE_VERSION,
+        profileVersion: REGISTER_PROFILE_VERSIONS[profile],
         exportSchemaVersion: job.schemaVersion,
       },
       organizationId,
@@ -205,6 +208,7 @@ export function manifest(job: {
       countPolicy:
         "rows is emitted register rows; scanned counts source records examined (register records, objects and evidence records), not rows. Completion requires an exhausted cursor and equal chunk/emitted counts; failed jobs expose no artifact.",
       maxArtifactBytes: MAX_EXPORT_BYTES,
+      ...(totalsSection ? { totals: totalsSection } : {}),
     };
   }
   return {

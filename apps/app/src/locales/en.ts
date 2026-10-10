@@ -202,6 +202,7 @@ export default {
       data: "Data Import/Export",
       metrics: "Metrics health",
       loanAgreements: "Loan agreements",
+      preparationRecipes: "Preparation recipes",
     },
     roles: {
       title: "Role Management",
@@ -416,7 +417,7 @@ export default {
         statusActive: "Active",
         statusRevoked: "Revoked",
         created: "Created",
-        lastSeen: "Last seen",
+        lastRequest: "Last request",
         noRequests: "No authenticated requests",
         lastError: "Last error",
         rotateCredential: "Rotate credential",
@@ -433,6 +434,9 @@ export default {
         probeIdPlaceholder: "probe-1",
         location: "Location",
         bindProbe: "Bind probe",
+        noProbeReadings: "no readings yet",
+        lastReadingObserved: "last reading observed",
+        lastReadingReceived: "received",
       },
     },
     tabs: {
@@ -2133,6 +2137,148 @@ export default {
       overCapacity: "Over capacity",
       openToPublic: "Open to Public",
       restrictedAccess: "Restricted Access",
+      enteredValues: "Entered values, not a reading",
+      readingObserved: "Observed {time}",
+      readingSilent: "No recent reading: observed {time}",
+    },
+    environment: {
+      title: "Environment",
+      editThresholds: "Edit thresholds",
+      conditions: {
+        out_of_range: "Out of range",
+        silent: "Silent probe",
+        awaiting_readings: "Waiting for readings",
+        no_thresholds: "Not judged",
+        in_range: "In range",
+        no_devices: "No device reports here",
+      },
+      conditionDetails: {
+        out_of_range:
+          "Readings are outside the thresholds. An alert episode tracks this breach until every probe that showed it is back within them.",
+        silent:
+          "A probe has sent no reading for over {hours} hours, so the conditions here are unknown.",
+        awaiting_readings: "A bound probe has not sent its first reading yet.",
+        no_thresholds:
+          "Readings arrive, but nothing judges them until thresholds are set.",
+        in_range:
+          "Every probe reported within the thresholds in the last {hours} hours.",
+        no_devices:
+          "No probe of an active device is bound to this location. Staff readings below are spot checks.",
+      },
+      policy:
+        "An episode escalates when readings stay outside the thresholds for an hour, and again after a day. A probe recovers after {minutes} minutes of readings within them and turns silent after {hours} hours without a reading.",
+      measures: {
+        temperature: "Temperature",
+        humidity: "Relative humidity",
+        lightLevel: "Light",
+        uvLevel: "UV",
+      },
+      notSet: "Not set",
+      openEpisode: "Open alert episode",
+      outOfRangeSince: "Outside the thresholds since {time} ({duration})",
+      resolve: "Resolve",
+      viewEvidence: "View evidence",
+      probes: "Probes",
+      noProbes: "No probe is bound to this location.",
+      probeLabel: "{device} · {probe}",
+      unknownDevice: "Unknown device",
+      probeStatus: {
+        reporting: "Reporting",
+        silent: "Silent",
+        awaiting_first_reading: "Awaiting first reading",
+        revoked: "Device revoked",
+      },
+      observedAt: "Observed {time}",
+      receivedAt: "received {time}",
+      noReadingYet: "No reading yet",
+      deviceLastRequest: "Device's last request {time}",
+      deviceNoRequests: "No requests from this device yet",
+      deviceLastError: "Device error: {error}",
+      recentEpisodes: "Recent episodes",
+      noEpisodes: "No alert episodes yet.",
+      recentReadings: "Latest readings",
+      noReadings: "No readings yet.",
+      outOfRange: "Out of range",
+      late: "Late",
+      staffReading: "Staff reading",
+      staffReadingBy: "Staff reading by {name}",
+      staffReadings: "Staff readings",
+      importedReading: "Imported reading",
+      unknownStaff: "a former member",
+      episodeStatus: {
+        open: "Open",
+        recovered: "Recovered",
+        resolved: "Resolved",
+      },
+      escalationLevel: {
+        hour: "over an hour",
+        day: "over a day",
+      },
+      startedAt: "Started",
+      lastReading: "Latest reading",
+      endedAt: "Ended",
+      lasted: "Lasted {duration}",
+      openFor: "Open for {duration}",
+      readings: "Readings",
+      readingCounts:
+        "{count} counted, {outOfRange} outside the thresholds, {late} late",
+      breaches: "Breached limits",
+      breach: {
+        above: "{measure} above the {limit} maximum",
+        below: "{measure} below the {limit} minimum",
+      },
+      extreme: {
+        above: "highest {value}",
+        below: "lowest {value}",
+      },
+      sourcesHeading: "Recovery",
+      sourceRecovered: "Recovered {time}",
+      sourceRecovering: "Within the thresholds since {time}",
+      sourceSilent: "Silent, last reading {time}",
+      sourceOutOfRange: "Outside the thresholds, last reading {time}",
+      resolvedBy: "Resolved by {name} on {time}",
+      thresholdsAtOpening:
+        "Thresholds when the episode opened: temperature {temperature}, relative humidity {humidity}.",
+      backToLocation: "Back to {location}",
+      episodeTitle: "Alert episode: {location}",
+      evidenceHeading: "Readings in this episode",
+      evidenceDescription:
+        "Every reading the episode counted, newest observation first. Late readings arrived after a later one from the same probe; they count as evidence but never change the episode.",
+      loadMoreReadings: "Load more readings",
+      thresholdsDialog: {
+        title: "Environmental thresholds",
+        description:
+          "Readings outside these limits open an alert episode. New limits apply to later readings.",
+        fields: {
+          temperatureMin: "Minimum temperature (°C)",
+          temperatureMax: "Maximum temperature (°C)",
+          humidityMin: "Minimum relative humidity (%)",
+          humidityMax: "Maximum relative humidity (%)",
+        },
+        hint: "Leave a field empty to set no limit. Temperatures go from -100 to 100 °C and humidity from 0 to 100 %.",
+        invalid:
+          "Enter possible readings, with each minimum below its maximum.",
+        failed: "Could not save the thresholds.",
+        cancel: "Cancel",
+        save: "Save thresholds",
+      },
+      resolveDialog: {
+        title: "Resolve alert episode",
+        description:
+          "Close this episode when readings cannot show recovery, for example after its probe was moved or retired. If readings are still outside the thresholds, the next one opens a new episode.",
+        note: "Note",
+        notePlaceholder: "What was checked and why the episode can close",
+        noteRequired: "Write a note of up to 1,000 characters.",
+        failed: "Could not resolve the episode.",
+        cancel: "Cancel",
+        submit: "Resolve episode",
+      },
+      errors: {
+        thresholdsInvalid:
+          "Enter possible readings, with each minimum below its maximum.",
+        episodeNotOpen: "This episode has already ended.",
+        resolutionNoteInvalid: "Write a note of up to 1,000 characters.",
+      },
     },
     sidebar: {
       empty: "No locations yet",
@@ -4639,6 +4785,7 @@ export default {
       deaccession: "Deaccession",
       exhibition: "Exhibition",
       conservation: "Conservation treatment",
+      documentationFinding: "Documentation finding",
     },
     fields: {
       title: "Title",
@@ -4761,6 +4908,73 @@ export default {
         "That record is not available to cite. Choose an accepted record from this organization.",
       limitReached: "This case or task has reached its limit.",
       invalidInput: "Check the required fields and try again.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Link an accepted condition assessment to this task first.",
+        media: "Link a file, such as a photograph, to this task first.",
+        movement: "Link the recorded move to this task first.",
+        auditEntry: "Link the audit event to this task first.",
+      },
+      caseNotAccepted:
+        "Recipes apply once the case is accepted, until it is returned, closed or cancelled.",
+      recipeNotFound: "This recipe is no longer available. Refresh the page.",
+      recipeInvalid: "Check the highlighted fields of the recipe.",
+    },
+    suggestion: {
+      badge: "Suggested",
+      origin: {
+        intake_accepted:
+          "Suggested by “{recipe}” after the intake was accepted",
+        loan_approved: "Suggested by “{recipe}” after the loan was approved",
+        exhibition_approved:
+          "Suggested by “{recipe}” after the exhibition was approved",
+      },
+      withdrawn:
+        "Withdrawn because the loan was cancelled. Restore it if the work is still needed.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Needs an accepted condition assessment linked as evidence before it can be completed.",
+        media:
+          "Needs a file, such as a photograph, linked as evidence before it can be completed.",
+        movement:
+          "Needs the recorded move linked as evidence before it can be completed.",
+        auditEntry:
+          "Needs an audit event linked as evidence before it can be completed.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Condition assessment linked as evidence.",
+        media: "File linked as evidence.",
+        movement: "Recorded move linked as evidence.",
+        auditEntry: "Audit event linked as evidence.",
+      },
+      restore: "Restore suggestion",
+      restored: "Suggestion restored",
+      dismiss: "Dismiss suggestion",
+      dismissDescription:
+        "The task stays on the case and is not suggested again. You can restore it later.",
+    },
+    preparation: {
+      title: "Preparation",
+      description: {
+        intake_accepted:
+          "Recipes suggest these tasks when an intake is accepted. Suggestions never record receipt, installation, title or condition.",
+        loan_approved:
+          "Recipes suggest these tasks when a loan is approved. Suggestions never record receipt, installation, title or condition.",
+        exhibition_approved:
+          "Recipes suggest these tasks when an exhibition is approved. Suggestions never record receipt, installation, title or condition.",
+      },
+      states: {
+        suggested: "Suggested",
+        ready: "Not suggested yet",
+        no_owner: "Waiting for an owner who can work on this case",
+        limit_reached: "This case has reached its task limit",
+      },
+      apply: "Suggest {count} missing task(s)",
+      applying: "Suggesting…",
+      applied: "{count} task(s) suggested",
+      nothingToApply: "Every step already has a task.",
+      skipped:
+        "{count} step(s) still need an owner who can work on this case, or room on the case.",
     },
     myWork: {
       title: "My work",
@@ -4776,6 +4990,140 @@ export default {
       assignedCasesEmpty: "No open cases are assigned to you.",
       assignedTruncated: "Showing the first 50 assigned cases.",
       since: "Since",
+    },
+  },
+  preparationRecipes: {
+    title: "Preparation recipes",
+    description:
+      "When an intake is accepted or a loan or exhibition is approved, active recipes suggest owned, dated tasks on the case. Suggestions never record receipt, installation, title or condition; staff record those in their own workflows.",
+    add: "New recipe",
+    loading: "Loading recipes…",
+    empty: "No recipes yet. Create one from a starting point under New recipe.",
+    notificationsHint:
+      "Each owner is notified once per suggested task, in their Tasks category.",
+    notificationsLink: "Notification settings",
+    noAttestation:
+      "Completing a suggested task records only that the work is done.",
+    stepCount: "{count} step(s)",
+    evidenceShort: "evidence: {kind}",
+    statuses: {
+      active: "Active",
+      paused: "Paused",
+      archived: "Archived",
+    },
+    triggers: {
+      intake_accepted: "Intake accepted",
+      loan_approved: "Loan approved",
+      exhibition_approved: "Exhibition approved",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Runs when an intake is accepted into the collection. Due dates count from the acceptance.",
+      loan_approved:
+        "Runs when a loan is approved. Due dates count from the approval or from the loan's start or end.",
+      exhibition_approved:
+        "Runs when an exhibition is approved. Due dates count from the approval or from its opening or closing.",
+    },
+    directions: {
+      any: "Incoming and outgoing loans",
+      outgoing: "Outgoing loans",
+      incoming: "Incoming loans",
+    },
+    actions: {
+      edit: "Edit",
+      pause: "Pause",
+      resume: "Resume",
+      archive: "Archive",
+      restore: "Restore",
+    },
+    toasts: {
+      saved: "Recipe saved",
+      paused: "Recipe paused",
+      resumed: "Recipe resumed",
+      archived: "Recipe archived",
+      restored: "Recipe restored as paused",
+    },
+    starters: {
+      intake: {
+        label: "Catalog, photograph and assess condition",
+        name: "Catalog, photograph and assess condition",
+        catalog: "Complete the catalog record",
+        photograph: "Photograph the object",
+        condition: "Record a condition assessment",
+      },
+      transport: {
+        label: "Pack, insure and arrange transport",
+        name: "Pack, insure and arrange transport",
+        condition: "Condition check before dispatch",
+        insurance: "Confirm insurance cover",
+        pack: "Pack the objects",
+        transport: "Book transport",
+      },
+      return: {
+        label: "Prepare the return",
+        name: "Prepare the return",
+        transport: "Book return transport",
+        condition: "Condition check on return",
+        move: "Record the return move",
+      },
+      blank: {
+        label: "Blank recipe",
+      },
+    },
+    dialog: {
+      addTitle: "New recipe",
+      editTitle: "Edit recipe",
+      description:
+        "Each step becomes a task on the case, owned by a member who can work on it. Repeating or correcting the event keeps one task per step.",
+      name: "Name",
+      trigger: "Suggest when",
+      triggerLocked:
+        "The event cannot change once the recipe exists. Create another recipe instead.",
+      direction: "Loans",
+      steps: "Steps",
+      step: "Step {number}",
+      stepReference: "Step {number}: {title}",
+      untitled: "Untitled step",
+      stepTitle: "Task title",
+      stepDescription: "Description",
+      evidence: "Evidence that shows it was done",
+      noEvidence: "None required",
+      owner: "Owner",
+      owners: {
+        caseAssignee: "Member assigned to the case",
+        approver: "Member who accepted it",
+        member: "A named member",
+      },
+      ownerMember: "Member",
+      chooseMember: "Choose a member",
+      ownerFallback:
+        "If the chosen owner cannot work on the case, the member assigned to the case owns the task, then the member who accepted it. A step without such a member waits until someone applies the recipe again.",
+      due: "Due",
+      noDue: "No due date",
+      anchors: {
+        event: "From the acceptance",
+        start: "From the start or opening",
+        end: "From the end or closing",
+      },
+      offsetDays: "Days",
+      offsetHint: "Negative numbers count back from that date.",
+      dependsOn: "Waits for",
+      addStep: "Add step",
+      removeStep: "Remove step",
+      moveUp: "Move step up",
+      moveDown: "Move step down",
+      cancel: "Cancel",
+      save: "Save recipe",
+      saving: "Saving…",
+      errors: {
+        name: "Give the recipe a name of up to 120 characters.",
+        steps: "A recipe needs 1 to 10 steps.",
+        title: "Give the step a title of up to 200 characters.",
+        description: "Keep the description to 2,000 characters.",
+        owner: "Choose a member who can work on these cases.",
+        due: "Use a whole number of days between -365 and 365.",
+        dependsOn: "A step can only wait for steps above it.",
+      },
     },
   },
   notificationsPage: {
@@ -4801,6 +5149,7 @@ export default {
       system: "System",
     },
     markAllRead: "Mark all as read",
+    settings: "Notification settings",
     empty: {
       noUnread: "No unread notifications",
       noNotifications: "No notifications",
@@ -4819,6 +5168,13 @@ export default {
       retry: "Retry email",
       details: "Email details",
       hideDetails: "Hide email details",
+      digest: {
+        waitingDaily: "Waiting for your daily digest {time}",
+        waitingWeekly: "Waiting for your weekly digest {time}",
+        sentDaily: "Emailed in your daily digest {time}",
+        sentWeekly: "Emailed in your weekly digest {time}",
+        leftOut: "Left out of your digest",
+      },
       attempt: "Attempt {number}",
       noAttempts: "No email has been sent yet.",
       duration: "{ms} ms",
@@ -4838,36 +5194,47 @@ export default {
         email_disabled: "Email is off for this category",
         address_missing: "Your account has no email address",
         channel_unavailable: "Email delivery is not set up",
+        digest_empty: "Nothing in the digest could still be emailed to you",
       },
       errors: {
         EMAIL_DELIVERY_NOT_FOUND: "This email is no longer available.",
-        EMAIL_DELIVERY_NOT_RETRYABLE: "This email was already delivered or is still being sent.",
-        EMAIL_OFF_FOR_CATEGORY: "Turn on email for this category in notification settings first.",
+        EMAIL_DELIVERY_NOT_RETRYABLE:
+          "This email was already delivered or is still being sent.",
+        EMAIL_OFF_FOR_CATEGORY:
+          "Turn on email for this category in notification settings first.",
         EMAIL_ADDRESS_MISSING: "Add an email address to your account first.",
-        EMAIL_CHANNEL_UNAVAILABLE: "Email delivery is not set up for this deployment.",
-        NOTIFICATION_ACCESS_REVOKED: "You can no longer view this record, so it cannot be emailed to you.",
-        NOT_ORGANIZATION_MEMBER: "You are no longer a member of this organization.",
+        EMAIL_CHANNEL_UNAVAILABLE:
+          "Email delivery is not set up for this deployment.",
+        NOTIFICATION_ACCESS_REVOKED:
+          "You can no longer view this record, so it cannot be emailed to you.",
+        NOT_ORGANIZATION_MEMBER:
+          "You are no longer a member of this organization.",
+        DIGEST_EMPTY: "Nothing in this digest can still be emailed to you.",
         fallback: "The email could not be queued again. Try again later.",
       },
     },
   },
   notificationSettings: {
     title: "Notification preferences",
-    description: "Choose which notifications you receive. Email is sent in addition to the notification in MuseumLite.",
+    description:
+      "Choose which notifications you receive. Email is sent in addition to the notification in MuseumLite.",
     notify: "Notify me",
     email: "Email",
     categories: {
       approvals: {
         label: "Approvals",
-        description: "Requests waiting for your approval and decisions on your requests",
+        description:
+          "Requests waiting for your approval and decisions on your requests",
       },
       reminders: {
         label: "Reminders",
-        description: "Loans coming due, expiring insurance, upcoming deliveries and deadline warnings",
+        description:
+          "Loans coming due, expiring insurance, upcoming deliveries and deadline warnings",
       },
       alerts: {
         label: "Alerts",
-        description: "Conservation and condition alerts, delays, blocked tasks and missed deadlines",
+        description:
+          "Conservation and condition alerts, delays, blocked tasks and missed deadlines",
       },
       assignments: {
         label: "Tasks",
@@ -4875,24 +5242,41 @@ export default {
       },
       system: {
         label: "System",
-        description: "Loan dispatch and returns, transit updates, batch jobs and announcements",
+        description:
+          "Loan dispatch and returns, transit updates, batch jobs and announcements",
       },
     },
-    emailTo: "Emails go to {address} as soon as a notification is sent.",
-    emailFixture: "This deployment sends notification email to a test endpoint, so messages do not reach your inbox.",
-    emailUnavailable: "Email delivery is not set up for this deployment, so notifications appear only in MuseumLite.",
-    emailAddressMissing: "Your account has no email address, so notifications appear only in MuseumLite.",
-    savedDigest: {
-      daily: "You chose a daily digest earlier. Digests are not available yet, so no digest emails are being sent. Save to receive the categories marked below by email as notifications happen.",
-      weekly: "You chose a weekly digest earlier. Digests are not available yet, so no digest emails are being sent. Save to receive the categories marked below by email as notifications happen.",
+    emailTo: "Notification emails go to {address}.",
+    emailFixture:
+      "This deployment sends notification email to a test endpoint, so messages do not reach your inbox.",
+    emailUnavailable:
+      "Email delivery is not set up for this deployment, so notifications appear only in MuseumLite.",
+    emailAddressMissing:
+      "Your account has no email address, so notifications appear only in MuseumLite.",
+    schedule: {
+      label: "Send email",
+      instant: "As notifications happen",
+      daily: "Daily digest",
+      weekly: "Weekly digest",
+      day: "Day",
+      time: "Time",
+      timezone: "Digest times are in your time zone, {timezone}.",
+      timezoneChange:
+        "Your digest is set in {saved}. Saving sets it to your current time zone, {timezone}.",
+      unscheduled:
+        "You chose a digest before digests had a delivery time, so it is not being sent. Check the day and time below and save to start receiving it.",
+      next: "Next digest ({count} waiting):",
     },
     save: "Save preferences",
     saving: "Saving...",
     saved: "Notification preferences saved.",
     errors: {
       NOT_ORGANIZATION_MEMBER: "You are not a member of this organization.",
-      EMAIL_CHANNEL_UNAVAILABLE: "Email delivery is not set up for this deployment, so email cannot be turned on.",
-      EMAIL_ADDRESS_MISSING: "Add an email address to your account before turning on email.",
+      EMAIL_CHANNEL_UNAVAILABLE:
+        "Email delivery is not set up for this deployment, so email cannot be turned on.",
+      EMAIL_ADDRESS_MISSING:
+        "Add an email address to your account before turning on email.",
+      DIGEST_SCHEDULE_INVALID: "Choose a valid day and time for your digest.",
       fallback: "Your preferences could not be saved. Try again.",
     },
   },
@@ -5345,6 +5729,7 @@ export default {
       locations: "Go to locations",
       conservation: "Go to conservation",
       entries: "Go to entries",
+      documentationQuality: "Go to documentation quality",
     },
     pageNotFound: {
       title: "Page not found",
@@ -5370,6 +5755,267 @@ export default {
       identifier: "Identifier (A–Z)",
     },
     allTypes: "All types",
+  },
+  documentationQuality: {
+    title: "Documentation quality",
+    description:
+      "Check records against the institution's documentation profiles and review duplicate identifiers, missing documentation, uncertain party links and broken references. Checks never change a record: staff repair records where they are kept, and the next check confirms the repair.",
+    tabs: {
+      findings: "Findings",
+      profiles: "Profiles",
+    },
+    kind: "Kind of finding",
+    allKinds: "All kinds",
+    kinds: {
+      duplicate_identifier: "Duplicate identifier",
+      missing_evidence: "Missing documentation",
+      legacy_link: "Uncertain party link",
+      orphan_reference: "Broken reference",
+    },
+    statuses: {
+      open: "Open",
+      accepted: "Accepted exception",
+      resolved: "Resolved",
+    },
+    registers: {
+      catalog: "catalog",
+      accession: "accession",
+    },
+    stages: {
+      entry: "Held under an entry",
+      collection: "In the collection",
+      borrowed: "Borrowed",
+      deaccessioned: "Deaccessioned",
+    },
+    stageHints: {
+      entry:
+        "Received for identification, deposit or acquisition review and not accessioned.",
+      collection: "Accessioned or catalogued objects, including those on loan.",
+      borrowed: "Objects held under an incoming loan.",
+      deaccessioned: "Objects removed from the collection; their records stay.",
+    },
+    requirements: {
+      object_name: "Object name",
+      maker: "Maker",
+      production_date: "Date made",
+      materials: "Materials",
+      dimensions: "Dimensions",
+      description: "Description",
+      current_location: "Current location",
+      condition_assessment: "Accepted condition assessment",
+      image: "Photograph",
+      supporting_document: "Supporting document",
+      accession_record: "Approved accession record",
+      provenance_claim: "Provenance claim",
+    },
+    orphanFields: {
+      parentObject: "Parent object",
+      currentLocation: "Current location",
+      collectionGroup: "Collection group",
+      object: "Object",
+      donorAccount: "Donor account",
+    },
+    orphanProblems: {
+      missing: "no longer exists",
+      other_organization: "belongs to another organization",
+      self: "points to the record itself",
+    },
+    recordTypes: {
+      object: "Object",
+      accession: "Accession",
+      deaccession: "Deaccession",
+    },
+    objectTabs: {
+      general: "General",
+      physical: "Physical",
+      media: "Media",
+      accession: "Accession",
+      placement: "Placement",
+      provenance: "Provenance",
+    },
+    summary: {
+      duplicateIdentifier:
+        "“{identifier}” is shared by {count} records in the {register} register",
+      missingEvidence: "{identifier} {title}: missing {missing}",
+      legacyName: "{label} names “{name}” without a linked party",
+      legacyAccount: "{label} references a party without a confirmed link",
+      orphanReference: "{label}: {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "No open findings. Run a check to look for documentation exceptions.",
+        accepted: "No accepted exceptions.",
+        resolved: "No resolved findings yet.",
+      },
+      emptyKind: "No findings of this kind: {kind}.",
+      reopened: "Reopened",
+      detectedBy: "Check {number}",
+      resolvedBy: "Resolved by check {number}",
+    },
+    check: {
+      title: "Quality check",
+      loading: "Loading…",
+      never:
+        "No check has run yet. A check reads every record in bounded steps and lists what it finds.",
+      running:
+        "Check {number} is running: step {step} of {steps} ({phase}), {records} records checked so far.",
+      stalled:
+        "Check {number} has made no progress for over ten minutes. Resume it, or cancel it and start again.",
+      completed:
+        "Check {number} finished {date}: {records} records checked, {detected} findings ({opened} new, {reopened} reopened), {resolved} resolved.",
+      failed: "Check {number} stopped while checking {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "The member who ran it no longer has access. Resume it to continue under your access.",
+        PAGE_FAILED:
+          "A record could not be checked. Resume it to try again from where it stopped.",
+      },
+      cancelled:
+        "Check {number} was cancelled. The findings it detected stay; it resolved none.",
+      phases: {
+        catalog_identifiers: "catalog identifiers",
+        accession_identifiers: "accession identifiers",
+        objects_active: "objects",
+        objects_loaned: "objects on loan",
+        objects_deaccessioned: "deaccessioned objects",
+        accessions: "accessions",
+        deaccessions: "deaccessions",
+        resolve_duplicate_identifier: "repaired duplicate identifiers",
+        resolve_missing_evidence: "repaired documentation",
+        resolve_legacy_link: "confirmed party links",
+        resolve_orphan_reference: "repaired references",
+        finished: "finished",
+      },
+      run: "Run check",
+      resume: "Resume",
+      cancel: "Cancel check",
+      started: "Check started",
+      resumed: "Check resumed",
+      cancelledToast: "Check cancelled",
+      noProfiles: "No active profiles, so missing documentation was not checked.",
+      partiesNotChecked:
+        "Party links were not checked because the Accounts module is off.",
+      identifierIndexIncomplete:
+        "Some identifiers are not indexed yet, so duplicates among them were not checked.",
+      identifierIndexLink: "Complete the identifier index",
+      neverChanges: "Checks never renumber, merge or fill in records.",
+    },
+    profiles: {
+      loading: "Loading profiles…",
+      description:
+        "A profile says what documentation objects of one type need at given stages. Each check applies the active profiles; archived ones are kept.",
+      add: "Add profile",
+      readOnly: "Administrators change profiles.",
+      empty:
+        "No profiles yet. Without one, checks still report duplicate identifiers, party links and broken references.",
+      allTypes: "All object types",
+      objectTypeHint: "Object types come from Settings › Preferences.",
+      addTitle: "Add documentation profile",
+      editTitle: "Edit documentation profile",
+      dialogDescription:
+        "Choose which objects the profile covers and what they must have. The next check applies it.",
+      fields: {
+        name: "Name",
+        objectType: "Object type",
+        stages: "Stages",
+        requirements: "Required documentation",
+      },
+      errors: {
+        name: "Enter a name of up to 120 characters.",
+        stages: "Choose at least one stage.",
+        requirements: "Choose at least one requirement.",
+      },
+      cancel: "Cancel",
+      save: "Save profile",
+      saving: "Saving…",
+      saved: "Profile saved",
+      edit: "Edit",
+      archive: "Archive",
+      restore: "Restore",
+      archived: "Profile archived",
+      restored: "Profile restored",
+      archivedBadge: "Archived",
+    },
+    review: {
+      title: "Review",
+      openHint:
+        "Repair the record and run a check, or accept this as an exception with a reason.",
+      acceptAction: "Accept as exception",
+      acceptTitle: "Accept as an exception",
+      acceptDescription:
+        "The record stays as it is. Give the reason, for example why the documentation cannot exist. The finding reopens if a later check finds something different.",
+      acceptDuplicateDescription:
+        "Every record keeps its identifier. Your reason is recorded as an identifier conflict review for each record that shares it.",
+      note: "Reason",
+      noteRequired: "Enter a reason.",
+      cancel: "Cancel",
+      accept: "Accept",
+      saving: "Saving…",
+      accepted: "Accepted as an exception",
+      reviewedBy: "Accepted by {name} on {date}",
+      unknownReviewer: "a former member",
+      earlierReview: "Accepted earlier; what the check found has changed since:",
+      reopen: "Reopen",
+      reopened: "Finding reopened",
+      reviewedInRegister:
+        "Reviewed in the identifier register. If another record starts sharing the identifier, this finding reopens.",
+      resolved: "Check {number} no longer found this on {date}.",
+    },
+    detail: {
+      headerTitle: "Finding",
+      back: "Back to documentation quality",
+      detection: "First found by check {first}; last found by check {last}.",
+      foundTitle: "What the check found",
+      repairTitle: "Where to repair",
+      notRecorded: "Not recorded",
+      register: "Register",
+      identifier: "Identifier as recorded",
+      records: "Records sharing it ({count})",
+      moreRecords: "And {count} more.",
+      object: "Object",
+      profile: "Profile",
+      stage: "Stage",
+      missing: "Missing",
+      recordedCondition: "Condition text on the record, kept as written",
+      recordedProvenance: "Provenance text on the record, kept as written",
+      record: "Record",
+      assertedName: "Name as written",
+      existingParty: "Account referenced",
+      suggestedRole: "Role",
+      field: "Reference",
+      storedReference: "Stored value",
+      problem: "Problem",
+      recordUnavailable: "{record} is no longer available.",
+      openTab: "Open the {tab} tab: {requirements}",
+      repairIntro:
+        "Repair the record where it is kept. The next check closes this finding when the gap is gone.",
+      linkPartyHint: "Confirm or link the party in the record's Parties panel.",
+      linkPartyUnavailable:
+        "Linking a party needs the Accounts module and permission to edit parties. Assign this to someone who can.",
+      duplicateHint:
+        "Nothing is renumbered. Open each record to compare them, or accept the duplicate with the historical evidence.",
+      identifierRegister: "Open the identifier register",
+    },
+    errors: {
+      fallback: "Something went wrong. Try again.",
+      profileInvalid: "Check the profile's name, stages and requirements.",
+      profileLimitReached:
+        "An organization can have at most 20 active profiles. Archive one first.",
+      profileNotFound: "This profile no longer exists.",
+      checkRunning: "A check is already running.",
+      checkNotFound: "This check no longer exists.",
+      checkNotResumable: "Only the latest stopped or stalled check can be resumed.",
+      findingNotFound: "This finding no longer exists.",
+      findingStatusChanged:
+        "This finding changed meanwhile. Reload to see its current state.",
+      reviewNoteRequired: "Enter a reason of up to 2,000 characters.",
+      identifierIndexIncomplete:
+        "Complete the identifier index before reviewing duplicates.",
+      duplicateGroupTooLarge:
+        "Too many records share this identifier to review at once. Review them in the identifier register.",
+      reviewedInIdentifierRegister:
+        "Duplicate identifiers are reviewed in the identifier register.",
+    },
   },
   objectEntries: {
     title: "Entries",
@@ -8222,6 +8868,16 @@ export default {
       updateSite: "Update Site",
       archiveSiteConfirm: "Are you sure you want to archive this site?",
       failedArchiveSite: "Failed to archive site",
+      siteInUseTitle: "This site is still in use",
+      siteInUseDescription:
+        "Archiving must not leave locations or objects under an inactive site. Resolve these first; nothing was changed.",
+      siteInUseLocations:
+        "Active locations at this site: {count}. Delete them in Locations first.",
+      siteInUseObjects:
+        "Objects still placed at this site's locations: {count}. Move them to another location first.",
+      siteInUseIncomplete:
+        "This site has too many locations or objects to check at once, so it cannot be archived here.",
+      siteInUseClose: "Close",
       systemRole: "(System)",
       siteManagement: "Site Management",
       physicalLocationBranches:
@@ -8599,6 +9255,7 @@ export default {
       newAccession: "New Accession",
       newLoan: "New Loan",
       newCollectionGroup: "New Collection Group",
+      documentationQuality: "Documentation quality",
       navigation: "Navigation",
       dashboard: "Dashboard",
       library: "Library",
@@ -9031,6 +9688,7 @@ export default {
       locked: "Unavailable",
       overview: "Overview",
       myWork: "My work",
+      documentationQuality: "Documentation quality",
       objectCatalog: "Object Catalog",
       locationTracking: "Location & Tracking",
       scan: "Scan",
@@ -9183,6 +9841,10 @@ export default {
         transitDelayed: "Transit Delayed: {number}",
         slaBreach: "SLA Breach: {workflowType} pending over {days} days",
         slaWarning: "SLA Warning: {workflowType} due in {days} days",
+        environmentOutOfRange: "Environment out of range: {location}",
+        environmentStillOutOfRange:
+          "Environment still out of range: {location}",
+        environmentBackInRange: "Environment back in range: {location}",
       },
       messages: {
         objectMoveExecuted:
@@ -9324,6 +9986,31 @@ export default {
         incoming: "incoming",
         outgoing: "outgoing",
       },
+      environment: {
+        overAnHour: "Out of range for over an hour.",
+        overADay: "Out of range for over a day.",
+        backWithin: "Readings are back within the thresholds.",
+        breach: {
+          temperatureAbove:
+            "Temperature {value} °C above the {limit} °C maximum",
+          temperatureBelow:
+            "Temperature {value} °C below the {limit} °C minimum",
+          humidityAbove:
+            "Relative humidity {value}% above the {limit}% maximum",
+          humidityBelow:
+            "Relative humidity {value}% below the {limit}% minimum",
+          lightLevelAbove: "Light {value} lx above the {limit} lx maximum",
+          uvLevelAbove: "UV {value} above the {limit} maximum",
+        },
+        extreme: {
+          temperatureHighest: "Highest temperature {value} °C",
+          temperatureLowest: "Lowest temperature {value} °C",
+          humidityHighest: "Highest relative humidity {value}%",
+          humidityLowest: "Lowest relative humidity {value}%",
+          lightLevelHighest: "Highest light {value} lx",
+          uvLevelHighest: "Highest UV {value}",
+        },
+      },
     },
     searchLogic: {
       and: "AND",
@@ -9414,21 +10101,30 @@ export default {
       "The export file is not available. Retry or create a new export.",
     reportsNote:
       "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
-    sourceRegister: "Register: {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} register rows · {scanned} records examined · {pages} pages",
+      "{rows} rows · {scanned} records examined · {pages} pages",
     errorRegisterCriteria:
-      "Check the register criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, and a status applies only to accession and disposal registers.",
+      "Check the criteria: dates must be valid, the start date cannot be after the end date, the as-of time cannot be in the future, a currency must be a three-letter code such as EUR, and each register or report accepts only its own criteria.",
   },
   registerReports: {
-    title: "Institutional registers",
+    title: "Registers and reports",
     description:
-      "Generate accession, disposal, custody and condition registers from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time and generator.",
-    profile: "Register",
+      "Generate registers, a board valuation report, an insurer schedule and a provenance research report from recorded evidence. Each file has a typed column schema and a manifest with the criteria, as-of time, profile version and any currency totals.",
+    profile: "Register or report",
+    groupRegisters: "Registers",
+    groupFinancial: "Financial reports",
+    groupResearch: "Research",
+    groupUnsupported: "Not supported",
     profileAccession: "Accession register",
     profileDisposal: "Disposal register",
     profileCustody: "Custody register",
     profileCondition: "Condition register",
+    profileValuation: "Valuation report (board)",
+    profileInsurance: "Insurance schedule (insurer)",
+    profileProvenance: "Provenance report (research)",
+    profileNoRoleAccess: "{profile} (not available to your role)",
+    profileNotInPlan: "{profile} (not in your plan)",
     profileSpectrum: "SPECTRUM XML (not supported)",
     profileLido: "LIDO XML (not supported)",
     fromDate: "From",
@@ -9438,21 +10134,44 @@ export default {
     statusPending: "Pending",
     statusApproved: "Approved",
     statusRejected: "Rejected",
+    purpose: "Purpose",
+    purposeAny: "Any purpose",
+    currency: "Currency",
+    currencyPlaceholder: "Any, or EUR",
+    inventoryScope: "Inventory scope",
+    scopeAny: "Any scope",
+    scopeOwned: "Owned",
+    scopeIncoming: "Incoming (not owned)",
+    scopeUnclassified: "Ownership unclassified",
+    scopeExcluded: "Outside the inventory",
+    policy: "Policy",
+    policyAny: "All policies",
+    policyOption: "{number} · {carrier}",
     asOf: "As of",
     asOfHint:
-      "Leave As of empty to use the time the register is created. Evidence recorded after the as-of time is excluded. Dates and the as-of time are in UTC.",
+      "Leave As of empty to use the time the file is created. Evidence recorded after the as-of time is excluded, and validity and coverage are judged at that time. Dates and the as-of time are in UTC.",
     preview: "Preview",
     previewing: "Loading preview",
-    previewLabel: "Register preview",
+    previewLabel: "Preview",
     previewSummary:
       "Showing {shown} of {rows} rows from the first page ({scanned} records examined).",
-    previewMore: "More rows follow; create the register for the complete file.",
+    previewMore:
+      "More rows follow; create the file for the complete register or report.",
     previewEmpty: "The first page has no rows for these criteria.",
     notRecordedNote:
       "Empty cells named in notRecorded were never recorded in MuseumLite. Rows marked legacy predate structured evidence.",
+    totalsPreviewNote:
+      "Currency totals cover the whole file. They appear on the completed file below and in its manifest.",
     exportLabel: "Create {profile} file",
+    totalsTitle: "Totals by currency",
+    totalsNone: "No amounts in this file.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} without a recognised currency, not added",
+    totalsNotStated: "Not stated",
+    totalsNote:
+      "Sums of the rows in this file, per group and currency. Amounts in different currencies are never added together; rows without a recognised currency are counted, not summed.",
     unsupportedNote:
-      "Registers use a documented MuseumLite interchange profile. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
+      "Registers and reports use documented MuseumLite interchange profiles. They are not a SPECTRUM, LIDO or accreditation conformance claim, and unsupported profiles cannot be generated.",
   },
   projectionHealth: {
     unavailable: {

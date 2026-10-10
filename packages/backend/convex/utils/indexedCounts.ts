@@ -5,13 +5,18 @@ import { isUnaccessionedEntryObject } from "./objectEntryLifecycle";
 
 type CountCtx = Pick<QueryCtx, "db">;
 
-const MAX_INVENTORY_LOAN_LINKS = 32;
+export const MAX_INVENTORY_LOAN_LINKS = 32;
 
-/** Inventory classification evidence for one bounded page of catalog rows. */
+/**
+ * Inventory classification evidence for one bounded page of catalog rows. An
+ * object with more loan associations fails with `tooManyLoanLinks`, which
+ * callers word for their own recovery.
+ */
 export async function getPageInventoryEvidence(
   ctx: CountCtx,
   organizationId: Id<"organizations">,
   rows: Array<{ _id: Id<"collections"> }>,
+  tooManyLoanLinks = `Inventory-scope views support at most ${MAX_INVENTORY_LOAN_LINKS} loan associations per object. Export explicit selected objects instead.`,
 ) {
   const openDeaccessionCollectionIds = new Set<Id<"collections">>();
   const inventoryLoanAssociations = {
@@ -24,9 +29,7 @@ export async function getPageInventoryEvidence(
       .withIndex("by_collection", (q) => q.eq("collectionId", row._id))
       .take(MAX_INVENTORY_LOAN_LINKS + 1);
     if (links.length > MAX_INVENTORY_LOAN_LINKS)
-      throw new ConvexError(
-        `Inventory-scope views support at most ${MAX_INVENTORY_LOAN_LINKS} loan associations per object. Export explicit selected objects instead.`,
-      );
+      throw new ConvexError(tooManyLoanLinks);
     for (const link of links) {
       const loan = await ctx.db.get(link.loanId);
       if (loan?.organizationId === organizationId)

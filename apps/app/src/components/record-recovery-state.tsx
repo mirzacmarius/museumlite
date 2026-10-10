@@ -28,6 +28,7 @@ const RECORD_LISTS = {
   locations: "/locations",
   conservation: "/conservation",
   entries: "/accessions/entries",
+  documentationQuality: "/documentation-quality",
 } as const;
 
 export type RecordList = keyof typeof RECORD_LISTS;

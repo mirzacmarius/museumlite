@@ -37,7 +37,7 @@ interface NoteDialogConfig {
   onSubmit: (note: string | undefined) => Promise<unknown>;
 }
 
-function useNoteDialogs(taskId: Id<"caseTasks">) {
+function useNoteDialogs(taskId: Id<"caseTasks">, suggested: boolean) {
   const t = useScopedI18n("caseTasks");
   const block = useMutation(api.caseTasks.block);
   const cancel = useMutation(api.caseTasks.cancel);
@@ -56,10 +56,14 @@ function useNoteDialogs(taskId: Id<"caseTasks">) {
       onSubmit: (note) => block({ taskId, reason: note ?? "" }),
     },
     cancel: {
-      title: t("dialogs.cancel.title"),
-      description: t("dialogs.cancel.description"),
+      title: suggested ? t("suggestion.dismiss") : t("dialogs.cancel.title"),
+      description: suggested
+        ? t("suggestion.dismissDescription")
+        : t("dialogs.cancel.description"),
       noteLabel: t("fields.reason"),
-      submitLabel: t("dialogs.cancel.submit"),
+      submitLabel: suggested
+        ? t("suggestion.dismiss")
+        : t("dialogs.cancel.submit"),
       noteRequired: true,
       showNoAttestation: false,
       onSubmit: (note) => cancel({ taskId, reason: note ?? "" }),
@@ -116,7 +120,7 @@ export function CaseTaskActions({
   const errorMessage = useWorkErrorMessage();
   const start = useMutation(api.caseTasks.start);
   const unblock = useMutation(api.caseTasks.unblock);
-  const noteDialogs = useNoteDialogs(task._id);
+  const noteDialogs = useNoteDialogs(task._id, task.suggestion !== undefined);
   const [noteAction, setNoteAction] = useState<NoteAction | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
@@ -128,6 +132,7 @@ export function CaseTaskActions({
     caseId: task.caseId,
   };
   const waiting = task.openDependencyCount > 0;
+  const evidenceMissing = task.requiredEvidence?.linked === false;
   const workable = task.status === "todo" || task.status === "in_progress";
   const activeNoteDialog = noteAction ? noteDialogs[noteAction] : null;
 
@@ -167,7 +172,7 @@ export function CaseTaskActions({
         <Button
           size="sm"
           variant="outline"
-          disabled={busy || waiting}
+          disabled={busy || waiting || evidenceMissing}
           onClick={() => setNoteAction(task.reviewerId ? "submit" : "complete")}
         >
           {task.reviewerId
@@ -226,7 +231,7 @@ export function CaseTaskActions({
         disabled={busy}
         onClick={() => setNoteAction("cancel")}
       >
-        {t("actions.cancel")}
+        {task.suggestion ? t("suggestion.dismiss") : t("actions.cancel")}
       </Button>
 
       {activeNoteDialog ? (

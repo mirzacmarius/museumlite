@@ -103,7 +103,10 @@ const organizationScopedTables = [
   "conditionDisputes",
   "conservationTreatments",
   "assessmentSchedules",
+  "environmentalDevices",
+  "environmentalProbes",
   "environmentalReadings",
+  "alertEpisodes",
   "conservationAttachments",
   "conservationAlertRules",
   "conservationAlerts",
@@ -146,6 +149,7 @@ const organizationScopedTables = [
   "installationTaskTemplates",
   "caseTasks",
   "caseTaskEvidence",
+  "preparationRecipes",
   "contacts",
   "accountRelationships",
   "partyLinks",
@@ -153,6 +157,9 @@ const organizationScopedTables = [
   "provenanceClaims",
   "provenanceEvidence",
   "provenanceReviews",
+  "documentationProfiles",
+  "documentationChecks",
+  "documentationFindings",
   "accountDocuments",
   "accountSegments",
   "scheduledReports",
@@ -409,6 +416,7 @@ interface DerivedDocuments {
   notificationIntents: Array<Doc<"notificationIntents">>;
   notificationEmailDeliveries: Array<Doc<"notificationEmailDeliveries">>;
   notificationEmailAttempts: Array<Doc<"notificationEmailAttempts">>;
+  notificationDigestItems: Array<Doc<"notificationDigestItems">>;
 }
 
 /** Export, projection, case-history and delivery log rows, read through organization or parent indexes. */
@@ -429,6 +437,7 @@ async function collectDerivedDocuments(
     notificationIntents,
     notificationEmailDeliveries,
     notificationEmailAttempts,
+    notificationDigestItems,
   ] = await Promise.all([
     ctx.db
       .query("organizationProjectionStates")
@@ -498,6 +507,12 @@ async function collectDerivedDocuments(
       .collect(),
     ctx.db
       .query("notificationEmailAttempts")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("notificationDigestItems")
       .withIndex("by_organizationId", (q) =>
         q.eq("organizationId", organizationId),
       )
@@ -572,6 +587,7 @@ async function collectDerivedDocuments(
     notificationIntents,
     notificationEmailDeliveries,
     notificationEmailAttempts,
+    notificationDigestItems,
   };
 }
 

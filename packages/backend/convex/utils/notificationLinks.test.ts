@@ -27,6 +27,12 @@ describe("notificationEntityHref", () => {
     );
   });
 
+  test("opens environmental alerts at their alert episode", () => {
+    expect(notificationEntityHref("alertEpisode", "ep1")).toBe(
+      "/locations/episodes/ep1",
+    );
+  });
+
   test("has no link for unknown or incomplete notifications", () => {
     expect(notificationEntityHref("invoice", "i1")).toBeNull();
     expect(notificationEntityHref(undefined, "i1")).toBeNull();

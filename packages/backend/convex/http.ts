@@ -177,6 +177,7 @@ for (const path of ["/exports/download", "/exports/manifest"]) {
             sha256: job.sha256,
             expiresAt: job.expiresAt,
             failedAttempts: job.failedAttempts,
+            totals: job.totals,
           });
           const chunks: Array<{
             sequence: number;
@@ -552,6 +553,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
   return json(result.duplicate ? 200 : 202, {
     accepted: true,
     duplicate: result.duplicate,
+    late: result.late === true,
   });
 });
 

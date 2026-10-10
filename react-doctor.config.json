@@ -43,7 +43,8 @@
           "packages/backend/convex/utils/exhibitionCrud.ts",
           "packages/backend/convex/partyLinks.ts",
           "packages/backend/convex/partyDuplicates.ts",
-          "packages/backend/convex/utils/provenance.ts"
+          "packages/backend/convex/utils/provenance.ts",
+          "packages/backend/convex/preparationRecipes.ts"
         ],
         "rules": ["react-doctor/async-defer-await"]
       },
@@ -68,7 +69,7 @@
         "rules": ["react-doctor/no-pure-black-background"]
       },
       {
-        "files": ["packages/backend/convex/utils/reportSchedule.ts"],
+        "files": ["packages/backend/convex/utils/calendarSchedule.ts"],
         "rules": ["react-doctor/js-hoist-intl"]
       },
       {

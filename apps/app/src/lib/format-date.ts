@@ -42,6 +42,26 @@ const UTC_DATE_TIME_FORMATTERS: Record<DateLocale, Intl.DateTimeFormat> = {
   }),
 };
 
+const SCHEDULE_WEEKDAY_FORMATTERS: Record<DateLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat("en", { weekday: "long", timeZone: "UTC" }),
+  es: new Intl.DateTimeFormat("es", { weekday: "long", timeZone: "UTC" }),
+  fr: new Intl.DateTimeFormat("fr", { weekday: "long", timeZone: "UTC" }),
+  no: new Intl.DateTimeFormat("nb-NO", { weekday: "long", timeZone: "UTC" }),
+  ro: new Intl.DateTimeFormat("ro", { weekday: "long", timeZone: "UTC" }),
+};
+
+/** Days of a weekly schedule as reports and digests store them; 0 is Sunday. */
+export const SCHEDULE_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+
+/** Name of a weekly schedule day in the app locale. */
+export function formatScheduleWeekday(day: number, locale: string): string {
+  const supportedLocale = isDateLocale(locale) ? locale : "en";
+  // 1 January 2023 was a Sunday.
+  return SCHEDULE_WEEKDAY_FORMATTERS[supportedLocale].format(
+    Date.UTC(2023, 0, 1 + day),
+  );
+}
+
 function isDateLocale(locale: string): locale is DateLocale {
   return (
     locale === "en" ||

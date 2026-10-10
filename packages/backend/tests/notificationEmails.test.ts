@@ -571,7 +571,8 @@ describe("email is offered only when it can be delivered", () => {
       email: {
         channel: "provider",
         address: "curator@example.test",
-        savedDigest: null,
+        schedule: { cadence: "instant" },
+        digestUnscheduled: false,
       },
     });
 
@@ -580,7 +581,7 @@ describe("email is offered only when it can be delivered", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  test("a saved daily digest sends nothing and is reported as not delivered", async () => {
+  test("a daily digest saved before digests had a time sends nothing and is reported as unscheduled", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_fixture_key");
     vi.stubEnv("RESEND_SENDER_EMAIL_AUTH", "notify@museum.example.test");
     const t = createConvexTest();
@@ -600,7 +601,10 @@ describe("email is offered only when it can be delivered", () => {
       api.notifications.getPreferences,
       { organizationId: thread.organizationId },
     );
-    expect(preferences?.email.savedDigest).toBe("daily");
+    expect(preferences?.email).toMatchObject({
+      schedule: { cadence: "daily" },
+      digestUnscheduled: true,
+    });
 
     await thread.mentionCurator();
     await drain(t);

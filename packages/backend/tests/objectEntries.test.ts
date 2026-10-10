@@ -950,6 +950,7 @@ describe("registers", () => {
         organizationId: museum.organizationId,
         profile,
         criteria: profile === "disposal" ? {} : { objectId: collectionId },
+        now: T0 + 10 * DAY,
       });
 
     const custody = await preview("custody");
