@@ -104,7 +104,7 @@ test("delayed bulk edit rechecks references and records observed movement", asyn
 test("direct bulk location write rejects a foreign destination without partial changes", async () => {
   const t = createConvexTest();
   const own = await createOrgUserCollectionWithPermissions(t, [
-    "collections.update",
+    "locations.update",
     "collections.read",
   ]);
   const secondId = await t.run((ctx) =>

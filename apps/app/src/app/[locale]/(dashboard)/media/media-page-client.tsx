@@ -8,7 +8,7 @@ import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import { Image as ImageIcon, Search, Star } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MetricsUnavailableInline } from "@/components/metrics-unavailable-notice";
 import { useCursorStackPagination } from "@/hooks/use-cursor-stack-pagination";
 import type { MediaFileType } from "@/hooks/use-url-filters";
@@ -71,6 +71,7 @@ export function MediaPageClient({
   const { filters, setFilters, resetFilters } = useMediaFilters();
 
   const [searchInput, setSearchInput] = useState(filters.search);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     setSearchInput(filters.search);
   }, [filters.search]);
@@ -206,7 +207,9 @@ export function MediaPageClient({
           <div className="relative">
             <Search className="absolute left-2.5 top-2 size-3.5 text-zinc-500" />
             <input
+              ref={searchInputRef}
               type="text"
+              aria-label={tRoot("untranslatedDashboard.media.mediaSearch")}
               placeholder={tRoot("untranslatedDashboard.media.mediaSearch")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -220,6 +223,7 @@ export function MediaPageClient({
           filters={{ fileType: filters.fileType, search: filters.search }}
           onChange={setFilters}
           onClearAll={resetFilters}
+          returnFocusRef={searchInputRef}
         />
       </div>
 

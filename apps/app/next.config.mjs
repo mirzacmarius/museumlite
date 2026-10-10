@@ -25,6 +25,22 @@ const nextConfig = {
   },
   // Note: Test files are excluded via tsconfig.json exclude patterns
   // This ensures they don't consume memory during TypeScript type checking
+  // Notification preferences moved out of the administrators-only settings
+  // area; emails sent earlier still link to the old address.
+  async redirects() {
+    return [
+      {
+        source: "/settings/notifications",
+        destination: "/notifications/settings",
+        permanent: false,
+      },
+      {
+        source: "/:locale(en|fr|es|no|ro)/settings/notifications",
+        destination: "/:locale/notifications/settings",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {

@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import type * as React from "react";
+import { useReturnFocus } from "../hooks/use-return-focus";
 import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 
@@ -35,35 +36,49 @@ const DialogContent = ({
   className,
   children,
   closeLabel,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
+  fallbackFocusRef,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> &
   React.RefAttributes<React.ElementRef<typeof DialogPrimitive.Content>> & {
     closeLabel?: string;
+    /** Receives focus on close when the control that opened it is gone. */
+    fallbackFocusRef?: React.RefObject<HTMLElement | null>;
   }) => {
   const { messages } = useUiLocale();
+  const returnFocus = useReturnFocus({
+    onOpenAutoFocus,
+    onCloseAutoFocus,
+    fallbackFocusRef,
+  });
 
   return (
     <DialogPortal>
       <DialogOverlay />
+      {/* The overlay scrolls, so a dialog taller than the screen stays reachable. */}
       <DialogPrimitive.Content
         ref={ref}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        className="fixed inset-0 z-50 overflow-y-auto duration-200 print:overflow-visible data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
         {...props}
+        {...returnFocus}
       >
-        <div
-          className={cn(
-            "relative grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg",
-            className,
-          )}
-        >
-          {children}
-          <DialogPrimitive.Close className="absolute right-4 top-4 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="size-4" />
-            <span className="sr-only">
-              {closeLabel ?? messages.dialog.close}
-            </span>
-          </DialogPrimitive.Close>
+        <div className="flex min-h-full items-center justify-center p-4">
+          <div
+            className={cn(
+              "relative grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg",
+              className,
+            )}
+          >
+            {children}
+            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="size-4" />
+              <span className="sr-only">
+                {closeLabel ?? messages.dialog.close}
+              </span>
+            </DialogPrimitive.Close>
+          </div>
         </div>
       </DialogPrimitive.Content>
     </DialogPortal>

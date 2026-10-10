@@ -14,6 +14,10 @@ import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
 import type { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useI18n } from "@/locales/client";
+import {
+  AlternativeTitleField,
+  TagsField,
+} from "../../collection-form-shared/catalog-parity-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 export interface ObjectRequestGeneralTabProps extends CollectionFormTabProps {
@@ -111,11 +115,18 @@ export function ObjectRequestGeneralTab({
             />
           </div>
 
+          <AlternativeTitleField
+            formData={formData}
+            updateField={updateField}
+          />
+
           <div className="space-y-2">
-            <Label htmlFor="objectType">
+            <Label id="objectType-label" htmlFor="objectType">
               {tRoot("objects.filters.objectType")}
             </Label>
             <TypeCombobox
+              id="objectType"
+              aria-labelledby="objectType-label"
               organizationId={currentOrganizationId}
               canDeleteTypes={false}
               value={
@@ -170,6 +181,8 @@ export function ObjectRequestGeneralTab({
             />
           </div>
 
+          <TagsField formData={formData} updateField={updateField} />
+
           {isLocationTrackingEnabled ? (
             <div className="space-y-2">
               <Label htmlFor="generalCurrentLocationId">
@@ -196,9 +209,13 @@ export function ObjectRequestGeneralTab({
             <CollectionGroupCombobox
               organizationId={currentOrganizationId}
               value={formData.collectionGroupIds}
-              onValueChange={(value) => updateField("collectionGroupIds", value)}
+              onValueChange={(value) =>
+                updateField("collectionGroupIds", value)
+              }
               primaryValue={formData.collectionGroupId}
-              onPrimaryChange={(value) => updateField("collectionGroupId", value)}
+              onPrimaryChange={(value) =>
+                updateField("collectionGroupId", value)
+              }
               placeholder={placeholders("collection")}
             />
           </div>

@@ -240,13 +240,13 @@ export function TransitPageClient() {
             </div>
 
             <DataTable
+              label={t("title")}
               loading={transitRecords === undefined}
               data={transitRecords?.page ?? []}
               columns={[
                 {
                   key: "transitNumber",
                   label: t("transitNumber"),
-                  className: "min-w-0 flex-[1.25]",
                   render: (record) => (
                     <Link
                       href={`/${locale}/transit/${record._id}`}
@@ -259,7 +259,7 @@ export function TransitPageClient() {
                 {
                   key: "transitType",
                   label: t("type"),
-                  className: "w-24 flex-none",
+                  className: "w-24",
                   render: (record) => (
                     <span className="capitalize">
                       {t(`typeOptions.${record.transitType}`)}
@@ -269,7 +269,6 @@ export function TransitPageClient() {
                 {
                   key: "destinationName",
                   label: t("originToDestination"),
-                  className: "min-w-0 flex-[1.8]",
                   render: (record) => (
                     <div className="flex min-w-0 flex-col">
                       <span className="truncate text-muted-foreground">
@@ -284,7 +283,6 @@ export function TransitPageClient() {
                 {
                   key: "carrier",
                   label: t("carrier"),
-                  className: "min-w-0 flex-[1.5]",
                   render: (record) => (
                     <div className="flex min-w-0 flex-col">
                       <span className="truncate text-muted-foreground">
@@ -301,7 +299,7 @@ export function TransitPageClient() {
                 {
                   key: "scheduledPickupDate",
                   label: t("pickup"),
-                  className: "w-28 flex-none",
+                  className: "w-28",
                   render: (record) =>
                     record.scheduledPickupDate ? (
                       <ClientDate
@@ -315,7 +313,7 @@ export function TransitPageClient() {
                 {
                   key: "estimatedDeliveryDate",
                   label: t("estimatedArrival"),
-                  className: "w-28 flex-none",
+                  className: "w-28",
                   render: (record) =>
                     record.estimatedDeliveryDate ? (
                       <ClientDate
@@ -329,12 +327,13 @@ export function TransitPageClient() {
                 {
                   key: "itemCount",
                   label: t("items"),
-                  className: "w-20 flex-none justify-end text-right",
+                  align: "end",
+                  className: "w-20",
                 },
                 {
                   key: "status",
                   label: t("status"),
-                  className: "w-32 flex-none",
+                  className: "w-32",
                   render: (record) => (
                     <Badge
                       variant="outline"

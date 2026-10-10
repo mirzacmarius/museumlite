@@ -44,9 +44,13 @@ export function CollectionEditFormHeader({
           variant="ghost"
           size="icon"
           className="size-7"
+          aria-label={tRoot("objects.backToObject")}
           onClick={() => onNavigate(`/objects/${collectionId}`)}
         >
-          <ArrowLeft className="size-4 text-muted-foreground" />
+          <ArrowLeft
+            className="size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
         </Button>
         <span className="text-muted-foreground">{t("detail.collections")}</span>
         <span className="text-muted-foreground/50">/</span>

@@ -20,8 +20,10 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { type RefObject, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
+import { useCustodyConflictMessage } from "@/hooks/use-custody-conflict-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface BulkMoveLocationDialogProps {
@@ -30,6 +32,8 @@ interface BulkMoveLocationDialogProps {
   selectedIds: Id<"collections">[];
   organizationId: Id<"organizations">;
   onSuccess: () => void;
+  /** Takes focus on close when the selection bar that opened it is gone. */
+  fallbackFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function BulkMoveLocationDialog({
@@ -38,6 +42,7 @@ export function BulkMoveLocationDialog({
   selectedIds,
   organizationId,
   onSuccess,
+  fallbackFocusRef,
 }: BulkMoveLocationDialogProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("common.toast");
@@ -46,6 +51,20 @@ export function BulkMoveLocationDialog({
   const _placeholders = useScopedI18n("objects.form.placeholders");
   const [locationId, setLocationId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const capabilityMessage = useCapabilityErrorMessage();
+  const custodyConflictMessage = useCustodyConflictMessage();
+  // A refused move is explained in the dialog, where staff can change the
+  // location or cancel; each refusal takes focus, even a repeated one.
+  const [refusal, setRefusal] = useState<{ message: string } | null>(null);
+  const refusalRef = useRef<HTMLParagraphElement>(null);
+  const refusalId = useId();
+  useEffect(() => {
+    if (refusal) refusalRef.current?.focus();
+  }, [refusal]);
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setRefusal(null);
+    onOpenChange(next);
+  };
 
   const locations = useQuery(api.locations.listAllWithPaths, {
     organizationId,
@@ -60,6 +79,7 @@ export function BulkMoveLocationDialog({
     }
 
     setIsSubmitting(true);
+    setRefusal(null);
     try {
       const result = await bulkUpdateLocation({
         collectionIds: selectedIds,
@@ -78,20 +98,22 @@ export function BulkMoveLocationDialog({
       }
 
       onSuccess();
-      onOpenChange(false);
+      handleOpenChange(false);
       setLocationId("");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("itemsMoveFailed"),
-      );
+      setRefusal({
+        message:
+          capabilityMessage(error) ??
+          custodyConflictMessage(error, tDialog("failed")),
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent fallbackFocusRef={fallbackFocusRef}>
         <DialogHeader>
           <DialogTitle>{tDialog("title")}</DialogTitle>
           <DialogDescription>
@@ -106,7 +128,10 @@ export function BulkMoveLocationDialog({
           <div className="space-y-2">
             <Label htmlFor="location">{tDialog("label")}</Label>
             <Select value={locationId} onValueChange={setLocationId}>
-              <SelectTrigger id="location">
+              <SelectTrigger
+                id="location"
+                aria-describedby={refusal ? refusalId : undefined}
+              >
                 <SelectValue placeholder={tDialog("placeholder")} />
               </SelectTrigger>
               <SelectContent>
@@ -124,13 +149,24 @@ export function BulkMoveLocationDialog({
                 ))}
               </SelectContent>
             </Select>
+            {refusal ? (
+              <p
+                ref={refusalRef}
+                id={refusalId}
+                role="alert"
+                tabIndex={-1}
+                className="text-sm text-destructive outline-none"
+              >
+                {refusal.message}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             disabled={isSubmitting}
           >
             {tCommon("cancel")}

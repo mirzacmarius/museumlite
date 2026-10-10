@@ -1,14 +1,21 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import { type Infer, v } from "convex/values";
+import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
 import { deliveryStatus, ledgerProgress } from "./utils/deliveryLedger";
 import { mutation } from "./utils/mutationBuilders";
+import {
+  isValidDigestSchedule,
+  moveWaitingDigests,
+  nextDigestOf,
+} from "./utils/notificationDigests";
 import { notificationEmailChannel } from "./utils/notificationEmailChannel";
 import { notificationError } from "./utils/notificationErrors";
 import {
   categoryChannelMatrix,
   channelPolicy,
+  emailSchedule,
+  emailScheduleChoice,
   preferenceFieldsFor,
   storedPreferences,
 } from "./utils/notificationPreferences";
@@ -16,7 +23,10 @@ import {
   categoryOfType,
   notificationCategory,
 } from "./utils/notificationTypes";
-import { notificationEmailErrorCode } from "./utils/notificationValidators";
+import {
+  digestCadence,
+  notificationEmailErrorCode,
+} from "./utils/notificationValidators";
 import { getCurrentUserOrganization } from "./utils/permissions";
 
 // ============================================
@@ -35,19 +45,18 @@ const emailOutcome = v.object({
   lastResponseStatus: v.optional(v.number()),
   lastErrorCode: v.optional(notificationEmailErrorCode),
   completedAt: v.optional(v.number()),
+  /** Set when the notification is emailed in a digest rather than on its own. */
+  digest: v.optional(
+    v.object({
+      cadence: digestCadence,
+      scheduledFor: v.number(),
+      /** Why the digest's latest attempt left this notification out. */
+      excludedReason: v.optional(notificationEmailErrorCode),
+    }),
+  ),
 });
 
-async function emailOutcomeOf(
-  ctx: QueryCtx,
-  notificationId: Id<"notifications">,
-) {
-  const delivery = await ctx.db
-    .query("notificationEmailDeliveries")
-    .withIndex("by_notificationId", (q) =>
-      q.eq("notificationId", notificationId),
-    )
-    .first();
-  if (!delivery) return null;
+function outcomeOf(delivery: Doc<"notificationEmailDeliveries">) {
   return {
     deliveryId: delivery._id,
     status: delivery.status,
@@ -58,6 +67,36 @@ async function emailOutcomeOf(
     lastResponseStatus: delivery.lastResponseStatus,
     lastErrorCode: delivery.lastErrorCode,
     completedAt: delivery.completedAt,
+  };
+}
+
+/** The email that carries a notification: its own, or the digest it is in. */
+async function emailOutcomeOf(
+  ctx: QueryCtx,
+  notificationId: Id<"notifications">,
+): Promise<Infer<typeof emailOutcome> | null> {
+  const delivery = await ctx.db
+    .query("notificationEmailDeliveries")
+    .withIndex("by_notificationId", (q) =>
+      q.eq("notificationId", notificationId),
+    )
+    .first();
+  if (delivery) return outcomeOf(delivery);
+  const item = await ctx.db
+    .query("notificationDigestItems")
+    .withIndex("by_notificationId", (q) =>
+      q.eq("notificationId", notificationId),
+    )
+    .first();
+  const digest = item ? await ctx.db.get(item.deliveryId) : null;
+  if (!item || digest?.kind !== "digest") return null;
+  return {
+    ...outcomeOf(digest),
+    digest: {
+      cadence: digest.cadence,
+      scheduledFor: digest.scheduledFor,
+      excludedReason: item.excludedReason,
+    },
   };
 }
 
@@ -484,7 +523,8 @@ export const cleanupOldNotifications = mutation({
 /**
  * The caller's category matrix for one organization and what their email
  * channel can actually deliver: whether this deployment sends notification
- * email, to which address, and a saved digest choice that is not delivered.
+ * email, to which address, when (as notifications happen or in a digest),
+ * and the next digest waiting to be sent.
  */
 export const getPreferences = query({
   args: {
@@ -500,7 +540,13 @@ export const getPreferences = query({
           v.literal("unavailable"),
         ),
         address: v.union(v.string(), v.null()),
-        savedDigest: v.union(v.literal("daily"), v.literal("weekly"), v.null()),
+        schedule: emailSchedule,
+        /** A digest chosen before digests had a time; it sends nothing until one is saved. */
+        digestUnscheduled: v.boolean(),
+        nextDigest: v.union(
+          v.object({ scheduledFor: v.number(), notificationCount: v.number() }),
+          v.null(),
+        ),
       }),
     }),
     v.null(),
@@ -517,33 +563,37 @@ export const getPreferences = query({
     if (!membership) {
       return null;
     }
-    const [user, preferences] = await Promise.all([
+    const [user, preferences, nextDigest] = await Promise.all([
       ctx.db.get(userId),
       storedPreferences(ctx, userId, args.organizationId),
+      nextDigestOf(ctx, { organizationId: args.organizationId, userId }),
     ]);
     const policy = channelPolicy(preferences);
+    const choice = emailScheduleChoice(preferences);
     return {
       categories: policy.categories,
       email: {
         channel: notificationEmailChannel().kind,
         address: user?.email ?? null,
-        savedDigest:
-          policy.emailCadence === "daily" || policy.emailCadence === "weekly"
-            ? policy.emailCadence
-            : null,
+        schedule: choice.schedule,
+        digestUnscheduled: choice.unscheduled && policy.emailCadence !== null,
+        nextDigest,
       },
     };
   },
 });
 
 /**
- * Replaces the caller's category matrix for one organization: which
- * categories notify them, and which of those are also emailed.
+ * Replaces the caller's choices for one organization: which categories
+ * notify them, which of those are also emailed, and whether that email is
+ * sent as notifications happen (the default) or as a daily or weekly digest
+ * at a local time. Digests already waiting move to the new time.
  */
 export const updatePreferences = mutation({
   args: {
     organizationId: v.id("organizations"),
     categories: categoryChannelMatrix,
+    emailSchedule: v.optional(emailSchedule),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -558,6 +608,10 @@ export const updatePreferences = mutation({
     if (!membership) {
       throw notificationError("NOT_ORGANIZATION_MEMBER");
     }
+    const schedule = args.emailSchedule ?? { cadence: "instant" as const };
+    if (schedule.cadence !== "instant" && !isValidDigestSchedule(schedule)) {
+      throw notificationError("DIGEST_SCHEDULE_INVALID");
+    }
     const emailRequested = Object.values(args.categories).some(
       (choice) => choice.enabled && choice.email,
     );
@@ -571,9 +625,10 @@ export const updatePreferences = mutation({
       }
     }
 
+    const now = Date.now();
     const fields = {
-      ...preferenceFieldsFor(args.categories),
-      updatedAt: Date.now(),
+      ...preferenceFieldsFor(args.categories, schedule),
+      updatedAt: now,
     };
     const existing = await storedPreferences(ctx, userId, args.organizationId);
     if (existing) {
@@ -585,6 +640,12 @@ export const updatePreferences = mutation({
         ...fields,
       });
     }
+    await moveWaitingDigests(
+      ctx,
+      { organizationId: args.organizationId, userId },
+      emailRequested && schedule.cadence !== "instant" ? schedule : null,
+      now,
+    );
     return null;
   },
 });

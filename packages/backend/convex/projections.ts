@@ -7,6 +7,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, type QueryCtx, query } from "./_generated/server";
+import { runCheckpointPage } from "./utils/boundedJobs";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 import {
@@ -370,12 +371,7 @@ export const markGenerationPageFailed = internalMutation({
   },
 });
 
-/**
- * Runs one checkpoint page. A failed page rolls back entirely, so it is
- * retried with fewer rows (dense rows can exceed per-transaction platform
- * limits at the default size). Only a failure at a single row is recorded
- * as a failed job that keeps its last committed checkpoint for retry.
- */
+/** Runs one checkpoint page (see `runCheckpointPage`). */
 export const advanceGeneration = internalAction({
   args: {
     generationId: v.id("projectionGenerations"),
@@ -383,26 +379,20 @@ export const advanceGeneration = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    let pageSize = PROJECTION_PAGE_SIZE;
-    for (;;) {
-      try {
-        await ctx.runMutation(internal.projections.applyGenerationPage, {
+    await runCheckpointPage({
+      pageSize: PROJECTION_PAGE_SIZE,
+      apply: (pageSize) =>
+        ctx.runMutation(internal.projections.applyGenerationPage, {
           ...args,
           pageSize,
-        });
-        return null;
-      } catch (error) {
-        if (pageSize > 1) {
-          pageSize = Math.max(1, Math.floor(pageSize / 2));
-          continue;
-        }
-        await ctx.runMutation(internal.projections.markGenerationPageFailed, {
+        }),
+      fail: (failure) =>
+        ctx.runMutation(internal.projections.markGenerationPageFailed, {
           ...args,
-          failure: error instanceof Error ? error.message : String(error),
-        });
-        return null;
-      }
-    }
+          failure,
+        }),
+    });
+    return null;
   },
 });
 

@@ -2,6 +2,7 @@
 
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import type * as React from "react";
+import { useReturnFocus } from "../hooks/use-return-focus";
 import { cn } from "../utils";
 import { buttonVariants } from "./button";
 
@@ -33,30 +34,39 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 const AlertDialogContent = ({
   className,
   children,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> &
   React.RefAttributes<
     React.ElementRef<typeof AlertDialogPrimitive.Content>
-  >) => (
-  <AlertDialogPortal>
-    <AlertDialogOverlay />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
-      {...props}
-    >
-      <div
-        className={cn(
-          "grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
-          className,
-        )}
+  >) => {
+  const returnFocus = useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus });
+
+  return (
+    <AlertDialogPortal>
+      <AlertDialogOverlay />
+      <AlertDialogPrimitive.Content
+        ref={ref}
+        className="fixed inset-0 z-50 overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        {...props}
+        {...returnFocus}
       >
-        {children}
-      </div>
-    </AlertDialogPrimitive.Content>
-  </AlertDialogPortal>
-);
+        <div className="flex min-h-full items-center justify-center p-4">
+          <div
+            className={cn(
+              "grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
+              className,
+            )}
+          >
+            {children}
+          </div>
+        </div>
+      </AlertDialogPrimitive.Content>
+    </AlertDialogPortal>
+  );
+};
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
 
 const AlertDialogHeader = ({

@@ -27,6 +27,7 @@
       {
         "files": [
           "packages/backend/convex/accountRelationships.ts",
+          "packages/backend/convex/accessions.ts",
           "packages/backend/convex/collections.ts",
           "packages/backend/convex/deaccessions.ts",
           "packages/backend/convex/mediaImports.ts",
@@ -38,6 +39,7 @@
           "packages/backend/convex/utils/exhibitionWorkflow.ts",
           "packages/backend/convex/utils/transitPhysicalHandoff.ts",
           "packages/backend/convex/exports.ts",
+          "packages/backend/convex/loans.ts",
           "packages/backend/convex/utils/exhibitionCrud.ts",
           "packages/backend/convex/partyLinks.ts",
           "packages/backend/convex/partyDuplicates.ts",
@@ -66,7 +68,7 @@
         "rules": ["react-doctor/no-pure-black-background"]
       },
       {
-        "files": ["packages/backend/convex/utils/reportSchedule.ts"],
+        "files": ["packages/backend/convex/utils/calendarSchedule.ts"],
         "rules": ["react-doctor/js-hoist-intl"]
       },
       {
@@ -87,6 +89,13 @@
           "src/app/**/exhibitions/page.tsx"
         ],
         "rules": ["react-doctor/prefer-useReducer"]
+      },
+      {
+        "files": [
+          "packages/ui/src/components/date-picker.tsx",
+          "src/components/date-picker.tsx"
+        ],
+        "rules": ["jsx-a11y/no-autofocus"]
       }
     ]
   }

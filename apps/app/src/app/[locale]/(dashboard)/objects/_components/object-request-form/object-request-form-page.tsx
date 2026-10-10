@@ -1,25 +1,27 @@
 "use client";
 
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import type {
-  CollectionFormData,
-  DraftMediaItem,
-} from "../collection-form-shared";
+import { useI18n } from "@/locales/client";
 import { ObjectRequestFormLayout } from "./object-request-form-layout";
-import { useObjectRequestForm } from "./use-object-request-form";
+import {
+  type UseObjectRequestFormOptions,
+  useObjectRequestForm,
+} from "./use-object-request-form";
 
-export interface ObjectRequestFormPageProps {
-  mode?: "create" | "draft-edit";
-  accessionId?: Id<"accessions">;
-  initialDraftObjectData?: Partial<CollectionFormData>;
-  initialDraftMedia?: DraftMediaItem[];
-  initialDraftSavedAt?: number | null;
-  prefilledCollectionGroupId?: string;
-  backHref?: string;
-}
+export type ObjectRequestFormPageProps = UseObjectRequestFormOptions;
 
 export function ObjectRequestFormPage(props: ObjectRequestFormPageProps) {
+  const tRoot = useI18n();
   const form = useObjectRequestForm(props);
+
+  if (form.isLocked && !form.hasUnsavedChanges) {
+    return (
+      <div className="flex size-full items-center justify-center">
+        <p className="text-muted-foreground">
+          {tRoot("untranslatedRecords.accessions.pendingDraftOnly")}
+        </p>
+      </div>
+    );
+  }
 
   if (!form.currentOrganizationId) {
     return (

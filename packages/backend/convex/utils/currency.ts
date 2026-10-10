@@ -56,6 +56,58 @@ export function currencyGroupKey(raw: string) {
   return normalizeCurrency(raw) ?? raw.trim().toUpperCase();
 }
 
+interface ScaledDecimal {
+  units: bigint;
+  /** Digits after the decimal point. */
+  scale: number;
+}
+
+function parseDecimal(text: string): ScaledDecimal {
+  const match = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(text);
+  if (!match) throw new Error(`Invalid decimal amount: ${text}`);
+  const [, sign, whole = "0", fraction = "", exponent = "0"] = match;
+  let units = BigInt(whole + fraction);
+  let scale = fraction.length - Number(exponent);
+  if (scale < 0) {
+    units *= 10n ** BigInt(-scale);
+    scale = 0;
+  }
+  return { units: sign ? -units : units, scale };
+}
+
+function formatDecimal({ units, scale }: ScaledDecimal) {
+  const negative = units < 0n;
+  const digits = (negative ? -units : units)
+    .toString()
+    .padStart(scale + 1, "0");
+  const whole = digits.slice(0, digits.length - scale);
+  const fraction = digits.slice(digits.length - scale).replace(/0+$/, "");
+  return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
+}
+
+/**
+ * The amount as exact decimal text: the shortest digits that round-trip the
+ * stored number, without an exponent (0.1 is "0.1", 1e21 is
+ * "1000000000000000000000").
+ */
+export function decimalAmountText(value: number) {
+  if (!Number.isFinite(value)) throw new Error("Amounts must be finite");
+  return formatDecimal(parseDecimal(String(value)));
+}
+
+/** Exact sum of two decimal amount texts, so 0.1 + 0.2 is "0.3". */
+export function addDecimalAmounts(left: string, right: string) {
+  const a = parseDecimal(left);
+  const b = parseDecimal(right);
+  const scale = Math.max(a.scale, b.scale);
+  return formatDecimal({
+    units:
+      a.units * 10n ** BigInt(scale - a.scale) +
+      b.units * 10n ** BigInt(scale - b.scale),
+    scale,
+  });
+}
+
 export const currencyTotalValidator = v.object({
   currency: v.string(),
   total: v.number(),

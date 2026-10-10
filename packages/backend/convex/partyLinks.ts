@@ -16,13 +16,16 @@ import {
 } from "./utils/parties";
 import { partyError } from "./utils/partyErrors";
 import {
-  ACCESSION_PARTY_ROLES,
+  accessionLegacyCandidate,
   accessionSourceAssertion,
   assertPartyRoleAllowed,
+  awaitsLegacyPartyReview,
   currentPartyLink,
+  deaccessionLegacyCandidate,
   endPartyLink,
   hasPartyLinkHistory,
-  loanPartyRoles,
+  type LegacyPartyCandidate,
+  loanLegacyCandidate,
   loanPrimaryRole,
   partyLinksForTarget,
   partyRecordLocked,
@@ -415,35 +418,17 @@ const legacyLinkItemValidator = v.object({
   existingParty: v.union(partySummaryValidator, v.null()),
 });
 
-interface LegacyCandidate {
-  target: PartyTarget;
-  label: string;
-  assertedName?: string;
-  contact?: string;
-  date: number;
-  roles: readonly PartyRole[];
-  existingAccountId?: Id<"accounts">;
-}
-
 async function legacyLinkItem(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  candidate: LegacyCandidate,
+  candidate: LegacyPartyCandidate,
 ): Promise<Infer<typeof legacyLinkItemValidator> | null> {
   const [suggestedRole] = candidate.roles;
-  if (!suggestedRole) return null;
-  if (!candidate.assertedName && !candidate.existingAccountId) return null;
-  // Records with any link history (current or ended) have been reviewed.
   if (
-    await hasPartyLinkHistory(
-      ctx,
-      organizationId,
-      candidate.target,
-      candidate.roles,
-    )
-  ) {
+    !suggestedRole ||
+    !(await awaitsLegacyPartyReview(ctx, organizationId, candidate))
+  )
     return null;
-  }
   let existingParty: PartySummary | null = null;
   if (candidate.existingAccountId) {
     const account = await ctx.db.get(candidate.existingAccountId);
@@ -491,7 +476,7 @@ export const listLegacyLinks = query({
         `Legacy link review pages hold at most ${LEGACY_REVIEW_PAGE_LIMIT} records`,
       );
     }
-    let candidates: LegacyCandidate[];
+    let candidates: LegacyPartyCandidate[];
     let page: { isDone: boolean; continueCursor: string; checked: number };
     if (args.kind === "accession") {
       const result = await ctx.db
@@ -500,14 +485,7 @@ export const listLegacyLinks = query({
           q.eq("organizationId", args.organizationId),
         )
         .paginate(args.paginationOpts);
-      candidates = result.page.map((accession) => ({
-        target: { type: "accession", id: accession._id },
-        label: accession.accessionNumber,
-        assertedName: accessionSourceAssertion(accession.source),
-        date: accession.dateReceived,
-        roles: ACCESSION_PARTY_ROLES,
-        existingAccountId: accession.donorAccountId,
-      }));
+      candidates = result.page.map(accessionLegacyCandidate);
       page = { ...result, checked: result.page.length };
     } else if (args.kind === "loan") {
       const result = await ctx.db
@@ -516,15 +494,7 @@ export const listLegacyLinks = query({
           q.eq("organizationId", args.organizationId),
         )
         .paginate(args.paginationOpts);
-      candidates = result.page.map((loan) => ({
-        target: { type: "loan", id: loan._id },
-        label: loan.loanNumber,
-        assertedName: loan.lenderBorrowerName.trim() || undefined,
-        contact: loan.lenderBorrowerContact?.trim() || undefined,
-        date: loan.startDate,
-        roles: loanPartyRoles(loan.type),
-        existingAccountId: loan.accountId,
-      }));
+      candidates = result.page.map(loanLegacyCandidate);
       page = { ...result, checked: result.page.length };
     } else {
       const result = await ctx.db
@@ -533,21 +503,8 @@ export const listLegacyLinks = query({
           q.eq("organizationId", args.organizationId),
         )
         .paginate(args.paginationOpts);
-      candidates = result.page.flatMap((deaccession) =>
-        deaccession.exitRecord
-          ? [
-              {
-                target: {
-                  type: "deaccession" as const,
-                  id: deaccession._id,
-                },
-                label: deaccession.deaccessionNumber,
-                assertedName: deaccession.exitRecord.recipient,
-                date: deaccession.exitRecord.exitDate,
-                roles: ["recipient" as const],
-              },
-            ]
-          : [],
+      candidates = result.page.flatMap(
+        (deaccession) => deaccessionLegacyCandidate(deaccession) ?? [],
       );
       page = { ...result, checked: result.page.length };
     }

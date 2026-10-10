@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  RecordFormNotices,
+  RecordLockedNotice,
+} from "@/components/record-form/record-form-notices";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { useI18n } from "@/locales/client";
 import { CollectionTypeChangeDialog } from "./collection-type-change-dialog";
@@ -25,6 +29,9 @@ export function ObjectRequestFormLayout({
     t,
     common,
     placeholders,
+    session,
+    fieldLabel,
+    goToField,
     formData,
     activeTab,
     setActiveTab,
@@ -119,7 +126,7 @@ export function ObjectRequestFormLayout({
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <form id="object-create-form" onSubmit={handleSubmit}>
+        <form id="object-create-form" onSubmit={handleSubmit} noValidate>
           <ObjectRequestFormHero
             formData={formData}
             images={galleryImages}
@@ -131,6 +138,7 @@ export function ObjectRequestFormLayout({
             handleFileSelect={handleFileSelect}
             placeholders={placeholders}
             onTitleChange={(value) => updateField("title", value)}
+            titleError={session.fieldErrors.title}
             onDescriptionChange={(value) => updateField("description", value)}
             locationSummary={locationSummary}
             collectionSummary={collectionSummary}
@@ -143,6 +151,21 @@ export function ObjectRequestFormLayout({
           <ObjectRequestFormTabShell
             mode={mode}
             error={error}
+            notices={
+              <div className="space-y-3">
+                {form.isLocked ? (
+                  <RecordLockedNotice
+                    message={tRoot("recordForm.notices.lockedWhileEditing")}
+                  />
+                ) : null}
+                <RecordFormNotices
+                  session={session}
+                  fieldLabel={fieldLabel}
+                  onGoToField={goToField}
+                />
+              </div>
+            }
+            fieldErrors={session.fieldErrors}
             tabs={tabs}
             activeTab={activeTab}
             onTabSelect={setActiveTab}

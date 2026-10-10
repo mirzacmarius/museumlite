@@ -29,14 +29,13 @@ export function getLoanStatusLabel(
   }
 }
 
-export function getLoanTypeIcon(type: string) {
-  return type === "incoming" ? (
+/** The loan's direction as an icon, with its name for assistive technology. */
+export function getLoanTypeIcon(type: string, label: string) {
+  const Icon = type === "incoming" ? ArrowDownLeft : ArrowUpRight;
+  return (
     <div className="flex size-6 items-center justify-center rounded bg-muted text-foreground/80">
-      <ArrowDownLeft className="size-3" strokeWidth={3} />
-    </div>
-  ) : (
-    <div className="flex size-6 items-center justify-center rounded bg-muted text-foreground/80">
-      <ArrowUpRight className="size-3" strokeWidth={3} />
+      <Icon className="size-3" strokeWidth={3} aria-hidden="true" />
+      <span className="sr-only">{label}</span>
     </div>
   );
 }

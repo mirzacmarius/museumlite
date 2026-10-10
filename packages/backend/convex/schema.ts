@@ -20,9 +20,15 @@ import {
   wineDetailFields,
 } from "./utils/collectionTypeDetailFields";
 import {
+  documentationCheckFields,
+  documentationFindingValidator,
+  documentationProfileFields,
+} from "./utils/documentationQualityValidators";
+import {
   exportFormat,
   exportSource,
   exportStatus,
+  registerTotalsValidator,
 } from "./utils/exportContract";
 import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
 import {
@@ -35,6 +41,7 @@ import {
 } from "./utils/movementValidators";
 import { notificationCategory } from "./utils/notificationTypes";
 import {
+  notificationDigestItemFields,
   notificationEmailAttemptFields,
   notificationEmailDeliveryFields,
   notificationIntentFields,
@@ -2737,15 +2744,24 @@ export default defineSchema({
     "by_organizationId_and_idempotencyKey",
     ["organizationId", "idempotencyKey"],
   ),
-  // Instant notification email on the shared delivery ledger (ADR 0004, 0007)
+  // Instant and digest notification email on the shared delivery ledger (ADR 0004, 0007, 0010)
   notificationEmailDeliveries: defineTable(notificationEmailDeliveryFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_intentId", ["intentId"])
     .index("by_notificationId", ["notificationId"])
-    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"]),
+    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"])
+    .index("by_userId_and_organizationId_and_scheduledFor", [
+      "userId",
+      "organizationId",
+      "scheduledFor",
+    ]),
   notificationEmailAttempts: defineTable(notificationEmailAttemptFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_deliveryId_and_attemptNumber", ["deliveryId", "attemptNumber"]),
+  notificationDigestItems: defineTable(notificationDigestItemFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_deliveryId", ["deliveryId"])
+    .index("by_notificationId", ["notificationId"]),
 
   // User notification preferences
   notificationPreferences: defineTable({
@@ -2775,6 +2791,9 @@ export default defineSchema({
         v.literal("never"),
       ),
     ),
+    // Local digest time ("08:00") and weekday (0 = Sunday) in `timezone`
+    emailDigestTime: v.optional(v.string()),
+    emailDigestDay: v.optional(v.number()),
 
     // Quiet hours (no notifications during these times)
     quietHoursEnabled: v.optional(v.boolean()),
@@ -4659,6 +4678,35 @@ export default defineSchema({
     .index("by_organization_and_objectId", ["organizationId", "objectId"])
     .index("by_organization_and_claimId", ["organizationId", "claimId"]),
 
+  // Documentation quality (MUS-654): an institution's completeness rules by
+  // object type and stage. Archived profiles are kept with their findings.
+  documentationProfiles: defineTable(documentationProfileFields).index(
+    "by_organization_and_status",
+    ["organizationId", "status"],
+  ),
+
+  // Bounded, resumable documentation checks; each page commits a checkpoint.
+  documentationChecks: defineTable(documentationCheckFields)
+    .index("by_organization_and_number", ["organizationId", "number"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // What checks found. Checks never repair records; a finding closes when a
+  // later check no longer detects it, or stays as a reviewed exception.
+  documentationFindings: defineTable(documentationFindingValidator)
+    .index("by_organization_and_key", ["organizationId", "key"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_status_and_kind", [
+      "organizationId",
+      "status",
+      "kind",
+    ])
+    .index("by_organization_and_standing_and_kind_and_lastCheckNumber", [
+      "organizationId",
+      "standing",
+      "kind",
+      "lastCheckNumber",
+    ]),
+
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),
     accountId: v.id("accounts"),
@@ -4879,6 +4927,8 @@ export default defineSchema({
     expiresAt: v.number(),
     storageId: v.optional(v.id("_storage")),
     sha256: v.optional(v.string()),
+    // Report profiles with monetary columns: totals of the committed rows.
+    totals: v.optional(registerTotalsValidator),
   })
     .index("by_creatorId_and_requestKey", ["creatorId", "requestKey"])
     .index("by_organizationId_and_creatorId", ["organizationId", "creatorId"])

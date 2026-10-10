@@ -16,13 +16,36 @@ Cancellation invalidates in-flight workers. Resume/retry continues from the last
 
 Derived files expire after seven days. Bounded cleanup removes artifact/chunk storage, retaining job and manifest metadata. Permanent museum source evidence remains unchanged. Additive schema versions require an explicit new version; existing version 1 parsers should ignore unknown JSON properties and use CSV headers rather than positions.
 
-## Register profiles (profile version 2)
+## Register and report profiles
 
-Registers are institutional outputs built on the same job engine: `accession`, `disposal`, `custody` and `condition`. Each is a MuseumLite interchange profile with a fixed, typed column schema. They make no SPECTRUM, LIDO, accreditation or other conformance claim; profiles MuseumLite cannot produce (for example SPECTRUM or LIDO XML) are shown as unavailable and cannot be requested.
+Registers and reports are institutional outputs built on the same job engine, as profiles of the `register` export source:
 
-Profile version 2 added temporary-entry events (`entry_received`, `entry_exit`, `entry_condition`) to the custody and condition registers; columns are unchanged.
+- registers: `accession`, `disposal`, `custody` and `condition`;
+- financial reports: `valuation` (for a board) and `insurance` (a schedule for insurers);
+- research report: `provenance`.
 
-Access: the requester needs a plan with reporting (Pro or Enterprise) and `collections.read`; custody registers also need `locations.read` and `loans.read`, and condition registers `loans.read`, because they include location and loan evidence. Every continuation and download rechecks these. Criteria are fixed at request creation: `fromDate`/`toDate` (UTC epoch milliseconds, inclusive, applied to the profile's event date), `status` (`pending`, `approved` or `rejected`; accession and disposal only), `asOf` (UTC epoch milliseconds, not in the future) and `objectId` (one object the organization holds, or one it transferred out). Invalid criteria are refused with the stable code `REGISTER_CRITERIA_INVALID`; an `objectId` outside the organization is refused as a filter outside the organization.
+Each is a MuseumLite interchange profile with a fixed, typed column schema. They make no SPECTRUM, LIDO, accreditation or other conformance claim; profiles MuseumLite cannot produce (for example SPECTRUM or LIDO XML) are shown as unavailable and cannot be requested.
+
+Each profile has its own version, recorded in the manifest as `generator.profileVersion` and bumped whenever that profile's columns or row semantics change: `accession`, `disposal`, `custody` and `condition` are at version 2; `valuation`, `insurance` and `provenance` at version 1. Version 2 of the registers added temporary-entry events (`entry_received`, `entry_exit`, `entry_condition`) to the custody and condition registers; columns are unchanged.
+
+Access: the requester needs a plan with reporting (Pro or Enterprise) and `collections.read`. Custody registers also need `locations.read` and `loans.read`, and condition registers `loans.read`, because they include location and loan evidence. The insurance schedule also needs `loans.read` and the plan that includes insurance, like the Insurance page. The provenance report also needs `media.read`, because its evidence names the object's files. Every continuation, listing and download rechecks these.
+
+Criteria are fixed at request creation, and each profile accepts only its own:
+
+| Criterion | Profiles | Meaning |
+| --- | --- | --- |
+| `fromDate`, `toDate` | accession, disposal, custody, condition | UTC epoch milliseconds, inclusive, applied to the profile's event date |
+| `status` | accession, disposal | `pending`, `approved` or `rejected` |
+| `asOf` | all | UTC epoch milliseconds, not in the future |
+| `objectId` | all but insurance | One object the organization holds, or one it transferred out |
+| `purpose` | valuation | Appraisal purpose: `insurance`, `replacement`, `market`, `fair_market` or `liquidation` |
+| `currency` | valuation, insurance | Upper-case ISO 4217 code, such as `EUR` |
+| `inventoryScope` | valuation | `owned`, `incoming` or `unclassified` (see valuation) |
+| `policyId` | insurance | One of the organization's insurance policies |
+
+A criterion the profile does not use, an unrecognised or lower-case currency, a reversed date range or a future `asOf` is refused with the stable code `REGISTER_CRITERIA_INVALID`; an `objectId` or `policyId` outside the organization is refused as a filter outside the organization.
+
+The preview (`registers.preview`) reads one bounded source page with the same criteria and returns the typed columns and its first ten rows. It takes the client's clock as `now`, the as-of when the criteria name none, because a query cannot read the clock; it never computes totals, which need the whole report.
 
 As-of: `effectiveAsOf` is `criteria.asOf`, or the creation cutoff when absent. Evidence recorded after it is excluded: movements, loan condition reports and register records by recording time; accepted assessments by `acceptedAt`; loan handoffs, lender exits, transfer handoffs and legacy condition changes by their event time. Accession and deaccession rows are mutable records: descriptive values and `status` are captured at `capturedAt`, and columns suffixed `AsOf` are derived from timestamps and append-only case history at or before `effectiveAsOf`. A historical as-of therefore shows what MuseumLite had recorded by then, not later corrections or imports.
 
@@ -30,7 +53,20 @@ Missing facts are explicit and never inferred. Every row ends with `recordedAt`,
 
 Encoding: JSONL emits every schema column on each line, in schema order, with `null` for empty values. CSV has a header row, RFC 4180 quoting and CRLF records. `id` and `text` cells are always quoted; a leading apostrophe is added when the value starts with an apostrophe, a tab, CR or LF, or when its first character after leading whitespace and control characters is `=`, `+`, `-` or `@`, so a parser removes exactly one leading apostrophe from a quoted text cell. `number` and `utcEpochMs` cells are unlocalized numbers, `boolean` cells are `true` or `false`, and an unquoted empty cell is `null` (a quoted empty cell is the empty string). Decoding a CSV with the manifest `columns` therefore reproduces the JSONL values exactly; `packages/backend/tests/registerExports.test.ts` verifies this round trip for every profile.
 
-The manifest adds `generator` (`name`, `profile` such as `register.accession`, `profileVersion`, `exportSchemaVersion`), `organizationId`, `requestedBy`, frozen `criteria`, `effectiveAsOf`, the profile's `consistency` statement and its `columns`. The `export.completed` audit entry records the profile, criteria and effective as-of with the artifact checksum. `scanned` counts source records examined (register records, objects and evidence records), not rows.
+The manifest adds `generator` (`name`, `profile` such as `register.accession`, `profileVersion`, `exportSchemaVersion`), `organizationId`, `requestedBy`, frozen `criteria`, `effectiveAsOf`, the profile's `consistency` statement and its `columns`. The `export.completed` audit entry records the profile, criteria, effective as-of and any totals with the artifact checksum. `scanned` counts source records examined (register records, objects and evidence records), not rows.
+
+### Currency totals
+
+The `valuation` and `insurance` profiles carry monetary columns. Their totals are computed from exactly the rows written to the artifact, page by page, and committed with each page, so a retried or resumed job never counts a page twice. The job status (`exports.status`, `exports.list`) returns them as `totals`, and the manifest has a `totals` section:
+
+| Field | Meaning |
+| --- | --- |
+| `definition` | The rule below, in words |
+| `groupBy` | Columns whose values form each total's group: `inventoryScope` and `purpose` for valuation, `stateAsOf` for insurance |
+| `amountColumn`, `currencyColumn` | `value` and `currency` for valuation, `coveredValue` and `currency` for insurance |
+| `entries` | One per group and currency: the `groupBy` columns, `currency`, `total` and `count` |
+
+Amounts are summed per group and recognised ISO 4217 currency and are never added across currencies or converted between them. `total` is exact decimal text (0.1 and 0.2 total `"0.3"`). Rows whose currency is missing or not a recognised code are counted under `currency: null` with `total: null`, and are not summed. Rows without an amount, such as a valuation row for an object without a current valuation, are not counted. Entries are ordered by group, then currency, with null last. Profiles without monetary columns have no totals.
 
 ### accession
 
@@ -121,6 +157,101 @@ One row per accepted condition assessment, loan condition report, condition stat
 | loanId | id | Loan of a loan condition report |
 | reportDirection | text | `out` or `in` for loan reports; `in` for entry conditions |
 
-Register pages read at most 25 register records, or 25 objects and 200 evidence records (in batches of 20, stopping at about 128 KiB of row data), and continue mid-object across pages. A record with more than 200 approval steps, an object with more than 100 transfer requests, lender exits or identifier reviews, or a loan object with more than 20 condition reports fails visibly with a processing-limit error rather than truncating. An object transferred during capture may be omitted from that run's custody or condition register.
+### valuation
+
+The board valuation report: one row per current valuation of each object the organization holds that was catalogued by as-of, ordered by object catalogue order, then purpose (insurance, replacement, market, fair market, liquidation) and currency. The current valuation is the shared MuseumLite rule applied at as-of: the latest appraisal (by appraisal date, then recording time) per object, purpose and currency that was recorded by as-of and not superseded by as-of. Values are never converted between currencies. Appraisals are immutable and corrections supersede them, so a historical as-of reproduces exactly the valuations then current. An object with no current valuation matching the criteria has one row with `validityAsOf` `none`, the criteria's purpose and currency, and the missing valuation columns in `notRecorded`.
+
+`objectStatus` and `inventoryScope` are captured at `capturedAt`. `inventoryScope` is the operational inventory classification (`operational_inventory_v1`, the definition the dashboard uses): `owned`, `incoming` (borrowed, or received under an entry and not accessioned), `unclassified` (conflicting loan evidence) or `excluded` (deaccessioned, legacy deleted, or with an open deaccession). Totals are grouped by it, so borrowed property is never added to the owned collection's value; use the `inventoryScope` criterion to report one scope.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| objectId, objectAccessionNumber, objectTitle | id, text, text | Object |
+| objectStatus | text | Catalogue status at capture |
+| inventoryScope | text | See above |
+| purpose | text | Appraisal purpose |
+| currency | text | Currency as recorded |
+| currencyRecognized | boolean | The currency is a recognised ISO 4217 code; otherwise the row is `legacy` and its value is not summed |
+| value | number | Appraised value, unconverted |
+| validityAsOf | text | `valid` (dated by as-of and within its two-year age and any valid-until date), `renewal_due` (past either), `future_dated` (dated after as-of) or `none` |
+| appraisalId | id | Appraisal |
+| appraisalDate | utcEpochMs | Date of the appraisal |
+| validUntil | utcEpochMs | Valid-until date, when recorded |
+| renewalDueAt | utcEpochMs | Two years after the appraisal date, or the valid-until date if earlier |
+| appraiserName, appraiserCompany, appraiserCredentials | text | Appraiser as recorded |
+| supersedesAppraisalId | id | The appraisal this one corrected |
+| supersessionReason | text | Reason given for that correction |
+
+`recordedAt` is when the appraisal was recorded.
+
+### insurance
+
+The insurer schedule: one row per insurance coverage recorded by as-of, in recording order, optionally for one policy. Each coverage insures one object, loan or exhibition in its own currency.
+
+`stateAsOf` is judged at as-of from the coverage's interval (its own dates, else its policy's period) and its policy's period: `in_force`, `not_started`, `expired`, `policy_inactive` (cancelled or suspended policy, or a policy MuseumLite cannot find), `removed` or `needs_review` (a legacy coverage naming several targets, until a person resolves it in Coverage review). A status the daily reconciliation records later (expired, active) does not change the state at an earlier as-of. Removal, cancellation and suspension have no recorded time, so they apply as recorded at capture, as do other mutable policy and coverage values such as dates; this limits how exactly a historical as-of can reproduce a past schedule. Covered loans and exhibitions are not expanded into their objects.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| coverageId | id | Coverage |
+| policyId | id | Policy |
+| policyNumber, carrier, policyType | text | Policy as recorded |
+| policyStatusAsOf | text | `active`, `pending` or `expired` from the policy period at as-of; `cancelled` or `suspended` as recorded |
+| policyEffectiveDate, policyExpirationDate | utcEpochMs | Policy period |
+| targetKind | text | `object`, `loan` or `exhibition`; empty for `needs_review` |
+| targetId | id | Covered object, loan or exhibition |
+| targetReference | text | Object accession number or loan number |
+| targetLabel | text | Object title, loan counterparty or exhibition title |
+| coveredValue | number | Insured value, unconverted |
+| currency | text | Currency as recorded |
+| currencyRecognized | boolean | The currency is a recognised ISO 4217 code; otherwise the row is `legacy` and its value is not summed |
+| coverageStart, coverageEnd | utcEpochMs | Coverage interval |
+| stateAsOf | text | See above |
+| appraisalStatusAsOf | text | For object coverages, the current insurance valuation at as-of in the coverage's currency: `current`, `stale` (past three years or its valid-until date), `missing` or `currency_not_recorded`; `not_applicable` for loan, exhibition and unresolved coverages |
+| appraisalId, appraisalValue, appraisalDate, appraiserName | id, number, utcEpochMs, text | That valuation |
+
+`recordedAt` is when the coverage was recorded; coverages without a recognised currency or naming several targets are `legacy`.
+
+### provenance
+
+The research report. Objects follow the custody register's order, including objects transferred out of the organization, whose claims stay with the organization that recorded them. For each object, `recordType` gives one row per provenance claim recorded by as-of (`claim`), then one per evidence item linked by as-of (`evidence`), then the legacy free-text provenance (`legacy_text`) and each legacy ownership history entry (`legacy_ownership`).
+
+Claims are immutable assertions (ADR 0006). A claim corrected or retracted after as-of is current at as-of, and its review status is the latest review decision made by as-of. Claims current at as-of come first in chronological order of their partial dates, then claims corrected or retracted by as-of, most recently first, as the Provenance tab lists them. Evidence follows in the order it was linked. Partial dates are written as EDTF (ISO 8601-2): `1937-03`, `192X` (the 1920s), `1925~` (circa), `1937?` (uncertain), `[..1937]` (not after) and `[1925..]` (not before); they are never timestamps. Assertion facts a claim does not state (role, method, place, dates, or an anonymous holder's description) are listed in `notRecorded`. Legacy text and ownership entries are undated catalogue fields: they are captured at `capturedAt`, `legacy`, with `recordedAt` in `notRecorded`, and never migrated into claims. Party identifications and the fine-art provenance chain are not exported.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| recordType | text | `claim`, `evidence`, `legacy_text` or `legacy_ownership` |
+| objectId, objectAccessionNumber, objectTitle | id, text, text | Object (number at transfer and no title for objects transferred out) |
+| claimId | id | The claim, or the claim an evidence item supports |
+| currentAsOf | boolean | Claims: not corrected or retracted by as-of. Evidence: not retracted by as-of |
+| statement | text | Claim as written; the legacy text; a legacy entry's description |
+| partyKind | text | `named`, `anonymous` or `unknown` holder |
+| partyText | text | Holder as the source names or describes them; a legacy entry's owner |
+| role | text | `owner` or `custodian`; empty when the source does not say |
+| method | text | `purchase`, `auction`, `gift`, `bequest`, `inheritance`, `exchange`, `commission`, `fieldCollection`, `confiscation`, `restitution` or `other` |
+| place | text | Place as written |
+| startDate, endDate | text | EDTF partial dates |
+| confidence | text | `documented`, `probable`, `possible` or `unassessed` |
+| reviewStatusAsOf | text | `unreviewed`, `accepted`, `disputed` or `rejected` at as-of |
+| reviewedAt, reviewedBy, reviewNote | utcEpochMs, id, text | That review decision |
+| contradictsClaimId | id | The claim this claim was recorded against |
+| contestedAsOf | boolean | Part of a contradiction at as-of, following corrections to the current claim |
+| supersedesClaimId | id | The claim this claim corrects |
+| supersededAt, supersededByClaimId, supersessionReason | utcEpochMs, id, text | Correction or retraction by as-of; no replacement for a retraction |
+| evidenceId | id | Evidence item |
+| evidenceKind | text | `citation` or `media` |
+| citation, url | text | Citation as entered; a legacy entry's verification source |
+| mediaId | id | Cited file of the object |
+| fileName | text | The file's name when it was cited |
+| excerpt, locator | text | What the source says, and the page, lot or folio |
+| retractedAt, retractionReason | utcEpochMs, text | Evidence retracted by as-of |
+| legacyStartYear, legacyEndYear | text | A legacy entry's years as recorded |
+| legacyVerified | boolean | A legacy entry was marked verified |
+
+`recordedAt` is when a claim was recorded or an evidence item linked.
+
+### Limits
+
+Register pages read at most 25 register records, or 25 objects and 200 evidence records (in batches of 20, stopping at about 128 KiB of row data), and continue mid-object across pages. Valuation pages read 25 objects and insurance pages 25 coverages. An object with more than 200 appraisals or provenance claims, or a claim with more than 100 review decisions, fails visibly with a processing-limit error, as does an object with more than 32 loan associations in the valuation report, whose inventory scope could not be classified. A record with more than 200 approval steps, an object with more than 100 transfer requests, lender exits or identifier reviews, or a loan object with more than 20 condition reports fails visibly with a processing-limit error rather than truncating. An object transferred during capture may be omitted from that run's custody, condition or provenance output.
+
+## Smaller legacy exports
 
 Smaller legacy exports (list CSV buttons, data settings CSV, analytics report summaries and server CSV/XML profile exports) are not durable jobs and do not carry manifests. Their CSV cells follow the same type-based policy: numbers and booleans are unlocalized, Date values are UTC ISO timestamps, and text cells starting with a formula prefix receive a leading apostrophe. Column names never change how a cell is encoded.

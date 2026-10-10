@@ -2,6 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  type SiteInUseData,
+  siteInUseFromError,
+} from "@v1/backend/convex/utils/siteUsage";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -19,6 +23,7 @@ import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { type Dispatch, type FormEvent, useReducer } from "react";
 import { CapabilityGuard } from "@/components/capability-guard";
 import { useOrganization } from "@/components/organization-provider";
@@ -50,6 +55,8 @@ interface SitesPageState {
   formData: SiteFormData;
   isSubmitting: boolean;
   error: string | null;
+  /** Why the last archive was refused, while its explanation is open. */
+  siteInUse: SiteInUseData | null;
 }
 
 type SitesPageAction =
@@ -60,6 +67,7 @@ type SitesPageAction =
   | { type: "patchFormData"; patch: Partial<SiteFormData> }
   | { type: "setIsSubmitting"; isSubmitting: boolean }
   | { type: "setError"; error: string | null }
+  | { type: "setSiteInUse"; siteInUse: SiteInUseData | null }
   | { type: "resetForm" };
 
 const EMPTY_SITE_FORM: SiteFormData = {
@@ -76,6 +84,7 @@ const INITIAL_SITES_PAGE_STATE: SitesPageState = {
   formData: EMPTY_SITE_FORM,
   isSubmitting: false,
   error: null,
+  siteInUse: null,
 };
 
 function sitesPageReducer(
@@ -97,6 +106,8 @@ function sitesPageReducer(
       return { ...state, isSubmitting: action.isSubmitting };
     case "setError":
       return { ...state, error: action.error };
+    case "setSiteInUse":
+      return { ...state, siteInUse: action.siteInUse };
     case "resetForm":
       return { ...state, formData: EMPTY_SITE_FORM };
   }
@@ -363,6 +374,57 @@ function SiteCard({
   );
 }
 
+/** Why a site cannot be archived yet, with the locations to resolve. */
+function SiteInUseDialog({
+  siteInUse,
+  onClose,
+}: {
+  siteInUse: SiteInUseData;
+  onClose: () => void;
+}) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
+  return (
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("siteInUseTitle")}</DialogTitle>
+          <DialogDescription>{t("siteInUseDescription")}</DialogDescription>
+        </DialogHeader>
+        <ul className="space-y-3 text-sm">
+          {siteInUse.activeLocations > 0 ? (
+            <li className="space-y-1">
+              <p>
+                {t("siteInUseLocations", {
+                  count: siteInUse.activeLocations,
+                })}
+              </p>
+              <ul className="list-disc space-y-1 pl-5">
+                {siteInUse.locations.map((location) => (
+                  <li key={location.id}>
+                    <Link
+                      href={`/locations/${location.id}`}
+                      className="underline underline-offset-2"
+                    >
+                      {location.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ) : null}
+          {siteInUse.objectsHeld > 0 ? (
+            <li>{t("siteInUseObjects", { count: siteInUse.objectsHeld })}</li>
+          ) : null}
+          {siteInUse.incomplete ? <li>{t("siteInUseIncomplete")}</li> : null}
+        </ul>
+        <DialogFooter>
+          <Button onClick={onClose}>{t("siteInUseClose")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function SitesSettingsPage() {
   const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
@@ -379,6 +441,7 @@ export default function SitesSettingsPage() {
     formData,
     isSubmitting,
     error,
+    siteInUse,
   } = state;
 
   const sites = useQuery(
@@ -497,6 +560,11 @@ export default function SitesSettingsPage() {
     try {
       await archiveSite({ siteId });
     } catch (err) {
+      const siteInUse = siteInUseFromError(err);
+      if (siteInUse) {
+        dispatch({ type: "setSiteInUse", siteInUse });
+        return;
+      }
       console.error("Error archiving site:", err);
       alert(capabilityErrorMessage(err) ?? t("failedArchiveSite"));
     }
@@ -541,6 +609,13 @@ export default function SitesSettingsPage() {
             </div>
           )}
         </div>
+
+        {siteInUse ? (
+          <SiteInUseDialog
+            siteInUse={siteInUse}
+            onClose={() => dispatch({ type: "setSiteInUse", siteInUse: null })}
+          />
+        ) : null}
 
         <Dialog
           open={editDialogOpen}

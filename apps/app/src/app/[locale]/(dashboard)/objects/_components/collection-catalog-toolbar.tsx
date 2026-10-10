@@ -10,6 +10,7 @@ import {
 } from "@v1/ui/select";
 import { ArrowUpDown, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
+import { useRef } from "react";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { ObjectAppliedFilters } from "./object-applied-filters";
@@ -51,6 +52,7 @@ export function CollectionCatalogToolbar({
   } = catalog;
 
   const isCollectionGroupView = Boolean(activeCollectionGroup);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const hasActiveFilters =
     filters.search !== "" ||
@@ -98,9 +100,14 @@ export function CollectionCatalogToolbar({
           </div>
           <div className="h-4 w-px shrink-0 bg-border" />
           <div className="group relative min-w-0">
-            <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
+            <Search
+              aria-hidden="true"
+              className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground"
+            />
             <input
+              ref={searchInputRef}
               type="text"
+              aria-label={t("searchLabel")}
               placeholder={t("searchPlaceholder")}
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
@@ -184,6 +191,7 @@ export function CollectionCatalogToolbar({
             collectionGroups={collectionGroups}
             onChange={setFilters}
             onClearAll={resetFilters}
+            returnFocusRef={searchInputRef}
             hideCollectionGroupFilter={isCollectionGroupView}
           />
         </div>
