@@ -78,7 +78,7 @@ export function ObjectRequestGeneralTab({
             />
             {identifierAccessionId ? (
               <p className="text-xs text-muted-foreground">
-                This permanent number is preserved when editing the draft.
+                {tRoot("identifiers.hint.permanentInDraft")}
               </p>
             ) : null}
             <IdentifierAvailabilityHint

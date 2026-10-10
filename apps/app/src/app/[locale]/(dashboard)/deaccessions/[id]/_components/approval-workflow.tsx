@@ -21,6 +21,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useWorkflowApprovalErrorMessage } from "@/hooks/use-workflow-approval-error-message";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { getDeaccessionActionLabel } from "./deaccession-detail-types";
 
@@ -33,6 +34,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
   const t = useScopedI18n("deaccessions");
   const tRoot = useI18n();
   const tCommon = useScopedI18n("common");
+  const approvalErrorMessage = useWorkflowApprovalErrorMessage();
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,9 +65,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
       });
       setComment("");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("form.errors.approveFailed"),
-      );
+      setError(approvalErrorMessage(err, t("form.errors.approveFailed")));
     } finally {
       setIsSubmitting(false);
     }
@@ -81,9 +81,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
       });
       setComment("");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("form.errors.rejectFailed"),
-      );
+      setError(approvalErrorMessage(err, t("form.errors.rejectFailed")));
     } finally {
       setIsSubmitting(false);
     }

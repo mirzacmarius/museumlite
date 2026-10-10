@@ -92,8 +92,8 @@ export function useMoveRequestDetail() {
       return request.requestedAccessionNumber;
     }
 
-    return "Will be generated on approval";
-  }, [request]);
+    return tRoot("untranslatedRecords.objects.transfer.numberOnApproval");
+  }, [request, tRoot]);
 
   const handleApprove = async (moveRequest: MoveRequestDetail) => {
     setIsSubmitting("approve");

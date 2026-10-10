@@ -49,6 +49,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ObjectPickerResults } from "@/components/object-picker-results";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import {
   type SelectableObject,
   useObjectSearchSelection,
@@ -296,6 +297,7 @@ function CollectionObjectsList({
 }) {
   const tRoot = useI18n();
   const t = useScopedI18n("collections");
+  const actionErrorMessage = useActionErrorMessage();
   const common = useScopedI18n("common");
   // Selected objects keep their labels when a new search replaces the results.
   const [selectedObjects, setSelectedObjects] = useState<SelectableObject[]>(
@@ -373,9 +375,7 @@ function CollectionObjectsList({
       setSelectedObjects([]);
       onAddDialogOpenChange(false);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("importDialog.errorAddFailed"),
-      );
+      setError(actionErrorMessage(err, t("importDialog.errorAddFailed")));
     }
   };
 
@@ -387,11 +387,7 @@ function CollectionObjectsList({
         collectionIds: [collectionId as Id<"collections">],
       });
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("importDialog.errorRemoveFailed"),
-      );
+      setError(actionErrorMessage(err, t("importDialog.errorRemoveFailed")));
     }
   };
 

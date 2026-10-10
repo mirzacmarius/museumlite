@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface TreatmentEvidencePanelProps {
@@ -34,6 +35,7 @@ export function TreatmentEvidencePanel({
 }: TreatmentEvidencePanelProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("conservation");
+  const actionErrorMessage = useActionErrorMessage();
   const evidence = useQuery(api.conservationTreatments.getTreatmentEvidence, {
     treatmentId,
   });
@@ -83,9 +85,7 @@ export function TreatmentEvidencePanel({
       await action();
       toast.success(t("evidence.actionSuccess"));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t("evidence.actionError");
-      toast.error(message);
+      toast.error(actionErrorMessage(error, t("evidence.actionError")));
     } finally {
       setBusyAction(null);
     }

@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 interface NewCollectionFormData {
@@ -30,6 +31,7 @@ interface NewCollectionFormData {
 
 export default function NewCollectionPage() {
   const t = useScopedI18n("collections");
+  const actionErrorMessage = useActionErrorMessage();
   const common = useScopedI18n("common");
   const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
@@ -83,7 +85,7 @@ export default function NewCollectionPage() {
       push("/collections");
     } catch (err) {
       console.error("Error creating collection:", err);
-      setError(err instanceof Error ? err.message : t("form.createError"));
+      setError(actionErrorMessage(err, t("form.createError")));
       setIsSubmitting(false);
     }
   };

@@ -22,10 +22,15 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
+import { MoneyCell } from "@/components/money-cell";
 import { PermissionGate } from "@/components/permission-gate";
 import { useListState } from "@/hooks/use-list-state";
 import { useListReturnPath } from "@/hooks/use-return-path";
-import { formatCurrency } from "@/lib/format-number";
+import {
+  type FormatLocale,
+  formatMoney,
+  totalsByCurrency,
+} from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "../accessions/accessions-page-skeleton";
 import { DeaccessionKanban } from "./deaccession-kanban";
@@ -142,7 +147,7 @@ export function DeaccessionsPageClient({
             >
               <Link href="/objects?status=archived">
                 <Archive className="size-3.5" />
-                Object archive
+                {t("withdrawnObjects")}
               </Link>
             </Button>
 
@@ -194,6 +199,7 @@ function DeaccessionsReportDialog({
 }: DeaccessionsReportDialogProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("deaccessions");
+  const tCommon = useScopedI18n("common");
   const exportData: DeaccessionsExportData | undefined = useQuery(
     api.deaccessions.listForExport,
     isOpen ? { organizationId } : "skip",
@@ -246,13 +252,13 @@ function DeaccessionsReportDialog({
                   </p>
                 </div>
                 <div className="rounded border border-zinc-200 p-3 text-center">
-                  <p className="text-2xl font-bold text-black">
-                    {formatCurrency(
-                      exportData.totals.totalProceeds,
-                      locale,
-                      "USD",
-                    ).replace(/\.\d+$/, "")}
-                  </p>
+                  <ProceedsByCurrency
+                    items={exportData.items}
+                    locale={locale}
+                    withoutCurrencyLabel={(count) =>
+                      t("report.proceedsWithoutCurrency", { count })
+                    }
+                  />
                   <p className="text-xs text-zinc-500">
                     {t("report.totalProceeds")}
                   </p>
@@ -305,13 +311,16 @@ function DeaccessionsReportDialog({
                           {t(`method.${item.method}`)}
                         </td>
                         <td className="py-2 text-right text-zinc-600">
-                          {item.proceedsAmount
-                            ? formatCurrency(
-                                item.proceedsAmount,
-                                locale,
-                                item.proceedsCurrency || "USD",
-                              )
-                            : "—"}
+                          {item.proceedsAmount ? (
+                            <MoneyCell
+                              value={item.proceedsAmount}
+                              currency={item.proceedsCurrency}
+                              locale={locale}
+                              notRecordedLabel={tCommon("currencyNotRecorded")}
+                            />
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td className="py-2 text-right">
                           <span
@@ -361,5 +370,44 @@ function DeaccessionsReportDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Proceeds per recorded currency; amounts without a currency are counted. */
+function ProceedsByCurrency({
+  items,
+  locale,
+  withoutCurrencyLabel,
+}: {
+  items: DeaccessionsExportItem[];
+  locale: string;
+  withoutCurrencyLabel: (count: number) => string;
+}) {
+  const totals = totalsByCurrency(
+    items.map((item) => ({
+      amount: item.proceedsAmount,
+      currency: item.proceedsCurrency,
+    })),
+  );
+  return (
+    <div className="space-y-0.5">
+      {totals.byCurrency.length === 0 ? (
+        <p className="text-2xl font-bold text-black">—</p>
+      ) : (
+        totals.byCurrency.map((entry) => (
+          <p
+            key={entry.currency}
+            className="text-2xl font-bold tabular-nums text-black"
+          >
+            {formatMoney(entry.total, locale as FormatLocale, entry.currency)}
+          </p>
+        ))
+      )}
+      {totals.currencyNotRecordedCount > 0 ? (
+        <p className="text-xs text-amber-700">
+          {withoutCurrencyLabel(totals.currencyNotRecordedCount)}
+        </p>
+      ) : null}
+    </div>
   );
 }

@@ -156,10 +156,10 @@ function DeaccessionDetailPageInner({
   const workflowEntryCount = workflowHistory?.length ?? 0;
   const reviewStateLabel =
     deaccession.status === "pending"
-      ? "Awaiting review"
+      ? tRoot("deaccessions.detail.awaitingReview")
       : deaccession.status === "approved"
-        ? "Approved"
-        : "Rejected";
+        ? tRoot("deaccessions.status.approved")
+        : tRoot("deaccessions.status.rejected");
 
   const viewProps = {
     deaccessionId,

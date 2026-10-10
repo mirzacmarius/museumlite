@@ -2196,7 +2196,7 @@ export default {
       termsEdit: "Conditions spécifiques du prêt, restrictions ou exigences...",
       notes: "Notes du personnel...",
       notesEdit: "Notes supplémentaires pour le personnel...",
-      collections: "Rechercher et sélectionner des collections...",
+      collections: "Rechercher et sélectionner des objets...",
       searchAccession: "Rechercher le numéro d'accession...",
       searchCollections: "Rechercher par numéro d'accession ou titre...",
       conditionOut: "État lors du départ",
@@ -2330,10 +2330,9 @@ export default {
       removeItem: "Retirer l'objet",
       addItemsToLoan: "Ajouter des objets au prêt",
       searchSelectCollections:
-        "Rechercher et sélectionner des collections à ajouter à ce prêt",
-      noCollectionsFound:
-        "Aucune collection trouvée correspondant à votre recherche",
-      noAvailableCollections: "Aucune collection disponible à ajouter",
+        "Recherchez et sélectionnez des objets à ajouter à ce prêt",
+      noCollectionsFound: "Aucun objet ne correspond à votre recherche",
+      noAvailableCollections: "Aucun objet disponible à ajouter",
       selectedCount: "Sélectionné ({count})",
       clearAll: "Effacer tout",
       addItems: "Ajouter des objets",
@@ -2405,7 +2404,7 @@ export default {
       nameInstitution: "Nom / Institution",
       required: "*",
       scheduleTerms: "Calendrier et conditions",
-      selectCollections: "Sélectionner les collections",
+      selectCollections: "Sélectionner des objets",
       summary: "Résumé",
       type: "Type",
       lender: "Prêteur",
@@ -2427,7 +2426,7 @@ export default {
       alreadyInActiveLoan:
         "Un ou plusieurs objets sélectionnés sont déjà dans un prêt actif ou en attente. Retirez-les et réessayez.",
       doesNotBelongToOrganization:
-        "Un ou plusieurs objets sélectionnés n'appartiennent plus à cette organisation. Actualisez et réessayez.",
+        "Un ou plusieurs objets sélectionnés ne sont plus disponibles. Actualisez et réessayez.",
       notActive:
         "Un ou plusieurs objets sélectionnés ne sont pas actifs. Sélectionnez uniquement des objets actifs.",
       exportedLoans: "{count} prêt(s) exporté(s)",
@@ -2444,8 +2443,7 @@ export default {
       failedToAddItems: "Impossible d'ajouter les objets au prêt",
       failedToRemoveItem: "Impossible de retirer l'objet du prêt",
       failedToReturnItem: "Impossible de retourner l'objet",
-      pleaseSelectAtLeastOneCollection:
-        "Veuillez sélectionner au moins une collection",
+      pleaseSelectAtLeastOneCollection: "Sélectionnez au moins un objet",
       alreadyInLoan: "Déjà dans le prêt {loanNumber} ({status})",
       outgoing: "Sortant",
       incoming: "Entrant",
@@ -2916,6 +2914,8 @@ export default {
         typeRequired: "Veuillez sélectionner un type d'emplacement",
         createFailed: "Échec de la création de l'emplacement",
       },
+      imageUploadFailed:
+        "La photo de l'emplacement n'a pas pu être téléversée. Réessayez.",
     },
     move: {
       title: "Déplacer l'Emplacement",
@@ -3055,6 +3055,7 @@ export default {
     saveChanges: "Enregistrer les Modifications",
     updating: "Mise à jour...",
     close: "Fermer",
+    currencyNotRecorded: "Devise non renseignée",
   },
   objects: {
     backToObject: "Retour à l'objet",
@@ -3140,10 +3141,11 @@ export default {
       noObjectsFound: "Aucun objet trouvé",
       addFirstObject: "Ajoutez Votre Premier Objet",
 
-      noObjectsInCollection: "Cette collection ne contient encore aucun objet",
-      addObjectsToCollection: "Ajouter des objets à la collection",
+      noObjectsInCollection:
+        "Ce groupe de collection ne contient encore aucun objet",
+      addObjectsToCollection: "Ajouter des objets au groupe de collection",
       addObjectsToCollectionDescription:
-        "Sélectionnez des objets déjà catalogués à inclure dans cette collection. Un objet peut appartenir à plusieurs collections.",
+        "Sélectionnez des objets catalogués à inclure dans ce groupe de collection. Un objet peut appartenir à plusieurs groupes de collection.",
     },
     table: {
       selectAllItems: "Sélectionner tous les objets",
@@ -3241,9 +3243,8 @@ export default {
       deleteObject: "Supprimer l'Objet",
       deleting: "Suppression...",
       editObject: "Modifier l'Objet",
-      selectOrganization:
-        "Veuillez sélectionner une organisation pour afficher les collections.",
-      collections: "Collections",
+      selectOrganization: "Sélectionnez une organisation pour voir ses objets.",
+      collections: "Objets",
       public: "Public",
       private: "Privé",
       currentObject: "Objet actuel",
@@ -3310,7 +3311,7 @@ export default {
       parentObject: "Objet Parent",
       parentObjectHint:
         "Lier cet objet à un objet parent (par exemple, un coffre au trésor contenant cet objet)",
-      collectionGroup: "Collection",
+      collectionGroup: "Groupe de collection",
       collectionGroupHint: "Ajouter cet objet à un groupe de collection",
       description: "Description",
       provenance: "Provenance",
@@ -3338,7 +3339,7 @@ export default {
         dimensions: "par exemple, 50 x 60 cm",
         location: "Sélectionner un emplacement (optionnel)",
         parentObject: "Sélectionner l'objet parent (optionnel)",
-        collection: "Sélectionner une collection (optionnel)",
+        collection: "Sélectionnez un groupe de collection (facultatif)",
         description: "Entrez une description détaillée",
         provenance: "Entrez les informations de provenance",
         exhibitionHistory: "Entrez l'historique d'exposition",
@@ -3410,6 +3411,9 @@ export default {
         failedToUpdateMedia: "Échec de la mise à jour du média",
         failedToGenerateUploadUrl:
           "Échec de la génération de l'URL de téléchargement",
+        uploadFailed: "Le fichier n'a pas pu être téléversé. Réessayez.",
+        failedToUploadDocuments:
+          "Les documents n'ont pas pu être téléversés. Réessayez.",
       },
       toasts: {
         noDataToExport: "Aucune donnée à exporter",
@@ -3525,29 +3529,41 @@ export default {
       },
     },
     collectionGroup: {
-      addObjectsTitle: "Ajouter des objets à la collection",
+      addObjectsTitle: "Ajouter des objets au groupe de collection",
       addObjectsDescription:
-        "Choisissez les objets à inclure dans la collection « {name} ». Les objets cochés seront inclus.",
+        "Choisissez les objets à inclure dans le groupe de collection « {name} ». Les objets cochés sont inclus.",
       searchAndSelectObjects: "Rechercher et sélectionner des objets…",
       multiCollectionHint:
-        "Un objet peut appartenir à plusieurs collections. Décochez-le pour le retirer uniquement de cette collection.",
+        "Un objet peut appartenir à plusieurs groupes de collection à la fois. Décochez-le pour le retirer uniquement de ce groupe.",
       saveMembership: "Enregistrer la sélection",
       addObjectsButton: "Ajouter des objets",
-      viewingCollection: "Collection : {name}",
+      viewingCollection: "Groupe de collection : {name}",
+    },
+    withdrawal: {
+      restore: "Remettre au catalogue",
+      restored: "Objet remis dans le catalogue courant.",
+      restoreFailed:
+        "L'objet n'a pas pu être remis au catalogue. Actualisez et réessayez.",
+      withdrawn: "Objet retiré du catalogue courant.",
+      noticeLabel: "Avis de retrait",
+      noticeTitle: "Retiré du catalogue courant",
+      reason: "Motif : {reason}",
+      legacyReasonMissing:
+        "Le motif de cet ancien retrait n'a pas été enregistré. Le registre et les preuves liées restent tels qu'enregistrés ; vérifiez les sources avant de remettre l'objet au catalogue.",
     },
   },
   collections: {
     createPage: {
       description:
-        "Regroupez les objets associés et choisissez qui gère la collection.",
-      detailsTitle: "Détails de la collection",
+        "Regroupez des objets liés et choisissez qui gère le groupe de collection.",
+      detailsTitle: "Détails du groupe de collection",
       managementTitle: "Gestion",
       optional: "Facultatif",
       objectsHint:
         "Vous pourrez ajouter des objets après avoir créé le groupe de collections.",
     },
     title: "Groupes de Collections",
-    description: "Gérez les groupes de collections d'objets",
+    description: "Gérez des groupes d'objets de votre collection",
     importCSV: "Importer CSV",
     newCollection: "Nouveau Groupe de Collections",
     searchPlaceholder: "Rechercher des groupes de collections...",
@@ -3602,9 +3618,9 @@ export default {
     },
     noItems: "Aucun objet dans ce groupe de collection",
     removeDialog: {
-      title: "Retirer de la Collection",
+      title: "Retirer du groupe de collection",
       description:
-        'Êtes-vous sûr de vouloir retirer "{title}" de cette collection ? L\'objet ne sera pas supprimé, seulement retiré de cette collection.',
+        "Retirer « {title} » de ce groupe de collection ? L'objet n'est pas supprimé, seulement retiré de ce groupe.",
       remove: "Retirer",
     },
     form: {
@@ -3612,7 +3628,7 @@ export default {
       nameRequired: "*",
       namePlaceholder: "par exemple, Artefacts Égyptiens Anciens",
       descriptionLabel: "Description",
-      descriptionPlaceholder: "Décrivez cette collection...",
+      descriptionPlaceholder: "Décrivez ce groupe de collection...",
       curatorLabel: "Conservateur",
       curatorPlaceholder: "Sélectionnez un conservateur (optionnel)",
       noCurator: "Aucun conservateur",
@@ -3621,27 +3637,27 @@ export default {
       managedByRolePlaceholder: "N'importe quel rôle peut gérer (optionnel)",
       anyRole: "N'importe quel rôle peut gérer",
       roleHint:
-        "Restreindre qui peut modifier cette collection aux utilisateurs avec un rôle spécifique",
+        "Limitez la modification de ce groupe de collection aux utilisateurs ayant un rôle précis",
       creating: "Création...",
-      createButton: "Créer la Collection",
+      createButton: "Créer le groupe de collection",
       updating: "Mise à jour...",
-      updateButton: "Mettre à Jour la Collection",
+      updateButton: "Mettre à jour le groupe de collection",
       nameError: "Le nom est requis",
-      createError: "Échec de la création de la collection. Veuillez réessayer.",
+      createError: "Le groupe de collection n'a pas pu être créé. Réessayez.",
       updateError:
-        "Échec de la mise à jour de la collection. Veuillez réessayer.",
+        "Le groupe de collection n'a pas pu être mis à jour. Réessayez.",
     },
     delete: {
       dangerZone: "Zone de Danger",
-      title: "Supprimer cette collection",
+      title: "Supprimer ce groupe de collection",
       description:
-        "Les objets de cette collection seront dissociés mais non supprimés.",
+        "Les objets de ce groupe de collection sont dissociés, pas supprimés.",
       button: "Supprimer",
-      dialogTitle: "Supprimer la Collection",
+      dialogTitle: "Supprimer le groupe de collection",
       dialogDescription:
-        'Êtes-vous sûr de vouloir supprimer "{name}" ? Les objets de cette collection seront dissociés mais non supprimés.',
+        "Supprimer « {name} » ? Les objets de ce groupe de collection sont dissociés, pas supprimés.",
       deleting: "Suppression...",
-      deleteButton: "Supprimer la Collection",
+      deleteButton: "Supprimer le groupe de collection",
     },
     csvImport: {
       title: "Importer des Objets depuis CSV",
@@ -4018,7 +4034,7 @@ export default {
       description: "Description",
       notes: "Notes",
       details: "Détails",
-      collectionObject: "Objet de Collection",
+      collectionObject: "Objet",
       datePerformed: "Date d'Exécution",
       performedBy: "Effectué Par",
       unknownObject: "Objet Inconnu",
@@ -4037,7 +4053,7 @@ export default {
         "Enregistrer un nouveau traitement ou évaluation de conservation",
       editTitle: "Modifier le Traitement",
       editSubtitle: "Mettre à jour les détails pour",
-      collectionObject: "Objet de Collection",
+      collectionObject: "Objet",
       treatmentType: "Type de Traitement",
       selectType: "Sélectionner le type",
       datePerformed: "Date d'Exécution",
@@ -4243,7 +4259,7 @@ export default {
       loanVenuePlaceholder: "Entrez le nom du lieu",
       notesLabel: "Notes",
       notesPlaceholder: "Ajoutez des notes sur cette exposition...",
-      selectObject: "Veuillez sélectionner un objet de collection",
+      selectObject: "Sélectionnez un objet",
       scheduleConflict: "Conflit d'Horaire Détecté",
       scheduleConflictDescription:
         "Cet objet est déjà programmé pendant les dates sélectionnées :",
@@ -5430,6 +5446,8 @@ export default {
         "Vous ne pouvez pas prendre cette décision à l'étape de revue actuelle.",
       fallback:
         "La décision n'a pas pu être enregistrée. Actualisez et réessayez.",
+      sourceVerificationRequired:
+        "La source doit être vérifiée avant d'approuver cette demande. Vérifiez la source ou approuvez en indiquant le motif de l'exception.",
     },
   },
   accessions: {
@@ -5564,6 +5582,8 @@ export default {
       failedToUpdate:
         "Échec de la mise à jour de l'accession. Veuillez réessayer.",
       sourceRequired: "La source est obligatoire",
+      failedToCreate:
+        "L'accession n'a pas pu être créée. Vérifiez les informations et réessayez.",
     },
     kanban: {
       loading: "Chargement…",
@@ -5607,6 +5627,21 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Affichage de 20 sur {count} lignes",
+    },
+    catalogNumber: {
+      title: "Numéro de catalogue à la publication",
+      optionalLabel: "Numéro de catalogue à la publication (facultatif)",
+      defaultHint:
+        "Par défaut, le numéro d'accession. Choisissez un numéro de catalogue libre si le catalogue utilise déjà le numéro d'accession ; chaque registre conserve son propre numéro permanent.",
+      planned:
+        "Numéro de catalogue prévu : {identifier}. Le numéro du registre des accessions {accessionNumber} reste permanent. Si le catalogue l'utilise déjà, choisissez un autre numéro de catalogue pour le nouvel objet. La disponibilité est revérifiée à la publication de l'objet.",
+      fieldLabel: "Numéro de catalogue du nouvel objet",
+      select: "Sélectionner le numéro de catalogue",
+      selected:
+        "Numéro de catalogue sélectionné. Le numéro d'accession permanent est inchangé.",
+      failed:
+        "Le numéro de catalogue n'a pas pu être sélectionné. Actualisez et réessayez.",
+      loading: "Chargement de la numérotation du catalogue…",
     },
   },
 
@@ -6166,6 +6201,7 @@ export default {
     loadMore: "Charger plus",
     refineSearch:
       "D'autres objets correspondent. Affinez la recherche pour réduire la liste.",
+    selectParent: "Sélectionnez un objet parent...",
   },
   valuation: {
     title: "Valorisation",
@@ -6333,7 +6369,7 @@ export default {
       methodLabel: "Méthode",
       disposition: "Disposition",
       notes: "Notes",
-      collectionObject: "Objet de Collection",
+      collectionObject: "Objet",
       workflowHistory: "Historique du Flux de Travail",
       approvalAction: "Action d'Approbation",
       commentLabel: "Commentaire (optionnel)",
@@ -6341,6 +6377,7 @@ export default {
       created: "Créé",
       step: "Étape {step} - Approuvée",
       unknown: "Inconnu",
+      awaitingReview: "En attente de revue",
     },
     stages: {
       eyebrow: "Étapes de cession",
@@ -6445,8 +6482,8 @@ export default {
         "Veuillez sélectionner une organisation pour créer des désaccessions.",
       selectOrgEdit:
         "Veuillez sélectionner une organisation pour modifier les désaccessions.",
-      collectionLabel: "Objet de Collection",
-      collectionPlaceholder: "Sélectionner un objet de collection",
+      collectionLabel: "Objet",
+      collectionPlaceholder: "Sélectionnez un objet",
       deaccessionNumber: "Numéro de Désaccession",
       deaccessionNumberPlaceholder: "Généré automatiquement si laissé vide",
       deaccessionNumberHint:
@@ -6478,7 +6515,7 @@ export default {
       proceedsNotes: "Notes sur les Produits",
       proceedsNotesPlaceholder: "Notes supplémentaires sur les produits...",
       errors: {
-        collectionRequired: "La collection est requise",
+        collectionRequired: "Sélectionnez un objet",
         reasonRequired: "La raison est requise",
         createFailed:
           "Échec de la création de la désaccession. Veuillez réessayer.",
@@ -6523,6 +6560,7 @@ export default {
       proceedsNotes: "Notes sur les Produits",
       stepApproved: "Étape {step} Approuvée",
       created: "Créé",
+      proceedsWithoutCurrency: "Produits sans devise renseignée : {count}",
     },
     placeholders: {
       searchObjects: "Rechercher des désaccessions...",
@@ -6531,6 +6569,7 @@ export default {
       selectDisposition: "ex. Vendu à un collectionneur privé",
       addNotes: "Notes supplémentaires sur cette désaccession...",
     },
+    withdrawnObjects: "Objets retirés",
   },
   parties: {
     roles: {
@@ -7112,8 +7151,8 @@ export default {
         noLoanHistory: "Aucun historique de prêt pour cet objet",
         documentsCount: "Documents ({count})",
         condition: "État",
-        searchCollections: "Rechercher et sélectionner des collections *",
-        loadingCollections: "Chargement des collections…",
+        searchCollections: "Rechercher et sélectionner des objets *",
+        loadingCollections: "Chargement des objets…",
         lenderUpper: "PRÊTEUR :",
         museumUpper: "MUSÉE/INSTITUTION :",
         uploadedBy: "Importé par {name}",
@@ -7157,8 +7196,7 @@ export default {
         sourceCheck: "Vérification de la source",
         approvalWorkflow: "Circuit d’approbation",
         linkedObject: "Objet associé",
-        linkedObjectDescription:
-          "Cette entrée a déjà créé une fiche de collection.",
+        linkedObjectDescription: "Cette accession a déjà créé son objet.",
         openCreatedObject: "Ouvrir l’objet créé",
         draftsMustBeSubmitted:
           "Les brouillons doivent être soumis avant le début de l’approbation.",
@@ -7479,11 +7517,11 @@ export default {
       },
       delete: {
         confirm:
-          "Voulez-vous vraiment supprimer « {name} » ? Les objets de cette collection seront dissociés, mais pas supprimés.",
+          "Supprimer « {name} » ? Les objets de ce groupe de collection sont dissociés, pas supprimés.",
       },
       remove: {
         confirm:
-          "Voulez-vous vraiment retirer « {name} » de cette collection ? L’objet ne sera pas supprimé, seulement retiré de cette collection.",
+          "Retirer « {name} » de ce groupe de collection ? L'objet n'est pas supprimé, seulement retiré de ce groupe.",
       },
       detail: {
         selectedCount: "Sélectionnés ({count}) :",
@@ -7635,7 +7673,7 @@ export default {
         mediaAlreadyApplied:
           "Les modifications des médias sont déjà appliquées.",
         noUnsavedChanges: "Aucune modification de champ non enregistrée.",
-        collectionNotFound: "Collection introuvable",
+        collectionNotFound: "Objet introuvable",
         selectOrganization:
           "Veuillez sélectionner une organisation pour modifier des objets.",
       },
@@ -7805,7 +7843,7 @@ export default {
         loans: "Chargement des prêts…",
         logs: "Chargement des journaux…",
         treatments: "Chargement des traitements…",
-        collections: "Chargement des collections…",
+        collections: "Chargement des objets…",
         more: "de plus",
         default: "Chargement…",
       },
@@ -7894,6 +7932,8 @@ export default {
         unknownOrganization: "Organisation inconnue",
         unknownUser: "Utilisateur inconnu",
         to: "à",
+        numberOnApproval: "Généré à l'approbation de la demande",
+        useRequestedAccessionNumber: "Utiliser le numéro d'accession demandé",
       },
       roles: {
         curator: "Conservateur",
@@ -7943,7 +7983,7 @@ export default {
         catalogedDate: "Date de catalogage",
       },
       collection: {
-        noneAssigned: "Affecté à aucune collection",
+        noneAssigned: "N'appartient à aucun groupe de collection",
       },
       request: {
         editTitle: "Modifier l’objet",
@@ -7998,9 +8038,10 @@ export default {
       failedToLoadAccessions: "Échec du chargement des entrées",
       failedToLoadAccessionsDescription:
         "Le circuit des entrées n’a pas pu être chargé. Réessayez ou revenez au tableau de bord.",
-      failedToLoadCollections: "Échec du chargement des collections",
+      failedToLoadCollections:
+        "Impossible de charger les groupes de collection",
       failedToLoadCollectionsDescription:
-        "Vos collections n’ont pas pu être chargées. Réessayez ou revenez au tableau de bord.",
+        "Nous n'avons pas pu charger vos groupes de collection. Réessayez ou revenez au tableau de bord.",
       failedToLoadLoans: "Échec du chargement des prêts",
       failedToLoadLoansDescription:
         "Vos prêts n’ont pas pu être chargés. Réessayez ou revenez au tableau de bord.",
@@ -9576,6 +9617,9 @@ export default {
       skipToSearch: "Passer à la recherche",
       cannotDeleteMaterial: "Impossible de supprimer le matériau",
       deleteMaterial: "Supprimer le matériau",
+      currentLocationOption: "{location} (actuel)",
+      flashNotSupported:
+        "L'appareil photo de cet appareil ne permet pas de contrôler le flash.",
     },
     auth: {
       noAccountYet: "Pas encore de compte ?",
@@ -9722,6 +9766,11 @@ export default {
     donorCreate: {
       duplicateEmail:
         "Un donateur avec cette adresse e-mail existe déjà : {donor}",
+      invalidEmail: "Saisissez une adresse e-mail valide.",
+      placeholder: "Sélectionnez ou ajoutez des donateurs...",
+      unknownDonors: "Donateurs inconnus",
+      unknownDonorsHint:
+        "À utiliser lorsque l'objet a été donné par un donateur anonyme",
     },
     navigation: {
       patronManagement: "Gestion des usagers",
@@ -10414,6 +10463,47 @@ export default {
       draftMedia: "Photos et documents",
       alternateNumberExists:
         "Ce numéro d'accession alternatif figure déjà dans la liste.",
+    },
+  },
+  workflowApprovals: {
+    errors: {
+      workflowNotConfigured:
+        "Cette étape d'approbation n'est pas configurée correctement. Demandez à un administrateur de vérifier la configuration du workflow, puis réessayez.",
+      approvalNotPermitted:
+        "Cette étape est attribuée à un autre rôle approbateur. Demandez à une personne assignée à cette étape de l'examiner.",
+      alreadyApproved:
+        "Votre approbation est déjà enregistrée. Le dossier reste en attente jusqu'à l'approbation des autres approbateurs.",
+    },
+  },
+  identifiers: {
+    registers: {
+      catalog: "registre du catalogue",
+      accession: "registre des accessions",
+    },
+    errors: {
+      invalid:
+        "Utilisez de 1 à 256 caractères visibles pour le numéro. Les numéros historiques existants restent inchangés.",
+      inUse:
+        "{identifier} est déjà utilisé dans le {register}. Ouvrez cette fiche ou choisissez un numéro libre ; les fiches historiques ne sont jamais renumérotées ni fusionnées.",
+      reviewRequired:
+        "Terminez la revue des identifiants du {register} dans Paramètres › Préférences avant d'attribuer de nouveaux numéros.",
+      numberingNotConfigured:
+        "La génération des numéros n'est pas configurée. Saisissez un numéro ou demandez à un administrateur de configurer la numérotation dans Paramètres › Préférences.",
+      numberingExhausted:
+        "Le format de numérotation a produit à répétition des numéros déjà utilisés dans le {register}. Demandez à un administrateur de vérifier le format ou le compteur dans Paramètres › Préférences.",
+      catalogNumberLocked:
+        "Seule une accession non publiée en cours de revue peut changer son numéro de catalogue prévu. Les numéros de registre publiés sont permanents.",
+    },
+    hint: {
+      needsIndexing:
+        "Terminez l'indexation des identifiants avant d'attribuer de nouveaux numéros.",
+      openReview: "Ouvrir la revue des identifiants",
+      inUse:
+        "D'autres fiches du {register} utilisent déjà ce numéro. Pour une nouvelle fiche, choisissez un numéro libre. Les majuscules et les espaces autour ne rendent pas un numéro unique.",
+      moreMatches:
+        "D'autres correspondances figurent dans la revue des identifiants.",
+      permanentInDraft:
+        "Ce numéro permanent est conservé lorsque vous modifiez le brouillon.",
     },
   },
 } as const;

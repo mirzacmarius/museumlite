@@ -44,6 +44,9 @@ interface SubmitDeaccessionParams {
   }) => Promise<Id<"organizationMoveRequests">>;
 }
 
+/** A form problem staff fix in the dialog; its message is already translated. */
+export class RemovalValidationError extends Error {}
+
 export async function submitDeaccession({
   removalType,
   reason,
@@ -67,14 +70,14 @@ export async function submitDeaccession({
   | { kind: "move"; id: Id<"organizationMoveRequests"> }
 > {
   if (!reason.trim()) {
-    throw new Error(
+    throw new RemovalValidationError(
       translate("untranslatedComponents.deaccession.reasonRequired"),
     );
   }
 
   if (removalType === "move") {
     if (!targetOrganizationId) {
-      throw new Error(
+      throw new RemovalValidationError(
         translate(
           "untranslatedComponents.deaccession.destinationOrganizationRequired",
         ),
@@ -82,7 +85,7 @@ export async function submitDeaccession({
     }
 
     if (accessionMode === "manual" && !manualAccessionNumber.trim()) {
-      throw new Error(
+      throw new RemovalValidationError(
         translate(
           "untranslatedComponents.deaccession.manualAccessionNumberRequired",
         ),
@@ -90,7 +93,7 @@ export async function submitDeaccession({
     }
 
     if (moveEligibility && !moveEligibility.isEligible) {
-      throw new Error(
+      throw new RemovalValidationError(
         translate(
           "untranslatedComponents.deaccession.moveBlockersMustBeResolved",
         ),

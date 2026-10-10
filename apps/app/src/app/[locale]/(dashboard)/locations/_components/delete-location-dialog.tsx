@@ -23,6 +23,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useReducer } from "react";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 interface DeleteLocationDialogProps {
@@ -93,6 +94,7 @@ export function DeleteLocationDialog({
   onDeleted,
 }: DeleteLocationDialogProps) {
   const t = useScopedI18n("locations");
+  const actionErrorMessage = useActionErrorMessage();
   const tCommon = useScopedI18n("common");
   const [state, dispatch] = useReducer(
     deleteLocationDialogReducer,
@@ -153,7 +155,7 @@ export function DeleteLocationDialog({
     } catch (err) {
       dispatch({
         type: "setError",
-        value: err instanceof Error ? err.message : t("deleteFailed"),
+        value: actionErrorMessage(err, t("deleteFailed")),
       });
       dispatch({ type: "setIsSubmitting", value: false });
       return;

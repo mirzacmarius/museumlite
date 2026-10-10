@@ -23,6 +23,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { getAvailableParentLocationOptions } from "../location-parent-options";
 
@@ -47,6 +48,7 @@ export function MoveLocationDialog({
   const tForm = useScopedI18n("locations.form");
   const tPlaceholders = useScopedI18n("locations.placeholders");
   const tCommon = useScopedI18n("common");
+  const actionErrorMessage = useActionErrorMessage();
   const { currentOrganizationId } = useOrganization();
   const [newParentId, setNewParentId] = useState<string>("root");
   const [notes, setNotes] = useState("");
@@ -80,7 +82,7 @@ export function MoveLocationDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("moveFailed"));
+      setError(actionErrorMessage(err, t("moveFailed")));
     } finally {
       setIsSubmitting(false);
     }

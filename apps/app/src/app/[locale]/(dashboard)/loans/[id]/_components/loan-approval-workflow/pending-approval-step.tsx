@@ -15,6 +15,7 @@ import {
 import { Button } from "@v1/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
+import { useWorkflowApprovalErrorMessage } from "@/hooks/use-workflow-approval-error-message";
 import type { LoanApprovalWorkflowState } from "./use-loan-approval-workflow";
 import { WorkflowErrorBanner } from "./workflow-error-banner";
 
@@ -36,6 +37,7 @@ export function PendingApprovalStep({
     approveLoan,
     cancelLoan,
   } = workflow;
+  const approvalErrorMessage = useWorkflowApprovalErrorMessage();
 
   const handleApprove = async () => {
     setIsSubmitting(true);
@@ -45,7 +47,7 @@ export function PendingApprovalStep({
         loanId: loanId as Id<"loans">,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("failedToApprove"));
+      setError(approvalErrorMessage(err, t("failedToApprove")));
     } finally {
       setIsSubmitting(false);
     }
@@ -59,7 +61,7 @@ export function PendingApprovalStep({
         loanId: loanId as Id<"loans">,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("failedToCancel"));
+      setError(approvalErrorMessage(err, t("failedToCancel")));
     } finally {
       setIsSubmitting(false);
     }

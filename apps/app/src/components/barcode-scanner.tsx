@@ -81,9 +81,11 @@ export function BarcodeScanner({
 
       setFlashEnabled(!flashEnabled);
     } catch (_error) {
-      setErrorMessage("Flash not supported on this device");
+      setErrorMessage(
+        translate("untranslatedComponents.labels.flashNotSupported"),
+      );
     }
-  }, [flashEnabled]);
+  }, [flashEnabled, translate]);
 
   const startScanner = useCallback(async () => {
     if (disabled || status === "scanning" || isCleaningUpRef.current) return;
@@ -144,7 +146,9 @@ export function BarcodeScanner({
         );
       } else {
         setStatus("error");
-        setErrorMessage(errorMsg);
+        setErrorMessage(
+          translate("untranslatedComponents.labels.failedToStartScanner"),
+        );
       }
 
       if (onScanError) {

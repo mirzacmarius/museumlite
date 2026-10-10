@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ClientDate } from "@/components/client-date";
+import { MoneyCell } from "@/components/money-cell";
 import { PermissionGate } from "@/components/permission-gate";
 import { useBackToResultsLink } from "@/components/record-recovery-state";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import { useI18n } from "@/locales/client";
 import { formatAccessionMethodLabel, StatusTile } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
@@ -194,13 +194,17 @@ export function AccessionDetailHeroBanner({
               <StatusTile
                 label={tRoot("accessions.form.cost")}
                 value={
-                  accession.cost
-                    ? formatCurrency(
-                        accession.cost,
-                        locale as FormatLocale,
-                        "USD",
-                      )
-                    : tRoot("untranslatedRecords.accessions.status.notRecorded")
+                  accession.cost ? (
+                    // Accession costs are stored without a currency.
+                    <MoneyCell
+                      value={accession.cost}
+                      currency={undefined}
+                      locale={locale}
+                      notRecordedLabel={tRoot("common.currencyNotRecorded")}
+                    />
+                  ) : (
+                    tRoot("untranslatedRecords.accessions.status.notRecorded")
+                  )
                 }
                 compact
               />

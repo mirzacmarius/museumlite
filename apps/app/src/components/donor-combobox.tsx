@@ -6,6 +6,7 @@ import { Command } from "@v1/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { useQuery } from "convex/react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 import { DonorComboboxCreateDialog } from "./donor-combobox-create-dialog";
 import { DonorComboboxListContent } from "./donor-combobox-list-content";
 import { DonorComboboxTrigger } from "./donor-combobox-trigger";
@@ -24,11 +25,12 @@ export function DonorCombobox({
   organizationId,
   value = EMPTY_DONOR_VALUES,
   onValueChange,
-  placeholder = "Select or add donors...",
+  placeholder,
   disabled = false,
   includeUnknownOption = false,
 }: DonorComboboxProps) {
   const listId = React.useId();
+  const translate = useI18n();
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
 
@@ -62,14 +64,16 @@ export function DonorCombobox({
     ) {
       organizationDonors.unshift({
         value: UNKNOWN_DONORS_VALUE,
-        label: UNKNOWN_DONORS_VALUE,
+        label: translate("untranslatedComponents.donorCreate.unknownDonors"),
         email: undefined,
-        contactSummary: "Use when the object was donated by an unnamed donor",
+        contactSummary: translate(
+          "untranslatedComponents.donorCreate.unknownDonorsHint",
+        ),
       });
     }
 
     return organizationDonors;
-  }, [donors, includeUnknownOption]);
+  }, [donors, includeUnknownOption, translate]);
 
   const {
     newDonorDialogOpen,
@@ -134,7 +138,10 @@ export function DonorCombobox({
           <DonorComboboxTrigger
             listId={listId}
             disabled={disabled}
-            placeholder={placeholder}
+            placeholder={
+              placeholder ??
+              translate("untranslatedComponents.donorCreate.placeholder")
+            }
             selectedValues={selectedValues}
             inputValue={inputValue}
             open={open}

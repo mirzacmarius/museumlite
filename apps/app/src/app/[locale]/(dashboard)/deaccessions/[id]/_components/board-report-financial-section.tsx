@@ -2,7 +2,7 @@
 
 import { DollarSign } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
+import { MoneyCell } from "@/components/money-cell";
 import { useI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
@@ -40,11 +40,12 @@ export function BoardReportFinancialSection({
               {tRoot("deaccessions.report.amount")}
             </p>
             <p className="font-semibold text-black">
-              {formatCurrency(
-                exportData.deaccession.proceedsAmount,
-                locale as FormatLocale,
-                exportData.deaccession.proceedsCurrency || "USD",
-              )}
+              <MoneyCell
+                value={exportData.deaccession.proceedsAmount}
+                currency={exportData.deaccession.proceedsCurrency}
+                locale={locale}
+                notRecordedLabel={tRoot("common.currencyNotRecorded")}
+              />
             </p>
           </div>
         ) : null}

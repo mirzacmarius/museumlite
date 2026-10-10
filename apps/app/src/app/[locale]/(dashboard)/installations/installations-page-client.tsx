@@ -36,6 +36,7 @@ import {
 } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -94,6 +95,7 @@ const priorityColor: Record<TaskPriority, string> = {
 
 export function InstallationsPageClient() {
   const t = useScopedI18n("untranslatedDashboard.installations");
+  const actionErrorMessage = useActionErrorMessage();
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const canUseInstallations = useCapabilities().isAvailable("installations");
@@ -160,7 +162,9 @@ export function InstallationsPageClient() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">{t("noOrganizationSelected")}</h3>
+            <h3 className="text-lg font-semibold">
+              {t("noOrganizationSelected")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t("selectOrganizationDescription")}
             </p>
@@ -183,9 +187,7 @@ export function InstallationsPageClient() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
               <h2 className="page-title">{t("title")}</h2>
-              <p className="page-description">
-                {t("description")}
-              </p>
+              <p className="page-description">{t("description")}</p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
               <PermissionGate permission="collections.create">
@@ -218,9 +220,7 @@ export function InstallationsPageClient() {
                           setCreateDialogOpen(false);
                         } catch (err) {
                           toast.error(
-                            err instanceof Error
-                              ? err.message
-                              : t("taskCreateFailed"),
+                            actionErrorMessage(err, t("taskCreateFailed")),
                           );
                         }
                       }}
@@ -315,11 +315,15 @@ export function InstallationsPageClient() {
 
                           <div className="mt-3 flex flex-col gap-2 text-xs text-muted-foreground">
                             {task.assigneeName && (
-                                <span>{t("assigneeValue", { name: task.assigneeName })}</span>
+                              <span>
+                                {t("assigneeValue", {
+                                  name: task.assigneeName,
+                                })}
+                              </span>
                             )}
                             {task.dueDate && (
                               <span>
-                                {t("dueDateValue")} {" "}
+                                {t("dueDateValue")}{" "}
                                 <ClientDate
                                   timestamp={task.dueDate}
                                   locale={locale}
@@ -352,9 +356,10 @@ export function InstallationsPageClient() {
                                   toast.success(t("taskUpdated"));
                                 } catch (err) {
                                   toast.error(
-                                    err instanceof Error
-                                      ? err.message
-                                      : t("taskUpdateFailed"),
+                                    actionErrorMessage(
+                                      err,
+                                      t("taskUpdateFailed"),
+                                    ),
                                   );
                                 }
                               }}
@@ -363,11 +368,15 @@ export function InstallationsPageClient() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="todo">{t("todo")}</SelectItem>
+                                <SelectItem value="todo">
+                                  {t("todo")}
+                                </SelectItem>
                                 <SelectItem value="in_progress">
                                   {t("inProgress")}
                                 </SelectItem>
-                                <SelectItem value="blocked">{t("blocked")}</SelectItem>
+                                <SelectItem value="blocked">
+                                  {t("blocked")}
+                                </SelectItem>
                                 <SelectItem value="completed">
                                   {t("completed")}
                                 </SelectItem>
@@ -482,7 +491,9 @@ function TaskForm({
               <SelectItem value="lighting">{t("typeLighting")}</SelectItem>
               <SelectItem value="signage">{t("typeSignage")}</SelectItem>
               <SelectItem value="mounts">{t("typeMounts")}</SelectItem>
-              <SelectItem value="conservation">{t("typeConservation")}</SelectItem>
+              <SelectItem value="conservation">
+                {t("typeConservation")}
+              </SelectItem>
               <SelectItem value="labeling">{t("typeLabeling")}</SelectItem>
               <SelectItem value="security">{t("typeSecurity")}</SelectItem>
               <SelectItem value="av">{t("typeAv")}</SelectItem>

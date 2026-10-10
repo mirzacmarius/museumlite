@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useLoanAgreementTemplateErrorMessage } from "@/hooks/use-loan-agreement-template-error-message";
+import { useLoanObjectErrorMessage } from "@/hooks/use-loan-object-error-message";
 import { usePartyErrorMessage } from "@/hooks/use-party-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { EMPTY_NEW_LOAN_FORM, type NewLoanFormData } from "./types";
@@ -22,6 +23,7 @@ export function useNewLoanForm() {
   const { currentOrganizationId } = useOrganization();
   const createLoan = useMutation(api.loans.create);
   const partyErrorMessage = usePartyErrorMessage();
+  const loanObjectErrorMessage = useLoanObjectErrorMessage();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +159,9 @@ export function useNewLoanForm() {
         .join(", ");
 
       setError(
-        `The following collections are already in active or pending loans and must be removed: ${problematicNames}. Please remove them before creating the loan.`,
+        tActions("collectionsAlreadyInActiveLoans", {
+          names: problematicNames,
+        }),
       );
       return;
     }
@@ -199,16 +203,8 @@ export function useNewLoanForm() {
 
       if (partyErrorFromError(err)) {
         errorMessage = partyErrorMessage(err);
-      } else if (!loanAgreementTemplateErrorFromError(err) && err instanceof Error) {
-        if (err.message.includes("already in an active loan")) {
-          errorMessage = tActions("alreadyInActiveLoan");
-        } else if (err.message.includes("does not belong to organization")) {
-          errorMessage = tActions("doesNotBelongToOrganization");
-        } else if (err.message.includes("is not active")) {
-          errorMessage = tActions("notActive");
-        } else {
-          errorMessage = err.message;
-        }
+      } else if (!loanAgreementTemplateErrorFromError(err)) {
+        errorMessage = loanObjectErrorMessage(err) ?? errorMessage;
       }
 
       setError(errorMessage);

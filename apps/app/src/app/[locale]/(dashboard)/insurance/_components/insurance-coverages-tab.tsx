@@ -10,9 +10,9 @@ import { usePaginatedQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { ShieldCheck } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
+import { MoneyCell } from "@/components/money-cell";
 import { CALENDAR_DATE_OPTIONS } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
-import { MoneyCell } from "./money-cell";
 
 type CoverageRow = FunctionReturnType<
   typeof api.insurance.listCoverages

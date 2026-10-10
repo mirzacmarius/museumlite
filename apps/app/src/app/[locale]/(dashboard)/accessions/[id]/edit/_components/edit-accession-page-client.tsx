@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useClientDate } from "@/hooks/use-client-date-format";
 import { getAccessionStatusLabel } from "@/lib/record-enum-labels";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
@@ -27,6 +28,7 @@ export function EditAccessionPageClient() {
   const { push, back } = useRouter();
   const t = useScopedI18n("accessions");
   const tCommon = useScopedI18n("common");
+  const actionErrorMessage = useActionErrorMessage();
   const locale = useCurrentLocale();
   const accessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
@@ -127,7 +129,7 @@ export function EditAccessionPageClient() {
       push(`/accessions/${accessionId}`);
     } catch (err) {
       console.error("Error updating accession:", err);
-      setError(err instanceof Error ? err.message : t("error.failedToUpdate"));
+      setError(actionErrorMessage(err, t("error.failedToUpdate")));
       setIsSubmitting(false);
     }
   };

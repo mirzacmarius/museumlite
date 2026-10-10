@@ -57,7 +57,7 @@ export function useDonorCreate({
     const trimmedEmail = newDonorForm.email.trim();
 
     if (!validateDonorEmail(trimmedEmail)) {
-      setEmailError("Please enter a valid email address");
+      setEmailError(t("untranslatedComponents.donorCreate.invalidEmail"));
       return;
     }
 
@@ -113,42 +113,7 @@ export function useDonorCreate({
       setNewDonorDialogOpen(false);
       resetNewDonorForm();
       onCreated();
-    } catch (err) {
-      if (err instanceof Error) {
-        if (err.message.includes("Invalid email")) {
-          setEmailError("Please enter a valid email address");
-          toast.error(t("common.toast.invalidEmail"));
-          return;
-        }
-
-        if (err.message.includes("already exists")) {
-          const errorMessage = err.message;
-          let toastMessage = errorMessage;
-
-          if (errorMessage.includes("email")) {
-            const existingByEmail = donorOptions.find(
-              (donor) =>
-                trimmedEmail &&
-                donor.email &&
-                donor.email.toLowerCase() === trimmedEmail.toLowerCase(),
-            );
-            if (existingByEmail) {
-              toastMessage = `A donor with this email already exists: ${existingByEmail.label}`;
-            }
-          } else {
-            const existingByName = donorOptions.find(
-              (donor) =>
-                donor.label.toLowerCase() === formattedName.toLowerCase(),
-            );
-            if (existingByName) {
-              toastMessage = `A donor with this name already exists: ${existingByName.label}`;
-            }
-          }
-
-          toast.error(toastMessage);
-          return;
-        }
-      }
+    } catch {
       toast.error(t("common.toast.createFailed"));
     } finally {
       setIsSubmitting(false);

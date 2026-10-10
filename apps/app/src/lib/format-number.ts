@@ -96,3 +96,32 @@ export function formatMoney(
     return `${formatNumber(value, locale)} ${currency}`;
   }
 }
+
+/**
+ * Totals per recorded currency, sorted by currency code. Amounts in different
+ * currencies are never added together; an amount without a currency is
+ * counted in `currencyNotRecordedCount`, not summed.
+ */
+export function totalsByCurrency(
+  entries: ReadonlyArray<{ amount?: number | null; currency?: string | null }>,
+): {
+  byCurrency: Array<{ currency: string; total: number }>;
+  currencyNotRecordedCount: number;
+} {
+  const totals = new Map<string, number>();
+  let currencyNotRecordedCount = 0;
+  for (const { amount, currency } of entries) {
+    if (amount === undefined || amount === null) continue;
+    if (!currency) {
+      currencyNotRecordedCount++;
+      continue;
+    }
+    totals.set(currency, (totals.get(currency) ?? 0) + amount);
+  }
+  return {
+    byCurrency: [...totals]
+      .map(([currency, total]) => ({ currency, total }))
+      .sort((a, b) => a.currency.localeCompare(b.currency)),
+    currencyNotRecordedCount,
+  };
+}

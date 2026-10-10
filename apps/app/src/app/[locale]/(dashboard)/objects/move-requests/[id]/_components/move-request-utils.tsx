@@ -47,14 +47,19 @@ export function MoveRequestStatusBadge({ status }: { status: string }) {
   }
 }
 
-export function formatMoveRequestAccessionMode(mode: string) {
+export function formatMoveRequestAccessionMode(
+  mode: string,
+  tRoot: (key: string) => string,
+) {
   switch (mode) {
     case "keep":
-      return "Keep current accession number";
+      return tRoot("untranslatedComponents.labels.keepCurrentAccessionNumber");
     case "auto":
-      return "Generate a new accession number";
+      return tRoot("untranslatedComponents.labels.generateANewAccessionNumber");
     case "manual":
-      return "Use the requested accession number";
+      return tRoot(
+        "untranslatedRecords.objects.transfer.useRequestedAccessionNumber",
+      );
     default:
       return mode;
   }

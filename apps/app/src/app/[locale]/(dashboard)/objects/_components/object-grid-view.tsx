@@ -35,6 +35,7 @@ import {
   type RemovalType,
 } from "@/components/deaccession-dialog";
 import { PermissionGate } from "@/components/permission-gate";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { withReturnPath } from "@/lib/return-path";
@@ -150,6 +151,7 @@ export function ObjectActionsMenu({
     item.status !== "archived" &&
     item.status !== "deleted";
   const restoreCollection = useMutation(api.collections.restoreCollection);
+  const capabilityMessage = useCapabilityErrorMessage();
   const objectDetail = useQuery(
     api.collections.getObjectDetail,
     state.isPrintModalOpen ? { collectionId: item._id } : "skip",
@@ -186,10 +188,10 @@ export function ObjectActionsMenu({
   const handleRestore = async () => {
     try {
       await restoreCollection({ collectionId: item._id });
-      toast.success("Object restored to the routine catalog.");
+      toast.success(tRoot("objects.withdrawal.restored"));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to restore object.",
+        capabilityMessage(error) ?? tRoot("objects.withdrawal.restoreFailed"),
       );
     }
   };
@@ -318,7 +320,7 @@ export function ObjectActionsMenu({
                 }}
               >
                 <RotateCcw className="mr-2 size-4" />
-                Restore to catalog
+                {tRoot("objects.withdrawal.restore")}
               </DropdownMenuItem>
             </PermissionGate>
           )}

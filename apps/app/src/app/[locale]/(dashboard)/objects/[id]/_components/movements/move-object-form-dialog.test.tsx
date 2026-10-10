@@ -63,7 +63,7 @@ test("a colleague's move while the dialog is open is refused, explained there, a
   const user = userEvent.setup();
   await user.click(screen.getByRole("combobox", { name: "Destination *" }));
   await user.click(
-    await screen.findByRole("option", { name: "Quarantine bay (room)" }),
+    await screen.findByRole("option", { name: "Quarantine bay (Room)" }),
   );
   moveObject.mockRejectedValueOnce(
     custodyConflict("SOURCE_CHANGED", "Object moved", {

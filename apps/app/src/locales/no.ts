@@ -2160,7 +2160,7 @@ export default {
       termsEdit: "Spesifikke lånevilkår, begrensninger eller krav...",
       notes: "Personalnotater...",
       notesEdit: "Tilleggsnotater for personalet...",
-      collections: "Søk og velg samlinger...",
+      collections: "Søk etter og velg objekter...",
       searchAccession: "Søk aksesjonsnummer...",
       searchCollections: "Søk etter aksesjonsnummer eller tittel...",
       conditionOut: "Tilstand ved avgang",
@@ -2293,9 +2293,10 @@ export default {
         "Er du sikker på at du vil fjerne dette objektet fra lånet? Handlingen kan ikke angres.",
       removeItem: "Fjern objekt",
       addItemsToLoan: "Legg til objekter i lånet",
-      searchSelectCollections: "Søk og velg samlinger å legge til dette lånet",
-      noCollectionsFound: "Ingen samlinger funnet som samsvarer med søket ditt",
-      noAvailableCollections: "Ingen tilgjengelige samlinger å legge til",
+      searchSelectCollections:
+        "Søk etter og velg objekter som skal legges til i lånet",
+      noCollectionsFound: "Ingen objekter samsvarer med søket",
+      noAvailableCollections: "Ingen objekter er tilgjengelige",
       selectedCount: "Valgt ({count})",
       clearAll: "Fjern alt",
       addItems: "Legg til objekter",
@@ -2367,7 +2368,7 @@ export default {
       nameInstitution: "Navn / Institusjon",
       required: "*",
       scheduleTerms: "Tidsplan og vilkår",
-      selectCollections: "Velg samlinger",
+      selectCollections: "Velg objekter",
       summary: "Sammendrag",
       type: "Type",
       lender: "Långiver",
@@ -2389,7 +2390,7 @@ export default {
       alreadyInActiveLoan:
         "Ett eller flere av de valgte objektene er allerede i et aktivt eller ventende lån. Fjern dem og prøv igjen.",
       doesNotBelongToOrganization:
-        "Ett eller flere av de valgte objektene tilhører ikke lenger denne organisasjonen. Oppdater og prøv igjen.",
+        "Ett eller flere av de valgte objektene er ikke lenger tilgjengelige. Oppdater og prøv igjen.",
       notActive:
         "Ett eller flere av de valgte objektene er ikke aktive. Velg bare aktive objekter.",
       exportedLoans: "Eksportert {count} lån",
@@ -2406,7 +2407,7 @@ export default {
       failedToAddItems: "Kunne ikke legge objektene til i lånet",
       failedToRemoveItem: "Kunne ikke fjerne objektet fra lånet",
       failedToReturnItem: "Kunne ikke returnere objektet",
-      pleaseSelectAtLeastOneCollection: "Vennligst velg minst en samling",
+      pleaseSelectAtLeastOneCollection: "Velg minst ett objekt",
       alreadyInLoan: "Allerede i lån {loanNumber} ({status})",
       outgoing: "Utgående",
       incoming: "Innkommende",
@@ -2872,6 +2873,8 @@ export default {
         typeRequired: "Vennligst velg en plasseringstype",
         createFailed: "Kunne ikke opprette plassering",
       },
+      imageUploadFailed:
+        "Bildet av plasseringen kunne ikke lastes opp. Prøv igjen.",
     },
     move: {
       title: "Flytt Plassering",
@@ -3008,6 +3011,7 @@ export default {
     saveChanges: "Lagre Endringer",
     updating: "Oppdaterer...",
     close: "Lukk",
+    currencyNotRecorded: "Valuta ikke registrert",
   },
   objects: {
     backToObject: "Tilbake til objektet",
@@ -3092,10 +3096,10 @@ export default {
       noObjectsFound: "Ingen objekter funnet",
       addFirstObject: "Legg til Ditt Første Objekt",
 
-      noObjectsInCollection: "Denne samlingen har ingen objekter ennå",
-      addObjectsToCollection: "Legg til objekter i samlingen",
+      noObjectsInCollection: "Denne samlingsgruppen har ingen objekter ennå",
+      addObjectsToCollection: "Legg til objekter i samlingsgruppen",
       addObjectsToCollectionDescription:
-        "Velg katalogiserte objekter som skal tas med i samlingen. Objekter kan tilhøre flere samlinger.",
+        "Velg katalogiserte objekter som skal være med i denne samlingsgruppen. Et objekt kan tilhøre flere samlingsgrupper.",
     },
     table: {
       selectAllItems: "Velg alle objekter",
@@ -3193,9 +3197,8 @@ export default {
       deleteObject: "Slett Objekt",
       deleting: "Sletter...",
       editObject: "Rediger Objekt",
-      selectOrganization:
-        "Vennligst velg en organisasjon for å vise samlinger.",
-      collections: "Samlinger",
+      selectOrganization: "Velg en organisasjon for å se objektene.",
+      collections: "Objekter",
       public: "Offentlig",
       private: "Privat",
       currentObject: "Gjeldende objekt",
@@ -3258,7 +3261,7 @@ export default {
         dimensions: "f.eks., 50 x 60 cm",
         location: "Velg en plassering (valgfritt)",
         parentObject: "Velg overordnet objekt (valgfritt)",
-        collection: "Velg samling (valgfritt)",
+        collection: "Velg en samlingsgruppe (valgfritt)",
         description: "Skriv inn detaljert beskrivelse",
         provenance: "Skriv inn proveniensinformasjon",
         exhibitionHistory: "Skriv inn utstillingshistorikk",
@@ -3328,6 +3331,9 @@ export default {
         failedToDeleteMedia: "Kunne ikke slette media",
         failedToUpdateMedia: "Kunne ikke oppdatere media",
         failedToGenerateUploadUrl: "Kunne ikke generere opplastings-URL",
+        uploadFailed: "Filen kunne ikke lastes opp. Prøv igjen.",
+        failedToUploadDocuments:
+          "Dokumentene kunne ikke lastes opp. Prøv igjen.",
       },
       toasts: {
         noDataToExport: "Ingen data å eksportere",
@@ -3477,29 +3483,41 @@ export default {
       missingFileDescription: "Filens URL mangler eller har utløpt.",
     },
     collectionGroup: {
-      addObjectsTitle: "Legg til objekter i samlingen",
+      addObjectsTitle: "Legg til objekter i samlingsgruppen",
       addObjectsDescription:
-        "Velg hvilke objekter som skal tilhøre samlingen «{name}». Avmerkede objekter tas med.",
+        "Velg hvilke objekter som skal tilhøre samlingsgruppen «{name}». Avmerkede objekter tas med.",
       searchAndSelectObjects: "Søk etter og velg objekter…",
       multiCollectionHint:
-        "Objekter kan tilhøre flere samlinger samtidig. Fjern avmerkingen for å ta objektet ut av bare denne samlingen.",
+        "Et objekt kan tilhøre flere samlingsgrupper samtidig. Fjern avmerkingen for å ta det ut av bare denne gruppen.",
       saveMembership: "Lagre utvalget",
       addObjectsButton: "Legg til objekter",
-      viewingCollection: "Samling: {name}",
+      viewingCollection: "Samlingsgruppe: {name}",
+    },
+    withdrawal: {
+      restore: "Gjenopprett til katalogen",
+      restored: "Objektet er gjenopprettet i den vanlige katalogen.",
+      restoreFailed:
+        "Objektet kunne ikke gjenopprettes. Oppdater og prøv igjen.",
+      withdrawn: "Objektet er trukket tilbake fra den vanlige katalogen.",
+      noticeLabel: "Melding om tilbaketrekking",
+      noticeTitle: "Trukket tilbake fra den vanlige katalogen",
+      reason: "Begrunnelse: {reason}",
+      legacyReasonMissing:
+        "Begrunnelsen for denne eldre tilbaketrekkingen ble ikke registrert. Registeret og tilknyttet dokumentasjon er bevart slik de ble lagret; gå gjennom kildepostene før du gjenoppretter.",
     },
   },
   collections: {
     createPage: {
       description:
-        "Grupper relaterte objekter og velg hvem som forvalter samlingen.",
-      detailsTitle: "Samlingsdetaljer",
+        "Grupper relaterte objekter og velg hvem som forvalter samlingsgruppen.",
+      detailsTitle: "Detaljer om samlingsgruppen",
       managementTitle: "Forvaltning",
       optional: "Valgfritt",
       objectsHint:
         "Du kan legge til objekter etter at samlingsgruppen er opprettet.",
     },
     title: "Samlingsgrupper",
-    description: "Administrer samlingsgrupper av objekter",
+    description: "Administrer grupper av objekter i samlingen",
     importCSV: "Importer CSV",
     newCollection: "Ny Samlingsgruppe",
     searchPlaceholder: "Søk samlingsgrupper...",
@@ -3553,9 +3571,9 @@ export default {
     },
     noItems: "Ingen objekter i denne samlingsgruppen",
     removeDialog: {
-      title: "Fjern fra Samling",
+      title: "Fjern fra samlingsgruppen",
       description:
-        'Er du sikker på at du vil fjerne "{title}" fra denne samlingen? Objektet vil ikke bli slettet, bare fjernet fra denne samlingen.',
+        "Fjerne «{title}» fra denne samlingsgruppen? Objektet slettes ikke, det tas bare ut av gruppen.",
       remove: "Fjern",
     },
     form: {
@@ -3563,7 +3581,7 @@ export default {
       nameRequired: "*",
       namePlaceholder: "f.eks., Antikke Egyptiske Gjenstander",
       descriptionLabel: "Beskrivelse",
-      descriptionPlaceholder: "Beskriv denne samlingen...",
+      descriptionPlaceholder: "Beskriv denne samlingsgruppen...",
       curatorLabel: "Kurator",
       curatorPlaceholder: "Velg en kurator (valgfritt)",
       noCurator: "Ingen kurator",
@@ -3572,26 +3590,26 @@ export default {
       managedByRolePlaceholder: "Enhver rolle kan administrere (valgfritt)",
       anyRole: "Enhver rolle kan administrere",
       roleHint:
-        "Begrens hvem som kan redigere denne samlingen til brukere med en spesifikk rolle",
+        "Begrens redigering av denne samlingsgruppen til brukere med en bestemt rolle",
       creating: "Oppretter...",
-      createButton: "Opprett Samling",
+      createButton: "Opprett samlingsgruppe",
       updating: "Oppdaterer...",
-      updateButton: "Oppdater Samling",
+      updateButton: "Oppdater samlingsgruppen",
       nameError: "Navn er påkrevd",
-      createError: "Kunne ikke opprette samling. Vennligst prøv igjen.",
-      updateError: "Kunne ikke oppdatere samling. Vennligst prøv igjen.",
+      createError: "Samlingsgruppen kunne ikke opprettes. Prøv igjen.",
+      updateError: "Samlingsgruppen kunne ikke oppdateres. Prøv igjen.",
     },
     delete: {
       dangerZone: "Faresone",
-      title: "Slett denne samlingen",
+      title: "Slett denne samlingsgruppen",
       description:
-        "Objekter i denne samlingen vil bli frakoblet men ikke slettet.",
+        "Objektene i denne samlingsgruppen kobles fra, de slettes ikke.",
       button: "Slett",
-      dialogTitle: "Slett Samling",
+      dialogTitle: "Slett samlingsgruppe",
       dialogDescription:
-        'Er du sikker på at du vil slette "{name}"? Objekter i denne samlingen vil bli frakoblet men ikke slettet.',
+        "Slette «{name}»? Objektene i denne samlingsgruppen kobles fra, de slettes ikke.",
       deleting: "Sletter...",
-      deleteButton: "Slett Samling",
+      deleteButton: "Slett samlingsgruppe",
     },
     csvImport: {
       title: "Importer Objekter fra CSV",
@@ -3963,7 +3981,7 @@ export default {
       description: "Beskrivelse",
       notes: "Notater",
       details: "Detaljer",
-      collectionObject: "Samlingsobjekt",
+      collectionObject: "Objekt",
       datePerformed: "Utført Dato",
       performedBy: "Utført Av",
       unknownObject: "Ukjent Objekt",
@@ -3981,7 +3999,7 @@ export default {
       newSubtitle: "Registrer en ny konserveringsbehandling eller vurdering",
       editTitle: "Rediger Behandlingsregistrering",
       editSubtitle: "Oppdater detaljer for",
-      collectionObject: "Samlingsobjekt",
+      collectionObject: "Objekt",
       treatmentType: "Behandlingstype",
       selectType: "Velg type",
       datePerformed: "Utført Dato",
@@ -4185,7 +4203,7 @@ export default {
       loanVenuePlaceholder: "Skriv inn stedsnavn",
       notesLabel: "Notater",
       notesPlaceholder: "Legg til notater om denne utstillingen...",
-      selectObject: "Vennligst velg et samlingsobjekt",
+      selectObject: "Velg et objekt",
       scheduleConflict: "Tidsplankonflikt Oppdaget",
       scheduleConflictDescription:
         "Dette objektet er allerede planlagt i de valgte datoene:",
@@ -5359,6 +5377,8 @@ export default {
       notPermitted:
         "Du kan ikke ta denne avgjørelsen for gjeldende gjennomgangstrinn.",
       fallback: "Avgjørelsen kunne ikke lagres. Oppdater og prøv igjen.",
+      sourceVerificationRequired:
+        "Kilden må verifiseres før denne forespørselen kan godkjennes. Verifiser kilden, eller godkjenn med en begrunnelse for unntaket.",
     },
   },
   accessions: {
@@ -5487,6 +5507,8 @@ export default {
       failedToEmptyTrash: "Kunne ikke tømme avviste aksesjoner",
       failedToUpdate: "Kunne ikke oppdatere aksesjon. Vennligst prøv igjen.",
       sourceRequired: "Kilde er påkrevd",
+      failedToCreate:
+        "Aksesjonen kunne ikke opprettes. Kontroller opplysningene og prøv igjen.",
     },
     kanban: {
       loading: "Laster…",
@@ -5533,6 +5555,20 @@ export default {
     },
 
     addObject: "Legg til objekt",
+    catalogNumber: {
+      title: "Katalognummer ved publisering",
+      optionalLabel: "Katalognummer ved publisering (valgfritt)",
+      defaultHint:
+        "Standard er aksesjonsnummeret. Velg et ledig katalognummer hvis katalogen allerede bruker aksesjonsnummeret; hvert register beholder sitt eget permanente nummer.",
+      planned:
+        "Planlagt katalognummer: {identifier}. Nummeret {accessionNumber} i aksesjonsregisteret er permanent. Hvis katalogen allerede bruker det, velger du et annet katalognummer for det nye objektet. Tilgjengeligheten kontrolleres på nytt når objektet publiseres.",
+      fieldLabel: "Katalognummer for det nye objektet",
+      select: "Velg katalognummer",
+      selected:
+        "Katalognummeret er valgt. Det permanente aksesjonsnummeret er uendret.",
+      failed: "Katalognummeret kunne ikke velges. Oppdater og prøv igjen.",
+      loading: "Laster katalognummerering…",
+    },
   },
 
   recordRecovery: {
@@ -6085,6 +6121,7 @@ export default {
     loadMore: "Last inn flere",
     refineSearch:
       "Flere objekter samsvarer. Avgrens søket for å snevre inn listen.",
+    selectParent: "Velg et overordnet objekt...",
   },
   valuation: {
     title: "Verdsettelse",
@@ -6253,7 +6290,7 @@ export default {
       methodLabel: "Metode",
       disposition: "Disposisjon",
       notes: "Notater",
-      collectionObject: "Samlingsobjekt",
+      collectionObject: "Objekt",
       workflowHistory: "Arbeidsflythistorikk",
       approvalAction: "Godkjenningshandling",
       commentLabel: "Kommentar (valgfritt)",
@@ -6261,6 +6298,7 @@ export default {
       created: "Opprettet",
       step: "Trinn {step} - Godkjent",
       unknown: "Ukjent",
+      awaitingReview: "Venter på gjennomgang",
     },
     stages: {
       eyebrow: "Avhendingstrinn",
@@ -6364,8 +6402,8 @@ export default {
       selectOrg: "Vennligst velg en organisasjon for å opprette deaksesjoner.",
       selectOrgEdit:
         "Vennligst velg en organisasjon for å redigere deaksesjoner.",
-      collectionLabel: "Samlingsobjekt",
-      collectionPlaceholder: "Velg et samlingsobjekt",
+      collectionLabel: "Objekt",
+      collectionPlaceholder: "Velg et objekt",
       deaccessionNumber: "Deaksesjonsnummer",
       deaccessionNumberPlaceholder: "Autogenerert hvis tomt",
       deaccessionNumberHint:
@@ -6395,7 +6433,7 @@ export default {
       proceedsNotes: "Inntektsnotater",
       proceedsNotesPlaceholder: "Tilleggsnotater om inntektene...",
       errors: {
-        collectionRequired: "Samling er påkrevd",
+        collectionRequired: "Velg et objekt",
         reasonRequired: "Årsak er påkrevd",
         createFailed: "Kunne ikke opprette deaksesjon. Vennligst prøv igjen.",
         updateFailed: "Kunne ikke oppdatere deaksesjon. Vennligst prøv igjen.",
@@ -6437,6 +6475,7 @@ export default {
       proceedsNotes: "Inntektsnotater",
       stepApproved: "Trinn {step} Godkjent",
       created: "Opprettet",
+      proceedsWithoutCurrency: "Inntekter uten registrert valuta: {count}",
     },
     placeholders: {
       searchObjects: "Søk deaksesjoner...",
@@ -6445,6 +6484,7 @@ export default {
       selectDisposition: "f.eks., Solgt til privat samler",
       addNotes: "Tilleggsnotater om denne deaksesjonen...",
     },
+    withdrawnObjects: "Tilbaketrukne objekter",
   },
   parties: {
     roles: {
@@ -7020,8 +7060,8 @@ export default {
         noLoanHistory: "Ingen lånehistorikk for dette objektet",
         documentsCount: "Dokumenter ({count})",
         condition: "Tilstand",
-        searchCollections: "Søk etter og velg samlinger *",
-        loadingCollections: "Laster samlinger…",
+        searchCollections: "Søk etter og velg objekter *",
+        loadingCollections: "Laster objekter…",
         lenderUpper: "UTLÅNER:",
         museumUpper: "MUSEUM/INSTITUSJON:",
         uploadedBy: "Lastet opp av {name}",
@@ -7066,7 +7106,7 @@ export default {
         approvalWorkflow: "Godkjenningsflyt",
         linkedObject: "Tilknyttet objekt",
         linkedObjectDescription:
-          "Denne accessionen har allerede opprettet en samlingspost.",
+          "Denne aksesjonen har allerede opprettet objektet sitt.",
         openCreatedObject: "Åpne opprettet objekt",
         draftsMustBeSubmitted:
           "Utkast må sendes inn før godkjenningen kan starte.",
@@ -7381,11 +7421,11 @@ export default {
       },
       delete: {
         confirm:
-          "Er du sikker på at du vil slette «{name}»? Objektene i denne samlingen kobles fra, men slettes ikke.",
+          "Slette «{name}»? Objektene i denne samlingsgruppen kobles fra, de slettes ikke.",
       },
       remove: {
         confirm:
-          "Er du sikker på at du vil fjerne «{name}» fra denne samlingen? Objektet slettes ikke, det fjernes bare fra samlingen.",
+          "Fjerne «{name}» fra denne samlingsgruppen? Objektet slettes ikke, det tas bare ut av gruppen.",
       },
       detail: {
         selectedCount: "Valgt ({count}):",
@@ -7533,7 +7573,7 @@ export default {
         unsavedAcrossTabs: "Du har ulagrede feltendringer på tvers av faner.",
         mediaAlreadyApplied: "Medieendringene er allerede tatt i bruk.",
         noUnsavedChanges: "Ingen ulagrede feltendringer.",
-        collectionNotFound: "Fant ikke samlingen",
+        collectionNotFound: "Fant ikke objektet",
         selectOrganization: "Velg en organisasjon for å redigere objekter.",
       },
       form: {
@@ -7692,7 +7732,7 @@ export default {
         loans: "Laster lån…",
         logs: "Laster logger…",
         treatments: "Laster behandlinger…",
-        collections: "Laster samlinger…",
+        collections: "Laster objekter…",
         more: "til",
         default: "Laster…",
       },
@@ -7779,6 +7819,8 @@ export default {
         unknownOrganization: "Ukjent organisasjon",
         unknownUser: "Ukjent bruker",
         to: "til",
+        numberOnApproval: "Genereres når forespørselen godkjennes",
+        useRequestedAccessionNumber: "Bruk det forespurte aksesjonsnummeret",
       },
       roles: {
         curator: "Kurator",
@@ -7828,7 +7870,7 @@ export default {
         catalogedDate: "Katalogiseringsdato",
       },
       collection: {
-        noneAssigned: "Ikke tilordnet en samling",
+        noneAssigned: "Ikke i noen samlingsgruppe",
       },
       request: {
         editTitle: "Rediger objekt",
@@ -7881,9 +7923,9 @@ export default {
       failedToLoadAccessions: "Kunne ikke laste accessioner",
       failedToLoadAccessionsDescription:
         "Arbeidsflyten for accessioner kunne ikke lastes. Prøv igjen eller gå tilbake til dashbordet.",
-      failedToLoadCollections: "Kunne ikke laste samlingene",
+      failedToLoadCollections: "Kunne ikke laste samlingsgrupper",
       failedToLoadCollectionsDescription:
-        "Samlingene kunne ikke lastes. Prøv igjen eller gå tilbake til dashbordet.",
+        "Vi kunne ikke laste samlingsgruppene dine. Prøv igjen eller gå tilbake til oversikten.",
       failedToLoadLoans: "Kunne ikke laste lånene",
       failedToLoadLoansDescription:
         "Lånene kunne ikke lastes. Prøv igjen eller gå tilbake til dashbordet.",
@@ -9432,6 +9474,8 @@ export default {
       skipToSearch: "Hopp til søket",
       cannotDeleteMaterial: "Kan ikke slette materialet",
       deleteMaterial: "Slett materialet",
+      currentLocationOption: "{location} (nåværende)",
+      flashNotSupported: "Kameraet på denne enheten har ikke blitskontroll.",
     },
     auth: {
       noAccountYet: "Har du ingen konto ennå?",
@@ -9570,6 +9614,10 @@ export default {
     donorCreate: {
       duplicateEmail:
         "Det finnes allerede en giver med denne e-postadressen: {donor}",
+      invalidEmail: "Skriv inn en gyldig e-postadresse.",
+      placeholder: "Velg eller legg til givere...",
+      unknownDonors: "Ukjente givere",
+      unknownDonorsHint: "Brukes når objektet ble gitt av en ukjent giver",
     },
     navigation: {
       patronManagement: "Låneradministrasjon",
@@ -10232,6 +10280,46 @@ export default {
       draftMedia: "Bilder og dokumenter",
       alternateNumberExists:
         "Dette alternative aksesjonsnummeret står allerede i listen.",
+    },
+  },
+  workflowApprovals: {
+    errors: {
+      workflowNotConfigured:
+        "Dette godkjenningssteget er ikke satt opp riktig. Be en administrator gå gjennom arbeidsflytinnstillingene, og prøv deretter igjen.",
+      approvalNotPermitted:
+        "Dette steget er tildelt en annen godkjennerrolle. Be noen som er tildelt steget om å gjennomgå det.",
+      alreadyApproved:
+        "Godkjenningen din er allerede registrert. Saken venter til de øvrige godkjennerne har godkjent den.",
+    },
+  },
+  identifiers: {
+    registers: {
+      catalog: "katalogregisteret",
+      accession: "aksesjonsregisteret",
+    },
+    errors: {
+      invalid:
+        "Bruk 1 til 256 synlige tegn i nummeret. Eksisterende historiske numre endres ikke.",
+      inUse:
+        "{identifier} er allerede i bruk i {register}. Åpne den posten eller velg et ledig nummer; historiske poster blir aldri omnummerert eller slått sammen.",
+      reviewRequired:
+        "Fullfør identifikatorgjennomgangen for {register} i Innstillinger › Preferanser før du tildeler nye numre.",
+      numberingNotConfigured:
+        "Nummergenerering er ikke satt opp. Skriv inn et nummer, eller be en administrator sette opp nummerering i Innstillinger › Preferanser.",
+      numberingExhausted:
+        "Nummerformatet ga gjentatte ganger numre som allerede brukes i {register}. Be en administrator gå gjennom formatet eller telleren i Innstillinger › Preferanser.",
+      catalogNumberLocked:
+        "Bare en upublisert aksesjon under gjennomgang kan endre det planlagte katalognummeret. Publiserte registernumre er permanente.",
+    },
+    hint: {
+      needsIndexing:
+        "Fullfør indekseringen av identifikatorer før du tildeler nye numre.",
+      openReview: "Åpne identifikatorgjennomgangen",
+      inUse:
+        "Andre poster i {register} bruker allerede dette nummeret. Velg et ledig nummer for en ny post. Store bokstaver og mellomrom rundt gjør ikke et nummer unikt.",
+      moreMatches: "Flere treff finnes i identifikatorgjennomgangen.",
+      permanentInDraft:
+        "Dette permanente nummeret beholdes når du redigerer utkastet.",
     },
   },
 } as const;

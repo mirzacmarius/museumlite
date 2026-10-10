@@ -2189,7 +2189,7 @@ export default {
         "Términos específicos del préstamo, restricciones o requisitos...",
       notes: "Notas del personal...",
       notesEdit: "Notas adicionales para el personal...",
-      collections: "Buscar y seleccionar colecciones...",
+      collections: "Buscar y seleccionar objetos...",
       searchAccession: "Buscar número de acceso...",
       searchCollections: "Buscar por número de acceso o título...",
       conditionOut: "Condición al salir",
@@ -2245,10 +2245,9 @@ export default {
       removeItem: "Quitar objeto",
       addItemsToLoan: "Añadir objetos al préstamo",
       searchSelectCollections:
-        "Buscar y seleccionar colecciones para agregar a este préstamo",
-      noCollectionsFound:
-        "No se encontraron colecciones que coincidan con tu búsqueda",
-      noAvailableCollections: "No hay colecciones disponibles para agregar",
+        "Busque y seleccione objetos para añadirlos a este préstamo",
+      noCollectionsFound: "Ningún objeto coincide con la búsqueda",
+      noAvailableCollections: "No hay objetos disponibles para añadir",
       selectedCount: "Seleccionado ({count})",
       clearAll: "Limpiar todo",
       addItems: "Añadir objetos",
@@ -2320,7 +2319,7 @@ export default {
       nameInstitution: "Nombre / Institución",
       required: "*",
       scheduleTerms: "Cronograma y términos",
-      selectCollections: "Seleccionar colecciones",
+      selectCollections: "Seleccionar objetos",
       summary: "Resumen",
       type: "Tipo",
       lender: "Prestamista",
@@ -2344,7 +2343,7 @@ export default {
       alreadyInActiveLoan:
         "Uno o más de los objetos seleccionados ya están en un préstamo activo o pendiente. Quítelos e inténtelo de nuevo.",
       doesNotBelongToOrganization:
-        "Uno o más de los objetos seleccionados ya no pertenecen a esta organización. Actualice e inténtelo de nuevo.",
+        "Uno o más de los objetos seleccionados ya no están disponibles. Actualice e inténtelo de nuevo.",
       notActive:
         "Uno o más de los objetos seleccionados no están activos. Seleccione solo objetos activos.",
       exportedLoans: "{count} préstamo{plural} exportado{plural}",
@@ -2361,8 +2360,7 @@ export default {
       failedToAddItems: "No se pudieron añadir los objetos al préstamo",
       failedToRemoveItem: "No se pudo quitar el objeto del préstamo",
       failedToReturnItem: "No se pudo devolver el objeto",
-      pleaseSelectAtLeastOneCollection:
-        "Por favor selecciona al menos una colección",
+      pleaseSelectAtLeastOneCollection: "Seleccione al menos un objeto",
       alreadyInLoan: "Ya está en el préstamo {loanNumber} ({status})",
       outgoing: "Saliente",
       incoming: "Entrante",
@@ -2908,6 +2906,8 @@ export default {
         typeRequired: "Por favor seleccione un tipo de ubicación",
         createFailed: "Error al crear la ubicación",
       },
+      imageUploadFailed:
+        "No se pudo subir la foto de la ubicación. Inténtelo de nuevo.",
     },
     move: {
       title: "Mover Ubicación",
@@ -3048,6 +3048,7 @@ export default {
     saveChanges: "Guardar Cambios",
     updating: "Actualizando...",
     close: "Cerrar",
+    currencyNotRecorded: "Moneda no registrada",
   },
   objects: {
     backToObject: "Volver al objeto",
@@ -3132,10 +3133,10 @@ export default {
       noObjectsFound: "No se encontraron objetos",
       addFirstObject: "Agrega Tu Primer Objeto",
 
-      noObjectsInCollection: "Esta colección todavía no tiene objetos",
-      addObjectsToCollection: "Añadir objetos a la colección",
+      noObjectsInCollection: "Este grupo de colección todavía no tiene objetos",
+      addObjectsToCollection: "Añadir objetos al grupo de colección",
       addObjectsToCollectionDescription:
-        "Selecciona objetos catalogados para incluirlos en esta colección. Los objetos pueden pertenecer a varias colecciones.",
+        "Seleccione objetos catalogados para incluirlos en este grupo de colección. Un objeto puede pertenecer a varios grupos de colección.",
     },
     table: {
       selectAllItems: "Seleccionar todos los objetos",
@@ -3233,9 +3234,8 @@ export default {
       deleteObject: "Eliminar Objeto",
       deleting: "Eliminando...",
       editObject: "Editar Objeto",
-      selectOrganization:
-        "Por favor selecciona una organización para ver las colecciones.",
-      collections: "Colecciones",
+      selectOrganization: "Seleccione una organización para ver sus objetos.",
+      collections: "Objetos",
       public: "Público",
       private: "Privado",
       currentObject: "Objeto actual",
@@ -3270,7 +3270,7 @@ export default {
       dimensions: "Dimensiones",
       condition: "Condición",
       parentObject: "Objeto Padre",
-      collectionGroup: "Grupo de Colección",
+      collectionGroup: "Grupo de colección",
       collectionGroupHint: "Agregar este objeto a un grupo de colección",
       description: "Descripción",
       provenance: "Procedencia",
@@ -3298,7 +3298,7 @@ export default {
         dimensions: "ej., 50 x 60 cm",
         location: "Selecciona una ubicación (opcional)",
         parentObject: "Selecciona objeto padre (opcional)",
-        collection: "Selecciona colección (opcional)",
+        collection: "Seleccione un grupo de colección (opcional)",
         description: "Ingresa descripción detallada",
         provenance: "Ingresa información de procedencia",
         exhibitionHistory: "Ingresa historial de exhibiciones",
@@ -3370,6 +3370,9 @@ export default {
         failedToDeleteMedia: "Error al eliminar medio",
         failedToUpdateMedia: "Error al actualizar medio",
         failedToGenerateUploadUrl: "Error al generar URL de carga",
+        uploadFailed: "No se pudo subir el archivo. Inténtelo de nuevo.",
+        failedToUploadDocuments:
+          "No se pudieron subir los documentos. Inténtelo de nuevo.",
       },
       toasts: {
         noDataToExport: "No hay datos para exportar",
@@ -3519,29 +3522,41 @@ export default {
         "La URL del archivo no está disponible o ha caducado.",
     },
     collectionGroup: {
-      addObjectsTitle: "Añadir objetos a la colección",
+      addObjectsTitle: "Añadir objetos al grupo de colección",
       addObjectsDescription:
-        "Elige qué objetos pertenecen a la colección «{name}». Se incluirán los que estén marcados.",
+        "Elija qué objetos pertenecen al grupo de colección «{name}». Se incluyen los marcados.",
       searchAndSelectObjects: "Buscar y seleccionar objetos…",
       multiCollectionHint:
-        "Los objetos pueden pertenecer a varias colecciones. Desmarca un objeto para quitarlo solo de esta colección.",
+        "Un objeto puede pertenecer a varios grupos de colección a la vez. Desmárquelo para quitarlo solo de este grupo.",
       saveMembership: "Guardar selección",
       addObjectsButton: "Añadir objetos",
-      viewingCollection: "Colección: {name}",
+      viewingCollection: "Grupo de colección: {name}",
+    },
+    withdrawal: {
+      restore: "Restaurar al catálogo",
+      restored: "Objeto restaurado al catálogo habitual.",
+      restoreFailed:
+        "No se pudo restaurar el objeto. Actualice e inténtelo de nuevo.",
+      withdrawn: "Objeto retirado del catálogo habitual.",
+      noticeLabel: "Aviso de retirada",
+      noticeTitle: "Retirado del catálogo habitual",
+      reason: "Motivo: {reason}",
+      legacyReasonMissing:
+        "No se registró el motivo de esta retirada anterior. El registro y las pruebas vinculadas se conservan tal como se guardaron; revise los registros de origen antes de restaurar.",
     },
   },
   collections: {
     createPage: {
       description:
-        "Agrupa objetos relacionados y elige quién gestiona la colección.",
-      detailsTitle: "Detalles de la colección",
+        "Agrupe objetos relacionados y elija quién gestiona el grupo de colección.",
+      detailsTitle: "Detalles del grupo de colección",
       managementTitle: "Gestión",
       optional: "Opcional",
       objectsHint:
         "Puedes añadir objetos después de crear el grupo de colecciones.",
     },
     title: "Grupos de Colecciones",
-    description: "Administra grupos de colecciones de objetos",
+    description: "Gestione grupos de objetos de su colección",
     importCSV: "Importar CSV",
     newCollection: "Nuevo Grupo de Colecciones",
     searchPlaceholder: "Buscar grupos de colecciones...",
@@ -3595,9 +3610,9 @@ export default {
     },
     noItems: "No hay objetos en este grupo de colección",
     removeDialog: {
-      title: "Eliminar de la Colección",
+      title: "Quitar del grupo de colección",
       description:
-        '¿Estás seguro de que quieres eliminar "{title}" de esta colección? El objeto no será eliminado, solo se quitará de esta colección.',
+        "¿Quitar «{title}» de este grupo de colección? El objeto no se elimina, solo se quita de este grupo.",
       remove: "Eliminar",
     },
     form: {
@@ -3605,7 +3620,7 @@ export default {
       nameRequired: "*",
       namePlaceholder: "ej., Artefactos Egipcios Antiguos",
       descriptionLabel: "Descripción",
-      descriptionPlaceholder: "Describe esta colección...",
+      descriptionPlaceholder: "Describa este grupo de colección...",
       curatorLabel: "Curador",
       curatorPlaceholder: "Selecciona un curador (opcional)",
       noCurator: "Sin curador",
@@ -3614,27 +3629,28 @@ export default {
       managedByRolePlaceholder: "Cualquier rol puede administrar (opcional)",
       anyRole: "Cualquier rol puede administrar",
       roleHint:
-        "Restringe quién puede editar esta colección a usuarios con un rol específico",
+        "Limite la edición de este grupo de colección a usuarios con un rol específico",
       creating: "Creando...",
-      createButton: "Crear Colección",
+      createButton: "Crear grupo de colección",
       updating: "Actualizando...",
-      updateButton: "Actualizar Colección",
+      updateButton: "Actualizar grupo de colección",
       nameError: "El nombre es obligatorio",
-      createError: "Error al crear la colección. Por favor intenta de nuevo.",
+      createError:
+        "No se pudo crear el grupo de colección. Inténtelo de nuevo.",
       updateError:
-        "Error al actualizar la colección. Por favor intenta de nuevo.",
+        "No se pudo actualizar el grupo de colección. Inténtelo de nuevo.",
     },
     delete: {
       dangerZone: "Zona de Peligro",
-      title: "Eliminar esta colección",
+      title: "Eliminar este grupo de colección",
       description:
-        "Los objetos de esta colección se desvincularán pero no se eliminarán.",
+        "Los objetos de este grupo de colección se desvinculan, no se eliminan.",
       button: "Eliminar",
-      dialogTitle: "Eliminar Colección",
+      dialogTitle: "Eliminar grupo de colección",
       dialogDescription:
-        '¿Estás seguro de que quieres eliminar "{name}"? Los objetos de esta colección se desvincularán pero no se eliminarán.',
+        "¿Eliminar «{name}»? Los objetos de este grupo de colección se desvinculan, no se eliminan.",
       deleting: "Eliminando...",
-      deleteButton: "Eliminar Colección",
+      deleteButton: "Eliminar grupo de colección",
     },
     csvImport: {
       title: "Importar Objetos desde CSV",
@@ -4013,7 +4029,7 @@ export default {
       description: "Descripción",
       notes: "Notas",
       details: "Detalles",
-      collectionObject: "Objeto de Colección",
+      collectionObject: "Objeto",
       datePerformed: "Fecha Realizada",
       performedBy: "Realizado Por",
       unknownObject: "Objeto Desconocido",
@@ -4032,7 +4048,7 @@ export default {
         "Registrar un nuevo tratamiento o evaluación de conservación",
       editTitle: "Editar Registro de Tratamiento",
       editSubtitle: "Actualizar detalles para",
-      collectionObject: "Objeto de Colección",
+      collectionObject: "Objeto",
       treatmentType: "Tipo de Tratamiento",
       selectType: "Seleccionar tipo",
       datePerformed: "Fecha Realizada",
@@ -4238,7 +4254,7 @@ export default {
       loanVenuePlaceholder: "Ingresa el nombre del lugar",
       notesLabel: "Notas",
       notesPlaceholder: "Añade notas sobre esta exposición...",
-      selectObject: "Por favor selecciona un objeto de colección",
+      selectObject: "Seleccione un objeto",
       scheduleConflict: "Conflicto de Horario Detectado",
       scheduleConflictDescription:
         "Este objeto ya está programado durante las fechas seleccionadas:",
@@ -5417,6 +5433,8 @@ export default {
         "No puede tomar esta decisión en el paso de revisión actual.",
       fallback:
         "No se pudo guardar la decisión. Actualice e inténtelo de nuevo.",
+      sourceVerificationRequired:
+        "Hay que verificar la fuente antes de aprobar esta solicitud. Verifique la fuente o apruebe indicando el motivo de la excepción.",
     },
   },
   accessions: {
@@ -5547,6 +5565,8 @@ export default {
       failedToUpdate:
         "Error al actualizar la accesión. Por favor, inténtalo de nuevo.",
       sourceRequired: "La fuente es obligatoria",
+      failedToCreate:
+        "No se pudo crear la accesión. Revise los datos e inténtelo de nuevo.",
     },
     kanban: {
       loading: "Cargando…",
@@ -5590,6 +5610,21 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Mostrando 20 de {count} filas",
+    },
+    catalogNumber: {
+      title: "Número de catálogo al publicar",
+      optionalLabel: "Número de catálogo al publicar (opcional)",
+      defaultHint:
+        "Por defecto es el número de accesión. Elija un número de catálogo libre si el catálogo ya usa el número de accesión; cada registro conserva su propio número permanente.",
+      planned:
+        "Número de catálogo previsto: {identifier}. El número del registro de accesiones {accessionNumber} es permanente. Si el catálogo ya lo usa, elija otro número de catálogo para el nuevo objeto. La disponibilidad se vuelve a comprobar al publicar el objeto.",
+      fieldLabel: "Número de catálogo del nuevo objeto",
+      select: "Seleccionar número de catálogo",
+      selected:
+        "Número de catálogo seleccionado. El número de accesión permanente no cambia.",
+      failed:
+        "No se pudo seleccionar el número de catálogo. Actualice e inténtelo de nuevo.",
+      loading: "Cargando la numeración del catálogo…",
     },
   },
 
@@ -6146,6 +6181,7 @@ export default {
     loadMore: "Cargar más",
     refineSearch:
       "Hay más objetos que coinciden. Afine la búsqueda para acotar la lista.",
+    selectParent: "Seleccione un objeto principal...",
   },
   valuation: {
     title: "Valoración",
@@ -6314,7 +6350,7 @@ export default {
       methodLabel: "Método",
       disposition: "Disposición",
       notes: "Notas",
-      collectionObject: "Objeto de Colección",
+      collectionObject: "Objeto",
       workflowHistory: "Historial del Flujo de Trabajo",
       approvalAction: "Acción de Aprobación",
       commentLabel: "Comentario (opcional)",
@@ -6322,6 +6358,7 @@ export default {
       created: "Creado",
       step: "Paso {step} - Aprobado",
       unknown: "Desconocido",
+      awaitingReview: "Pendiente de revisión",
     },
     stages: {
       eyebrow: "Etapas de baja",
@@ -6425,8 +6462,8 @@ export default {
         "Por favor selecciona una organización para crear desaccesiones.",
       selectOrgEdit:
         "Por favor selecciona una organización para editar desaccesiones.",
-      collectionLabel: "Objeto de Colección",
-      collectionPlaceholder: "Seleccionar un objeto de colección",
+      collectionLabel: "Objeto",
+      collectionPlaceholder: "Seleccione un objeto",
       deaccessionNumber: "Número de Desaccesión",
       deaccessionNumberPlaceholder: "Generado automáticamente si se deja vacío",
       deaccessionNumberHint:
@@ -6456,7 +6493,7 @@ export default {
       proceedsNotes: "Notas de Ingresos",
       proceedsNotesPlaceholder: "Notas adicionales sobre los ingresos...",
       errors: {
-        collectionRequired: "La colección es requerida",
+        collectionRequired: "Seleccione un objeto",
         reasonRequired: "La razón es requerida",
         createFailed:
           "Error al crear la desaccesión. Por favor intenta de nuevo.",
@@ -6500,6 +6537,7 @@ export default {
       proceedsNotes: "Notas de Ingresos",
       stepApproved: "Paso {step} Aprobado",
       created: "Creado",
+      proceedsWithoutCurrency: "Ingresos sin moneda registrada: {count}",
     },
     placeholders: {
       searchObjects: "Buscar desaccesiones...",
@@ -6508,6 +6546,7 @@ export default {
       selectDisposition: "ej., Vendido a coleccionista privado",
       addNotes: "Notas adicionales sobre esta desaccesión...",
     },
+    withdrawnObjects: "Objetos retirados",
   },
   parties: {
     roles: {
@@ -7090,8 +7129,8 @@ export default {
         noLoanHistory: "No hay historial de préstamos para este objeto",
         documentsCount: "Documentos ({count})",
         condition: "Estado",
-        searchCollections: "Buscar y seleccionar colecciones *",
-        loadingCollections: "Cargando colecciones…",
+        searchCollections: "Buscar y seleccionar objetos *",
+        loadingCollections: "Cargando objetos…",
         lenderUpper: "PRESTADOR:",
         museumUpper: "MUSEO/INSTITUCIÓN:",
         uploadedBy: "Subido por {name}",
@@ -7135,8 +7174,7 @@ export default {
         sourceCheck: "Verificación de la fuente",
         approvalWorkflow: "Flujo de aprobación",
         linkedObject: "Objeto vinculado",
-        linkedObjectDescription:
-          "Este ingreso ya creó un registro de colección.",
+        linkedObjectDescription: "Esta accesión ya ha creado su objeto.",
         openCreatedObject: "Abrir el objeto creado",
         draftsMustBeSubmitted:
           "Los borradores deben enviarse antes de iniciar la aprobación.",
@@ -7457,11 +7495,11 @@ export default {
       },
       delete: {
         confirm:
-          "¿Seguro que quiere eliminar «{name}»? Los objetos de esta colección se desvincularán, pero no se eliminarán.",
+          "¿Eliminar «{name}»? Los objetos de este grupo de colección se desvinculan, no se eliminan.",
       },
       remove: {
         confirm:
-          "¿Seguro que quiere quitar «{name}» de esta colección? El objeto no se eliminará, solo se quitará de esta colección.",
+          "¿Quitar «{name}» de este grupo de colección? El objeto no se elimina, solo se quita de este grupo.",
       },
       detail: {
         selectedCount: "Seleccionados ({count}):",
@@ -7611,7 +7649,7 @@ export default {
           "Hay cambios de campos sin guardar en varias pestañas.",
         mediaAlreadyApplied: "Los cambios de medios ya se aplicaron.",
         noUnsavedChanges: "No hay cambios de campos sin guardar.",
-        collectionNotFound: "No se encontró la colección",
+        collectionNotFound: "No se encontró el objeto",
         selectOrganization: "Seleccione una organización para editar objetos.",
       },
       form: {
@@ -7779,7 +7817,7 @@ export default {
         loans: "Cargando préstamos…",
         logs: "Cargando registros…",
         treatments: "Cargando tratamientos…",
-        collections: "Cargando colecciones…",
+        collections: "Cargando objetos…",
         more: "más",
         default: "Cargando…",
       },
@@ -7868,6 +7906,8 @@ export default {
         unknownOrganization: "Organización desconocida",
         unknownUser: "Usuario desconocido",
         to: "a",
+        numberOnApproval: "Se genera al aprobar la solicitud",
+        useRequestedAccessionNumber: "Usar el número de accesión solicitado",
       },
       roles: {
         curator: "Conservador",
@@ -7917,7 +7957,7 @@ export default {
         catalogedDate: "Fecha de catalogación",
       },
       collection: {
-        noneAssigned: "No asignado a una colección",
+        noneAssigned: "No pertenece a ningún grupo de colección",
       },
       request: {
         editTitle: "Editar objeto",
@@ -7970,9 +8010,9 @@ export default {
       failedToLoadAccessions: "No se pudieron cargar los ingresos",
       failedToLoadAccessionsDescription:
         "No se pudo cargar el flujo de ingresos. Inténtelo de nuevo o vuelva al panel.",
-      failedToLoadCollections: "No se pudieron cargar las colecciones",
+      failedToLoadCollections: "No se pudieron cargar los grupos de colección",
       failedToLoadCollectionsDescription:
-        "No se pudieron cargar las colecciones. Inténtelo de nuevo o vuelva al panel.",
+        "No pudimos cargar sus grupos de colección. Inténtelo de nuevo o vuelva al panel.",
       failedToLoadLoans: "No se pudieron cargar los préstamos",
       failedToLoadLoansDescription:
         "No se pudieron cargar los préstamos. Inténtelo de nuevo o vuelva al panel.",
@@ -8498,7 +8538,7 @@ export default {
         organizations: "Organizaciones",
         portal: "Portal",
         scan: "Escaneo",
-        settings: "Ajustes",
+        settings: "Configuración",
         transit: "Registro de traslados",
         transfers: "Traslados",
       },
@@ -9546,6 +9586,9 @@ export default {
       skipToSearch: "Saltar a la búsqueda",
       cannotDeleteMaterial: "No se puede eliminar el material",
       deleteMaterial: "Eliminar material",
+      currentLocationOption: "{location} (actual)",
+      flashNotSupported:
+        "La cámara de este dispositivo no permite controlar el flash.",
     },
     auth: {
       noAccountYet: "¿Aún no tienes una cuenta?",
@@ -9691,6 +9734,10 @@ export default {
     donorCreate: {
       duplicateEmail:
         "Ya existe un donante con este correo electrónico: {donor}",
+      invalidEmail: "Introduzca una dirección de correo electrónico válida.",
+      placeholder: "Seleccione o añada donantes...",
+      unknownDonors: "Donantes desconocidos",
+      unknownDonorsHint: "Úselo cuando el objeto lo donó un donante sin nombre",
     },
     navigation: {
       patronManagement: "Gestión de usuarios",
@@ -10378,6 +10425,46 @@ export default {
       draftMedia: "Fotos y documentos",
       alternateNumberExists:
         "Este número de accesión alternativo ya está en la lista.",
+    },
+  },
+  workflowApprovals: {
+    errors: {
+      workflowNotConfigured:
+        "Este paso de aprobación no está configurado correctamente. Pida a un administrador que revise la configuración del flujo de trabajo y vuelva a intentarlo.",
+      approvalNotPermitted:
+        "Este paso está asignado a otro rol aprobador. Pida a alguien asignado a este paso que lo revise.",
+      alreadyApproved:
+        "Su aprobación ya está registrada. El caso sigue pendiente hasta que lo aprueben los demás aprobadores.",
+    },
+  },
+  identifiers: {
+    registers: {
+      catalog: "registro del catálogo",
+      accession: "registro de accesiones",
+    },
+    errors: {
+      invalid:
+        "Use entre 1 y 256 caracteres visibles para el número. Los números históricos existentes no cambian.",
+      inUse:
+        "{identifier} ya se usa en el {register}. Abra esa ficha o elija un número libre; las fichas históricas nunca se renumeran ni se fusionan.",
+      reviewRequired:
+        "Complete la revisión de identificadores del {register} en Configuración › Preferencias antes de asignar números nuevos.",
+      numberingNotConfigured:
+        "La generación de números no está configurada. Introduzca un número o pida a un administrador que configure la numeración en Configuración › Preferencias.",
+      numberingExhausted:
+        "El formato de numeración siguió generando números ya usados en el {register}. Pida a un administrador que revise el formato o el contador en Configuración › Preferencias.",
+      catalogNumberLocked:
+        "Solo una accesión sin publicar y en revisión puede cambiar su número de catálogo previsto. Los números de registro publicados son permanentes.",
+    },
+    hint: {
+      needsIndexing:
+        "Complete la indexación de identificadores antes de asignar números nuevos.",
+      openReview: "Abrir la revisión de identificadores",
+      inUse:
+        "Otras fichas del {register} ya usan este número. Para una ficha nueva, elija un número libre. Las mayúsculas y los espacios alrededor no hacen que un número sea distinto.",
+      moreMatches: "Hay más coincidencias en la revisión de identificadores.",
+      permanentInDraft:
+        "Este número permanente se conserva al editar el borrador.",
     },
   },
 } as const;

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useClientDate } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { EditDeaccessionForm } from "./edit-deaccession-form";
@@ -19,6 +20,7 @@ export function EditDeaccessionPageClient() {
   const { push, back } = useRouter();
   const t = useScopedI18n("deaccessions");
   const tCommon = useScopedI18n("common");
+  const actionErrorMessage = useActionErrorMessage();
   const locale = useCurrentLocale();
   const deaccessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
@@ -146,9 +148,7 @@ export function EditDeaccessionPageClient() {
       push(`/deaccessions/${deaccessionId}`);
     } catch (err) {
       console.error("Error updating deaccession:", err);
-      setError(
-        err instanceof Error ? err.message : t("form.errors.updateFailed"),
-      );
+      setError(actionErrorMessage(err, t("form.errors.updateFailed")));
       setIsSubmitting(false);
     }
   };
