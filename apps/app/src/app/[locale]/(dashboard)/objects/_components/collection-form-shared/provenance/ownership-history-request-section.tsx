@@ -94,9 +94,15 @@ export function OwnershipHistoryRequestSection({
                   formData={formData}
                   updateField={updateField}
                   placeholders={placeholders}
-                  ownerPlaceholder="Owner name"
-                  notesPlaceholder="Ownership notes"
-                  verificationPlaceholder="Verification source"
+                  ownerPlaceholder={tRoot(
+                    "objects.form.placeholders.ownerName",
+                  )}
+                  notesPlaceholder={tRoot(
+                    "objects.form.placeholders.ownershipNotes",
+                  )}
+                  verificationPlaceholder={tRoot(
+                    "objects.form.placeholders.verificationSource",
+                  )}
                 />
               </div>
             ))}

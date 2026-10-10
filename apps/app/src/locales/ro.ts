@@ -2774,7 +2774,7 @@ export default {
   deaccessions: {
     loadedResults: "Număr pentru rezultatele încărcate",
     loadMore: "Încarcă mai multe",
-    title: "Dezaccesiuni",
+    title: "Înregistrări de scoatere din colecție",
     description: "Obiecte scoase definitiv din colecție.",
     status: {
       pending: "În Așteptare",
@@ -7337,6 +7337,7 @@ export default {
         reviewCheckpoint: "Punct de verificare a revizuirii",
         sourceOnlyBlocker:
           "Verificarea sursei este singurul impediment înainte de continuarea acestui dosar.",
+        review: "Evaluare",
       },
       approval: {
         noteGuidance:
@@ -8661,7 +8662,7 @@ export default {
         analytics: "Analize",
         assignments: "Munca mea",
         conservation: "Conservare",
-        deaccessions: "Dezafectări",
+        deaccessions: "Scoateri din colecție",
         exhibitions: "Expoziții",
         insurance: "Asigurări",
         installations: "Instalări",
@@ -8675,6 +8676,8 @@ export default {
         settings: "Setări",
         transit: "Registrul transporturilor",
         transfers: "Transferuri",
+        collections: "Grupuri de colecție",
+        library: "Bibliotecă",
       },
     },
     dashboardBilling: {

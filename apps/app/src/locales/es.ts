@@ -6423,7 +6423,7 @@ export default {
   deaccessions: {
     loadedResults: "Recuentos de resultados cargados",
     loadMore: "Cargar más",
-    title: "Registros de Desaccesión",
+    title: "Registros de baja",
     description: "Objetos retirados permanentemente de la colección.",
     noOrg: {
       title: "No se Encontró Organización",
@@ -7345,6 +7345,7 @@ export default {
         reviewCheckpoint: "Punto de control de revisión",
         sourceOnlyBlocker:
           "La verificación de la fuente es el único impedimento para continuar con este registro.",
+        review: "Revisión",
       },
       approval: {
         noteGuidance:
@@ -8688,6 +8689,8 @@ export default {
         settings: "Configuración",
         transit: "Registro de traslados",
         transfers: "Traslados",
+        collections: "Grupos de colección",
+        library: "Biblioteca",
       },
     },
     dashboardBilling: {
@@ -9896,7 +9899,7 @@ export default {
       locationTracking: "Ubicación y seguimiento",
       scan: "Escanear",
       accessions: "Accesiones",
-      deaccessions: "Bajas de colección",
+      deaccessions: "Bajas",
       conservation: "Conservación",
       insurance: "Seguros",
       loansTransport: "Préstamos y transporte",

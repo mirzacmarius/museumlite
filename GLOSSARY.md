@@ -194,6 +194,7 @@ The accepted word for each term in the app's other locales. Use it wherever Engl
 | Entry | entrada | entrée | innlevering | intrare |
 | Acquisition | adquisición | acquisition | erverv | achiziție |
 | Accession | accesión | accession | aksesjon | accesiune |
+| Deaccession | baja | désaccession | deaksesjon | scoatere din colecție |
 | Custody | custodia | garde | forvaring | custodie |
 | Withdrawal | retirada | retrait | tilbaketrekking | retragere |
 | Party | parte | partie | part | parte |

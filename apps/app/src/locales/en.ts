@@ -7194,6 +7194,7 @@ export default {
         reviewCheckpoint: "Review checkpoint",
         sourceOnlyBlocker:
           "Source verification is the only blocker before this record can move forward.",
+        review: "Review",
       },
       approval: {
         noteGuidance:
@@ -8510,6 +8511,8 @@ export default {
         settings: "Settings",
         transit: "Transit log",
         transfers: "Transfers",
+        collections: "Collection groups",
+        library: "Library",
       },
     },
     dashboardBilling: {

@@ -6445,7 +6445,7 @@ export default {
   deaccessions: {
     loadedResults: "Nombre dans les résultats chargés",
     loadMore: "Charger plus",
-    title: "Registres de Désaccession",
+    title: "Registres de désaccession",
     description: "Objets retirés définitivement de la collection.",
     noOrg: {
       title: "Aucune Organisation Trouvée",
@@ -7369,6 +7369,7 @@ export default {
         reviewCheckpoint: "Point de contrôle de révision",
         sourceOnlyBlocker:
           "La vérification de la source est le seul obstacle avant de poursuivre le traitement de cette fiche.",
+        review: "Revue",
       },
       approval: {
         noteGuidance:
@@ -8706,7 +8707,7 @@ export default {
         analytics: "Analyses",
         assignments: "Mon travail",
         conservation: "Conservation",
-        deaccessions: "Déclassements",
+        deaccessions: "Désaccessions",
         exhibitions: "Expositions",
         insurance: "Assurance",
         installations: "Montages",
@@ -8720,6 +8721,8 @@ export default {
         settings: "Paramètres",
         transit: "Registre des transports",
         transfers: "Transferts",
+        collections: "Groupes de collection",
+        library: "Bibliothèque",
       },
     },
     dashboardBilling: {
@@ -9931,7 +9934,7 @@ export default {
       locationTracking: "Emplacements et suivi",
       scan: "Scanner",
       accessions: "Accessions",
-      deaccessions: "Déclassements",
+      deaccessions: "Désaccessions",
       conservation: "Conservation",
       insurance: "Assurance",
       loansTransport: "Prêts et transport",

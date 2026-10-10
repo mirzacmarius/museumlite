@@ -69,7 +69,7 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
         {configuredWorkflowSteps.length > 0 &&
         !(accession.status === "pending" && !isDraft) ? (
           <SectionCard
-            eyebrow="Workflow"
+            eyebrow={tRoot("untranslatedRecords.accessions.detail.workflow")}
             title={tRoot(
               "untranslatedRecords.accessions.detail.approvalWorkflow",
             )}

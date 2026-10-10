@@ -7278,6 +7278,7 @@ export default {
         reviewCheckpoint: "Kontrollpunkt for gjennomgang",
         sourceOnlyBlocker:
           "Kildebekreftelse er det eneste hinderet for å gå videre med denne posten.",
+        review: "Gjennomgang",
       },
       approval: {
         noteGuidance:
@@ -8582,7 +8583,7 @@ export default {
         analytics: "Analyse",
         assignments: "Mitt arbeid",
         conservation: "Konservering",
-        deaccessions: "Avhendinger",
+        deaccessions: "Deaksesjoner",
         exhibitions: "Utstillinger",
         insurance: "Forsikring",
         installations: "Monteringer",
@@ -8596,6 +8597,8 @@ export default {
         settings: "Innstillinger",
         transit: "Transportlogg",
         transfers: "Overføringer",
+        collections: "Samlingsgrupper",
+        library: "Bibliotek",
       },
     },
     dashboardBilling: {
@@ -9775,8 +9778,8 @@ export default {
       objectCatalog: "Objektkatalog",
       locationTracking: "Plassering og sporing",
       scan: "Skann",
-      accessions: "Tilvekster",
-      deaccessions: "Kasseringer",
+      accessions: "Aksesjoner",
+      deaccessions: "Deaksesjoner",
       conservation: "Konservering",
       insurance: "Forsikring",
       loansTransport: "Lån og transport",
