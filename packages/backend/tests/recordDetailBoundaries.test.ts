@@ -1,7 +1,9 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import * as collections from "../convex/collections";
 import { capabilityUnavailableFromError } from "../convex/utils/capabilities";
+import { expectMatchesReturns } from "./returnsValidation";
 import {
   authedForUser,
   type ConvexTest,
@@ -64,6 +66,32 @@ test("a malformed object link or another record type's identifier reads as missi
       await user.query(api.collections.getObjectDetail, { collectionId }),
     ).toBeNull();
   }
+});
+
+test("an object whose condition comes from an accepted assessment opens", async () => {
+  const t = createConvexTest();
+  const owner = await createOrgUserCollectionWithPermissions(t, [
+    "collections.read",
+    "collections.update",
+    "collections.accept_condition",
+  ]);
+  const user = authedForUser(t, owner.userId);
+  const assessmentId = await user.mutation(api.conditionAssessments.create, {
+    collectionId: owner.collectionId,
+    assessedAt: Date.now() - 60_000,
+    condition: "Fair",
+    summary: "Checked on receipt from the borrower",
+    observations: [],
+    photos: [],
+  });
+  await user.mutation(api.conditionAssessments.accept, { assessmentId });
+
+  const detail = await user.query(api.collections.getObjectDetail, {
+    collectionId: owner.collectionId,
+  });
+
+  expect(detail?.collection.condition).toBe("Fair");
+  expectMatchesReturns(collections.getObjectDetail, detail);
 });
 
 test("a member whose role cannot read objects gets a coded permission refusal", async () => {

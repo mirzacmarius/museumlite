@@ -10,7 +10,7 @@ import {
   query,
 } from "./_generated/server";
 import { createDeaccessionRecord } from "./deaccessions";
-import { customFieldValue } from "./schema";
+import schema, { customFieldValue } from "./schema";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import {
   buildConditionHistoryEntry,
@@ -103,108 +103,13 @@ const conditionHistoryEntryValidator = v.object({
   changedByName: v.optional(v.string()),
 });
 
-const linkValidator = v.object({
-  url: v.string(),
-  label: v.optional(v.string()),
-});
-
-const ownershipHistoryEntryValidator = v.object({
-  owner: v.string(),
-  startYear: v.optional(v.string()),
-  endYear: v.optional(v.string()),
-  description: v.optional(v.string()),
-  verified: v.optional(v.boolean()),
-  verificationSource: v.optional(v.string()),
-});
-
-const inscriptionMarkValidator = v.object({
-  label: v.string(),
-  description: v.string(),
-});
-
+// The detail read returns the whole stored object, so the validator follows
+// the schema: a field added to objects cannot make every detail page fail.
 const objectDetailCollectionValidator = v.object({
+  ...schema.tables.collections.validator.fields,
   _id: v.id("collections"),
-  organizationId: v.id("organizations"),
-  collectionGroupId: v.optional(v.id("collectionGroups")),
-  accessionNumber: v.string(),
-  normalizedIdentifier: v.optional(v.string()),
-  alternateAccessionNumbers: v.optional(v.array(v.string())),
-  accessionNumberHistory: v.optional(
-    v.array(
-      v.object({
-        number: v.string(),
-        validFrom: v.number(),
-        validTo: v.optional(v.number()),
-      }),
-    ),
-  ),
-  title: v.string(),
-  alternativeTitle: v.optional(v.string()),
-  creator: v.optional(v.string()),
-  objectType: v.optional(v.string()),
-  objectName: v.optional(v.string()),
-  culture: v.optional(v.string()),
-  period: v.optional(v.string()),
-  dateCreated: v.optional(v.string()),
-  materials: v.optional(v.string()),
-  technique: v.optional(v.string()),
-  dimensions: v.optional(v.string()),
-  dimensionDiameter: v.optional(v.string()),
-  dimensionHeight: v.optional(v.number()),
-  dimensionWidth: v.optional(v.number()),
-  dimensionDepth: v.optional(v.number()),
-  dimensionWeight: v.optional(v.union(v.number(), v.null())),
-  dimensionUnit: v.optional(v.string()),
-  weightUnit: v.optional(v.string()),
-  description: v.optional(v.string()),
-  condition: v.optional(v.string()),
-  conditionHistory: v.optional(v.array(conditionHistoryEntryValidator)),
-  inscriptions: v.optional(v.string()),
-  inscriptionMarks: v.optional(v.array(inscriptionMarkValidator)),
-  tags: v.optional(v.array(v.string())),
-  provenance: v.optional(v.string()),
-  exhibitionHistory: v.optional(v.string()),
-  ownershipHistory: v.optional(v.array(ownershipHistoryEntryValidator)),
-  donated_by: v.optional(v.array(v.string())),
-  donated_date: v.optional(v.string()),
-  donation_info: v.optional(v.string()),
-  creditLine: v.optional(v.string()),
-  previous_owners: v.optional(v.array(v.string())),
-  links: v.optional(v.array(linkValidator)),
-  parentObjectId: v.optional(v.id("collections")),
-  currentLocationId: v.optional(v.id("locations")),
-  acquisitionMethod: v.optional(v.string()),
-  legalRestrictions: v.optional(v.boolean()),
-  isPubliclyVisible: v.optional(v.boolean()),
-  isHighResDownloadable: v.optional(v.boolean()),
-  isSearchable: v.optional(v.boolean()),
-  isValuationVisible: v.optional(v.boolean()),
-  publicSlug: v.optional(v.string()),
-  displayStatus: v.optional(v.string()),
-  status: v.union(
-    v.literal("active"),
-    v.literal("loaned"),
-    v.literal("deaccessioned"),
-    v.literal("archived"),
-    v.literal("deleted"),
-  ),
-  archivedAt: v.optional(v.number()),
-  archivedBy: v.optional(v.id("users")),
-  archivedReason: v.optional(v.string()),
-  deletedAt: v.optional(v.number()),
-  deletedBy: v.optional(v.id("users")),
-  deletedReason: v.optional(v.string()),
-  catalogedBy: v.id("users"),
-  catalogedAt: v.number(),
-  lastModifiedBy: v.optional(v.id("users")),
-  lastModifiedAt: v.optional(v.number()),
-  collectionType: v.optional(collectionTypeValidator),
-  customFields: v.optional(v.record(v.string(), customFieldValue)),
-  verified: v.optional(v.boolean()),
-  verifiedBy: v.optional(v.id("users")),
-  verifiedByName: v.optional(v.string()),
-  verifiedAt: v.optional(v.number()),
   _creationTime: v.number(),
+  verifiedByName: v.optional(v.string()),
 });
 
 const objectDetailMediaValidator = v.object({
