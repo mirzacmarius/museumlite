@@ -1,8 +1,9 @@
 import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { normalizeCurrency } from "./currency";
 import {
-  REGISTER_STATUS_PROFILES,
+  REGISTER_CRITERIA_FIELDS,
   type RegisterCriteria,
   type RegisterProfile,
   type RegisterRow,
@@ -77,23 +78,30 @@ async function latestTransferOut(
 
 /**
  * Validates register criteria and the tenant of every referenced ID. `now`
- * is omitted by queries, which cannot read the clock.
+ * is the server clock for mutations and the client's clock for previews.
  */
 export async function validateRegisterCriteria(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   profile: RegisterProfile,
   criteria: RegisterCriteria,
-  now?: number,
+  now: number,
 ) {
-  const { fromDate, toDate, asOf, status, objectId } = criteria;
+  const { fromDate, toDate, asOf, objectId, currency } = criteria;
+  const accepted = REGISTER_CRITERIA_FIELDS[profile];
+  const usesOtherCriteria = Object.entries(criteria).some(
+    ([field, value]) =>
+      value !== undefined &&
+      !accepted.some((acceptedField) => acceptedField === field),
+  );
   if (
+    usesOtherCriteria ||
     [fromDate, toDate, asOf].some(
       (date) => date !== undefined && (!Number.isFinite(date) || date < 0),
     ) ||
     (fromDate !== undefined && toDate !== undefined && fromDate > toDate) ||
-    (asOf !== undefined && now !== undefined && asOf > now) ||
-    (status !== undefined && !REGISTER_STATUS_PROFILES.includes(profile))
+    (asOf !== undefined && asOf > now) ||
+    (currency !== undefined && normalizeCurrency(currency) !== currency)
   )
     throw new ConvexError({
       code: REGISTER_CRITERIA_INVALID,
@@ -106,6 +114,11 @@ export async function validateRegisterCriteria(
       (object.organizationId !== organizationId &&
         !(await latestTransferOut(ctx, organizationId, objectId)))
     )
+      throw new ConvexError("Filter outside organization");
+  }
+  if (criteria.policyId) {
+    const policy = await ctx.db.get(criteria.policyId);
+    if (policy?.organizationId !== organizationId)
       throw new ConvexError("Filter outside organization");
   }
 }
@@ -187,7 +200,7 @@ function approvalColumns(
   };
 }
 
-async function accessionPage(
+export async function accessionPage(
   ctx: QueryCtx,
   scope: RegisterScope,
   cursor: string | null,
@@ -336,7 +349,7 @@ function disposalCategory(
   return { transfer, legacyLoanReturn };
 }
 
-async function disposalPage(
+export async function disposalPage(
   ctx: QueryCtx,
   scope: RegisterScope,
   cursor: string | null,
@@ -490,10 +503,10 @@ async function disposalPage(
 }
 
 // ---------------------------------------------------------------------------
-// Object-subject registers (custody, condition)
+// Object-subject registers (custody, condition) and the provenance report
 // ---------------------------------------------------------------------------
 
-interface Subject {
+export interface Subject {
   object: Doc<"collections">;
   /** Present when the object left this organization through this transfer. */
   transfer?: Doc<"organizationMoveRequests">;
@@ -509,17 +522,23 @@ interface SubjectCursor {
     sourceAfter: number | null;
   };
 }
-interface SourceResult {
+export interface SourceResult {
   rows: RegisterRow[];
   last: number | null;
   done: boolean;
   scanned: number;
 }
-interface PageCache {
+export interface PageCache {
   locations: Map<Id<"locations">, Doc<"locations"> | null>;
   loans: Map<Id<"loans">, Doc<"loans"> | null>;
+  /** An Object's provenance claims, read once per page. */
+  claims: Map<Id<"collections">, Doc<"provenanceClaims">[]>;
 }
-type EvidenceSource = (
+/**
+ * Reads one batch of a subject's evidence after `after`, the position the
+ * previous batch returned as `last`.
+ */
+export type EvidenceSource = (
   ctx: QueryCtx,
   scope: RegisterScope,
   subject: Subject,
@@ -611,7 +630,7 @@ async function cachedLoan(
   return loan?.organizationId === scope.organizationId ? loan : null;
 }
 
-function subjectColumns(
+export function subjectColumns(
   scope: RegisterScope,
   subject: Subject,
   notRecorded: string[],
@@ -643,7 +662,7 @@ function locationColumns(
   };
 }
 
-function sourceResult(
+export function sourceResult(
   rows: RegisterRow[],
   docs: Array<{ _creationTime: number }>,
   limit: number,
@@ -1221,7 +1240,10 @@ const legacyConditionSource: EvidenceSource = async (_ctx, scope, subject) => {
   return { rows, last: null, done: true, scanned: history.length };
 };
 
-const SUBJECT_SOURCES: Record<"custody" | "condition", EvidenceSource[]> = {
+export const SUBJECT_SOURCES: Record<
+  "custody" | "condition",
+  EvidenceSource[]
+> = {
   custody: [
     movementSource,
     loanHandoffSource,
@@ -1358,14 +1380,18 @@ async function loadCurrentSubject(
   return await subjectFor(ctx, scope.organizationId, object, transfer);
 }
 
-async function subjectPage(
+export async function subjectPage(
   ctx: QueryCtx,
   scope: RegisterScope,
   sources: EvidenceSource[],
   rawCursor: string | null,
 ): Promise<RegisterPage> {
   const cursor = parseSubjectCursor(ctx, rawCursor);
-  const cache: PageCache = { locations: new Map(), loans: new Map() };
+  const cache: PageCache = {
+    locations: new Map(),
+    loans: new Map(),
+    claims: new Map(),
+  };
   const rows: RegisterRow[] = [];
   let scanned = 0;
   let budget = EVIDENCE_BUDGET;
@@ -1447,20 +1473,4 @@ async function subjectPage(
     cursor.after = null;
   }
   return emit(cursor);
-}
-
-export async function readRegisterPage(
-  ctx: QueryCtx,
-  scope: RegisterScope,
-  cursor: string | null,
-): Promise<RegisterPage> {
-  switch (scope.profile) {
-    case "accession":
-      return accessionPage(ctx, scope, cursor);
-    case "disposal":
-      return disposalPage(ctx, scope, cursor);
-    case "custody":
-    case "condition":
-      return subjectPage(ctx, scope, SUBJECT_SOURCES[scope.profile], cursor);
-  }
 }
