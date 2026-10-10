@@ -3,7 +3,10 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
-import { renderNotificationEmail } from "./email/senders";
+import {
+  renderNotificationDigestEmail,
+  renderNotificationEmail,
+} from "./email/senders";
 import { postWithTimeout } from "./utils/deliveryLedger";
 import {
   classifyProviderResponse,
@@ -42,10 +45,16 @@ export const attemptDelivery = internalAction({
       });
       return null;
     }
-    const email = await renderNotificationEmail(
-      { ...claim.content, email: claim.to },
-      claim.locale,
-    );
+    const email =
+      claim.content.kind === "digest"
+        ? await renderNotificationDigestEmail(
+            { ...claim.content, email: claim.to },
+            claim.locale,
+          )
+        : await renderNotificationEmail(
+            { ...claim.content, email: claim.to },
+            claim.locale,
+          );
     const request = providerRequest(
       channel,
       { to: claim.to, ...email },

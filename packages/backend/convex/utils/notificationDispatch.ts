@@ -3,6 +3,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { DELIVERY_MAX_ATTEMPTS, newDeliveryLedger } from "./deliveryLedger";
 import { rolePermissionNames } from "./memberPermissions";
+import { addToDigest } from "./notificationDigests";
 import { notificationEmailChannel } from "./notificationEmailChannel";
 import {
   type ChannelPolicy,
@@ -46,7 +47,8 @@ export interface DispatchResult {
  * The only way to notify staff (ADR 0007). Records the intent, checks every
  * recipient's membership and read access to the related entity, then applies
  * their category and channel choices: in-app for an enabled category, plus
- * a durable email delivery when they chose instant email for it.
+ * a durable email delivery when they chose instant email for it, or a place
+ * in their next digest when they chose a daily or weekly digest (ADR 0008).
  */
 export async function dispatchNotification(
   ctx: MutationCtx,
@@ -108,24 +110,25 @@ export async function dispatchNotification(
       intentId,
     });
 
-    switch (emailCadence(policy, category, dispatch.type)) {
-      case "instant":
-        if (emailAvailable && recipient.user.email) {
-          await ctx.db.insert("notificationEmailDeliveries", {
-            organizationId: dispatch.organizationId,
-            intentId,
-            userId,
-            notificationId,
-            ...newDeliveryLedger(DELIVERY_MAX_ATTEMPTS, now),
-          });
-          emailsQueued++;
-        }
-        break;
-      // TODO(MUS-659): record a digest item here once digests are delivered.
-      case "daily":
-      case "weekly":
-      case null:
-        break;
+    const cadence = emailCadence(policy, category, dispatch.type);
+    if (cadence === null || !emailAvailable || !recipient.user.email) continue;
+    if (cadence === "instant") {
+      await ctx.db.insert("notificationEmailDeliveries", {
+        kind: "instant",
+        organizationId: dispatch.organizationId,
+        intentId,
+        userId,
+        notificationId,
+        ...newDeliveryLedger(DELIVERY_MAX_ATTEMPTS, now),
+      });
+      emailsQueued++;
+    } else if (policy.digestSchedule) {
+      await addToDigest(
+        ctx,
+        { organizationId: dispatch.organizationId, userId, notificationId },
+        policy.digestSchedule,
+        now,
+      );
     }
   }
 
@@ -167,8 +170,9 @@ export type RecipientCheck =
   | { kind: "no_access" };
 
 /**
- * Membership and role permissions of candidate recipients, read once per role
- * so organization-wide notifications stay within transaction limits.
+ * Membership and role permissions of candidate recipients, read once per
+ * recipient and once per role, so organization-wide notifications and
+ * digests of many notifications stay within transaction limits.
  */
 export function recipientAccess(
   ctx: QueryCtx,
@@ -178,34 +182,49 @@ export function recipientAccess(
     Id<"roles">,
     Promise<ReadonlySet<string>>
   >();
+  const members = new Map<
+    Id<"users">,
+    Promise<{ user: Doc<"users">; roleId: Id<"roles"> } | null>
+  >();
+  async function loadMember(userId: Id<"users">) {
+    const [user, membership] = await Promise.all([
+      ctx.db.get(userId),
+      ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user_and_organization", (q) =>
+          q.eq("userId", userId).eq("organizationId", organizationId),
+        )
+        .first(),
+    ]);
+    return user && user.deactivatedAt === undefined && membership
+      ? { user, roleId: membership.roleId }
+      : null;
+  }
   return {
     async check(
       userId: Id<"users">,
       readPermission: string | null,
     ): Promise<RecipientCheck> {
-      const [user, membership] = await Promise.all([
-        ctx.db.get(userId),
-        ctx.db
-          .query("userOrganizations")
-          .withIndex("by_user_and_organization", (q) =>
-            q.eq("userId", userId).eq("organizationId", organizationId),
-          )
-          .first(),
-      ]);
-      if (!user || user.deactivatedAt !== undefined || !membership) {
+      let member = members.get(userId);
+      if (!member) {
+        member = loadMember(userId);
+        members.set(userId, member);
+      }
+      const recipient = await member;
+      if (!recipient) {
         return { kind: "not_member" };
       }
       if (readPermission !== null) {
-        let permissions = permissionsByRole.get(membership.roleId);
+        let permissions = permissionsByRole.get(recipient.roleId);
         if (!permissions) {
-          permissions = rolePermissionNames(ctx, membership.roleId);
-          permissionsByRole.set(membership.roleId, permissions);
+          permissions = rolePermissionNames(ctx, recipient.roleId);
+          permissionsByRole.set(recipient.roleId, permissions);
         }
         if (!(await permissions).has(readPermission)) {
           return { kind: "no_access" };
         }
       }
-      return { kind: "allowed", user };
+      return { kind: "allowed", user: recipient.user };
     },
   };
 }

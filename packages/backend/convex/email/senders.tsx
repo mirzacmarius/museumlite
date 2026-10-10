@@ -14,8 +14,14 @@ import {
 import { render } from "@react-email/render";
 import type { ReactNode } from "react";
 import { env } from "../env";
-import type { NotificationCategory } from "../utils/notificationTypes";
-import type { NotificationEmailDetails } from "../utils/notificationValidators";
+import {
+  NOTIFICATION_CATEGORIES,
+  type NotificationCategory,
+} from "../utils/notificationTypes";
+import type {
+  DigestCadence,
+  NotificationEmailDetails,
+} from "../utils/notificationValidators";
 import { sendEmail } from "./index";
 import {
   emailBodyStyle,
@@ -753,6 +759,136 @@ export async function renderNotificationEmail(
   locale: EmailLocale,
 ) {
   const { subject, element } = notificationEmailElement(content, locale);
+  const [html, plainText] = await Promise.all([
+    render(element),
+    render(element, { plainText: true }),
+  ]);
+  return { subject, html, text: plainText };
+}
+
+export interface NotificationDigestContent {
+  /** Recipient address, used in the greeting. */
+  email: string;
+  organizationName: string;
+  cadence: DigestCadence;
+  /** Time zone the notification times are shown in. */
+  timezone: string;
+  notifications: Array<{
+    id: string;
+    category: NotificationCategory;
+    title: string;
+    message: string;
+    /** App path of the notification's entity, without a locale. */
+    actionPath: string;
+    createdAt: number;
+  }>;
+}
+
+function digestCount(count: number, locale: EmailLocale) {
+  const t = getEmailTranslations(locale).digest.count;
+  const form =
+    emailPluralRules[locale].select(count) === "one" ? t.one : t.other;
+  return text(form, { count });
+}
+
+function NotificationDigestEmail({
+  content,
+  preview,
+  locale,
+}: {
+  content: NotificationDigestContent;
+  preview: string;
+  locale: EmailLocale;
+}) {
+  const messages = getEmailTranslations(locale);
+  const t = messages.digest;
+  const { organizationName, cadence } = content;
+  const formatTime = new Intl.DateTimeFormat(emailDateLocales[locale], {
+    timeZone: content.timezone,
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const groups = NOTIFICATION_CATEGORIES.map((category) => ({
+    category,
+    notifications: content.notifications.filter(
+      (notification) => notification.category === category,
+    ),
+  })).filter((group) => group.notifications.length > 0);
+  return (
+    <EmailShell
+      locale={locale}
+      preview={preview}
+      footer={text(t.footer[cadence], { organizationName })}
+    >
+      <Greeting email={content.email} locale={locale} />
+      <Text style={emailTextStyle}>
+        {text(t.intro[cadence], {
+          count: digestCount(content.notifications.length, locale),
+          organizationName,
+        })}
+      </Text>
+      {groups.map((group) => (
+        <Section key={group.category}>
+          <Text style={emailTextStyle}>
+            <strong>{messages.notification.categories[group.category]}</strong>
+          </Text>
+          {group.notifications.map((notification) => (
+            <Text key={notification.id} style={emailTextStyle}>
+              <Link
+                href={localizedSiteUrl(notification.actionPath, locale)}
+                style={emailLinkStyle}
+              >
+                {notification.title}
+              </Link>
+              <br />
+              {notification.message}
+              <br />
+              <span style={emailMutedTextStyle}>
+                {formatTime.format(notification.createdAt)}
+              </span>
+            </Text>
+          ))}
+        </Section>
+      ))}
+      <Section style={emailButtonSectionStyle}>
+        <Button
+          href={localizedSiteUrl("/notifications", locale)}
+          style={emailInvitationButtonStyle}
+        >
+          {t.open}
+        </Button>
+      </Section>
+      <Text style={emailMutedTextStyle}>
+        <Link
+          href={localizedSiteUrl("/settings/notifications", locale)}
+          style={emailLinkStyle}
+        >
+          {messages.notification.manage}
+        </Link>
+      </Text>
+    </EmailShell>
+  );
+}
+
+/** Subject, HTML and plain text of one digest email. */
+export async function renderNotificationDigestEmail(
+  content: NotificationDigestContent,
+  locale: EmailLocale,
+) {
+  const subject = text(
+    getEmailTranslations(locale).digest.subject[content.cadence],
+    {
+      organizationName: content.organizationName,
+      count: digestCount(content.notifications.length, locale),
+    },
+  );
+  const element = (
+    <NotificationDigestEmail
+      content={content}
+      preview={subject}
+      locale={locale}
+    />
+  );
   const [html, plainText] = await Promise.all([
     render(element),
     render(element, { plainText: true }),

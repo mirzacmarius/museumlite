@@ -1,5 +1,9 @@
-/** Calendar schedules use compatible DST disambiguation: first fold, forward gap. */
-export interface ReportSchedule {
+/**
+ * A recurring local time in an IANA time zone, shared by scheduled reports
+ * and notification digests. Calendar schedules use compatible DST
+ * disambiguation: first fold, forward gap.
+ */
+export interface CalendarSchedule {
   schedule: "daily" | "weekly" | "monthly" | "quarterly" | "on_demand";
   scheduledDay?: number;
   scheduledTime?: string;
@@ -42,9 +46,23 @@ function localTimestamp(formatter: Intl.DateTimeFormat, timestamp: number) {
   );
 }
 
-export function validateReportSchedule(config: ReportSchedule): void {
+export function isTimeZone(timezone: string): boolean {
+  try {
+    dateFormatter(timezone).format(0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A 24-hour local time such as "08:30". */
+export function isLocalTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+export function validateCalendarSchedule(config: CalendarSchedule): void {
   dateFormatter(config.timezone ?? "UTC").format(0);
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(config.scheduledTime ?? "09:00")) {
+  if (!isLocalTime(config.scheduledTime ?? "09:00")) {
     throw new Error("Use a valid local time in HH:MM format");
   }
   if (config.scheduledDay !== undefined) {
@@ -89,11 +107,11 @@ function resolveLocalTime(
   return forward[0];
 }
 
-export function nextReportRun(
-  config: ReportSchedule,
+export function nextScheduledRun(
+  config: CalendarSchedule,
   after = Date.now(),
 ): number | undefined {
-  validateReportSchedule(config);
+  validateCalendarSchedule(config);
   if (config.schedule === "on_demand") return undefined;
   const formatter = dateFormatter(config.timezone ?? "UTC");
   const localNow = new Date(localTimestamp(formatter, after));

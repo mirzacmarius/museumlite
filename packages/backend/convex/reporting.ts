@@ -4,6 +4,10 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import schema from "./schema";
+import {
+  nextScheduledRun,
+  validateCalendarSchedule,
+} from "./utils/calendarSchedule";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { loadOperationalKpis } from "./utils/operationalKpis";
@@ -17,7 +21,6 @@ import {
   buildLoanTrendSeries,
 } from "./utils/projectionReports";
 import { projectionUnavailableResult } from "./utils/projectionValidators";
-import { nextReportRun, validateReportSchedule } from "./utils/reportSchedule";
 
 // ============================================
 // VALIDATORS
@@ -302,7 +305,7 @@ export const updateScheduledReport = mutation({
       args.timezone !== undefined ||
       args.isActive !== undefined;
     if (calendarChanged)
-      validateReportSchedule({
+      validateCalendarSchedule({
         schedule,
         scheduledDay,
         scheduledTime,
@@ -318,7 +321,7 @@ export const updateScheduledReport = mutation({
       updates.scheduledDay = scheduledDay;
       updates.scheduleRevision = (report.scheduleRevision ?? 0) + 1;
       updates.nextRunAt = isActive
-        ? nextReportRun({ schedule, scheduledDay, scheduledTime, timezone })
+        ? nextScheduledRun({ schedule, scheduledDay, scheduledTime, timezone })
         : undefined;
     }
 
@@ -1246,7 +1249,7 @@ function calculateNextRun(
   scheduledTime?: string,
   _timezone?: string,
 ): number | undefined {
-  return nextReportRun({
+  return nextScheduledRun({
     schedule,
     scheduledDay,
     scheduledTime,

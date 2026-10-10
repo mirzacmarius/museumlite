@@ -1,9 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, query } from "./_generated/server";
 import { emailLocaleOf, emailLocaleValidator } from "./userPreferences";
+import { isTimeZone } from "./utils/calendarSchedule";
 import {
   attemptOutcome,
   claimStep,
@@ -18,6 +19,10 @@ import {
   retrySeriesPatch,
 } from "./utils/deliveryLedger";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import {
+  DIGEST_ITEM_LIMIT,
+  type DigestDelivery,
+} from "./utils/notificationDigests";
 import { emailCadence, recipientAccess } from "./utils/notificationDispatch";
 import { notificationEmailChannel } from "./utils/notificationEmailChannel";
 import {
@@ -26,14 +31,17 @@ import {
 } from "./utils/notificationErrors";
 import { notificationEntityHref } from "./utils/notificationLinks";
 import {
+  type ChannelPolicy,
   channelPolicy,
   storedPreferences,
 } from "./utils/notificationPreferences";
 import {
+  categoryOfType,
   notificationCategory,
   readPermissionForEntity,
 } from "./utils/notificationTypes";
 import {
+  digestCadence,
   type NotificationEmailErrorCode,
   notificationEmailDetails,
   notificationEmailErrorCode,
@@ -50,7 +58,15 @@ export const get = query({
       delivery: v.object({
         _id: v.id("notificationEmailDeliveries"),
         _creationTime: v.number(),
-        notificationId: v.id("notifications"),
+        /** The notification an instant email accompanies; absent for a digest. */
+        notificationId: v.optional(v.id("notifications")),
+        digest: v.optional(
+          v.object({
+            cadence: digestCadence,
+            scheduledFor: v.number(),
+            notificationCount: v.number(),
+          }),
+        ),
         status: deliveryStatus,
         attemptCount: v.number(),
         maxAttempts: v.number(),
@@ -93,7 +109,15 @@ export const get = query({
       delivery: {
         _id: delivery._id,
         _creationTime: delivery._creationTime,
-        notificationId: delivery.notificationId,
+        ...(delivery.kind === "digest"
+          ? {
+              digest: {
+                cadence: delivery.cadence,
+                scheduledFor: delivery.scheduledFor,
+                notificationCount: delivery.itemCount,
+              },
+            }
+          : { notificationId: delivery.notificationId }),
         status: delivery.status,
         attemptCount: delivery.attemptCount,
         maxAttempts: delivery.maxAttempts,
@@ -150,41 +174,261 @@ export const dispatchIntent = internalMutation({
 
 type Ineligibility = Exclude<
   NotificationEmailErrorCode,
-  "http_error" | "timeout" | "network_error" | "attempt_lost" | "event_expired"
+  "http_error" | "timeout" | "network_error" | "attempt_lost"
 >;
 
+type InstantDelivery = Exclude<
+  Doc<"notificationEmailDeliveries">,
+  { kind: "digest" }
+>;
+
+/** A run that starts before its delivery is due belongs to a digest moved later. */
+const EARLY_RUN_TOLERANCE_MS = 1_000;
+
+const emailContent = v.union(
+  v.object({
+    kind: v.literal("instant"),
+    organizationName: v.string(),
+    category: notificationCategory,
+    title: v.string(),
+    message: v.string(),
+    actionPath: v.string(),
+    details: v.optional(notificationEmailDetails),
+  }),
+  v.object({
+    kind: v.literal("digest"),
+    organizationName: v.string(),
+    cadence: digestCadence,
+    /** Time zone the listed notification times are shown in. */
+    timezone: v.string(),
+    notifications: v.array(
+      v.object({
+        id: v.id("notifications"),
+        category: notificationCategory,
+        title: v.string(),
+        message: v.string(),
+        actionPath: v.string(),
+        createdAt: v.number(),
+      }),
+    ),
+  }),
+);
+
+type EmailMessage =
+  | { kind: "ineligible"; reason: Ineligibility }
+  | {
+      kind: "send";
+      to: string;
+      idempotencyKey: string;
+      content: Infer<typeof emailContent>;
+    };
+
 /**
- * Why the recipient may not be emailed this intent now, or null when they
- * may. Checked again before every attempt and every retry, because time
- * passes between the event and the send.
+ * Whether the recipient may still be emailed by the organization at all:
+ * a current member with an address, on a deployment that sends email.
  */
-async function emailIneligibility(
+async function recipientEmail(
   ctx: MutationCtx,
+  access: ReturnType<typeof recipientAccess>,
   delivery: Doc<"notificationEmailDeliveries">,
-  intent: Doc<"notificationIntents">,
+): Promise<
+  | { kind: "ineligible"; reason: Ineligibility }
+  | { kind: "eligible"; to: string; policy: ChannelPolicy }
+> {
+  const recipient = await access.check(delivery.userId, null);
+  if (recipient.kind !== "allowed") {
+    return { kind: "ineligible", reason: "recipient_removed" };
+  }
+  if (!recipient.user.email) {
+    return { kind: "ineligible", reason: "address_missing" };
+  }
+  if (notificationEmailChannel().kind === "unavailable") {
+    return { kind: "ineligible", reason: "channel_unavailable" };
+  }
+  return {
+    kind: "eligible",
+    to: recipient.user.email,
+    policy: channelPolicy(
+      await storedPreferences(ctx, delivery.userId, delivery.organizationId),
+    ),
+  };
+}
+
+/**
+ * Why one notification may not be emailed to the recipient now, or null when
+ * it may: its category must still be emailed and its record still readable.
+ * Checked again before every attempt and every retry, because time passes
+ * between the event and the send.
+ */
+async function notificationIneligibility(
+  access: ReturnType<typeof recipientAccess>,
+  userId: Id<"users">,
+  policy: ChannelPolicy,
+  notification: { type: string; relatedEntityType?: string },
 ): Promise<Ineligibility | null> {
-  const readPermission =
-    intent.relatedEntityType === undefined
-      ? null
-      : readPermissionForEntity(intent.relatedEntityType);
-  if (readPermission === undefined) return "access_revoked";
-  const recipient = await recipientAccess(ctx, delivery.organizationId).check(
-    delivery.userId,
-    readPermission,
-  );
-  if (recipient.kind === "not_member") return "recipient_removed";
-  if (recipient.kind === "no_access") return "access_revoked";
-  const policy = channelPolicy(
-    await storedPreferences(ctx, delivery.userId, delivery.organizationId),
-  );
-  if (emailCadence(policy, intent.category, intent.type) !== "instant") {
+  if (
+    emailCadence(
+      policy,
+      categoryOfType(notification.type),
+      notification.type,
+    ) === null
+  ) {
     return "email_disabled";
   }
-  if (!recipient.user.email) return "address_missing";
-  if (notificationEmailChannel().kind === "unavailable") {
-    return "channel_unavailable";
+  const readPermission =
+    notification.relatedEntityType === undefined
+      ? null
+      : readPermissionForEntity(notification.relatedEntityType);
+  if (readPermission === undefined) return "access_revoked";
+  const recipient = await access.check(userId, readPermission);
+  return recipient.kind === "allowed" ? null : "access_revoked";
+}
+
+/** The email that accompanies one notification, as its intent captured it. */
+async function instantMessage(
+  ctx: MutationCtx,
+  delivery: InstantDelivery,
+): Promise<EmailMessage> {
+  const [intent, organization] = await Promise.all([
+    ctx.db.get(delivery.intentId),
+    ctx.db.get(delivery.organizationId),
+  ]);
+  if (!intent || !organization) {
+    return { kind: "ineligible", reason: "event_expired" };
   }
-  return null;
+  const access = recipientAccess(ctx, delivery.organizationId);
+  const recipient = await recipientEmail(ctx, access, delivery);
+  if (recipient.kind === "ineligible") return recipient;
+  const reason = await notificationIneligibility(
+    access,
+    delivery.userId,
+    recipient.policy,
+    intent,
+  );
+  if (reason) return { kind: "ineligible", reason };
+  return {
+    kind: "send",
+    to: recipient.to,
+    idempotencyKey: `${delivery._id}:${delivery.seriesStartAttempt}`,
+    content: {
+      kind: "instant",
+      organizationName: organization.name,
+      category: intent.category,
+      title: intent.title,
+      message: intent.message,
+      actionPath:
+        notificationEntityHref(
+          intent.relatedEntityType,
+          intent.relatedEntityId,
+        ) ?? "/notifications",
+      details: intent.emailDetails,
+    },
+  };
+}
+
+/** Short stable fingerprint of the notifications one digest attempt lists. */
+async function listFingerprint(ids: readonly string[]) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(ids.join(",")),
+  );
+  return Array.from(new Uint8Array(digest).slice(0, 8), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+/**
+ * A digest lists the notifications it collected that may still be emailed,
+ * each checked again like an instant email. `exclusions` records why the
+ * others are left out. The provider key names the listed notifications, so
+ * a resend of the same list is deduplicated, and a shorter list after an
+ * access change is a new email rather than a refused one.
+ */
+interface DigestExclusion {
+  itemId: Id<"notificationDigestItems">;
+  /** Undefined when a notification left out before is listed again. */
+  reason: Ineligibility | undefined;
+}
+
+async function digestMessage(
+  ctx: MutationCtx,
+  delivery: DigestDelivery,
+): Promise<{ message: EmailMessage; exclusions: DigestExclusion[] }> {
+  const organization = await ctx.db.get(delivery.organizationId);
+  if (!organization) {
+    return {
+      message: { kind: "ineligible", reason: "event_expired" },
+      exclusions: [],
+    };
+  }
+  const access = recipientAccess(ctx, delivery.organizationId);
+  const recipient = await recipientEmail(ctx, access, delivery);
+  if (recipient.kind === "ineligible") {
+    return { message: recipient, exclusions: [] };
+  }
+  const items = await ctx.db
+    .query("notificationDigestItems")
+    .withIndex("by_deliveryId", (q) => q.eq("deliveryId", delivery._id))
+    .take(DIGEST_ITEM_LIMIT);
+  const listed: Array<Doc<"notifications">> = [];
+  const exclusions: DigestExclusion[] = [];
+  for (const item of items) {
+    const notification = await ctx.db.get(item.notificationId);
+    const reason = notification
+      ? await notificationIneligibility(
+          access,
+          delivery.userId,
+          recipient.policy,
+          notification,
+        )
+      : "event_expired";
+    if (notification && reason === null) listed.push(notification);
+    if ((reason ?? undefined) !== item.excludedReason) {
+      exclusions.push({ itemId: item._id, reason: reason ?? undefined });
+    }
+  }
+  if (listed.length === 0) {
+    return {
+      message: { kind: "ineligible", reason: "digest_empty" },
+      exclusions,
+    };
+  }
+  const preferences = await storedPreferences(
+    ctx,
+    delivery.userId,
+    delivery.organizationId,
+  );
+  const timezone =
+    preferences?.timezone && isTimeZone(preferences.timezone)
+      ? preferences.timezone
+      : "UTC";
+  const fingerprint = await listFingerprint(listed.map(({ _id }) => _id));
+  return {
+    message: {
+      kind: "send",
+      to: recipient.to,
+      idempotencyKey: `${delivery._id}:${delivery.seriesStartAttempt}:${fingerprint}`,
+      content: {
+        kind: "digest",
+        organizationName: organization.name,
+        cadence: delivery.cadence,
+        timezone,
+        notifications: listed.map((notification) => ({
+          id: notification._id,
+          category: categoryOfType(notification.type),
+          title: notification.title,
+          message: notification.message,
+          actionPath:
+            notificationEntityHref(
+              notification.relatedEntityType,
+              notification.relatedEntityId,
+            ) ?? "/notifications",
+          createdAt: notification.createdAt,
+        })),
+      },
+    },
+    exclusions,
+  };
 }
 
 async function finishWithoutSending(
@@ -207,21 +451,14 @@ const claimResult = v.union(
     to: v.string(),
     locale: emailLocaleValidator,
     idempotencyKey: v.string(),
-    content: v.object({
-      organizationName: v.string(),
-      category: notificationCategory,
-      title: v.string(),
-      message: v.string(),
-      actionPath: v.string(),
-      details: v.optional(notificationEmailDetails),
-    }),
+    content: emailContent,
   }),
 );
 
 /**
  * Claims attempt `attempt` of a pending email delivery and returns what to
- * send. Stale or duplicate runs are no-ops; a recipient who may no longer be
- * emailed cancels the delivery without sending.
+ * send. Stale, duplicate or early runs are no-ops; a recipient who may no
+ * longer be emailed cancels the delivery without sending.
  */
 export const claimAttempt = internalMutation({
   args: {
@@ -231,10 +468,14 @@ export const claimAttempt = internalMutation({
   returns: claimResult,
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
-    if (!delivery) {
+    const now = Date.now();
+    if (
+      !delivery ||
+      (delivery.nextAttemptAt ?? now) > now + EARLY_RUN_TOLERANCE_MS
+    ) {
       return { kind: "skip" as const };
     }
-    const step = claimStep(delivery, args.attempt, Date.now());
+    const step = claimStep(delivery, args.attempt, now);
     if (step.kind === "stale") {
       return { kind: "skip" as const };
     }
@@ -253,47 +494,32 @@ export const claimAttempt = internalMutation({
         "attempt_lost",
       );
     }
-    const [intent, organization, user] = await Promise.all([
-      ctx.db.get(delivery.intentId),
-      ctx.db.get(delivery.organizationId),
-      ctx.db.get(delivery.userId),
-    ]);
-    if (!intent || !organization) {
-      return await finishWithoutSending(
-        ctx,
-        delivery,
-        "cancelled",
-        "event_expired",
-      );
+    let message: EmailMessage;
+    if (delivery.kind === "digest") {
+      const digest = await digestMessage(ctx, delivery);
+      for (const { itemId, reason } of digest.exclusions) {
+        await ctx.db.patch(itemId, { excludedReason: reason });
+      }
+      message = digest.message;
+    } else {
+      message = await instantMessage(ctx, delivery);
     }
-    const ineligibility = await emailIneligibility(ctx, delivery, intent);
-    if (ineligibility || !user?.email) {
+    if (message.kind === "ineligible") {
       return await finishWithoutSending(
         ctx,
         delivery,
         "cancelled",
-        ineligibility ?? "address_missing",
+        message.reason,
       );
     }
 
     await ctx.db.patch(delivery._id, step.patch);
     return {
       kind: "send" as const,
-      to: user.email,
+      to: message.to,
       locale: await emailLocaleOf(ctx, delivery.userId),
-      idempotencyKey: `${delivery._id}:${delivery.seriesStartAttempt}`,
-      content: {
-        organizationName: organization.name,
-        category: intent.category,
-        title: intent.title,
-        message: intent.message,
-        actionPath:
-          notificationEntityHref(
-            intent.relatedEntityType,
-            intent.relatedEntityId,
-          ) ?? "/notifications",
-        details: intent.emailDetails,
-      },
+      idempotencyKey: message.idempotencyKey,
+      content: message.content,
     };
   },
 });
@@ -350,16 +576,19 @@ export const recordAttemptResult = internalMutation({
 });
 
 const RETRY_BLOCKED: Record<Ineligibility, NotificationErrorCode> = {
+  event_expired: "EMAIL_DELIVERY_NOT_FOUND",
   recipient_removed: "NOT_ORGANIZATION_MEMBER",
   access_revoked: "NOTIFICATION_ACCESS_REVOKED",
   email_disabled: "EMAIL_OFF_FOR_CATEGORY",
   address_missing: "EMAIL_ADDRESS_MISSING",
   channel_unavailable: "EMAIL_CHANNEL_UNAVAILABLE",
+  digest_empty: "DIGEST_EMPTY",
 };
 
 /**
  * The recipient starts a new attempt series for their own failed or cancelled
- * email. Its content is the captured intent, so the message is unchanged.
+ * email. An instant email resends its captured intent; a digest lists again
+ * the notifications it collected that may still be emailed.
  */
 export const retry = mutation({
   args: { deliveryId: v.id("notificationEmailDeliveries") },
@@ -369,16 +598,18 @@ export const retry = mutation({
     if (!userId) throw new Error("Not authenticated");
 
     const delivery = await ctx.db.get(args.deliveryId);
-    const intent = delivery ? await ctx.db.get(delivery.intentId) : null;
-    if (!delivery || !intent || delivery.userId !== userId) {
+    if (!delivery || delivery.userId !== userId) {
       throw notificationError("EMAIL_DELIVERY_NOT_FOUND");
     }
     if (!isRetryableStatus(delivery.status)) {
       throw notificationError("EMAIL_DELIVERY_NOT_RETRYABLE");
     }
-    const ineligibility = await emailIneligibility(ctx, delivery, intent);
-    if (ineligibility) {
-      throw notificationError(RETRY_BLOCKED[ineligibility]);
+    const message =
+      delivery.kind === "digest"
+        ? (await digestMessage(ctx, delivery)).message
+        : await instantMessage(ctx, delivery);
+    if (message.kind === "ineligible") {
+      throw notificationError(RETRY_BLOCKED[message.reason]);
     }
 
     await ctx.db.patch(
