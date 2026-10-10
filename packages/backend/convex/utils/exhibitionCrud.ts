@@ -24,6 +24,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./permissions";
+import { correctPreparation, suggestPreparation } from "./preparation";
 import { getWorkflowConfig } from "./workflowConfigs";
 import { resolveWorkflowStepState } from "./workflowSteps";
 
@@ -285,6 +286,16 @@ export async function updateExhibitionHandler(
       changes: { ...filteredUpdates, participants },
     }),
   ]);
+  if (args.startDate !== undefined || args.endDate !== undefined)
+    await correctPreparation(
+      ctx,
+      {
+        organizationId: exhibition.organizationId,
+        caseType: "exhibition",
+        caseId: args.id,
+      },
+      userId,
+    );
 
   return null;
 }
@@ -497,6 +508,13 @@ export async function createExhibitionHandler(
       message: `Exhibition "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
       related: { entityType: "exhibition", entityId: exhibitionId },
     });
+  } else {
+    // Without a workflow the exhibition is accepted as it is created.
+    await suggestPreparation(
+      ctx,
+      { organizationId, caseType: "exhibition", caseId: exhibitionId },
+      userId,
+    );
   }
 
   return exhibitionId;

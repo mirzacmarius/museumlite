@@ -17,25 +17,54 @@ export const WORK_ERROR_CODES = [
   "EVIDENCE_NOT_FOUND",
   "LIMIT_REACHED",
   "INVALID_INPUT",
+  "EVIDENCE_REQUIRED",
+  "CASE_NOT_ACCEPTED",
+  "RECIPE_NOT_FOUND",
+  "RECIPE_INVALID",
 ] as const;
 
 export type WorkErrorCode = (typeof WORK_ERROR_CODES)[number];
 
-// Type alias (not an interface) so the payload satisfies Convex's Value type.
-export type WorkErrorData = {
-  code: WorkErrorCode;
-  message: string;
+export const RECIPE_FIELDS = [
+  "name",
+  "loanDirection",
+  "steps",
+  "title",
+  "description",
+  "owner",
+  "due",
+  "dependsOn",
+] as const;
+
+export type RecipeField = (typeof RECIPE_FIELDS)[number];
+
+// Type aliases (not interfaces) so the payload satisfies Convex's Value type.
+type WorkErrorDetails = {
   /** Number of dependencies that are still open. */
   openCount?: number;
+  /** Evidence kind a suggested task needs before it can be completed. */
+  evidenceKind?: string;
+  /** Recipe field that failed validation, and the step it belongs to. */
+  field?: RecipeField;
+  stepIndex?: number;
+};
+
+export type WorkErrorData = WorkErrorDetails & {
+  code: WorkErrorCode;
+  message: string;
 };
 
 export function workError(
   code: WorkErrorCode,
   message: string,
-  details: { openCount?: number } = {},
+  details: WorkErrorDetails = {},
 ): ConvexError<WorkErrorData> {
   const data: WorkErrorData = { code, message };
   if (details.openCount !== undefined) data.openCount = details.openCount;
+  if (details.evidenceKind !== undefined)
+    data.evidenceKind = details.evidenceKind;
+  if (details.field !== undefined) data.field = details.field;
+  if (details.stepIndex !== undefined) data.stepIndex = details.stepIndex;
   return new ConvexError(data);
 }
 
@@ -73,5 +102,10 @@ export function workErrorFromError(error: unknown): WorkErrorData | null {
     message: typeof record.message === "string" ? record.message : code,
     openCount:
       typeof record.openCount === "number" ? record.openCount : undefined,
+    evidenceKind:
+      typeof record.evidenceKind === "string" ? record.evidenceKind : undefined,
+    field: RECIPE_FIELDS.find((field) => field === record.field),
+    stepIndex:
+      typeof record.stepIndex === "number" ? record.stepIndex : undefined,
   };
 }

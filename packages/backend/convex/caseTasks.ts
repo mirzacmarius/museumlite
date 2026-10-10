@@ -4,18 +4,31 @@ import {
   paginationResultValidator,
 } from "convex/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { resolveCase } from "./auditLog";
+import {
+  CASE_CONFIG,
+  type CaseDoc,
+  canWorkWith,
+  caseLabelOf,
+  displayName,
+  isFinding,
+  isOpenStatus,
+  loadCase,
+  logTaskEvent,
+  MAX_TASKS_PER_CASE,
+  UNDATED,
+} from "./utils/caseTaskRules";
 import {
   type CaseTaskCaseType,
   type CaseTaskEvidenceReference,
   type CaseTaskStatus,
   caseTaskCaseTypeValidator,
+  caseTaskEvidenceKindValidator,
   caseTaskEvidenceReferenceValidator,
   caseTaskStatusValidator,
 } from "./utils/caseTaskValidators";
+import { findingObjectIds } from "./utils/documentationFindings";
 import { hasFeatureAccess } from "./utils/featureGates";
 import {
   memberPermissionNames,
@@ -23,77 +36,19 @@ import {
 } from "./utils/memberPermissions";
 import { mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
-import type { NotificationEntityType } from "./utils/notificationTypes";
 import { hasPermission, requirePermission } from "./utils/permissions";
+import { preparationTriggerValidator } from "./utils/preparationValidators";
 import { workError } from "./utils/workErrors";
 
-const MAX_TASKS_PER_CASE = 100;
 const MAX_DEPENDENCIES = 10;
 const MAX_EVIDENCE_PER_TASK = 20;
 const MAX_TITLE_LENGTH = 200;
 const MAX_TEXT_LENGTH = 2000;
-const UNDATED = Number.MAX_SAFE_INTEGER;
 const AUDIT_READ_PERMISSION = "organization.view_analytics";
-
-type CaseReadPermission = "loans.read" | "collections.read";
-type CaseWorkPermission = "loans.update" | "collections.update";
-
-interface CaseConfig {
-  readPermission: CaseReadPermission;
-  workPermission: CaseWorkPermission;
-  feature?: "loans" | "exhibitions" | "conservation";
-  /** Key that files task audit events under the case (see auditEvidence). */
-  auditKey: string;
-  /** Entity type used by notification links to open the case. */
-  notificationEntityType: NotificationEntityType;
-}
-
-const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
-  loan: {
-    readPermission: "loans.read",
-    workPermission: "loans.update",
-    feature: "loans",
-    auditKey: "loanId",
-    notificationEntityType: "loan",
-  },
-  accession: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    auditKey: "accessionId",
-    notificationEntityType: "accession",
-  },
-  deaccession: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    auditKey: "deaccessionId",
-    notificationEntityType: "deaccession",
-  },
-  exhibition: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    feature: "exhibitions",
-    auditKey: "exhibitionId",
-    notificationEntityType: "exhibition",
-  },
-  conservation: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    feature: "conservation",
-    auditKey: "conservationTreatmentId",
-    notificationEntityType: "conservationTreatment",
-  },
-};
-
-const evidenceKindValidator = v.union(
-  v.literal("conditionAssessment"),
-  v.literal("movement"),
-  v.literal("media"),
-  v.literal("auditEntry"),
-);
 
 const evidenceValidator = v.object({
   _id: v.id("caseTaskEvidence"),
-  kind: evidenceKindValidator,
+  kind: caseTaskEvidenceKindValidator,
   /** Id of the cited record, so pickers can hide records already linked. */
   recordId: v.string(),
   /** False when the viewer may not read this kind of record. */
@@ -136,27 +91,23 @@ const taskValidator = v.object({
   completionNote: v.optional(v.string()),
   cancelReason: v.optional(v.string()),
   evidence: v.array(evidenceValidator),
+  /** Present when a preparation recipe suggested the task. */
+  suggestion: v.optional(
+    v.object({
+      recipeName: v.string(),
+      trigger: preparationTriggerValidator,
+      eventAt: v.number(),
+      withdrawnReason: v.optional(v.literal("loan_cancelled")),
+    }),
+  ),
+  /** Evidence the task needs before it can be completed, and whether it is linked. */
+  requiredEvidence: v.optional(
+    v.object({ kind: caseTaskEvidenceKindValidator, linked: v.boolean() }),
+  ),
   createdAt: v.number(),
   updatedAt: v.number(),
   completedAt: v.optional(v.number()),
 });
-
-type CaseDoc = Awaited<ReturnType<typeof resolveCase>>;
-
-function caseLabelOf(entity: CaseDoc): string {
-  if ("loanNumber" in entity) return entity.loanNumber;
-  if ("deaccessionNumber" in entity) return entity.deaccessionNumber;
-  if ("accessionNumber" in entity) return entity.accessionNumber;
-  return entity.title;
-}
-
-function displayName(user: Doc<"users"> | null) {
-  return user?.name || user?.email || undefined;
-}
-
-function isOpenStatus(status: CaseTaskStatus) {
-  return status !== "done" && status !== "cancelled";
-}
 
 function requiredText(value: string, maxLength: number, field: string) {
   const trimmed = value.trim();
@@ -184,38 +135,6 @@ async function requireUserId(ctx: QueryCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) throw new Error("Not authenticated");
   return userId;
-}
-
-/** Resolves the case for the caller, enforcing the case's read access. */
-async function loadCase(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  caseType: CaseTaskCaseType,
-  caseId: string,
-) {
-  try {
-    return await resolveCase(ctx, {
-      organizationId,
-      caseType,
-      entityId: caseId,
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message === "Case not found")
-      throw workError("CASE_NOT_FOUND", "Case not found in this organization");
-    throw error;
-  }
-}
-
-function canWorkWith(
-  permissions: Set<string> | null,
-  caseType: CaseTaskCaseType,
-) {
-  const config = CASE_CONFIG[caseType];
-  return (
-    !!permissions &&
-    permissions.has(config.readPermission) &&
-    permissions.has(config.workPermission)
-  );
 }
 
 /** Owners and reviewers must be members who can work on this kind of case. */
@@ -264,6 +183,7 @@ async function readCaseLabel(
     deaccession: "deaccessions",
     exhibition: "exhibitions",
     conservation: "conservationTreatments",
+    documentationFinding: "documentationFindings",
   } as const;
   const id = ctx.db.normalizeId(table[caseType], caseId);
   const entity = id ? await ctx.db.get(id) : null;
@@ -303,6 +223,19 @@ function canViewEvidence(
   if (kind === "auditEntry") return access.auditRead;
   if (kind === "media") return access.mediaRead;
   return access.collectionsRead;
+}
+
+/** The evidence a suggested task asks for, and whether a link supplies it. */
+function requiredEvidenceOf(
+  task: Doc<"caseTasks">,
+  evidenceRows: Doc<"caseTaskEvidence">[],
+) {
+  const kind = task.suggestion?.evidence;
+  if (!kind) return undefined;
+  return {
+    kind,
+    linked: evidenceRows.some((row) => row.reference.kind === kind),
+  };
 }
 
 async function presentTask(
@@ -372,36 +305,17 @@ async function presentTask(
         linkedByName: displayName(linkers[index] ?? null),
       };
     }),
+    suggestion: task.suggestion && {
+      recipeName: task.suggestion.recipeName,
+      trigger: task.suggestion.trigger,
+      eventAt: task.suggestion.eventAt,
+      withdrawnReason: task.suggestion.withdrawnReason,
+    },
+    requiredEvidence: requiredEvidenceOf(task, evidenceRows),
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     completedAt: task.completedAt,
   };
-}
-
-async function logTaskEvent(
-  ctx: MutationCtx,
-  task: Pick<
-    Doc<"caseTasks">,
-    "organizationId" | "caseType" | "caseId" | "title"
-  >,
-  taskId: Id<"caseTasks">,
-  userId: Id<"users">,
-  action: string,
-  details: Record<string, unknown> = {},
-) {
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId: task.organizationId,
-    userId,
-    action,
-    entityType: "caseTask",
-    entityId: taskId,
-    changes: {
-      [CASE_CONFIG[task.caseType].auditKey]: task.caseId,
-      caseType: task.caseType,
-      title: task.title,
-      ...details,
-    },
-  });
 }
 
 async function notifyTaskUser(
@@ -794,6 +708,11 @@ async function caseObjectIds(
       .take(CASE_OBJECT_LIMIT);
     return members.map((member) => member.collectionId);
   }
+  if (isFinding(entity))
+    return findingObjectIds(entity).flatMap((id) => {
+      const objectId = ctx.db.normalizeId("collections", id);
+      return objectId ? [objectId] : [];
+    });
   return "collectionId" in entity && entity.collectionId
     ? [entity.collectionId]
     : [];
@@ -1105,6 +1024,22 @@ async function requireDependenciesClosed(
     );
 }
 
+/** A suggested step that names evidence needs that kind linked first. */
+async function requireSuggestedEvidence(ctx: QueryCtx, task: Doc<"caseTasks">) {
+  const kind = task.suggestion?.evidence;
+  if (!kind) return;
+  const linked = await ctx.db
+    .query("caseTaskEvidence")
+    .withIndex("by_taskId", (q) => q.eq("taskId", task._id))
+    .take(MAX_EVIDENCE_PER_TASK);
+  if (!linked.some((row) => row.reference.kind === kind))
+    throw workError(
+      "EVIDENCE_REQUIRED",
+      "Link the evidence this task asks for first",
+      { evidenceKind: kind },
+    );
+}
+
 function requireReviewer(task: Doc<"caseTasks">, userId: Id<"users">) {
   if (task.reviewerId !== userId)
     throw workError("REVIEWER_ONLY", "Only the task reviewer can do this");
@@ -1195,6 +1130,7 @@ export const submitForReview = mutation({
       throw workError("INVALID_INPUT", "Assign a reviewer first");
     const note = optionalText(args.note, "Note");
     await requireDependenciesClosed(ctx, task);
+    await requireSuggestedEvidence(ctx, task);
     const now = Date.now();
     await applyTransition(
       ctx,
@@ -1298,6 +1234,7 @@ export const complete = mutation({
       );
     const note = optionalText(args.note, "Note");
     await requireDependenciesClosed(ctx, task);
+    await requireSuggestedEvidence(ctx, task);
     const now = Date.now();
     await applyTransition(
       ctx,
@@ -1333,6 +1270,24 @@ export const cancel = mutation({
       { status: "cancelled", cancelReason: reason },
       { reason },
     );
+    return null;
+  },
+});
+
+/** Reopens a suggested task that staff dismissed or that was withdrawn. */
+export const restoreSuggestion = mutation({
+  args: taskIdArgs,
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { userId, task } = await loadTaskForWork(ctx, args.taskId);
+    if (!task.suggestion)
+      throw workError("INVALID_INPUT", "Only suggested tasks can be restored");
+    if (task.status !== "cancelled") return null;
+    await applyTransition(ctx, task, userId, "task_suggestion_restored", {
+      status: task.startedAt === undefined ? "todo" : "in_progress",
+      cancelReason: undefined,
+      suggestion: { ...task.suggestion, withdrawnReason: undefined },
+    });
     return null;
   },
 });

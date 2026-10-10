@@ -20,9 +20,15 @@ import {
   wineDetailFields,
 } from "./utils/collectionTypeDetailFields";
 import {
+  documentationCheckFields,
+  documentationFindingValidator,
+  documentationProfileFields,
+} from "./utils/documentationQualityValidators";
+import {
   exportFormat,
   exportSource,
   exportStatus,
+  registerTotalsValidator,
 } from "./utils/exportContract";
 import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
 import {
@@ -35,6 +41,7 @@ import {
 } from "./utils/movementValidators";
 import { notificationCategory } from "./utils/notificationTypes";
 import {
+  notificationDigestItemFields,
   notificationEmailAttemptFields,
   notificationEmailDeliveryFields,
   notificationIntentFields,
@@ -48,6 +55,13 @@ import {
   partyDuplicateReviewDocumentValidator,
   partyLinkDocumentValidator,
 } from "./utils/partyValidators";
+import {
+  caseTaskSuggestionValidator,
+  loanDirectionValidator,
+  preparationRecipeStatusValidator,
+  preparationStepValidator,
+  preparationTriggerValidator,
+} from "./utils/preparationValidators";
 import {
   projectionAvailability,
   projectionDiscrepancyFields,
@@ -2737,15 +2751,24 @@ export default defineSchema({
     "by_organizationId_and_idempotencyKey",
     ["organizationId", "idempotencyKey"],
   ),
-  // Instant notification email on the shared delivery ledger (ADR 0004, 0007)
+  // Instant and digest notification email on the shared delivery ledger (ADR 0004, 0007, 0010)
   notificationEmailDeliveries: defineTable(notificationEmailDeliveryFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_intentId", ["intentId"])
     .index("by_notificationId", ["notificationId"])
-    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"]),
+    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"])
+    .index("by_userId_and_organizationId_and_scheduledFor", [
+      "userId",
+      "organizationId",
+      "scheduledFor",
+    ]),
   notificationEmailAttempts: defineTable(notificationEmailAttemptFields)
     .index("by_organizationId", ["organizationId"])
     .index("by_deliveryId_and_attemptNumber", ["deliveryId", "attemptNumber"]),
+  notificationDigestItems: defineTable(notificationDigestItemFields)
+    .index("by_organizationId", ["organizationId"])
+    .index("by_deliveryId", ["deliveryId"])
+    .index("by_notificationId", ["notificationId"]),
 
   // User notification preferences
   notificationPreferences: defineTable({
@@ -2775,6 +2798,9 @@ export default defineSchema({
         v.literal("never"),
       ),
     ),
+    // Local digest time ("08:00") and weekday (0 = Sunday) in `timezone`
+    emailDigestTime: v.optional(v.string()),
+    emailDigestDay: v.optional(v.number()),
 
     // Quiet hours (no notifications during these times)
     quietHoursEnabled: v.optional(v.boolean()),
@@ -4478,6 +4504,13 @@ export default defineSchema({
     submittedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
     completedBy: v.optional(v.id("users")),
+    /** Recipe step and case event that suggested the task (MUS-661). */
+    suggestion: v.optional(caseTaskSuggestionValidator),
+    /**
+     * `{trigger}:{caseId}:{recipeId}:{stepKey}`: one task per case event and
+     * recipe step, whatever its status (ADR 0012).
+     */
+    suggestionKey: v.optional(v.string()),
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -4487,6 +4520,10 @@ export default defineSchema({
       "organizationId",
       "caseType",
       "caseId",
+    ])
+    .index("by_organization_and_suggestionKey", [
+      "organizationId",
+      "suggestionKey",
     ])
     .index("by_organization_and_ownerId_and_open_and_queueDueAt", [
       "organizationId",
@@ -4499,6 +4536,30 @@ export default defineSchema({
       "reviewerId",
       "status",
       "queueDueAt",
+    ]),
+
+  // Preparation recipes - next-step tasks an accepted intake, loan or
+  // exhibition suggests (MUS-661, ADR 0012). Steps are bounded (10).
+  preparationRecipes: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    trigger: preparationTriggerValidator,
+    /** Loan recipes only; absent applies to both directions. */
+    loanDirection: v.optional(loanDirectionValidator),
+    status: preparationRecipeStatusValidator,
+    steps: v.array(preparationStepValidator),
+    /** Numbers new step keys, so a removed step's key is never reused. */
+    nextStepNumber: v.number(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedBy: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_organizationId", ["organizationId"])
+    .index("by_organizationId_and_trigger_and_status", [
+      "organizationId",
+      "trigger",
+      "status",
     ]),
 
   // Evidence links cite existing records for a case task; append-only.
@@ -4658,6 +4719,35 @@ export default defineSchema({
   provenanceReviews: defineTable(provenanceReviewDocumentValidator)
     .index("by_organization_and_objectId", ["organizationId", "objectId"])
     .index("by_organization_and_claimId", ["organizationId", "claimId"]),
+
+  // Documentation quality (MUS-654): an institution's completeness rules by
+  // object type and stage. Archived profiles are kept with their findings.
+  documentationProfiles: defineTable(documentationProfileFields).index(
+    "by_organization_and_status",
+    ["organizationId", "status"],
+  ),
+
+  // Bounded, resumable documentation checks; each page commits a checkpoint.
+  documentationChecks: defineTable(documentationCheckFields)
+    .index("by_organization_and_number", ["organizationId", "number"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // What checks found. Checks never repair records; a finding closes when a
+  // later check no longer detects it, or stays as a reviewed exception.
+  documentationFindings: defineTable(documentationFindingValidator)
+    .index("by_organization_and_key", ["organizationId", "key"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_status_and_kind", [
+      "organizationId",
+      "status",
+      "kind",
+    ])
+    .index("by_organization_and_standing_and_kind_and_lastCheckNumber", [
+      "organizationId",
+      "standing",
+      "kind",
+      "lastCheckNumber",
+    ]),
 
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),
@@ -4879,6 +4969,8 @@ export default defineSchema({
     expiresAt: v.number(),
     storageId: v.optional(v.id("_storage")),
     sha256: v.optional(v.string()),
+    // Report profiles with monetary columns: totals of the committed rows.
+    totals: v.optional(registerTotalsValidator),
   })
     .index("by_creatorId_and_requestKey", ["creatorId", "requestKey"])
     .index("by_organizationId_and_creatorId", ["organizationId", "creatorId"])

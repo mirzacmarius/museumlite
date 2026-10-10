@@ -207,6 +207,7 @@ export default {
       data: "Import/Export de données",
       metrics: "État des indicateurs",
       loanAgreements: "Contrats de prêt",
+      preparationRecipes: "Recettes de préparation",
     },
     roles: {
       title: "Gestion des Rôles",
@@ -4805,6 +4806,7 @@ export default {
       deaccession: "Radiation",
       exhibition: "Exposition",
       conservation: "Traitement de conservation",
+      documentationFinding: "Constat de documentation",
     },
     fields: {
       title: "Titre",
@@ -4930,6 +4932,76 @@ export default {
         "Cet enregistrement ne peut pas être cité. Choisissez un enregistrement validé de cette organisation.",
       limitReached: "Ce dossier ou cette tâche a atteint sa limite.",
       invalidInput: "Vérifiez les champs obligatoires et réessayez.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Liez d’abord un constat d’état accepté à cette tâche.",
+        media:
+          "Liez d’abord un fichier, par exemple une photographie, à cette tâche.",
+        movement: "Liez d’abord le mouvement enregistré à cette tâche.",
+        auditEntry: "Liez d’abord l’événement d’audit à cette tâche.",
+      },
+      caseNotAccepted:
+        "Les recettes s’appliquent une fois le dossier accepté, jusqu’à son retour, sa clôture ou son annulation.",
+      recipeNotFound:
+        "Cette recette n’est plus disponible. Actualisez la page.",
+      recipeInvalid: "Vérifiez les champs signalés de la recette.",
+    },
+    suggestion: {
+      badge: "Suggérée",
+      origin: {
+        intake_accepted:
+          "Suggérée par « {recipe} » après l’acceptation de la réception",
+        loan_approved: "Suggérée par « {recipe} » après l’approbation du prêt",
+        exhibition_approved:
+          "Suggérée par « {recipe} » après l’approbation de l’exposition",
+      },
+      withdrawn:
+        "Retirée parce que le prêt a été annulé. Restaurez-la si le travail reste nécessaire.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Nécessite un constat d’état accepté lié comme preuve avant de pouvoir être terminée.",
+        media:
+          "Nécessite un fichier, par exemple une photographie, lié comme preuve avant de pouvoir être terminée.",
+        movement:
+          "Nécessite le mouvement enregistré lié comme preuve avant de pouvoir être terminée.",
+        auditEntry:
+          "Nécessite un événement d’audit lié comme preuve avant de pouvoir être terminée.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Constat d’état lié comme preuve.",
+        media: "Fichier lié comme preuve.",
+        movement: "Mouvement enregistré lié comme preuve.",
+        auditEntry: "Événement d’audit lié comme preuve.",
+      },
+      restore: "Restaurer la suggestion",
+      restored: "Suggestion restaurée",
+      dismiss: "Écarter la suggestion",
+      dismissDescription:
+        "La tâche reste dans le dossier et ne sera plus suggérée. Vous pourrez la restaurer plus tard.",
+    },
+    preparation: {
+      title: "Préparation",
+      description: {
+        intake_accepted:
+          "Des recettes suggèrent ces tâches quand une réception est acceptée. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
+        loan_approved:
+          "Des recettes suggèrent ces tâches quand un prêt est approuvé. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
+        exhibition_approved:
+          "Des recettes suggèrent ces tâches quand une exposition est approuvée. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
+      },
+      states: {
+        suggested: "Suggérée",
+        ready: "Pas encore suggérée",
+        no_owner:
+          "En attente d’un responsable pouvant travailler sur ce dossier",
+        limit_reached: "Ce dossier a atteint sa limite de tâches",
+      },
+      apply: "Suggérer {count} tâche(s) manquante(s)",
+      applying: "Suggestion en cours…",
+      applied: "{count} tâche(s) suggérée(s)",
+      nothingToApply: "Chaque étape a déjà une tâche.",
+      skipped:
+        "{count} étape(s) attendent encore un responsable pouvant travailler sur ce dossier, ou de la place dans le dossier.",
     },
     myWork: {
       title: "Mon travail",
@@ -4945,6 +5017,142 @@ export default {
       assignedCasesEmpty: "Aucun dossier ouvert ne vous est attribué.",
       assignedTruncated: "Affichage des 50 premiers dossiers attribués.",
       since: "Depuis le",
+    },
+  },
+  preparationRecipes: {
+    title: "Recettes de préparation",
+    description:
+      "Quand une réception est acceptée ou qu’un prêt ou une exposition est approuvé, les recettes actives suggèrent dans le dossier des tâches avec responsable et échéance. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état ; ceux-ci s’enregistrent dans leurs propres processus.",
+    add: "Nouvelle recette",
+    loading: "Chargement des recettes…",
+    empty:
+      "Aucune recette pour l’instant. Créez-en une à partir d’un modèle sous Nouvelle recette.",
+    notificationsHint:
+      "Chaque responsable est averti une seule fois par tâche suggérée, dans sa catégorie Tâches.",
+    notificationsLink: "Paramètres de notification",
+    noAttestation:
+      "Terminer une tâche suggérée enregistre seulement que le travail est fait.",
+    stepCount: "{count} étape(s)",
+    evidenceShort: "preuve : {kind}",
+    statuses: {
+      active: "Active",
+      paused: "En pause",
+      archived: "Archivée",
+    },
+    triggers: {
+      intake_accepted: "Réception acceptée",
+      loan_approved: "Prêt approuvé",
+      exhibition_approved: "Exposition approuvée",
+    },
+    triggerHints: {
+      intake_accepted:
+        "S’applique quand une réception est acceptée dans la collection. Les échéances comptent à partir de l’acceptation.",
+      loan_approved:
+        "S’applique quand un prêt est approuvé. Les échéances comptent à partir de l’approbation ou du début ou de la fin du prêt.",
+      exhibition_approved:
+        "S’applique quand une exposition est approuvée. Les échéances comptent à partir de l’approbation ou de son ouverture ou de sa clôture.",
+    },
+    directions: {
+      any: "Prêts entrants et sortants",
+      outgoing: "Prêts sortants",
+      incoming: "Prêts entrants",
+    },
+    actions: {
+      edit: "Modifier",
+      pause: "Mettre en pause",
+      resume: "Reprendre",
+      archive: "Archiver",
+      restore: "Restaurer",
+    },
+    toasts: {
+      saved: "Recette enregistrée",
+      paused: "Recette mise en pause",
+      resumed: "Recette reprise",
+      archived: "Recette archivée",
+      restored: "Recette restaurée en pause",
+    },
+    starters: {
+      intake: {
+        label: "Cataloguer, photographier et constater l’état",
+        name: "Cataloguer, photographier et constater l’état",
+        catalog: "Compléter la notice du catalogue",
+        photograph: "Photographier l’objet",
+        condition: "Enregistrer un constat d’état",
+      },
+      transport: {
+        label: "Emballer, assurer et organiser le transport",
+        name: "Emballer, assurer et organiser le transport",
+        condition: "Constat d’état avant l’envoi",
+        insurance: "Confirmer la couverture d’assurance",
+        pack: "Emballer les objets",
+        transport: "Réserver le transport",
+      },
+      return: {
+        label: "Préparer le retour",
+        name: "Préparer le retour",
+        transport: "Réserver le transport de retour",
+        condition: "Constat d’état au retour",
+        move: "Enregistrer le mouvement de retour",
+      },
+      blank: {
+        label: "Recette vide",
+      },
+    },
+    dialog: {
+      addTitle: "Nouvelle recette",
+      editTitle: "Modifier la recette",
+      description:
+        "Chaque étape devient une tâche du dossier, confiée à un membre pouvant y travailler. Si l’événement est répété ou corrigé, chaque étape garde une seule tâche.",
+      name: "Nom",
+      trigger: "Suggérer quand",
+      triggerLocked:
+        "L’événement ne peut plus changer une fois la recette créée. Créez-en une autre.",
+      direction: "Prêts",
+      steps: "Étapes",
+      step: "Étape {number}",
+      stepReference: "Étape {number} : {title}",
+      untitled: "Étape sans titre",
+      stepTitle: "Titre de la tâche",
+      stepDescription: "Description",
+      evidence: "Preuve que le travail est fait",
+      noEvidence: "Aucune requise",
+      owner: "Responsable",
+      owners: {
+        caseAssignee: "Membre affecté au dossier",
+        approver: "Membre qui l’a accepté",
+        member: "Un membre désigné",
+      },
+      ownerMember: "Membre",
+      chooseMember: "Choisir un membre",
+      ownerFallback:
+        "Si le responsable choisi ne peut pas travailler sur le dossier, la tâche revient au membre affecté au dossier, puis au membre qui l’a accepté. Une étape sans un tel membre attend que quelqu’un applique à nouveau la recette.",
+      due: "Échéance",
+      noDue: "Sans échéance",
+      anchors: {
+        event: "À partir de l’acceptation",
+        start: "À partir du début ou de l’ouverture",
+        end: "À partir de la fin ou de la clôture",
+      },
+      offsetDays: "Jours",
+      offsetHint: "Un nombre négatif compte à rebours depuis cette date.",
+      dependsOn: "Attend",
+      addStep: "Ajouter une étape",
+      removeStep: "Supprimer l’étape",
+      moveUp: "Monter l’étape",
+      moveDown: "Descendre l’étape",
+      cancel: "Annuler",
+      save: "Enregistrer",
+      saving: "Enregistrement…",
+      errors: {
+        name: "Donnez à la recette un nom de 120 caractères au plus.",
+        steps: "Une recette compte de 1 à 10 étapes.",
+        title: "Donnez à l’étape un titre de 200 caractères au plus.",
+        description: "La description ne peut dépasser 2 000 caractères.",
+        owner: "Choisissez un membre pouvant travailler sur ces dossiers.",
+        due: "Indiquez un nombre entier de jours entre -365 et 365.",
+        dependsOn:
+          "Une étape ne peut attendre que des étapes situées au-dessus.",
+      },
     },
   },
   notificationsPage: {
@@ -4970,6 +5178,7 @@ export default {
       system: "Système",
     },
     markAllRead: "Tout marquer comme lu",
+    settings: "Paramètres des notifications",
     empty: {
       noUnread: "Aucune notification non lue",
       noNotifications: "Aucune notification",
@@ -4988,6 +5197,13 @@ export default {
       retry: "Renvoyer l’e-mail",
       details: "Détails de l’e-mail",
       hideDetails: "Masquer les détails de l’e-mail",
+      digest: {
+        waitingDaily: "En attente de votre récapitulatif quotidien {time}",
+        waitingWeekly: "En attente de votre récapitulatif hebdomadaire {time}",
+        sentDaily: "Envoyé dans votre récapitulatif quotidien {time}",
+        sentWeekly: "Envoyé dans votre récapitulatif hebdomadaire {time}",
+        leftOut: "Non incluse dans votre récapitulatif",
+      },
       attempt: "Tentative {number}",
       noAttempts: "Aucun e-mail n’a encore été envoyé.",
       duration: "{ms} ms",
@@ -5007,61 +5223,95 @@ export default {
         email_disabled: "L’e-mail est désactivé pour cette catégorie",
         address_missing: "Votre compte n’a pas d’adresse e-mail",
         channel_unavailable: "L’envoi d’e-mails n’est pas configuré",
+        digest_empty:
+          "Plus rien dans le récapitulatif ne pouvait vous être envoyé",
       },
       errors: {
         EMAIL_DELIVERY_NOT_FOUND: "Cet e-mail n’est plus disponible.",
-        EMAIL_DELIVERY_NOT_RETRYABLE: "Cet e-mail a déjà été remis ou est en cours d’envoi.",
-        EMAIL_OFF_FOR_CATEGORY: "Activez d’abord l’e-mail pour cette catégorie dans les paramètres de notification.",
-        EMAIL_ADDRESS_MISSING: "Ajoutez d’abord une adresse e-mail à votre compte.",
-        EMAIL_CHANNEL_UNAVAILABLE: "L’envoi d’e-mails n’est pas configuré pour ce déploiement.",
-        NOTIFICATION_ACCESS_REVOKED: "Vous ne pouvez plus consulter cet enregistrement : il ne peut donc pas vous être envoyé par e-mail.",
-        NOT_ORGANIZATION_MEMBER: "Vous n’êtes plus membre de cette organisation.",
+        EMAIL_DELIVERY_NOT_RETRYABLE:
+          "Cet e-mail a déjà été remis ou est en cours d’envoi.",
+        EMAIL_OFF_FOR_CATEGORY:
+          "Activez d’abord l’e-mail pour cette catégorie dans les paramètres de notification.",
+        EMAIL_ADDRESS_MISSING:
+          "Ajoutez d’abord une adresse e-mail à votre compte.",
+        EMAIL_CHANNEL_UNAVAILABLE:
+          "L’envoi d’e-mails n’est pas configuré pour ce déploiement.",
+        NOTIFICATION_ACCESS_REVOKED:
+          "Vous ne pouvez plus consulter cet enregistrement : il ne peut donc pas vous être envoyé par e-mail.",
+        NOT_ORGANIZATION_MEMBER:
+          "Vous n’êtes plus membre de cette organisation.",
+        DIGEST_EMPTY:
+          "Plus rien dans ce récapitulatif ne peut vous être envoyé par e-mail.",
         fallback: "L’e-mail n’a pas pu être renvoyé. Réessayez plus tard.",
       },
     },
   },
   notificationSettings: {
     title: "Préférences de notification",
-    description: "Choisissez les notifications que vous recevez. L’e-mail s’ajoute à la notification dans MuseumLite.",
+    description:
+      "Choisissez les notifications que vous recevez. L’e-mail s’ajoute à la notification dans MuseumLite.",
     notify: "Me notifier",
     email: "E-mail",
     categories: {
       approvals: {
         label: "Approbations",
-        description: "Demandes en attente de votre approbation et décisions sur vos demandes",
+        description:
+          "Demandes en attente de votre approbation et décisions sur vos demandes",
       },
       reminders: {
         label: "Rappels",
-        description: "Prêts arrivant à échéance, assurances qui expirent, livraisons à venir et alertes de délai",
+        description:
+          "Prêts arrivant à échéance, assurances qui expirent, livraisons à venir et alertes de délai",
       },
       alerts: {
         label: "Alertes",
-        description: "Alertes de conservation et d’état, retards, tâches bloquées et délais dépassés",
+        description:
+          "Alertes de conservation et d’état, retards, tâches bloquées et délais dépassés",
       },
       assignments: {
         label: "Tâches",
-        description: "Tâches qui vous sont attribuées, relectures, retours et mentions",
+        description:
+          "Tâches qui vous sont attribuées, relectures, retours et mentions",
       },
       system: {
         label: "Système",
-        description: "Expédition et retour des prêts, suivi des transports, traitements par lots et annonces",
+        description:
+          "Expédition et retour des prêts, suivi des transports, traitements par lots et annonces",
       },
     },
-    emailTo: "Les e-mails sont envoyés à {address} dès qu’une notification est émise.",
-    emailFixture: "Ce déploiement envoie les e-mails de notification à un point de test : ils n’arrivent pas dans votre boîte de réception.",
-    emailUnavailable: "L’envoi d’e-mails n’est pas configuré pour ce déploiement : les notifications apparaissent uniquement dans MuseumLite.",
-    emailAddressMissing: "Votre compte n’a pas d’adresse e-mail : les notifications apparaissent uniquement dans MuseumLite.",
-    savedDigest: {
-      daily: "Vous aviez choisi un récapitulatif quotidien. Les récapitulatifs ne sont pas encore disponibles et aucun n’est envoyé. Enregistrez pour recevoir par e-mail, au fil de l’eau, les catégories cochées ci-dessous.",
-      weekly: "Vous aviez choisi un récapitulatif hebdomadaire. Les récapitulatifs ne sont pas encore disponibles et aucun n’est envoyé. Enregistrez pour recevoir par e-mail, au fil de l’eau, les catégories cochées ci-dessous.",
+    emailTo: "Les e-mails de notification sont envoyés à {address}.",
+    emailFixture:
+      "Ce déploiement envoie les e-mails de notification à un point de test : ils n’arrivent pas dans votre boîte de réception.",
+    emailUnavailable:
+      "L’envoi d’e-mails n’est pas configuré pour ce déploiement : les notifications apparaissent uniquement dans MuseumLite.",
+    emailAddressMissing:
+      "Votre compte n’a pas d’adresse e-mail : les notifications apparaissent uniquement dans MuseumLite.",
+    schedule: {
+      label: "Envoyer l’e-mail",
+      instant: "Au fil des notifications",
+      daily: "Récapitulatif quotidien",
+      weekly: "Récapitulatif hebdomadaire",
+      day: "Jour",
+      time: "Heure",
+      timezone:
+        "Les heures du récapitulatif suivent votre fuseau horaire, {timezone}.",
+      timezoneChange:
+        "Votre récapitulatif est réglé sur {saved}. En enregistrant, il passera à votre fuseau horaire actuel, {timezone}.",
+      unscheduled:
+        "Vous aviez choisi un récapitulatif avant que les récapitulatifs aient une heure d’envoi : il n’est donc pas envoyé. Vérifiez le jour et l’heure ci-dessous puis enregistrez pour commencer à le recevoir.",
+      next: "Prochain récapitulatif ({count} en attente) :",
     },
     save: "Enregistrer les préférences",
     saving: "Enregistrement...",
     saved: "Préférences de notification enregistrées.",
     errors: {
       NOT_ORGANIZATION_MEMBER: "Vous n’êtes pas membre de cette organisation.",
-      EMAIL_CHANNEL_UNAVAILABLE: "L’envoi d’e-mails n’est pas configuré pour ce déploiement : l’e-mail ne peut pas être activé.",
-      EMAIL_ADDRESS_MISSING: "Ajoutez une adresse e-mail à votre compte avant d’activer l’e-mail.",
+      EMAIL_CHANNEL_UNAVAILABLE:
+        "L’envoi d’e-mails n’est pas configuré pour ce déploiement : l’e-mail ne peut pas être activé.",
+      EMAIL_ADDRESS_MISSING:
+        "Ajoutez une adresse e-mail à votre compte avant d’activer l’e-mail.",
+      DIGEST_SCHEDULE_INVALID:
+        "Choisissez un jour et une heure valides pour votre récapitulatif.",
       fallback: "Vos préférences n’ont pas pu être enregistrées. Réessayez.",
     },
   },
@@ -5533,6 +5783,7 @@ export default {
       locations: "Aller aux emplacements",
       conservation: "Aller à la conservation",
       entries: "Aller aux entrées",
+      documentationQuality: "Aller à la qualité de la documentation",
     },
     pageNotFound: {
       title: "Page introuvable",
@@ -5559,6 +5810,276 @@ export default {
       identifier: "Identifiant (A–Z)",
     },
     allTypes: "Tous les types",
+  },
+  documentationQuality: {
+    title: "Qualité de la documentation",
+    description:
+      "Vérifiez les fiches au regard des profils de documentation de l’institution et examinez les identifiants en double, la documentation manquante, les liens incertains vers des parties et les références rompues. Les vérifications ne modifient jamais une fiche : le personnel corrige les fiches là où elles sont tenues, et la vérification suivante confirme la correction.",
+    tabs: {
+      findings: "Constats",
+      profiles: "Profils",
+    },
+    kind: "Type de constat",
+    allKinds: "Tous les types",
+    kinds: {
+      duplicate_identifier: "Identifiant en double",
+      missing_evidence: "Documentation manquante",
+      legacy_link: "Lien incertain vers une partie",
+      orphan_reference: "Référence rompue",
+    },
+    statuses: {
+      open: "Ouvert",
+      accepted: "Exception acceptée",
+      resolved: "Résolu",
+    },
+    registers: {
+      catalog: "catalogue",
+      accession: "inventaire",
+    },
+    stages: {
+      entry: "Détenu sous une entrée",
+      collection: "Dans la collection",
+      borrowed: "Emprunté",
+      deaccessioned: "Désaccessionné",
+    },
+    stageHints: {
+      entry:
+        "Reçu pour identification, dépôt ou examen d’acquisition, sans inscription à l’inventaire.",
+      collection:
+        "Objets inscrits à l’inventaire ou catalogués, y compris ceux prêtés.",
+      borrowed: "Objets détenus au titre d’un prêt entrant.",
+      deaccessioned:
+        "Objets sortis de la collection ; leurs fiches sont conservées.",
+    },
+    requirements: {
+      object_name: "Dénomination",
+      maker: "Auteur",
+      production_date: "Date de réalisation",
+      materials: "Matériaux",
+      dimensions: "Dimensions",
+      description: "Description",
+      current_location: "Emplacement actuel",
+      condition_assessment: "Constat d’état accepté",
+      image: "Photographie",
+      supporting_document: "Document justificatif",
+      accession_record: "Inscription à l’inventaire approuvée",
+      provenance_claim: "Assertion de provenance",
+    },
+    orphanFields: {
+      parentObject: "Objet parent",
+      currentLocation: "Emplacement actuel",
+      collectionGroup: "Groupe de collections",
+      object: "Objet",
+      donorAccount: "Compte du donateur",
+    },
+    orphanProblems: {
+      missing: "n’existe plus",
+      other_organization: "appartient à une autre organisation",
+      self: "renvoie à la fiche elle-même",
+    },
+    recordTypes: {
+      object: "Objet",
+      accession: "Inscription",
+      deaccession: "Désaccession",
+    },
+    objectTabs: {
+      general: "Général",
+      physical: "Physique",
+      media: "Médias",
+      accession: "Inscription",
+      placement: "Emplacement",
+      provenance: "Provenance",
+    },
+    summary: {
+      duplicateIdentifier:
+        "« {identifier} » est partagé par {count} fiches ({register})",
+      missingEvidence: "{identifier} {title} : manque {missing}",
+      legacyName: "{label} cite « {name} » sans partie liée",
+      legacyAccount: "{label} renvoie à une partie sans lien confirmé",
+      orphanReference: "{label} : {field} {problem}",
+    },
+    findings: {
+      empty: {
+        open: "Aucun constat ouvert. Lancez une vérification pour rechercher des exceptions de documentation.",
+        accepted: "Aucune exception acceptée.",
+        resolved: "Aucun constat résolu pour l’instant.",
+      },
+      emptyKind: "Aucun constat de ce type : {kind}.",
+      reopened: "Rouvert",
+      detectedBy: "Vérification {number}",
+      resolvedBy: "Résolu par la vérification {number}",
+    },
+    check: {
+      title: "Vérification de qualité",
+      loading: "Chargement…",
+      never:
+        "Aucune vérification n’a encore été lancée. Une vérification lit chaque fiche par étapes limitées et liste ce qu’elle trouve.",
+      running:
+        "La vérification {number} est en cours : étape {step} sur {steps} ({phase}), {records} fiches vérifiées jusqu’ici.",
+      stalled:
+        "La vérification {number} n’a pas progressé depuis plus de dix minutes. Reprenez-la, ou annulez-la et recommencez.",
+      completed:
+        "La vérification {number} s’est terminée le {date} : {records} fiches vérifiées, {detected} constats ({opened} nouveaux, {reopened} rouverts), {resolved} résolus.",
+      failed: "La vérification {number} s’est arrêtée pendant : {phase}.",
+      failures: {
+        ACTOR_NOT_PERMITTED:
+          "Le membre qui l’a lancée n’y a plus accès. Reprenez-la pour continuer avec votre accès.",
+        PAGE_FAILED:
+          "Une fiche n’a pas pu être vérifiée. Reprenez la vérification pour réessayer à partir de l’endroit où elle s’est arrêtée.",
+      },
+      cancelled:
+        "La vérification {number} a été annulée. Les constats détectés sont conservés ; aucun n’a été résolu.",
+      phases: {
+        catalog_identifiers: "identifiants du catalogue",
+        accession_identifiers: "identifiants d’inventaire",
+        objects_active: "objets",
+        objects_loaned: "objets prêtés",
+        objects_deaccessioned: "objets désaccessionnés",
+        accessions: "inscriptions",
+        deaccessions: "désaccessions",
+        resolve_duplicate_identifier: "doublons d’identifiants corrigés",
+        resolve_missing_evidence: "documentation complétée",
+        resolve_legacy_link: "liens vers des parties confirmés",
+        resolve_orphan_reference: "références réparées",
+        finished: "terminée",
+      },
+      run: "Lancer une vérification",
+      resume: "Reprendre",
+      cancel: "Annuler la vérification",
+      started: "Vérification lancée",
+      resumed: "Vérification reprise",
+      cancelledToast: "Vérification annulée",
+      noProfiles:
+        "Aucun profil actif : la documentation manquante n’a pas été vérifiée.",
+      partiesNotChecked:
+        "Les liens vers des parties n’ont pas été vérifiés, car le module Comptes est désactivé.",
+      identifierIndexIncomplete:
+        "Certains identifiants ne sont pas encore indexés ; les doublons parmi eux n’ont pas été vérifiés.",
+      identifierIndexLink: "Compléter l’index des identifiants",
+      neverChanges:
+        "Les vérifications ne renumérotent, ne fusionnent et ne complètent jamais les fiches.",
+    },
+    profiles: {
+      loading: "Chargement des profils…",
+      description:
+        "Un profil indique la documentation que les objets d’un type doivent avoir à certaines étapes. Chaque vérification applique les profils actifs ; les profils archivés sont conservés.",
+      add: "Ajouter un profil",
+      readOnly: "Les administrateurs modifient les profils.",
+      empty:
+        "Aucun profil pour l’instant. Sans profil, les vérifications signalent tout de même les identifiants en double, les liens vers des parties et les références rompues.",
+      allTypes: "Tous les types d’objets",
+      objectTypeHint: "Les types d’objets proviennent de Paramètres › Préférences.",
+      addTitle: "Ajouter un profil de documentation",
+      editTitle: "Modifier le profil de documentation",
+      dialogDescription:
+        "Choisissez les objets couverts par le profil et ce qu’ils doivent avoir. La vérification suivante l’applique.",
+      fields: {
+        name: "Nom",
+        objectType: "Type d’objet",
+        stages: "Étapes",
+        requirements: "Documentation requise",
+      },
+      errors: {
+        name: "Saisissez un nom de 120 caractères au plus.",
+        stages: "Choisissez au moins une étape.",
+        requirements: "Choisissez au moins une exigence.",
+      },
+      cancel: "Annuler",
+      save: "Enregistrer le profil",
+      saving: "Enregistrement…",
+      saved: "Profil enregistré",
+      edit: "Modifier",
+      archive: "Archiver",
+      restore: "Restaurer",
+      archived: "Profil archivé",
+      restored: "Profil restauré",
+      archivedBadge: "Archivé",
+    },
+    review: {
+      title: "Examen",
+      openHint:
+        "Corrigez la fiche puis lancez une vérification, ou acceptez ce constat comme exception en indiquant la raison.",
+      acceptAction: "Accepter comme exception",
+      acceptTitle: "Accepter comme exception",
+      acceptDescription:
+        "La fiche reste inchangée. Indiquez la raison, par exemple pourquoi la documentation ne peut pas exister. Le constat est rouvert si une vérification ultérieure trouve autre chose.",
+      acceptDuplicateDescription:
+        "Chaque fiche conserve son identifiant. Votre raison est enregistrée comme examen de conflit d’identifiant pour chaque fiche qui le partage.",
+      note: "Raison",
+      noteRequired: "Indiquez une raison.",
+      cancel: "Annuler",
+      accept: "Accepter",
+      saving: "Enregistrement…",
+      accepted: "Accepté comme exception",
+      reviewedBy: "Accepté par {name} le {date}",
+      unknownReviewer: "un ancien membre",
+      earlierReview:
+        "Accepté précédemment ; ce que la vérification a trouvé a changé depuis :",
+      reopen: "Rouvrir",
+      reopened: "Constat rouvert",
+      reviewedInRegister:
+        "Examiné dans le registre des identifiants. Si une autre fiche se met à partager l’identifiant, ce constat est rouvert.",
+      resolved: "La vérification {number} ne l’a plus trouvé le {date}.",
+    },
+    detail: {
+      headerTitle: "Constat",
+      back: "Retour à la qualité de la documentation",
+      detection:
+        "Trouvé d’abord par la vérification {first} ; dernièrement par la vérification {last}.",
+      foundTitle: "Ce que la vérification a trouvé",
+      repairTitle: "Où corriger",
+      notRecorded: "Non renseigné",
+      register: "Registre",
+      identifier: "Identifiant tel qu’enregistré",
+      records: "Fiches qui le partagent ({count})",
+      moreRecords: "Et {count} de plus.",
+      object: "Objet",
+      profile: "Profil",
+      stage: "Étape",
+      missing: "Manquant",
+      recordedCondition: "Texte d’état sur la fiche, conservé tel qu’écrit",
+      recordedProvenance:
+        "Texte de provenance sur la fiche, conservé tel qu’écrit",
+      record: "Fiche",
+      assertedName: "Nom tel qu’écrit",
+      existingParty: "Compte référencé",
+      suggestedRole: "Rôle",
+      field: "Référence",
+      storedReference: "Valeur enregistrée",
+      problem: "Problème",
+      recordUnavailable: "{record} n’est plus disponible.",
+      openTab: "Ouvrir l’onglet {tab} : {requirements}",
+      repairIntro:
+        "Corrigez la fiche là où elle est tenue. La vérification suivante clôt ce constat lorsque la lacune a disparu.",
+      linkPartyHint:
+        "Confirmez ou liez la partie dans le panneau Parties de la fiche.",
+      linkPartyUnavailable:
+        "Lier une partie nécessite le module Comptes et l’autorisation de modifier les parties. Confiez cette tâche à quelqu’un qui le peut.",
+      duplicateHint:
+        "Rien n’est renuméroté. Ouvrez chaque fiche pour les comparer, ou acceptez le doublon avec les éléments historiques.",
+      identifierRegister: "Ouvrir le registre des identifiants",
+    },
+    errors: {
+      fallback: "Une erreur s’est produite. Réessayez.",
+      profileInvalid: "Vérifiez le nom, les étapes et les exigences du profil.",
+      profileLimitReached:
+        "Une organisation peut avoir au plus 20 profils actifs. Archivez-en un d’abord.",
+      profileNotFound: "Ce profil n’existe plus.",
+      checkRunning: "Une vérification est déjà en cours.",
+      checkNotFound: "Cette vérification n’existe plus.",
+      checkNotResumable:
+        "Seule la dernière vérification arrêtée ou bloquée peut être reprise.",
+      findingNotFound: "Ce constat n’existe plus.",
+      findingStatusChanged:
+        "Ce constat a changé entre-temps. Rechargez pour voir son état actuel.",
+      reviewNoteRequired: "Indiquez une raison de 2 000 caractères au plus.",
+      identifierIndexIncomplete:
+        "Complétez l’index des identifiants avant d’examiner les doublons.",
+      duplicateGroupTooLarge:
+        "Trop de fiches partagent cet identifiant pour un examen en une fois. Examinez-les dans le registre des identifiants.",
+      reviewedInIdentifierRegister:
+        "Les identifiants en double s’examinent dans le registre des identifiants.",
+    },
   },
   objectEntries: {
     title: "Entrées",
@@ -8482,6 +9003,16 @@ export default {
       updateSite: "Mettre à jour le site",
       archiveSiteConfirm: "Voulez-vous vraiment archiver ce site ?",
       failedArchiveSite: "Échec de l’archivage du site",
+      siteInUseTitle: "Ce site est encore utilisé",
+      siteInUseDescription:
+        "L’archivage ne doit pas laisser d’emplacements ni d’objets sous un site inactif. Réglez d’abord ces points ; rien n’a été modifié.",
+      siteInUseLocations:
+        "Emplacements actifs sur ce site : {count}. Supprimez-les d’abord dans Emplacements.",
+      siteInUseObjects:
+        "Objets encore placés dans les emplacements de ce site : {count}. Déplacez-les d’abord vers un autre emplacement.",
+      siteInUseIncomplete:
+        "Ce site compte trop d’emplacements ou d’objets pour être vérifié en une fois ; il ne peut pas être archivé ici.",
+      siteInUseClose: "Fermer",
       systemRole: "(Système)",
       siteManagement: "Gestion des sites",
       physicalLocationBranches:
@@ -8873,6 +9404,7 @@ export default {
       newAccession: "Nouvelle entrée",
       newLoan: "Nouveau prêt",
       newCollectionGroup: "Nouveau groupe de collections",
+      documentationQuality: "Qualité de la documentation",
       navigation: "Navigation",
       dashboard: "Tableau de bord",
       library: "Bibliothèque",
@@ -9333,6 +9865,7 @@ export default {
       locked: "Indisponible",
       overview: "Vue d’ensemble",
       myWork: "Mon travail",
+      documentationQuality: "Qualité de la documentation",
       objectCatalog: "Catalogue des objets",
       locationTracking: "Emplacements et suivi",
       scan: "Scanner",
@@ -9736,21 +10269,30 @@ export default {
       "Le fichier d'export n'est pas disponible. Réessayez ou créez un nouvel export.",
     reportsNote:
       "Les synthèses de rapports ci-dessous contiennent les réponses KPI actuelles et des listes limitées d'éléments récents ou à venir. Utilisez les exports complets du catalogue et de l'audit ci-dessus pour obtenir des jeux de données source rapprochés.",
-    sourceRegister: "Registre : {profile}",
+    sourceRegister: "{profile}",
     progressRegister:
-      "{rows} lignes de registre · {scanned} enregistrements examinés · {pages} pages",
+      "{rows} lignes · {scanned} enregistrements examinés · {pages} pages",
     errorRegisterCriteria:
-      "Vérifiez les critères du registre : les dates doivent être valides, la date de début ne peut pas suivre la date de fin, la date de référence ne peut pas être dans le futur et un statut ne s'applique qu'aux registres d'inventaire et de cession.",
+      "Vérifiez les critères : les dates doivent être valides, la date de début ne peut pas suivre la date de fin, la date de référence ne peut pas être dans le futur, une devise doit être un code de trois lettres comme EUR, et chaque registre ou rapport n'accepte que ses propres critères.",
   },
   registerReports: {
-    title: "Registres institutionnels",
+    title: "Registres et rapports",
     description:
-      "Générez les registres d'inventaire, de cession, de garde et d'état de conservation à partir des preuves enregistrées. Chaque fichier a un schéma de colonnes typé et un manifeste indiquant les critères, la date de référence et le générateur.",
-    profile: "Registre",
+      "Générez des registres, un rapport de valorisation pour le conseil d'administration, un état pour l'assureur et un rapport de recherche de provenance à partir des preuves enregistrées. Chaque fichier a un schéma de colonnes typé et un manifeste indiquant les critères, la date de référence, la version du profil et, le cas échéant, les totaux par devise.",
+    profile: "Registre ou rapport",
+    groupRegisters: "Registres",
+    groupFinancial: "Rapports financiers",
+    groupResearch: "Recherche",
+    groupUnsupported: "Non pris en charge",
     profileAccession: "Registre d'inventaire",
     profileDisposal: "Registre des cessions",
     profileCustody: "Registre de garde",
     profileCondition: "Registre d'état de conservation",
+    profileValuation: "Rapport de valorisation (conseil)",
+    profileInsurance: "État des garanties (assureur)",
+    profileProvenance: "Rapport de provenance (recherche)",
+    profileNoRoleAccess: "{profile} (non disponible pour votre rôle)",
+    profileNotInPlan: "{profile} (non inclus dans votre offre)",
     profileSpectrum: "SPECTRUM XML (non pris en charge)",
     profileLido: "LIDO XML (non pris en charge)",
     fromDate: "Du",
@@ -9760,23 +10302,45 @@ export default {
     statusPending: "En attente",
     statusApproved: "Approuvé",
     statusRejected: "Refusé",
+    purpose: "Finalité",
+    purposeAny: "Toutes les finalités",
+    currency: "Devise",
+    currencyPlaceholder: "Toutes, ou EUR",
+    inventoryScope: "Périmètre d'inventaire",
+    scopeAny: "Tous les périmètres",
+    scopeOwned: "En propriété",
+    scopeIncoming: "Entrant (hors propriété)",
+    scopeUnclassified: "Propriété non classée",
+    scopeExcluded: "Hors inventaire",
+    policy: "Police",
+    policyAny: "Toutes les polices",
+    policyOption: "{number} · {carrier}",
     asOf: "À la date du",
     asOfHint:
-      "Laissez À la date du vide pour utiliser le moment de création du registre. Les preuves enregistrées après cette date sont exclues. Les dates et l'heure de référence sont en UTC.",
+      "Laissez À la date du vide pour utiliser le moment de création du fichier. Les preuves enregistrées après cette date sont exclues, et la validité et la couverture sont évaluées à cette date. Les dates et l'heure de référence sont en UTC.",
     preview: "Aperçu",
     previewing: "Chargement de l'aperçu",
-    previewLabel: "Aperçu du registre",
+    previewLabel: "Aperçu",
     previewSummary:
       "{shown} lignes affichées sur {rows} de la première page ({scanned} enregistrements examinés).",
     previewMore:
-      "D'autres lignes suivent ; créez le registre pour obtenir le fichier complet.",
+      "D'autres lignes suivent ; créez le fichier pour obtenir le registre ou le rapport complet.",
     previewEmpty:
       "La première page ne contient aucune ligne pour ces critères.",
     notRecordedNote:
       "Les cellules vides nommées dans notRecorded n'ont jamais été enregistrées dans MuseumLite. Les lignes marquées legacy sont antérieures aux preuves structurées.",
+    totalsPreviewNote:
+      "Les totaux par devise portent sur tout le fichier. Ils apparaissent sur le fichier terminé ci-dessous et dans son manifeste.",
     exportLabel: "Créer le fichier {profile}",
+    totalsTitle: "Totaux par devise",
+    totalsNone: "Ce fichier ne contient aucun montant.",
+    totalsAmount: "{amount} ({count})",
+    totalsNotSummed: "{count} sans devise reconnue, non additionnés",
+    totalsNotStated: "Non indiqué",
+    totalsNote:
+      "Sommes des lignes de ce fichier, par groupe et par devise. Les montants en devises différentes ne sont jamais additionnés ; les lignes sans devise reconnue sont comptées, mais pas additionnées.",
     unsupportedNote:
-      "Les registres utilisent un profil d'échange MuseumLite documenté. Ils ne constituent pas une déclaration de conformité SPECTRUM, LIDO ou d'accréditation, et les profils non pris en charge ne peuvent pas être générés.",
+      "Les registres et rapports utilisent des profils d'échange MuseumLite documentés. Ils ne constituent pas une déclaration de conformité SPECTRUM, LIDO ou d'accréditation, et les profils non pris en charge ne peuvent pas être générés.",
   },
   projectionHealth: {
     unavailable: {

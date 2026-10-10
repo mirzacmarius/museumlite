@@ -11,52 +11,36 @@ import {
 import { AUDIT_READ_PERMISSION } from "./auditLog";
 import schema from "./schema";
 import { filterCollectionListPage } from "./utils/collectionListHelpers";
+import { requireExportAccess } from "./utils/exportAccess";
 import {
   exportFormat,
   exportSource,
   exportStatus,
   MAX_EXPORT_BYTES,
   RETENTION_MS,
+  registerTotalsValidator,
 } from "./utils/exportContract";
 import {
   enforceExportQuota,
   hasFeatureAccess,
   recordExportUsage,
-  requireFeatureAccess,
 } from "./utils/featureGates";
 import { getPageInventoryEvidence } from "./utils/indexedCounts";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
-import { REGISTER_PERMISSIONS } from "./utils/registerProfiles";
+import { readRegisterPage } from "./utils/registerPages";
 import {
-  readRegisterPage,
-  validateRegisterCriteria,
-} from "./utils/registerSources";
+  REGISTER_FEATURES,
+  REGISTER_PERMISSIONS,
+} from "./utils/registerProfiles";
+import { validateRegisterCriteria } from "./utils/registerSources";
+import { mergeRegisterTotals } from "./utils/registerTotals";
 
 const exportJobDoc = v.object({
   ...schema.tables.exportJobs.validator.fields,
   _id: v.id("exportJobs"),
   _creationTime: v.number(),
 });
-function requiredExportPermissions(source: Doc<"exportJobs">["source"]) {
-  if (source.kind === "register") return REGISTER_PERMISSIONS[source.profile];
-  return source.kind === "audit"
-    ? ["collections.read", AUDIT_READ_PERMISSION]
-    : ["collections.read"];
-}
-async function requireExportAccess(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">,
-  source: Doc<"exportJobs">["source"],
-  requireMemberPermission: (permission: string) => Promise<unknown>,
-) {
-  for (const permission of requiredExportPermissions(source))
-    await requireMemberPermission(permission);
-  if (source.kind === "audit")
-    await requireFeatureAccess(ctx, organizationId, "compliance");
-  if (source.kind === "register")
-    await requireFeatureAccess(ctx, organizationId, "reporting");
-}
 async function requireOwnJob(
   ctx: QueryCtx | MutationCtx,
   jobId: Id<"exportJobs">,
@@ -346,6 +330,7 @@ const publicStatus = v.object({
   sha256: v.optional(v.string()),
   error: v.optional(v.string()),
   leaseUntil: v.optional(v.number()),
+  totals: v.optional(registerTotalsValidator),
 });
 function toPublicStatus(job: Doc<"exportJobs">) {
   return {
@@ -371,6 +356,7 @@ function toPublicStatus(job: Doc<"exportJobs">) {
     sha256: job.sha256,
     error: job.error,
     leaseUntil: job.leaseUntil,
+    totals: job.totals,
   };
 }
 export const status = query({
@@ -389,23 +375,28 @@ export const list = query({
     const auditAllowed =
       (await hasFeatureAccess(ctx, args.organizationId, "compliance")) &&
       (await hasPermission(ctx, args.organizationId, AUDIT_READ_PERMISSION));
-    const registerAllowed = await hasFeatureAccess(
-      ctx,
-      args.organizationId,
-      "reporting",
-    );
     const granted = new Map<string, boolean>();
+    const allows = async (key: string, check: () => Promise<boolean>) => {
+      if (!granted.has(key)) granted.set(key, await check());
+      return granted.get(key) === true;
+    };
     const profileAllowed = async (
       profile: keyof typeof REGISTER_PERMISSIONS,
     ) => {
-      for (const permission of REGISTER_PERMISSIONS[profile]) {
-        if (!granted.has(permission))
-          granted.set(
-            permission,
-            await hasPermission(ctx, args.organizationId, permission),
-          );
-        if (!granted.get(permission)) return false;
-      }
+      for (const feature of REGISTER_FEATURES[profile])
+        if (
+          !(await allows(`feature:${feature}`, () =>
+            hasFeatureAccess(ctx, args.organizationId, feature),
+          ))
+        )
+          return false;
+      for (const permission of REGISTER_PERMISSIONS[profile])
+        if (
+          !(await allows(permission, () =>
+            hasPermission(ctx, args.organizationId, permission),
+          ))
+        )
+          return false;
       return true;
     };
     const jobs = await ctx.db
@@ -420,7 +411,7 @@ export const list = query({
       if (
         (job.source.kind !== "audit" || auditAllowed) &&
         (job.source.kind !== "register" ||
-          (registerAllowed && (await profileAllowed(job.source.profile))))
+          (await profileAllowed(job.source.profile)))
       ) {
         visibleJobs.push(toPublicStatus(job));
       }
@@ -620,6 +611,7 @@ export const commitChunk = internalMutation({
     done: v.boolean(),
     scanned: v.number(),
     capturedAt: v.number(),
+    totals: v.optional(registerTotalsValidator),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
@@ -671,6 +663,9 @@ export const commitChunk = internalMutation({
       captureCompletedAt: args.done ? Date.now() : undefined,
       leaseUntil: undefined,
       status: args.done ? "finalizing" : "queued",
+      totals: args.totals
+        ? mergeRegisterTotals(job.totals ?? [], args.totals)
+        : job.totals,
     });
     await ctx.scheduler.runAfter(0, internal.exportActions.process, {
       jobId: job._id,
@@ -827,6 +822,7 @@ export const complete = internalMutation({
               profile: job.source.profile,
               criteria: job.source.criteria,
               effectiveAsOf: job.source.criteria.asOf ?? job.asOf,
+              ...(job.totals ? { totals: job.totals } : {}),
             }
           : {}),
       },

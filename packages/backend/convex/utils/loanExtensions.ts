@@ -7,6 +7,7 @@ import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./permissions";
+import { correctPreparation } from "./preparation";
 
 export async function requestLoanExtensionHandler(
   ctx: MutationCtx,
@@ -152,6 +153,15 @@ export async function approveLoanExtensionHandler(
       },
     }),
   ] as const);
+  await correctPreparation(
+    ctx,
+    {
+      organizationId: request.organizationId,
+      caseType: "loan",
+      caseId: request.loanId,
+    },
+    userId,
+  );
 
   return null;
 }

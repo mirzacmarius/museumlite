@@ -19,6 +19,7 @@ import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./permissions";
+import { suggestPreparation } from "./preparation";
 import { getWorkflowConfig } from "./workflowConfigs";
 import { resolveWorkflowStepState } from "./workflowSteps";
 
@@ -104,6 +105,15 @@ export async function approveExhibitionHandler(
         }),
       ]);
 
+      await suggestPreparation(
+        ctx,
+        {
+          organizationId: exhibition.organizationId,
+          caseType: "exhibition",
+          caseId: args.exhibitionId,
+        },
+        userId,
+      );
       const creatorEntry = history.find((h) => h.step === 0);
       const creatorId = creatorEntry?.approvedBy;
       if (creatorId && creatorId !== userId) {
@@ -175,6 +185,15 @@ export async function approveExhibitionHandler(
         changes: { status: "approved" },
       }),
     ] as const);
+    await suggestPreparation(
+      ctx,
+      {
+        organizationId: exhibition.organizationId,
+        caseType: "exhibition",
+        caseId: args.exhibitionId,
+      },
+      userId,
+    );
   }
 
   return null;
