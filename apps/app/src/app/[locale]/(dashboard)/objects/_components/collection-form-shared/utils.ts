@@ -245,7 +245,7 @@ export function comparableCollectionForm(
     currentLocationId: text(formData.currentLocationId),
     collectionGroupId: text(formData.collectionGroupId),
     // Membership is a set; which group is primary is its own field.
-    collectionGroupIds: [...(formData.collectionGroupIds ?? [])].sort(),
+    collectionGroupIds: (formData.collectionGroupIds ?? []).toSorted(),
     alternateAccessionNumbers: formData.alternateAccessionNumbers ?? [],
     ownershipHistory: (formData.ownershipHistory ?? []).map(
       ({ localId: _localId, ...entry }) => entry,
