@@ -458,21 +458,27 @@ export async function correctPreparation(
 ) {
   const event = await acceptedCaseEvent(ctx, ref);
   if (!event) return;
-  const recipes = new Map<
+  const stepsByRecipe = new Map<
     Id<"preparationRecipes">,
-    Promise<Doc<"preparationRecipes"> | null>
+    Promise<Map<string, PreparationStep>>
   >();
+  const stepsOf = (recipeId: Id<"preparationRecipes">) => {
+    let steps = stepsByRecipe.get(recipeId);
+    if (!steps) {
+      steps = ctx.db
+        .get(recipeId)
+        .then(
+          (recipe) =>
+            new Map((recipe?.steps ?? []).map((step) => [step.key, step])),
+        );
+      stepsByRecipe.set(recipeId, steps);
+    }
+    return steps;
+  };
   for (const task of await tasksOnCase(ctx, ref)) {
     const suggestion = task.suggestion;
     if (!suggestion || !isOpenStatus(task.status)) continue;
-    let recipe = recipes.get(suggestion.recipeId);
-    if (!recipe) {
-      recipe = ctx.db.get(suggestion.recipeId);
-      recipes.set(suggestion.recipeId, recipe);
-    }
-    const step = (await recipe)?.steps.find(
-      (candidate) => candidate.key === suggestion.stepKey,
-    );
+    const step = (await stepsOf(suggestion.recipeId)).get(suggestion.stepKey);
     if (step) await keepSuggestionCurrent(ctx, task, step, event, [], actorId);
   }
 }
