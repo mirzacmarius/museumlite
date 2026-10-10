@@ -3,8 +3,25 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
+import { deliveryStatus, ledgerProgress } from "./utils/deliveryLedger";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
-import { getUserIdsWithPermission } from "./utils/permissions";
+import { notificationError } from "./utils/notificationErrors";
+import { notificationEmailChannel } from "./utils/notificationEmailChannel";
+import {
+  categoryChannelMatrix,
+  channelPolicy,
+  preferenceFieldsFor,
+  storedPreferences,
+} from "./utils/notificationPreferences";
+import {
+  categoryOfType,
+  notificationCategory,
+} from "./utils/notificationTypes";
+import { notificationEmailErrorCode } from "./utils/notificationValidators";
+import {
+  getCurrentUserOrganization,
+  getUserIdsWithPermission,
+} from "./utils/permissions";
 
 // ============================================
 // Notification Type Constants
@@ -91,8 +108,47 @@ const NOTIFICATION_TYPE_TO_CATEGORY = new Map<string, string>(
 // Enhanced Notification Queries
 // ============================================
 
+const emailOutcome = v.object({
+  deliveryId: v.id("notificationEmailDeliveries"),
+  status: deliveryStatus,
+  attemptCount: v.number(),
+  maxAttempts: v.number(),
+  seriesAttempts: v.number(),
+  inFlight: v.boolean(),
+  nextAttemptAt: v.optional(v.number()),
+  lastAttemptAt: v.optional(v.number()),
+  lastResponseStatus: v.optional(v.number()),
+  lastErrorCode: v.optional(notificationEmailErrorCode),
+  completedAt: v.optional(v.number()),
+});
+
+async function emailOutcomeOf(
+  ctx: QueryCtx,
+  notificationId: Id<"notifications">,
+) {
+  const delivery = await ctx.db
+    .query("notificationEmailDeliveries")
+    .withIndex("by_notificationId", (q) =>
+      q.eq("notificationId", notificationId),
+    )
+    .first();
+  if (!delivery) return null;
+  return {
+    deliveryId: delivery._id,
+    status: delivery.status,
+    attemptCount: delivery.attemptCount,
+    maxAttempts: delivery.maxAttempts,
+    ...ledgerProgress(delivery),
+    lastAttemptAt: delivery.lastAttemptAt,
+    lastResponseStatus: delivery.lastResponseStatus,
+    lastErrorCode: delivery.lastErrorCode,
+    completedAt: delivery.completedAt,
+  };
+}
+
 /**
- * Get notification center data with categories
+ * The caller's notifications in one organization, newest first, each with
+ * its category and the outcome of its email when one was sent.
  */
 export const getNotificationCenter = query({
   args: {
@@ -110,7 +166,8 @@ export const getNotificationCenter = query({
         relatedEntityType: v.optional(v.string()),
         relatedEntityId: v.optional(v.string()),
         createdAt: v.number(),
-        category: v.string(),
+        category: notificationCategory,
+        email: v.union(emailOutcome, v.null()),
       }),
     ),
     unreadCount: v.number(),
@@ -137,17 +194,20 @@ export const getNotificationCenter = query({
       .order("desc")
       .take(limit);
 
-    const categorizedNotifications = notifications.map((n) => ({
-      _id: n._id,
-      type: n.type,
-      title: n.title,
-      message: n.message,
-      read: n.read,
-      relatedEntityType: n.relatedEntityType,
-      relatedEntityId: n.relatedEntityId,
-      createdAt: n.createdAt,
-      category: getCategoryForType(n.type),
-    }));
+    const categorizedNotifications = await Promise.all(
+      notifications.map(async (n) => ({
+        _id: n._id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        read: n.read,
+        relatedEntityType: n.relatedEntityType,
+        relatedEntityId: n.relatedEntityId,
+        createdAt: n.createdAt,
+        category: categoryOfType(n.type),
+        email: await emailOutcomeOf(ctx, n._id),
+      })),
+    );
 
     const unreadNotifications = await ctx.db
       .query("notifications")
@@ -168,10 +228,7 @@ export const getNotificationCenter = query({
     };
 
     for (const n of unreadNotifications) {
-      const category = getCategoryForType(n.type);
-      if (category in unreadByCategory) {
-        unreadByCategory[category as keyof typeof unreadByCategory]++;
-      }
+      unreadByCategory[categoryOfType(n.type)]++;
     }
 
     return {
@@ -244,8 +301,6 @@ export const getNotificationsByCategory = query({
       throw new Error("Not authenticated");
     }
 
-    const categoryTypes = NOTIFICATION_CATEGORIES[args.category] ?? [];
-    const categoryTypeSet = new Set(categoryTypes);
     const limit = args.limit ?? 50;
 
     let notificationsQuery = ctx.db
@@ -266,7 +321,7 @@ export const getNotificationsByCategory = query({
 
     // Filter by category types
     const filtered = notifications
-      .filter((n) => categoryTypeSet.has(n.type))
+      .filter((n) => categoryOfType(n.type) === args.category)
       .slice(0, limit);
 
     return filtered.map((n) => ({
@@ -789,55 +844,14 @@ export const sendApprovalRequest = internalMutation({
   },
 });
 
-/**
- * Internal: Send batch job completion notification
- */
-export const sendBatchJobCompleted = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    userId: v.id("users"),
-    jobId: v.id("batchJobs"),
-    jobType: v.string(),
-    totalItems: v.number(),
-    successCount: v.number(),
-    failureCount: v.number(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const jobTypeLabels: Record<string, string> = {
-      bulk_edit: "Bulk Edit",
-      bulk_move: "Bulk Move",
-      bulk_status_change: "Bulk Status Change",
-      bulk_delete: "Bulk Delete",
-      bulk_export: "Bulk Export",
-    };
-
-    const label = jobTypeLabels[args.jobType] ?? args.jobType;
-    const status =
-      args.failureCount === 0
-        ? "completed successfully"
-        : `completed with ${args.failureCount} errors`;
-
-    await ctx.runMutation(internal.notifications.sendNotification, {
-      organizationId: args.organizationId,
-      userId: args.userId,
-      type: NOTIFICATION_TYPES.BATCH_JOB_COMPLETED,
-      title: `${label} ${status}`,
-      message: `Processed ${args.successCount} of ${args.totalItems} items.`,
-      relatedEntityType: "batch_job",
-      relatedEntityId: args.jobId,
-    });
-
-    return null;
-  },
-});
-
 // ============================================
 // Notification Preferences
 // ============================================
 
 /**
- * Get notification preferences for current user
+ * The caller's category matrix for one organization and what their email
+ * channel can actually deliver: whether this deployment sends notification
+ * email, to which address, and a saved digest choice that is not delivered.
  */
 export const getPreferences = query({
   args: {
@@ -845,18 +859,16 @@ export const getPreferences = query({
   },
   returns: v.union(
     v.object({
-      enableApprovals: v.boolean(),
-      enableReminders: v.boolean(),
-      enableAlerts: v.boolean(),
-      enableAssignments: v.boolean(),
-      enableSystem: v.boolean(),
-      disabledTypes: v.array(v.string()),
-      emailEnabled: v.boolean(),
-      emailDigestFrequency: v.string(),
-      quietHoursEnabled: v.boolean(),
-      quietHoursStart: v.optional(v.string()),
-      quietHoursEnd: v.optional(v.string()),
-      timezone: v.optional(v.string()),
+      categories: categoryChannelMatrix,
+      email: v.object({
+        channel: v.union(
+          v.literal("provider"),
+          v.literal("fixture"),
+          v.literal("unavailable"),
+        ),
+        address: v.union(v.string(), v.null()),
+        savedDigest: v.union(v.literal("daily"), v.literal("weekly"), v.null()),
+      }),
     }),
     v.null(),
   ),
@@ -865,57 +877,40 @@ export const getPreferences = query({
     if (!userId) {
       return null;
     }
-
-    const prefs = await ctx.db
-      .query("notificationPreferences")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    // Return defaults if no preferences set
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      return null;
+    }
+    const [user, preferences] = await Promise.all([
+      ctx.db.get(userId),
+      storedPreferences(ctx, userId, args.organizationId),
+    ]);
+    const policy = channelPolicy(preferences);
     return {
-      enableApprovals: prefs?.enableApprovals ?? true,
-      enableReminders: prefs?.enableReminders ?? true,
-      enableAlerts: prefs?.enableAlerts ?? true,
-      enableAssignments: prefs?.enableAssignments ?? true,
-      enableSystem: prefs?.enableSystem ?? true,
-      disabledTypes: prefs?.disabledTypes ?? [],
-      emailEnabled: prefs?.emailEnabled ?? false,
-      emailDigestFrequency: prefs?.emailDigestFrequency ?? "never",
-      quietHoursEnabled: prefs?.quietHoursEnabled ?? false,
-      quietHoursStart: prefs?.quietHoursStart,
-      quietHoursEnd: prefs?.quietHoursEnd,
-      timezone: prefs?.timezone,
+      categories: policy.categories,
+      email: {
+        channel: notificationEmailChannel().kind,
+        address: user?.email ?? null,
+        savedDigest:
+          policy.emailCadence === "daily" || policy.emailCadence === "weekly"
+            ? policy.emailCadence
+            : null,
+      },
     };
   },
 });
 
 /**
- * Update notification preferences
+ * Replaces the caller's category matrix for one organization: which
+ * categories notify them, and which of those are also emailed.
  */
 export const updatePreferences = mutation({
   args: {
     organizationId: v.id("organizations"),
-    enableApprovals: v.optional(v.boolean()),
-    enableReminders: v.optional(v.boolean()),
-    enableAlerts: v.optional(v.boolean()),
-    enableAssignments: v.optional(v.boolean()),
-    enableSystem: v.optional(v.boolean()),
-    disabledTypes: v.optional(v.array(v.string())),
-    emailEnabled: v.optional(v.boolean()),
-    emailDigestFrequency: v.optional(
-      v.union(
-        v.literal("instant"),
-        v.literal("daily"),
-        v.literal("weekly"),
-        v.literal("never"),
-      ),
-    ),
-    quietHoursEnabled: v.optional(v.boolean()),
-    quietHoursStart: v.optional(v.string()),
-    quietHoursEnd: v.optional(v.string()),
-    timezone: v.optional(v.string()),
+    categories: categoryChannelMatrix,
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -923,50 +918,44 @@ export const updatePreferences = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw notificationError("NOT_ORGANIZATION_MEMBER");
+    }
+    const emailRequested = Object.values(args.categories).some(
+      (choice) => choice.enabled && choice.email,
+    );
+    if (emailRequested) {
+      if (notificationEmailChannel().kind === "unavailable") {
+        throw notificationError("EMAIL_CHANNEL_UNAVAILABLE");
+      }
+      const user = await ctx.db.get(userId);
+      if (!user?.email) {
+        throw notificationError("EMAIL_ADDRESS_MISSING");
+      }
+    }
 
-    const existing = await ctx.db
-      .query("notificationPreferences")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    const updates: Record<string, unknown> = { updatedAt: Date.now() };
-
-    if (args.enableApprovals !== undefined)
-      updates.enableApprovals = args.enableApprovals;
-    if (args.enableReminders !== undefined)
-      updates.enableReminders = args.enableReminders;
-    if (args.enableAlerts !== undefined)
-      updates.enableAlerts = args.enableAlerts;
-    if (args.enableAssignments !== undefined)
-      updates.enableAssignments = args.enableAssignments;
-    if (args.enableSystem !== undefined)
-      updates.enableSystem = args.enableSystem;
-    if (args.disabledTypes !== undefined)
-      updates.disabledTypes = args.disabledTypes;
-    if (args.emailEnabled !== undefined)
-      updates.emailEnabled = args.emailEnabled;
-    if (args.emailDigestFrequency !== undefined)
-      updates.emailDigestFrequency = args.emailDigestFrequency;
-    if (args.quietHoursEnabled !== undefined)
-      updates.quietHoursEnabled = args.quietHoursEnabled;
-    if (args.quietHoursStart !== undefined)
-      updates.quietHoursStart = args.quietHoursStart;
-    if (args.quietHoursEnd !== undefined)
-      updates.quietHoursEnd = args.quietHoursEnd;
-    if (args.timezone !== undefined) updates.timezone = args.timezone;
-
+    const fields = {
+      ...preferenceFieldsFor(args.categories),
+      updatedAt: Date.now(),
+    };
+    const existing = await storedPreferences(
+      ctx,
+      userId,
+      args.organizationId,
+    );
     if (existing) {
-      await ctx.db.patch(existing._id, updates);
+      await ctx.db.patch(existing._id, fields);
     } else {
       await ctx.db.insert("notificationPreferences", {
         userId,
         organizationId: args.organizationId,
-        ...updates,
+        ...fields,
       });
     }
-
     return null;
   },
 });

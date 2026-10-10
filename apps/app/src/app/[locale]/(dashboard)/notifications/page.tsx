@@ -29,7 +29,7 @@ import { type ReactNode, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { getNotificationCopy } from "@/lib/notification-copy";
-import { notificationEntityHref } from "@/lib/notification-links";
+import { notificationEntityHref } from "@v1/backend/convex/utils/notificationLinks";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { NotificationsPageSkeleton } from "./notifications-page-skeleton";
 

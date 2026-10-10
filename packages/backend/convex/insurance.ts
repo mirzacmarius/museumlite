@@ -43,6 +43,7 @@ import {
   insuranceStatsValidator,
 } from "./utils/insuranceStats";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,
@@ -1895,17 +1896,15 @@ export const checkExpiringPoliciesInternal = internalMutation({
         policy.organizationId,
         "organization.manage_settings",
       );
-      for (const coordinatorUserId of coordinatorUserIds) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: policy.organizationId,
-          userId: coordinatorUserId,
-          type: "insurance_expiry",
-          title: `Insurance Policy Expiring in ${daysUntilExpiry} Days`,
-          message,
-          relatedEntityType: "insurancePolicy",
-          relatedEntityId: policy._id,
-        });
-      }
+      await dispatchNotification(ctx, {
+        organizationId: policy.organizationId,
+        type: "insurance_expiry",
+        recipients: coordinatorUserIds,
+        title: `Insurance Policy Expiring in ${daysUntilExpiry} Days`,
+        message,
+        related: { entityType: "insurancePolicy", entityId: policy._id },
+        idempotencyKey: `insurance_expiry:${policy._id}:${policy.expirationDate}:${daysUntilExpiry}`,
+      });
     }
 
     return null;

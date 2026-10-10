@@ -88,6 +88,19 @@ export interface EmailMessages {
     stop: string;
     footer: string;
   };
+  notification: {
+    intro: string;
+    open: string;
+    manage: string;
+    footer: string;
+    categories: {
+      approvals: string;
+      reminders: string;
+      alerts: string;
+      assignments: string;
+      system: string;
+    };
+  };
   auth: {
     verificationSubject: string;
     verificationBody: string;
@@ -202,6 +215,20 @@ const messages: Record<EmailLocale, EmailMessages> = {
       keep: "To keep this account, stop the deletion now or transfer ownership to another team member.",
       stop: "Stop deletion",
       footer: "This final notice was sent to {email} for {organizationName}.",
+    },
+    notification: {
+      intro: "There is a new notification for you in {organizationName}:",
+      open: "Open in MuseumLite",
+      manage: "Change which notifications you receive by email",
+      footer:
+        "You receive this email because email is on for {category} notifications in {organizationName}.",
+      categories: {
+        approvals: "Approvals",
+        reminders: "Reminders",
+        alerts: "Alerts",
+        assignments: "Tasks",
+        system: "System",
+      },
     },
     auth: {
       verificationSubject: "Your MuseumLite verification code",
@@ -323,6 +350,20 @@ const messages: Record<EmailLocale, EmailMessages> = {
       footer:
         "Ce dernier avis concernant {organizationName} a été envoyé à {email}.",
     },
+    notification: {
+      intro: "Vous avez une nouvelle notification dans {organizationName} :",
+      open: "Ouvrir dans MuseumLite",
+      manage: "Choisir les notifications reçues par e-mail",
+      footer:
+        "Vous recevez cet e-mail car l’e-mail est activé pour les notifications {category} dans {organizationName}.",
+      categories: {
+        approvals: "Approbations",
+        reminders: "Rappels",
+        alerts: "Alertes",
+        assignments: "Tâches",
+        system: "Système",
+      },
+    },
     auth: {
       verificationSubject: "Votre code de vérification MuseumLite",
       verificationBody: "Votre code de vérification est {token}.",
@@ -440,6 +481,20 @@ const messages: Record<EmailLocale, EmailMessages> = {
       stop: "Detener eliminación",
       footer: "Este aviso final sobre {organizationName} se envió a {email}.",
     },
+    notification: {
+      intro: "Tienes una nueva notificación en {organizationName}:",
+      open: "Abrir en MuseumLite",
+      manage: "Elegir qué notificaciones recibes por correo",
+      footer:
+        "Recibes este correo porque el correo está activado para las notificaciones de {category} en {organizationName}.",
+      categories: {
+        approvals: "Aprobaciones",
+        reminders: "Recordatorios",
+        alerts: "Alertas",
+        assignments: "Tareas",
+        system: "Sistema",
+      },
+    },
     auth: {
       verificationSubject: "Tu código de verificación de MuseumLite",
       verificationBody: "Tu código de verificación es {token}.",
@@ -556,6 +611,20 @@ const messages: Record<EmailLocale, EmailMessages> = {
       footer:
         "Dette siste varselet om {organizationName} ble sendt til {email}.",
     },
+    notification: {
+      intro: "Du har et nytt varsel i {organizationName}:",
+      open: "Åpne i MuseumLite",
+      manage: "Velg hvilke varsler du får på e-post",
+      footer:
+        "Du får denne e-posten fordi e-post er slått på for varsler om {category} i {organizationName}.",
+      categories: {
+        approvals: "Godkjenninger",
+        reminders: "Påminnelser",
+        alerts: "Advarsler",
+        assignments: "Oppgaver",
+        system: "System",
+      },
+    },
     auth: {
       verificationSubject: "Din bekreftelseskode for MuseumLite",
       verificationBody: "Bekreftelseskoden din er {token}.",
@@ -670,6 +739,20 @@ const messages: Record<EmailLocale, EmailMessages> = {
       stop: "Opriți ștergerea",
       footer:
         "Această notificare finală despre {organizationName} a fost trimisă la {email}.",
+    },
+    notification: {
+      intro: "Aveți o notificare nouă în {organizationName}:",
+      open: "Deschideți în MuseumLite",
+      manage: "Alegeți ce notificări primiți prin e-mail",
+      footer:
+        "Primiți acest e-mail deoarece e-mailul este activat pentru notificările de tip {category} în {organizationName}.",
+      categories: {
+        approvals: "Aprobări",
+        reminders: "Mementouri",
+        alerts: "Alerte",
+        assignments: "Sarcini",
+        system: "Sistem",
+      },
     },
     auth: {
       verificationSubject: "Codul dvs. de verificare MuseumLite",

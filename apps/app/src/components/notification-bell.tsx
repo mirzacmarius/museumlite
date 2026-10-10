@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { getNotificationCopy } from "@/lib/notification-copy";
-import { notificationEntityHref } from "@/lib/notification-links";
+import { notificationEntityHref } from "@v1/backend/convex/utils/notificationLinks";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { useOrganization } from "./organization-provider";
 

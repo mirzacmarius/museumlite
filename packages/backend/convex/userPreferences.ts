@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internalQuery, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { internalQuery, type QueryCtx, query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
 
 export const get = query({
@@ -105,7 +106,7 @@ export const remove = mutation({
   },
 });
 
-const emailLocaleValidator = v.union(
+export const emailLocaleValidator = v.union(
   v.literal("en"),
   v.literal("fr"),
   v.literal("es"),
@@ -151,19 +152,19 @@ export const getEmailLocaleByEmail = internalQuery({
   },
 });
 
+/** The language a user chose for the app, which their emails follow. */
+export async function emailLocaleOf(ctx: QueryCtx, userId: Id<"users">) {
+  const preference = await ctx.db
+    .query("userPreferences")
+    .withIndex("by_user_organization_key", (q) =>
+      q.eq("userId", userId).eq("organizationId", undefined).eq("key", "language"),
+    )
+    .unique();
+  return parseEmailLocale(preference?.value);
+}
+
 export const getEmailLocaleByUserId = internalQuery({
   args: { userId: v.id("users") },
   returns: emailLocaleValidator,
-  handler: async (ctx, args) => {
-    const preference = await ctx.db
-      .query("userPreferences")
-      .withIndex("by_user_organization_key", (q) =>
-        q
-          .eq("userId", args.userId)
-          .eq("organizationId", undefined)
-          .eq("key", "language"),
-      )
-      .unique();
-    return parseEmailLocale(preference?.value);
-  },
+  handler: async (ctx, args) => await emailLocaleOf(ctx, args.userId),
 });

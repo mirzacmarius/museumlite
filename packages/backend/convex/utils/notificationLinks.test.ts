@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { notificationEntityHref } from "./notification-links";
+import { notificationEntityHref } from "./notificationLinks";
 
 describe("notificationEntityHref", () => {
   test("opens object notifications at the canonical object route", () => {
