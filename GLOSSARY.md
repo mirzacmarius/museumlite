@@ -106,6 +106,14 @@ _Avoid_: Ticket, request (as a general term)
 A unit of work waiting on a staff member, such as an installation task or an approval step on a Case.
 _Avoid_: To-do, job
 
+**Preparation recipe**:
+An institution's list of next-step Tasks that an accepted intake, an approved loan or an approved exhibition suggests, such as cataloguing, photographing and assessing a newly accessioned Object. Each step names its owner, its due date relative to the Case, the steps it waits for and the evidence that shows it was done.
+_Avoid_: Template, automation, workflow (approval workflows are separate)
+
+**Suggested task**:
+A Task a Preparation recipe created for one step of one accepted Case event. Repeating or correcting the event never adds a second one, and staff can dismiss and restore it. Completing it records nothing about custody, receipt, installation, title or condition.
+_Avoid_: Automatic task, recommendation
+
 ### Documentation quality
 
 **Documentation profile**:

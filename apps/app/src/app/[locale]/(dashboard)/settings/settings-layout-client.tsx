@@ -21,6 +21,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isDataPath = pathname === "/settings/data";
   const isMetricsPath = pathname === "/settings/metrics";
   const isLoanAgreementsPath = pathname === "/settings/loan-agreements";
+  const isPreparationRecipesPath = pathname === "/settings/preparation-recipes";
   const navItems = [
     {
       href: "/settings/organization",
@@ -39,6 +40,11 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
       href: "/settings/loan-agreements",
       label: t("loanAgreements"),
       active: isLoanAgreementsPath,
+    },
+    {
+      href: "/settings/preparation-recipes",
+      label: t("preparationRecipes"),
+      active: isPreparationRecipesPath,
     },
     {
       href: "/settings/integrations",
@@ -166,6 +172,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("loanAgreements")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/preparation-recipes"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isPreparationRecipesPath && "bg-muted"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-foreground/80 ${isPreparationRecipesPath && "font-medium text-foreground"}`,
+              )}
+            >
+              {t("preparationRecipes")}
             </span>
           </Link>
           <Link

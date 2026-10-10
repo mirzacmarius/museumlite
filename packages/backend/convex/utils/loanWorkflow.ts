@@ -16,6 +16,7 @@ import {
   getWorkflowCreatorRecipient,
 } from "./notificationRecipients";
 import { canApproveAtStep, requirePermission } from "./permissions";
+import { suggestPreparation, withdrawPreparation } from "./preparation";
 import { getWorkflowConfig } from "./workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
@@ -147,6 +148,15 @@ export async function approveLoanHandler(
           changes: { status: "active", step: currentStep },
         }),
       ]);
+      await suggestPreparation(
+        ctx,
+        {
+          organizationId: loan.organizationId,
+          caseType: "loan",
+          caseId: args.loanId,
+        },
+        userId,
+      );
       const { itemName, itemCount } = await getLoanEmailItemData(
         ctx,
         args.loanId,
@@ -221,6 +231,15 @@ export async function approveLoanHandler(
         changes: { status: "active" },
       }),
     ]);
+    await suggestPreparation(
+      ctx,
+      {
+        organizationId: loan.organizationId,
+        caseType: "loan",
+        caseId: args.loanId,
+      },
+      userId,
+    );
     const [recipients, loanItemData] = await Promise.all([
       getOrganizationNotificationRecipients(ctx, loan.organizationId, userId),
       getLoanEmailItemData(ctx, args.loanId),
@@ -410,6 +429,7 @@ export async function bulkApproveLoansHandler(
         loan.organizationId,
         "loan",
       );
+      let approvedNow = false;
 
       if (workflowConfig) {
         const workflowState = resolveWorkflowStepState(
@@ -496,6 +516,7 @@ export async function bulkApproveLoansHandler(
             approvedAt: Date.now(),
             ...(await appendCaseHistory(ctx, loan, "loan", history)),
           });
+          approvedNow = true;
         } else {
           const nextStep = workflowState.nextStep;
           if (nextStep === undefined) {
@@ -526,6 +547,7 @@ export async function bulkApproveLoansHandler(
           approvedBy: userId,
           approvedAt: Date.now(),
         });
+        approvedNow = true;
       }
 
       // Log audit action
@@ -537,6 +559,16 @@ export async function bulkApproveLoansHandler(
         entityId: loanId,
         changes: { status: "active", bulkAction: true },
       });
+      if (approvedNow)
+        await suggestPreparation(
+          ctx,
+          {
+            organizationId: loan.organizationId,
+            caseType: "loan",
+            caseId: loanId,
+          },
+          userId,
+        );
 
       approved++;
     }),
@@ -615,6 +647,16 @@ export async function bulkCancelLoansHandler(
           changes: { status: "cancelled", bulkAction: true },
         }),
       ]);
+      await withdrawPreparation(
+        ctx,
+        {
+          organizationId: loan.organizationId,
+          caseType: "loan",
+          caseId: loanId,
+        },
+        userId,
+        "loan_cancelled",
+      );
 
       cancelled++;
     }),

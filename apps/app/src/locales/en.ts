@@ -190,6 +190,7 @@ export default {
       data: "Data Import/Export",
       metrics: "Metrics health",
       loanAgreements: "Loan agreements",
+      preparationRecipes: "Preparation recipes",
     },
     roles: {
       title: "Role Management",
@@ -4741,6 +4742,73 @@ export default {
         "That record is not available to cite. Choose an accepted record from this organization.",
       limitReached: "This case or task has reached its limit.",
       invalidInput: "Check the required fields and try again.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Link an accepted condition assessment to this task first.",
+        media: "Link a file, such as a photograph, to this task first.",
+        movement: "Link the recorded move to this task first.",
+        auditEntry: "Link the audit event to this task first.",
+      },
+      caseNotAccepted:
+        "Recipes apply once the case is accepted, until it is returned, closed or cancelled.",
+      recipeNotFound: "This recipe is no longer available. Refresh the page.",
+      recipeInvalid: "Check the highlighted fields of the recipe.",
+    },
+    suggestion: {
+      badge: "Suggested",
+      origin: {
+        intake_accepted:
+          "Suggested by “{recipe}” after the intake was accepted",
+        loan_approved: "Suggested by “{recipe}” after the loan was approved",
+        exhibition_approved:
+          "Suggested by “{recipe}” after the exhibition was approved",
+      },
+      withdrawn:
+        "Withdrawn because the loan was cancelled. Restore it if the work is still needed.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Needs an accepted condition assessment linked as evidence before it can be completed.",
+        media:
+          "Needs a file, such as a photograph, linked as evidence before it can be completed.",
+        movement:
+          "Needs the recorded move linked as evidence before it can be completed.",
+        auditEntry:
+          "Needs an audit event linked as evidence before it can be completed.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Condition assessment linked as evidence.",
+        media: "File linked as evidence.",
+        movement: "Recorded move linked as evidence.",
+        auditEntry: "Audit event linked as evidence.",
+      },
+      restore: "Restore suggestion",
+      restored: "Suggestion restored",
+      dismiss: "Dismiss suggestion",
+      dismissDescription:
+        "The task stays on the case and is not suggested again. You can restore it later.",
+    },
+    preparation: {
+      title: "Preparation",
+      description: {
+        intake_accepted:
+          "Recipes suggest these tasks when an intake is accepted. Suggestions never record receipt, installation, title or condition.",
+        loan_approved:
+          "Recipes suggest these tasks when a loan is approved. Suggestions never record receipt, installation, title or condition.",
+        exhibition_approved:
+          "Recipes suggest these tasks when an exhibition is approved. Suggestions never record receipt, installation, title or condition.",
+      },
+      states: {
+        suggested: "Suggested",
+        ready: "Not suggested yet",
+        no_owner: "Waiting for an owner who can work on this case",
+        limit_reached: "This case has reached its task limit",
+      },
+      apply: "Suggest {count} missing task(s)",
+      applying: "Suggesting…",
+      applied: "{count} task(s) suggested",
+      nothingToApply: "Every step already has a task.",
+      skipped:
+        "{count} step(s) still need an owner who can work on this case, or room on the case.",
     },
     myWork: {
       title: "My work",
@@ -4756,6 +4824,140 @@ export default {
       assignedCasesEmpty: "No open cases are assigned to you.",
       assignedTruncated: "Showing the first 50 assigned cases.",
       since: "Since",
+    },
+  },
+  preparationRecipes: {
+    title: "Preparation recipes",
+    description:
+      "When an intake is accepted or a loan or exhibition is approved, active recipes suggest owned, dated tasks on the case. Suggestions never record receipt, installation, title or condition; staff record those in their own workflows.",
+    add: "New recipe",
+    loading: "Loading recipes…",
+    empty: "No recipes yet. Create one from a starting point under New recipe.",
+    notificationsHint:
+      "Each owner is notified once per suggested task, in their Tasks category.",
+    notificationsLink: "Notification settings",
+    noAttestation:
+      "Completing a suggested task records only that the work is done.",
+    stepCount: "{count} step(s)",
+    evidenceShort: "evidence: {kind}",
+    statuses: {
+      active: "Active",
+      paused: "Paused",
+      archived: "Archived",
+    },
+    triggers: {
+      intake_accepted: "Intake accepted",
+      loan_approved: "Loan approved",
+      exhibition_approved: "Exhibition approved",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Runs when an intake is accepted into the collection. Due dates count from the acceptance.",
+      loan_approved:
+        "Runs when a loan is approved. Due dates count from the approval or from the loan's start or end.",
+      exhibition_approved:
+        "Runs when an exhibition is approved. Due dates count from the approval or from its opening or closing.",
+    },
+    directions: {
+      any: "Incoming and outgoing loans",
+      outgoing: "Outgoing loans",
+      incoming: "Incoming loans",
+    },
+    actions: {
+      edit: "Edit",
+      pause: "Pause",
+      resume: "Resume",
+      archive: "Archive",
+      restore: "Restore",
+    },
+    toasts: {
+      saved: "Recipe saved",
+      paused: "Recipe paused",
+      resumed: "Recipe resumed",
+      archived: "Recipe archived",
+      restored: "Recipe restored as paused",
+    },
+    starters: {
+      intake: {
+        label: "Catalog, photograph and assess condition",
+        name: "Catalog, photograph and assess condition",
+        catalog: "Complete the catalog record",
+        photograph: "Photograph the object",
+        condition: "Record a condition assessment",
+      },
+      transport: {
+        label: "Pack, insure and arrange transport",
+        name: "Pack, insure and arrange transport",
+        condition: "Condition check before dispatch",
+        insurance: "Confirm insurance cover",
+        pack: "Pack the objects",
+        transport: "Book transport",
+      },
+      return: {
+        label: "Prepare the return",
+        name: "Prepare the return",
+        transport: "Book return transport",
+        condition: "Condition check on return",
+        move: "Record the return move",
+      },
+      blank: {
+        label: "Blank recipe",
+      },
+    },
+    dialog: {
+      addTitle: "New recipe",
+      editTitle: "Edit recipe",
+      description:
+        "Each step becomes a task on the case, owned by a member who can work on it. Repeating or correcting the event keeps one task per step.",
+      name: "Name",
+      trigger: "Suggest when",
+      triggerLocked:
+        "The event cannot change once the recipe exists. Create another recipe instead.",
+      direction: "Loans",
+      steps: "Steps",
+      step: "Step {number}",
+      stepReference: "Step {number}: {title}",
+      untitled: "Untitled step",
+      stepTitle: "Task title",
+      stepDescription: "Description",
+      evidence: "Evidence that shows it was done",
+      noEvidence: "None required",
+      owner: "Owner",
+      owners: {
+        caseAssignee: "Member assigned to the case",
+        approver: "Member who accepted it",
+        member: "A named member",
+      },
+      ownerMember: "Member",
+      chooseMember: "Choose a member",
+      ownerFallback:
+        "If the chosen owner cannot work on the case, the member assigned to the case owns the task, then the member who accepted it. A step without such a member waits until someone applies the recipe again.",
+      due: "Due",
+      noDue: "No due date",
+      anchors: {
+        event: "From the acceptance",
+        start: "From the start or opening",
+        end: "From the end or closing",
+      },
+      offsetDays: "Days",
+      offsetHint: "Negative numbers count back from that date.",
+      dependsOn: "Waits for",
+      addStep: "Add step",
+      removeStep: "Remove step",
+      moveUp: "Move step up",
+      moveDown: "Move step down",
+      cancel: "Cancel",
+      save: "Save recipe",
+      saving: "Saving…",
+      errors: {
+        name: "Give the recipe a name of up to 120 characters.",
+        steps: "A recipe needs 1 to 10 steps.",
+        title: "Give the step a title of up to 200 characters.",
+        description: "Keep the description to 2,000 characters.",
+        owner: "Choose a member who can work on these cases.",
+        due: "Use a whole number of days between -365 and 365.",
+        dependsOn: "A step can only wait for steps above it.",
+      },
     },
   },
   notificationsPage: {

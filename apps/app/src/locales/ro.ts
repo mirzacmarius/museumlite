@@ -517,6 +517,7 @@ export default {
       data: "Import/Export Date",
       metrics: "Starea indicatorilor",
       loanAgreements: "Contracte de împrumut",
+      preparationRecipes: "Rețete de pregătire",
     },
     roles: {
       title: "Gestionare Roluri",
@@ -7458,6 +7459,73 @@ export default {
         "Înregistrarea nu poate fi citată. Alegeți o înregistrare acceptată din această organizație.",
       limitReached: "Dosarul sau sarcina a atins limita.",
       invalidInput: "Verificați câmpurile obligatorii și încercați din nou.",
+      evidenceRequired: {
+        conditionAssessment:
+          "Legați mai întâi o evaluare a stării acceptată de această sarcină.",
+        media:
+          "Legați mai întâi un fișier, de exemplu o fotografie, de această sarcină.",
+        movement: "Legați mai întâi mutarea înregistrată de această sarcină.",
+        auditEntry: "Legați mai întâi evenimentul de audit de această sarcină.",
+      },
+      caseNotAccepted:
+        "Rețetele se aplică după ce dosarul este acceptat, până când este returnat, închis sau anulat.",
+      recipeNotFound:
+        "Această rețetă nu mai este disponibilă. Reîncărcați pagina.",
+      recipeInvalid: "Verificați câmpurile marcate ale rețetei.",
+    },
+    suggestion: {
+      badge: "Sugerată",
+      origin: {
+        intake_accepted: "Sugerată de „{recipe}” după acceptarea primirii",
+        loan_approved: "Sugerată de „{recipe}” după aprobarea împrumutului",
+        exhibition_approved: "Sugerată de „{recipe}” după aprobarea expoziției",
+      },
+      withdrawn:
+        "Retrasă deoarece împrumutul a fost anulat. Restaurați-o dacă lucrarea este încă necesară.",
+      evidenceNeeded: {
+        conditionAssessment:
+          "Are nevoie de o evaluare a stării acceptată, legată ca dovadă, înainte de a putea fi finalizată.",
+        media:
+          "Are nevoie de un fișier, de exemplu o fotografie, legat ca dovadă, înainte de a putea fi finalizată.",
+        movement:
+          "Are nevoie de mutarea înregistrată, legată ca dovadă, înainte de a putea fi finalizată.",
+        auditEntry:
+          "Are nevoie de un eveniment de audit, legat ca dovadă, înainte de a putea fi finalizată.",
+      },
+      evidenceLinked: {
+        conditionAssessment: "Evaluarea stării este legată ca dovadă.",
+        media: "Fișierul este legat ca dovadă.",
+        movement: "Mutarea înregistrată este legată ca dovadă.",
+        auditEntry: "Evenimentul de audit este legat ca dovadă.",
+      },
+      restore: "Restaurează sugestia",
+      restored: "Sugestia a fost restaurată",
+      dismiss: "Respinge sugestia",
+      dismissDescription:
+        "Sarcina rămâne în dosar și nu va mai fi sugerată. O puteți restaura mai târziu.",
+    },
+    preparation: {
+      title: "Pregătire",
+      description: {
+        intake_accepted:
+          "Rețetele sugerează aceste sarcini când o primire este acceptată. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
+        loan_approved:
+          "Rețetele sugerează aceste sarcini când un împrumut este aprobat. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
+        exhibition_approved:
+          "Rețetele sugerează aceste sarcini când o expoziție este aprobată. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
+      },
+      states: {
+        suggested: "Sugerată",
+        ready: "Încă nesugerată",
+        no_owner: "Așteaptă un responsabil care poate lucra la acest dosar",
+        limit_reached: "Acest dosar a atins limita de sarcini",
+      },
+      apply: "Sugerează {count} sarcină(i) lipsă",
+      applying: "Se sugerează…",
+      applied: "{count} sarcină(i) sugerată(e)",
+      nothingToApply: "Fiecare pas are deja o sarcină.",
+      skipped:
+        "{count} pas(i) au încă nevoie de un responsabil care poate lucra la acest dosar sau de loc în dosar.",
     },
     myWork: {
       title: "Munca mea",
@@ -7473,6 +7541,141 @@ export default {
       assignedCasesEmpty: "Nu aveți dosare deschise atribuite.",
       assignedTruncated: "Se afișează primele 50 de dosare atribuite.",
       since: "Din",
+    },
+  },
+  preparationRecipes: {
+    title: "Rețete de pregătire",
+    description:
+      "Când o primire este acceptată sau un împrumut ori o expoziție este aprobată, rețetele active sugerează în dosar sarcini cu responsabil și termen. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea; acestea se înregistrează în propriile fluxuri.",
+    add: "Rețetă nouă",
+    loading: "Se încarcă rețetele…",
+    empty:
+      "Nu există încă rețete. Creați una pornind de la un model din Rețetă nouă.",
+    notificationsHint:
+      "Fiecare responsabil este anunțat o singură dată pentru fiecare sarcină sugerată, în categoria Sarcini.",
+    notificationsLink: "Setări de notificare",
+    noAttestation:
+      "Finalizarea unei sarcini sugerate înregistrează doar că lucrarea este făcută.",
+    stepCount: "{count} pas(i)",
+    evidenceShort: "dovadă: {kind}",
+    statuses: {
+      active: "Activă",
+      paused: "În pauză",
+      archived: "Arhivată",
+    },
+    triggers: {
+      intake_accepted: "Primire acceptată",
+      loan_approved: "Împrumut aprobat",
+      exhibition_approved: "Expoziție aprobată",
+    },
+    triggerHints: {
+      intake_accepted:
+        "Se aplică atunci când o primire este acceptată în colecție. Termenele se calculează de la acceptare.",
+      loan_approved:
+        "Se aplică atunci când un împrumut este aprobat. Termenele se calculează de la aprobare sau de la începutul ori sfârșitul împrumutului.",
+      exhibition_approved:
+        "Se aplică atunci când o expoziție este aprobată. Termenele se calculează de la aprobare sau de la deschiderea ori închiderea ei.",
+    },
+    directions: {
+      any: "Împrumuturi primite și acordate",
+      outgoing: "Împrumuturi acordate",
+      incoming: "Împrumuturi primite",
+    },
+    actions: {
+      edit: "Editează",
+      pause: "Pune pe pauză",
+      resume: "Reia",
+      archive: "Arhivează",
+      restore: "Restaurează",
+    },
+    toasts: {
+      saved: "Rețeta a fost salvată",
+      paused: "Rețeta a fost pusă pe pauză",
+      resumed: "Rețeta a fost reluată",
+      archived: "Rețeta a fost arhivată",
+      restored: "Rețeta a fost restaurată, pe pauză",
+    },
+    starters: {
+      intake: {
+        label: "Catalogare, fotografiere și evaluarea stării",
+        name: "Catalogare, fotografiere și evaluarea stării",
+        catalog: "Completați fișa de catalog",
+        photograph: "Fotografiați obiectul",
+        condition: "Înregistrați o evaluare a stării",
+      },
+      transport: {
+        label: "Ambalare, asigurare și transport",
+        name: "Ambalare, asigurare și transport",
+        condition: "Verificarea stării înainte de expediere",
+        insurance: "Confirmați acoperirea asigurării",
+        pack: "Ambalați obiectele",
+        transport: "Rezervați transportul",
+      },
+      return: {
+        label: "Pregătirea returului",
+        name: "Pregătirea returului",
+        transport: "Rezervați transportul de retur",
+        condition: "Verificarea stării la retur",
+        move: "Înregistrați mutarea de retur",
+      },
+      blank: {
+        label: "Rețetă goală",
+      },
+    },
+    dialog: {
+      addTitle: "Rețetă nouă",
+      editTitle: "Editează rețeta",
+      description:
+        "Fiecare pas devine o sarcină în dosar, cu un membru care poate lucra la el ca responsabil. Dacă evenimentul se repetă sau este corectat, fiecare pas păstrează o singură sarcină.",
+      name: "Nume",
+      trigger: "Sugerează când",
+      triggerLocked:
+        "Evenimentul nu se mai poate schimba după crearea rețetei. Creați altă rețetă.",
+      direction: "Împrumuturi",
+      steps: "Pași",
+      step: "Pasul {number}",
+      stepReference: "Pasul {number}: {title}",
+      untitled: "Pas fără titlu",
+      stepTitle: "Titlul sarcinii",
+      stepDescription: "Descriere",
+      evidence: "Dovada că a fost făcut",
+      noEvidence: "Nu este necesară",
+      owner: "Responsabil",
+      owners: {
+        caseAssignee: "Membrul atribuit dosarului",
+        approver: "Membrul care l-a acceptat",
+        member: "Un anumit membru",
+      },
+      ownerMember: "Membru",
+      chooseMember: "Alegeți un membru",
+      ownerFallback:
+        "Dacă responsabilul ales nu poate lucra la dosar, sarcina revine membrului atribuit dosarului, apoi membrului care l-a acceptat. Un pas fără un astfel de membru așteaptă până când cineva aplică din nou rețeta.",
+      due: "Termen",
+      noDue: "Fără termen",
+      anchors: {
+        event: "De la acceptare",
+        start: "De la început sau deschidere",
+        end: "De la sfârșit sau închidere",
+      },
+      offsetDays: "Zile",
+      offsetHint: "Numerele negative numără înapoi de la acea dată.",
+      dependsOn: "Așteaptă",
+      addStep: "Adaugă pas",
+      removeStep: "Elimină pasul",
+      moveUp: "Mută pasul mai sus",
+      moveDown: "Mută pasul mai jos",
+      cancel: "Anulează",
+      save: "Salvează rețeta",
+      saving: "Se salvează…",
+      errors: {
+        name: "Dați rețetei un nume de cel mult 120 de caractere.",
+        steps: "O rețetă are nevoie de 1 până la 10 pași.",
+        title: "Dați pasului un titlu de cel mult 200 de caractere.",
+        description: "Descrierea poate avea cel mult 2.000 de caractere.",
+        owner: "Alegeți un membru care poate lucra la aceste dosare.",
+        due: "Folosiți un număr întreg de zile între -365 și 365.",
+        dependsOn: "Un pas poate aștepta doar pașii de deasupra lui.",
+      },
     },
   },
   notificationsPage: {

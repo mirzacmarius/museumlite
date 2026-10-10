@@ -56,6 +56,13 @@ import {
   partyLinkDocumentValidator,
 } from "./utils/partyValidators";
 import {
+  caseTaskSuggestionValidator,
+  loanDirectionValidator,
+  preparationRecipeStatusValidator,
+  preparationStepValidator,
+  preparationTriggerValidator,
+} from "./utils/preparationValidators";
+import {
   projectionAvailability,
   projectionDiscrepancyFields,
   projectionFact,
@@ -4497,6 +4504,13 @@ export default defineSchema({
     submittedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
     completedBy: v.optional(v.id("users")),
+    /** Recipe step and case event that suggested the task (MUS-661). */
+    suggestion: v.optional(caseTaskSuggestionValidator),
+    /**
+     * `{trigger}:{caseId}:{recipeId}:{stepKey}`: one task per case event and
+     * recipe step, whatever its status (ADR 0012).
+     */
+    suggestionKey: v.optional(v.string()),
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -4506,6 +4520,10 @@ export default defineSchema({
       "organizationId",
       "caseType",
       "caseId",
+    ])
+    .index("by_organization_and_suggestionKey", [
+      "organizationId",
+      "suggestionKey",
     ])
     .index("by_organization_and_ownerId_and_open_and_queueDueAt", [
       "organizationId",
@@ -4518,6 +4536,30 @@ export default defineSchema({
       "reviewerId",
       "status",
       "queueDueAt",
+    ]),
+
+  // Preparation recipes - next-step tasks an accepted intake, loan or
+  // exhibition suggests (MUS-661, ADR 0012). Steps are bounded (10).
+  preparationRecipes: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    trigger: preparationTriggerValidator,
+    /** Loan recipes only; absent applies to both directions. */
+    loanDirection: v.optional(loanDirectionValidator),
+    status: preparationRecipeStatusValidator,
+    steps: v.array(preparationStepValidator),
+    /** Numbers new step keys, so a removed step's key is never reused. */
+    nextStepNumber: v.number(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedBy: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_organizationId", ["organizationId"])
+    .index("by_organizationId_and_trigger_and_status", [
+      "organizationId",
+      "trigger",
+      "status",
     ]),
 
   // Evidence links cite existing records for a case task; append-only.

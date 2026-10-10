@@ -10,6 +10,18 @@ import { useState } from "react";
 import { useScopedI18n } from "@/locales/client";
 import { CaseTaskCard } from "./case-task-card";
 import { CreateTaskDialog } from "./case-task-dialogs";
+import {
+  type PreparationCaseType,
+  PreparationSummary,
+} from "./preparation-summary";
+
+function isPreparationCase(
+  caseType: CaseTaskCaseType,
+): caseType is PreparationCaseType {
+  return (
+    caseType === "accession" || caseType === "loan" || caseType === "exhibition"
+  );
+}
 
 /** Accountable tasks for one case, shown on its detail page. */
 export function CaseTaskPanel({
@@ -54,6 +66,13 @@ export function CaseTaskPanel({
         ) : null}
       </div>
       <p className="text-sm text-muted-foreground">{t("panel.description")}</p>
+      {isPreparationCase(caseType) ? (
+        <PreparationSummary
+          organizationId={organizationId}
+          caseType={caseType}
+          caseId={caseId}
+        />
+      ) : null}
 
       {view === undefined ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
