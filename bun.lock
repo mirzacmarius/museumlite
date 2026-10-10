@@ -26,6 +26,7 @@
         "patch-package": "^8.0.1",
         "postinstall-postinstall": "^2.1.0",
         "react-doctor": "^0.2.1",
+        "sherif": "1.13.0",
         "sonner": "^2.0.7",
         "ts-node": "^10.9.2",
         "tsx": "^4.21.0",
@@ -94,6 +95,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@v1/analytics": "workspace:*",
+        "@v1/backend": "workspace:*",
         "@v1/ui": "workspace:*",
         "@vercel/analytics": "^1.6.1",
         "@vercel/speed-insights": "^1.3.1",
@@ -2443,6 +2445,24 @@
     "shebang-command": ["shebang-command@2.0.0", "", { "dependencies": { "shebang-regex": "^3.0.0" } }, "sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA=="],
 
     "shebang-regex": ["shebang-regex@3.0.0", "", {}, "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A=="],
+
+    "sherif": ["sherif@1.13.0", "", { "optionalDependencies": { "sherif-darwin-arm64": "1.13.0", "sherif-darwin-x64": "1.13.0", "sherif-linux-arm64": "1.13.0", "sherif-linux-arm64-musl": "1.13.0", "sherif-linux-x64": "1.13.0", "sherif-linux-x64-musl": "1.13.0", "sherif-windows-arm64": "1.13.0", "sherif-windows-x64": "1.13.0" }, "bin": { "sherif": "index.js" } }, "sha512-Ld2nUOlwW1nmYDA2Q/5o7SC8WcCzVS7XjImmzW4a4z1o8DXJnt+2xYLvI42N5UYlNb/EevPahdC/XxIP6C38TQ=="],
+
+    "sherif-darwin-arm64": ["sherif-darwin-arm64@1.13.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-k38jpGpZIEWS5dpSRLSvVi53LZuGO3hDqB88jgdLMDN11LZM6yTDcP0GytnQ8OpE6Br/Js6bDCLsdWDarZdV9g=="],
+
+    "sherif-darwin-x64": ["sherif-darwin-x64@1.13.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-W2bOj0Ya9A0fPSWzbeaaNg2RRRr48l2lArN8sGbfc9SZuJSJWXcdWkTVC3sEUiiXwpxNeLY/CsGNyQz5Izbfig=="],
+
+    "sherif-linux-arm64": ["sherif-linux-arm64@1.13.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-Z94SgKNClWarVJj4LsayOmL7zccCUAvy3ugZnIO860FoJofh812KAyF8CdWrSho8qfmmoAzNcqSSc1OZh7+ckQ=="],
+
+    "sherif-linux-arm64-musl": ["sherif-linux-arm64-musl@1.13.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-9IDAlwYT5Ay2nex9Da3R98cvnPKVveT57i7pJXnnY/DC90qdqqz6Twlp7STRv+7qo4k4ES+2J9zQ0k6SDe888A=="],
+
+    "sherif-linux-x64": ["sherif-linux-x64@1.13.0", "", { "os": "linux", "cpu": "x64" }, "sha512-xGB9iiet8l/i8/YLZje8icpZyt4pVgoxB2+SoC6JCB8iDWsCVSuixebwX2t9yeGqXBXO1kphaW0TLf8Tmwy9JQ=="],
+
+    "sherif-linux-x64-musl": ["sherif-linux-x64-musl@1.13.0", "", { "os": "linux", "cpu": "x64" }, "sha512-2L+A8jF5ylojFwl7eAePR1h3Bzx24IcMgEoWObXgD70k6xF+GOJaM/n+q4MQ9YDntAKbJfMDr6ETjt6Bt/hosA=="],
+
+    "sherif-windows-arm64": ["sherif-windows-arm64@1.13.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-jHzJ/EcG4HuNLf/3AEDzbRkAofLPBHRJKJJMjAosampAe9861atu4q+Z2IZ1/sHg5oVnNgaNg/Xc5DDhGcQ/3w=="],
+
+    "sherif-windows-x64": ["sherif-windows-x64@1.13.0", "", { "os": "win32", "cpu": "x64" }, "sha512-KyMqQY62Eb3O+wePlw433mH2XBPVPLXdDjWPneg9pB6jeK0B1sgEzM2yks+aAP5asZ1Y8Q7C7iR7ZtbJKdsAtA=="],
 
     "side-channel": ["side-channel@1.1.0", "", { "dependencies": { "es-errors": "^1.3.0", "object-inspect": "^1.13.3", "side-channel-list": "^1.0.0", "side-channel-map": "^1.0.1", "side-channel-weakmap": "^1.0.2" } }, "sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw=="],
 

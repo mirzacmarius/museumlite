@@ -7,7 +7,7 @@ import "./src/env.mjs";
 import { withSentryConfig } from "@sentry/nextjs";
 
 // Skip TypeScript checking during Vercel builds to prevent OOM and speed up deployment
-// Type checking should be done in CI/pre-commit hooks instead
+// Type checking runs in CI instead
 const skipTypeCheck =
   process.env.SKIP_TYPE_CHECK === "true" ||
   process.env.NEXT_DISABLE_TYPECHECK === "1" ||
@@ -19,7 +19,7 @@ const nextConfig = {
   turbopack: {},
   images: convexImageConfig(),
   // Skip TypeScript checking during build to prevent OOM
-  // Type checking runs in CI/pre-commit hooks for faster deployments
+  // Type checking runs in CI for faster deployments
   typescript: {
     ignoreBuildErrors: skipTypeCheck,
   },
