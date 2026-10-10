@@ -1342,9 +1342,9 @@ export const approve = mutation({
       await dispatchNotification(ctx, {
         organizationId: deaccession.organizationId,
         type: "workflow_approved",
-        recipients: userOrgs
-          .filter((userOrg) => userOrg.userId !== userId)
-          .map((userOrg) => userOrg.userId),
+        recipients: userOrgs.flatMap((userOrg) =>
+          userOrg.userId === userId ? [] : [userOrg.userId],
+        ),
         title: "Deaccession Approved",
         message: `Deaccession ${deaccession.deaccessionNumber} has been approved.`,
         related: { entityType: "deaccession", entityId: args.deaccessionId },

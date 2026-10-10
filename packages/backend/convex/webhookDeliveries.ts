@@ -653,9 +653,7 @@ export const recordAttemptResult = internalMutation({
         internal.webhooksActions.attemptDelivery,
         { deliveryId: delivery._id, attempt: delivery.attemptCount + 1 },
       );
-      return null;
-    }
-    if (args.outcome === "succeeded") {
+    } else if (args.outcome === "succeeded") {
       const webhook = await ctx.db.get(delivery.webhookId);
       if (
         webhook &&

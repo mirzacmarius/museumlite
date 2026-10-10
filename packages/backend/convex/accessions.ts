@@ -1660,9 +1660,9 @@ export const approve = mutation({
       await dispatchNotification(ctx, {
         organizationId: accession.organizationId,
         type: "workflow_approved",
-        recipients: userOrgs
-          .filter((userOrg) => userOrg.userId !== userId)
-          .map((userOrg) => userOrg.userId),
+        recipients: userOrgs.flatMap((userOrg) =>
+          userOrg.userId === userId ? [] : [userOrg.userId],
+        ),
         title: "Accession Approved",
         message: `Accession ${accession.accessionNumber} has been approved and added to the collection.`,
         related: { entityType: "accession", entityId: args.accessionId },

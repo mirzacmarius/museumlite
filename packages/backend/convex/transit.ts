@@ -484,9 +484,9 @@ async function notifyTransitStatusChange(
   await dispatchNotification(ctx, {
     organizationId,
     type: "transit_status_update",
-    recipients: userOrgs
-      .map((userOrg) => userOrg.userId)
-      .filter((userId) => userId !== excludeUserId),
+    recipients: userOrgs.flatMap((userOrg) =>
+      userOrg.userId === excludeUserId ? [] : [userOrg.userId],
+    ),
     title,
     message,
     related: { entityType: "transitRecord", entityId: transitRecordId },

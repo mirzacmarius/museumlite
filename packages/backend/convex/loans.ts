@@ -1965,9 +1965,9 @@ export const createConditionDispute = mutation({
     await dispatchNotification(ctx, {
       organizationId: loan.organizationId,
       type: "condition_dispute_created",
-      recipients: orgMembers
-        .filter((member) => member.userId !== userId)
-        .map((member) => member.userId),
+      recipients: orgMembers.flatMap((member) =>
+        member.userId === userId ? [] : [member.userId],
+      ),
       title: "Condition Dispute Reported",
       message: `A condition dispute has been reported for loan ${loan.loanNumber}`,
       related: { entityType: "loan", entityId: args.loanId },

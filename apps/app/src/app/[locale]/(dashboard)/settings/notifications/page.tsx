@@ -124,8 +124,9 @@ function NotificationPreferencesForm({
   const t = useScopedI18n("notificationSettings");
   const errorMessage = useNotificationPreferencesErrorMessage();
   const updatePreferences = useMutation(api.notifications.updatePreferences);
-  const [categories, setCategories] = useState(preferences.categories);
+  const [edits, setEdits] = useState<Partial<CategoryMatrix>>({});
   const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  const categories: CategoryMatrix = { ...preferences.categories, ...edits };
   const emailOffered =
     preferences.email.channel !== "unavailable" &&
     preferences.email.address !== null;
@@ -138,6 +139,7 @@ function NotificationPreferencesForm({
         organizationId,
         categories: emailOffered ? categories : withoutEmail(categories),
       });
+      setEdits({});
       setSaveState({ kind: "saved" });
     } catch (error) {
       setSaveState({ kind: "failed", message: errorMessage(error) });
@@ -163,7 +165,7 @@ function NotificationPreferencesForm({
             choice={categories[category]}
             emailOffered={emailOffered}
             onChange={(choice) => {
-              setCategories((current) => ({ ...current, [category]: choice }));
+              setEdits((current) => ({ ...current, [category]: choice }));
               setSaveState({ kind: "idle" });
             }}
           />
