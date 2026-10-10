@@ -943,6 +943,8 @@ const physicalHandoffParticipantValidator = v.object({
   deinstalledAt: v.optional(v.number()),
   returnedAt: v.optional(v.number()),
   originalLocationId: v.optional(v.id("locations")),
+  /** Where a return goes unless staff choose otherwise. */
+  returnLocationId: v.optional(v.id("locations")),
   currentLocationId: v.optional(v.id("locations")),
 });
 

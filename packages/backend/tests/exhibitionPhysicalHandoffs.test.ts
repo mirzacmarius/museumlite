@@ -732,3 +732,29 @@ test("the handoff summary says where each object is recorded now, so staff confi
   );
   expectMatchesReturns(exhibitions.getPhysicalHandoffSummary, after);
 });
+
+test("an object with no recorded original location returns by default to where it was installed from", async () => {
+  const t = createConvexTest();
+  const fixture = await createHandoffFixture(t);
+  await t.run((ctx) =>
+    ctx.db.patch(fixture.exhibitionObjectId, { originalLocationId: undefined }),
+  );
+  await fixture.authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId: fixture.exhibitionObjectId,
+    observedFromLocationId: fixture.storageLocationId,
+    installationConditionAssessmentId: fixture.acceptedAssessmentId,
+  });
+  await fixture.authed.mutation(api.exhibitions.deinstallObject, {
+    exhibitionObjectId: fixture.exhibitionObjectId,
+    deinstallationConditionAssessmentId: fixture.acceptedAssessmentId,
+  });
+
+  const summary = await fixture.authed.query(
+    api.exhibitions.getPhysicalHandoffSummary,
+    { exhibitionId: fixture.exhibitionId },
+  );
+
+  expect(summary.participants[0]?.returnLocationId).toBe(
+    fixture.storageLocationId,
+  );
+});

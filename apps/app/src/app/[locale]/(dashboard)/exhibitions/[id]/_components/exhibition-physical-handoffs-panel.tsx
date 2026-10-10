@@ -237,7 +237,7 @@ function ExhibitionHandoffActions({
   const [draft, setDraft] = useState(() => ({
     assessmentId: "",
     installationDestination: "",
-    returnDestination: participant.originalLocationId ?? "",
+    returnDestination: participant.returnLocationId ?? "",
     observedFrom: participant.currentLocationId ?? "",
     exceptionReason: "",
   }));

@@ -154,6 +154,12 @@ export async function getExhibitionPhysicalHandoffSummary(
   const participants = await Promise.all(
     exhibitionObjects.map(async (obj) => {
       const collection = await ctx.db.get(obj.collectionId);
+      // Participants added with the exhibition have no recorded original
+      // location; their installation movement says where they came from.
+      const installation =
+        obj.originalLocationId === undefined && obj.installationMovementId
+          ? await ctx.db.get(obj.installationMovementId)
+          : null;
       return {
         exhibitionObjectId: obj._id,
         collectionId: obj.collectionId,
@@ -180,6 +186,8 @@ export async function getExhibitionPhysicalHandoffSummary(
         deinstalledAt: obj.deinstalledAt,
         returnedAt: obj.returnedAt,
         originalLocationId: obj.originalLocationId,
+        returnLocationId:
+          obj.originalLocationId ?? installation?.fromLocationId ?? undefined,
         // Where the object is recorded now: the observed source staff confirm.
         currentLocationId:
           collection?.organizationId === organizationId

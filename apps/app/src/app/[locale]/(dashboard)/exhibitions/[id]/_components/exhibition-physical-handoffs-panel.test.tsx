@@ -26,6 +26,7 @@ const deinstalled = {
   order: 0,
   hasReturnException: false,
   originalLocationId: "store",
+  returnLocationId: "store",
   currentLocationId: "gallery",
 };
 
