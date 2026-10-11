@@ -147,6 +147,7 @@ import type * as utils_alertEpisodeErrors from "../utils/alertEpisodeErrors.js";
 import type * as utils_alertEpisodePolicy from "../utils/alertEpisodePolicy.js";
 import type * as utils_alertEpisodeValidators from "../utils/alertEpisodeValidators.js";
 import type * as utils_alertEpisodes from "../utils/alertEpisodes.js";
+import type * as utils_analyticsSections from "../utils/analyticsSections.js";
 import type * as utils_auditEvidence from "../utils/auditEvidence.js";
 import type * as utils_authorizationContext from "../utils/authorizationContext.js";
 import type * as utils_authorizedCollectionBatch from "../utils/authorizedCollectionBatch.js";
@@ -461,6 +462,7 @@ declare const fullApi: ApiFromModules<{
   "utils/alertEpisodePolicy": typeof utils_alertEpisodePolicy;
   "utils/alertEpisodeValidators": typeof utils_alertEpisodeValidators;
   "utils/alertEpisodes": typeof utils_alertEpisodes;
+  "utils/analyticsSections": typeof utils_analyticsSections;
   "utils/auditEvidence": typeof utils_auditEvidence;
   "utils/authorizationContext": typeof utils_authorizationContext;
   "utils/authorizedCollectionBatch": typeof utils_authorizedCollectionBatch;
