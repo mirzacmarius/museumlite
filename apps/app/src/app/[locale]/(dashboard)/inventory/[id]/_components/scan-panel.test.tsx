@@ -69,9 +69,10 @@ test("a scan that did not save says so, and retrying sends the same scan", async
   });
   await renderOnPage(<ScanPanel session={session} />);
 
-  const user = await typeScan("A-2");
-
-  const scans = await screen.findByRole("list");
+  const [user, scans] = await Promise.all([
+    typeScan("A-2"),
+    screen.findByRole("list"),
+  ]);
   expect(await within(scans).findByText("Not saved")).toBeTruthy();
   await user.click(within(scans).getByRole("button", { name: "Retry" }));
 

@@ -128,6 +128,20 @@ _Avoid_: Audit, scan
 A documentation exception a Quality check detected (a duplicate identifier, missing documentation, an uncertain Party link or a broken reference), kept with the values the check found. It stays open until a later check no longer detects it or a reviewer accepts it as an exception with a reason. Repair work on it is a Task with the Finding as its Case.
 _Avoid_: Issue, error, warning
 
+### Inventory
+
+**Inventory session**:
+A comparison of the Objects the records place in one Location, optionally with every Location below it, with what staff find there. The expected Objects are a snapshot taken when it starts. It ends reconciled when every Inventory exception is closed, or cancelled with its Observations kept.
+_Avoid_: Stocktake, audit, scan (a scan is one Observation)
+
+**Observation**:
+Evidence that a staff member scanned or typed a label at a Location in an Inventory session's scope at a recorded time. It never moves an Object or changes its record.
+_Avoid_: Sighting, check-in
+
+**Inventory exception**:
+A difference an Inventory session found when scanning finished: an expected Object not found, an Object found in another Location than recorded, an Object not expected there, or a label that names no Object. It closes when a reviewer records the move through the guarded movement command, or accepts it with a reason. Repair work on it is a Task with the exception as its Case.
+_Avoid_: Discrepancy (in staff-facing copy), error
+
 ### Notifications
 
 **Notification**:

@@ -4776,6 +4776,7 @@ export default {
       exhibition: "Utstilling",
       conservation: "Konserveringsbehandling",
       documentationFinding: "Dokumentasjonsfunn",
+      inventoryException: "Inventeringsavvik",
     },
     fields: {
       title: "Tittel",

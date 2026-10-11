@@ -6834,6 +6834,7 @@ export default {
       exhibition: "Expoziție",
       conservation: "Tratament de conservare",
       documentationFinding: "Constatare de documentare",
+      inventoryException: "Excepție de inventar",
     },
     fields: {
       title: "Titlu",

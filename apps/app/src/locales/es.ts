@@ -4830,6 +4830,7 @@ export default {
       exhibition: "Exposición",
       conservation: "Tratamiento de conservación",
       documentationFinding: "Hallazgo de documentación",
+      inventoryException: "Excepción de inventario",
     },
     fields: {
       title: "Título",

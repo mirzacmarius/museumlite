@@ -37,9 +37,11 @@ export function StartSessionDialog({
   const errorMessage = useInventoryErrorMessage();
   const startSession = useMutation(api.inventory.startSession);
   const { push } = useRouter();
-  const [name, setName] = useState("");
-  const [scopeLocationId, setScopeLocationId] = useState<string>("");
-  const [includeSublocations, setIncludeSublocations] = useState(true);
+  const [{ name, scopeLocationId, includeSublocations }, setForm] = useState({
+    name: "",
+    scopeLocationId: "",
+    includeSublocations: true,
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [refusal, setRefusal] = useState<Refusal | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -93,7 +95,9 @@ export function StartSessionDialog({
               aria-describedby={
                 nameError ? "inventory-session-name-error" : undefined
               }
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) =>
+                setForm((form) => ({ ...form, name: event.target.value }))
+              }
               disabled={isSaving}
             />
             {nameError ? (
@@ -111,7 +115,9 @@ export function StartSessionDialog({
               id="inventory-session-scope"
               organizationId={organizationId}
               value={scopeLocationId}
-              onValueChange={setScopeLocationId}
+              onValueChange={(next) =>
+                setForm((form) => ({ ...form, scopeLocationId: next }))
+              }
               allowNone={false}
               disabled={isSaving}
               aria-invalid={!!scopeError}
@@ -133,7 +139,10 @@ export function StartSessionDialog({
               id="inventory-session-sublocations"
               checked={includeSublocations}
               onCheckedChange={(checked) =>
-                setIncludeSublocations(checked === true)
+                setForm((form) => ({
+                  ...form,
+                  includeSublocations: checked === true,
+                }))
               }
               disabled={isSaving}
             />

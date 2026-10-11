@@ -56,9 +56,9 @@ export function InventoryPageClient({
           </h2>
           {sessions === undefined ? (
             <div className="space-y-2" aria-busy="true">
-              {[0, 1, 2].map((index) => (
+              {["first", "second", "third"].map((placeholder) => (
                 <div
-                  key={index}
+                  key={placeholder}
                   className="h-20 animate-pulse rounded-xl bg-muted/60"
                 />
               ))}

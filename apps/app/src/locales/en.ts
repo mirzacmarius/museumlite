@@ -4728,6 +4728,7 @@ export default {
       exhibition: "Exhibition",
       conservation: "Conservation treatment",
       documentationFinding: "Documentation finding",
+      inventoryException: "Inventory exception",
     },
     fields: {
       title: "Title",

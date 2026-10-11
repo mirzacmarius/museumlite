@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation } from "convex/react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useReducer, useRef, useState } from "react";
 import { ActionRefusal, type Refusal } from "@/components/action-refusal";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { useInventoryErrorMessage } from "@/hooks/use-inventory-error-message";
@@ -60,6 +60,44 @@ function newScanId() {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+interface ScanLog {
+  scans: LocalScan[];
+  refusal: Refusal | null;
+  announcement: string;
+}
+
+type ScanLogAction =
+  | { type: "added"; scan: LocalScan }
+  | { type: "updated"; clientObservationId: string; patch: Partial<LocalScan> }
+  | { type: "refused"; message: string | null }
+  | { type: "announced"; text: string };
+
+function scanLogReducer(log: ScanLog, action: ScanLogAction): ScanLog {
+  switch (action.type) {
+    case "added":
+      return {
+        ...log,
+        scans: [action.scan, ...log.scans].slice(0, KEPT_SCANS),
+      };
+    case "updated":
+      return {
+        ...log,
+        scans: log.scans.map((scan) =>
+          scan.clientObservationId === action.clientObservationId
+            ? { ...scan, ...action.patch }
+            : scan,
+        ),
+      };
+    case "refused":
+      return {
+        ...log,
+        refusal: action.message ? { message: action.message } : null,
+      };
+    case "announced":
+      return { ...log, announcement: action.text };
+  }
+}
+
 /**
  * Records observations for one session. Each scan has its own identifier, so
  * retrying one whose answer was lost records nothing twice. A scan that did
@@ -71,26 +109,26 @@ export function ScanPanel({ session }: { session: SessionView }) {
   const tErrors = useScopedI18n("inventory.errors");
   const errorMessage = useInventoryErrorMessage();
   const recordObservation = useMutation(api.inventory.recordObservation);
-  const [locationId, setLocationId] = useState<Id<"locations">>(
-    session.scopeLocationId,
+  const [chosenLocationId, setLocationId] = useState<Id<"locations"> | null>(
+    null,
   );
+  const locationId = chosenLocationId ?? session.scopeLocationId;
   const [value, setValue] = useState("");
   const [note, setNote] = useState("");
-  const [scans, setScans] = useState<LocalScan[]>([]);
-  const [refusal, setRefusal] = useState<Refusal | null>(null);
-  const [announcement, setAnnouncement] = useState("");
+  const [{ scans, refusal, announcement }, dispatch] = useReducer(
+    scanLogReducer,
+    { scans: [], refusal: null, announcement: "" },
+  );
+  const setRefusal = (next: Refusal | null) =>
+    dispatch({ type: "refused", message: next?.message ?? null });
+  const setAnnouncement = (text: string) =>
+    dispatch({ type: "announced", text });
   const locationNames = new Map(
     session.scopeLocations.map((location) => [location._id, location.name]),
   );
 
   function update(clientObservationId: string, patch: Partial<LocalScan>) {
-    setScans((current) =>
-      current.map((scan) =>
-        scan.clientObservationId === clientObservationId
-          ? { ...scan, ...patch }
-          : scan,
-      ),
-    );
+    dispatch({ type: "updated", clientObservationId, patch });
   }
 
   async function submit(scan: LocalScan) {
@@ -147,7 +185,7 @@ export function ScanPanel({ session }: { session: SessionView }) {
       note: scanNote?.trim() || undefined,
       state: "saving",
     };
-    setScans((current) => [scan, ...current].slice(0, KEPT_SCANS));
+    dispatch({ type: "added", scan });
     void submit(scan);
     return true;
   }
