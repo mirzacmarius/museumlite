@@ -881,3 +881,154 @@ test("without an email channel the delivery is cancelled and cannot be retried u
     ),
   ).toBe("EMAIL_CHANNEL_UNAVAILABLE");
 });
+
+test("the request list is newest first, filters by status and is closed to outsiders", async () => {
+  const t = createConvexTest();
+  const museum = await createMuseum(t);
+  const first = await openRequest(t, museum);
+  vi.advanceTimersByTime(1_000);
+  const second = await openRequest(t, museum);
+  await museum.staff.mutation(api.reproductionRequests.withdraw, {
+    requestId: first.requestId,
+    reason: "Requester found the image elsewhere",
+  });
+  expect(
+    await reproductionErrorOf(
+      museum.staff.mutation(api.reproductionRequests.withdraw, {
+        requestId: first.requestId,
+        reason: "Again",
+      }),
+    ),
+  ).toBe("REQUEST_NOT_OPEN");
+
+  const page = (status?: "open" | "withdrawn") =>
+    museum.staff.query(api.reproductionRequests.list, {
+      organizationId: museum.organizationId,
+      status,
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+  expect((await page()).page.map((row) => row.requestNumber)).toEqual([
+    second.requestNumber,
+    first.requestNumber,
+  ]);
+  expect((await page("open")).page).toEqual([
+    expect.objectContaining({
+      _id: second.requestId,
+      requesterName: "Ada Researcher",
+      objectLabel: expect.any(String),
+      purpose: "commercial_publication",
+    }),
+  ]);
+  expect((await page("withdrawn")).page).toEqual([
+    expect.objectContaining({ _id: first.requestId, status: "withdrawn" }),
+  ]);
+
+  const outsider = await createOrgUserCollectionWithPermissions(
+    t,
+    RIGHTS_MANAGER,
+    { enabledModules: ["accounts"] },
+  );
+  await expect(
+    authedForUser(t, outsider.userId).query(api.reproductionRequests.list, {
+      organizationId: museum.organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+    }),
+  ).rejects.toThrow();
+});
+
+test("deciders are notified of a new request and the approver of an undelivered email", async () => {
+  enableEmail();
+  const t = createConvexTest();
+  const museum = await createMuseum(t);
+  const deciderId = await addMember(t, museum.organizationId, "decider", [
+    "media.read",
+    "accounts.read",
+    "organization.manage_settings",
+  ]);
+  const preparerId = await addMember(t, museum.organizationId, "preparer", [
+    "media.read",
+    "media.upload",
+    "accounts.read",
+  ]);
+  const center = async (userId: Id<"users">) =>
+    (
+      await authedForUser(t, userId).query(
+        api.notifications.getNotificationCenter,
+        { organizationId: museum.organizationId },
+      )
+    ).notifications.map((notification) => notification.type);
+
+  providerReplies(422);
+  const { requestId } = await approvedRequest(t, museum);
+  expect(await center(deciderId)).toEqual(["reproduction_request_received"]);
+  expect(await center(preparerId)).toEqual([]);
+  expect(await center(museum.userId)).toEqual([]);
+
+  await settle(t);
+  expect(await center(museum.userId)).toEqual(["reproduction_delivery_failed"]);
+  const [delivery] =
+    (await museum.staff.query(api.reproductionRequests.get, { requestId }))
+      ?.deliveries ?? [];
+  expect(delivery?.status).toBe("failed_permanent");
+});
+
+test("subscribed endpoints receive decisions and ended approvals without the requester's personal data", async () => {
+  const t = createConvexTest();
+  const museum = await createMuseum(t);
+  await museum.staff.mutation(api.webhooks.create, {
+    organizationId: museum.organizationId,
+    name: "Rights system",
+    url: "https://rights.example.test/hooks",
+    events: ["reproduction_request.decided", "reproduction_request.ended"],
+  });
+  const { requestId, requestNumber, decisionId } = await approvedRequest(
+    t,
+    museum,
+  );
+  await museum.staff.mutation(api.reproductionRequests.revoke, {
+    requestId,
+    reason: "Licence breached",
+  });
+
+  const deliveries = await museum.staff.query(api.webhookDeliveries.list, {
+    organizationId: museum.organizationId,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  const bodies = await Promise.all(
+    deliveries.page.map(async (delivery) => {
+      const detail = await museum.staff.query(api.webhookDeliveries.get, {
+        organizationId: museum.organizationId,
+        deliveryId: delivery._id,
+      });
+      return detail?.event.body ?? "";
+    }),
+  );
+  const events = bodies
+    .map((body) => JSON.parse(body) as { event: string; data: unknown })
+    .reverse();
+  expect(events).toEqual([
+    {
+      id: expect.any(String),
+      event: "reproduction_request.decided",
+      version: 1,
+      timestamp: expect.any(Number),
+      data: expect.objectContaining({
+        requestId,
+        requestNumber,
+        decisionId,
+        objectId: museum.collectionId,
+        outcome: "approved",
+        termsVersion: 1,
+      }),
+    },
+    {
+      id: expect.any(String),
+      event: "reproduction_request.ended",
+      version: 1,
+      timestamp: expect.any(Number),
+      data: expect.objectContaining({ requestId, outcome: "revoked" }),
+    },
+  ]);
+  expect(bodies.join(" ")).not.toContain("ada@university.example");
+  expect(bodies.join(" ")).not.toContain("Ada Researcher");
+});

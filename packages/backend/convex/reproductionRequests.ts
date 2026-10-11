@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -11,8 +12,11 @@ import { recordPartyLink } from "./utils/partyLinks";
 import { getCurrentUserOrganization } from "./utils/permissions";
 import { isWithdrawnObject } from "./utils/provenance";
 import { getPublicationSource } from "./utils/publicMedia";
+import { dispatchNotification } from "./utils/notificationDispatch";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 import {
   reproductionCommands,
+  reproductionDeciders,
   requireReproductionAccess,
   requireReproductionRequest,
 } from "./utils/reproductionRequestAccess";
@@ -214,6 +218,17 @@ export const create = mutation({
         requesterAccountId: party._id,
         purpose: args.purpose,
       },
+    });
+    await dispatchNotification(ctx, {
+      organizationId: args.organizationId,
+      type: "reproduction_request_received",
+      recipients: (await reproductionDeciders(ctx, args.organizationId)).filter(
+        (deciderId) => deciderId !== userId,
+      ),
+      title: "Reproduction request awaits a decision",
+      message: `Request ${requestNumber} asks to use an image of ${objectLabel(object)}.`,
+      related: { entityType: "reproductionRequest", entityId: requestId },
+      idempotencyKey: `reproduction-request:${requestId}:received`,
     });
     return { requestId, requestNumber };
   },
@@ -743,6 +758,22 @@ export const approve = mutation({
       decisionId,
       userId,
     );
+    await emitWebhookEvent(
+      ctx,
+      request.organizationId,
+      "reproduction_request.decided",
+      {
+        requestId: request._id,
+        requestNumber: request.requestNumber,
+        decisionId,
+        objectId: request.objectId,
+        mediaId: request.mediaId,
+        purpose: request.purpose,
+        outcome: "approved",
+        termsVersion: terms.version,
+        expiresAt: args.expiresAt,
+      },
+    );
     await logRequestAction(ctx, request, userId, "reproduction_request_approved", {
       decisionId,
       derivativeId: derivative._id,
@@ -786,6 +817,20 @@ export const refuse = mutation({
       closedAt: now,
       closedBy: userId,
     });
+    await emitWebhookEvent(
+      ctx,
+      request.organizationId,
+      "reproduction_request.decided",
+      {
+        requestId: request._id,
+        requestNumber: request.requestNumber,
+        decisionId,
+        objectId: request.objectId,
+        mediaId: request.mediaId,
+        purpose: request.purpose,
+        outcome: "refused",
+      },
+    );
     await logRequestAction(ctx, request, userId, "reproduction_request_refused", {
       decisionId,
       reason,
@@ -818,6 +863,18 @@ export const expire = internalMutation({
         updatedAt: now,
         closedAt: expiresAt,
       });
+      await emitWebhookEvent(
+        ctx,
+        request.organizationId,
+        "reproduction_request.ended",
+        {
+          requestId: request._id,
+          requestNumber: request.requestNumber,
+          decisionId: decision._id,
+          outcome: "expired",
+          endedAt: expiresAt,
+        },
+      );
     }
     return null;
   },
@@ -962,6 +1019,18 @@ export const revoke = mutation({
           "grant_inactive",
         );
     }
+    await emitWebhookEvent(
+      ctx,
+      request.organizationId,
+      "reproduction_request.ended",
+      {
+        requestId: request._id,
+        requestNumber: request.requestNumber,
+        decisionId: decision._id,
+        outcome: "revoked",
+        endedAt: now,
+      },
+    );
     await logRequestAction(ctx, request, userId, "reproduction_request_revoked", {
       decisionId: decision._id,
       reason,
@@ -1036,6 +1105,91 @@ async function decisionView(
           },
   };
 }
+
+/** Closes an open request without a decision, for example when withdrawn. */
+export const withdraw = mutation({
+  args: { requestId: v.id("reproductionRequests"), reason: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const request = await requireReproductionRequest(
+      ctx,
+      args.requestId,
+      "prepare",
+    );
+    const userId = await requireUserId(ctx);
+    requireOpen(request);
+    const reason = requiredText(args.reason, "REASON_REQUIRED");
+    const now = Date.now();
+    await ctx.db.patch(request._id, {
+      status: "withdrawn",
+      updatedAt: now,
+      closedAt: now,
+      closedBy: userId,
+      closeReason: reason,
+    });
+    await logRequestAction(ctx, request, userId, "reproduction_request_withdrawn", {
+      reason,
+    });
+    return null;
+  },
+});
+
+const listItem = v.object({
+  _id: v.id("reproductionRequests"),
+  requestNumber: v.string(),
+  status: reproductionStatus,
+  purpose: reproductionPurpose,
+  requesterName: v.string(),
+  objectLabel: v.string(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const list = query({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(reproductionStatus),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(listItem),
+  handler: async (ctx, args) => {
+    await requireReproductionAccess(ctx, args.organizationId, "read");
+    const { status } = args;
+    const result = await (status
+      ? ctx.db
+          .query("reproductionRequests")
+          .withIndex("by_organization_and_status_and_createdAt", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          )
+      : ctx.db
+          .query("reproductionRequests")
+          .withIndex("by_organization_and_createdAt", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+    )
+      .order("desc")
+      .paginate(args.paginationOpts);
+    const page = await Promise.all(
+      result.page.map(async (request) => {
+        const object = await ctx.db.get(request.objectId);
+        return {
+          _id: request._id,
+          requestNumber: request.requestNumber,
+          status: request.status,
+          purpose: request.purpose,
+          requesterName: request.requesterName,
+          objectLabel:
+            object?.organizationId === request.organizationId
+              ? objectLabel(object)
+              : "",
+          createdAt: request.createdAt,
+          updatedAt: request.updatedAt,
+        };
+      }),
+    );
+    return { ...result, page };
+  },
+});
 
 const EVIDENCE_LIMIT = 100;
 

@@ -84,3 +84,32 @@ export async function reproductionCommands(
     canDecide: holds(REPRODUCTION_DECIDE_PERMISSIONS),
   };
 }
+
+const MEMBER_SCAN_LIMIT = 500;
+
+/** Current members whose role holds every permission needed to decide. */
+export async function reproductionDeciders(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const memberships = await ctx.db
+    .query("userOrganizations")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .take(MEMBER_SCAN_LIMIT);
+  const rolePermissions = new Map<Id<"roles">, readonly string[]>();
+  const deciders: Array<Id<"users">> = [];
+  for (const membership of memberships) {
+    let permissions = rolePermissions.get(membership.roleId);
+    if (!permissions) {
+      permissions = await getRolePermissionNames(ctx, membership.roleId);
+      rolePermissions.set(membership.roleId, permissions);
+    }
+    if (
+      REPRODUCTION_DECIDE_PERMISSIONS.every((permission) =>
+        permissions.includes(permission),
+      )
+    )
+      deciders.push(membership.userId);
+  }
+  return deciders;
+}

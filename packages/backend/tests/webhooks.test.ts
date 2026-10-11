@@ -57,6 +57,8 @@ describe("webhook endpoint configuration", () => {
       "collection.created",
       "loan.approved",
       "media.uploaded",
+      "reproduction_request.decided",
+      "reproduction_request.ended",
     ]);
     expect(
       await errorCodeOf(

@@ -167,6 +167,16 @@ const organizationScopedTables = [
   "batchJobs",
   "savedViews",
   "objectComments",
+  "reproductionRequests",
+  "reproductionRequestCounters",
+  "reproductionEvidence",
+  "reproductionDerivatives",
+  "reproductionTerms",
+  "reproductionDecisions",
+  "reproductionDeliveries",
+  "reproductionDeliveryAttempts",
+  "reproductionAccessLinks",
+  "reproductionDownloads",
 ] as const;
 
 type OrganizationScopedTableName = (typeof organizationScopedTables)[number];

@@ -6,6 +6,8 @@ export const WEBHOOK_EVENT_TYPES = [
   "collection.created",
   "loan.approved",
   "media.uploaded",
+  "reproduction_request.decided",
+  "reproduction_request.ended",
 ] as const;
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
 export const WEBHOOK_TEST_EVENT = "test";
