@@ -6923,7 +6923,6 @@ export default {
       decidedOn: "Décidée le {date}",
       evidenceBasis: "Preuves retenues",
       termsUsed: "Conditions d'utilisation",
-      endsOn: "Fin de la licence le {date} (UTC)",
       grants: {
         active: "Licence active",
         expired: "Licence expirée",

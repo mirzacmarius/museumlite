@@ -8,7 +8,7 @@ import {
   authedForUser,
   type ConvexTest,
   capabilityFailureOf,
-  createConvexTest,
+  createConvexTestWithRateLimiter,
   createOrgUserCollectionWithPermissions,
 } from "./testHarness";
 
@@ -92,7 +92,7 @@ async function createMuseum(t: ConvexTest) {
 }
 
 test("staff record who asks for which image and why, and outsiders learn nothing", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
 
   const { requestId, requestNumber } = await museum.staff.mutation(
@@ -176,7 +176,7 @@ async function openRequest(
 }
 
 test("rights evidence is kept when retracted and may cite only a document of the same Object", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const { requestId } = await openRequest(t, museum);
   const { documentId, foreignDocumentId } = await t.run(async (ctx) => {
@@ -274,8 +274,8 @@ async function blobBytes(t: ConvexTest, storageId: Id<"_storage">) {
   return bytes ? Buffer.from(bytes) : null;
 }
 
-test("a Licensed derivative is a bounded JPEG made from the verified image, never the original", async () => {
-  const t = createConvexTest();
+test("a Licensed copy is a bounded JPEG made from the verified image, never the original", async () => {
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const { requestId } = await openRequest(t, museum);
 
@@ -331,7 +331,7 @@ test("a Licensed derivative is a bounded JPEG made from the verified image, neve
 });
 
 test("a derivative that cannot be made is reported failed and can be prepared again", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const { requestId } = await openRequest(t, museum);
   const original = await blobBytes(t, museum.storageId);
@@ -417,7 +417,7 @@ async function publishTerms(
 }
 
 test("approval records the rights evidence, the terms version and the expiry it was decided on", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const prepared = await preparedRequest(t, museum);
   const { requestId, derivativeId } = prepared;
@@ -524,7 +524,7 @@ test("approval records the rights evidence, the terms version and the expiry it 
 });
 
 test("approval needs active evidence and a ready derivative; refusal needs only a reason", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const { termsId } = await publishTerms(museum, "Study use only.");
   const { requestId, evidenceId, derivativeId } = await preparedRequest(
@@ -664,7 +664,7 @@ function enableEmail() {
 
 test("approval emails the requester a link to the derivative only, and each download is a use record", async () => {
   enableEmail();
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const fetchMock = providerReplies(200);
   const { requestId, derivativeId, requestNumber } = await approvedRequest(
@@ -718,7 +718,7 @@ test("approval emails the requester a link to the derivative only, and each down
 
 test("a delivery retries transient failures with the same email and staff can start a new series after a refusal", async () => {
   enableEmail();
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const fetchMock = providerReplies(503, 200, 422, 200);
   const { requestId } = await approvedRequest(t, museum);
@@ -786,7 +786,7 @@ test("a delivery retries transient failures with the same email and staff can st
 
 test("revocation stops downloads at once and cancels deliveries not yet sent", async () => {
   enableEmail();
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const fetchMock = providerReplies(200, 503);
   const { requestId } = await approvedRequest(t, museum);
@@ -846,7 +846,7 @@ test("revocation stops downloads at once and cancels deliveries not yet sent", a
 
 test("an approval expires at the end of its term and its link stops working", async () => {
   enableEmail();
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const fetchMock = providerReplies(200);
   const { requestId } = await approvedRequest(t, museum, DAY);
@@ -869,7 +869,7 @@ test("an approval expires at the end of its term and its link stops working", as
 });
 
 test("without an email channel the delivery is cancelled and cannot be retried until one exists", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const { requestId } = await approvedRequest(t, museum);
   await settle(t);
@@ -891,7 +891,7 @@ test("without an email channel the delivery is cancelled and cannot be retried u
 });
 
 test("the request list is newest first, filters by status and is closed to outsiders", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const first = await openRequest(t, museum);
   vi.advanceTimersByTime(1_000);
@@ -946,7 +946,7 @@ test("the request list is newest first, filters by status and is closed to outsi
 
 test("deciders are notified of a new request and the approver of an undelivered email", async () => {
   enableEmail();
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   const deciderId = await addMember(t, museum.organizationId, "decider", [
     "media.read",
@@ -981,7 +981,7 @@ test("deciders are notified of a new request and the approver of an undelivered 
 });
 
 test("subscribed endpoints receive decisions and ended approvals without the requester's personal data", async () => {
-  const t = createConvexTest();
+  const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
   await museum.staff.mutation(api.webhooks.create, {
     organizationId: museum.organizationId,
@@ -1039,4 +1039,25 @@ test("subscribed endpoints receive decisions and ended approvals without the req
   ]);
   expect(bodies.join(" ")).not.toContain("ada@university.example");
   expect(bodies.join(" ")).not.toContain("Ada Researcher");
+});
+
+test("a download link answers too many requests without recording them", async () => {
+  enableEmail();
+  const t = createConvexTestWithRateLimiter();
+  const museum = await createMuseum(t);
+  const fetchMock = providerReplies(200);
+  const { requestId } = await approvedRequest(t, museum);
+  await settle(t, 5_000);
+  const path = downloadPath(providerRequests(fetchMock)[0]?.body.text ?? "");
+
+  const statuses: number[] = [];
+  for (let index = 0; index < 11; index++) {
+    statuses.push((await t.fetch(path, { method: "GET" })).status);
+  }
+  expect(statuses.filter((status) => status === 200)).toHaveLength(10);
+  expect(statuses.at(-1)).toBe(429);
+  expect(
+    (await museum.staff.query(api.reproductionRequests.get, { requestId }))
+      ?.downloads,
+  ).toHaveLength(10);
 });

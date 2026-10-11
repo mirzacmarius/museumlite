@@ -12,7 +12,7 @@ import {
   Text,
 } from "@react-email/components";
 import { render } from "@react-email/render";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { env } from "../env";
 import { wallClockTime } from "../utils/calendarSchedule";
 import {
@@ -966,8 +966,13 @@ function ReproductionDeliveryEmail({
           })}
         </strong>
       </Text>
-      <Text style={{ ...emailTextStyle, whiteSpace: "pre-wrap" }}>
-        {content.termsBody}
+      <Text style={emailTextStyle}>
+        {content.termsBody.split("\n").map((line, index) => (
+          <Fragment key={index}>
+            {index > 0 ? <br /> : null}
+            {line}
+          </Fragment>
+        ))}
       </Text>
       <Text style={emailMutedTextStyle}>
         {text(t.expires, {
@@ -986,7 +991,7 @@ function ReproductionDeliveryEmail({
   );
 }
 
-/** Subject, HTML and plain text of a Licensed derivative's delivery email. */
+/** Subject, HTML and plain text of a Licensed copy's delivery email. */
 export async function renderReproductionDeliveryEmail(
   content: ReproductionDeliveryContent,
   locale: EmailLocale,

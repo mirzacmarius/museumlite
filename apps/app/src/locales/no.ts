@@ -6835,7 +6835,6 @@ export default {
       decidedOn: "Avgjort {date}",
       evidenceBasis: "Dokumentasjon som ble lagt til grunn",
       termsUsed: "Bruksvilkår",
-      endsOn: "Lisensen slutter {date} (UTC)",
       grants: {
         active: "Lisensen gjelder",
         expired: "Lisensen er utløpt",

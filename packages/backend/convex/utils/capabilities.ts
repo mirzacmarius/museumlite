@@ -133,7 +133,7 @@ export const CAPABILITY_MATRIX = {
     route: "/deaccessions",
   },
   // Requesters are Parties, so requests need the accounts module. Deciding
-  // is the rights authority of public image approval (ADR 0014).
+  // is the rights authority of public image approval (ADR 0015).
   reproduction_requests: {
     module: "accounts",
     permissions: ["media.read", "accounts.read"],

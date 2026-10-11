@@ -574,7 +574,7 @@ http.route({
 });
 
 /**
- * A requester's download of their Licensed derivative. The file is streamed
+ * A requester's download of their Licensed copy. The file is streamed
  * so revocation and expiry take effect at once; no storage URL is shared.
  */
 const downloadLicensedDerivative = httpAction(async (ctx, request) => {
@@ -588,6 +588,15 @@ const downloadLicensedDerivative = httpAction(async (ctx, request) => {
     { tokenHash: await hashAccessToken(token) },
   );
   if (result.kind === "not_found") return notFound();
+  if (result.kind === "rate_limited") {
+    return new Response("Too many requests", {
+      status: 429,
+      headers: {
+        "Retry-After": String(Math.ceil(result.retryAfter / 1000)),
+        "Cache-Control": "no-store",
+      },
+    });
+  }
   if (result.kind === "refused") {
     return new Response(
       result.outcome === "refused_unavailable"

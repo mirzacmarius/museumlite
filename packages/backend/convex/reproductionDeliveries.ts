@@ -1,5 +1,6 @@
+import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { objectLabel } from "./utils/collectionDisplayHelpers";
@@ -27,6 +28,11 @@ import {
 /** A run that starts before its delivery is due belongs to a later attempt. */
 const EARLY_RUN_TOLERANCE_MS = 1_000;
 const SWEEP_BATCH = 100;
+
+/** Downloads per link; more are answered without a use record. */
+const limiter = new RateLimiter(components.rateLimiter, {
+  licensedDownloads: { kind: "token bucket", rate: 10, period: MINUTE },
+});
 
 const emailContent = v.object({
   organizationName: v.string(),
@@ -257,13 +263,14 @@ export const sweep = internalMutation({
 
 /**
  * Resolves a download link and records the request as a use record. Unknown
- * links record nothing. Only a ready Licensed derivative owned by the
+ * links record nothing. Only a ready Licensed copy owned by the
  * request's organization is ever served.
  */
 export const openDownload = internalMutation({
   args: { tokenHash: v.string() },
   returns: v.union(
     v.object({ kind: v.literal("not_found") }),
+    v.object({ kind: v.literal("rate_limited"), retryAfter: v.number() }),
     v.object({ kind: v.literal("refused"), outcome: downloadOutcome }),
     v.object({
       kind: v.literal("serve"),
@@ -282,6 +289,11 @@ export const openDownload = internalMutation({
       ctx.db.get(link.decisionId),
     ]);
     if (!request || !decision) return { kind: "not_found" as const };
+    const status = await limiter.limit(ctx, "licensedDownloads", {
+      key: link._id,
+    });
+    if (!status.ok)
+      return { kind: "rate_limited" as const, retryAfter: status.retryAfter };
     const now = Date.now();
     const record = async (
       outcome: Doc<"reproductionDownloads">["outcome"],

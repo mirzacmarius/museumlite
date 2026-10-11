@@ -6800,7 +6800,6 @@ export default {
       decidedOn: "Decided {date}",
       evidenceBasis: "Evidence relied on",
       termsUsed: "Terms of use",
-      endsOn: "License ends {date} (UTC)",
       grants: {
         active: "License active",
         expired: "License expired",

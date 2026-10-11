@@ -55,7 +55,7 @@ export const reproductionLocale = v.union(
   ...REPRODUCTION_LOCALES.map((locale) => v.literal(locale)),
 );
 
-/** Longest edge, in pixels, a Licensed derivative may have. */
+/** Longest edge, in pixels, a Licensed copy may have. */
 export const DERIVATIVE_SIZES = [1200, 2400, 4000] as const;
 export const derivativeSize = v.union(
   ...DERIVATIVE_SIZES.map((size) => v.literal(size)),
@@ -94,7 +94,7 @@ export const rightsSnapshot = v.object({
 });
 
 /**
- * Tables of research and reproduction requests (ADR 0014). Spread into the
+ * Tables of research and reproduction requests (ADR 0015). Spread into the
  * schema so the module's storage stays together.
  */
 export const reproductionRequestTables = {

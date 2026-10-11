@@ -6,7 +6,7 @@ import { internalAction } from "./_generated/server";
 import { derivativeSize } from "./utils/reproductionRequestValidators";
 
 /**
- * Makes a request's Licensed derivative: the verified source re-encoded as a
+ * Makes a request's Licensed copy: the verified source re-encoded as a
  * JPEG no larger than the chosen size, without the original's metadata.
  */
 export const makeDerivative = internalAction({
@@ -46,7 +46,7 @@ export const makeDerivative = internalAction({
         .toBuffer({ resolveWithObject: true });
       rendered = { data, width: info.width, height: info.height };
     } catch (error) {
-      console.error("Licensed derivative generation failed", error);
+      console.error("Licensed copy generation failed", error);
       await fail();
       return null;
     }

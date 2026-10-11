@@ -5373,7 +5373,6 @@ export default {
       decidedOn: "Decisă pe {date}",
       evidenceBasis: "Dovezile luate în considerare",
       termsUsed: "Condiții de utilizare",
-      endsOn: "Licența se încheie pe {date} (UTC)",
       grants: {
         active: "Licență activă",
         expired: "Licență expirată",

@@ -6897,7 +6897,6 @@ export default {
       decidedOn: "Decidida el {date}",
       evidenceBasis: "Pruebas consideradas",
       termsUsed: "Condiciones de uso",
-      endsOn: "La licencia termina el {date} (UTC)",
       grants: {
         active: "Licencia vigente",
         expired: "Licencia vencida",

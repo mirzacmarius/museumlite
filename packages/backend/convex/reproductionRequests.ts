@@ -17,7 +17,7 @@ import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { notificationEmailChannel } from "./utils/notificationEmailChannel";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
-import { requireLinkableParty } from "./utils/parties";
+import { partyDisplayName, requireLinkableParty } from "./utils/parties";
 import { recordPartyLink } from "./utils/partyLinks";
 import { getCurrentUserOrganization } from "./utils/permissions";
 import { isWithdrawnObject } from "./utils/provenance";
@@ -81,8 +81,8 @@ function requiredText(
   return text;
 }
 
-/** The image staff may make a Licensed derivative of, or the reason not. */
-export function derivativeBlocker(media: Doc<"mediaFiles">) {
+/** The image staff may make a Licensed copy of, or the reason not. */
+function derivativeBlocker(media: Doc<"mediaFiles">) {
   if (
     media.fileType !== "image" ||
     media.mediaCategory === "document" ||
@@ -191,7 +191,7 @@ export const create = mutation({
       objectId: object._id,
       mediaId: media._id,
       requesterAccountId: party._id,
-      requesterName: "",
+      requesterName: partyDisplayName(party),
       requesterEmail,
       requesterLocale: args.requesterLocale,
       purpose: args.purpose,
@@ -201,7 +201,7 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    const link = await recordPartyLink(ctx, {
+    await recordPartyLink(ctx, {
       organizationId: args.organizationId,
       target: { type: "reproductionRequest", id: requestId },
       account: party,
@@ -210,10 +210,6 @@ export const create = mutation({
       effectiveFrom: now,
       userId,
       origin: "staff",
-    });
-    const partyLink = await ctx.db.get(link.linkId);
-    await ctx.db.patch(requestId, {
-      requesterName: partyLink?.nameSnapshot ?? party.accountNumber,
     });
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,

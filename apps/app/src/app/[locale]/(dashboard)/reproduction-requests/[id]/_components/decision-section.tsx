@@ -227,22 +227,22 @@ function DecisionRecord({ view }: { view: RequestView }) {
         {approval ? (
           <>
             <Field label={t("decision.expires")}>
-              {t("decision.endsOn", {
-                date: formatDate(
-                  new Date(approval.expiresAt),
-                  locale,
-                  CALENDAR_DATE_OPTIONS,
-                ),
-              })}
-            </Field>
-            <Field label={t("decision.termsUsed")}>
-              {t("decision.termsVersion", {
-                title: approval.termsTitle,
-                version: approval.termsVersion,
-              })}
+              {formatDate(
+                new Date(approval.expiresAt),
+                locale,
+                CALENDAR_DATE_OPTIONS,
+              )}{" "}
+              (UTC)
             </Field>
             <div className="sm:col-span-2">
               <Field label={t("decision.termsUsed")}>
+                <span className="font-medium">
+                  {t("decision.termsVersion", {
+                    title: approval.termsTitle,
+                    version: approval.termsVersion,
+                  })}
+                </span>
+                {"\n"}
                 {approval.termsBody}
               </Field>
             </div>

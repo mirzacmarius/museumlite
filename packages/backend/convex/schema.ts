@@ -5153,6 +5153,6 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_email", ["email"]),
 
-  // Research and reproduction requests (ADR 0014)
+  // Research and reproduction requests (ADR 0015)
   ...reproductionRequestTables,
 });
