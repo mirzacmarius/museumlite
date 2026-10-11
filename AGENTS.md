@@ -10,6 +10,13 @@ This project runs Next.js 16.2, and its APIs, conventions, and file structure di
 
 # Coding Agent Guidelines
 
+## Prelaunch verification policy
+
+- Match local checks to the changed area. Documentation or copy-only changes do not need the full suite.
+- For auth, permissions, billing, schema, or shared dependencies, run the relevant targeted tests and build checks.
+- Run the full manual CI workflow for a release candidate or when a risky change specifically calls for it: `gh workflow run check.yml --ref <branch>`.
+- CI no longer runs automatically on pushes or pull requests; do not wait for automatic checks.
+
 MuseumLite is a museum and library collection-management SaaS. Turborepo monorepo with Convex backend, Next.js 16 App Router, Bun, and Biome.
 
 ## Find project guidance

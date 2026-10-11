@@ -1,12 +1,10 @@
 name: Check
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -14,6 +12,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       CONVEX_LOCAL_BACKEND_VERSION: precompiled-2026-10-06-a3538c6
       CI: true
