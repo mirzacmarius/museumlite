@@ -95,7 +95,6 @@ export const incidentEventActionValidator = v.union(
   v.literal("recovered"),
   v.literal("evidence_linked"),
   v.literal("evidence_retracted"),
-  v.literal("note_added"),
   v.literal("closed"),
   v.literal("reopened"),
 );

@@ -39,7 +39,7 @@ import { dispatchNotification } from "./utils/notificationDispatch";
 import { generateNextIncidentNumber } from "./utils/numberGenerator";
 import { getUserIdsWithPermission } from "./utils/permissions";
 import { suggestPreparation } from "./utils/preparation";
-import { workError } from "./utils/workErrors";
+import { workError, workErrorFromError } from "./utils/workErrors";
 
 const MAX_TITLE_LENGTH = 200;
 const MAX_TEXT_LENGTH = 4000;
@@ -1189,14 +1189,22 @@ function nameCache(ctx: QueryCtx) {
   };
 }
 
+/**
+ * The incident for its detail page; null when it does not exist or the
+ * caller may not see it, so a restricted incident reads as missing.
+ */
 export const get = query({
   args: { incidentId: v.id("incidents") },
-  returns: detailValidator,
+  returns: v.union(v.null(), detailValidator),
   handler: async (ctx, args) => {
-    const { incident, viewer } = await requireVisibleIncident(
-      ctx,
-      args.incidentId,
-    );
+    let visible: Awaited<ReturnType<typeof requireVisibleIncident>>;
+    try {
+      visible = await requireVisibleIncident(ctx, args.incidentId);
+    } catch (error) {
+      if (workErrorFromError(error)?.code === "INCIDENT_NOT_FOUND") return null;
+      throw error;
+    }
+    const { incident, viewer } = visible;
     const org = incident.organizationId;
     const names = nameCache(ctx);
     const [objectRows, handoffRows, eventRows] = await Promise.all([
@@ -1350,7 +1358,11 @@ export const listPlanOptions = query({
       recipeId: v.id("preparationRecipes"),
       name: v.string(),
       steps: v.array(
-        v.object({ title: v.string(), offsetHours: v.optional(v.number()) }),
+        v.object({
+          key: v.string(),
+          title: v.string(),
+          offsetHours: v.optional(v.number()),
+        }),
       ),
     }),
   ),
@@ -1370,6 +1382,7 @@ export const listPlanOptions = query({
       recipeId: recipe._id,
       name: recipe.name,
       steps: recipe.steps.map((step) => ({
+        key: step.key,
         title: step.title,
         offsetHours: step.due?.offsetHours,
       })),

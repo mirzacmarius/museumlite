@@ -36,6 +36,7 @@ import { useScopedI18n } from "@/locales/client";
 import {
   anchorsFor,
   blankStep,
+  countsHours,
   type DraftErrors,
   draftErrors,
   EVIDENCE_KINDS,
@@ -117,6 +118,7 @@ function StepEditor({
   const errorId = (field: StepField) => `${id(field)}-error`;
   const isInvalid = (field: StepField) => invalid.includes(field);
   const anchors = anchorsFor(trigger);
+  const hourly = countsHours(trigger);
   return (
     <fieldset className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex items-center justify-between gap-2">
@@ -235,7 +237,7 @@ function StepEditor({
             <SelectContent>
               {OWNER_KINDS.map((kind) => (
                 <SelectItem key={kind} value={kind}>
-                  {t(`owners.${kind}`)}
+                  {hourly ? t(`incidentOwners.${kind}`) : t(`owners.${kind}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -304,13 +306,35 @@ function StepEditor({
               <SelectItem value={NONE}>{t("noDue")}</SelectItem>
               {anchors.map((anchor) => (
                 <SelectItem key={anchor} value={anchor}>
-                  {t(`anchors.${anchor}`)}
+                  {hourly ? t("anchorTriage") : t(`anchors.${anchor}`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        {step.dueAnchor !== "none" ? (
+        {step.dueAnchor !== "none" && hourly ? (
+          <div className="space-y-1.5">
+            <Label htmlFor={id("offset")}>{t("offsetHours")}</Label>
+            <Input
+              id={id("offset")}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={168}
+              step={1}
+              value={step.offsetHours}
+              aria-invalid={isInvalid("due")}
+              aria-describedby={isInvalid("due") ? errorId("due") : id("hint")}
+              onChange={(event) =>
+                onChange({ offsetHours: event.target.value })
+              }
+              disabled={disabled}
+            />
+            <p id={id("hint")} className="text-xs text-muted-foreground">
+              {t("offsetHoursHint")}
+            </p>
+          </div>
+        ) : step.dueAnchor !== "none" ? (
           <div className="space-y-1.5">
             <Label htmlFor={id("offset")}>{t("offsetDays")}</Label>
             <Input

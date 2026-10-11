@@ -11,7 +11,11 @@ import { toast } from "sonner";
 import { useWorkErrorMessage } from "@/hooks/use-work-error-message";
 import { useScopedI18n } from "@/locales/client";
 
-export type PreparationCaseType = "accession" | "loan" | "exhibition";
+export type PreparationCaseType =
+  | "accession"
+  | "loan"
+  | "exhibition"
+  | "incident";
 
 const STATE_STYLES = {
   suggested: "text-emerald-700 dark:text-emerald-300",

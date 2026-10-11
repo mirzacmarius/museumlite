@@ -11,6 +11,7 @@ import {
   MapPin,
   Plus,
   Settings,
+  Siren,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import {
@@ -78,6 +79,11 @@ export function buildCommandPaletteActions({
       labelKey: "documentationQuality",
       href: capabilityRoute("documentation_quality"),
       icon: ClipboardCheck,
+    }),
+    ...when(isOpen("incidents"), {
+      labelKey: "incidents",
+      href: capabilityRoute("incidents"),
+      icon: Siren,
     }),
     ...when(isOpen("loans"), {
       labelKey: "loans",

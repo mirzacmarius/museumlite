@@ -2676,6 +2676,8 @@ export default {
           bulk_edit: "Masseredigering",
           catalog_edit: "Katalogendring",
           legacy: "Registrert flytting",
+          incident_evacuation: "Evakuering ved hendelse",
+          incident_recovery: "Tilbakeføring etter hendelse",
         },
       },
     },
@@ -2885,6 +2887,8 @@ export default {
         episodeNotOpen: "Denne episoden er allerede avsluttet.",
         resolutionNoteInvalid: "Skriv et notat på opptil 1000 tegn.",
       },
+      reportIncident: "Meld en hendelse",
+      incidentTitle: "Klimavarsel ved {location}",
     },
     sidebar: {
       empty: "Ingen plasseringer ennå",
@@ -4775,6 +4779,7 @@ export default {
       exhibition: "Utstilling",
       conservation: "Konserveringsbehandling",
       documentationFinding: "Dokumentasjonsfunn",
+      incident: "Hendelse",
     },
     fields: {
       title: "Tittel",
@@ -4912,6 +4917,16 @@ export default {
       recipeNotFound:
         "Denne oppskriften er ikke lenger tilgjengelig. Last inn siden på nytt.",
       recipeInvalid: "Kontroller de markerte feltene i oppskriften.",
+      incidentNotFound:
+        "Denne hendelsen finnes ikke, eller du kan ikke se den.",
+      notIncidentCoordinator: "Bare hendelseskoordinatorer kan gjøre dette.",
+      notIncidentResponder:
+        "Du har ikke tillatelse til å gjøre dette på en hendelse.",
+      objectNotAffected: "Legg først objektet til hendelsen.",
+      planNotAvailable:
+        "Den planen er ikke lenger en aktiv responsplan. Oppdater og velg på nytt.",
+      tasksOpen:
+        "Fullfør eller avbryt først hendelsens {count} åpne oppgave(r).",
     },
     suggestion: {
       badge: "Foreslått",
@@ -4921,6 +4936,7 @@ export default {
         loan_approved: "Foreslått av «{recipe}» etter at lånet ble godkjent",
         exhibition_approved:
           "Foreslått av «{recipe}» etter at utstillingen ble godkjent",
+        incident_response: "Fra responsplanen «{recipe}» valgt ved vurdering",
       },
       withdrawn:
         "Trukket tilbake fordi lånet ble kansellert. Gjenopprett den hvis arbeidet fortsatt trengs.",
@@ -4955,6 +4971,8 @@ export default {
           "Oppskrifter foreslår disse oppgavene når et lån blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
         exhibition_approved:
           "Oppskrifter foreslår disse oppgavene når en utstilling blir godkjent. Forslag registrerer aldri mottak, installering, eiendomsrett eller tilstand.",
+        incident_response:
+          "Trinn i responsplanene en koordinator valgte ved vurdering. Å fullføre et trinn registrerer aldri en flytting, et mottak eller en tilstand.",
       },
       states: {
         suggested: "Foreslått",
@@ -5009,6 +5027,7 @@ export default {
       intake_accepted: "Mottak godkjent",
       loan_approved: "Lån godkjent",
       exhibition_approved: "Utstilling godkjent",
+      incident_response: "Responsplan for hendelser",
     },
     triggerHints: {
       intake_accepted:
@@ -5017,6 +5036,8 @@ export default {
         "Kjøres når et lån blir godkjent. Frister regnes fra godkjenningen eller fra lånets start eller slutt.",
       exhibition_approved:
         "Kjøres når en utstilling blir godkjent. Frister regnes fra godkjenningen eller fra åpningen eller avslutningen.",
+      incident_response:
+        "Brukes bare når en koordinator velger den ved vurdering av en hendelse. Frister regnes i timer fra vurderingen.",
     },
     directions: {
       any: "Inngående og utgående lån",
@@ -5118,7 +5139,16 @@ export default {
         due: "Bruk et helt antall dager mellom -365 og 365.",
         dependsOn: "Et trinn kan bare vente på trinn over seg.",
       },
+      offsetHours: "Timer etter vurdering",
+      offsetHoursHint: "0 til 168 timer.",
+      anchorTriage: "Vurdering",
+      incidentOwners: {
+        caseAssignee: "Hendelsesansvarlig",
+        approver: "Koordinatoren som vurderte",
+        member: "Et navngitt medlem",
+      },
     },
+    blankIncidentPlan: "Tom responsplan for hendelser",
   },
   notificationsPage: {
     title: "Varsler",
@@ -5756,6 +5786,7 @@ export default {
       conservation: "Gå til konservering",
       entries: "Gå til innleveringer",
       documentationQuality: "Gå til dokumentasjonskvalitet",
+      incidents: "Gå til hendelser",
     },
     pageNotFound: {
       title: "Fant ikke siden",
@@ -8599,6 +8630,7 @@ export default {
         transfers: "Overføringer",
         collections: "Samlingsgrupper",
         library: "Bibliotek",
+        incidents: "Hendelser",
       },
     },
     dashboardBilling: {
@@ -9626,6 +9658,7 @@ export default {
       deleteMaterial: "Slett materialet",
       currentLocationOption: "{location} (nåværende)",
       flashNotSupported: "Kameraet på denne enheten har ikke blitskontroll.",
+      incidents: "Hendelser",
     },
     auth: {
       noAccountYet: "Har du ingen konto ennå?",
@@ -9801,6 +9834,7 @@ export default {
       exhibitionsLoans: "Utstillinger og lån",
       library: "Bibliotek",
       administration: "Administrasjon",
+      incidents: "Hendelser",
     },
     transferLookup: {
       invalidOrganizationAccountNumber:
@@ -9935,6 +9969,9 @@ export default {
         environmentStillOutOfRange:
           "Miljø fortsatt utenfor grensene: {location}",
         environmentBackInRange: "Miljø innenfor grensene igjen: {location}",
+        incidentReported: "Hendelse meldt",
+        incidentLeadAssigned: "Hendelsesansvarlig tildelt",
+        incidentClosed: "Hendelse avsluttet",
       },
       messages: {
         objectMoveExecuted:
@@ -10046,6 +10083,9 @@ export default {
           "Utstillingen «{title}» ble avslått. Begrunnelse: {reason}",
         disputeUnderInvestigation: "Uenigheten om tilstanden undersøkes nå",
         disputeResolved: "Uenigheten om tilstanden er løst",
+        incidentNeedsTriage: "{incident} må vurderes",
+        incidentLeadAssigned: "Du leder responsen på {incident}",
+        incidentClosed: "{incident} ble avsluttet med evaluering",
       },
       workflowTypes: {
         accession: "tilvekst",
@@ -10498,5 +10538,266 @@ export default {
       permanentInDraft:
         "Dette permanente nummeret beholdes når du redigerer utkastet.",
     },
+  },
+  incidents: {
+    title: "Hendelser",
+    description:
+      "Skade, tap og nødsituasjoner som rammer samlingen, fra første melding via vurdering og respons til evaluering i etterkant.",
+    reportAction: "Meld hendelse",
+    filters: {
+      open: "Åpne",
+      closed: "Avsluttede",
+    },
+    loading: "Laster hendelser …",
+    emptyOpen: "Ingen åpne hendelser du kan se.",
+    emptyClosed: "Ingen avsluttede hendelser du kan se.",
+    reportedOn: "Meldt",
+    leadIs: "Ansvarlig: {name}",
+    loadMore: "Last inn flere",
+    statuses: {
+      reported: "Venter på vurdering",
+      responding: "Respons pågår",
+      closed: "Avsluttet",
+    },
+    severities: {
+      minor: "Liten",
+      moderate: "Moderat",
+      major: "Alvorlig",
+      critical: "Kritisk",
+    },
+    notTriaged: "Ikke vurdert",
+    sensitive: "Begrenset",
+    sensitiveHint:
+      "Bare hendelseskoordinatorer, den som meldte, den ansvarlige og navngitte innsatspersoner kan se en begrenset hendelse.",
+    notRecorded: "Ikke registrert",
+    formerMember: "Tidligere medlem",
+    cancel: "Avbryt",
+    close: "Lukk",
+    kinds: {
+      damage: "Skade",
+      loss: "Tap",
+      theft: "Tyveri",
+      fire: "Brann",
+      water: "Vann",
+      pest: "Skadedyr",
+      environmental: "Klimaforhold",
+      security: "Sikkerhet",
+      other: "Annet",
+    },
+    impacts: {
+      at_risk: "I fare",
+      damaged: "Skadet",
+      missing: "Savnet",
+      unaffected: "Ikke berørt",
+    },
+    report: {
+      title: "Meld en hendelse",
+      description:
+        "Registrer det du fant nå; en koordinator vurderer det og organiserer responsen.",
+      fromEpisode:
+        "Når du melder fra denne varselsepisoden, registreres den som kilde. Er den allerede meldt, kommer du til den hendelsen.",
+      kind: "Type hendelse",
+      location: "Hvor",
+      locationPlaceholder: "Velg et sted",
+      whatHappened: "Hva skjedde",
+      whatHappenedPlaceholder:
+        "For eksempel: vann drypper på vasemonteret i sal 2",
+      details: "Detaljer",
+      detailsPlaceholder: "Hva du så og hva du har gjort så langt",
+      objects: "Berørte objekter",
+      objectsPlaceholder: "Søk etter objekter",
+      impact: "Hvordan objektene er berørt",
+      discoveredAt: "Oppdaget",
+      occurredAt: "Skjedde (hvis kjent)",
+      sensitive: "Begrens hvem som kan se den",
+      sensitiveHint:
+        "Brukes ved mistanke om tyveri eller saker om sikkerhet eller personale. Bare koordinatorer, du, den ansvarlige og navngitte innsatspersoner ser den.",
+      submit: "Meld hendelse",
+      reported: "Hendelsen er meldt. Koordinatorene er varslet.",
+      alreadyReported: "Dette var allerede meldt; her er hendelsen.",
+      alreadyReportedRestricted:
+        "Dette er allerede meldt som en begrenset hendelse. Koordinatorene følger det opp.",
+      errors: {
+        title: "Beskriv hva som skjedde med 1–200 tegn.",
+        where: "Velg et sted eller minst ett objekt.",
+        times:
+          "Sjekk tidspunktene: oppdagelsen kan ikke være i fremtiden, og hendelsen kan ikke ha skjedd etter at den ble oppdaget.",
+      },
+    },
+    detail: {
+      reportTitle: "Melding",
+      discoveredAt: "Oppdaget",
+      occurredAt: "Skjedde",
+      reportedBy: "Meldt av",
+      locations: "Steder",
+      source: "Utløst av",
+      alertEpisode: "Klimavarselsepisode",
+      details: "Detaljer",
+    },
+    response: {
+      title: "Respons",
+      update: "Oppdater respons",
+      triage: "Vurder",
+      awaitingTriage: "Venter på at en koordinator vurderer hendelsen.",
+      awaitingTriageCoordinator:
+        "Vurder hendelsen: angi alvorlighet, velg en ansvarlig og bestem hvilken plan, om noen, som styrer responsen.",
+      severity: "Alvorlighet",
+      lead: "Ansvarlig",
+      responders: "Innsatspersoner",
+      noResponders: "Ingen andre innsatspersoner",
+      triaged: "Vurdert av",
+      plans: "Responsplaner",
+      noPlan: "Ingen plan styrer denne responsen; oppgaver legges til manuelt.",
+      note: "Vurderingsnotat",
+      errors: {
+        severityAndLead: "Velg alvorlighet og en ansvarlig.",
+        planChoice:
+          "Velg planene som styrer responsen, eller registrer at ingen gjelder.",
+      },
+      tasksSuggested:
+        "Responsen er lagret. {count} oppgave(r) lagt til fra de valgte planene.",
+      saved: "Responsen er lagret.",
+      stepsSkipped:
+        "{count} plantrinn trenger fortsatt en eier som kan arbeide med denne hendelsen.",
+      triageTitle: "Vurder hendelse",
+      updateTitle: "Oppdater respons",
+      triageDescription:
+        "Planene er institusjonens egne; ingenting velges for deg. Trinnene i planene du velger, blir oppgaver for eierne sine.",
+      chooseSeverity: "Velg alvorlighet",
+      chooseLead: "Velg en ansvarlig",
+      respondersHint:
+        "Innsatspersoner kan se en begrenset hendelse og få oppgavene på den.",
+      plansHint: "Velg med omhu: en valgt plan blir stående i journalen.",
+      plansChosen: "Styrer allerede denne responsen: {plans}",
+      noPlanApplies: "Ingen plan gjelder; koordiner manuelt",
+      noMorePlans: "Ikke legg til planer",
+      followPlans: "Følg disse planene",
+      noPlansAvailable:
+        "Ingen andre aktive responsplaner. Administratorer skriver dem under Innstillinger › Forberedelsesoppskrifter.",
+      dueWithin: "frist {hours} t etter vurdering",
+      save: "Lagre respons",
+    },
+    objects: {
+      title: "Berørte objekter",
+      add: "Legg til objekter",
+      description:
+        "Objektene forblir knyttet til hendelsen som dokumentasjon. Merk et objekt som ikke berørt i stedet for å fjerne det.",
+      empty: "Ingen objekter er knyttet til denne hendelsen.",
+      whenReported: "Ved tilknytning: {location}",
+      now: "Nå: {location}",
+      noLocation: "intet registrert sted",
+      lastHandoff: {
+        evacuation: "Evakuert til {location}",
+        recovery: "Tilbakeført til {location}",
+      },
+      recordAssessment: "Registrer en tilstandsvurdering",
+      impactFor: "Hvordan {object} er berørt",
+      recover: "Tilbakefør",
+      evacuate: "Evakuer",
+      chooseObjects: "Velg minst ett objekt.",
+      added: "{count} objekt(er) lagt til.",
+      addTitle: "Legg til berørte objekter",
+      addDescription:
+        "Objekter som allerede er på hendelsen, legges ikke til to ganger.",
+      impact: "Hvordan de er berørt",
+      addSubmit: "Legg til objekter",
+      chooseDestination: "Velg hvor objektet skal.",
+      handoffRecorded: {
+        evacuation: "Evakueringen er registrert som en flytting.",
+        recovery: "Tilbakeføringen er registrert som en flytting.",
+      },
+      handoffTitle: {
+        evacuation: "Evakuer {object}",
+        recovery: "Tilbakefør {object}",
+      },
+      handoffDescription:
+        "Registrer flyttingen når den skjer. Den kontrolleres mot hvor objektet var da du åpnet dette, og mot målstedets status og kapasitet.",
+      from: "Fra: {location}",
+      destination: "Til",
+      recoverySuggestion:
+        "Det var på {location} da det ble knyttet til hendelsen. Bekreft hvor det faktisk skal.",
+      notes: "Merknader",
+      handoffSubmit: {
+        evacuation: "Registrer evakuering",
+        recovery: "Registrer tilbakeføring",
+      },
+    },
+    evidence: {
+      title: "Dokumentasjon",
+      link: "Knytt til dokumentasjon",
+      description:
+        "Godkjente tilstandsvurderinger og filer for de berørte objektene, og forsikringskrav. Koblinger beholdes; en feilaktig kobling trekkes tilbake med en begrunnelse.",
+      empty: "Ingen dokumentasjon er knyttet til ennå.",
+      kinds: {
+        conditionAssessment: "Tilstandsvurdering",
+        media: "Fil",
+        insuranceClaim: "Forsikringskrav",
+      },
+      restricted: "Du har ikke tilgang til denne posten.",
+      linkedBy: "Knyttet til av {name}",
+      retractedBy: "Trukket tilbake av {name}: {reason}",
+      retract: "Trekk tilbake",
+      coverageTitle: "Forsikringsdekning da det ble oppdaget",
+      coverageRestricted: "Du har ikke tilgang til forsikringsposter.",
+      coverageNone:
+        "Ingen gjeldende dekning var registrert på de berørte objektene på det tidspunktet.",
+      coverageRow: "{object}: {policy} ({carrier}), {value}",
+      coverageNote:
+        "Viser dekning registrert på hvert objekt; dekning gjennom et utlån eller en utstilling står på de postene.",
+      linkTitle: "Knytt til dokumentasjon",
+      linkDescription:
+        "Nylige godkjente vurderinger og filer for de berørte objektene, og krav som nevner dem.",
+      noCandidates:
+        "Ingenting å knytte til. Registrer først en vurdering eller last opp en fil på et berørt objekt.",
+      linked: "Dokumentasjonen er knyttet til.",
+      linkOne: "Knytt til",
+      reasonRequired: "Oppgi en begrunnelse.",
+      retractTitle: "Trekk tilbake dokumentasjon",
+      retractDescription:
+        "Koblingen blir stående på hendelsen, merket som trukket tilbake med din begrunnelse.",
+      reason: "Begrunnelse",
+    },
+    afterAction: {
+      title: "Evaluering i etterkant",
+      reopen: "Gjenåpne",
+      close: "Avslutt med evaluering",
+      summary: "Hva som skjedde og hvordan responsen gikk",
+      whatWorked: "Hva som fungerte",
+      improvements: "Hva som bør forbedres",
+      followUp: "Oppfølging",
+      recordedBy: "Registrert av {name}",
+      pending: "Skrives av en koordinator når responsen er over.",
+      pendingCoordinator:
+        "Når alle oppgaver er utført eller avbrutt, avslutter du hendelsen med evalueringen. Avslutning flytter eller vurderer ingen objekter på nytt.",
+      earlier: "Tidligere evalueringer ({count})",
+      summaryRequired: "Oppsummer hva som skjedde og hvordan responsen gikk.",
+      closed: "Hendelsen er avsluttet.",
+      closeTitle: "Avslutt med evaluering",
+      closeDescription:
+        "Alle oppgaver må først være utført eller avbrutt. Objektene blir der de sist ble registrert.",
+      closeSubmit: "Avslutt hendelse",
+      reasonRequired: "Oppgi en begrunnelse for gjenåpning.",
+      reopened: "Hendelsen er gjenåpnet.",
+      reopenTitle: "Gjenåpne hendelse",
+      reopenDescription: "Evalueringen blir stående i journalen.",
+      reason: "Begrunnelse",
+    },
+    activity: {
+      title: "Hendelseslogg",
+      reported: "Meldt med {count} objekt(er)",
+      reportRepeated: "Meldt på nytt fra samme varsel",
+      triaged: "Vurdert som {severity}, ansvarlig {lead}",
+      response_updated: "Respons oppdatert: {severity}, ansvarlig {lead}",
+      plansApplied: "Valgte planer: {plans} ({count} oppgave(r) lagt til)",
+      objectsAdded: "{count} objekt(er) lagt til",
+      impactChanged: "{object} merket {impact}",
+      evacuated: "{object} evakuert fra {from} til {to}",
+      recovered: "{object} tilbakeført fra {from} til {to}",
+      evidenceLinked: "Dokumentasjon knyttet til",
+      evidenceRetracted: "Dokumentasjon trukket tilbake",
+      closed: "Avsluttet med evaluering",
+      reopened: "Gjenåpnet",
+    },
+    objectNone: "Ingen hendelser du kan se, gjelder dette objektet.",
   },
 } as const;

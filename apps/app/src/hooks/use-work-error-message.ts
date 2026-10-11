@@ -57,6 +57,18 @@ export function useWorkErrorMessage() {
         return t("recipeNotFound");
       case "RECIPE_INVALID":
         return t("recipeInvalid");
+      case "INCIDENT_NOT_FOUND":
+        return t("incidentNotFound");
+      case "NOT_INCIDENT_COORDINATOR":
+        return t("notIncidentCoordinator");
+      case "NOT_INCIDENT_RESPONDER":
+        return t("notIncidentResponder");
+      case "OBJECT_NOT_AFFECTED":
+        return t("objectNotAffected");
+      case "PLAN_NOT_AVAILABLE":
+        return t("planNotAvailable");
+      case "TASKS_OPEN":
+        return t("tasksOpen", { count: data.openCount ?? 1 });
     }
   };
 }

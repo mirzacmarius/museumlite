@@ -45,6 +45,9 @@ function getTitleMatch(title: string): Match | null {
     "Task Ready for Review": "taskReadyForReview",
     "Task Returned": "taskReturned",
     "Task Approved": "taskApproved",
+    "Incident Reported": "incidentReported",
+    "Incident Lead Assigned": "incidentLeadAssigned",
+    "Incident Closed": "incidentClosed",
     "New Loan Requires Approval": "newLoanRequiresApproval",
     "Condition Dispute Reported": "conditionDisputeReported",
     "Dispute Under Investigation": "disputeUnderInvestigation",
@@ -315,6 +318,21 @@ function getMessageMatch(message: string): Match | null {
       /^You have been assigned to: (.+)$/,
       "taskAssigned",
       (match) => ({ title: match[1] ?? "" }),
+    ],
+    [
+      /^(.+) needs triage$/,
+      "incidentNeedsTriage",
+      (match) => ({ incident: match[1] ?? "" }),
+    ],
+    [
+      /^You lead the response to (.+)$/,
+      "incidentLeadAssigned",
+      (match) => ({ incident: match[1] ?? "" }),
+    ],
+    [
+      /^(.+) was closed with its after-action review$/,
+      "incidentClosed",
+      (match) => ({ incident: match[1] ?? "" }),
     ],
     [
       /^Task "(.+)" is due in less than 24 hours$/,

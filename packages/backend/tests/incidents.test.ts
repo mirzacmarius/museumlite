@@ -138,6 +138,15 @@ async function setup() {
 
 type Setup = Awaited<ReturnType<typeof setup>>;
 
+async function incidentOf(
+  member: Setup["coordinator"],
+  incidentId: Id<"incidents">,
+) {
+  const incident = await member.query(api.incidents.get, { incidentId });
+  if (!incident) throw new Error("Incident not visible");
+  return incident;
+}
+
 async function workErrorCodeOf(call: Promise<unknown>) {
   try {
     await call;
@@ -184,7 +193,7 @@ test("any collection reader reports an incident that colleagues can read and out
   );
   expect(duplicate).toBe(false);
 
-  const seen = await s.responder.query(api.incidents.get, { incidentId });
+  const seen = await incidentOf(s.responder, incidentId);
   expect(seen.incidentNumber).toMatch(/^INC-\d{4}-0001$/);
   expect(seen.status).toBe("reported");
   expect(seen.title).toBe("Water coming through the gallery ceiling");
@@ -213,9 +222,7 @@ test("any collection reader reports an incident that colleagues can read and out
   });
   expect(list.page.map((row) => row._id)).toEqual([incidentId]);
 
-  expect(
-    await workErrorCodeOf(s.outsider.query(api.incidents.get, { incidentId })),
-  ).toBe("INCIDENT_NOT_FOUND");
+  expect(await s.outsider.query(api.incidents.get, { incidentId })).toBeNull();
   await expect(s.t.query(api.incidents.get, { incidentId })).rejects.toThrow();
   await expect(
     s.outsider.query(api.incidents.list, {
@@ -314,9 +321,7 @@ test("a sensitive incident is visible only to coordinators and the people named 
   expect(await listed(s.viewer)).toEqual([incidentId]);
   expect(await listed(s.coordinator)).toEqual([incidentId]);
   expect(await listed(s.responder)).toEqual([]);
-  expect(
-    await workErrorCodeOf(s.responder.query(api.incidents.get, { incidentId })),
-  ).toBe("INCIDENT_NOT_FOUND");
+  expect(await s.responder.query(api.incidents.get, { incidentId })).toBeNull();
   // The coordinator's notification names only the number.
   const [message] = await incidentNotifications(
     s.coordinator,
@@ -393,7 +398,7 @@ test("a coordinator triages with a chosen plan whose steps become the lead's tas
   await s.coordinator.mutation(api.incidents.triage, triage);
   await s.coordinator.mutation(api.incidents.triage, triage);
 
-  const incident = await s.colleague.query(api.incidents.get, { incidentId });
+  const incident = await incidentOf(s.colleague, incidentId);
   expect(incident.status).toBe("responding");
   expect(incident.severity).toBe("major");
   expect(incident.lead?.name).toBe("rita");
@@ -496,7 +501,7 @@ test("no plan is applied unless a coordinator chooses it, and only active incide
     ...base,
     plan: { kind: "none" },
   });
-  const incident = await s.coordinator.query(api.incidents.get, { incidentId });
+  const incident = await incidentOf(s.coordinator, incidentId);
   expect(incident.status).toBe("responding");
   expect(incident.plans).toEqual([]);
   expect(await incidentTasks(s.coordinator, s, incidentId)).toEqual([]);
@@ -716,7 +721,7 @@ test("evacuation and recovery are guarded movements that cite the incident and s
     expectedFromLocationId: s.safeRoomId,
     handoffKey: "recover-vase-1",
   });
-  const incident = await s.coordinator.query(api.incidents.get, { incidentId });
+  const incident = await incidentOf(s.coordinator, incidentId);
   expect(incident.objects[0]).toMatchObject({
     currentLocationName: "Gallery 2",
     locationAtReportName: "Gallery 2",
@@ -769,7 +774,7 @@ test("affected objects are added and re-assessed but never unlinked", async () =
     impact: "unaffected",
     note: "Case kept it dry",
   });
-  const incident = await s.coordinator.query(api.incidents.get, { incidentId });
+  const incident = await incidentOf(s.coordinator, incidentId);
   expect(
     incident.objects
       .map((object) => [object.title, object.impact, object.note])
@@ -1066,7 +1071,7 @@ test("an incident closes only with an after-action record and no open tasks, and
   await s.coordinator.mutation(api.incidents.close, afterAction);
   await s.coordinator.mutation(api.incidents.close, afterAction);
 
-  const closed = await s.colleague.query(api.incidents.get, { incidentId });
+  const closed = await incidentOf(s.colleague, incidentId);
   expect(closed.status).toBe("closed");
   expect(closed.afterAction?.summary).toBe(afterAction.summary);
   // Closing records nothing physical: the vase is still in the safe room.
@@ -1100,7 +1105,7 @@ test("an incident closes only with an after-action record and no open tasks, and
     incidentId,
     reason: "Leak returned overnight",
   });
-  const reopened = await s.coordinator.query(api.incidents.get, { incidentId });
+  const reopened = await incidentOf(s.coordinator, incidentId);
   expect(reopened.status).toBe("responding");
   expect(reopened.afterAction).toBeUndefined();
   expect(reopened.events.map((event) => event.action).slice(0, 2)).toEqual([
@@ -1148,9 +1153,7 @@ test("reporting from the same alert episode again opens the existing incident", 
     duplicate: true,
     visible: true,
   });
-  const incident = await s.coordinator.query(api.incidents.get, {
-    incidentId: first.incidentId,
-  });
+  const incident = await incidentOf(s.coordinator, first.incidentId);
   expect(incident.source).toEqual({ kind: "alertEpisode", episodeId });
   expect(incident.locations.map((location) => location.name)).toEqual([
     "Store A",
@@ -1269,8 +1272,16 @@ test("coordinators pick from active incident plans and eligible members; objects
       recipeId: planId,
       name: "Water ingress response",
       steps: [
-        { title: "Cover or move objects under the leak", offsetHours: 1 },
-        { title: "Assess condition of wet objects", offsetHours: 24 },
+        {
+          key: "s1",
+          title: "Cover or move objects under the leak",
+          offsetHours: 1,
+        },
+        {
+          key: "s2",
+          title: "Assess condition of wet objects",
+          offsetHours: 24,
+        },
       ],
     },
   ]);
