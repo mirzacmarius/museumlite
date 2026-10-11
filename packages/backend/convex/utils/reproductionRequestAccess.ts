@@ -96,17 +96,19 @@ export async function reproductionDeciders(
     .query("userOrganizations")
     .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .take(MEMBER_SCAN_LIMIT);
-  const rolePermissions = new Map<Id<"roles">, readonly string[]>();
+  const rolePermissions = new Map<Id<"roles">, ReadonlySet<string>>();
   const deciders: Array<Id<"users">> = [];
   for (const membership of memberships) {
     let permissions = rolePermissions.get(membership.roleId);
     if (!permissions) {
-      permissions = await getRolePermissionNames(ctx, membership.roleId);
+      permissions = new Set(
+        await getRolePermissionNames(ctx, membership.roleId),
+      );
       rolePermissions.set(membership.roleId, permissions);
     }
     if (
       REPRODUCTION_DECIDE_PERMISSIONS.every((permission) =>
-        permissions.includes(permission),
+        permissions.has(permission),
       )
     )
       deciders.push(membership.userId);

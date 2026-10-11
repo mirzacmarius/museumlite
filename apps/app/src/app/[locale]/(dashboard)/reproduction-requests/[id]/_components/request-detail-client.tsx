@@ -43,7 +43,7 @@ function RequestDetail({ view }: { view: RequestView }) {
           href={back.href}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
           {back.fromResults ? back.label : t("detail.back")}
         </Link>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

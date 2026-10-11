@@ -45,6 +45,15 @@ const requestSchema = z.object({
   purposeDetails: z.string().trim().min(1).max(4000),
 });
 
+interface RequestDraft {
+  objectId?: string;
+  mediaId?: string;
+  requesterAccountId?: Id<"accounts">;
+  purpose: ReproductionPurpose;
+  purposeDetails: string;
+  requesterLocale: RequestLocale;
+}
+
 const REPRODUCIBLE_TYPES = [
   "image/jpeg",
   "image/png",
@@ -61,21 +70,20 @@ export function NewRequestDialog({
 }) {
   const t = useScopedI18n("reproductionRequests");
   const locale = useCurrentLocale();
-  const router = useRouter();
+  const { push } = useRouter();
   const errorMessage = useReproductionErrorMessage();
   const { canPick } = usePartyPickerAccess();
   const create = useMutation(api.reproductionRequests.create);
-  const [objectId, setObjectId] = useState<string>();
-  const [mediaId, setMediaId] = useState<string>();
-  const [requesterAccountId, setRequesterAccountId] =
-    useState<Id<"accounts">>();
-  const [purpose, setPurpose] =
-    useState<ReproductionPurpose>("academic_research");
-  const [purposeDetails, setPurposeDetails] = useState("");
-  const [requesterLocale, setRequesterLocale] = useState<RequestLocale>(
-    REPRODUCTION_LOCALES.find((candidate) => candidate === locale) ?? "en",
-  );
+  const [draft, setDraft] = useState<RequestDraft>(() => ({
+    purpose: "academic_research",
+    purposeDetails: "",
+    requesterLocale:
+      REPRODUCTION_LOCALES.find((candidate) => candidate === locale) ?? "en",
+  }));
   const [saving, setSaving] = useState(false);
+  const update = (change: Partial<RequestDraft>) =>
+    setDraft((current) => ({ ...current, ...change }));
+  const { objectId, mediaId, requesterAccountId } = draft;
   const media = useQuery(
     api.media.list,
     objectId ? { collectionId: objectId as Id<"collections"> } : "skip",
@@ -90,12 +98,7 @@ export function NewRequestDialog({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const parsed = requestSchema.safeParse({
-      objectId,
-      mediaId,
-      requesterAccountId,
-      purposeDetails,
-    });
+    const parsed = requestSchema.safeParse(draft);
     if (!parsed.success) {
       toast.error(t("create.missingFields"));
       return;
@@ -107,12 +110,12 @@ export function NewRequestDialog({
         objectId: parsed.data.objectId as Id<"collections">,
         mediaId: parsed.data.mediaId as Id<"mediaFiles">,
         requesterAccountId: parsed.data.requesterAccountId as Id<"accounts">,
-        purpose,
+        purpose: draft.purpose,
         purposeDetails: parsed.data.purposeDetails,
-        requesterLocale,
+        requesterLocale: draft.requesterLocale,
       });
       toast.success(t("create.created", { number: result.requestNumber }));
-      router.push(`/reproduction-requests/${result.requestId}`);
+      push(`/reproduction-requests/${result.requestId}`);
       onClose();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -139,10 +142,9 @@ export function NewRequestDialog({
             <ObjectCombobox
               organizationId={organizationId}
               value={objectId}
-              onValueChange={(value) => {
-                setObjectId(value);
-                setMediaId(undefined);
-              }}
+              onValueChange={(value) =>
+                update({ objectId: value, mediaId: undefined })
+              }
               placeholder={t("create.objectPlaceholder")}
             />
           </div>
@@ -155,7 +157,7 @@ export function NewRequestDialog({
             ) : (
               <Select
                 value={mediaId ?? ""}
-                onValueChange={setMediaId}
+                onValueChange={(value) => update({ mediaId: value })}
                 disabled={!objectId || media === undefined}
               >
                 <SelectTrigger id="request-image">
@@ -177,7 +179,7 @@ export function NewRequestDialog({
               id="request-requester"
               organizationId={organizationId}
               value={requesterAccountId}
-              onChange={(party) => setRequesterAccountId(party?._id)}
+              onChange={(party) => update({ requesterAccountId: party?._id })}
               placeholder={t("create.requesterPlaceholder")}
               disabled={!canPick}
             />
@@ -186,12 +188,12 @@ export function NewRequestDialog({
             <div className="space-y-2">
               <Label htmlFor="request-purpose">{t("create.purpose")}</Label>
               <Select
-                value={purpose}
+                value={draft.purpose}
                 onValueChange={(value) => {
                   const next = REPRODUCTION_PURPOSES.find(
                     (candidate) => candidate === value,
                   );
-                  if (next) setPurpose(next);
+                  if (next) update({ purpose: next });
                 }}
               >
                 <SelectTrigger id="request-purpose">
@@ -209,12 +211,12 @@ export function NewRequestDialog({
             <div className="space-y-2">
               <Label htmlFor="request-language">{t("create.language")}</Label>
               <Select
-                value={requesterLocale}
+                value={draft.requesterLocale}
                 onValueChange={(value) => {
                   const next = REPRODUCTION_LOCALES.find(
                     (candidate) => candidate === value,
                   );
-                  if (next) setRequesterLocale(next);
+                  if (next) update({ requesterLocale: next });
                 }}
               >
                 <SelectTrigger id="request-language">
@@ -238,9 +240,11 @@ export function NewRequestDialog({
               id="request-details"
               rows={3}
               maxLength={4000}
-              value={purposeDetails}
+              value={draft.purposeDetails}
               placeholder={t("create.purposeDetailsPlaceholder")}
-              onChange={(event) => setPurposeDetails(event.target.value)}
+              onChange={(event) =>
+                update({ purposeDetails: event.target.value })
+              }
             />
           </div>
           <DialogFooter>

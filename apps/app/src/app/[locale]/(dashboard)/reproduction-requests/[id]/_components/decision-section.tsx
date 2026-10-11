@@ -19,9 +19,11 @@ import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useReproductionErrorMessage } from "@/hooks/use-reproduction-error-message";
-import { CALENDAR_DATE_OPTIONS, formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import { useRequestDate } from "../../_components/request-status";
+import { useScopedI18n } from "@/locales/client";
+import {
+  useCalendarDate,
+  useRequestDate,
+} from "../../_components/request-status";
 import { ReasonDialog } from "./reason-dialog";
 import type { RequestView } from "./request-view";
 import { RightsFields } from "./rights-fields";
@@ -175,7 +177,7 @@ function ApproveForm({ view }: { view: RequestView }) {
 
 function DecisionRecord({ view }: { view: RequestView }) {
   const t = useScopedI18n("reproductionRequests");
-  const locale = useCurrentLocale();
+  const formatCalendarDate = useCalendarDate();
   const formatDay = useRequestDate();
   const decision = view.decision;
   if (!decision) return null;
@@ -227,12 +229,7 @@ function DecisionRecord({ view }: { view: RequestView }) {
         {approval ? (
           <>
             <Field label={t("decision.expires")}>
-              {formatDate(
-                new Date(approval.expiresAt),
-                locale,
-                CALENDAR_DATE_OPTIONS,
-              )}{" "}
-              (UTC)
+              {formatCalendarDate(approval.expiresAt)} (UTC)
             </Field>
             <div className="sm:col-span-2">
               <Field label={t("decision.termsUsed")}>

@@ -995,19 +995,19 @@ export const retryDelivery = mutation({
       delivery.requestId,
       "decide",
     );
-    const userId = await requireUserId(ctx);
-    if (!isRetryableStatus(delivery.status))
-      throw reproductionError(
-        "DELIVERY_NOT_RETRYABLE",
-        "Only a failed or cancelled delivery can be retried",
-      );
     const decision = await requireActiveGrant(ctx, request);
     if (decision._id !== delivery.decisionId)
       throw reproductionError(
         "GRANT_NOT_ACTIVE",
         "This delivery belongs to an earlier decision",
       );
+    if (!isRetryableStatus(delivery.status))
+      throw reproductionError(
+        "DELIVERY_NOT_RETRYABLE",
+        "Only a failed or cancelled delivery can be retried",
+      );
     requireEmailChannel();
+    const userId = await requireUserId(ctx);
     await ctx.db.patch(delivery._id, {
       ...retrySeriesPatch(delivery, userId, DELIVERY_MAX_ATTEMPTS, Date.now()),
       pendingToken: undefined,

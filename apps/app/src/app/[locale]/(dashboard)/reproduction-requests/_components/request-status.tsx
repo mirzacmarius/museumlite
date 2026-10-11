@@ -2,7 +2,7 @@
 
 import type { ReproductionStatus } from "@v1/backend/convex/utils/reproductionRequestValidators";
 import { Badge } from "@v1/ui/badge";
-import { formatDate } from "@/lib/format-date";
+import { CALENDAR_DATE_OPTIONS, formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export function RequestStatusBadge({ status }: { status: ReproductionStatus }) {
@@ -37,4 +37,11 @@ export function useRequestDateTime() {
       dateStyle: "medium",
       timeStyle: "short",
     });
+}
+
+/** Formats a calendar date stored at a UTC day boundary as that day. */
+export function useCalendarDate() {
+  const locale = useCurrentLocale();
+  return (timestamp: number) =>
+    formatDate(new Date(timestamp), locale, CALENDAR_DATE_OPTIONS);
 }

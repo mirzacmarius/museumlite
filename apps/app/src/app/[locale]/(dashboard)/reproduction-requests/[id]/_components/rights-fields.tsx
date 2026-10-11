@@ -1,7 +1,7 @@
 "use client";
 
-import { CALENDAR_DATE_OPTIONS, formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
+import { useCalendarDate } from "../../_components/request-status";
 import { Field } from "./section";
 
 const RIGHTS_STATUSES = [
@@ -36,7 +36,7 @@ interface Rights {
 /** An image's rights as recorded, with known values translated. */
 export function RightsFields({ rights }: { rights: Rights }) {
   const t = useScopedI18n("reproductionRequests");
-  const locale = useCurrentLocale();
+  const formatCalendarDate = useCalendarDate();
   const notRecorded = t("detail.notRecorded");
   const rightsStatus = RIGHTS_STATUSES.find(
     (status) => status === rights.rightsStatus,
@@ -58,11 +58,7 @@ export function RightsFields({ rights }: { rights: Rights }) {
       </Field>
       <Field label={t("detail.licenseExpiry")}>
         {rights.licenseExpiry !== undefined
-          ? formatDate(
-              new Date(rights.licenseExpiry),
-              locale,
-              CALENDAR_DATE_OPTIONS,
-            )
+          ? formatCalendarDate(rights.licenseExpiry)
           : notRecorded}
       </Field>
       <Field label={t("detail.rightsHolder")}>

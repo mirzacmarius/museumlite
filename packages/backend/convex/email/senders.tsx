@@ -922,6 +922,30 @@ export async function renderNotificationDigestEmail(
   return { subject, html, text: plainText };
 }
 
+/** Calendar dates stored as the end of a UTC day, shown as that day. */
+const utcDateFormatters: Record<EmailLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat(emailDateLocales.en, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  fr: new Intl.DateTimeFormat(emailDateLocales.fr, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  es: new Intl.DateTimeFormat(emailDateLocales.es, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  no: new Intl.DateTimeFormat(emailDateLocales.no, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  ro: new Intl.DateTimeFormat(emailDateLocales.ro, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+};
+
 export interface ReproductionDeliveryContent {
   organizationName: string;
   requesterName: string;
@@ -944,6 +968,9 @@ function ReproductionDeliveryEmail({
   locale: EmailLocale;
 }) {
   const t = getEmailTranslations(locale).reproductionDelivery;
+  const termsLines = content.termsBody
+    .split("\n")
+    .map((text, position) => ({ key: `line-${position}`, text }));
   return (
     <EmailShell
       locale={locale}
@@ -967,19 +994,16 @@ function ReproductionDeliveryEmail({
         </strong>
       </Text>
       <Text style={emailTextStyle}>
-        {content.termsBody.split("\n").map((line, index) => (
-          <Fragment key={index}>
-            {index > 0 ? <br /> : null}
-            {line}
+        {termsLines.map((line) => (
+          <Fragment key={line.key}>
+            {line.key === "line-0" ? null : <br />}
+            {line.text}
           </Fragment>
         ))}
       </Text>
       <Text style={emailMutedTextStyle}>
         {text(t.expires, {
-          date: new Intl.DateTimeFormat(emailDateLocales[locale], {
-            dateStyle: "long",
-            timeZone: "UTC",
-          }).format(content.expiresAt),
+          date: utcDateFormatters[locale].format(content.expiresAt),
         })}
       </Text>
       <Section style={emailButtonSectionStyle}>
