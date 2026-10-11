@@ -208,6 +208,7 @@ import type * as utils_identifiers from "../utils/identifiers.js";
 import type * as utils_importJobs from "../utils/importJobs.js";
 import type * as utils_importRows from "../utils/importRows.js";
 import type * as utils_incidentAccess from "../utils/incidentAccess.js";
+import type * as utils_incidentRecords from "../utils/incidentRecords.js";
 import type * as utils_incidentValidators from "../utils/incidentValidators.js";
 import type * as utils_indexedCounts from "../utils/indexedCounts.js";
 import type * as utils_institutionTransferEvidence from "../utils/institutionTransferEvidence.js";
@@ -527,6 +528,7 @@ declare const fullApi: ApiFromModules<{
   "utils/importJobs": typeof utils_importJobs;
   "utils/importRows": typeof utils_importRows;
   "utils/incidentAccess": typeof utils_incidentAccess;
+  "utils/incidentRecords": typeof utils_incidentRecords;
   "utils/incidentValidators": typeof utils_incidentValidators;
   "utils/indexedCounts": typeof utils_indexedCounts;
   "utils/institutionTransferEvidence": typeof utils_institutionTransferEvidence;

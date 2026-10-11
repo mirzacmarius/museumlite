@@ -25,8 +25,9 @@ import {
 import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Loader2 } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useReducer, useState } from "react";
 import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { useWorkErrorMessage } from "@/hooks/use-work-error-message";
@@ -118,6 +119,45 @@ export function IncidentResponse({ incident }: { incident: IncidentDetail }) {
   );
 }
 
+type Candidate = { userId: Id<"users">; name: string; canLead: boolean };
+type PlanOption = FunctionReturnType<
+  typeof api.incidents.listPlanOptions
+>[number];
+
+interface TriageDraft {
+  severity: IncidentSeverity | "";
+  leadId: string;
+  responderIds: ReadonlySet<string>;
+  sensitive: boolean;
+  /** First triage records a deliberate choice; later updates only add plans. */
+  planChoice: "" | "plans" | "none";
+  planIds: ReadonlySet<string>;
+  note: string;
+}
+
+function updateTriage(draft: TriageDraft, change: Partial<TriageDraft>) {
+  return { ...draft, ...change };
+}
+
+function toggled(set: ReadonlySet<string>, id: string, on: boolean) {
+  const next = new Set(set);
+  if (on) next.add(id);
+  else next.delete(id);
+  return next;
+}
+
+function triageDraftOf(incident: IncidentDetail): TriageDraft {
+  return {
+    severity: incident.severity ?? "",
+    leadId: incident.lead?.userId ?? "",
+    responderIds: new Set(incident.responders.map((person) => person.userId)),
+    sensitive: incident.sensitive,
+    planChoice: incident.plans === null ? "" : "none",
+    planIds: new Set(),
+    note: "",
+  };
+}
+
 function TriageForm({
   incident,
   onDone,
@@ -135,36 +175,17 @@ function TriageForm({
   const candidates = useQuery(api.incidents.listTeamCandidates, {
     incidentId: incident._id,
   });
-  const chosenBefore = new Set(incident.plans?.map((plan) => plan.recipeId));
-  const [severity, setSeverity] = useState<IncidentSeverity | "">(
-    incident.severity ?? "",
-  );
-  const [leadId, setLeadId] = useState<string>(incident.lead?.userId ?? "");
-  const [responderIds, setResponderIds] = useState<Set<string>>(
-    () => new Set(incident.responders.map((person) => person.userId)),
-  );
-  const [sensitive, setSensitive] = useState(incident.sensitive);
-  // First triage records a deliberate choice; later updates only add plans.
-  const [planChoice, setPlanChoice] = useState<"" | "plans" | "none">(
-    incident.plans === null ? "" : "none",
-  );
-  const [planIds, setPlanIds] = useState<Set<string>>(new Set());
-  const [note, setNote] = useState("");
+  const [draft, update] = useReducer(updateTriage, incident, triageDraftOf);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const togglePlan = (recipeId: string, checked: boolean) => {
-    setPlanIds((current) => {
-      const next = new Set(current);
-      if (checked) next.add(recipeId);
-      else next.delete(recipeId);
-      return next;
-    });
-    if (checked) setPlanChoice("plans");
+  const change = (next: Partial<TriageDraft>) => {
+    setError(null);
+    update(next);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const { severity, leadId, planChoice, planIds } = draft;
     if (!severity || !leadId) {
       setError(t("errors.severityAndLead"));
       return;
@@ -180,10 +201,10 @@ function TriageForm({
         incidentId: incident._id,
         severity,
         leadId: leadId as Id<"users">,
-        responderIds: [...responderIds].filter(
+        responderIds: [...draft.responderIds].filter(
           (id) => id !== leadId,
         ) as Id<"users">[],
-        sensitive,
+        sensitive: draft.sensitive,
         plan:
           planChoice === "plans"
             ? {
@@ -191,7 +212,7 @@ function TriageForm({
                 recipeIds: [...planIds] as Id<"preparationRecipes">[],
               }
             : { kind: "none" },
-        note: note.trim() || undefined,
+        note: draft.note.trim() || undefined,
       });
       if (outcome.suggested > 0)
         toast.success(t("tasksSuggested", { count: outcome.suggested }));
@@ -206,7 +227,9 @@ function TriageForm({
     }
   };
 
-  const newPlans = plans?.filter((plan) => !chosenBefore.has(plan.recipeId));
+  const leads = candidates?.flatMap((candidate) =>
+    candidate.canLead ? [candidate] : [],
+  );
 
   return (
     <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
@@ -222,8 +245,10 @@ function TriageForm({
           <div className="grid gap-2">
             <Label htmlFor="triage-severity">{t("severity")}</Label>
             <Select
-              value={severity}
-              onValueChange={(value) => setSeverity(value as IncidentSeverity)}
+              value={draft.severity}
+              onValueChange={(value) =>
+                change({ severity: value as IncidentSeverity })
+              }
             >
               <SelectTrigger id="triage-severity">
                 <SelectValue placeholder={t("chooseSeverity")} />
@@ -239,60 +264,32 @@ function TriageForm({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="triage-lead">{t("lead")}</Label>
-            <Select value={leadId} onValueChange={setLeadId}>
-              <SelectTrigger id="triage-lead" disabled={!candidates}>
+            <Select
+              value={draft.leadId}
+              onValueChange={(value) => change({ leadId: value })}
+            >
+              <SelectTrigger id="triage-lead" disabled={!leads}>
                 <SelectValue placeholder={t("chooseLead")} />
               </SelectTrigger>
               <SelectContent>
-                {candidates
-                  ?.filter((candidate) => candidate.canLead)
-                  .map((candidate) => (
-                    <SelectItem key={candidate.userId} value={candidate.userId}>
-                      {candidate.name}
-                    </SelectItem>
-                  ))}
+                {leads?.map((candidate) => (
+                  <SelectItem key={candidate.userId} value={candidate.userId}>
+                    {candidate.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">{t("responders")}</legend>
-          <p className="text-sm text-muted-foreground">{t("respondersHint")}</p>
-          <div className="grid max-h-48 gap-2 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-2">
-            {candidates === undefined ? (
-              <Loader2 className="size-4 animate-spin text-muted-foreground" />
-            ) : (
-              candidates
-                .filter((candidate) => candidate.userId !== leadId)
-                .map((candidate) => (
-                  <div
-                    key={candidate.userId}
-                    className="flex items-center gap-2"
-                  >
-                    <Checkbox
-                      id={`triage-responder-${candidate.userId}`}
-                      checked={responderIds.has(candidate.userId)}
-                      onCheckedChange={(checked) =>
-                        setResponderIds((current) => {
-                          const next = new Set(current);
-                          if (checked === true) next.add(candidate.userId);
-                          else next.delete(candidate.userId);
-                          return next;
-                        })
-                      }
-                    />
-                    <Label
-                      htmlFor={`triage-responder-${candidate.userId}`}
-                      className="font-normal"
-                    >
-                      {candidate.name}
-                    </Label>
-                  </div>
-                ))
-            )}
-          </div>
-        </fieldset>
+        <ResponderPicker
+          candidates={candidates}
+          leadId={draft.leadId}
+          selected={draft.responderIds}
+          onToggle={(userId, on) =>
+            change({ responderIds: toggled(draft.responderIds, userId, on) })
+          }
+        />
 
         <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
           <div className="space-y-1">
@@ -306,94 +303,33 @@ function TriageForm({
           </div>
           <Switch
             id="triage-sensitive"
-            checked={sensitive}
-            onCheckedChange={setSensitive}
+            checked={draft.sensitive}
+            onCheckedChange={(checked) => change({ sensitive: checked })}
             aria-describedby="triage-sensitive-hint"
           />
         </div>
 
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-medium">{t("plans")}</legend>
-          <p className="text-sm text-muted-foreground">{t("plansHint")}</p>
-          {incident.plans?.length ? (
-            <p className="text-sm">
-              {t("plansChosen", {
-                plans: incident.plans.map((plan) => plan.name).join(", "),
-              })}
-            </p>
-          ) : null}
-          <RadioGroup
-            value={planChoice}
-            onValueChange={(value) => setPlanChoice(value as "plans" | "none")}
-          >
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="none" id="triage-plan-none" />
-              <Label htmlFor="triage-plan-none" className="font-normal">
-                {incident.plans === null
-                  ? t("noPlanApplies")
-                  : t("noMorePlans")}
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem
-                value="plans"
-                id="triage-plan-some"
-                disabled={!newPlans?.length}
-              />
-              <Label htmlFor="triage-plan-some" className="font-normal">
-                {t("followPlans")}
-              </Label>
-            </div>
-          </RadioGroup>
-          {newPlans === undefined ? null : newPlans.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("noPlansAvailable")}
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {newPlans.map((plan) => (
-                <li
-                  key={plan.recipeId}
-                  className="rounded-lg border border-border p-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id={`triage-plan-${plan.recipeId}`}
-                      checked={planIds.has(plan.recipeId)}
-                      onCheckedChange={(checked) =>
-                        togglePlan(plan.recipeId, checked === true)
-                      }
-                    />
-                    <Label
-                      htmlFor={`triage-plan-${plan.recipeId}`}
-                      className="font-medium"
-                    >
-                      {plan.name}
-                    </Label>
-                  </div>
-                  <ol className="mt-2 list-decimal space-y-1 pl-10 text-sm text-muted-foreground">
-                    {plan.steps.map((step) => (
-                      <li key={step.key}>
-                        {step.title}
-                        {step.offsetHours !== undefined
-                          ? ` · ${t("dueWithin", { hours: step.offsetHours })}`
-                          : null}
-                      </li>
-                    ))}
-                  </ol>
-                </li>
-              ))}
-            </ul>
-          )}
-        </fieldset>
+        <PlanPicker
+          incident={incident}
+          plans={plans}
+          choice={draft.planChoice}
+          selected={draft.planIds}
+          onChoice={(planChoice) => change({ planChoice })}
+          onToggle={(recipeId, on) =>
+            change({
+              planIds: toggled(draft.planIds, recipeId, on),
+              ...(on ? { planChoice: "plans" as const } : {}),
+            })
+          }
+        />
 
         <div className="grid gap-2">
           <Label htmlFor="triage-note">{t("note")}</Label>
           <Textarea
             id="triage-note"
-            value={note}
+            value={draft.note}
             maxLength={4000}
-            onChange={(event) => setNote(event.currentTarget.value)}
+            onChange={(event) => update({ note: event.currentTarget.value })}
             rows={3}
           />
         </div>
@@ -414,5 +350,148 @@ function TriageForm({
         </DialogFooter>
       </form>
     </DialogContent>
+  );
+}
+
+function ResponderPicker({
+  candidates,
+  leadId,
+  selected,
+  onToggle,
+}: {
+  candidates: Candidate[] | undefined;
+  leadId: string;
+  selected: ReadonlySet<string>;
+  onToggle: (userId: string, on: boolean) => void;
+}) {
+  const t = useScopedI18n("incidents.response");
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium">{t("responders")}</legend>
+      <p className="text-sm text-muted-foreground">{t("respondersHint")}</p>
+      <div className="grid max-h-48 gap-2 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-2">
+        {candidates === undefined ? (
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        ) : (
+          candidates.flatMap((candidate) =>
+            candidate.userId === leadId
+              ? []
+              : [
+                  <div
+                    key={candidate.userId}
+                    className="flex items-center gap-2"
+                  >
+                    <Checkbox
+                      id={`triage-responder-${candidate.userId}`}
+                      checked={selected.has(candidate.userId)}
+                      onCheckedChange={(checked) =>
+                        onToggle(candidate.userId, checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor={`triage-responder-${candidate.userId}`}
+                      className="font-normal"
+                    >
+                      {candidate.name}
+                    </Label>
+                  </div>,
+                ],
+          )
+        )}
+      </div>
+    </fieldset>
+  );
+}
+
+/** Active plans not chosen yet, or the explicit record that none applies. */
+function PlanPicker({
+  incident,
+  plans,
+  choice,
+  selected,
+  onChoice,
+  onToggle,
+}: {
+  incident: IncidentDetail;
+  plans: PlanOption[] | undefined;
+  choice: TriageDraft["planChoice"];
+  selected: ReadonlySet<string>;
+  onChoice: (choice: "plans" | "none") => void;
+  onToggle: (recipeId: string, on: boolean) => void;
+}) {
+  const t = useScopedI18n("incidents.response");
+  const chosenBefore = new Set(incident.plans?.map((plan) => plan.recipeId));
+  const newPlans = plans?.filter((plan) => !chosenBefore.has(plan.recipeId));
+  return (
+    <fieldset className="space-y-3">
+      <legend className="text-sm font-medium">{t("plans")}</legend>
+      <p className="text-sm text-muted-foreground">{t("plansHint")}</p>
+      {incident.plans?.length ? (
+        <p className="text-sm">
+          {t("plansChosen", {
+            plans: incident.plans.map((plan) => plan.name).join(", "),
+          })}
+        </p>
+      ) : null}
+      <RadioGroup
+        value={choice}
+        onValueChange={(value) => onChoice(value as "plans" | "none")}
+      >
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="none" id="triage-plan-none" />
+          <Label htmlFor="triage-plan-none" className="font-normal">
+            {incident.plans === null ? t("noPlanApplies") : t("noMorePlans")}
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem
+            value="plans"
+            id="triage-plan-some"
+            disabled={!newPlans?.length}
+          />
+          <Label htmlFor="triage-plan-some" className="font-normal">
+            {t("followPlans")}
+          </Label>
+        </div>
+      </RadioGroup>
+      {newPlans === undefined ? null : newPlans.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("noPlansAvailable")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {newPlans.map((plan) => (
+            <li
+              key={plan.recipeId}
+              className="rounded-lg border border-border p-3"
+            >
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`triage-plan-${plan.recipeId}`}
+                  checked={selected.has(plan.recipeId)}
+                  onCheckedChange={(checked) =>
+                    onToggle(plan.recipeId, checked === true)
+                  }
+                />
+                <Label
+                  htmlFor={`triage-plan-${plan.recipeId}`}
+                  className="font-medium"
+                >
+                  {plan.name}
+                </Label>
+              </div>
+              <ol className="mt-2 list-decimal space-y-1 pl-10 text-sm text-muted-foreground">
+                {plan.steps.map((step) => (
+                  <li key={step.key}>
+                    {step.title}
+                    {step.offsetHours !== undefined
+                      ? ` · ${t("dueWithin", { hours: step.offsetHours })}`
+                      : null}
+                  </li>
+                ))}
+              </ol>
+            </li>
+          ))}
+        </ul>
+      )}
+    </fieldset>
   );
 }

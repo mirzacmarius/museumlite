@@ -201,17 +201,17 @@ async function loadIncidentCase(
   caseId: string,
 ) {
   const incidentId = ctx.db.normalizeId("incidents", caseId);
-  const notFound = () =>
+  const caseMissing = () =>
     workError("CASE_NOT_FOUND", "Case not found in this organization");
-  if (!incidentId) throw notFound();
-  try {
-    const { incident } = await requireVisibleIncident(ctx, incidentId);
-    if (incident.organizationId !== organizationId) throw notFound();
-    return incident;
-  } catch (error) {
-    if (workErrorCode(error) === "INCIDENT_NOT_FOUND") throw notFound();
-    throw error;
-  }
+  if (!incidentId) throw caseMissing();
+  const visible = await requireVisibleIncident(ctx, incidentId).catch(
+    (error: unknown) => {
+      if (workErrorCode(error) === "INCIDENT_NOT_FOUND") throw caseMissing();
+      throw error;
+    },
+  );
+  if (visible.incident.organizationId !== organizationId) throw caseMissing();
+  return visible.incident;
 }
 
 /** Resolves the case for the caller, enforcing the case's read access. */

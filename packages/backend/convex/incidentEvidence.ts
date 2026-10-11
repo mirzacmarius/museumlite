@@ -1,11 +1,6 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
-import {
-  appendIncidentEvent,
-  auditIncident,
-  incidentObjectRows,
-} from "./incidents";
 import { displayName } from "./utils/caseTaskRules";
 import {
   type IncidentViewer,
@@ -13,6 +8,11 @@ import {
   requireVisibleIncident,
   requireWorker,
 } from "./utils/incidentAccess";
+import {
+  appendIncidentEvent,
+  auditIncident,
+  incidentObjectRows,
+} from "./utils/incidentRecords";
 import {
   type IncidentEvidenceReference,
   incidentEvidenceReferenceValidator,

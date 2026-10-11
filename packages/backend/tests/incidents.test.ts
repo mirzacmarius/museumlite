@@ -241,9 +241,9 @@ async function incidentNotifications(
   const center = await member.query(api.notifications.getNotificationCenter, {
     organizationId,
   });
-  return center.notifications
-    .filter((notification) => notification.type === type)
-    .map((notification) => notification.message);
+  return center.notifications.flatMap((notification) =>
+    notification.type === type ? [notification.message] : [],
+  );
 }
 
 test("a retried report is one incident and coordinators are notified once", async () => {

@@ -14,7 +14,7 @@ import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useReducer, useState } from "react";
 import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { useWorkErrorMessage } from "@/hooks/use-work-error-message";
@@ -23,6 +23,24 @@ import { DATE_TIME } from "../../_components/incident-format";
 import { Field, type IncidentDetail, Section } from "./incident-detail-client";
 
 const TEXT_MAX_LENGTH = 4000;
+
+interface ReviewDraft {
+  summary: string;
+  whatWorked: string;
+  improvements: string;
+  followUp: string;
+}
+
+const EMPTY_REVIEW: ReviewDraft = {
+  summary: "",
+  whatWorked: "",
+  improvements: "",
+  followUp: "",
+};
+
+function updateReview(review: ReviewDraft, change: Partial<ReviewDraft>) {
+  return { ...review, ...change };
+}
 
 /** The after-action review that closes the incident, and reopening it. */
 export function IncidentAfterAction({
@@ -129,10 +147,8 @@ function CloseForm({
   const tIncidents = useScopedI18n("incidents");
   const errorMessage = useWorkErrorMessage();
   const close = useMutation(api.incidents.close);
-  const [summary, setSummary] = useState("");
-  const [whatWorked, setWhatWorked] = useState("");
-  const [improvements, setImprovements] = useState("");
-  const [followUp, setFollowUp] = useState("");
+  const [review, update] = useReducer(updateReview, EMPTY_REVIEW);
+  const { summary, whatWorked, improvements, followUp } = review;
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -163,15 +179,10 @@ function CloseForm({
   };
 
   const fields = [
-    ["incident-close-summary", t("summary"), summary, setSummary],
-    ["incident-close-worked", t("whatWorked"), whatWorked, setWhatWorked],
-    [
-      "incident-close-improvements",
-      t("improvements"),
-      improvements,
-      setImprovements,
-    ],
-    ["incident-close-follow-up", t("followUp"), followUp, setFollowUp],
+    ["incident-close-summary", "summary"],
+    ["incident-close-worked", "whatWorked"],
+    ["incident-close-improvements", "improvements"],
+    ["incident-close-follow-up", "followUp"],
   ] as const;
 
   return (
@@ -181,14 +192,16 @@ function CloseForm({
           <DialogTitle>{t("closeTitle")}</DialogTitle>
           <DialogDescription>{t("closeDescription")}</DialogDescription>
         </DialogHeader>
-        {fields.map(([id, label, value, setValue]) => (
+        {fields.map(([id, field]) => (
           <div key={id} className="grid gap-2">
-            <Label htmlFor={id}>{label}</Label>
+            <Label htmlFor={id}>{t(field)}</Label>
             <Textarea
               id={id}
-              value={value}
+              value={review[field]}
               maxLength={TEXT_MAX_LENGTH}
-              onChange={(event) => setValue(event.currentTarget.value)}
+              onChange={(event) =>
+                update({ [field]: event.currentTarget.value })
+              }
               aria-invalid={
                 id === "incident-close-summary" && error !== null
                   ? true

@@ -29,7 +29,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useReducer, useState } from "react";
 import { toast } from "sonner";
 import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
 import { LocationSelector } from "@/components/location-selector";
@@ -67,6 +67,22 @@ export function ReportIncidentDialog(props: ReportIncidentDialogProps) {
 
 type FieldErrors = Partial<Record<"title" | "where" | "times", string>>;
 
+interface ReportDraft {
+  kind: IncidentKind;
+  title: string;
+  description: string;
+  discoveredAt: string;
+  occurredAt: string;
+  locationId: string;
+  objectIds: string[];
+  impact: IncidentImpact;
+  sensitive: boolean;
+}
+
+function updateDraft(draft: ReportDraft, change: Partial<ReportDraft>) {
+  return { ...draft, ...change };
+}
+
 function ReportIncidentForm({
   organizationId,
   onOpenChange,
@@ -79,22 +95,36 @@ function ReportIncidentForm({
   const t = useScopedI18n("incidents.report");
   const tIncidents = useScopedI18n("incidents");
   const errorMessage = useWorkErrorMessage();
-  const router = useRouter();
+  const { push } = useRouter();
   const report = useMutation(api.incidents.report);
   // One key per opened form, so a retried or double submit is one incident.
   const [intakeKey] = useState(() => crypto.randomUUID());
-  const [now] = useState(() => Date.now());
-  const [kind, setKind] = useState<IncidentKind>(defaultKind ?? "damage");
-  const [title, setTitle] = useState(defaultTitle ?? "");
-  const [description, setDescription] = useState("");
-  const [discoveredAt, setDiscoveredAt] = useState(toLocalInputValue(now));
-  const [occurredAt, setOccurredAt] = useState("");
-  const [locationId, setLocationId] = useState<string>(
-    defaultLocationId ?? "__none__",
+  const [draft, update] = useReducer(
+    updateDraft,
+    null,
+    (): ReportDraft => ({
+      kind: defaultKind ?? "damage",
+      title: defaultTitle ?? "",
+      description: "",
+      discoveredAt: toLocalInputValue(Date.now()),
+      occurredAt: "",
+      locationId: defaultLocationId ?? "__none__",
+      objectIds: defaultObjectIds ?? [],
+      impact: "at_risk",
+      sensitive: false,
+    }),
   );
-  const [objectIds, setObjectIds] = useState<string[]>(defaultObjectIds ?? []);
-  const [impact, setImpact] = useState<IncidentImpact>("at_risk");
-  const [sensitive, setSensitive] = useState(false);
+  const {
+    kind,
+    title,
+    description,
+    discoveredAt,
+    occurredAt,
+    locationId,
+    objectIds,
+    impact,
+    sensitive,
+  } = draft;
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -155,7 +185,7 @@ function ReportIncidentForm({
         return;
       }
       toast.success(result.duplicate ? t("alreadyReported") : t("reported"));
-      router.push(`/incidents/${result.incidentId}`);
+      push(`/incidents/${result.incidentId}`);
     } catch (error) {
       setFailure(errorMessage(error));
     } finally {
@@ -178,7 +208,7 @@ function ReportIncidentForm({
             <Label htmlFor="report-incident-kind">{t("kind")}</Label>
             <Select
               value={kind}
-              onValueChange={(value) => setKind(value as IncidentKind)}
+              onValueChange={(value) => update({ kind: value as IncidentKind })}
             >
               <SelectTrigger id="report-incident-kind">
                 <SelectValue />
@@ -198,7 +228,7 @@ function ReportIncidentForm({
               id="report-incident-location"
               organizationId={organizationId}
               value={locationId}
-              onValueChange={setLocationId}
+              onValueChange={(value) => update({ locationId: value })}
               placeholder={t("locationPlaceholder")}
             />
           </div>
@@ -210,7 +240,7 @@ function ReportIncidentForm({
             id="report-incident-title"
             value={title}
             maxLength={TITLE_MAX_LENGTH}
-            onChange={(event) => setTitle(event.currentTarget.value)}
+            onChange={(event) => update({ title: event.currentTarget.value })}
             placeholder={t("whatHappenedPlaceholder")}
             aria-invalid={errors.title !== undefined}
             aria-describedby={
@@ -233,92 +263,25 @@ function ReportIncidentForm({
             id="report-incident-description"
             value={description}
             maxLength={TEXT_MAX_LENGTH}
-            onChange={(event) => setDescription(event.currentTarget.value)}
+            onChange={(event) =>
+              update({ description: event.currentTarget.value })
+            }
             placeholder={t("detailsPlaceholder")}
             rows={3}
           />
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="report-incident-where">{t("objects")}</Label>
-          <div
-            id="report-incident-where"
-            tabIndex={-1}
-            aria-invalid={errors.where !== undefined}
-            aria-describedby={
-              errors.where ? "report-incident-where-error" : undefined
-            }
-          >
-            <CollectionMultiSelectCombobox
-              organizationId={organizationId}
-              selectedIds={objectIds}
-              onSelectionChange={setObjectIds}
-              placeholder={t("objectsPlaceholder")}
-            />
-          </div>
-          {objectIds.length > 0 ? (
-            <div className="grid gap-2 sm:max-w-xs">
-              <Label htmlFor="report-incident-impact">{t("impact")}</Label>
-              <Select
-                value={impact}
-                onValueChange={(value) => setImpact(value as IncidentImpact)}
-              >
-                <SelectTrigger id="report-incident-impact">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {INCIDENT_IMPACTS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {tIncidents(`impacts.${option}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
-          {errors.where ? (
-            <p
-              id="report-incident-where-error"
-              className="text-sm text-destructive"
-            >
-              {errors.where}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="report-incident-times">{t("discoveredAt")}</Label>
-            <Input
-              id="report-incident-times"
-              type="datetime-local"
-              value={discoveredAt}
-              onChange={(event) => setDiscoveredAt(event.currentTarget.value)}
-              aria-invalid={errors.times !== undefined}
-              aria-describedby={
-                errors.times ? "report-incident-times-error" : undefined
-              }
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="report-incident-occurred">{t("occurredAt")}</Label>
-            <Input
-              id="report-incident-occurred"
-              type="datetime-local"
-              value={occurredAt}
-              onChange={(event) => setOccurredAt(event.currentTarget.value)}
-            />
-          </div>
-          {errors.times ? (
-            <p
-              id="report-incident-times-error"
-              className="text-sm text-destructive sm:col-span-2"
-            >
-              {errors.times}
-            </p>
-          ) : null}
-        </div>
-
+        <AffectedObjectsField
+          organizationId={organizationId}
+          draft={draft}
+          error={errors.where}
+          update={update}
+        />
+        <IncidentTimesField
+          draft={draft}
+          error={errors.times}
+          update={update}
+        />
         <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
           <div className="space-y-1">
             <Label htmlFor="report-incident-sensitive">{t("sensitive")}</Label>
@@ -332,7 +295,7 @@ function ReportIncidentForm({
           <Switch
             id="report-incident-sensitive"
             checked={sensitive}
-            onCheckedChange={setSensitive}
+            onCheckedChange={(checked) => update({ sensitive: checked })}
             aria-describedby="report-incident-sensitive-hint"
           />
         </div>
@@ -357,5 +320,118 @@ function ReportIncidentForm({
         </DialogFooter>
       </form>
     </DialogContent>
+  );
+}
+
+type UpdateDraft = (change: Partial<ReportDraft>) => void;
+
+function AffectedObjectsField({
+  organizationId,
+  draft,
+  error,
+  update,
+}: {
+  organizationId: Id<"organizations">;
+  draft: ReportDraft;
+  error: string | undefined;
+  update: UpdateDraft;
+}) {
+  const t = useScopedI18n("incidents.report");
+  const tIncidents = useScopedI18n("incidents");
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="report-incident-where">{t("objects")}</Label>
+      <div
+        id="report-incident-where"
+        tabIndex={-1}
+        aria-invalid={error !== undefined}
+        aria-describedby={error ? "report-incident-where-error" : undefined}
+      >
+        <CollectionMultiSelectCombobox
+          organizationId={organizationId}
+          selectedIds={draft.objectIds}
+          onSelectionChange={(ids) => update({ objectIds: ids })}
+          placeholder={t("objectsPlaceholder")}
+        />
+      </div>
+      {draft.objectIds.length > 0 ? (
+        <div className="grid gap-2 sm:max-w-xs">
+          <Label htmlFor="report-incident-impact">{t("impact")}</Label>
+          <Select
+            value={draft.impact}
+            onValueChange={(value) =>
+              update({ impact: value as IncidentImpact })
+            }
+          >
+            <SelectTrigger id="report-incident-impact">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {INCIDENT_IMPACTS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {tIncidents(`impacts.${option}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+      {error ? (
+        <p
+          id="report-incident-where-error"
+          className="text-sm text-destructive"
+        >
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function IncidentTimesField({
+  draft,
+  error,
+  update,
+}: {
+  draft: ReportDraft;
+  error: string | undefined;
+  update: UpdateDraft;
+}) {
+  const t = useScopedI18n("incidents.report");
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-2">
+        <Label htmlFor="report-incident-times">{t("discoveredAt")}</Label>
+        <Input
+          id="report-incident-times"
+          type="datetime-local"
+          value={draft.discoveredAt}
+          onChange={(event) =>
+            update({ discoveredAt: event.currentTarget.value })
+          }
+          aria-invalid={error !== undefined}
+          aria-describedby={error ? "report-incident-times-error" : undefined}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="report-incident-occurred">{t("occurredAt")}</Label>
+        <Input
+          id="report-incident-occurred"
+          type="datetime-local"
+          value={draft.occurredAt}
+          onChange={(event) =>
+            update({ occurredAt: event.currentTarget.value })
+          }
+        />
+      </div>
+      {error ? (
+        <p
+          id="report-incident-times-error"
+          className="text-sm text-destructive sm:col-span-2"
+        >
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

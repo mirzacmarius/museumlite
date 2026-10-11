@@ -3,7 +3,6 @@ import {
   paginationResultValidator,
 } from "convex/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { displayName, isOpenStatus } from "./utils/caseTaskRules";
@@ -20,7 +19,12 @@ import {
   WORK_PERMISSION,
 } from "./utils/incidentAccess";
 import {
-  type IncidentEventAction,
+  appendIncidentEvent,
+  auditIncident,
+  incidentObjectRows,
+  MAX_INCIDENT_OBJECTS,
+} from "./utils/incidentRecords";
+import {
   incidentAfterActionValidator,
   incidentEventActionValidator,
   incidentHandoffDirectionValidator,
@@ -44,7 +48,6 @@ import { workError, workErrorFromError } from "./utils/workErrors";
 const MAX_TITLE_LENGTH = 200;
 const MAX_TEXT_LENGTH = 4000;
 const MAX_LOCATIONS = 10;
-export const MAX_INCIDENT_OBJECTS = 50;
 const MAX_HANDOFFS = 200;
 const EVENTS_SHOWN = 100;
 const MAX_PAGE_SIZE = 50;
@@ -80,67 +83,6 @@ function requireTime(value: number, message: string) {
   )
     throw workError("INVALID_INPUT", message);
   return value;
-}
-
-/** Appends to the incident's own log and returns the entry's ordinal. */
-export async function appendIncidentEvent(
-  ctx: MutationCtx,
-  incident: Doc<"incidents">,
-  actorId: Id<"users">,
-  action: IncidentEventAction,
-  details: Partial<
-    Pick<
-      Doc<"incidentEvents">,
-      | "note"
-      | "objectId"
-      | "fromLocationId"
-      | "toLocationId"
-      | "userId"
-      | "value"
-      | "count"
-    >
-  > = {},
-) {
-  const current = await ctx.db.get(incident._id);
-  const ordinal = (current?.eventCount ?? incident.eventCount) + 1;
-  const at = Date.now();
-  await ctx.db.insert("incidentEvents", {
-    organizationId: incident.organizationId,
-    incidentId: incident._id,
-    ordinal,
-    action,
-    actorId,
-    at,
-    ...details,
-  });
-  await ctx.db.patch(incident._id, { eventCount: ordinal, updatedAt: at });
-  return ordinal;
-}
-
-/**
- * Records the incident action in the organization audit log. Only the
- * incident number and non-identifying fields are written there; the detail
- * stays in the incident's scoped event log (ADR 0014).
- */
-export async function auditIncident(
-  ctx: MutationCtx,
-  incident: Doc<"incidents">,
-  userId: Id<"users">,
-  action: string,
-  changes: Record<string, string | number | boolean | undefined> = {},
-) {
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId: incident.organizationId,
-    userId,
-    action,
-    entityType: "incident",
-    entityId: incident._id,
-    changes: {
-      incidentNumber: incident.incidentNumber,
-      sensitive: incident.sensitive,
-      ...changes,
-    },
-  });
 }
 
 /** Headline a notification may carry: sensitive incidents name only their number. */
@@ -210,18 +152,6 @@ export async function linkObjects(
       updatedAt: now,
     });
   return added.length;
-}
-
-export async function incidentObjectRows(
-  ctx: QueryCtx,
-  incidentId: Id<"incidents">,
-) {
-  return await ctx.db
-    .query("incidentObjects")
-    .withIndex("by_incident_and_collection", (q) =>
-      q.eq("incidentId", incidentId),
-    )
-    .take(MAX_INCIDENT_OBJECTS);
 }
 
 /** Members who may see the incident, from `candidates`, minus the actor. */
@@ -1232,7 +1162,7 @@ export const get = query({
     );
     const titleOf = (id: Id<"collections"> | undefined) =>
       id ? objectDocs.get(id)?.title : undefined;
-    const handoffs = [...handoffRows].sort((a, b) => a.movedAt - b.movedAt);
+    const handoffs = handoffRows.toSorted((a, b) => a.movedAt - b.movedAt);
     const lastHandoff = new Map(handoffs.map((row) => [row.collectionId, row]));
 
     const locations = (

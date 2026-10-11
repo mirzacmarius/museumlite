@@ -28,7 +28,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { Loader2, Plus } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useReducer, useState } from "react";
 import { toast } from "sonner";
 import { ActionRefusal, type Refusal } from "@/components/action-refusal";
 import { ClientDate } from "@/components/client-date";
@@ -42,6 +42,17 @@ import { DATE_TIME, INCIDENT_IMPACTS } from "../../_components/incident-format";
 import { type IncidentDetail, Section } from "./incident-detail-client";
 
 type AffectedObject = IncidentDetail["objects"][number];
+
+interface HandoffDraft {
+  observedFrom: Id<"locations"> | null;
+  handoffKey: string;
+  destination: string;
+  notes: string;
+}
+
+function updateHandoff(draft: HandoffDraft, change: Partial<HandoffDraft>) {
+  return { ...draft, ...change };
+}
 
 export function IncidentObjects({ incident }: { incident: IncidentDetail }) {
   const t = useScopedI18n("incidents.objects");
@@ -332,14 +343,20 @@ function HandoffForm({
   const custodyMessage = useCustodyConflictMessage();
   const recordHandoff = useMutation(api.incidents.recordHandoff);
   // The source the mover saw when the dialog opened, and one key per attempt.
-  const [observedFrom] = useState(object.currentLocationId ?? null);
-  const [handoffKey] = useState(() => crypto.randomUUID());
-  const [destination, setDestination] = useState<string>(
-    direction === "recovery" && object.locationAtReportId
-      ? object.locationAtReportId
-      : "__none__",
+  const [handoff, update] = useReducer(
+    updateHandoff,
+    null,
+    (): HandoffDraft => ({
+      observedFrom: object.currentLocationId ?? null,
+      handoffKey: crypto.randomUUID(),
+      destination:
+        direction === "recovery" && object.locationAtReportId
+          ? object.locationAtReportId
+          : "__none__",
+      notes: "",
+    }),
   );
-  const [notes, setNotes] = useState("");
+  const { observedFrom, handoffKey, destination, notes } = handoff;
   const [refusal, setRefusal] = useState<Refusal | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -396,7 +413,7 @@ function HandoffForm({
             id="incident-handoff-destination"
             organizationId={incident.organizationId}
             value={destination}
-            onValueChange={setDestination}
+            onValueChange={(value) => update({ destination: value })}
             allowNone={false}
           />
           {direction === "recovery" && object.locationAtReportName ? (
@@ -413,7 +430,7 @@ function HandoffForm({
             id="incident-handoff-notes"
             value={notes}
             maxLength={4000}
-            onChange={(event) => setNotes(event.currentTarget.value)}
+            onChange={(event) => update({ notes: event.currentTarget.value })}
             rows={2}
           />
         </div>
