@@ -17,6 +17,7 @@ import { useMutation } from "convex/react";
 import { AlertTriangle } from "lucide-react";
 import { type RefObject, useState } from "react";
 import { toast } from "sonner";
+import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 interface BulkDeaccessionDialogProps {
@@ -41,6 +42,7 @@ export function BulkDeaccessionDialog({
   const placeholders = useScopedI18n("objects.form.placeholders");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const capabilityMessage = useCapabilityErrorMessage();
 
   const bulkDeaccession = useMutation(api.collections.bulkDeaccession);
 
@@ -82,8 +84,8 @@ export function BulkDeaccessionDialog({
       onSuccess();
       onOpenChange(false);
       setReason("");
-    } catch (_error) {
-      toast.error(t("itemsDeaccessionFailed"));
+    } catch (error) {
+      toast.error(capabilityMessage(error) ?? t("itemsDeaccessionFailed"));
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,8 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { CAPABILITY_IDS, evaluateCapability } from "./utils/capabilities";
+import { deaccessionInitiationState } from "./utils/deaccessionInitiation";
 import { organizationAccess } from "./utils/featureGates";
 import { enabledModuleValidator } from "./utils/moduleValidators";
 import {
@@ -60,5 +62,19 @@ export const forOrganization = query({
     return CAPABILITY_IDS.map((capability) =>
       evaluateCapability(capability, access, permissions),
     );
+  },
+});
+
+/**
+ * Whether the caller may start a deaccession, single or bulk, as a state of
+ * the `deaccession` capability. Null for non-members.
+ */
+export const deaccessionInitiation = query({
+  args: { organizationId: v.id("organizations") },
+  returns: v.union(v.null(), capabilityStateValidator),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    return await deaccessionInitiationState(ctx, args.organizationId, userId);
   },
 });
