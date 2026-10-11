@@ -160,10 +160,7 @@ test("staff record who asks for which image and why, and outsiders learn nothing
   ).toMatchObject({ reason: "permission_missing" });
 });
 
-async function openRequest(
-  t: ConvexTest,
-  museum: Awaited<ReturnType<typeof createMuseum>>,
-) {
+async function openRequest(museum: Awaited<ReturnType<typeof createMuseum>>) {
   return await museum.staff.mutation(api.reproductionRequests.create, {
     organizationId: museum.organizationId,
     objectId: museum.collectionId,
@@ -178,7 +175,7 @@ async function openRequest(
 test("rights evidence is kept when retracted and may cite only a document of the same Object", async () => {
   const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
-  const { requestId } = await openRequest(t, museum);
+  const { requestId } = await openRequest(museum);
   const { documentId, foreignDocumentId } = await t.run(async (ctx) => {
     const storageId = await ctx.storage.store(
       new Blob(["signed permission"], { type: "application/pdf" }),
@@ -277,7 +274,7 @@ async function blobBytes(t: ConvexTest, storageId: Id<"_storage">) {
 test("a Licensed copy is a bounded JPEG made from the verified image, never the original", async () => {
   const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
-  const { requestId } = await openRequest(t, museum);
+  const { requestId } = await openRequest(museum);
 
   await museum.staff.mutation(api.reproductionRequests.prepareDerivative, {
     requestId,
@@ -333,7 +330,7 @@ test("a Licensed copy is a bounded JPEG made from the verified image, never the 
 test("a derivative that cannot be made is reported failed and can be prepared again", async () => {
   const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
-  const { requestId } = await openRequest(t, museum);
+  const { requestId } = await openRequest(museum);
   const original = await blobBytes(t, museum.storageId);
   const corruptId = await t.run((ctx) =>
     ctx.storage.store(new Blob(["not an image"], { type: "image/png" })),
@@ -388,7 +385,7 @@ async function preparedRequest(
   t: ConvexTest,
   museum: Awaited<ReturnType<typeof createMuseum>>,
 ) {
-  const { requestId, requestNumber } = await openRequest(t, museum);
+  const { requestId, requestNumber } = await openRequest(museum);
   const evidenceId = await museum.staff.mutation(
     api.reproductionRequests.addEvidence,
     {
@@ -546,7 +543,7 @@ test("approval needs active evidence and a ready derivative; refusal needs only 
     ),
   ).toBe("EVIDENCE_REQUIRED");
 
-  const other = await openRequest(t, museum);
+  const other = await openRequest(museum);
   await museum.staff.mutation(api.reproductionRequests.addEvidence, {
     requestId: other.requestId,
     kind: "license",
@@ -893,9 +890,9 @@ test("without an email channel the delivery is cancelled and cannot be retried u
 test("the request list is newest first, filters by status and is closed to outsiders", async () => {
   const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);
-  const first = await openRequest(t, museum);
+  const first = await openRequest(museum);
   vi.advanceTimersByTime(1_000);
-  const second = await openRequest(t, museum);
+  const second = await openRequest(museum);
   await museum.staff.mutation(api.reproductionRequests.withdraw, {
     requestId: first.requestId,
     reason: "Requester found the image elsewhere",
