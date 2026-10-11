@@ -62,13 +62,15 @@ Running `bun dev` at root starts `convex dev --tail-logs` against the cloud depl
 - `bun run typecheck`
 - `bun run test` (uses `convex-test`; no cloud)
 
-`bun run check` runs everything CI runs except build and loopback deploy: lint (Biome, sherif, no bare `TODO`/`FIXME`, runtime-breaking call patterns from `scripts/check-patterns.mjs`), react-doctor, typecheck including i18n (`typecheck:all`), workspace tests, and CI-policy tests (`test:ci-policy`). CI is the source of truth; if it gains a step that needs no backend, add it to the `check` script. Mark intentional follow-up work as `TODO(MUS-123)` instead of a bare `TODO`.
+`bun run check` runs the local checks except build and loopback deploy: lint (Biome, sherif, no bare `TODO`/`FIXME`, runtime-breaking call patterns from `scripts/check-patterns.mjs`), react-doctor, typecheck including i18n (`typecheck:all`), workspace tests, and CI-policy tests (`test:ci-policy`). Mark intentional follow-up work as `TODO(MUS-123)` instead of a bare `TODO`.
 
-CI uses one `Check / check` runner and installs dependencies once. `scripts/classify-ci.mjs` selects app-only or marketing-only checks; backend changes also validate both consumers and run loopback deploy. Shared packages, manifests, lockfiles, scripts, CI configuration, and unknown paths run all checks. Explicit documentation paths skip installation and expensive checks. Pull requests compare the merge base with the checked-out merge result; main pushes compare the previous commit with the new commit. Missing revisions trigger all checks. Main-push validation and cancellation of superseded PR runs remain enabled.
+The full GitHub Actions workflow is manual: `gh workflow run check.yml --ref <branch>`. No GitHub required check should reference this manual workflow. Run it for a release candidate or when a risky change calls for full CI.
 
-The runner restores `.turbo` for lint, types, tests, and builds. Test and build hashes include upstream workspace source, shared configuration, dependency patches, environment files, and declared runtime variables. `bun run test:ci-policy` exercises real Git histories and the installed Turbo cache to verify selection and invalidation.
+Manual dispatch runs the full scope. `scripts/classify-ci.mjs` retains its app-only/marketing-only selection for local push or pull-request comparisons; backend changes also validate both consumers and run loopback deploy. Shared packages, manifests, lockfiles, scripts, CI configuration, and unknown paths run all checks. Every manual dispatch runs all checks regardless of changed paths.
 
-For backend or shared changes, CI pushes `packages/backend/convex` to an isolated loopback backend, runs `bun run qa:seed`, and fails if `_generated` is stale. These steps always execute when selected and are never cached. Reproduce them with the commands in `scripts/local-qa/README.md`.
+When manually run, the runner restores `.turbo` for lint, types, tests, and builds. Test and build hashes include upstream workspace source, shared configuration, dependency patches, environment files, and declared runtime variables. `bun run test:ci-policy` exercises real Git histories and the installed Turbo cache to verify selection and invalidation.
+
+Every manual full workflow pushes `packages/backend/convex` to an isolated loopback backend, runs `bun run qa:seed`, and fails if `_generated` is stale. These steps are never cached. Reproduce them with the commands in `scripts/local-qa/README.md`.
 
 ## Worktrees and agent runs
 
