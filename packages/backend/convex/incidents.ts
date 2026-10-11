@@ -446,7 +446,7 @@ async function requireTaskPeopleInScope(
  * Triage, or a later change to the response: severity, lead, responders,
  * sensitivity and the plans that guide it. Plans are only ever the ones the
  * coordinator chose here; choosing more later adds their steps, and a plan
- * once chosen stays on the record (ADR 0014).
+ * once chosen stays on the record (ADR 0015).
  */
 export const triage = mutation({
   args: {

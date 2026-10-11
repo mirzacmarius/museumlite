@@ -2414,6 +2414,7 @@ export const getCollectionLocationHistory = query({
       exhibitionObjectId: v.optional(v.id("exhibitionObjects")),
       transitItemId: v.optional(v.id("transitItems")),
       incidentId: v.optional(v.id("incidents")),
+      inventoryExceptionId: v.optional(v.id("inventoryExceptions")),
       fromLocationName: v.optional(v.string()),
       toLocationName: v.string(),
       movedByName: v.optional(v.string()),

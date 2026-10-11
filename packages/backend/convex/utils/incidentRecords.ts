@@ -45,7 +45,7 @@ export async function appendIncidentEvent(
 /**
  * Records the incident action in the organization audit log. Only the
  * incident number and non-identifying fields are written there; the detail
- * stays in the incident's scoped event log (ADR 0014).
+ * stays in the incident's scoped event log (ADR 0015).
  */
 export async function auditIncident(
   ctx: MutationCtx,

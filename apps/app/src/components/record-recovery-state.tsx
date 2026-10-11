@@ -30,6 +30,7 @@ const RECORD_LISTS = {
   entries: "/accessions/entries",
   documentationQuality: "/documentation-quality",
   incidents: "/incidents",
+  inventory: "/inventory",
 } as const;
 
 export type RecordList = keyof typeof RECORD_LISTS;

@@ -23,8 +23,11 @@ export const MAX_TASKS_PER_CASE = 100;
 /** Queue sort key of an undated task, so dated work comes first. */
 export const UNDATED = Number.MAX_SAFE_INTEGER;
 
-type CaseReadPermission = "loans.read" | "collections.read";
-type CaseWorkPermission = "loans.update" | "collections.update";
+type CaseReadPermission = "loans.read" | "collections.read" | "locations.read";
+type CaseWorkPermission =
+  | "loans.update"
+  | "collections.update"
+  | "locations.update";
 
 export interface CaseConfig {
   readPermission: CaseReadPermission;
@@ -82,6 +85,13 @@ export const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
     auditKey: "incidentId",
     notificationEntityType: "incident",
   },
+  // Searching, relabelling and returning objects is location work (ADR 0014).
+  inventoryException: {
+    readPermission: "locations.read",
+    workPermission: "locations.update",
+    auditKey: "inventoryExceptionId",
+    notificationEntityType: "inventoryException",
+  },
 };
 
 /** Owners and reviewers need both the read and the work permission of the case kind. */
@@ -107,7 +117,7 @@ export function isOpenStatus(status: CaseTaskStatus) {
 
 /**
  * The task title the organization audit log may show: a sensitive
- * incident's tasks are named by the incident number only (ADR 0014).
+ * incident's tasks are named by the incident number only (ADR 0015).
  */
 async function auditedTitle(
   ctx: MutationCtx,
@@ -151,7 +161,8 @@ export async function logTaskEvent(
 export type CaseDoc =
   | Awaited<ReturnType<typeof resolveCase>>
   | Doc<"documentationFindings">
-  | Doc<"incidents">;
+  | Doc<"incidents">
+  | Doc<"inventoryExceptions">;
 
 export function isFinding(
   entity: CaseDoc,
@@ -163,9 +174,16 @@ export function isIncident(entity: CaseDoc): entity is Doc<"incidents"> {
   return "incidentNumber" in entity;
 }
 
+export function isInventoryException(
+  entity: CaseDoc,
+): entity is Doc<"inventoryExceptions"> {
+  return "detectedAt" in entity && "sessionId" in entity;
+}
+
 export function caseLabelOf(entity: CaseDoc): string {
   if (isFinding(entity)) return findingLabel(entity);
   if (isIncident(entity)) return entity.incidentNumber;
+  if (isInventoryException(entity)) return entity.label;
   if ("loanNumber" in entity) return entity.loanNumber;
   if ("deaccessionNumber" in entity) return entity.deaccessionNumber;
   if ("accessionNumber" in entity) return entity.accessionNumber;
@@ -214,6 +232,25 @@ async function loadIncidentCase(
   return visible.incident;
 }
 
+/** An inventory exception, for members with the inventory capability. */
+async function loadInventoryExceptionCase(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  caseId: string,
+) {
+  await requireCapability(
+    ctx,
+    organizationId,
+    "inventory",
+    CAPABILITY_MATRIX.inventory.permissions,
+  );
+  const exceptionId = ctx.db.normalizeId("inventoryExceptions", caseId);
+  const exception = exceptionId ? await ctx.db.get(exceptionId) : null;
+  if (!exception || exception.organizationId !== organizationId)
+    throw workError("CASE_NOT_FOUND", "Case not found in this organization");
+  return exception;
+}
+
 /** Resolves the case for the caller, enforcing the case's read access. */
 export async function loadCase(
   ctx: QueryCtx,
@@ -225,6 +262,8 @@ export async function loadCase(
     return await loadFindingCase(ctx, organizationId, caseId);
   if (caseType === "incident")
     return await loadIncidentCase(ctx, organizationId, caseId);
+  if (caseType === "inventoryException")
+    return await loadInventoryExceptionCase(ctx, organizationId, caseId);
   try {
     return await resolveCase(ctx, {
       organizationId,

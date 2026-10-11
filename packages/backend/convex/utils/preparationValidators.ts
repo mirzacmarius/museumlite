@@ -3,7 +3,7 @@ import { caseTaskEvidenceKindValidator } from "./caseTaskValidators";
 
 /**
  * Accepted case events a preparation recipe can follow. An incident response
- * plan follows triage, but only when a coordinator chose it (ADR 0014).
+ * plan follows triage, but only when a coordinator chose it (ADR 0015).
  */
 export const preparationTriggerValidator = v.union(
   v.literal("intake_accepted"),

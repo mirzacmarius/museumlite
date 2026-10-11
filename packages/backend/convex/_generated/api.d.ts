@@ -65,6 +65,7 @@ import type * as installations from "../installations.js";
 import type * as insurance from "../insurance.js";
 import type * as insuranceCoverageReviews from "../insuranceCoverageReviews.js";
 import type * as integrations from "../integrations.js";
+import type * as inventory from "../inventory.js";
 import type * as invitations from "../invitations.js";
 import type * as library_acquisitions from "../library/acquisitions.js";
 import type * as library_circulation from "../library/circulation.js";
@@ -215,6 +216,8 @@ import type * as utils_institutionTransferEvidence from "../utils/institutionTra
 import type * as utils_insuranceCoverage from "../utils/insuranceCoverage.js";
 import type * as utils_insuranceCoverageAlerts from "../utils/insuranceCoverageAlerts.js";
 import type * as utils_insuranceStats from "../utils/insuranceStats.js";
+import type * as utils_inventoryErrors from "../utils/inventoryErrors.js";
+import type * as utils_inventoryValidators from "../utils/inventoryValidators.js";
 import type * as utils_legacyTemplates from "../utils/legacyTemplates.js";
 import type * as utils_loanAccess from "../utils/loanAccess.js";
 import type * as utils_loanAgreementErrors from "../utils/loanAgreementErrors.js";
@@ -385,6 +388,7 @@ declare const fullApi: ApiFromModules<{
   insurance: typeof insurance;
   insuranceCoverageReviews: typeof insuranceCoverageReviews;
   integrations: typeof integrations;
+  inventory: typeof inventory;
   invitations: typeof invitations;
   "library/acquisitions": typeof library_acquisitions;
   "library/circulation": typeof library_circulation;
@@ -535,6 +539,8 @@ declare const fullApi: ApiFromModules<{
   "utils/insuranceCoverage": typeof utils_insuranceCoverage;
   "utils/insuranceCoverageAlerts": typeof utils_insuranceCoverageAlerts;
   "utils/insuranceStats": typeof utils_insuranceStats;
+  "utils/inventoryErrors": typeof utils_inventoryErrors;
+  "utils/inventoryValidators": typeof utils_inventoryValidators;
   "utils/legacyTemplates": typeof utils_legacyTemplates;
   "utils/loanAccess": typeof utils_loanAccess;
   "utils/loanAgreementErrors": typeof utils_loanAgreementErrors;

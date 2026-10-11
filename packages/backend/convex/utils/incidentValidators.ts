@@ -16,7 +16,7 @@ export type IncidentKind = Infer<typeof incidentKindValidator>;
 
 /**
  * Reported until a coordinator triages it, responding while the response
- * runs, closed once its after-action record is written (ADR 0014).
+ * runs, closed once its after-action record is written (ADR 0015).
  */
 export const incidentStatusValidator = v.union(
   v.literal("reported"),

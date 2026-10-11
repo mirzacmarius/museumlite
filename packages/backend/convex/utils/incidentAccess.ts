@@ -10,7 +10,7 @@ import {
 import { workError } from "./workErrors";
 
 /**
- * Who may see and work on an incident (ADR 0014). Collection readers see
+ * Who may see and work on an incident (ADR 0015). Collection readers see
  * ordinary incidents and may report one; a sensitive incident is visible only
  * to coordinators, its reporter, its lead and its named responders.
  */

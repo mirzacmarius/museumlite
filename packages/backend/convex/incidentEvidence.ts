@@ -23,7 +23,7 @@ import { requireCapability } from "./utils/permissions";
 import { workError } from "./utils/workErrors";
 
 /**
- * Records cited as incident evidence (ADR 0014). Links are retained: a
+ * Records cited as incident evidence (ADR 0015). Links are retained: a
  * mistaken one is retracted with a reason and stays on the incident.
  */
 

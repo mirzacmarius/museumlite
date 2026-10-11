@@ -4,6 +4,7 @@ import {
   Box,
   Building2,
   ClipboardCheck,
+  ClipboardList,
   CreditCard,
   FilePlus,
   LayoutDashboard,
@@ -84,6 +85,11 @@ export function buildCommandPaletteActions({
       labelKey: "incidents",
       href: capabilityRoute("incidents"),
       icon: Siren,
+    }),
+    ...when(isOpen("inventory"), {
+      labelKey: "inventory",
+      href: capabilityRoute("inventory"),
+      icon: ClipboardList,
     }),
     ...when(isOpen("loans"), {
       labelKey: "loans",

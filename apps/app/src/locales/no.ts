@@ -2675,6 +2675,7 @@ export default {
           bulk_move: "Masseflytting",
           bulk_edit: "Masseredigering",
           catalog_edit: "Katalogendring",
+          inventory_reconciliation: "Avstemming etter inventering",
           legacy: "Registrert flytting",
           incident_evacuation: "Evakuering ved hendelse",
           incident_recovery: "Tilbakeføring etter hendelse",
@@ -4780,6 +4781,7 @@ export default {
       conservation: "Konserveringsbehandling",
       documentationFinding: "Dokumentasjonsfunn",
       incident: "Hendelse",
+      inventoryException: "Inventeringsavvik",
     },
     fields: {
       title: "Tittel",
@@ -5787,6 +5789,7 @@ export default {
       entries: "Gå til innleveringer",
       documentationQuality: "Gå til dokumentasjonskvalitet",
       incidents: "Gå til hendelser",
+      inventory: "Gå til inventering",
     },
     pageNotFound: {
       title: "Fant ikke siden",
@@ -7134,6 +7137,215 @@ export default {
     resumeNotice:
       "Denne filen ble importert {date}: {attempted} av {total} rader forsøkt, {accepted} godtatt, {failed} feilet. Fortsettelse hopper over godtatte rader.",
     resumeImport: "Fortsett import",
+  },
+  inventory: {
+    title: "Inventering",
+    description:
+      "Sammenlign hvor registreringene plasserer objektene med hvor de ansatte finner dem. Skanninger er dokumentasjon; de flytter aldri et objekt.",
+    newSession: "Start inventering",
+    noSessions: "Ingen inventeringer ennå.",
+    noSessionsHint:
+      "Start en for et magasin, et rom eller en hylle, og skann etikettene du finner der.",
+    workUnavailable:
+      "Du kan følge inventeringer. For å starte, skanne og avklare dem trenger du tillatelse til å flytte objekter.",
+    sessionsTitle: "Inventeringer",
+    statuses: {
+      scanning: "Skanner",
+      reviewing: "Til gjennomgang",
+      reconciled: "Avstemt",
+      cancelled: "Avbrutt",
+    },
+    progress: "{observed} av {expected} funnet",
+    remaining: "Ikke funnet ennå: {count}",
+    withSublocations: "{location} og alt under",
+    start: {
+      title: "Start inventering",
+      description:
+        "Ved start lagres et øyeblikksbilde av objektene registreringene plasserer i dette området. Senere flyttinger endrer det ikke.",
+      name: "Navn",
+      namePlaceholder: "Årlig kontroll av magasin 2",
+      scope: "Plassering",
+      includeSublocations: "Ta med alle plasseringer under",
+      submit: "Start",
+      submitting: "Starter...",
+      nameRequired: "Skriv inn et navn.",
+      scopeRequired: "Velg en plassering.",
+    },
+    session: {
+      back: "Tilbake til inventering",
+      startedBy: "Startet av {name} {date}",
+      finishedBy: "Skanning avsluttet av {name} {date}",
+      cancelledBy: "Avbrutt av {name} {date}: {reason}",
+      reconciledOn: "Avstemt {date}",
+      unknownPerson: "et tidligere medlem",
+      tabs: {
+        scan: "Skann",
+        expected: "Forventet",
+        observations: "Observasjoner",
+        exceptions: "Avvik",
+      },
+      printObjectLabels: "Objektetiketter",
+      printLocationLabels: "Plasseringsetiketter",
+      objectLabelsTitle: "Etiketter for de forventede objektene",
+      objectLabelsDescription:
+        "QR-etiketter for objektene som er forventet i dette området ({count}).",
+      locationLabelsTitle: "Plasseringsetiketter",
+      locationLabelsDescription:
+        "QR-etiketter for plasseringene i dette området ({count}). Når du skanner en, bytter skanneren til den plasseringen.",
+      finish: "Avslutt skanningen",
+      finishTitle: "Avslutte skanningen?",
+      finishDescription:
+        "Hver forskjell mellom det forventede og det observerte blir et avvik som skal gjennomgås. Ingen objekter flyttes. Du kan ikke skanne i denne inventeringen etterpå.",
+      finishing: "Avslutter...",
+      finished: "Skanningen er avsluttet.",
+      cancel: "Avbryt inventeringen",
+      cancelTitle: "Avbryte denne inventeringen?",
+      cancelDescription:
+        "Observasjonene beholdes som dokumentasjon, men ingen avvik opprettes, og ingen kan skanne i den igjen.",
+      cancelReason: "Begrunnelse",
+      cancelReasonRequired: "Skriv inn en begrunnelse.",
+      cancelling: "Avbryter...",
+      cancelled: "Inventeringen er avbrutt.",
+      keepScanning: "Fortsett å skanne",
+      exceptionsOpen: "Åpne avvik: {count}",
+    },
+    scan: {
+      currentLocation: "Hvor du skanner",
+      cameraTitle: "Skann med kameraet",
+      manualTitle: "Skriv inn eller bruk en håndskanner",
+      manualLabel: "Etikett eller aksesjonsnummer",
+      manualHint:
+        "En håndskanner som skriver i dette feltet fungerer også. Trykk Enter for å registrere.",
+      note: "Merknad (valgfritt)",
+      record: "Registrer",
+      recording: "Lagrer...",
+      switchedLocation: "Skanner i {location}.",
+      locationOutOfScope:
+        "Den plasseringsetiketten hører ikke til denne inventeringen.",
+      lastScans: "Skanninger fra denne enheten",
+      lastScansHint:
+        "Skanninger som ikke ble lagret, blir stående her til du prøver igjen. De lagres ikke på denne enheten.",
+      notSaved: "Ikke lagret",
+      retry: "Prøv igjen",
+      alreadyRecorded: "Allerede registrert",
+      cameraError: "Kameraet kunne ikke skanne: {error}",
+      outcomes: {
+        expected: "Funnet der det er registrert",
+        misplaced: "Registrert i {location}",
+        unexpected: "Ikke forventet her",
+        unknown: "Ikke et objekt i denne organisasjonen",
+        repeat: "Allerede observert",
+      },
+      unexpectedRecorded: "Registrert i {location}",
+      unexpectedNoLocation: "Ingen registrert plassering",
+    },
+    expected: {
+      empty: "Ingen objekter var forventet i dette området.",
+      found: "Funnet",
+      notFound: "Ikke funnet ennå",
+      foundAt: "Funnet i {location}",
+      expectedIn: "Forventet i {location}",
+    },
+    observations: {
+      empty: "Ingenting er skannet ennå.",
+      latestOnly: "Viser de 200 nyeste observasjonene.",
+      by: "{name}, {date}",
+      methods: {
+        scan: "Kamera",
+        manual: "Skrevet inn",
+      },
+      noRecordedLocation: "Ingen registrert plassering",
+    },
+    exceptions: {
+      empty: "Ingen avvik.",
+      notFinished:
+        "Avvik registreres når skanningen avsluttes. Inntil da viser fanene Forventet og Observasjoner fremdriften.",
+      kinds: {
+        missing: "Mangler",
+        misplaced: "Feilplassert",
+        unexpected: "Uventet",
+        unknown_label: "Ukjent etikett",
+      },
+      statuses: {
+        open: "Åpent",
+        accepted: "Godtatt",
+        resolved: "Løst",
+      },
+      summaries: {
+        missing: "Forventet i {recorded}, ikke funnet",
+        misplaced: "Forventet i {recorded}, funnet i {observed}",
+        unexpected: "Registrert i {recorded}, funnet i {observed}",
+        unexpectedNoLocation:
+          "Ingen registrert plassering, funnet i {observed}",
+        unknown_label: "Skannet i {observed}",
+      },
+    },
+    exception: {
+      back: "Tilbake til inventeringen",
+      session: "Inventering",
+      foundTitle: "Hva som ble observert",
+      object: "Objekt",
+      scannedValue: "Skannet verdi",
+      recordedLocation: "Registrert plassering",
+      observedLocation: "Observert plassering",
+      observedBy: "Observert av",
+      method: "Registrert med",
+      note: "Merknad",
+      notRecorded: "Ikke registrert",
+      openObject: "Åpne objektet",
+      reprintLabel: "Skriv ut etiketten på nytt",
+      reprintTitle: "Skriv ut objektets etikett på nytt",
+      reprintDescription: "En ny QR-etikett for {label}.",
+      reviewTitle: "Gjennomgang",
+      openHint:
+        "Lukk dette avviket ved å registrere flyttingen til der objektet ble funnet, eller godta det med en begrunnelse. Utbedringsarbeid, som leting eller ny merking, legges i en oppgave nedenfor; å fullføre en oppgave lukker ikke avviket.",
+      recordMove: "Registrer flyttingen til {location}",
+      recordMoveHint:
+        "Registrerer en flytting fra {recorded} til {observed}, godkjent av deg. Den avvises hvis objektet er flyttet siden, er utlånt, eller plasseringen ikke kan ta imot det.",
+      recording: "Registrerer...",
+      moved: "Flyttingen er registrert.",
+      confirmed:
+        "Registreringen viste allerede den observerte plasseringen; ingen flytting var nødvendig.",
+      accept: "Godta med en begrunnelse",
+      acceptTitle: "Godta dette avviket",
+      acceptDescription:
+        "Avviket lukkes med begrunnelsen din som forklaring. Objektets registrering endres ikke.",
+      reason: "Begrunnelse",
+      reasonRequired: "Skriv inn en begrunnelse.",
+      accepting: "Lagrer...",
+      accepted: "Avviket er godtatt.",
+      cancel: "Avbryt",
+      resolutions: {
+        moved: "Løst med en registrert flytting.",
+        location_confirmed:
+          "Løst: registreringen viste allerede den observerte plasseringen.",
+        accepted: "Godtatt: {reason}",
+      },
+      resolvedBy: "{name}, {date}",
+      viewOnly:
+        "Du kan lese dette avviket. For å avklare det trenger du tillatelse til å flytte objekter.",
+    },
+    errors: {
+      nameRequired: "Skriv inn et navn.",
+      textTooLong: "Denne teksten er for lang.",
+      locationNotFound:
+        "Den plasseringen er ikke tilgjengelig i denne organisasjonen.",
+      scopeTooLarge:
+        "Dette området er for stort for én inventering (grense: {limit}). Velg en mindre plassering eller utelat plasseringene under den.",
+      sessionNotFound: "Denne inventeringen er ikke tilgjengelig.",
+      sessionNotScanning: "Denne inventeringen skanner ikke lenger.",
+      locationOutOfScope:
+        "Den plasseringen hører ikke til denne inventeringen.",
+      scanValueRequired: "Ingenting ble skannet.",
+      observationLimitReached:
+        "Denne inventeringen har nådd grensen på {limit} observasjoner. Avslutt den og start en ny.",
+      exceptionNotFound: "Dette avviket er ikke tilgjengelig.",
+      exceptionClosed: "Dette avviket er allerede lukket.",
+      exceptionNotMovable:
+        "Bare et objekt som er funnet et annet sted, kan flyttes dit.",
+      reasonRequired: "Skriv inn en begrunnelse.",
+      fallback: "Det fungerte ikke. Prøv igjen.",
+    },
   },
   scan: {
     scanner: {
@@ -9352,6 +9564,7 @@ export default {
       newLoan: "Nytt lån",
       newCollectionGroup: "Ny samlingsgruppe",
       documentationQuality: "Dokumentasjonskvalitet",
+      inventory: "Inventering",
       navigation: "Navigasjon",
       dashboard: "Dashbord",
       library: "Bibliotek",
@@ -9808,6 +10021,7 @@ export default {
       overview: "Oversikt",
       myWork: "Mitt arbeid",
       documentationQuality: "Dokumentasjonskvalitet",
+      inventory: "Inventering",
       objectCatalog: "Objektkatalog",
       locationTracking: "Plassering og sporing",
       scan: "Skann",

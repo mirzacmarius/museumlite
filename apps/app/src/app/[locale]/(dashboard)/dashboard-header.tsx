@@ -44,6 +44,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const t = useScopedI18n("untranslatedDashboard.dashboardHeader");
   const tEntries = useScopedI18n("objectEntries");
   const tQuality = useScopedI18n("documentationQuality");
+  const tInventory = useScopedI18n("inventory");
   const tRecipes = useScopedI18n("preparationRecipes");
 
   const getPageTitle = (path: string) => {
@@ -74,6 +75,8 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
     if (/^\/documentation-quality\/[^/]+$/.test(cleanPath))
       return tQuality("detail.headerTitle");
     if (cleanPath === "/settings/preparation-recipes") return tRecipes("title");
+    if (cleanPath === "/inventory" || cleanPath.startsWith("/inventory/"))
+      return tInventory("title");
 
     // A page without its own title (new, edit, import, a record) is named by
     // its section; route words are never shown as English titles.

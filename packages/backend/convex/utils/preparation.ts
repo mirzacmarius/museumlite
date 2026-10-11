@@ -61,7 +61,7 @@ export interface CaseEvent extends PreparationCaseRef {
   dates: { event: number; start?: number; end?: number };
   /**
    * Recipes staff chose for this case. Set for incidents, whose plans never
-   * apply unless a coordinator chose them (ADR 0014).
+   * apply unless a coordinator chose them (ADR 0015).
    */
   chosenRecipeIds?: ReadonlySet<Id<"preparationRecipes">>;
 }
