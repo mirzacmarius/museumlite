@@ -139,6 +139,7 @@ export const NOTIFICATION_ENTITY_READ_PERMISSIONS = {
   acquisition: "collections.read",
   libraryAcquisitionRequest: "collections.read",
   documentationFinding: "collections.read",
+  inventoryException: "locations.read",
   loan: "loans.read",
   transitRecord: "loans.read",
   insurancePolicy: "loans.read",
