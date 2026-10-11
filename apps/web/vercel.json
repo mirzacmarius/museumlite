@@ -1,3 +1,9 @@
 {
-  "buildCommand": "if [ \"$VERCEL_ENV\" = production ]; then cd ../../apps/web && turbo run build; else cd ../../packages/backend && npx convex deploy --cmd 'cd ../../apps/web && turbo run build' --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL; fi"
+  "buildCommand": "if [ \"$VERCEL_ENV\" = production ]; then cd ../../apps/web && turbo run build; else cd ../../packages/backend && npx convex deploy --cmd 'cd ../../apps/web && turbo run build' --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL; fi",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
+  }
 }
