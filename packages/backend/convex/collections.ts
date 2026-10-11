@@ -12,6 +12,7 @@ import {
 import { createDeaccessionRecord } from "./deaccessions";
 import schema, { customFieldValue } from "./schema";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
+import { capabilityUnavailableFromError } from "./utils/capabilities";
 import {
   buildConditionHistoryEntry,
   getCollectionGroupMembershipIds,
@@ -2486,11 +2487,6 @@ export const bulkDeaccession = mutation({
       }
 
       try {
-        await requirePermission(
-          ctx,
-          collection.organizationId,
-          "collections.delete",
-        );
         // Bulk UI has no method picker yet; default to destruction.
         const deaccessionId = await createDeaccessionRecord(
           ctx,
@@ -2511,7 +2507,10 @@ export const bulkDeaccession = mutation({
         } else {
           awaitingDecision++;
         }
-      } catch {
+      } catch (error) {
+        // A member who may not start a deaccession is refused outright, with
+        // the coded reason, instead of failing object by object.
+        if (capabilityUnavailableFromError(error)) throw error;
         failed++;
       }
     }

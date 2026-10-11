@@ -18,6 +18,7 @@ import {
   canRestoreRejectedDisposition,
   markCollectionActive,
 } from "./utils/collectionLifecycle";
+import { requireDeaccessionInitiation } from "./utils/deaccessionInitiation";
 import {
   DISPOSAL_POLICY_VERSION,
   type DisposalDecisionCheckKey,
@@ -43,7 +44,6 @@ import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
-  hasPermission,
   requirePermission,
 } from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
@@ -243,57 +243,6 @@ async function logDecisionException(
   });
 }
 
-async function canInitiateDeaccessionWorkflowForUser(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  userId: Id<"users">,
-  workflowEnabled: boolean,
-) {
-  const userOrganization = await ctx.db
-    .query("userOrganizations")
-    .withIndex("by_user_and_organization", (q) =>
-      q.eq("userId", userId).eq("organizationId", organizationId),
-    )
-    .first();
-
-  if (!userOrganization) {
-    return false;
-  }
-
-  // Organization administrators may start any workflow, as they may approve
-  // any step (see canApproveAtStep).
-  if (
-    await hasPermission(ctx, organizationId, "organization.manage_settings")
-  ) {
-    return true;
-  }
-
-  const workflowConfig = workflowEnabled
-    ? await getWorkflowConfig(ctx, organizationId, "deaccession")
-    : null;
-
-  if (workflowConfig) {
-    return workflowConfig.canInitiateRoles.includes(userOrganization.roleId);
-  }
-
-  const rolePermissions = await ctx.db
-    .query("rolePermissions")
-    .withIndex("by_role", (q) => q.eq("roleId", userOrganization.roleId))
-    .collect();
-
-  const permissions = await Promise.all(
-    rolePermissions.map((rolePermission) =>
-      ctx.db.get(rolePermission.permissionId),
-    ),
-  );
-
-  return permissions.some(
-    (permission) =>
-      permission?.name === "collections.create" ||
-      permission?.name === "collections.delete",
-  );
-}
-
 async function isDeaccessionWorkflowEnabled(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
@@ -342,16 +291,7 @@ export async function createDeaccessionRecord(
     ctx,
     args.organizationId,
   );
-  const canInitiate = await canInitiateDeaccessionWorkflowForUser(
-    ctx,
-    args.organizationId,
-    userId,
-    deaccessionWorkflowEnabled,
-  );
-
-  if (!canInitiate) {
-    throw new Error("Permission denied: cannot initiate deaccession workflow");
-  }
+  await requireDeaccessionInitiation(ctx, args.organizationId, userId);
 
   const deaccessionNumber = args.deaccessionNumber
     ? args.deaccessionNumber

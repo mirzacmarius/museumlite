@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import { capabilityUnavailableFromError } from "../convex/utils/capabilities";
 import {
   authedForUser,
@@ -183,55 +184,168 @@ test("bulkDeaccession rejects unauthenticated callers", async () => {
   ).rejects.toThrow("Not authenticated");
 });
 
-test("bulkDeaccession counts permission failures without throwing", async () => {
+/** A member of the fixture's organization holding exactly these permissions. */
+async function addMember(
+  t: ReturnType<typeof createConvexTest>,
+  organizationId: Id<"organizations">,
+  permissionNames: string[],
+) {
+  return t.run(async (ctx) => {
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Member role",
+      isSystemRole: false,
+    });
+    for (const name of permissionNames) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name,
+        category: name.split(".")[0] ?? "collections",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+    }
+    const userId = await ctx.db.insert("users", {
+      email: `member-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      name: "Member",
+    });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+    return { userId, roleId };
+  });
+}
+
+async function pendingRecordsFor(
+  t: ReturnType<typeof createConvexTest>,
+  organizationId: Id<"organizations">,
+) {
+  return t.run((ctx) =>
+    ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  );
+}
+
+test("bulkDeaccession refuses a role that cannot start one, with the coded reason", async () => {
   const t = createConvexTest();
   const { organizationId, activeCollectionIdA, activeCollectionIdB } =
     await createBulkDeaccessionFixture(t);
+  // Approving decisions is not the right to start one.
+  const { userId } = await addMember(t, organizationId, [
+    "collections.read",
+    "collections.update",
+    "collections.approve_deaccession",
+  ]);
+  const authed = authedForUser(t, userId);
 
-  const readOnlyUserId = await t.run(async (ctx) => {
-    const readOnlyRoleId = await ctx.db.insert("roles", {
+  expect(
+    await authed.query(api.capabilities.deaccessionInitiation, {
       organizationId,
-      name: "Read Only",
-      isSystemRole: false,
-    });
-    const readPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-    });
-    await ctx.db.insert("rolePermissions", {
-      roleId: readOnlyRoleId,
-      permissionId: readPermissionId,
-    });
+    }),
+  ).toMatchObject({ capability: "deaccession", status: "permission_missing" });
 
-    const readOnlyUserId = await ctx.db.insert("users", {
-      email: `reader-${Math.random().toString(36).slice(2, 8)}@example.com`,
-      name: "Read Only User",
-    });
-    await ctx.db.insert("userOrganizations", {
-      userId: readOnlyUserId,
-      organizationId,
-      roleId: readOnlyRoleId,
-      joinedAt: Date.now(),
-    });
-
-    return readOnlyUserId;
-  });
-
-  const readOnlyAuthed = authedForUser(t, readOnlyUserId);
-  const result = await readOnlyAuthed.mutation(
-    api.collections.bulkDeaccession,
-    {
+  const error = await authed
+    .mutation(api.collections.bulkDeaccession, {
       collectionIds: [activeCollectionIdA, activeCollectionIdB],
       reason: "Unauthorized attempt",
-    },
-  );
+    })
+    .catch((caught: unknown) => caught);
+
+  expect(capabilityUnavailableFromError(error)).toMatchObject({
+    reason: "permission_missing",
+    capability: "deaccession",
+  });
+  expect(await pendingRecordsFor(t, organizationId)).toHaveLength(0);
+});
+
+test("bulkDeaccession lets a role with collections.create start proposals", async () => {
+  const t = createConvexTest();
+  const { organizationId, activeCollectionIdA, activeCollectionIdB } =
+    await createBulkDeaccessionFixture(t);
+  // A Curator-like role: no collections.delete, which bulk used to demand.
+  const { userId } = await addMember(t, organizationId, [
+    "collections.read",
+    "collections.create",
+  ]);
+  const authed = authedForUser(t, userId);
+
+  expect(
+    await authed.query(api.capabilities.deaccessionInitiation, {
+      organizationId,
+    }),
+  ).toMatchObject({ capability: "deaccession", status: "available" });
+
+  const result = await authed.mutation(api.collections.bulkDeaccession, {
+    collectionIds: [activeCollectionIdA, activeCollectionIdB],
+    reason: "Curatorial review",
+  });
 
   expect(result).toEqual({
     deaccessioned: 0,
-    awaitingDecision: 0,
+    awaitingDecision: 2,
     skipped: 0,
-    failed: 2,
+    failed: 0,
   });
+  const records = await pendingRecordsFor(t, organizationId);
+  expect(records.map((record) => record.status)).toEqual([
+    "pending",
+    "pending",
+  ]);
+});
+
+test("bulkDeaccession follows the workflow's initiating roles and never decides", async () => {
+  const t = createConvexTest();
+  const { organizationId, activeCollectionIdA } =
+    await createBulkDeaccessionFixture(t);
+  const initiator = await addMember(t, organizationId, ["collections.read"]);
+  const outsider = await addMember(t, organizationId, [
+    "collections.read",
+    "collections.delete",
+  ]);
+  await t.run(async (ctx) => {
+    const organization = await ctx.db.get(organizationId);
+    await ctx.db.patch(organizationId, {
+      settings: { ...organization?.settings, deaccessionWorkflowEnabled: true },
+    });
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "deaccession",
+      steps: [
+        { stepNumber: 1, roleId: outsider.roleId, name: "Collections review" },
+      ],
+      canInitiateRoles: [initiator.roleId],
+    });
+  });
+
+  // With a workflow, collections.delete alone does not start one.
+  const refused = await authedForUser(t, outsider.userId)
+    .mutation(api.collections.bulkDeaccession, {
+      collectionIds: [activeCollectionIdA],
+      reason: "Not an initiator",
+    })
+    .catch((caught: unknown) => caught);
+  expect(capabilityUnavailableFromError(refused)?.reason).toBe(
+    "permission_missing",
+  );
+
+  const result = await authedForUser(t, initiator.userId).mutation(
+    api.collections.bulkDeaccession,
+    { collectionIds: [activeCollectionIdA], reason: "Workflow proposal" },
+  );
+  expect(result).toEqual({
+    deaccessioned: 0,
+    awaitingDecision: 1,
+    skipped: 0,
+    failed: 0,
+  });
+  const [record] = await pendingRecordsFor(t, organizationId);
+  expect(record).toMatchObject({ status: "pending", workflowStep: 1 });
+  expect(record?.approvedBy).toBeUndefined();
 });
 
 /** Two catalogued objects and an active store in the member's organization. */
