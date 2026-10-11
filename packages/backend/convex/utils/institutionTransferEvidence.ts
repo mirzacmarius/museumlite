@@ -10,6 +10,10 @@ export interface TransferScopeSnapshot {
   observedSourceLocationId: Id<"locations"> | null;
   legacyCollectionGroupId?: Id<"collectionGroups">;
   collectionGroupIds: Id<"collectionGroups">[];
+  collectionGroupMemberships: Array<{
+    collectionGroupId: Id<"collectionGroups">;
+    role?: "primary" | "secondary";
+  }>;
   accessionNumberAtTransfer: string;
 }
 
@@ -27,6 +31,11 @@ export async function buildTransferScopeSnapshot(
     observedSourceLocationId: collection.currentLocationId ?? null,
     legacyCollectionGroupId: collection.collectionGroupId,
     collectionGroupIds: membershipRows.map((row) => row.collectionGroupId),
+    collectionGroupMemberships: membershipRows.map((row) =>
+      row.role
+        ? { collectionGroupId: row.collectionGroupId, role: row.role }
+        : { collectionGroupId: row.collectionGroupId },
+    ),
     accessionNumberAtTransfer: collection.accessionNumber,
   };
 }

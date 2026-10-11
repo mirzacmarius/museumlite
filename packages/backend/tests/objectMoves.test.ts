@@ -858,6 +858,65 @@ describe("objectMoves", () => {
     ]);
   });
 
+  test("target acceptance records each source group membership with its canonical role", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const secondaryGroupId = await t.run(async (ctx) => {
+      const groupId = await ctx.db.insert("collectionGroups", {
+        organizationId: fixture.sourceOrganizationId,
+        name: "Secondary Move Group",
+        itemsCount: 1,
+        createdAt: Date.now(),
+        createdBy: fixture.requesterId,
+      });
+      await ctx.db.insert("collectionGroupItems", {
+        collectionGroupId: groupId,
+        collectionId: fixture.collectionId,
+        role: "secondary",
+        addedAt: Date.now(),
+        addedBy: fixture.requesterId,
+      });
+      return groupId;
+    });
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Approved move",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    const request = await t.run(async (ctx) => await ctx.db.get(requestId));
+    const memberships =
+      request?.transferScopeSnapshot?.collectionGroupMemberships ?? [];
+
+    expect(request?.transferScopeSnapshot?.legacyCollectionGroupId).toBe(
+      fixture.collectionGroupId,
+    );
+    // The fixture's legacy row predates roles: it is retained without a guessed role.
+    expect(memberships).toHaveLength(2);
+    expect(
+      memberships.find(
+        (membership) =>
+          membership.collectionGroupId === fixture.collectionGroupId,
+      ),
+    ).toEqual({ collectionGroupId: fixture.collectionGroupId });
+    expect(
+      memberships.find(
+        (membership) => membership.collectionGroupId === secondaryGroupId,
+      ),
+    ).toEqual({ collectionGroupId: secondaryGroupId, role: "secondary" });
+  });
+
   test("acceptance rejects a stale observed source location", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
