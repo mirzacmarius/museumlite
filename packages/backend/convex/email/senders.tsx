@@ -970,7 +970,12 @@ function ReproductionDeliveryEmail({
         {content.termsBody}
       </Text>
       <Text style={emailMutedTextStyle}>
-        {text(t.expires, { date: formatEmailDate(content.expiresAt, locale) })}
+        {text(t.expires, {
+          date: new Intl.DateTimeFormat(emailDateLocales[locale], {
+            dateStyle: "long",
+            timeZone: "UTC",
+          }).format(content.expiresAt),
+        })}
       </Text>
       <Section style={emailButtonSectionStyle}>
         <Button href={content.downloadUrl} style={emailInvitationButtonStyle}>
@@ -986,10 +991,13 @@ export async function renderReproductionDeliveryEmail(
   content: ReproductionDeliveryContent,
   locale: EmailLocale,
 ) {
-  const subject = text(getEmailTranslations(locale).reproductionDelivery.subject, {
-    organizationName: content.organizationName,
-    requestNumber: content.requestNumber,
-  });
+  const subject = text(
+    getEmailTranslations(locale).reproductionDelivery.subject,
+    {
+      organizationName: content.organizationName,
+      requestNumber: content.requestNumber,
+    },
+  );
   const element = (
     <ReproductionDeliveryEmail
       content={content}

@@ -33,7 +33,6 @@ import {
   registerTotalsValidator,
 } from "./utils/exportContract";
 import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
-import { reproductionRequestTables } from "./utils/reproductionRequestValidators";
 import {
   collectionTypeValidator,
   enabledModuleValidator,
@@ -78,6 +77,7 @@ import {
   provenanceEvidenceDocumentValidator,
   provenanceReviewDocumentValidator,
 } from "./utils/provenanceValidators";
+import { reproductionRequestTables } from "./utils/reproductionRequestValidators";
 import {
   webhookDeliveryAttemptFields,
   webhookDeliveryFields,

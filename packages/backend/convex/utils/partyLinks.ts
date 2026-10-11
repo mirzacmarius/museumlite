@@ -17,8 +17,8 @@ import {
   requireCapability,
   requirePermission,
 } from "./permissions";
-import { REPRODUCTION_READ_PERMISSIONS } from "./reproductionRequestAccess";
 import { isWithdrawnObject } from "./provenance";
+import { REPRODUCTION_READ_PERMISSIONS } from "./reproductionRequestAccess";
 
 /** History rows read per target; supersession history stays small. */
 export const PARTY_LINKS_PER_TARGET_LIMIT = 100;

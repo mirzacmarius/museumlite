@@ -304,8 +304,7 @@ test("a Licensed derivative is a bounded JPEG made from the verified image, neve
     height: 600,
   });
   const storageId = await t.run(
-    async (ctx) =>
-      derivative && (await ctx.db.get(derivative._id))?.storageId,
+    async (ctx) => derivative && (await ctx.db.get(derivative._id))?.storageId,
   );
   if (!storageId) throw new Error("Derivative was not stored");
   expect(storageId).not.toBe(museum.storageId);
@@ -429,7 +428,10 @@ test("approval records the rights evidence, the terms version and the expiry it 
   };
 
   const otherMuseum = await createMuseum(t);
-  const foreignTerms = await publishTerms(otherMuseum, "Another museum's text.");
+  const foreignTerms = await publishTerms(
+    otherMuseum,
+    "Another museum's text.",
+  );
   expect(
     await reproductionErrorOf(
       museum.staff.mutation(api.reproductionRequests.approve, {
@@ -439,7 +441,10 @@ test("approval records the rights evidence, the terms version and the expiry it 
     ),
   ).toBe("TERMS_NOT_PUBLISHED");
   const first = await publishTerms(museum, "One print edition only.");
-  const second = await publishTerms(museum, "One print edition; credit the museum.");
+  const second = await publishTerms(
+    museum,
+    "One print edition; credit the museum.",
+  );
   expect([first.version, second.version]).toEqual([1, 2]);
   expect(
     await reproductionErrorOf(
@@ -612,10 +617,9 @@ function providerReplies(...statuses: number[]) {
   const fetchMock = vi.fn();
   for (const status of statuses) {
     fetchMock.mockImplementationOnce(async () =>
-      Response.json(
-        status === 200 ? { id: "email-1" } : { name: "error" },
-        { status },
-      ),
+      Response.json(status === 200 ? { id: "email-1" } : { name: "error" }, {
+        status,
+      }),
     );
   }
   vi.stubGlobal("fetch", fetchMock);
@@ -694,8 +698,12 @@ test("approval emails the requester a link to the derivative only, and each down
     async (ctx) => (await ctx.db.get(derivativeId))?.storageId,
   );
   if (!derivativeStorageId) throw new Error("Derivative missing");
-  expect(served.equals((await blobBytes(t, derivativeStorageId)) ?? Buffer.alloc(0))).toBe(true);
-  expect(served.equals((await blobBytes(t, museum.storageId)) ?? Buffer.alloc(0))).toBe(false);
+  expect(
+    served.equals((await blobBytes(t, derivativeStorageId)) ?? Buffer.alloc(0)),
+  ).toBe(true);
+  expect(
+    served.equals((await blobBytes(t, museum.storageId)) ?? Buffer.alloc(0)),
+  ).toBe(false);
 
   const unknown = await t.fetch(
     "/v1/licensed-derivatives/not-a-real-token-value",

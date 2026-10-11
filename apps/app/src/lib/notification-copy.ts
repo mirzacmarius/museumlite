@@ -74,6 +74,9 @@ function getTitleMatch(title: string): Match | null {
     "Conservation Treatment Rejected": "conservationTreatmentRejected",
     "Overdue Treatment Alert": "overdueTreatmentAlert",
     "Assessment Due Alert": "assessmentDueAlert",
+    "Reproduction request awaits a decision":
+      "reproductionRequestAwaitsDecision",
+    "Licensed image not delivered": "licensedImageNotDelivered",
   };
   const staticKey = staticTitles[title];
   if (staticKey) return { key: `notificationCopy.titles.${staticKey}` };
@@ -246,6 +249,16 @@ function getMessageMatch(message: string): Match | null {
       (match: RegExpExecArray) => Record<string, string | number>,
     ]
   > = [
+    [
+      /^Request (.+) asks to use an image of (.+)\.$/,
+      "reproductionRequestReceived",
+      (match) => ({ number: match[1] ?? "", object: match[2] ?? "" }),
+    ],
+    [
+      /^The email for request (.+) could not be delivered\.$/,
+      "reproductionDeliveryFailed",
+      (match) => ({ number: match[1] ?? "" }),
+    ],
     [
       /^Accession (.+) is pending your approval at step (\d+)\.$/,
       "accessionPendingAtStep",

@@ -43,6 +43,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const t = useScopedI18n("untranslatedDashboard.dashboardHeader");
   const tEntries = useScopedI18n("objectEntries");
   const tQuality = useScopedI18n("documentationQuality");
+  const tReproduction = useScopedI18n("reproductionRequests");
   const tRecipes = useScopedI18n("preparationRecipes");
 
   const getPageTitle = (path: string) => {
@@ -72,6 +73,9 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
     if (cleanPath === "/documentation-quality") return tQuality("title");
     if (/^\/documentation-quality\/[^/]+$/.test(cleanPath))
       return tQuality("detail.headerTitle");
+    if (cleanPath === "/reproduction-requests") return tReproduction("title");
+    if (/^\/reproduction-requests\/[^/]+$/.test(cleanPath))
+      return tReproduction("headerTitle");
     if (cleanPath === "/settings/preparation-recipes") return tRecipes("title");
 
     // A page without its own title (new, edit, import, a record) is named by

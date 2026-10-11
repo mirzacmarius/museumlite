@@ -331,7 +331,10 @@ export const openDownload = internalMutation({
       ownership.ownerId !== derivative._id
     ) {
       await record("refused_unavailable");
-      return { kind: "refused" as const, outcome: "refused_unavailable" as const };
+      return {
+        kind: "refused" as const,
+        outcome: "refused_unavailable" as const,
+      };
     }
     await record("served", blob.size);
     return {

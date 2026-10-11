@@ -269,7 +269,7 @@ const messages: Record<EmailLocale, EmailMessages> = {
         "{organizationName} approved your request {requestNumber} for {objectLabel}. The file is a copy prepared for your request, not the original.",
       terms: "Terms of use: {termsTitle}, version {termsVersion}",
       expires:
-        "The download link works until {date}. It stops working earlier if the licence is revoked.",
+        "The download link works until the end of {date} (UTC). It stops working earlier if the license is revoked.",
       download: "Download the image",
       footer:
         "You received this email because you asked {organizationName} to use one of its images.",
@@ -435,7 +435,7 @@ const messages: Record<EmailLocale, EmailMessages> = {
         "{organizationName} a approuvé votre demande {requestNumber} pour {objectLabel}. Le fichier est une copie préparée pour votre demande, et non l'original.",
       terms: "Conditions d'utilisation : {termsTitle}, version {termsVersion}",
       expires:
-        "Le lien de téléchargement fonctionne jusqu'au {date}. Il cesse de fonctionner plus tôt si la licence est révoquée.",
+        "Le lien de téléchargement fonctionne jusqu'à la fin du {date} (UTC). Il cesse de fonctionner plus tôt si la licence est révoquée.",
       download: "Télécharger l'image",
       footer:
         "Vous recevez cet e-mail parce que vous avez demandé à {organizationName} d'utiliser l'une de ses images.",
@@ -595,7 +595,7 @@ const messages: Record<EmailLocale, EmailMessages> = {
         "{organizationName} aprobó su solicitud {requestNumber} para {objectLabel}. El archivo es una copia preparada para su solicitud, no el original.",
       terms: "Condiciones de uso: {termsTitle}, versión {termsVersion}",
       expires:
-        "El enlace de descarga funciona hasta el {date}. Deja de funcionar antes si se revoca la licencia.",
+        "El enlace de descarga funciona hasta el final del {date} (UTC). Deja de funcionar antes si se revoca la licencia.",
       download: "Descargar la imagen",
       footer:
         "Recibe este correo porque pidió a {organizationName} usar una de sus imágenes.",
@@ -756,7 +756,7 @@ const messages: Record<EmailLocale, EmailMessages> = {
         "{organizationName} har godkjent forespørselen din {requestNumber} for {objectLabel}. Filen er en kopi laget for forespørselen din, ikke originalen.",
       terms: "Bruksvilkår: {termsTitle}, versjon {termsVersion}",
       expires:
-        "Nedlastingslenken virker til {date}. Den slutter å virke tidligere hvis lisensen trekkes tilbake.",
+        "Nedlastingslenken virker til og med {date} (UTC). Den slutter å virke tidligere hvis lisensen trekkes tilbake.",
       download: "Last ned bildet",
       footer:
         "Du får denne e-posten fordi du ba {organizationName} om å bruke et av bildene deres.",
@@ -914,7 +914,7 @@ const messages: Record<EmailLocale, EmailMessages> = {
         "{organizationName} a aprobat cererea dvs. {requestNumber} pentru {objectLabel}. Fișierul este o copie pregătită pentru cererea dvs., nu originalul.",
       terms: "Condiții de utilizare: {termsTitle}, versiunea {termsVersion}",
       expires:
-        "Linkul de descărcare funcționează până la {date}. Nu mai funcționează mai devreme dacă licența este revocată.",
+        "Linkul de descărcare funcționează până la sfârșitul zilei de {date} (UTC). Nu mai funcționează mai devreme dacă licența este revocată.",
       download: "Descărcați imaginea",
       footer:
         "Primiți acest e-mail deoarece ați cerut organizației {organizationName} să folosească una dintre imaginile sale.",

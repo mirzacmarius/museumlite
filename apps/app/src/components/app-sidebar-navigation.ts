@@ -9,6 +9,7 @@ import {
   Container,
   Database,
   FileCheck,
+  FileImage,
   FileX,
   GalleryVerticalEnd,
   Globe,
@@ -106,6 +107,10 @@ export function buildSidebarNavigation({
     ...capabilityItem("documentation_quality", {
       title: label("documentationQuality"),
       icon: ClipboardCheck,
+    }),
+    ...capabilityItem("reproduction_requests", {
+      title: label("reproductionRequests"),
+      icon: FileImage,
     }),
     ...capabilityItem("conservation", {
       title: label("conservation"),

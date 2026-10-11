@@ -1,32 +1,27 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator, paginationResultValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { objectLabel } from "./utils/collectionDisplayHelpers";
+import {
+  DELIVERY_MAX_ATTEMPTS,
+  isRetryableStatus,
+  retrySeriesPatch,
+} from "./utils/deliveryLedger";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { dispatchNotification } from "./utils/notificationDispatch";
+import { notificationEmailChannel } from "./utils/notificationEmailChannel";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requireLinkableParty } from "./utils/parties";
 import { recordPartyLink } from "./utils/partyLinks";
 import { getCurrentUserOrganization } from "./utils/permissions";
 import { isWithdrawnObject } from "./utils/provenance";
 import { getPublicationSource } from "./utils/publicMedia";
-import { dispatchNotification } from "./utils/notificationDispatch";
-import { emitWebhookEvent } from "./utils/webhookEvents";
-import {
-  reproductionCommands,
-  reproductionDeciders,
-  requireReproductionAccess,
-  requireReproductionRequest,
-} from "./utils/reproductionRequestAccess";
-import { reproductionError } from "./utils/reproductionRequestErrors";
-import {
-  DELIVERY_MAX_ATTEMPTS,
-  isRetryableStatus,
-  retrySeriesPatch,
-} from "./utils/deliveryLedger";
-import { notificationEmailChannel } from "./utils/notificationEmailChannel";
 import {
   finishDeliveryWithoutSending,
   grantState,
@@ -39,12 +34,20 @@ import {
   downloadsView,
 } from "./utils/reproductionDeliveryViews";
 import {
+  reproductionCommands,
+  reproductionDeciders,
+  requireReproductionAccess,
+  requireReproductionRequest,
+} from "./utils/reproductionRequestAccess";
+import { reproductionError } from "./utils/reproductionRequestErrors";
+import {
   derivativeSize,
   reproductionEvidenceKind,
   reproductionLocale,
   reproductionPurpose,
   reproductionStatus,
 } from "./utils/reproductionRequestValidators";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 
 const TEXT_LIMIT = 4000;
 const SUPPORTED_IMAGE_TYPES = [
@@ -62,7 +65,11 @@ async function requireUserId(ctx: QueryCtx | MutationCtx) {
 
 function requiredText(
   value: string,
-  code: "PURPOSE_REQUIRED" | "REASON_REQUIRED" | "TERMS_TEXT_REQUIRED",
+  code:
+    | "PURPOSE_REQUIRED"
+    | "SUMMARY_REQUIRED"
+    | "REASON_REQUIRED"
+    | "TERMS_TEXT_REQUIRED",
 ) {
   const text = value.trim();
   if (!text) throw reproductionError(code, "Text is required");
@@ -132,7 +139,10 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireReproductionAccess(ctx, args.organizationId, "prepare");
     const userId = await requireUserId(ctx);
-    const purposeDetails = requiredText(args.purposeDetails, "PURPOSE_REQUIRED");
+    const purposeDetails = requiredText(
+      args.purposeDetails,
+      "PURPOSE_REQUIRED",
+    );
     const [object, media] = await Promise.all([
       ctx.db.get(args.objectId),
       ctx.db.get(args.mediaId),
@@ -283,7 +293,7 @@ export const addEvidence = mutation({
     );
     const userId = await requireUserId(ctx);
     requireOpen(request);
-    const summary = requiredText(args.summary, "PURPOSE_REQUIRED");
+    const summary = requiredText(args.summary, "SUMMARY_REQUIRED");
     if (args.documentMediaId) {
       const document = await ctx.db.get(args.documentMediaId);
       if (
@@ -306,10 +316,16 @@ export const addEvidence = mutation({
       recordedAt: Date.now(),
     });
     await touch(ctx, request);
-    await logRequestAction(ctx, request, userId, "reproduction_evidence_added", {
-      evidenceId,
-      kind: args.kind,
-    });
+    await logRequestAction(
+      ctx,
+      request,
+      userId,
+      "reproduction_evidence_added",
+      {
+        evidenceId,
+        kind: args.kind,
+      },
+    );
     return evidenceId;
   },
 });
@@ -581,7 +597,8 @@ export const publishTerms = mutation({
     const userId = await requireUserId(ctx);
     const title = requiredText(args.title, "TERMS_TEXT_REQUIRED");
     const body = requiredText(args.body, "TERMS_TEXT_REQUIRED");
-    const version = ((await latestTerms(ctx, args.organizationId))?.version ?? 0) + 1;
+    const version =
+      ((await latestTerms(ctx, args.organizationId))?.version ?? 0) + 1;
     const termsId = await ctx.db.insert("reproductionTerms", {
       organizationId: args.organizationId,
       version,
@@ -636,6 +653,16 @@ export const listTerms = query({
   },
 });
 
+async function latestTermsSummary(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const terms = await latestTerms(ctx, organizationId);
+  return terms
+    ? { _id: terms._id, version: terms.version, title: terms.title }
+    : null;
+}
+
 async function activeEvidenceIds(
   ctx: MutationCtx,
   request: Doc<"reproductionRequests">,
@@ -644,7 +671,9 @@ async function activeEvidenceIds(
     .query("reproductionEvidence")
     .withIndex("by_requestId", (q) => q.eq("requestId", request._id))
     .take(EVIDENCE_LIMIT);
-  return rows.flatMap((row) => (row.retractedAt === undefined ? [row._id] : []));
+  return rows.flatMap((row) =>
+    row.retractedAt === undefined ? [row._id] : [],
+  );
 }
 
 function rightsOf(media: Doc<"mediaFiles"> | null) {
@@ -774,12 +803,18 @@ export const approve = mutation({
         expiresAt: args.expiresAt,
       },
     );
-    await logRequestAction(ctx, request, userId, "reproduction_request_approved", {
-      decisionId,
-      derivativeId: derivative._id,
-      termsVersion: terms.version,
-      expiresAt: args.expiresAt,
-    });
+    await logRequestAction(
+      ctx,
+      request,
+      userId,
+      "reproduction_request_approved",
+      {
+        decisionId,
+        derivativeId: derivative._id,
+        termsVersion: terms.version,
+        expiresAt: args.expiresAt,
+      },
+    );
     return decisionId;
   },
 });
@@ -831,10 +866,16 @@ export const refuse = mutation({
         outcome: "refused",
       },
     );
-    await logRequestAction(ctx, request, userId, "reproduction_request_refused", {
-      decisionId,
-      reason,
-    });
+    await logRequestAction(
+      ctx,
+      request,
+      userId,
+      "reproduction_request_refused",
+      {
+        decisionId,
+        reason,
+      },
+    );
     return decisionId;
   },
 });
@@ -850,14 +891,21 @@ export const expire = internalMutation({
       return null;
     const now = Date.now();
     if (expiresAt > now) {
-      await ctx.scheduler.runAt(expiresAt, internal.reproductionRequests.expire, {
-        decisionId: decision._id,
-      });
+      await ctx.scheduler.runAt(
+        expiresAt,
+        internal.reproductionRequests.expire,
+        {
+          decisionId: decision._id,
+        },
+      );
       return null;
     }
     await ctx.db.patch(decision._id, { endedAt: expiresAt });
     const request = await ctx.db.get(decision.requestId);
-    if (request?.currentDecisionId === decision._id && request.status === "approved") {
+    if (
+      request?.currentDecisionId === decision._id &&
+      request.status === "approved"
+    ) {
       await ctx.db.patch(request._id, {
         status: "expired",
         updatedAt: now,
@@ -922,9 +970,15 @@ export const resendDelivery = mutation({
     const decision = await requireActiveGrant(ctx, request);
     requireEmailChannel();
     const deliveryId = await queueDelivery(ctx, request, decision._id, userId);
-    await logRequestAction(ctx, request, userId, "reproduction_delivery_resent", {
-      deliveryId,
-    });
+    await logRequestAction(
+      ctx,
+      request,
+      userId,
+      "reproduction_delivery_resent",
+      {
+        deliveryId,
+      },
+    );
     return deliveryId;
   },
 });
@@ -968,9 +1022,15 @@ export const retryDelivery = mutation({
       internal.reproductionDeliveriesActions.attemptDelivery,
       { deliveryId: delivery._id, attempt: delivery.attemptCount + 1 },
     );
-    await logRequestAction(ctx, request, userId, "reproduction_delivery_retried", {
-      deliveryId: delivery._id,
-    });
+    await logRequestAction(
+      ctx,
+      request,
+      userId,
+      "reproduction_delivery_retried",
+      {
+        deliveryId: delivery._id,
+      },
+    );
     return null;
   },
 });
@@ -1031,10 +1091,16 @@ export const revoke = mutation({
         endedAt: now,
       },
     );
-    await logRequestAction(ctx, request, userId, "reproduction_request_revoked", {
-      decisionId: decision._id,
-      reason,
-    });
+    await logRequestAction(
+      ctx,
+      request,
+      userId,
+      "reproduction_request_revoked",
+      {
+        decisionId: decision._id,
+        reason,
+      },
+    );
     return null;
   },
 });
@@ -1127,9 +1193,15 @@ export const withdraw = mutation({
       closedBy: userId,
       closeReason: reason,
     });
-    await logRequestAction(ctx, request, userId, "reproduction_request_withdrawn", {
-      reason,
-    });
+    await logRequestAction(
+      ctx,
+      request,
+      userId,
+      "reproduction_request_withdrawn",
+      {
+        reason,
+      },
+    );
     return null;
   },
 });
@@ -1300,11 +1372,23 @@ export const get = query({
       decision: v.union(decisionItem, v.null()),
       deliveries: v.array(deliveryItem),
       downloads: v.array(downloadItem),
+      latestTerms: v.union(
+        v.null(),
+        v.object({
+          _id: v.id("reproductionTerms"),
+          version: v.number(),
+          title: v.string(),
+        }),
+      ),
+      emailAvailable: v.boolean(),
       commands: v.object({ canPrepare: v.boolean(), canDecide: v.boolean() }),
     }),
   ),
   handler: async (ctx, args) => {
-    const requestId = ctx.db.normalizeId("reproductionRequests", args.requestId);
+    const requestId = ctx.db.normalizeId(
+      "reproductionRequests",
+      args.requestId,
+    );
     const request = requestId ? await ctx.db.get(requestId) : null;
     if (
       !request ||
@@ -1366,6 +1450,8 @@ export const get = query({
       decision: await decisionView(ctx, request),
       deliveries: await deliveriesView(ctx, request),
       downloads: await downloadsView(ctx, request),
+      latestTerms: await latestTermsSummary(ctx, request.organizationId),
+      emailAvailable: notificationEmailChannel().kind !== "unavailable",
       commands: await reproductionCommands(ctx, request.organizationId),
     };
   },

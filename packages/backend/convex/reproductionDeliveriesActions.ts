@@ -31,13 +31,16 @@ export const attemptDelivery = internalAction({
     // Read at call time, like the channel, so configuration applies at once.
     const siteUrl = process.env.CONVEX_SITE_URL;
     if (channel.kind === "unavailable" || !siteUrl) {
-      await ctx.runMutation(internal.reproductionDeliveries.recordAttemptResult, {
-        ...args,
-        startedAt,
-        durationMs: 0,
-        outcome: "failed_transient",
-        errorCode: "channel_unavailable",
-      });
+      await ctx.runMutation(
+        internal.reproductionDeliveries.recordAttemptResult,
+        {
+          ...args,
+          startedAt,
+          durationMs: 0,
+          outcome: "failed_transient",
+          errorCode: "channel_unavailable",
+        },
+      );
       return null;
     }
     const downloadUrl = new URL(
