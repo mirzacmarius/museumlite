@@ -80,6 +80,7 @@ export const NOTIFICATION_TYPE_CATEGORIES = {
   condition_dispute_resolved: "alerts",
   insurance_auto_claim: "alerts",
   task_blocked: "alerts",
+  incident_reported: "alerts",
   library_recall: "alerts",
   sla_breach_accession: "alerts",
   sla_breach_deaccession: "alerts",
@@ -93,6 +94,7 @@ export const NOTIFICATION_TYPE_CATEGORIES = {
   task_review_requested: "assignments",
   task_returned: "assignments",
   comment_mention: "assignments",
+  incident_lead_assigned: "assignments",
 
   batch_job_completed: "system",
   report_ready: "system",
@@ -103,6 +105,7 @@ export const NOTIFICATION_TYPE_CATEGORIES = {
   loan_cancelled: "system",
   transit_status_update: "system",
   library_auto_renewal: "system",
+  incident_closed: "system",
 } as const satisfies Record<string, NotificationCategory>;
 
 export type NotificationType = keyof typeof NOTIFICATION_TYPE_CATEGORIES;
@@ -139,6 +142,8 @@ export const NOTIFICATION_ENTITY_READ_PERMISSIONS = {
   acquisition: "collections.read",
   libraryAcquisitionRequest: "collections.read",
   documentationFinding: "collections.read",
+  // Sensitive incidents also narrow recipients to their scope (ADR 0014).
+  incident: "collections.read",
   loan: "loans.read",
   transitRecord: "loans.read",
   insurancePolicy: "loans.read",

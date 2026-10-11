@@ -13,6 +13,7 @@ import {
   caseLabelOf,
   displayName,
   isFinding,
+  isIncident,
   isOpenStatus,
   loadCase,
   logTaskEvent,
@@ -30,13 +31,18 @@ import {
 } from "./utils/caseTaskValidators";
 import { findingObjectIds } from "./utils/documentationFindings";
 import { hasFeatureAccess } from "./utils/featureGates";
+import { memberCanWorkOn, seesIncident } from "./utils/incidentAccess";
 import {
   memberPermissionNames,
   rolePermissionNames,
 } from "./utils/memberPermissions";
 import { mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
-import { hasPermission, requirePermission } from "./utils/permissions";
+import {
+  getUserPermissions,
+  hasPermission,
+  requirePermission,
+} from "./utils/permissions";
 import { preparationTriggerValidator } from "./utils/preparationValidators";
 import { workError } from "./utils/workErrors";
 
@@ -137,16 +143,35 @@ async function requireUserId(ctx: QueryCtx) {
   return userId;
 }
 
-/** Owners and reviewers must be members who can work on this kind of case. */
+/**
+ * Whether a member may own or review tasks on this case: they can work on
+ * its kind of case and, on a sensitive incident, are in its scope.
+ */
+async function eligibleFor(
+  ctx: QueryCtx,
+  entity: CaseDoc,
+  caseType: CaseTaskCaseType,
+  userId: Id<"users">,
+  permissions: Set<string> | null,
+) {
+  if (!canWorkWith(permissions, caseType)) return false;
+  return isIncident(entity) ? await memberCanWorkOn(ctx, entity, userId) : true;
+}
+
+/** Owners and reviewers must be members who can work on this case. */
 async function requireEligible(
   ctx: QueryCtx,
-  organizationId: Id<"organizations">,
+  entity: CaseDoc,
   caseType: CaseTaskCaseType,
   userId: Id<"users">,
   role: "owner" | "reviewer",
 ) {
-  const permissions = await memberPermissionNames(ctx, organizationId, userId);
-  if (canWorkWith(permissions, caseType)) return;
+  const permissions = await memberPermissionNames(
+    ctx,
+    entity.organizationId,
+    userId,
+  );
+  if (await eligibleFor(ctx, entity, caseType, userId, permissions)) return;
   throw role === "owner"
     ? workError(
         "ASSIGNEE_NOT_ELIGIBLE",
@@ -171,11 +196,13 @@ async function canAccessCaseType(
   return await hasPermission(ctx, organizationId, config.readPermission);
 }
 
+/** The case's label, or null when the viewer may not open the case. */
 async function readCaseLabel(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   caseType: CaseTaskCaseType,
   caseId: string,
+  viewer: { userId: Id<"users">; permissions: ReadonlySet<string> },
 ) {
   const table = {
     loan: "loans",
@@ -184,10 +211,16 @@ async function readCaseLabel(
     exhibition: "exhibitions",
     conservation: "conservationTreatments",
     documentationFinding: "documentationFindings",
+    incident: "incidents",
   } as const;
   const id = ctx.db.normalizeId(table[caseType], caseId);
   const entity = id ? await ctx.db.get(id) : null;
   if (!entity || entity.organizationId !== organizationId) return null;
+  if (
+    isIncident(entity) &&
+    !seesIncident(entity, viewer.userId, viewer.permissions)
+  )
+    return null;
   return caseLabelOf(entity);
 }
 
@@ -442,7 +475,11 @@ async function presentQueuePage(
   organizationId: Id<"organizations">,
   rows: Doc<"caseTasks">[],
 ) {
-  const access = await viewerAccess(ctx, organizationId);
+  const [access, permissions] = await Promise.all([
+    viewerAccess(ctx, organizationId),
+    getUserPermissions(ctx, organizationId),
+  ]);
+  const viewer = { userId: access.userId, permissions: new Set(permissions) };
   const caseTypeAccess = new Map<
     CaseTaskCaseType,
     Promise<{ read: boolean; work: boolean }>
@@ -471,6 +508,7 @@ async function presentQueuePage(
         organizationId,
         task.caseType,
         task.caseId,
+        viewer,
       );
       return caseLabel === null
         ? null
@@ -646,7 +684,12 @@ export const listAssignableMembers = query({
   returns: v.array(v.object({ userId: v.id("users"), name: v.string() })),
   handler: async (ctx, args) => {
     await requireUserId(ctx);
-    await loadCase(ctx, args.organizationId, args.caseType, args.caseId);
+    const entity = await loadCase(
+      ctx,
+      args.organizationId,
+      args.caseType,
+      args.caseId,
+    );
     await requirePermission(
       ctx,
       args.organizationId,
@@ -666,7 +709,16 @@ export const listAssignableMembers = query({
           permissions = rolePermissionNames(ctx, membership.roleId);
           rolePermissions.set(membership.roleId, permissions);
         }
-        if (!canWorkWith(await permissions, args.caseType)) return null;
+        if (
+          !(await eligibleFor(
+            ctx,
+            entity,
+            args.caseType,
+            membership.userId,
+            await permissions,
+          ))
+        )
+          return null;
         const user = await ctx.db.get(membership.userId);
         const name = displayName(user);
         return name ? { userId: membership.userId, name } : null;
@@ -707,6 +759,15 @@ async function caseObjectIds(
       .withIndex("by_exhibition", (q) => q.eq("exhibitionId", exhibitionId))
       .take(CASE_OBJECT_LIMIT);
     return members.map((member) => member.collectionId);
+  }
+  if (isIncident(entity)) {
+    const rows = await ctx.db
+      .query("incidentObjects")
+      .withIndex("by_incident_and_collection", (q) =>
+        q.eq("incidentId", entity._id),
+      )
+      .take(CASE_OBJECT_LIMIT);
+    return rows.map((row) => row.collectionId);
   }
   if (isFinding(entity))
     return findingObjectIds(entity).flatMap((id) => {
@@ -881,7 +942,12 @@ export const create = mutation({
   returns: v.id("caseTasks"),
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    await loadCase(ctx, args.organizationId, args.caseType, args.caseId);
+    const entity = await loadCase(
+      ctx,
+      args.organizationId,
+      args.caseType,
+      args.caseId,
+    );
     await requirePermission(
       ctx,
       args.organizationId,
@@ -890,13 +956,7 @@ export const create = mutation({
     const title = requiredText(args.title, MAX_TITLE_LENGTH, "Title");
     const description = optionalText(args.description, "Description");
     const dueDate = validDueDate(args.dueDate);
-    await requireEligible(
-      ctx,
-      args.organizationId,
-      args.caseType,
-      args.ownerId,
-      "owner",
-    );
+    await requireEligible(ctx, entity, args.caseType, args.ownerId, "owner");
     if (args.reviewerId !== undefined) {
       if (args.reviewerId === args.ownerId)
         throw workError(
@@ -905,7 +965,7 @@ export const create = mutation({
         );
       await requireEligible(
         ctx,
-        args.organizationId,
+        entity,
         args.caseType,
         args.reviewerId,
         "reviewer",
@@ -992,13 +1052,18 @@ async function loadTaskForWork(ctx: MutationCtx, taskId: Id<"caseTasks">) {
         .first()
     : null;
   if (!task || !membership) throw workError("TASK_NOT_FOUND", "Task not found");
-  await loadCase(ctx, task.organizationId, task.caseType, task.caseId);
+  const entity = await loadCase(
+    ctx,
+    task.organizationId,
+    task.caseType,
+    task.caseId,
+  );
   await requirePermission(
     ctx,
     task.organizationId,
     CASE_CONFIG[task.caseType].workPermission,
   );
-  return { userId, task };
+  return { userId, task, entity };
 }
 
 function requireStatus(task: Doc<"caseTasks">, allowed: CaseTaskStatus[]) {
@@ -1301,30 +1366,18 @@ export const assign = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { userId, task } = await loadTaskForWork(ctx, args.taskId);
+    const { userId, task, entity } = await loadTaskForWork(ctx, args.taskId);
     requireStatus(task, ["todo", "in_progress", "blocked", "in_review"]);
     const reviewerId = args.reviewerId ?? undefined;
     const dueDate = validDueDate(args.dueDate ?? undefined);
-    await requireEligible(
-      ctx,
-      task.organizationId,
-      task.caseType,
-      args.ownerId,
-      "owner",
-    );
+    await requireEligible(ctx, entity, task.caseType, args.ownerId, "owner");
     if (reviewerId !== undefined) {
       if (reviewerId === args.ownerId)
         throw workError(
           "REVIEWER_NOT_ELIGIBLE",
           "Reviewer must be someone other than the owner",
         );
-      await requireEligible(
-        ctx,
-        task.organizationId,
-        task.caseType,
-        reviewerId,
-        "reviewer",
-      );
+      await requireEligible(ctx, entity, task.caseType, reviewerId, "reviewer");
     } else if (task.status === "in_review") {
       throw workError("INVALID_INPUT", "A task under review needs a reviewer");
     }

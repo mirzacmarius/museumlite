@@ -12,6 +12,7 @@ export const caseTaskCaseTypeValidator = v.union(
   v.literal("exhibition"),
   v.literal("conservation"),
   v.literal("documentationFinding"),
+  v.literal("incident"),
 );
 export type CaseTaskCaseType = Infer<typeof caseTaskCaseTypeValidator>;
 

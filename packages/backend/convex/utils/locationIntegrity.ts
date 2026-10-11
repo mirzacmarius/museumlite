@@ -56,6 +56,7 @@ export interface CollectionMovementOptions extends MovementGuardOptions {
   batchJobId?: Id<"batchJobs">;
   exhibitionObjectId?: Id<"exhibitionObjects">;
   transitItemId?: Id<"transitItems">;
+  incidentId?: Id<"incidents">;
   /**
    * This movement is the return that ends external custody, so the
    * outgoing-loan guard must not block it.
@@ -309,6 +310,7 @@ export async function moveCollectionToLocation(
     batchJobId: options.batchJobId,
     exhibitionObjectId: options.exhibitionObjectId,
     transitItemId: options.transitItemId,
+    incidentId: options.incidentId,
   });
   await ctx.db.patch(collection._id, {
     currentLocationId: toLocationId,

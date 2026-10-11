@@ -29,6 +29,7 @@ export const CAPABILITY_IDS = [
   "patrons",
   "library",
   "documentation_quality",
+  "incidents",
   "deaccession",
   "administration",
 ] as const;
@@ -124,6 +125,12 @@ export const CAPABILITY_MATRIX = {
   documentation_quality: {
     permissions: ["collections.read", "collections.update"],
     route: "/documentation-quality",
+  },
+  // Anyone who reads the collection may report an incident; coordinating
+  // and sensitive scope are checked by the commands (ADR 0014).
+  incidents: {
+    permissions: ["collections.read"],
+    route: "/incidents",
   },
   // Starting a deaccession is a role rule, not one permission: see
   // `deaccessionInitiationState`, which single and bulk starts share.

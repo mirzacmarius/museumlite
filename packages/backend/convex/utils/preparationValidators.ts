@@ -1,11 +1,15 @@
 import { type Infer, v } from "convex/values";
 import { caseTaskEvidenceKindValidator } from "./caseTaskValidators";
 
-/** Accepted case events a preparation recipe can follow. */
+/**
+ * Accepted case events a preparation recipe can follow. An incident response
+ * plan follows triage, but only when a coordinator chose it (ADR 0014).
+ */
 export const preparationTriggerValidator = v.union(
   v.literal("intake_accepted"),
   v.literal("loan_approved"),
   v.literal("exhibition_approved"),
+  v.literal("incident_response"),
 );
 export type PreparationTrigger = Infer<typeof preparationTriggerValidator>;
 
@@ -13,6 +17,7 @@ export const PREPARATION_TRIGGERS: readonly PreparationTrigger[] = [
   "intake_accepted",
   "loan_approved",
   "exhibition_approved",
+  "incident_response",
 ];
 
 export const preparationRecipeStatusValidator = v.union(
@@ -40,11 +45,12 @@ export type PreparationOwner = Infer<typeof preparationOwnerValidator>;
 
 /**
  * A due date in days from a case date: the acceptance, or the loan or
- * exhibition's start or end.
+ * exhibition's start or end. Incident plans count hours from triage instead.
  */
 export const preparationDueValidator = v.object({
   anchor: v.union(v.literal("event"), v.literal("start"), v.literal("end")),
   offsetDays: v.number(),
+  offsetHours: v.optional(v.number()),
 });
 export type PreparationDue = Infer<typeof preparationDueValidator>;
 
