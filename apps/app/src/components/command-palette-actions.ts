@@ -4,6 +4,7 @@ import {
   Box,
   Building2,
   ClipboardCheck,
+  ClipboardList,
   CreditCard,
   FileImage,
   FilePlus,
@@ -84,6 +85,11 @@ export function buildCommandPaletteActions({
       labelKey: "reproductionRequests",
       href: capabilityRoute("reproduction_requests"),
       icon: FileImage,
+    }),
+    ...when(isOpen("inventory"), {
+      labelKey: "inventory",
+      href: capabilityRoute("inventory"),
+      icon: ClipboardList,
     }),
     ...when(isOpen("loans"), {
       labelKey: "loans",

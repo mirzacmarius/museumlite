@@ -184,6 +184,7 @@ async function readCaseLabel(
     exhibition: "exhibitions",
     conservation: "conservationTreatments",
     documentationFinding: "documentationFindings",
+    inventoryException: "inventoryExceptions",
   } as const;
   const id = ctx.db.normalizeId(table[caseType], caseId);
   const entity = id ? await ctx.db.get(id) : null;

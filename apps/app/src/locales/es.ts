@@ -2706,6 +2706,7 @@ export default {
           bulk_move: "Movimiento masivo",
           bulk_edit: "Edición masiva",
           catalog_edit: "Edición del catálogo",
+          inventory_reconciliation: "Conciliación de inventario",
           legacy: "Movimiento registrado",
         },
       },
@@ -4829,6 +4830,7 @@ export default {
       exhibition: "Exposición",
       conservation: "Tratamiento de conservación",
       documentationFinding: "Hallazgo de documentación",
+      inventoryException: "Excepción de inventario",
     },
     fields: {
       title: "Título",
@@ -5812,6 +5814,7 @@ export default {
       conservation: "Ir a conservación",
       entries: "Ir a entradas",
       documentationQuality: "Ir a calidad de la documentación",
+      inventory: "Ir al inventario",
     },
     pageNotFound: {
       title: "Página no encontrada",
@@ -7483,6 +7486,214 @@ export default {
     resumeNotice:
       "Este archivo se importó el {date}: {attempted} de {total} filas procesadas, {accepted} aceptadas, {failed} con error. Al reanudar se omiten las filas aceptadas.",
     resumeImport: "Reanudar importación",
+  },
+  inventory: {
+    title: "Inventario",
+    description:
+      "Compare dónde sitúan los registros los objetos con dónde los encuentra el personal. Los escaneos son evidencia; nunca mueven un objeto.",
+    newSession: "Iniciar inventario",
+    noSessions: "Todavía no hay sesiones de inventario.",
+    noSessionsHint:
+      "Inicie una para un depósito, una sala o una estantería y escanee las etiquetas que encuentre allí.",
+    workUnavailable:
+      "Puede seguir las sesiones de inventario. Para iniciarlas, escanear y resolverlas necesita permiso para mover objetos.",
+    sessionsTitle: "Sesiones",
+    statuses: {
+      scanning: "Escaneando",
+      reviewing: "En revisión",
+      reconciled: "Conciliada",
+      cancelled: "Cancelada",
+    },
+    progress: "{observed} de {expected} encontrados",
+    remaining: "Pendientes de encontrar: {count}",
+    withSublocations: "{location} y todo lo que contiene",
+    start: {
+      title: "Iniciar inventario",
+      description:
+        "Al iniciar se toma una instantánea de los objetos que los registros sitúan en este ámbito. Los movimientos posteriores no la cambian.",
+      name: "Nombre",
+      namePlaceholder: "Revisión anual del depósito 2",
+      scope: "Ubicación",
+      includeSublocations: "Incluir todas las ubicaciones que contiene",
+      submit: "Iniciar",
+      submitting: "Iniciando...",
+      nameRequired: "Introduzca un nombre.",
+      scopeRequired: "Elija una ubicación.",
+    },
+    session: {
+      back: "Volver al inventario",
+      startedBy: "Iniciada por {name} el {date}",
+      finishedBy: "Escaneo terminado por {name} el {date}",
+      cancelledBy: "Cancelada por {name} el {date}: {reason}",
+      reconciledOn: "Conciliada el {date}",
+      unknownPerson: "un antiguo miembro",
+      tabs: {
+        scan: "Escanear",
+        expected: "Esperados",
+        observations: "Observaciones",
+        exceptions: "Excepciones",
+      },
+      printObjectLabels: "Etiquetas de objetos",
+      printLocationLabels: "Etiquetas de ubicaciones",
+      objectLabelsTitle: "Etiquetas de los objetos esperados",
+      objectLabelsDescription:
+        "Etiquetas QR de los objetos esperados en este ámbito ({count}).",
+      locationLabelsTitle: "Etiquetas de ubicaciones",
+      locationLabelsDescription:
+        "Etiquetas QR de las ubicaciones de este ámbito ({count}). Al escanear una, el escáner pasa a esa ubicación.",
+      finish: "Terminar el escaneo",
+      finishTitle: "¿Terminar el escaneo?",
+      finishDescription:
+        "Cada diferencia entre lo esperado y lo observado se convierte en una excepción que revisar. No se mueve ningún objeto. Después no podrá escanear en esta sesión.",
+      finishing: "Terminando...",
+      finished: "Escaneo terminado.",
+      cancel: "Cancelar la sesión",
+      cancelTitle: "¿Cancelar esta sesión?",
+      cancelDescription:
+        "Sus observaciones se conservan como evidencia, pero no se crean excepciones y nadie podrá volver a escanear en ella.",
+      cancelReason: "Motivo",
+      cancelReasonRequired: "Introduzca un motivo.",
+      cancelling: "Cancelando...",
+      cancelled: "Sesión cancelada.",
+      keepScanning: "Seguir escaneando",
+      exceptionsOpen: "Excepciones abiertas: {count}",
+    },
+    scan: {
+      currentLocation: "Dónde está escaneando",
+      cameraTitle: "Escanear con la cámara",
+      manualTitle: "Escribir o usar un lector de mano",
+      manualLabel: "Etiqueta o número de accesión",
+      manualHint:
+        "También sirve un lector de mano que escriba en este campo. Pulse Intro para registrar.",
+      note: "Nota (opcional)",
+      record: "Registrar",
+      recording: "Guardando...",
+      switchedLocation: "Escaneando en {location}.",
+      locationOutOfScope:
+        "Esa etiqueta de ubicación no forma parte de esta sesión.",
+      lastScans: "Escaneos de este dispositivo",
+      lastScansHint:
+        "Los escaneos que no se guardaron permanecen aquí hasta que los reintente. No se almacenan en este dispositivo.",
+      notSaved: "No guardado",
+      retry: "Reintentar",
+      alreadyRecorded: "Ya registrado",
+      cameraError: "La cámara no pudo escanear: {error}",
+      outcomes: {
+        expected: "Encontrado donde está registrado",
+        misplaced: "Registrado en {location}",
+        unexpected: "No se esperaba aquí",
+        unknown: "No es un objeto de esta organización",
+        repeat: "Ya observado",
+      },
+      unexpectedRecorded: "Registrado en {location}",
+      unexpectedNoLocation: "Sin ubicación registrada",
+    },
+    expected: {
+      empty: "No se esperaban objetos en este ámbito.",
+      found: "Encontrado",
+      notFound: "Aún no encontrado",
+      foundAt: "Encontrado en {location}",
+      expectedIn: "Esperado en {location}",
+    },
+    observations: {
+      empty: "Todavía no se ha escaneado nada.",
+      latestOnly: "Se muestran las 200 observaciones más recientes.",
+      by: "{name}, {date}",
+      methods: {
+        scan: "Cámara",
+        manual: "Escrito",
+      },
+      noRecordedLocation: "Sin ubicación registrada",
+    },
+    exceptions: {
+      empty: "No hay excepciones.",
+      notFinished:
+        "Las excepciones se registran al terminar el escaneo. Hasta entonces, las pestañas Esperados y Observaciones muestran el avance.",
+      kinds: {
+        missing: "Falta",
+        misplaced: "Fuera de lugar",
+        unexpected: "Inesperado",
+        unknown_label: "Etiqueta desconocida",
+      },
+      statuses: {
+        open: "Abierta",
+        accepted: "Aceptada",
+        resolved: "Resuelta",
+      },
+      summaries: {
+        missing: "Esperado en {recorded}, no encontrado",
+        misplaced: "Esperado en {recorded}, encontrado en {observed}",
+        unexpected: "Registrado en {recorded}, encontrado en {observed}",
+        unexpectedNoLocation:
+          "Sin ubicación registrada, encontrado en {observed}",
+        unknown_label: "Escaneado en {observed}",
+      },
+    },
+    exception: {
+      back: "Volver a la sesión",
+      session: "Sesión",
+      foundTitle: "Qué se observó",
+      object: "Objeto",
+      scannedValue: "Valor escaneado",
+      recordedLocation: "Ubicación registrada",
+      observedLocation: "Ubicación observada",
+      observedBy: "Observado por",
+      method: "Captado con",
+      note: "Nota",
+      notRecorded: "No registrado",
+      openObject: "Abrir el objeto",
+      reprintLabel: "Reimprimir la etiqueta",
+      reprintTitle: "Reimprimir la etiqueta del objeto",
+      reprintDescription: "Una nueva etiqueta QR para {label}.",
+      reviewTitle: "Revisión",
+      openHint:
+        "Cierre esta excepción registrando el movimiento al lugar donde se encontró el objeto, o acéptela con un motivo. El trabajo de reparación, como una búsqueda o un reetiquetado, va en una tarea más abajo; terminar una tarea no cierra la excepción.",
+      recordMove: "Registrar el movimiento a {location}",
+      recordMoveHint:
+        "Registra un movimiento de {recorded} a {observed}, autorizado por usted. Se rechaza si el objeto se ha movido desde entonces, está en préstamo o la ubicación no puede recibirlo.",
+      recording: "Registrando...",
+      moved: "Movimiento registrado.",
+      confirmed:
+        "El registro ya indicaba la ubicación observada; no hizo falta ningún movimiento.",
+      accept: "Aceptar con un motivo",
+      acceptTitle: "Aceptar esta excepción",
+      acceptDescription:
+        "La excepción se cierra con su motivo como explicación. El registro del objeto no cambia.",
+      reason: "Motivo",
+      reasonRequired: "Introduzca un motivo.",
+      accepting: "Guardando...",
+      accepted: "Excepción aceptada.",
+      cancel: "Cancelar",
+      resolutions: {
+        moved: "Resuelta con un movimiento registrado.",
+        location_confirmed:
+          "Resuelta: el registro ya indicaba la ubicación observada.",
+        accepted: "Aceptada: {reason}",
+      },
+      resolvedBy: "{name}, {date}",
+      viewOnly:
+        "Puede leer esta excepción. Para resolverla necesita permiso para mover objetos.",
+    },
+    errors: {
+      nameRequired: "Introduzca un nombre.",
+      textTooLong: "Este texto es demasiado largo.",
+      locationNotFound:
+        "Esa ubicación no está disponible en esta organización.",
+      scopeTooLarge:
+        "Este ámbito es demasiado grande para una sola sesión (límite: {limit}). Elija una ubicación más pequeña o excluya las ubicaciones que contiene.",
+      sessionNotFound: "Esta sesión de inventario no está disponible.",
+      sessionNotScanning: "Esta sesión ya no está escaneando.",
+      locationOutOfScope: "Esa ubicación no forma parte de esta sesión.",
+      scanValueRequired: "No se escaneó nada.",
+      observationLimitReached:
+        "Esta sesión ha alcanzado su límite de {limit} observaciones. Termínela e inicie otra.",
+      exceptionNotFound: "Esta excepción no está disponible.",
+      exceptionClosed: "Esta excepción ya está cerrada.",
+      exceptionNotMovable:
+        "Solo un objeto encontrado en otro lugar puede moverse allí.",
+      reasonRequired: "Introduzca un motivo.",
+      fallback: "No ha funcionado. Inténtelo de nuevo.",
+    },
   },
   scan: {
     scanner: {
@@ -9740,6 +9951,7 @@ export default {
       newLoan: "Nuevo préstamo",
       newCollectionGroup: "Nuevo grupo de colecciones",
       documentationQuality: "Calidad de la documentación",
+      inventory: "Inventario",
       navigation: "Navegación",
       dashboard: "Panel",
       library: "Biblioteca",
@@ -10211,6 +10423,7 @@ export default {
       overview: "Resumen",
       myWork: "Mi trabajo",
       documentationQuality: "Calidad de la documentación",
+      inventory: "Inventario",
       objectCatalog: "Catálogo de objetos",
       locationTracking: "Ubicación y seguimiento",
       scan: "Escanear",

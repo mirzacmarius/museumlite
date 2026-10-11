@@ -1,0 +1,20 @@
+# Inventory observations are evidence, not custody; exceptions are resolved by guarded commands
+
+An inventory session compares where the record says Objects are with where staff find them. Its scope is one Location, optionally with every Location below it (at most 200 Locations). Starting the session takes a snapshot of the expected Objects: those in the collection (status `active`) whose recorded current Location is in scope, at most 1,000. The snapshot is the session's expectation. Later moves do not rewrite it, and an Object is never expected in two places within one session.
+
+A scan records an Observation: the scanned value as read, how it was captured (camera scan or typed/keyboard-wedge entry), the Location in scope where it was made, the actor, the server time, the Object it resolved to, the Location the record showed at that moment, and an optional note. The client gives every scan an identifier, so retrying a scan whose answer was lost returns the first result and records nothing twice. An Observation never changes an Object's current Location, status or history. Finding an Object somewhere unexpected is evidence about the record, not a movement.
+
+Finishing the scan turns every difference into an Exception in one transaction: `missing` (expected and not observed), `misplaced` (expected in one in-scope Location and observed in another), `unexpected` (observed in scope while the record shows another Location, no Location, or a status outside the collection) and `unknown_label` (a scanned value that names no Object of the organization). A session with no Exceptions is reconciled at once; otherwise it is reconciled when the last one is closed. A session is limited to 3,000 Observations, so finishing stays one bounded transaction. Cancelling a session keeps its Observations and creates no Exceptions.
+
+Staff close each Exception in one of two ways, and each writes institutional history:
+- **Record the move to the observed Location** (misplaced and unexpected only). This calls the guarded movement command (`moveCollectionToLocation`, MUS-628) with the new movement kind `inventory_reconciliation`, the reviewer as the authorizer, and the recorded Location the Exception names as the observed source. If someone moved the Object in the meantime, if it is out on loan, or if the destination is closed or full, the command refuses with the usual custody conflict and the Exception stays open. If the record already shows the observed Location, the Exception closes as confirmed with no movement. Repeating a resolved command returns the first resolution.
+- **Accept with a reason**, for example an Object known to be in the conservation studio, or a label that belongs to a disposed Object.
+
+Repair work (search for a missing Object, relabel, return an Object to its recorded place) is a case task (MUS-656) with the Exception as its Case, so it reaches My work. As with documentation Findings, completing a task does not close the Exception; a reviewer records the move or accepts it.
+
+Inventory is a capability for staff who read collection records and Locations, on every plan and without a module. Starting, scanning, finishing, cancelling and resolving require `locations.update`, the permission that already governs moving Objects; Catalogers and Viewers can follow progress but not change it. Labels reuse the existing object QR label (an object URL), and new Location labels carry the Location URL. Scanning a Location label switches the scanner's current Location; it records nothing.
+
+Considered and rejected:
+- Applying observations as moves automatically, or "reconcile all". That would turn a sighting into custody without an authorized decision, which R10 and R33 forbid.
+- A live expected set recomputed on every read. Moves made during the session would make Objects appear and disappear from the expectation, and the comparison would not be repeatable.
+- Offline capture. It needs a secure storage, conflict and sync contract (MUS-663, held). The scanner says that a scan which failed to save was not saved and offers a retry; it never queues scans.

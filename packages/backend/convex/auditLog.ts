@@ -175,7 +175,7 @@ export const AUDIT_READ_PERMISSION = "organization.view_analytics";
 const CASE_ACCESS: Record<
   string,
   {
-    permission: "loans.read" | "collections.read";
+    permission: "loans.read" | "collections.read" | "locations.read";
     feature?: "loans" | "exhibitions" | "conservation";
     module?: "library";
   }
@@ -191,6 +191,7 @@ const CASE_ACCESS: Record<
   deaccession: { permission: "collections.read" },
   organizationMoveRequest: { permission: "collections.read" },
   documentationFinding: { permission: "collections.read" },
+  inventoryException: { permission: "locations.read" },
   libraryAcquisitionRequest: {
     permission: "collections.read",
     module: "library",

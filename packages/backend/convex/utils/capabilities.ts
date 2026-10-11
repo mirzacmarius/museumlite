@@ -29,6 +29,7 @@ export const CAPABILITY_IDS = [
   "patrons",
   "library",
   "documentation_quality",
+  "inventory",
   "deaccession",
   "reproduction_requests",
   "administration",
@@ -125,6 +126,12 @@ export const CAPABILITY_MATRIX = {
   documentation_quality: {
     permissions: ["collections.read", "collections.update"],
     route: "/documentation-quality",
+  },
+  // Following sessions reads objects and locations; scanning and resolving
+  // need `locations.update`, the permission that governs moves (ADR 0014).
+  inventory: {
+    permissions: ["collections.read", "locations.read"],
+    route: "/inventory",
   },
   // Starting a deaccession is a role rule, not one permission: see
   // `deaccessionInitiationState`, which single and bulk starts share.
