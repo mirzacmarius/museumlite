@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import schema from "./schema";
+import { ANALYTICS_SECTION_PERMISSIONS } from "./utils/analyticsSections";
 import {
   nextScheduledRun,
   validateCalendarSchedule,
@@ -402,7 +403,7 @@ export const listScheduledReports = query({
       requirePermission(
         ctx,
         args.organizationId,
-        "organization.view_analytics",
+        ANALYTICS_SECTION_PERMISSIONS.scheduledReports,
       ),
     ]);
     const reports = await ctx.db
@@ -647,7 +648,7 @@ export const listReportRuns = query({
       requirePermission(
         ctx,
         args.organizationId,
-        "organization.view_analytics",
+        ANALYTICS_SECTION_PERMISSIONS.scheduledReports,
       ),
     ]);
 
