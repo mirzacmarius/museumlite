@@ -5,6 +5,7 @@ import {
   BookOpen,
   ChartColumn,
   ClipboardCheck,
+  ClipboardList,
   Contact,
   Container,
   Database,
@@ -101,6 +102,10 @@ export function buildSidebarNavigation({
       ? [{ title: label("locationTracking"), url: "/locations", icon: MapPin }]
       : []),
     { title: label("scan"), url: "/scan", icon: QrCode },
+    ...capabilityItem("inventory", {
+      title: label("inventory"),
+      icon: ClipboardList,
+    }),
     { title: label("accessions"), url: "/accessions", icon: FileCheck },
     { title: label("deaccessions"), url: "/deaccessions", icon: FileX },
     ...capabilityItem("documentation_quality", {

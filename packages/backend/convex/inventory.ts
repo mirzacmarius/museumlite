@@ -247,10 +247,12 @@ const sessionViewValidator = v.object({
   canWork: v.boolean(),
 });
 
+/** Null when the session does not exist (the page shows its recovery state). */
 export const getSession = query({
   args: { sessionId: v.id("inventorySessions") },
-  returns: sessionViewValidator,
+  returns: v.union(sessionViewValidator, v.null()),
   handler: async (ctx, args) => {
+    if (!(await ctx.db.get(args.sessionId))) return null;
     const { session } = await loadSession(ctx, args.sessionId);
     const [locations, startedBy, finishedBy, cancelledBy, canWork] =
       await Promise.all([
@@ -1130,22 +1132,21 @@ export const acceptException = mutation({
 
 export const getException = query({
   args: { exceptionId: v.id("inventoryExceptions") },
-  returns: exceptionRowValidator.extend({
-    organizationId: v.id("organizations"),
-    label: v.string(),
-    sessionName: v.string(),
-    sessionStatus: inventorySessionStatusValidator,
-    observationNote: v.optional(v.string()),
-    observationMethod: v.optional(inventoryCaptureMethodValidator),
-    canWork: v.boolean(),
-  }),
+  returns: v.union(
+    exceptionRowValidator.extend({
+      organizationId: v.id("organizations"),
+      label: v.string(),
+      sessionName: v.string(),
+      sessionStatus: inventorySessionStatusValidator,
+      observationNote: v.optional(v.string()),
+      observationMethod: v.optional(inventoryCaptureMethodValidator),
+      canWork: v.boolean(),
+    }),
+    v.null(),
+  ),
   handler: async (ctx, args) => {
     const exception = await ctx.db.get(args.exceptionId);
-    if (!exception)
-      throw inventoryError(
-        "EXCEPTION_NOT_FOUND",
-        "Inventory exception not found",
-      );
+    if (!exception) return null;
     const { session } = await loadSession(ctx, exception.sessionId);
     const [row, observation, canWork] = await Promise.all([
       exceptionRow(ctx, new NameCache(ctx, session.organizationId), exception),
