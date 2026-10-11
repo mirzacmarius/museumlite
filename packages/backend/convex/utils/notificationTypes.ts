@@ -53,6 +53,7 @@ export const NOTIFICATION_TYPE_CATEGORIES = {
   loan_extension_rejected: "approvals",
   regulatory_approval_granted: "approvals",
   regulatory_approval_denied: "approvals",
+  reproduction_request_received: "approvals",
 
   loan_due_soon: "reminders",
   loan_return_due_soon: "reminders",
@@ -81,6 +82,7 @@ export const NOTIFICATION_TYPE_CATEGORIES = {
   insurance_auto_claim: "alerts",
   task_blocked: "alerts",
   library_recall: "alerts",
+  reproduction_delivery_failed: "alerts",
   sla_breach_accession: "alerts",
   sla_breach_deaccession: "alerts",
   sla_breach_loan: "alerts",
@@ -139,6 +141,7 @@ export const NOTIFICATION_ENTITY_READ_PERMISSIONS = {
   acquisition: "collections.read",
   libraryAcquisitionRequest: "collections.read",
   documentationFinding: "collections.read",
+  reproductionRequest: "media.read",
   loan: "loans.read",
   transitRecord: "loans.read",
   insurancePolicy: "loans.read",

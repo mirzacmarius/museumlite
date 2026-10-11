@@ -80,4 +80,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "sweep-reproduction-deliveries",
+  { minutes: 5 },
+  internal.reproductionDeliveries.sweep,
+  {},
+);
+
 export default crons;

@@ -33,6 +33,7 @@ import {
   registerTotalsValidator,
 } from "./utils/exportContract";
 import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
+import { reproductionRequestTables } from "./utils/reproductionRequestValidators";
 import {
   collectionTypeValidator,
   enabledModuleValidator,
@@ -5151,4 +5152,7 @@ export default defineSchema({
     message: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_email", ["email"]),
+
+  // Research and reproduction requests (ADR 0014)
+  ...reproductionRequestTables,
 });

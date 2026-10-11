@@ -921,3 +921,85 @@ export async function renderNotificationDigestEmail(
   ]);
   return { subject, html, text: plainText };
 }
+
+export interface ReproductionDeliveryContent {
+  organizationName: string;
+  requesterName: string;
+  requestNumber: string;
+  objectLabel: string;
+  termsTitle: string;
+  termsVersion: number;
+  termsBody: string;
+  expiresAt: number;
+  downloadUrl: string;
+}
+
+function ReproductionDeliveryEmail({
+  content,
+  subject,
+  locale,
+}: {
+  content: ReproductionDeliveryContent;
+  subject: string;
+  locale: EmailLocale;
+}) {
+  const t = getEmailTranslations(locale).reproductionDelivery;
+  return (
+    <EmailShell
+      locale={locale}
+      preview={subject}
+      footer={text(t.footer, { organizationName: content.organizationName })}
+    >
+      <Greeting email={content.requesterName} locale={locale} />
+      <Text style={emailTextStyle}>
+        {text(t.intro, {
+          organizationName: content.organizationName,
+          requestNumber: content.requestNumber,
+          objectLabel: content.objectLabel,
+        })}
+      </Text>
+      <Text style={emailTextStyle}>
+        <strong>
+          {text(t.terms, {
+            termsTitle: content.termsTitle,
+            termsVersion: content.termsVersion,
+          })}
+        </strong>
+      </Text>
+      <Text style={{ ...emailTextStyle, whiteSpace: "pre-wrap" }}>
+        {content.termsBody}
+      </Text>
+      <Text style={emailMutedTextStyle}>
+        {text(t.expires, { date: formatEmailDate(content.expiresAt, locale) })}
+      </Text>
+      <Section style={emailButtonSectionStyle}>
+        <Button href={content.downloadUrl} style={emailInvitationButtonStyle}>
+          {t.download}
+        </Button>
+      </Section>
+    </EmailShell>
+  );
+}
+
+/** Subject, HTML and plain text of a Licensed derivative's delivery email. */
+export async function renderReproductionDeliveryEmail(
+  content: ReproductionDeliveryContent,
+  locale: EmailLocale,
+) {
+  const subject = text(getEmailTranslations(locale).reproductionDelivery.subject, {
+    organizationName: content.organizationName,
+    requestNumber: content.requestNumber,
+  });
+  const element = (
+    <ReproductionDeliveryEmail
+      content={content}
+      subject={subject}
+      locale={locale}
+    />
+  );
+  const [html, plainText] = await Promise.all([
+    render(element),
+    render(element, { plainText: true }),
+  ]);
+  return { subject, html, text: plainText };
+}

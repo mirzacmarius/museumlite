@@ -6,6 +6,10 @@ import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { env } from "./env";
 import { manifest } from "./utils/exportEncoding";
+import {
+  hashAccessToken,
+  LICENSED_DERIVATIVE_PATH,
+} from "./utils/reproductionDelivery";
 
 const http = httpRouter();
 
@@ -567,6 +571,48 @@ http.route({
   path: "/v1/objects",
   method: "GET",
   handler: listObjects,
+});
+
+/**
+ * A requester's download of their Licensed derivative. The file is streamed
+ * so revocation and expiry take effect at once; no storage URL is shared.
+ */
+const downloadLicensedDerivative = httpAction(async (ctx, request) => {
+  const notFound = () => new Response("Not found", { status: 404 });
+  const token = new URL(request.url).pathname.slice(
+    LICENSED_DERIVATIVE_PATH.length,
+  );
+  if (!/^[A-Za-z0-9_-]{32,64}$/.test(token)) return notFound();
+  const result = await ctx.runMutation(
+    internal.reproductionDeliveries.openDownload,
+    { tokenHash: await hashAccessToken(token) },
+  );
+  if (result.kind === "not_found") return notFound();
+  if (result.kind === "refused") {
+    return new Response(
+      result.outcome === "refused_unavailable"
+        ? "This file is no longer available"
+        : "This licence has ended",
+      { status: 410, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  const file = await ctx.storage.get(result.storageId);
+  if (!file) return notFound();
+  return new Response(file, {
+    status: 200,
+    headers: {
+      "Content-Type": "image/jpeg",
+      "Content-Disposition": `attachment; filename="${result.fileName}"`,
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+});
+
+http.route({
+  pathPrefix: LICENSED_DERIVATIVE_PATH,
+  method: "GET",
+  handler: downloadLicensedDerivative,
 });
 
 export default http;
