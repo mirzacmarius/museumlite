@@ -204,6 +204,18 @@ _Avoid_: Borrower (a loans party), member, user
 An approved, version-specific derivative of a single file that may be shown publicly. Publishing an Object does not publish its attachments.
 _Avoid_: Public image, published file
 
+**Reproduction request**:
+A Party's request to use one image of an Object for research or reproduction, with its purpose, rights evidence and decision. An approval delivers a Licensed copy under a version of the Terms of use until it expires or is revoked.
+_Avoid_: Image order, permission request
+
+**Licensed copy**:
+The copy of an image made for one approved Reproduction request, without the original's metadata. It is the only file a requester receives and is never public.
+_Avoid_: Derivative (in staff copy), original, public rendition
+
+**Terms of use**:
+An Organization's published conditions for Licensed copies. Each publication is a new version, and every approval keeps the version it was granted under.
+_Avoid_: License (the rights status recorded on an image)
+
 ## Translations
 
 The accepted word for each term in the app's other locales. Use it wherever English names the term, and inflect it as the sentence needs. `apps/app/src/locales/translations.test.ts` checks Object and Location, that an Accession is never translated as an Acquisition or an Entry, and that no locale calls an Object an item outside the Library Module.

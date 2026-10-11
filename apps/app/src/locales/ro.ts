@@ -2154,6 +2154,7 @@ export default {
     tryAgain: "Încercați din nou",
     errorId: "ID eroare: {id}",
     goToList: {
+      reproductionRequests: "Mergi la cererile de reproducere",
       objects: "Mergi la obiecte",
       loans: "Mergi la împrumuturi",
       accessions: "Mergi la accesiuni",
@@ -5383,8 +5384,321 @@ export default {
       scannerError: "Eroare scaner: {error}",
     },
   },
+  reproductionRequests: {
+    rightsStatuses: {
+      owned: "Deținute de instituție",
+      licensed: "Sub licență",
+      public_domain: "Domeniu public",
+      orphan_work: "Operă orfană",
+      restricted: "Restricționate",
+      unknown: "Necunoscute",
+    },
+    licenseTypes: {
+      creative_commons_by: "CC BY",
+      creative_commons_by_sa: "CC BY-SA",
+      creative_commons_by_nc: "CC BY-NC",
+      creative_commons_by_nd: "CC BY-ND",
+      creative_commons_zero: "CC0",
+      editorial_only: "Doar uz editorial",
+      commercial: "Comercială",
+      internal_only: "Doar uz intern",
+      custom: "Licență personalizată",
+    },
+    title: "Cereri de cercetare și reproducere",
+    description:
+      "Înregistrați cine cere să folosească o imagine a unui obiect și de ce, verificați dovezile privind drepturile și livrați o copie aprobată conform condițiilor dvs. de utilizare. Originalele nu se trimit niciodată.",
+    headerTitle: "Cerere de reproducere",
+    newRequest: "Cerere nouă",
+    tabs: {
+      requests: "Cereri",
+      terms: "Condiții de utilizare",
+    },
+    statuses: {
+      all: "Toate",
+      open: "Deschisă",
+      approved: "Aprobată",
+      refused: "Respinsă",
+      withdrawn: "Retrasă",
+      expired: "Expirată",
+      revoked: "Revocată",
+    },
+    purposes: {
+      private_study: "Studiu personal",
+      academic_research: "Cercetare academică",
+      academic_publication: "Publicație academică",
+      commercial_publication: "Publicație comercială",
+      exhibition: "Expoziție",
+      broadcast: "Televiziune sau film",
+      online: "Site web sau rețele sociale",
+      other: "Altă utilizare",
+    },
+    evidenceKinds: {
+      rights_holder_permission: "Permisiunea titularului de drepturi",
+      license: "Licență",
+      public_domain_assessment: "Evaluare de domeniu public",
+      institutional_ownership: "Drepturile aparțin instituției",
+      donor_agreement: "Acord cu donatorul",
+      other: "Altă dovadă",
+    },
+    locales: {
+      en: "Engleză",
+      fr: "Franceză",
+      es: "Spaniolă",
+      no: "Norvegiană",
+      ro: "Română",
+    },
+    list: {
+      empty: "Încă nu există cereri.",
+      emptyStatus: "Nu există cereri cu acest status.",
+      requester: "Solicitant",
+      object: "Obiect",
+      purpose: "Utilizare",
+      received: "Primită pe {date}",
+    },
+    create: {
+      title: "Cerere nouă de cercetare sau reproducere",
+      description:
+        "Solicitantul este o parte și are nevoie de o adresă de e-mail: copia aprobată se livrează prin e-mail.",
+      object: "Obiect",
+      objectPlaceholder: "Căutați un obiect",
+      image: "Imagine",
+      imagePlaceholder: "Alegeți o imagine a obiectului",
+      noImages: "Acest obiect nu are imagini care pot fi reproduse.",
+      requester: "Solicitant",
+      requesterPlaceholder: "Căutați o persoană sau o instituție",
+      purpose: "Utilizare",
+      purposeDetails: "Utilizarea prevăzută",
+      purposeDetailsPlaceholder:
+        "De exemplu: figura 3 dintr-o revistă de specialitate, tiraj de 500 de exemplare",
+      language: "Limba e-mailului",
+      submit: "Înregistrați cererea",
+      submitting: "Se înregistrează…",
+      created: "Cererea {number} a fost înregistrată",
+      missingFields:
+        "Alegeți un obiect, o imagine și un solicitant și descrieți utilizarea.",
+      partiesUnavailable:
+        "Solicitanții sunt părți. Activați Conturi și cereți acces la părți pentru a înregistra cereri.",
+    },
+    detail: {
+      back: "Înapoi la cereri",
+      notRecorded: "Neînregistrat",
+      requestTitle: "Cerere",
+      requester: "Solicitant",
+      email: "Adresa de livrare",
+      object: "Obiect",
+      image: "Imagine",
+      imageUnavailable: "Imaginea nu mai este disponibilă.",
+      purpose: "Utilizare",
+      language: "Limba e-mailului",
+      received: "Primită",
+      closeReason: "Motivul închiderii",
+      withdraw: "Retrageți cererea",
+      withdrawTitle: "Retrageți această cerere?",
+      withdrawDescription:
+        "Cererea se închide fără decizie. Dovezile și istoricul ei se păstrează.",
+      withdrawn: "Cererea a fost retrasă",
+      reason: "Motiv",
+      reasonPlaceholder: "De ce se întâmplă, pentru evidență",
+      cancel: "Anulați",
+      confirm: "Confirmați",
+      rightsTitle: "Drepturile înregistrate ale imaginii",
+      rightsDescription:
+        "Din fișa imaginii. Decizia păstrează o copie a acestor valori așa cum erau când a fost luată.",
+      rightsStatus: "Statutul drepturilor",
+      licenseType: "Licență",
+      licenseExpiry: "Expirarea licenței",
+      rightsHolder: "Titularul drepturilor",
+      copyright: "Drept de autor",
+      usageRestrictions: "Restricții de utilizare",
+      unverifiedSource:
+        "Fișierul imaginii nu este verificat. Încărcați-l din nou sau creați o versiune verificată înainte de a pregăti o copie.",
+    },
+    evidence: {
+      title: "Dovezi privind drepturile",
+      description:
+        "Ce arată că utilizarea cerută poate fi permisă. Intrările retrase se păstrează.",
+      empty: "Nu există dovezi înregistrate.",
+      add: "Adăugați o dovadă",
+      kind: "Tip",
+      summary: "Rezumat",
+      summaryPlaceholder: "Cine a acordat ce, când și unde se află dovada",
+      document: "Fișier justificativ",
+      noDocument: "Fără fișier",
+      added: "Dovada a fost adăugată",
+      recordedBy: "Înregistrată pe {date} de {name}",
+      recordedAt: "Înregistrată pe {date}",
+      retract: "Retrageți",
+      retractTitle: "Retrageți această dovadă?",
+      retractDescription:
+        "Intrarea rămâne pe cerere, marcată ca retrasă, și nu mai susține o aprobare.",
+      retracted: "Retrasă pe {date}: {reason}",
+      retractedToast: "Dovada a fost retrasă",
+    },
+    derivative: {
+      title: "Copie licențiată",
+      description:
+        "Un JPEG creat din imagine pentru această cerere, fără metadatele originalului. Este singurul fișier pe care îl primește solicitantul.",
+      empty: "Nu a fost pregătită încă nicio copie.",
+      size: "Latura cea mai mare",
+      sizeOption: "{size} px",
+      prepare: "Pregătiți copia",
+      preparing: "Se pregătește copia…",
+      prepared: "Copia se pregătește",
+      statuses: {
+        processing: "În pregătire",
+        ready: "Gata",
+        failed: "Eșuată",
+      },
+      dimensions: "{width} × {height} px",
+      failedHint:
+        "Copia nu a putut fi creată din această imagine. Pregătiți-o din nou sau verificați fișierul imaginii.",
+      preview: "Previzualizarea copiei licențiate",
+    },
+    decision: {
+      title: "Decizie",
+      description:
+        "Aprobarea livrează solicitantului copia pregătită, conform celor mai recente condiții de utilizare, până la data de încheiere.",
+      awaiting: "Se așteaptă o decizie.",
+      cannotDecide:
+        "Doar personalul care gestionează setările organizației decide asupra cererilor.",
+      approve: "Aprobați",
+      refuse: "Respingeți",
+      approveTitle: "Aprobați cererea",
+      refuseTitle: "Respingeți cererea",
+      copy: "Copia de livrat",
+      noReadyCopy: "Pregătiți o copie înainte de aprobare.",
+      terms: "Condiții de utilizare",
+      termsVersion: "{title}, versiunea {version}",
+      noTerms: "Publicați condiții de utilizare înainte de aprobare.",
+      expires: "Sfârșitul licenței",
+      expiresHint:
+        "Linkul de descărcare funcționează până la sfârșitul acestei zile (UTC).",
+      note: "Notă",
+      notePlaceholder: "Condiții sau observații opționale",
+      evidenceRequired:
+        "Înregistrați cel puțin o dovadă privind drepturile înainte de aprobare.",
+      emailUnavailable:
+        "Această instalare nu trimite e-mailuri, așa că copia nu poate fi livrată până nu se configurează e-mailul. Puteți totuși înregistra decizia.",
+      approved: "Cererea a fost aprobată",
+      refused: "Cererea a fost respinsă",
+      approvedOn: "Aprobată pe {date} de {name}",
+      refusedOn: "Respinsă pe {date} de {name}",
+      decidedOn: "Decisă pe {date}",
+      evidenceBasis: "Dovezile luate în considerare",
+      termsUsed: "Condiții de utilizare",
+      grants: {
+        active: "Licență activă",
+        expired: "Licență expirată",
+        revoked: "Licență revocată",
+      },
+      revokedOn: "Revocată pe {date}: {reason}",
+      expiredOn: "Expirată pe {date}",
+      revoke: "Revocați licența",
+      revokeTitle: "Revocați această licență?",
+      revokeDescription:
+        "Linkul de descărcare nu mai funcționează imediat, iar e-mailurile netrimise se anulează. Fișierele deja descărcate nu pot fi recuperate.",
+      revokedToast: "Licența a fost revocată",
+      rightsAtDecision: "Drepturile imaginii la momentul deciziei",
+    },
+    delivery: {
+      title: "Livrare și utilizare",
+      description:
+        "Fiecare e-mail către solicitant, cu încercările lui, și fiecare utilizare a linkului de descărcare.",
+      empty: "Nimic nu a fost livrat încă.",
+      resend: "Trimiteți din nou",
+      resent: "E-mailul a fost pus în coadă",
+      retry: "Reîncercați",
+      retried: "O nouă încercare a început",
+      to: "Către {email}",
+      queuedAt: "Pus în coadă pe {date}",
+      attempts: "Încercări: {count} din {max}",
+      nextAttempt: "Următoarea încercare pe {date}",
+      sending: "Se trimite",
+      statuses: {
+        pending: "În așteptare",
+        succeeded: "Livrat",
+        failed_transient: "Eșuat după reîncercări",
+        failed_permanent: "Refuzat",
+        cancelled: "Anulat",
+      },
+      errors: {
+        http_error: "Serviciul de e-mail a răspuns cu o eroare",
+        timeout: "Serviciul de e-mail nu a răspuns la timp",
+        network_error: "Serviciul de e-mail nu a putut fi contactat",
+        attempt_lost: "O încercare a fost întreruptă",
+        channel_unavailable: "E-mailul nu este configurat pe această instalare",
+        grant_inactive: "Licența se încheiase",
+      },
+      attemptLine: "Încercarea {number}, {date}",
+      responseStatus: "HTTP {status}",
+      outcomes: {
+        succeeded: "Livrat",
+        failed_transient: "Se va reîncerca",
+        failed_permanent: "Refuzat",
+      },
+      usesTitle: "Registrul de utilizare",
+      usesEmpty: "Linkul de descărcare nu a fost folosit.",
+      downloadOutcomes: {
+        served: "Copia a fost descărcată",
+        refused_expired: "Refuzat: licența a expirat",
+        refused_revoked: "Refuzat: licența a fost revocată",
+        refused_unavailable: "Refuzat: copia nu este disponibilă",
+      },
+    },
+    terms: {
+      title: "Condiții de utilizare",
+      description:
+        "Textul trimis cu fiecare copie aprobată. Publicarea creează o versiune nouă; fiecare decizie păstrează versiunea folosită.",
+      empty:
+        "Nu au fost publicate încă condiții de utilizare. Cererile nu pot fi aprobate până nu le publicați.",
+      publish: "Publicați o versiune nouă",
+      publishTitle: "Publicați condiții de utilizare",
+      publishDescription:
+        "Aprobările ulterioare folosesc această versiune. Aprobările deja date își păstrează versiunea.",
+      termsTitle: "Titlu",
+      body: "Text",
+      published: "Versiunea {version} a fost publicată",
+      version: "Versiunea {version}",
+      publishedOn: "Publicată pe {date} de {name}",
+      current: "Actuală",
+    },
+    errors: {
+      requestNotFound: "Această cerere nu mai există.",
+      objectUnavailable: "Obiectul nu este disponibil sau a fost retras.",
+      imageNotEligible:
+        "Pot fi reproduse doar imagini JPEG, PNG, WebP sau TIFF complete ale acestui obiect.",
+      imageSourceUnverified:
+        "Fișierul imaginii nu este verificat. Încărcați-l din nou sau creați o versiune verificată.",
+      requesterEmailMissing:
+        "Adăugați mai întâi o adresă de e-mail acestei părți: copia aprobată se livrează prin e-mail.",
+      purposeRequired: "Descrieți utilizarea prevăzută.",
+      summaryRequired: "Rezumați dovada.",
+      textTooLong: "Textul este prea lung.",
+      requestNotOpen: "Această cerere este deja decisă sau închisă.",
+      evidenceNotFound: "Această dovadă nu mai există.",
+      evidenceDocumentInvalid: "Alegeți un fișier al obiectului cerut.",
+      evidenceRequired:
+        "Înregistrați cel puțin o dovadă privind drepturile înainte de aprobare.",
+      derivativeInProgress: "O copie se pregătește deja.",
+      derivativeNotReady:
+        "Pregătiți o copie a imaginii actuale înainte de aprobare.",
+      termsNotPublished: "Publicați condiții de utilizare înainte de aprobare.",
+      termsOutdated:
+        "A fost publicată o versiune mai nouă a condițiilor de utilizare. Citiți-o și aprobați din nou.",
+      termsTextRequired: "Introduceți un titlu și textul.",
+      expiryInvalid:
+        "Alegeți o dată de încheiere viitoare, în următorii zece ani.",
+      reasonRequired: "Indicați un motiv.",
+      grantNotActive: "Licența s-a încheiat.",
+      deliveryNotRetryable:
+        "Doar un e-mail eșuat sau anulat poate fi reîncercat.",
+      emailChannelUnavailable: "Această instalare nu trimite e-mailuri.",
+      fallback: "Cererea nu a putut fi salvată. Încercați din nou.",
+    },
+  },
   parties: {
     roles: {
+      requester: "Solicitant",
       donor: "Donator / sursă",
       lender: "Împrumutător",
       borrower: "Împrumutat",
@@ -5404,6 +5718,7 @@ export default {
       phone: "Același telefon",
     },
     targetTypes: {
+      reproductionRequest: "Cerere de reproducere",
       accession: "Accesiune",
       loan: "Împrumut",
       deaccession: "Scoatere din colecție",
@@ -9542,6 +9857,7 @@ export default {
   },
   untranslatedComponents: {
     labels: {
+      reproductionRequests: "Cereri de reproducere",
       address: "Adresă",
       streetAddress: "Adresă stradală",
       address2: "Adresă 2",
@@ -10109,6 +10425,7 @@ export default {
         "Folosiți când obiectul a fost donat de un donator nenumit",
     },
     navigation: {
+      reproductionRequests: "Cereri de reproducere",
       patronManagement: "Gestionarea cititorilor",
       locked: "Indisponibil",
       overview: "Prezentare generală",
@@ -10199,6 +10516,9 @@ export default {
     },
     notificationCopy: {
       titles: {
+        licensedImageNotDelivered: "Imagine licențiată nelivrată",
+        reproductionRequestAwaitsDecision:
+          "Cerere de reproducere în așteptarea deciziei",
         batchJobSucceeded: "{job}: operațiune finalizată",
         batchJobFailed: "{job}: operațiune finalizată cu {count} erori",
         newAccessionRequiresApproval: "O nouă accesiune necesită aprobare",
@@ -10287,6 +10607,10 @@ export default {
         incidentClosed: "Incident închis",
       },
       messages: {
+        reproductionDeliveryFailed:
+          "E-mailul pentru cererea {number} nu a putut fi livrat.",
+        reproductionRequestReceived:
+          "Cererea {number} solicită folosirea unei imagini a obiectului {object}.",
         objectMoveExecuted:
           "Solicitarea ta de transfer al obiectului a fost aprobată și executată.",
         onlyActiveObjectsCanMove:

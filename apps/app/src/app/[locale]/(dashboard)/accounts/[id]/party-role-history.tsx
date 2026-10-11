@@ -17,6 +17,7 @@ const TARGET_ROUTES: Partial<Record<PartyTargetType, string>> = {
   deaccession: "/deaccessions",
   collection: "/collections",
   entry: "/accessions/entries",
+  reproductionRequest: "/reproduction-requests",
 };
 
 /** Every procedure role this Party has held, with what was recorded then. */

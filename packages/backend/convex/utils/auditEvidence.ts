@@ -76,6 +76,7 @@ export async function captureAuditEvidence(
     "libraryAcquisitionRequest",
     "objectEntry",
     "documentationFinding",
+    "reproductionRequest",
     "inventoryException",
   ].includes(args.entityType)
     ? `${args.entityType}:${args.entityId}`
@@ -117,6 +118,7 @@ export async function captureAuditEvidence(
           "locationCode",
           "referenceNumber",
           "entryNumber",
+          "requestNumber",
           "incidentNumber",
         ]) ?? args.entityId,
     },

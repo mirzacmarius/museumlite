@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   CreditCard,
+  FileImage,
   FilePlus,
   LayoutDashboard,
   Library,
@@ -80,6 +81,11 @@ export function buildCommandPaletteActions({
       labelKey: "documentationQuality",
       href: capabilityRoute("documentation_quality"),
       icon: ClipboardCheck,
+    }),
+    ...when(isOpen("reproduction_requests"), {
+      labelKey: "reproductionRequests",
+      href: capabilityRoute("reproduction_requests"),
+      icon: FileImage,
     }),
     ...when(isOpen("incidents"), {
       labelKey: "incidents",

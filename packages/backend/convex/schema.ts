@@ -95,6 +95,7 @@ import {
   provenanceEvidenceDocumentValidator,
   provenanceReviewDocumentValidator,
 } from "./utils/provenanceValidators";
+import { reproductionRequestTables } from "./utils/reproductionRequestValidators";
 import {
   webhookDeliveryAttemptFields,
   webhookDeliveryFields,
@@ -5327,4 +5328,7 @@ export default defineSchema({
     message: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_email", ["email"]),
+
+  // Research and reproduction requests (ADR 0016)
+  ...reproductionRequestTables,
 });

@@ -12,7 +12,7 @@ import {
   Text,
 } from "@react-email/components";
 import { render } from "@react-email/render";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { env } from "../env";
 import { wallClockTime } from "../utils/calendarSchedule";
 import {
@@ -912,6 +912,125 @@ export async function renderNotificationDigestEmail(
     <NotificationDigestEmail
       content={content}
       preview={subject}
+      locale={locale}
+    />
+  );
+  const [html, plainText] = await Promise.all([
+    render(element),
+    render(element, { plainText: true }),
+  ]);
+  return { subject, html, text: plainText };
+}
+
+/** Calendar dates stored as the end of a UTC day, shown as that day. */
+const utcDateFormatters: Record<EmailLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat(emailDateLocales.en, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  fr: new Intl.DateTimeFormat(emailDateLocales.fr, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  es: new Intl.DateTimeFormat(emailDateLocales.es, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  no: new Intl.DateTimeFormat(emailDateLocales.no, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+  ro: new Intl.DateTimeFormat(emailDateLocales.ro, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }),
+};
+
+export interface ReproductionDeliveryContent {
+  organizationName: string;
+  requesterName: string;
+  requestNumber: string;
+  objectLabel: string;
+  termsTitle: string;
+  termsVersion: number;
+  termsBody: string;
+  expiresAt: number;
+  downloadUrl: string;
+}
+
+function ReproductionDeliveryEmail({
+  content,
+  subject,
+  locale,
+}: {
+  content: ReproductionDeliveryContent;
+  subject: string;
+  locale: EmailLocale;
+}) {
+  const t = getEmailTranslations(locale).reproductionDelivery;
+  const termsLines = content.termsBody
+    .split("\n")
+    .map((text, position) => ({ key: `line-${position}`, text }));
+  return (
+    <EmailShell
+      locale={locale}
+      preview={subject}
+      footer={text(t.footer, { organizationName: content.organizationName })}
+    >
+      <Greeting email={content.requesterName} locale={locale} />
+      <Text style={emailTextStyle}>
+        {text(t.intro, {
+          organizationName: content.organizationName,
+          requestNumber: content.requestNumber,
+          objectLabel: content.objectLabel,
+        })}
+      </Text>
+      <Text style={emailTextStyle}>
+        <strong>
+          {text(t.terms, {
+            termsTitle: content.termsTitle,
+            termsVersion: content.termsVersion,
+          })}
+        </strong>
+      </Text>
+      <Text style={emailTextStyle}>
+        {termsLines.map((line) => (
+          <Fragment key={line.key}>
+            {line.key === "line-0" ? null : <br />}
+            {line.text}
+          </Fragment>
+        ))}
+      </Text>
+      <Text style={emailMutedTextStyle}>
+        {text(t.expires, {
+          date: utcDateFormatters[locale].format(content.expiresAt),
+        })}
+      </Text>
+      <Section style={emailButtonSectionStyle}>
+        <Button href={content.downloadUrl} style={emailInvitationButtonStyle}>
+          {t.download}
+        </Button>
+      </Section>
+    </EmailShell>
+  );
+}
+
+/** Subject, HTML and plain text of a Licensed copy's delivery email. */
+export async function renderReproductionDeliveryEmail(
+  content: ReproductionDeliveryContent,
+  locale: EmailLocale,
+) {
+  const subject = text(
+    getEmailTranslations(locale).reproductionDelivery.subject,
+    {
+      organizationName: content.organizationName,
+      requestNumber: content.requestNumber,
+    },
+  );
+  const element = (
+    <ReproductionDeliveryEmail
+      content={content}
+      subject={subject}
       locale={locale}
     />
   );

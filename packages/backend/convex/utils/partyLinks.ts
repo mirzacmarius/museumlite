@@ -12,8 +12,13 @@ import {
 } from "./parties";
 import { partyError } from "./partyErrors";
 import type { PartyRole, PartyTarget } from "./partyValidators";
-import { hasPermission, requirePermission } from "./permissions";
+import {
+  hasPermission,
+  requireCapability,
+  requirePermission,
+} from "./permissions";
 import { isWithdrawnObject } from "./provenance";
+import { REPRODUCTION_READ_PERMISSIONS } from "./reproductionRequestAccess";
 
 /** History rows read per target; supersession history stays small. */
 export const PARTY_LINKS_PER_TARGET_LIMIT = 100;
@@ -231,6 +236,27 @@ export async function resolvePartyTarget(
         recordAccountId: entry.depositorAccountId,
       };
     }
+    case "reproductionRequest": {
+      const request = await ctx.db.get(target.id);
+      if (!request) targetNotFound();
+      await requireCapability(
+        ctx,
+        request.organizationId,
+        "reproduction_requests",
+        REPRODUCTION_READ_PERMISSIONS,
+      );
+      // The requester is recorded at intake and never replaced.
+      return {
+        organizationId: request.organizationId,
+        label: request.requestNumber,
+        defaultEffectiveFrom: request.createdAt,
+        allowedRoles: ["requester"],
+        policy: "closed",
+        primaryRole: "requester",
+        recordAssertedName: request.requesterName,
+        recordAccountId: request.requesterAccountId,
+      };
+    }
   }
 }
 
@@ -240,7 +266,11 @@ export async function readablePartyTargetLabel(
   link: Doc<"partyLinks">,
 ): Promise<string | null> {
   const readPermission =
-    link.targetType === "loan" ? "loans.read" : "collections.read";
+    link.targetType === "loan"
+      ? "loans.read"
+      : link.targetType === "reproductionRequest"
+        ? "media.read"
+        : "collections.read";
   if (!(await hasPermission(ctx, link.organizationId, readPermission))) {
     return null;
   }
@@ -289,6 +319,12 @@ export async function readablePartyTargetLabel(
         ? record.entryNumber
         : null;
     }
+    case "reproductionRequest": {
+      const record = await ctx.db.get(link.targetId);
+      return record?.organizationId === link.organizationId
+        ? record.requestNumber
+        : null;
+    }
   }
 }
 
@@ -327,6 +363,11 @@ function targetFields(target: PartyTarget) {
       return { targetType: "collection" as const, targetId: target.id };
     case "entry":
       return { targetType: "entry" as const, targetId: target.id };
+    case "reproductionRequest":
+      return {
+        targetType: "reproductionRequest" as const,
+        targetId: target.id,
+      };
   }
 }
 
@@ -346,6 +387,8 @@ export function partyTargetOf(link: Doc<"partyLinks">): PartyTarget {
       return { type: "collection", id: link.targetId };
     case "entry":
       return { type: "entry", id: link.targetId };
+    case "reproductionRequest":
+      return { type: "reproductionRequest", id: link.targetId };
   }
 }
 

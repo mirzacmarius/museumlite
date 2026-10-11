@@ -5780,6 +5780,7 @@ export default {
     tryAgain: "Prøv igjen",
     errorId: "Feil-ID: {id}",
     goToList: {
+      reproductionRequests: "Gå til reproduksjonsforespørsler",
       objects: "Gå til objekter",
       loans: "Gå til lån",
       accessions: "Gå til aksesjoner",
@@ -6667,8 +6668,321 @@ export default {
     },
     withdrawnObjects: "Tilbaketrukne objekter",
   },
+  reproductionRequests: {
+    rightsStatuses: {
+      owned: "Eies av institusjonen",
+      licensed: "Lisensiert",
+      public_domain: "Fri bruk",
+      orphan_work: "Foreldreløst verk",
+      restricted: "Begrenset",
+      unknown: "Ukjent",
+    },
+    licenseTypes: {
+      creative_commons_by: "CC BY",
+      creative_commons_by_sa: "CC BY-SA",
+      creative_commons_by_nc: "CC BY-NC",
+      creative_commons_by_nd: "CC BY-ND",
+      creative_commons_zero: "CC0",
+      editorial_only: "Kun redaksjonell bruk",
+      commercial: "Kommersiell",
+      internal_only: "Kun intern bruk",
+      custom: "Egendefinert lisens",
+    },
+    title: "Forsknings- og reproduksjonsforespørsler",
+    description:
+      "Registrer hvem som ber om å bruke et bilde av et objekt og hvorfor, gå gjennom rettighetsdokumentasjonen og lever en godkjent kopi etter bruksvilkårene deres. Originaler sendes aldri.",
+    headerTitle: "Reproduksjonsforespørsel",
+    newRequest: "Ny forespørsel",
+    tabs: {
+      requests: "Forespørsler",
+      terms: "Bruksvilkår",
+    },
+    statuses: {
+      all: "Alle",
+      open: "Åpen",
+      approved: "Godkjent",
+      refused: "Avslått",
+      withdrawn: "Trukket",
+      expired: "Utløpt",
+      revoked: "Tilbakekalt",
+    },
+    purposes: {
+      private_study: "Privat studium",
+      academic_research: "Akademisk forskning",
+      academic_publication: "Akademisk publikasjon",
+      commercial_publication: "Kommersiell publikasjon",
+      exhibition: "Utstilling",
+      broadcast: "TV eller film",
+      online: "Nettsted eller sosiale medier",
+      other: "Annen bruk",
+    },
+    evidenceKinds: {
+      rights_holder_permission: "Tillatelse fra rettighetshaver",
+      license: "Lisens",
+      public_domain_assessment: "Vurdering av fri bruk",
+      institutional_ownership: "Institusjonen eier rettighetene",
+      donor_agreement: "Avtale med giver",
+      other: "Annen dokumentasjon",
+    },
+    locales: {
+      en: "Engelsk",
+      fr: "Fransk",
+      es: "Spansk",
+      no: "Norsk",
+      ro: "Rumensk",
+    },
+    list: {
+      empty: "Ingen forespørsler ennå.",
+      emptyStatus: "Ingen forespørsler med denne statusen.",
+      requester: "Forespørrer",
+      object: "Objekt",
+      purpose: "Bruk",
+      received: "Mottatt {date}",
+    },
+    create: {
+      title: "Ny forsknings- eller reproduksjonsforespørsel",
+      description:
+        "Forespørreren er en part og trenger en e-postadresse: den godkjente kopien leveres på e-post.",
+      object: "Objekt",
+      objectPlaceholder: "Søk etter et objekt",
+      image: "Bilde",
+      imagePlaceholder: "Velg et bilde av objektet",
+      noImages: "Dette objektet har ingen bilder som kan reproduseres.",
+      requester: "Forespørrer",
+      requesterPlaceholder: "Søk etter en person eller institusjon",
+      purpose: "Bruk",
+      purposeDetails: "Tiltenkt bruk",
+      purposeDetailsPlaceholder:
+        "For eksempel: figur 3 i en tidsskriftartikkel, opplag på 500",
+      language: "E-postspråk",
+      submit: "Registrer forespørsel",
+      submitting: "Registrerer …",
+      created: "Forespørsel {number} registrert",
+      missingFields:
+        "Velg et objekt, et bilde og en forespørrer, og beskriv bruken.",
+      partiesUnavailable:
+        "Forespørrere er parter. Slå på Kontoer og be om tilgang til parter for å registrere forespørsler.",
+    },
+    detail: {
+      back: "Tilbake til forespørsler",
+      notRecorded: "Ikke registrert",
+      requestTitle: "Forespørsel",
+      requester: "Forespørrer",
+      email: "Leveringsadresse",
+      object: "Objekt",
+      image: "Bilde",
+      imageUnavailable: "Bildet er ikke lenger tilgjengelig.",
+      purpose: "Bruk",
+      language: "E-postspråk",
+      received: "Mottatt",
+      closeReason: "Grunn til avslutning",
+      withdraw: "Trekk forespørselen",
+      withdrawTitle: "Trekke denne forespørselen?",
+      withdrawDescription:
+        "Forespørselen avsluttes uten avgjørelse. Dokumentasjonen og historikken beholdes.",
+      withdrawn: "Forespørselen er trukket",
+      reason: "Grunn",
+      reasonPlaceholder: "Hvorfor dette skjer, for ettertiden",
+      cancel: "Avbryt",
+      confirm: "Bekreft",
+      rightsTitle: "Registrerte bilderettigheter",
+      rightsDescription:
+        "Fra bildeposten. Avgjørelsen tar vare på en kopi av verdiene slik de var da den ble tatt.",
+      rightsStatus: "Rettighetsstatus",
+      licenseType: "Lisens",
+      licenseExpiry: "Lisensen utløper",
+      rightsHolder: "Rettighetshaver",
+      copyright: "Opphavsrett",
+      usageRestrictions: "Bruksbegrensninger",
+      unverifiedSource:
+        "Bildefilen er ikke verifisert. Last den opp på nytt eller lag en verifisert versjon før du lager en kopi.",
+    },
+    evidence: {
+      title: "Rettighetsdokumentasjon",
+      description:
+        "Det som viser at den ønskede bruken kan tillates. Tilbaketrukne oppføringer beholdes.",
+      empty: "Ingen dokumentasjon registrert.",
+      add: "Legg til dokumentasjon",
+      kind: "Type",
+      summary: "Sammendrag",
+      summaryPlaceholder: "Hvem ga hva, når, og hvor beviset finnes",
+      document: "Støttefil",
+      noDocument: "Ingen fil",
+      added: "Dokumentasjon lagt til",
+      recordedBy: "Registrert {date} av {name}",
+      recordedAt: "Registrert {date}",
+      retract: "Trekk tilbake",
+      retractTitle: "Trekke tilbake denne dokumentasjonen?",
+      retractDescription:
+        "Oppføringen blir stående på forespørselen, merket som tilbaketrukket, og støtter ikke lenger en godkjenning.",
+      retracted: "Trukket tilbake {date}: {reason}",
+      retractedToast: "Dokumentasjonen er trukket tilbake",
+    },
+    derivative: {
+      title: "Lisensiert kopi",
+      description:
+        "En JPEG laget av bildet for denne forespørselen, uten originalens metadata. Det er den eneste filen forespørreren får.",
+      empty: "Ingen kopi laget ennå.",
+      size: "Lengste side",
+      sizeOption: "{size} px",
+      prepare: "Lag kopi",
+      preparing: "Lager kopien …",
+      prepared: "Kopien lages",
+      statuses: {
+        processing: "Lages",
+        ready: "Klar",
+        failed: "Mislyktes",
+      },
+      dimensions: "{width} × {height} px",
+      failedHint:
+        "Kopien kunne ikke lages av dette bildet. Lag den på nytt eller kontroller bildefilen.",
+      preview: "Forhåndsvisning av den lisensierte kopien",
+    },
+    decision: {
+      title: "Avgjørelse",
+      description:
+        "En godkjenning leverer den ferdige kopien til forespørreren etter de nyeste bruksvilkårene fram til sluttdatoen.",
+      awaiting: "Venter på avgjørelse.",
+      cannotDecide:
+        "Bare ansatte som administrerer organisasjonsinnstillingene avgjør forespørsler.",
+      approve: "Godkjenn",
+      refuse: "Avslå",
+      approveTitle: "Godkjenn forespørselen",
+      refuseTitle: "Avslå forespørselen",
+      copy: "Kopi som leveres",
+      noReadyCopy: "Lag en kopi før du godkjenner.",
+      terms: "Bruksvilkår",
+      termsVersion: "{title}, versjon {version}",
+      noTerms: "Publiser bruksvilkår før du godkjenner.",
+      expires: "Lisensen slutter",
+      expiresHint: "Nedlastingslenken virker til og med denne dagen (UTC).",
+      note: "Merknad",
+      notePlaceholder: "Valgfrie vilkår eller merknader",
+      evidenceRequired:
+        "Registrer minst én rettighetsdokumentasjon før du godkjenner.",
+      emailUnavailable:
+        "Denne installasjonen sender ikke e-post, så kopien kan ikke leveres før e-post er satt opp. Du kan likevel registrere avgjørelsen.",
+      approved: "Forespørselen er godkjent",
+      refused: "Forespørselen er avslått",
+      approvedOn: "Godkjent {date} av {name}",
+      refusedOn: "Avslått {date} av {name}",
+      decidedOn: "Avgjort {date}",
+      evidenceBasis: "Dokumentasjon som ble lagt til grunn",
+      termsUsed: "Bruksvilkår",
+      grants: {
+        active: "Lisensen gjelder",
+        expired: "Lisensen er utløpt",
+        revoked: "Lisensen er tilbakekalt",
+      },
+      revokedOn: "Tilbakekalt {date}: {reason}",
+      expiredOn: "Utløpt {date}",
+      revoke: "Tilbakekall lisensen",
+      revokeTitle: "Tilbakekalle denne lisensen?",
+      revokeDescription:
+        "Nedlastingslenken slutter å virke med en gang, og e-poster som ikke er sendt, kanselleres. Filer som allerede er lastet ned, kan ikke hentes tilbake.",
+      revokedToast: "Lisensen er tilbakekalt",
+      rightsAtDecision: "Bilderettigheter da avgjørelsen ble tatt",
+    },
+    delivery: {
+      title: "Levering og bruk",
+      description:
+        "Hver e-post til forespørreren med forsøkene, og hver bruk av nedlastingslenken.",
+      empty: "Ingenting er levert ennå.",
+      resend: "Send på nytt",
+      resent: "E-posten er satt i kø",
+      retry: "Prøv igjen",
+      retried: "Nytt forsøk startet",
+      to: "Til {email}",
+      queuedAt: "Satt i kø {date}",
+      attempts: "Forsøk: {count} av {max}",
+      nextAttempt: "Neste forsøk {date}",
+      sending: "Sender",
+      statuses: {
+        pending: "Venter",
+        succeeded: "Levert",
+        failed_transient: "Mislyktes etter nye forsøk",
+        failed_permanent: "Avvist",
+        cancelled: "Kansellert",
+      },
+      errors: {
+        http_error: "E-posttjenesten svarte med en feil",
+        timeout: "E-posttjenesten svarte ikke i tide",
+        network_error: "Fikk ikke kontakt med e-posttjenesten",
+        attempt_lost: "Et forsøk ble avbrutt",
+        channel_unavailable: "E-post er ikke satt opp i denne installasjonen",
+        grant_inactive: "Lisensen var avsluttet",
+      },
+      attemptLine: "Forsøk {number}, {date}",
+      responseStatus: "HTTP {status}",
+      outcomes: {
+        succeeded: "Levert",
+        failed_transient: "Prøves igjen",
+        failed_permanent: "Avvist",
+      },
+      usesTitle: "Bruksregister",
+      usesEmpty: "Nedlastingslenken er ikke brukt.",
+      downloadOutcomes: {
+        served: "Kopien ble lastet ned",
+        refused_expired: "Avvist: lisensen er utløpt",
+        refused_revoked: "Avvist: lisensen er tilbakekalt",
+        refused_unavailable: "Avvist: kopien er utilgjengelig",
+      },
+    },
+    terms: {
+      title: "Bruksvilkår",
+      description:
+        "Teksten som sendes med hver godkjente kopi. Publisering lager en ny versjon; hver avgjørelse beholder versjonen den brukte.",
+      empty:
+        "Ingen bruksvilkår er publisert ennå. Forespørsler kan ikke godkjennes før du publiserer dem.",
+      publish: "Publiser ny versjon",
+      publishTitle: "Publiser bruksvilkår",
+      publishDescription:
+        "Senere godkjenninger bruker denne versjonen. Godkjenninger som allerede er gitt, beholder sin.",
+      termsTitle: "Tittel",
+      body: "Tekst",
+      published: "Versjon {version} er publisert",
+      version: "Versjon {version}",
+      publishedOn: "Publisert {date} av {name}",
+      current: "Gjeldende",
+    },
+    errors: {
+      requestNotFound: "Denne forespørselen finnes ikke lenger.",
+      objectUnavailable: "Objektet er utilgjengelig eller trukket tilbake.",
+      imageNotEligible:
+        "Bare ferdige JPEG-, PNG-, WebP- eller TIFF-bilder av dette objektet kan reproduseres.",
+      imageSourceUnverified:
+        "Bildefilen er ikke verifisert. Last den opp på nytt eller lag en verifisert versjon.",
+      requesterEmailMissing:
+        "Legg først til en e-postadresse på denne parten: den godkjente kopien leveres på e-post.",
+      purposeRequired: "Beskriv den tiltenkte bruken.",
+      summaryRequired: "Oppsummer dokumentasjonen.",
+      textTooLong: "Teksten er for lang.",
+      requestNotOpen:
+        "Denne forespørselen er allerede avgjort eller avsluttet.",
+      evidenceNotFound: "Denne dokumentasjonen finnes ikke lenger.",
+      evidenceDocumentInvalid:
+        "Velg en fil som hører til det forespurte objektet.",
+      evidenceRequired:
+        "Registrer minst én rettighetsdokumentasjon før du godkjenner.",
+      derivativeInProgress: "En kopi lages allerede.",
+      derivativeNotReady:
+        "Lag en kopi av det gjeldende bildet før du godkjenner.",
+      termsNotPublished: "Publiser bruksvilkår før du godkjenner.",
+      termsOutdated:
+        "En nyere versjon av bruksvilkårene er publisert. Les den og godkjenn på nytt.",
+      termsTextRequired: "Skriv inn en tittel og teksten.",
+      expiryInvalid: "Velg en sluttdato fram i tid og innen ti år.",
+      reasonRequired: "Oppgi en grunn.",
+      grantNotActive: "Lisensen er avsluttet.",
+      deliveryNotRetryable:
+        "Bare en mislykket eller kansellert e-post kan prøves på nytt.",
+      emailChannelUnavailable: "Denne installasjonen sender ikke e-post.",
+      fallback: "Forespørselen kunne ikke lagres. Prøv igjen.",
+    },
+  },
   parties: {
     roles: {
+      requester: "Forespørrer",
       donor: "Giver / kilde",
       lender: "Långiver",
       borrower: "Låntaker",
@@ -6688,6 +7002,7 @@ export default {
       phone: "Samme telefon",
     },
     targetTypes: {
+      reproductionRequest: "Reproduksjonsforespørsel",
       accession: "Aksesjon",
       loan: "Lån",
       deaccession: "Deaksesjon",
@@ -9458,6 +9773,7 @@ export default {
   },
   untranslatedComponents: {
     labels: {
+      reproductionRequests: "Reproduksjonsforespørsler",
       address: "Adresse",
       streetAddress: "Gateadresse",
       address2: "Adresse 2",
@@ -10016,6 +10332,7 @@ export default {
       unknownDonorsHint: "Brukes når objektet ble gitt av en ukjent giver",
     },
     navigation: {
+      reproductionRequests: "Reproduksjonsforespørsler",
       patronManagement: "Låneradministrasjon",
       locked: "Utilgjengelig",
       overview: "Oversikt",
@@ -10106,6 +10423,9 @@ export default {
     },
     notificationCopy: {
       titles: {
+        licensedImageNotDelivered: "Lisensiert bilde ble ikke levert",
+        reproductionRequestAwaitsDecision:
+          "Reproduksjonsforespørsel venter på avgjørelse",
         batchJobSucceeded: "{job} er fullført",
         batchJobFailed: "{job} er fullført med {count} feil",
         newAccessionRequiresApproval: "Ny tilvekst krever godkjenning",
@@ -10188,6 +10508,10 @@ export default {
         incidentClosed: "Hendelse avsluttet",
       },
       messages: {
+        reproductionDeliveryFailed:
+          "E-posten for forespørsel {number} kunne ikke leveres.",
+        reproductionRequestReceived:
+          "Forespørsel {number} gjelder bruk av et bilde av objektet {object}.",
         objectMoveExecuted:
           "Forespørselen din om å flytte objektet er godkjent og gjennomført.",
         onlyActiveObjectsCanMove:

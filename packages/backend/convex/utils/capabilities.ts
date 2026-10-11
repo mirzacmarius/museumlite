@@ -32,6 +32,7 @@ export const CAPABILITY_IDS = [
   "incidents",
   "inventory",
   "deaccession",
+  "reproduction_requests",
   "administration",
 ] as const;
 
@@ -144,6 +145,13 @@ export const CAPABILITY_MATRIX = {
   deaccession: {
     permissions: ["collections.read"],
     route: "/deaccessions",
+  },
+  // Requesters are Parties, so requests need the accounts module. Deciding
+  // is the rights authority of public image approval (ADR 0016).
+  reproduction_requests: {
+    module: "accounts",
+    permissions: ["media.read", "accounts.read"],
+    route: "/reproduction-requests",
   },
   administration: {
     permissions: ["organization.manage_settings"],

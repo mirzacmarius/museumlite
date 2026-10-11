@@ -29,6 +29,7 @@ const RECORD_LISTS = {
   conservation: "/conservation",
   entries: "/accessions/entries",
   documentationQuality: "/documentation-quality",
+  reproductionRequests: "/reproduction-requests",
   incidents: "/incidents",
   inventory: "/inventory",
 } as const;

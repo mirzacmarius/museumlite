@@ -108,6 +108,14 @@ export interface EmailMessages {
     open: string;
     footer: { daily: string; weekly: string };
   };
+  reproductionDelivery: {
+    subject: string;
+    intro: string;
+    terms: string;
+    expires: string;
+    download: string;
+    footer: string;
+  };
   auth: {
     verificationSubject: string;
     verificationBody: string;
@@ -254,6 +262,17 @@ const messages: Record<EmailLocale, EmailMessages> = {
         weekly:
           "You receive this digest because you chose a weekly email digest for notifications in {organizationName}.",
       },
+    },
+    reproductionDelivery: {
+      subject: "Your image from {organizationName} ({requestNumber})",
+      intro:
+        "{organizationName} approved your request {requestNumber} for {objectLabel}. The file is a copy prepared for your request, not the original.",
+      terms: "Terms of use: {termsTitle}, version {termsVersion}",
+      expires:
+        "The download link works until the end of {date} (UTC). It stops working earlier if the license is revoked.",
+      download: "Download the image",
+      footer:
+        "You received this email because you asked {organizationName} to use one of its images.",
     },
     auth: {
       verificationSubject: "Your MuseumLite verification code",
@@ -410,6 +429,17 @@ const messages: Record<EmailLocale, EmailMessages> = {
           "Vous recevez ce récapitulatif car vous avez choisi un récapitulatif hebdomadaire par e-mail des notifications de {organizationName}.",
       },
     },
+    reproductionDelivery: {
+      subject: "Votre image de {organizationName} ({requestNumber})",
+      intro:
+        "{organizationName} a approuvé votre demande {requestNumber} pour {objectLabel}. Le fichier est une copie préparée pour votre demande, et non l'original.",
+      terms: "Conditions d'utilisation : {termsTitle}, version {termsVersion}",
+      expires:
+        "Le lien de téléchargement fonctionne jusqu'à la fin du {date} (UTC). Il cesse de fonctionner plus tôt si la licence est révoquée.",
+      download: "Télécharger l'image",
+      footer:
+        "Vous recevez cet e-mail parce que vous avez demandé à {organizationName} d'utiliser l'une de ses images.",
+    },
     auth: {
       verificationSubject: "Votre code de vérification MuseumLite",
       verificationBody: "Votre code de vérification est {token}.",
@@ -558,6 +588,17 @@ const messages: Record<EmailLocale, EmailMessages> = {
         weekly:
           "Recibes este resumen porque elegiste un resumen semanal por correo de las notificaciones de {organizationName}.",
       },
+    },
+    reproductionDelivery: {
+      subject: "Su imagen de {organizationName} ({requestNumber})",
+      intro:
+        "{organizationName} aprobó su solicitud {requestNumber} para {objectLabel}. El archivo es una copia preparada para su solicitud, no el original.",
+      terms: "Condiciones de uso: {termsTitle}, versión {termsVersion}",
+      expires:
+        "El enlace de descarga funciona hasta el final del {date} (UTC). Deja de funcionar antes si se revoca la licencia.",
+      download: "Descargar la imagen",
+      footer:
+        "Recibe este correo porque pidió a {organizationName} usar una de sus imágenes.",
     },
     auth: {
       verificationSubject: "Tu código de verificación de MuseumLite",
@@ -709,6 +750,17 @@ const messages: Record<EmailLocale, EmailMessages> = {
           "Du får dette sammendraget fordi du har valgt et ukentlig sammendrag på e-post for varsler i {organizationName}.",
       },
     },
+    reproductionDelivery: {
+      subject: "Bildet ditt fra {organizationName} ({requestNumber})",
+      intro:
+        "{organizationName} har godkjent forespørselen din {requestNumber} for {objectLabel}. Filen er en kopi laget for forespørselen din, ikke originalen.",
+      terms: "Bruksvilkår: {termsTitle}, versjon {termsVersion}",
+      expires:
+        "Nedlastingslenken virker til og med {date} (UTC). Den slutter å virke tidligere hvis lisensen trekkes tilbake.",
+      download: "Last ned bildet",
+      footer:
+        "Du får denne e-posten fordi du ba {organizationName} om å bruke et av bildene deres.",
+    },
     auth: {
       verificationSubject: "Din bekreftelseskode for MuseumLite",
       verificationBody: "Bekreftelseskoden din er {token}.",
@@ -855,6 +907,17 @@ const messages: Record<EmailLocale, EmailMessages> = {
         weekly:
           "Primiți acest rezumat deoarece ați ales un rezumat săptămânal prin e-mail al notificărilor din {organizationName}.",
       },
+    },
+    reproductionDelivery: {
+      subject: "Imaginea dvs. de la {organizationName} ({requestNumber})",
+      intro:
+        "{organizationName} a aprobat cererea dvs. {requestNumber} pentru {objectLabel}. Fișierul este o copie pregătită pentru cererea dvs., nu originalul.",
+      terms: "Condiții de utilizare: {termsTitle}, versiunea {termsVersion}",
+      expires:
+        "Linkul de descărcare funcționează până la sfârșitul zilei de {date} (UTC). Nu mai funcționează mai devreme dacă licența este revocată.",
+      download: "Descărcați imaginea",
+      footer:
+        "Primiți acest e-mail deoarece ați cerut organizației {organizationName} să folosească una dintre imaginile sale.",
     },
     auth: {
       verificationSubject: "Codul dvs. de verificare MuseumLite",

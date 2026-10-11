@@ -5835,6 +5835,7 @@ export default {
     tryAgain: "Intentar de nuevo",
     errorId: "ID de error: {id}",
     goToList: {
+      reproductionRequests: "Ir a solicitudes de reproducción",
       objects: "Ir a objetos",
       loans: "Ir a préstamos",
       accessions: "Ir a accesiones",
@@ -6728,8 +6729,320 @@ export default {
     },
     withdrawnObjects: "Objetos retirados",
   },
+  reproductionRequests: {
+    rightsStatuses: {
+      owned: "Propiedad de la institución",
+      licensed: "Con licencia",
+      public_domain: "Dominio público",
+      orphan_work: "Obra huérfana",
+      restricted: "Restringidos",
+      unknown: "Desconocidos",
+    },
+    licenseTypes: {
+      creative_commons_by: "CC BY",
+      creative_commons_by_sa: "CC BY-SA",
+      creative_commons_by_nc: "CC BY-NC",
+      creative_commons_by_nd: "CC BY-ND",
+      creative_commons_zero: "CC0",
+      editorial_only: "Solo uso editorial",
+      commercial: "Comercial",
+      internal_only: "Solo uso interno",
+      custom: "Licencia personalizada",
+    },
+    title: "Solicitudes de investigación y reproducción",
+    description:
+      "Registre quién pide usar una imagen de un objeto y para qué, revise las pruebas de derechos y entregue una copia aprobada según sus condiciones de uso. Los originales nunca se envían.",
+    headerTitle: "Solicitud de reproducción",
+    newRequest: "Nueva solicitud",
+    tabs: {
+      requests: "Solicitudes",
+      terms: "Condiciones de uso",
+    },
+    statuses: {
+      all: "Todas",
+      open: "Abierta",
+      approved: "Aprobada",
+      refused: "Rechazada",
+      withdrawn: "Retirada",
+      expired: "Vencida",
+      revoked: "Revocada",
+    },
+    purposes: {
+      private_study: "Estudio privado",
+      academic_research: "Investigación académica",
+      academic_publication: "Publicación académica",
+      commercial_publication: "Publicación comercial",
+      exhibition: "Exposición",
+      broadcast: "Televisión o cine",
+      online: "Sitio web o redes sociales",
+      other: "Otro uso",
+    },
+    evidenceKinds: {
+      rights_holder_permission: "Permiso del titular de derechos",
+      license: "Licencia",
+      public_domain_assessment: "Evaluación de dominio público",
+      institutional_ownership: "Derechos de la institución",
+      donor_agreement: "Acuerdo con el donante",
+      other: "Otra prueba",
+    },
+    locales: {
+      en: "Inglés",
+      fr: "Francés",
+      es: "Español",
+      no: "Noruego",
+      ro: "Rumano",
+    },
+    list: {
+      empty: "Todavía no hay solicitudes.",
+      emptyStatus: "No hay solicitudes con este estado.",
+      requester: "Solicitante",
+      object: "Objeto",
+      purpose: "Uso",
+      received: "Recibida el {date}",
+    },
+    create: {
+      title: "Nueva solicitud de investigación o reproducción",
+      description:
+        "El solicitante es una parte y necesita una dirección de correo: la copia aprobada se entrega por correo.",
+      object: "Objeto",
+      objectPlaceholder: "Buscar un objeto",
+      image: "Imagen",
+      imagePlaceholder: "Elegir una imagen del objeto",
+      noImages: "Este objeto no tiene imágenes que se puedan reproducir.",
+      requester: "Solicitante",
+      requesterPlaceholder: "Buscar una persona o institución",
+      purpose: "Uso",
+      purposeDetails: "Uso previsto",
+      purposeDetailsPlaceholder:
+        "Por ejemplo: figura 3 en una revista científica, tirada de 500 ejemplares",
+      language: "Idioma del correo",
+      submit: "Registrar solicitud",
+      submitting: "Registrando…",
+      created: "Solicitud {number} registrada",
+      missingFields:
+        "Elija un objeto, una imagen y un solicitante, y describa el uso.",
+      partiesUnavailable:
+        "Los solicitantes son partes. Active Cuentas y pida acceso a las partes para registrar solicitudes.",
+    },
+    detail: {
+      back: "Volver a las solicitudes",
+      notRecorded: "Sin registrar",
+      requestTitle: "Solicitud",
+      requester: "Solicitante",
+      email: "Dirección de entrega",
+      object: "Objeto",
+      image: "Imagen",
+      imageUnavailable: "La imagen ya no está disponible.",
+      purpose: "Uso",
+      language: "Idioma del correo",
+      received: "Recibida",
+      closeReason: "Motivo del cierre",
+      withdraw: "Retirar solicitud",
+      withdrawTitle: "¿Retirar esta solicitud?",
+      withdrawDescription:
+        "La solicitud se cierra sin decisión. Se conservan sus pruebas y su historial.",
+      withdrawn: "Solicitud retirada",
+      reason: "Motivo",
+      reasonPlaceholder: "Por qué ocurre, para el registro",
+      cancel: "Cancelar",
+      confirm: "Confirmar",
+      rightsTitle: "Derechos registrados de la imagen",
+      rightsDescription:
+        "Tomados de la ficha de la imagen. La decisión guarda una copia de estos valores tal como estaban al decidir.",
+      rightsStatus: "Estado de derechos",
+      licenseType: "Licencia",
+      licenseExpiry: "Fin de la licencia",
+      rightsHolder: "Titular de derechos",
+      copyright: "Derechos de autor",
+      usageRestrictions: "Restricciones de uso",
+      unverifiedSource:
+        "El archivo de la imagen no está verificado. Vuelva a subirlo o cree una versión verificada antes de preparar una copia.",
+    },
+    evidence: {
+      title: "Pruebas de derechos",
+      description:
+        "Lo que establece que el uso solicitado puede permitirse. Las entradas retiradas se conservan.",
+      empty: "No hay pruebas registradas.",
+      add: "Añadir prueba",
+      kind: "Tipo",
+      summary: "Resumen",
+      summaryPlaceholder: "Quién concedió qué, cuándo y dónde está la prueba",
+      document: "Archivo de apoyo",
+      noDocument: "Sin archivo",
+      added: "Prueba añadida",
+      recordedBy: "Registrada el {date} por {name}",
+      recordedAt: "Registrada el {date}",
+      retract: "Retirar",
+      retractTitle: "¿Retirar esta prueba?",
+      retractDescription:
+        "La entrada sigue en la solicitud, marcada como retirada, y ya no respalda una aprobación.",
+      retracted: "Retirada el {date}: {reason}",
+      retractedToast: "Prueba retirada",
+    },
+    derivative: {
+      title: "Copia con licencia",
+      description:
+        "Un JPEG creado a partir de la imagen para esta solicitud, sin los metadatos del original. Es el único archivo que recibe el solicitante.",
+      empty: "Aún no se ha preparado ninguna copia.",
+      size: "Lado mayor",
+      sizeOption: "{size} px",
+      prepare: "Preparar copia",
+      preparing: "Preparando la copia…",
+      prepared: "Preparando la copia",
+      statuses: {
+        processing: "En preparación",
+        ready: "Lista",
+        failed: "Fallida",
+      },
+      dimensions: "{width} × {height} px",
+      failedHint:
+        "No se pudo crear la copia a partir de esta imagen. Prepárela de nuevo o revise el archivo de la imagen.",
+      preview: "Vista previa de la copia con licencia",
+    },
+    decision: {
+      title: "Decisión",
+      description:
+        "La aprobación entrega la copia preparada al solicitante según las últimas condiciones de uso hasta la fecha de fin.",
+      awaiting: "Pendiente de decisión.",
+      cannotDecide:
+        "Solo el personal que gestiona la configuración de la organización decide las solicitudes.",
+      approve: "Aprobar",
+      refuse: "Rechazar",
+      approveTitle: "Aprobar solicitud",
+      refuseTitle: "Rechazar solicitud",
+      copy: "Copia que se entrega",
+      noReadyCopy: "Prepare una copia antes de aprobar.",
+      terms: "Condiciones de uso",
+      termsVersion: "{title}, versión {version}",
+      noTerms: "Publique unas condiciones de uso antes de aprobar.",
+      expires: "Fin de la licencia",
+      expiresHint:
+        "El enlace de descarga funciona hasta el final de este día (UTC).",
+      note: "Nota",
+      notePlaceholder: "Condiciones u observaciones opcionales",
+      evidenceRequired:
+        "Registre al menos una prueba de derechos antes de aprobar.",
+      emailUnavailable:
+        "Este despliegue no envía correos, así que la copia no se puede entregar hasta configurar el correo. Aun así puede registrar la decisión.",
+      approved: "Solicitud aprobada",
+      refused: "Solicitud rechazada",
+      approvedOn: "Aprobada el {date} por {name}",
+      refusedOn: "Rechazada el {date} por {name}",
+      decidedOn: "Decidida el {date}",
+      evidenceBasis: "Pruebas consideradas",
+      termsUsed: "Condiciones de uso",
+      grants: {
+        active: "Licencia vigente",
+        expired: "Licencia vencida",
+        revoked: "Licencia revocada",
+      },
+      revokedOn: "Revocada el {date}: {reason}",
+      expiredOn: "Vencida el {date}",
+      revoke: "Revocar licencia",
+      revokeTitle: "¿Revocar esta licencia?",
+      revokeDescription:
+        "El enlace de descarga deja de funcionar al instante y se cancelan los correos aún no enviados. Los archivos ya descargados no se pueden recuperar.",
+      revokedToast: "Licencia revocada",
+      rightsAtDecision: "Derechos de la imagen al decidir",
+    },
+    delivery: {
+      title: "Entrega y uso",
+      description:
+        "Cada correo al solicitante con sus intentos, y cada uso del enlace de descarga.",
+      empty: "Todavía no se ha entregado nada.",
+      resend: "Enviar de nuevo",
+      resent: "Correo en cola",
+      retry: "Reintentar",
+      retried: "Reintento iniciado",
+      to: "Para {email}",
+      queuedAt: "En cola desde el {date}",
+      attempts: "Intentos: {count} de {max}",
+      nextAttempt: "Próximo intento el {date}",
+      sending: "Enviando",
+      statuses: {
+        pending: "Pendiente",
+        succeeded: "Entregado",
+        failed_transient: "Falló tras varios intentos",
+        failed_permanent: "Rechazado",
+        cancelled: "Cancelado",
+      },
+      errors: {
+        http_error: "El servicio de correo respondió con un error",
+        timeout: "El servicio de correo no respondió a tiempo",
+        network_error: "No se pudo contactar con el servicio de correo",
+        attempt_lost: "Un intento se interrumpió",
+        channel_unavailable: "El correo no está configurado en este despliegue",
+        grant_inactive: "La licencia había terminado",
+      },
+      attemptLine: "Intento {number}, {date}",
+      responseStatus: "HTTP {status}",
+      outcomes: {
+        succeeded: "Entregado",
+        failed_transient: "Se reintentará",
+        failed_permanent: "Rechazado",
+      },
+      usesTitle: "Registro de uso",
+      usesEmpty: "El enlace de descarga no se ha usado.",
+      downloadOutcomes: {
+        served: "Copia descargada",
+        refused_expired: "Denegado: licencia vencida",
+        refused_revoked: "Denegado: licencia revocada",
+        refused_unavailable: "Denegado: copia no disponible",
+      },
+    },
+    terms: {
+      title: "Condiciones de uso",
+      description:
+        "El texto que acompaña a cada copia aprobada. Publicar crea una nueva versión; cada decisión conserva la versión que usó.",
+      empty:
+        "Todavía no hay condiciones de uso publicadas. Las solicitudes no se pueden aprobar hasta que las publique.",
+      publish: "Publicar nueva versión",
+      publishTitle: "Publicar condiciones de uso",
+      publishDescription:
+        "Las aprobaciones posteriores usan esta versión. Las aprobaciones ya hechas conservan la suya.",
+      termsTitle: "Título",
+      body: "Texto",
+      published: "Versión {version} publicada",
+      version: "Versión {version}",
+      publishedOn: "Publicada el {date} por {name}",
+      current: "Vigente",
+    },
+    errors: {
+      requestNotFound: "Esta solicitud ya no existe.",
+      objectUnavailable: "El objeto no está disponible o fue retirado.",
+      imageNotEligible:
+        "Solo se pueden reproducir imágenes JPEG, PNG, WebP o TIFF completas de este objeto.",
+      imageSourceUnverified:
+        "El archivo de la imagen no está verificado. Vuelva a subirlo o cree una versión verificada.",
+      requesterEmailMissing:
+        "Añada primero una dirección de correo a esta parte: la copia aprobada se entrega por correo.",
+      purposeRequired: "Describa el uso previsto.",
+      summaryRequired: "Resuma la prueba.",
+      textTooLong: "Este texto es demasiado largo.",
+      requestNotOpen: "Esta solicitud ya está decidida o cerrada.",
+      evidenceNotFound: "Esta prueba ya no existe.",
+      evidenceDocumentInvalid: "Elija un archivo del objeto solicitado.",
+      evidenceRequired:
+        "Registre al menos una prueba de derechos antes de aprobar.",
+      derivativeInProgress: "Ya se está preparando una copia.",
+      derivativeNotReady:
+        "Prepare una copia de la imagen actual antes de aprobar.",
+      termsNotPublished: "Publique unas condiciones de uso antes de aprobar.",
+      termsOutdated:
+        "Se publicó una versión más reciente de las condiciones de uso. Revísela y apruebe de nuevo.",
+      termsTextRequired: "Escriba un título y el texto.",
+      expiryInvalid: "Elija una fecha de fin futura y dentro de diez años.",
+      reasonRequired: "Indique un motivo.",
+      grantNotActive: "La licencia ha terminado.",
+      deliveryNotRetryable:
+        "Solo se puede reintentar un correo fallido o cancelado.",
+      emailChannelUnavailable: "Este despliegue no envía correos.",
+      fallback: "No se pudo guardar la solicitud. Inténtelo de nuevo.",
+    },
+  },
   parties: {
     roles: {
+      requester: "Solicitante",
       donor: "Donante / procedencia",
       lender: "Prestamista",
       borrower: "Prestatario",
@@ -6749,6 +7062,7 @@ export default {
       phone: "Mismo teléfono",
     },
     targetTypes: {
+      reproductionRequest: "Solicitud de reproducción",
       accession: "Accesión",
       loan: "Préstamo",
       deaccession: "Desaccesión",
@@ -9562,6 +9876,7 @@ export default {
   },
   untranslatedComponents: {
     labels: {
+      reproductionRequests: "Solicitudes de reproducción",
       address: "Dirección",
       streetAddress: "Dirección",
       address2: "Dirección 2",
@@ -10135,6 +10450,7 @@ export default {
       unknownDonorsHint: "Úselo cuando el objeto lo donó un donante sin nombre",
     },
     navigation: {
+      reproductionRequests: "Solicitudes de reproducción",
       patronManagement: "Gestión de usuarios",
       locked: "No disponible",
       overview: "Resumen",
@@ -10226,6 +10542,9 @@ export default {
     },
     notificationCopy: {
       titles: {
+        licensedImageNotDelivered: "Imagen con licencia no entregada",
+        reproductionRequestAwaitsDecision:
+          "Solicitud de reproducción pendiente de decisión",
         batchJobSucceeded: "{job}: proceso completado",
         batchJobFailed: "{job}: proceso completado con {count} errores",
         newAccessionRequiresApproval: "Nueva accesión pendiente de aprobación",
@@ -10315,6 +10634,10 @@ export default {
         incidentClosed: "Incidente cerrado",
       },
       messages: {
+        reproductionDeliveryFailed:
+          "No se pudo entregar el correo de la solicitud {number}.",
+        reproductionRequestReceived:
+          "La solicitud {number} pide usar una imagen del objeto {object}.",
         objectMoveExecuted:
           "Se ha aprobado y completado tu solicitud de traslado del objeto.",
         onlyActiveObjectsCanMove:
