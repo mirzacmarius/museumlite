@@ -115,7 +115,8 @@ interface ReportData {
       }>;
     };
   };
-  locationUtilization: {
+  /** Absent when the member's role cannot read locations. */
+  locationUtilization?: {
     summary: {
       totalLocations: number;
       locationsWithCapacity: number;
@@ -411,6 +412,7 @@ function useReportExportActions({
   }, [compliance, kpis.generatedAt, csv, locale]);
 
   const exportLocationReport = useCallback(() => {
+    if (!locationUtilization) return;
     setExporting("locations");
     try {
       const rows = [
@@ -584,22 +586,26 @@ function useReportExportActions({
         [],
         ...complianceRows,
         [csv("board.storageUtilization")],
-        [
-          csv("location.totalCapacity"),
-          locationUtilization.summary.totalCapacity,
-        ],
-        [
-          csv("board.currentlyOccupied"),
-          locationUtilization.summary.totalOccupied,
-        ],
-        [
-          csv("board.utilizationRate"),
-          `${locationUtilization.summary.utilizationPercentage}%`,
-        ],
-        [
-          csv("board.locationsAtCapacity"),
-          locationUtilization.atCapacity.length,
-        ],
+        ...(locationUtilization
+          ? [
+              [
+                csv("location.totalCapacity"),
+                locationUtilization.summary.totalCapacity,
+              ],
+              [
+                csv("board.currentlyOccupied"),
+                locationUtilization.summary.totalOccupied,
+              ],
+              [
+                csv("board.utilizationRate"),
+                `${locationUtilization.summary.utilizationPercentage}%`,
+              ],
+              [
+                csv("board.locationsAtCapacity"),
+                locationUtilization.atCapacity.length,
+              ],
+            ]
+          : [[csv("unavailable")]]),
       ];
 
       const csvContent = rows
@@ -683,18 +689,22 @@ function useReportExportActions({
         ]),
         [],
         [csv("insurance.storageConditions")],
-        [
-          csv("insurance.locationType"),
-          csv("insurance.totalCapacity"),
-          csv("insurance.currentOccupancy"),
-          csv("insurance.utilization"),
-        ],
-        ...locationUtilization.byType.map((item) => [
-          item.type,
-          item.totalCapacity,
-          item.totalOccupied,
-          `${item.utilizationPercentage}%`,
-        ]),
+        ...(locationUtilization
+          ? [
+              [
+                csv("insurance.locationType"),
+                csv("insurance.totalCapacity"),
+                csv("insurance.currentOccupancy"),
+                csv("insurance.utilization"),
+              ],
+              ...locationUtilization.byType.map((item) => [
+                item.type,
+                item.totalCapacity,
+                item.totalOccupied,
+                `${item.utilizationPercentage}%`,
+              ]),
+            ]
+          : [[csv("unavailable")]]),
       ];
 
       const csvContent = rows
@@ -776,6 +786,7 @@ function PrimaryReportMenu({
 
 interface IndividualReportsMenuProps {
   hasInventoryValuation: boolean;
+  hasLocationUtilization: boolean;
   onExportInventoryValuation: () => void;
   onExportLoanReport: () => void;
   onExportComplianceReport: () => void;
@@ -785,6 +796,7 @@ interface IndividualReportsMenuProps {
 
 function IndividualReportsMenu({
   hasInventoryValuation,
+  hasLocationUtilization,
   onExportInventoryValuation,
   onExportLoanReport,
   onExportComplianceReport,
@@ -813,9 +825,11 @@ function IndividualReportsMenu({
         <DropdownMenuItem onClick={onExportComplianceReport}>
           {t("complianceAudit")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onExportLocationReport}>
-          {t("locationUtilization")}
-        </DropdownMenuItem>
+        {hasLocationUtilization && (
+          <DropdownMenuItem onClick={onExportLocationReport}>
+            {t("locationUtilization")}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onExportAllReports}>
           {t("exportAllReports")}
@@ -854,6 +868,7 @@ function KpiReportMenus({ reports }: { reports: ReportData }) {
       />
       <IndividualReportsMenu
         hasInventoryValuation={reports.hasInventoryValuation}
+        hasLocationUtilization={reports.locationUtilization !== undefined}
         onExportInventoryValuation={exportInventoryValuation}
         onExportLoanReport={exportLoanReport}
         onExportComplianceReport={exportComplianceReport}

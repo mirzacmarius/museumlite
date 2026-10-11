@@ -36,6 +36,24 @@ export function navigationAccess(
   }
 }
 
+/**
+ * The state of one section of a capability that needs its own role
+ * permission, in the backend's order: a disabled module still wins, then the
+ * missing permission, so members whose role lacks access are never told to
+ * upgrade.
+ */
+export function sectionCapabilityState(
+  state: CapabilityState,
+  hasSectionPermission: boolean,
+): CapabilityState {
+  if (state.status === "module_disabled" || hasSectionPermission) return state;
+  return {
+    capability: state.capability,
+    listed: state.listed,
+    status: "permission_missing",
+  };
+}
+
 /** The explanation a page shows for an unavailable capability; null when open. */
 export function capabilityGuardReason(
   state: CapabilityState,

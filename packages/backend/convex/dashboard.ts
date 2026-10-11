@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { ANALYTICS_SECTION_PERMISSIONS } from "./utils/analyticsSections";
 import { INVENTORY_METRIC_DEFINITION } from "./utils/collectionMetrics";
 import { buildOrganizationAnalytics } from "./utils/dashboardAnalytics";
 import { EXHIBITION_METRIC_DEFINITION } from "./utils/exhibitionMetrics";
@@ -316,7 +317,11 @@ export const getLocationUtilization = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
-      requirePermission(ctx, args.organizationId, "locations.read"),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        ANALYTICS_SECTION_PERMISSIONS.locationUtilization,
+      ),
     ]);
     return await buildLocationUtilization(ctx, args.organizationId, args.now);
   },

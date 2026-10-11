@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { ANALYTICS_SECTION_PERMISSIONS } from "@v1/backend/convex/utils/analyticsSections";
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import { BarChart3 } from "lucide-react";
@@ -10,6 +11,7 @@ import { CapabilityGuard } from "@/components/capability-guard";
 import { ClientTime } from "@/components/client-date";
 import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
+import { usePermissions } from "@/components/permission-gate";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -109,6 +111,10 @@ export default function AnalyticsPage() {
   const hasReporting = useCapabilities().isAvailable("reporting");
   const hasCompliance = hasFeature("compliance");
   const hasInventoryValuation = hasModule("inventory_valuation");
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  const canReadLocations = hasPermission(
+    ANALYTICS_SECTION_PERMISSIONS.locationUtilization,
+  );
   const now = useClientNow();
 
   const kpis = useQuery(
@@ -132,7 +138,10 @@ export default function AnalyticsPage() {
 
   const locationUtilization = useQuery(
     api.dashboard.getLocationUtilization,
-    currentOrganizationId && hasReporting && now !== undefined
+    currentOrganizationId &&
+      hasReporting &&
+      canReadLocations &&
+      now !== undefined
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           now,
@@ -154,7 +163,10 @@ export default function AnalyticsPage() {
   }
 
   const isLoading =
-    !kpis || !locationUtilization || (hasCompliance && !compliance);
+    !kpis ||
+    permissionsLoading ||
+    (canReadLocations && !locationUtilization) ||
+    (hasCompliance && !compliance);
 
   if (isLoading) {
     return (
@@ -182,7 +194,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!kpis || !locationUtilization) {
+  if (!kpis) {
     return null;
   }
 
@@ -194,7 +206,9 @@ export default function AnalyticsPage() {
     unavailableReason(locationUtilization) ??
     (hasCompliance ? unavailableReason(compliance) : undefined);
   const reports =
-    kpiData && locationData && (!hasCompliance || complianceData)
+    kpiData &&
+    (!canReadLocations || locationData) &&
+    (!hasCompliance || complianceData)
       ? {
           kpis: kpiData,
           compliance: complianceData,
@@ -251,14 +265,28 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {locationData ? (
+      {locationData || !canReadLocations ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <LocationUtilizationCard data={locationData} />
+          <CapabilityGuard
+            capability="reporting"
+            permission={ANALYTICS_SECTION_PERMISSIONS.locationUtilization}
+            featureName={t("analytics.locations.title")}
+          >
+            {locationData ? (
+              <LocationUtilizationCard data={locationData} />
+            ) : null}
+          </CapabilityGuard>
         </div>
       ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ScheduledReportsCard organizationId={currentOrganizationId} />
+        <CapabilityGuard
+          capability="reporting"
+          permission={ANALYTICS_SECTION_PERMISSIONS.scheduledReports}
+          featureName={t("analytics.scheduledReports.title")}
+        >
+          <ScheduledReportsCard organizationId={currentOrganizationId} />
+        </CapabilityGuard>
         <ReportExportsCard
           organizationId={currentOrganizationId}
           reports={reports}

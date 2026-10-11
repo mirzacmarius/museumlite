@@ -54,25 +54,21 @@ export function FeatureGuard({
   return (
     <div
       role="status"
-      className="flex flex-col items-center justify-center min-h-[400px] w-full border border-white/10 rounded-lg bg-zinc-950/20 p-8 text-center animate-in fade-in duration-500"
+      className="flex flex-col items-center justify-center min-h-[400px] w-full border border-border rounded-lg bg-muted/30 p-8 text-center animate-in fade-in duration-500"
     >
-      <div className="size-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-        <Lock aria-hidden="true" className="size-6 text-white/40" />
+      <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-4 border border-border">
+        <Lock aria-hidden="true" className="size-6 text-muted-foreground" />
       </div>
-      <h3 className="text-xl font-medium text-white mb-2">
+      <h3 className="text-xl font-medium text-foreground mb-2">
         {formatUiMessage(copy.locked, { featureName })}
       </h3>
       {description ? (
-        <p className="text-white/60 max-w-md mb-2">{description}</p>
+        <p className="text-muted-foreground max-w-md mb-2">{description}</p>
       ) : null}
-      <p className="text-white/60 max-w-md mb-6">{explanation}</p>
+      <p className="text-muted-foreground max-w-md mb-6">{explanation}</p>
 
       {action ? (
-        <Button
-          asChild
-          size="lg"
-          className="bg-white text-black hover:bg-white/90"
-        >
+        <Button asChild size="lg">
           <Link href={action.href}>{action.label}</Link>
         </Button>
       ) : null}
