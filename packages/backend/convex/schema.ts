@@ -32,6 +32,12 @@ import {
   exportStatus,
   registerTotalsValidator,
 } from "./utils/exportContract";
+import {
+  inventoryExceptionFields,
+  inventoryExpectedObjectFields,
+  inventoryObservationFields,
+  inventorySessionFields,
+} from "./utils/inventoryValidators";
 import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
 import {
   collectionTypeValidator,
@@ -1549,6 +1555,8 @@ export default defineSchema({
     batchJobId: v.optional(v.id("batchJobs")),
     exhibitionObjectId: v.optional(v.id("exhibitionObjects")),
     transitItemId: v.optional(v.id("transitItems")),
+    // The inventory exception whose review authorized this move (MUS-662).
+    inventoryExceptionId: v.optional(v.id("inventoryExceptions")),
   })
     .index("by_collection", ["collectionId"])
     .index("by_exhibition_object", ["exhibitionObjectId"])
@@ -4763,6 +4771,37 @@ export default defineSchema({
       "kind",
       "lastCheckNumber",
     ]),
+
+  // Inventory sessions (MUS-662): expected-versus-observed comparisons of one
+  // location scope. Observations are evidence and never move objects;
+  // exceptions close through guarded moves or reviewed acceptance.
+  inventorySessions: defineTable(inventorySessionFields)
+    .index("by_organization_and_startedAt", ["organizationId", "startedAt"])
+    .index("by_organization_and_status_and_startedAt", [
+      "organizationId",
+      "status",
+      "startedAt",
+    ]),
+
+  inventoryExpectedObjects: defineTable(inventoryExpectedObjectFields)
+    .index("by_session_and_collection", ["sessionId", "collectionId"])
+    .index("by_session_and_firstObservation", [
+      "sessionId",
+      "firstObservationId",
+    ]),
+
+  inventoryObservations: defineTable(inventoryObservationFields)
+    .index("by_session_and_clientObservationId", [
+      "sessionId",
+      "clientObservationId",
+    ])
+    .index("by_session_and_collection", ["sessionId", "collectionId"])
+    .index("by_session_and_observedAt", ["sessionId", "observedAt"]),
+
+  inventoryExceptions: defineTable(inventoryExceptionFields)
+    .index("by_session_and_status", ["sessionId", "status"])
+    .index("by_session_and_kind", ["sessionId", "kind"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),

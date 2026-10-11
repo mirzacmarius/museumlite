@@ -3,7 +3,8 @@ import { v } from "convex/values";
 
 /**
  * Case kinds a task can be linked to; each has a staff case detail page. A
- * documentation quality finding is the case its repair work hangs on.
+ * documentation quality finding and an inventory exception are the cases their
+ * repair work hangs on.
  */
 export const caseTaskCaseTypeValidator = v.union(
   v.literal("loan"),
@@ -12,6 +13,7 @@ export const caseTaskCaseTypeValidator = v.union(
   v.literal("exhibition"),
   v.literal("conservation"),
   v.literal("documentationFinding"),
+  v.literal("inventoryException"),
 );
 export type CaseTaskCaseType = Infer<typeof caseTaskCaseTypeValidator>;
 

@@ -7,6 +7,7 @@ const CASE_PATHS: Record<CaseTaskCaseType, string> = {
   exhibition: "/exhibitions",
   conservation: "/conservation",
   documentationFinding: "/documentation-quality",
+  inventoryException: "/inventory/exceptions",
 };
 
 export function caseHref(caseType: CaseTaskCaseType, caseId: string) {
