@@ -19,7 +19,10 @@ function isPreparationCase(
   caseType: CaseTaskCaseType,
 ): caseType is PreparationCaseType {
   return (
-    caseType === "accession" || caseType === "loan" || caseType === "exhibition"
+    caseType === "accession" ||
+    caseType === "loan" ||
+    caseType === "exhibition" ||
+    caseType === "incident"
   );
 }
 

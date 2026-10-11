@@ -8,6 +8,7 @@ import {
   MAX_TASKS_PER_CASE,
   UNDATED,
 } from "./caseTaskRules";
+import { seesIncident, WORK_PERMISSION } from "./incidentAccess";
 import { memberPermissionNames } from "./memberPermissions";
 import { dispatchNotification } from "./notificationDispatch";
 import type {
@@ -25,16 +26,22 @@ import type {
  * condition; the work they ask for is recorded through its own commands.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 /** Recipes an organization may keep outside the archive. */
 export const MAX_RECIPES = 20;
 
-export type PreparationCaseType = "accession" | "loan" | "exhibition";
+export type PreparationCaseType =
+  | "accession"
+  | "loan"
+  | "exhibition"
+  | "incident";
 
 export const TRIGGER_CASE_TYPES = {
   intake_accepted: "accession",
   loan_approved: "loan",
   exhibition_approved: "exhibition",
+  incident_response: "incident",
 } as const satisfies Record<PreparationTrigger, PreparationCaseType>;
 
 export interface PreparationCaseRef {
@@ -52,6 +59,11 @@ export interface CaseEvent extends PreparationCaseRef {
   loanDirection?: Doc<"loans">["type"];
   /** Case dates that due dates count from. */
   dates: { event: number; start?: number; end?: number };
+  /**
+   * Recipes staff chose for this case. Set for incidents, whose plans never
+   * apply unless a coordinator chose them (ADR 0015).
+   */
+  chosenRecipeIds?: ReadonlySet<Id<"preparationRecipes">>;
 }
 
 const LOAN_PREPARATION_STATUSES: ReadonlySet<Doc<"loans">["status"]> = new Set([
@@ -134,6 +146,26 @@ export async function acceptedCaseEvent(
         },
       };
     }
+    case "incident": {
+      const id = ctx.db.normalizeId("incidents", ref.caseId);
+      const incident = id ? await ctx.db.get(id) : null;
+      if (
+        !incident ||
+        incident.organizationId !== ref.organizationId ||
+        incident.status !== "responding" ||
+        incident.triagedAt === undefined
+      )
+        return null;
+      return {
+        ...ref,
+        trigger: "incident_response",
+        eventAt: incident.triagedAt,
+        approverId: incident.triagedBy,
+        assigneeId: incident.leadId,
+        dates: { event: incident.triagedAt },
+        chosenRecipeIds: new Set(incident.plans.map((plan) => plan.recipeId)),
+      };
+    }
   }
 }
 
@@ -150,7 +182,8 @@ export async function recipesForEvent(ctx: QueryCtx, event: CaseEvent) {
     .take(MAX_RECIPES);
   return recipes.filter(
     (recipe) =>
-      !recipe.loanDirection || recipe.loanDirection === event.loanDirection,
+      (!recipe.loanDirection || recipe.loanDirection === event.loanDirection) &&
+      (!event.chosenRecipeIds || event.chosenRecipeIds.has(recipe._id)),
   );
 }
 
@@ -162,7 +195,10 @@ export function suggestionKey(
   return `${event.trigger}:${event.caseId}:${recipeId}:${stepKey}`;
 }
 
-/** UTC day of the case date plus the offset; undefined without that date. */
+/**
+ * UTC day of the case date plus the offset in days, or the case time plus
+ * the offset in hours; undefined without that date.
+ */
 export function suggestedDueDate(
   due: PreparationDue | undefined,
   dates: CaseEvent["dates"],
@@ -170,23 +206,41 @@ export function suggestedDueDate(
   if (!due) return undefined;
   const from = dates[due.anchor];
   if (from === undefined) return undefined;
+  if (due.offsetHours !== undefined) return from + due.offsetHours * HOUR_MS;
   return Math.floor(from / DAY_MS) * DAY_MS + due.offsetDays * DAY_MS;
 }
 
 type Eligibility = (userId: Id<"users">) => Promise<boolean>;
 
-/** Whether a member may own tasks on this kind of case, cached per member. */
+/**
+ * Whether a member may own tasks on this case, cached per member. On a
+ * sensitive incident they must also be in its scope.
+ */
 export function ownerEligibility(
   ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  caseType: PreparationCaseType,
+  ref: PreparationCaseRef,
 ): Eligibility {
+  const { organizationId, caseType } = ref;
+  const incidentId =
+    caseType === "incident"
+      ? ctx.db.normalizeId("incidents", ref.caseId)
+      : null;
+  const incident = incidentId ? ctx.db.get(incidentId) : null;
   const cache = new Map<Id<"users">, Promise<boolean>>();
   return (userId) => {
     let eligible = cache.get(userId);
     if (!eligible) {
       eligible = memberPermissionNames(ctx, organizationId, userId).then(
-        (permissions) => canWorkWith(permissions, caseType),
+        async (permissions) => {
+          if (!canWorkWith(permissions, caseType)) return false;
+          if (!incident) return caseType !== "incident";
+          const doc = await incident;
+          return (
+            !!doc &&
+            !!permissions?.has(WORK_PERMISSION) &&
+            seesIncident(doc, userId, permissions)
+          );
+        },
       );
       cache.set(userId, eligible);
     }
@@ -385,7 +439,7 @@ export async function suggestPreparation(
   if (!event) return outcome;
   const recipes = await recipesForEvent(ctx, event);
   if (recipes.length === 0) return outcome;
-  const eligible = ownerEligibility(ctx, event.organizationId, event.caseType);
+  const eligible = ownerEligibility(ctx, event);
   let taskCount = await caseTaskCount(ctx, event);
   for (const recipe of recipes) {
     const stepTasks = new Map<string, Id<"caseTasks">>();

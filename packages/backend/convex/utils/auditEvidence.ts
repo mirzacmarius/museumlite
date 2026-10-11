@@ -119,6 +119,7 @@ export async function captureAuditEvidence(
           "referenceNumber",
           "entryNumber",
           "requestNumber",
+          "incidentNumber",
         ]) ?? args.entityId,
     },
     objectId,

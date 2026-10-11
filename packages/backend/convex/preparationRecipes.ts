@@ -50,6 +50,8 @@ const MAX_NAME_LENGTH = 120;
 const MAX_TITLE_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_OFFSET_DAYS = 365;
+/** Incident plan steps fall due within a week of triage. */
+const MAX_OFFSET_HOURS = 168;
 /** Archived recipes listed per trigger, newest first. */
 const ARCHIVED_LISTED = 50;
 const MEMBER_SCAN = 200;
@@ -58,6 +60,7 @@ const TRIGGER_FEATURES = {
   intake_accepted: null,
   loan_approved: "loans",
   exhibition_approved: "exhibitions",
+  incident_response: null,
 } as const satisfies Record<PreparationTrigger, "loans" | "exhibitions" | null>;
 
 function recipeInvalid(
@@ -123,11 +126,19 @@ async function normalizeSteps(
         );
     }
     if (input.due) {
-      const { anchor, offsetDays } = input.due;
+      const { anchor, offsetDays, offsetHours } = input.due;
+      const hourly = trigger === "incident_response";
       if (
-        (trigger === "intake_accepted" && anchor !== "event") ||
+        ((trigger === "intake_accepted" || hourly) && anchor !== "event") ||
         !Number.isInteger(offsetDays) ||
-        Math.abs(offsetDays) > MAX_OFFSET_DAYS
+        Math.abs(offsetDays) > MAX_OFFSET_DAYS ||
+        (hourly
+          ? offsetDays !== 0 ||
+            offsetHours === undefined ||
+            !Number.isInteger(offsetHours) ||
+            offsetHours < 0 ||
+            offsetHours > MAX_OFFSET_HOURS
+          : offsetHours !== undefined)
       )
         throw recipeInvalid("due", "The due date rule is invalid", index);
     }
@@ -503,6 +514,7 @@ const caseArgs = {
     v.literal("accession"),
     v.literal("loan"),
     v.literal("exhibition"),
+    v.literal("incident"),
   ),
   caseId: v.string(),
 };
@@ -565,7 +577,7 @@ export const getForCase = query({
       recipesForEvent(ctx, event),
       caseTaskCount(ctx, event),
     ]);
-    const eligible = ownerEligibility(ctx, args.organizationId, args.caseType);
+    const eligible = ownerEligibility(ctx, args);
     let room = MAX_TASKS_PER_CASE - taskCount;
     const presented: Array<{
       recipeId: Id<"preparationRecipes">;

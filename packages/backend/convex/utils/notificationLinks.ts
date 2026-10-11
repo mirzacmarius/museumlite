@@ -34,6 +34,8 @@ export function notificationEntityHref(
       return `/documentation-quality/${entityId}`;
     case "reproductionRequest":
       return `/reproduction-requests/${entityId}`;
+    case "incident":
+      return `/incidents/${entityId}`;
     case "inventoryException":
       return `/inventory/exceptions/${entityId}`;
     default:

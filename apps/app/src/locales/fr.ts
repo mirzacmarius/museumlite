@@ -2713,6 +2713,8 @@ export default {
           catalog_edit: "Modification du catalogue",
           inventory_reconciliation: "Rapprochement d'inventaire",
           legacy: "Mouvement enregistré",
+          incident_evacuation: "Évacuation (incident)",
+          incident_recovery: "Rapatriement (incident)",
         },
       },
     },
@@ -2925,6 +2927,8 @@ export default {
         resolutionNoteInvalid:
           "Rédigez une note de 1 000 caractères au maximum.",
       },
+      reportIncident: "Signaler un incident",
+      incidentTitle: "Alerte climatique à {location}",
     },
     sidebar: {
       empty: "Aucun emplacement pour le moment",
@@ -4837,6 +4841,7 @@ export default {
       exhibition: "Exposition",
       conservation: "Traitement de conservation",
       documentationFinding: "Constat de documentation",
+      incident: "Incident",
       inventoryException: "Exception d'inventaire",
     },
     fields: {
@@ -4976,6 +4981,17 @@ export default {
       recipeNotFound:
         "Cette recette n’est plus disponible. Actualisez la page.",
       recipeInvalid: "Vérifiez les champs signalés de la recette.",
+      incidentNotFound:
+        "Cet incident n'existe pas ou vous ne pouvez pas le voir.",
+      notIncidentCoordinator:
+        "Seuls les coordinateurs d'incidents peuvent faire cela.",
+      notIncidentResponder:
+        "Vous n'avez pas l'autorisation de faire cela sur un incident.",
+      objectNotAffected: "Ajoutez d'abord l'objet à l'incident.",
+      planNotAvailable:
+        "Ce plan n'est plus un plan de réponse actif. Actualisez et choisissez à nouveau.",
+      tasksOpen:
+        "Terminez ou annulez d'abord les {count} tâche(s) ouverte(s) de l'incident.",
     },
     suggestion: {
       badge: "Suggérée",
@@ -4985,6 +5001,8 @@ export default {
         loan_approved: "Suggérée par « {recipe} » après l’approbation du prêt",
         exhibition_approved:
           "Suggérée par « {recipe} » après l’approbation de l’exposition",
+        incident_response:
+          "Issue du plan de réponse « {recipe} » choisi au tri",
       },
       withdrawn:
         "Retirée parce que le prêt a été annulé. Restaurez-la si le travail reste nécessaire.",
@@ -5019,6 +5037,8 @@ export default {
           "Des recettes suggèrent ces tâches quand un prêt est approuvé. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
         exhibition_approved:
           "Des recettes suggèrent ces tâches quand une exposition est approuvée. Les suggestions n’enregistrent jamais une réception, une installation, un titre de propriété ou un état.",
+        incident_response:
+          "Étapes des plans de réponse choisis par un coordinateur au tri. Terminer une étape n'enregistre jamais de déplacement, de réception ni d'état.",
       },
       states: {
         suggested: "Suggérée",
@@ -5074,6 +5094,7 @@ export default {
       intake_accepted: "Réception acceptée",
       loan_approved: "Prêt approuvé",
       exhibition_approved: "Exposition approuvée",
+      incident_response: "Plan de réponse aux incidents",
     },
     triggerHints: {
       intake_accepted:
@@ -5082,6 +5103,8 @@ export default {
         "S’applique quand un prêt est approuvé. Les échéances comptent à partir de l’approbation ou du début ou de la fin du prêt.",
       exhibition_approved:
         "S’applique quand une exposition est approuvée. Les échéances comptent à partir de l’approbation ou de son ouverture ou de sa clôture.",
+      incident_response:
+        "Appliqué uniquement quand un coordinateur le choisit au tri d'un incident. Les échéances comptent en heures depuis le tri.",
     },
     directions: {
       any: "Prêts entrants et sortants",
@@ -5184,7 +5207,16 @@ export default {
         dependsOn:
           "Une étape ne peut attendre que des étapes situées au-dessus.",
       },
+      offsetHours: "Heures après le tri",
+      offsetHoursHint: "De 0 à 168 heures.",
+      anchorTriage: "Tri",
+      incidentOwners: {
+        caseAssignee: "Responsable de l'incident",
+        approver: "Coordinateur ayant trié",
+        member: "Un membre désigné",
+      },
     },
+    blankIncidentPlan: "Plan de réponse aux incidents vierge",
   },
   notificationsPage: {
     title: "Notifications",
@@ -5834,6 +5866,7 @@ export default {
       conservation: "Aller à la conservation",
       entries: "Aller aux entrées",
       documentationQuality: "Aller à la qualité de la documentation",
+      incidents: "Aller aux incidents",
       inventory: "Aller à l'inventaire",
     },
     pageNotFound: {
@@ -9250,6 +9283,7 @@ export default {
         transfers: "Transferts",
         collections: "Groupes de collection",
         library: "Bibliothèque",
+        incidents: "Incidents",
       },
     },
     dashboardBilling: {
@@ -10301,6 +10335,7 @@ export default {
       currentLocationOption: "{location} (actuel)",
       flashNotSupported:
         "L'appareil photo de cet appareil ne permet pas de contrôler le flash.",
+      incidents: "Incidents",
     },
     auth: {
       noAccountYet: "Pas encore de compte ?",
@@ -10487,6 +10522,7 @@ export default {
       exhibitionsLoans: "Expositions et prêts",
       library: "Bibliothèque",
       administration: "Administration",
+      incidents: "Incidents",
     },
     transferLookup: {
       invalidOrganizationAccountNumber:
@@ -10630,6 +10666,9 @@ export default {
           "Environnement toujours hors seuils : {location}",
         environmentBackInRange:
           "Environnement revenu dans les seuils : {location}",
+        incidentReported: "Incident signalé",
+        incidentLeadAssigned: "Responsable d'incident désigné",
+        incidentClosed: "Incident clos",
       },
       messages: {
         reproductionDeliveryFailed:
@@ -10755,6 +10794,9 @@ export default {
         disputeUnderInvestigation:
           "Votre litige sur l’état de conservation fait actuellement l’objet d’une enquête",
         disputeResolved: "Votre litige sur l’état de conservation a été résolu",
+        incidentNeedsTriage: "{incident} doit être trié",
+        incidentLeadAssigned: "Vous dirigez la réponse à {incident}",
+        incidentClosed: "{incident} a été clos avec son retour d'expérience",
       },
       workflowTypes: {
         accession: "accession",
@@ -11225,5 +11267,269 @@ export default {
       permanentInDraft:
         "Ce numéro permanent est conservé lorsque vous modifiez le brouillon.",
     },
+  },
+  incidents: {
+    title: "Incidents",
+    description:
+      "Dommages, pertes et urgences touchant la collection, du premier signalement au tri, à la réponse et au retour d'expérience.",
+    reportAction: "Signaler un incident",
+    filters: {
+      open: "Ouverts",
+      closed: "Clos",
+    },
+    loading: "Chargement des incidents…",
+    emptyOpen: "Aucun incident ouvert visible pour vous.",
+    emptyClosed: "Aucun incident clos visible pour vous.",
+    reportedOn: "Signalé",
+    leadIs: "Responsable : {name}",
+    loadMore: "Charger plus",
+    statuses: {
+      reported: "En attente de tri",
+      responding: "Réponse en cours",
+      closed: "Clos",
+    },
+    severities: {
+      minor: "Mineure",
+      moderate: "Modérée",
+      major: "Majeure",
+      critical: "Critique",
+    },
+    notTriaged: "Non trié",
+    sensitive: "Restreint",
+    sensitiveHint:
+      "Seuls les coordinateurs d'incidents, la personne qui l'a signalé, le responsable et les intervenants désignés voient un incident restreint.",
+    notRecorded: "Non renseigné",
+    formerMember: "Ancien membre",
+    cancel: "Annuler",
+    close: "Fermer",
+    kinds: {
+      damage: "Dommage",
+      loss: "Perte",
+      theft: "Vol",
+      fire: "Incendie",
+      water: "Eau",
+      pest: "Nuisibles",
+      environmental: "Conditions climatiques",
+      security: "Sûreté",
+      other: "Autre",
+    },
+    impacts: {
+      at_risk: "Menacé",
+      damaged: "Endommagé",
+      missing: "Manquant",
+      unaffected: "Non touché",
+    },
+    report: {
+      title: "Signaler un incident",
+      description:
+        "Consignez maintenant ce que vous avez constaté ; un coordinateur le trie et organise la réponse.",
+      fromEpisode:
+        "Signaler depuis cet épisode d'alerte l'enregistre comme origine. S'il a déjà été signalé, vous êtes conduit à cet incident.",
+      kind: "Type d'incident",
+      location: "Où",
+      locationPlaceholder: "Choisir un emplacement",
+      whatHappened: "Ce qui s'est passé",
+      whatHappenedPlaceholder:
+        "Par exemple : de l'eau goutte sur la vitrine du vase en salle 2",
+      details: "Détails",
+      detailsPlaceholder: "Ce que vous avez vu et ce que vous avez déjà fait",
+      objects: "Objets touchés",
+      objectsPlaceholder: "Rechercher des objets",
+      impact: "Comment les objets sont touchés",
+      discoveredAt: "Découvert",
+      occurredAt: "Survenu (si connu)",
+      sensitive: "Restreindre qui peut le voir",
+      sensitiveHint:
+        "Pour un vol présumé ou une question de sûreté ou de personnel. Seuls les coordinateurs, vous, le responsable et les intervenants désignés le verront.",
+      submit: "Signaler l'incident",
+      reported: "Incident signalé. Les coordinateurs ont été prévenus.",
+      alreadyReported: "Ceci avait déjà été signalé ; voici l'incident.",
+      alreadyReportedRestricted:
+        "Ceci a déjà été signalé comme incident restreint. Les coordinateurs s'en occupent.",
+      errors: {
+        title: "Décrivez ce qui s'est passé en 1 à 200 caractères.",
+        where: "Choisissez un emplacement ou au moins un objet.",
+        times:
+          "Vérifiez les heures : la découverte ne peut pas être dans le futur, ni l'incident survenir après sa découverte.",
+      },
+    },
+    detail: {
+      reportTitle: "Signalement",
+      discoveredAt: "Découvert",
+      occurredAt: "Survenu",
+      reportedBy: "Signalé par",
+      locations: "Emplacements",
+      source: "Issu de",
+      alertEpisode: "Épisode d'alerte climatique",
+      details: "Détails",
+    },
+    response: {
+      title: "Réponse",
+      update: "Mettre à jour la réponse",
+      triage: "Trier",
+      awaitingTriage: "En attente du tri par un coordinateur.",
+      awaitingTriageCoordinator:
+        "Triez cet incident : fixez sa gravité, choisissez un responsable et décidez quel plan, s'il y en a un, guide la réponse.",
+      severity: "Gravité",
+      lead: "Responsable",
+      responders: "Intervenants",
+      noResponders: "Aucun autre intervenant",
+      triaged: "Trié par",
+      plans: "Plans de réponse",
+      noPlan:
+        "Aucun plan ne guide cette réponse ; les tâches sont ajoutées à la main.",
+      note: "Note de tri",
+      errors: {
+        severityAndLead: "Choisissez une gravité et un responsable.",
+        planChoice:
+          "Choisissez les plans qui guident la réponse ou indiquez qu'aucun ne s'applique.",
+      },
+      tasksSuggested:
+        "Réponse enregistrée. {count} tâche(s) ajoutée(s) depuis les plans choisis.",
+      saved: "Réponse enregistrée.",
+      stepsSkipped:
+        "{count} étape(s) de plan attendent encore un responsable pouvant travailler sur cet incident.",
+      triageTitle: "Trier l'incident",
+      updateTitle: "Mettre à jour la réponse",
+      triageDescription:
+        "Les plans sont ceux de votre institution ; rien n'est choisi à votre place. Les étapes des plans choisis deviennent des tâches pour leurs responsables.",
+      chooseSeverity: "Choisir la gravité",
+      chooseLead: "Choisir un responsable",
+      respondersHint:
+        "Les intervenants voient un incident restreint et peuvent en recevoir les tâches.",
+      plansHint:
+        "Choisissez en connaissance de cause : un plan choisi reste au dossier.",
+      plansChosen: "Guident déjà cette réponse : {plans}",
+      noPlanApplies: "Aucun plan ne s'applique ; coordonner à la main",
+      noMorePlans: "N'ajouter aucun plan",
+      followPlans: "Suivre ces plans",
+      noPlansAvailable:
+        "Aucun autre plan de réponse actif. Les administrateurs les rédigent dans Paramètres › Recettes de préparation.",
+      dueWithin: "échéance {hours} h après le tri",
+      save: "Enregistrer la réponse",
+    },
+    objects: {
+      title: "Objets touchés",
+      add: "Ajouter des objets",
+      description:
+        "Les objets restent liés à l'incident comme preuve. Marquez un objet comme non touché plutôt que de le retirer.",
+      empty: "Aucun objet n'est lié à cet incident.",
+      whenReported: "À la liaison : {location}",
+      now: "Maintenant : {location}",
+      noLocation: "aucun emplacement enregistré",
+      lastHandoff: {
+        evacuation: "Évacué vers {location}",
+        recovery: "Rapatrié vers {location}",
+      },
+      recordAssessment: "Consigner un constat d'état",
+      impactFor: "Comment {object} est touché",
+      recover: "Rapatrier",
+      evacuate: "Évacuer",
+      chooseObjects: "Choisissez au moins un objet.",
+      added: "{count} objet(s) ajouté(s).",
+      addTitle: "Ajouter des objets touchés",
+      addDescription:
+        "Les objets déjà liés à l'incident ne sont pas ajoutés deux fois.",
+      impact: "Comment ils sont touchés",
+      addSubmit: "Ajouter les objets",
+      chooseDestination: "Choisissez où va l'objet.",
+      handoffRecorded: {
+        evacuation: "Évacuation enregistrée comme mouvement.",
+        recovery: "Rapatriement enregistré comme mouvement.",
+      },
+      handoffTitle: {
+        evacuation: "Évacuer {object}",
+        recovery: "Rapatrier {object}",
+      },
+      handoffDescription:
+        "Enregistrez le déplacement au moment où il a lieu. Il est vérifié par rapport à l'emplacement de l'objet à l'ouverture et à l'état et la capacité de la destination.",
+      from: "Depuis : {location}",
+      destination: "Vers",
+      recoverySuggestion:
+        "Il se trouvait à {location} lors de sa liaison à l'incident. Confirmez où il va réellement.",
+      notes: "Notes",
+      handoffSubmit: {
+        evacuation: "Enregistrer l'évacuation",
+        recovery: "Enregistrer le rapatriement",
+      },
+    },
+    evidence: {
+      title: "Preuves",
+      link: "Lier une preuve",
+      description:
+        "Constats d'état acceptés et fichiers des objets touchés, et déclarations de sinistre. Les liens sont conservés ; un lien erroné est retiré avec un motif.",
+      empty: "Aucune preuve liée pour l'instant.",
+      kinds: {
+        conditionAssessment: "Constat d'état",
+        media: "Fichier",
+        insuranceClaim: "Déclaration de sinistre",
+      },
+      restricted: "Vous n'avez pas accès à cet enregistrement.",
+      linkedBy: "Lié par {name}",
+      retractedBy: "Retiré par {name} : {reason}",
+      retract: "Retirer",
+      coverageTitle: "Couverture d'assurance à la découverte",
+      coverageRestricted: "Vous n'avez pas accès aux données d'assurance.",
+      coverageNone:
+        "Aucune couverture en vigueur n'était enregistrée sur les objets touchés à ce moment.",
+      coverageRow: "{object} : {policy} ({carrier}), {value}",
+      coverageNote:
+        "Affiche la couverture enregistrée sur chaque objet ; celle d'un prêt ou d'une exposition figure dans ces dossiers.",
+      linkTitle: "Lier une preuve",
+      linkDescription:
+        "Constats acceptés et fichiers récents des objets touchés, et déclarations qui les nomment.",
+      noCandidates:
+        "Rien à lier. Consignez d'abord un constat ou téléversez un fichier sur un objet touché.",
+      linked: "Preuve liée.",
+      linkOne: "Lier",
+      reasonRequired: "Indiquez un motif.",
+      retractTitle: "Retirer une preuve",
+      retractDescription:
+        "Le lien reste sur l'incident, marqué comme retiré avec votre motif.",
+      reason: "Motif",
+    },
+    afterAction: {
+      title: "Retour d'expérience",
+      reopen: "Rouvrir",
+      close: "Clore avec retour d'expérience",
+      summary: "Ce qui s'est passé et le déroulement de la réponse",
+      whatWorked: "Ce qui a fonctionné",
+      improvements: "À améliorer",
+      followUp: "Suites à donner",
+      recordedBy: "Rédigé par {name}",
+      pending: "Rédigé par un coordinateur à la fin de la réponse.",
+      pendingCoordinator:
+        "Quand toutes les tâches sont faites ou annulées, clôturez l'incident avec son retour d'expérience. La clôture ne déplace ni ne réévalue aucun objet.",
+      earlier: "Retours précédents ({count})",
+      summaryRequired:
+        "Résumez ce qui s'est passé et le déroulement de la réponse.",
+      closed: "Incident clos.",
+      closeTitle: "Clore avec retour d'expérience",
+      closeDescription:
+        "Toutes les tâches doivent d'abord être faites ou annulées. Les objets restent à leur dernier emplacement enregistré.",
+      closeSubmit: "Clore l'incident",
+      reasonRequired: "Indiquez un motif de réouverture.",
+      reopened: "Incident rouvert.",
+      reopenTitle: "Rouvrir l'incident",
+      reopenDescription: "Le retour d'expérience reste au dossier.",
+      reason: "Motif",
+    },
+    activity: {
+      title: "Journal de l'incident",
+      reported: "Signalé avec {count} objet(s)",
+      reportRepeated: "Signalé à nouveau depuis la même alerte",
+      triaged: "Trié en gravité {severity}, responsable {lead}",
+      response_updated: "Réponse mise à jour : {severity}, responsable {lead}",
+      plansApplied: "Plans choisis : {plans} ({count} tâche(s) ajoutée(s))",
+      objectsAdded: "{count} objet(s) ajouté(s)",
+      impactChanged: "{object} marqué {impact}",
+      evacuated: "{object} évacué de {from} vers {to}",
+      recovered: "{object} rapatrié de {from} vers {to}",
+      evidenceLinked: "Preuve liée",
+      evidenceRetracted: "Preuve retirée",
+      closed: "Clos avec retour d'expérience",
+      reopened: "Rouvert",
+    },
+    objectNone: "Aucun incident visible pour vous ne concerne cet objet.",
   },
 } as const;

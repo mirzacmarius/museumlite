@@ -13,6 +13,7 @@ import {
   MapPin,
   Plus,
   Settings,
+  Siren,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import {
@@ -85,6 +86,11 @@ export function buildCommandPaletteActions({
       labelKey: "reproductionRequests",
       href: capabilityRoute("reproduction_requests"),
       icon: FileImage,
+    }),
+    ...when(isOpen("incidents"), {
+      labelKey: "incidents",
+      href: capabilityRoute("incidents"),
+      icon: Siren,
     }),
     ...when(isOpen("inventory"), {
       labelKey: "inventory",

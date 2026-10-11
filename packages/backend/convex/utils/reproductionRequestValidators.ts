@@ -94,7 +94,7 @@ export const rightsSnapshot = v.object({
 });
 
 /**
- * Tables of research and reproduction requests (ADR 0015). Spread into the
+ * Tables of research and reproduction requests (ADR 0016). Spread into the
  * schema so the module's storage stays together.
  */
 export const reproductionRequestTables = {

@@ -29,6 +29,7 @@ export const CAPABILITY_IDS = [
   "patrons",
   "library",
   "documentation_quality",
+  "incidents",
   "inventory",
   "deaccession",
   "reproduction_requests",
@@ -127,6 +128,12 @@ export const CAPABILITY_MATRIX = {
     permissions: ["collections.read", "collections.update"],
     route: "/documentation-quality",
   },
+  // Anyone who reads the collection may report an incident; coordinating
+  // and sensitive scope are checked by the commands (ADR 0015).
+  incidents: {
+    permissions: ["collections.read"],
+    route: "/incidents",
+  },
   // Following sessions reads objects and locations; scanning and resolving
   // need `locations.update`, the permission that governs moves (ADR 0014).
   inventory: {
@@ -140,7 +147,7 @@ export const CAPABILITY_MATRIX = {
     route: "/deaccessions",
   },
   // Requesters are Parties, so requests need the accounts module. Deciding
-  // is the rights authority of public image approval (ADR 0015).
+  // is the rights authority of public image approval (ADR 0016).
   reproduction_requests: {
     module: "accounts",
     permissions: ["media.read", "accounts.read"],

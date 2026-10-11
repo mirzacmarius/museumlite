@@ -36,6 +36,7 @@ import { useScopedI18n } from "@/locales/client";
 import {
   anchorsFor,
   blankStep,
+  countsHours,
   type DraftErrors,
   draftErrors,
   EVIDENCE_KINDS,
@@ -86,6 +87,110 @@ function serverErrorsOf(error: unknown): DraftErrors | null {
   }
 }
 
+/** When a step falls due: days from a case date, or hours from triage. */
+function DueFields({
+  step,
+  trigger,
+  invalid,
+  disabled,
+  idOf: id,
+  onChange,
+}: {
+  step: StepDraft;
+  trigger: PreparationTrigger;
+  invalid: boolean;
+  disabled: boolean;
+  idOf: (field: string) => string;
+  onChange: (changes: Partial<StepDraft>) => void;
+}) {
+  const t = useScopedI18n("preparationRecipes.dialog");
+  const anchors = anchorsFor(trigger);
+  const hourly = countsHours(trigger);
+  const errorId = `${id("due")}-error`;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={id("anchor")}>{t("due")}</Label>
+          <Select
+            value={step.dueAnchor}
+            onValueChange={(value) =>
+              onChange({
+                dueAnchor: anchors.find((anchor) => anchor === value) ?? "none",
+              })
+            }
+            disabled={disabled}
+          >
+            <SelectTrigger
+              id={id("anchor")}
+              aria-invalid={invalid}
+              aria-describedby={invalid ? errorId : undefined}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>{t("noDue")}</SelectItem>
+              {anchors.map((anchor) => (
+                <SelectItem key={anchor} value={anchor}>
+                  {hourly ? t("anchorTriage") : t(`anchors.${anchor}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {step.dueAnchor !== "none" && hourly ? (
+          <div className="space-y-1.5">
+            <Label htmlFor={id("offset")}>{t("offsetHours")}</Label>
+            <Input
+              id={id("offset")}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={168}
+              step={1}
+              value={step.offsetHours}
+              aria-invalid={invalid}
+              aria-describedby={invalid ? errorId : id("hint")}
+              onChange={(event) =>
+                onChange({ offsetHours: event.target.value })
+              }
+              disabled={disabled}
+            />
+            <p id={id("hint")} className="text-xs text-muted-foreground">
+              {t("offsetHoursHint")}
+            </p>
+          </div>
+        ) : step.dueAnchor !== "none" ? (
+          <div className="space-y-1.5">
+            <Label htmlFor={id("offset")}>{t("offsetDays")}</Label>
+            <Input
+              id={id("offset")}
+              type="number"
+              inputMode="numeric"
+              min={-365}
+              max={365}
+              step={1}
+              value={step.offsetDays}
+              aria-invalid={invalid}
+              aria-describedby={invalid ? errorId : id("hint")}
+              onChange={(event) => onChange({ offsetDays: event.target.value })}
+              disabled={disabled}
+            />
+            <p id={id("hint")} className="text-xs text-muted-foreground">
+              {t("offsetHint")}
+            </p>
+          </div>
+        ) : null}
+      </div>
+      {invalid ? (
+        <p id={errorId} className="text-xs text-destructive">
+          {t("errors.due")}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function StepEditor({
   step,
   index,
@@ -116,7 +221,7 @@ function StepEditor({
   const id = (field: string) => `recipe-step-${step.clientKey}-${field}`;
   const errorId = (field: StepField) => `${id(field)}-error`;
   const isInvalid = (field: StepField) => invalid.includes(field);
-  const anchors = anchorsFor(trigger);
+  const hourly = countsHours(trigger);
   return (
     <fieldset className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex items-center justify-between gap-2">
@@ -235,7 +340,7 @@ function StepEditor({
             <SelectContent>
               {OWNER_KINDS.map((kind) => (
                 <SelectItem key={kind} value={kind}>
-                  {t(`owners.${kind}`)}
+                  {hourly ? t(`incidentOwners.${kind}`) : t(`owners.${kind}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -281,62 +386,14 @@ function StepEditor({
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor={id("anchor")}>{t("due")}</Label>
-          <Select
-            value={step.dueAnchor}
-            onValueChange={(value) =>
-              onChange({
-                dueAnchor: anchors.find((anchor) => anchor === value) ?? "none",
-              })
-            }
-            disabled={disabled}
-          >
-            <SelectTrigger
-              id={id("anchor")}
-              aria-invalid={isInvalid("due")}
-              aria-describedby={isInvalid("due") ? errorId("due") : undefined}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NONE}>{t("noDue")}</SelectItem>
-              {anchors.map((anchor) => (
-                <SelectItem key={anchor} value={anchor}>
-                  {t(`anchors.${anchor}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {step.dueAnchor !== "none" ? (
-          <div className="space-y-1.5">
-            <Label htmlFor={id("offset")}>{t("offsetDays")}</Label>
-            <Input
-              id={id("offset")}
-              type="number"
-              inputMode="numeric"
-              min={-365}
-              max={365}
-              step={1}
-              value={step.offsetDays}
-              aria-invalid={isInvalid("due")}
-              aria-describedby={isInvalid("due") ? errorId("due") : id("hint")}
-              onChange={(event) => onChange({ offsetDays: event.target.value })}
-              disabled={disabled}
-            />
-            <p id={id("hint")} className="text-xs text-muted-foreground">
-              {t("offsetHint")}
-            </p>
-          </div>
-        ) : null}
-      </div>
-      {isInvalid("due") ? (
-        <p id={errorId("due")} className="text-xs text-destructive">
-          {t("errors.due")}
-        </p>
-      ) : null}
+      <DueFields
+        step={step}
+        trigger={trigger}
+        invalid={isInvalid("due")}
+        disabled={disabled}
+        idOf={id}
+        onChange={onChange}
+      />
 
       {earlierSteps.length > 0 ? (
         <div

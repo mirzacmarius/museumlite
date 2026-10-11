@@ -7,11 +7,13 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { use, useState } from "react";
-import { PermissionGate } from "@/components/permission-gate";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate, usePermissions } from "@/components/permission-gate";
 import { RecordRecoveryState } from "@/components/record-recovery-state";
 import { useCurrentMinute } from "@/hooks/use-current-minute";
 import { useRecordViewState } from "@/hooks/use-return-path";
 import { useScopedI18n } from "@/locales/client";
+import { ReportIncidentDialog } from "../../../incidents/_components/report-incident-dialog";
 import { EnvironmentReadingList } from "../../_components/environment/environment-readings";
 import {
   EpisodeFacts,
@@ -35,6 +37,11 @@ export default function AlertEpisodePage({
   );
   const viewState = useRecordViewState(detail);
   const [resolving, setResolving] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const { currentOrganizationId } = useOrganization();
+  const { hasPermission } = usePermissions();
+  const canReport =
+    hasPermission("collections.read") && hasPermission("locations.read");
 
   if (detail === undefined || now === null) {
     return (
@@ -74,18 +81,30 @@ export default function AlertEpisodePage({
               {t("episodeTitle", { location: location.name })}
               <EpisodeStatusPill episode={episode} />
             </h1>
-            {episode.status === "open" ? (
-              <PermissionGate permission="locations.update">
+            <div className="flex flex-wrap gap-2">
+              {canReport && currentOrganizationId ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setResolving(true)}
+                  onClick={() => setReporting(true)}
                 >
-                  {t("resolve")}
+                  {t("reportIncident")}
                 </Button>
-              </PermissionGate>
-            ) : null}
+              ) : null}
+              {episode.status === "open" ? (
+                <PermissionGate permission="locations.update">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setResolving(true)}
+                  >
+                    {t("resolve")}
+                  </Button>
+                </PermissionGate>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -98,6 +117,16 @@ export default function AlertEpisodePage({
           open={resolving}
           onOpenChange={setResolving}
         />
+        {currentOrganizationId ? (
+          <ReportIncidentDialog
+            organizationId={currentOrganizationId}
+            open={reporting}
+            onOpenChange={setReporting}
+            alertEpisodeId={episode._id}
+            defaultKind="environmental"
+            defaultTitle={t("incidentTitle", { location: location.name })}
+          />
+        ) : null}
       </div>
     </div>
   );

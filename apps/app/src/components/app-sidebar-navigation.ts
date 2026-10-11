@@ -25,6 +25,7 @@ import {
   Settings2,
   Shield,
   ShoppingCart,
+  Siren,
   SlidersHorizontal,
   Ticket,
   Truck,
@@ -109,6 +110,7 @@ export function buildSidebarNavigation({
     }),
     { title: label("accessions"), url: "/accessions", icon: FileCheck },
     { title: label("deaccessions"), url: "/deaccessions", icon: FileX },
+    ...capabilityItem("incidents", { title: label("incidents"), icon: Siren }),
     ...capabilityItem("documentation_quality", {
       title: label("documentationQuality"),
       icon: ClipboardCheck,

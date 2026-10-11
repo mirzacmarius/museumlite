@@ -71,6 +71,13 @@ export async function isOrganizationEvidenceProtected(
     ),
   );
   if (evidence.some((record) => record !== null)) return true;
+  const incident = await ctx.db
+    .query("incidents")
+    .withIndex("by_organization_and_open_and_reportedAt", (q) =>
+      q.eq("organizationId", organizationId),
+    )
+    .first();
+  if (incident) return true;
 
   const auditEntries = await ctx.db
     .query("auditLog")

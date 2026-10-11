@@ -28,7 +28,12 @@ import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useWorkErrorMessage } from "@/hooks/use-work-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { RecipeDialog } from "./recipe-dialog";
-import { draftOfRecipe, type Recipe, type RecipeDraft } from "./recipe-draft";
+import {
+  blankIncidentPlan,
+  draftOfRecipe,
+  type Recipe,
+  type RecipeDraft,
+} from "./recipe-draft";
 import { STARTERS, type StarterId, useRecipeStarter } from "./recipe-starters";
 
 type RecipeStatus = Recipe["status"];
@@ -52,6 +57,7 @@ function useAvailableTriggers(): PreparationTrigger[] {
     "intake_accepted",
     ...(hasFeature("loans") ? (["loan_approved"] as const) : []),
     ...(hasFeature("exhibitions") ? (["exhibition_approved"] as const) : []),
+    "incident_response",
   ];
 }
 
@@ -249,6 +255,11 @@ export function RecipesManager({
                 {t(`starters.${starter}.label`)}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuItem
+              onSelect={() => setEditor({ draft: blankIncidentPlan() })}
+            >
+              {t("blankIncidentPlan")}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>

@@ -2204,6 +2204,8 @@ export default {
         episodeNotOpen: "This episode has already ended.",
         resolutionNoteInvalid: "Write a note of up to 1,000 characters.",
       },
+      reportIncident: "Report an incident",
+      incidentTitle: "Environmental alert at {location}",
     },
     sidebar: {
       empty: "No locations yet",
@@ -2459,6 +2461,8 @@ export default {
           catalog_edit: "Catalog edit",
           inventory_reconciliation: "Inventory reconciliation",
           legacy: "Recorded movement",
+          incident_evacuation: "Incident evacuation",
+          incident_recovery: "Incident recovery",
         },
       },
     },
@@ -4728,6 +4732,7 @@ export default {
       exhibition: "Exhibition",
       conservation: "Conservation treatment",
       documentationFinding: "Documentation finding",
+      incident: "Incident",
       inventoryException: "Inventory exception",
     },
     fields: {
@@ -4862,6 +4867,14 @@ export default {
         "Recipes apply once the case is accepted, until it is returned, closed or cancelled.",
       recipeNotFound: "This recipe is no longer available. Refresh the page.",
       recipeInvalid: "Check the highlighted fields of the recipe.",
+      incidentNotFound: "This incident does not exist or you cannot see it.",
+      notIncidentCoordinator: "Only incident coordinators can do this.",
+      notIncidentResponder:
+        "You do not have permission to do this on an incident.",
+      objectNotAffected: "Add the object to the incident first.",
+      planNotAvailable:
+        "That plan is not an active incident response plan any more. Refresh and choose again.",
+      tasksOpen: "Finish or cancel the incident's {count} open task(s) first.",
     },
     suggestion: {
       badge: "Suggested",
@@ -4871,6 +4884,7 @@ export default {
         loan_approved: "Suggested by “{recipe}” after the loan was approved",
         exhibition_approved:
           "Suggested by “{recipe}” after the exhibition was approved",
+        incident_response: "From the response plan “{recipe}” chosen at triage",
       },
       withdrawn:
         "Withdrawn because the loan was cancelled. Restore it if the work is still needed.",
@@ -4905,6 +4919,8 @@ export default {
           "Recipes suggest these tasks when a loan is approved. Suggestions never record receipt, installation, title or condition.",
         exhibition_approved:
           "Recipes suggest these tasks when an exhibition is approved. Suggestions never record receipt, installation, title or condition.",
+        incident_response:
+          "Steps of the response plans a coordinator chose at triage. Completing a step never records a move, receipt or condition.",
       },
       states: {
         suggested: "Suggested",
@@ -4958,6 +4974,7 @@ export default {
       intake_accepted: "Intake accepted",
       loan_approved: "Loan approved",
       exhibition_approved: "Exhibition approved",
+      incident_response: "Incident response plan",
     },
     triggerHints: {
       intake_accepted:
@@ -4966,6 +4983,8 @@ export default {
         "Runs when a loan is approved. Due dates count from the approval or from the loan's start or end.",
       exhibition_approved:
         "Runs when an exhibition is approved. Due dates count from the approval or from its opening or closing.",
+      incident_response:
+        "Applied only when a coordinator chooses it while triaging an incident. Due times count hours from triage.",
     },
     directions: {
       any: "Incoming and outgoing loans",
@@ -5067,7 +5086,16 @@ export default {
         due: "Use a whole number of days between -365 and 365.",
         dependsOn: "A step can only wait for steps above it.",
       },
+      offsetHours: "Hours after triage",
+      offsetHoursHint: "0 to 168 hours.",
+      anchorTriage: "Triage",
+      incidentOwners: {
+        caseAssignee: "Incident lead",
+        approver: "Coordinator who triaged",
+        member: "A named member",
+      },
     },
+    blankIncidentPlan: "Blank incident response plan",
   },
   notificationsPage: {
     title: "Notifications",
@@ -5693,6 +5721,7 @@ export default {
       conservation: "Go to conservation",
       entries: "Go to entries",
       documentationQuality: "Go to documentation quality",
+      incidents: "Go to incidents",
       inventory: "Go to inventory",
     },
     pageNotFound: {
@@ -9033,6 +9062,7 @@ export default {
         transfers: "Transfers",
         collections: "Collection groups",
         library: "Library",
+        incidents: "Incidents",
       },
     },
     dashboardBilling: {
@@ -10046,6 +10076,7 @@ export default {
       deleteMaterial: "Delete Material",
       currentLocationOption: "{location} (current)",
       flashNotSupported: "This device's camera has no flash control.",
+      incidents: "Incidents",
     },
     auth: {
       noAccountYet: "No account yet?",
@@ -10214,6 +10245,7 @@ export default {
       exhibitionsLoans: "Exhibitions & Loans",
       library: "Library",
       administration: "Administration",
+      incidents: "Incidents",
     },
     transferLookup: {
       invalidOrganizationAccountNumber:
@@ -10347,6 +10379,9 @@ export default {
         environmentStillOutOfRange:
           "Environment still out of range: {location}",
         environmentBackInRange: "Environment back in range: {location}",
+        incidentReported: "Incident Reported",
+        incidentLeadAssigned: "Incident Lead Assigned",
+        incidentClosed: "Incident Closed",
       },
       messages: {
         reproductionDeliveryFailed:
@@ -10468,6 +10503,9 @@ export default {
         disputeUnderInvestigation:
           "Your condition dispute is now under investigation",
         disputeResolved: "Your condition dispute has been resolved",
+        incidentNeedsTriage: "{incident} needs triage",
+        incidentLeadAssigned: "You lead the response to {incident}",
+        incidentClosed: "{incident} was closed with its after-action review",
       },
       workflowTypes: {
         accession: "accession",
@@ -10917,5 +10955,265 @@ export default {
       permanentInDraft:
         "This permanent number is kept when you edit the draft.",
     },
+  },
+  incidents: {
+    title: "Incidents",
+    description:
+      "Damage, loss and emergencies affecting the collection, from the first report through triage and response to the after-action review.",
+    reportAction: "Report incident",
+    filters: {
+      open: "Open",
+      closed: "Closed",
+    },
+    loading: "Loading incidents…",
+    emptyOpen: "No open incidents you can see.",
+    emptyClosed: "No closed incidents you can see.",
+    reportedOn: "Reported",
+    leadIs: "Lead: {name}",
+    loadMore: "Load more",
+    statuses: {
+      reported: "Awaiting triage",
+      responding: "Responding",
+      closed: "Closed",
+    },
+    severities: {
+      minor: "Minor",
+      moderate: "Moderate",
+      major: "Major",
+      critical: "Critical",
+    },
+    notTriaged: "Not triaged",
+    sensitive: "Restricted",
+    sensitiveHint:
+      "Only incident coordinators, the reporter, the lead and named responders can see a restricted incident.",
+    notRecorded: "Not recorded",
+    formerMember: "Former member",
+    cancel: "Cancel",
+    close: "Close",
+    kinds: {
+      damage: "Damage",
+      loss: "Loss",
+      theft: "Theft",
+      fire: "Fire",
+      water: "Water",
+      pest: "Pests",
+      environmental: "Environmental conditions",
+      security: "Security",
+      other: "Other",
+    },
+    impacts: {
+      at_risk: "At risk",
+      damaged: "Damaged",
+      missing: "Missing",
+      unaffected: "Unaffected",
+    },
+    report: {
+      title: "Report an incident",
+      description:
+        "Record what you found now; a coordinator triages it and organizes the response.",
+      fromEpisode:
+        "Reporting from this alert episode records it as the source. If it was already reported, you are taken to that incident.",
+      kind: "What kind of incident",
+      location: "Where",
+      locationPlaceholder: "Choose a location",
+      whatHappened: "What happened",
+      whatHappenedPlaceholder:
+        "For example: water dripping onto the vase case in Gallery 2",
+      details: "Details",
+      detailsPlaceholder: "What you saw and what you have done so far",
+      objects: "Affected objects",
+      objectsPlaceholder: "Search objects",
+      impact: "How the objects are affected",
+      discoveredAt: "Discovered",
+      occurredAt: "Happened (if known)",
+      sensitive: "Restrict who can see it",
+      sensitiveHint:
+        "Use for suspected theft, security or personnel matters. Only coordinators, you, the lead and named responders will see it.",
+      submit: "Report incident",
+      reported: "Incident reported. Coordinators have been notified.",
+      alreadyReported: "This was already reported; here is the incident.",
+      alreadyReportedRestricted:
+        "This was already reported as a restricted incident. Coordinators are handling it.",
+      errors: {
+        title: "Describe what happened in 1-200 characters.",
+        where: "Choose a location or at least one object.",
+        times:
+          "Check the times: discovery cannot be in the future, and it cannot have happened after it was discovered.",
+      },
+    },
+    detail: {
+      reportTitle: "Report",
+      discoveredAt: "Discovered",
+      occurredAt: "Happened",
+      reportedBy: "Reported by",
+      locations: "Locations",
+      source: "Raised from",
+      alertEpisode: "Environmental alert episode",
+      details: "Details",
+    },
+    response: {
+      title: "Response",
+      update: "Update response",
+      triage: "Triage",
+      awaitingTriage: "Waiting for a coordinator to triage this incident.",
+      awaitingTriageCoordinator:
+        "Triage this incident: set its severity, choose a lead and decide which plan, if any, guides the response.",
+      severity: "Severity",
+      lead: "Lead",
+      responders: "Responders",
+      noResponders: "No other responders",
+      triaged: "Triaged by",
+      plans: "Response plans",
+      noPlan: "No plan guides this response; tasks are added by hand.",
+      note: "Triage note",
+      errors: {
+        severityAndLead: "Choose a severity and a lead.",
+        planChoice:
+          "Choose the plans that guide the response, or record that none applies.",
+      },
+      tasksSuggested:
+        "Response saved. {count} task(s) added from the chosen plans.",
+      saved: "Response saved.",
+      stepsSkipped:
+        "{count} plan step(s) still need an owner who can work on this incident.",
+      triageTitle: "Triage incident",
+      updateTitle: "Update response",
+      triageDescription:
+        "Plans are your institution's own; nothing is chosen for you. Steps of the plans you choose become tasks for their owners.",
+      chooseSeverity: "Choose severity",
+      chooseLead: "Choose a lead",
+      respondersHint:
+        "Responders can see a restricted incident and can be given its tasks.",
+      plansHint: "Choose deliberately: a plan once chosen stays on the record.",
+      plansChosen: "Already guiding this response: {plans}",
+      noPlanApplies: "No plan applies; coordinate by hand",
+      noMorePlans: "Add no plans",
+      followPlans: "Follow these plans",
+      noPlansAvailable:
+        "No other active incident response plans. Administrators write them under Settings › Preparation recipes.",
+      dueWithin: "due {hours} h after triage",
+      save: "Save response",
+    },
+    objects: {
+      title: "Affected objects",
+      add: "Add objects",
+      description:
+        "Objects stay linked to the incident as evidence. Mark an object unaffected rather than removing it.",
+      empty: "No objects are linked to this incident.",
+      whenReported: "When linked: {location}",
+      now: "Now: {location}",
+      noLocation: "no recorded location",
+      lastHandoff: {
+        evacuation: "Evacuated to {location}",
+        recovery: "Recovered to {location}",
+      },
+      recordAssessment: "Record a condition assessment",
+      impactFor: "How {object} is affected",
+      recover: "Recover",
+      evacuate: "Evacuate",
+      chooseObjects: "Choose at least one object.",
+      added: "{count} object(s) added.",
+      addTitle: "Add affected objects",
+      addDescription: "Objects already on the incident are not added twice.",
+      impact: "How they are affected",
+      addSubmit: "Add objects",
+      chooseDestination: "Choose where the object is going.",
+      handoffRecorded: {
+        evacuation: "Evacuation recorded as a movement.",
+        recovery: "Recovery recorded as a movement.",
+      },
+      handoffTitle: {
+        evacuation: "Evacuate {object}",
+        recovery: "Recover {object}",
+      },
+      handoffDescription:
+        "Record the move when it happens. It is checked against where the object was when you opened this and against the destination's status and capacity.",
+      from: "From: {location}",
+      destination: "To",
+      recoverySuggestion:
+        "It was at {location} when it was linked to the incident. Confirm where it actually goes.",
+      notes: "Notes",
+      handoffSubmit: {
+        evacuation: "Record evacuation",
+        recovery: "Record recovery",
+      },
+    },
+    evidence: {
+      title: "Evidence",
+      link: "Link evidence",
+      description:
+        "Accepted condition assessments and files of the affected objects, and insurance claims. Links are kept; a mistaken one is retracted with a reason.",
+      empty: "No evidence linked yet.",
+      kinds: {
+        conditionAssessment: "Condition assessment",
+        media: "File",
+        insuranceClaim: "Insurance claim",
+      },
+      restricted: "You do not have access to this record.",
+      linkedBy: "Linked by {name}",
+      retractedBy: "Retracted by {name}: {reason}",
+      retract: "Retract",
+      coverageTitle: "Insurance cover when discovered",
+      coverageRestricted: "You do not have access to insurance records.",
+      coverageNone:
+        "No in-force object cover was recorded for the affected objects at that time.",
+      coverageRow: "{object}: {policy} ({carrier}), {value}",
+      coverageNote:
+        "Shows cover recorded on each object; cover through a loan or exhibition is on those records.",
+      linkTitle: "Link evidence",
+      linkDescription:
+        "Recent accepted assessments and files of the affected objects, and claims that name them.",
+      noCandidates:
+        "Nothing to link. Record an assessment or upload a file on an affected object first.",
+      linked: "Evidence linked.",
+      linkOne: "Link",
+      reasonRequired: "Give a reason.",
+      retractTitle: "Retract evidence",
+      retractDescription:
+        "The link stays on the incident, marked as retracted with your reason.",
+      reason: "Reason",
+    },
+    afterAction: {
+      title: "After-action review",
+      reopen: "Reopen",
+      close: "Close with review",
+      summary: "What happened and how the response went",
+      whatWorked: "What worked",
+      improvements: "What to improve",
+      followUp: "Follow-up",
+      recordedBy: "Recorded by {name}",
+      pending: "Written by a coordinator when the response ends.",
+      pendingCoordinator:
+        "When every task is done or cancelled, close the incident with its after-action review. Closing does not move or reassess any object.",
+      earlier: "Earlier reviews ({count})",
+      summaryRequired: "Summarize what happened and how the response went.",
+      closed: "Incident closed.",
+      closeTitle: "Close with after-action review",
+      closeDescription:
+        "Every task must be done or cancelled first. Objects stay where they were last recorded.",
+      closeSubmit: "Close incident",
+      reasonRequired: "Give a reason for reopening.",
+      reopened: "Incident reopened.",
+      reopenTitle: "Reopen incident",
+      reopenDescription: "The after-action review stays on file.",
+      reason: "Reason",
+    },
+    activity: {
+      title: "Incident log",
+      reported: "Reported with {count} object(s)",
+      reportRepeated: "Reported again from the same alert",
+      triaged: "Triaged as {severity}, led by {lead}",
+      response_updated: "Response updated: {severity}, led by {lead}",
+      plansApplied: "Plans chosen: {plans} ({count} task(s) added)",
+      objectsAdded: "{count} object(s) added",
+      impactChanged: "{object} marked {impact}",
+      evacuated: "{object} evacuated from {from} to {to}",
+      recovered: "{object} recovered from {from} to {to}",
+      evidenceLinked: "Evidence linked",
+      evidenceRetracted: "Evidence retracted",
+      closed: "Closed with after-action review",
+      reopened: "Reopened",
+    },
+    objectNone: "No incidents you can see involve this object.",
   },
 } as const;

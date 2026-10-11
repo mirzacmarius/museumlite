@@ -42,7 +42,8 @@ export interface YearBasedCounter {
     | Id<"deaccessionCounters">
     | Id<"loanCounters">
     | Id<"objectEntryCounters">
-    | Id<"transitCounters">;
+    | Id<"transitCounters">
+    | Id<"incidentCounters">;
   _creationTime: number;
   organizationId: Id<"organizations">;
   year: number;
@@ -111,7 +112,8 @@ export async function getNextYearBasedValue<
       | "transitCounters"
       | "claimCounters"
       | "deaccessionCounters"
-      | "objectEntryCounters";
+      | "objectEntryCounters"
+      | "incidentCounters";
     organizationId: Id<"organizations">;
     year: number;
   },
@@ -383,4 +385,24 @@ export async function generateNextClaimNumber(
   });
 
   return `CLM-${year}-${padNumber(nextValue, 4)}`;
+}
+
+/** Incident numbers: INC-{year}-{0001}, per organization and year. */
+export async function generateNextIncidentNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<string> {
+  const year = getCurrentYear();
+  const counter = await ctx.db
+    .query("incidentCounters")
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
+    )
+    .first();
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "incidentCounters",
+    organizationId,
+    year,
+  });
+  return `INC-${year}-${padNumber(nextValue, 4)}`;
 }

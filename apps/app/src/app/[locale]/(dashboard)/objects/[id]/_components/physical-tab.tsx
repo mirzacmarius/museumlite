@@ -6,8 +6,9 @@ import { ClientDate } from "@/components/client-date";
 import { getConditionIcon } from "@/components/condition-combobox";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n } from "@/locales/client";
-import { formatConditionLabel } from "./condition-display";
 import { ConditionAssessmentPanel } from "./condition-assessment-panel";
+import { formatConditionLabel } from "./condition-display";
+import { ObjectIncidents } from "./object-incidents";
 import type { CollectionData } from "./types";
 
 interface PhysicalTabProps {
@@ -63,6 +64,10 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
   return (
     <div className="space-y-8">
       <ConditionAssessmentPanel collectionId={collection._id} />
+      <ObjectIncidents
+        collectionId={collection._id}
+        organizationId={collection.organizationId}
+      />
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
