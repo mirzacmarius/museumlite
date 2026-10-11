@@ -99,7 +99,7 @@ _Avoid_: Feature (when the combination is meant)
 ### Work
 
 **Case**:
-A workflow record with its own approval history, such as a loan, transit record, exhibition, conservation treatment, accession, deaccession, move request, library acquisition request or documentation Finding.
+A workflow record with its own approval history, such as a loan, transit record, exhibition, conservation treatment, accession, deaccession, move request, library acquisition request, documentation Finding or Incident.
 _Avoid_: Ticket, request (as a general term)
 
 **Task**:
@@ -113,6 +113,14 @@ _Avoid_: Template, automation, workflow (approval workflows are separate)
 **Suggested task**:
 A Task a Preparation recipe created for one step of one accepted Case event. Repeating or correcting the event never adds a second one, and staff can dismiss and restore it. Completing it records nothing about custody, receipt, installation, title or condition.
 _Avoid_: Automatic task, recommendation
+
+**Incident**:
+A Case recording damage, loss, theft or an emergency that affects Objects or Locations, from the first report through triage and response to its after-action review. A restricted Incident is visible only to coordinators, its reporter, its lead and its named responders.
+_Avoid_: Event, alert (an Alert episode can raise an Incident), claim (an insurance claim is separate)
+
+**Response plan**:
+A Preparation recipe for Incidents. It guides a response only when a coordinator chooses it at triage; its steps fall due in hours from triage.
+_Avoid_: Emergency plan (the institution's full emergency plan lives outside the app), playbook
 
 ### Documentation quality
 
@@ -215,5 +223,6 @@ The accepted word for each term in the app's other locales. Use it wherever Engl
 | Case | caso | dossier | sak | dosar |
 | Task | tarea | tâche | oppgave | sarcină |
 | Notification | notificación | notification | varsel | notificare |
+| Incident | incidente | incident | hendelse | incident |
 
 Norwegian uses _gjenstand_ for property received under an Entry, as Spanish uses _bien_ and Romanian _bun_; the Object recorded for it is still _objekt_.

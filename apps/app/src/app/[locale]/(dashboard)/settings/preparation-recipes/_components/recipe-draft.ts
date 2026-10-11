@@ -39,6 +39,8 @@ export interface StepDraft {
   ownerUserId: Id<"users"> | null;
   dueAnchor: DueAnchor | "none";
   offsetDays: string;
+  /** Incident plans count hours from triage instead of days. */
+  offsetHours: string;
   /** Client keys of earlier steps this one waits for. */
   dependsOn: string[];
 }
@@ -66,7 +68,18 @@ export function blankStep(): StepDraft {
     ownerUserId: null,
     dueAnchor: "none",
     offsetDays: "0",
+    offsetHours: "1",
     dependsOn: [],
+  };
+}
+
+/** A new incident response plan: the institution writes every step. */
+export function blankIncidentPlan(): RecipeDraft {
+  return {
+    name: "",
+    trigger: "incident_response",
+    loanDirection: "any",
+    steps: [blankStep()],
   };
 }
 
@@ -88,14 +101,25 @@ export function draftOfRecipe(recipe: Recipe): RecipeDraft {
       ownerUserId: step.owner.kind === "member" ? step.owner.userId : null,
       dueAnchor: step.due?.anchor ?? "none",
       offsetDays: String(step.due?.offsetDays ?? 0),
+      offsetHours: String(step.due?.offsetHours ?? 1),
       dependsOn: step.dependsOn.flatMap((key) => clientKeys.get(key) ?? []),
     })),
   };
 }
 
-/** Anchors a trigger's cases have: intakes only have their acceptance. */
+/**
+ * Anchors a trigger's cases have: intakes only have their acceptance, and
+ * incidents their triage.
+ */
 export function anchorsFor(trigger: PreparationTrigger): DueAnchor[] {
-  return trigger === "intake_accepted" ? ["event"] : [...DUE_ANCHORS];
+  return trigger === "intake_accepted" || trigger === "incident_response"
+    ? ["event"]
+    : [...DUE_ANCHORS];
+}
+
+/** Incident plan steps fall due in hours from triage. */
+export function countsHours(trigger: PreparationTrigger) {
+  return trigger === "incident_response";
 }
 
 /** Keeps each step waiting only for steps that still come before it. */
@@ -112,6 +136,7 @@ export function withEarlierDependencies(steps: StepDraft[]): StepDraft[] {
 }
 
 const offsetSchema = z.coerce.number().int().min(-365).max(365);
+const hoursSchema = z.coerce.number().int().min(0).max(168);
 
 /** Client checks mirroring the recipe commands; the server rules still apply. */
 const stepSchema = z.object({
@@ -146,7 +171,9 @@ export function draftErrors(draft: RecipeDraft): DraftErrors {
     if (
       step.dueAnchor !== "none" &&
       (!anchors.includes(step.dueAnchor) ||
-        !offsetSchema.safeParse(step.offsetDays).success)
+        !(countsHours(draft.trigger) ? hoursSchema : offsetSchema).safeParse(
+          countsHours(draft.trigger) ? step.offsetHours : step.offsetDays,
+        ).success)
     )
       fields.push("due");
     if (fields.length > 0) errors.stepFields[index] = fields;
@@ -169,6 +196,7 @@ function ownerOf(step: StepDraft): PreparationOwner | null {
 
 /** The recipe as the recipe commands take it; null while an owner is missing. */
 export function recipeInput(draft: RecipeDraft) {
+  const hourly = countsHours(draft.trigger);
   const positions = new Map(
     draft.steps.map((step, index) => [step.clientKey, index]),
   );
@@ -185,7 +213,13 @@ export function recipeInput(draft: RecipeDraft) {
       due:
         step.dueAnchor === "none"
           ? undefined
-          : { anchor: step.dueAnchor, offsetDays: Number(step.offsetDays) },
+          : hourly
+            ? {
+                anchor: step.dueAnchor,
+                offsetDays: 0,
+                offsetHours: Number(step.offsetHours),
+              }
+            : { anchor: step.dueAnchor, offsetDays: Number(step.offsetDays) },
       dependsOn: step.dependsOn.flatMap((key) => positions.get(key) ?? []),
     });
   }

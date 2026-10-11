@@ -1814,6 +1814,7 @@ export const createDefaultRoles = internalMutation({
       "collections.approve_conservation",
       "collections.accept_condition",
       "collections.review_provenance",
+      "collections.coordinate_incidents",
       // Loans
       "loans.create",
       "loans.read",
@@ -1901,6 +1902,7 @@ export const createDefaultRoles = internalMutation({
       "collections.approve_conservation",
       "collections.accept_condition",
       "collections.review_provenance",
+      "collections.coordinate_incidents",
       "media.upload",
       "media.read",
       "media.delete",
@@ -1932,6 +1934,7 @@ export const createDefaultRoles = internalMutation({
       "collections.approve_deaccession",
       "collections.accept_condition",
       "collections.review_provenance",
+      "collections.coordinate_incidents",
       "loans.create",
       "loans.read",
       "loans.update",

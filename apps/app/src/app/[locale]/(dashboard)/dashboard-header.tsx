@@ -19,6 +19,7 @@ const pageTitleKeys: Record<string, string> = {
   deaccessions: "deaccessions",
   exhibitions: "exhibitions",
   insurance: "insurance",
+  incidents: "incidents",
   installations: "installations",
   library: "library",
   loans: "loans",

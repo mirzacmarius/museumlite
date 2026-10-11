@@ -29,6 +29,7 @@ export const CAPABILITY_IDS = [
   "patrons",
   "library",
   "documentation_quality",
+  "incidents",
   "inventory",
   "deaccession",
   "administration",
@@ -125,6 +126,12 @@ export const CAPABILITY_MATRIX = {
   documentation_quality: {
     permissions: ["collections.read", "collections.update"],
     route: "/documentation-quality",
+  },
+  // Anyone who reads the collection may report an incident; coordinating
+  // and sensitive scope are checked by the commands (ADR 0015).
+  incidents: {
+    permissions: ["collections.read"],
+    route: "/incidents",
   },
   // Following sessions reads objects and locations; scanning and resolving
   // need `locations.update`, the permission that governs moves (ADR 0014).

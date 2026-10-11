@@ -33,6 +33,18 @@ import {
   registerTotalsValidator,
 } from "./utils/exportContract";
 import {
+  incidentAfterActionValidator,
+  incidentEventActionValidator,
+  incidentEvidenceReferenceValidator,
+  incidentHandoffDirectionValidator,
+  incidentImpactValidator,
+  incidentKindValidator,
+  incidentPlanValidator,
+  incidentSeverityValidator,
+  incidentSourceValidator,
+  incidentStatusValidator,
+} from "./utils/incidentValidators";
+import {
   inventoryExceptionFields,
   inventoryExpectedObjectFields,
   inventoryObservationFields,
@@ -1555,6 +1567,8 @@ export default defineSchema({
     batchJobId: v.optional(v.id("batchJobs")),
     exhibitionObjectId: v.optional(v.id("exhibitionObjects")),
     transitItemId: v.optional(v.id("transitItems")),
+    /** Incident whose evacuation or recovery this movement was (MUS-664). */
+    incidentId: v.optional(v.id("incidents")),
     // The inventory exception whose review authorized this move (MUS-662).
     inventoryExceptionId: v.optional(v.id("inventoryExceptions")),
   })
@@ -4602,6 +4616,129 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_taskId", ["taskId"]),
+
+  // Incidents - damage, loss and emergency response cases (MUS-664, ADR 0015).
+  incidents: defineTable({
+    organizationId: v.id("organizations"),
+    incidentNumber: v.string(),
+    kind: incidentKindValidator,
+    title: v.string(),
+    description: v.optional(v.string()),
+    status: incidentStatusValidator,
+    /** Reported or responding; drives the open incidents list. */
+    open: v.boolean(),
+    /** Visible only to coordinators, reporter, lead and responders. */
+    sensitive: v.boolean(),
+    discoveredAt: v.number(),
+    occurredAt: v.optional(v.number()),
+    locationIds: v.array(v.id("locations")),
+    reportedBy: v.id("users"),
+    reportedAt: v.number(),
+    /** Client key of the report form, so a retried report is one incident. */
+    intakeKey: v.string(),
+    source: v.optional(incidentSourceValidator),
+    /** `alertEpisode:{id}`: one incident per triggering record. */
+    sourceKey: v.optional(v.string()),
+    severity: v.optional(incidentSeverityValidator),
+    leadId: v.optional(v.id("users")),
+    responderIds: v.array(v.id("users")),
+    triagedBy: v.optional(v.id("users")),
+    triagedAt: v.optional(v.number()),
+    triageNote: v.optional(v.string()),
+    /** Plans chosen at triage; empty after triage means no plan guides it. */
+    plans: v.array(incidentPlanValidator),
+    afterAction: v.optional(incidentAfterActionValidator),
+    /** After-action records of earlier closures, kept when it was reopened. */
+    earlierAfterActions: v.optional(v.array(incidentAfterActionValidator)),
+    closedAt: v.optional(v.number()),
+    /** Entries in the incident's event log; keys its notifications. */
+    eventCount: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization_and_open_and_reportedAt", [
+      "organizationId",
+      "open",
+      "reportedAt",
+    ])
+    .index("by_organization_and_intakeKey", ["organizationId", "intakeKey"])
+    .index("by_organization_and_sourceKey", ["organizationId", "sourceKey"]),
+
+  // Objects an incident affects. Never removed; staff mark them unaffected.
+  incidentObjects: defineTable({
+    organizationId: v.id("organizations"),
+    incidentId: v.id("incidents"),
+    collectionId: v.id("collections"),
+    impact: incidentImpactValidator,
+    note: v.optional(v.string()),
+    /** Where the object was recorded when it was linked; suggests recovery. */
+    locationAtReportId: v.optional(v.id("locations")),
+    addedBy: v.id("users"),
+    addedAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_incident_and_collection", ["incidentId", "collectionId"])
+    .index("by_collection", ["collectionId"]),
+
+  // Evacuation and recovery movements made for an incident; append-only.
+  incidentHandoffs: defineTable({
+    organizationId: v.id("organizations"),
+    incidentId: v.id("incidents"),
+    collectionId: v.id("collections"),
+    direction: incidentHandoffDirectionValidator,
+    movementId: v.id("locationHistory"),
+    fromLocationId: v.optional(v.id("locations")),
+    toLocationId: v.id("locations"),
+    /** Client key, so a retried handoff returns the first movement. */
+    handoffKey: v.string(),
+    movedBy: v.id("users"),
+    movedAt: v.number(),
+  })
+    .index("by_incident_and_collection", ["incidentId", "collectionId"])
+    .index("by_incident_and_handoffKey", ["incidentId", "handoffKey"]),
+
+  // Records cited as incident evidence. Retracted links stay (ADR 0015).
+  incidentEvidence: defineTable({
+    organizationId: v.id("organizations"),
+    incidentId: v.id("incidents"),
+    reference: incidentEvidenceReferenceValidator,
+    label: v.string(),
+    objectId: v.optional(v.id("collections")),
+    recordedAt: v.optional(v.number()),
+    linkedBy: v.id("users"),
+    linkedAt: v.number(),
+    retraction: v.optional(
+      v.object({
+        reason: v.string(),
+        retractedBy: v.id("users"),
+        retractedAt: v.number(),
+      }),
+    ),
+  }).index("by_incident", ["incidentId"]),
+
+  // The incident's own append-only log, readable only by people in scope.
+  incidentEvents: defineTable({
+    organizationId: v.id("organizations"),
+    incidentId: v.id("incidents"),
+    ordinal: v.number(),
+    action: incidentEventActionValidator,
+    actorId: v.id("users"),
+    at: v.number(),
+    note: v.optional(v.string()),
+    objectId: v.optional(v.id("collections")),
+    fromLocationId: v.optional(v.id("locations")),
+    toLocationId: v.optional(v.id("locations")),
+    userId: v.optional(v.id("users")),
+    /** A short value the action names, such as a status or impact. */
+    value: v.optional(v.string()),
+    count: v.optional(v.number()),
+  }).index("by_incident_and_ordinal", ["incidentId", "ordinal"]),
+
+  incidentCounters: defineTable({
+    organizationId: v.id("organizations"),
+    year: v.number(),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization_and_year", ["organizationId", "year"]),
 
   organizationSubscriptions: defineTable({
     organizationId: v.id("organizations"),

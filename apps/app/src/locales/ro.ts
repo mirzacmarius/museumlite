@@ -2162,6 +2162,7 @@ export default {
       conservation: "Mergi la conservare",
       entries: "Mergi la intrări",
       documentationQuality: "Mergi la calitatea documentației",
+      incidents: "Mergi la incidente",
       inventory: "Mergi la inventar",
     },
     pageNotFound: {
@@ -3142,6 +3143,8 @@ export default {
           catalog_edit: "Editare în catalog",
           inventory_reconciliation: "Reconciliere de inventar",
           legacy: "Mutare înregistrată",
+          incident_evacuation: "Evacuare la incident",
+          incident_recovery: "Readucere după incident",
         },
       },
     },
@@ -3310,6 +3313,8 @@ export default {
         episodeNotOpen: "Acest episod s-a încheiat deja.",
         resolutionNoteInvalid: "Scrieți o notă de cel mult 1.000 de caractere.",
       },
+      reportIncident: "Semnalați un incident",
+      incidentTitle: "Alertă de mediu la {location}",
     },
     sidebar: {
       empty: "Nicio locație încă",
@@ -6834,6 +6839,7 @@ export default {
       exhibition: "Expoziție",
       conservation: "Tratament de conservare",
       documentationFinding: "Constatare de documentare",
+      incident: "Incident",
       inventoryException: "Excepție de inventar",
     },
     fields: {
@@ -6973,6 +6979,16 @@ export default {
       recipeNotFound:
         "Această rețetă nu mai este disponibilă. Reîncărcați pagina.",
       recipeInvalid: "Verificați câmpurile marcate ale rețetei.",
+      incidentNotFound: "Acest incident nu există sau nu îl puteți vedea.",
+      notIncidentCoordinator:
+        "Doar coordonatorii de incidente pot face acest lucru.",
+      notIncidentResponder:
+        "Nu aveți permisiunea să faceți acest lucru pe un incident.",
+      objectNotAffected: "Adăugați mai întâi obiectul la incident.",
+      planNotAvailable:
+        "Acel plan nu mai este un plan de intervenție activ. Reîmprospătați și alegeți din nou.",
+      tasksOpen:
+        "Finalizați sau anulați mai întâi cele {count} sarcină(i) deschisă(e) ale incidentului.",
     },
     suggestion: {
       badge: "Sugerată",
@@ -6980,6 +6996,8 @@ export default {
         intake_accepted: "Sugerată de „{recipe}” după acceptarea primirii",
         loan_approved: "Sugerată de „{recipe}” după aprobarea împrumutului",
         exhibition_approved: "Sugerată de „{recipe}” după aprobarea expoziției",
+        incident_response:
+          "Din planul de intervenție „{recipe}” ales la triere",
       },
       withdrawn:
         "Retrasă deoarece împrumutul a fost anulat. Restaurați-o dacă lucrarea este încă necesară.",
@@ -7014,6 +7032,8 @@ export default {
           "Rețetele sugerează aceste sarcini când un împrumut este aprobat. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
         exhibition_approved:
           "Rețetele sugerează aceste sarcini când o expoziție este aprobată. Sugestiile nu înregistrează niciodată primirea, instalarea, titlul de proprietate sau starea.",
+        incident_response:
+          "Pașii planurilor de intervenție aleși de un coordonator la triere. Finalizarea unui pas nu înregistrează niciodată o mutare, o primire sau o stare.",
       },
       states: {
         suggested: "Sugerată",
@@ -7068,6 +7088,7 @@ export default {
       intake_accepted: "Primire acceptată",
       loan_approved: "Împrumut aprobat",
       exhibition_approved: "Expoziție aprobată",
+      incident_response: "Plan de intervenție la incidente",
     },
     triggerHints: {
       intake_accepted:
@@ -7076,6 +7097,8 @@ export default {
         "Se aplică atunci când un împrumut este aprobat. Termenele se calculează de la aprobare sau de la începutul ori sfârșitul împrumutului.",
       exhibition_approved:
         "Se aplică atunci când o expoziție este aprobată. Termenele se calculează de la aprobare sau de la deschiderea ori închiderea ei.",
+      incident_response:
+        "Se aplică doar când un coordonator îl alege la trierea unui incident. Termenele se numără în ore de la triere.",
     },
     directions: {
       any: "Împrumuturi primite și acordate",
@@ -7177,7 +7200,16 @@ export default {
         due: "Folosiți un număr întreg de zile între -365 și 365.",
         dependsOn: "Un pas poate aștepta doar pașii de deasupra lui.",
       },
+      offsetHours: "Ore după triere",
+      offsetHoursHint: "Între 0 și 168 de ore.",
+      anchorTriage: "Triere",
+      incidentOwners: {
+        caseAssignee: "Responsabilul incidentului",
+        approver: "Coordonatorul care a triat",
+        member: "Un membru numit",
+      },
     },
+    blankIncidentPlan: "Plan de intervenție la incidente gol",
   },
   notificationsPage: {
     title: "Notificări",
@@ -8887,6 +8919,7 @@ export default {
         transfers: "Transferuri",
         collections: "Grupuri de colecție",
         library: "Bibliotecă",
+        incidents: "Incidente",
       },
     },
     dashboardBilling: {
@@ -9928,6 +9961,7 @@ export default {
       currentLocationOption: "{location} (actuală)",
       flashNotSupported:
         "Camera acestui dispozitiv nu permite controlul blițului.",
+      incidents: "Incidente",
     },
     auth: {
       noAccountYet: "Nu ai încă un cont?",
@@ -10107,6 +10141,7 @@ export default {
       exhibitionsLoans: "Expoziții și împrumuturi",
       library: "Bibliotecă",
       administration: "Administrare",
+      incidents: "Incidente",
     },
     transferLookup: {
       invalidOrganizationAccountNumber:
@@ -10247,6 +10282,9 @@ export default {
         environmentStillOutOfRange:
           "Mediu încă în afara pragurilor: {location}",
         environmentBackInRange: "Mediu revenit în limite: {location}",
+        incidentReported: "Incident semnalat",
+        incidentLeadAssigned: "Responsabil de incident desemnat",
+        incidentClosed: "Incident închis",
       },
       messages: {
         objectMoveExecuted:
@@ -10369,6 +10407,9 @@ export default {
           "Disputa ta privind starea de conservare este în curs de investigare",
         disputeResolved:
           "Disputa ta privind starea de conservare a fost soluționată",
+        incidentNeedsTriage: "{incident} trebuie triat",
+        incidentLeadAssigned: "Conduceți intervenția pentru {incident}",
+        incidentClosed: "{incident} a fost închis cu analiza ulterioară",
       },
       workflowTypes: {
         accession: "accesiune",
@@ -10830,5 +10871,270 @@ export default {
       permanentInDraft:
         "Acest număr permanent se păstrează când editați ciorna.",
     },
+  },
+  incidents: {
+    title: "Incidente",
+    description:
+      "Deteriorări, pierderi și situații de urgență care afectează colecția, de la prima semnalare la triere, intervenție și analiza ulterioară.",
+    reportAction: "Semnalează incident",
+    filters: {
+      open: "Deschise",
+      closed: "Închise",
+    },
+    loading: "Se încarcă incidentele…",
+    emptyOpen: "Nu există incidente deschise pe care le puteți vedea.",
+    emptyClosed: "Nu există incidente închise pe care le puteți vedea.",
+    reportedOn: "Semnalat",
+    leadIs: "Responsabil: {name}",
+    loadMore: "Încarcă mai multe",
+    statuses: {
+      reported: "În așteptarea trierii",
+      responding: "Intervenție în curs",
+      closed: "Închis",
+    },
+    severities: {
+      minor: "Minoră",
+      moderate: "Moderată",
+      major: "Majoră",
+      critical: "Critică",
+    },
+    notTriaged: "Netriat",
+    sensitive: "Restricționat",
+    sensitiveHint:
+      "Doar coordonatorii de incidente, cel care l-a semnalat, responsabilul și intervenienții numiți pot vedea un incident restricționat.",
+    notRecorded: "Neînregistrat",
+    formerMember: "Fost membru",
+    cancel: "Anulează",
+    close: "Închide",
+    kinds: {
+      damage: "Deteriorare",
+      loss: "Pierdere",
+      theft: "Furt",
+      fire: "Incendiu",
+      water: "Apă",
+      pest: "Dăunători",
+      environmental: "Condiții de mediu",
+      security: "Securitate",
+      other: "Altele",
+    },
+    impacts: {
+      at_risk: "În pericol",
+      damaged: "Deteriorat",
+      missing: "Lipsă",
+      unaffected: "Neafectat",
+    },
+    report: {
+      title: "Semnalați un incident",
+      description:
+        "Înregistrați acum ce ați găsit; un coordonator îl triază și organizează intervenția.",
+      fromEpisode:
+        "Semnalarea din acest episod de alertă îl înregistrează ca sursă. Dacă a fost deja semnalat, veți ajunge la acel incident.",
+      kind: "Tipul incidentului",
+      location: "Unde",
+      locationPlaceholder: "Alegeți o locație",
+      whatHappened: "Ce s-a întâmplat",
+      whatHappenedPlaceholder:
+        "De exemplu: picură apă pe vitrina vazei din Sala 2",
+      details: "Detalii",
+      detailsPlaceholder: "Ce ați văzut și ce ați făcut până acum",
+      objects: "Obiecte afectate",
+      objectsPlaceholder: "Căutați obiecte",
+      impact: "Cum sunt afectate obiectele",
+      discoveredAt: "Descoperit",
+      occurredAt: "Petrecut (dacă se știe)",
+      sensitive: "Restricționați cine îl poate vedea",
+      sensitiveHint:
+        "Pentru suspiciuni de furt sau probleme de securitate ori de personal. Îl vor vedea doar coordonatorii, dumneavoastră, responsabilul și intervenienții numiți.",
+      submit: "Semnalează incidentul",
+      reported: "Incident semnalat. Coordonatorii au fost anunțați.",
+      alreadyReported: "Acesta fusese deja semnalat; iată incidentul.",
+      alreadyReportedRestricted:
+        "Acesta a fost deja semnalat ca incident restricționat. Coordonatorii se ocupă de el.",
+      errors: {
+        title: "Descrieți ce s-a întâmplat în 1-200 de caractere.",
+        where: "Alegeți o locație sau cel puțin un obiect.",
+        times:
+          "Verificați orele: descoperirea nu poate fi în viitor, iar incidentul nu poate avea loc după descoperire.",
+      },
+    },
+    detail: {
+      reportTitle: "Semnalare",
+      discoveredAt: "Descoperit",
+      occurredAt: "Petrecut",
+      reportedBy: "Semnalat de",
+      locations: "Locații",
+      source: "Provine din",
+      alertEpisode: "Episod de alertă de mediu",
+      details: "Detalii",
+    },
+    response: {
+      title: "Intervenție",
+      update: "Actualizează intervenția",
+      triage: "Triază",
+      awaitingTriage:
+        "Se așteaptă trierea incidentului de către un coordonator.",
+      awaitingTriageCoordinator:
+        "Triați acest incident: stabiliți gravitatea, alegeți un responsabil și decideți ce plan, dacă există, ghidează intervenția.",
+      severity: "Gravitate",
+      lead: "Responsabil",
+      responders: "Intervenienți",
+      noResponders: "Niciun alt intervenient",
+      triaged: "Triat de",
+      plans: "Planuri de intervenție",
+      noPlan:
+        "Niciun plan nu ghidează această intervenție; sarcinile se adaugă manual.",
+      note: "Notă de triere",
+      errors: {
+        severityAndLead: "Alegeți o gravitate și un responsabil.",
+        planChoice:
+          "Alegeți planurile care ghidează intervenția sau înregistrați că niciunul nu se aplică.",
+      },
+      tasksSuggested:
+        "Intervenție salvată. Au fost adăugate {count} sarcină(i) din planurile alese.",
+      saved: "Intervenție salvată.",
+      stepsSkipped:
+        "{count} pas(i) din plan încă au nevoie de un responsabil care poate lucra la acest incident.",
+      triageTitle: "Triați incidentul",
+      updateTitle: "Actualizați intervenția",
+      triageDescription:
+        "Planurile sunt ale instituției dumneavoastră; nimic nu este ales în locul dumneavoastră. Pașii planurilor alese devin sarcini pentru responsabilii lor.",
+      chooseSeverity: "Alegeți gravitatea",
+      chooseLead: "Alegeți un responsabil",
+      respondersHint:
+        "Intervenienții pot vedea un incident restricționat și pot primi sarcinile lui.",
+      plansHint: "Alegeți cu grijă: un plan ales rămâne în evidență.",
+      plansChosen: "Ghidează deja această intervenție: {plans}",
+      noPlanApplies: "Niciun plan nu se aplică; coordonare manuală",
+      noMorePlans: "Nu adăuga planuri",
+      followPlans: "Urmează aceste planuri",
+      noPlansAvailable:
+        "Nu există alte planuri de intervenție active. Administratorii le redactează în Setări › Rețete de pregătire.",
+      dueWithin: "termen la {hours} h după triere",
+      save: "Salvează intervenția",
+    },
+    objects: {
+      title: "Obiecte afectate",
+      add: "Adaugă obiecte",
+      description:
+        "Obiectele rămân legate de incident ca dovadă. Marcați un obiect ca neafectat în loc să-l eliminați.",
+      empty: "Niciun obiect nu este legat de acest incident.",
+      whenReported: "La legare: {location}",
+      now: "Acum: {location}",
+      noLocation: "fără locație înregistrată",
+      lastHandoff: {
+        evacuation: "Evacuat în {location}",
+        recovery: "Readus în {location}",
+      },
+      recordAssessment: "Înregistrați o evaluare a stării",
+      impactFor: "Cum este afectat {object}",
+      recover: "Readu",
+      evacuate: "Evacuează",
+      chooseObjects: "Alegeți cel puțin un obiect.",
+      added: "{count} obiect(e) adăugat(e).",
+      addTitle: "Adăugați obiecte afectate",
+      addDescription:
+        "Obiectele deja legate de incident nu se adaugă de două ori.",
+      impact: "Cum sunt afectate",
+      addSubmit: "Adaugă obiectele",
+      chooseDestination: "Alegeți unde merge obiectul.",
+      handoffRecorded: {
+        evacuation: "Evacuarea a fost înregistrată ca mutare.",
+        recovery: "Readucerea a fost înregistrată ca mutare.",
+      },
+      handoffTitle: {
+        evacuation: "Evacuați {object}",
+        recovery: "Readuceți {object}",
+      },
+      handoffDescription:
+        "Înregistrați mutarea când are loc. Este verificată față de locul în care era obiectul când ați deschis această fereastră și față de starea și capacitatea destinației.",
+      from: "De la: {location}",
+      destination: "La",
+      recoverySuggestion:
+        "Era în {location} când a fost legat de incident. Confirmați unde merge de fapt.",
+      notes: "Note",
+      handoffSubmit: {
+        evacuation: "Înregistrează evacuarea",
+        recovery: "Înregistrează readucerea",
+      },
+    },
+    evidence: {
+      title: "Dovezi",
+      link: "Leagă o dovadă",
+      description:
+        "Evaluări ale stării acceptate și fișiere ale obiectelor afectate, precum și daune de asigurare. Legăturile se păstrează; una greșită se retrage cu un motiv.",
+      empty: "Nicio dovadă legată încă.",
+      kinds: {
+        conditionAssessment: "Evaluare a stării",
+        media: "Fișier",
+        insuranceClaim: "Daună de asigurare",
+      },
+      restricted: "Nu aveți acces la această înregistrare.",
+      linkedBy: "Legat de {name}",
+      retractedBy: "Retras de {name}: {reason}",
+      retract: "Retrage",
+      coverageTitle: "Acoperirea de asigurare la descoperire",
+      coverageRestricted: "Nu aveți acces la înregistrările de asigurare.",
+      coverageNone:
+        "Nu era înregistrată nicio acoperire în vigoare pe obiectele afectate la acel moment.",
+      coverageRow: "{object}: {policy} ({carrier}), {value}",
+      coverageNote:
+        "Arată acoperirea înregistrată pe fiecare obiect; acoperirea printr-un împrumut sau o expoziție se află pe acele înregistrări.",
+      linkTitle: "Leagă o dovadă",
+      linkDescription:
+        "Evaluări acceptate și fișiere recente ale obiectelor afectate, precum și daunele care le numesc.",
+      noCandidates:
+        "Nimic de legat. Înregistrați mai întâi o evaluare sau încărcați un fișier pe un obiect afectat.",
+      linked: "Dovadă legată.",
+      linkOne: "Leagă",
+      reasonRequired: "Indicați un motiv.",
+      retractTitle: "Retrageți dovada",
+      retractDescription:
+        "Legătura rămâne pe incident, marcată ca retrasă cu motivul dumneavoastră.",
+      reason: "Motiv",
+    },
+    afterAction: {
+      title: "Analiză ulterioară",
+      reopen: "Redeschide",
+      close: "Închide cu analiză",
+      summary: "Ce s-a întâmplat și cum a decurs intervenția",
+      whatWorked: "Ce a funcționat",
+      improvements: "Ce trebuie îmbunătățit",
+      followUp: "Măsuri ulterioare",
+      recordedBy: "Înregistrată de {name}",
+      pending: "O redactează un coordonator la sfârșitul intervenției.",
+      pendingCoordinator:
+        "Când toate sarcinile sunt finalizate sau anulate, închideți incidentul cu analiza ulterioară. Închiderea nu mută și nu reevaluează niciun obiect.",
+      earlier: "Analize anterioare ({count})",
+      summaryRequired: "Rezumați ce s-a întâmplat și cum a decurs intervenția.",
+      closed: "Incident închis.",
+      closeTitle: "Închideți cu analiza ulterioară",
+      closeDescription:
+        "Mai întâi, toate sarcinile trebuie finalizate sau anulate. Obiectele rămân unde au fost înregistrate ultima dată.",
+      closeSubmit: "Închide incidentul",
+      reasonRequired: "Indicați un motiv pentru redeschidere.",
+      reopened: "Incident redeschis.",
+      reopenTitle: "Redeschideți incidentul",
+      reopenDescription: "Analiza ulterioară rămâne în evidență.",
+      reason: "Motiv",
+    },
+    activity: {
+      title: "Jurnalul incidentului",
+      reported: "Semnalat cu {count} obiect(e)",
+      reportRepeated: "Semnalat din nou din aceeași alertă",
+      triaged: "Triat ca {severity}, responsabil {lead}",
+      response_updated:
+        "Intervenție actualizată: {severity}, responsabil {lead}",
+      plansApplied: "Planuri alese: {plans} ({count} sarcină(i) adăugată(e))",
+      objectsAdded: "{count} obiect(e) adăugat(e)",
+      impactChanged: "{object} marcat {impact}",
+      evacuated: "{object} evacuat din {from} în {to}",
+      recovered: "{object} readus din {from} în {to}",
+      evidenceLinked: "Dovadă legată",
+      evidenceRetracted: "Dovadă retrasă",
+      closed: "Închis cu analiză ulterioară",
+      reopened: "Redeschis",
+    },
+    objectNone:
+      "Niciun incident pe care îl puteți vedea nu implică acest obiect.",
   },
 };

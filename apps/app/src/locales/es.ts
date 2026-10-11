@@ -2708,6 +2708,8 @@ export default {
           catalog_edit: "Edición del catálogo",
           inventory_reconciliation: "Conciliación de inventario",
           legacy: "Movimiento registrado",
+          incident_evacuation: "Evacuación por incidente",
+          incident_recovery: "Recuperación tras incidente",
         },
       },
     },
@@ -2916,6 +2918,8 @@ export default {
         episodeNotOpen: "Este episodio ya ha terminado.",
         resolutionNoteInvalid: "Escriba una nota de hasta 1000 caracteres.",
       },
+      reportIncident: "Notificar un incidente",
+      incidentTitle: "Alerta ambiental en {location}",
     },
     sidebar: {
       empty: "Aún no hay ubicaciones",
@@ -4830,6 +4834,7 @@ export default {
       exhibition: "Exposición",
       conservation: "Tratamiento de conservación",
       documentationFinding: "Hallazgo de documentación",
+      incident: "Incidente",
       inventoryException: "Excepción de inventario",
     },
     fields: {
@@ -4968,6 +4973,15 @@ export default {
         "Las recetas se aplican cuando el caso está aceptado, hasta que se devuelve, se cierra o se cancela.",
       recipeNotFound: "Esta receta ya no está disponible. Actualice la página.",
       recipeInvalid: "Revise los campos marcados de la receta.",
+      incidentNotFound: "Este incidente no existe o no puede verlo.",
+      notIncidentCoordinator:
+        "Solo los coordinadores de incidentes pueden hacer esto.",
+      notIncidentResponder: "No tiene permiso para hacer esto en un incidente.",
+      objectNotAffected: "Añada antes el objeto al incidente.",
+      planNotAvailable:
+        "Ese plan ya no es un plan de respuesta activo. Actualice y elija de nuevo.",
+      tasksOpen:
+        "Termine o cancele antes las {count} tarea(s) abierta(s) del incidente.",
     },
     suggestion: {
       badge: "Sugerida",
@@ -4976,6 +4990,8 @@ export default {
         loan_approved: "Sugerida por «{recipe}» tras aprobar el préstamo",
         exhibition_approved:
           "Sugerida por «{recipe}» tras aprobar la exposición",
+        incident_response:
+          "Del plan de respuesta «{recipe}» elegido en la evaluación",
       },
       withdrawn:
         "Retirada porque el préstamo se canceló. Restáurela si el trabajo sigue siendo necesario.",
@@ -5010,6 +5026,8 @@ export default {
           "Las recetas sugieren estas tareas cuando se aprueba un préstamo. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
         exhibition_approved:
           "Las recetas sugieren estas tareas cuando se aprueba una exposición. Las sugerencias nunca registran recepción, instalación, titularidad ni estado de conservación.",
+        incident_response:
+          "Pasos de los planes de respuesta que un coordinador eligió en la evaluación. Completar un paso nunca registra un traslado, una recepción ni un estado.",
       },
       states: {
         suggested: "Sugerida",
@@ -5064,6 +5082,7 @@ export default {
       intake_accepted: "Recepción aceptada",
       loan_approved: "Préstamo aprobado",
       exhibition_approved: "Exposición aprobada",
+      incident_response: "Plan de respuesta a incidentes",
     },
     triggerHints: {
       intake_accepted:
@@ -5072,6 +5091,8 @@ export default {
         "Se aplica cuando se aprueba un préstamo. Las fechas límite cuentan desde la aprobación o desde el inicio o el fin del préstamo.",
       exhibition_approved:
         "Se aplica cuando se aprueba una exposición. Las fechas límite cuentan desde la aprobación o desde su apertura o cierre.",
+      incident_response:
+        "Se aplica solo cuando un coordinador lo elige al evaluar un incidente. Los plazos cuentan horas desde la evaluación.",
     },
     directions: {
       any: "Préstamos entrantes y salientes",
@@ -5173,7 +5194,16 @@ export default {
         due: "Use un número entero de días entre -365 y 365.",
         dependsOn: "Un paso solo puede esperar a pasos anteriores.",
       },
+      offsetHours: "Horas después de la evaluación",
+      offsetHoursHint: "De 0 a 168 horas.",
+      anchorTriage: "Evaluación",
+      incidentOwners: {
+        caseAssignee: "Responsable del incidente",
+        approver: "Coordinador que lo evaluó",
+        member: "Un miembro concreto",
+      },
     },
+    blankIncidentPlan: "Plan de respuesta a incidentes en blanco",
   },
   notificationsPage: {
     title: "Notificaciones",
@@ -5813,6 +5843,7 @@ export default {
       conservation: "Ir a conservación",
       entries: "Ir a entradas",
       documentationQuality: "Ir a calidad de la documentación",
+      incidents: "Ir a incidentes",
       inventory: "Ir al inventario",
     },
     pageNotFound: {
@@ -8902,6 +8933,7 @@ export default {
         transfers: "Traslados",
         collections: "Grupos de colección",
         library: "Biblioteca",
+        incidents: "Incidentes",
       },
     },
     dashboardBilling: {
@@ -9951,6 +9983,7 @@ export default {
       currentLocationOption: "{location} (actual)",
       flashNotSupported:
         "La cámara de este dispositivo no permite controlar el flash.",
+      incidents: "Incidentes",
     },
     auth: {
       noAccountYet: "¿Aún no tienes una cuenta?",
@@ -10134,6 +10167,7 @@ export default {
       exhibitionsLoans: "Exposiciones y préstamos",
       library: "Biblioteca",
       administration: "Administración",
+      incidents: "Incidentes",
     },
     transferLookup: {
       invalidOrganizationAccountNumber:
@@ -10276,6 +10310,9 @@ export default {
           "Condiciones aún fuera de rango: {location}",
         environmentBackInRange:
           "Condiciones de nuevo dentro de rango: {location}",
+        incidentReported: "Incidente notificado",
+        incidentLeadAssigned: "Responsable de incidente asignado",
+        incidentClosed: "Incidente cerrado",
       },
       messages: {
         objectMoveExecuted:
@@ -10396,6 +10433,9 @@ export default {
           "Se está investigando la discrepancia que notificaste sobre el estado de conservación",
         disputeResolved:
           "La discrepancia que notificaste sobre el estado de conservación se ha resuelto",
+        incidentNeedsTriage: "{incident} necesita evaluación",
+        incidentLeadAssigned: "Usted dirige la respuesta a {incident}",
+        incidentClosed: "{incident} se cerró con su revisión posterior",
       },
       workflowTypes: {
         accession: "accesión",
@@ -10859,5 +10899,266 @@ export default {
       permanentInDraft:
         "Este número permanente se conserva al editar el borrador.",
     },
+  },
+  incidents: {
+    title: "Incidentes",
+    description:
+      "Daños, pérdidas y emergencias que afectan a la colección, desde el primer aviso hasta la evaluación inicial, la respuesta y la revisión posterior.",
+    reportAction: "Notificar incidente",
+    filters: {
+      open: "Abiertos",
+      closed: "Cerrados",
+    },
+    loading: "Cargando incidentes…",
+    emptyOpen: "No hay incidentes abiertos que pueda ver.",
+    emptyClosed: "No hay incidentes cerrados que pueda ver.",
+    reportedOn: "Notificado",
+    leadIs: "Responsable: {name}",
+    loadMore: "Cargar más",
+    statuses: {
+      reported: "Pendiente de evaluación",
+      responding: "En respuesta",
+      closed: "Cerrado",
+    },
+    severities: {
+      minor: "Leve",
+      moderate: "Moderada",
+      major: "Grave",
+      critical: "Crítica",
+    },
+    notTriaged: "Sin evaluar",
+    sensitive: "Restringido",
+    sensitiveHint:
+      "Solo los coordinadores de incidentes, quien lo notificó, el responsable y los intervinientes nombrados pueden ver un incidente restringido.",
+    notRecorded: "No registrado",
+    formerMember: "Antiguo miembro",
+    cancel: "Cancelar",
+    close: "Cerrar",
+    kinds: {
+      damage: "Daño",
+      loss: "Pérdida",
+      theft: "Robo",
+      fire: "Incendio",
+      water: "Agua",
+      pest: "Plagas",
+      environmental: "Condiciones ambientales",
+      security: "Seguridad",
+      other: "Otro",
+    },
+    impacts: {
+      at_risk: "En riesgo",
+      damaged: "Dañado",
+      missing: "Desaparecido",
+      unaffected: "No afectado",
+    },
+    report: {
+      title: "Notificar un incidente",
+      description:
+        "Registre ahora lo que ha encontrado; un coordinador lo evalúa y organiza la respuesta.",
+      fromEpisode:
+        "Al notificarlo desde este episodio de alerta, el episodio queda registrado como origen. Si ya se notificó, irá a ese incidente.",
+      kind: "Tipo de incidente",
+      location: "Dónde",
+      locationPlaceholder: "Elija una ubicación",
+      whatHappened: "Qué ha pasado",
+      whatHappenedPlaceholder:
+        "Por ejemplo: gotea agua sobre la vitrina del jarrón en la Sala 2",
+      details: "Detalles",
+      detailsPlaceholder: "Lo que vio y lo que ha hecho hasta ahora",
+      objects: "Objetos afectados",
+      objectsPlaceholder: "Buscar objetos",
+      impact: "Cómo están afectados los objetos",
+      discoveredAt: "Descubierto",
+      occurredAt: "Ocurrido (si se sabe)",
+      sensitive: "Restringir quién puede verlo",
+      sensitiveHint:
+        "Úselo para sospechas de robo o asuntos de seguridad o de personal. Solo lo verán los coordinadores, usted, el responsable y los intervinientes nombrados.",
+      submit: "Notificar incidente",
+      reported: "Incidente notificado. Se ha avisado a los coordinadores.",
+      alreadyReported: "Esto ya se había notificado; aquí está el incidente.",
+      alreadyReportedRestricted:
+        "Esto ya se notificó como incidente restringido. Los coordinadores se están ocupando.",
+      errors: {
+        title: "Describa lo ocurrido en 1-200 caracteres.",
+        where: "Elija una ubicación o al menos un objeto.",
+        times:
+          "Revise las horas: el descubrimiento no puede estar en el futuro ni el incidente haber ocurrido después de descubrirse.",
+      },
+    },
+    detail: {
+      reportTitle: "Aviso",
+      discoveredAt: "Descubierto",
+      occurredAt: "Ocurrido",
+      reportedBy: "Notificado por",
+      locations: "Ubicaciones",
+      source: "Originado en",
+      alertEpisode: "Episodio de alerta ambiental",
+      details: "Detalles",
+    },
+    response: {
+      title: "Respuesta",
+      update: "Actualizar respuesta",
+      triage: "Evaluar",
+      awaitingTriage: "Pendiente de que un coordinador evalúe este incidente.",
+      awaitingTriageCoordinator:
+        "Evalúe este incidente: fije su gravedad, elija un responsable y decida qué plan, si alguno, guía la respuesta.",
+      severity: "Gravedad",
+      lead: "Responsable",
+      responders: "Intervinientes",
+      noResponders: "Ningún otro interviniente",
+      triaged: "Evaluado por",
+      plans: "Planes de respuesta",
+      noPlan: "Ningún plan guía esta respuesta; las tareas se añaden a mano.",
+      note: "Nota de evaluación",
+      errors: {
+        severityAndLead: "Elija una gravedad y un responsable.",
+        planChoice:
+          "Elija los planes que guían la respuesta o indique que no se aplica ninguno.",
+      },
+      tasksSuggested:
+        "Respuesta guardada. Se añadieron {count} tarea(s) de los planes elegidos.",
+      saved: "Respuesta guardada.",
+      stepsSkipped:
+        "{count} paso(s) del plan aún necesitan un responsable que pueda trabajar en este incidente.",
+      triageTitle: "Evaluar incidente",
+      updateTitle: "Actualizar respuesta",
+      triageDescription:
+        "Los planes son de su institución; nada se elige por usted. Los pasos de los planes que elija se convierten en tareas para sus responsables.",
+      chooseSeverity: "Elija la gravedad",
+      chooseLead: "Elija un responsable",
+      respondersHint:
+        "Los intervinientes pueden ver un incidente restringido y recibir sus tareas.",
+      plansHint: "Elija con cuidado: un plan elegido queda en el registro.",
+      plansChosen: "Ya guían esta respuesta: {plans}",
+      noPlanApplies: "No se aplica ningún plan; coordinar a mano",
+      noMorePlans: "No añadir planes",
+      followPlans: "Seguir estos planes",
+      noPlansAvailable:
+        "No hay otros planes de respuesta activos. Los administradores los redactan en Configuración › Recetas de preparación.",
+      dueWithin: "vence {hours} h después de la evaluación",
+      save: "Guardar respuesta",
+    },
+    objects: {
+      title: "Objetos afectados",
+      add: "Añadir objetos",
+      description:
+        "Los objetos siguen vinculados al incidente como prueba. Márquelo como no afectado en lugar de quitarlo.",
+      empty: "No hay objetos vinculados a este incidente.",
+      whenReported: "Al vincularlo: {location}",
+      now: "Ahora: {location}",
+      noLocation: "sin ubicación registrada",
+      lastHandoff: {
+        evacuation: "Evacuado a {location}",
+        recovery: "Recuperado a {location}",
+      },
+      recordAssessment: "Registrar una evaluación del estado",
+      impactFor: "Cómo está afectado {object}",
+      recover: "Recuperar",
+      evacuate: "Evacuar",
+      chooseObjects: "Elija al menos un objeto.",
+      added: "{count} objeto(s) añadido(s).",
+      addTitle: "Añadir objetos afectados",
+      addDescription:
+        "Los objetos que ya están en el incidente no se añaden dos veces.",
+      impact: "Cómo están afectados",
+      addSubmit: "Añadir objetos",
+      chooseDestination: "Elija adónde va el objeto.",
+      handoffRecorded: {
+        evacuation: "Evacuación registrada como movimiento.",
+        recovery: "Recuperación registrada como movimiento.",
+      },
+      handoffTitle: {
+        evacuation: "Evacuar {object}",
+        recovery: "Recuperar {object}",
+      },
+      handoffDescription:
+        "Registre el traslado cuando ocurra. Se comprueba con dónde estaba el objeto al abrir esto y con el estado y la capacidad del destino.",
+      from: "Desde: {location}",
+      destination: "A",
+      recoverySuggestion:
+        "Estaba en {location} cuando se vinculó al incidente. Confirme adónde va realmente.",
+      notes: "Notas",
+      handoffSubmit: {
+        evacuation: "Registrar evacuación",
+        recovery: "Registrar recuperación",
+      },
+    },
+    evidence: {
+      title: "Pruebas",
+      link: "Vincular prueba",
+      description:
+        "Evaluaciones del estado aceptadas y archivos de los objetos afectados, y reclamaciones de seguro. Los vínculos se conservan; uno erróneo se retira con un motivo.",
+      empty: "Aún no hay pruebas vinculadas.",
+      kinds: {
+        conditionAssessment: "Evaluación del estado",
+        media: "Archivo",
+        insuranceClaim: "Reclamación de seguro",
+      },
+      restricted: "No tiene acceso a este registro.",
+      linkedBy: "Vinculado por {name}",
+      retractedBy: "Retirado por {name}: {reason}",
+      retract: "Retirar",
+      coverageTitle: "Cobertura de seguro al descubrirse",
+      coverageRestricted: "No tiene acceso a los registros de seguros.",
+      coverageNone:
+        "No había cobertura vigente registrada en los objetos afectados en ese momento.",
+      coverageRow: "{object}: {policy} ({carrier}), {value}",
+      coverageNote:
+        "Muestra la cobertura registrada en cada objeto; la cobertura por un préstamo o una exposición está en esos registros.",
+      linkTitle: "Vincular prueba",
+      linkDescription:
+        "Evaluaciones aceptadas y archivos recientes de los objetos afectados, y reclamaciones que los nombran.",
+      noCandidates:
+        "Nada que vincular. Registre antes una evaluación o suba un archivo en un objeto afectado.",
+      linked: "Prueba vinculada.",
+      linkOne: "Vincular",
+      reasonRequired: "Indique un motivo.",
+      retractTitle: "Retirar prueba",
+      retractDescription:
+        "El vínculo permanece en el incidente, marcado como retirado con su motivo.",
+      reason: "Motivo",
+    },
+    afterAction: {
+      title: "Revisión posterior",
+      reopen: "Reabrir",
+      close: "Cerrar con revisión",
+      summary: "Qué pasó y cómo fue la respuesta",
+      whatWorked: "Qué funcionó",
+      improvements: "Qué mejorar",
+      followUp: "Seguimiento",
+      recordedBy: "Registrado por {name}",
+      pending: "La redacta un coordinador cuando termina la respuesta.",
+      pendingCoordinator:
+        "Cuando todas las tareas estén hechas o canceladas, cierre el incidente con su revisión posterior. Cerrar no mueve ni reevalúa ningún objeto.",
+      earlier: "Revisiones anteriores ({count})",
+      summaryRequired: "Resuma qué pasó y cómo fue la respuesta.",
+      closed: "Incidente cerrado.",
+      closeTitle: "Cerrar con revisión posterior",
+      closeDescription:
+        "Antes, todas las tareas deben estar hechas o canceladas. Los objetos siguen donde se registraron por última vez.",
+      closeSubmit: "Cerrar incidente",
+      reasonRequired: "Indique un motivo para reabrir.",
+      reopened: "Incidente reabierto.",
+      reopenTitle: "Reabrir incidente",
+      reopenDescription: "La revisión posterior se conserva.",
+      reason: "Motivo",
+    },
+    activity: {
+      title: "Registro del incidente",
+      reported: "Notificado con {count} objeto(s)",
+      reportRepeated: "Notificado de nuevo desde la misma alerta",
+      triaged: "Evaluado como {severity}, responsable {lead}",
+      response_updated: "Respuesta actualizada: {severity}, responsable {lead}",
+      plansApplied: "Planes elegidos: {plans} ({count} tarea(s) añadida(s))",
+      objectsAdded: "{count} objeto(s) añadido(s)",
+      impactChanged: "{object} marcado como {impact}",
+      evacuated: "{object} evacuado de {from} a {to}",
+      recovered: "{object} recuperado de {from} a {to}",
+      evidenceLinked: "Prueba vinculada",
+      evidenceRetracted: "Prueba retirada",
+      closed: "Cerrado con revisión posterior",
+      reopened: "Reabierto",
+    },
+    objectNone: "Ningún incidente que pueda ver afecta a este objeto.",
   },
 } as const;

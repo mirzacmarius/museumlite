@@ -7,10 +7,15 @@ import {
   assignCustomerNumberIfMissing,
   parseCustomerNumber,
 } from "./utils/customerNumber";
+import { COORDINATE_PERMISSION } from "./utils/incidentAccess";
 import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { keepOldestPrimaryImage } from "./utils/primaryMedia";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
+import {
+  grantPermissionToSystemRoles,
+  REVIEWER_SYSTEM_ROLE_NAMES,
+} from "./utils/systemRoleGrants";
 import {
   COLLECTION_MANAGER_ROLE_DESCRIPTION,
   COLLECTION_MANAGER_ROLE_NAME,
@@ -1701,6 +1706,42 @@ export const grantProvenanceReviewPermissions = internalMutation({
       await ctx.scheduler.runAfter(
         0,
         internal.migrations.grantProvenanceReviewPermissions,
+        { cursor: page.continueCursor },
+      );
+    }
+    return { organizationsProcessed: page.page.length, isDone: page.isDone };
+  },
+});
+
+/**
+ * Migration: grant collections.coordinate_incidents on existing system roles
+ * (owner, administrator, curator, collection manager / registrar). Runs in
+ * pages of organizations and schedules the next page; safe to rerun.
+ *
+ * Run: bunx convex run migrations:grantIncidentCoordinationPermissions
+ */
+export const grantIncidentCoordinationPermissions = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  returns: v.object({
+    organizationsProcessed: v.number(),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("organizations")
+      .paginate({ numItems: 25, cursor: args.cursor ?? null });
+    for (const organization of page.page) {
+      await grantPermissionToSystemRoles(ctx, {
+        organizationId: organization._id,
+        name: COORDINATE_PERMISSION,
+        description: "Triage incidents, choose response plans and close them",
+        roleNames: REVIEWER_SYSTEM_ROLE_NAMES,
+      });
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.grantIncidentCoordinationPermissions,
         { cursor: page.continueCursor },
       );
     }
