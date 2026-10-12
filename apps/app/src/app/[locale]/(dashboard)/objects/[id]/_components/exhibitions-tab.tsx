@@ -85,7 +85,7 @@ export function ExhibitionsTab({
                   className={cn(
                     "text-xs font-bold",
                     exhibition.isCurrent
-                      ? "text-accent"
+                      ? "text-accent-foreground"
                       : "text-muted-foreground",
                   )}
                 >

@@ -241,7 +241,7 @@ export function RecordContextSidebar({
                         {obj.title.split(" ").slice(0, 2).join(" ")}
                         {obj.title.split(" ").length > 2 && "..."}
                       </p>
-                      <p className="text-[10px] text-accent">
+                      <p className="text-[10px] text-accent-foreground">
                         {obj.relationship}
                       </p>
                     </div>

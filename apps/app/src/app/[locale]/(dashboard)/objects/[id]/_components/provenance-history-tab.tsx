@@ -49,7 +49,7 @@ export function ProvenanceHistoryTab({
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex w-max items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent hover:underline"
+                    className="flex w-max items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent-foreground hover:underline"
                   >
                     <LinkIcon className="size-3.5 text-muted-foreground" />
                     <span>{link.label || link.url}</span>

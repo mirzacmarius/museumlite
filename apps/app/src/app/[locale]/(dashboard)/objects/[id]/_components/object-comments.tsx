@@ -160,7 +160,7 @@ export function ObjectComments({
   return (
     <div className="space-y-6 rounded-xl border border-border/60 bg-secondary/20 p-6">
       <div className="flex items-center gap-2">
-        <MessageSquare className="size-4 text-accent" />
+        <MessageSquare className="size-4 text-accent-foreground" />
         <h3 className="text-xs font-medium uppercase tracking-widest text-foreground">
           {tRoot("untranslatedRecords.objects.comments.title")}
         </h3>
