@@ -55,7 +55,7 @@ export function MediaGallery({
       {showImages && (
         <div className="space-y-3">
           <h4 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <ImageIcon className="size-4 text-accent" />
+            <ImageIcon className="size-4 text-accent-foreground" />
             {t("visualMediaTitle")}
           </h4>
           <MediaGalleryImageGrid

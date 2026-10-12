@@ -148,7 +148,7 @@ export function ObjectDetailHero({
             <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
+                  <div className="flex items-center gap-2 text-sm font-medium text-status-info-foreground dark:text-blue-100">
                     <ArrowRightLeft className="size-4" />
                     {pendingMoveRequest.status === "awaiting_acceptance"
                       ? tRoot(
@@ -158,7 +158,7 @@ export function ObjectDetailHero({
                           "untranslatedRecords.objects.transfer.pendingApproval",
                         )}
                   </div>
-                  <p className="text-sm text-blue-200/80">
+                  <p className="text-sm text-status-info-foreground dark:text-blue-200/80">
                     {tRoot("untranslatedRecords.objects.move.thisObject")}{" "}
                     {pendingMoveRequest.status === "awaiting_acceptance"
                       ? tRoot(
@@ -187,7 +187,7 @@ export function ObjectDetailHero({
               className={cn(
                 "rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
                 collection.status === "active"
-                  ? "bg-emerald-500/10 text-emerald-400"
+                  ? "bg-status-success/10 text-status-success-foreground dark:bg-emerald-500/10 dark:text-emerald-400"
                   : "bg-muted text-muted-foreground",
               )}
             >
@@ -195,7 +195,7 @@ export function ObjectDetailHero({
             </div>
 
             {isOnDisplay ? (
-              <div className="rounded bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+              <div className="rounded bg-status-success/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-status-success-foreground dark:bg-emerald-500/10 dark:text-emerald-400">
                 {onDisplayLabel}
               </div>
             ) : null}
@@ -233,7 +233,9 @@ export function ObjectDetailHero({
               <div
                 className={cn(
                   "flex items-center gap-2",
-                  isOnDisplay ? "text-emerald-400" : "text-muted-foreground",
+                  isOnDisplay
+                    ? "text-status-success-foreground dark:text-emerald-400"
+                    : "text-muted-foreground",
                 )}
               >
                 <MapPin className="size-4 shrink-0" />

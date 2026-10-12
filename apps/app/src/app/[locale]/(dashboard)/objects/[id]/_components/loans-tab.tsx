@@ -61,7 +61,7 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-accent">
+                    <span className="font-mono text-xs text-accent-foreground">
                       {loan.loanNumber}
                     </span>
                     <span

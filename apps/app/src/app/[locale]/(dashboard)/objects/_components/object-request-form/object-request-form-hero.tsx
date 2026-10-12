@@ -75,7 +75,7 @@ export function ObjectRequestFormHero({
 
         <div className="flex-1 space-y-6">
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500">
+            <div className="rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-status-warning/10 text-status-warning-foreground dark:bg-amber-500/10 dark:text-amber-500">
               {pageBadge}
             </div>
             <div className="rounded bg-background/80 px-2 py-1 text-[10px] font-mono text-muted-foreground">
@@ -100,7 +100,7 @@ export function ObjectRequestFormHero({
               onChange={(event) => onTitleChange(event.target.value)}
               {...fieldErrorProps("title", titleError)}
               placeholder={placeholders("title")}
-              className="h-14 border-border/60 bg-background/90 text-xl font-semibold sm:text-2xl"
+              className="h-14 bg-background/90 text-xl font-semibold dark:border-border/60 sm:text-2xl"
               required
             />
             <FieldError field="title" message={titleError} />

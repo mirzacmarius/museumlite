@@ -38,12 +38,12 @@ export function GeneralTab({
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <Tag className="size-4 text-accent" />
+            <Tag className="size-4 text-muted-foreground" />
             {tRoot("untranslatedRecords.objects.detail.classificationMetadata")}
           </h3>
         </div>
 
-        <div className="space-y-6 rounded-xl border border-border/60 bg-secondary/20 p-6">
+        <div className="space-y-6 rounded-xl border border-border bg-secondary/50 p-6 dark:border-border/60 dark:bg-secondary/20">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -110,9 +110,7 @@ export function GeneralTab({
 
             {collection.isHighResDownloadable && (
               <div className="flex items-center gap-2.5">
-                <div className="flex size-2.5 items-center justify-center rounded-full bg-accent">
-                  <CheckCircle className="size-1.5 text-white" />
-                </div>
+                <CheckCircle className="size-4 text-status-success-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">
                   {tRoot(
                     "untranslatedRecords.objects.detail.highResDownloadable",
