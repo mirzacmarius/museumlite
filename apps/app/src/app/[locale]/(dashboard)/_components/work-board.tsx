@@ -62,7 +62,7 @@ function BoardColumn({
   loadingLabel: string;
 }) {
   return (
-    <section className="flex w-80 shrink-0 flex-col rounded-lg bg-muted/30">
+    <section className="flex min-w-56 max-w-96 flex-1 basis-0 flex-col rounded-lg bg-muted/30">
       <h2 className="flex items-center gap-2 px-3 py-2.5">
         <ColumnHeader column={column} />
       </h2>
@@ -87,7 +87,7 @@ function EmptyColumns({
   label: string;
 }) {
   return (
-    <details open className="group ml-auto w-72 shrink-0">
+    <details open className="group ml-auto w-60 shrink-0">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-1 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
         <ChevronDown
           className="size-3.5 -rotate-90 transition-transform group-open:rotate-0"

@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -12,6 +13,7 @@ import {
   History,
   LayoutGrid,
   Microscope,
+  OctagonAlert,
   Package,
   Presentation,
   Truck,
@@ -120,9 +122,20 @@ export function PendingApprovalCard({ item }: { item: PendingApproval }) {
               {item.title}
             </span>
             {item.urgency === "high" ? (
-              <span className="shrink-0 rounded bg-rose-500/10 px-1 py-0.5 text-[10px] font-medium text-rose-400">
-                {t("assignmentsPage.card.urgent")}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    role="img"
+                    aria-label={t("assignmentsPage.card.urgent")}
+                    className="shrink-0 text-rose-400"
+                  >
+                    <OctagonAlert className="size-3.5" aria-hidden="true" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t("assignmentsPage.card.urgent")}
+                </TooltipContent>
+              </Tooltip>
             ) : null}
           </span>
           {item.subtitle ? (
