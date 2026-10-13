@@ -24,11 +24,8 @@ import { usePermission } from "@/components/permission-gate";
 import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
-import { MyRecentObjectsSections } from "./_components/my-assignments-sections";
-import {
-  ProvenanceReviewSection,
-  WorkSection,
-} from "./_components/my-work-sections";
+import { CatalogedByYouSection } from "./_components/my-assignments-sections";
+import { WorkSection } from "./_components/my-work-sections";
 import { MyWorkBoard } from "./_components/work-board";
 import {
   CollectionGroupsGridSkeleton,
@@ -365,8 +362,7 @@ export default function DashboardPage() {
         ) : null}
 
         <MyWorkBoard organizationId={currentOrganizationId} />
-        <ProvenanceReviewSection organizationId={currentOrganizationId} />
-        <MyRecentObjectsSections organizationId={currentOrganizationId} />
+        <CatalogedByYouSection organizationId={currentOrganizationId} />
         <CollectionGroupsSection
           organizationId={currentOrganizationId}
           canCreate={canCreateCollectionGroup === true}

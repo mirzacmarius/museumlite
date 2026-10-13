@@ -4779,16 +4779,13 @@ export default {
     stats: {
       pending: "pendiente",
       cataloged: "catalogado",
-      thisWeek: "esta semana",
       total: "total",
     },
     sections: {
       pendingApproval: "Pendiente de Su Aprobación",
-      recentlyModified: "Modificado Recientemente por Usted",
       catalogedByYou: "Catalogado por Usted",
     },
     links: {
-      viewAllActivity: "Ver toda la actividad",
       viewAllObjects: "Ver todos los objetos",
     },
     empty: {
@@ -7425,13 +7422,9 @@ export default {
     queue: {
       title: "Afirmaciones de procedencia por revisar",
       statuses: {
-        unreviewed: "Pendientes de revisión",
         disputed: "Cuestionadas",
       },
-      empty: "No hay afirmaciones pendientes.",
       contradicts: "Contradice otra afirmación",
-      loading: "Cargando…",
-      loadMore: "Cargar más",
     },
     legacy: {
       title: "Texto de procedencia anterior",

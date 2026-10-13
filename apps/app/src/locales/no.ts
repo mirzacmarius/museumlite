@@ -4725,16 +4725,13 @@ export default {
     stats: {
       pending: "ventende",
       cataloged: "katalogisert",
-      thisWeek: "denne uken",
       total: "totalt",
     },
     sections: {
       pendingApproval: "Venter på Din Godkjenning",
-      recentlyModified: "Nylig Endret av Deg",
       catalogedByYou: "Katalogisert av Deg",
     },
     links: {
-      viewAllActivity: "Vis all aktivitet",
       viewAllObjects: "Vis alle objekter",
     },
     empty: {
@@ -7363,13 +7360,9 @@ export default {
     queue: {
       title: "Provenienspåstander til vurdering",
       statuses: {
-        unreviewed: "Venter på vurdering",
         disputed: "Omstridte",
       },
-      empty: "Ingen påstander venter.",
       contradicts: "Motsier en annen påstand",
-      loading: "Laster…",
-      loadMore: "Last inn flere",
     },
     legacy: {
       title: "Tidligere proveniensstekst",
