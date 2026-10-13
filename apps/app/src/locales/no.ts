@@ -9651,10 +9651,6 @@ export default {
         "Konfigurer og forhåndsvis den offentlige samlingsportalen",
       notConfigured: "Ikke konfigurert",
     },
-    assignments: {
-      modifiedPrefix: "Endret",
-      catalogedPrefix: "Katalogisert",
-    },
   },
   ui: {
     dialog: {

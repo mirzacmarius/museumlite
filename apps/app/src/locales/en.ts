@@ -9550,10 +9550,6 @@ export default {
         "Configure and preview your public-facing collection portal",
       notConfigured: "Not configured",
     },
-    assignments: {
-      modifiedPrefix: "Modified",
-      catalogedPrefix: "Cataloged",
-    },
   },
   ui: {
     dialog: {

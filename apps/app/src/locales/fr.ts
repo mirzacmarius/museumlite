@@ -9792,10 +9792,6 @@ export default {
         "Configurez et prévisualisez votre portail de collection public",
       notConfigured: "Non configuré",
     },
-    assignments: {
-      modifiedPrefix: "Modifié",
-      catalogedPrefix: "Catalogué",
-    },
   },
   ui: {
     dialog: {

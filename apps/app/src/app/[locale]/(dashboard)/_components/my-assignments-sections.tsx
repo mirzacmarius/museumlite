@@ -165,7 +165,6 @@ function ObjectCard({
   accessionNumber,
   thumbnailUrl,
   timestamp,
-  timestampPrefix,
   status,
 }: {
   id: Id<"collections">;
@@ -173,7 +172,6 @@ function ObjectCard({
   accessionNumber: string;
   thumbnailUrl?: string;
   timestamp: number;
-  timestampPrefix: string;
   status?: ObjectStatus;
 }) {
   const locale = useCurrentLocale();
@@ -211,16 +209,17 @@ function ObjectCard({
               </span>
             ) : null}
           </span>
-          <span className="block truncate text-xs text-muted-foreground">
-            {accessionNumber}
-          </span>
-          <span className="block truncate text-[11px] text-muted-foreground">
-            {timestampPrefix}{" "}
-            <ClientRelativeTime
-              timestamp={timestamp}
-              locale={locale}
-              options={{ addSuffix: true }}
-            />
+          <span className="flex items-baseline gap-2">
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+              {accessionNumber}
+            </span>
+            <span className="shrink-0 text-[11px] text-muted-foreground">
+              <ClientRelativeTime
+                timestamp={timestamp}
+                locale={locale}
+                options={{ addSuffix: true }}
+              />
+            </span>
           </span>
         </span>
       </Link>
@@ -270,9 +269,6 @@ export function MyRecentObjectsSections({
                 accessionNumber={item.accessionNumber}
                 thumbnailUrl={item.thumbnailUrl}
                 timestamp={item.lastModifiedAt}
-                timestampPrefix={t(
-                  "untranslatedDashboard.assignments.modifiedPrefix",
-                )}
               />
             ))}
           </CardGrid>
@@ -303,9 +299,6 @@ export function MyRecentObjectsSections({
                 accessionNumber={item.accessionNumber}
                 thumbnailUrl={item.thumbnailUrl}
                 timestamp={item.catalogedAt}
-                timestampPrefix={t(
-                  "untranslatedDashboard.assignments.catalogedPrefix",
-                )}
                 status={item.status}
               />
             ))}

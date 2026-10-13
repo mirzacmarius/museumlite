@@ -9735,10 +9735,6 @@ export default {
         "Configurați și previzualizați portalul public al colecției",
       notConfigured: "Neconfigurat",
     },
-    assignments: {
-      modifiedPrefix: "Modificat",
-      catalogedPrefix: "Catalogat",
-    },
   },
   ui: {
     dialog: {
