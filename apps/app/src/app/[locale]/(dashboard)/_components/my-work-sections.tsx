@@ -22,22 +22,30 @@ import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 const PAGE_SIZE = 20;
 
-function Section({
+export function WorkSection({
   icon,
   title,
+  badge,
+  action,
   children,
 }: {
   icon: ReactNode;
   title: string;
+  badge?: ReactNode;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-2">
-        {icon}
-        <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          {title}
-        </h2>
+    <section className="min-w-0 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {icon}
+          <h2 className="truncate text-sm font-medium uppercase tracking-widest text-muted-foreground">
+            {title}
+          </h2>
+          {badge}
+        </div>
+        {action}
       </div>
       {children}
     </section>
@@ -149,8 +157,8 @@ export function MyWorkSections({
   const { hasPermission } = usePermissions();
   const [now] = useState(() => Date.now());
   return (
-    <div className="space-y-8">
-      <Section
+    <div className="space-y-6">
+      <WorkSection
         icon={<ListTodo className="size-4 text-blue-400" />}
         title={t("myTasks")}
       >
@@ -160,8 +168,8 @@ export function MyWorkSections({
           emptyLabel={t("myTasksEmpty")}
           now={now}
         />
-      </Section>
-      <Section
+      </WorkSection>
+      <WorkSection
         icon={<ClipboardCheck className="size-4 text-amber-400" />}
         title={t("reviews")}
       >
@@ -171,21 +179,21 @@ export function MyWorkSections({
           emptyLabel={t("reviewsEmpty")}
           now={now}
         />
-      </Section>
+      </WorkSection>
       {hasPermission("collections.review_provenance") ? (
-        <Section
+        <WorkSection
           icon={<ScrollText className="size-4 text-purple-400" />}
           title={tProvenance("title")}
         >
           <ProvenanceReviewQueue organizationId={organizationId} />
-        </Section>
+        </WorkSection>
       ) : null}
-      <Section
+      <WorkSection
         icon={<Briefcase className="size-4 text-emerald-400" />}
         title={t("assignedCases")}
       >
         <AssignedCases organizationId={organizationId} />
-      </Section>
+      </WorkSection>
     </div>
   );
 }

@@ -7,7 +7,9 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { MetricsUnavailableInline } from "@/components/metrics-unavailable-notice";
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
+
+const USAGE_METRIC_KEYS = ["storage", "objects", "exports"] as const;
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -42,12 +44,10 @@ export function PlanUsageStats({
   organizationId,
   className,
   showUpgradeLink = true,
-  layout = "card",
 }: {
   organizationId: Id<"organizations"> | undefined;
   className?: string;
   showUpgradeLink?: boolean;
-  layout?: "card" | "inline";
 }) {
   const translate = useI18n();
   const stats = useQuery(
@@ -55,38 +55,23 @@ export function PlanUsageStats({
     organizationId ? { organizationId } : "skip",
   );
   const containerClassName = cn(
-    layout === "inline"
-      ? "@container/usage min-w-0"
-      : "rounded-lg border border-zinc-800/60 bg-zinc-950 p-5",
+    "rounded-lg border border-zinc-800/60 bg-zinc-950 p-5",
     className,
   );
-  const rowsClassName =
-    layout === "inline"
-      ? "grid gap-4 @min-[26rem]/usage:grid-cols-3"
-      : "space-y-3";
 
   if (!stats) {
     return (
       <div className={containerClassName}>
-        {layout === "card" ? (
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="size-1.5 animate-pulse rounded-full bg-zinc-800" />
-              <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
-            </div>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <div className="size-1.5 animate-pulse rounded-full bg-zinc-800" />
+            <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
           </div>
-        ) : null}
-        <div className={rowsClassName}>
-          {["storage", "objects", "exports"].map((metric) => (
+        </div>
+        <div className="space-y-3">
+          {USAGE_METRIC_KEYS.map((metric) => (
             <div key={metric}>
-              <div
-                className={cn(
-                  "mb-1 flex gap-2",
-                  layout === "inline"
-                    ? "flex-col items-start"
-                    : "items-end justify-between",
-                )}
-              >
+              <div className="mb-1 flex items-end justify-between gap-2">
                 <div className="h-3 w-16 animate-pulse rounded bg-zinc-800" />
                 <div className="h-3 w-20 animate-pulse rounded bg-zinc-800" />
               </div>
@@ -104,28 +89,25 @@ export function PlanUsageStats({
 
   return (
     <div className={containerClassName}>
-      {layout === "card" ? (
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <div className="size-1.5 rounded-full bg-primary" />
-            <span className="text-sm font-semibold text-zinc-200">
-              {getTierDisplayName(stats.tier)}
-            </span>
-          </div>
-          {showUpgradeLink && !isEnterprise ? (
-            <Link
-              href="/settings/billing"
-              className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-primary"
-            >
-              {translate("untranslatedComponents.labels.upgrade")}
-            </Link>
-          ) : null}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <div className="size-1.5 rounded-full bg-primary" />
+          <span className="text-sm font-semibold text-zinc-200">
+            {getTierDisplayName(stats.tier)}
+          </span>
         </div>
-      ) : null}
+        {showUpgradeLink && !isEnterprise ? (
+          <Link
+            href="/settings/billing"
+            className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-primary"
+          >
+            {translate("untranslatedComponents.labels.upgrade")}
+          </Link>
+        ) : null}
+      </div>
 
-      <div className={rowsClassName}>
+      <div className="space-y-3">
         <UsageRow
-          layout={layout}
           label={translate("untranslatedComponents.labels.storage")}
           value={
             stats.storage.limit === null ? (
@@ -153,7 +135,6 @@ export function PlanUsageStats({
           }
         />
         <UsageRow
-          layout={layout}
           label={translate("untranslatedComponents.labels.objectRecords")}
           value={
             stats.objects.limit === null ? (
@@ -181,7 +162,6 @@ export function PlanUsageStats({
           }
         />
         <UsageRow
-          layout={layout}
           label={translate("untranslatedComponents.labels.monthlyExports")}
           value={
             stats.exports.limit === null ? (
@@ -221,25 +201,16 @@ function UsageRow({
   percentage,
   showProgress,
   progressClassName,
-  layout,
 }: {
   label: string;
   value: ReactNode;
   percentage: number;
   showProgress: boolean;
   progressClassName: string;
-  layout: "card" | "inline";
 }) {
   return (
     <div>
-      <div
-        className={cn(
-          "mb-1 flex gap-2",
-          layout === "inline"
-            ? "flex-col items-start"
-            : "items-end justify-between",
-        )}
-      >
+      <div className="mb-1 flex items-end justify-between gap-2">
         <span className="text-xs font-medium text-zinc-500">{label}</span>
         {value}
       </div>
@@ -254,6 +225,148 @@ function UsageRow({
           />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+interface SidebarUsageMetric {
+  key: (typeof USAGE_METRIC_KEYS)[number];
+  label: string;
+  value: string;
+  percentage: number | null;
+  barClassName: string;
+}
+
+function usageMetric(
+  key: SidebarUsageMetric["key"],
+  label: string,
+  used: number | null,
+  limit: number | null,
+  format: (value: number) => string,
+  labels: { unlimited: string; unavailable: string },
+  barClassName: string,
+): SidebarUsageMetric {
+  if (limit === null) {
+    return {
+      key,
+      label,
+      value: labels.unlimited,
+      percentage: null,
+      barClassName,
+    };
+  }
+  if (used === null) {
+    return {
+      key,
+      label,
+      value: labels.unavailable,
+      percentage: null,
+      barClassName,
+    };
+  }
+  return {
+    key,
+    label,
+    value: `${format(used)} / ${format(limit)}`,
+    percentage: calculatePercentage(used, limit),
+    barClassName,
+  };
+}
+
+/** Plan usage condensed for the sidebar footer; the plan name links to billing. */
+export function SidebarPlanUsage({
+  organizationId,
+  onNavigate,
+  className,
+}: {
+  organizationId: Id<"organizations">;
+  onNavigate?: () => void;
+  className?: string;
+}) {
+  const translate = useI18n();
+  const t = useScopedI18n("untranslatedDashboard.dashboardBilling");
+  const stats = useQuery(api.organizations.getUsageStats, { organizationId });
+
+  if (!stats) {
+    return (
+      <div className={cn("space-y-1.5 px-2 py-1", className)}>
+        <div className="h-3.5 w-16 animate-pulse rounded bg-sidebar-accent" />
+        {USAGE_METRIC_KEYS.map((metric) => (
+          <div key={metric} className="space-y-1">
+            <div className="flex justify-between gap-2">
+              <div className="h-3 w-14 animate-pulse rounded bg-sidebar-accent" />
+              <div className="h-3 w-12 animate-pulse rounded bg-sidebar-accent" />
+            </div>
+            <div className="h-0.5 rounded-full bg-sidebar-accent" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const labels = {
+    unlimited: translate("untranslatedComponents.labels.unlimited"),
+    unavailable: translate("projectionHealth.unavailable.short"),
+  };
+  const metrics = [
+    usageMetric(
+      "storage",
+      translate("untranslatedComponents.labels.storage"),
+      stats.storage.used,
+      stats.storage.limit,
+      formatBytes,
+      labels,
+      "bg-primary",
+    ),
+    usageMetric(
+      "objects",
+      translate("untranslatedComponents.labels.objectRecords"),
+      stats.objects.used,
+      stats.objects.limit,
+      formatNumber,
+      labels,
+      "bg-amber-500/80",
+    ),
+    usageMetric(
+      "exports",
+      translate("untranslatedComponents.labels.monthlyExports"),
+      stats.exports.used,
+      stats.exports.limit,
+      formatNumber,
+      labels,
+      "bg-emerald-500/80",
+    ),
+  ];
+
+  return (
+    <div className={cn("space-y-1.5 px-2 py-1", className)}>
+      <Link
+        href="/settings/billing"
+        onClick={onNavigate}
+        className="block truncate text-xs font-medium text-sidebar-foreground/80 underline-offset-2 transition-colors hover:text-primary hover:underline"
+      >
+        {t(`plans.${stats.tier}`)}
+      </Link>
+      {metrics.map((metric) => (
+        <div key={metric.key} className="space-y-1 text-[11px]">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="truncate text-sidebar-foreground/60">
+              {metric.label}
+            </span>
+            <span className="shrink-0 tabular-nums text-sidebar-foreground/70">
+              {metric.value}
+            </span>
+          </div>
+          <div className="h-0.5 overflow-hidden rounded-full bg-sidebar-accent">
+            {metric.percentage === null ? null : (
+              <div
+                className={cn("h-0.5 rounded-full", metric.barClassName)}
+                style={{ width: `${metric.percentage}%` }}
+              />
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

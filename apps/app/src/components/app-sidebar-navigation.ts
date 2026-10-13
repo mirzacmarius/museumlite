@@ -19,7 +19,6 @@ import {
   Image,
   LayoutGrid,
   Library,
-  ListTodo,
   MapPin,
   QrCode,
   Settings2,
@@ -98,7 +97,6 @@ export function buildSidebarNavigation({
 
   const navCoreInventory: NavigationItem[] = [
     { title: label("overview"), url: "/", icon: LayoutGrid },
-    { title: label("myWork"), url: "/assignments", icon: ListTodo },
     { title: label("objectCatalog"), url: "/objects", icon: Database },
     ...(isLocationTrackingEnabled
       ? [{ title: label("locationTracking"), url: "/locations", icon: MapPin }]

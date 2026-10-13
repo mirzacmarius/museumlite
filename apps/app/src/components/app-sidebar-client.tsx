@@ -60,6 +60,7 @@ import {
 } from "@/components/app-sidebar-navigation";
 import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
+import { SidebarPlanUsage } from "@/components/plan-usage-stats";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { useI18n, useScopedI18n } from "@/locales/client";
@@ -403,6 +404,13 @@ function UserMenu({
 
   return (
     <SidebarFooter>
+      {currentOrganizationId ? (
+        <SidebarPlanUsage
+          organizationId={currentOrganizationId}
+          onNavigate={onNavigate}
+          className="group-data-[collapsible=icon]:hidden"
+        />
+      ) : null}
       <SidebarMenu>
         <SidebarMenuItem>
           <DropdownMenu>
