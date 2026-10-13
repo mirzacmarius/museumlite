@@ -4786,16 +4786,13 @@ export default {
     stats: {
       pending: "en attente",
       cataloged: "catalogué",
-      thisWeek: "cette semaine",
       total: "total",
     },
     sections: {
       pendingApproval: "En Attente de Votre Approbation",
-      recentlyModified: "Récemment Modifié par Vous",
       catalogedByYou: "Catalogué par Vous",
     },
     links: {
-      viewAllActivity: "Voir toute l'activité",
       viewAllObjects: "Voir tous les objets",
     },
     empty: {
@@ -7456,13 +7453,9 @@ export default {
     queue: {
       title: "Assertions de provenance à examiner",
       statuses: {
-        unreviewed: "En attente d'examen",
         disputed: "Contestées",
       },
-      empty: "Aucune assertion en attente.",
       contradicts: "Contredit une autre assertion",
-      loading: "Chargement…",
-      loadMore: "Charger plus",
     },
     legacy: {
       title: "Texte de provenance antérieur",

@@ -1,11 +1,6 @@
 "use client";
 
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { ScrollText } from "lucide-react";
 import type { ReactNode } from "react";
-import { usePermissions } from "@/components/permission-gate";
-import { ProvenanceReviewQueue } from "@/components/provenance/provenance-review-queue";
-import { useScopedI18n } from "@/locales/client";
 
 export const CARD_GRID_CLASS_NAME =
   "grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2";
@@ -40,23 +35,5 @@ export function WorkSection({
       </div>
       {children}
     </section>
-  );
-}
-
-export function ProvenanceReviewSection({
-  organizationId,
-}: {
-  organizationId: Id<"organizations">;
-}) {
-  const t = useScopedI18n("provenance.queue");
-  const { hasPermission } = usePermissions();
-  if (!hasPermission("collections.review_provenance")) return null;
-  return (
-    <WorkSection
-      icon={<ScrollText className="size-4 text-purple-400" />}
-      title={t("title")}
-    >
-      <ProvenanceReviewQueue organizationId={organizationId} />
-    </WorkSection>
   );
 }

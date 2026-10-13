@@ -10,7 +10,6 @@ import {
   ArrowRight,
   FileCheck,
   FileX,
-  History,
   LayoutGrid,
   Microscope,
   OctagonAlert,
@@ -231,80 +230,45 @@ function CardGrid({ children }: { children: ReactNode }) {
   return <ul className={CARD_GRID_CLASS_NAME}>{children}</ul>;
 }
 
-/** Objects the viewer recently modified or cataloged. */
-export function MyRecentObjectsSections({
+/** Objects the viewer cataloged. */
+export function CatalogedByYouSection({
   organizationId,
 }: {
   organizationId: Id<"organizations">;
 }) {
   const t = useI18n();
   const assignments = useMyAssignments(organizationId);
-  if (!assignments) return null;
-  const { recentlyModified, myCatalogedItems, stats } = assignments;
+  if (!assignments || assignments.myCatalogedItems.length === 0) return null;
+  const { myCatalogedItems, stats } = assignments;
 
   return (
-    <>
-      {recentlyModified.length > 0 ? (
-        <WorkSection
-          icon={<History className="size-4 text-blue-400" />}
-          title={t("assignmentsPage.sections.recentlyModified")}
-          badge={
-            <span className="text-xs text-muted-foreground">
-              {stats.itemsModifiedThisWeek}{" "}
-              {t("assignmentsPage.stats.thisWeek")}
-            </span>
-          }
-          action={
-            <SectionLink href="/activity">
-              {t("assignmentsPage.links.viewAllActivity")}
-            </SectionLink>
-          }
-        >
-          <CardGrid>
-            {recentlyModified.slice(0, VISIBLE_RECENT_OBJECTS).map((item) => (
-              <ObjectCard
-                key={item._id}
-                id={item._id}
-                title={item.title}
-                accessionNumber={item.accessionNumber}
-                thumbnailUrl={item.thumbnailUrl}
-                timestamp={item.lastModifiedAt}
-              />
-            ))}
-          </CardGrid>
-        </WorkSection>
-      ) : null}
-
-      {myCatalogedItems.length > 0 ? (
-        <WorkSection
-          icon={<LayoutGrid className="size-4 text-emerald-400" />}
-          title={t("assignmentsPage.sections.catalogedByYou")}
-          badge={
-            <span className="text-xs tabular-nums text-muted-foreground">
-              {stats.totalCatalogedItems}
-            </span>
-          }
-          action={
-            <SectionLink href="/objects">
-              {t("assignmentsPage.links.viewAllObjects")}
-            </SectionLink>
-          }
-        >
-          <CardGrid>
-            {myCatalogedItems.slice(0, VISIBLE_RECENT_OBJECTS).map((item) => (
-              <ObjectCard
-                key={item._id}
-                id={item._id}
-                title={item.title}
-                accessionNumber={item.accessionNumber}
-                thumbnailUrl={item.thumbnailUrl}
-                timestamp={item.catalogedAt}
-                status={item.status}
-              />
-            ))}
-          </CardGrid>
-        </WorkSection>
-      ) : null}
-    </>
+    <WorkSection
+      icon={<LayoutGrid className="size-4 text-emerald-400" />}
+      title={t("assignmentsPage.sections.catalogedByYou")}
+      badge={
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {stats.totalCatalogedItems}
+        </span>
+      }
+      action={
+        <SectionLink href="/objects">
+          {t("assignmentsPage.links.viewAllObjects")}
+        </SectionLink>
+      }
+    >
+      <CardGrid>
+        {myCatalogedItems.slice(0, VISIBLE_RECENT_OBJECTS).map((item) => (
+          <ObjectCard
+            key={item._id}
+            id={item._id}
+            title={item.title}
+            accessionNumber={item.accessionNumber}
+            thumbnailUrl={item.thumbnailUrl}
+            timestamp={item.catalogedAt}
+            status={item.status}
+          />
+        ))}
+      </CardGrid>
+    </WorkSection>
   );
 }

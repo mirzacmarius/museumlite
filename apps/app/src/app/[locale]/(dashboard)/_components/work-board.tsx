@@ -5,18 +5,22 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import { usePaginatedQuery, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
   AlertCircle,
   Briefcase,
   ChevronDown,
   ClipboardCheck,
   ListTodo,
+  ScrollText,
 } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { CaseTaskTile } from "@/components/case-tasks/case-task-card";
 import { caseHref } from "@/components/case-tasks/case-task-links";
 import { ClientDate } from "@/components/client-date";
+import { usePermissions } from "@/components/permission-gate";
+import { useHistoricalDateFormat } from "@/components/provenance/use-historical-date-format";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
   PendingApprovalCard,
@@ -26,6 +30,10 @@ import { CARD_CLASS_NAME } from "./my-work-sections";
 
 const PAGE_SIZE = 20;
 const CARD_LIST_CLASS_NAME = "flex flex-col gap-2";
+
+type ProvenanceClaim = FunctionReturnType<
+  typeof api.provenance.reviewQueue
+>["page"][number];
 
 interface WorkColumn {
   key: string;
@@ -120,6 +128,58 @@ function EmptyColumns({
   );
 }
 
+function ProvenanceClaimCard({
+  claim,
+  disputed,
+}: {
+  claim: ProvenanceClaim;
+  disputed: boolean;
+}) {
+  const t = useScopedI18n("provenance");
+  const dates = useHistoricalDateFormat();
+  return (
+    <li>
+      <Link
+        href={`/objects/${claim.objectId}?tab=provenance`}
+        className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
+      >
+        <span className="flex w-full items-center gap-1.5">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+            {claim.objectLabel}
+          </span>
+          <span
+            className={cn(
+              "shrink-0 rounded border px-1 py-px text-[10px] font-medium",
+              disputed
+                ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
+                : "border-border bg-muted text-muted-foreground",
+            )}
+          >
+            {disputed
+              ? t("queue.statuses.disputed")
+              : t(`confidence.${claim.confidence}`)}
+          </span>
+        </span>
+        <span className="w-full truncate text-[11px] text-muted-foreground">
+          {dates.period(claim.startDate, claim.endDate)}
+          {" · "}
+          {claim.partyKind === "named"
+            ? claim.partyText
+            : t(`partyKinds.${claim.partyKind}`)}
+        </span>
+        <span className="line-clamp-2 text-xs text-muted-foreground">
+          {claim.statement}
+        </span>
+        {claim.contradictsClaimId ? (
+          <span className="text-[11px] text-rose-700 dark:text-rose-300">
+            {t("queue.contradicts")}
+          </span>
+        ) : null}
+      </Link>
+    </li>
+  );
+}
+
 function LoadMoreButton({ onClick }: { onClick: () => void }) {
   const t = useScopedI18n("caseTasks.myWork");
   return (
@@ -129,7 +189,7 @@ function LoadMoreButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** My tasks, approvals, reviews and assigned cases as kanban columns; empty ones stack on the right. */
+/** Work waiting on the viewer as kanban columns; empty ones stack on the right. */
 export function MyWorkBoard({
   organizationId,
 }: {
@@ -153,6 +213,22 @@ export function MyWorkBoard({
   const assigned = useQuery(api.caseTasks.listMyAssignedCases, {
     organizationId,
   });
+  const { hasPermission } = usePermissions();
+  const canReviewProvenance = hasPermission("collections.review_provenance");
+  const unreviewedClaims = usePaginatedQuery(
+    api.provenance.reviewQueue,
+    canReviewProvenance ? { organizationId, status: "unreviewed" } : "skip",
+    { initialNumItems: PAGE_SIZE },
+  );
+  const disputedClaims = usePaginatedQuery(
+    api.provenance.reviewQueue,
+    canReviewProvenance ? { organizationId, status: "disputed" } : "skip",
+    { initialNumItems: PAGE_SIZE },
+  );
+  const claimQueues = [
+    { disputed: false, queue: unreviewedClaims },
+    { disputed: true, queue: disputedClaims },
+  ];
 
   const taskColumn = (
     key: string,
@@ -243,6 +319,52 @@ export function MyWorkBoard({
         </div>
       ),
     },
+    ...(canReviewProvenance
+      ? [
+          {
+            key: "provenance",
+            icon: <ScrollText className="size-4 shrink-0 text-purple-400" />,
+            title: tRoot("provenance.queue.title"),
+            loading: claimQueues.some(
+              ({ queue }) => queue.status === "LoadingFirstPage",
+            ),
+            count: claimQueues.reduce(
+              (total, { queue }) => total + queue.results.length,
+              0,
+            ),
+            hasMore: claimQueues.some(
+              ({ queue }) => queue.status === "CanLoadMore",
+            ),
+            renderCards: () => (
+              <div className="space-y-2">
+                <ul className={CARD_LIST_CLASS_NAME}>
+                  {claimQueues.flatMap(({ disputed, queue }) =>
+                    queue.results.map((claim) => (
+                      <ProvenanceClaimCard
+                        key={claim.claimId}
+                        claim={claim}
+                        disputed={disputed}
+                      />
+                    )),
+                  )}
+                </ul>
+                {claimQueues.some(
+                  ({ queue }) => queue.status === "CanLoadMore",
+                ) ? (
+                  <LoadMoreButton
+                    onClick={() => {
+                      for (const { queue } of claimQueues) {
+                        if (queue.status === "CanLoadMore")
+                          queue.loadMore(PAGE_SIZE);
+                      }
+                    }}
+                  />
+                ) : null}
+              </div>
+            ),
+          } satisfies WorkColumn,
+        ]
+      : []),
   ];
 
   const isEmpty = (column: WorkColumn) => !column.loading && column.count === 0;

@@ -6083,13 +6083,9 @@ export default {
     queue: {
       title: "Afirmații de proveniență de analizat",
       statuses: {
-        unreviewed: "În așteptarea analizei",
         disputed: "Contestate",
       },
-      empty: "Nu există afirmații în așteptare.",
       contradicts: "Contrazice o altă afirmație",
-      loading: "Se încarcă…",
-      loadMore: "Încarcă mai multe",
     },
     legacy: {
       title: "Text de proveniență anterior",
@@ -7099,16 +7095,13 @@ export default {
     stats: {
       pending: "în așteptare",
       cataloged: "catalogate",
-      thisWeek: "săptămâna aceasta",
       total: "total",
     },
     sections: {
       pendingApproval: "În așteptarea aprobării tale",
-      recentlyModified: "Modificate recent de tine",
       catalogedByYou: "Catalogate de tine",
     },
     links: {
-      viewAllActivity: "Vezi toată activitatea",
       viewAllObjects: "Vezi toate obiectele",
     },
     empty: {

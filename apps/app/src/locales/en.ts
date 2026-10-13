@@ -4677,16 +4677,13 @@ export default {
     stats: {
       pending: "pending",
       cataloged: "cataloged",
-      thisWeek: "this week",
       total: "total",
     },
     sections: {
       pendingApproval: "Pending Your Approval",
-      recentlyModified: "Recently Modified by You",
       catalogedByYou: "Cataloged by You",
     },
     links: {
-      viewAllActivity: "View all activity",
       viewAllObjects: "View all objects",
     },
     empty: {
@@ -7527,13 +7524,9 @@ export default {
     queue: {
       title: "Provenance claims to review",
       statuses: {
-        unreviewed: "Awaiting review",
         disputed: "Disputed",
       },
-      empty: "No claims are waiting.",
       contradicts: "Contradicts another claim",
-      loading: "Loading…",
-      loadMore: "Load more",
     },
     legacy: {
       title: "Earlier provenance text",
