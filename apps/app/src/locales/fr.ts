@@ -9286,9 +9286,9 @@ export default {
     },
     dashboardBilling: {
       plans: {
-        free: "Offre gratuite",
-        pro: "Offre Pro",
-        enterprise: "Offre Entreprise",
+        free: "Gratuit",
+        pro: "Pro",
+        enterprise: "Entreprise",
       },
       loadingStatus: "Chargement du statut de facturation",
       noActiveSubscription: "Aucun abonnement payant actif",

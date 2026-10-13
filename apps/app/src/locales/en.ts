@@ -9065,9 +9065,9 @@ export default {
     },
     dashboardBilling: {
       plans: {
-        free: "Free plan",
-        pro: "Pro plan",
-        enterprise: "Enterprise plan",
+        free: "Free",
+        pro: "Pro",
+        enterprise: "Enterprise",
       },
       loadingStatus: "Loading billing status",
       noActiveSubscription: "No active paid subscription",

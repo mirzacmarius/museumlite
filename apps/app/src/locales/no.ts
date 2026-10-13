@@ -9160,9 +9160,9 @@ export default {
     },
     dashboardBilling: {
       plans: {
-        free: "Gratisplan",
-        pro: "Pro-plan",
-        enterprise: "Enterprise-plan",
+        free: "Gratis",
+        pro: "Pro",
+        enterprise: "Enterprise",
       },
       loadingStatus: "Laster faktureringsstatus",
       noActiveSubscription: "Ingen aktiv betalt abonnementsplan",

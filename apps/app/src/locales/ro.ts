@@ -9237,9 +9237,9 @@ export default {
     },
     dashboardBilling: {
       plans: {
-        free: "Plan gratuit",
-        pro: "Plan Pro",
-        enterprise: "Plan Enterprise",
+        free: "Gratuit",
+        pro: "Pro",
+        enterprise: "Enterprise",
       },
       loadingStatus: "Se încarcă starea facturării",
       noActiveSubscription: "Nu există un abonament plătit activ",

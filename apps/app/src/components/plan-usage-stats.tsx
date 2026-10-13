@@ -273,7 +273,7 @@ function usageMetric(
   };
 }
 
-/** Plan usage condensed for the sidebar footer; the plan name links to billing. */
+/** Plan usage condensed for the sidebar footer, with a link to billing. */
 export function SidebarPlanUsage({
   organizationId,
   onNavigate,
@@ -340,13 +340,18 @@ export function SidebarPlanUsage({
 
   return (
     <div className={cn("space-y-1.5 px-2 py-1", className)}>
-      <Link
-        href="/settings/billing"
-        onClick={onNavigate}
-        className="block truncate text-xs font-medium text-sidebar-foreground/80 underline-offset-2 transition-colors hover:text-primary hover:underline"
-      >
-        {t(`plans.${stats.tier}`)}
-      </Link>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="truncate text-xs font-medium text-sidebar-foreground/80">
+          {t(`plans.${stats.tier}`)}
+        </span>
+        <Link
+          href="/settings/billing"
+          onClick={onNavigate}
+          className="shrink-0 text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {translate("settings.sidebar.billing")}
+        </Link>
+      </div>
       {metrics.map((metric) => (
         <div key={metric.key} className="space-y-1 text-[11px]">
           <div className="flex items-baseline justify-between gap-2">
