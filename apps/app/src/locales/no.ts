@@ -4999,6 +4999,7 @@ export default {
       myTasksEmpty: "Du har ingen åpne oppgaver.",
       reviews: "Venter på min gjennomgang",
       reviewsEmpty: "Ingenting venter på din gjennomgang.",
+      approvalsEmpty: "Ingenting venter på din godkjenning.",
       assignedCases: "Saker tildelt meg",
       assignedCasesEmpty: "Ingen åpne saker er tildelt deg.",
       assignedTruncated: "Viser de første 50 tildelte sakene.",

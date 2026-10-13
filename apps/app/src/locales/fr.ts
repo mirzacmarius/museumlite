@@ -5064,6 +5064,7 @@ export default {
       myTasksEmpty: "Vous n’avez aucune tâche ouverte.",
       reviews: "En attente de ma relecture",
       reviewsEmpty: "Rien n’attend votre relecture.",
+      approvalsEmpty: "Rien n’attend votre approbation.",
       assignedCases: "Dossiers qui me sont attribués",
       assignedCasesEmpty: "Aucun dossier ouvert ne vous est attribué.",
       assignedTruncated: "Affichage des 50 premiers dossiers attribués.",

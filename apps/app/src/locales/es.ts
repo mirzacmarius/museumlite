@@ -5052,6 +5052,7 @@ export default {
       myTasksEmpty: "No tiene tareas abiertas.",
       reviews: "Pendientes de mi revisión",
       reviewsEmpty: "No hay nada pendiente de su revisión.",
+      approvalsEmpty: "No hay nada pendiente de su aprobación.",
       assignedCases: "Casos asignados a mí",
       assignedCasesEmpty: "No tiene casos abiertos asignados.",
       assignedTruncated: "Se muestran los primeros 50 casos asignados.",

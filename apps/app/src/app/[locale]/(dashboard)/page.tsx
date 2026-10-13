@@ -26,9 +26,16 @@ import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
   MyRecentObjectsSections,
-  PendingApprovalsSection,
+  PendingApprovalsColumn,
 } from "./_components/my-assignments-sections";
-import { MyWorkSections, WorkSection } from "./_components/my-work-sections";
+import {
+  AssignedCasesColumn,
+  MyTasksColumn,
+  ProvenanceReviewSection,
+  ReviewsColumn,
+  WorkBoard,
+  WorkSection,
+} from "./_components/my-work-sections";
 import {
   CollectionGroupsGridSkeleton,
   DashboardPageSkeleton,
@@ -363,8 +370,13 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        <PendingApprovalsSection organizationId={currentOrganizationId} />
-        <MyWorkSections organizationId={currentOrganizationId} />
+        <WorkBoard>
+          <MyTasksColumn organizationId={currentOrganizationId} />
+          <PendingApprovalsColumn organizationId={currentOrganizationId} />
+          <ReviewsColumn organizationId={currentOrganizationId} />
+          <AssignedCasesColumn organizationId={currentOrganizationId} />
+        </WorkBoard>
+        <ProvenanceReviewSection organizationId={currentOrganizationId} />
         <MyRecentObjectsSections organizationId={currentOrganizationId} />
         <CollectionGroupsSection
           organizationId={currentOrganizationId}

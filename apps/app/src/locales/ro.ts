@@ -7373,6 +7373,7 @@ export default {
       myTasksEmpty: "Nu aveți sarcini deschise.",
       reviews: "Așteaptă verificarea mea",
       reviewsEmpty: "Nimic nu așteaptă verificarea dvs.",
+      approvalsEmpty: "Nimic nu așteaptă aprobarea dvs.",
       assignedCases: "Dosare atribuite mie",
       assignedCasesEmpty: "Nu aveți dosare deschise atribuite.",
       assignedTruncated: "Se afișează primele 50 de dosare atribuite.",

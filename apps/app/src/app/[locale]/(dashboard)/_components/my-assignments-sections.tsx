@@ -23,8 +23,11 @@ import type { ReactNode } from "react";
 import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import {
+  BoardColumn,
   CARD_CLASS_NAME,
   CARD_GRID_CLASS_NAME,
+  COLUMN_LIST_CLASS_NAME,
+  ColumnMessage,
   WorkSection,
 } from "./my-work-sections";
 
@@ -220,32 +223,36 @@ function CardGrid({ children }: { children: ReactNode }) {
   return <ul className={CARD_GRID_CLASS_NAME}>{children}</ul>;
 }
 
-/** Workflow cases waiting for the viewer's approval at their current step. */
-export function PendingApprovalsSection({
+export function PendingApprovalsColumn({
   organizationId,
 }: {
   organizationId: Id<"organizations">;
 }) {
   const t = useI18n();
   const assignments = useMyAssignments(organizationId);
-  if (!assignments || assignments.pendingApprovals.length === 0) return null;
 
   return (
-    <WorkSection
-      icon={<AlertCircle className="size-4 text-amber-400" />}
+    <BoardColumn
+      icon={<AlertCircle className="size-4 shrink-0 text-amber-400" />}
       title={t("assignmentsPage.sections.pendingApproval")}
-      badge={
-        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium tabular-nums text-amber-400">
-          {assignments.stats.totalPendingApprovals}
-        </span>
+      count={
+        assignments === undefined
+          ? undefined
+          : String(assignments.stats.totalPendingApprovals)
       }
     >
-      <CardGrid>
-        {assignments.pendingApprovals.map((item) => (
-          <PendingApprovalCard key={item._id} item={item} />
-        ))}
-      </CardGrid>
-    </WorkSection>
+      {assignments === undefined ? (
+        <ColumnMessage>{t("caseTasks.myWork.loading")}</ColumnMessage>
+      ) : assignments.pendingApprovals.length === 0 ? (
+        <ColumnMessage>{t("caseTasks.myWork.approvalsEmpty")}</ColumnMessage>
+      ) : (
+        <ul className={COLUMN_LIST_CLASS_NAME}>
+          {assignments.pendingApprovals.map((item) => (
+            <PendingApprovalCard key={item._id} item={item} />
+          ))}
+        </ul>
+      )}
+    </BoardColumn>
   );
 }
 

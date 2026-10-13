@@ -4945,6 +4945,7 @@ export default {
       myTasksEmpty: "You have no open tasks.",
       reviews: "Waiting for my review",
       reviewsEmpty: "Nothing is waiting for your review.",
+      approvalsEmpty: "Nothing is waiting for your approval.",
       assignedCases: "Cases assigned to me",
       assignedCasesEmpty: "No open cases are assigned to you.",
       assignedTruncated: "Showing the first 50 assigned cases.",

@@ -53,44 +53,148 @@ export function WorkSection({
   );
 }
 
-function TaskQueue({
+export function WorkBoard({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @6xl:grid-cols-4">
+      {children}
+    </div>
+  );
+}
+
+export function BoardColumn({
+  icon,
+  title,
+  count,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  count?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex min-w-0 flex-col rounded-lg border border-border bg-muted/20">
+      <header className="flex items-center gap-2 border-b border-border px-3 py-2.5">
+        {icon}
+        <h2 className="min-w-0 flex-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          {title}
+        </h2>
+        {count !== undefined ? (
+          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+            {count}
+          </span>
+        ) : null}
+      </header>
+      <div className="max-h-[28rem] min-h-24 overflow-y-auto p-2 custom-scrollbar">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+export function ColumnMessage({ children }: { children: ReactNode }) {
+  return (
+    <p className="px-1 py-6 text-center text-xs text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
+export const COLUMN_LIST_CLASS_NAME = "flex flex-col gap-2";
+
+function TaskColumn({
   organizationId,
   query,
+  icon,
+  title,
   emptyLabel,
-  now,
 }: {
   organizationId: Id<"organizations">;
   query: typeof api.caseTasks.listMyWork | typeof api.caseTasks.listReviewQueue;
+  icon: ReactNode;
+  title: string;
   emptyLabel: string;
-  now: number;
 }) {
   const t = useScopedI18n("caseTasks.myWork");
+  const [now] = useState(() => Date.now());
   const { results, status, loadMore } = usePaginatedQuery(
     query,
     { organizationId },
     { initialNumItems: PAGE_SIZE },
   );
-  if (status === "LoadingFirstPage")
-    return <p className="text-sm text-muted-foreground">{t("loading")}</p>;
-  if (results.length === 0)
-    return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
+  const loading = status === "LoadingFirstPage";
   return (
-    <div className="space-y-3">
-      <ul className={CARD_GRID_CLASS_NAME}>
-        {results.map((task) => (
-          <CaseTaskTile key={task._id} task={task} now={now} />
-        ))}
-      </ul>
-      {status === "CanLoadMore" ? (
-        <Button size="sm" variant="outline" onClick={() => loadMore(PAGE_SIZE)}>
-          {t("loadMore")}
-        </Button>
-      ) : null}
-    </div>
+    <BoardColumn
+      icon={icon}
+      title={title}
+      count={
+        loading
+          ? undefined
+          : `${results.length}${status === "CanLoadMore" ? "+" : ""}`
+      }
+    >
+      {loading ? (
+        <ColumnMessage>{t("loading")}</ColumnMessage>
+      ) : results.length === 0 ? (
+        <ColumnMessage>{emptyLabel}</ColumnMessage>
+      ) : (
+        <div className="space-y-2">
+          <ul className={COLUMN_LIST_CLASS_NAME}>
+            {results.map((task) => (
+              <CaseTaskTile key={task._id} task={task} now={now} />
+            ))}
+          </ul>
+          {status === "CanLoadMore" ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="w-full"
+              onClick={() => loadMore(PAGE_SIZE)}
+            >
+              {t("loadMore")}
+            </Button>
+          ) : null}
+        </div>
+      )}
+    </BoardColumn>
   );
 }
 
-function AssignedCases({
+export function MyTasksColumn({
+  organizationId,
+}: {
+  organizationId: Id<"organizations">;
+}) {
+  const t = useScopedI18n("caseTasks.myWork");
+  return (
+    <TaskColumn
+      organizationId={organizationId}
+      query={api.caseTasks.listMyWork}
+      icon={<ListTodo className="size-4 shrink-0 text-blue-400" />}
+      title={t("myTasks")}
+      emptyLabel={t("myTasksEmpty")}
+    />
+  );
+}
+
+export function ReviewsColumn({
+  organizationId,
+}: {
+  organizationId: Id<"organizations">;
+}) {
+  const t = useScopedI18n("caseTasks.myWork");
+  return (
+    <TaskColumn
+      organizationId={organizationId}
+      query={api.caseTasks.listReviewQueue}
+      icon={<ClipboardCheck className="size-4 shrink-0 text-amber-400" />}
+      title={t("reviews")}
+      emptyLabel={t("reviewsEmpty")}
+    />
+  );
+}
+
+export function AssignedCasesColumn({
   organizationId,
 }: {
   organizationId: Id<"organizations">;
@@ -100,93 +204,65 @@ function AssignedCases({
   const assigned = useQuery(api.caseTasks.listMyAssignedCases, {
     organizationId,
   });
-  if (assigned === undefined)
-    return (
-      <p className="text-sm text-muted-foreground">{t("myWork.loading")}</p>
-    );
-  if (assigned.cases.length === 0)
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("myWork.assignedCasesEmpty")}
-      </p>
-    );
   return (
-    <div className="space-y-2">
-      <ul className={CARD_GRID_CLASS_NAME}>
-        {assigned.cases.map((row) => (
-          <li key={`${row.caseType}:${row.caseId}`}>
-            <Link
-              href={caseHref(row.caseType, row.caseId)}
-              className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
-            >
-              <span className="w-full truncate text-sm font-medium text-foreground">
-                {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                {t("myWork.since")}{" "}
-                <ClientDate timestamp={row.since} locale={locale} />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {assigned.truncated ? (
-        <p className="text-xs text-muted-foreground">
-          {t("myWork.assignedTruncated")}
-        </p>
-      ) : null}
-    </div>
+    <BoardColumn
+      icon={<Briefcase className="size-4 shrink-0 text-emerald-400" />}
+      title={t("myWork.assignedCases")}
+      count={
+        assigned === undefined
+          ? undefined
+          : `${assigned.cases.length}${assigned.truncated ? "+" : ""}`
+      }
+    >
+      {assigned === undefined ? (
+        <ColumnMessage>{t("myWork.loading")}</ColumnMessage>
+      ) : assigned.cases.length === 0 ? (
+        <ColumnMessage>{t("myWork.assignedCasesEmpty")}</ColumnMessage>
+      ) : (
+        <div className="space-y-2">
+          <ul className={COLUMN_LIST_CLASS_NAME}>
+            {assigned.cases.map((row) => (
+              <li key={`${row.caseType}:${row.caseId}`}>
+                <Link
+                  href={caseHref(row.caseType, row.caseId)}
+                  className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
+                >
+                  <span className="w-full truncate text-sm font-medium text-foreground">
+                    {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {t("myWork.since")}{" "}
+                    <ClientDate timestamp={row.since} locale={locale} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {assigned.truncated ? (
+            <p className="px-1 text-xs text-muted-foreground">
+              {t("myWork.assignedTruncated")}
+            </p>
+          ) : null}
+        </div>
+      )}
+    </BoardColumn>
   );
 }
 
-/** Tasks the user owns, reviews waiting for them and cases assigned to them. */
-export function MyWorkSections({
+export function ProvenanceReviewSection({
   organizationId,
 }: {
   organizationId: Id<"organizations">;
 }) {
-  const t = useScopedI18n("caseTasks.myWork");
-  const tProvenance = useScopedI18n("provenance.queue");
+  const t = useScopedI18n("provenance.queue");
   const { hasPermission } = usePermissions();
-  const [now] = useState(() => Date.now());
+  if (!hasPermission("collections.review_provenance")) return null;
   return (
-    <div className="space-y-6">
-      <WorkSection
-        icon={<ListTodo className="size-4 text-blue-400" />}
-        title={t("myTasks")}
-      >
-        <TaskQueue
-          organizationId={organizationId}
-          query={api.caseTasks.listMyWork}
-          emptyLabel={t("myTasksEmpty")}
-          now={now}
-        />
-      </WorkSection>
-      <WorkSection
-        icon={<ClipboardCheck className="size-4 text-amber-400" />}
-        title={t("reviews")}
-      >
-        <TaskQueue
-          organizationId={organizationId}
-          query={api.caseTasks.listReviewQueue}
-          emptyLabel={t("reviewsEmpty")}
-          now={now}
-        />
-      </WorkSection>
-      {hasPermission("collections.review_provenance") ? (
-        <WorkSection
-          icon={<ScrollText className="size-4 text-purple-400" />}
-          title={tProvenance("title")}
-        >
-          <ProvenanceReviewQueue organizationId={organizationId} />
-        </WorkSection>
-      ) : null}
-      <WorkSection
-        icon={<Briefcase className="size-4 text-emerald-400" />}
-        title={t("assignedCases")}
-      >
-        <AssignedCases organizationId={organizationId} />
-      </WorkSection>
-    </div>
+    <WorkSection
+      icon={<ScrollText className="size-4 text-purple-400" />}
+      title={t("title")}
+    >
+      <ProvenanceReviewQueue organizationId={organizationId} />
+    </WorkSection>
   );
 }
