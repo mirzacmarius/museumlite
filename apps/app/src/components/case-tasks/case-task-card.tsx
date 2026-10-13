@@ -305,3 +305,54 @@ export function CaseTaskCard({
     </li>
   );
 }
+
+/** Compact task card linking to its case, where the task can be worked. */
+export function CaseTaskTile({ task, now }: { task: CaseTask; now: number }) {
+  const t = useScopedI18n("caseTasks");
+  const locale = useCurrentLocale();
+  const overdue =
+    isOpen(task) && task.dueDate !== undefined && task.dueDate < now;
+  return (
+    <li data-task-status={task.status}>
+      <Link
+        href={caseHref(task.caseType, task.caseId)}
+        className="flex h-full flex-col gap-1 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-muted/50"
+      >
+        <span className="flex items-start justify-between gap-2">
+          <span className="line-clamp-2 text-sm font-medium text-foreground">
+            {task.title}
+          </span>
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+              STATUS_STYLES[task.status],
+            )}
+          >
+            {t(`status.${task.status}`)}
+          </span>
+        </span>
+        <span className="truncate text-xs text-muted-foreground">
+          {t(`caseTypes.${task.caseType}`)} {task.caseLabel}
+        </span>
+        {task.dueDate !== undefined ? (
+          <span
+            className={cn(
+              "text-[11px]",
+              overdue
+                ? "text-rose-700 dark:text-rose-300"
+                : "text-muted-foreground",
+            )}
+          >
+            {t("fields.dueDate")}:{" "}
+            <ClientDate
+              timestamp={task.dueDate}
+              locale={locale}
+              options={DUE_DATE_OPTIONS}
+            />
+            {overdue ? ` (${t("labels.overdue")})` : null}
+          </span>
+        ) : null}
+      </Link>
+    </li>
+  );
+}

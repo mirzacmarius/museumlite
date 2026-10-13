@@ -59,18 +59,21 @@ export function ProvenanceReviewQueue({
       ) : results.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("queue.empty")}</p>
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
           {results.map((item) => (
-            <li key={item.claimId} className="space-y-1.5 px-4 py-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <li
+              key={item.claimId}
+              className="space-y-1 rounded-lg border border-border bg-card px-3 py-2.5 text-sm"
+            >
+              <div className="flex items-start justify-between gap-2">
                 <Link
                   href={`/objects/${item.objectId}?tab=provenance`}
-                  className="inline-flex items-center gap-1 font-medium hover:underline"
+                  className="inline-flex min-w-0 items-center gap-1 font-medium hover:underline"
                 >
-                  {item.objectLabel}
-                  <ExternalLink className="size-3" />
+                  <span className="truncate">{item.objectLabel}</span>
+                  <ExternalLink className="size-3 shrink-0" />
                 </Link>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex shrink-0 flex-wrap justify-end gap-1">
                   {item.role ? (
                     <Badge variant="outline">{t(`roles.${item.role}`)}</Badge>
                   ) : null}
@@ -79,14 +82,14 @@ export function ProvenanceReviewQueue({
                   </Badge>
                 </div>
               </div>
-              <p className="font-mono text-xs text-muted-foreground">
+              <p className="truncate font-mono text-[11px] text-muted-foreground">
                 {dates.period(item.startDate, item.endDate)}
                 {" · "}
                 {item.partyKind === "named"
                   ? item.partyText
                   : t(`partyKinds.${item.partyKind}`)}
               </p>
-              <p className="line-clamp-2 text-muted-foreground">
+              <p className="line-clamp-2 text-xs text-muted-foreground">
                 {item.statement}
               </p>
               {item.contradictsClaimId ? (
