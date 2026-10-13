@@ -118,7 +118,7 @@ export function PendingApprovalCard({ item }: { item: PendingApproval }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-foreground">
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {item.title}
             </span>
             {item.urgency === "high" ? (
@@ -195,7 +195,7 @@ function ObjectCard({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-foreground">
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {title}
             </span>
             {status ? (
