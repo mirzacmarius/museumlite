@@ -363,19 +363,13 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        <div className="grid items-start gap-6 @min-[60rem]:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-          <div className="flex min-w-0 flex-col gap-6">
-            <PendingApprovalsSection organizationId={currentOrganizationId} />
-            <MyWorkSections organizationId={currentOrganizationId} />
-          </div>
-          <aside className="flex min-w-0 flex-col gap-6">
-            <CollectionGroupsSection
-              organizationId={currentOrganizationId}
-              canCreate={canCreateCollectionGroup === true}
-            />
-            <MyRecentObjectsSections organizationId={currentOrganizationId} />
-          </aside>
-        </div>
+        <PendingApprovalsSection organizationId={currentOrganizationId} />
+        <MyWorkSections organizationId={currentOrganizationId} />
+        <MyRecentObjectsSections organizationId={currentOrganizationId} />
+        <CollectionGroupsSection
+          organizationId={currentOrganizationId}
+          canCreate={canCreateCollectionGroup === true}
+        />
       </div>
     </div>
   );

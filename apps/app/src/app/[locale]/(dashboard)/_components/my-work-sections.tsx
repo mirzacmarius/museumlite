@@ -3,17 +3,12 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { cn } from "@v1/ui/utils";
 import { usePaginatedQuery, useQuery } from "convex/react";
-import {
-  Briefcase,
-  ClipboardCheck,
-  ExternalLink,
-  ListTodo,
-  ScrollText,
-} from "lucide-react";
+import { Briefcase, ClipboardCheck, ListTodo, ScrollText } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
-import { CaseTaskCard } from "@/components/case-tasks/case-task-card";
+import { CaseTaskTile } from "@/components/case-tasks/case-task-card";
 import { caseHref } from "@/components/case-tasks/case-task-links";
 import { ClientDate } from "@/components/client-date";
 import { usePermissions } from "@/components/permission-gate";
@@ -21,6 +16,12 @@ import { ProvenanceReviewQueue } from "@/components/provenance/provenance-review
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 const PAGE_SIZE = 20;
+
+export const CARD_GRID_CLASS_NAME =
+  "grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2";
+
+export const CARD_CLASS_NAME =
+  "flex h-full min-w-0 items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-muted/50";
 
 export function WorkSection({
   icon,
@@ -75,16 +76,9 @@ function TaskQueue({
     return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   return (
     <div className="space-y-3">
-      <ul className="space-y-3">
+      <ul className={CARD_GRID_CLASS_NAME}>
         {results.map((task) => (
-          <CaseTaskCard
-            key={task._id}
-            task={task}
-            organizationId={organizationId}
-            canManage={task.viewerCanWork}
-            showCaseLink
-            now={now}
-          />
+          <CaseTaskTile key={task._id} task={task} now={now} />
         ))}
       </ul>
       {status === "CanLoadMore" ? (
@@ -118,20 +112,19 @@ function AssignedCases({
     );
   return (
     <div className="space-y-2">
-      <ul className="divide-y divide-border rounded-lg border border-border">
+      <ul className={CARD_GRID_CLASS_NAME}>
         {assigned.cases.map((row) => (
           <li key={`${row.caseType}:${row.caseId}`}>
             <Link
               href={caseHref(row.caseType, row.caseId)}
-              className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-muted/50"
+              className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
             >
-              <span className="text-foreground">
+              <span className="w-full truncate text-sm font-medium text-foreground">
                 {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
               </span>
-              <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground">
                 {t("myWork.since")}{" "}
                 <ClientDate timestamp={row.since} locale={locale} />
-                <ExternalLink className="size-3" />
               </span>
             </Link>
           </li>

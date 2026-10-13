@@ -16,7 +16,7 @@ const COLLECTION_GROUP_SKELETON_WIDTHS = [
   "w-52",
 ] as const;
 const WORK_SECTION_SKELETON_KEYS = ["approvals", "tasks", "reviews"];
-const ROW_SKELETON_KEYS = ["first", "second", "third"];
+const CARD_SKELETON_KEYS = ["first", "second", "third", "fourth"];
 
 export function CollectionGroupsGridSkeleton() {
   return (
@@ -35,15 +35,17 @@ function WorkSectionSkeleton({ sectionKey }: { sectionKey: string }) {
   return (
     <div className="space-y-3">
       <div className="h-4 w-44 rounded bg-muted/60" />
-      <div className="divide-y divide-border rounded-lg border border-border">
-        {ROW_SKELETON_KEYS.map((key) => (
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
+        {CARD_SKELETON_KEYS.map((key) => (
           <div
             key={`${sectionKey}-${key}`}
-            className="flex items-center gap-3 px-4 py-2.5"
+            className="flex items-start gap-2.5 rounded-lg border border-border px-3 py-2.5"
           >
             <div className="size-7 shrink-0 rounded-md bg-muted/70" />
-            <div className="h-3 w-48 max-w-full rounded bg-muted/60" />
-            <div className="ms-auto h-3 w-16 shrink-0 rounded bg-muted/40" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="h-3 w-3/4 rounded bg-muted/60" />
+              <div className="h-2.5 w-1/2 rounded bg-muted/40" />
+            </div>
           </div>
         ))}
       </div>
@@ -75,17 +77,9 @@ export function DashboardPageSkeleton() {
           ))}
         </div>
 
-        <div className="grid items-start gap-6 @min-[60rem]:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-          <div className="flex min-w-0 flex-col gap-6">
-            {WORK_SECTION_SKELETON_KEYS.map((key) => (
-              <WorkSectionSkeleton key={key} sectionKey={key} />
-            ))}
-          </div>
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="h-4 w-36 rounded bg-muted/60" />
-            <CollectionGroupsGridSkeleton />
-          </div>
-        </div>
+        {WORK_SECTION_SKELETON_KEYS.map((key) => (
+          <WorkSectionSkeleton key={key} sectionKey={key} />
+        ))}
       </div>
     </div>
   );

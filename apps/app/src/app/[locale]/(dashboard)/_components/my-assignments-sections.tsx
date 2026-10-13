@@ -22,7 +22,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
-import { WorkSection } from "./my-work-sections";
+import {
+  CARD_CLASS_NAME,
+  CARD_GRID_CLASS_NAME,
+  WorkSection,
+} from "./my-work-sections";
 
 type MyAssignments = FunctionReturnType<
   typeof api.assignments.listMyAssignments
@@ -31,7 +35,7 @@ type PendingApproval = MyAssignments["pendingApprovals"][number];
 type ObjectStatus = MyAssignments["myCatalogedItems"][number]["status"];
 
 const ASSIGNMENTS_LIMIT = 50;
-const VISIBLE_RECENT_OBJECTS = 6;
+const VISIBLE_RECENT_OBJECTS = 8;
 
 const APPROVAL_TYPES = {
   accession: {
@@ -88,7 +92,7 @@ function SectionLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-function PendingApprovalRow({ item }: { item: PendingApproval }) {
+function PendingApprovalCard({ item }: { item: PendingApproval }) {
   const locale = useCurrentLocale();
   const t = useI18n();
   const config = APPROVAL_TYPES[item.type];
@@ -99,8 +103,8 @@ function PendingApprovalRow({ item }: { item: PendingApproval }) {
       <Link
         href={`${config.href}/${item._id}`}
         className={cn(
-          "flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/50",
-          item.urgency === "high" && "bg-rose-500/5",
+          CARD_CLASS_NAME,
+          item.urgency === "high" && "border-rose-500/30 bg-rose-500/5",
         )}
       >
         <span
@@ -112,12 +116,12 @@ function PendingApprovalRow({ item }: { item: PendingApproval }) {
           <Icon className="size-3.5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
-            <span className="truncate font-medium text-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-foreground">
               {item.title}
             </span>
             {item.urgency === "high" ? (
-              <span className="shrink-0 rounded bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-400">
+              <span className="shrink-0 rounded bg-rose-500/10 px-1 py-0.5 text-[10px] font-medium text-rose-400">
                 {t("assignmentsPage.card.urgent")}
               </span>
             ) : null}
@@ -127,25 +131,23 @@ function PendingApprovalRow({ item }: { item: PendingApproval }) {
               {item.subtitle}
             </span>
           ) : null}
-        </span>
-        <span className="flex shrink-0 flex-col items-end text-[11px] text-muted-foreground">
-          <ClientRelativeTime
-            timestamp={item.createdAt}
-            locale={locale}
-            options={{ addSuffix: true }}
-          />
-          {item.workflowStep !== undefined ? (
-            <span>
-              {t("assignmentsPage.card.step")} {item.workflowStep}
-            </span>
-          ) : null}
+          <span className="block truncate text-[11px] text-muted-foreground">
+            <ClientRelativeTime
+              timestamp={item.createdAt}
+              locale={locale}
+              options={{ addSuffix: true }}
+            />
+            {item.workflowStep !== undefined
+              ? ` · ${t("assignmentsPage.card.step")} ${item.workflowStep}`
+              : null}
+          </span>
         </span>
       </Link>
     </li>
   );
 }
 
-function ObjectRow({
+function ObjectCard({
   id,
   title,
   accessionNumber,
@@ -167,10 +169,7 @@ function ObjectRow({
 
   return (
     <li>
-      <Link
-        href={`/objects/${id}`}
-        className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50"
-      >
+      <Link href={`/objects/${id}`} className={CARD_CLASS_NAME}>
         <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
           {thumbnailUrl ? (
             <Image
@@ -185,11 +184,26 @@ function ObjectRow({
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">
-            {title}
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-foreground">
+              {title}
+            </span>
+            {status ? (
+              <span
+                className={cn(
+                  "shrink-0 rounded border px-1 py-px text-[10px] font-medium",
+                  STATUS_CLASS_NAMES[status],
+                )}
+              >
+                {t(`assignmentsPage.status.${status}`)}
+              </span>
+            ) : null}
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {accessionNumber}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
-            {accessionNumber} · {timestampPrefix}{" "}
+            {timestampPrefix}{" "}
             <ClientRelativeTime
               timestamp={timestamp}
               locale={locale}
@@ -197,27 +211,13 @@ function ObjectRow({
             />
           </span>
         </span>
-        {status ? (
-          <span
-            className={cn(
-              "shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
-              STATUS_CLASS_NAMES[status],
-            )}
-          >
-            {t(`assignmentsPage.status.${status}`)}
-          </span>
-        ) : null}
       </Link>
     </li>
   );
 }
 
-function RowList({ children }: { children: ReactNode }) {
-  return (
-    <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
-      {children}
-    </ul>
-  );
+function CardGrid({ children }: { children: ReactNode }) {
+  return <ul className={CARD_GRID_CLASS_NAME}>{children}</ul>;
 }
 
 /** Workflow cases waiting for the viewer's approval at their current step. */
@@ -240,11 +240,11 @@ export function PendingApprovalsSection({
         </span>
       }
     >
-      <RowList>
+      <CardGrid>
         {assignments.pendingApprovals.map((item) => (
-          <PendingApprovalRow key={item._id} item={item} />
+          <PendingApprovalCard key={item._id} item={item} />
         ))}
-      </RowList>
+      </CardGrid>
     </WorkSection>
   );
 }
@@ -278,9 +278,9 @@ export function MyRecentObjectsSections({
             </SectionLink>
           }
         >
-          <RowList>
+          <CardGrid>
             {recentlyModified.slice(0, VISIBLE_RECENT_OBJECTS).map((item) => (
-              <ObjectRow
+              <ObjectCard
                 key={item._id}
                 id={item._id}
                 title={item.title}
@@ -292,7 +292,7 @@ export function MyRecentObjectsSections({
                 )}
               />
             ))}
-          </RowList>
+          </CardGrid>
         </WorkSection>
       ) : null}
 
@@ -311,9 +311,9 @@ export function MyRecentObjectsSections({
             </SectionLink>
           }
         >
-          <RowList>
+          <CardGrid>
             {myCatalogedItems.slice(0, VISIBLE_RECENT_OBJECTS).map((item) => (
-              <ObjectRow
+              <ObjectCard
                 key={item._id}
                 id={item._id}
                 title={item.title}
@@ -326,7 +326,7 @@ export function MyRecentObjectsSections({
                 status={item.status}
               />
             ))}
-          </RowList>
+          </CardGrid>
         </WorkSection>
       ) : null}
     </>
