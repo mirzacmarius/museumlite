@@ -9250,9 +9250,9 @@ export default {
     },
     dashboardBilling: {
       plans: {
-        free: "Plan gratuito",
-        pro: "Plan Pro",
-        enterprise: "Plan Enterprise",
+        free: "Gratuito",
+        pro: "Pro",
+        enterprise: "Enterprise",
       },
       loadingStatus: "Cargando el estado de facturación",
       noActiveSubscription: "No hay ninguna suscripción de pago activa",
@@ -9754,10 +9754,6 @@ export default {
       configureAndPreview:
         "Configura y previsualiza el portal público de tu colección",
       notConfigured: "No configurado",
-    },
-    assignments: {
-      modifiedPrefix: "Modificado",
-      catalogedPrefix: "Catalogado",
     },
   },
   ui: {
@@ -10478,6 +10474,8 @@ export default {
       digitalAssets: "Recursos digitales",
       preferences: "Preferencias",
       settings: "Configuración",
+      registration: "Registro",
+      collectionCare: "Cuidado de colecciones",
       exhibitionsLoans: "Exposiciones y préstamos",
       library: "Biblioteca",
       administration: "Administración",

@@ -9237,9 +9237,9 @@ export default {
     },
     dashboardBilling: {
       plans: {
-        free: "Plan gratuit",
-        pro: "Plan Pro",
-        enterprise: "Plan Enterprise",
+        free: "Gratuit",
+        pro: "Pro",
+        enterprise: "Enterprise",
       },
       loadingStatus: "Se încarcă starea facturării",
       noActiveSubscription: "Nu există un abonament plătit activ",
@@ -9734,10 +9734,6 @@ export default {
       configureAndPreview:
         "Configurați și previzualizați portalul public al colecției",
       notConfigured: "Neconfigurat",
-    },
-    assignments: {
-      modifiedPrefix: "Modificat",
-      catalogedPrefix: "Catalogat",
     },
   },
   ui: {
@@ -10453,6 +10449,8 @@ export default {
       digitalAssets: "Resurse digitale",
       preferences: "Preferințe",
       settings: "Setări",
+      registration: "Înregistrare",
+      collectionCare: "Îngrijirea colecțiilor",
       exhibitionsLoans: "Expoziții și împrumuturi",
       library: "Bibliotecă",
       administration: "Administrare",

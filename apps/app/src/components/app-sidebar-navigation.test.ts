@@ -42,6 +42,8 @@ const navigationLabels: Record<string, string> = {
   "untranslatedComponents.navigation.digitalAssets": "Digital Assets",
   "untranslatedComponents.navigation.preferences": "Preferences",
   "untranslatedComponents.navigation.settings": "Settings",
+  "untranslatedComponents.navigation.registration": "Registration",
+  "untranslatedComponents.navigation.collectionCare": "Collection Care",
   "untranslatedComponents.navigation.exhibitionsLoans": "Exhibitions & Loans",
   "untranslatedComponents.navigation.library": "Library",
   "untranslatedComponents.navigation.administration": "Administration",
@@ -86,6 +88,24 @@ function allTitles(navigation: ReturnType<typeof buildNavigation>) {
 }
 
 describe("buildSidebarNavigation", () => {
+  test("keeps only Overview, Object Catalog, Location & Tracking and Scan at the top level", () => {
+    const { topLevelNavigation, navigationGroups } = buildNavigation();
+
+    expect(topLevelNavigation.map((item) => item.title)).toEqual([
+      "Overview",
+      "Object Catalog",
+      "Location & Tracking",
+      "Scan",
+    ]);
+    expect(navigationGroups.map((group) => group.title)).toEqual([
+      "Registration",
+      "Collection Care",
+      "Exhibitions & Loans",
+      "Library",
+      "Administration",
+    ]);
+  });
+
   test("lists Patron Management once, in the Library group", () => {
     const navigation = buildNavigation();
 
@@ -125,7 +145,10 @@ describe("buildSidebarNavigation", () => {
 
   test("lists documentation quality for staff who maintain records and hides it from read-only roles", () => {
     expect(
-      findItem(buildNavigation().topLevelNavigation, "Documentation quality"),
+      findItem(
+        findGroup(buildNavigation().navigationGroups, "Registration").items,
+        "Documentation quality",
+      ),
     ).toMatchObject({ url: "/documentation-quality", locked: false });
     expect(
       allTitles(
@@ -137,7 +160,7 @@ describe("buildSidebarNavigation", () => {
   });
 
   test("shows plan-gated workflows locked at their canonical routes", () => {
-    const { navigationGroups, topLevelNavigation } = buildNavigation({
+    const { navigationGroups } = buildNavigation({
       loans: { status: "tier_required", requiredTier: "pro" },
       conservation: { status: "tier_required", requiredTier: "pro" },
     });
@@ -146,18 +169,26 @@ describe("buildSidebarNavigation", () => {
       findGroup(navigationGroups, "Exhibitions & Loans").items,
       "Loans & Transport",
     );
-    const conservation = findItem(topLevelNavigation, "Conservation");
+    const conservation = findItem(
+      findGroup(navigationGroups, "Collection Care").items,
+      "Conservation",
+    );
 
     expect(loans).toMatchObject({ url: "/loans", locked: true });
     expect(conservation).toMatchObject({ url: "/conservation", locked: true });
   });
 
   test("locks Insurance by the loans plan it is enforced with, not conservation", () => {
-    const { topLevelNavigation } = buildNavigation({
+    const { navigationGroups } = buildNavigation({
       conservation: { status: "tier_required", requiredTier: "pro" },
     });
 
-    expect(findItem(topLevelNavigation, "Insurance")).toMatchObject({
+    expect(
+      findItem(
+        findGroup(navigationGroups, "Collection Care").items,
+        "Insurance",
+      ),
+    ).toMatchObject({
       url: "/insurance",
       locked: false,
     });

@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -12,6 +13,7 @@ import {
   History,
   LayoutGrid,
   Microscope,
+  OctagonAlert,
   Package,
   Presentation,
   Truck,
@@ -116,13 +118,24 @@ export function PendingApprovalCard({ item }: { item: PendingApproval }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-foreground">
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {item.title}
             </span>
             {item.urgency === "high" ? (
-              <span className="shrink-0 rounded bg-rose-500/10 px-1 py-0.5 text-[10px] font-medium text-rose-400">
-                {t("assignmentsPage.card.urgent")}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    role="img"
+                    aria-label={t("assignmentsPage.card.urgent")}
+                    className="shrink-0 text-rose-400"
+                  >
+                    <OctagonAlert className="size-3.5" aria-hidden="true" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t("assignmentsPage.card.urgent")}
+                </TooltipContent>
+              </Tooltip>
             ) : null}
           </span>
           {item.subtitle ? (
@@ -152,7 +165,6 @@ function ObjectCard({
   accessionNumber,
   thumbnailUrl,
   timestamp,
-  timestampPrefix,
   status,
 }: {
   id: Id<"collections">;
@@ -160,7 +172,6 @@ function ObjectCard({
   accessionNumber: string;
   thumbnailUrl?: string;
   timestamp: number;
-  timestampPrefix: string;
   status?: ObjectStatus;
 }) {
   const locale = useCurrentLocale();
@@ -184,7 +195,7 @@ function ObjectCard({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-foreground">
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {title}
             </span>
             {status ? (
@@ -198,16 +209,17 @@ function ObjectCard({
               </span>
             ) : null}
           </span>
-          <span className="block truncate text-xs text-muted-foreground">
-            {accessionNumber}
-          </span>
-          <span className="block truncate text-[11px] text-muted-foreground">
-            {timestampPrefix}{" "}
-            <ClientRelativeTime
-              timestamp={timestamp}
-              locale={locale}
-              options={{ addSuffix: true }}
-            />
+          <span className="flex items-baseline gap-2">
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+              {accessionNumber}
+            </span>
+            <span className="shrink-0 text-[11px] text-muted-foreground">
+              <ClientRelativeTime
+                timestamp={timestamp}
+                locale={locale}
+                options={{ addSuffix: true }}
+              />
+            </span>
           </span>
         </span>
       </Link>
@@ -257,9 +269,6 @@ export function MyRecentObjectsSections({
                 accessionNumber={item.accessionNumber}
                 thumbnailUrl={item.thumbnailUrl}
                 timestamp={item.lastModifiedAt}
-                timestampPrefix={t(
-                  "untranslatedDashboard.assignments.modifiedPrefix",
-                )}
               />
             ))}
           </CardGrid>
@@ -290,9 +299,6 @@ export function MyRecentObjectsSections({
                 accessionNumber={item.accessionNumber}
                 thumbnailUrl={item.thumbnailUrl}
                 timestamp={item.catalogedAt}
-                timestampPrefix={t(
-                  "untranslatedDashboard.assignments.catalogedPrefix",
-                )}
                 status={item.status}
               />
             ))}

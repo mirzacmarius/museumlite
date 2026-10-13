@@ -9160,9 +9160,9 @@ export default {
     },
     dashboardBilling: {
       plans: {
-        free: "Gratisplan",
-        pro: "Pro-plan",
-        enterprise: "Enterprise-plan",
+        free: "Gratis",
+        pro: "Pro",
+        enterprise: "Enterprise",
       },
       loadingStatus: "Laster faktureringsstatus",
       noActiveSubscription: "Ingen aktiv betalt abonnementsplan",
@@ -9650,10 +9650,6 @@ export default {
       configureAndPreview:
         "Konfigurer og forhåndsvis den offentlige samlingsportalen",
       notConfigured: "Ikke konfigurert",
-    },
-    assignments: {
-      modifiedPrefix: "Endret",
-      catalogedPrefix: "Katalogisert",
     },
   },
   ui: {
@@ -10360,6 +10356,8 @@ export default {
       digitalAssets: "Digitale ressurser",
       preferences: "Preferanser",
       settings: "Innstillinger",
+      registration: "Registrering",
+      collectionCare: "Samlingsvern",
       exhibitionsLoans: "Utstillinger og lån",
       library: "Bibliotek",
       administration: "Administrasjon",

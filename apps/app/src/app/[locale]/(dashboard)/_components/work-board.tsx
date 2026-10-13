@@ -37,11 +37,22 @@ interface WorkColumn {
   renderCards: () => ReactNode;
 }
 
-function ColumnHeader({ column }: { column: WorkColumn }) {
+function ColumnHeader({
+  column,
+  compact = false,
+}: {
+  column: WorkColumn;
+  compact?: boolean;
+}) {
   return (
     <>
       {column.icon}
-      <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
+      <span
+        className={cn(
+          "min-w-0 flex-1 font-medium text-foreground",
+          compact ? "text-xs" : "text-sm",
+        )}
+      >
         {column.title}
       </span>
       {column.loading ? null : (
@@ -62,11 +73,11 @@ function BoardColumn({
   loadingLabel: string;
 }) {
   return (
-    <section className="flex w-80 shrink-0 flex-col rounded-lg bg-muted/30">
+    <section className="flex min-w-52 max-w-72 flex-1 basis-0 flex-col rounded-lg bg-muted/30">
       <h2 className="flex items-center gap-2 px-3 py-2.5">
         <ColumnHeader column={column} />
       </h2>
-      <div className="max-h-[32rem] overflow-y-auto px-2 pb-2 custom-scrollbar">
+      <div className="max-h-96 overflow-y-auto px-2 pb-2 custom-scrollbar">
         {column.loading ? (
           <p className="px-1 py-6 text-center text-xs text-muted-foreground">
             {loadingLabel}
@@ -87,7 +98,7 @@ function EmptyColumns({
   label: string;
 }) {
   return (
-    <details open className="group ml-auto w-72 shrink-0">
+    <details open className="group ml-auto w-52 shrink-0">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-1 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
         <ChevronDown
           className="size-3.5 -rotate-90 transition-transform group-open:rotate-0"
@@ -99,9 +110,9 @@ function EmptyColumns({
         {columns.map((column) => (
           <li
             key={column.key}
-            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5"
+            className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5"
           >
-            <ColumnHeader column={column} />
+            <ColumnHeader column={column} compact />
           </li>
         ))}
       </ul>

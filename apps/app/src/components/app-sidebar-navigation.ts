@@ -12,9 +12,11 @@ import {
   FileCheck,
   FileImage,
   FileX,
+  FolderArchive,
   GalleryVerticalEnd,
   Globe,
   Hammer,
+  HeartPulse,
   IdCard,
   Image,
   LayoutGrid,
@@ -102,13 +104,15 @@ export function buildSidebarNavigation({
       ? [{ title: label("locationTracking"), url: "/locations", icon: MapPin }]
       : []),
     { title: label("scan"), url: "/scan", icon: QrCode },
+  ];
+
+  const navRegistration: NavigationItem[] = [
+    { title: label("accessions"), url: "/accessions", icon: FileCheck },
+    { title: label("deaccessions"), url: "/deaccessions", icon: FileX },
     ...capabilityItem("inventory", {
       title: label("inventory"),
       icon: ClipboardList,
     }),
-    { title: label("accessions"), url: "/accessions", icon: FileCheck },
-    { title: label("deaccessions"), url: "/deaccessions", icon: FileX },
-    ...capabilityItem("incidents", { title: label("incidents"), icon: Siren }),
     ...capabilityItem("documentation_quality", {
       title: label("documentationQuality"),
       icon: ClipboardCheck,
@@ -117,10 +121,14 @@ export function buildSidebarNavigation({
       title: label("reproductionRequests"),
       icon: FileImage,
     }),
+  ];
+
+  const navCollectionCare: NavigationItem[] = [
     ...capabilityItem("conservation", {
       title: label("conservation"),
       icon: Activity,
     }),
+    ...capabilityItem("incidents", { title: label("incidents"), icon: Siren }),
     ...capabilityItem("insurance", { title: label("insurance"), icon: Shield }),
   ];
 
@@ -192,6 +200,16 @@ export function buildSidebarNavigation({
   ];
 
   const groups: NavigationGroup[] = [
+    {
+      title: label("registration"),
+      icon: FolderArchive,
+      items: navRegistration,
+    },
+    {
+      title: label("collectionCare"),
+      icon: HeartPulse,
+      items: navCollectionCare,
+    },
     {
       title: label("exhibitionsLoans"),
       icon: Truck,

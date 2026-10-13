@@ -33,7 +33,7 @@ export function CollectionGroupsGridSkeleton() {
 
 function BoardColumnSkeleton({ columnKey }: { columnKey: string }) {
   return (
-    <div className="flex w-80 shrink-0 flex-col rounded-lg bg-muted/30">
+    <div className="flex min-w-52 max-w-72 flex-1 basis-0 flex-col rounded-lg bg-muted/30">
       <div className="px-3 py-3">
         <div className="h-3 w-36 rounded bg-muted/60" />
       </div>
