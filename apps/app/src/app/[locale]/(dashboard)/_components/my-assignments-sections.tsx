@@ -19,14 +19,10 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useCallback, useState } from "react";
 import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
-import {
-  CARD_CLASS_NAME,
-  CARD_GRID_CLASS_NAME,
-  WorkSection,
-} from "./my-work-sections";
+import { CARD_CLASS_NAME, WorkSection } from "./my-work-sections";
 
 type MyAssignments = FunctionReturnType<
   typeof api.assignments.listMyAssignments
@@ -35,7 +31,9 @@ type PendingApproval = MyAssignments["pendingApprovals"][number];
 type ObjectStatus = MyAssignments["myCatalogedItems"][number]["status"];
 
 const ASSIGNMENTS_LIMIT = 50;
-const VISIBLE_RECENT_OBJECTS = 8;
+const MAX_CATALOGED_CARDS = 10;
+const CATALOGED_CARD_MIN_WIDTH_PX = 176;
+const CATALOGED_CARD_GAP_PX = 8;
 
 const APPROVAL_TYPES = {
   accession: {
@@ -65,12 +63,12 @@ const APPROVAL_TYPES = {
   },
 } satisfies Record<PendingApproval["type"], unknown>;
 
-const STATUS_CLASS_NAMES = {
-  active: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
-  loaned: "border-purple-500/30 bg-purple-500/10 text-purple-400",
-  deaccessioned: "border-border bg-muted text-muted-foreground",
-  archived: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-  deleted: "border-red-500/30 bg-red-500/10 text-red-400",
+const STATUS_DOT_CLASS_NAMES = {
+  active: "bg-emerald-400",
+  loaned: "bg-purple-400",
+  deaccessioned: "bg-muted-foreground",
+  archived: "bg-amber-400",
+  deleted: "bg-red-400",
 } satisfies Record<ObjectStatus, string>;
 
 export function useMyAssignments(organizationId: Id<"organizations">) {
@@ -171,54 +169,59 @@ function ObjectCard({
   accessionNumber: string;
   thumbnailUrl?: string;
   timestamp: number;
-  status?: ObjectStatus;
+  status: ObjectStatus;
 }) {
   const locale = useCurrentLocale();
   const t = useI18n();
+  const statusLabel = t(`assignmentsPage.status.${status}`);
 
   return (
     <li>
-      <Link href={`/objects/${id}`} className={CARD_CLASS_NAME}>
-        <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+      <Link
+        href={`/objects/${id}`}
+        className={cn(CARD_CLASS_NAME, "gap-2 px-2.5 py-2")}
+      >
+        <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
           {thumbnailUrl ? (
             <Image
               src={thumbnailUrl}
               alt=""
               fill
-              sizes="36px"
+              sizes="32px"
               className="object-cover"
             />
           ) : (
             <Package className="size-4 text-muted-foreground" />
           )}
         </span>
-        <span className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1 leading-4">
           <span className="flex items-center gap-1.5">
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
               {title}
             </span>
-            {status ? (
-              <span
-                className={cn(
-                  "shrink-0 rounded border px-1 py-px text-[10px] font-medium",
-                  STATUS_CLASS_NAMES[status],
-                )}
-              >
-                {t(`assignmentsPage.status.${status}`)}
-              </span>
-            ) : null}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  role="img"
+                  aria-label={statusLabel}
+                  className={cn(
+                    "size-1.5 shrink-0 rounded-full",
+                    STATUS_DOT_CLASS_NAMES[status],
+                  )}
+                />
+              </TooltipTrigger>
+              <TooltipContent>{statusLabel}</TooltipContent>
+            </Tooltip>
           </span>
-          <span className="flex items-baseline gap-2">
-            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-              {accessionNumber}
-            </span>
-            <span className="shrink-0 text-[11px] text-muted-foreground">
-              <ClientRelativeTime
-                timestamp={timestamp}
-                locale={locale}
-                options={{ addSuffix: true }}
-              />
-            </span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            {accessionNumber}
+          </span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            <ClientRelativeTime
+              timestamp={timestamp}
+              locale={locale}
+              options={{ addSuffix: true }}
+            />
           </span>
         </span>
       </Link>
@@ -226,8 +229,23 @@ function ObjectCard({
   );
 }
 
-function CardGrid({ children }: { children: ReactNode }) {
-  return <ul className={CARD_GRID_CLASS_NAME}>{children}</ul>;
+/** How many cards of the minimum width fit in one row of the observed list. */
+function useCardsPerRow() {
+  const [cardsPerRow, setCardsPerRow] = useState(5);
+  const listRef = useCallback((list: HTMLUListElement | null) => {
+    if (!list) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      const fit = Math.floor(
+        (entry.contentRect.width + CATALOGED_CARD_GAP_PX) /
+          (CATALOGED_CARD_MIN_WIDTH_PX + CATALOGED_CARD_GAP_PX),
+      );
+      setCardsPerRow(Math.min(MAX_CATALOGED_CARDS, Math.max(1, fit)));
+    });
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, []);
+  return [listRef, cardsPerRow] as const;
 }
 
 /** Objects the viewer cataloged. */
@@ -238,6 +256,7 @@ export function CatalogedByYouSection({
 }) {
   const t = useI18n();
   const assignments = useMyAssignments(organizationId);
+  const [listRef, cardsPerRow] = useCardsPerRow();
   if (!assignments || assignments.myCatalogedItems.length === 0) return null;
   const { myCatalogedItems, stats } = assignments;
 
@@ -256,8 +275,14 @@ export function CatalogedByYouSection({
         </SectionLink>
       }
     >
-      <CardGrid>
-        {myCatalogedItems.slice(0, VISIBLE_RECENT_OBJECTS).map((item) => (
+      <ul
+        ref={listRef}
+        className="grid gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${cardsPerRow}, minmax(0, 1fr))`,
+        }}
+      >
+        {myCatalogedItems.slice(0, cardsPerRow).map((item) => (
           <ObjectCard
             key={item._id}
             id={item._id}
@@ -268,7 +293,7 @@ export function CatalogedByYouSection({
             status={item.status}
           />
         ))}
-      </CardGrid>
+      </ul>
     </WorkSection>
   );
 }

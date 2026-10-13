@@ -2,9 +2,6 @@
 
 import type { ReactNode } from "react";
 
-export const CARD_GRID_CLASS_NAME =
-  "grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2";
-
 export const CARD_CLASS_NAME =
   "flex h-full min-w-0 items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-muted/50";
 
