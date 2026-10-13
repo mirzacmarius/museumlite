@@ -15,8 +15,8 @@ const COLLECTION_GROUP_SKELETON_WIDTHS = [
   "w-24",
   "w-52",
 ] as const;
-const WORK_SECTION_SKELETON_KEYS = ["approvals", "tasks", "reviews"];
-const CARD_SKELETON_KEYS = ["first", "second", "third", "fourth"];
+const BOARD_COLUMN_SKELETON_KEYS = ["tasks", "approvals", "reviews", "cases"];
+const CARD_SKELETON_KEYS = ["first", "second", "third"];
 
 export function CollectionGroupsGridSkeleton() {
   return (
@@ -31,21 +31,20 @@ export function CollectionGroupsGridSkeleton() {
   );
 }
 
-function WorkSectionSkeleton({ sectionKey }: { sectionKey: string }) {
+function BoardColumnSkeleton({ columnKey }: { columnKey: string }) {
   return (
-    <div className="space-y-3">
-      <div className="h-4 w-44 rounded bg-muted/60" />
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
+    <div className="flex w-80 shrink-0 flex-col rounded-lg bg-muted/30">
+      <div className="px-3 py-3">
+        <div className="h-3 w-36 rounded bg-muted/60" />
+      </div>
+      <div className="flex flex-col gap-2 px-2 pb-2">
         {CARD_SKELETON_KEYS.map((key) => (
           <div
-            key={`${sectionKey}-${key}`}
-            className="flex items-start gap-2.5 rounded-lg border border-border px-3 py-2.5"
+            key={`${columnKey}-${key}`}
+            className="space-y-1.5 rounded-lg border border-border bg-card px-3 py-2.5"
           >
-            <div className="size-7 shrink-0 rounded-md bg-muted/70" />
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="h-3 w-3/4 rounded bg-muted/60" />
-              <div className="h-2.5 w-1/2 rounded bg-muted/40" />
-            </div>
+            <div className="h-3 w-3/4 rounded bg-muted/60" />
+            <div className="h-2.5 w-1/2 rounded bg-muted/40" />
           </div>
         ))}
       </div>
@@ -77,9 +76,11 @@ export function DashboardPageSkeleton() {
           ))}
         </div>
 
-        {WORK_SECTION_SKELETON_KEYS.map((key) => (
-          <WorkSectionSkeleton key={key} sectionKey={key} />
-        ))}
+        <div className="flex items-start gap-3 overflow-hidden">
+          {BOARD_COLUMN_SKELETON_KEYS.map((key) => (
+            <BoardColumnSkeleton key={key} columnKey={key} />
+          ))}
+        </div>
       </div>
     </div>
   );

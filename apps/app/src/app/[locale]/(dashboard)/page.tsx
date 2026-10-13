@@ -24,11 +24,12 @@ import { usePermission } from "@/components/permission-gate";
 import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { MyRecentObjectsSections } from "./_components/my-assignments-sections";
 import {
-  MyRecentObjectsSections,
-  PendingApprovalsSection,
-} from "./_components/my-assignments-sections";
-import { MyWorkSections, WorkSection } from "./_components/my-work-sections";
+  ProvenanceReviewSection,
+  WorkSection,
+} from "./_components/my-work-sections";
+import { MyWorkBoard } from "./_components/work-board";
 import {
   CollectionGroupsGridSkeleton,
   DashboardPageSkeleton,
@@ -363,8 +364,8 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        <PendingApprovalsSection organizationId={currentOrganizationId} />
-        <MyWorkSections organizationId={currentOrganizationId} />
+        <MyWorkBoard organizationId={currentOrganizationId} />
+        <ProvenanceReviewSection organizationId={currentOrganizationId} />
         <MyRecentObjectsSections organizationId={currentOrganizationId} />
         <CollectionGroupsSection
           organizationId={currentOrganizationId}

@@ -6,7 +6,6 @@ import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
-  AlertCircle,
   ArrowRight,
   FileCheck,
   FileX,
@@ -73,7 +72,7 @@ const STATUS_CLASS_NAMES = {
   deleted: "border-red-500/30 bg-red-500/10 text-red-400",
 } satisfies Record<ObjectStatus, string>;
 
-function useMyAssignments(organizationId: Id<"organizations">) {
+export function useMyAssignments(organizationId: Id<"organizations">) {
   return useQuery(api.assignments.listMyAssignments, {
     organizationId,
     limit: ASSIGNMENTS_LIMIT,
@@ -92,7 +91,7 @@ function SectionLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-function PendingApprovalCard({ item }: { item: PendingApproval }) {
+export function PendingApprovalCard({ item }: { item: PendingApproval }) {
   const locale = useCurrentLocale();
   const t = useI18n();
   const config = APPROVAL_TYPES[item.type];
@@ -218,35 +217,6 @@ function ObjectCard({
 
 function CardGrid({ children }: { children: ReactNode }) {
   return <ul className={CARD_GRID_CLASS_NAME}>{children}</ul>;
-}
-
-/** Workflow cases waiting for the viewer's approval at their current step. */
-export function PendingApprovalsSection({
-  organizationId,
-}: {
-  organizationId: Id<"organizations">;
-}) {
-  const t = useI18n();
-  const assignments = useMyAssignments(organizationId);
-  if (!assignments || assignments.pendingApprovals.length === 0) return null;
-
-  return (
-    <WorkSection
-      icon={<AlertCircle className="size-4 text-amber-400" />}
-      title={t("assignmentsPage.sections.pendingApproval")}
-      badge={
-        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium tabular-nums text-amber-400">
-          {assignments.stats.totalPendingApprovals}
-        </span>
-      }
-    >
-      <CardGrid>
-        {assignments.pendingApprovals.map((item) => (
-          <PendingApprovalCard key={item._id} item={item} />
-        ))}
-      </CardGrid>
-    </WorkSection>
-  );
 }
 
 /** Objects the viewer recently modified or cataloged. */
