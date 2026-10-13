@@ -10449,6 +10449,8 @@ export default {
       digitalAssets: "Resurse digitale",
       preferences: "Preferințe",
       settings: "Setări",
+      registration: "Înregistrare",
+      collectionCare: "Îngrijirea colecțiilor",
       exhibitionsLoans: "Expoziții și împrumuturi",
       library: "Bibliotecă",
       administration: "Administrare",

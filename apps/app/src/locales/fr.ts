@@ -10513,6 +10513,8 @@ export default {
       digitalAssets: "Ressources numériques",
       preferences: "Préférences",
       settings: "Paramètres",
+      registration: "Régie des collections",
+      collectionCare: "Soin des collections",
       exhibitionsLoans: "Expositions et prêts",
       library: "Bibliothèque",
       administration: "Administration",

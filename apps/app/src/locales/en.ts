@@ -10236,6 +10236,8 @@ export default {
       digitalAssets: "Digital Assets",
       preferences: "Preferences",
       settings: "Settings",
+      registration: "Registration",
+      collectionCare: "Collection Care",
       exhibitionsLoans: "Exhibitions & Loans",
       library: "Library",
       administration: "Administration",

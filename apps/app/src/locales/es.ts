@@ -10474,6 +10474,8 @@ export default {
       digitalAssets: "Recursos digitales",
       preferences: "Preferencias",
       settings: "Configuración",
+      registration: "Registro",
+      collectionCare: "Cuidado de colecciones",
       exhibitionsLoans: "Exposiciones y préstamos",
       library: "Biblioteca",
       administration: "Administración",

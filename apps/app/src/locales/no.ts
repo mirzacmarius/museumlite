@@ -10356,6 +10356,8 @@ export default {
       digitalAssets: "Digitale ressurser",
       preferences: "Preferanser",
       settings: "Innstillinger",
+      registration: "Registrering",
+      collectionCare: "Samlingsvern",
       exhibitionsLoans: "Utstillinger og lån",
       library: "Bibliotek",
       administration: "Administrasjon",
