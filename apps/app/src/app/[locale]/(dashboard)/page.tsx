@@ -24,18 +24,12 @@ import { usePermission } from "@/components/permission-gate";
 import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { MyRecentObjectsSections } from "./_components/my-assignments-sections";
 import {
-  MyRecentObjectsSections,
-  PendingApprovalsColumn,
-} from "./_components/my-assignments-sections";
-import {
-  AssignedCasesColumn,
-  MyTasksColumn,
   ProvenanceReviewSection,
-  ReviewsColumn,
-  WorkBoard,
   WorkSection,
 } from "./_components/my-work-sections";
+import { MyWorkBoard } from "./_components/work-board";
 import {
   CollectionGroupsGridSkeleton,
   DashboardPageSkeleton,
@@ -370,12 +364,7 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        <WorkBoard>
-          <MyTasksColumn organizationId={currentOrganizationId} />
-          <PendingApprovalsColumn organizationId={currentOrganizationId} />
-          <ReviewsColumn organizationId={currentOrganizationId} />
-          <AssignedCasesColumn organizationId={currentOrganizationId} />
-        </WorkBoard>
+        <MyWorkBoard organizationId={currentOrganizationId} />
         <ProvenanceReviewSection organizationId={currentOrganizationId} />
         <MyRecentObjectsSections organizationId={currentOrganizationId} />
         <CollectionGroupsSection

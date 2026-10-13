@@ -33,11 +33,11 @@ export function CollectionGroupsGridSkeleton() {
 
 function BoardColumnSkeleton({ columnKey }: { columnKey: string }) {
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-muted/20">
-      <div className="border-b border-border px-3 py-3">
+    <div className="flex w-80 shrink-0 flex-col rounded-lg bg-muted/30">
+      <div className="px-3 py-3">
         <div className="h-3 w-36 rounded bg-muted/60" />
       </div>
-      <div className="flex flex-col gap-2 p-2">
+      <div className="flex flex-col gap-2 px-2 pb-2">
         {CARD_SKELETON_KEYS.map((key) => (
           <div
             key={`${columnKey}-${key}`}
@@ -76,7 +76,7 @@ export function DashboardPageSkeleton() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @6xl:grid-cols-4">
+        <div className="flex items-start gap-3 overflow-hidden">
           {BOARD_COLUMN_SKELETON_KEYS.map((key) => (
             <BoardColumnSkeleton key={key} columnKey={key} />
           ))}

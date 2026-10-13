@@ -6,7 +6,6 @@ import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
-  AlertCircle,
   ArrowRight,
   FileCheck,
   FileX,
@@ -23,11 +22,8 @@ import type { ReactNode } from "react";
 import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import {
-  BoardColumn,
   CARD_CLASS_NAME,
   CARD_GRID_CLASS_NAME,
-  COLUMN_LIST_CLASS_NAME,
-  ColumnMessage,
   WorkSection,
 } from "./my-work-sections";
 
@@ -76,7 +72,7 @@ const STATUS_CLASS_NAMES = {
   deleted: "border-red-500/30 bg-red-500/10 text-red-400",
 } satisfies Record<ObjectStatus, string>;
 
-function useMyAssignments(organizationId: Id<"organizations">) {
+export function useMyAssignments(organizationId: Id<"organizations">) {
   return useQuery(api.assignments.listMyAssignments, {
     organizationId,
     limit: ASSIGNMENTS_LIMIT,
@@ -95,7 +91,7 @@ function SectionLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-function PendingApprovalCard({ item }: { item: PendingApproval }) {
+export function PendingApprovalCard({ item }: { item: PendingApproval }) {
   const locale = useCurrentLocale();
   const t = useI18n();
   const config = APPROVAL_TYPES[item.type];
@@ -221,39 +217,6 @@ function ObjectCard({
 
 function CardGrid({ children }: { children: ReactNode }) {
   return <ul className={CARD_GRID_CLASS_NAME}>{children}</ul>;
-}
-
-export function PendingApprovalsColumn({
-  organizationId,
-}: {
-  organizationId: Id<"organizations">;
-}) {
-  const t = useI18n();
-  const assignments = useMyAssignments(organizationId);
-
-  return (
-    <BoardColumn
-      icon={<AlertCircle className="size-4 shrink-0 text-amber-400" />}
-      title={t("assignmentsPage.sections.pendingApproval")}
-      count={
-        assignments === undefined
-          ? undefined
-          : String(assignments.stats.totalPendingApprovals)
-      }
-    >
-      {assignments === undefined ? (
-        <ColumnMessage>{t("caseTasks.myWork.loading")}</ColumnMessage>
-      ) : assignments.pendingApprovals.length === 0 ? (
-        <ColumnMessage>{t("caseTasks.myWork.approvalsEmpty")}</ColumnMessage>
-      ) : (
-        <ul className={COLUMN_LIST_CLASS_NAME}>
-          {assignments.pendingApprovals.map((item) => (
-            <PendingApprovalCard key={item._id} item={item} />
-          ))}
-        </ul>
-      )}
-    </BoardColumn>
-  );
 }
 
 /** Objects the viewer recently modified or cataloged. */
