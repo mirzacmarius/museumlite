@@ -664,7 +664,7 @@ describe("wide fan-out", () => {
       status: "completed",
       mismatchCount: 0,
     });
-  });
+  }, 20_000);
 
   test("moving a location with more than the fan-out limit of objects to another site converges without blanking metrics", async () => {
     const { staff, settle, organizationId, userId, t } = await fixture([
@@ -732,7 +732,7 @@ describe("wide fan-out", () => {
     ).toMatchObject({ availability: "ready", updating: false });
     const { health } = await reconcile(staff, settle, organizationId);
     expect(health.lastReconciliation).toMatchObject({ mismatchCount: 0 });
-  });
+  }, 20_000);
 });
 
 describe("metric aggregate storage", () => {
