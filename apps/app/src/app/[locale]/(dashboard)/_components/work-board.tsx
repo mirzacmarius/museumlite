@@ -106,7 +106,7 @@ function EmptyColumns({
   label: string;
 }) {
   return (
-    <details open className="group ml-auto w-52 shrink-0">
+    <details open className="group ml-auto w-60 shrink-0">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-1 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
         <ChevronDown
           className="size-3.5 -rotate-90 transition-transform group-open:rotate-0"
