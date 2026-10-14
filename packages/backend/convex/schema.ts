@@ -1242,6 +1242,11 @@ export default defineSchema({
       "dateReceived",
     ])
     .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
+    .index("by_organization_and_status_and_approvedAt", [
+      "organizationId",
+      "status",
+      "approvedAt",
+    ])
     .index("by_donor_account", ["donorAccountId"])
     .index("by_assigned_to", ["assignedTo"])
     .index("by_entry", ["entryId"])

@@ -5505,6 +5505,7 @@ export default {
     kanban: {
       loading: "Cargando…",
       loadMore: "Cargar más",
+      showMore: "Mostrar más",
       shownOfTotal: "{loaded} de {total}",
       matchesShown: "Coincidencias mostradas: {loaded}",
       noMatches: "No hay accesiones coincidentes en {step}",

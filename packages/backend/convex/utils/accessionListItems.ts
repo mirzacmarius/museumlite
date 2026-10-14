@@ -21,6 +21,7 @@ export const accessionListItemValidator = v.object({
   ),
   status: accessionStatusValidator,
   workflowStep: v.optional(v.number()),
+  approvedAt: v.optional(v.number()),
   assignedTo: v.optional(v.id("users")),
   assigneeName: v.optional(v.string()),
 });
@@ -47,6 +48,7 @@ export async function toAccessionListItems(
       method: item.method,
       status: item.status,
       workflowStep: item.workflowStep,
+      approvedAt: item.approvedAt,
       assignedTo: item.assignedTo,
       assigneeName: assignee?.name || assignee?.email || undefined,
     };

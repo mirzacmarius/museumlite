@@ -18,6 +18,7 @@ import Link from "next/link";
 import { withReturnPath } from "@/lib/return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatAccessionMethodLabel } from "./[id]/_components/accession-detail-ui";
+import { ApprovedLogEntry } from "./approved-log-entry";
 
 export type AccessionBoardColumn = FunctionArgs<
   typeof api.accessions.listBoardColumn
@@ -36,6 +37,7 @@ type KanbanColumnProps = {
 };
 
 const PAGE_SIZE = 25;
+const APPROVED_LOG_PAGE_SIZE = 10;
 
 const stepDotStyles: Record<number, string> = {
   0: "bg-zinc-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]",
@@ -101,6 +103,8 @@ export function KanbanColumn({
   const dotStyle = getColumnDotStyle(column);
   const icon = getColumnIcon(column);
   const search = searchQuery.trim();
+  const isApprovedLog = column.kind === "approved";
+  const pageSize = isApprovedLog ? APPROVED_LOG_PAGE_SIZE : PAGE_SIZE;
   const { results, status, loadMore } = usePaginatedQuery(
     api.accessions.listBoardColumn,
     {
@@ -108,7 +112,7 @@ export function KanbanColumn({
       column,
       search: search || undefined,
     },
-    { initialNumItems: PAGE_SIZE },
+    { initialNumItems: pageSize },
   );
   const isLoadingFirstPage = status === "LoadingFirstPage";
   const countLabel = search
@@ -149,6 +153,19 @@ export function KanbanColumn({
                       })}
                 </p>
               </div>
+            ) : isApprovedLog ? (
+              <ol className="flex flex-col divide-y divide-border/60">
+                {results.map((accession) => (
+                  <ApprovedLogEntry
+                    key={accession._id}
+                    accession={accession}
+                    href={withReturnPath(
+                      `/accessions/${accession._id}`,
+                      returnPath,
+                    )}
+                  />
+                ))}
+              </ol>
             ) : (
               results.map((accession) => (
                 <Link
@@ -194,11 +211,13 @@ export function KanbanColumn({
                 size="sm"
                 className="w-full text-xs"
                 disabled={status === "LoadingMore"}
-                onClick={() => loadMore(PAGE_SIZE)}
+                onClick={() => loadMore(pageSize)}
               >
                 {status === "LoadingMore"
                   ? t("kanban.loading")
-                  : t("kanban.loadMore")}
+                  : isApprovedLog
+                    ? t("kanban.showMore")
+                    : t("kanban.loadMore")}
               </Button>
             ) : null}
           </div>

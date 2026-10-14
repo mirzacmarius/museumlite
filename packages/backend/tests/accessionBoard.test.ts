@@ -190,3 +190,49 @@ test("board queries require collections.read in the organization", async () => {
     ).rejects.toThrow();
   }
 });
+
+test("the Approved column lists the latest approvals first with their approval time", async () => {
+  const t = createConvexTest();
+  const setup = await setupBoard(t);
+  await t.run(async (ctx) => {
+    const approvals = [
+      { accessionNumber: "OLDEST", dateReceived: 3, approvedAt: 100 },
+      { accessionNumber: "NEWEST", dateReceived: 1, approvedAt: 300 },
+      { accessionNumber: "MIDDLE", dateReceived: 2, approvedAt: 200 },
+    ];
+    for (const approval of approvals) {
+      await ctx.db.insert("accessions", {
+        organizationId: setup.organizationId,
+        ...approval,
+        source: "Donor",
+        method: "gift",
+        status: "approved",
+      });
+    }
+  });
+  const user = authedForUser(t, setup.userId);
+
+  const first = await user.query(api.accessions.listBoardColumn, {
+    organizationId: setup.organizationId,
+    column: { kind: "approved" },
+    paginationOpts: { cursor: null, numItems: 2 },
+  });
+  const second = await user.query(api.accessions.listBoardColumn, {
+    organizationId: setup.organizationId,
+    column: { kind: "approved" },
+    paginationOpts: { cursor: first.continueCursor, numItems: 2 },
+  });
+
+  expectMatchesReturns(accessions.listBoardColumn, first);
+  expect(
+    [...first.page, ...second.page].map((row) => [
+      row.accessionNumber,
+      row.approvedAt,
+    ]),
+  ).toEqual([
+    ["NEWEST", 300],
+    ["MIDDLE", 200],
+    ["OLDEST", 100],
+  ]);
+  expect(second.isDone).toBe(true);
+});

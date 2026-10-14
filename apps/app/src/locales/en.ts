@@ -5387,6 +5387,7 @@ export default {
     kanban: {
       loading: "Loading…",
       loadMore: "Load more",
+      showMore: "Show more",
       shownOfTotal: "{loaded} of {total}",
       matchesShown: "Matches shown: {loaded}",
       noMatches: "No matching accessions in {step}",

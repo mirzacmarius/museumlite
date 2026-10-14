@@ -924,6 +924,30 @@ const boardColumnValidator = v.union(
   v.object({ kind: v.literal("step"), step: v.number() }),
 );
 
+/** Approved reads as a log ordered by approval; other columns by receipt. */
+function boardColumnQuery(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  column: Infer<typeof boardColumnValidator>,
+  lastStep: number,
+) {
+  if (column.kind === "step") {
+    return pendingColumnQuery(ctx, organizationId, column.step, lastStep);
+  }
+  if (column.kind === "approved") {
+    return ctx.db
+      .query("accessions")
+      .withIndex("by_organization_and_status_and_approvedAt", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "approved"),
+      );
+  }
+  return ctx.db
+    .query("accessions")
+    .withIndex("by_organization_and_status_and_dateReceived", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "withdrawn"),
+    );
+}
+
 /**
  * One accession board column, paginated on the server. With a search, rows
  * come from the indexed search documents; a page can hold fewer rows than
@@ -969,25 +993,14 @@ export const listBoardColumn = query({
       };
     }
 
-    const result =
-      column.kind !== "step"
-        ? await ctx.db
-            .query("accessions")
-            .withIndex("by_organization_and_status_and_dateReceived", (q) =>
-              q
-                .eq("organizationId", args.organizationId)
-                .eq("status", column.kind),
-            )
-            .order("desc")
-            .paginate(args.paginationOpts)
-        : await pendingColumnQuery(
-            ctx,
-            args.organizationId,
-            column.step,
-            lastStep,
-          )
-            .order("desc")
-            .paginate(args.paginationOpts);
+    const result = await boardColumnQuery(
+      ctx,
+      args.organizationId,
+      column,
+      lastStep,
+    )
+      .order("desc")
+      .paginate(args.paginationOpts);
     return {
       page: await toAccessionListItems(ctx, result.page),
       isDone: result.isDone,
