@@ -59,7 +59,9 @@ export function NewExhibitionPageClient() {
       setError(t("form.titleRequired"));
       return;
     }
-    const parsedParticipants = exhibitionParticipantSchema.safeParse(formData.participants);
+    const parsedParticipants = exhibitionParticipantSchema.safeParse(
+      formData.participants,
+    );
     if (!parsedParticipants.success) {
       setError(t("form.invalidParticipants"));
       return;

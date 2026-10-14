@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
@@ -8,6 +8,7 @@ import es from "./es";
 import fr from "./fr";
 import no from "./no";
 import ro from "./ro";
+import KNOWN_UNUSED_KEYS from "./unused-keys.baseline.json";
 
 function flattenTranslations(
   dictionary: object,
@@ -275,4 +276,68 @@ test("literal translation calls resolve to an English string", () => {
 
   expect(checkedCalls).toBeGreaterThan(0);
   expect(Array.from(missing).toSorted()).toEqual([]);
+}, 15_000);
+
+function propertyChain(node: ts.Expression): string[] {
+  if (ts.isPropertyAccessExpression(node)) {
+    return [...propertyChain(node.expression), node.name.text];
+  }
+  return ts.isIdentifier(node) ? [node.text] : [];
+}
+
+/**
+ * Text of every string literal, property-access chain and template-literal
+ * head in the app, so a key counts as used when any of its dot-suffixes is
+ * written out, or when a template such as `status.${value}` can build it.
+ */
+function sourceStrings(files: string[]) {
+  const literals = new Set<string>();
+  const templateHeads = new Set<string>();
+  for (const path of files) {
+    const source = ts.createSourceFile(
+      path,
+      readFileSync(path, "utf8"),
+      ts.ScriptTarget.Latest,
+    );
+    function visit(node: ts.Node) {
+      if (ts.isStringLiteralLike(node)) literals.add(node.text);
+      // `dictionary.loans.actions.condition` reads a key without a string.
+      if (ts.isPropertyAccessExpression(node)) {
+        const names = propertyChain(node);
+        for (let index = 0; index < names.length - 1; index++) {
+          literals.add(names.slice(index).join("."));
+        }
+      }
+      if (ts.isTemplateExpression(node) && node.head.text.endsWith(".")) {
+        templateHeads.add(node.head.text);
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(source);
+  }
+  return { literals, templateHeads };
+}
+
+test("every English translation is referenced from app source", () => {
+  const { literals, templateHeads } = sourceStrings([
+    ...sourceFiles(fileURLToPath(new URL("../", import.meta.url))),
+    // Hands the `ui` namespace to @v1/ui.
+    fileURLToPath(new URL("./ui-provider.tsx", import.meta.url)),
+  ]);
+  const unused = Object.keys(english).filter((key) => {
+    const segments = key.split(".");
+    const written = segments.some((_, index) =>
+      literals.has(segments.slice(index).join(".")),
+    );
+    const built = [...templateHeads].some((head) =>
+      `.${key}`.includes(`.${head}`),
+    );
+    return !written && !built;
+  });
+
+  const known = new Set(KNOWN_UNUSED_KEYS);
+  // A key you stopped using: delete it from every locale.
+  expect(unused.filter((key) => !known.has(key))).toEqual([]);
+  // A key that is used again or was deleted: drop it from the baseline.
+  expect(KNOWN_UNUSED_KEYS.filter((key) => !unused.includes(key))).toEqual([]);
 }, 15_000);

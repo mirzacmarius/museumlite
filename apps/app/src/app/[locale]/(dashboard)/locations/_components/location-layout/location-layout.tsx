@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { IconActionButton } from "@/components/icon-action-button";
 import { PermissionGate } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
 import { LocationContentSkeleton } from "../../location-page-skeleton";
 import {
   getDefaultLocationId,
@@ -20,7 +21,6 @@ import { LocationSidebar } from "../location-sidebar";
 import { LocationActions } from "./location-actions";
 import { LocationLayoutContent } from "./location-layout-content";
 
-import { useI18n } from "@/locales/client";
 interface LocationLayoutProps {
   organizationId: Id<"organizations">;
 }
@@ -164,7 +164,9 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <MapPin className="size-12 text-muted-foreground" />
             <div className="text-center">
-              <p className="text-muted-foreground">{tRoot("untranslatedDashboard.locationViews.noLocationsYet")}</p>
+              <p className="text-muted-foreground">
+                {tRoot("untranslatedDashboard.locationViews.noLocationsYet")}
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {tRoot("untranslatedDashboard.locationViews.firstLocation")}
               </p>

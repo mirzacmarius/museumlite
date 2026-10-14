@@ -24,7 +24,9 @@ export function EditExhibitionPageClient() {
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("exhibitions");
   const updateExhibition = useMutation(api.exhibitions.update);
-  const reconcileParticipation = useMutation(api.exhibitions.reconcileLegacyParticipation);
+  const reconcileParticipation = useMutation(
+    api.exhibitions.reconcileLegacyParticipation,
+  );
 
   const exhibition = useQuery(api.exhibitions.get, {
     id: exhibitionId as Id<"exhibitions">,
@@ -59,7 +61,10 @@ export function EditExhibitionPageClient() {
         isLoan: exhibition.isLoan || false,
         loanVenue: exhibition.loanVenue || "",
         notes: exhibition.notes || "",
-        participants: members.map((member) => ({ collectionId: member.collectionId, role: member.role })),
+        participants: members.map((member) => ({
+          collectionId: member.collectionId,
+          role: member.role,
+        })),
       });
     }
   }, [exhibition, members]);
@@ -102,7 +107,9 @@ export function EditExhibitionPageClient() {
       await reconcileParticipation({
         exhibitionId: exhibitionId as Id<"exhibitions">,
         includeAnchor,
-        expectedMemberCollectionIds: members.map((member) => member.collectionId),
+        expectedMemberCollectionIds: members.map(
+          (member) => member.collectionId,
+        ),
       });
       refresh();
       setIsSubmitting(false);
@@ -120,7 +127,9 @@ export function EditExhibitionPageClient() {
       setError(t("form.titleRequired"));
       return;
     }
-    const parsedParticipants = exhibitionParticipantSchema.safeParse(formData.participants);
+    const parsedParticipants = exhibitionParticipantSchema.safeParse(
+      formData.participants,
+    );
     if (!parsedParticipants.success) {
       setError(t("form.invalidParticipants"));
       return;
@@ -138,7 +147,10 @@ export function EditExhibitionPageClient() {
         isLoan: formData.isLoan,
         loanVenue: formData.isLoan ? formData.loanVenue : undefined,
         notes: formData.notes || undefined,
-        participants: parsedParticipants.data.map((participant) => ({ collectionId: participant.collectionId as Id<"collections">, role: participant.role })),
+        participants: parsedParticipants.data.map((participant) => ({
+          collectionId: participant.collectionId as Id<"collections">,
+          role: participant.role,
+        })),
       });
       push(`/exhibitions/${exhibitionId}`);
     } catch (err) {
@@ -184,8 +196,13 @@ export function EditExhibitionPageClient() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {exhibition.legacyParticipationReview && (
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 space-y-3">
-                <p className="text-sm text-amber-200">{t("form.legacyReviewDescription")}</p>
-                <p className="text-xs text-white/60">{t("form.legacyReviewReason")}: {t(`form.${exhibition.legacyParticipationReview.reason}`)}</p>
+                <p className="text-sm text-amber-200">
+                  {t("form.legacyReviewDescription")}
+                </p>
+                <p className="text-xs text-white/60">
+                  {t("form.legacyReviewReason")}:{" "}
+                  {t(`form.${exhibition.legacyParticipationReview.reason}`)}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
@@ -238,16 +255,18 @@ export function EditExhibitionPageClient() {
               >
                 {t("actions.cancel")}
               </Button>
-              {!exhibition.legacyParticipationReview && <PermissionGate permission="collections.update">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Save className="mr-2 size-4" />
-                  {isSubmitting ? t("actions.saving") : t("actions.save")}
-                </Button>
-              </PermissionGate>}
+              {!exhibition.legacyParticipationReview && (
+                <PermissionGate permission="collections.update">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Save className="mr-2 size-4" />
+                    {isSubmitting ? t("actions.saving") : t("actions.save")}
+                  </Button>
+                </PermissionGate>
+              )}
             </div>
           </form>
         </div>

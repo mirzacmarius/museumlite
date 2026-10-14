@@ -1,10 +1,10 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { Package } from "lucide-react";
-import { useScopedI18n } from "@/locales/client";
 import Image from "next/image";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { useScopedI18n } from "@/locales/client";
 import type { LocationObjectThumbnail } from "./location-object-thumbnail";
 import { locationUnitCards } from "./location-unit-cards";
 

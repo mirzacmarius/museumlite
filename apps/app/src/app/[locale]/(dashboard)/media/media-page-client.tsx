@@ -175,12 +175,18 @@ export function MediaPageClient({
             {stats?.availability === "ready" && usage && (
               <div className="flex items-center gap-2 text-xs text-zinc-500">
                 <span className="size-2 rounded-full bg-emerald-500" />
-                <span>{formatFileSize(stats.totalSize)} {tRoot("untranslatedRecords.objects.forms.used")}</span>
+                <span>
+                  {formatFileSize(stats.totalSize)}{" "}
+                  {tRoot("untranslatedRecords.objects.forms.used")}
+                </span>
                 <span className="text-zinc-700">/</span>
                 {usage.storage.limit === null ? (
                   <span>{tRoot("untranslatedDashboard.media.unlimited")}</span>
                 ) : (
-                  <span>{formatFileSize(usage.storage.limit)} {tRoot("untranslatedDashboard.media.total")}</span>
+                  <span>
+                    {formatFileSize(usage.storage.limit)}{" "}
+                    {tRoot("untranslatedDashboard.media.total")}
+                  </span>
                 )}
               </div>
             )}
@@ -234,7 +240,9 @@ export function MediaPageClient({
           <EmptyState
             icon={ImageIcon}
             title={t("mediaPage.empty")}
-            description={tRoot("untranslatedDashboard.media.uploadedFromObjects")}
+            description={tRoot(
+              "untranslatedDashboard.media.uploadedFromObjects",
+            )}
             size="md"
           />
         )}
@@ -247,44 +255,44 @@ export function MediaPageClient({
               const previewUrl = urlByStorageId.get(previewStorageId);
 
               return (
-              <button
-                key={item._id}
-                type="button"
-                onClick={() => setSelectedMediaId(item._id)}
-                className="group relative w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 text-left transition-all duration-300 hover:border-zinc-600 hover:shadow-xl"
-              >
-                <div className="relative aspect-square overflow-hidden bg-zinc-950">
-                  {item.fileType === "image" && previewUrl ? (
-                    <NextImage
-                      src={previewUrl}
-                      alt={item.fileName}
-                      fill
-                      sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
-                      className="object-cover opacity-80 transition-all duration-500 group-hover:scale-105 group-hover:opacity-100"
-                    />
-                  ) : (
-                    <div className="flex size-full items-center justify-center">
-                      <div className="size-12 rounded-lg bg-zinc-900/40" />
-                    </div>
-                  )}
+                <button
+                  key={item._id}
+                  type="button"
+                  onClick={() => setSelectedMediaId(item._id)}
+                  className="group relative w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 text-left transition-all duration-300 hover:border-zinc-600 hover:shadow-xl"
+                >
+                  <div className="relative aspect-square overflow-hidden bg-zinc-950">
+                    {item.fileType === "image" && previewUrl ? (
+                      <NextImage
+                        src={previewUrl}
+                        alt={item.fileName}
+                        fill
+                        sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
+                        className="object-cover opacity-80 transition-all duration-500 group-hover:scale-105 group-hover:opacity-100"
+                      />
+                    ) : (
+                      <div className="flex size-full items-center justify-center">
+                        <div className="size-12 rounded-lg bg-zinc-900/40" />
+                      </div>
+                    )}
 
-                  {item.isPrimary && (
-                    <div className="absolute left-2 top-2 rounded bg-amber-500/90 p-1">
-                      <Star className="size-3 text-white" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-zinc-900 p-2.5">
-                  <p className="truncate text-xs font-medium text-zinc-200">
-                    {item.fileName}
-                  </p>
-                  <div className="mt-1 flex justify-between text-[10px] text-zinc-500">
-                    <span>{formatFileSize(item.fileSize)}</span>
-                    <span>{getFileExtension(item.fileName)}</span>
+                    {item.isPrimary && (
+                      <div className="absolute left-2 top-2 rounded bg-amber-500/90 p-1">
+                        <Star className="size-3 text-white" />
+                      </div>
+                    )}
                   </div>
-                </div>
-              </button>
+
+                  <div className="bg-zinc-900 p-2.5">
+                    <p className="truncate text-xs font-medium text-zinc-200">
+                      {item.fileName}
+                    </p>
+                    <div className="mt-1 flex justify-between text-[10px] text-zinc-500">
+                      <span>{formatFileSize(item.fileSize)}</span>
+                      <span>{getFileExtension(item.fileName)}</span>
+                    </div>
+                  </div>
+                </button>
               );
             })}
           </div>

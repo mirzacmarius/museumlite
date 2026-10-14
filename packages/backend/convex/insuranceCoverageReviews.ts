@@ -1,5 +1,5 @@
-import { customQuery } from "convex-helpers/server/customFunctions";
 import { type Infer, v } from "convex/values";
+import { customQuery } from "convex-helpers/server/customFunctions";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
@@ -35,7 +35,12 @@ const insuranceReadQuery = customQuery(query, {
   args: { organizationId: v.id("organizations") },
   input: async (ctx, args) => {
     const userId = await requireAuthenticatedUser(ctx);
-    await requireCapability(ctx, args.organizationId, "insurance", "loans.read");
+    await requireCapability(
+      ctx,
+      args.organizationId,
+      "insurance",
+      "loans.read",
+    );
     return { ctx: { userId, organizationId: args.organizationId }, args: {} };
   },
 });

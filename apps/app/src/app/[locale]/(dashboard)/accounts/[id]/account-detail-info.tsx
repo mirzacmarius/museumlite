@@ -24,7 +24,9 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                 <Building2 className="mt-0.5 size-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">{account.businessName}</p>
-                  <p className="text-xs text-muted-foreground">{t("businessName")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("businessName")}
+                  </p>
                 </div>
               </div>
               {account.phone && (
@@ -32,7 +34,9 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                   <Phone className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.phone}</p>
-                    <p className="text-xs text-muted-foreground">{t("phone")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("phone")}
+                    </p>
                   </div>
                 </div>
               )}
@@ -41,7 +45,9 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                   <Mail className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.email}</p>
-                    <p className="text-xs text-muted-foreground">{t("email")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("email")}
+                    </p>
                   </div>
                 </div>
               )}

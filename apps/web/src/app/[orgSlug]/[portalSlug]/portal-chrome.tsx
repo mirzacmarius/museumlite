@@ -65,15 +65,15 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-4 text-xs text-white/40">
               <LocaleSwitcher />
               <span>
-              {t("common.poweredBy")} {" "}
-              <a
-                href="https://museumlite.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white/60 hover:text-white transition-colors"
-              >
-                MuseumLite
-              </a>
+                {t("common.poweredBy")}{" "}
+                <a
+                  href="https://museumlite.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  MuseumLite
+                </a>
               </span>
             </div>
           </div>

@@ -33,12 +33,12 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useScopedI18n } from "@/locales/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   isExhibitionLocation,
   isStorageLocation,
 } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
+import { useScopedI18n } from "@/locales/client";
 import { LocationTypeIcon } from "../location-type-icon";
 import {
   type DiagramSettings,
@@ -109,7 +109,16 @@ function getLocationAccent(type: string) {
 }
 
 function formatLocationType(type: string, translate: (key: string) => string) {
-  return ["building", "room", "gallery", "storage", "cabinet", "shelf", "vault", "other"].includes(type)
+  return [
+    "building",
+    "room",
+    "gallery",
+    "storage",
+    "cabinet",
+    "shelf",
+    "vault",
+    "other",
+  ].includes(type)
     ? translate(`form.locationTypes.${type}`)
     : type;
 }
@@ -326,13 +335,13 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
       )}
 
       <div className="flex h-10 items-center justify-between border-t border-border/60 px-3 text-[10px] text-muted-foreground">
-        <span>
-          {t("objectsHere", { count: objects.length })}
-        </span>
+        <span>{t("objectsHere", { count: objects.length })}</span>
         {hasChildren ? (
           <button
             type="button"
-            aria-label={t(expanded ? "collapseLocation" : "expandLocation", { name: location.name })}
+            aria-label={t(expanded ? "collapseLocation" : "expandLocation", {
+              name: location.name,
+            })}
             aria-expanded={expanded}
             onClick={() => toggle(location._id)}
             className="nodrag nopan flex items-center gap-1 rounded p-1 hover:bg-muted hover:text-foreground"

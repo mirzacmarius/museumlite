@@ -24,8 +24,8 @@ Standing delivery authorization (merge, deploy, then In Review) is defined in ro
 Apply when finishing work tied to a MUS issue (prompt, branch, PR, or link).
 
 1. Resolve the MUS id (for example `MUS-501`). Ask once if missing.
-2. Complete the normal delivery path under standing authorization in `AGENTS.md` (commit, PR, required checks, merge, production deploy).
-3. Keep the issue `In Progress` until the change is verified on https://app.museumlite.com.
+2. Complete the normal delivery path under standing authorization in `AGENTS.md` (commit, `code-review`, PR, `Check / check`, merge, production deploy).
+3. Keep the issue `In Progress` until `node scripts/verify-deploy.mjs <merge-sha>` passes. It finds the Vercel production deployment for the commit, fails within 3 minutes if none started, waits for READY and confirms https://app.museumlite.com serves it. Do not poll GitHub commit statuses for this; Vercel can skip a commit without posting one.
 4. Comment on the issue with PR link, deployed commit SHA, app URL, and a **Review checklist**.
 5. Move the issue to `In Review` only after that deploy verification.
 6. Never set `Done`, `Canceled`, or `Duplicate` unless a human asks after review.

@@ -842,7 +842,9 @@ describe("property held under an entry is not part of the collection", () => {
         )
       ).code,
     ).toBe("ENTRY_TEMPORARY_CUSTODY");
-    expect((await entryErrorOf(deaccession())).code).toBe("ENTRY_TEMPORARY_CUSTODY");
+    expect((await entryErrorOf(deaccession())).code).toBe(
+      "ENTRY_TEMPORARY_CUSTODY",
+    );
     const eligibility = await museum.staff.query(
       api.objectMoves.getEligibility,
       {
@@ -1296,9 +1298,9 @@ describe("review follow-ups", () => {
     const bulk = await museum.staff.mutation(
       api.batchOperations.quickBulkStatusChange,
       {
-      organizationId: museum.organizationId,
-      collectionIds: [collectionId],
-      newStatus: "archived",
+        organizationId: museum.organizationId,
+        collectionIds: [collectionId],
+        newStatus: "archived",
         reason: "Bulk clean-up",
       },
     );
@@ -1329,9 +1331,9 @@ describe("review follow-ups", () => {
     const t = createConvexTest();
     const museum = await createMuseum(t);
     const { entryId } = await receive(museum);
-    expect(
-      (await getEntry(museum.staff, entryId)).canInitiateAcquisition,
-    ).toBe(true);
+    expect((await getEntry(museum.staff, entryId)).canInitiateAcquisition).toBe(
+      true,
+    );
     await t.run(async (ctx) => {
       const otherRole = await ctx.db.insert("roles", {
         organizationId: museum.organizationId,
@@ -1345,9 +1347,9 @@ describe("review follow-ups", () => {
         canInitiateRoles: [otherRole],
       });
     });
-    expect(
-      (await getEntry(museum.staff, entryId)).canInitiateAcquisition,
-    ).toBe(false);
+    expect((await getEntry(museum.staff, entryId)).canInitiateAcquisition).toBe(
+      false,
+    );
   });
 
   test("does not announce entered property as a new collection object", async () => {

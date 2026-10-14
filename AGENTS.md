@@ -10,12 +10,11 @@ This project runs Next.js 16.2, and its APIs, conventions, and file structure di
 
 # Coding Agent Guidelines
 
-## Prelaunch verification policy
+## Verification policy
 
-- Match local checks to the changed area. Documentation or copy-only changes do not need the full suite.
-- For auth, permissions, billing, schema, or shared dependencies, run the relevant targeted tests and build checks.
-- Run the full manual CI workflow for a release candidate or when a risky change specifically calls for it: `gh workflow run check.yml --ref <branch>`.
-- CI no longer runs automatically on pushes or pull requests; do not wait for automatic checks.
+- Before pushing, run checks matched to the changed area. Documentation or copy-only changes do not need the full suite; `bun run check` covers everything CI runs except build and loopback deploy.
+- For auth, permissions, billing, schema, or shared dependencies, also run the relevant targeted tests and build checks.
+- CI (`Check / check` in `.github/workflows/check.yml`) runs automatically on every pull request and push to `main`. A PR is mergeable only when that check has passed on its head commit.
 
 MuseumLite is a museum and library collection-management SaaS. Turborepo monorepo with Convex backend, Next.js 16 App Router, Bun, and Biome.
 
@@ -39,7 +38,7 @@ Tickets and acceptance criteria live in Linear (MUS). Do not reintroduce large a
 
 ## Standing delivery authorization
 
-For MuseumLite coding work or implementation requested from a Linear issue, the user authorizes the normal delivery workflow without a separate fresh confirmation at each step: commit the completed change, push the branch, open a pull request, wait for all required checks to pass, review the resulting diff, merge through the repository's normal GitHub controls, and allow the configured Vercel and Convex production deployment to run. Verify that the merged commit successfully serves `https://app.museumlite.com`, then post the tester checklist and deployed commit SHA, PR link, and app URL to the Linear issue and move it to `In Review`.
+For MuseumLite coding work or implementation requested from a Linear issue, the user authorizes the normal delivery workflow without a separate fresh confirmation at each step: commit the completed change, run the `code-review` skill (Standards and Spec review against `CODING_STANDARDS.md` and the Linear issue) on the branch since `origin/main` and fix what it confirms, push the branch, open a pull request, wait for the `Check / check` run on the PR head commit to pass (`gh pr checks <pr> --watch`), merge through the repository's normal GitHub controls, and allow the configured Vercel and Convex production deployment to run. Verify with `node scripts/verify-deploy.mjs <merge-sha>` that the merged commit serves `https://app.museumlite.com`, then post the tester checklist and deployed commit SHA, PR link, and app URL to the Linear issue and move it to `In Review`.
 
 This project-scoped standing authorization takes precedence over optional skill instructions that would otherwise require fresh consent for each merge or routine production deployment, including `convex-deploy-guard`. It does not authorize bypassing branch protection or failed checks, or operations outside this normal delivery workflow. Honor explicit user constraints, identify the correct issue and deployment target, and use deterministic checks before merging. When required checks fail, investigate and fix failures within the requested scope, then rerun the required checks and continue once they pass. If a failure or deployment problem remains unresolved, do not bypass it or move the issue to `In Review`; report the blocker and keep the issue `In Progress`. `Done` remains reserved for human or tester validation.
 

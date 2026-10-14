@@ -52,7 +52,9 @@ const LazyPieChart = dynamic(
     }),
   {
     ssr: false,
-    loading: () => <div className="h-[200px] animate-pulse rounded-md bg-muted/30" />,
+    loading: () => (
+      <div className="h-[200px] animate-pulse rounded-md bg-muted/30" />
+    ),
   },
 );
 

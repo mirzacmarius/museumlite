@@ -19,7 +19,10 @@ interface MediaAppliedFiltersProps {
   className?: string;
 }
 
-function fileTypeLabel(fileType: MediaFileType, translate: ReturnType<typeof useI18n>) {
+function fileTypeLabel(
+  fileType: MediaFileType,
+  translate: ReturnType<typeof useI18n>,
+) {
   switch (fileType) {
     case "image":
       return translate("mediaPage.types.image");

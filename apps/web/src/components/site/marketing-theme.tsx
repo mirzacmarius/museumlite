@@ -85,7 +85,9 @@ export function MarketingThemeProvider({
 export function useMarketingTheme() {
   const ctx = use(MarketingThemeContext);
   if (!ctx) {
-    throw new Error("useMarketingTheme must be used within MarketingThemeProvider");
+    throw new Error(
+      "useMarketingTheme must be used within MarketingThemeProvider",
+    );
   }
   return ctx;
 }

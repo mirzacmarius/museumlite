@@ -102,14 +102,18 @@ export function OrganizationDeletionCancelPageClient({ params }: PageProps) {
       <div className="flex w-full max-w-md flex-col items-center gap-6">
         <Logo width={200} height={200} />
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("heading")}
+          </h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
 
         <div className="w-full space-y-4 rounded-lg border border-border bg-card p-6">
           <div>
             <p className="text-sm text-muted-foreground">{t("organization")}</p>
-            <p className="text-base font-medium">{deletionInfo.organizationName}</p>
+            <p className="text-base font-medium">
+              {deletionInfo.organizationName}
+            </p>
           </div>
           {scheduledDeletionLabel ? (
             <div>
