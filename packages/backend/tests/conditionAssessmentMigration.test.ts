@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
+import { SUPER_ADMIN_ROLE_NAME } from "../convex/utils/superAdmins";
 import {
   ADMIN_ROLE_NAME,
   CATALOGER_ROLE_NAME,
@@ -13,7 +14,6 @@ import {
   LEGACY_REGISTRAR_ROLE_NAME,
   LEGACY_VIEWER_ROLE_NAME,
 } from "../convex/utils/systemRoles";
-import { SUPER_ADMIN_ROLE_NAME } from "../convex/utils/superAdmins";
 import { modules } from "./testSetup";
 
 const ACCEPT_CONDITION = "collections.accept_condition";

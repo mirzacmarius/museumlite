@@ -4,9 +4,9 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import { LocationSelector } from "@/components/location-selector";
 import { Loader2 } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
+import { LocationSelector } from "@/components/location-selector";
 import { useI18n } from "@/locales/client";
 import type { MoveRequestSubmitAction } from "./use-move-request-detail";
 
@@ -216,12 +216,12 @@ function MoveRequestActionsPanelTargetActions() {
           />
         </div>
       ) : null}
-    <Button onClick={onAccept} disabled={submittingAction !== null}>
-      {submittingAction === "accept" && (
-        <Loader2 className="mr-2 size-4 animate-spin" />
-      )}
-      {tRoot("untranslatedRecords.objects.move.accept")}
-    </Button>
+      <Button onClick={onAccept} disabled={submittingAction !== null}>
+        {submittingAction === "accept" && (
+          <Loader2 className="mr-2 size-4 animate-spin" />
+        )}
+        {tRoot("untranslatedRecords.objects.move.accept")}
+      </Button>
     </>
   );
 }

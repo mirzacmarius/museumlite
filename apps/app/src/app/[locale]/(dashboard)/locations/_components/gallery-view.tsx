@@ -234,7 +234,9 @@ export function GalleryView({
                     {wallSlots.length} {t("wallsConfigured")} ·{" "}
                     {normalizedWallItemsPerWall} {t("item")} {t("perWall")}
                   </span>
-                  <span>{occupiedWalls.length} {t("inUse")}</span>
+                  <span>
+                    {occupiedWalls.length} {t("inUse")}
+                  </span>
                 </div>
               </div>
             </div>
@@ -264,7 +266,9 @@ export function GalleryView({
       {hasShelves ? (
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-xs font-medium text-foreground">{t("shelves")}</h3>
+            <h3 className="text-xs font-medium text-foreground">
+              {t("shelves")}
+            </h3>
             <div className="text-xs text-muted-foreground">
               <span className="text-foreground">
                 {occupiedShelves.length}/{shelves.length} {t("shelvesInUse")}
@@ -333,7 +337,9 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
           <div className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
         </div>
         <div className="p-4 pt-12 h-full flex items-center justify-center">
-          <span className="text-[9px] text-muted-foreground">{t("emptySlot")}</span>
+          <span className="text-[9px] text-muted-foreground">
+            {t("emptySlot")}
+          </span>
         </div>
       </div>
     );
@@ -400,7 +406,9 @@ function WallSlot({ slot }: WallSlotProps) {
         <span className="mt-1 max-w-full truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
           {subtitle}
         </span>
-        <span className="text-[9px] text-muted-foreground">{t("emptyShort")}</span>
+        <span className="text-[9px] text-muted-foreground">
+          {t("emptyShort")}
+        </span>
       </div>
     );
   }

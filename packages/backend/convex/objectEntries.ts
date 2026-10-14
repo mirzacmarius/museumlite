@@ -4,9 +4,9 @@ import {
 } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { recordIntakeReviewDecision } from "./accessions";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import { recordIntakeReviewDecision } from "./accessions";
 import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
@@ -70,7 +70,10 @@ function optionalText(
   const text = value?.trim();
   if (!text) return undefined;
   if (text.length > max)
-    throw entryError("ENTRY_TEXT_TOO_LONG", `Text must be at most ${max} characters`);
+    throw entryError(
+      "ENTRY_TEXT_TOO_LONG",
+      `Text must be at most ${max} characters`,
+    );
   return text;
 }
 
@@ -251,7 +254,10 @@ export const receive = mutation({
     const now = Date.now();
     requireValidDate(args.receivedAt);
     if (args.receivedAt > now + CLOCK_SKEW_MS)
-      throw entryError("ENTRY_DATES_INVALID", "Receipt cannot be in the future");
+      throw entryError(
+        "ENTRY_DATES_INVALID",
+        "Receipt cannot be in the future",
+      );
     requireDueDates(args.receivedAt, args);
     const title = optionalText(args.object.title, MAX_NAME_LENGTH);
     if (!title) throw entryError("ENTRY_TITLE_REQUIRED", "A title is required");
@@ -462,7 +468,7 @@ async function mayInitiateAcquisition(
   organizationId: Id<"organizations">,
 ) {
   const organization = await ctx.db.get(organizationId);
-  return organization?.settings?.accessionWorkflowEnabled ?? true
+  return (organization?.settings?.accessionWorkflowEnabled ?? true)
     ? await canInitiateWorkflow(ctx, organizationId, "accession")
     : await hasPermission(ctx, organizationId, "collections.create");
 }

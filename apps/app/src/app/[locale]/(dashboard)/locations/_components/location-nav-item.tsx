@@ -183,7 +183,12 @@ export function LocationNavTreeItem({
         <LocationNavItem.Link />
       </LocationNavItem.Root>
       {isExpanded && (
-        <ul className="mt-0.5" aria-label={t("untranslatedDashboard.locationViews.childrenLabel", { name: location.name })}>
+        <ul
+          className="mt-0.5"
+          aria-label={t("untranslatedDashboard.locationViews.childrenLabel", {
+            name: location.name,
+          })}
+        >
           {childLocations.map((childLocation) => (
             <LocationNavTreeItem
               key={childLocation._id}

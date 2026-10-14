@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { X } from "lucide-react";
 import { useFocusOnLeave } from "@v1/ui/hooks";
+import { X } from "lucide-react";
 import { type ReactNode, type RefObject, useEffect, useRef } from "react";
 
 interface SelectionActionBarProps {

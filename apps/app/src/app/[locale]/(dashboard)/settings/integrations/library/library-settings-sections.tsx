@@ -34,11 +34,17 @@ export function LibrarySettingsHeader({
       <div className="flex flex-col gap-3">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/settings/integrations">
-            <ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+            <ArrowLeft className="mr-2 size-4" />
+            {t("back")}
+          </Link>
         </Button>
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-medium text-foreground">{t("librarySettings")}</h2>
-          <p className="text-sm text-muted-foreground">{t("librarySettingsDescription")}</p>
+          <h2 className="text-xl font-medium text-foreground">
+            {t("librarySettings")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("librarySettingsDescription")}
+          </p>
         </div>
       </div>
       <Button onClick={onSave} disabled={isSaving}>
@@ -62,7 +68,9 @@ export function LibraryCirculationSection({
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
         <h3 className="text-lg font-medium">{t("circulationPolicies")}</h3>
-        <p className="text-sm text-muted-foreground">{t("checkoutRenewalDefaults")}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("checkoutRenewalDefaults")}
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
@@ -136,7 +144,9 @@ export function LibraryFineSettingsSection({
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
         <h3 className="text-lg font-medium">{t("fineSettings")}</h3>
-        <p className="text-sm text-muted-foreground">{t("fineSettingsDescription")}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("fineSettingsDescription")}
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
@@ -212,7 +222,9 @@ export function LibraryHoldSettingsSection({
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
         <h3 className="text-lg font-medium">{t("holdSettings")}</h3>
-        <p className="text-sm text-muted-foreground">{t("holdSettingsDescription")}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("holdSettingsDescription")}
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
@@ -257,7 +269,9 @@ export function LibraryCardSettingsSection({
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
         <h3 className="text-lg font-medium">{t("libraryCardSettings")}</h3>
-        <p className="text-sm text-muted-foreground">{t("libraryCardDescription")}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("libraryCardDescription")}
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
@@ -291,7 +305,9 @@ export function LibraryCardSettingsSection({
         <div className="flex items-center justify-between gap-y-0 sm:col-span-2">
           <div>
             <Label>{t("autoGenerateCardNumbers")}</Label>
-            <p className="text-sm text-muted-foreground">{t("autoGenerateCardNumbersDescription")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("autoGenerateCardNumbersDescription")}
+            </p>
           </div>
           <Switch
             checked={formData.autoGenerateCardNumbers}
@@ -317,7 +333,9 @@ export function LibraryCatalogingSection({
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
         <h3 className="text-lg font-medium">{t("catalogingSettings")}</h3>
-        <p className="text-sm text-muted-foreground">{t("catalogingDescription")}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("catalogingDescription")}
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">

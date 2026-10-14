@@ -74,7 +74,9 @@ export function CollectionGroupCombobox({
 
   const handleSelect = (selectedValue: string) => {
     if (selectedValues.includes(selectedValue)) {
-      const remaining = selectedValues.filter((valueItem) => valueItem !== selectedValue);
+      const remaining = selectedValues.filter(
+        (valueItem) => valueItem !== selectedValue,
+      );
       onValueChange?.(remaining);
       if (primaryValue === selectedValue) onPrimaryChange?.(remaining[0] ?? "");
     } else {
@@ -85,7 +87,9 @@ export function CollectionGroupCombobox({
   };
 
   const handleRemove = (selectedValue: string) => {
-    const remaining = selectedValues.filter((valueItem) => valueItem !== selectedValue);
+    const remaining = selectedValues.filter(
+      (valueItem) => valueItem !== selectedValue,
+    );
     onValueChange?.(remaining);
     if (primaryValue === selectedValue) onPrimaryChange?.(remaining[0] ?? "");
   };

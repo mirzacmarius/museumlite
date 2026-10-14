@@ -8,8 +8,8 @@ import {
   SelectTrigger,
 } from "@v1/ui/select";
 import { cn } from "@v1/ui/utils";
-import { Languages } from "lucide-react";
 import { useMutation } from "convex/react";
+import { Languages } from "lucide-react";
 import { toast } from "sonner";
 import {
   useChangeLocale,

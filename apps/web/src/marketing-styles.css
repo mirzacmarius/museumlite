@@ -217,13 +217,19 @@ html.marketing-site {
   html.marketing-site.marketing-theme-light .hero-overlay .text-ivory {
     color: var(--hero-overlay-ivory);
   }
-  html.marketing-site.marketing-theme-light .hero-overlay .text-soft-foreground {
+  html.marketing-site.marketing-theme-light
+    .hero-overlay
+    .text-soft-foreground {
     color: var(--hero-overlay-soft);
   }
-  html.marketing-site.marketing-theme-light .hero-overlay .text-muted-foreground {
+  html.marketing-site.marketing-theme-light
+    .hero-overlay
+    .text-muted-foreground {
     color: var(--hero-overlay-muted);
   }
-  html.marketing-site.marketing-theme-light .hero-overlay [class*="border-ivory"] {
+  html.marketing-site.marketing-theme-light
+    .hero-overlay
+    [class*="border-ivory"] {
     border-color: oklch(0.94 0.014 85 / 40%);
   }
   .shadow-gallery {
@@ -233,7 +239,12 @@ html.marketing-site {
     box-shadow: var(--shadow-gold);
   }
   .gold-rule {
-    background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--gold) 50%,
+      transparent
+    );
   }
   .btn-marketing {
     border-radius: var(--radius-button);

@@ -110,7 +110,9 @@ function BillingOverview() {
   const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col gap-2">
-      <h2 className="text-xl font-medium text-foreground">{t("billingOverview")}</h2>
+      <h2 className="text-xl font-medium text-foreground">
+        {t("billingOverview")}
+      </h2>
       <p className="text-sm text-muted-foreground">
         {t("billingDescription")}{" "}
         <a

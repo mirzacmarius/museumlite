@@ -102,11 +102,15 @@ export function LocationGrid({
                         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-[10px]">
                           <dt className="text-muted-foreground">ID</dt>
                           <dd className="font-mono">{location.locationCode}</dd>
-                          <dt className="text-muted-foreground">{tView("locationType")}</dt>
+                          <dt className="text-muted-foreground">
+                            {tView("locationType")}
+                          </dt>
                           <dd className="capitalize">
                             {formatLocationType(location.type)}
                           </dd>
-                          <dt className="text-muted-foreground">{tView("locationStatus")}</dt>
+                          <dt className="text-muted-foreground">
+                            {tView("locationStatus")}
+                          </dt>
                           <dd>
                             {location.isActive
                               ? tLocations("active")

@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 
-export function SectionLabel({ index, title }: { index: string; title: string }) {
+export function SectionLabel({
+  index,
+  title,
+}: {
+  index: string;
+  title: string;
+}) {
   return (
     <div className="flex items-center gap-6 text-[10px] uppercase tracking-[0.4em] text-gold">
       <span className="font-display text-base text-gold normal-case tracking-normal">

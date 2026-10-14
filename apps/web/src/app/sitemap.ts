@@ -7,7 +7,12 @@ import { siteConfig } from "@/lib/site";
 const BASE_URL = siteConfig.url;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const marketingPaths = ["/features", "/pricing", "/about", "/contact"] as const;
+  const marketingPaths = [
+    "/features",
+    "/pricing",
+    "/about",
+    "/contact",
+  ] as const;
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: BASE_URL,

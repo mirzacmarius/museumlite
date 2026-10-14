@@ -1407,7 +1407,10 @@ test("a case at its task limit reports the steps it could not suggest", async ()
     caseType: "loan" as const,
     caseId: cases.loanId,
   };
-  const view = await registrar.query(api.preparationRecipes.getForCase, caseRef);
+  const view = await registrar.query(
+    api.preparationRecipes.getForCase,
+    caseRef,
+  );
   expect(view.recipes[0]?.steps.map((step) => step.state)).toEqual([
     "suggested",
     "limit_reached",

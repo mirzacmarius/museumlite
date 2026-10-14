@@ -35,14 +35,18 @@ export function TransitDetailClient({
   const transit = useQuery(api.transit.getTransitRecord, { transitRecordId });
 
   if (isLoading || transit === undefined) {
-    return <DashboardListPageSkeleton layout="list" filtersCount={0} actionsCount={0} />;
+    return (
+      <DashboardListPageSkeleton
+        layout="list"
+        filtersCount={0}
+        actionsCount={0}
+      />
+    );
   }
 
   if (transit === null) {
     return (
-      <div className="p-8 text-sm text-muted-foreground">
-        {th("notFound")}
-      </div>
+      <div className="p-8 text-sm text-muted-foreground">{th("notFound")}</div>
     );
   }
 
@@ -96,7 +100,9 @@ export function TransitDetailClient({
         ) : null}
       </div>
 
-      <p className="text-xs text-muted-foreground">{th("carrierVsReceiptHint")}</p>
+      <p className="text-xs text-muted-foreground">
+        {th("carrierVsReceiptHint")}
+      </p>
 
       {currentOrganizationId ? (
         <TransitPhysicalHandoffsPanel

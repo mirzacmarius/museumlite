@@ -7,9 +7,5 @@ export default async function TransitDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return (
-    <TransitDetailClient
-      transitRecordId={id as Id<"transitRecords">}
-    />
-  );
+  return <TransitDetailClient transitRecordId={id as Id<"transitRecords">} />;
 }

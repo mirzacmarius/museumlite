@@ -109,7 +109,10 @@ export function CollectionSetupStep({
   };
 
   const updateSuggestion = useCallback(
-    (id: string, patch: Partial<Pick<CollectionGroupSuggestion, "name" | "description">>) => {
+    (
+      id: string,
+      patch: Partial<Pick<CollectionGroupSuggestion, "name" | "description">>,
+    ) => {
       setSetup((current) => ({
         ...current,
         suggestions: current.suggestions.map((item) =>
@@ -313,7 +316,12 @@ export function CollectionSetupStep({
           )}
         </Button>
 
-        <Button type="button" variant="ghost" className="w-full" onClick={onSkip}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={onSkip}
+        >
           {t("onboardingPage.collectionSetup.skip")}
         </Button>
       </div>

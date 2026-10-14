@@ -25,7 +25,13 @@ const LazyLineChart = dynamic(
     import("recharts").then((mod) => {
       const { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } = mod;
       return {
-        default: ({ data, objectsAddedLabel }: { data: ChartDataItem[]; objectsAddedLabel: string }) => (
+        default: ({
+          data,
+          objectsAddedLabel,
+        }: {
+          data: ChartDataItem[];
+          objectsAddedLabel: string;
+        }) => (
           <LineChart
             data={data}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -59,7 +65,9 @@ const LazyLineChart = dynamic(
     }),
   {
     ssr: false,
-    loading: () => <div className="h-[300px] animate-pulse rounded-md bg-muted/30" />,
+    loading: () => (
+      <div className="h-[300px] animate-pulse rounded-md bg-muted/30" />
+    ),
   },
 );
 
@@ -96,7 +104,10 @@ export function CollectionGrowthChart() {
 
   return (
     <ChartContainer height={300}>
-      <LazyLineChart data={data.months} objectsAddedLabel={t("untranslatedDashboard.analytics.objectsAdded")} />
+      <LazyLineChart
+        data={data.months}
+        objectsAddedLabel={t("untranslatedDashboard.analytics.objectsAdded")}
+      />
     </ChartContainer>
   );
 }

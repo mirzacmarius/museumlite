@@ -92,7 +92,9 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
                 {template.description}
               </p>
               <p className="mt-2 text-sm">
-                <span className="font-medium">{tDashboard("requiredFields")}</span>{" "}
+                <span className="font-medium">
+                  {tDashboard("requiredFields")}
+                </span>{" "}
                 {template.requiredFields.join(", ")}
               </p>
             </div>

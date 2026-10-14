@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 import { useI18n, useScopedI18n } from "@/locales/client";
+
 interface ErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
