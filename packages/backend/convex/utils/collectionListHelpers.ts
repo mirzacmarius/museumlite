@@ -49,6 +49,22 @@ function parseStoredStringList(value: string): string[] {
   return [trimmed];
 }
 
+/** Objects the dashboard does not count as on display (active and marked on display). */
+const NOT_ON_DISPLAY_FILTER = "not_on_display";
+
+function matchesDisplayStatus(
+  collection: Pick<Doc<"collections">, "status" | "displayStatus">,
+  filter: string,
+): boolean {
+  if (filter === NOT_ON_DISPLAY_FILTER) {
+    return !(
+      collection.status === "active" &&
+      collection.displayStatus === "on_display"
+    );
+  }
+  return collection.displayStatus === filter;
+}
+
 function matchesObjectType(
   stored: string | undefined,
   filter: string,
@@ -120,7 +136,10 @@ export async function filterCollectionListPage(
         !matchesObjectType(collection.objectType, args.objectType)
       )
         return false;
-      if (args.displayStatus && collection.displayStatus !== args.displayStatus)
+      if (
+        args.displayStatus &&
+        !matchesDisplayStatus(collection, args.displayStatus)
+      )
         return false;
       if (
         args.catalogedFrom !== undefined &&

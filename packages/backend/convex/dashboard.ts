@@ -44,6 +44,7 @@ export const getAnalytics = query({
         ownershipUnclassified: v.number(),
         deaccessioned: v.number(),
         onDisplay: v.number(),
+        notOnDisplay: v.number(),
       }),
       loans: v.object({
         total: v.number(),

@@ -10,8 +10,8 @@ import {
   ArrowRight,
   Building2,
   Eye,
+  EyeOff,
   FolderOpen,
-  type LucideIcon,
   MapPin,
   Package,
   PackagePlus,
@@ -25,14 +25,17 @@ import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { CatalogedByYouSection } from "./_components/my-assignments-sections";
+import { MyWorkSummary } from "./_components/my-work-pills";
 import { WorkSection } from "./_components/my-work-sections";
-import { MyWorkBoard } from "./_components/work-board";
+import {
+  OverviewPill,
+  type OverviewPillProps,
+} from "./_components/overview-pill";
 import {
   CollectionGroupsGridSkeleton,
   DashboardPageSkeleton,
 } from "./dashboard-page-skeleton";
 
-type MetricAccentColor = "indigo" | "emerald" | "amber" | "blue";
 const COLLECTION_GROUP_COLORS = [
   "#d97706",
   "#059669",
@@ -46,49 +49,6 @@ const COLLECTION_GROUP_CARD_CLASS_NAME = cn(
   "inline-flex w-fit max-w-full items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1",
   "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
 );
-
-interface MetricChipProps {
-  href: string;
-  title: string;
-  value: string;
-  icon: LucideIcon;
-  accentColor: MetricAccentColor;
-}
-
-const METRIC_ICON_CLASS_NAMES = {
-  indigo: "text-primary",
-  emerald: "text-emerald-400",
-  amber: "text-amber-400",
-  blue: "text-blue-400",
-} satisfies Record<MetricAccentColor, string>;
-
-function MetricChip({
-  href,
-  title,
-  value,
-  icon,
-  accentColor,
-}: MetricChipProps) {
-  const Icon = icon;
-  return (
-    <Link
-      href={href}
-      className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <Icon
-        className={cn(
-          "size-3.5 shrink-0",
-          METRIC_ICON_CLASS_NAMES[accentColor],
-        )}
-        aria-hidden="true"
-      />
-      <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-        {value}
-      </span>
-      <span className="truncate text-xs text-muted-foreground">{title}</span>
-    </Link>
-  );
-}
 
 function CollectionGroupsSection({
   organizationId,
@@ -256,41 +216,48 @@ export default function DashboardPage() {
     ? unavailableReason(analytics)
     : undefined;
 
-  const metrics: MetricChipProps[] = [
+  const metrics: OverviewPillProps[] = [
     {
       href: "/objects?inventory=owned",
       title: kpi("totalObjects"),
       value: formatMetricValue(analyticsData?.objects.total, locale),
       icon: Package,
-      accentColor: "indigo",
+      accentClassName: "text-primary",
     },
     {
       href: "/objects?inventory=owned&status=active&displayStatus=on_display",
       title: kpi("itemsOnDisplay"),
       value: formatMetricValue(analyticsData?.objects.onDisplay, locale),
       icon: Eye,
-      accentColor: "emerald",
+      accentClassName: "text-emerald-400",
+    },
+    {
+      href: "/objects?inventory=owned&displayStatus=not_on_display",
+      title: kpi("itemsNotOnDisplay"),
+      value: formatMetricValue(analyticsData?.objects.notOnDisplay, locale),
+      icon: EyeOff,
+      accentClassName: "text-muted-foreground",
     },
     {
       href: "/loans?status=active",
       title: kpi("activeLoans"),
       value: formatMetricValue(analyticsData?.loans.active, locale),
       icon: ArrowLeftRight,
-      accentColor: "blue",
+      accentClassName: "text-blue-400",
     },
     {
       href: "/locations",
       title: kpi("totalLocations"),
       value: formatMetricValue(analyticsData?.locations.total, locale),
       icon: MapPin,
-      accentColor: "amber",
+      accentClassName: "text-amber-400",
     },
     {
       href: "/accessions/transfers?status=pending_source_approval",
       title: tRoot("dashboard.pendingOutgoingTransferApprovals"),
       value: formatMetricValue(analyticsData?.transfers.pending, locale),
       icon: ArrowLeftRight,
-      accentColor: "blue",
+      accentClassName: "text-blue-400",
     },
   ];
 
@@ -339,7 +306,7 @@ export default function DashboardPage() {
           >
             <div className="flex flex-wrap gap-2">
               {metrics.map((metric) => (
-                <MetricChip key={metric.href} {...metric} />
+                <OverviewPill key={metric.href} {...metric} />
               ))}
             </div>
             {analyticsData ? (
@@ -361,7 +328,7 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        <MyWorkBoard organizationId={currentOrganizationId} />
+        <MyWorkSummary organizationId={currentOrganizationId} />
         <CatalogedByYouSection organizationId={currentOrganizationId} />
         <CollectionGroupsSection
           organizationId={currentOrganizationId}

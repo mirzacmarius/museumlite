@@ -1428,6 +1428,7 @@ export default {
   kpi: {
     totalObjects: "Totalt objekter",
     itemsOnDisplay: "Objekter på visning",
+    itemsNotOnDisplay: "Objekter ikke på visning",
     objectsOnLoan: "Objekter utlånt",
     activeLoans: "Aktive lån",
     totalLocations: "Plasseringer totalt",
@@ -3078,6 +3079,7 @@ export default {
       archived: "Arkivert",
       deleted: "Slettet",
       onDisplay: "På visning",
+      notOnDisplay: "Ikke på visning",
       filterByCulture: "Filtrer etter kultur",
       filterByPeriod: "Filtrer etter periode",
       filterByMaterials: "Filtrer etter materialer",

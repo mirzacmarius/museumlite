@@ -986,6 +986,7 @@ describe("Dashboard metric drilldowns", () => {
       active: 1,
       loaned: 1,
       onDisplay: 1,
+      notOnDisplay: 2,
       incomingLoanExcluded: 1,
       ownershipUnclassified: 2,
     });
@@ -1015,6 +1016,16 @@ describe("Dashboard metric drilldowns", () => {
     });
     expect(display.page.map((item) => item.title)).toEqual([
       "Owned on display",
+    ]);
+    const notOnDisplay = await reader.query(api.collections.list, {
+      organizationId,
+      inventoryMetricScope: "owned",
+      displayStatus: "not_on_display",
+      paginationOpts: { numItems: 100, cursor: null },
+    });
+    expect(notOnDisplay.page.map((item) => item.title).sort()).toEqual([
+      "Archived owned",
+      "Outgoing owned",
     ]);
     await expect(
       t.query(api.collections.list, {

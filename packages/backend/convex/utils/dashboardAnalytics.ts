@@ -245,16 +245,19 @@ function analyticsFromTotals(
   totals: Record<string, number>,
   organizationTotals: Record<string, number>,
 ) {
+  const ownedTotal = metric(totals, "inventory.owned");
+  const onDisplay = metric(totals, "inventory.onDisplay");
   return {
     collections: { total: metric(totals, "collections.total") },
     objects: {
-      total: metric(totals, "inventory.owned"),
+      total: ownedTotal,
       active: metric(totals, "inventory.status.active"),
       loaned: metric(totals, "inventory.status.loaned"),
       incomingLoanExcluded: metric(totals, "inventory.incoming"),
       ownershipUnclassified: metric(totals, "inventory.unclassified"),
       deaccessioned: metric(totals, "objects.deaccessioned"),
-      onDisplay: metric(totals, "inventory.onDisplay"),
+      onDisplay,
+      notOnDisplay: Math.max(0, ownedTotal - onDisplay),
     },
     loans: {
       total:

@@ -1416,6 +1416,7 @@ export default {
   kpi: {
     totalObjects: "Total Objects",
     itemsOnDisplay: "Objects on Display",
+    itemsNotOnDisplay: "Objects not on Display",
     objectsOnLoan: "Objects on Loan",
     activeLoans: "Active Loans",
     totalLocations: "Total Locations",
@@ -2463,6 +2464,7 @@ export default {
       archived: "Archived",
       deleted: "Deleted",
       onDisplay: "On display",
+      notOnDisplay: "Not on display",
       filterByCulture: "Filter by culture",
       filterByPeriod: "Filter by period",
       filterByMaterials: "Filter by materials",

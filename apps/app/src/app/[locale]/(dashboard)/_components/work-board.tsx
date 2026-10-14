@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   ListTodo,
+  type LucideIcon,
   ScrollText,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,9 +36,10 @@ type ProvenanceClaim = FunctionReturnType<
   typeof api.provenance.reviewQueue
 >["page"][number];
 
-interface WorkColumn {
+export interface WorkColumn {
   key: string;
-  icon: ReactNode;
+  icon: LucideIcon;
+  accentClassName: string;
   title: string;
   loading: boolean;
   count: number;
@@ -52,9 +54,13 @@ function ColumnHeader({
   column: WorkColumn;
   compact?: boolean;
 }) {
+  const Icon = column.icon;
   return (
     <>
-      {column.icon}
+      <Icon
+        className={cn("size-4 shrink-0", column.accentClassName)}
+        aria-hidden="true"
+      />
       <span
         className={cn(
           "min-w-0 flex-1 font-medium text-foreground",
@@ -189,12 +195,10 @@ function LoadMoreButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** Work waiting on the viewer as kanban columns; empty ones stack on the right. */
-export function MyWorkBoard({
-  organizationId,
-}: {
-  organizationId: Id<"organizations">;
-}) {
+/** Each queue of work waiting on the viewer, with its count and cards. */
+export function useMyWorkColumns(
+  organizationId: Id<"organizations">,
+): WorkColumn[] {
   const t = useScopedI18n("caseTasks");
   const tRoot = useI18n();
   const locale = useCurrentLocale();
@@ -232,12 +236,14 @@ export function MyWorkBoard({
 
   const taskColumn = (
     key: string,
-    icon: ReactNode,
+    icon: LucideIcon,
+    accentClassName: string,
     title: string,
     queue: typeof tasks | typeof reviews,
   ): WorkColumn => ({
     key,
     icon,
+    accentClassName,
     title,
     loading: queue.status === "LoadingFirstPage",
     count: queue.results.length,
@@ -256,16 +262,13 @@ export function MyWorkBoard({
     ),
   });
 
-  const columns: WorkColumn[] = [
-    taskColumn(
-      "tasks",
-      <ListTodo className="size-4 shrink-0 text-blue-400" />,
-      t("myWork.myTasks"),
-      tasks,
-    ),
+  return [
+    taskColumn("tasks", ListTodo, "text-blue-400", t("myWork.myTasks"), tasks),
+
     {
       key: "approvals",
-      icon: <AlertCircle className="size-4 shrink-0 text-amber-400" />,
+      icon: AlertCircle,
+      accentClassName: "text-amber-400",
       title: tRoot("assignmentsPage.sections.pendingApproval"),
       loading: assignments === undefined,
       count: assignments?.stats.totalPendingApprovals ?? 0,
@@ -280,13 +283,15 @@ export function MyWorkBoard({
     },
     taskColumn(
       "reviews",
-      <ClipboardCheck className="size-4 shrink-0 text-amber-400" />,
+      ClipboardCheck,
+      "text-amber-400",
       t("myWork.reviews"),
       reviews,
     ),
     {
       key: "assigned",
-      icon: <Briefcase className="size-4 shrink-0 text-emerald-400" />,
+      icon: Briefcase,
+      accentClassName: "text-emerald-400",
       title: t("myWork.assignedCases"),
       loading: assigned === undefined,
       count: assigned?.cases.length ?? 0,
@@ -323,7 +328,8 @@ export function MyWorkBoard({
       ? [
           {
             key: "provenance",
-            icon: <ScrollText className="size-4 shrink-0 text-purple-400" />,
+            icon: ScrollText,
+            accentClassName: "text-purple-400",
             title: tRoot("provenance.queue.title"),
             loading: claimQueues.some(
               ({ queue }) => queue.status === "LoadingFirstPage",
@@ -366,7 +372,16 @@ export function MyWorkBoard({
         ]
       : []),
   ];
+}
 
+/** Work waiting on the viewer as kanban columns; empty ones stack on the right. */
+export function MyWorkBoard({
+  organizationId,
+}: {
+  organizationId: Id<"organizations">;
+}) {
+  const t = useScopedI18n("caseTasks");
+  const columns = useMyWorkColumns(organizationId);
   const isEmpty = (column: WorkColumn) => !column.loading && column.count === 0;
   const filled = columns.filter((column) => !isEmpty(column));
   const empty = columns.filter(isEmpty);
