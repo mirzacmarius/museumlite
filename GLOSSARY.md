@@ -106,6 +106,10 @@ _Avoid_: Ticket, request (as a general term)
 A unit of work waiting on a staff member, such as an installation task or an approval step on a Case.
 _Avoid_: To-do, job
 
+**Work board**:
+The columns at the top of the Overview page that hold only Tasks and Cases waiting on the viewer to do, approve, review or verify. Activity feeds such as Cataloged by you show what the viewer already did, so they sit below the board and never become a column.
+_Avoid_: Board (alone; a Board report is for an institution's governing board), dashboard, kanban
+
 **Preparation recipe**:
 An institution's list of next-step Tasks that an accepted intake, an approved loan or an approved exhibition suggests, such as cataloguing, photographing and assessing a newly accessioned Object. Each step names its owner, its due date relative to the Case, the steps it waits for and the evidence that shows it was done.
 _Avoid_: Template, automation, workflow (approval workflows are separate)

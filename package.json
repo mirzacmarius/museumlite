@@ -29,7 +29,7 @@
     "start:web": "turbo start --filter=@v1/web",
     "start:app": "turbo start --filter=@v1/app",
     "test": "turbo test",
-    "format": "biome format --write .",
+    "format": "biome check --write apps packages scripts",
     "lint": "turbo lint && bun lint:scripts && bun lint:todos && bun lint:patterns && bun lint:repo",
     "lint:scripts": "biome check scripts --error-on-warnings",
     "lint:todos": "node scripts/check-no-todos.mjs",
