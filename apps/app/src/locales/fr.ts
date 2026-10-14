@@ -5525,6 +5525,7 @@ export default {
     kanban: {
       loading: "Chargement…",
       loadMore: "Charger plus",
+      showMore: "Afficher plus",
       shownOfTotal: "{loaded} sur {total}",
       matchesShown: "Résultats affichés : {loaded}",
       noMatches: "Aucune accession correspondante dans {step}",

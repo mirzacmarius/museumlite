@@ -5451,6 +5451,7 @@ export default {
     kanban: {
       loading: "Laster…",
       loadMore: "Last inn flere",
+      showMore: "Vis flere",
       shownOfTotal: "{loaded} av {total}",
       matchesShown: "Treff vist: {loaded}",
       noMatches: "Ingen samsvarende aksesjoner i {step}",

@@ -1658,6 +1658,7 @@ export default {
     kanban: {
       loading: "Se încarcă…",
       loadMore: "Încarcă mai multe",
+      showMore: "Afișează mai multe",
       shownOfTotal: "{loaded} din {total}",
       matchesShown: "Potriviri afișate: {loaded}",
       noMatches: "Nicio accesiune potrivită în {step}",
