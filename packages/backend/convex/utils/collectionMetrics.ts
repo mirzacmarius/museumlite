@@ -9,6 +9,13 @@ export interface InventoryMetricRecord {
   linkedToOutgoingLoan: boolean;
 }
 
+/** Whether an object counts as on display in dashboard metrics and filters. */
+export function isCountedOnDisplay(
+  object: Pick<Doc<"collections">, "status" | "displayStatus">,
+): boolean {
+  return object.status === "active" && object.displayStatus === "on_display";
+}
+
 export function classifyInventoryRecord(
   record: InventoryMetricRecord,
 ): "owned" | "incoming" | "unclassified" | "excluded" {

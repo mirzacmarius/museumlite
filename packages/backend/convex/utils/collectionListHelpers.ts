@@ -5,7 +5,10 @@ import {
   getCollectionPrimaryImageUrls,
   getLocationPathStrings,
 } from "./collectionDisplayHelpers";
-import { classifyInventoryRecord } from "./collectionMetrics";
+import {
+  classifyInventoryRecord,
+  isCountedOnDisplay,
+} from "./collectionMetrics";
 import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 
 interface CollectionListFilters {
@@ -49,7 +52,7 @@ function parseStoredStringList(value: string): string[] {
   return [trimmed];
 }
 
-/** Objects the dashboard does not count as on display (active and marked on display). */
+/** Filter value for objects the dashboard does not count as on display. */
 const NOT_ON_DISPLAY_FILTER = "not_on_display";
 
 function matchesDisplayStatus(
@@ -57,10 +60,7 @@ function matchesDisplayStatus(
   filter: string,
 ): boolean {
   if (filter === NOT_ON_DISPLAY_FILTER) {
-    return !(
-      collection.status === "active" &&
-      collection.displayStatus === "on_display"
-    );
+    return !isCountedOnDisplay(collection);
   }
   return collection.displayStatus === filter;
 }
