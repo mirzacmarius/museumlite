@@ -1,6 +1,9 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { classifyInventoryRecord } from "./collectionMetrics";
+import {
+  classifyInventoryRecord,
+  isCountedOnDisplay,
+} from "./collectionMetrics";
 import { normalizeCurrency } from "./currency";
 import { getExhibitionLifecycle } from "./exhibitionMetrics";
 import { coverageTarget, needsTargetReview } from "./insuranceCoverage";
@@ -425,10 +428,7 @@ export async function computeSourceFacts(
         add(`inventory.${inventory}`, 1, scope);
         if (inventory === "owned") {
           add(`inventory.status.${object.status}`, 1, scope);
-          if (
-            object.status === "active" &&
-            object.displayStatus === "on_display"
-          ) {
+          if (isCountedOnDisplay(object)) {
             add("inventory.onDisplay", 1, scope);
           }
         }

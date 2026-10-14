@@ -1102,6 +1102,7 @@ export default {
       archived: "Arhivat",
       deleted: "Șters",
       onDisplay: "Expus",
+      notOnDisplay: "Neexpus",
       filterByCulture: "Filtrează după cultură",
       filterByPeriod: "Filtrează după perioadă",
       filterByMaterials: "Filtrează după materiale",
@@ -6341,6 +6342,7 @@ export default {
   kpi: {
     totalObjects: "Total obiecte",
     itemsOnDisplay: "Obiecte expuse",
+    itemsNotOnDisplay: "Obiecte neexpuse",
     objectsOnLoan: "Obiecte împrumutate",
     activeLoans: "Împrumuturi active",
     totalCollectionGroups: "Grupuri de colecții",

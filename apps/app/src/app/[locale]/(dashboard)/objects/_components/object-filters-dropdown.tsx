@@ -87,6 +87,8 @@ function displayStatusLabel(
       return t("filters.anyDisplayStatus");
     case "on_display":
       return t("filters.onDisplay");
+    case "not_on_display":
+      return t("filters.notOnDisplay");
   }
 
   const exhaustiveDisplayStatus: never = displayStatus;

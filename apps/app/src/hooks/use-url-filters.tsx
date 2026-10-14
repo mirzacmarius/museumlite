@@ -19,7 +19,8 @@ export type ObjectStatus =
   | "archived"
   | "deleted";
 
-export type ObjectDisplayStatus = "" | "on_display";
+const OBJECT_DISPLAY_STATUSES = ["", "on_display", "not_on_display"] as const;
+export type ObjectDisplayStatus = (typeof OBJECT_DISPLAY_STATUSES)[number];
 
 // Advanced filter types matching AdvancedSearchDialog
 export type FilterOperator =
@@ -92,7 +93,7 @@ export function useObjectFilters() {
   );
   const [displayStatus, setDisplayStatus] = useQueryState(
     "displayStatus",
-    parseAsStringLiteral(["", "on_display"] as const).withDefault(""),
+    parseAsStringLiteral(OBJECT_DISPLAY_STATUSES).withDefault(""),
   );
   const [culture, setCulture] = useQueryState(
     "culture",
@@ -154,7 +155,7 @@ export function useObjectFilters() {
       status: status as ObjectStatus,
       inventoryScope,
       objectType,
-      displayStatus: displayStatus as ObjectDisplayStatus,
+      displayStatus,
       culture,
       period,
       materials,

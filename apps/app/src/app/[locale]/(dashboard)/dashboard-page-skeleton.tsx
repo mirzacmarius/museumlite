@@ -1,6 +1,7 @@
 const METRIC_SKELETON_WIDTHS = {
   objects: "w-32",
   display: "w-36",
+  notOnDisplay: "w-44",
   loans: "w-32",
   locations: "w-32",
   transfers: "w-52",
@@ -15,6 +16,11 @@ const COLLECTION_GROUP_SKELETON_WIDTHS = [
   "w-24",
   "w-52",
 ] as const;
+const WORK_PILL_SKELETON_WIDTHS = {
+  approvals: "w-48",
+  tasks: "w-28",
+  link: "w-20",
+};
 const BOARD_COLUMN_SKELETON_KEYS = ["tasks", "approvals", "reviews", "cases"];
 const CARD_SKELETON_KEYS = ["first", "second", "third"];
 
@@ -52,6 +58,17 @@ function BoardColumnSkeleton({ columnKey }: { columnKey: string }) {
   );
 }
 
+/** Placeholder for the My work board while the organization loads. */
+export function MyWorkBoardSkeleton() {
+  return (
+    <div className="flex items-start gap-3 overflow-hidden">
+      {BOARD_COLUMN_SKELETON_KEYS.map((key) => (
+        <BoardColumnSkeleton key={key} columnKey={key} />
+      ))}
+    </div>
+  );
+}
+
 export function DashboardPageSkeleton() {
   return (
     <div className="@container h-full min-h-0 w-full overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
@@ -76,10 +93,15 @@ export function DashboardPageSkeleton() {
           ))}
         </div>
 
-        <div className="flex items-start gap-3 overflow-hidden">
-          {BOARD_COLUMN_SKELETON_KEYS.map((key) => (
-            <BoardColumnSkeleton key={key} columnKey={key} />
-          ))}
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(WORK_PILL_SKELETON_WIDTHS).map(
+            ([key, widthClass]) => (
+              <div
+                key={key}
+                className={`h-8 max-w-full rounded-md border border-border bg-card ${widthClass}`}
+              />
+            ),
+          )}
         </div>
       </div>
     </div>

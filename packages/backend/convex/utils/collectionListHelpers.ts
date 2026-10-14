@@ -5,7 +5,10 @@ import {
   getCollectionPrimaryImageUrls,
   getLocationPathStrings,
 } from "./collectionDisplayHelpers";
-import { classifyInventoryRecord } from "./collectionMetrics";
+import {
+  classifyInventoryRecord,
+  isCountedOnDisplay,
+} from "./collectionMetrics";
 import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 
 interface CollectionListFilters {
@@ -47,6 +50,19 @@ function parseStoredStringList(value: string): string[] {
     }
   }
   return [trimmed];
+}
+
+/** Filter value for objects the dashboard does not count as on display. */
+const NOT_ON_DISPLAY_FILTER = "not_on_display";
+
+function matchesDisplayStatus(
+  collection: Pick<Doc<"collections">, "status" | "displayStatus">,
+  filter: string,
+): boolean {
+  if (filter === NOT_ON_DISPLAY_FILTER) {
+    return !isCountedOnDisplay(collection);
+  }
+  return collection.displayStatus === filter;
 }
 
 function matchesObjectType(
@@ -120,7 +136,10 @@ export async function filterCollectionListPage(
         !matchesObjectType(collection.objectType, args.objectType)
       )
         return false;
-      if (args.displayStatus && collection.displayStatus !== args.displayStatus)
+      if (
+        args.displayStatus &&
+        !matchesDisplayStatus(collection, args.displayStatus)
+      )
         return false;
       if (
         args.catalogedFrom !== undefined &&
