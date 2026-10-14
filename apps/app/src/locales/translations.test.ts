@@ -278,10 +278,17 @@ test("literal translation calls resolve to an English string", () => {
   expect(Array.from(missing).toSorted()).toEqual([]);
 }, 15_000);
 
+function propertyChain(node: ts.Expression): string[] {
+  if (ts.isPropertyAccessExpression(node)) {
+    return [...propertyChain(node.expression), node.name.text];
+  }
+  return ts.isIdentifier(node) ? [node.text] : [];
+}
+
 /**
- * Text of every string literal and every template-literal head in the app,
- * so a key counts as used when any of its dot-suffixes is written out, or
- * when a template such as `status.${value}` can build it.
+ * Text of every string literal, property-access chain and template-literal
+ * head in the app, so a key counts as used when any of its dot-suffixes is
+ * written out, or when a template such as `status.${value}` can build it.
  */
 function sourceStrings(files: string[]) {
   const literals = new Set<string>();
@@ -294,6 +301,13 @@ function sourceStrings(files: string[]) {
     );
     function visit(node: ts.Node) {
       if (ts.isStringLiteralLike(node)) literals.add(node.text);
+      // `dictionary.loans.actions.condition` reads a key without a string.
+      if (ts.isPropertyAccessExpression(node)) {
+        const names = propertyChain(node);
+        for (let index = 0; index < names.length - 1; index++) {
+          literals.add(names.slice(index).join("."));
+        }
+      }
       if (ts.isTemplateExpression(node) && node.head.text.endsWith(".")) {
         templateHeads.add(node.head.text);
       }
