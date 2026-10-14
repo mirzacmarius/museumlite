@@ -941,10 +941,11 @@ function boardColumnQuery(
         q.eq("organizationId", organizationId).eq("status", "approved"),
       );
   }
+  const withdrawn: "withdrawn" = column.kind;
   return ctx.db
     .query("accessions")
     .withIndex("by_organization_and_status_and_dateReceived", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "withdrawn"),
+      q.eq("organizationId", organizationId).eq("status", withdrawn),
     );
 }
 

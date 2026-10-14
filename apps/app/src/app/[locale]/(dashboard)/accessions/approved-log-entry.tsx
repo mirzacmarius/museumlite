@@ -11,6 +11,25 @@ type BoardAccession = FunctionReturnType<
   typeof api.accessions.listBoardColumn
 >["page"][number];
 
+/**
+ * Board headline and secondary line for an accession. The source is dropped
+ * from the secondary line when it only repeats the title.
+ */
+export function accessionBoardText(
+  accession: BoardAccession,
+  unknownSource: string,
+  methodLabel: (method: BoardAccession["method"]) => string,
+) {
+  const title = accession.draftTitle || accession.source || unknownSource;
+  if (!accession.draftTitle) {
+    return { title, detail: methodLabel(accession.method) };
+  }
+  if (accession.source === accession.draftTitle) {
+    return { title, detail: undefined };
+  }
+  return { title, detail: accession.source };
+}
+
 interface ApprovedLogEntryProps {
   accession: BoardAccession;
   href: string;
@@ -21,13 +40,11 @@ export function ApprovedLogEntry({ accession, href }: ApprovedLogEntryProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("accessions");
   const locale = useCurrentLocale();
-  const title =
-    accession.draftTitle || accession.source || t("kanban.unknownSource");
-  const detail = accession.draftTitle
-    ? accession.source !== accession.draftTitle
-      ? accession.source
-      : undefined
-    : formatAccessionMethodLabel(accession.method, tRoot);
+  const { title, detail } = accessionBoardText(
+    accession,
+    t("kanban.unknownSource"),
+    (method) => formatAccessionMethodLabel(method, tRoot),
+  );
   const summary = detail ? `${title} · ${detail}` : title;
   const approvedAt =
     accession.approvedAt === undefined
