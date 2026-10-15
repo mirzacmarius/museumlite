@@ -18,7 +18,15 @@ const NO_APPROVALS = {
 const work = vi.hoisted(() => ({
   queries: {} as Record<string, unknown>,
   pages: {} as Record<string, { results: unknown[]; status: string }>,
+  permissions: new Set<string>(),
 }));
+
+function pageKey(query: never, args: unknown) {
+  const status = (args as { status?: string }).status;
+  return status
+    ? `${getFunctionName(query)}:${status}`
+    : getFunctionName(query);
+}
 
 vi.mock("convex/react", () => ({
   useQuery: (query: never, args: unknown) =>
@@ -26,13 +34,16 @@ vi.mock("convex/react", () => ({
   usePaginatedQuery: (query: never, args: unknown) =>
     args === "skip"
       ? { results: [], status: "LoadingFirstPage" }
-      : (work.pages[getFunctionName(query)] ?? {
+      : (work.pages[pageKey(query, args)] ?? {
           results: [],
           status: "LoadingFirstPage",
         }),
 }));
 vi.mock("@/components/permission-gate", () => ({
-  usePermissions: () => ({ isLoading: false, hasPermission: () => false }),
+  usePermissions: () => ({
+    isLoading: false,
+    hasPermission: (permission: string) => work.permissions.has(permission),
+  }),
 }));
 
 function assignments(pendingApprovalsByType: typeof NO_APPROVALS) {
@@ -63,6 +74,7 @@ function page(count: number, status = "Exhausted") {
 
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(NOW);
+  work.permissions = new Set();
   work.queries = {
     "assignments:listMyAssignments": assignments(NO_APPROVALS),
     "caseTasks:listMyAssignedCases": { cases: [], truncated: false },
@@ -115,6 +127,29 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
   expect(hrefOf("Pending conservation approval 1")).toBe(
     "/conservation?status=proposed",
   );
+});
+
+test("provenance claims count only for members who review provenance", async () => {
+  work.pages["provenance:reviewQueue:unreviewed"] = page(2);
+  work.pages["provenance:reviewQueue:disputed"] = page(1);
+  work.permissions = new Set(["collections.review_provenance"]);
+
+  await renderSummary();
+
+  expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual([
+    "Provenance claims to review 3",
+  ]);
+  expect(hrefOf("Provenance claims to review 3")).toBe("/assignments");
+});
+
+test("members who do not review provenance see no claims card", async () => {
+  work.pages["provenance:reviewQueue:unreviewed"] = page(2);
+  work.pages["provenance:reviewQueue:disputed"] = page(1);
+
+  await renderSummary();
+
+  expect(screen.queryAllByRole("link")).toEqual([]);
+  expect(screen.getByText("No work waiting for you.")).toBeTruthy();
 });
 
 test("links to My work when no card already opens it", async () => {
