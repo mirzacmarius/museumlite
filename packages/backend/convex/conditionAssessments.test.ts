@@ -305,6 +305,30 @@ test("rejects unauthenticated capture and future assessment dates", async () => 
   ).rejects.toThrow("future");
 });
 
+test("comparison has no accepted current condition until an assessment is accepted", async () => {
+  const { t, userId, collectionId } = await setup();
+  const asUser = t.withIdentity({ subject: userId });
+  await asUser.mutation(api.conditionAssessments.create, {
+    collectionId,
+    assessedAt: Date.UTC(2026, 9, 1),
+    condition: "Poor",
+    summary: "Draft only",
+    observations: [],
+    photos: [],
+  });
+
+  const detail = await asUser.query(api.conditionAssessments.getForObject, {
+    collectionId,
+  });
+
+  expect(detail.current).toMatchObject({ source: "legacy", condition: "Fair" });
+  expect(detail.comparison).toEqual({
+    legacyCondition: "Fair",
+    previousAccepted: null,
+    currentCondition: null,
+  });
+});
+
 test("comparison exposes previous accepted assessment after a second acceptance", async () => {
   const { t, userId, collectionId } = await setup();
   const asUser = t.withIdentity({ subject: userId });
