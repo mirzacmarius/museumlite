@@ -21,6 +21,7 @@ interface ObjectDetailHeaderProps {
   collection: NonNullable<ObjectDetailData["collection"]>;
   collectionGroupName?: string;
   collectionId: Id<"collections">;
+  editTab?: string;
   linkCopied: boolean;
   onLinkCopiedChange: (copied: boolean) => void;
   onPrintClick: () => void;
@@ -41,6 +42,7 @@ export function ObjectDetailHeader({
   collection,
   collectionGroupName,
   collectionId,
+  editTab,
   linkCopied,
   onLinkCopiedChange,
   onPrintClick,
@@ -139,7 +141,13 @@ export function ObjectDetailHeader({
         <div className="h-4 w-px bg-border" />
         <PermissionGate permission="collections.update">
           <Button size="sm" asChild>
-            <Link href={`/objects/${collectionId}/edit`}>
+            <Link
+              href={
+                editTab
+                  ? `/objects/${collectionId}/edit?tab=${editTab}`
+                  : `/objects/${collectionId}/edit`
+              }
+            >
               <Pencil className="mr-2 size-3.5" />
               {editObjectLabel}
             </Link>

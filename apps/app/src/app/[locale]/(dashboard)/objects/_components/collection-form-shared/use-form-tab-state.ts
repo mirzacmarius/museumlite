@@ -1,21 +1,25 @@
 "use client";
 
 import type { CollectionModuleId } from "@v1/backend/convex/utils/moduleCatalog";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { getObjectEditTabs } from "../../[id]/_components/object-tab-config";
 import type { CollectionEditTabId } from "./types";
+
+interface FormTabStateOptions {
+  isLocationTrackingEnabled: boolean;
+  typeDetailsTab?: CollectionModuleId;
+  savedObject?: boolean;
+  permissions?: ReadonlyArray<string>;
+  initialTab?: string | null;
+}
 
 export function useFormTabState({
   isLocationTrackingEnabled,
   typeDetailsTab,
   savedObject,
   permissions,
-}: {
-  isLocationTrackingEnabled: boolean;
-  typeDetailsTab?: CollectionModuleId;
-  savedObject?: boolean;
-  permissions?: ReadonlyArray<string>;
-}) {
+  initialTab,
+}: FormTabStateOptions) {
   const tabs = useMemo(
     () =>
       getObjectEditTabs({
@@ -26,22 +30,9 @@ export function useFormTabState({
       }).map((tab) => ({ ...tab, id: tab.id as CollectionEditTabId })),
     [isLocationTrackingEnabled, typeDetailsTab, savedObject, permissions],
   );
-  const [activeTab, setActiveTab] = useState<CollectionEditTabId>("general");
-
-  useEffect(() => {
-    if (tabs.length === 0) {
-      return;
-    }
-
-    const firstTabId = tabs[0]?.id;
-    if (!firstTabId) {
-      return;
-    }
-
-    if (!tabs.some((tab) => tab.id === activeTab)) {
-      setActiveTab(firstTabId);
-    }
-  }, [activeTab, tabs]);
+  const [requestedTab, setActiveTab] = useState(initialTab);
+  const activeTab: CollectionEditTabId =
+    tabs.find((tab) => tab.id === requestedTab)?.id ?? tabs[0]?.id ?? "general";
 
   return { tabs, activeTab, setActiveTab };
 }

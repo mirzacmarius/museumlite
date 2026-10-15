@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { custodyConflictFromError } from "@v1/backend/convex/utils/custodyErrors";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
+import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
@@ -53,6 +54,7 @@ export function useCollectionEditForm() {
   const tErrors = useScopedI18n("recordForm.errors");
   const tFields = useScopedI18n("recordForm.objectFields");
   const params = useParams();
+  const [linkedTab] = useQueryState("tab");
   const collectionId = params.id as string;
   const typedCollectionId = collectionId as Id<"collections">;
   const { currentOrganization, currentOrganizationId } = useOrganization();
@@ -83,6 +85,7 @@ export function useCollectionEditForm() {
     isLocationTrackingEnabled,
     savedObject: true,
     permissions,
+    initialTab: linkedTab,
   });
   const [localError, setLocalError] = useState<string | null>(null);
   const [alternateAccessionDraft, setAlternateAccessionDraft] = useState("");
