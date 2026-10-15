@@ -112,7 +112,9 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
   expect(hrefOf("Pending exhibition approval 1")).toBe(
     `/exhibitions?lifecycle=proposed&asOf=${NOW}`,
   );
-  expect(hrefOf("Pending conservation approval 1")).toBe("/conservation");
+  expect(hrefOf("Pending conservation approval 1")).toBe(
+    "/conservation?status=proposed",
+  );
 });
 
 test("links to My work when no card already opens it", async () => {

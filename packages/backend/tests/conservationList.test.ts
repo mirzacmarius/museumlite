@@ -11,6 +11,7 @@ import {
 } from "./testHarness";
 
 type TreatmentType = "cleaning" | "repair" | "assessment";
+type TreatmentStatus = "proposed" | "completed";
 
 async function setupConservation(
   t: ConvexTest,
@@ -28,7 +29,12 @@ async function insertTreatments(
     userId: Id<"users">;
     collectionId: Id<"collections">;
   },
-  rows: Array<{ treatmentType: TreatmentType; count: number; title: string }>,
+  rows: Array<{
+    treatmentType: TreatmentType;
+    count: number;
+    title: string;
+    status?: TreatmentStatus;
+  }>,
 ) {
   await t.run(async (ctx) => {
     for (const row of rows) {
@@ -41,6 +47,7 @@ async function insertTreatments(
           description: "Recorded treatment",
           performedBy: setup.userId,
           performedAt: Date.UTC(2026, 0, 1) + index * 1000,
+          status: row.status,
         });
       }
     }
@@ -52,6 +59,7 @@ async function listAll(
   args: {
     organizationId: Id<"organizations">;
     treatmentType?: TreatmentType;
+    status?: TreatmentStatus;
     search?: string;
   },
 ) {
@@ -103,6 +111,60 @@ test("filtered pages list every treatment of a type, newest first, and the total
     { treatmentType: "cleaning", count: cleaning.length },
     { treatmentType: "repair", count: 5 },
   ]);
+});
+
+test("a status filter lists and counts only treatments in that status", async () => {
+  const t = createConvexTest();
+  const setup = await setupConservation(t);
+  await insertTreatments(t, setup, [
+    {
+      treatmentType: "cleaning",
+      count: 2,
+      title: "Proposed clean",
+      status: "proposed",
+    },
+    {
+      treatmentType: "repair",
+      count: 1,
+      title: "Proposed repair",
+      status: "proposed",
+    },
+    {
+      treatmentType: "cleaning",
+      count: 3,
+      title: "Finished clean",
+      status: "completed",
+    },
+  ]);
+  const user = authedForUser(t, setup.userId);
+
+  const proposed = await listAll(user, {
+    organizationId: setup.organizationId,
+    status: "proposed",
+  });
+  const proposedCleaning = await listAll(user, {
+    organizationId: setup.organizationId,
+    status: "proposed",
+    treatmentType: "cleaning",
+  });
+  const counts = await user.query(api.conservationTreatments.getListCounts, {
+    organizationId: setup.organizationId,
+    status: "proposed",
+  });
+
+  expect(proposed).toEqual([
+    "Proposed repair 0",
+    "Proposed clean 1",
+    "Proposed clean 0",
+  ]);
+  expect(proposedCleaning).toEqual(["Proposed clean 1", "Proposed clean 0"]);
+  expect(counts).toEqual({
+    total: 3,
+    byType: [
+      { treatmentType: "cleaning", count: 2 },
+      { treatmentType: "repair", count: 1 },
+    ],
+  });
 });
 
 test("search matches treatment titles within the selected type", async () => {
