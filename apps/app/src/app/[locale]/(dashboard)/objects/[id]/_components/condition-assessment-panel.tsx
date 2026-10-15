@@ -11,6 +11,7 @@ import { useRef, useState } from "react";
 import { z } from "zod";
 import { ActionRefusal, type Refusal } from "@/components/action-refusal";
 import { ClientDate } from "@/components/client-date";
+import { ConditionCombobox } from "@/components/condition-combobox";
 import { usePermissions } from "@/components/permission-gate";
 import {
   FieldError,
@@ -18,8 +19,8 @@ import {
   focusFirstFieldInError,
 } from "@/components/record-form/record-form-notices";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
-import { useClientNow } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { formatConditionLabel } from "./condition-display";
 
 interface ObservationInput {
   area: string;
@@ -57,12 +58,23 @@ function assessedAtFor(day: string, now: number) {
 
 const requiredText = z.string().trim().min(1);
 
+const SOURCE_CAPTION = {
+  assessment: "acceptedSource",
+  legacy: "legacyUncertain",
+  unknown: null,
+} as const;
+
 export function ConditionAssessmentPanel({
   collectionId,
+  mode = "view",
 }: {
   collectionId: Id<"collections">;
+  mode?: "view" | "edit";
 }) {
   const t = useScopedI18n("conditionAssessments");
+  const translate = useI18n();
+  const conditionLabel = (value: string) =>
+    formatConditionLabel(value, translate);
   const { hasPermission } = usePermissions();
   const capabilityMessage = useCapabilityErrorMessage();
   const detail = useQuery(api.conditionAssessments.getForObject, {
@@ -75,18 +87,17 @@ export function ConditionAssessmentPanel({
   );
   const media = useQuery(
     api.media.list,
-    hasPermission("media.read") ? { collectionId } : "skip",
+    mode === "edit" && hasPermission("media.read") ? { collectionId } : "skip",
   );
   const create = useMutation(api.conditionAssessments.create);
   const accept = useMutation(api.conditionAssessments.accept);
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
   const createMedia = useMutation(api.media.create);
   const locale = useCurrentLocale();
-  const now = useClientNow();
-  const today = now === undefined ? "" : localDateValue(now);
+  const [dayOpened] = useState(() => localDateValue(Date.now()));
   const nextObservationId = useRef(0);
-  // null keeps the default: the day the page was opened on this device.
-  const [date, setDate] = useState<string | null>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [chosenDate, setChosenDate] = useState<string | null>(null);
   const [condition, setCondition] = useState("");
   const [summary, setSummary] = useState("");
   const [observations, setObservations] = useState<ObservationDraft[]>([]);
@@ -98,11 +109,14 @@ export function ConditionAssessmentPanel({
     (Refusal & { at: "form" | Id<"conditionAssessments"> }) | null
   >(null);
   const [notice, setNotice] = useState("");
-  const canCapture = hasPermission("collections.update");
-  const canAccept = hasPermission("collections.accept_condition");
+  const canCapture = mode === "edit" && hasPermission("collections.update");
+  const cannotOpenEditForm = !hasPermission("collections.update");
+  const canAccept =
+    hasPermission("collections.accept_condition") &&
+    (mode === "edit" || cannotOpenEditForm);
   const canUpload =
     hasPermission("media.upload") && hasPermission("media.read");
-  const day = date ?? today;
+  const day = chosenDate ?? dayOpened;
   const completedImageMedia = (media ?? []).filter(
     (item) => item.fileType === "image" && item.uploadStatus === "completed",
   );
@@ -142,6 +156,9 @@ export function ConditionAssessmentPanel({
 
   async function saveDraft(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // The edit form opens this panel in a dialog portal, and React still
+    // bubbles the submit to the object form around it.
+    event.stopPropagation();
     setRefusal(null);
     setNotice("");
     const errors = validate();
@@ -161,7 +178,7 @@ export function ConditionAssessmentPanel({
         })),
         photos: photoIds,
       });
-      setDate(null);
+      setChosenDate(null);
       setCondition("");
       setSummary("");
       setObservations([]);
@@ -248,37 +265,49 @@ export function ConditionAssessmentPanel({
       </p>
     );
   }
+  const currentCaption = SOURCE_CAPTION[detail.current.source];
+  const comparedBefore =
+    detail.comparison.previousAccepted?.condition ??
+    detail.comparison.legacyCondition;
 
   return (
     <section
-      aria-labelledby="condition-assessments-title"
-      className="space-y-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+      aria-labelledby={
+        mode === "view" ? "condition-assessments-title" : undefined
+      }
+      className={
+        mode === "view"
+          ? "space-y-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+          : "space-y-5"
+      }
     >
-      <div>
-        <h2
-          id="condition-assessments-title"
-          className="text-base font-semibold"
-        >
-          {t("title")}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
-      </div>
+      {mode === "view" ? (
+        <div>
+          <h2
+            id="condition-assessments-title"
+            className="text-base font-semibold"
+          >
+            {t("title")}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("description")}
+          </p>
+        </div>
+      ) : null}
       <div className="rounded-lg border border-border p-4">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           {t("current")}
         </p>
         <p className="mt-1 break-words font-medium">
-          {detail.current.condition ?? t("unknown")}
+          {detail.current.condition
+            ? conditionLabel(detail.current.condition)
+            : t("unknown")}
         </p>
-        <p className="text-xs text-muted-foreground">
-          {detail.current.source === "assessment"
-            ? t("acceptedSource")
-            : t("legacyUncertain")}
-        </p>
+        {currentCaption ? (
+          <p className="text-xs text-muted-foreground">{t(currentCaption)}</p>
+        ) : null}
       </div>
-      {detail.comparison.currentCondition &&
-      (detail.comparison.previousAccepted ||
-        detail.comparison.legacyCondition) ? (
+      {detail.comparison.currentCondition && comparedBefore ? (
         <div className="rounded-lg border border-border p-4">
           <h3 className="text-sm font-medium">{t("compareTitle")}</h3>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -287,9 +316,7 @@ export function ConditionAssessmentPanel({
                 {t("compareBefore")}
               </p>
               <p className="mt-1 break-words text-sm">
-                {detail.comparison.previousAccepted?.condition ??
-                  detail.comparison.legacyCondition ??
-                  t("unknown")}
+                {conditionLabel(comparedBefore)}
               </p>
               {detail.comparison.previousAccepted ? (
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -309,7 +336,7 @@ export function ConditionAssessmentPanel({
                 {t("compareAfter")}
               </p>
               <p className="mt-1 break-words text-sm">
-                {detail.comparison.currentCondition}
+                {conditionLabel(detail.comparison.currentCondition)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("acceptedSource")}
@@ -327,7 +354,9 @@ export function ConditionAssessmentPanel({
             {t("legacyUncertain")}
           </p>
           {detail.legacy.condition ? (
-            <p className="mt-2 text-sm">{detail.legacy.condition}</p>
+            <p className="mt-2 text-sm">
+              {conditionLabel(detail.legacy.condition)}
+            </p>
           ) : null}
           {detail.legacy.history.map((entry) => (
             <p
@@ -335,7 +364,12 @@ export function ConditionAssessmentPanel({
               key={`${entry.changedAt}-${entry.condition}`}
             >
               <ClientDate timestamp={entry.changedAt} locale={locale} />:{" "}
-              {entry.condition}
+              {conditionLabel(entry.condition)}
+              {entry.changedByName
+                ? ` · ${translate("untranslatedRecords.objects.logs.byUser", {
+                    name: entry.changedByName,
+                  })}`
+                : ""}
               {entry.note ? ` — ${entry.note}` : ""}
             </p>
           ))}
@@ -354,19 +388,20 @@ export function ConditionAssessmentPanel({
             <Input
               id={FIELD.date}
               type="date"
-              max={today || undefined}
+              max={dayOpened}
               value={day}
-              onChange={(event) => setDate(event.target.value)}
+              onChange={(event) => setChosenDate(event.target.value)}
               {...fieldErrorProps(FIELD.date, fieldErrors[FIELD.date])}
             />
             <FieldError field={FIELD.date} message={fieldErrors[FIELD.date]} />
           </div>
           <div className="space-y-2">
             <Label htmlFor={FIELD.condition}>{t("condition")}</Label>
-            <Input
+            <ConditionCombobox
               id={FIELD.condition}
+              organizationId={detail.organizationId}
               value={condition}
-              onChange={(event) => setCondition(event.target.value)}
+              onValueChange={setCondition}
               {...fieldErrorProps(
                 FIELD.condition,
                 fieldErrors[FIELD.condition],
@@ -523,18 +558,26 @@ export function ConditionAssessmentPanel({
             </fieldset>
           ) : null}
           {canUpload ? (
-            <div className="space-y-2">
-              <Label htmlFor="assessment-photo">{t("uploadPhoto")}</Label>
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy !== null}
+                onClick={() => photoInput.current?.click()}
+              >
+                {t("uploadPhoto")}
+              </Button>
               <input
-                id="assessment-photo"
+                ref={photoInput}
+                aria-label={t("uploadPhoto")}
+                hidden
                 type="file"
                 accept="image/*"
-                disabled={busy !== null}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
+                  event.target.value = "";
                   if (file) void uploadPhoto(file);
                 }}
-                className="block w-full text-sm"
               />
             </div>
           ) : null}
@@ -568,7 +611,9 @@ export function ConditionAssessmentPanel({
             className="rounded-lg border border-border p-4"
           >
             <div className="flex flex-wrap justify-between gap-2">
-              <strong className="break-words">{assessment.condition}</strong>
+              <strong className="break-words">
+                {conditionLabel(assessment.condition)}
+              </strong>
               <span className="text-sm text-muted-foreground">
                 <ClientDate timestamp={assessment.assessedAt} locale={locale} />
               </span>

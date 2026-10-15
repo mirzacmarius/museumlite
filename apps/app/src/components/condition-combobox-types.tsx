@@ -62,6 +62,9 @@ export function getConditionIcon(conditionValue: string): React.ReactNode {
 }
 
 export interface ConditionComboboxProps {
+  id?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
   organizationId?: string;
   value?: string;
   onValueChange?: (value: string) => void;

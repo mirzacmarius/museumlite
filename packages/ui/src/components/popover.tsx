@@ -3,6 +3,7 @@
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import type * as React from "react";
 import { cn } from "../utils";
+import { useDialogContentElement } from "./dialog";
 
 function Popover({
   ...props
@@ -22,8 +23,9 @@ function PopoverContent({
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  const dialogContent = useDialogContentElement();
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal container={dialogContent}>
       <PopoverPrimitive.Content
         data-slot="popover-content"
         align={align}

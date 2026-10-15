@@ -63,6 +63,7 @@ export default {
     legacyUncertain: "Legacy condition; source and date may be uncertain",
     legacyHistory: "Legacy condition history",
     newAssessment: "New assessment",
+    setCondition: "Set condition",
     date: "Assessment date",
     condition: "Condition",
     summary: "Summary",
@@ -88,7 +89,7 @@ export default {
     observationNumber: "Observation {number}",
     errors: {
       date: "Choose a date that is not in the future.",
-      condition: "Enter the condition.",
+      condition: "Choose a condition.",
       summary: "Enter a summary.",
       area: "Enter the area.",
       observation: "Describe what you observed.",
@@ -7795,10 +7796,8 @@ export default {
         noParent: "No parent object assigned.",
         childObjects: "Child Objects",
         noChildren: "No child objects assigned.",
-        noConditionHistory: "No condition history recorded yet.",
         inscriptionsMarks: "Inscriptions & Marks",
         noInscriptions: "No inscriptions documented.",
-        overallCondition: "Overall Condition",
         historyRelatedItems: "History and related records",
         recordContext: "Record Context",
         recordVerified: "Record Verified",
@@ -7857,8 +7856,6 @@ export default {
         noImagesUploaded: "No images uploaded yet.",
         savedToObject: "Saved to this object",
         conditionChangeNote: "Condition change note",
-        conditionChangeDated:
-          "This change will be dated and attributed automatically.",
         detailedDimensionsHint: "Document dimensions, diameter, and weight.",
         ownershipHistory: "Ownership history",
         ownershipHistoryDescription:
@@ -7893,7 +7890,6 @@ export default {
         recordIdentityDescription:
           "Core catalog information that identifies and classifies this object.",
         documentDimensions: "Document dimensions, diameter, and weight.",
-        explainChange: "Explain what changed and why.",
         linkParentHint:
           "Link this object to a parent record when it belongs to a larger set or container.",
         markOnDisplayHint:
@@ -7932,9 +7928,6 @@ export default {
         digitalVisibility: "Digital asset visibility",
         documentMarksDescription:
           "Document signatures, stamps, labels, engravings, or collector marks",
-        conditionChangeRequired:
-          "Required when replacing an existing condition.",
-        initialConditionOptional: "Optional for the initial condition entry.",
         savingDraftNow: "Saving draft…",
         saveDraft: "Save draft",
         submitting: "Submitting…",

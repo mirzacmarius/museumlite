@@ -262,7 +262,8 @@ export const getForObject = query({
     const comparison = {
       legacyCondition: legacy.condition,
       previousAccepted,
-      currentCondition: current.condition,
+      currentCondition:
+        current.source === "assessment" ? current.condition : null,
     };
     return {
       organizationId: collection.organizationId,
