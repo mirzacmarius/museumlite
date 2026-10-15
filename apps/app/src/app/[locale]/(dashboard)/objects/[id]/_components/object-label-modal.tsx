@@ -133,19 +133,17 @@ function ObjectLabelModalContent({
   return (
     <DialogContent
       aria-describedby={undefined}
-      className="flex flex-col max-w-3xl w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0"
+      className="flex flex-col max-w-3xl w-full h-[90vh] p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0 print:bg-white"
     >
-      <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">
-        <DialogTitle className="text-black">{t("title")}</DialogTitle>
+      <DialogHeader className="flex-shrink-0 print:hidden border-b p-6 pb-4">
+        <DialogTitle>{t("title")}</DialogTitle>
       </DialogHeader>
 
       <div className="flex-1 overflow-y-auto print:overflow-visible">
-        <div className="grid gap-6 p-6 border-b border-zinc-200 print:hidden md:grid-cols-2">
+        <div className="grid gap-6 p-6 border-b print:hidden md:grid-cols-2">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="object-label-name" className="text-black">
-                {t("objectName")}
-              </Label>
+              <Label htmlFor="object-label-name">{t("objectName")}</Label>
               <Textarea
                 id="object-label-name"
                 value={formState.objectName}
@@ -153,11 +151,11 @@ function ObjectLabelModalContent({
                   dispatch({ type: "setObjectName", value: event.target.value })
                 }
                 rows={2}
-                className="resize-none bg-white text-black"
+                className="resize-none"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="object-label-description" className="text-black">
+              <Label htmlFor="object-label-description">
                 {t("description")}
               </Label>
               <Textarea
@@ -170,12 +168,12 @@ function ObjectLabelModalContent({
                   })
                 }
                 rows={4}
-                className="resize-y bg-white text-black"
+                className="resize-y"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-black">{t("accessionNumber")}</Label>
-              <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
+              <Label>{t("accessionNumber")}</Label>
+              <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
                 {collection.accessionNumber}
               </p>
             </div>
@@ -183,7 +181,7 @@ function ObjectLabelModalContent({
 
           <div className="space-y-5">
             <div>
-              <Label className="text-sm font-medium text-black mb-3 block">
+              <Label className="text-sm font-medium mb-3 block">
                 {t("labelSize")}
               </Label>
               <RadioGroup
@@ -200,7 +198,7 @@ function ObjectLabelModalContent({
                   <RadioGroupItem value="small" id="object-label-small" />
                   <Label
                     htmlFor="object-label-small"
-                    className="cursor-pointer text-sm text-black"
+                    className="cursor-pointer text-sm"
                   >
                     {t("sizeSmall")}
                   </Label>
@@ -209,7 +207,7 @@ function ObjectLabelModalContent({
                   <RadioGroupItem value="medium" id="object-label-medium" />
                   <Label
                     htmlFor="object-label-medium"
-                    className="cursor-pointer text-sm text-black"
+                    className="cursor-pointer text-sm"
                   >
                     {t("sizeMedium")}
                   </Label>
@@ -218,7 +216,7 @@ function ObjectLabelModalContent({
                   <RadioGroupItem value="large" id="object-label-large" />
                   <Label
                     htmlFor="object-label-large"
-                    className="cursor-pointer text-sm text-black"
+                    className="cursor-pointer text-sm"
                   >
                     {t("sizeLarge")}
                   </Label>
@@ -227,9 +225,7 @@ function ObjectLabelModalContent({
             </div>
 
             <div className="flex items-center justify-between gap-4">
-              <Label htmlFor="object-label-border" className="text-black">
-                {t("showBorder")}
-              </Label>
+              <Label htmlFor="object-label-border">{t("showBorder")}</Label>
               <Switch
                 id="object-label-border"
                 checked={formState.showBorder}
@@ -240,9 +236,7 @@ function ObjectLabelModalContent({
             </div>
 
             <div className="flex items-center justify-between gap-4">
-              <Label htmlFor="object-label-qr-code" className="text-black">
-                {t("showQrCode")}
-              </Label>
+              <Label htmlFor="object-label-qr-code">{t("showQrCode")}</Label>
               <Switch
                 id="object-label-qr-code"
                 checked={formState.showQrCode}
@@ -253,10 +247,7 @@ function ObjectLabelModalContent({
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="object-label-accession-size"
-                className="text-black"
-              >
+              <Label htmlFor="object-label-accession-size">
                 {t("accessionFontSize")} ({formState.accessionFontSize}pt)
               </Label>
               <input
@@ -272,13 +263,13 @@ function ObjectLabelModalContent({
                     value: Number(event.target.value),
                   })
                 }
-                className="w-full accent-zinc-900"
+                className="w-full accent-primary"
               />
             </div>
           </div>
         </div>
 
-        <div className="p-6 flex items-center justify-center min-h-[320px] bg-zinc-50 print:bg-white print:p-0 print:min-h-0">
+        <div className="p-6 flex items-center justify-center min-h-[320px] bg-muted print:bg-white print:p-0 print:min-h-0">
           <div ref={printRef} className="shadow-lg print:shadow-none print:m-0">
             <ObjectTextLabelGenerator
               data={{
@@ -296,11 +287,11 @@ function ObjectLabelModalContent({
           </div>
         </div>
 
-        <div className="p-6 border-t border-zinc-200 bg-blue-50 print:hidden">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">
+        <div className="p-6 border-t bg-status-info/10 print:hidden">
+          <h3 className="text-sm font-medium text-status-info-foreground mb-2">
             {t("printInstructions")}
           </h3>
-          <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+          <ul className="text-xs text-status-info-foreground space-y-1 list-disc list-inside">
             <li>{t("instructionPaperSize")}</li>
             <li>{t("instructionOrientation")}</li>
             <li>{t("instructionMargins")}</li>
@@ -309,18 +300,11 @@ function ObjectLabelModalContent({
         </div>
       </div>
 
-      <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-zinc-200 bg-white print:hidden">
-        <Button
-          variant="outline"
-          onClick={onClose}
-          className="bg-zinc-900 text-white border-zinc-300 hover:bg-zinc-100 hover:text-black"
-        >
+      <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t print:hidden">
+        <Button variant="outline" onClick={onClose}>
           {tCommon("cancel")}
         </Button>
-        <Button
-          onClick={handlePrint}
-          className="bg-zinc-900 text-white hover:bg-zinc-800"
-        >
+        <Button onClick={handlePrint}>
           <Printer className="mr-2 size-4" />
           {t("print")}
         </Button>
