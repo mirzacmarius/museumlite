@@ -165,6 +165,7 @@ export function CollectionEditFormTabShell({
           {activeTab === "provenance" ? (
             <CollectionEditProvenanceTab
               {...tabProps}
+              collection={collection}
               editingOwnershipEntryId={editingOwnershipEntryId}
               setEditingOwnershipEntryId={setEditingOwnershipEntryId}
               createOwnershipEntry={createOwnershipEntry}

@@ -52,7 +52,14 @@ function correctionDefaults(
   };
 }
 
+const READ_ONLY_VIEWER = {
+  canRecord: false,
+  canReview: false,
+  canLinkParties: false,
+};
+
 interface ProvenanceClaimsPanelProps {
+  mode: "view" | "edit";
   objectId: Id<"collections">;
   organizationId: Id<"organizations">;
   legacyProvenance?: string;
@@ -64,6 +71,7 @@ interface ProvenanceClaimsPanelProps {
  * retraction, with superseded claims kept below the current ones.
  */
 export function ProvenanceClaimsPanel({
+  mode,
   objectId,
   organizationId,
   legacyProvenance,
@@ -72,10 +80,11 @@ export function ProvenanceClaimsPanel({
   const t = useScopedI18n("provenance");
   const { hasPermission } = usePermissions();
   const provenance = useQuery(api.provenance.listForObject, { objectId });
-  const canRecord = provenance?.viewer.canRecord ?? false;
+  const viewer =
+    mode === "edit" && provenance ? provenance.viewer : READ_ONLY_VIEWER;
   const media = useQuery(
     api.media.list,
-    canRecord && hasPermission("media.read")
+    viewer.canRecord && hasPermission("media.read")
       ? { collectionId: objectId }
       : "skip",
   );
@@ -90,7 +99,7 @@ export function ProvenanceClaimsPanel({
   }
   if (provenance === null) return null;
 
-  const { viewer, claims } = provenance;
+  const { claims } = provenance;
   const current = claims.filter((claim) => claim.isCurrent);
   const earlier = claims.filter((claim) => !claim.isCurrent);
   const statements = new Map(
