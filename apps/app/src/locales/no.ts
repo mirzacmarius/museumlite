@@ -3905,6 +3905,7 @@ export default {
     description: "Spor konserveringsbehandlinger og tilstandsvurderinger",
     newTreatment: "Ny Behandling",
     searchPlaceholder: "Søk etter tittel, beskrivelse eller notater...",
+    pendingApproval: "Venter på godkjenning",
     loading: "Laster...",
     noOrganizationTitle: "Ingen Organisasjon Funnet",
     noOrganizationDescription:

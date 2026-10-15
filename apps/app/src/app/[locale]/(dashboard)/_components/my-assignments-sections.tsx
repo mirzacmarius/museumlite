@@ -80,7 +80,7 @@ export const APPROVAL_TYPES = {
   conservation: {
     icon: Microscope,
     href: "/conservation",
-    pendingHref: () => "/conservation",
+    pendingHref: () => "/conservation?status=proposed",
     accentClassName: "text-cyan-400",
     className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400",
   },

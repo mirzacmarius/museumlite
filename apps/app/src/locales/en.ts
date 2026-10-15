@@ -3309,6 +3309,7 @@ export default {
     description: "Track conservation treatments and condition assessments",
     newTreatment: "New Treatment",
     searchPlaceholder: "Search by title, description, or notes...",
+    pendingApproval: "Pending approval",
     loading: "Loading...",
     noOrganizationTitle: "No Organization Found",
     noOrganizationDescription:

@@ -3642,6 +3642,7 @@ export default {
     newTreatment: "Tratament Nou",
 
     searchPlaceholder: "Caută după titlu, descriere sau note...",
+    pendingApproval: "În așteptarea aprobării",
     loading: "Se încarcă...",
     noOrganizationTitle: "Nu a fost găsită nicio organizație",
     noOrganizationDescription:

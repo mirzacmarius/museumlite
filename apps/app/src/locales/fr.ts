@@ -3955,6 +3955,7 @@ export default {
       "Suivre les traitements de conservation et les évaluations de l'état",
     newTreatment: "Nouveau Traitement",
     searchPlaceholder: "Rechercher par titre, description ou notes...",
+    pendingApproval: "En attente d'approbation",
     loading: "Chargement...",
     noOrganizationTitle: "Aucune Organisation Trouvée",
     noOrganizationDescription:
