@@ -1040,7 +1040,6 @@ export default {
       objectName: "Denumirea obiectului",
       description: "Descriere",
       accessionNumber: "Număr de accesiune",
-      accessionNumberPrefix: "nr.",
       labelSize: "Dimensiunea etichetei",
       sizeSmall: "Mică (3 × 2 in)",
       sizeMedium: "Medie (4 × 2,5 in)",

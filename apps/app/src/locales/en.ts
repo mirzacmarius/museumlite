@@ -2595,7 +2595,6 @@ export default {
       objectName: "Object Name",
       description: "Description",
       accessionNumber: "Accession Number",
-      accessionNumberPrefix: "no.",
       labelSize: "Label Size",
       sizeSmall: 'Small (3" × 2")',
       sizeMedium: 'Medium (4" × 2.5")',

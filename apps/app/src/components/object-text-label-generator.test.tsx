@@ -14,7 +14,6 @@ describe("printed object accession number", () => {
           objectName: "Bronze coin",
           description: "Roman bronze coin",
           accessionNumber: "112-2026-0003",
-          accessionNumberLabel: "no.",
         }}
         showQrCode={showQrCode}
         qrCodeUrl="https://app.museumlite.com/en/objects/example"

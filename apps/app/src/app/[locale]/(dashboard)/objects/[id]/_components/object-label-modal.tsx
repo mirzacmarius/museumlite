@@ -280,7 +280,6 @@ function ObjectLabelModalContent({
                 objectName: formState.objectName.trim() || collection.title,
                 description: formState.description.trim(),
                 accessionNumber: collection.accessionNumber,
-                accessionNumberLabel: t("accessionNumberPrefix"),
               }}
               showQrCode={formState.showQrCode}
               qrCodeUrl={qrCodeUrl}
