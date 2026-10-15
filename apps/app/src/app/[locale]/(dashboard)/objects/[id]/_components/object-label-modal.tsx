@@ -20,10 +20,15 @@ import {
 import { useScopedI18n } from "@/locales/client";
 import type { CollectionData } from "./types";
 
+type LabelledObject = Pick<
+  CollectionData,
+  "_id" | "title" | "description" | "accessionNumber"
+>;
+
 interface ObjectLabelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  collection: CollectionData;
+  collection: LabelledObject;
   qrCodeUrl: string;
 }
 
@@ -49,7 +54,7 @@ type ObjectLabelFormAction =
   | { type: "setDescription"; value: string };
 
 function createInitialFormState(
-  collection: CollectionData,
+  collection: LabelledObject,
 ): ObjectLabelFormState {
   return {
     labelSize: "medium",
@@ -102,7 +107,7 @@ export function ObjectLabelModal({
 }
 
 interface ObjectLabelModalContentProps {
-  collection: CollectionData;
+  collection: LabelledObject;
   qrCodeUrl: string;
   onClose: () => void;
 }
