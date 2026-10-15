@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import type * as React from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import { useReturnFocus } from "../hooks/use-return-focus";
 import { useUiLocale } from "../locale";
 import { cn } from "../utils";
@@ -14,6 +15,16 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
+
+const DialogContentElementContext = createContext<HTMLElement | null>(null);
+
+/**
+ * The open dialog's content element. A popover portals into it because the
+ * dialog's scroll lock cancels wheel events from anywhere else.
+ */
+function useDialogContentElement() {
+  return useContext(DialogContentElementContext);
+}
 
 const DialogOverlay = ({
   className,
@@ -53,13 +64,24 @@ const DialogContent = ({
     onCloseAutoFocus,
     fallbackFocusRef,
   });
+  const [contentElement, setContentElement] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const contentRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setContentElement(node);
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
 
   return (
     <DialogPortal>
       <DialogOverlay />
       {/* The overlay scrolls, so a dialog taller than the screen stays reachable. */}
       <DialogPrimitive.Content
-        ref={ref}
+        ref={contentRef}
         className="fixed inset-0 z-50 overflow-y-auto duration-200 print:overflow-visible data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
         {...props}
         {...returnFocus}
@@ -71,7 +93,9 @@ const DialogContent = ({
               className,
             )}
           >
-            {children}
+            <DialogContentElementContext value={contentElement}>
+              {children}
+            </DialogContentElementContext>
             <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
               <X className="size-4" />
               <span className="sr-only">
@@ -159,4 +183,5 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  useDialogContentElement,
 };
