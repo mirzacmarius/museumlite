@@ -2,16 +2,12 @@ import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { z } from "zod";
-import { fieldErrorsFromZod } from "@/lib/record-form";
 import { serializeStringListField } from "@/lib/string-list-field";
 import type { CollectionFormData } from "../collection-form-shared/types";
 import {
-  type CollectionFormRuleMessages,
   collectionFormDataSchema,
-  collectionFormRules,
   comparableCollectionForm,
   createInitialFormData,
-  normalizeOptionalString,
   parseOptionalMeasurement,
   parseOptionalWeight,
 } from "../collection-form-shared/utils";
@@ -42,10 +38,9 @@ export function collectionEditValues(
 export function comparableCollectionEdit(
   values: CollectionEditValues,
 ): Record<string, unknown> {
-  return {
-    ...comparableCollectionForm(values),
-    conditionChangeNote: values.conditionChangeNote,
-  };
+  const { condition: _setByAcceptedAssessment, ...comparable } =
+    comparableCollectionForm(values);
+  return comparable;
 }
 
 const collectionEditValuesSchema = collectionFormDataSchema.extend({
@@ -57,37 +52,6 @@ export function parseCollectionEditValues(
 ): CollectionEditValues | null {
   const parsed = collectionEditValuesSchema.safeParse(stored);
   return parsed.success ? parsed.data : null;
-}
-
-/**
- * The shared catalog rules, plus the server's rule that changing a recorded
- * condition needs a note.
- */
-export function validateCollectionEdit(
-  values: CollectionEditValues,
-  recordedCondition: string | undefined,
-  messages: CollectionFormRuleMessages & { conditionNoteRequired: string },
-): Record<string, string> {
-  const recorded = normalizeOptionalString(recordedCondition);
-  const result = collectionFormRules(messages)
-    .extend({
-      condition: z.string().optional(),
-      conditionChangeNote: z.string(),
-    })
-    .superRefine((input, context) => {
-      if (
-        recorded &&
-        normalizeOptionalString(input.condition) !== recorded &&
-        !input.conditionChangeNote.trim()
-      )
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["conditionChangeNote"],
-          message: messages.conditionNoteRequired,
-        });
-    })
-    .safeParse(values);
-  return result.success ? {} : fieldErrorsFromZod(result.error);
 }
 
 type CollectionUpdateArgs = FunctionArgs<typeof api.collections.update>;
@@ -152,10 +116,6 @@ export function collectionUpdatePatch(
   ] as const) {
     if (changed.has(field))
       patch[field] = parseOptionalMeasurement(values[field]).value ?? null;
-  }
-  if (changed.has("condition")) {
-    patch.condition = values.condition ?? "";
-    patch.conditionChangeNote = values.conditionChangeNote.trim() || undefined;
   }
   if (changed.has("inscriptionMarks"))
     patch.inscriptionMarks = (values.inscriptionMarks ?? []).flatMap(

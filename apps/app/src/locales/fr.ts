@@ -67,6 +67,7 @@ export default {
       "État historique ; la source et la date peuvent être incertaines",
     legacyHistory: "Historique de l'état",
     newAssessment: "Nouvelle évaluation",
+    setCondition: "Définir l'état",
     date: "Date d'évaluation",
     condition: "État",
     summary: "Résumé",
@@ -7983,11 +7984,8 @@ export default {
         noParent: "Aucun objet parent associé.",
         childObjects: "Objets enfants",
         noChildren: "Aucun objet enfant associé.",
-        noConditionHistory:
-          "Aucun historique d’état enregistré pour le moment.",
         inscriptionsMarks: "Inscriptions et marques",
         noInscriptions: "Aucune inscription documentée.",
-        overallCondition: "État général",
         historyRelatedItems: "Historique et fiches associées",
         recordContext: "Contexte de la fiche",
         recordVerified: "Fiche vérifiée",
@@ -8055,8 +8053,6 @@ export default {
         noImagesUploaded: "Aucune image téléversée pour le moment.",
         savedToObject: "Enregistré avec cet objet",
         conditionChangeNote: "Note sur le changement d’état",
-        conditionChangeDated:
-          "La date et l’auteur de cette modification seront renseignés automatiquement.",
         detailedDimensionsHint:
           "Renseignez les dimensions, le diamètre et le poids.",
         ownershipHistory: "Historique de propriété",
@@ -8093,7 +8089,6 @@ export default {
           "Informations principales du catalogue qui identifient et classent cet objet.",
         documentDimensions:
           "Renseignez les dimensions, le diamètre et le poids.",
-        explainChange: "Expliquez ce qui a changé et pourquoi.",
         linkParentHint:
           "Associez cet objet à une fiche parente s’il appartient à un ensemble plus vaste ou à un contenant.",
         markOnDisplayHint:
@@ -8133,10 +8128,6 @@ export default {
         digitalVisibility: "Visibilité des ressources numériques",
         documentMarksDescription:
           "Documentez les signatures, cachets, étiquettes, gravures ou marques de collectionneur",
-        conditionChangeRequired:
-          "Obligatoire lors du remplacement d’un état de conservation existant.",
-        initialConditionOptional:
-          "Facultatif lors de la première saisie de l’état de conservation.",
         savingDraftNow: "Enregistrement du brouillon…",
         saveDraft: "Enregistrer le brouillon",
         submitting: "Envoi en cours…",

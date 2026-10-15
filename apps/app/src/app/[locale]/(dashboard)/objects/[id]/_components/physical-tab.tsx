@@ -1,13 +1,9 @@
 "use client";
 
-import { cn } from "@v1/ui/utils";
 import { Hammer, Ruler, Search, Shapes } from "lucide-react";
-import { ClientDate } from "@/components/client-date";
-import { getConditionIcon } from "@/components/condition-combobox";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n } from "@/locales/client";
 import { ConditionAssessmentPanel } from "./condition-assessment-panel";
-import { formatConditionLabel } from "./condition-display";
 import { ObjectIncidents } from "./object-incidents";
 import type { CollectionData } from "./types";
 
@@ -36,10 +32,6 @@ function formatObjectType(
 
 export function PhysicalTab({ collection }: PhysicalTabProps) {
   const tRoot = useI18n();
-  const conditionHistory = (collection.conditionHistory ?? []).toSorted(
-    (a, b) => b.changedAt - a.changedAt,
-  );
-  const latestConditionEntry = conditionHistory[0];
   const notSpecified = tRoot("untranslatedRecords.objects.status.notSpecified");
   const materials = formatStringListField(collection.materials, notSpecified);
   const dimensions =
@@ -63,7 +55,6 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
 
   return (
     <div className="space-y-8">
-      <ConditionAssessmentPanel collectionId={collection._id} />
       <ObjectIncidents
         collectionId={collection._id}
         organizationId={collection.organizationId}
@@ -171,100 +162,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
           </div>
         </div>
 
-        {/* Condition */}
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-          <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            {conditionHistory.length > 0
-              ? tRoot("conditionAssessments.legacyHistory")
-              : tRoot("untranslatedRecords.objects.detail.overallCondition")}
-          </span>
-          <div className="space-y-3">
-            {conditionHistory.length > 0 ? (
-              <div className="relative mb-1">
-                <div className="absolute bottom-2 left-3 top-2 w-px bg-zinc-800" />
-                <div>
-                  {conditionHistory.map((entry, index) => (
-                    <div
-                      key={`${entry.changedAt}-${entry.condition}-${entry.note ?? ""}`}
-                      className={cn(
-                        "relative pl-8",
-                        index < conditionHistory.length - 1 && "pb-6",
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "absolute left-0 top-1 z-10 flex size-6 items-center justify-center rounded-full",
-                          index === 0
-                            ? "border border-primary bg-primary/20 text-primary shadow-[0_0_10px_rgba(99,102,241,0.3)]"
-                            : "border border-zinc-700 bg-zinc-900",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "flex items-center justify-center",
-                            index === 0 && "animate-pulse",
-                          )}
-                        >
-                          {getConditionIcon(entry.condition)}
-                        </div>
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4
-                            className={cn(
-                              "text-sm font-medium",
-                              index === 0 ? "text-primary" : "text-foreground",
-                            )}
-                          >
-                            {formatConditionLabel(entry.condition, tRoot)}
-                          </h4>
-                        </div>
-                        <p className="text-[10px] text-zinc-500">
-                          <ClientDate
-                            timestamp={entry.changedAt}
-                            locale="en-US"
-                            options={{
-                              dateStyle: "short",
-                              timeStyle: "medium",
-                            }}
-                          />{" "}
-                          •{" "}
-                          {tRoot("untranslatedRecords.objects.logs.byUser", {
-                            name:
-                              entry.changedByName ||
-                              tRoot(
-                                "untranslatedRecords.objects.comments.unknown",
-                              ),
-                          })}
-                        </p>
-                        {entry.note ? (
-                          <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
-                            {entry.note}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex size-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                  <div className="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                </div>
-                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                  {formatConditionLabel(collection.condition, tRoot) ||
-                    tRoot("untranslatedRecords.objects.status.notAssessed")}
-                </span>
-              </div>
-            )}
-            {!latestConditionEntry ? (
-              <p className="text-xs text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.noConditionHistory")}
-              </p>
-            ) : null}
-          </div>
-        </div>
+        <ConditionAssessmentPanel collectionId={collection._id} />
       </div>
 
       {/* Inscriptions & Marks */}

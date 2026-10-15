@@ -1,16 +1,30 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { useQuery } from "convex/react";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { usePermissions } from "@/components/permission-gate";
 import {
   FieldError,
   fieldErrorProps,
 } from "@/components/record-form/record-form-notices";
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
+import { ConditionAssessmentPanel } from "../../../[id]/_components/condition-assessment-panel";
+import { formatConditionLabel } from "../../../[id]/_components/condition-display";
 import {
   InscriptionMarksField,
   MeasuredDimensionsFields,
@@ -36,10 +50,6 @@ export function CollectionEditPhysicalTab({
   currentOrganizationId,
   fieldErrors = NO_FIELD_ERRORS,
   typedCollectionId,
-  hasConditionChanged,
-  requiresConditionChangeNote,
-  conditionChangeNote,
-  onConditionChangeNoteChange,
 }: CollectionEditPhysicalTabProps) {
   const tRoot = useI18n();
   return (
@@ -71,60 +81,22 @@ export function CollectionEditPhysicalTab({
 
           <TechniqueField formData={formData} updateField={updateField} />
 
-          <div className="space-y-2">
-            <Label htmlFor="condition">{tRoot("objects.form.condition")}</Label>
-            <ConditionCombobox
-              organizationId={currentOrganizationId}
-              value={formData.condition || ""}
-              onValueChange={(value) => updateField("condition", value)}
-            />
-            <FieldError field="condition" message={fieldErrors.condition} />
-            {hasConditionChanged ? (
-              <div className="rounded-lg border border-dashed border-border/60 bg-secondary/10 p-3">
-                <p className="text-xs text-muted-foreground">
-                  {tRoot(
-                    "untranslatedRecords.objects.form.conditionChangeDated",
-                  )}
-                </p>
-                <div className="mt-3 space-y-2">
-                  <Label htmlFor="conditionChangeNote">
-                    {tRoot(
-                      "untranslatedRecords.objects.form.conditionChangeNote",
-                    )}
-                  </Label>
-                  <Textarea
-                    autoResize
-                    id="conditionChangeNote"
-                    value={conditionChangeNote}
-                    onChange={(event) =>
-                      onConditionChangeNoteChange?.(event.target.value)
-                    }
-                    rows={3}
-                    placeholder={tRoot(
-                      "untranslatedRecords.objects.form.explainChange",
-                    )}
-                    {...fieldErrorProps(
-                      "conditionChangeNote",
-                      fieldErrors.conditionChangeNote,
-                    )}
-                  />
-                  <FieldError
-                    field="conditionChangeNote"
-                    message={fieldErrors.conditionChangeNote}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {requiresConditionChangeNote
-                      ? tRoot(
-                          "untranslatedRecords.objects.form.conditionChangeRequired",
-                        )
-                      : tRoot(
-                          "untranslatedRecords.objects.form.initialConditionOptional",
-                        )}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </div>
+          {typedCollectionId ? (
+            <ConditionField collectionId={typedCollectionId} />
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="condition">
+                {tRoot("objects.form.condition")}
+              </Label>
+              <ConditionCombobox
+                id="condition"
+                organizationId={currentOrganizationId}
+                value={formData.condition || ""}
+                onValueChange={(value) => updateField("condition", value)}
+              />
+              <FieldError field="condition" message={fieldErrors.condition} />
+            </div>
+          )}
 
           <div className="space-y-3 md:col-span-2 xl:col-span-3">
             <div className="space-y-1">
@@ -227,6 +199,50 @@ export function CollectionEditPhysicalTab({
           />
         </div>
       </EditSection>
+    </div>
+  );
+}
+
+function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
+  const tRoot = useI18n();
+  const t = useScopedI18n("conditionAssessments");
+  const { hasPermission } = usePermissions();
+  const detail = useQuery(api.conditionAssessments.getForObject, {
+    collectionId,
+  });
+  const current = detail?.current.condition;
+  return (
+    <div className="space-y-2">
+      <p className="text-sm leading-none font-medium">
+        {tRoot("objects.form.condition")}
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        {detail ? (
+          <span className="text-sm">
+            {current ? formatConditionLabel(current, tRoot) : t("unknown")}
+          </span>
+        ) : null}
+        {hasPermission("collections.update") ||
+        hasPermission("collections.accept_condition") ? (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline">
+                {t("setCondition")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>{t("setCondition")}</DialogTitle>
+                <DialogDescription>{t("description")}</DialogDescription>
+              </DialogHeader>
+              <ConditionAssessmentPanel
+                collectionId={collectionId}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        ) : null}
+      </div>
     </div>
   );
 }

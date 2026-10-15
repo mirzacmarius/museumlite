@@ -67,6 +67,7 @@ export default {
     legacyUncertain: "Stare anterioară; sursa și data pot fi incerte",
     legacyHistory: "Istoricul stării anterioare",
     newAssessment: "Evaluare nouă",
+    setCondition: "Stabilește starea",
     date: "Data evaluării",
     condition: "Stare",
     summary: "Rezumat",
@@ -7944,11 +7945,8 @@ export default {
         noParent: "Nu este atribuit niciun obiect părinte.",
         childObjects: "Obiecte copil",
         noChildren: "Nu sunt atribuite obiecte copil.",
-        noConditionHistory:
-          "Nu este încă înregistrat niciun istoric al stării.",
         inscriptionsMarks: "Inscripții și marcaje",
         noInscriptions: "Nu sunt documentate inscripții.",
-        overallCondition: "Stare generală",
         historyRelatedItems: "Istoric și înregistrări asociate",
         recordContext: "Contextul fișei",
         recordVerified: "Fișă verificată",
@@ -8015,8 +8013,6 @@ export default {
         noImagesUploaded: "Nu au fost încărcate încă imagini.",
         savedToObject: "Salvat la acest obiect",
         conditionChangeNote: "Notă privind schimbarea stării",
-        conditionChangeDated:
-          "Data și autorul acestei modificări vor fi înregistrate automat.",
         detailedDimensionsHint:
           "Înregistrați dimensiunile, diametrul și greutatea.",
         ownershipHistory: "Istoricul proprietății",
@@ -8054,7 +8050,6 @@ export default {
           "Informații principale de catalog care identifică și clasifică acest obiect.",
         documentDimensions:
           "Înregistrați dimensiunile, diametrul și greutatea.",
-        explainChange: "Explicați ce s-a schimbat și de ce.",
         linkParentHint:
           "Asociați acest obiect unei fișe părinte dacă face parte dintr-un set sau container mai mare.",
         markOnDisplayHint:
@@ -8093,10 +8088,6 @@ export default {
         digitalVisibility: "Vizibilitatea resurselor digitale",
         documentMarksDescription:
           "Documentați semnături, ștampile, etichete, gravuri sau marcaje de colecționar",
-        conditionChangeRequired:
-          "Obligatoriu la înlocuirea unei stări de conservare existente.",
-        initialConditionOptional:
-          "Opțional la înregistrarea inițială a stării.",
         savingDraftNow: "Se salvează ciorna…",
         saveDraft: "Salvați ciorna",
         submitting: "Se trimite…",

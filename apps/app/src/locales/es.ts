@@ -67,6 +67,7 @@ export default {
       "Estado anterior; la fuente y la fecha pueden ser inciertas",
     legacyHistory: "Historial del estado anterior",
     newAssessment: "Nueva evaluación",
+    setCondition: "Establecer estado",
     date: "Fecha de evaluación",
     condition: "Estado",
     summary: "Resumen",
@@ -7957,10 +7958,8 @@ export default {
         noParent: "No hay ningún objeto principal asignado.",
         childObjects: "Objetos secundarios",
         noChildren: "No hay objetos secundarios asignados.",
-        noConditionHistory: "Aún no hay historial del estado registrado.",
         inscriptionsMarks: "Inscripciones y marcas",
         noInscriptions: "No hay inscripciones documentadas.",
-        overallCondition: "Estado general",
         historyRelatedItems: "Historial y registros relacionados",
         recordContext: "Contexto del registro",
         recordVerified: "Registro verificado",
@@ -8026,8 +8025,6 @@ export default {
         noImagesUploaded: "Aún no se han subido imágenes.",
         savedToObject: "Guardado con este objeto",
         conditionChangeNote: "Nota sobre el cambio de estado",
-        conditionChangeDated:
-          "La fecha y la autoría de este cambio se registrarán automáticamente.",
         detailedDimensionsHint:
           "Documente las dimensiones, el diámetro y el peso.",
         ownershipHistory: "Historial de propiedad",
@@ -8063,7 +8060,6 @@ export default {
         recordIdentityDescription:
           "Información principal del catálogo que identifica y clasifica este objeto.",
         documentDimensions: "Documente las dimensiones, el diámetro y el peso.",
-        explainChange: "Explique qué cambió y por qué.",
         linkParentHint:
           "Vincule este objeto a un registro principal si forma parte de un conjunto o contenedor mayor.",
         markOnDisplayHint:
@@ -8103,10 +8099,6 @@ export default {
         digitalVisibility: "Visibilidad de los recursos digitales",
         documentMarksDescription:
           "Documente firmas, sellos, etiquetas, grabados o marcas de coleccionista",
-        conditionChangeRequired:
-          "Obligatorio al reemplazar una condición existente.",
-        initialConditionOptional:
-          "Opcional para el registro inicial del estado de conservación.",
         savingDraftNow: "Guardando borrador…",
         saveDraft: "Guardar borrador",
         submitting: "Enviando…",

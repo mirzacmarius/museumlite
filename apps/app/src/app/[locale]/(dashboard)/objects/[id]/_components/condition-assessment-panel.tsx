@@ -66,8 +66,10 @@ const SOURCE_CAPTION = {
 
 export function ConditionAssessmentPanel({
   collectionId,
+  mode = "view",
 }: {
   collectionId: Id<"collections">;
+  mode?: "view" | "edit";
 }) {
   const t = useScopedI18n("conditionAssessments");
   const translate = useI18n();
@@ -85,7 +87,7 @@ export function ConditionAssessmentPanel({
   );
   const media = useQuery(
     api.media.list,
-    hasPermission("media.read") ? { collectionId } : "skip",
+    mode === "edit" && hasPermission("media.read") ? { collectionId } : "skip",
   );
   const create = useMutation(api.conditionAssessments.create);
   const accept = useMutation(api.conditionAssessments.accept);
@@ -107,8 +109,11 @@ export function ConditionAssessmentPanel({
     (Refusal & { at: "form" | Id<"conditionAssessments"> }) | null
   >(null);
   const [notice, setNotice] = useState("");
-  const canCapture = hasPermission("collections.update");
-  const canAccept = hasPermission("collections.accept_condition");
+  const canCapture = mode === "edit" && hasPermission("collections.update");
+  const cannotOpenEditForm = !hasPermission("collections.update");
+  const canAccept =
+    hasPermission("collections.accept_condition") &&
+    (mode === "edit" || cannotOpenEditForm);
   const canUpload =
     hasPermission("media.upload") && hasPermission("media.read");
   const day = chosenDate ?? dayOpened;
@@ -151,6 +156,9 @@ export function ConditionAssessmentPanel({
 
   async function saveDraft(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // The edit form opens this panel in a dialog portal, and React still
+    // bubbles the submit to the object form around it.
+    event.stopPropagation();
     setRefusal(null);
     setNotice("");
     const errors = validate();
@@ -264,18 +272,28 @@ export function ConditionAssessmentPanel({
 
   return (
     <section
-      aria-labelledby="condition-assessments-title"
-      className="space-y-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+      aria-labelledby={
+        mode === "view" ? "condition-assessments-title" : undefined
+      }
+      className={
+        mode === "view"
+          ? "space-y-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+          : "space-y-5"
+      }
     >
-      <div>
-        <h2
-          id="condition-assessments-title"
-          className="text-base font-semibold"
-        >
-          {t("title")}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
-      </div>
+      {mode === "view" ? (
+        <div>
+          <h2
+            id="condition-assessments-title"
+            className="text-base font-semibold"
+          >
+            {t("title")}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("description")}
+          </p>
+        </div>
+      ) : null}
       <div className="rounded-lg border border-border p-4">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           {t("current")}

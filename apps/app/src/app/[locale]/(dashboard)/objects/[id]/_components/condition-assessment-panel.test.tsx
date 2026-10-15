@@ -163,6 +163,19 @@ test("viewing an object shows its current condition and history without authorin
   expect(screen.queryByRole("heading", { name: "New assessment" })).toBeNull();
 });
 
+test("a reviewer who cannot edit the object accepts drafts from the view tab", async () => {
+  permissions = new Set(["collections.read", "collections.accept_condition"]);
+  await renderOnPage(<PhysicalTab collection={viewedObject} />);
+  const user = userEvent.setup();
+
+  expect(screen.queryByRole("button", { name: "Save draft" })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Accept assessment" }));
+
+  expect(mutations["conditionAssessments:accept"]).toHaveBeenCalledWith({
+    assessmentId: "assessment-1",
+  });
+});
+
 test("the view tab lists legacy condition history once, with who recorded it", async () => {
   detail.legacy.history = [legacyEntry];
   await renderOnPage(
@@ -235,6 +248,26 @@ test("the edit Physical tab sets condition through an assessment dialog, not the
     expect.objectContaining({ condition: "Poor", summary: "Crack at base" }),
   );
   expect(outerSubmit).not.toHaveBeenCalled();
+});
+
+test("an accession's object draft keeps its intake condition picker", async () => {
+  const updateField = vi.fn();
+  await renderOnPage(
+    <CollectionEditPhysicalTab
+      formData={{ title: "Vase", condition: "Fair" }}
+      updateField={updateField}
+      placeholders={() => ""}
+      currentOrganizationId="org"
+    />,
+  );
+  const user = userEvent.setup();
+
+  const condition = screen.getByRole("combobox", { name: "Condition" });
+  expect(condition.textContent).toBe("Fair");
+  await chooseCondition(user, "Poor");
+
+  expect(updateField).toHaveBeenCalledWith("condition", "Poor");
+  expect(screen.queryByRole("button", { name: "Set condition" })).toBeNull();
 });
 
 test("Set condition is offered to staff who may record or accept an assessment", async () => {

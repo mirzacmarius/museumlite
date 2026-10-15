@@ -65,6 +65,7 @@ export default {
     legacyUncertain: "Eldre tilstand; kilde og dato kan være usikre",
     legacyHistory: "Eldre tilstandshistorikk",
     newAssessment: "Ny vurdering",
+    setCondition: "Angi tilstand",
     date: "Vurderingsdato",
     condition: "Tilstand",
     summary: "Sammendrag",
@@ -7889,10 +7890,8 @@ export default {
         noParent: "Ingen overordnet objekt er tilordnet.",
         childObjects: "Underordnede objekter",
         noChildren: "Ingen underordnede objekter er tilordnet.",
-        noConditionHistory: "Ingen tilstandshistorikk er registrert ennå.",
         inscriptionsMarks: "Innskrifter og merker",
         noInscriptions: "Ingen innskrifter dokumentert.",
-        overallCondition: "Samlet tilstand",
         historyRelatedItems: "Historikk og relaterte poster",
         recordContext: "Postkontekst",
         recordVerified: "Post bekreftet",
@@ -7953,8 +7952,6 @@ export default {
         noImagesUploaded: "Ingen bilder er lastet opp ennå.",
         savedToObject: "Lagret med dette objektet",
         conditionChangeNote: "Merknad om tilstandsendring",
-        conditionChangeDated:
-          "Denne endringen dateres og tilskrives automatisk.",
         detailedDimensionsHint: "Registrer mål, diameter og vekt.",
         ownershipHistory: "Eierhistorikk",
         ownershipHistoryDescription: "Dokumenter eierrekken post for post.",
@@ -7988,7 +7985,6 @@ export default {
         recordIdentityDescription:
           "Grunnleggende kataloginformasjon som identifiserer og klassifiserer objektet.",
         documentDimensions: "Registrer mål, diameter og vekt.",
-        explainChange: "Forklar hva som ble endret og hvorfor.",
         linkParentHint:
           "Knytt objektet til en overordnet post hvis det tilhører et større sett eller en beholder.",
         markOnDisplayHint:
@@ -8027,9 +8023,6 @@ export default {
         digitalVisibility: "Synlighet for digitale ressurser",
         documentMarksDescription:
           "Dokumenter signaturer, stempler, etiketter, graveringer eller samlermerker",
-        conditionChangeRequired:
-          "Påkrevd når en eksisterende tilstand erstattes.",
-        initialConditionOptional: "Valgfritt ved første tilstandsregistrering.",
         savingDraftNow: "Lagrer utkast…",
         saveDraft: "Lagre utkast",
         submitting: "Sender…",
