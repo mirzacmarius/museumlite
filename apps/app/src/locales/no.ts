@@ -4781,7 +4781,7 @@ export default {
       assignedCases: "Saker tildelt meg",
       assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
-      nothingWaiting: "Ingen arbeid venter på deg.",
+      nothingWaiting: "Ingenting venter på deg.",
       pendingApproval: {
         accession: "Aksesjoner som venter på godkjenning",
         deaccession: "Deaksesjoner som venter på godkjenning",
