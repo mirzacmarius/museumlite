@@ -1,11 +1,12 @@
 import sharp from "sharp";
-import { expect, test, vi } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import {
   authedForUser,
   createConvexTest,
   createOrgUserCollectionWithPermissions,
   createOrgUserWithPermissions,
+  useSequentialScheduledJobs,
 } from "./testHarness";
 
 vi.stubEnv("CONVEX_SITE_URL", "https://example.convex.site");
@@ -287,6 +288,8 @@ test("exhibition installation observes the current source and invalid return lea
 });
 
 test("owned upload binds organization and uploader before attachment and sessions are single use", async () => {
+  vi.useFakeTimers();
+  onTestFinished(() => vi.useRealTimers());
   const t = createConvexTest();
   const own = await createOrgUserCollectionWithPermissions(t, [
     "media.upload",
@@ -742,6 +745,8 @@ test("an upload session cannot be used after expiry and another member cannot cl
 });
 
 test("a trusted HTTP upload passes public-image ownership review and a fresh version revokes display", async () => {
+  vi.useFakeTimers();
+  onTestFinished(() => vi.useRealTimers());
   const t = createConvexTest();
   const own = await createOrgUserCollectionWithPermissions(t, [
     "media.upload",
@@ -791,6 +796,7 @@ test("a trusted HTTP upload passes public-image ownership review and a fresh ver
     storageId,
     isPrimary: false,
   });
+  await t.finishAllScheduledFunctions(() => vi.runAllTimers());
   await authorized.mutation(api.media.updateRights, {
     mediaId,
     rightsStatus: "owned",
@@ -800,7 +806,6 @@ test("a trusted HTTP upload passes public-image ownership review and a fresh ver
     .mockImplementation(
       async () => new Response(new Uint8Array(input), { status: 200 }),
     );
-  vi.useFakeTimers();
   try {
     await authorized.mutation(api.mediaPublications.approve, { mediaId });
     await t.finishAllScheduledFunctions(() => vi.runAllTimers());
@@ -881,14 +886,14 @@ test("primary upload thumbnail attaches an owned derivative without stranding ap
     .mockImplementation(
       async () => new Response(new Uint8Array(input), { status: 200 }),
     );
-  vi.useFakeTimers();
+  const restoreTimers = useSequentialScheduledJobs();
   try {
     const mediaId = await authorized.mutation(api.media.create, {
       ...uploadArgs,
       storageId,
       isPrimary: true,
     });
-    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    await t.finishAllScheduledFunctions(() => vi.advanceTimersToNextTimer());
     const [listed] = await authorized.query(api.media.list, {
       collectionId: own.collectionId,
     });
@@ -907,7 +912,7 @@ test("primary upload thumbnail attaches an owned derivative without stranding ap
       await authorized.query(api.mediaPublications.getReview, { mediaId }),
     ).toMatchObject({ blocker: null });
     await authorized.mutation(api.mediaPublications.approve, { mediaId });
-    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    await t.finishAllScheduledFunctions(() => vi.advanceTimersToNextTimer());
     expect(
       await authorized.query(api.mediaPublications.getReview, { mediaId }),
     ).toMatchObject({ status: "approved", blocker: null });
@@ -915,7 +920,7 @@ test("primary upload thumbnail attaches an owned derivative without stranding ap
     // Re-requesting a thumbnail for an image that already has one must not
     // create another derivative.
     await authorized.mutation(api.media.setPrimary, { mediaId });
-    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    await t.finishAllScheduledFunctions(() => vi.advanceTimersToNextTimer());
     const [again] = await authorized.query(api.media.list, {
       collectionId: own.collectionId,
     });
@@ -923,7 +928,7 @@ test("primary upload thumbnail attaches an owned derivative without stranding ap
     expect(again?.uploadStatus).toBe("completed");
   } finally {
     fetchMock.mockRestore();
-    vi.useRealTimers();
+    restoreTimers();
   }
 });
 
@@ -962,13 +967,13 @@ test("a legacy image stranded in thumbnail processing recovers when re-selected 
     .mockImplementation(
       async () => new Response(new Uint8Array(input), { status: 200 }),
     );
-  vi.useFakeTimers();
+  const restoreTimers = useSequentialScheduledJobs();
   try {
     await authorized.mutation(api.media.setPrimary, { mediaId });
-    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    await t.finishAllScheduledFunctions(() => vi.advanceTimersToNextTimer());
   } finally {
     fetchMock.mockRestore();
-    vi.useRealTimers();
+    restoreTimers();
   }
   const [listed] = await authorized.query(api.media.list, {
     collectionId: own.collectionId,
@@ -1030,13 +1035,13 @@ test("stranded upload recovery restores completed originals and leaves chunked u
     .mockImplementation(
       async () => new Response(new Uint8Array(input), { status: 200 }),
     );
-  vi.useFakeTimers();
+  const restoreTimers = useSequentialScheduledJobs();
   try {
     await t.mutation(internal.migrations.recoverStrandedMediaUploads, {});
-    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    await t.finishAllScheduledFunctions(() => vi.advanceTimersToNextTimer());
   } finally {
     fetchMock.mockRestore();
-    vi.useRealTimers();
+    restoreTimers();
   }
   const authorized = authedForUser(t, own.userId);
   const media = await authorized.query(api.media.list, {
@@ -1046,6 +1051,13 @@ test("stranded upload recovery restores completed originals and leaves chunked u
     uploadStatus: "completed",
     thumbnailStorageId: expect.any(String),
   });
+  expect(
+    (
+      await authorized.query(api.mediaPublications.getReview, {
+        mediaId: strandedId,
+      })
+    )?.portal,
+  ).toBe("shown");
   expect(media.find((item) => item._id === chunkedId)?.uploadStatus).toBe(
     "processing",
   );

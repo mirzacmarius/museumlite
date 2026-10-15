@@ -19,6 +19,9 @@ export async function getStorageUsageFromMedia(
     if (media.publicApproval?.renditionStorageId) {
       storageIds.add(media.publicApproval.renditionStorageId);
     }
+    if (media.publicRendition?.status === "ready") {
+      storageIds.add(media.publicRendition.renditionStorageId);
+    }
   }
 
   for (const version of mediaVersions) {

@@ -14,6 +14,7 @@ import {
   ensureUsageCounter,
 } from "./organizationUsageCounters";
 import { normalizeDraftMediaPrimary } from "./primaryMedia";
+import { syncPublicRendition } from "./publicMedia";
 import { transferStorageOwnership } from "./uploadOwnership";
 
 function serializeStringList(values?: string[]) {
@@ -200,6 +201,7 @@ export async function publishAccessionObjectDraft(
         ownerId: mediaId,
       });
       await ctx.db.patch(mediaId, ownership);
+      await syncPublicRendition(ctx, mediaId);
     }),
   ]);
 

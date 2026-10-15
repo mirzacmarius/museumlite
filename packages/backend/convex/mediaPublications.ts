@@ -7,9 +7,12 @@ import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { hasPermission, requirePermission } from "./utils/permissions";
 import {
   getApprovedPublicMedia,
+  getPortalDisplayBlocker,
+  getPortalImage,
   getPublicationBlocker,
   getPublicationSource,
   revokePublicRendition,
+  syncPublicRendition as syncMediaPublicRendition,
 } from "./utils/publicMedia";
 
 export const getReview = query({
@@ -25,6 +28,13 @@ export const getReview = query({
         v.literal("approved"),
         v.literal("failed"),
       ),
+      portal: v.union(
+        v.literal("shown"),
+        v.literal("preparing"),
+        v.literal("hidden"),
+        v.literal("blocked"),
+        v.literal("failed"),
+      ),
       publicRenditionUrl: v.union(v.string(), v.null()),
       originalDownloadAllowed: v.boolean(),
       approvedAt: v.optional(v.number()),
@@ -34,8 +44,15 @@ export const getReview = query({
     const media = await ctx.db.get(args.mediaId);
     if (!media) return null;
     await requirePermission(ctx, media.organizationId, "media.read");
-    const blocker = getPublicationBlocker(media, Date.now());
+    const now = Date.now();
+    const blocker = getPublicationBlocker(media, now);
     const approved = await getApprovedPublicMedia(
+      ctx,
+      media,
+      media.organizationId,
+      media.collectionId,
+    );
+    const portalImage = await getPortalImage(
       ctx,
       media,
       media.organizationId,
@@ -65,7 +82,17 @@ export const getReview = query({
           : approval?.status === "processing" || approval?.status === "failed"
             ? approval.status
             : ("private" as const),
-      publicRenditionUrl: approved?.url ?? null,
+      portal:
+        media.portalChoice === "hidden"
+          ? ("hidden" as const)
+          : getPortalDisplayBlocker(media, now)
+            ? ("blocked" as const)
+            : portalImage
+              ? ("shown" as const)
+              : media.publicRendition?.status === "failed"
+                ? ("failed" as const)
+                : ("preparing" as const),
+      publicRenditionUrl: portalImage?.url ?? null,
       originalDownloadAllowed: !!approved?.originalDownloadUrl,
       approvedAt: approved ? approval?.approvedAt : undefined,
     };
@@ -99,6 +126,7 @@ export const approve = mutation({
     await revokePublicRendition(ctx, media);
     const requestId = crypto.randomUUID();
     await ctx.db.patch(media._id, {
+      portalChoice: "shown",
       publicApproval: {
         status: "processing",
         requestId,
@@ -109,6 +137,7 @@ export const approve = mutation({
         allowOriginalDownload: false,
       },
     });
+    await syncMediaPublicRendition(ctx, media._id);
     await ctx.scheduler.runAfter(
       0,
       internal.mediaPublicationsActions.processRendition,
@@ -218,6 +247,86 @@ export const completeRendition = internalMutation({
   },
 });
 
+export const completePublicRendition = internalMutation({
+  args: {
+    mediaId: v.id("mediaFiles"),
+    requestId: v.string(),
+    renditionStorageId: v.id("_storage"),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const media = await ctx.db.get(args.mediaId);
+    const request = media?.publicRendition;
+    if (
+      !media ||
+      request?.status !== "processing" ||
+      request.requestId !== args.requestId ||
+      args.renditionStorageId === request.sourceStorageId
+    )
+      return false;
+    const [rendition, existingOwnership] = await Promise.all([
+      ctx.db.system.get(args.renditionStorageId),
+      ctx.db
+        .query("storageOwnership")
+        .withIndex("by_storageId", (q) =>
+          q.eq("storageId", args.renditionStorageId),
+        )
+        .unique(),
+    ]);
+    if (!rendition || existingOwnership) return false;
+    await ctx.db.insert("storageOwnership", {
+      storageId: args.renditionStorageId,
+      organizationId: media.organizationId,
+      uploadedBy: media.uploadedBy,
+      uploadedAt: Date.now(),
+      ownerType: "mediaRendition",
+      ownerId: media._id,
+    });
+    await ctx.db.patch(media._id, {
+      publicRendition: {
+        status: "ready",
+        sourceStorageId: request.sourceStorageId,
+        renditionStorageId: args.renditionStorageId,
+      },
+    });
+    await applyUsageCounterDelta(ctx, media.organizationId, {
+      storageBytes: rendition.size,
+    });
+    return true;
+  },
+});
+
+export const failPublicRendition = internalMutation({
+  args: { mediaId: v.id("mediaFiles"), requestId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const media = await ctx.db.get(args.mediaId);
+    const request = media?.publicRendition;
+    if (
+      media &&
+      request?.status === "processing" &&
+      request.requestId === args.requestId
+    ) {
+      await ctx.db.patch(media._id, {
+        publicRendition: {
+          status: "failed",
+          sourceStorageId: request.sourceStorageId,
+        },
+      });
+    }
+    return null;
+  },
+});
+
+export const syncPublicRendition = internalMutation({
+  args: { mediaId: v.id("mediaFiles") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await syncMediaPublicRendition(ctx, args.mediaId);
+    return null;
+  },
+});
+
 export const failRendition = internalMutation({
   args: { mediaId: v.id("mediaFiles"), requestId: v.string() },
   returns: v.null(),
@@ -237,8 +346,8 @@ export const failRendition = internalMutation({
   },
 });
 
-export const unpublish = mutation({
-  args: { mediaId: v.id("mediaFiles") },
+export const setHiddenFromPortal = mutation({
+  args: { mediaId: v.id("mediaFiles"), hidden: v.boolean() },
   returns: v.null(),
   handler: async (ctx, args) => {
     const media = await ctx.db.get(args.mediaId);
@@ -250,12 +359,22 @@ export const unpublish = mutation({
     );
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    await revokePublicRendition(ctx, media);
-    await ctx.db.patch(media._id, { publicApproval: undefined });
+    if (args.hidden) {
+      await revokePublicRendition(ctx, media);
+      await ctx.db.patch(media._id, {
+        portalChoice: "hidden",
+        publicApproval: undefined,
+      });
+    } else {
+      await ctx.db.patch(media._id, { portalChoice: "shown" });
+    }
+    await syncMediaPublicRendition(ctx, media._id);
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: media.organizationId,
       userId,
-      action: "unpublished_public_media",
+      action: args.hidden
+        ? "unpublished_public_media"
+        : "republished_public_media",
       entityType: "media",
       entityId: media._id,
     });

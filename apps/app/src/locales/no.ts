@@ -3178,7 +3178,6 @@ export default {
       selectOrganization: "Velg en organisasjon for å se objektene.",
       collections: "Objekter",
       public: "Offentlig",
-      private: "Privat",
       alternativeTitle: "Alternativ Tittel",
 
       printLabel: "Skriv ut QR-etikett",
@@ -5098,14 +5097,22 @@ export default {
   },
   mediaPage: {
     publication: {
-      title: "Godkjenning av offentlig bilde",
+      title: "Offentlig portal",
       status: {
-        private: "Privat",
+        private: "Ikke godkjent for nedlasting av originalen",
         processing: "Lager offentlig bilde...",
-        approved: "Publisert",
+        approved: "Godkjent for nedlasting av originalen",
         failed: "Bildebehandling mislyktes",
       },
-      publicPreview: "Forhåndsvisning av godkjent offentlig bilde",
+      portal: {
+        shown: "Vises i den offentlige portalen når objektet er publisert der.",
+        preparing: "Klargjør den offentlige gjengivelsen...",
+        hidden: "Skjult fra den offentlige portalen.",
+        blocked:
+          "Vises ikke i den offentlige portalen fordi filtypen eller de registrerte rettighetene ikke tillater det.",
+        failed: "Den offentlige gjengivelsen kunne ikke lages.",
+      },
+      publicPreview: "Forhåndsvisning av offentlig gjengivelse",
       rightsStatus: "Rettighetsstatus",
       licenseType: "Lisens",
       noLicense: "Ingen lisens angitt",
@@ -5113,9 +5120,10 @@ export default {
       restrictions: "Bruksbegrensninger",
       acknowledgment: "Offentlig visning krever kreditering",
       saveRights: "Lagre rettigheter",
-      approve: "Godkjenn offentlig bilde",
+      approve: "Godkjenn for nedlasting av originalen",
       retry: "Prøv bildebehandling på nytt",
-      unpublish: "Fjern bildet fra offentlig visning",
+      hide: "Skjul fra offentlig portal",
+      show: "Vis i offentlig portal",
       originalDownload: "Tillat offentlig nedlasting av originalen",
       invalidExpiry: "Angi en gyldig dato.",
       failed: "Kunne ikke oppdatere. Prøv igjen.",

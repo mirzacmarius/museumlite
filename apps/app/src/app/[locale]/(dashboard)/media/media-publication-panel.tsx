@@ -68,7 +68,9 @@ export function MediaPublicationPanel({
   const review = useQuery(api.mediaPublications.getReview, { mediaId });
   const updateRights = useMutation(api.media.updateRights);
   const approve = useMutation(api.mediaPublications.approve);
-  const unpublish = useMutation(api.mediaPublications.unpublish);
+  const setHiddenFromPortal = useMutation(
+    api.mediaPublications.setHiddenFromPortal,
+  );
   const setOriginalDownload = useMutation(
     api.mediaPublications.setOriginalDownload,
   );
@@ -142,6 +144,29 @@ export function MediaPublicationPanel({
         <p className="text-xs text-zinc-400">{t("mediaPage.loading")}</p>
       ) : review ? (
         <>
+          <p className="text-xs text-zinc-400">
+            {t(`mediaPage.publication.portal.${review.portal}`)}
+          </p>
+          {review.canManage && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={state.isSaving}
+              onClick={() =>
+                void run(() =>
+                  setHiddenFromPortal({
+                    mediaId,
+                    hidden: review.portal !== "hidden",
+                  }),
+                )
+              }
+            >
+              {review.portal === "hidden"
+                ? t("mediaPage.publication.show")
+                : t("mediaPage.publication.hide")}
+            </Button>
+          )}
           <p className="text-xs text-zinc-400">
             {t(`mediaPage.publication.status.${review.status}`)}
           </p>
@@ -269,17 +294,6 @@ export function MediaPublicationPanel({
                     {review.status === "failed"
                       ? t("mediaPage.publication.retry")
                       : t("mediaPage.publication.approve")}
-                  </Button>
-                )}
-                {review.status !== "private" && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={state.isSaving}
-                    onClick={() => void run(() => unpublish({ mediaId }))}
-                  >
-                    {t("mediaPage.publication.unpublish")}
                   </Button>
                 )}
               </div>

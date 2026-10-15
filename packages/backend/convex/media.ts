@@ -30,7 +30,10 @@ import {
 } from "./utils/primaryMedia";
 import { buildStorageStats } from "./utils/projectionReports";
 import { projectionUnavailableResult } from "./utils/projectionValidators";
-import { revokePublicRendition } from "./utils/publicMedia";
+import {
+  revokePublicRendition,
+  syncPublicRendition,
+} from "./utils/publicMedia";
 import {
   accessionReferenceProblems,
   objectReferenceProblems,
@@ -205,6 +208,7 @@ export const create = mutation({
       expectedFileSize: args.fileSize,
       expectedMimeType: args.mimeType,
     });
+    await syncPublicRendition(ctx, mediaId);
 
     await emitWebhookEvent(ctx, args.organizationId, "media.uploaded", {
       mediaId,
@@ -931,6 +935,7 @@ export const generateThumbnail = internalMutation({
       (await ctx.db.system.get(media.storageId))
     ) {
       await ctx.db.patch(args.mediaId, { uploadStatus: "completed" });
+      await syncPublicRendition(ctx, args.mediaId);
     }
 
     // Skip if thumbnail already exists
@@ -1460,6 +1465,7 @@ export const updateRights = mutation({
         changes: updates,
       }),
     ]);
+    await syncPublicRendition(ctx, args.mediaId);
 
     return null;
   },
@@ -1795,6 +1801,7 @@ export const bulkUpdateRights = mutation({
             updates.acknowledgmentText = args.acknowledgmentText;
 
           await ctx.db.patch(mediaId, updates);
+          await syncPublicRendition(ctx, mediaId);
           return "updated" as const;
         } catch {
           return "failed" as const;

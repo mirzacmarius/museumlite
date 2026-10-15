@@ -314,6 +314,9 @@ export async function computeSourceFacts(
           media.storageId,
           media.thumbnailStorageId,
           media.publicApproval?.renditionStorageId,
+          media.publicRendition?.status === "ready"
+            ? media.publicRendition.renditionStorageId
+            : undefined,
         ].filter((id): id is Id<"_storage"> => id !== undefined),
       );
       for (const storageId of storageIds) {

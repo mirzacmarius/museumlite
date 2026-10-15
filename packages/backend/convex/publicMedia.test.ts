@@ -11,7 +11,7 @@ import type { Id } from "./_generated/dataModel";
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-test("anonymous catalog hides legacy and restricted attachments in list and detail", async () => {
+test("anonymous catalog shows a legacy image as its rendition and never a restricted attachment", async () => {
   const t = createConvexTest();
   const fixture = await createOrgUserCollectionWithPermissions(t, [
     "organization.manage_settings",
@@ -33,7 +33,25 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
       ["secret.pdf", "application/pdf", "restricted"],
     ] as const) {
       const storageId = await ctx.storage.store(
-        new Blob([fileName], { type: mimeType }),
+        new Blob(
+          [
+            mimeType === "image/jpeg"
+              ? new Uint8Array(
+                  await sharp({
+                    create: {
+                      width: 2000,
+                      height: 1000,
+                      channels: 3,
+                      background: "#996633",
+                    },
+                  })
+                    .jpeg()
+                    .toBuffer(),
+                )
+              : fileName,
+          ],
+          { type: mimeType },
+        ),
       );
       const mediaId = await ctx.db.insert("mediaFiles", {
         organizationId: fixture.organizationId,
@@ -72,6 +90,10 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
     return { slug: org?.slug ?? "", libraryItemId, legacyMediaId };
   });
   const collection = await t.run((ctx) => ctx.db.get(fixture.collectionId));
+  await t.mutation(internal.migrations.backfillPublicRenditions, {
+    cursor: null,
+  });
+  await t.finishAllScheduledFunctions(() => vi.runAllTimers());
   const detail = await t.query(api.collections.getPublic, {
     organizationSlug: slug,
     accessionNumber: collection?.accessionNumber ?? "",
@@ -79,9 +101,24 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
   const list = await t.query(api.collections.listPublic, {
     organizationSlug: slug,
   });
-  expect(detail?.images).toEqual([]);
+  if (!legacyMediaId) throw new Error("Missing test media");
+  const legacy = await t.run(async (ctx) => {
+    const media = await ctx.db.get(legacyMediaId);
+    return {
+      originalUrl: media ? await ctx.storage.getUrl(media.storageId) : null,
+      renditionUrl:
+        media?.publicRendition?.status === "ready"
+          ? await ctx.storage.getUrl(media.publicRendition.renditionStorageId)
+          : null,
+    };
+  });
+  expect(legacy.renditionUrl).not.toBeNull();
+  expect(legacy.renditionUrl).not.toBe(legacy.originalUrl);
+  expect(detail?.images.map((image) => image.url)).toEqual([
+    legacy.renditionUrl,
+  ]);
   expect(detail?.isHighResDownloadable).toBe(false);
-  expect(list.items[0]?.primaryImageUrl).toBeUndefined();
+  expect(list.items[0]?.primaryImageUrl).toBe(legacy.renditionUrl);
   expect(
     list.items.find((item) => item._id === libraryItemId)?.primaryImageUrl,
   ).toBeUndefined();
@@ -90,7 +127,6 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
     accessionNumber: `library-${libraryItemId}`,
   });
   expect(libraryDetail?.images).toEqual([]);
-  if (!legacyMediaId) throw new Error("Missing test media");
   expect(
     (
       await authedForUser(t, fixture.userId).query(
@@ -241,7 +277,10 @@ test("approval action creates a bounded JPEG rendition before public projection"
   await t.run((ctx) =>
     ctx.db.patch(sourceOwnershipId, { organizationId: fixture.organizationId }),
   );
-  await reviewer.mutation(api.mediaPublications.unpublish, { mediaId });
+  await reviewer.mutation(api.mediaPublications.setHiddenFromPortal, {
+    mediaId,
+    hidden: true,
+  });
   expect(
     (
       await t.query(api.collections.getPublic, {
@@ -256,7 +295,7 @@ test("approval action creates a bounded JPEG rendition before public projection"
   expect(revoked).toBeNull();
 });
 
-test("approval publishes only its rendition and invalidates on rights, version, and unpublish", async () => {
+test("approval publishes only its rendition and invalidates on rights, version, and hide", async () => {
   const t = createConvexTest();
   const fixture = await createOrgUserCollectionWithPermissions(t, [
     "media.read",
@@ -397,7 +436,10 @@ test("approval publishes only its rendition and invalidates on rights, version, 
     }),
   ).rejects.toThrow("Permission denied");
   await expect(
-    reader.mutation(api.mediaPublications.unpublish, { mediaId }),
+    reader.mutation(api.mediaPublications.setHiddenFromPortal, {
+      mediaId,
+      hidden: true,
+    }),
   ).rejects.toThrow("Permission denied");
   await reviewer.mutation(api.mediaPublications.setOriginalDownload, {
     mediaId,
@@ -556,7 +598,10 @@ test("approval publishes only its rendition and invalidates on rights, version, 
     editType: "crop",
   });
   expect((await publicDetail())?.images).toEqual([]);
-  await reviewer.mutation(api.mediaPublications.unpublish, { mediaId });
+  await reviewer.mutation(api.mediaPublications.setHiddenFromPortal, {
+    mediaId,
+    hidden: true,
+  });
   expect((await publicDetail())?.images).toEqual([]);
   expect(
     (await t.query(api.collections.listPublic, { organizationSlug: slug }))

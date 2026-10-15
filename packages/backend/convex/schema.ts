@@ -988,6 +988,26 @@ export default defineSchema({
         allowOriginalDownload: v.boolean(),
       }),
     ),
+    publicRendition: v.optional(
+      v.union(
+        v.object({
+          status: v.literal("processing"),
+          sourceStorageId: v.id("_storage"),
+          requestId: v.string(),
+          requestedAt: v.number(),
+        }),
+        v.object({
+          status: v.literal("failed"),
+          sourceStorageId: v.id("_storage"),
+        }),
+        v.object({
+          status: v.literal("ready"),
+          sourceStorageId: v.id("_storage"),
+          renditionStorageId: v.id("_storage"),
+        }),
+      ),
+    ),
+    portalChoice: v.optional(v.union(v.literal("shown"), v.literal("hidden"))),
   })
     .index("by_collection", ["collectionId"])
     .index("by_collection_and_fileType", ["collectionId", "fileType"])
@@ -2763,6 +2783,11 @@ export default defineSchema({
     ])
     .index("by_user", ["userId"])
     .index("by_entity", ["entityType", "entityId"])
+    .index("by_entityType_and_entityId_and_action", [
+      "entityType",
+      "entityId",
+      "action",
+    ])
     .index("by_timestamp", ["timestamp"]),
 
   // User notifications
