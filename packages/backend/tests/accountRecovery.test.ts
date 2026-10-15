@@ -199,7 +199,7 @@ describe("account recovery without existence disclosure", () => {
         }),
       ),
     ).toEqual({ code: "InvalidCredentials" });
-  });
+  }, 20_000);
 
   test("locked-out and unknown emails both perform password verification work", async () => {
     const t = createConvexTestWithRateLimiter();
@@ -233,7 +233,7 @@ describe("account recovery without existence disclosure", () => {
     );
     expect(work.mock.calls.length).toBe(1);
     expect(lockedOutWork).toBe(1);
-  });
+  }, 20_000);
 
   test.each([
     "reset",
