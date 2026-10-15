@@ -11,6 +11,7 @@ import {
   FileCheck,
   FileX,
   LayoutGrid,
+  type LucideIcon,
   Microscope,
   OctagonAlert,
   Package,
@@ -23,45 +24,67 @@ import { useCallback, useState } from "react";
 import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { CARD_CLASS_NAME, WorkSection } from "./my-work-sections";
+import {
+  OVERVIEW_CARD_GAP_PX,
+  OVERVIEW_CARD_MIN_WIDTH_PX,
+} from "./overview-card";
 
 type MyAssignments = FunctionReturnType<
   typeof api.assignments.listMyAssignments
 >;
 type PendingApproval = MyAssignments["pendingApprovals"][number];
+export type ApprovalType = PendingApproval["type"];
 type ObjectStatus = MyAssignments["myCatalogedItems"][number]["status"];
 
 const ASSIGNMENTS_LIMIT = 50;
 const MAX_CATALOGED_CARDS = 10;
-const CATALOGED_CARD_MIN_WIDTH_PX = 176;
-const CATALOGED_CARD_GAP_PX = 8;
 
-const APPROVAL_TYPES = {
+interface ApprovalTypeConfig {
+  icon: LucideIcon;
+  href: string;
+  pendingHref: (asOf: number) => string;
+  accentClassName: string;
+  className: string;
+}
+
+export const APPROVAL_TYPES = {
   accession: {
     icon: FileCheck,
     href: "/accessions",
+    pendingHref: () => "/accessions?status=pending",
+    accentClassName: "text-primary",
     className: "border-primary/30 bg-primary/10 text-primary",
   },
   deaccession: {
     icon: FileX,
     href: "/deaccessions",
+    pendingHref: () => "/deaccessions?status=pending",
+    accentClassName: "text-rose-400",
     className: "border-rose-500/30 bg-rose-500/10 text-rose-400",
   },
   loan: {
     icon: Truck,
     href: "/loans",
+    pendingHref: () => "/loans?status=pending",
+    accentClassName: "text-emerald-400",
     className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
   },
   exhibition: {
     icon: Presentation,
     href: "/exhibitions",
+    pendingHref: (asOf: number) =>
+      `/exhibitions?lifecycle=proposed&asOf=${asOf}`,
+    accentClassName: "text-purple-400",
     className: "border-purple-500/30 bg-purple-500/10 text-purple-400",
   },
   conservation: {
     icon: Microscope,
     href: "/conservation",
+    pendingHref: () => "/conservation",
+    accentClassName: "text-cyan-400",
     className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400",
   },
-} satisfies Record<PendingApproval["type"], unknown>;
+} satisfies Record<ApprovalType, ApprovalTypeConfig>;
 
 const STATUS_DOT_CLASS_NAMES = {
   active: "bg-emerald-400",
@@ -78,7 +101,13 @@ export function useMyAssignments(organizationId: Id<"organizations">) {
   });
 }
 
-function SectionLink({ href, children }: { href: string; children: string }) {
+export function SectionLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: string;
+}) {
   return (
     <Link
       href={href}
@@ -237,8 +266,8 @@ function useCardsPerRow() {
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return;
       const fit = Math.floor(
-        (entry.contentRect.width + CATALOGED_CARD_GAP_PX) /
-          (CATALOGED_CARD_MIN_WIDTH_PX + CATALOGED_CARD_GAP_PX),
+        (entry.contentRect.width + OVERVIEW_CARD_GAP_PX) /
+          (OVERVIEW_CARD_MIN_WIDTH_PX + OVERVIEW_CARD_GAP_PX),
       );
       setCardsPerRow(Math.min(MAX_CATALOGED_CARDS, Math.max(1, fit)));
     });

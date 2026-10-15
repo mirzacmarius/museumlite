@@ -4780,6 +4780,14 @@ export default {
       assignedCases: "Saker tildelt meg",
       assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
+      nothingWaiting: "Ingen arbeid venter på deg.",
+      pendingApproval: {
+        accession: "Aksesjoner som venter på godkjenning",
+        deaccession: "Deaksesjoner som venter på godkjenning",
+        loan: "Lån som venter på godkjenning",
+        exhibition: "Utstillinger som venter på godkjenning",
+        conservation: "Konservering som venter på godkjenning",
+      },
     },
   },
   preparationRecipes: {

@@ -1,11 +1,13 @@
-const METRIC_SKELETON_WIDTHS = {
-  objects: "w-32",
-  display: "w-36",
-  notOnDisplay: "w-44",
-  loans: "w-32",
-  locations: "w-32",
-  transfers: "w-52",
-};
+import { OVERVIEW_CARD_GRID_STYLE } from "./_components/overview-card";
+
+const METRIC_SKELETON_KEYS = [
+  "objects",
+  "display",
+  "notOnDisplay",
+  "loans",
+  "locations",
+  "transfers",
+];
 const COLLECTION_GROUP_SKELETON_WIDTHS = [
   "w-28",
   "w-36",
@@ -16,13 +18,20 @@ const COLLECTION_GROUP_SKELETON_WIDTHS = [
   "w-24",
   "w-52",
 ] as const;
-const WORK_PILL_SKELETON_WIDTHS = {
-  approvals: "w-48",
-  tasks: "w-28",
-  link: "w-20",
-};
+const WORK_CARD_SKELETON_KEYS = ["tasks", "approvals", "reviews"];
 const BOARD_COLUMN_SKELETON_KEYS = ["tasks", "approvals", "reviews", "cases"];
 const CARD_SKELETON_KEYS = ["first", "second", "third"];
+
+function OverviewCardSkeleton() {
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-border bg-card px-3 py-2.5">
+      <div className="h-8">
+        <div className="h-4 w-3/4 rounded bg-muted/50" />
+      </div>
+      <div className="h-7 w-10 rounded bg-muted/70" />
+    </div>
+  );
+}
 
 export function CollectionGroupsGridSkeleton() {
   return (
@@ -40,7 +49,7 @@ export function CollectionGroupsGridSkeleton() {
 function BoardColumnSkeleton({ columnKey }: { columnKey: string }) {
   return (
     <div className="flex min-w-52 max-w-72 flex-1 basis-0 flex-col rounded-lg bg-muted/30">
-      <div className="px-3 py-3">
+      <div className="p-3">
         <div className="h-3 w-36 rounded bg-muted/60" />
       </div>
       <div className="flex flex-col gap-2 px-2 pb-2">
@@ -84,24 +93,19 @@ export function DashboardPageSkeleton() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(METRIC_SKELETON_WIDTHS).map(([key, widthClass]) => (
-            <div
-              key={key}
-              className={`h-8 max-w-full rounded-md border border-border bg-card ${widthClass}`}
-            />
+        <div className="grid" style={OVERVIEW_CARD_GRID_STYLE}>
+          {METRIC_SKELETON_KEYS.map((key) => (
+            <OverviewCardSkeleton key={key} />
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(WORK_PILL_SKELETON_WIDTHS).map(
-            ([key, widthClass]) => (
-              <div
-                key={key}
-                className={`h-8 max-w-full rounded-md border border-border bg-card ${widthClass}`}
-              />
-            ),
-          )}
+        <div className="space-y-3">
+          <div className="h-5 w-28 rounded bg-muted/50" />
+          <div className="grid" style={OVERVIEW_CARD_GRID_STYLE}>
+            {WORK_CARD_SKELETON_KEYS.map((key) => (
+              <OverviewCardSkeleton key={key} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

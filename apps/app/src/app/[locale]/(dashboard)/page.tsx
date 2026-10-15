@@ -25,12 +25,13 @@ import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { CatalogedByYouSection } from "./_components/my-assignments-sections";
-import { MyWorkSummary } from "./_components/my-work-pills";
+import { MyWorkSummary } from "./_components/my-work-cards";
 import { WorkSection } from "./_components/my-work-sections";
 import {
-  OverviewPill,
-  type OverviewPillProps,
-} from "./_components/overview-pill";
+  OVERVIEW_CARD_GRID_STYLE,
+  OverviewCard,
+  type OverviewCardProps,
+} from "./_components/overview-card";
 import {
   CollectionGroupsGridSkeleton,
   DashboardPageSkeleton,
@@ -216,7 +217,7 @@ export default function DashboardPage() {
     ? unavailableReason(analytics)
     : undefined;
 
-  const metrics: OverviewPillProps[] = [
+  const metrics: OverviewCardProps[] = [
     {
       href: "/objects?inventory=owned",
       title: kpi("totalObjects"),
@@ -304,9 +305,9 @@ export default function DashboardPage() {
             )}
             className="flex flex-col gap-2"
           >
-            <div className="flex flex-wrap gap-2">
+            <div className="grid" style={OVERVIEW_CARD_GRID_STYLE}>
               {metrics.map((metric) => (
-                <OverviewPill key={metric.href} {...metric} />
+                <OverviewCard key={metric.href} {...metric} />
               ))}
             </div>
             {analyticsData ? (

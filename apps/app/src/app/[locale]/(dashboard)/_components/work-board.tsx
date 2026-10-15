@@ -24,17 +24,28 @@ import { usePermissions } from "@/components/permission-gate";
 import { useHistoricalDateFormat } from "@/components/provenance/use-historical-date-format";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
+  APPROVAL_TYPES,
+  type ApprovalType,
   PendingApprovalCard,
   useMyAssignments,
 } from "./my-assignments-sections";
 import { CARD_CLASS_NAME } from "./my-work-sections";
 
+export const MY_WORK_HREF = "/assignments";
 const PAGE_SIZE = 20;
 const CARD_LIST_CLASS_NAME = "flex flex-col gap-2";
 
 type ProvenanceClaim = FunctionReturnType<
   typeof api.provenance.reviewQueue
 >["page"][number];
+
+export interface WorkSummaryEntry
+  extends Pick<
+    WorkColumn,
+    "key" | "icon" | "accentClassName" | "title" | "count" | "hasMore"
+  > {
+  href: string;
+}
 
 export interface WorkColumn {
   key: string;
@@ -45,6 +56,19 @@ export interface WorkColumn {
   count: number;
   hasMore: boolean;
   renderCards: () => ReactNode;
+  summaryEntries: readonly WorkSummaryEntry[];
+}
+
+function withMyWorkSummary(
+  column: Omit<WorkColumn, "summaryEntries">,
+): WorkColumn {
+  const { key, icon, accentClassName, title, count, hasMore } = column;
+  return {
+    ...column,
+    summaryEntries: [
+      { key, icon, accentClassName, title, count, hasMore, href: MY_WORK_HREF },
+    ],
+  };
 }
 
 function ColumnHeader({
@@ -240,27 +264,28 @@ export function useMyWorkColumns(
     accentClassName: string,
     title: string,
     queue: typeof tasks | typeof reviews,
-  ): WorkColumn => ({
-    key,
-    icon,
-    accentClassName,
-    title,
-    loading: queue.status === "LoadingFirstPage",
-    count: queue.results.length,
-    hasMore: queue.status === "CanLoadMore",
-    renderCards: () => (
-      <div className="space-y-2">
-        <ul className={CARD_LIST_CLASS_NAME}>
-          {queue.results.map((task) => (
-            <CaseTaskTile key={task._id} task={task} now={now} />
-          ))}
-        </ul>
-        {queue.status === "CanLoadMore" ? (
-          <LoadMoreButton onClick={() => queue.loadMore(PAGE_SIZE)} />
-        ) : null}
-      </div>
-    ),
-  });
+  ): WorkColumn =>
+    withMyWorkSummary({
+      key,
+      icon,
+      accentClassName,
+      title,
+      loading: queue.status === "LoadingFirstPage",
+      count: queue.results.length,
+      hasMore: queue.status === "CanLoadMore",
+      renderCards: () => (
+        <div className="space-y-2">
+          <ul className={CARD_LIST_CLASS_NAME}>
+            {queue.results.map((task) => (
+              <CaseTaskTile key={task._id} task={task} now={now} />
+            ))}
+          </ul>
+          {queue.status === "CanLoadMore" ? (
+            <LoadMoreButton onClick={() => queue.loadMore(PAGE_SIZE)} />
+          ) : null}
+        </div>
+      ),
+    });
 
   return [
     taskColumn("tasks", ListTodo, "text-blue-400", t("myWork.myTasks"), tasks),
@@ -280,6 +305,17 @@ export function useMyWorkColumns(
           ))}
         </ul>
       ),
+      summaryEntries: (Object.keys(APPROVAL_TYPES) as ApprovalType[]).map(
+        (type) => ({
+          key: type,
+          icon: APPROVAL_TYPES[type].icon,
+          accentClassName: APPROVAL_TYPES[type].accentClassName,
+          title: t(`myWork.pendingApproval.${type}`),
+          count: assignments?.stats.pendingApprovalsByType[type] ?? 0,
+          hasMore: false,
+          href: APPROVAL_TYPES[type].pendingHref(now),
+        }),
+      ),
     },
     taskColumn(
       "reviews",
@@ -288,7 +324,7 @@ export function useMyWorkColumns(
       t("myWork.reviews"),
       reviews,
     ),
-    {
+    withMyWorkSummary({
       key: "assigned",
       icon: Briefcase,
       accentClassName: "text-emerald-400",
@@ -323,10 +359,10 @@ export function useMyWorkColumns(
           ) : null}
         </div>
       ),
-    },
+    }),
     ...(canReviewProvenance
       ? [
-          {
+          withMyWorkSummary({
             key: "provenance",
             icon: ScrollText,
             accentClassName: "text-purple-400",
@@ -368,7 +404,7 @@ export function useMyWorkColumns(
                 ) : null}
               </div>
             ),
-          } satisfies WorkColumn,
+          }),
         ]
       : []),
   ];

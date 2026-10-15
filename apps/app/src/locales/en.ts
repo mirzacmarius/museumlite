@@ -4729,6 +4729,14 @@ export default {
       assignedCases: "Cases assigned to me",
       assignedTruncated: "Showing the first 50 assigned cases.",
       since: "Since",
+      nothingWaiting: "No work waiting for you.",
+      pendingApproval: {
+        accession: "Pending accession approval",
+        deaccession: "Pending deaccession approval",
+        loan: "Pending loan approval",
+        exhibition: "Pending exhibition approval",
+        conservation: "Pending conservation approval",
+      },
     },
   },
   preparationRecipes: {

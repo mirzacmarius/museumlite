@@ -7104,6 +7104,14 @@ export default {
       assignedCases: "Dosare atribuite mie",
       assignedTruncated: "Se afișează primele 50 de dosare atribuite.",
       since: "Din",
+      nothingWaiting: "Nu aveți nimic în așteptare.",
+      pendingApproval: {
+        accession: "Accesiuni în așteptarea aprobării",
+        deaccession: "Scoateri din colecție în așteptarea aprobării",
+        loan: "Împrumuturi în așteptarea aprobării",
+        exhibition: "Expoziții în așteptarea aprobării",
+        conservation: "Conservare în așteptarea aprobării",
+      },
     },
   },
   preparationRecipes: {

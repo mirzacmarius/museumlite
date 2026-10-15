@@ -4841,6 +4841,14 @@ export default {
       assignedCases: "Dossiers qui me sont attribués",
       assignedTruncated: "Affichage des 50 premiers dossiers attribués.",
       since: "Depuis le",
+      nothingWaiting: "Aucun travail ne vous attend.",
+      pendingApproval: {
+        accession: "Accessions en attente d'approbation",
+        deaccession: "Désaccessions en attente d'approbation",
+        loan: "Prêts en attente d'approbation",
+        exhibition: "Expositions en attente d'approbation",
+        conservation: "Conservation en attente d'approbation",
+      },
     },
   },
   preparationRecipes: {

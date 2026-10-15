@@ -4830,6 +4830,14 @@ export default {
       assignedCases: "Casos asignados a mí",
       assignedTruncated: "Se muestran los primeros 50 casos asignados.",
       since: "Desde",
+      nothingWaiting: "No tiene trabajo pendiente.",
+      pendingApproval: {
+        accession: "Accesiones pendientes de aprobación",
+        deaccession: "Bajas pendientes de aprobación",
+        loan: "Préstamos pendientes de aprobación",
+        exhibition: "Exposiciones pendientes de aprobación",
+        conservation: "Conservación pendiente de aprobación",
+      },
     },
   },
   preparationRecipes: {
