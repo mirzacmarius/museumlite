@@ -18,6 +18,7 @@ import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
   requirePermission,
+  resolveCaseApproval,
 } from "./permissions";
 import { suggestPreparation } from "./preparation";
 import { workflowApprovalError } from "./workflowApprovalErrors";
@@ -44,46 +45,18 @@ export async function approveExhibitionHandler(
   }
 
   await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-  const workflowConfig = await getWorkflowConfig(
+  const approval = await resolveCaseApproval(
     ctx,
     exhibition.organizationId,
     "exhibition",
+    exhibition.workflowStep,
   );
+  if (!approval.allowed) {
+    throw approval.refusal;
+  }
 
-  if (workflowConfig) {
-    const workflowState = resolveWorkflowStepState(
-      workflowConfig.steps,
-      exhibition.workflowStep,
-    );
-    const currentStep = workflowState.currentStep;
-
-    if (currentStep === undefined) {
-      throw workflowApprovalError(
-        "WORKFLOW_NOT_CONFIGURED",
-        "Workflow has no approval steps configured",
-      );
-    }
-    if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-      throw workflowApprovalError(
-        "WORKFLOW_NOT_CONFIGURED",
-        "Current workflow step is not configured",
-      );
-    }
-
-    const canApprove = await canApproveAtStep(
-      ctx,
-      exhibition.organizationId,
-      "exhibition",
-      currentStep,
-    );
-
-    if (!canApprove) {
-      throw workflowApprovalError(
-        "APPROVAL_NOT_PERMITTED",
-        "Permission denied: cannot approve at this step",
-      );
-    }
+  if (approval.workflow) {
+    const { state: workflowState, currentStep } = approval.workflow;
 
     const history = [...(exhibition.workflowHistory ?? [])];
     if (!workflowState.isPastLastStep) {
@@ -183,7 +156,6 @@ export async function approveExhibitionHandler(
     }
   } else {
     await Promise.all([
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
       ctx.db.patch(args.exhibitionId, {
         status: "approved",
         approvedBy: userId,

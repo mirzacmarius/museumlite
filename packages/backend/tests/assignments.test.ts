@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import type { ApprovalCaseType as ApprovalType } from "../convex/utils/permissions";
 import { workflowApprovalErrorFromError } from "../convex/utils/workflowApprovalErrors";
 import {
   authedForUser,
@@ -13,13 +14,6 @@ import {
 } from "./testHarness";
 
 import { modules } from "./testSetup";
-
-type ApprovalType =
-  | "accession"
-  | "deaccession"
-  | "loan"
-  | "exhibition"
-  | "conservation";
 
 const NO_APPROVALS = {
   accession: 0,
@@ -284,6 +278,30 @@ test("a role off the workflow step does not count the approval the step refuses"
       (error: unknown) => workflowApprovalErrorFromError(error)?.code,
     ),
   ).resolves.toBe("APPROVAL_NOT_PERMITTED");
+});
+
+test.each([
+  "exhibition",
+  "conservation",
+] as const)("with a workflow, the step's role alone counts and approves a pending %s", async (type) => {
+  const t = convexTest(schema, modules);
+  const { authed, record, stats, organizationId, roleId } =
+    await pendingApprovalFor(t, type, APPROVAL_ACCESS[type].read);
+  await t.run((ctx) =>
+    ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: type,
+      canInitiateRoles: [roleId],
+      steps: [{ stepNumber: 1, roleId, name: "Review" }],
+    }),
+  );
+
+  expect((await stats()).pendingApprovalsByType).toEqual({
+    ...NO_APPROVALS,
+    [type]: 1,
+  });
+  await approve(authed, record);
+  expect((await stats()).pendingApprovalsByType).toEqual(NO_APPROVALS);
 });
 
 test("plans without loans, exhibitions or conservation count none of them", async () => {
