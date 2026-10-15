@@ -180,10 +180,6 @@ export function CollectionEditFormTabShell({
             <CollectionEditPhysicalTab
               {...tabProps}
               typedCollectionId={typedCollectionId}
-              hasConditionChanged={hasConditionChanged}
-              requiresConditionChangeNote={requiresConditionChangeNote}
-              conditionChangeNote={conditionChangeNote}
-              onConditionChangeNoteChange={onConditionChangeNoteChange}
             />
           ) : null}
           {activeTab === "media" ? (

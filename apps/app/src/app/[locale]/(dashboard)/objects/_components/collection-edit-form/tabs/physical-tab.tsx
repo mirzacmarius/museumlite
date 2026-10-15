@@ -37,10 +37,6 @@ import {
 } from "../../collection-form-shared/types";
 export interface CollectionEditPhysicalTabProps extends CollectionFormTabProps {
   typedCollectionId?: Id<"collections">;
-  hasConditionChanged?: boolean;
-  requiresConditionChangeNote?: boolean;
-  conditionChangeNote?: string;
-  onConditionChangeNoteChange?: (value: string) => void;
 }
 
 export function CollectionEditPhysicalTab({
