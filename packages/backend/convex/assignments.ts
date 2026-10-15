@@ -75,6 +75,13 @@ export const listMyAssignments = query({
     ),
     stats: v.object({
       totalPendingApprovals: v.number(),
+      pendingApprovalsByType: v.object({
+        accession: v.number(),
+        deaccession: v.number(),
+        loan: v.number(),
+        exhibition: v.number(),
+        conservation: v.number(),
+      }),
       totalAssignedAccessions: v.number(),
       totalCatalogedItems: v.number(),
       itemsModifiedThisWeek: v.number(),
@@ -497,6 +504,17 @@ export const listMyAssignments = query({
       (c) => c.catalogedBy === userId,
     ).length;
 
+    const pendingApprovalsByType = {
+      accession: 0,
+      deaccession: 0,
+      loan: 0,
+      exhibition: 0,
+      conservation: 0,
+    } satisfies Record<(typeof pendingApprovals)[number]["type"], number>;
+    for (const approval of pendingApprovals) {
+      pendingApprovalsByType[approval.type] += 1;
+    }
+
     return {
       pendingApprovals: pendingApprovals.slice(0, limit),
       myAssignedAccessions,
@@ -504,6 +522,7 @@ export const listMyAssignments = query({
       myCatalogedItems,
       stats: {
         totalPendingApprovals: pendingApprovals.length,
+        pendingApprovalsByType,
         totalAssignedAccessions: myAssignedAccessions.length,
         totalCatalogedItems,
         itemsModifiedThisWeek,
