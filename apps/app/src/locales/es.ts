@@ -3067,7 +3067,6 @@ export default {
       accessionNumber: "Número de Accesión",
       print: "Imprimir",
       title: "Imprimir etiqueta del objeto",
-      accessionNumberPrefix: "n.º",
       labelSize: "Tamaño de etiqueta",
       sizeSmall: 'Pequeña (3" × 2")',
       sizeMedium: 'Mediana (4" × 2,5")',

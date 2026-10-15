@@ -10,7 +10,6 @@ export interface ObjectTextLabelData {
   objectName: string;
   description: string;
   accessionNumber: string;
-  accessionNumberLabel: string;
 }
 
 export interface ObjectTextLabelOptions {
@@ -49,7 +48,7 @@ export function ObjectTextLabelGenerator({
   ref,
 }: ObjectTextLabelGeneratorProps) {
   const dimensions = LABEL_DIMENSIONS[size];
-  const accessionText = `(${data.accessionNumberLabel}: ${data.accessionNumber})`;
+  const accessionText = `(${data.accessionNumber})`;
   const qrCode =
     showQrCode && qrCodeUrl
       ? QRCode.create(qrCodeUrl, { errorCorrectionLevel: "M" })

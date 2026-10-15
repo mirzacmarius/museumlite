@@ -3034,7 +3034,6 @@ export default {
       accessionNumber: "Aksesjonsnummer",
       print: "Skriv ut",
       title: "Skriv ut objektetikett",
-      accessionNumberPrefix: "nr.",
       labelSize: "Etikettstørrelse",
       sizeSmall: 'Liten (3" × 2")',
       sizeMedium: 'Middels (4" × 2,5")',

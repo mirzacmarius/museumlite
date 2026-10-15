@@ -3075,7 +3075,6 @@ export default {
       print: "Imprimer",
       title: "Imprimer une étiquette d'objet",
       description: "Description",
-      accessionNumberPrefix: "n°",
       labelSize: "Taille de l'étiquette",
       sizeSmall: 'Petit (3" × 2")',
       sizeMedium: 'Moyen (4" × 2,5")',
