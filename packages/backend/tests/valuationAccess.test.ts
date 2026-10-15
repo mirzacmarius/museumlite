@@ -355,3 +355,92 @@ test("the valuation migration grants existing owner, administrator and collectio
     vi.useRealTimers();
   }
 });
+
+test("a Curator links valuation evidence on a pending deaccession without valuation access", async () => {
+  const t = createConvexTest();
+  const { owner, organizationId, collectionId } = await seededMuseum(t);
+  const appraisalId = await owner.mutation(api.appraisals.create, {
+    collectionId,
+    ...appraisal,
+    appraisalDate: Date.now() - 30 * DAY,
+  });
+  const supersededId = await owner.mutation(api.appraisals.create, {
+    collectionId,
+    ...appraisal,
+    appraisalType: "market",
+    value: 7_000,
+    appraisalDate: Date.now() - 60 * DAY,
+  });
+  await owner.mutation(api.appraisals.supersede, {
+    appraisalId: supersededId,
+    reason: "Revised by the valuer",
+    ...appraisal,
+    appraisalType: "market",
+    value: 7_500,
+    appraisalDate: Date.now() - 60 * DAY,
+  });
+  const deaccessionId = await owner.mutation(api.deaccessions.create, {
+    organizationId,
+    collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Outside collecting policy",
+    method: "sale",
+    disposition: "Public auction",
+  });
+  const curator = await memberWithSystemRole(
+    t,
+    organizationId,
+    CURATOR_ROLE_NAME,
+  );
+  const viewer = await memberWithSystemRole(
+    t,
+    organizationId,
+    VIEWER_ROLE_NAME,
+  );
+
+  const linkable = await curator.query(
+    api.deaccessions.listLinkableAppraisals,
+    { deaccessionId, now: Date.now() },
+  );
+  expect(
+    linkable.map(({ value, appraisalType, appraiserName, ageDays }) => ({
+      value,
+      appraisalType,
+      appraiserName,
+      ageDays,
+    })),
+  ).toEqual([
+    {
+      value: 10_000,
+      appraisalType: "insurance",
+      appraiserName: "Independent Valuer",
+      ageDays: 30,
+    },
+    {
+      value: 7_500,
+      appraisalType: "market",
+      appraiserName: "Independent Valuer",
+      ageDays: 60,
+    },
+  ]);
+  await expect(
+    viewer.query(api.deaccessions.listLinkableAppraisals, {
+      deaccessionId,
+      now: Date.now(),
+    }),
+  ).rejects.toThrow("Permission denied");
+
+  await curator.mutation(api.deaccessions.linkAppraisal, {
+    deaccessionId,
+    appraisalId,
+  });
+  const stages = await viewer.query(api.deaccessions.getDisposalStages, {
+    deaccessionId,
+  });
+  expect(stages?.valuation).toMatchObject({
+    linkedAppraisalId: appraisalId,
+    value: 10_000,
+    currency: "EUR",
+    appraiserName: "Independent Valuer",
+  });
+});

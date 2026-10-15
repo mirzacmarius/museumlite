@@ -314,64 +314,6 @@ export const get = query({
 });
 
 /**
- * List appraisals for a collection item, newest first, with the derived
- * current valuation marker.
- */
-export const listByCollection = query({
-  args: {
-    collectionId: v.id("collections"),
-  },
-  returns: v.array(
-    v.object({
-      _id: v.id("appraisals"),
-      appraisalDate: v.number(),
-      appraiserName: v.string(),
-      appraiserCompany: v.optional(v.string()),
-      appraisalType: appraisalPurposeValidator,
-      value: v.number(),
-      currency: v.string(),
-      isCurrent: v.boolean(),
-      isSuperseded: v.boolean(),
-      ageDays: v.number(),
-      isValid: v.boolean(),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const collection = await ctx.db.get(args.collectionId);
-    if (!collection) {
-      return [];
-    }
-
-    const [, appraisals] = await Promise.all([
-      requirePermission(ctx, collection.organizationId, "collections.read"),
-      loadObjectAppraisals(ctx, args.collectionId),
-    ] as const);
-    const current = new Set(
-      [...selectCurrentValuations(appraisals).values()].map(
-        (appraisal) => appraisal._id,
-      ),
-    );
-    const now = Date.now();
-
-    return appraisals.map((appraisal) => ({
-      _id: appraisal._id,
-      appraisalDate: appraisal.appraisalDate,
-      appraiserName: appraisal.appraiserName,
-      appraiserCompany: appraisal.appraiserCompany,
-      appraisalType: appraisal.appraisalType,
-      value: appraisal.value,
-      currency: appraisal.currency,
-      isCurrent: current.has(appraisal._id),
-      isSuperseded: appraisal.supersededBy !== undefined,
-      ageDays: appraisalAgeDays(appraisal, now),
-      isValid:
-        appraisal.supersededBy === undefined &&
-        isWithinValuationAge(appraisal, now, VALUATION_MAX_AGE_MS),
-    }));
-  },
-});
-
-/**
  * An object's valuations: the current valuation for each purpose and
  * currency, and the full appraisal history including superseded records.
  */
