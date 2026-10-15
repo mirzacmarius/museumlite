@@ -12,9 +12,9 @@ These stay private:
 
 Unknown or missing rights, and orphan works, do not keep an image private.
 
-Hiding an image, or recording rights that forbid public display, deletes its rendition, so a copied link stops working. When a license expires, a scheduled job deletes the rendition at the expiry time. Taking an Object out of the portal, or turning the portal off, stops listing its images but keeps their renditions, so a link copied while they were public keeps working. Images of Objects outside the portal also get renditions, so an Object that enters the portal shows its images at once. The migration keeps an image hidden if its last publication record before this change was an unpublish.
+Hiding an image, or recording rights that forbid public display, deletes its rendition, so a copied link stops working. When a license expires, a scheduled job deletes the rendition at the expiry time. Taking an Object out of the portal, or turning the portal off, stops listing its images but keeps their renditions, so a link copied while they were public keeps working. Images of Objects outside the portal also get renditions, so an Object that enters the portal shows its images at once. The migration hides an image if its last publication record before this change was an unpublish. After this change, showing, hiding, or approving an image stores the staff choice on the image, and the migration never overrides that choice.
 
-Staff approval no longer decides publication. It now only lets staff offer a public download of an image's original file, which keeps the original's metadata. That download stays off until staff turn it on for that image. Approval keeps the ownership check from ADR 0001, which ADR 0016 also relies on for Licensed copies.
+Staff approval no longer decides publication. Approving a hidden image shows it again, like Show. Approval also lets staff offer a public download of an image's original file, which keeps the original's metadata. That download stays off until staff turn it on for that image. Approval keeps the ownership check from ADR 0001, which ADR 0016 also relies on for Licensed copies.
 
 Considered and rejected:
 

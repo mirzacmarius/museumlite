@@ -120,7 +120,7 @@ export async function getPortalImage(
   if (
     media.organizationId !== organizationId ||
     media.collectionId !== collectionId ||
-    media.isHiddenFromPortal ||
+    media.portalChoice === "hidden" ||
     getRecordedRestriction(media)
   )
     return null;
@@ -159,7 +159,7 @@ export async function syncPublicRendition(
   const now = Date.now();
   const rendition = media.publicRendition;
   const sourceStorageId =
-    media.isHiddenFromPortal || getPortalDisplayBlocker(media, now)
+    media.portalChoice === "hidden" || getPortalDisplayBlocker(media, now)
       ? null
       : await getCurrentImageFile(ctx, media);
   if (!sourceStorageId) {

@@ -646,6 +646,23 @@ test("the rendition backfill keeps an image hidden when many later audit records
   ]);
 });
 
+test("the rendition backfill shows an image whose approval came after its unpublish", async () => {
+  const portal = await createPortal();
+  const [mediaId] = await portal.insertLegacyImages(["reapproved.jpg"]);
+  if (!mediaId) throw new Error("legacy image not inserted");
+  await portal.recordAudit(mediaId, [
+    "unpublished_public_media",
+    "approved_public_media",
+  ]);
+
+  await portal.backfill();
+
+  expect(await portal.portalStatus(mediaId)).toBe("shown");
+  expect((await portal.detail())?.images.map((image) => image._id)).toEqual([
+    mediaId,
+  ]);
+});
+
 test("a transparent PNG is shown on a white background", async () => {
   const portal = await createPortal();
   const cutOut = await sharp({
@@ -808,7 +825,7 @@ test("hiding an image deletes its rendition after its object moved to another or
     });
     await ctx.db.patch(mediaId, {
       organizationId: receivingOrganizationId,
-      isHiddenFromPortal: true,
+      portalChoice: "hidden",
     });
   });
   await portal.t.mutation(internal.mediaPublications.syncPublicRendition, {

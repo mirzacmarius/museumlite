@@ -82,15 +82,16 @@ export const getReview = query({
           : approval?.status === "processing" || approval?.status === "failed"
             ? approval.status
             : ("private" as const),
-      portal: media.isHiddenFromPortal
-        ? ("hidden" as const)
-        : getPortalDisplayBlocker(media, now)
-          ? ("blocked" as const)
-          : portalImage
-            ? ("shown" as const)
-            : media.publicRendition?.status === "failed"
-              ? ("failed" as const)
-              : ("preparing" as const),
+      portal:
+        media.portalChoice === "hidden"
+          ? ("hidden" as const)
+          : getPortalDisplayBlocker(media, now)
+            ? ("blocked" as const)
+            : portalImage
+              ? ("shown" as const)
+              : media.publicRendition?.status === "failed"
+                ? ("failed" as const)
+                : ("preparing" as const),
       publicRenditionUrl: portalImage?.url ?? null,
       originalDownloadAllowed: !!approved?.originalDownloadUrl,
       approvedAt: approved ? approval?.approvedAt : undefined,
@@ -125,7 +126,7 @@ export const approve = mutation({
     await revokePublicRendition(ctx, media);
     const requestId = crypto.randomUUID();
     await ctx.db.patch(media._id, {
-      isHiddenFromPortal: undefined,
+      portalChoice: "shown",
       publicApproval: {
         status: "processing",
         requestId,
@@ -361,11 +362,11 @@ export const setHiddenFromPortal = mutation({
     if (args.hidden) {
       await revokePublicRendition(ctx, media);
       await ctx.db.patch(media._id, {
-        isHiddenFromPortal: true,
+        portalChoice: "hidden",
         publicApproval: undefined,
       });
     } else {
-      await ctx.db.patch(media._id, { isHiddenFromPortal: undefined });
+      await ctx.db.patch(media._id, { portalChoice: "shown" });
     }
     await syncMediaPublicRendition(ctx, media._id);
     await ctx.runMutation(internal.audit.logAction, {

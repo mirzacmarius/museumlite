@@ -1757,24 +1757,22 @@ async function staffUnpublishedBeforePublicByDefault(
   media: Doc<"mediaFiles">,
 ) {
   if (media.publicApproval) return false;
-  const history = await ctx.db
-    .query("auditLog")
-    .withIndex(
-      "by_organization_and_entityType_and_entityId_and_timestamp",
-      (q) =>
-        q
-          .eq("organizationId", media.organizationId)
-          .eq("entityType", "media")
-          .eq("entityId", media._id),
-    )
-    .order("desc")
-    .take(100);
-  const latest = history.find(
-    (entry) =>
-      entry.action === "approved_public_media" ||
-      entry.action === "unpublished_public_media",
+  const [approved, unpublished] = await Promise.all(
+    ["approved_public_media", "unpublished_public_media"].map((action) =>
+      ctx.db
+        .query("auditLog")
+        .withIndex("by_entityType_and_entityId_and_action", (q) =>
+          q
+            .eq("entityType", "media")
+            .eq("entityId", media._id)
+            .eq("action", action),
+        )
+        .order("desc")
+        .first(),
+    ),
   );
-  return latest?.action === "unpublished_public_media";
+  if (!unpublished) return false;
+  return !approved || unpublished._creationTime > approved._creationTime;
 }
 
 export const backfillPublicRenditions = internalMutation({
@@ -1786,10 +1784,10 @@ export const backfillPublicRenditions = internalMutation({
       .paginate({ numItems: 50, cursor: args.cursor });
     for (const media of page.page) {
       if (
-        !media.isHiddenFromPortal &&
+        media.portalChoice === undefined &&
         (await staffUnpublishedBeforePublicByDefault(ctx, media))
       ) {
-        await ctx.db.patch(media._id, { isHiddenFromPortal: true });
+        await ctx.db.patch(media._id, { portalChoice: "hidden" });
       }
       await syncPublicRendition(ctx, media._id);
     }
