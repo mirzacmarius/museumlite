@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { upsertAccessionSearchDocument } from "./utils/accessionSearch";
 import { processOptionUsageBackfillPage } from "./utils/collectionOptionUsages";
 import {
@@ -11,6 +12,7 @@ import { COORDINATE_PERMISSION } from "./utils/incidentAccess";
 import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { keepOldestPrimaryImage } from "./utils/primaryMedia";
+import { syncPublicRendition } from "./utils/publicMedia";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {
   grantPermissionToSystemRoles,
@@ -1573,6 +1575,7 @@ export const recoverStrandedMediaUploads = internalMutation({
       if (media.chunkedUploadId) continue;
       if (!(await ctx.db.system.get(media.storageId))) continue;
       await ctx.db.patch(media._id, { uploadStatus: "completed" });
+      await syncPublicRendition(ctx, media._id);
       recovered += 1;
       if (media.isPrimary && !media.thumbnailStorageId) {
         await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
@@ -1746,5 +1749,57 @@ export const grantIncidentCoordinationPermissions = internalMutation({
       );
     }
     return { organizationsProcessed: page.page.length, isDone: page.isDone };
+  },
+});
+
+async function staffUnpublishedBeforePublicByDefault(
+  ctx: MutationCtx,
+  media: Doc<"mediaFiles">,
+) {
+  if (media.publicApproval) return false;
+  const history = await ctx.db
+    .query("auditLog")
+    .withIndex(
+      "by_organization_and_entityType_and_entityId_and_timestamp",
+      (q) =>
+        q
+          .eq("organizationId", media.organizationId)
+          .eq("entityType", "media")
+          .eq("entityId", media._id),
+    )
+    .order("desc")
+    .take(100);
+  const latest = history.find(
+    (entry) =>
+      entry.action === "approved_public_media" ||
+      entry.action === "unpublished_public_media",
+  );
+  return latest?.action === "unpublished_public_media";
+}
+
+export const backfillPublicRenditions = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  returns: v.object({ processed: v.number(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("mediaFiles")
+      .paginate({ numItems: 50, cursor: args.cursor });
+    for (const media of page.page) {
+      if (
+        !media.isHiddenFromPortal &&
+        (await staffUnpublishedBeforePublicByDefault(ctx, media))
+      ) {
+        await ctx.db.patch(media._id, { isHiddenFromPortal: true });
+      }
+      await syncPublicRendition(ctx, media._id);
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.backfillPublicRenditions,
+        { cursor: page.continueCursor },
+      );
+    }
+    return { processed: page.page.length, isDone: page.isDone };
   },
 });

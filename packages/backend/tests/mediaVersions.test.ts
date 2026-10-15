@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
@@ -147,6 +147,9 @@ async function uploadVersion(
   const result: { storageId: Id<"_storage"> } = await response.json();
   return result.storageId;
 }
+
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
 
 describe("mediaVersions", () => {
   test("should create first version of media file", async () => {

@@ -988,6 +988,26 @@ export default defineSchema({
         allowOriginalDownload: v.boolean(),
       }),
     ),
+    publicRendition: v.optional(
+      v.union(
+        v.object({
+          status: v.literal("processing"),
+          sourceStorageId: v.id("_storage"),
+          requestId: v.string(),
+          requestedAt: v.number(),
+        }),
+        v.object({
+          status: v.literal("failed"),
+          sourceStorageId: v.id("_storage"),
+        }),
+        v.object({
+          status: v.literal("ready"),
+          sourceStorageId: v.id("_storage"),
+          renditionStorageId: v.id("_storage"),
+        }),
+      ),
+    ),
+    isHiddenFromPortal: v.optional(v.boolean()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_collection_and_fileType", ["collectionId", "fileType"])

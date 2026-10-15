@@ -3211,7 +3211,6 @@ export default {
       selectOrganization: "Seleccione una organización para ver sus objetos.",
       collections: "Objetos",
       public: "Público",
-      private: "Privado",
       alternativeTitle: "Título Alternativo",
 
       printLabel: "Imprimir etiqueta QR",
@@ -5147,14 +5146,23 @@ export default {
   },
   mediaPage: {
     publication: {
-      title: "Aprobación de imagen pública",
+      title: "Portal público",
       status: {
-        private: "Privada",
+        private: "No aprobada para descargar el original",
         processing: "Creando imagen pública...",
-        approved: "Publicada",
+        approved: "Aprobada para descargar el original",
         failed: "Error al procesar la imagen",
       },
-      publicPreview: "Vista previa de la imagen pública aprobada",
+      portal: {
+        shown:
+          "Se muestra en el portal público cuando su objeto está publicado allí.",
+        preparing: "Preparando la versión pública...",
+        hidden: "Oculta en el portal público.",
+        blocked:
+          "No se muestra en el portal público porque el tipo de archivo o los derechos registrados no lo permiten.",
+        failed: "No se pudo crear la versión pública.",
+      },
+      publicPreview: "Vista previa de la versión pública",
       rightsStatus: "Estado de derechos",
       licenseType: "Licencia",
       noLicense: "Sin licencia indicada",
@@ -5162,9 +5170,10 @@ export default {
       restrictions: "Restricciones de uso",
       acknowledgment: "La exhibición pública requiere atribución",
       saveRights: "Guardar derechos",
-      approve: "Aprobar imagen pública",
+      approve: "Aprobar la descarga del original",
       retry: "Reintentar procesamiento",
-      unpublish: "Retirar imagen",
+      hide: "Ocultar en el portal público",
+      show: "Mostrar en el portal público",
       originalDownload: "Permitir descarga pública del original",
       invalidExpiry: "Introduce una fecha válida.",
       failed: "No se pudo actualizar. Inténtalo de nuevo.",
