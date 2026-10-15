@@ -15,7 +15,11 @@ import {
   getOrganizationNotificationRecipients,
   getWorkflowCreatorRecipient,
 } from "./notificationRecipients";
-import { canApproveAtStep, requirePermission } from "./permissions";
+import {
+  canApproveAtStep,
+  requirePermission,
+  resolveCaseApproval,
+} from "./permissions";
 import { suggestPreparation, withdrawPreparation } from "./preparation";
 import { workflowApprovalError } from "./workflowApprovalErrors";
 import { getWorkflowConfig } from "./workflowConfigs";
@@ -59,50 +63,23 @@ export async function approveLoanHandler(
 
   assertAllowedLoanTransition(loan.status, "active", "Loan is not pending");
 
-  await Promise.all([
-    requireLoansAccess(ctx, loan.organizationId),
-    requirePermission(ctx, loan.organizationId, "loans.approve"),
-  ]);
-
-  const workflowConfig = await getWorkflowConfig(
+  await requireLoansAccess(ctx, loan.organizationId);
+  const approval = await resolveCaseApproval(
     ctx,
     loan.organizationId,
     "loan",
+    loan.workflowStep,
   );
+  if (!approval.allowed) {
+    throw approval.refusal;
+  }
 
-  if (workflowConfig) {
-    const workflowState = resolveWorkflowStepState(
-      workflowConfig.steps,
-      loan.workflowStep,
-    );
-    const currentStep = workflowState.currentStep;
-
-    if (currentStep === undefined) {
-      throw workflowApprovalError(
-        "WORKFLOW_NOT_CONFIGURED",
-        "Workflow has no approval steps configured",
-      );
-    }
-    if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-      throw workflowApprovalError(
-        "WORKFLOW_NOT_CONFIGURED",
-        "Current workflow step is not configured",
-      );
-    }
-
-    const canApprove = await canApproveAtStep(
-      ctx,
-      loan.organizationId,
-      "loan",
+  if (approval.workflow) {
+    const {
+      config: workflowConfig,
+      state: workflowState,
       currentStep,
-    );
-
-    if (!canApprove) {
-      throw workflowApprovalError(
-        "APPROVAL_NOT_PERMITTED",
-        "Permission denied: cannot approve at this step",
-      );
-    }
+    } = approval.workflow;
 
     const currentStepConfig = workflowConfig.steps.find(
       (step) => step.stepNumber === currentStep,

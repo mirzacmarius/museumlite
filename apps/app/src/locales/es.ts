@@ -3950,6 +3950,7 @@ export default {
       "Seguimiento de tratamientos de conservación y evaluaciones de condición",
     newTreatment: "Nuevo Tratamiento",
     searchPlaceholder: "Buscar por título, descripción o notas...",
+    pendingApproval: "Pendiente de aprobación",
     loading: "Cargando...",
     noOrganizationTitle: "No se Encontró Organización",
     noOrganizationDescription:
@@ -4830,6 +4831,14 @@ export default {
       assignedCases: "Casos asignados a mí",
       assignedTruncated: "Se muestran los primeros 50 casos asignados.",
       since: "Desde",
+      nothingWaiting: "No tiene trabajo pendiente.",
+      pendingApproval: {
+        accession: "Accesiones pendientes de aprobación",
+        deaccession: "Bajas pendientes de aprobación",
+        loan: "Préstamos pendientes de aprobación",
+        exhibition: "Exposiciones pendientes de aprobación",
+        conservation: "Conservación pendiente de aprobación",
+      },
     },
   },
   preparationRecipes: {

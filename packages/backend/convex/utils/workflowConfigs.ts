@@ -17,3 +17,11 @@ export async function getWorkflowConfig(
     )
     .first();
 }
+
+export async function isDeaccessionWorkflowEnabled(
+  ctx: WorkflowConfigLookupCtx,
+  organizationId: Id<"organizations">,
+) {
+  const organization = await ctx.db.get(organizationId);
+  return organization?.settings?.deaccessionWorkflowEnabled ?? true;
+}

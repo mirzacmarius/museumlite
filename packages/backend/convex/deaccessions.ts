@@ -42,9 +42,9 @@ import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
 import { requireLinkableParty } from "./utils/parties";
 import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
-  canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
   requirePermission,
+  resolveCaseApproval,
 } from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
 import {
@@ -58,7 +58,10 @@ import {
 } from "./utils/valuation";
 import { valuationError } from "./utils/valuationErrors";
 import { workflowApprovalError } from "./utils/workflowApprovalErrors";
-import { getWorkflowConfig } from "./utils/workflowConfigs";
+import {
+  getWorkflowConfig,
+  isDeaccessionWorkflowEnabled,
+} from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
@@ -241,14 +244,6 @@ async function logDecisionException(
       policyVersion: decisionReview.policyVersion,
     },
   });
-}
-
-async function isDeaccessionWorkflowEnabled(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-) {
-  const organization = await ctx.db.get(organizationId);
-  return organization?.settings?.deaccessionWorkflowEnabled ?? true;
 }
 
 export async function createDeaccessionRecord(
@@ -1134,52 +1129,22 @@ export const approve = mutation({
       throw new Error("Deaccession is not pending");
     }
 
-    await requirePermission(
+    const approval = await resolveCaseApproval(
       ctx,
       deaccession.organizationId,
-      "collections.approve_deaccession",
+      "deaccession",
+      deaccession.workflowStep,
     );
+    if (!approval.allowed) {
+      throw approval.refusal;
+    }
 
-    const workflowConfig = (await isDeaccessionWorkflowEnabled(
-      ctx,
-      deaccession.organizationId,
-    ))
-      ? await getWorkflowConfig(ctx, deaccession.organizationId, "deaccession")
-      : null;
-
-    if (workflowConfig) {
-      const workflowState = resolveWorkflowStepState(
-        workflowConfig.steps,
-        deaccession.workflowStep,
-      );
-      const currentStep = workflowState.currentStep;
-
-      if (currentStep === undefined) {
-        throw workflowApprovalError(
-          "WORKFLOW_NOT_CONFIGURED",
-          "Workflow has no approval steps configured",
-        );
-      }
-      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-        throw workflowApprovalError(
-          "WORKFLOW_NOT_CONFIGURED",
-          "Current workflow step is not configured",
-        );
-      }
-
-      const canApprove = await canApproveAtStep(
-        ctx,
-        deaccession.organizationId,
-        "deaccession",
+    if (approval.workflow) {
+      const {
+        config: workflowConfig,
+        state: workflowState,
         currentStep,
-      );
-
-      if (!canApprove) {
-        throw workflowApprovalError(
-          "APPROVAL_NOT_PERMITTED",
-          "Permission denied: cannot approve at this step",
-        );
-      }
+      } = approval.workflow;
 
       const currentStepConfig = workflowConfig.steps.find(
         (step) => step.stepNumber === currentStep,

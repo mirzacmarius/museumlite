@@ -3905,6 +3905,7 @@ export default {
     description: "Spor konserveringsbehandlinger og tilstandsvurderinger",
     newTreatment: "Ny Behandling",
     searchPlaceholder: "Søk etter tittel, beskrivelse eller notater...",
+    pendingApproval: "Venter på godkjenning",
     loading: "Laster...",
     noOrganizationTitle: "Ingen Organisasjon Funnet",
     noOrganizationDescription:
@@ -4780,6 +4781,14 @@ export default {
       assignedCases: "Saker tildelt meg",
       assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
+      nothingWaiting: "Ingenting venter på deg.",
+      pendingApproval: {
+        accession: "Aksesjoner som venter på godkjenning",
+        deaccession: "Deaksesjoner som venter på godkjenning",
+        loan: "Lån som venter på godkjenning",
+        exhibition: "Utstillinger som venter på godkjenning",
+        conservation: "Konservering som venter på godkjenning",
+      },
     },
   },
   preparationRecipes: {

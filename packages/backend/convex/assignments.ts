@@ -1,8 +1,68 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { query } from "./_generated/server";
-import { accessionStatusValidator } from "./utils/accessionReview";
-import { canApproveAtStep } from "./utils/permissions";
+import type { Id } from "./_generated/dataModel";
+import { type QueryCtx, query } from "./_generated/server";
+import {
+  accessionStatusValidator,
+  isAwaitingReview,
+} from "./utils/accessionReview";
+import { type CapabilityId, evaluateCapability } from "./utils/capabilities";
+import { organizationAccess } from "./utils/featureGates";
+import {
+  type ApprovalCaseType,
+  getCurrentUserOrganization,
+  getRolePermissionNames,
+  resolveCaseApproval,
+} from "./utils/permissions";
+
+type ApprovalPageAccess = { permission: string } | { capability: CapabilityId };
+
+const APPROVAL_PAGE_ACCESS: Record<ApprovalCaseType, ApprovalPageAccess> = {
+  accession: { permission: "collections.read" },
+  deaccession: { capability: "deaccession" },
+  loan: { capability: "loans" },
+  exhibition: { capability: "exhibitions" },
+  conservation: { capability: "conservation" },
+};
+
+async function loadCanActOnApproval(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const [membership, organization] = await Promise.all([
+    getCurrentUserOrganization(ctx, organizationId),
+    ctx.db.get(organizationId),
+  ]);
+  const permissions = membership
+    ? await getRolePermissionNames(ctx, membership.roleId)
+    : [];
+  const canOpenPage = (caseType: ApprovalCaseType) => {
+    const page = APPROVAL_PAGE_ACCESS[caseType];
+    if ("permission" in page) return permissions.includes(page.permission);
+    return (
+      organization !== null &&
+      evaluateCapability(
+        page.capability,
+        organizationAccess(organization),
+        permissions,
+      ).status === "available"
+    );
+  };
+  const decisions = new Map<string, Promise<boolean>>();
+  return (caseType: ApprovalCaseType, workflowStep: number | undefined) => {
+    const key = `${caseType}:${workflowStep}`;
+    let decision = decisions.get(key);
+    if (!decision) {
+      decision = canOpenPage(caseType)
+        ? resolveCaseApproval(ctx, organizationId, caseType, workflowStep).then(
+            (approval) => approval.allowed,
+          )
+        : Promise.resolve(false);
+      decisions.set(key, decision);
+    }
+    return decision;
+  };
+}
 
 /**
  * Get user's assignments across the organization
@@ -75,6 +135,13 @@ export const listMyAssignments = query({
     ),
     stats: v.object({
       totalPendingApprovals: v.number(),
+      pendingApprovalsByType: v.object({
+        accession: v.number(),
+        deaccession: v.number(),
+        loan: v.number(),
+        exhibition: v.number(),
+        conservation: v.number(),
+      }),
       totalAssignedAccessions: v.number(),
       totalCatalogedItems: v.number(),
       itemsModifiedThisWeek: v.number(),
@@ -118,6 +185,7 @@ export const listMyAssignments = query({
 
     const [
       userId,
+      canActOn,
       slaConfigs,
       pendingAccessions,
       pendingDeaccessions,
@@ -126,6 +194,7 @@ export const listMyAssignments = query({
       pendingConservation,
     ] = await Promise.all([
       getAuthUserId(ctx),
+      loadCanActOnApproval(ctx, args.organizationId),
       ctx.db
         .query("workflowSlaConfigs")
         .withIndex("by_organization", (q) =>
@@ -168,75 +237,59 @@ export const listMyAssignments = query({
     }
 
     const approvalChecks = await Promise.all([
-      ...Array.from(pendingAccessions).map((accession) => {
+      ...pendingAccessions.flatMap((accession) => {
+        if (!isAwaitingReview(accession)) return [];
         const currentStep = accession.workflowStep ?? 1;
-        return canApproveAtStep(
-          ctx,
-          args.organizationId,
-          "accession",
-          currentStep,
-        ).then((canApprove) => ({
-          canApprove,
-          type: "accession" as const,
-          entity: accession,
-          currentStep,
-        }));
+        return canActOn("accession", accession.workflowStep).then(
+          (canApprove) => ({
+            canApprove,
+            type: "accession" as const,
+            entity: accession,
+            currentStep,
+          }),
+        );
       }),
-      ...Array.from(pendingDeaccessions).map((deaccession) => {
+      ...pendingDeaccessions.map((deaccession) => {
         const currentStep = deaccession.workflowStep ?? 1;
-        return canApproveAtStep(
-          ctx,
-          args.organizationId,
-          "deaccession",
-          currentStep,
-        ).then((canApprove) => ({
-          canApprove,
-          type: "deaccession" as const,
-          entity: deaccession,
-          currentStep,
-        }));
+        return canActOn("deaccession", deaccession.workflowStep).then(
+          (canApprove) => ({
+            canApprove,
+            type: "deaccession" as const,
+            entity: deaccession,
+            currentStep,
+          }),
+        );
       }),
-      ...Array.from(pendingLoans).map((loan) => {
+      ...pendingLoans.map((loan) => {
         const currentStep = loan.workflowStep ?? 1;
-        return canApproveAtStep(
-          ctx,
-          args.organizationId,
-          "loan",
-          currentStep,
-        ).then((canApprove) => ({
+        return canActOn("loan", loan.workflowStep).then((canApprove) => ({
           canApprove,
           type: "loan" as const,
           entity: loan,
           currentStep,
         }));
       }),
-      ...Array.from(pendingExhibitions).map((exhibition) => {
+      ...pendingExhibitions.map((exhibition) => {
         const currentStep = exhibition.workflowStep ?? 1;
-        return canApproveAtStep(
-          ctx,
-          args.organizationId,
-          "exhibition",
-          currentStep,
-        ).then((canApprove) => ({
-          canApprove,
-          type: "exhibition" as const,
-          entity: exhibition,
-          currentStep,
-        }));
+        return canActOn("exhibition", exhibition.workflowStep).then(
+          (canApprove) => ({
+            canApprove,
+            type: "exhibition" as const,
+            entity: exhibition,
+            currentStep,
+          }),
+        );
       }),
-      ...Array.from(pendingConservation).map((treatment) => {
+      ...pendingConservation.map((treatment) => {
         const currentStep = treatment.workflowStep ?? 1;
-        return canApproveAtStep(
-          ctx,
-          args.organizationId,
-          "conservation",
-          currentStep,
-        ).then((canApprove) => ({
-          canApprove,
-          type: "conservation" as const,
-          entity: treatment,
-          currentStep,
-        }));
+        return canActOn("conservation", treatment.workflowStep).then(
+          (canApprove) => ({
+            canApprove,
+            type: "conservation" as const,
+            entity: treatment,
+            currentStep,
+          }),
+        );
       }),
     ]);
 
@@ -497,6 +550,17 @@ export const listMyAssignments = query({
       (c) => c.catalogedBy === userId,
     ).length;
 
+    const pendingApprovalsByType = {
+      accession: 0,
+      deaccession: 0,
+      loan: 0,
+      exhibition: 0,
+      conservation: 0,
+    } satisfies Record<(typeof pendingApprovals)[number]["type"], number>;
+    for (const approval of pendingApprovals) {
+      pendingApprovalsByType[approval.type] += 1;
+    }
+
     return {
       pendingApprovals: pendingApprovals.slice(0, limit),
       myAssignedAccessions,
@@ -504,6 +568,7 @@ export const listMyAssignments = query({
       myCatalogedItems,
       stats: {
         totalPendingApprovals: pendingApprovals.length,
+        pendingApprovalsByType,
         totalAssignedAccessions: myAssignedAccessions.length,
         totalCatalogedItems,
         itemsModifiedThisWeek,
@@ -532,8 +597,9 @@ export const getAssignmentCounts = query({
 
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-    const [pendingAccessions, pendingLoans, assignedAccessions] =
+    const [canActOn, pendingAccessions, pendingLoans, assignedAccessions] =
       await Promise.all([
+        loadCanActOnApproval(ctx, args.organizationId),
         ctx.db
           .query("accessions")
           .withIndex("by_organization_and_status", (q) =>
@@ -555,15 +621,10 @@ export const getAssignmentCounts = query({
     const [accessionCounts, loanCounts] = await Promise.all([
       Promise.all(
         pendingAccessions.map(async (accession) => {
-          const currentStep = accession.workflowStep ?? 1;
-          const canApprove = await canApproveAtStep(
-            ctx,
-            args.organizationId,
-            "accession",
-            currentStep,
-          );
-
-          if (!canApprove) {
+          if (
+            !isAwaitingReview(accession) ||
+            !(await canActOn("accession", accession.workflowStep))
+          ) {
             return { pending: 0, urgent: 0 };
           }
 
@@ -575,15 +636,7 @@ export const getAssignmentCounts = query({
       ),
       Promise.all(
         pendingLoans.map(async (loan) => {
-          const currentStep = loan.workflowStep ?? 1;
-          const canApprove = await canApproveAtStep(
-            ctx,
-            args.organizationId,
-            "loan",
-            currentStep,
-          );
-
-          if (!canApprove) {
+          if (!(await canActOn("loan", loan.workflowStep))) {
             return { pending: 0, urgent: 0 };
           }
 

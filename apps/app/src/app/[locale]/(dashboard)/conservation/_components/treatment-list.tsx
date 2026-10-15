@@ -28,9 +28,8 @@ const TREATMENT_TYPES = [
   "other",
 ] as const;
 
-/** The conservation list URL: title search, treatment type, loaded depth. */
 export const treatmentListState = defineListState({
-  filters: { type: ["all", ...TREATMENT_TYPES] },
+  filters: { type: ["all", ...TREATMENT_TYPES], status: ["all", "proposed"] },
   sorts: ["newest"],
   pageSize: TREATMENT_PAGE_SIZE,
   maxDepth: TREATMENT_PAGE_SIZE * 10,
@@ -51,15 +50,19 @@ export function TreatmentList({
   const { searchInput, setSearchInput } = list;
   const returnPath = useListReturnPath(treatmentListState.keys);
   const selectedType = list.state.filters.type;
+  const selectedStatus = list.state.filters.status;
+  const statusArg = selectedStatus === "all" ? undefined : selectedStatus;
   const search = list.state.search.trim();
   const counts = useQuery(api.conservationTreatments.getListCounts, {
     organizationId,
+    status: statusArg,
   });
   const { results, status, loadMore } = usePaginatedQuery(
     api.conservationTreatments.listPage,
     {
       organizationId,
       treatmentType: selectedType === "all" ? undefined : selectedType,
+      status: statusArg,
       search: search || undefined,
     },
     { initialNumItems: list.state.show },
@@ -113,6 +116,18 @@ export function TreatmentList({
               onSelect={() => list.update({ filters: { type } })}
             />
           ))}
+          <TypeChip
+            label={t("pendingApproval")}
+            count={undefined}
+            selected={selectedStatus === "proposed"}
+            onSelect={() =>
+              list.update({
+                filters: {
+                  status: selectedStatus === "proposed" ? "all" : "proposed",
+                },
+              })
+            }
+          />
           {list.isFiltered ? (
             <Button
               variant="ghost"

@@ -26,6 +26,7 @@ import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
   requirePermission,
+  resolveCaseApproval,
 } from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
 import { workflowApprovalError } from "./utils/workflowApprovalErrors";
@@ -148,16 +149,54 @@ async function toTreatmentListItems(
   });
 }
 
+function queryTreatments(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  {
+    status,
+    treatmentType,
+  }: {
+    status?: Doc<"conservationTreatments">["status"];
+    treatmentType?: Doc<"conservationTreatments">["treatmentType"];
+  },
+) {
+  const treatments = ctx.db.query("conservationTreatments");
+  if (status && treatmentType) {
+    return treatments.withIndex(
+      "by_organization_and_status_and_treatmentType",
+      (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("status", status)
+          .eq("treatmentType", treatmentType),
+    );
+  }
+  if (status) {
+    return treatments.withIndex("by_organization_and_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", status),
+    );
+  }
+  if (treatmentType) {
+    return treatments.withIndex("by_organization_and_treatmentType", (q) =>
+      q.eq("organizationId", organizationId).eq("treatmentType", treatmentType),
+    );
+  }
+  return treatments.withIndex("by_organization", (q) =>
+    q.eq("organizationId", organizationId),
+  );
+}
+
 /**
  * One page of an organization's treatments, newest first, optionally limited
- * to a treatment type. A search keeps the rows of the page whose title,
- * description, notes, object or performer contain it, so a page can hold
- * fewer rows than requested while more remain.
+ * to a treatment type and a status. A search keeps the rows of the page whose
+ * title, description, notes, object or performer contain it, so a page can
+ * hold fewer rows than requested while more remain.
  */
 export const listPage = query({
   args: {
     organizationId: v.id("organizations"),
     treatmentType: v.optional(treatmentTypeValidator),
+    status: v.optional(treatmentStatusValidator),
     search: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
@@ -167,21 +206,7 @@ export const listPage = query({
       requireConservationAccess(ctx, args.organizationId),
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
-    const treatmentType = args.treatmentType;
-    const result = await (treatmentType
-      ? ctx.db
-          .query("conservationTreatments")
-          .withIndex("by_organization_and_treatmentType", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("treatmentType", treatmentType),
-          )
-      : ctx.db
-          .query("conservationTreatments")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-    )
+    const result = await queryTreatments(ctx, args.organizationId, args)
       .order("desc")
       .paginate(args.paginationOpts);
 
@@ -209,6 +234,7 @@ export const listPage = query({
 export const getListCounts = query({
   args: {
     organizationId: v.id("organizations"),
+    status: v.optional(treatmentStatusValidator),
   },
   returns: v.object({
     total: v.number(),
@@ -225,13 +251,10 @@ export const getListCounts = query({
       TREATMENT_TYPES.map(async (treatmentType) => ({
         treatmentType,
         count: await countIndexedQuery(
-          ctx.db
-            .query("conservationTreatments")
-            .withIndex("by_organization_and_treatmentType", (q) =>
-              q
-                .eq("organizationId", args.organizationId)
-                .eq("treatmentType", treatmentType),
-            ),
+          queryTreatments(ctx, args.organizationId, {
+            status: args.status,
+            treatmentType,
+          }),
         ),
       })),
     );
@@ -825,45 +848,18 @@ export const approve = mutation({
       treatment.baselineAssessmentId,
     );
 
-    const workflowConfig = await getWorkflowConfig(
+    const approval = await resolveCaseApproval(
       ctx,
       treatment.organizationId,
       "conservation",
+      treatment.workflowStep,
     );
+    if (!approval.allowed) {
+      throw approval.refusal;
+    }
 
-    if (workflowConfig) {
-      const workflowState = resolveWorkflowStepState(
-        workflowConfig.steps,
-        treatment.workflowStep,
-      );
-      const currentStep = workflowState.currentStep;
-
-      if (currentStep === undefined) {
-        throw workflowApprovalError(
-          "WORKFLOW_NOT_CONFIGURED",
-          "Workflow has no approval steps configured",
-        );
-      }
-      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-        throw workflowApprovalError(
-          "WORKFLOW_NOT_CONFIGURED",
-          "Current workflow step is not configured",
-        );
-      }
-
-      const canApprove = await canApproveAtStep(
-        ctx,
-        treatment.organizationId,
-        "conservation",
-        currentStep,
-      );
-
-      if (!canApprove) {
-        throw workflowApprovalError(
-          "APPROVAL_NOT_PERMITTED",
-          "Permission denied: cannot approve at this step",
-        );
-      }
+    if (approval.workflow) {
+      const { state: workflowState, currentStep } = approval.workflow;
 
       const history = [...(treatment.workflowHistory ?? [])];
       if (!workflowState.isPastLastStep) {
@@ -968,7 +964,6 @@ export const approve = mutation({
       }
     } else {
       await Promise.all([
-        requirePermission(ctx, treatment.organizationId, "collections.update"),
         ctx.db.patch(args.treatmentId, {
           status: "approved",
           approvedBy: userId,

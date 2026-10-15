@@ -19,6 +19,12 @@ import {
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./featureGates";
+import { workflowApprovalError } from "./workflowApprovalErrors";
+import {
+  getWorkflowConfig,
+  isDeaccessionWorkflowEnabled,
+} from "./workflowConfigs";
+import { resolveWorkflowStepState } from "./workflowSteps";
 
 /**
  * Returns user IDs in an organization whose role includes the given permission.
@@ -428,6 +434,82 @@ export async function canApproveAtStep(
     return true;
   }
   return false;
+}
+
+export type ApprovalCaseType = Exclude<WorkflowType, "acquisition">;
+
+const APPROVE_COMMAND_PERMISSIONS = {
+  accession: {
+    name: "collections.approve_accession",
+    requiredWithWorkflow: true,
+  },
+  deaccession: {
+    name: "collections.approve_deaccession",
+    requiredWithWorkflow: true,
+  },
+  loan: { name: "loans.approve", requiredWithWorkflow: true },
+  exhibition: { name: "collections.update", requiredWithWorkflow: false },
+  conservation: { name: "collections.update", requiredWithWorkflow: false },
+} satisfies Record<
+  ApprovalCaseType,
+  { name: string; requiredWithWorkflow: boolean }
+>;
+
+export async function resolveCaseApproval(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  caseType: ApprovalCaseType,
+  workflowStep: number | undefined,
+) {
+  const permission = APPROVE_COMMAND_PERMISSIONS[caseType];
+  const config =
+    caseType === "deaccession" &&
+    !(await isDeaccessionWorkflowEnabled(ctx, organizationId))
+      ? null
+      : await getWorkflowConfig(ctx, organizationId, caseType);
+  if (
+    (permission.requiredWithWorkflow || !config) &&
+    !(await hasPermission(ctx, organizationId, permission.name))
+  ) {
+    return {
+      allowed: false as const,
+      refusal: permissionDenied(permission.name),
+    };
+  }
+  if (!config) {
+    return { allowed: true as const, workflow: null };
+  }
+
+  const state = resolveWorkflowStepState(config.steps, workflowStep);
+  const currentStep = state.currentStep;
+  if (currentStep === undefined) {
+    return {
+      allowed: false as const,
+      refusal: workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Workflow has no approval steps configured",
+      ),
+    };
+  }
+  if (!state.hasCurrentStep && !state.isPastLastStep) {
+    return {
+      allowed: false as const,
+      refusal: workflowApprovalError(
+        "WORKFLOW_NOT_CONFIGURED",
+        "Current workflow step is not configured",
+      ),
+    };
+  }
+  if (!(await canApproveAtStep(ctx, organizationId, caseType, currentStep))) {
+    return {
+      allowed: false as const,
+      refusal: workflowApprovalError(
+        "APPROVAL_NOT_PERMITTED",
+        "Permission denied: cannot approve at this step",
+      ),
+    };
+  }
+  return { allowed: true as const, workflow: { config, state, currentStep } };
 }
 
 /**
