@@ -508,7 +508,7 @@ test.each([
   const t = createConvexTest();
   const { organizationId, userId } = await createOrgUserWithPermissions(
     t,
-    ["collections.read"],
+    ["collections.read", "collections.view_valuation"],
     { subscriptionTier: "pro", slugPrefix: "appraisal-age" },
   );
   const authed = authedForUser(t, userId);

@@ -56,6 +56,7 @@ async function setup() {
       "accounts.read",
       "media.upload",
       "loans.read",
+      "collections.view_valuation",
     ]) {
       const insert = ctx.db.insert.bind(ctx.db);
       const permissionId = await insert("permissions", {

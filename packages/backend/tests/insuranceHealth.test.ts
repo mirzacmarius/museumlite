@@ -29,6 +29,7 @@ async function setup(t: ConvexTest) {
       "organization.view_analytics",
       "collections.read",
       "collections.update",
+      "collections.view_valuation",
     ],
     { subscriptionTier: "pro", slugPrefix: "insurance-health" },
   );

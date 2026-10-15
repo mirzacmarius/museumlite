@@ -8,21 +8,24 @@ import {
   SYSTEM_ROLE_DEFINITIONS,
 } from "./systemRoles";
 
-/**
- * Current and legacy names (e.g. "registrar") of the system roles that
- * review collection evidence: owners, administrators, curators and
- * collection managers.
- */
-export const REVIEWER_SYSTEM_ROLE_NAMES: ReadonlySet<string> = new Set([
-  SUPER_ADMIN_ROLE_NAME,
-  ...SYSTEM_ROLE_DEFINITIONS.flatMap((definition) =>
-    [ADMIN_ROLE_NAME, CURATOR_ROLE_NAME, COLLECTION_MANAGER_ROLE_NAME].includes(
-      definition.name,
-    )
-      ? definition.recognizedNames
-      : [],
-  ),
-]);
+function superAdminAndRecognizedNames(roleNames: readonly string[]) {
+  return new Set([
+    SUPER_ADMIN_ROLE_NAME,
+    ...SYSTEM_ROLE_DEFINITIONS.flatMap((definition) =>
+      roleNames.includes(definition.name) ? definition.recognizedNames : [],
+    ),
+  ]);
+}
+
+export const REVIEWER_SYSTEM_ROLE_NAMES: ReadonlySet<string> =
+  superAdminAndRecognizedNames([
+    ADMIN_ROLE_NAME,
+    CURATOR_ROLE_NAME,
+    COLLECTION_MANAGER_ROLE_NAME,
+  ]);
+
+export const VALUATION_SYSTEM_ROLE_NAMES: ReadonlySet<string> =
+  superAdminAndRecognizedNames([ADMIN_ROLE_NAME, COLLECTION_MANAGER_ROLE_NAME]);
 
 /**
  * Creates a collections permission if missing and grants it to one

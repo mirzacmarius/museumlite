@@ -8,7 +8,7 @@ import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { requireAmount, requireCurrencyCode } from "./utils/currency";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
-import { requirePermission } from "./utils/permissions";
+import { requirePermission, requireValuationRead } from "./utils/permissions";
 import {
   APPRAISAL_PURPOSE_ORDER,
   appraisalAgeDays,
@@ -22,6 +22,7 @@ import {
   selectCurrentValuations,
   toAppraisalView,
   VALUATION_MAX_AGE_MS,
+  VALUATION_PERMISSION,
 } from "./utils/valuation";
 import { valuationError } from "./utils/valuationErrors";
 
@@ -52,6 +53,16 @@ interface AppraisalInput {
 function optionalText(value: string | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+async function requireRecordAppraisal(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  await Promise.all([
+    requirePermission(ctx, organizationId, "collections.update"),
+    requirePermission(ctx, organizationId, VALUATION_PERMISSION),
+  ]);
 }
 
 /** Validates recorded appraisal facts; values are never edited afterwards. */
@@ -104,11 +115,7 @@ export const create = mutation({
     if (!collection) {
       throw valuationError("REFERENCE_NOT_FOUND", "Object not found");
     }
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
+    await requireRecordAppraisal(ctx, collection.organizationId);
     const { collectionId, ...input } = args;
     const fields = validatedAppraisal(input);
 
@@ -175,7 +182,7 @@ export const supersede = mutation({
     if (!previous) {
       throw valuationError("REFERENCE_NOT_FOUND", "Appraisal not found");
     }
-    await requirePermission(ctx, previous.organizationId, "collections.update");
+    await requireRecordAppraisal(ctx, previous.organizationId);
     const reason = supersessionReason(previous, args.reason);
     const { appraisalId: _previousId, reason: _reason, ...input } = args;
     const fields = validatedAppraisal(input);
@@ -288,7 +295,7 @@ export const get = query({
       return null;
     }
 
-    await requirePermission(ctx, appraisal.organizationId, "collections.read");
+    await requireValuationRead(ctx, appraisal.organizationId);
 
     const view = toAppraisalView(
       appraisal,
@@ -386,7 +393,7 @@ export const getObjectValuation = query({
     if (!collection) {
       return null;
     }
-    await requirePermission(ctx, collection.organizationId, "collections.read");
+    await requireValuationRead(ctx, collection.organizationId);
 
     const appraisals = await loadObjectAppraisals(ctx, args.collectionId);
     const currentIds = new Set(
@@ -480,7 +487,7 @@ export const list = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await requireValuationRead(ctx, args.organizationId);
 
     const now = Date.now();
 
