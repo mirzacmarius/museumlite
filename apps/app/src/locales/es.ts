@@ -92,7 +92,7 @@ export default {
     observationNumber: "Observación {number}",
     errors: {
       date: "Elige una fecha que no sea futura.",
-      condition: "Introduce el estado.",
+      condition: "Elige el estado.",
       summary: "Introduce un resumen.",
       area: "Introduce la zona.",
       observation: "Describe lo observado.",

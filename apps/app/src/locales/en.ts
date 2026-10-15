@@ -88,7 +88,7 @@ export default {
     observationNumber: "Observation {number}",
     errors: {
       date: "Choose a date that is not in the future.",
-      condition: "Enter the condition.",
+      condition: "Choose a condition.",
       summary: "Enter a summary.",
       area: "Enter the area.",
       observation: "Describe what you observed.",

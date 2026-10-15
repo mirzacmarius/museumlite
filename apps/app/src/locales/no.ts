@@ -90,7 +90,7 @@ export default {
     observationNumber: "Observasjon {number}",
     errors: {
       date: "Velg en dato som ikke er fram i tid.",
-      condition: "Fyll inn tilstand.",
+      condition: "Velg tilstand.",
       summary: "Fyll inn et sammendrag.",
       area: "Fyll inn område.",
       observation: "Beskriv hva du observerte.",

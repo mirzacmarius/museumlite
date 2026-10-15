@@ -26,6 +26,7 @@ export function ConditionCombobox({
   onValueChange,
   placeholder,
   disabled = false,
+  ...triggerProps
 }: ConditionComboboxProps) {
   const translate = useI18n();
   const standardConditions = getStandardConditions(translate);
@@ -134,6 +135,7 @@ export function ConditionCombobox({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            {...triggerProps}
             variant="outline"
             role="combobox"
             aria-expanded={open}

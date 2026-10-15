@@ -92,7 +92,7 @@ export default {
     observationNumber: "Observația {number}",
     errors: {
       date: "Alege o dată care nu este în viitor.",
-      condition: "Completează starea.",
+      condition: "Alege starea.",
       summary: "Completează un rezumat.",
       area: "Completează zona.",
       observation: "Descrie ce ai observat.",

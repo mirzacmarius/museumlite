@@ -92,7 +92,7 @@ export default {
     observationNumber: "Observation {number}",
     errors: {
       date: "Choisissez une date qui n'est pas dans le futur.",
-      condition: "Saisissez l'état.",
+      condition: "Choisissez l'état.",
       summary: "Saisissez un résumé.",
       area: "Saisissez la zone.",
       observation: "Décrivez ce que vous avez observé.",
