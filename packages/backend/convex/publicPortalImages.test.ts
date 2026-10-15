@@ -57,11 +57,10 @@ async function createPortal() {
   });
   const staff = authedForUser(t, fixture.userId);
 
-  async function upload(
+  async function storeFile(
     fileName: string,
     bytes: Uint8Array,
     mimeType: string,
-    options: { isPrimary?: boolean; mediaCategory?: "image" | "document" } = {},
   ) {
     const { uploadUrl } = await staff.mutation(api.media.generateUploadUrl, {
       organizationId: fixture.organizationId,
@@ -76,10 +75,19 @@ async function createPortal() {
       body: new Blob([new Uint8Array(bytes)], { type: mimeType }),
     });
     const { storageId }: { storageId: Id<"_storage"> } = await response.json();
+    return storageId;
+  }
+
+  async function upload(
+    fileName: string,
+    bytes: Uint8Array,
+    mimeType: string,
+    options: { isPrimary?: boolean; mediaCategory?: "image" | "document" } = {},
+  ) {
     return await staff.mutation(api.media.create, {
       organizationId: fixture.organizationId,
       collectionId: fixture.collectionId,
-      storageId,
+      storageId: await storeFile(fileName, bytes, mimeType),
       fileName,
       fileSize: bytes.length,
       mimeType,
@@ -141,17 +149,77 @@ async function createPortal() {
     });
   }
 
+  async function insertLegacyImages(fileNames: string[]) {
+    const bytes = new Uint8Array(await photo(800));
+    return await t.run(
+      async (ctx) =>
+        await Promise.all(
+          fileNames.map(async (fileName, index) =>
+            ctx.db.insert("mediaFiles", {
+              organizationId: fixture.organizationId,
+              collectionId: fixture.collectionId,
+              storageId: await ctx.storage.store(
+                new Blob([bytes], { type: "image/jpeg" }),
+              ),
+              fileName,
+              fileType: "image",
+              fileSize: bytes.length,
+              mimeType: "image/jpeg",
+              isPrimary: index === 0,
+              uploadedBy: fixture.userId,
+              uploadedAt: Date.now(),
+              uploadStatus: "completed",
+            }),
+          ),
+        ),
+    );
+  }
+
+  async function recordAudit(mediaId: Id<"mediaFiles">, actions: string[]) {
+    await t.run(async (ctx) => {
+      for (const [index, action] of actions.entries()) {
+        await ctx.db.insert("auditLog", {
+          organizationId: fixture.organizationId,
+          userId: fixture.userId,
+          action,
+          entityType: "media",
+          entityId: mediaId,
+          timestamp: index + 1,
+        });
+      }
+    });
+  }
+
+  const drain = () =>
+    t.finishAllScheduledFunctions(() => vi.advanceTimersToNextTimer());
+
+  async function backfill() {
+    await t.mutation(internal.migrations.backfillPublicRenditions, {
+      cursor: null,
+    });
+    await drain();
+  }
+
+  async function portalStatus(mediaId: Id<"mediaFiles">) {
+    return (await staff.query(api.mediaPublications.getReview, { mediaId }))
+      ?.portal;
+  }
+
   return {
     t,
     ...fixture,
     staff,
+    storeFile,
     upload,
+    insertLegacyImages,
+    recordAudit,
     files,
     served,
     renditionStatuses,
     isStored,
-    drain: () =>
-      t.finishAllScheduledFunctions(() => vi.advanceTimersToNextTimer()),
+    drain,
+    backfill,
+    portalStatus,
     list: () =>
       t.query(api.collections.listPublic, {
         organizationSlug: "portal-museum",
@@ -494,6 +562,88 @@ test("the rendition backfill shows images uploaded before MUS-790 and keeps a pa
       })
     )?.portal,
   ).toBe("hidden");
+});
+
+test("a second rendition backfill keeps an image shown that staff showed again after a past unpublish", async () => {
+  const portal = await createPortal();
+  const [mediaId] = await portal.insertLegacyImages(["returned.jpg"]);
+  if (!mediaId) throw new Error("legacy image not inserted");
+  await portal.recordAudit(mediaId, ["unpublished_public_media"]);
+
+  await portal.backfill();
+  expect(await portal.portalStatus(mediaId)).toBe("hidden");
+
+  await portal.staff.mutation(api.mediaPublications.setHiddenFromPortal, {
+    mediaId,
+    hidden: false,
+  });
+  await portal.drain();
+  expect(await portal.portalStatus(mediaId)).toBe("shown");
+
+  await portal.backfill();
+  expect(await portal.portalStatus(mediaId)).toBe("shown");
+  expect((await portal.detail())?.images.map((image) => image._id)).toEqual([
+    mediaId,
+  ]);
+});
+
+test("a second rendition backfill keeps an image shown that staff approved after hiding it", async () => {
+  const portal = await createPortal();
+  const mediaId = await portal.upload(
+    "approved.jpg",
+    await photo(800),
+    "image/jpeg",
+  );
+  await portal.drain();
+  await portal.staff.mutation(api.media.updateRights, {
+    mediaId,
+    rightsStatus: "owned",
+  });
+  await portal.staff.mutation(api.mediaPublications.setHiddenFromPortal, {
+    mediaId,
+    hidden: true,
+  });
+  await portal.staff.mutation(api.mediaPublications.approve, { mediaId });
+  const cropped = await photo(600);
+  await portal.staff.mutation(api.mediaVersions.createVersion, {
+    mediaId,
+    storageId: await portal.storeFile(
+      "approved-cropped.jpg",
+      cropped,
+      "image/jpeg",
+    ),
+    editType: "crop",
+  });
+  await portal.drain();
+  expect(await portal.portalStatus(mediaId)).toBe("shown");
+
+  await portal.backfill();
+
+  expect(await portal.portalStatus(mediaId)).toBe("shown");
+  const images = (await portal.detail())?.images ?? [];
+  expect(await portal.served(images.map((image) => image.url))).toEqual([
+    { format: "jpeg", width: 600, hasExif: false },
+  ]);
+});
+
+test("the rendition backfill keeps an image hidden when many later audit records follow its unpublish", async () => {
+  const portal = await createPortal();
+  const [open, withdrawn] = await portal.insertLegacyImages([
+    "open.jpg",
+    "withdrawn.jpg",
+  ]);
+  if (!open || !withdrawn) throw new Error("legacy images not inserted");
+  await portal.recordAudit(withdrawn, [
+    "unpublished_public_media",
+    ...Array.from({ length: 100 }, () => "updated_media_rights"),
+  ]);
+
+  await portal.backfill();
+
+  expect(await portal.portalStatus(withdrawn)).toBe("hidden");
+  expect((await portal.detail())?.images.map((image) => image._id)).toEqual([
+    open,
+  ]);
 });
 
 test("a transparent PNG is shown on a white background", async () => {
