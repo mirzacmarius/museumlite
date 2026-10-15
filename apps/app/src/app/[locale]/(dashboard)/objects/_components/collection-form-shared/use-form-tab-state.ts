@@ -5,17 +5,26 @@ import { useEffect, useMemo, useState } from "react";
 import { getObjectEditTabs } from "../../[id]/_components/object-tab-config";
 import type { CollectionEditTabId } from "./types";
 
-export function useFormTabState(
-  isLocationTrackingEnabled: boolean,
-  typeDetailsTab?: CollectionModuleId,
-) {
+export function useFormTabState({
+  isLocationTrackingEnabled,
+  typeDetailsTab,
+  savedObject,
+  permissions,
+}: {
+  isLocationTrackingEnabled: boolean;
+  typeDetailsTab?: CollectionModuleId;
+  savedObject?: boolean;
+  permissions?: ReadonlyArray<string>;
+}) {
   const tabs = useMemo(
     () =>
       getObjectEditTabs({
         locationTrackingEnabled: isLocationTrackingEnabled,
         typeDetailsTab,
+        savedObject,
+        permissions,
       }).map((tab) => ({ ...tab, id: tab.id as CollectionEditTabId })),
-    [isLocationTrackingEnabled, typeDetailsTab],
+    [isLocationTrackingEnabled, typeDetailsTab, savedObject, permissions],
   );
   const [activeTab, setActiveTab] = useState<CollectionEditTabId>("general");
 

@@ -168,10 +168,10 @@ export function useObjectRequestForm({
     isCollectionTypeEnabled(formData.collectionType, enabledModules)
       ? formData.collectionType
       : undefined;
-  const { tabs, activeTab, setActiveTab } = useFormTabState(
+  const { tabs, activeTab, setActiveTab } = useFormTabState({
     isLocationTrackingEnabled,
     typeDetailsTab,
-  );
+  });
 
   const localMedia = useObjectRequestFormLocalMedia({
     currentOrganizationId,

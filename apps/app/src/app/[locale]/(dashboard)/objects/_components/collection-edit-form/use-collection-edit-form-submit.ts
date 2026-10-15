@@ -15,7 +15,7 @@ import {
 interface UseCollectionEditFormSubmitOptions {
   collectionId: string;
   typedCollectionId: Id<"collections">;
-  session: RecordFormSession<CollectionEditValues>;
+  session: Pick<RecordFormSession<CollectionEditValues>, "isDirty" | "save">;
   hasMediaChanges: boolean;
 }
 
@@ -46,6 +46,9 @@ export function useCollectionEditFormSubmit({
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
+      // Dialogs in a tab, such as Record appraisal, render in a portal, but
+      // their submit still bubbles here through the React tree.
+      if (event.target !== event.currentTarget) return;
       event.preventDefault();
       if (!isDirty && hasMediaChanges) {
         push(`/objects/${collectionId}`);
