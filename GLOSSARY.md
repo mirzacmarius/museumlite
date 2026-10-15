@@ -205,7 +205,7 @@ _Avoid_: Borrower (a loans party), member, user
 ### Publication
 
 **Public rendition**:
-An approved, version-specific derivative of a single file that may be shown publicly. Publishing an Object does not publish its attachments.
+A derivative of one image's current file, at most 1600 px and without embedded metadata. It is made automatically and is the only form in which the public portal shows the image. An Object in the portal shows its images this way by default, but never its documents, its original files, images that staff hid, or images whose recorded rights forbid public display.
 _Avoid_: Public image, published file
 
 **Reproduction request**:
