@@ -1,29 +1,20 @@
 #!/usr/bin/env node
 /**
- * Measure client navigations in the real app with a signed-in QA user.
+ *   node scripts/perf/measure-navigation.mjs --label baseline [--runs 7] [--latency 100] [--url http://localhost:3122]
  *
- *   node scripts/perf/measure-navigation.mjs --label baseline [--runs 7] [--url http://localhost:3122]
- *
- * Needs the QA backend (`bun run qa:backend`), `bun run qa:seed`,
- * `node scripts/perf/seed-perf-data.mjs`, `bun run qa:session`, and a
- * production build of the app running on --url. Each run opens a fresh browser
- * context (cold router cache, warm server) and clicks through a fixed route
- * script. Per step it records, in milliseconds after the click:
- *
- *   urlChange  history.pushState for the destination
- *   firstShell first DOM mutation inside #main-content (loading UI or content)
- *   ready      the route's ready predicate holds and no skeleton remains
- *
- * It also counts prefetch requests fired while the Overview and Objects pages
- * sit idle. Results go to .local-qa/perf/<label>-<timestamp>.json; compare two
- * files with scripts/perf/compare.mjs.
+ * See scripts/perf/README.md for setup and what each column means.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { cpus, loadavg } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium } from "playwright";
-import { root } from "../local-qa/lib.mjs";
+import { qaStorageState, root } from "../local-qa/lib.mjs";
+import {
+  PERF_ACCESSION_SOURCE,
+  PERF_GROUP_NAME,
+  PERF_OBJECT_PREFIX,
+} from "./fixtures.mjs";
 
 const { values: options } = parseArgs({
   options: {
@@ -34,16 +25,23 @@ const { values: options } = parseArgs({
     latency: { type: "string", default: "0" },
   },
 });
-const latencyMs = Number(options.latency);
 if (!options.label) {
   console.error("✗ --label is required (for example --label baseline)");
   process.exit(1);
 }
 const runs = Number(options.runs);
+const latencyMs = Number(options.latency);
+if (!Number.isInteger(runs) || runs < 1) {
+  console.error(`✗ --runs must be a positive integer, got ${options.runs}`);
+  process.exit(1);
+}
+if (!Number.isFinite(latencyMs) || latencyMs < 0) {
+  console.error(`✗ --latency must be milliseconds, got ${options.latency}`);
+  process.exit(1);
+}
 const baseUrl = options.url.replace(/\/$/, "");
-const storageState = join(root, ".local-qa/storage-state.json");
 const outDir = join(root, ".local-qa/perf");
-const SKELETON_TOKENS = [
+const HAND_MADE_SKELETON_CLASSES = [
   "animate-pulse",
   "bg-muted/60",
   "bg-muted/50",
@@ -52,81 +50,85 @@ const SKELETON_TOKENS = [
 const IDLE_PREFETCH_WINDOW_MS = 3000;
 const STEP_TIMEOUT_MS = 20000;
 
-/** Fixed route script. `ready` runs in the page against #main-content. */
 const steps = [
   {
     name: "overview -> objects",
     link: 'a[href="/objects"]',
     path: "/objects",
-    ready: "main.querySelector('tbody tr a[href^=\"/objects/\"]') !== null",
+    readySource:
+      "main.querySelector('tbody tr a[href^=\"/objects/\"]') !== null",
   },
   {
     name: "objects -> object detail",
     link: 'tbody tr a[href^="/objects/"]',
     path: "/objects/",
-    ready:
-      'main.querySelector("tbody") === null && /Perf object \\d\\d/.test(main.textContent ?? "")',
+    readySource: `main.querySelector("tbody") === null && /${PERF_OBJECT_PREFIX} \\d\\d/.test(main.textContent ?? "")`,
   },
   {
     name: "object detail -> accessions",
     link: 'a[href="/accessions"]',
     path: "/accessions",
-    ready: '/Perf donor \\d/.test(main.textContent ?? "")',
+    readySource: `/${PERF_ACCESSION_SOURCE} \\d/.test(main.textContent ?? "")`,
   },
   {
     name: "accessions -> transfers",
     link: 'a[href="/accessions/transfers"]',
     path: "/accessions/transfers",
-    ready: '(main.textContent ?? "").includes("Pending transfer approval")',
+    readySource:
+      '(main.textContent ?? "").includes("Pending transfer approval")',
   },
   {
     name: "transfers -> administration",
     link: 'a[href="/settings/organization"]',
     path: "/settings/organization",
-    ready: "main.querySelector('input[value=\"QA Museum\"]') !== null",
+    readySource: "main.querySelector('input[value=\"QA Museum\"]') !== null",
   },
   {
     name: "administration -> modules",
     link: 'a[href="/settings/modules"]',
     path: "/settings/modules",
-    ready: "main.querySelector('button[role=\"switch\"]') !== null",
+    readySource: "main.querySelector('button[role=\"switch\"]') !== null",
   },
   {
     name: "modules -> overview",
     link: 'a[href="/"]',
     path: "/",
-    ready: '(main.textContent ?? "").includes("Perf group")',
+    readySource: `(main.textContent ?? "").includes("${PERF_GROUP_NAME}")`,
   },
 ];
 
 const recorderSource = `
 (() => {
-  const tokens = ${JSON.stringify(SKELETON_TOKENS)};
-  const hasSkeleton = (root) => {
-    for (const el of root.querySelectorAll("*")) {
-      for (const token of tokens) if (el.classList.contains(token)) return true;
-    }
-    return false;
-  };
-  const nav = { active: null, pushes: [] };
+  const skeletonSelector = ['[data-slot="skeleton"]', ...${JSON.stringify(HAND_MADE_SKELETON_CLASSES)}.map((token) => "." + CSS.escape(token))].join(", ");
+  const hasSkeleton = (root) => root.querySelector(skeletonSelector) !== null;
+  const nav = { active: null };
+  const matchesPath = (pathname, path) =>
+    pathname === path || (path.endsWith("/") ? pathname.startsWith(path) : pathname.startsWith(path + "/"));
   const wrap = (name) => {
     const original = history[name];
     history[name] = function (...args) {
       const at = performance.now();
       const result = original.apply(this, args);
-      nav.pushes.push({ at, path: location.pathname });
-      if (nav.active && nav.active.urlChange === null && location.pathname.startsWith(nav.active.path)) {
-        nav.active.urlChange = at;
+      const active = nav.active;
+      if (active && active.clickAt !== null && active.urlChange === null && matchesPath(location.pathname, active.path)) {
+        active.urlChange = at;
       }
       return result;
     };
   };
   wrap("pushState");
   wrap("replaceState");
+  document.addEventListener(
+    "click",
+    () => {
+      if (nav.active && nav.active.clickAt === null) nav.active.clickAt = performance.now();
+    },
+    true,
+  );
   const main = () => document.getElementById("main-content");
   const observer = new MutationObserver((records) => {
     const active = nav.active;
-    if (!active) return;
+    if (!active || active.clickAt === null) return;
     const now = performance.now();
     const container = main();
     if (!container) return;
@@ -153,7 +155,6 @@ const recorderSource = `
         ready: null,
       };
     },
-    markClick() { if (nav.active) nav.active.clickAt = performance.now(); },
     result() {
       const a = nav.active;
       if (!a || a.clickAt === null) return null;
@@ -177,26 +178,20 @@ function isPrefetch(request) {
   );
 }
 
-/** Sidebar groups start collapsed; open them all so every step is one click. */
 async function expandSidebarGroups(page) {
-  await page.evaluate(() => {
-    for (const trigger of document.querySelectorAll(
-      '[data-sidebar="sidebar"] button[aria-expanded="false"][aria-controls]',
-    )) {
-      trigger.click();
-    }
-  });
+  const closedTrigger =
+    '[data-sidebar="sidebar"] button[aria-expanded="false"][aria-controls]';
+  await page.evaluate((selector) => {
+    for (const trigger of document.querySelectorAll(selector)) trigger.click();
+  }, closedTrigger);
   await page.waitForFunction(
-    () =>
-      document.querySelectorAll(
-        '[data-sidebar="sidebar"] button[aria-expanded="false"][aria-controls]',
-      ).length === 0,
-    null,
+    (selector) => document.querySelectorAll(selector).length === 0,
+    closedTrigger,
     { timeout: STEP_TIMEOUT_MS },
   );
 }
 
-async function measureRun(browser, runIndex) {
+async function measureRun(browser, storageState, runIndex) {
   const context = await browser.newContext({
     storageState,
     viewport: { width: 1440, height: 1600 },
@@ -214,54 +209,53 @@ async function measureRun(browser, runIndex) {
     });
   }
   const prefetches = { overview: 0, objects: 0, total: 0 };
-  let prefetchBucket = "overview";
+  let idleBucket = null;
   page.on("request", (request) => {
     if (!isPrefetch(request)) return;
     prefetches.total += 1;
-    if (prefetchBucket in prefetches) prefetches[prefetchBucket] += 1;
+    if (idleBucket) prefetches[idleBucket] += 1;
   });
+  const idle = async (bucket) => {
+    idleBucket = bucket;
+    await page.waitForTimeout(IDLE_PREFETCH_WINDOW_MS);
+    idleBucket = null;
+  };
 
   const coldLoadStart = Date.now();
   await page.goto(`${baseUrl}/`, { waitUntil: "load" });
   await page.waitForFunction(
-    () =>
-      window.__nav.settled() &&
-      document.body.textContent.includes("Perf group"),
-    null,
+    (groupName) =>
+      window.__nav.settled() && document.body.textContent.includes(groupName),
+    PERF_GROUP_NAME,
     { timeout: STEP_TIMEOUT_MS },
   );
   const coldLoadMs = Date.now() - coldLoadStart;
   await expandSidebarGroups(page);
-  await page.waitForTimeout(IDLE_PREFETCH_WINDOW_MS);
+  await idle("overview");
 
   const results = [];
   for (const step of steps) {
-    prefetchBucket = step.path === "/objects" ? "objects" : "other";
     const link = page.locator(step.link).locator("visible=true").first();
     await link.waitFor({ state: "visible", timeout: STEP_TIMEOUT_MS });
     await page.evaluate(
       ([path, predicate]) => window.__nav.start(path, predicate),
-      [step.path, step.ready],
+      [step.path, step.readySource],
     );
     await link.hover();
-    await page.evaluate(() => window.__nav.markClick());
     await link.click();
     let timedOut = false;
     try {
       await page.waitForFunction(
         () => window.__nav.result()?.ready !== null,
         null,
-        {
-          timeout: STEP_TIMEOUT_MS,
-        },
+        { timeout: STEP_TIMEOUT_MS },
       );
     } catch {
       timedOut = true;
     }
     const timings = await page.evaluate(() => window.__nav.result());
     results.push({ step: step.name, path: step.path, timedOut, ...timings });
-    if (step.path === "/objects")
-      await page.waitForTimeout(IDLE_PREFETCH_WINDOW_MS);
+    if (step.path === "/objects") await idle("objects");
   }
   await context.close();
   return { run: runIndex, coldLoadMs, prefetches, steps: results };
@@ -314,13 +308,14 @@ function summarize(measured) {
 }
 
 mkdirSync(outDir, { recursive: true });
+const { storageState } = await qaStorageState(baseUrl);
 const browser = await chromium.launch({ headless: !options.headed });
 const loadBefore = loadavg();
 console.log(`Warm-up run against ${baseUrl}`);
-await measureRun(browser, 0);
+await measureRun(browser, storageState, 0);
 const measured = [];
 for (let run = 1; run <= runs; run++) {
-  const result = await measureRun(browser, run);
+  const result = await measureRun(browser, storageState, run);
   measured.push(result);
   console.log(
     `run ${run}: ${result.steps.map((s) => `${s.ready ?? "x"}`).join(" ")} ms ready; prefetches ${result.prefetches.total}`,
@@ -367,7 +362,7 @@ for (const row of report.summary.steps) {
   );
 }
 console.log(
-  `prefetch requests (median): overview ${report.summary.prefetchMedian.overview}, objects ${report.summary.prefetchMedian.objects}, whole run ${report.summary.prefetchMedian.total}`,
+  `prefetch requests while idle (median): overview ${report.summary.prefetchMedian.overview}, objects ${report.summary.prefetchMedian.objects}; whole run ${report.summary.prefetchMedian.total}`,
 );
 console.log(`cold load of / (median): ${report.summary.coldLoadMedianMs} ms`);
 console.log(`wrote ${file}`);

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 /**
- * Compare two reports from measure-navigation.mjs step by step.
- *
  *   node scripts/perf/compare.mjs .local-qa/perf/baseline-*.json .local-qa/perf/after-*.json
  */
 import { readFileSync } from "node:fs";

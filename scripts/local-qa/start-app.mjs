@@ -1,15 +1,10 @@
 #!/usr/bin/env node
 /**
- * Run the main Next.js app against the local QA backend (foreground).
- *
  *   bun run qa:app             dev server on port 3000
  *   QA_APP_PORT=3100 bun run qa:app
  *   bun run qa:app -- --build  production build, then `next start`
- *
- * Stop any previous app server first: a stale one on the same port causes a
- * /login redirect loop. The production build writes to apps/app/.next/local-qa
- * so it never collides with a cloud-pointed build in the same checkout.
  */
+import { createServer } from "node:net";
 import { join } from "node:path";
 import { localOnlyEnv, readState, root, run } from "./lib.mjs";
 
@@ -25,6 +20,20 @@ const options = {
     ...(production ? { LOCAL_QA: "1", SENTRY_AUTH_TOKEN: "" } : {}),
   }),
 };
+
+const portTaken = await new Promise((resolve) => {
+  const probe = createServer();
+  probe.once("error", () => resolve(true));
+  probe.listen(Number(port), "127.0.0.1", () =>
+    probe.close(() => resolve(false)),
+  );
+});
+if (portTaken) {
+  console.error(
+    `✗ Port ${port} is already in use. Stop that server first, or set QA_APP_PORT.`,
+  );
+  process.exit(1);
+}
 
 if (production) {
   const built = run("bunx", ["next", "build"], options);

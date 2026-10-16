@@ -5,7 +5,11 @@ function Skeleton({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("rounded-md bg-primary/10", className)} {...props} />
+    <div
+      data-slot="skeleton"
+      className={cn("rounded-md bg-primary/10", className)}
+      {...props}
+    />
   );
 }
 

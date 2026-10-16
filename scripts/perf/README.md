@@ -11,7 +11,6 @@ QA_PORT=3251 QA_APP_PORT=3122 bun run qa:backend
 QA_PORT=3251 bun run convex:local -- deploy --yes
 QA_PORT=3251 QA_APP_PORT=3122 bun run qa:seed
 QA_PORT=3251 node scripts/perf/seed-perf-data.mjs      # 1 group, 40 objects, 5 accessions
-QA_PORT=3251 QA_APP_PORT=3122 bun run qa:session        # cookies for Playwright
 bun install --cwd scripts/perf                          # Playwright, outside the workspace graph
 QA_APP_PORT=3122 bun run qa:app -- --build              # next build, then next start
 node scripts/perf/measure-navigation.mjs --label before --runs 7
@@ -28,7 +27,7 @@ Playwright needs a Chromium download once: `bunx --cwd scripts/perf playwright i
 
 ## What a run measures
 
-Each run opens a fresh browser context (empty router cache, warm server), loads `/`, expands every sidebar group, then clicks through Overview, Objects, an object, Accessions, Transfers, Administration, Modules, and back to Overview. For each click it records, in milliseconds after the click:
+The script signs the QA user in itself (one fresh session per invocation). Each run opens a fresh browser context (empty router cache, warm server), loads `/`, expands every sidebar group, then clicks through Overview, Objects, an object, Accessions, Transfers, Administration, Modules, and back to Overview. For each click it records, in milliseconds after the page's `click` event:
 
 - `urlChange`: the `history.pushState` for the destination.
 - `firstShell`: the first DOM mutation inside `#main-content`, whether loading UI or content.

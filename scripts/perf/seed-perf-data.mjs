@@ -1,28 +1,38 @@
 #!/usr/bin/env node
 /**
- * Give the seeded QA organization enough records for the navigation benchmark:
- * one collection group, a page of objects and a few accessions. Idempotent:
- * records are tagged with a fixed prefix and skipped when they already exist.
- *
  *   node scripts/perf/seed-perf-data.mjs
- *
- * Needs `bun run qa:seed` to have run first. Nothing here touches a cloud
- * deployment.
  */
-import { readFileSync } from "node:fs";
-import { credentialsPath, readState, signInQaUser } from "../local-qa/lib.mjs";
+import {
+  readQaCredentials,
+  readState,
+  signInQaUser,
+} from "../local-qa/lib.mjs";
+import {
+  PERF_ACCESSION_SOURCE,
+  PERF_GROUP_NAME,
+  PERF_OBJECT_PREFIX,
+} from "./fixtures.mjs";
 
-export const PERF_GROUP_NAME = "Perf group";
-export const PERF_OBJECT_PREFIX = "Perf object";
-export const PERF_ACCESSION_SOURCE = "Perf donor";
 const OBJECT_COUNT = 40;
 const ACCESSION_COUNT = 5;
 
 const { state } = readState();
-const { email, password, organizationId } = JSON.parse(
-  readFileSync(credentialsPath, "utf8"),
-);
+const { email, password, organizationId } = readQaCredentials();
 const { client, api } = await signInQaUser(state.url, email, password);
+
+async function listAll(query, args) {
+  const items = [];
+  let cursor = null;
+  do {
+    const page = await client.query(query, {
+      ...args,
+      paginationOpts: { numItems: 200, cursor },
+    });
+    items.push(...page.page);
+    cursor = page.isDone ? null : page.continueCursor;
+  } while (cursor !== null);
+  return items;
+}
 
 const groups = await client.query(api.collectionGroups.list, {
   organizationId,
@@ -37,12 +47,11 @@ if (!group) {
   group = { _id: groupId, name: PERF_GROUP_NAME };
 }
 
-const paginationOpts = { numItems: 200, cursor: null };
-const existing = await client.query(api.collections.list, {
+const existing = await listAll(api.collections.list, {
   organizationId,
-  paginationOpts,
+  collectionGroupId: group._id,
 });
-const existingTitles = new Set(existing.page.map((item) => item.title));
+const existingTitles = new Set(existing.map((item) => item.title));
 let created = 0;
 for (let index = 1; index <= OBJECT_COUNT; index++) {
   const title = `${PERF_OBJECT_PREFIX} ${String(index).padStart(2, "0")}`;
@@ -58,11 +67,8 @@ for (let index = 1; index <= OBJECT_COUNT; index++) {
   created += 1;
 }
 
-const accessions = await client.query(api.accessions.list, {
-  organizationId,
-  paginationOpts,
-});
-const existingSources = new Set(accessions.page.map((item) => item.source));
+const accessions = await listAll(api.accessions.list, { organizationId });
+const existingSources = new Set(accessions.map((item) => item.source));
 let accessionsCreated = 0;
 for (let index = 1; index <= ACCESSION_COUNT; index++) {
   const source = `${PERF_ACCESSION_SOURCE} ${index}`;
