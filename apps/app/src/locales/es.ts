@@ -4047,6 +4047,16 @@ export default {
       markFollowUpDone: "Marcar seguimiento completado",
       actionSuccess: "Tratamiento actualizado",
       actionError: "No se pudo actualizar el tratamiento",
+      errors: {
+        baselineRequired:
+          "Vincule una evaluación inicial a este tratamiento antes de aprobarlo o completarlo.",
+        outcomeRequired:
+          "Vincule una evaluación final a este tratamiento antes de completarlo.",
+        outcomeNotAccepted:
+          "Acepte la evaluación final antes de completar este tratamiento.",
+        statusChanged:
+          "El estado de este tratamiento ha cambiado. Compruebe su estado actual e inténtelo de nuevo.",
+      },
       followUp: {
         none: "Ninguno",
         pending: "Pendiente",
