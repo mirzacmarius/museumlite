@@ -24,6 +24,7 @@ const router: AppRouterInstance = {
   push: () => {},
   replace: () => {},
   prefetch: () => {},
+  bfcacheId: "test",
 };
 
 /**
