@@ -52,7 +52,7 @@ import { mutation } from "./utils/mutationBuilders";
 import { searchObjects } from "./utils/objectSearch";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
-import { getApprovedPublicMedia } from "./utils/publicMedia";
+import { getPortalImage } from "./utils/publicMedia";
 import { findPublicPortalOrganization } from "./utils/publicPortal";
 import { canReadRecord } from "./utils/recordAccess";
 import {
@@ -2797,7 +2797,7 @@ export const listPublic = query({
           .collect();
         const approved = await Promise.all(
           mediaFiles.map((media) =>
-            getApprovedPublicMedia(ctx, media, organization._id, c._id),
+            getPortalImage(ctx, media, organization._id, c._id),
           ),
         );
         const primaryImageUrl = (
@@ -2982,7 +2982,7 @@ export const getPublic = query({
 
     const images = await Promise.all(
       mediaFiles.map((media) =>
-        getApprovedPublicMedia(ctx, media, organization._id, collection._id),
+        getPortalImage(ctx, media, organization._id, collection._id),
       ),
     );
 

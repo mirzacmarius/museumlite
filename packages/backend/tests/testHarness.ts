@@ -50,6 +50,26 @@ export function createConvexTestWithRateLimiter() {
   return t;
 }
 
+/**
+ * Fakes timers and gives every scheduled job its own due time, so a drain with
+ * `vi.advanceTimersToNextTimer` runs one job per step. convex-test shares one
+ * transaction flag across concurrent actions, so two actions that store files
+ * at once corrupt each other. Call the returned function to restore timers.
+ */
+export function useSequentialScheduledJobs() {
+  vi.useFakeTimers();
+  const fakeSetTimeout = globalThis.setTimeout;
+  let order = 0;
+  const stagger = vi
+    .spyOn(globalThis, "setTimeout")
+    .mockImplementation(((callback: () => void, delay = 0) =>
+      fakeSetTimeout(callback, delay + order++)) as typeof setTimeout);
+  return () => {
+    stagger.mockRestore();
+    vi.useRealTimers();
+  };
+}
+
 export function authedForUser(
   t: ConvexTest,
   userId: Id<"users">,

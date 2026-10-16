@@ -20,6 +20,7 @@ import {
 } from "./utils/mediaAssets";
 import { mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
+import { syncPublicRendition } from "./utils/publicMedia";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
@@ -209,6 +210,7 @@ async function attachRetainedFile(
   });
   // The attachment keeps the original uploader, not the person who mapped it.
   await ctx.db.patch(mediaId, ownership);
+  await syncPublicRendition(ctx, mediaId);
   return mediaId;
 }
 

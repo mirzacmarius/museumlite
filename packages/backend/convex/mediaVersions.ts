@@ -4,7 +4,10 @@ import { query } from "./_generated/server";
 import { recordMediaVersionUsage } from "./utils/mediaAssets";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
-import { revokePublicRendition } from "./utils/publicMedia";
+import {
+  revokePublicRendition,
+  syncPublicRendition,
+} from "./utils/publicMedia";
 import { claimStorageOwnership } from "./utils/uploadOwnership";
 
 /**
@@ -74,6 +77,7 @@ export const createVersion = mutation({
         storageId: args.storageId,
       }),
     ]);
+    await syncPublicRendition(ctx, args.mediaId);
 
     return versionId;
   },
@@ -114,6 +118,7 @@ export const revertToVersion = mutation({
       currentVersionId: args.versionId,
       publicApproval: undefined,
     });
+    await syncPublicRendition(ctx, version.originalMediaId);
 
     return version.originalMediaId;
   },

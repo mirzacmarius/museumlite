@@ -1212,7 +1212,6 @@ export default {
       selectOrganization: "Selectați o organizație pentru a-i vedea obiectele.",
       collections: "Obiecte",
       public: "Public",
-      private: "Privat",
       parentObject: "Obiect părinte",
       alternativeTitle: "Titlu alternativ",
       onDisplay: "Expus",
@@ -7419,14 +7418,23 @@ export default {
   },
   mediaPage: {
     publication: {
-      title: "Aprobarea imaginii publice",
+      title: "Portal public",
       status: {
-        private: "Privată",
+        private: "Neaprobată pentru descărcarea originalului",
         processing: "Se creează imaginea publică...",
-        approved: "Publicată",
+        approved: "Aprobată pentru descărcarea originalului",
         failed: "Procesarea imaginii a eșuat",
       },
-      publicPreview: "Previzualizarea imaginii publice aprobate",
+      portal: {
+        shown:
+          "Apare în portalul public când obiectul său este publicat acolo.",
+        preparing: "Se pregătește varianta publică...",
+        hidden: "Ascunsă din portalul public.",
+        blocked:
+          "Nu apare în portalul public deoarece tipul fișierului sau drepturile înregistrate nu permit acest lucru.",
+        failed: "Varianta publică nu a putut fi creată.",
+      },
+      publicPreview: "Previzualizarea variantei publice",
       rightsStatus: "Statutul drepturilor",
       licenseType: "Licență",
       noLicense: "Nicio licență specificată",
@@ -7434,9 +7442,10 @@ export default {
       restrictions: "Restricții de utilizare",
       acknowledgment: "Afișarea publică necesită atribuire",
       saveRights: "Salvează drepturile",
-      approve: "Aprobă imaginea publică",
+      approve: "Aprobă descărcarea originalului",
       retry: "Reîncearcă procesarea",
-      unpublish: "Retrage imaginea",
+      hide: "Ascunde din portalul public",
+      show: "Afișează în portalul public",
       originalDownload: "Permite descărcarea publică a originalului",
       invalidExpiry: "Introdu o dată validă.",
       failed: "Actualizarea a eșuat. Încearcă din nou.",
