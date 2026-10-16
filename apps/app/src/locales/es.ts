@@ -1179,10 +1179,8 @@ export default {
     featuresIncluded: "Funciones incluidas:",
     configureSettings: "Configurar ajustes de {name}",
     settings: "Configuración",
-    disableIntegration: "Deshabilitar Integración",
-    disableDescription:
-      "¿Estás seguro de que deseas deshabilitar esta integración? Los datos se conservarán, pero las funciones ya no serán accesibles hasta que se reactive.",
-    disable: "Deshabilitar",
+    disableConsequence:
+      "Los datos se conservarán, pero las funciones ya no serán accesibles hasta que se reactive.",
     subscribeToEnable: "Suscribirse para Habilitar",
     subscribeDescription:
       "Esta integración requiere una suscripción activa. Suscríbete ahora para desbloquear todas las funciones.",
@@ -2948,6 +2946,14 @@ export default {
 
     parentLocation: "Ubicación superior",
   },
+  confirmedSwitch: {
+    enableTitle: "¿Estás seguro de que deseas habilitar esta función?",
+    disableTitle: "¿Estás seguro de que deseas deshabilitar esta función?",
+    setting: "Opción: {setting}",
+    appliesOnSave: "El cambio se aplicará cuando guardes.",
+    enable: "Habilitar",
+    disable: "Deshabilitar",
+  },
   common: {
     importJobUnavailable: "Importación no disponible",
     importJobUnavailableDescription:
@@ -2995,12 +3001,14 @@ export default {
       exportFailed: "Error al exportar datos",
       invalidEmail: "Formato de dirección de correo electrónico inválido",
       createFailed: "Error al crear. Por favor intenta de nuevo.",
-      moduleToggled: "Módulo {action}",
+      moduleEnabled: "Módulo habilitado",
+      moduleDisabled: "Módulo deshabilitado",
       moduleUpdateFailed: "Error al actualizar módulos",
       waitingSubscription: "Esperando confirmación de suscripción...",
       integrationEnabled: "Integración habilitada exitosamente",
       integrationAlreadyEnabled: "La integración ya está habilitada",
       integrationEnableFailed: "Error al habilitar integración",
+      integrationDisableFailed: "Error al deshabilitar integración",
       loansApproved: "{count} préstamo(s) aprobado(s) exitosamente",
       someLoansSkipped: "{count} préstamo(s) fueron omitidos (no pendientes)",
       loansApproveFailed: "Error al aprobar préstamos",
