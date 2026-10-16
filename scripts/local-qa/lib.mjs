@@ -136,3 +136,44 @@ export function run(cmd, args, options = {}) {
   const result = spawnSync(cmd, args, { stdio: "inherit", ...options });
   return result.status ?? 1;
 }
+
+export function readQaCredentials() {
+  if (!existsSync(credentialsPath)) {
+    console.error("✗ No QA user found. Run `bun run qa:seed` first.");
+    process.exit(1);
+  }
+  return JSON.parse(readFileSync(credentialsPath, "utf8"));
+}
+
+export async function qaStorageState(appUrl = qaAppUrl()) {
+  if (
+    !isLoopback(appUrl) ||
+    !["http:", "https:"].includes(new URL(appUrl).protocol)
+  ) {
+    throw new Error("QA browser sessions require an HTTP loopback URL");
+  }
+  const { state } = readState();
+  const { email, password } = readQaCredentials();
+  const { tokens } = await signInQaUser(state.url, email, password);
+  // Convex Auth's Next.js cookies; on localhost they carry no __Host- prefix.
+  const cookie = (name, value) => ({
+    name,
+    value,
+    domain: new URL(appUrl).hostname,
+    path: "/",
+    expires: -1,
+    httpOnly: true,
+    secure: false,
+    sameSite: "Lax",
+  });
+  return {
+    email,
+    storageState: {
+      cookies: [
+        cookie("__convexAuthJWT", tokens.token),
+        cookie("__convexAuthRefreshToken", tokens.refreshToken),
+      ],
+      origins: [],
+    },
+  };
+}

@@ -9,51 +9,14 @@
  * Writes .local-qa/storage-state.json (gitignored, mode 0600). Nothing here
  * touches a cloud deployment.
  */
-import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  credentialsPath,
-  qaAppUrl,
-  readState,
-  signInQaUser,
-  stateDir,
-} from "./lib.mjs";
-
-const { state } = readState();
-if (!existsSync(credentialsPath)) {
-  console.error("✗ No QA user found. Run `bun run qa:seed` first.");
-  process.exit(1);
-}
-const { email, password } = JSON.parse(readFileSync(credentialsPath, "utf8"));
-const { tokens } = await signInQaUser(state.url, email, password);
+import { qaAppUrl, qaStorageState, stateDir } from "./lib.mjs";
 
 const appUrl = qaAppUrl();
-// Convex Auth's Next.js cookies; on localhost they carry no __Host- prefix.
-const cookie = (name, value) => ({
-  name,
-  value,
-  domain: new URL(appUrl).hostname,
-  path: "/",
-  expires: -1,
-  httpOnly: true,
-  secure: false,
-  sameSite: "Lax",
-});
+const { email, storageState } = await qaStorageState(appUrl);
 const storageStatePath = join(stateDir, "storage-state.json");
-writeFileSync(
-  storageStatePath,
-  JSON.stringify(
-    {
-      cookies: [
-        cookie("__convexAuthJWT", tokens.token),
-        cookie("__convexAuthRefreshToken", tokens.refreshToken),
-      ],
-      origins: [],
-    },
-    null,
-    2,
-  ),
-);
+writeFileSync(storageStatePath, JSON.stringify(storageState, null, 2));
 chmodSync(storageStatePath, 0o600);
 
 console.log(`Signed-in browser session for ${email} on ${appUrl}:

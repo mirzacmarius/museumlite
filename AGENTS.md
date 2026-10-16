@@ -4,7 +4,7 @@ Scope note: the Next.js block below covers UI and routing only. All data, auth, 
 
 # This is NOT the Next.js you know
 
-This project runs Next.js 16.2, and its APIs, conventions, and file structure differ from your training data. Before any Next.js UI or routing work, find and read the relevant doc in `node_modules/next/dist/docs/` (resolved from the repository root). Heed deprecation notices.
+This project runs Next.js 16.4, and its APIs, conventions, and file structure differ from your training data. Before any Next.js UI or routing work, find and read the relevant doc in `node_modules/next/dist/docs/` (resolved from the repository root). Heed deprecation notices.
 
 <!-- END:nextjs-agent-rules -->
 

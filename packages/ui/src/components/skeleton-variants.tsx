@@ -11,6 +11,7 @@ interface SkeletonProps {
 export function SkeletonCard({ className }: SkeletonProps) {
   return (
     <div
+      data-slot="skeleton"
       className={cn(
         "rounded-xl h-32 bg-card/40 border border-border/60",
         className,
@@ -22,6 +23,7 @@ export function SkeletonCard({ className }: SkeletonProps) {
 export function SkeletonTable({ className }: SkeletonProps) {
   return (
     <div
+      data-slot="skeleton"
       className={cn(
         "rounded-xl overflow-hidden border border-border/60",
         className,
@@ -42,6 +44,7 @@ interface SkeletonTextProps extends SkeletonProps {
 export function SkeletonText({ className, width }: SkeletonTextProps) {
   return (
     <div
+      data-slot="skeleton"
       className={cn("h-4 w-full bg-muted/50 rounded", className)}
       style={width ? { width } : undefined}
     />
@@ -64,6 +67,7 @@ export function SkeletonAvatar({
 
   return (
     <div
+      data-slot="skeleton"
       className={cn("rounded-full bg-muted/50", sizeClasses[size], className)}
     />
   );
@@ -82,6 +86,7 @@ export function SkeletonList({
   if (variant === "grid") {
     return (
       <div
+        data-slot="skeleton"
         className={cn(
           "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4",
           className,
@@ -104,7 +109,7 @@ export function SkeletonList({
   }
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div data-slot="skeleton" className={cn("space-y-3", className)}>
       {skeletonKeys("list-item", count).map((key) => (
         <div
           key={key}
@@ -128,7 +133,7 @@ interface SkeletonFormProps extends SkeletonProps {
 
 export function SkeletonForm({ className, fields = 4 }: SkeletonFormProps) {
   return (
-    <div className={cn("space-y-6", className)}>
+    <div data-slot="skeleton" className={cn("space-y-6", className)}>
       {skeletonKeys("form-field", fields).map((key) => (
         <div key={key} className="space-y-2">
           <div className="h-4 w-24 bg-muted/50 rounded" />
