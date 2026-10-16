@@ -11,7 +11,7 @@ const pageSkeleton = (
   <AccessionsPageSkeleton
     actionsCount={0}
     showWorkbenchNav={false}
-    statsCount={3}
+    statsCount={4}
   />
 );
 

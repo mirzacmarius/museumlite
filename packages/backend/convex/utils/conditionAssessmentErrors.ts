@@ -10,8 +10,12 @@ export const CONDITION_ASSESSMENT_ERROR_CODES = [
   "ASSESSMENT_ALREADY_OPEN",
   /** Only a draft can be edited or submitted. */
   "ASSESSMENT_NOT_DRAFT",
-  /** Only an assessment awaiting approval can be accepted or rejected. */
+  /** Only an assessment submitted for approval can be accepted. */
   "ASSESSMENT_NOT_SUBMITTED",
+  /** A reviewer already accepted or rejected the assessment. */
+  "ASSESSMENT_ALREADY_DECIDED",
+  /** A chosen evidence photo is not an available image of the object. */
+  "ASSESSMENT_PHOTO_UNAVAILABLE",
   /** The object or an evidence photo is gone; reject and record a new one. */
   "ASSESSMENT_EVIDENCE_UNAVAILABLE",
 ] as const;

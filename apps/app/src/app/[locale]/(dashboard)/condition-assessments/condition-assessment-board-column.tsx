@@ -65,7 +65,7 @@ export function ConditionAssessmentBoardColumn({
   organizationId: Id<"organizations">;
   column: ConditionAssessmentColumn;
   search: string;
-  /** Exact column total; undefined while counts load. */
+  /** Exact column total; undefined when too large to count. */
   total?: number;
 }) {
   const t = useScopedI18n("conditionAssessments.board");
@@ -173,9 +173,11 @@ function AssessmentCard({
   const translate = useI18n();
   const locale = useCurrentLocale();
   const { hasPermission } = usePermissions();
-  const canDecide =
-    assessment.status === "submitted" &&
-    hasPermission("collections.accept_condition");
+  const decidable =
+    assessment.status === "submitted" || assessment.status === "draft"
+      ? assessment.status
+      : null;
+  const canDecide = hasPermission("collections.accept_condition");
   const byLine =
     assessment.status === "rejected"
       ? t("decidedBy", {
@@ -234,10 +236,11 @@ function AssessmentCard({
           />
         </span>
       </div>
-      {canDecide ? (
+      {decidable && canDecide ? (
         <ConditionAssessmentDecision
           className="mt-3"
           assessmentId={assessment._id}
+          status={decidable}
           onDecided={(decision) =>
             toast.success(
               decision === "accepted"

@@ -115,7 +115,11 @@ export default {
       ASSESSMENT_NOT_DRAFT:
         "Esta evaluación ya se envió, así que no se puede modificar.",
       ASSESSMENT_NOT_SUBMITTED:
-        "Solo se puede aceptar o rechazar una evaluación pendiente de aprobación.",
+        "Solo se puede aceptar una evaluación enviada para aprobación.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "Un responsable ya aceptó o rechazó esta evaluación.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "Una foto de evidencia ya no está disponible en este objeto. Quítala de la evaluación e inténtalo de nuevo.",
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "El objeto o una foto de evidencia ya no está disponible. Rechaza esta evaluación y registra una nueva.",
     },
@@ -4092,7 +4096,9 @@ export default {
       linkBaseline: "Establecer inicial",
       linkOutcome: "Establecer final",
       captureOnObject:
-        "Capturar o aceptar evaluaciones en la pestaña Físico del objeto",
+        "Registra una evaluación con Establecer estado en el formulario de edición del objeto (pestaña Descripción Física)",
+      acceptOnBoard:
+        "Acepta o rechaza las evaluaciones enviadas en Evaluaciones del estado",
       workflow: "Flujo del tratamiento",
       approve: "Aprobar",
       start: "Iniciar trabajo",

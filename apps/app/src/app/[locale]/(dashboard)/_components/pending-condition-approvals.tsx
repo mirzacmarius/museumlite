@@ -71,7 +71,9 @@ function PendingConditionCards({
         {results.map((assessment) => (
           <li key={assessment._id}>
             <Link
-              href={`/objects/${assessment.collectionId}?tab=physical`}
+              // Reviewers accept or reject on the board; the object's view
+              // page is read-only for anyone who may edit it.
+              href={PENDING_CONDITION_APPROVALS_HREF}
               className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
             >
               <span className="w-full truncate text-sm font-medium text-foreground">

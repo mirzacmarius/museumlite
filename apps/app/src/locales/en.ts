@@ -111,7 +111,11 @@ export default {
       ASSESSMENT_NOT_DRAFT:
         "This assessment was already submitted, so it can no longer be changed.",
       ASSESSMENT_NOT_SUBMITTED:
-        "Only an assessment awaiting approval can be accepted or rejected.",
+        "Only an assessment submitted for approval can be accepted.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "A reviewer has already accepted or rejected this assessment.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "An evidence photo is no longer available on this object. Remove it from the assessment and try again.",
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "The object or an evidence photo is no longer available. Reject this assessment and record a new one.",
     },
@@ -3449,7 +3453,9 @@ export default {
       linkBaseline: "Set baseline",
       linkOutcome: "Set outcome",
       captureOnObject:
-        "Capture or accept assessments on the object Physical tab",
+        "Record an assessment with Set condition in the object's edit form (Physical Description tab)",
+      acceptOnBoard:
+        "Accept or reject submitted assessments under Condition assessments",
       workflow: "Treatment workflow",
       approve: "Approve",
       start: "Start work",

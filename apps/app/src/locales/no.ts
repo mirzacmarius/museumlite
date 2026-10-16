@@ -113,7 +113,11 @@ export default {
       ASSESSMENT_NOT_DRAFT:
         "Denne vurderingen er allerede sendt inn og kan ikke lenger endres.",
       ASSESSMENT_NOT_SUBMITTED:
-        "Bare en vurdering som venter på godkjenning, kan godkjennes eller avvises.",
+        "Bare en vurdering som er sendt til godkjenning, kan godkjennes.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "En kontrollør har allerede godkjent eller avvist denne vurderingen.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "Et dokumentasjonsbilde er ikke lenger tilgjengelig på dette objektet. Fjern det fra vurderingen og prøv igjen.",
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "Objektet eller et dokumentasjonsbilde er ikke lenger tilgjengelig. Avvis denne vurderingen og registrer en ny.",
     },
@@ -4046,7 +4050,9 @@ export default {
       linkBaseline: "Sett grunnlinje",
       linkOutcome: "Sett utfall",
       captureOnObject:
-        "Registrer eller godkjenn vurderinger på objektets fysiske fane",
+        "Registrer en vurdering med Angi tilstand i objektets redigeringsskjema (fanen Fysisk Beskrivelse)",
+      acceptOnBoard:
+        "Godkjenn eller avvis innsendte vurderinger under Tilstandsvurderinger",
       workflow: "Behandlingsflyt",
       approve: "Godkjenn",
       start: "Start arbeid",

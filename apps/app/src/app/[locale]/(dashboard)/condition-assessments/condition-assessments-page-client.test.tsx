@@ -54,7 +54,12 @@ const rows = {
 vi.mock("convex/react", () => ({
   useQuery: (query: never) =>
     getFunctionName(query) === "conditionAssessments:getBoardCounts"
-      ? { draft: 1, submitted: 1, accepted: 12, rejected: 1 }
+      ? {
+          draft: { count: 1, hasMore: false },
+          submitted: { count: 1, hasMore: false },
+          accepted: { count: 999, hasMore: true },
+          rejected: { count: 1, hasMore: false },
+        }
       : undefined,
   usePaginatedQuery: (_query: never, args: { column: keyof typeof rows }) => {
     board.columnArgs.push(args);
@@ -105,15 +110,33 @@ test("the board shows drafts, assessments awaiting approval and the accepted log
   expect(columnTitles()).toEqual(["Drafts", "Awaiting approval", "Accepted"]);
   const accepted = screen.getByRole("region", { name: "Accepted" });
   expect(within(accepted).getByTitle("Vase 3 · Poor")).toBeTruthy();
-  expect(within(accepted).getByText("Showing 1 of 12")).toBeTruthy();
+  // Past the count limit the column shows what it loaded, and the stat "+".
+  expect(within(accepted).getByText("1")).toBeTruthy();
+  expect(screen.getByText("999+")).toBeTruthy();
   expect(
     within(screen.getByRole("region", { name: "Awaiting approval" }))
       .getByRole("link", { name: /Vase 2/ })
       .getAttribute("href"),
   ).toBe("/objects/object-2?tab=physical&from=%2Fcondition-assessments");
+  expect(screen.queryByRole("button", { name: /assessment$/ })).toBeNull();
+});
+
+test("reviewers can reject a draft nobody will finish, but not accept it", async () => {
+  board.permissions.add("collections.accept_condition");
+  const user = await renderBoard("/en/condition-assessments");
+
+  const drafts = within(screen.getByRole("region", { name: "Drafts" }));
   expect(
-    screen.queryByRole("button", { name: "Accept assessment" }),
+    drafts.queryByRole("button", { name: "Accept assessment" }),
   ).toBeNull();
+  await user.click(drafts.getByRole("button", { name: "Reject assessment" }));
+  await user.click(
+    within(screen.getByRole("dialog")).getByRole("button", {
+      name: "Reject assessment",
+    }),
+  );
+
+  expect(board.reject).toHaveBeenCalledWith({ assessmentId: "1" });
 });
 
 test("the pending filter shows only assessments awaiting approval, which reviewers accept there", async () => {

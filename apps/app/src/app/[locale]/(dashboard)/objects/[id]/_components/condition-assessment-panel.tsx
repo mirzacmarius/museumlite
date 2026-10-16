@@ -302,10 +302,13 @@ export function ConditionAssessmentPanel({
                 {t("rejectionReason", { reason: assessment.rejectionReason })}
               </p>
             ) : null}
-            {assessment.status === "submitted" && canDecide ? (
+            {(assessment.status === "submitted" ||
+              assessment.status === "draft") &&
+            canDecide ? (
               <ConditionAssessmentDecision
                 className="mt-3"
                 assessmentId={assessment._id}
+                status={assessment.status}
                 onDecided={(decision) =>
                   setNotice(
                     decision === "accepted" ? t("accepted") : t("rejected"),
@@ -431,7 +434,14 @@ function AssessmentForm({
         description: description.trim(),
         severity,
       })),
-      photos: photoIds,
+      // A saved draft can name a photo since removed from the object; drop it
+      // once the media list shows it is gone.
+      photos: photoIds.filter(
+        (id) =>
+          media === undefined ||
+          !draft?.photoIds.includes(id) ||
+          media.some((item) => item._id === id),
+      ),
       submit,
     };
     try {

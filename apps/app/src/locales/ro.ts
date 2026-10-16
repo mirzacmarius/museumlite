@@ -115,7 +115,11 @@ export default {
       ASSESSMENT_NOT_DRAFT:
         "Această evaluare a fost deja trimisă, deci nu mai poate fi modificată.",
       ASSESSMENT_NOT_SUBMITTED:
-        "Doar o evaluare în așteptarea aprobării poate fi acceptată sau respinsă.",
+        "Doar o evaluare trimisă spre aprobare poate fi acceptată.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "Un responsabil a acceptat sau a respins deja această evaluare.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "O fotografie probatorie nu mai este disponibilă pentru acest obiect. Elimin-o din evaluare și încearcă din nou.",
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "Obiectul sau o fotografie probatorie nu mai este disponibilă. Respinge această evaluare și înregistrează una nouă.",
     },
@@ -3677,7 +3681,9 @@ export default {
       linkBaseline: "Setează evaluarea inițială",
       linkOutcome: "Setează evaluarea finală",
       captureOnObject:
-        "Înregistrați sau acceptați evaluări în fila Fizic a obiectului",
+        "Înregistrați o evaluare cu Stabilește starea în formularul de editare al obiectului (fila Descriere fizică)",
+      acceptOnBoard:
+        "Acceptați sau respingeți evaluările trimise în Evaluări ale stării",
       workflow: "Flux de lucru al tratamentului",
       approve: "Aprobă",
       start: "Începe lucrul",

@@ -24,17 +24,18 @@ import { useScopedI18n } from "@/locales/client";
 export type ConditionAssessmentDecisionKind = "accepted" | "rejected";
 
 /**
- * Accept and Reject for one assessment awaiting approval. Rejecting asks for
- * an optional reason first. A refusal is explained next to the buttons.
+ * Accept and Reject for one assessment awaiting approval, or only Reject for
+ * a draft nobody will finish. Rejecting asks for an optional reason first. A
+ * refusal is explained next to the buttons.
  */
 export function ConditionAssessmentDecision({
   assessmentId,
-  disabled = false,
+  status,
   onDecided,
   className,
 }: {
   assessmentId: Id<"conditionAssessments">;
-  disabled?: boolean;
+  status: "draft" | "submitted";
   onDecided?: (decision: ConditionAssessmentDecisionKind) => void;
   className?: string;
 }) {
@@ -84,21 +85,23 @@ export function ConditionAssessmentDecision({
     <div className={cn("space-y-2", className)}>
       <ActionRefusal refusal={refusal} />
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled || busy !== null}
-          onClick={() => void decide("accepted")}
-        >
-          {t("accept")}
-        </Button>
+        {status === "submitted" ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy !== null}
+            onClick={() => void decide("accepted")}
+          >
+            {t("accept")}
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           className="text-destructive hover:text-destructive"
-          disabled={disabled || busy !== null}
+          disabled={busy !== null}
           onClick={() => {
             setRefusal(null);
             setRejecting(true);

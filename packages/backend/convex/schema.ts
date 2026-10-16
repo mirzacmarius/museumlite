@@ -2097,10 +2097,16 @@ export default defineSchema({
     rejectedBy: v.optional(v.id("users")),
     rejectedAt: v.optional(v.number()),
     rejectionReason: v.optional(v.string()),
+    /** When the status last changed; absent on records from before drafts. */
+    statusChangedAt: v.optional(v.number()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
-    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_status_and_statusChangedAt", [
+      "organizationId",
+      "status",
+      "statusChangedAt",
+    ])
     .index("by_collection_and_status_and_acceptedAt", [
       "collectionId",
       "status",

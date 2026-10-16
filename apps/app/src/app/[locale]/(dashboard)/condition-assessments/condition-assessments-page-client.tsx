@@ -44,7 +44,7 @@ export function ConditionAssessmentsPageClient({
       <AccessionsPageSkeleton
         actionsCount={0}
         showWorkbenchNav={false}
-        statsCount={3}
+        statsCount={STAT_COLUMNS.length}
       />
     );
   }
@@ -59,7 +59,8 @@ export function ConditionAssessmentsPageClient({
                 {t(`columns.${column}`)}
               </dt>
               <dd className="text-2xl font-semibold tracking-tight text-foreground">
-                {formatNumber(counts[column], locale)}
+                {formatNumber(counts[column].count, locale)}
+                {counts[column].hasMore ? "+" : ""}
               </dd>
             </div>
           ))}
@@ -118,7 +119,7 @@ export function ConditionAssessmentsPageClient({
               organizationId={organizationId}
               column={column}
               search={list.state.search}
-              total={counts[column]}
+              total={counts[column].hasMore ? undefined : counts[column].count}
             />
           ))}
         </div>

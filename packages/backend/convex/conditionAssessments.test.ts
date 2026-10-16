@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import { modules } from "../tests/testSetup";
 import { api } from "./_generated/api";
@@ -371,24 +371,14 @@ test("an object has one draft or submitted assessment until a reviewer decides i
   );
 });
 
-test("reviewers accept or reject only assessments awaiting approval", async () => {
+test("a reviewer rejects a submitted assessment once, and a decided one stays decided", async () => {
   const { t, userId, collectionId } = await setup();
   const asUser = t.withIdentity({ subject: userId });
-  const assessmentId = await asUser.mutation(
-    api.conditionAssessments.create,
-    draftInput(collectionId),
-  );
-  expect(
-    await errorCodeOf(
-      asUser.mutation(api.conditionAssessments.reject, { assessmentId }),
-    ),
-  ).toBe("ASSESSMENT_NOT_SUBMITTED");
-
-  await asUser.mutation(api.conditionAssessments.update, {
-    assessmentId,
-    ...content(),
+  const assessmentId = await asUser.mutation(api.conditionAssessments.create, {
+    ...draftInput(collectionId),
     submit: true,
   });
+
   await asUser.mutation(api.conditionAssessments.reject, {
     assessmentId,
     reason: "  Photos missing  ",
@@ -401,11 +391,20 @@ test("reviewers accept or reject only assessments awaiting approval", async () =
     rejectedBy: userId,
     rejectionReason: "Photos missing",
   });
+  expect(stored?.statusChangedAt).toBe(stored?.rejectedAt);
   expect(
     await errorCodeOf(
       asUser.mutation(api.conditionAssessments.accept, { assessmentId }),
     ),
-  ).toBe("ASSESSMENT_NOT_SUBMITTED");
+  ).toBe("ASSESSMENT_ALREADY_DECIDED");
+  expect(
+    await errorCodeOf(
+      asUser.mutation(api.conditionAssessments.update, {
+        assessmentId,
+        ...content(),
+      }),
+    ),
+  ).toBe("ASSESSMENT_NOT_DRAFT");
   const detail = await asUser.query(api.conditionAssessments.getForObject, {
     collectionId,
   });
@@ -423,6 +422,38 @@ test("reviewers accept or reject only assessments awaiting approval", async () =
       rejectedByName: "Assessor",
     },
   ]);
+});
+
+test("a reviewer can reject a draft nobody will finish, which frees the object", async () => {
+  const { t, userId, collectionId } = await setup();
+  const asUser = t.withIdentity({ subject: userId });
+  const draftId = await asUser.mutation(
+    api.conditionAssessments.create,
+    draftInput(collectionId),
+  );
+
+  await asUser.mutation(api.conditionAssessments.reject, {
+    assessmentId: draftId,
+    reason: "Abandoned",
+  });
+
+  expect((await t.run(async (ctx) => ctx.db.get(draftId)))?.status).toBe(
+    "rejected",
+  );
+  const acceptedId = await asUser.mutation(api.conditionAssessments.create, {
+    ...draftInput(collectionId, "Good"),
+    submit: true,
+  });
+  await asUser.mutation(api.conditionAssessments.accept, {
+    assessmentId: acceptedId,
+  });
+  expect(
+    await errorCodeOf(
+      asUser.mutation(api.conditionAssessments.reject, {
+        assessmentId: acceptedId,
+      }),
+    ),
+  ).toBe("ASSESSMENT_ALREADY_DECIDED");
 });
 
 test("capture and acceptance require separate permissions", async () => {
@@ -633,7 +664,12 @@ test("the board lists each status in its own column with counts and search", asy
     await asUser.query(api.conditionAssessments.getBoardCounts, {
       organizationId,
     }),
-  ).toEqual({ draft: 1, submitted: 1, accepted: 1, rejected: 0 });
+  ).toEqual({
+    draft: { count: 1, hasMore: false },
+    submitted: { count: 1, hasMore: false },
+    accepted: { count: 1, hasMore: false },
+    rejected: { count: 0, hasMore: false },
+  });
 
   const outsiderId = await t.run(async (ctx) =>
     ctx.db.insert("users", { name: "Outsider" }),
@@ -643,6 +679,68 @@ test("the board lists each status in its own column with counts and search", asy
       .withIdentity({ subject: outsiderId })
       .query(api.conditionAssessments.getBoardCounts, { organizationId }),
   ).rejects.toThrow();
+});
+
+test("board columns list the latest submission or decision first", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  try {
+    const { t, userId, organizationId } = await setup();
+    const asUser = t.withIdentity({ subject: userId });
+    const olderId = await addObject(t, organizationId, userId, "Older");
+    const newerId = await addObject(t, organizationId, userId, "Newer");
+    vi.setSystemTime(Date.UTC(2026, 9, 10));
+    const olderDraft = await asUser.mutation(
+      api.conditionAssessments.create,
+      draftInput(olderId),
+    );
+    vi.setSystemTime(Date.UTC(2026, 9, 11));
+    const newerSubmission = await asUser.mutation(
+      api.conditionAssessments.create,
+      { ...draftInput(newerId), submit: true },
+    );
+    vi.setSystemTime(Date.UTC(2026, 9, 12));
+    await asUser.mutation(api.conditionAssessments.update, {
+      assessmentId: olderDraft,
+      ...content(),
+      submit: true,
+    });
+
+    const pending = await asUser.query(
+      api.conditionAssessments.listBoardColumn,
+      {
+        organizationId,
+        column: "submitted",
+        paginationOpts: { numItems: 10, cursor: null },
+      },
+    );
+    expect(pending.page.map((item) => item._id)).toEqual([
+      olderDraft,
+      newerSubmission,
+    ]);
+
+    vi.setSystemTime(Date.UTC(2026, 9, 13));
+    await asUser.mutation(api.conditionAssessments.accept, {
+      assessmentId: newerSubmission,
+    });
+    vi.setSystemTime(Date.UTC(2026, 9, 14));
+    await asUser.mutation(api.conditionAssessments.accept, {
+      assessmentId: olderDraft,
+    });
+    const accepted = await asUser.query(
+      api.conditionAssessments.listBoardColumn,
+      {
+        organizationId,
+        column: "accepted",
+        paginationOpts: { numItems: 10, cursor: null },
+      },
+    );
+    expect(accepted.page.map((item) => item._id)).toEqual([
+      olderDraft,
+      newerSubmission,
+    ]);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("assessment history pages without losing earlier accepted evidence", async () => {
@@ -728,12 +826,14 @@ test("photo evidence belongs to the object and remains linked after acceptance",
     ],
     submit: true,
   };
-  await expect(
-    asUser.mutation(api.conditionAssessments.create, {
-      ...input,
-      photos: [otherPhotoId],
-    }),
-  ).rejects.toThrow("photo must belong");
+  expect(
+    await errorCodeOf(
+      asUser.mutation(api.conditionAssessments.create, {
+        ...input,
+        photos: [otherPhotoId],
+      }),
+    ),
+  ).toBe("ASSESSMENT_PHOTO_UNAVAILABLE");
   const assessmentId = await asUser.mutation(api.conditionAssessments.create, {
     ...input,
     photos: [photoId],

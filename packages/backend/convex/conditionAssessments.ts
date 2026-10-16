@@ -13,11 +13,11 @@ import { displayName } from "./utils/caseTaskRules";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { conditionAssessmentError } from "./utils/conditionAssessmentErrors";
 import {
+  type ConditionAssessmentStatus,
   conditionAssessmentStatusValidator,
   MAX_REJECTION_REASON_LENGTH,
   OPEN_CONDITION_ASSESSMENT_STATUSES,
 } from "./utils/conditionAssessmentStatus";
-import { countIndexedQuery } from "./utils/indexedCounts";
 import { mutation } from "./utils/mutationBuilders";
 import {
   getUserPermissions,
@@ -47,6 +47,8 @@ const assessmentContent = {
 
 /** Overview shows "99+" beyond this many assessments awaiting approval. */
 export const PENDING_APPROVAL_COUNT_LIMIT = 99;
+/** Board totals stop here and read "999+", so a count never scans a log. */
+export const BOARD_COUNT_LIMIT = 999;
 const BOARD_PERMISSIONS = CAPABILITY_MATRIX.condition_assessments.permissions;
 const REVIEW_PERMISSION = "collections.accept_condition";
 
@@ -90,7 +92,10 @@ async function validatedContent(
       photo.uploadStatus !== "completed" ||
       !(await ctx.db.system.get(photo.storageId))
     ) {
-      throw new Error("Assessment photo must belong to this object");
+      throw conditionAssessmentError(
+        "ASSESSMENT_PHOTO_UNAVAILABLE",
+        "Assessment photo must belong to this object",
+      );
     }
     photos.push({
       mediaId: photoId,
@@ -166,12 +171,15 @@ async function logAssessmentActions(
   }
 }
 
+/** A submission's fields; a draft stays a draft. */
 function lifecycleFields(submit: boolean | undefined, userId: Id<"users">) {
+  const now = Date.now();
   return submit
     ? {
         status: "submitted" as const,
         submittedBy: userId,
-        submittedAt: Date.now(),
+        submittedAt: now,
+        statusChangedAt: now,
       }
     : { status: "draft" as const };
 }
@@ -212,6 +220,7 @@ export const create = mutation({
       collectionId,
       assessedBy: userId,
       recordedAt: Date.now(),
+      statusChangedAt: Date.now(),
       ...content,
       ...lifecycleFields(submit, userId),
     });
@@ -284,6 +293,12 @@ export const accept = mutation({
     if (!assessment) throw new Error("Assessment not found");
     await requirePermission(ctx, assessment.organizationId, REVIEW_PERMISSION);
     if (assessment.status === "accepted") return null;
+    if (assessment.status === "rejected") {
+      throw conditionAssessmentError(
+        "ASSESSMENT_ALREADY_DECIDED",
+        "The condition assessment was already rejected",
+      );
+    }
     if (assessment.status !== "submitted") {
       throw conditionAssessmentError(
         "ASSESSMENT_NOT_SUBMITTED",
@@ -318,6 +333,7 @@ export const accept = mutation({
       status: "accepted",
       acceptedBy: userId,
       acceptedAt,
+      statusChangedAt: acceptedAt,
     });
     await ctx.db.patch(collection._id, {
       condition: assessment.condition,
@@ -337,8 +353,9 @@ export const accept = mutation({
 });
 
 /**
- * Declines an assessment awaiting approval. The object's condition stays as
- * it was, and staff may record a new assessment.
+ * Declines an assessment awaiting approval, or a draft nobody will finish.
+ * The object's condition stays as it was, and staff may record a new
+ * assessment.
  */
 export const reject = mutation({
   args: {
@@ -355,20 +372,22 @@ export const reject = mutation({
     if (!assessment) throw new Error("Assessment not found");
     await requirePermission(ctx, assessment.organizationId, REVIEW_PERMISSION);
     if (assessment.status === "rejected") return null;
-    if (assessment.status !== "submitted") {
+    if (assessment.status === "accepted") {
       throw conditionAssessmentError(
-        "ASSESSMENT_NOT_SUBMITTED",
-        "Only a condition assessment awaiting approval can be rejected",
+        "ASSESSMENT_ALREADY_DECIDED",
+        "The condition assessment was already accepted",
       );
     }
     const reason = args.reason?.trim();
     if (reason && reason.length > MAX_REJECTION_REASON_LENGTH) {
       throw new Error("Rejection reason is too long");
     }
+    const rejectedAt = Date.now();
     await ctx.db.patch(args.assessmentId, {
       status: "rejected",
       rejectedBy: userId,
-      rejectedAt: Date.now(),
+      rejectedAt,
+      statusChangedAt: rejectedAt,
       ...(reason ? { rejectionReason: reason } : {}),
     });
     await logAssessmentActions(ctx, assessment, userId, [
@@ -520,6 +539,17 @@ export const getForObject = query({
   },
 });
 
+/** Display names of the given users, looked up once each. */
+async function userNames(ctx: QueryCtx, ids: (Id<"users"> | undefined)[]) {
+  const users = await batchLookup(
+    ctx,
+    ids.filter((id): id is Id<"users"> => id !== undefined),
+    "users",
+  );
+  return (id: Id<"users"> | undefined) =>
+    id === undefined ? undefined : displayName(users.get(id) ?? null);
+}
+
 export const listForObject = query({
   args: {
     collectionId: v.id("collections"),
@@ -541,19 +571,22 @@ export const listForObject = query({
       )
       .order("desc")
       .paginate(args.paginationOpts);
+    const nameOf = await userNames(
+      ctx,
+      result.page.flatMap((assessment) => [
+        assessment.assessedBy,
+        assessment.acceptedBy,
+        assessment.rejectedBy,
+      ]),
+    );
     const page = await Promise.all(
       result.page.map(async (assessment) => ({
         ...assessment,
-        assessorName:
-          displayName(await ctx.db.get(assessment.assessedBy)) ??
-          "Unknown assessor",
+        assessorName: nameOf(assessment.assessedBy) ?? "Unknown assessor",
         acceptedByName: assessment.acceptedBy
-          ? (displayName(await ctx.db.get(assessment.acceptedBy)) ??
-            "Unknown reviewer")
+          ? (nameOf(assessment.acceptedBy) ?? "Unknown reviewer")
           : null,
-        rejectedByName: assessment.rejectedBy
-          ? (displayName(await ctx.db.get(assessment.rejectedBy)) ?? null)
-          : null,
+        rejectedByName: nameOf(assessment.rejectedBy) ?? null,
         photos: await Promise.all(
           assessment.photos.map(async (photo) => ({
             id: photo.mediaId,
@@ -594,28 +627,24 @@ async function toBoardItems(
   ctx: QueryCtx,
   assessments: Doc<"conditionAssessments">[],
 ): Promise<BoardItem[]> {
-  const [collections, users] = await Promise.all([
+  const [collections, nameOf] = await Promise.all([
     batchLookup(
       ctx,
       assessments.map((assessment) => assessment.collectionId),
       "collections",
     ),
-    batchLookup(
+    userNames(
       ctx,
-      assessments.flatMap((assessment) =>
-        [
-          assessment.assessedBy,
-          assessment.acceptedBy,
-          assessment.rejectedBy,
-        ].filter((id): id is Id<"users"> => id !== undefined),
-      ),
-      "users",
+      assessments.flatMap((assessment) => [
+        assessment.assessedBy,
+        assessment.acceptedBy,
+        assessment.rejectedBy,
+      ]),
     ),
   ]);
   return assessments.map((assessment) => {
     const collection = collections.get(assessment.collectionId);
     const visible = collection?.organizationId === assessment.organizationId;
-    const decidedBy = assessment.acceptedBy ?? assessment.rejectedBy;
     return {
       _id: assessment._id,
       _creationTime: assessment._creationTime,
@@ -628,13 +657,11 @@ async function toBoardItems(
       observationCount: assessment.observations.length,
       photoCount: assessment.photos.length,
       assessedAt: assessment.assessedAt,
-      assessorName:
-        displayName(users.get(assessment.assessedBy) ?? null) ?? null,
+      assessorName: nameOf(assessment.assessedBy) ?? null,
       submittedAt: assessment.submittedAt ?? null,
       decidedAt: assessment.acceptedAt ?? assessment.rejectedAt ?? null,
-      decidedByName: decidedBy
-        ? (displayName(users.get(decidedBy) ?? null) ?? null)
-        : null,
+      decidedByName:
+        nameOf(assessment.acceptedBy ?? assessment.rejectedBy) ?? null,
       rejectionReason: assessment.rejectionReason ?? null,
     };
   });
@@ -650,9 +677,35 @@ function matchesBoardSearch(item: BoardItem, search: string) {
   ].some((text) => text?.toLowerCase().includes(search));
 }
 
+function statusQuery(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  status: ConditionAssessmentStatus,
+) {
+  return ctx.db
+    .query("conditionAssessments")
+    .withIndex("by_organization_and_status_and_statusChangedAt", (q) =>
+      q.eq("organizationId", organizationId).eq("status", status),
+    );
+}
+
+/** How many assessments have a status, counting no further than `limit`. */
+async function countUpTo(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  status: ConditionAssessmentStatus,
+  limit: number,
+) {
+  const rows = await statusQuery(ctx, organizationId, status).take(limit + 1);
+  return { count: Math.min(rows.length, limit), hasMore: rows.length > limit };
+}
+
+const boundedCount = v.object({ count: v.number(), hasMore: v.boolean() });
+
 /**
- * One column of the condition assessment board, newest first. Search narrows
- * each loaded page, as on the deaccession board without search documents.
+ * One column of the condition assessment board, most recent status change
+ * first. Search narrows each loaded page, as on the deaccession board
+ * without search documents.
  */
 export const listBoardColumn = query({
   args: {
@@ -669,11 +722,7 @@ export const listBoardColumn = query({
       "condition_assessments",
       BOARD_PERMISSIONS,
     );
-    const result = await ctx.db
-      .query("conditionAssessments")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", args.column),
-      )
+    const result = await statusQuery(ctx, args.organizationId, args.column)
       .order("desc")
       .paginate(args.paginationOpts);
     const items = await toBoardItems(ctx, result.page);
@@ -690,10 +739,10 @@ export const listBoardColumn = query({
 export const getBoardCounts = query({
   args: { organizationId: v.id("organizations") },
   returns: v.object({
-    draft: v.number(),
-    submitted: v.number(),
-    accepted: v.number(),
-    rejected: v.number(),
+    draft: boundedCount,
+    submitted: boundedCount,
+    accepted: boundedCount,
+    rejected: boundedCount,
   }),
   handler: async (ctx, args) => {
     await requireCapability(
@@ -702,14 +751,8 @@ export const getBoardCounts = query({
       "condition_assessments",
       BOARD_PERMISSIONS,
     );
-    const count = (status: Doc<"conditionAssessments">["status"]) =>
-      countIndexedQuery(
-        ctx.db
-          .query("conditionAssessments")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", args.organizationId).eq("status", status),
-          ),
-      );
+    const count = (status: ConditionAssessmentStatus) =>
+      countUpTo(ctx, args.organizationId, status, BOARD_COUNT_LIMIT);
     const [draft, submitted, accepted, rejected] = await Promise.all([
       count("draft"),
       count("submitted"),
@@ -726,22 +769,18 @@ export const getBoardCounts = query({
  */
 export const pendingApprovalCount = query({
   args: { organizationId: v.id("organizations") },
-  returns: v.object({ count: v.number(), hasMore: v.boolean() }),
+  returns: boundedCount,
   handler: async (ctx, args) => {
     const permissions = await getUserPermissions(ctx, args.organizationId);
     const canAct = [...BOARD_PERMISSIONS, REVIEW_PERMISSION].every(
       (permission) => permissions.includes(permission),
     );
     if (!canAct) return { count: 0, hasMore: false };
-    const waiting = await ctx.db
-      .query("conditionAssessments")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "submitted"),
-      )
-      .take(PENDING_APPROVAL_COUNT_LIMIT + 1);
-    return {
-      count: Math.min(waiting.length, PENDING_APPROVAL_COUNT_LIMIT),
-      hasMore: waiting.length > PENDING_APPROVAL_COUNT_LIMIT,
-    };
+    return await countUpTo(
+      ctx,
+      args.organizationId,
+      "submitted",
+      PENDING_APPROVAL_COUNT_LIMIT,
+    );
   },
 });

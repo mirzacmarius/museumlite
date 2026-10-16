@@ -715,3 +715,33 @@ test("a second assessment is refused in words while one is open", async () => {
     "This object already has a draft or an assessment awaiting approval. Finish that one first.",
   );
 });
+
+test("a draft photo since removed from the object is dropped when the draft is saved", async () => {
+  detail.open = { ...openDraft(), photoIds: ["photo-1", "photo-gone"] };
+  const user = await renderPanel();
+
+  await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+  expect(update).toHaveBeenLastCalledWith(
+    expect.objectContaining({ photos: ["photo-1"] }),
+  );
+});
+
+test("a reviewer can reject a draft nobody will finish but cannot accept it", async () => {
+  assessments = [{ ...submittedAssessment(), status: "draft" }];
+  const user = await renderPanel();
+
+  expect(
+    screen.queryByRole("button", { name: "Accept assessment" }),
+  ).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Reject assessment" }));
+  await user.click(
+    within(
+      screen.getByRole("dialog", { name: "Reject this assessment?" }),
+    ).getByRole("button", { name: "Reject assessment" }),
+  );
+
+  expect(mutations["conditionAssessments:reject"]).toHaveBeenCalledWith({
+    assessmentId: "assessment-1",
+  });
+});

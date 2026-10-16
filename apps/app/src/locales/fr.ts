@@ -115,7 +115,11 @@ export default {
       ASSESSMENT_NOT_DRAFT:
         "Cette évaluation a déjà été soumise et ne peut plus être modifiée.",
       ASSESSMENT_NOT_SUBMITTED:
-        "Seule une évaluation en attente de validation peut être validée ou rejetée.",
+        "Seule une évaluation soumise pour validation peut être validée.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "Un responsable a déjà validé ou rejeté cette évaluation.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "Une photo justificative n'est plus disponible pour cet objet. Retirez-la de l'évaluation et réessayez.",
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "L'objet ou une photo justificative n'est plus disponible. Rejetez cette évaluation et enregistrez-en une nouvelle.",
     },
@@ -4098,7 +4102,9 @@ export default {
       linkBaseline: "Définir l'initiale",
       linkOutcome: "Définir la finale",
       captureOnObject:
-        "Capturer ou accepter des évaluations dans l'onglet Physique de l'objet",
+        "Enregistrez une évaluation avec Définir l'état dans le formulaire de modification de l'objet (onglet Description Physique)",
+      acceptOnBoard:
+        "Validez ou rejetez les évaluations soumises dans Évaluations de l'état",
       workflow: "Flux de traitement",
       approve: "Approuver",
       start: "Commencer le travail",
