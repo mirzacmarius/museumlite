@@ -77,7 +77,7 @@ _Avoid_: Approximate timestamp
 Access has independent dimensions: the Organization's Modules, its Entitlements, and the staff member's Role. A Capability names which of them it needs.
 
 **Module**:
-An optional area an Organization turns on in Settings › Modules, such as Library, Accounts or a collection type like Fine Art. Turning a Module on never grants an Entitlement. The Insurance Module only lists Insurance in navigation, because insurance records predate it.
+An optional area an Organization turns on or off in Settings › Modules, such as Library, Accounts or a collection type like Fine Art. Most Modules start off. Comments starts on, and turning it off hides the Comments tab on Objects and refuses new comments while keeping existing ones. Turning a Module on never grants an Entitlement. The Insurance Module only lists Insurance in navigation, because insurance records predate it.
 _Avoid_: Add-on, integration (the legacy library integration also turns on the Library Module)
 
 **Entitlement**:

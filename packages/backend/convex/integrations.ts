@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { query } from "./_generated/server";
+import { moduleSwitchPatch } from "./utils/moduleCatalog";
 import { mutation } from "./utils/mutationBuilders";
 import {
   getCurrentUserOrganization,
@@ -163,22 +164,18 @@ export const enable = mutation({
 
     const currentSettings = org.settings ?? {};
     const enabledIntegrations = currentSettings.enabledIntegrations ?? [];
-    const enabledModules = currentSettings.enabledModules ?? [];
 
     if (enabledIntegrations.includes(args.integrationId)) {
       return { ok: false as const, reason: "already_enabled" as const };
     }
 
-    const nextEnabledModules =
-      args.integrationId === "library" && !enabledModules.includes("library")
-        ? [...enabledModules, "library" as const]
-        : enabledModules;
-
     await ctx.db.patch(args.organizationId, {
       settings: {
         ...currentSettings,
         enabledIntegrations: [...enabledIntegrations, args.integrationId],
-        enabledModules: nextEnabledModules,
+        ...(args.integrationId === "library"
+          ? moduleSwitchPatch(currentSettings, "library", true)
+          : {}),
       },
     });
 
@@ -219,22 +216,16 @@ export const disable = mutation({
 
     const currentSettings = org.settings ?? {};
     const enabledIntegrations = currentSettings.enabledIntegrations ?? [];
-    const enabledModules = currentSettings.enabledModules ?? [];
-
-    // Remove from enabled integrations
-    const updatedIntegrations = enabledIntegrations.filter(
-      (id) => id !== args.integrationId,
-    );
-    const updatedModules =
-      args.integrationId === "library"
-        ? enabledModules.filter((id) => id !== "library")
-        : enabledModules;
 
     await ctx.db.patch(args.organizationId, {
       settings: {
         ...currentSettings,
-        enabledIntegrations: updatedIntegrations,
-        enabledModules: updatedModules,
+        enabledIntegrations: enabledIntegrations.filter(
+          (id) => id !== args.integrationId,
+        ),
+        ...(args.integrationId === "library"
+          ? moduleSwitchPatch(currentSettings, "library", false)
+          : {}),
       },
     });
 

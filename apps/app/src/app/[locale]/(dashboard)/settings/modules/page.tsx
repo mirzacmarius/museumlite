@@ -3,6 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
+  isModuleSwitchedOn,
   MODULE_INTEGRATION_REQUIREMENTS,
   type ModuleId,
   SETTINGS_MODULE_IDS,
@@ -19,13 +20,13 @@ import {
   DollarSign,
   Leaf,
   Loader2,
+  MessageSquare,
   Palette,
   Shield,
   Users,
   Wine,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmedSwitch } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
@@ -43,6 +44,7 @@ const MODULE_ICONS: Record<ModuleId, typeof Users> = {
   coins_stamps: Coins,
   inventory_valuation: DollarSign,
   insurance: Shield,
+  comments: MessageSquare,
 };
 
 export default function ModulesSettingsPage() {
@@ -53,8 +55,6 @@ export default function ModulesSettingsPage() {
     currentOrganizationId,
     "organization.manage_settings",
   );
-  const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
-
   const organization = useQuery(
     api.organizations.get,
     currentOrganizationId
@@ -67,33 +67,20 @@ export default function ModulesSettingsPage() {
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
-  const updateOrganization = useMutation(api.organizations.update);
-
-  useEffect(() => {
-    if (organization) {
-      setEnabledModules(
-        (organization.settings?.enabledModules ?? []) as ModuleId[],
-      );
-    }
-  }, [organization]);
+  const setModuleEnabled = useMutation(api.organizations.setModuleEnabled);
 
   const toggleModule = async (moduleId: ModuleId, enabled: boolean) => {
     if (!currentOrganizationId) return;
-    const previous = enabledModules;
-    const next = enabled
-      ? Array.from(new Set([...enabledModules, moduleId]))
-      : enabledModules.filter((id) => id !== moduleId);
-    setEnabledModules(next);
     try {
-      await updateOrganization({
+      await setModuleEnabled({
         organizationId: currentOrganizationId as Id<"organizations">,
-        settings: { enabledModules: next },
+        moduleId,
+        enabled,
       });
       toast.success(
         enabled ? tToast("moduleEnabled") : tToast("moduleDisabled"),
       );
     } catch (_error) {
-      setEnabledModules(previous);
       toast.error(tToast("moduleUpdateFailed"));
     }
   };
@@ -126,7 +113,10 @@ export default function ModulesSettingsPage() {
       </div>
       <div className="flex w-full flex-col gap-4">
         {SETTINGS_MODULE_IDS.map((moduleId) => {
-          const isEnabled = enabledModules.includes(moduleId);
+          const isEnabled = isModuleSwitchedOn(
+            organization?.settings ?? {},
+            moduleId,
+          );
           const requiredIntegration =
             MODULE_INTEGRATION_REQUIREMENTS[moduleId] ?? null;
           const integrationLocked =
@@ -180,6 +170,11 @@ export default function ModulesSettingsPage() {
                     settingName={t(`${moduleId}.name` as const)}
                     checked={isEnabled}
                     disabled={!canManage || !!integrationLocked}
+                    disableDetails={
+                      moduleId === "comments"
+                        ? t("comments.disableDetails")
+                        : undefined
+                    }
                     onConfirmedChange={(checked) =>
                       toggleModule(moduleId, checked)
                     }

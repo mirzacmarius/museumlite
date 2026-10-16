@@ -12,7 +12,7 @@ import {
   type CustodyConflictData,
   custodyConflictFromError,
 } from "../convex/utils/custodyErrors";
-import type { ModuleId } from "../convex/utils/moduleCatalog";
+import type { OptInModuleId } from "../convex/utils/moduleCatalog";
 
 import { modules } from "./testSetup";
 
@@ -27,7 +27,7 @@ export interface TestOrgUserOptions {
   userEmailPrefix?: string;
   roleName?: string;
   subscriptionTier?: SubscriptionTier;
-  enabledModules?: Array<ModuleId>;
+  enabledModules?: Array<OptInModuleId>;
   permissionCategoryFallback?: string;
 }
 

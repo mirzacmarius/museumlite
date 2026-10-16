@@ -10,13 +10,14 @@ import {
   isCollectionModuleId,
   isCollectionType,
   isCollectionTypeEnabled,
+  isModuleSwitchedOn,
   MODULE_IDS,
+  moduleSwitchPatch,
   SETTINGS_MODULE_IDS,
 } from "./moduleCatalog";
 import {
   COLLECTION_TYPE_VALIDATOR_IDS,
   collectionTypeValidator,
-  ENABLED_MODULE_VALIDATOR_IDS,
   enabledModuleValidator,
 } from "./moduleValidators";
 
@@ -49,8 +50,11 @@ describe("module catalog", () => {
     );
   });
 
+  test("keeps each module in exactly one stored list", () => {
+    expect(new Set(MODULE_IDS).size).toBe(MODULE_IDS.length);
+  });
+
   test("keeps Convex validators aligned with module ids", () => {
-    expect(ENABLED_MODULE_VALIDATOR_IDS).toEqual(MODULE_IDS);
     expect(COLLECTION_TYPE_VALIDATOR_IDS).toEqual(COLLECTION_TYPE_IDS);
     expect(enabledModuleValidator.isOptional).toBe("required");
     expect(collectionTypeValidator.isOptional).toBe("required");
@@ -70,5 +74,31 @@ describe("module catalog", () => {
     expect(isCollectionTypeEnabled("wine", [])).toBe(false);
     expect(isCollectionTypeEnabled("wine", ["wine"])).toBe(true);
     expect(isCollectionTypeEnabled("general", [])).toBe(true);
+  });
+
+  test("Comments is on until switched off; other modules are off until switched on", () => {
+    expect(isModuleSwitchedOn({}, "comments")).toBe(true);
+    expect(isModuleSwitchedOn({}, "accounts")).toBe(false);
+
+    const switchedOff = moduleSwitchPatch({}, "comments", false);
+    expect(switchedOff).toEqual({ disabledModules: ["comments"] });
+    expect(isModuleSwitchedOn(switchedOff, "comments")).toBe(false);
+    expect(moduleSwitchPatch(switchedOff, "comments", false)).toEqual(
+      switchedOff,
+    );
+    expect(moduleSwitchPatch(switchedOff, "comments", true)).toEqual({
+      disabledModules: [],
+    });
+
+    const accountsOn = moduleSwitchPatch(
+      { enabledModules: ["wine"], disabledModules: ["comments"] },
+      "accounts",
+      true,
+    );
+    expect(accountsOn).toEqual({ enabledModules: ["wine", "accounts"] });
+    expect(moduleSwitchPatch(accountsOn, "accounts", true)).toEqual(accountsOn);
+    expect(moduleSwitchPatch(accountsOn, "accounts", false)).toEqual({
+      enabledModules: ["wine"],
+    });
   });
 });

@@ -47,6 +47,7 @@ export function organizationAccess(
   return {
     subscriptionTier: org.subscriptionTier,
     enabledModules: org.settings?.enabledModules,
+    disabledModules: org.settings?.disabledModules,
     enabledIntegrations: org.settings?.enabledIntegrations,
   };
 }

@@ -684,6 +684,12 @@ export default {
       description:
         "Administrer givere, långivere, institusjoner, kontakter, dokumenter og relasjoner.",
     },
+    comments: {
+      name: "Kommentarer",
+      description: "Diskuter objekter med kolleger og omtal dem med @.",
+      disableDetails:
+        "Fanen Kommentarer skjules på alle objekter. Eksisterende kommentarer beholdes og vises igjen når Kommentarer slås på igjen.",
+    },
     fine_art: {
       name: "Kunst",
       description:
