@@ -5,10 +5,10 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Loader2, Save } from "lucide-react";
 import { useEffect, useReducer } from "react";
+import { ConfirmedSwitch } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 import { useScopedI18n } from "@/locales/client";
@@ -81,6 +81,49 @@ function portalSettingsSidebarReducer(
         portalSlug: action.settings.portalSlug,
       };
   }
+}
+
+function PortalSettingSwitch({
+  checked,
+  description,
+  disabled,
+  id,
+  label,
+  onConfirmedChange,
+}: {
+  checked: boolean;
+  description: string;
+  disabled?: boolean;
+  id: string;
+  label: string;
+  onConfirmedChange: (checked: boolean) => void;
+}) {
+  const labelId = `${id}-label`;
+  const descriptionId = `${id}-description`;
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="space-y-0.5">
+        <p
+          id={labelId}
+          className="field-label text-sm leading-none font-medium"
+        >
+          {label}
+        </p>
+        <p id={descriptionId} className="caption text-muted-foreground">
+          {description}
+        </p>
+      </div>
+      <ConfirmedSwitch
+        id={id}
+        labelId={labelId}
+        descriptionId={descriptionId}
+        settingName={label}
+        checked={checked}
+        disabled={disabled}
+        onConfirmedChange={onConfirmedChange}
+      />
+    </div>
+  );
 }
 
 export function PortalSettingsSidebar() {
@@ -217,80 +260,45 @@ export function PortalSettingsSidebar() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="portal-enabled" className="field-label">
-                {t("portalEnabled")}
-              </Label>
-              <p className="caption text-muted-foreground">
-                {t("publiclyAccessible")}
-              </p>
-            </div>
-            <Switch
-              id="portal-enabled"
-              checked={state.isEnabled}
-              onCheckedChange={(value) =>
-                dispatch({ type: "setIsEnabled", value })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="search-enabled" className="field-label">
-                {t("publicSearch")}
-              </Label>
-              <p className="caption text-muted-foreground">
-                {t("allowVisitorsToSearch")}
-              </p>
-            </div>
-            <Switch
-              id="search-enabled"
-              checked={state.isSearchEnabled}
-              onCheckedChange={(value) =>
-                dispatch({ type: "setIsSearchEnabled", value })
-              }
-              disabled={!state.isEnabled}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="highres-enabled" className="field-label">
-                {t("highResDownloads")}
-              </Label>
-              <p className="caption text-muted-foreground">
-                {t("allowHighResDownloads")}
-              </p>
-            </div>
-            <Switch
-              id="highres-enabled"
-              checked={state.isHighResEnabled}
-              onCheckedChange={(value) =>
-                dispatch({ type: "setIsHighResEnabled", value })
-              }
-              disabled={!state.isEnabled}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="valuations-visible" className="field-label">
-                {t("showValuations")}
-              </Label>
-              <p className="caption text-muted-foreground">
-                {t("displayValuationsPublicly")}
-              </p>
-            </div>
-            <Switch
-              id="valuations-visible"
-              checked={state.isValuationVisible}
-              onCheckedChange={(value) =>
-                dispatch({ type: "setIsValuationVisible", value })
-              }
-              disabled={!state.isEnabled}
-            />
-          </div>
+          <PortalSettingSwitch
+            id="portal-enabled"
+            label={t("portalEnabled")}
+            description={t("publiclyAccessible")}
+            checked={state.isEnabled}
+            onConfirmedChange={(value) =>
+              dispatch({ type: "setIsEnabled", value })
+            }
+          />
+          <PortalSettingSwitch
+            id="search-enabled"
+            label={t("publicSearch")}
+            description={t("allowVisitorsToSearch")}
+            checked={state.isSearchEnabled}
+            disabled={!state.isEnabled}
+            onConfirmedChange={(value) =>
+              dispatch({ type: "setIsSearchEnabled", value })
+            }
+          />
+          <PortalSettingSwitch
+            id="highres-enabled"
+            label={t("highResDownloads")}
+            description={t("allowHighResDownloads")}
+            checked={state.isHighResEnabled}
+            disabled={!state.isEnabled}
+            onConfirmedChange={(value) =>
+              dispatch({ type: "setIsHighResEnabled", value })
+            }
+          />
+          <PortalSettingSwitch
+            id="valuations-visible"
+            label={t("showValuations")}
+            description={t("displayValuationsPublicly")}
+            checked={state.isValuationVisible}
+            disabled={!state.isEnabled}
+            onConfirmedChange={(value) =>
+              dispatch({ type: "setIsValuationVisible", value })
+            }
+          />
         </div>
 
         <div className="pt-2">

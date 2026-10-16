@@ -22,11 +22,10 @@ import {
 } from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-
+import { ConfirmedSwitch } from "@/components/confirmed-switch";
 import { useI18n } from "@/locales/client";
 
 type Translate = (key: string) => string;
@@ -82,13 +81,29 @@ export function PreferenceSwitch({
   label: string;
   onCheckedChange: (checked: boolean) => void;
 }) {
+  const labelId = `${id}-label`;
+  const descriptionId = `${id}-description`;
   return (
     <div className="flex items-center justify-between gap-6 rounded-lg border border-border/70 bg-secondary/20 p-4">
       <div className="space-y-1">
-        <Label htmlFor={id}>{label}</Label>
-        <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
+        <p id={labelId} className="text-sm leading-none font-medium">
+          {label}
+        </p>
+        <p
+          id={descriptionId}
+          className="max-w-2xl text-sm text-muted-foreground"
+        >
+          {description}
+        </p>
       </div>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      <ConfirmedSwitch
+        id={id}
+        labelId={labelId}
+        descriptionId={descriptionId}
+        settingName={label}
+        checked={checked}
+        onConfirmedChange={onCheckedChange}
+      />
     </div>
   );
 }

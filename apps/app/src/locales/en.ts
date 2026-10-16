@@ -1151,10 +1151,8 @@ export default {
     featuresIncluded: "Features included:",
     configureSettings: "Configure {name} settings",
     settings: "Settings",
-    disableIntegration: "Disable Integration",
-    disableDescription:
-      "Are you sure you want to disable this integration? The data will be preserved, but the features will no longer be accessible until re-enabled.",
-    disable: "Disable",
+    disableConsequence:
+      "The data will be preserved, but the features will no longer be accessible until re-enabled.",
     subscribeToEnable: "Subscribe to Enable",
     subscribeDescription:
       "This integration requires an active subscription. Subscribe now to unlock all features.",
@@ -2339,6 +2337,14 @@ export default {
     },
 
     parentLocation: "Parent location",
+  },
+  confirmedSwitch: {
+    enableTitle: "Are you sure you want to enable this function?",
+    disableTitle: "Are you sure you want to disable this function?",
+    enableDescription: "“{setting}” will be turned on.",
+    disableDescription: "“{setting}” will be turned off.",
+    enable: "Enable",
+    disable: "Disable",
   },
   common: {
     importJobUnavailable: "Import job unavailable",

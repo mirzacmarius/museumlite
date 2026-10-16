@@ -2,16 +2,6 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@v1/ui/alert-dialog";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
 import {
@@ -21,43 +11,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
 import { BookOpen, Check, ChevronRight, Loader2, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useReducer } from "react";
+import { ConfirmedSwitch } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 
 interface IntegrationsSettingsState {
-  disableDialogOpen: boolean;
   subscribeDialogOpen: boolean;
   selectedIntegration: string | null;
-  isToggling: string | null;
   isCreatingCheckout: boolean;
   pendingEnableIntegration: string | null;
 }
 
 type IntegrationsSettingsAction =
-  | { type: "setDisableDialogOpen"; value: boolean }
   | { type: "setSubscribeDialogOpen"; value: boolean }
   | { type: "setSelectedIntegration"; value: string | null }
-  | { type: "setIsToggling"; value: string | null }
   | { type: "setIsCreatingCheckout"; value: boolean }
   | { type: "setPendingEnableIntegration"; value: string | null }
-  | {
-      type: "openDisableDialog";
-      integrationId: string;
-    }
-  | { type: "closeSubscribeDialog" }
-  | { type: "finishDisable" };
+  | { type: "closeSubscribeDialog" };
 
 const initialIntegrationsSettingsState: IntegrationsSettingsState = {
-  disableDialogOpen: false,
   subscribeDialogOpen: false,
   selectedIntegration: null,
-  isToggling: null,
   isCreatingCheckout: false,
   pendingEnableIntegration: null,
 };
@@ -67,34 +46,18 @@ function integrationsSettingsReducer(
   action: IntegrationsSettingsAction,
 ): IntegrationsSettingsState {
   switch (action.type) {
-    case "setDisableDialogOpen":
-      return { ...state, disableDialogOpen: action.value };
     case "setSubscribeDialogOpen":
       return { ...state, subscribeDialogOpen: action.value };
     case "setSelectedIntegration":
       return { ...state, selectedIntegration: action.value };
-    case "setIsToggling":
-      return { ...state, isToggling: action.value };
     case "setIsCreatingCheckout":
       return { ...state, isCreatingCheckout: action.value };
     case "setPendingEnableIntegration":
       return { ...state, pendingEnableIntegration: action.value };
-    case "openDisableDialog":
-      return {
-        ...state,
-        selectedIntegration: action.integrationId,
-        disableDialogOpen: true,
-      };
     case "closeSubscribeDialog":
       return {
         ...state,
         subscribeDialogOpen: false,
-        selectedIntegration: null,
-      };
-    case "finishDisable":
-      return {
-        ...state,
-        isToggling: null,
         selectedIntegration: null,
       };
   }
@@ -137,22 +100,23 @@ function IntegrationEmptyState({ message }: { message: string }) {
 function IntegrationCard({
   integration,
   isEnabled,
-  isLoading,
   labels,
-  onToggle,
+  onEnabledChange,
 }: {
   integration: AvailableIntegration;
   isEnabled: boolean;
-  isLoading: boolean;
   labels: {
     configureSettings: string;
+    disableConsequence: string;
     enabled: string;
     featuresIncluded: string;
     requiresSubscription: string;
     settings: string;
   };
-  onToggle: () => void;
+  onEnabledChange: (enabled: boolean) => Promise<void>;
 }) {
+  const nameId = `integration-${integration.id}-name`;
+  const descriptionId = `integration-${integration.id}-description`;
   return (
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="flex w-full items-start justify-between p-6">
@@ -164,7 +128,9 @@ function IntegrationCard({
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-medium">{integration.name}</h3>
+              <h3 id={nameId} className="text-lg font-medium">
+                {integration.name}
+              </h3>
               {isEnabled ? (
                 <Badge variant="secondary" className="text-xs">
                   <Check className="mr-1 size-3" />
@@ -172,7 +138,7 @@ function IntegrationCard({
                 </Badge>
               ) : null}
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p id={descriptionId} className="text-sm text-muted-foreground">
               {integration.description}
             </p>
             {integration.requiresSubscription ? (
@@ -183,11 +149,14 @@ function IntegrationCard({
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {isLoading ? (
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-          ) : (
-            <Switch checked={isEnabled} onCheckedChange={onToggle} />
-          )}
+          <ConfirmedSwitch
+            labelId={nameId}
+            descriptionId={descriptionId}
+            settingName={integration.name}
+            checked={isEnabled}
+            disableDetails={labels.disableConsequence}
+            onConfirmedChange={onEnabledChange}
+          />
         </div>
       </div>
 
@@ -222,41 +191,6 @@ function IntegrationCard({
         </div>
       ) : null}
     </div>
-  );
-}
-
-function DisableIntegrationDialog({
-  cancelLabel,
-  description,
-  disableLabel,
-  onConfirm,
-  onOpenChange,
-  open,
-  title,
-}: {
-  cancelLabel: string;
-  description: string;
-  disableLabel: string;
-  onConfirm: () => void;
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
-  title: string;
-}) {
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
-            {disableLabel}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
 
@@ -394,30 +328,28 @@ function IntegrationsSettingsContent() {
     enableIntegration,
   ]);
 
-  const handleToggle = async (
+  const setIntegrationEnabled = async (
     integrationId: string,
-    currentlyEnabled: boolean,
+    enabled: boolean,
   ) => {
     if (!currentOrganizationId) return;
+    const organizationId = currentOrganizationId as Id<"organizations">;
 
-    if (currentlyEnabled) {
-      dispatch({ type: "openDisableDialog", integrationId });
-    } else {
-      dispatch({ type: "setIsToggling", value: integrationId });
-      try {
-        const result = await enableIntegration({
-          organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId,
-        });
+    if (!enabled) {
+      await disableIntegration({ organizationId, integrationId });
+      return;
+    }
 
-        if (result.ok) {
-          toast.success(tToast("integrationEnabled"));
-        } else {
-          toast.info(tToast("integrationAlreadyEnabled"));
-        }
-      } finally {
-        dispatch({ type: "setIsToggling", value: null });
+    try {
+      const result = await enableIntegration({ organizationId, integrationId });
+      if (result.ok) {
+        toast.success(tToast("integrationEnabled"));
+      } else {
+        toast.info(tToast("integrationAlreadyEnabled"));
       }
+    } catch (error) {
+      console.error("Failed to enable integration:", error);
+      toast.error(tToast("integrationEnableFailed"));
     }
   };
 
@@ -448,21 +380,6 @@ function IntegrationsSettingsContent() {
     }
   };
 
-  const handleConfirmDisable = async () => {
-    if (!currentOrganizationId || !state.selectedIntegration) return;
-
-    dispatch({ type: "setIsToggling", value: state.selectedIntegration });
-    dispatch({ type: "setDisableDialogOpen", value: false });
-    try {
-      await disableIntegration({
-        organizationId: currentOrganizationId as Id<"organizations">,
-        integrationId: state.selectedIntegration,
-      });
-    } finally {
-      dispatch({ type: "finishDisable" });
-    }
-  };
-
   if (!currentOrganizationId) {
     return <IntegrationEmptyState message={t("selectOrganization")} />;
   }
@@ -487,37 +404,22 @@ function IntegrationsSettingsContent() {
             key={integration.id}
             integration={integration}
             isEnabled={enabledIntegrations.includes(integration.id)}
-            isLoading={state.isToggling === integration.id}
             labels={{
               configureSettings: t("configureSettings", {
                 name: integration.name.toLowerCase(),
               }),
+              disableConsequence: t("disableConsequence"),
               enabled: t("enabled"),
               featuresIncluded: t("featuresIncluded"),
               requiresSubscription: t("requiresSubscription"),
               settings: t("settings"),
             }}
-            onToggle={() =>
-              handleToggle(
-                integration.id,
-                enabledIntegrations.includes(integration.id),
-              )
+            onEnabledChange={(enabled) =>
+              setIntegrationEnabled(integration.id, enabled)
             }
           />
         ))}
       </div>
-
-      <DisableIntegrationDialog
-        cancelLabel={tCommon("cancel")}
-        description={t("disableDescription")}
-        disableLabel={t("disable")}
-        onConfirm={handleConfirmDisable}
-        onOpenChange={(open) =>
-          dispatch({ type: "setDisableDialogOpen", value: open })
-        }
-        open={state.disableDialogOpen}
-        title={t("disableIntegration")}
-      />
 
       <SubscribeIntegrationDialog
         cancelLabel={tCommon("cancel")}

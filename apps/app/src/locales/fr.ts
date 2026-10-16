@@ -1182,10 +1182,8 @@ export default {
     featuresIncluded: "Fonctionnalités incluses :",
     configureSettings: "Configurer les paramètres de {name}",
     settings: "Paramètres",
-    disableIntegration: "Désactiver l'intégration",
-    disableDescription:
-      "Êtes-vous sûr de vouloir désactiver cette intégration ? Les données seront conservées, mais les fonctionnalités ne seront plus accessibles jusqu'à la réactivation.",
-    disable: "Désactiver",
+    disableConsequence:
+      "Les données seront conservées, mais les fonctionnalités ne seront plus accessibles jusqu'à la réactivation.",
     subscribeToEnable: "S'abonner pour activer",
     subscribeDescription:
       "Cette intégration nécessite un abonnement actif. Abonnez-vous maintenant pour débloquer toutes les fonctionnalités.",
@@ -2956,6 +2954,14 @@ export default {
     },
 
     parentLocation: "Emplacement parent",
+  },
+  confirmedSwitch: {
+    enableTitle: "Êtes-vous sûr de vouloir activer cette fonction ?",
+    disableTitle: "Êtes-vous sûr de vouloir désactiver cette fonction ?",
+    enableDescription: "Le réglage « {setting} » sera activé.",
+    disableDescription: "Le réglage « {setting} » sera désactivé.",
+    enable: "Activer",
+    disable: "Désactiver",
   },
   common: {
     importJobUnavailable: "Importation indisponible",

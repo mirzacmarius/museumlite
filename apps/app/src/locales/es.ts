@@ -1179,10 +1179,8 @@ export default {
     featuresIncluded: "Funciones incluidas:",
     configureSettings: "Configurar ajustes de {name}",
     settings: "Configuración",
-    disableIntegration: "Deshabilitar Integración",
-    disableDescription:
-      "¿Estás seguro de que deseas deshabilitar esta integración? Los datos se conservarán, pero las funciones ya no serán accesibles hasta que se reactive.",
-    disable: "Deshabilitar",
+    disableConsequence:
+      "Los datos se conservarán, pero las funciones ya no serán accesibles hasta que se reactive.",
     subscribeToEnable: "Suscribirse para Habilitar",
     subscribeDescription:
       "Esta integración requiere una suscripción activa. Suscríbete ahora para desbloquear todas las funciones.",
@@ -2947,6 +2945,14 @@ export default {
     },
 
     parentLocation: "Ubicación superior",
+  },
+  confirmedSwitch: {
+    enableTitle: "¿Estás seguro de que deseas habilitar esta función?",
+    disableTitle: "¿Estás seguro de que deseas deshabilitar esta función?",
+    enableDescription: "La opción «{setting}» se activará.",
+    disableDescription: "La opción «{setting}» se desactivará.",
+    enable: "Habilitar",
+    disable: "Deshabilitar",
   },
   common: {
     importJobUnavailable: "Importación no disponible",

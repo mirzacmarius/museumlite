@@ -12,12 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Switch } from "@v1/ui/switch";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Droplet, Plus, Save } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
+import { ConfirmedSwitch } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -205,17 +205,28 @@ function WatermarkSettingsCard({
         <h2 className="text-lg font-medium">{t("watermarkSettings")}</h2>
       </div>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <Label htmlFor="watermarkEnabled">{t("enableWatermark")}</Label>
-            <p className="text-xs text-muted-foreground">
+            <p
+              id="watermarkEnabled-label"
+              className="text-sm leading-none font-medium"
+            >
+              {t("enableWatermark")}
+            </p>
+            <p
+              id="watermarkEnabled-description"
+              className="text-xs text-muted-foreground"
+            >
               {t("applyWatermarkEditedImages")}
             </p>
           </div>
-          <Switch
+          <ConfirmedSwitch
             id="watermarkEnabled"
+            labelId="watermarkEnabled-label"
+            descriptionId="watermarkEnabled-description"
+            settingName={t("enableWatermark")}
             checked={settings.isEnabled}
-            onCheckedChange={(checked) =>
+            onConfirmedChange={(checked) =>
               onSettingsChange({
                 ...settings,
                 isEnabled: checked,

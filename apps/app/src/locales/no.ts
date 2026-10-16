@@ -1158,10 +1158,8 @@ export default {
     featuresIncluded: "Inkluderte funksjoner:",
     configureSettings: "Konfigurer {name}-innstillinger",
     settings: "Innstillinger",
-    disableIntegration: "Deaktiver Integrasjon",
-    disableDescription:
-      "Er du sikker på at du vil deaktivere denne integrasjonen? Dataene vil bli bevart, men funksjonene vil ikke være tilgjengelige før den reaktiveres.",
-    disable: "Deaktiver",
+    disableConsequence:
+      "Dataene vil bli bevart, men funksjonene vil ikke være tilgjengelige før den reaktiveres.",
     subscribeToEnable: "Abonner for å Aktivere",
     subscribeDescription:
       "Denne integrasjonen krever et aktivt abonnement. Abonner nå for å låse opp alle funksjoner.",
@@ -2918,6 +2916,14 @@ export default {
     },
 
     parentLocation: "Overordnet plassering",
+  },
+  confirmedSwitch: {
+    enableTitle: "Er du sikker på at du vil aktivere denne funksjonen?",
+    disableTitle: "Er du sikker på at du vil deaktivere denne funksjonen?",
+    enableDescription: "«{setting}» blir slått på.",
+    disableDescription: "«{setting}» blir slått av.",
+    enable: "Aktiver",
+    disable: "Deaktiver",
   },
   common: {
     importJobUnavailable: "Importjobb utilgjengelig",

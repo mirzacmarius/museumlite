@@ -919,6 +919,14 @@ export default {
         "Acest cont folosește un furnizor extern și nu are o parolă de schimbat.",
     },
   },
+  confirmedSwitch: {
+    enableTitle: "Sigur vrei să activezi această funcție?",
+    disableTitle: "Sigur vrei să dezactivezi această funcție?",
+    enableDescription: "Setarea „{setting}” va fi activată.",
+    disableDescription: "Setarea „{setting}” va fi dezactivată.",
+    enable: "Activează",
+    disable: "Dezactivează",
+  },
   common: {
     importJobUnavailable: "Import indisponibil",
     importJobUnavailableDescription:
@@ -6071,10 +6079,8 @@ export default {
     featuresIncluded: "Funcții incluse:",
     configureSettings: "Configurează setările pentru {name}",
     settings: "Setări",
-    disableIntegration: "Dezactivează integrarea",
-    disableDescription:
-      "Sigur vrei să dezactivezi această integrare? Datele vor fi păstrate, dar funcțiile nu vor mai fi accesibile până când o activezi din nou.",
-    disable: "Dezactivează",
+    disableConsequence:
+      "Datele vor fi păstrate, dar funcțiile nu vor mai fi accesibile până când o activezi din nou.",
     subscribeToEnable: "Abonează-te pentru a activa",
     subscribeDescription:
       "Această integrare necesită un abonament activ. Abonează-te acum pentru a debloca toate funcțiile.",

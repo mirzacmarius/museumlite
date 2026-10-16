@@ -10,9 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Switch } from "@v1/ui/switch";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import Link from "next/link";
+import { ConfirmedSwitch } from "@/components/confirmed-switch";
 import { useScopedI18n } from "@/locales/client";
 import type { LibrarySettingsFormData } from "./library-settings-types";
 
@@ -302,16 +302,28 @@ export function LibraryCardSettingsSection({
             }
           />
         </div>
-        <div className="flex items-center justify-between gap-y-0 sm:col-span-2">
+        <div className="flex items-center justify-between gap-4 sm:col-span-2">
           <div>
-            <Label>{t("autoGenerateCardNumbers")}</Label>
-            <p className="text-sm text-muted-foreground">
+            <p
+              id="autoGenerateCardNumbers-label"
+              className="text-sm leading-none font-medium"
+            >
+              {t("autoGenerateCardNumbers")}
+            </p>
+            <p
+              id="autoGenerateCardNumbers-description"
+              className="text-sm text-muted-foreground"
+            >
               {t("autoGenerateCardNumbersDescription")}
             </p>
           </div>
-          <Switch
+          <ConfirmedSwitch
+            id="autoGenerateCardNumbers"
+            labelId="autoGenerateCardNumbers-label"
+            descriptionId="autoGenerateCardNumbers-description"
+            settingName={t("autoGenerateCardNumbers")}
             checked={formData.autoGenerateCardNumbers}
-            onCheckedChange={(checked) =>
+            onConfirmedChange={(checked) =>
               setFormData((prev) => ({
                 ...prev,
                 autoGenerateCardNumbers: checked,

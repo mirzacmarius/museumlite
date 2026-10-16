@@ -9,7 +9,6 @@ import {
 } from "@v1/backend/convex/utils/moduleCatalog";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
-import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
 import {
   Archive,
@@ -28,6 +27,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ConfirmedSwitch } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermission } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -54,7 +54,6 @@ export default function ModulesSettingsPage() {
     "organization.manage_settings",
   );
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
-  const [isSaving, setIsSaving] = useState<ModuleId | null>(null);
 
   const organization = useQuery(
     api.organizations.get,
@@ -85,7 +84,6 @@ export default function ModulesSettingsPage() {
       ? Array.from(new Set([...enabledModules, moduleId]))
       : enabledModules.filter((id) => id !== moduleId);
     setEnabledModules(next);
-    setIsSaving(moduleId);
     try {
       await updateOrganization({
         organizationId: currentOrganizationId as Id<"organizations">,
@@ -97,8 +95,6 @@ export default function ModulesSettingsPage() {
     } catch (_error) {
       setEnabledModules(previous);
       toast.error(tToast("moduleUpdateFailed"));
-    } finally {
-      setIsSaving(null);
     }
   };
 
@@ -131,7 +127,6 @@ export default function ModulesSettingsPage() {
       <div className="flex w-full flex-col gap-4">
         {SETTINGS_MODULE_IDS.map((moduleId) => {
           const isEnabled = enabledModules.includes(moduleId);
-          const isLoading = isSaving === moduleId;
           const requiredIntegration =
             MODULE_INTEGRATION_REQUIREMENTS[moduleId] ?? null;
           const integrationLocked =
@@ -150,7 +145,10 @@ export default function ModulesSettingsPage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium">
+                      <h3
+                        id={`module-${moduleId}-name`}
+                        className="text-lg font-medium"
+                      >
                         {t(`${moduleId}.name` as const)}
                       </h3>
                       {isEnabled && (
@@ -160,7 +158,10 @@ export default function ModulesSettingsPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p
+                      id={`module-${moduleId}-description`}
+                      className="text-sm text-muted-foreground"
+                    >
                       {t(`${moduleId}.description` as const)}
                     </p>
                     {integrationLocked && (
@@ -173,17 +174,16 @@ export default function ModulesSettingsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  {isLoading ? (
-                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Switch
-                      checked={isEnabled}
-                      disabled={!canManage || !!integrationLocked}
-                      onCheckedChange={(checked) =>
-                        toggleModule(moduleId, checked)
-                      }
-                    />
-                  )}
+                  <ConfirmedSwitch
+                    labelId={`module-${moduleId}-name`}
+                    descriptionId={`module-${moduleId}-description`}
+                    settingName={t(`${moduleId}.name` as const)}
+                    checked={isEnabled}
+                    disabled={!canManage || !!integrationLocked}
+                    onConfirmedChange={(checked) =>
+                      toggleModule(moduleId, checked)
+                    }
+                  />
                 </div>
               </div>
               {integrationLocked && (
