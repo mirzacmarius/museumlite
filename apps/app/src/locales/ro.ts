@@ -982,6 +982,14 @@ export default {
         "Acest cont folosește un furnizor extern și nu are o parolă de schimbat.",
     },
   },
+  confirmedSwitch: {
+    enableTitle: "Sigur vrei să activezi această funcție?",
+    disableTitle: "Sigur vrei să dezactivezi această funcție?",
+    setting: "Setare: {setting}",
+    appliesOnSave: "Modificarea se aplică după ce salvezi.",
+    enable: "Activează",
+    disable: "Dezactivează",
+  },
   common: {
     importJobUnavailable: "Import indisponibil",
     importJobUnavailableDescription:
@@ -1015,12 +1023,14 @@ export default {
 
       invalidEmail: "Formatul adresei de email nu este valid",
       createFailed: "Crearea a eșuat. Încearcă din nou.",
-      moduleToggled: "Modul {action}",
+      moduleEnabled: "Modul activat",
+      moduleDisabled: "Modul dezactivat",
       moduleUpdateFailed: "Actualizarea modulelor a eșuat",
       waitingSubscription: "Se așteaptă confirmarea abonamentului...",
       integrationEnabled: "Integrare activată cu succes",
       integrationAlreadyEnabled: "Integrarea este deja activată",
       integrationEnableFailed: "Activarea integrării a eșuat",
+      integrationDisableFailed: "Dezactivarea integrării a eșuat",
       loansApproved: "S-au aprobat cu succes {count} împrumut(uri)",
       someLoansSkipped:
         "{count} împrumut(uri) au fost omise (nu sunt în așteptare)",
@@ -6147,10 +6157,8 @@ export default {
     featuresIncluded: "Funcții incluse:",
     configureSettings: "Configurează setările pentru {name}",
     settings: "Setări",
-    disableIntegration: "Dezactivează integrarea",
-    disableDescription:
-      "Sigur vrei să dezactivezi această integrare? Datele vor fi păstrate, dar funcțiile nu vor mai fi accesibile până când o activezi din nou.",
-    disable: "Dezactivează",
+    disableConsequence:
+      "Datele vor fi păstrate, dar funcțiile nu vor mai fi accesibile până când o activezi din nou.",
     subscribeToEnable: "Abonează-te pentru a activa",
     subscribeDescription:
       "Această integrare necesită un abonament activ. Abonează-te acum pentru a debloca toate funcțiile.",

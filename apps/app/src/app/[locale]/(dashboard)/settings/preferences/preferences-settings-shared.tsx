@@ -22,11 +22,10 @@ import {
 } from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-
+import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useI18n } from "@/locales/client";
 
 type Translate = (key: string) => string;
@@ -83,13 +82,16 @@ export function PreferenceSwitch({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-6 rounded-lg border border-border/70 bg-secondary/20 p-4">
-      <div className="space-y-1">
-        <Label htmlFor={id}>{label}</Label>
-        <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
-      </div>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
-    </div>
+    <ConfirmedSwitchRow
+      id={id}
+      className="gap-6 rounded-lg border border-border/70 bg-secondary/20 p-4"
+      descriptionClassName="max-w-2xl"
+      label={label}
+      description={description}
+      checked={checked}
+      appliesOnSave
+      onConfirmedChange={onCheckedChange}
+    />
   );
 }
 
