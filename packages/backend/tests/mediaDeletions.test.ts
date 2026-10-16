@@ -160,7 +160,7 @@ async function createMuseum({
     const mimeType = options.mimeType ?? "image/jpeg";
     const bytes =
       mimeType === "image/jpeg"
-        ? new Uint8Array(await photo(800))
+        ? new Uint8Array(await photo(64))
         : new TextEncoder().encode("%PDF-1.4 condition report");
     const { uploadUrl } = await cataloger.mutation(
       api.media.generateUploadUrl,
@@ -274,7 +274,7 @@ async function storageState(museum: Museum, storageIds: Id<"_storage">[]) {
 
 async function addVersion(museum: Museum, mediaId: Id<"mediaFiles">) {
   const editor = museum.as("cataloger");
-  const bytes = new Uint8Array(await photo(400));
+  const bytes = new Uint8Array(await photo(48));
   const { uploadUrl } = await editor.mutation(api.media.generateUploadUrl, {
     organizationId: museum.organizationId,
     collectionId: museum.collectionId,
