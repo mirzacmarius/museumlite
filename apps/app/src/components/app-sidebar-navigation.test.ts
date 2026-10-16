@@ -25,6 +25,9 @@ const navigationLabels: Record<string, string> = {
   "untranslatedComponents.navigation.documentationQuality":
     "Documentation quality",
   "untranslatedComponents.navigation.conservation": "Conservation",
+  "untranslatedComponents.navigation.conditionAssessments":
+    "Condition assessments",
+  "untranslatedComponents.navigation.incidents": "Incidents",
   "untranslatedComponents.navigation.insurance": "Insurance",
   "untranslatedComponents.navigation.loansTransport": "Loans & Transport",
   "untranslatedComponents.navigation.transitLog": "Transit Log",
@@ -176,6 +179,34 @@ describe("buildSidebarNavigation", () => {
 
     expect(loans).toMatchObject({ url: "/loans", locked: true });
     expect(conservation).toMatchObject({ url: "/conservation", locked: true });
+  });
+
+  test("lists Condition assessments under Collection Care for collection readers", () => {
+    const { navigationGroups } = buildNavigation();
+
+    expect(
+      findGroup(navigationGroups, "Collection Care").items.map(
+        (item) => item.title,
+      ),
+    ).toEqual([
+      "Conservation",
+      "Condition assessments",
+      "Incidents",
+      "Insurance",
+    ]);
+    expect(
+      findItem(
+        findGroup(navigationGroups, "Collection Care").items,
+        "Condition assessments",
+      ),
+    ).toMatchObject({ url: "/condition-assessments", locked: false });
+    expect(
+      allTitles(
+        buildNavigation({
+          condition_assessments: { status: "permission_missing" },
+        }),
+      ),
+    ).not.toContain("Condition assessments");
   });
 
   test("locks Insurance by the loans plan it is enforced with, not conservation", () => {
