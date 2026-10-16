@@ -4,7 +4,7 @@ import { query } from "./_generated/server";
 import { CAPABILITY_IDS, evaluateCapability } from "./utils/capabilities";
 import { deaccessionInitiationState } from "./utils/deaccessionInitiation";
 import { organizationAccess } from "./utils/featureGates";
-import { enabledModuleValidator } from "./utils/moduleValidators";
+import { moduleIdValidator } from "./utils/moduleValidators";
 import {
   getCurrentUserOrganization,
   getRolePermissionNames,
@@ -30,7 +30,7 @@ const capabilityStateValidator = v.union(
   v.object({
     ...stateFields,
     status: v.literal("module_disabled"),
-    module: enabledModuleValidator,
+    module: moduleIdValidator,
   }),
   v.object({
     ...stateFields,

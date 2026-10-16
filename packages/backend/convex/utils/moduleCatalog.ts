@@ -1,4 +1,6 @@
-export const MODULE_IDS = [
+import type { IntegrationId } from "./featurePolicy";
+
+export const OPT_IN_MODULE_IDS = [
   "library",
   "fine_art",
   "wine",
@@ -11,7 +13,56 @@ export const MODULE_IDS = [
   "insurance",
 ] as const;
 
+export const DEFAULT_ON_MODULE_IDS = ["comments"] as const;
+
+export const MODULE_IDS = [
+  ...OPT_IN_MODULE_IDS,
+  ...DEFAULT_ON_MODULE_IDS,
+] as const;
+
+export type OptInModuleId = (typeof OPT_IN_MODULE_IDS)[number];
+export type DefaultOnModuleId = (typeof DEFAULT_ON_MODULE_IDS)[number];
 export type ModuleId = (typeof MODULE_IDS)[number];
+
+export interface ModuleSwitches {
+  enabledModules?: ReadonlyArray<OptInModuleId>;
+  disabledModules?: ReadonlyArray<DefaultOnModuleId>;
+}
+
+function isDefaultOnModule(moduleId: ModuleId): moduleId is DefaultOnModuleId {
+  return DEFAULT_ON_MODULE_IDS.some((candidate) => candidate === moduleId);
+}
+
+export function isModuleSwitchedOn(
+  switches: ModuleSwitches,
+  moduleId: ModuleId,
+): boolean {
+  if (isDefaultOnModule(moduleId)) {
+    return !switches.disabledModules?.includes(moduleId);
+  }
+  return switches.enabledModules?.includes(moduleId) ?? false;
+}
+
+function withMember<T>(
+  list: ReadonlyArray<T> = [],
+  member: T,
+  present: boolean,
+): T[] {
+  if (!present) return list.filter((candidate) => candidate !== member);
+  return list.includes(member) ? [...list] : [...list, member];
+}
+
+export function moduleSwitchPatch(
+  switches: ModuleSwitches,
+  moduleId: ModuleId,
+  on: boolean,
+):
+  | { enabledModules: OptInModuleId[] }
+  | { disabledModules: DefaultOnModuleId[] } {
+  return isDefaultOnModule(moduleId)
+    ? { disabledModules: withMember(switches.disabledModules, moduleId, !on) }
+    : { enabledModules: withMember(switches.enabledModules, moduleId, on) };
+}
 
 export const SETTINGS_MODULE_IDS = [
   "accounts",
@@ -24,6 +75,7 @@ export const SETTINGS_MODULE_IDS = [
   "coins_stamps",
   "inventory_valuation",
   "insurance",
+  "comments",
 ] as const satisfies ReadonlyArray<ModuleId>;
 
 export const COLLECTION_MODULE_IDS = [
@@ -56,7 +108,7 @@ export const COLLECTION_TYPE_MODULE_REQUIREMENTS: Partial<
 };
 
 export const MODULE_INTEGRATION_REQUIREMENTS: Partial<
-  Record<ModuleId, string>
+  Record<ModuleId, IntegrationId>
 > = {
   library: "library",
 };

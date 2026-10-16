@@ -6602,6 +6602,12 @@ export default {
       description:
         "Gestionează donatori, creditori, instituții, contacte, documente și relații.",
     },
+    comments: {
+      name: "Comentarii",
+      description: "Discută despre obiecte cu colegii și menționează-i cu @.",
+      disableDetails:
+        "Fila Comentarii este ascunsă pe toate obiectele. Comentariile existente sunt păstrate și apar din nou când Comentarii este reactivat.",
+    },
     fine_art: {
       name: "Artă plastică",
       description:

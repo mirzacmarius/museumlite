@@ -1,24 +1,25 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { getFunctionName } from "convex/server";
 import { beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import ModulesSettingsPage from "./page";
 
-const updateOrganization = vi.fn();
-// Stable results, as Convex returns between renders.
-const ORGANIZATION = { settings: { enabledModules: ["accounts"] } };
+const setModuleEnabled = vi.fn();
 const ENABLED_INTEGRATIONS: string[] = [];
+let organization: {
+  settings: { enabledModules: string[]; disabledModules?: string[] };
+};
 
 vi.mock("convex/react", () => ({
   useQuery: (reference: unknown) => {
     const name = getFunctionName(reference as never);
-    if (name === "organizations:get") return ORGANIZATION;
+    if (name === "organizations:get") return organization;
     if (name === "integrations:getEnabled") return ENABLED_INTEGRATIONS;
     return undefined;
   },
-  useMutation: () => updateOrganization,
+  useMutation: () => setModuleEnabled,
 }));
 vi.mock("@/components/organization-provider", () => ({
   useOrganization: () => ({ currentOrganizationId: "org-1" }),
@@ -28,8 +29,9 @@ vi.mock("@/components/permission-gate", () => ({
 }));
 
 beforeEach(() => {
-  updateOrganization.mockReset();
-  updateOrganization.mockResolvedValue(null);
+  organization = { settings: { enabledModules: ["accounts"] } };
+  setModuleEnabled.mockReset();
+  setModuleEnabled.mockResolvedValue(null);
 });
 
 test("clicking a module's name or description does not toggle it", async () => {
@@ -44,7 +46,7 @@ test("clicking a module's name or description does not toggle it", async () => {
   );
 
   expect(screen.queryByRole("alertdialog")).toBeNull();
-  expect(updateOrganization).not.toHaveBeenCalled();
+  expect(setModuleEnabled).not.toHaveBeenCalled();
   expect(
     screen
       .getByRole("switch", { name: "Fine Art" })
@@ -64,19 +66,17 @@ test("a module is enabled only after the confirmation, and Cancel saves nothing"
   });
   within(dialog).getByText("Setting: Fine Art");
   await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-  expect(updateOrganization).not.toHaveBeenCalled();
+  expect(setModuleEnabled).not.toHaveBeenCalled();
   expect(fineArt.getAttribute("aria-checked")).toBe("false");
 
   await user.click(fineArt);
   await user.click(screen.getByRole("button", { name: "Enable" }));
 
-  expect(updateOrganization).toHaveBeenCalledExactlyOnceWith({
+  expect(setModuleEnabled).toHaveBeenCalledExactlyOnceWith({
     organizationId: "org-1",
-    settings: { enabledModules: ["accounts", "fine_art"] },
+    moduleId: "fine_art",
+    enabled: true,
   });
-  await waitFor(() =>
-    expect(fineArt.getAttribute("aria-checked")).toBe("true"),
-  );
 });
 
 test("disabling a module asks to disable it and saves without it", async () => {
@@ -90,8 +90,48 @@ test("disabling a module asks to disable it and saves without it", async () => {
   screen.getByText("Setting: Accounts & CRM");
   await user.click(screen.getByRole("button", { name: "Disable" }));
 
-  expect(updateOrganization).toHaveBeenCalledExactlyOnceWith({
+  expect(setModuleEnabled).toHaveBeenCalledExactlyOnceWith({
     organizationId: "org-1",
-    settings: { enabledModules: [] },
+    moduleId: "accounts",
+    enabled: false,
   });
+});
+
+test("Comments is on until an administrator turns it off, and turning it off says comments are kept", async () => {
+  const user = userEvent.setup();
+  await renderOnPage(<ModulesSettingsPage />, "/en/settings/modules");
+  const comments = screen.getByRole("switch", { name: "Comments" });
+  expect(comments.getAttribute("aria-checked")).toBe("true");
+
+  await user.click(comments);
+  const dialog = screen.getByRole("alertdialog");
+  within(dialog).getByText("Setting: Comments");
+  within(dialog).getByText(
+    "The Comments tab is hidden on every object. Existing comments are kept and show again when Comments is turned back on.",
+  );
+  await user.click(within(dialog).getByRole("button", { name: "Disable" }));
+
+  expect(setModuleEnabled).toHaveBeenCalledExactlyOnceWith({
+    organizationId: "org-1",
+    moduleId: "comments",
+    enabled: false,
+  });
+});
+
+test("Comments shows as off once it is turned off", async () => {
+  organization = {
+    settings: { enabledModules: ["accounts"], disabledModules: ["comments"] },
+  };
+  await renderOnPage(<ModulesSettingsPage />, "/en/settings/modules");
+
+  expect(
+    screen
+      .getByRole("switch", { name: "Comments" })
+      .getAttribute("aria-checked"),
+  ).toBe("false");
+  expect(
+    screen
+      .getByRole("switch", { name: "Accounts & CRM" })
+      .getAttribute("aria-checked"),
+  ).toBe("true");
 });

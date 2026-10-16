@@ -54,6 +54,7 @@ import {
 import { loanAgreementTemplateFields } from "./utils/loanAgreementValidators";
 import {
   collectionTypeValidator,
+  disabledModuleValidator,
   enabledModuleValidator,
 } from "./utils/moduleValidators";
 import {
@@ -296,6 +297,7 @@ export default defineSchema({
         enableDetailedConditionReports: v.optional(v.boolean()),
         enabledIntegrations: v.optional(v.array(v.string())),
         enabledModules: v.optional(v.array(enabledModuleValidator)),
+        disabledModules: v.optional(v.array(disabledModuleValidator)),
         defaultCollectionType: v.optional(collectionTypeValidator),
         portalSettings: v.optional(
           v.object({

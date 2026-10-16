@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
+import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
@@ -81,6 +82,7 @@ export const create = mutation({
     if (!object) throw new Error("Object not found");
 
     await requirePermission(ctx, object.organizationId, "collections.update");
+    await requireModuleEnabled(ctx, object.organizationId, "comments");
 
     const mentionHandles = new Set<string>();
     mentionPattern.lastIndex = 0;

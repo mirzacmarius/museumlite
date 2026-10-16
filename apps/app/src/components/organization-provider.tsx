@@ -2,7 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import type { ModuleId } from "@v1/backend/convex/utils/moduleCatalog";
+import type {
+  DefaultOnModuleId,
+  OptInModuleId,
+} from "@v1/backend/convex/utils/moduleCatalog";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -33,7 +36,8 @@ interface OrganizationContextType {
     settings?: {
       locationTrackingEnabled?: boolean;
       enabledIntegrations?: string[];
-      enabledModules?: ModuleId[];
+      enabledModules?: OptInModuleId[];
+      disabledModules?: DefaultOnModuleId[];
     };
     subscriptionTier?: "free" | "pro" | "enterprise";
     parentOrganizationId?: Id<"organizations">;
@@ -54,7 +58,8 @@ interface OrganizationContextType {
     settings?: {
       locationTrackingEnabled?: boolean;
       enabledIntegrations?: string[];
-      enabledModules?: ModuleId[];
+      enabledModules?: OptInModuleId[];
+      disabledModules?: DefaultOnModuleId[];
     };
     subscriptionTier?: "free" | "pro" | "enterprise";
     parentOrganizationId?: Id<"organizations">;

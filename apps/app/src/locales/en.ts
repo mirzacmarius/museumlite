@@ -680,6 +680,12 @@ export default {
       description:
         "Manage donors, lenders, institutions, contacts, documents, and relationships.",
     },
+    comments: {
+      name: "Comments",
+      description: "Discuss objects with colleagues and mention them with @.",
+      disableDetails:
+        "The Comments tab is hidden on every object. Existing comments are kept and show again when Comments is turned back on.",
+    },
     fine_art: {
       name: "Fine Art",
       description:

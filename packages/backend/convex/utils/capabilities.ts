@@ -7,7 +7,12 @@ import {
   SUBSCRIPTION_TIERS,
   type SubscriptionTier,
 } from "./featurePolicy";
-import { MODULE_IDS, type ModuleId } from "./moduleCatalog";
+import {
+  isModuleSwitchedOn,
+  MODULE_IDS,
+  type ModuleId,
+  type ModuleSwitches,
+} from "./moduleCatalog";
 
 /**
  * Staff-facing capabilities and the independent access dimensions that govern
@@ -42,7 +47,6 @@ export type CapabilityId = (typeof CAPABILITY_IDS)[number];
 export interface CapabilityRequirement {
   /** Paid entitlement; the plan comes from `FEATURE_REQUIREMENTS`. */
   feature?: FeatureId;
-  /** Free opt-in module an administrator turns on in Settings > Modules. */
   module?: ModuleId;
   /**
    * Module that only decides whether navigation lists the capability. Its
@@ -191,9 +195,8 @@ export type CapabilityState =
     })
   | (CapabilityStateBase & { status: "permission_missing" });
 
-export interface OrganizationAccess {
+export interface OrganizationAccess extends ModuleSwitches {
   subscriptionTier?: SubscriptionTier | null;
-  enabledModules?: ReadonlyArray<string>;
   enabledIntegrations?: ReadonlyArray<string>;
 }
 
@@ -202,7 +205,7 @@ export function isOrganizationModuleEnabled(
   access: OrganizationAccess,
   moduleId: ModuleId,
 ): boolean {
-  if (access.enabledModules?.includes(moduleId)) return true;
+  if (isModuleSwitchedOn(access, moduleId)) return true;
   return (
     moduleId === "library" &&
     (access.enabledIntegrations?.includes("library") ?? false)

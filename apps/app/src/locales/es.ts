@@ -693,6 +693,13 @@ export default {
       description:
         "Gestione donantes, prestamistas, instituciones, contactos, documentos y relaciones.",
     },
+    comments: {
+      name: "Comentarios",
+      description:
+        "Converse sobre los objetos con sus colegas y menciónelos con @.",
+      disableDetails:
+        "La pestaña Comentarios se oculta en todos los objetos. Los comentarios existentes se conservan y vuelven a mostrarse al activar de nuevo Comentarios.",
+    },
     fine_art: {
       name: "Bellas Artes",
       description:
