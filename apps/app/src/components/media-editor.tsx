@@ -24,6 +24,7 @@ import { MediaEditorViewport } from "./media-editor-viewport";
 
 export type {
   EditMetadata,
+  MediaEditorDeletion,
   MediaEditorImage,
   MediaEditorProps,
   WatermarkSettings,
@@ -123,6 +124,7 @@ export function MediaEditor({
   onClose,
   onSave,
   watermarkSettings,
+  deletion,
 }: MediaEditorProps) {
   const translate = useI18n();
   const actionErrorMessage = useActionErrorMessage();
@@ -299,6 +301,7 @@ export function MediaEditor({
             onApplyCrop={handleApplyCrop}
             onSave={handleSave}
             onClose={onClose}
+            deletion={deletion}
           />
 
           <MediaEditorViewport

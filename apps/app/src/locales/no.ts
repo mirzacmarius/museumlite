@@ -4871,6 +4871,7 @@ export default {
         loan: "Lån som venter på godkjenning",
         exhibition: "Utstillinger som venter på godkjenning",
         conservation: "Konservering som venter på godkjenning",
+        imageDeletion: "Bildeslettinger som venter på godkjenning",
       },
     },
   },
@@ -10712,6 +10713,54 @@ export default {
         "Dette steget er tildelt en annen godkjennerrolle. Be noen som er tildelt steget om å gjennomgå det.",
       alreadyApproved:
         "Godkjenningen din er allerede registrert. Saken venter til de øvrige godkjennerne har godkjent den.",
+    },
+  },
+  imageDeletion: {
+    deleteImage: "Slett bilde",
+    pending: "Sletting venter på godkjenning",
+    pendingDescription:
+      "Slettingen av dette bildet venter på godkjenning. Bildet blir værende til en godkjenner har bestemt seg.",
+    confirm: {
+      title: "Er du sikker på at du vil slette dette bildet?",
+      approvalHint:
+        "En godkjenner vurderer slettingen først. Bildet blir værende til slettingen er godkjent.",
+    },
+    finalConfirm: {
+      title: "Dette sletter bildet.",
+      description: "Handlingen kan ikke angres.",
+    },
+    requested: "Bildeslettingen er sendt til godkjenning",
+    deleted: "Bildet er slettet",
+    failed: "Bildet kunne ikke slettes.",
+    errors: {
+      notAnImage:
+        "Bare bilder kan slettes. Dokumenter blir værende på objektet.",
+      alreadyPending:
+        "Dette bildet venter allerede på godkjenning av sletting.",
+      approvalSettingChanged:
+        "Godkjenningsinnstillingen for bildesletting er endret. Prøv igjen.",
+      citedAsEvidence:
+        "Dette bildet er brukt som dokumentasjon i en tilstandsvurdering, en proveniensopplysning, en hendelse, en oppgave eller en reproduksjonsforespørsel, og kan derfor ikke slettes.",
+      requestClosed: "Denne sletteforespørselen er allerede avgjort.",
+      imageNotFound:
+        "Dette bildet finnes ikke lenger. Det kan allerede være slettet.",
+    },
+    approvals: {
+      title: "Bildeslettinger",
+      description:
+        "Bilder som ansatte har bedt om å slette. Godkjenning sletter bildet for godt; avvisning beholder det på objektet.",
+      empty: "Ingen bildeslettinger venter på godkjenning.",
+      noAccess:
+        "Du trenger tilgang til å se medier for å se disse forespørslene.",
+      readOnly:
+        "Bare godkjenneren av første trinn i aksesjonsflyten eller en administrator kan avgjøre disse forespørslene.",
+      requestedBy: "Forespurt av {name}",
+      approve: "Godkjenn",
+      reject: "Avvis",
+      approved: "Bildet er slettet",
+      rejected: "Slettingen er avvist. Bildet blir værende.",
+      decideFailed: "Forespørselen kunne ikke avgjøres.",
+      imageUnavailable: "Bildet er ikke tilgjengelig",
     },
   },
   identifiers: {

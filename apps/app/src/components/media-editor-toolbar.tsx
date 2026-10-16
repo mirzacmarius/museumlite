@@ -1,8 +1,19 @@
 "use client";
 
-import { Check, RotateCcw, RotateCw, Save, X } from "lucide-react";
+import {
+  Check,
+  Hourglass,
+  RotateCcw,
+  RotateCw,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useI18n } from "@/locales/client";
-import type { MediaEditorImage } from "./media-editor-types";
+import type {
+  MediaEditorDeletion,
+  MediaEditorImage,
+} from "./media-editor-types";
 
 interface MediaEditorToolbarProps {
   image: MediaEditorImage;
@@ -13,6 +24,39 @@ interface MediaEditorToolbarProps {
   onApplyCrop: () => void;
   onSave: () => void;
   onClose: () => void;
+  deletion?: MediaEditorDeletion;
+}
+
+function DeletionControl({ deletion }: { deletion: MediaEditorDeletion }) {
+  const translate = useI18n();
+  if (deletion.pending) {
+    return (
+      <span
+        className="flex shrink-0 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 p-2 text-xs font-medium text-amber-700 sm:px-2.5 sm:py-1 dark:text-amber-300"
+        title={translate("imageDeletion.pendingDescription")}
+      >
+        <Hourglass className="size-3.5 shrink-0" aria-hidden="true" />
+        {/* Narrow toolbars keep the label for screen readers and the title. */}
+        <span className="sr-only sm:not-sr-only">
+          {translate("imageDeletion.pending")}
+        </span>
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        deletion.onDelete();
+      }}
+      className="rounded-lg p-2 text-destructive transition-colors hover:bg-destructive/10"
+      aria-label={translate("imageDeletion.deleteImage")}
+      title={translate("imageDeletion.deleteImage")}
+    >
+      <Trash2 size={20} />
+    </button>
+  );
 }
 
 export function MediaEditorToolbar({
@@ -24,6 +68,7 @@ export function MediaEditorToolbar({
   onApplyCrop,
   onSave,
   onClose,
+  deletion,
 }: MediaEditorToolbarProps) {
   const translate = useI18n();
   return (
@@ -83,6 +128,7 @@ export function MediaEditorToolbar({
         >
           <Save size={20} />
         </button>
+        {deletion ? <DeletionControl deletion={deletion} /> : null}
         <button
           type="button"
           onClick={(e) => {

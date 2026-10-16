@@ -10,6 +10,7 @@ import {
   ArrowRight,
   FileCheck,
   FileX,
+  ImageMinus,
   LayoutGrid,
   type LucideIcon,
   Microscope,
@@ -38,11 +39,14 @@ type ObjectStatus = MyAssignments["myCatalogedItems"][number]["status"];
 
 const ASSIGNMENTS_LIMIT = 50;
 const MAX_CATALOGED_CARDS = 10;
+const IMAGE_DELETIONS_HREF = "/image-deletions";
 
 interface ApprovalTypeConfig {
   icon: LucideIcon;
   href: string;
   pendingHref: (asOf: number) => string;
+  /** Where one pending item opens; its record page under `href` by default. */
+  itemHref?: (id: string) => string;
   accentClassName: string;
   className: string;
 }
@@ -84,6 +88,14 @@ export const APPROVAL_TYPES = {
     accentClassName: "text-cyan-400",
     className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400",
   },
+  imageDeletion: {
+    icon: ImageMinus,
+    href: IMAGE_DELETIONS_HREF,
+    pendingHref: () => IMAGE_DELETIONS_HREF,
+    itemHref: () => IMAGE_DELETIONS_HREF,
+    accentClassName: "text-orange-400",
+    className: "border-orange-500/30 bg-orange-500/10 text-orange-400",
+  },
 } satisfies Record<ApprovalType, ApprovalTypeConfig>;
 
 const STATUS_DOT_CLASS_NAMES = {
@@ -122,13 +134,13 @@ export function SectionLink({
 export function PendingApprovalCard({ item }: { item: PendingApproval }) {
   const locale = useCurrentLocale();
   const t = useI18n();
-  const config = APPROVAL_TYPES[item.type];
+  const config: ApprovalTypeConfig = APPROVAL_TYPES[item.type];
   const Icon = config.icon;
 
   return (
     <li>
       <Link
-        href={`${config.href}/${item._id}`}
+        href={config.itemHref?.(item._id) ?? `${config.href}/${item._id}`}
         className={cn(
           CARD_CLASS_NAME,
           item.urgency === "high" && "border-rose-500/30 bg-rose-500/5",

@@ -47,6 +47,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const tReproduction = useScopedI18n("reproductionRequests");
   const tInventory = useScopedI18n("inventory");
   const tRecipes = useScopedI18n("preparationRecipes");
+  const tImageDeletion = useScopedI18n("imageDeletion.approvals");
   const tCondition = useScopedI18n("conditionAssessments");
 
   const getPageTitle = (path: string) => {
@@ -76,6 +77,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
     if (cleanPath === "/documentation-quality") return tQuality("title");
     if (/^\/documentation-quality\/[^/]+$/.test(cleanPath))
       return tQuality("detail.headerTitle");
+    if (cleanPath === "/image-deletions") return tImageDeletion("title");
     if (cleanPath === "/reproduction-requests") return tReproduction("title");
     if (/^\/reproduction-requests\/[^/]+$/.test(cleanPath))
       return tReproduction("headerTitle");

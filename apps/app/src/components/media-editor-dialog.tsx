@@ -4,8 +4,9 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ImageDeletionDialogs } from "@/components/image-deletion-dialogs";
 import { useOrganization } from "@/components/organization-provider";
 import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useI18n } from "@/locales/client";
@@ -21,6 +22,8 @@ interface MediaEditorDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved?: () => void;
+  /** Offers deleting the image, as the object's edit form does. */
+  allowDelete?: boolean;
 }
 
 export function MediaEditorDialog({
@@ -28,16 +31,22 @@ export function MediaEditorDialog({
   isOpen,
   onClose,
   onSaved,
+  allowDelete = false,
 }: MediaEditorDialogProps) {
   const translate = useI18n();
   const actionErrorMessage = useActionErrorMessage();
   const { currentOrganizationId } = useOrganization();
   const isSavingRef = useRef(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   // Load media file data
   const mediaFile = useQuery(
     api.media.getWithMetadata,
     mediaId ? { mediaId } : "skip",
+  );
+  const deletionState = useQuery(
+    api.mediaDeletions.getDeletionState,
+    allowDelete && isOpen && mediaId ? { mediaId } : "skip",
   );
 
   // Load organization for watermark settings
@@ -180,7 +189,8 @@ export function MediaEditorDialog({
   );
 
   // Don't render if not open or no media
-  if (!isOpen || !mediaId) {
+  // A deleted image (null) has nothing to edit; never cover the page for it.
+  if (!isOpen || !mediaId || mediaFile === null) {
     return null;
   }
 
@@ -217,13 +227,40 @@ export function MediaEditorDialog({
       }
     : undefined;
 
+  const canDelete = deletionState?.canDelete === true;
+  const deletionPending =
+    deletionState !== undefined &&
+    deletionState !== null &&
+    deletionState.pendingRequestedAt !== null;
+
   return (
-    <MediaEditor
-      image={editorImage}
-      isOpen={isOpen}
-      onClose={onClose}
-      onSave={handleSave}
-      watermarkSettings={watermarkSettings}
-    />
+    <>
+      <MediaEditor
+        image={editorImage}
+        isOpen={isOpen}
+        // Escape answers the open confirmation, not the editor behind it.
+        onClose={isConfirmingDelete ? () => {} : onClose}
+        onSave={handleSave}
+        watermarkSettings={watermarkSettings}
+        deletion={
+          canDelete || deletionPending
+            ? {
+                pending: deletionPending,
+                onDelete: () => setIsConfirmingDelete(true),
+              }
+            : undefined
+        }
+      />
+      {canDelete && deletionState ? (
+        <ImageDeletionDialogs
+          mediaId={mediaFile._id}
+          fileName={mediaFile.fileName}
+          requiresApproval={deletionState.requiresApproval}
+          open={isConfirmingDelete}
+          onOpenChange={setIsConfirmingDelete}
+          onDone={onClose}
+        />
+      ) : null}
+    </>
   );
 }

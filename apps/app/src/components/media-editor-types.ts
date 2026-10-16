@@ -22,6 +22,14 @@ export interface MediaEditorProps {
   onClose: () => void;
   onSave?: (editedBlob: Blob, editMetadata: EditMetadata) => Promise<void>;
   watermarkSettings?: WatermarkSettings;
+  deletion?: MediaEditorDeletion;
+}
+
+/** Offers deleting the image from the editor's toolbar. */
+export interface MediaEditorDeletion {
+  /** The image already waits for deletion approval. */
+  pending: boolean;
+  onDelete: () => void;
 }
 
 export interface EditMetadata {

@@ -7197,6 +7197,7 @@ export default {
         loan: "Împrumuturi în așteptarea aprobării",
         exhibition: "Expoziții în așteptarea aprobării",
         conservation: "Conservare în așteptarea aprobării",
+        imageDeletion: "Ștergeri de imagini în așteptarea aprobării",
       },
     },
   },
@@ -10828,6 +10829,52 @@ export default {
         "Acest pas este atribuit unui alt rol de aprobator. Roagă o persoană desemnată pentru acest pas să îl verifice.",
       alreadyApproved:
         "Aprobarea ta este deja înregistrată. Dosarul rămâne în așteptare până când îl aprobă ceilalți aprobatori.",
+    },
+  },
+  imageDeletion: {
+    deleteImage: "Șterge imaginea",
+    pending: "Ștergere în așteptarea aprobării",
+    pendingDescription:
+      "Ștergerea acestei imagini așteaptă aprobarea. Imaginea rămâne până când un aprobator decide.",
+    confirm: {
+      title: "Sigur vrei să ștergi această imagine?",
+      approvalHint:
+        "Mai întâi un aprobator verifică ștergerea. Imaginea rămâne până când o aprobă.",
+    },
+    finalConfirm: {
+      title: "Imaginea va fi ștearsă.",
+      description: "Această acțiune nu poate fi anulată.",
+    },
+    requested: "Ștergerea imaginii a fost trimisă spre aprobare",
+    deleted: "Imagine ștearsă",
+    failed: "Imaginea nu a putut fi ștearsă.",
+    errors: {
+      notAnImage: "Doar imaginile pot fi șterse. Documentele rămân la obiect.",
+      alreadyPending: "Această imagine așteaptă deja aprobarea ștergerii.",
+      approvalSettingChanged:
+        "Setarea de aprobare pentru ștergerea imaginilor s-a schimbat. Încearcă din nou.",
+      citedAsEvidence:
+        "Această imagine este citată ca dovadă într-o evaluare a stării, o afirmație de proveniență, un incident, o sarcină sau o cerere de reproducere, deci nu poate fi ștearsă.",
+      requestClosed: "Această cerere de ștergere a fost deja soluționată.",
+      imageNotFound:
+        "Această imagine nu mai există. Poate a fost deja ștearsă.",
+    },
+    approvals: {
+      title: "Ștergeri de imagini",
+      description:
+        "Imagini pe care personalul a cerut să fie șterse. Aprobarea șterge imaginea definitiv; respingerea o păstrează la obiectul ei.",
+      empty: "Nicio ștergere de imagine nu așteaptă aprobarea.",
+      noAccess:
+        "Pentru a vedea aceste cereri ai nevoie de permisiunea de a vedea fișierele media.",
+      readOnly:
+        "Doar aprobatorul primului pas din fluxul de accesiune sau un administrator poate decide aceste cereri.",
+      requestedBy: "Cerută de {name}",
+      approve: "Aprobă",
+      reject: "Respinge",
+      approved: "Imagine ștearsă",
+      rejected: "Ștergere respinsă. Imaginea rămâne.",
+      decideFailed: "Cererea nu a putut fi soluționată.",
+      imageUnavailable: "Imagine indisponibilă",
     },
   },
   identifiers: {

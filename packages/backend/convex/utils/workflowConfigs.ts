@@ -25,3 +25,11 @@ export async function isDeaccessionWorkflowEnabled(
   const organization = await ctx.db.get(organizationId);
   return organization?.settings?.deaccessionWorkflowEnabled ?? true;
 }
+
+export async function isAccessionWorkflowEnabled(
+  ctx: WorkflowConfigLookupCtx,
+  organizationId: Id<"organizations">,
+) {
+  const organization = await ctx.db.get(organizationId);
+  return organization?.settings?.accessionWorkflowEnabled ?? true;
+}

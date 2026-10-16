@@ -14,6 +14,7 @@ const NO_APPROVALS = {
   loan: 0,
   exhibition: 0,
   conservation: 0,
+  imageDeletion: 0,
 };
 
 const work = vi.hoisted(() => ({
@@ -103,6 +104,7 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
     loan: 0,
     exhibition: 1,
     conservation: 1,
+    imageDeletion: 2,
   });
   work.pages["caseTasks:listMyWork"] = page(20, "CanLoadMore");
 
@@ -114,6 +116,7 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
     "Pending deaccession approval 2",
     "Pending exhibition approval 1",
     "Pending conservation approval 1",
+    "Pending image deletion approval 2",
   ]);
   expect(hrefOf("My tasks 20+")).toBe("/assignments");
   expect(hrefOf("Pending accession approval 3")).toBe(
@@ -128,6 +131,7 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
   expect(hrefOf("Pending conservation approval 1")).toBe(
     "/conservation?status=proposed",
   );
+  expect(hrefOf("Pending image deletion approval 2")).toBe("/image-deletions");
 });
 
 test("condition assessments awaiting approval follow the other approval cards and open the approval page", async () => {

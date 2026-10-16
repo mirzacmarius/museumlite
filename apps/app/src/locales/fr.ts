@@ -4933,6 +4933,7 @@ export default {
         loan: "Prêts en attente d'approbation",
         exhibition: "Expositions en attente d'approbation",
         conservation: "Conservation en attente d'approbation",
+        imageDeletion: "Suppression d'image en attente d'approbation",
       },
     },
   },
@@ -10893,6 +10894,54 @@ export default {
         "Cette étape est attribuée à un autre rôle approbateur. Demandez à une personne assignée à cette étape de l'examiner.",
       alreadyApproved:
         "Votre approbation est déjà enregistrée. Le dossier reste en attente jusqu'à l'approbation des autres approbateurs.",
+    },
+  },
+  imageDeletion: {
+    deleteImage: "Supprimer l'image",
+    pending: "Suppression en attente d'approbation",
+    pendingDescription:
+      "La suppression de cette image attend une approbation. L'image reste jusqu'à la décision d'un approbateur.",
+    confirm: {
+      title: "Voulez-vous vraiment supprimer cette image ?",
+      approvalHint:
+        "Un approbateur examine d'abord la suppression. L'image reste jusqu'à son approbation.",
+    },
+    finalConfirm: {
+      title: "Cette action supprimera l'image.",
+      description: "Elle est irréversible.",
+    },
+    requested: "Suppression de l'image envoyée pour approbation",
+    deleted: "Image supprimée",
+    failed: "Impossible de supprimer l'image.",
+    errors: {
+      notAnImage:
+        "Seules les images peuvent être supprimées. Les documents restent avec l'objet.",
+      alreadyPending:
+        "Cette image attend déjà l'approbation de sa suppression.",
+      approvalSettingChanged:
+        "Le réglage d'approbation des suppressions d'images a changé. Réessayez.",
+      citedAsEvidence:
+        "Cette image est citée comme preuve par un constat d'état, une affirmation de provenance, un incident, une tâche ou une demande de reproduction ; elle ne peut donc pas être supprimée.",
+      requestClosed: "Cette demande de suppression a déjà été tranchée.",
+      imageNotFound:
+        "Cette image n'existe plus. Elle a peut-être déjà été supprimée.",
+    },
+    approvals: {
+      title: "Suppressions d'images",
+      description:
+        "Images dont le personnel a demandé la suppression. Approuver supprime l'image définitivement ; refuser la conserve avec son objet.",
+      empty: "Aucune suppression d'image n'attend d'approbation.",
+      noAccess:
+        "Pour voir ces demandes, il faut l'autorisation de consulter les médias.",
+      readOnly:
+        "Seul l'approbateur de la première étape du circuit d'accession ou un administrateur peut trancher ces demandes.",
+      requestedBy: "Demandé par {name}",
+      approve: "Approuver",
+      reject: "Refuser",
+      approved: "Image supprimée",
+      rejected: "Suppression refusée. L'image est conservée.",
+      decideFailed: "Impossible de traiter la demande.",
+      imageUnavailable: "Image indisponible",
     },
   },
   identifiers: {

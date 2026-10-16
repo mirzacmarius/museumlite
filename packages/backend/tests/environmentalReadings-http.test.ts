@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { describe, expect, onTestFinished, test, vi } from "vitest";
 import rateLimiterSchema from "../../../node_modules/@convex-dev/rate-limiter/src/component/schema";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
@@ -220,6 +220,12 @@ describe("POST /v1/environmental-readings", () => {
   });
 
   test("limits each device to 120 new readings per minute", async () => {
+    // The bucket refills 2 tokens a second; a frozen clock keeps a slow run
+    // from earning a 121st reading.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const t = createTestContext();
     const { token, organizationId, admin } = await createReceiver(t);
     const submit = (index: number) =>

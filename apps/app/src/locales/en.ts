@@ -4819,6 +4819,7 @@ export default {
         loan: "Pending loan approval",
         exhibition: "Pending exhibition approval",
         conservation: "Pending conservation approval",
+        imageDeletion: "Pending image deletion approval",
       },
     },
   },
@@ -10594,6 +10595,51 @@ export default {
         "This step is assigned to a different approver role. Ask someone assigned to this step to review it.",
       alreadyApproved:
         "Your approval is already recorded. The case stays pending until the remaining approvers approve it.",
+    },
+  },
+  imageDeletion: {
+    deleteImage: "Delete image",
+    pending: "Deletion awaiting approval",
+    pendingDescription:
+      "Deletion of this image is waiting for approval. The image stays until an approver decides.",
+    confirm: {
+      title: "Are you sure you want to delete this image?",
+      approvalHint:
+        "An approver reviews the deletion first. The image stays until they approve it.",
+    },
+    finalConfirm: {
+      title: "This will delete the image.",
+      description: "This action cannot be reversed.",
+    },
+    requested: "Image deletion sent for approval",
+    deleted: "Image deleted",
+    failed: "The image could not be deleted.",
+    errors: {
+      notAnImage: "Only images can be deleted. Documents stay with the object.",
+      alreadyPending: "This image is already waiting for deletion approval.",
+      approvalSettingChanged:
+        "The approval setting for image deletions has changed. Try again.",
+      citedAsEvidence:
+        "This image is cited as evidence by a condition assessment, provenance claim, incident, task or reproduction request, so it cannot be deleted.",
+      requestClosed: "This deletion request has already been decided.",
+      imageNotFound:
+        "This image no longer exists. It may already have been deleted.",
+    },
+    approvals: {
+      title: "Image deletions",
+      description:
+        "Images staff asked to delete. Approving deletes the image for good; rejecting keeps it with its object.",
+      empty: "No image deletions are waiting for approval.",
+      noAccess: "Viewing these requests needs permission to view media.",
+      readOnly:
+        "Only the approver of the accession workflow's first step or an administrator can decide these requests.",
+      requestedBy: "Requested by {name}",
+      approve: "Approve",
+      reject: "Reject",
+      approved: "Image deleted",
+      rejected: "Deletion rejected. The image stays.",
+      decideFailed: "The request could not be decided.",
+      imageUnavailable: "Image unavailable",
     },
   },
   identifiers: {

@@ -1,9 +1,10 @@
 "use client";
-import type { api } from "@v1/backend/convex/_generated/api";
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Edit, Star, Upload } from "lucide-react";
+import { Edit, Hourglass, Star, Upload } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
 import { PermissionGate } from "@/components/permission-gate";
@@ -34,6 +35,7 @@ export interface CollectionEditMediaTabProps extends CollectionFormTabProps {
 }
 
 export function CollectionEditMediaTab({
+  typedCollectionId,
   images,
   documents,
   common,
@@ -43,6 +45,11 @@ export function CollectionEditMediaTab({
   setEditingImageId,
 }: CollectionEditMediaTabProps) {
   const tRoot = useI18n();
+  const pendingDeletion = new Set<string>(
+    useQuery(api.mediaDeletions.listPendingForObject, {
+      collectionId: typedCollectionId,
+    }) ?? [],
+  );
   return (
     <div className="space-y-8">
       <EditSection
@@ -68,7 +75,7 @@ export function CollectionEditMediaTab({
                   />
                 ) : null}
 
-                <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
+                <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
                   {file.isPrimary ? (
                     <div className="rounded-full bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground">
                       {tRoot("objects.form.media.primary")}
@@ -76,6 +83,18 @@ export function CollectionEditMediaTab({
                   ) : (
                     <div />
                   )}
+                  {pendingDeletion.has(file._id) ? (
+                    <div
+                      className="flex min-w-0 items-center gap-1 rounded-full bg-amber-700 px-2 py-1 text-[10px] font-medium text-white"
+                      title={tRoot("imageDeletion.pendingDescription")}
+                    >
+                      <Hourglass
+                        className="size-3 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span>{tRoot("imageDeletion.pending")}</span>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-zinc-950/65 p-3">

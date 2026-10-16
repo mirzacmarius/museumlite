@@ -21,6 +21,7 @@ const NO_APPROVALS = {
   loan: 0,
   exhibition: 0,
   conservation: 0,
+  imageDeletion: 0,
 };
 
 interface PendingRecordSetup {
@@ -458,6 +459,7 @@ test("should return empty assignments when no data exists", async () => {
         loan: 0,
         exhibition: 0,
         conservation: 0,
+        imageDeletion: 0,
       },
     },
   });

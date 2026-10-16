@@ -4921,6 +4921,7 @@ export default {
         loan: "Préstamos pendientes de aprobación",
         exhibition: "Exposiciones pendientes de aprobación",
         conservation: "Conservación pendiente de aprobación",
+        imageDeletion: "Eliminación de imagen pendiente de aprobación",
       },
     },
   },
@@ -10851,6 +10852,52 @@ export default {
         "Este paso está asignado a otro rol aprobador. Pida a alguien asignado a este paso que lo revise.",
       alreadyApproved:
         "Su aprobación ya está registrada. El caso sigue pendiente hasta que lo aprueben los demás aprobadores.",
+    },
+  },
+  imageDeletion: {
+    deleteImage: "Eliminar imagen",
+    pending: "Eliminación pendiente de aprobación",
+    pendingDescription:
+      "La eliminación de esta imagen espera aprobación. La imagen se conserva hasta que un aprobador decida.",
+    confirm: {
+      title: "¿Seguro que quieres eliminar esta imagen?",
+      approvalHint:
+        "Primero un aprobador revisa la eliminación. La imagen se conserva hasta que la apruebe.",
+    },
+    finalConfirm: {
+      title: "Esto eliminará la imagen.",
+      description: "Esta acción no se puede deshacer.",
+    },
+    requested: "Eliminación de la imagen enviada para aprobación",
+    deleted: "Imagen eliminada",
+    failed: "No se pudo eliminar la imagen.",
+    errors: {
+      notAnImage:
+        "Solo se pueden eliminar imágenes. Los documentos permanecen con el objeto.",
+      alreadyPending: "Esta imagen ya espera la aprobación de su eliminación.",
+      approvalSettingChanged:
+        "La configuración de aprobación para eliminar imágenes ha cambiado. Inténtalo de nuevo.",
+      citedAsEvidence:
+        "Esta imagen se cita como prueba en una evaluación del estado, una afirmación de procedencia, un incidente, una tarea o una solicitud de reproducción, por lo que no se puede eliminar.",
+      requestClosed: "Esta solicitud de eliminación ya se ha decidido.",
+      imageNotFound:
+        "Esta imagen ya no existe. Puede que ya se haya eliminado.",
+    },
+    approvals: {
+      title: "Eliminaciones de imágenes",
+      description:
+        "Imágenes que el personal pidió eliminar. Aprobar elimina la imagen definitivamente; rechazar la conserva con su objeto.",
+      empty: "No hay eliminaciones de imágenes pendientes de aprobación.",
+      noAccess: "Para ver estas solicitudes necesitas permiso para ver medios.",
+      readOnly:
+        "Solo el aprobador del primer paso del flujo de accesión o un administrador puede decidir estas solicitudes.",
+      requestedBy: "Solicitado por {name}",
+      approve: "Aprobar",
+      reject: "Rechazar",
+      approved: "Imagen eliminada",
+      rejected: "Eliminación rechazada. La imagen se conserva.",
+      decideFailed: "No se pudo decidir la solicitud.",
+      imageUnavailable: "Imagen no disponible",
     },
   },
   identifiers: {
