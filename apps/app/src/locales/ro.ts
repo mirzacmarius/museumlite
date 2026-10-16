@@ -2061,6 +2061,7 @@ export default {
     },
     loadMore: "Încarcă mai multe",
     loading: "Se încarcă…",
+    showMore: "Afișează mai multe",
     shownOfTotal: "Se afișează {shown} din {total}",
     matchesShown: "Potriviri afișate: {shown}",
     sort: {
@@ -7106,6 +7107,7 @@ export default {
       assignedTruncated: "Se afișează primele 50 de dosare atribuite.",
       since: "Din",
       nothingWaiting: "Nu aveți nimic în așteptare.",
+      pendingTransfers: "Transferuri în așteptare",
       pendingApproval: {
         accession: "Accesiuni în așteptarea aprobării",
         deaccession: "Scoateri din colecție în așteptarea aprobării",

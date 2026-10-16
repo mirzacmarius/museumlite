@@ -152,6 +152,57 @@ test("members who do not review provenance see no claims card", async () => {
   expect(screen.getByText("No work waiting for you.")).toBeTruthy();
 });
 
+function pendingTransfers(count: number, truncated = false) {
+  return {
+    requests: Array.from({ length: count }, (_, index) => ({
+      _id: `transfer-${index}`,
+      collectionTitle: `Object ${index}`,
+      sourceAccessionNumber: `SRC-${index}`,
+      status: "pending_source_approval",
+      requestedAt: NOW,
+    })),
+    truncated,
+  };
+}
+
+test("transfer managers see pending transfers after the approval cards, opening Transfers", async () => {
+  work.queries["assignments:listMyAssignments"] = assignments({
+    ...NO_APPROVALS,
+    conservation: 1,
+  });
+  work.queries["objectMoves:listAwaitingDecision"] = pendingTransfers(2);
+  work.permissions = new Set(["organization.manage_settings"]);
+
+  await renderSummary();
+
+  expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual([
+    "View All",
+    "Pending conservation approval 1",
+    "Pending transfers 2",
+  ]);
+  expect(hrefOf("Pending transfers 2")).toBe("/accessions/transfers");
+});
+
+test("a capped transfer list reads as more than its count", async () => {
+  work.queries["objectMoves:listAwaitingDecision"] = pendingTransfers(50, true);
+  work.permissions = new Set(["organization.manage_settings"]);
+
+  await renderSummary();
+
+  expect(
+    screen.getByRole("link", { name: "Pending transfers 50+" }),
+  ).toBeTruthy();
+});
+
+test("members who cannot decide transfers see no transfers card", async () => {
+  work.queries["objectMoves:listAwaitingDecision"] = pendingTransfers(2);
+
+  await renderSummary();
+
+  expect(screen.queryAllByRole("link")).toEqual([]);
+  expect(screen.getByText("No work waiting for you.")).toBeTruthy();
+});
+
 test("links to My work when no card already opens it", async () => {
   work.queries["assignments:listMyAssignments"] = assignments({
     ...NO_APPROVALS,

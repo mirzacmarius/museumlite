@@ -4843,6 +4843,7 @@ export default {
       assignedTruncated: "Affichage des 50 premiers dossiers attribués.",
       since: "Depuis le",
       nothingWaiting: "Aucun travail ne vous attend.",
+      pendingTransfers: "Transferts en attente",
       pendingApproval: {
         accession: "Accessions en attente d'approbation",
         deaccession: "Désaccessions en attente d'approbation",
@@ -5660,6 +5661,7 @@ export default {
     },
     loadMore: "Charger plus",
     loading: "Chargement…",
+    showMore: "Afficher plus",
     shownOfTotal: "{shown} affichés sur {total}",
     matchesShown: "Résultats affichés : {shown}",
     sort: {

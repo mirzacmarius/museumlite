@@ -1320,6 +1320,123 @@ describe("objectMoves", () => {
     );
   });
 
+  test("listAwaitingDecision follows a transfer to whichever organization must decide it", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const waitingOn = async () => {
+      const [source, target] = await Promise.all([
+        fixture.admin.query(api.objectMoves.listAwaitingDecision, {
+          organizationId: fixture.sourceOrganizationId,
+        }),
+        fixture.targetAdmin.query(api.objectMoves.listAwaitingDecision, {
+          organizationId: fixture.targetOrganizationId,
+        }),
+      ]);
+      return { source, target };
+    };
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Pending transfer card",
+      },
+    );
+
+    const requested = await waitingOn();
+    expect(requested.source).toEqual({
+      requests: [
+        {
+          _id: requestId,
+          collectionTitle: "Move Test Object",
+          sourceAccessionNumber: "SRC-001",
+          status: "pending_source_approval",
+          requestedAt: expect.any(Number),
+        },
+      ],
+      truncated: false,
+    });
+    expect(requested.target).toEqual({ requests: [], truncated: false });
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+
+    const approved = await waitingOn();
+    expect(approved.source.requests).toEqual([]);
+    expect(approved.target.requests).toMatchObject([
+      { _id: requestId, status: "awaiting_acceptance" },
+    ]);
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    const executed = await waitingOn();
+    expect(executed.source.requests).toEqual([]);
+    expect(executed.target.requests).toEqual([]);
+  });
+
+  test("listAwaitingDecision has nothing for members who cannot decide transfers", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    await fixture.requester.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.targetOrganizationId,
+      accessionMode: "keep",
+      reason: "Requester cannot approve their own transfer",
+    });
+
+    const [requesterView, adminView] = await Promise.all([
+      fixture.requester.query(api.objectMoves.listAwaitingDecision, {
+        organizationId: fixture.sourceOrganizationId,
+      }),
+      fixture.admin.query(api.objectMoves.listAwaitingDecision, {
+        organizationId: fixture.sourceOrganizationId,
+      }),
+    ]);
+
+    expect(requesterView).toEqual({ requests: [], truncated: false });
+    expect(adminView.requests).toHaveLength(1);
+  });
+
+  test("listAwaitingDecision counts legacy pending requests and caps the list newest first", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestedAt = Date.UTC(2026, 9, 1);
+
+    await t.run(async (ctx) => {
+      for (let index = 0; index < 51; index += 1) {
+        await ctx.db.insert("organizationMoveRequests", {
+          collectionId: fixture.collectionId,
+          sourceOrganizationId: fixture.sourceOrganizationId,
+          targetOrganizationId: fixture.targetOrganizationId,
+          sourceAccessionNumber: `SRC-${index}`,
+          accessionMode: "keep",
+          reason: "Backlog",
+          status: index === 50 ? "pending" : "pending_source_approval",
+          requestedBy: fixture.requesterId,
+          requestedAt: requestedAt + index,
+        });
+      }
+    });
+
+    const waiting = await fixture.admin.query(
+      api.objectMoves.listAwaitingDecision,
+      { organizationId: fixture.sourceOrganizationId },
+    );
+
+    expect(waiting.truncated).toBe(true);
+    expect(waiting.requests).toHaveLength(50);
+    expect(waiting.requests[0]).toMatchObject({
+      sourceAccessionNumber: "SRC-50",
+      status: "pending_source_approval",
+    });
+    expect(waiting.requests.at(-1)?.sourceAccessionNumber).toBe("SRC-1");
+  });
+
   test("rejecting a request leaves the object unchanged and notifies the requester", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);

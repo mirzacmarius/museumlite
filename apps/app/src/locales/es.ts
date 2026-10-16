@@ -4832,6 +4832,7 @@ export default {
       assignedTruncated: "Se muestran los primeros 50 casos asignados.",
       since: "Desde",
       nothingWaiting: "No tiene trabajo pendiente.",
+      pendingTransfers: "Transferencias pendientes",
       pendingApproval: {
         accession: "Accesiones pendientes de aprobación",
         deaccession: "Bajas pendientes de aprobación",
@@ -5639,6 +5640,7 @@ export default {
     },
     loadMore: "Cargar más",
     loading: "Cargando…",
+    showMore: "Mostrar más",
     shownOfTotal: "Mostrando {shown} de {total}",
     matchesShown: "Coincidencias mostradas: {shown}",
     sort: {
