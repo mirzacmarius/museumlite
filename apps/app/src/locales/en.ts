@@ -4741,6 +4741,7 @@ export default {
       assignedTruncated: "Showing the first 50 assigned cases.",
       since: "Since",
       nothingWaiting: "No work waiting for you.",
+      pendingTransfers: "Pending transfers",
       pendingApproval: {
         accession: "Pending accession approval",
         deaccession: "Pending deaccession approval",
@@ -5531,6 +5532,7 @@ export default {
     },
     loadMore: "Load more",
     loading: "Loading…",
+    showMore: "Show more",
     shownOfTotal: "Showing {shown} of {total}",
     matchesShown: "Matches shown: {shown}",
     sort: {

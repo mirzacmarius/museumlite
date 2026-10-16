@@ -15,6 +15,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ClientDateFns } from "@/components/client-date";
+import {
+  RECORD_LOG_PAGE_SIZE,
+  RecordLog,
+  RecordLogEntry,
+} from "@/components/record-log";
 import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { DEACCESSION_COLUMN_PAGE_SIZE } from "./deaccession-list-state";
@@ -65,19 +70,6 @@ function getColumnIcon(column: DeaccessionBoardColumn) {
   return <ShieldCheck className="size-4" />;
 }
 
-function formatTargetStatus(
-  targetCollectionStatus: "deaccessioned" | "archived" | "deleted",
-) {
-  switch (targetCollectionStatus) {
-    case "deaccessioned":
-      return "Deaccession";
-    case "archived":
-      return "Archived";
-    case "deleted":
-      return "Deleted";
-  }
-}
-
 export function DeaccessionKanbanColumn({
   organizationId,
   column,
@@ -93,10 +85,14 @@ export function DeaccessionKanbanColumn({
   const dotStyle = getColumnDotStyle(column);
   const icon = getColumnIcon(column);
   const trimmedSearch = search.trim();
+  const isApprovedLog = column.kind === "approved";
+  const pageSize = isApprovedLog
+    ? RECORD_LOG_PAGE_SIZE
+    : DEACCESSION_COLUMN_PAGE_SIZE;
   const { results, status, loadMore } = usePaginatedQuery(
     api.deaccessions.listBoardColumn,
     { organizationId, column, search: trimmedSearch || undefined },
-    { initialNumItems: DEACCESSION_COLUMN_PAGE_SIZE },
+    { initialNumItems: pageSize },
   );
   const countLabel = trimmedSearch
     ? tList("matchesShown", { shown: results.length })
@@ -134,6 +130,23 @@ export function DeaccessionKanbanColumn({
                     : t("table.noResults")}
                 </p>
               </div>
+            ) : isApprovedLog ? (
+              <RecordLog>
+                {results.map((item) => (
+                  <RecordLogEntry
+                    key={item._id}
+                    href={withReturnPath(
+                      `/deaccessions/${item._id}`,
+                      returnPath,
+                    )}
+                    reference={item.deaccessionNumber}
+                    date={item.dateDeaccessioned}
+                    showTime={false}
+                    title={item.collectionTitle}
+                    detail={item.reason || undefined}
+                  />
+                ))}
+              </RecordLog>
             ) : (
               results.map((item) => (
                 <Link
@@ -164,9 +177,7 @@ export function DeaccessionKanbanColumn({
 
                   <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
                     <span className="truncate">
-                      {column.kind === "approved"
-                        ? formatTargetStatus(item.targetCollectionStatus)
-                        : t(`method.${item.method}`)}
+                      {t(`method.${item.method}`)}
                     </span>
                     <span className="shrink-0 text-muted-foreground">
                       <ClientDateFns
@@ -185,11 +196,13 @@ export function DeaccessionKanbanColumn({
                 size="sm"
                 className="w-full text-xs"
                 disabled={status === "LoadingMore"}
-                onClick={() => loadMore(DEACCESSION_COLUMN_PAGE_SIZE)}
+                onClick={() => loadMore(pageSize)}
               >
                 {status === "LoadingMore"
                   ? tList("loading")
-                  : tList("loadMore")}
+                  : isApprovedLog
+                    ? tList("showMore")
+                    : tList("loadMore")}
               </Button>
             ) : null}
           </div>

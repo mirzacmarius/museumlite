@@ -1,6 +1,7 @@
 "use client";
 
 import type { api } from "@v1/backend/convex/_generated/api";
+import { Button } from "@v1/ui/button";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -11,7 +12,13 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { ClientDateFns } from "@/components/client-date";
+import {
+  RECORD_LOG_PAGE_SIZE,
+  RecordLog,
+  RecordLogEntry,
+} from "@/components/record-log";
 import type { useI18n as useI18nType } from "@/locales/client";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 
@@ -109,6 +116,37 @@ function getTransferEmptyMessage(
   }
 }
 
+/** Finished transfers read as a log of decisions rather than as cards. */
+const LOG_STATUSES = new Set<TransferStatus>(["executed", "rejected"]);
+
+/** When the deciding organization executed or rejected the transfer. */
+function decidedAt(request: TransferRequest) {
+  return (
+    request.targetReviewedAt ??
+    request.sourceReviewedAt ??
+    request.reviewedAt ??
+    request.requestedAt
+  );
+}
+
+/** Why a transfer was rejected, otherwise where it went. */
+function logDetail(request: TransferRequest) {
+  if (request.status !== "rejected") return request.targetOrganizationName;
+  return (
+    request.targetReviewNotes ??
+    request.sourceReviewNotes ??
+    request.targetOrganizationName
+  );
+}
+
+function newestDecisionFirst(left: TransferRequest, right: TransferRequest) {
+  return (
+    decidedAt(right) - decidedAt(left) ||
+    right.requestedAt - left.requestedAt ||
+    left._id.localeCompare(right._id)
+  );
+}
+
 function getAccessionHandlingSummary(
   request: TransferRequest,
   tRoot: Translator,
@@ -140,6 +178,13 @@ export function TransferKanbanColumn({
   const locale = useCurrentLocale();
   const style = statusStyles[status];
   const Icon = style.icon;
+  const isLog = LOG_STATUSES.has(status);
+  const [shownLog, setShownLog] = useState({
+    search: searchQuery,
+    length: RECORD_LOG_PAGE_SIZE,
+  });
+  const logLength =
+    shownLog.search === searchQuery ? shownLog.length : RECORD_LOG_PAGE_SIZE;
 
   const filteredRequests = transferRequests.filter((request) => {
     if (request.status !== status || request.direction !== direction) {
@@ -162,13 +207,21 @@ export function TransferKanbanColumn({
       false
     );
   });
+  const logEntries = isLog
+    ? filteredRequests.toSorted(newestDecisionFirst)
+    : [];
 
   return (
     <div className="flex w-80 flex-shrink-0 flex-col">
-      <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
         <span>{title}</span>
-        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
-          {filteredRequests.length}
+        <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] normal-case tracking-normal text-zinc-500">
+          {isLog
+            ? tRoot("listState.shownOfTotal", {
+                shown: Math.min(logLength, logEntries.length),
+                total: logEntries.length,
+              })
+            : filteredRequests.length}
         </span>
       </div>
 
@@ -184,6 +237,19 @@ export function TransferKanbanColumn({
                   {getTransferEmptyMessage(status, tRoot)}
                 </p>
               </div>
+            ) : isLog ? (
+              <RecordLog>
+                {logEntries.slice(0, logLength).map((request) => (
+                  <RecordLogEntry
+                    key={request._id}
+                    href={`/objects/move-requests/${request._id}`}
+                    reference={request.sourceAccessionNumber}
+                    date={decidedAt(request)}
+                    title={request.collectionTitle}
+                    detail={logDetail(request)}
+                  />
+                ))}
+              </RecordLog>
             ) : (
               filteredRequests.map((request) => (
                 <Link
@@ -272,6 +338,21 @@ export function TransferKanbanColumn({
                 </Link>
               ))
             )}
+            {logEntries.length > logLength ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() =>
+                  setShownLog({
+                    search: searchQuery,
+                    length: logLength + RECORD_LOG_PAGE_SIZE,
+                  })
+                }
+              >
+                {tRoot("listState.showMore")}
+              </Button>
+            ) : null}
           </div>
         </ScrollArea>
       </div>

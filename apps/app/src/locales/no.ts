@@ -4792,6 +4792,7 @@ export default {
       assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
       nothingWaiting: "Ingenting venter på deg.",
+      pendingTransfers: "Ventende overføringer",
       pendingApproval: {
         accession: "Aksesjoner som venter på godkjenning",
         deaccession: "Deaksesjoner som venter på godkjenning",
@@ -5596,6 +5597,7 @@ export default {
     },
     loadMore: "Last inn flere",
     loading: "Laster…",
+    showMore: "Vis flere",
     shownOfTotal: "Viser {shown} av {total}",
     matchesShown: "Treff vist: {shown}",
     sort: {
