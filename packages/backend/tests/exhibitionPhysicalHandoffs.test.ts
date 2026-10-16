@@ -122,6 +122,7 @@ async function acceptAssessment(
     summary: "Pre-install check",
     observations: [],
     photos: [],
+    submit: true,
   });
   await authed.mutation(api.conditionAssessments.accept, { assessmentId });
   return assessmentId;

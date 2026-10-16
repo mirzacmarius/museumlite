@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { ConditionAssessmentStatus } from "@v1/backend/convex/utils/conditionAssessmentStatus";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import {
@@ -236,12 +237,22 @@ export function TreatmentEvidencePanel({
                 </Button>
               </div>
             </div>
-            <Link
-              href={`/objects/${collectionId}`}
-              className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
-            >
-              {t("evidence.captureOnObject")}
-            </Link>
+            <div className="flex flex-col gap-1">
+              <Link
+                href={`/objects/${collectionId}/edit`}
+                className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+              >
+                {t("evidence.captureOnObject")}
+              </Link>
+              <PermissionGate permission="collections.accept_condition">
+                <Link
+                  href="/condition-assessments?status=pending"
+                  className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+                >
+                  {t("evidence.acceptOnBoard")}
+                </Link>
+              </PermissionGate>
+            </div>
           </div>
         </PermissionGate>
       )}
@@ -389,7 +400,7 @@ function AssessmentCard({
     condition: string;
     summary: string;
     assessedAt: number;
-    status: "draft" | "accepted";
+    status: ConditionAssessmentStatus;
   } | null;
   emptyLabel: string;
   locale: string;

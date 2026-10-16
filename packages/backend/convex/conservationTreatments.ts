@@ -15,6 +15,7 @@ import { describeBreach } from "./utils/alertEpisodePolicy";
 import { acceptReading } from "./utils/alertEpisodes";
 import { batchLookup } from "./utils/batchLookup";
 import { appendCaseHistory } from "./utils/caseHistory";
+import { conditionAssessmentStatusValidator } from "./utils/conditionAssessmentStatus";
 import { conservationError } from "./utils/conservationErrors";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
@@ -63,7 +64,7 @@ const assessmentEvidenceSummary = v.object({
   condition: v.string(),
   summary: v.string(),
   assessedAt: v.number(),
-  status: v.union(v.literal("draft"), v.literal("accepted")),
+  status: conditionAssessmentStatusValidator,
 });
 
 interface TreatmentObject {

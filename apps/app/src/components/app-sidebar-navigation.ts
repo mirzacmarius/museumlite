@@ -28,6 +28,7 @@ import {
   ShoppingCart,
   Siren,
   SlidersHorizontal,
+  Stethoscope,
   Ticket,
   Truck,
   Users,
@@ -127,6 +128,10 @@ export function buildSidebarNavigation({
     ...capabilityItem("conservation", {
       title: label("conservation"),
       icon: Activity,
+    }),
+    ...capabilityItem("condition_assessments", {
+      title: label("conditionAssessments"),
+      icon: Stethoscope,
     }),
     ...capabilityItem("incidents", { title: label("incidents"), icon: Siren }),
     ...capabilityItem("insurance", { title: label("insurance"), icon: Shield }),

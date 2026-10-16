@@ -60,7 +60,7 @@ export default {
 
     title: "Evaluări ale stării",
     description:
-      "Observațiile datate și fotografiile sunt păstrate. Un responsabil acceptă ciorna pentru a actualiza starea curentă.",
+      "Observațiile datate și fotografiile sunt păstrate. Salvează o ciornă cât lucrezi, apoi trimite-o; un responsabil o acceptă pentru a actualiza starea curentă.",
     current: "Stare curentă",
     unknown: "Necunoscută",
     acceptedSource: "Dintr-o evaluare acceptată",
@@ -83,11 +83,24 @@ export default {
     photos: "Fotografii probatorii",
     uploadPhoto: "Încarcă fotografie",
     saveDraft: "Salvează ciorna",
+    submitForApproval: "Trimite spre aprobare",
+    submitting: "Se trimite…",
+    editDraft: "Editează ciorna",
+    draftHint:
+      "Ciorna este salvată. Un responsabil o poate accepta doar după ce o trimiți.",
+    awaitingApprovalNotice:
+      "O evaluare a acestui obiect așteaptă aprobarea. Poți înregistra una nouă după ce un responsabil o acceptă sau o respinge.",
+    openDraftCaption: "Ciornă de evaluare în lucru",
+    awaitingApprovalCaption: "Evaluare în așteptarea aprobării",
     history: "Istoricul evaluărilor",
     none: "Nu există evaluări",
     acceptedStatus: "Acceptată",
-    draftStatus: "Ciornă în așteptarea verificării",
+    draftStatus: "Ciornă",
+    submittedStatus: "În așteptarea aprobării",
+    rejectedStatus: "Respinsă",
     accept: "Acceptă evaluarea",
+    reject: "Respinge evaluarea",
+    rejectionReason: "Motivul respingerii: {reason}",
     loading: "Se încarcă evaluările…",
     saving: "Se salvează ciorna…",
     observationNumber: "Observația {number}",
@@ -97,11 +110,61 @@ export default {
       summary: "Completează un rezumat.",
       area: "Completează zona.",
       observation: "Descrie ce ai observat.",
+      ASSESSMENT_ALREADY_OPEN:
+        "Acest obiect are deja o ciornă sau o evaluare în așteptarea aprobării. Finalizeaz-o mai întâi.",
+      ASSESSMENT_NOT_DRAFT:
+        "Această evaluare a fost deja trimisă, deci nu mai poate fi modificată.",
+      ASSESSMENT_NOT_SUBMITTED:
+        "Doar o evaluare trimisă spre aprobare poate fi acceptată.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "Un responsabil a acceptat sau a respins deja această evaluare.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "O fotografie probatorie nu mai este disponibilă pentru acest obiect. Elimin-o din evaluare și încearcă din nou.",
+      ASSESSMENT_EVIDENCE_UNAVAILABLE:
+        "Obiectul sau o fotografie probatorie nu mai este disponibilă. Respinge această evaluare și înregistrează una nouă.",
     },
-    draftSaved: "Ciorna a fost salvată. Un responsabil o poate accepta.",
+    draftSaved:
+      "Ciorna a fost salvată. Trimite-o spre aprobare când este gata.",
     saveFailed: "Ciorna nu a putut fi salvată. Încearcă din nou.",
+    submitted:
+      "Evaluarea a fost trimisă. Un responsabil o poate accepta sau respinge acum.",
+    submitFailed: "Evaluarea nu a putut fi trimisă. Încearcă din nou.",
     accepted: "Evaluarea a fost acceptată. Starea curentă a fost actualizată.",
     acceptFailed: "Evaluarea nu a putut fi acceptată. Încearcă din nou.",
+    rejected: "Evaluarea a fost respinsă. Starea curentă nu s-a schimbat.",
+    rejectFailed: "Evaluarea nu a putut fi respinsă. Încearcă din nou.",
+    rejectDialog: {
+      title: "Respingi această evaluare?",
+      description:
+        "Starea curentă a obiectului rămâne neschimbată, iar personalul poate înregistra o evaluare nouă.",
+      reason: "Motiv (opțional)",
+      confirm: "Respinge evaluarea",
+      rejecting: "Se respinge…",
+    },
+    pendingApprovalCard: "Stare în așteptarea aprobării",
+    board: {
+      filterLabel: "Starea evaluării",
+      filters: {
+        all: "Toate",
+        pending: "În așteptarea aprobării",
+        accepted: "Acceptate",
+        rejected: "Respinse",
+      },
+      columns: {
+        draft: "Ciorne",
+        submitted: "În așteptarea aprobării",
+        accepted: "Acceptate",
+        rejected: "Respinse",
+      },
+      searchPlaceholder: "Caută evaluări...",
+      empty: "Nu există evaluări aici",
+      objectUnavailable: "Obiect indisponibil",
+      assessedBy: "Evaluată de {name}",
+      decidedBy: "Decisă de {name}",
+      unknownPerson: "necunoscut",
+      observationCount: "Observații: {count}",
+      photoCount: "Fotografii: {count}",
+    },
     invalidPhoto: "Alege o imagine de cel mult 20 MB.",
     uploadFailed: "Încărcarea fotografiei a eșuat. Încearcă din nou.",
     uploaded: "Fotografia a fost încărcată și selectată.",
@@ -3628,7 +3691,9 @@ export default {
       linkBaseline: "Setează evaluarea inițială",
       linkOutcome: "Setează evaluarea finală",
       captureOnObject:
-        "Înregistrați sau acceptați evaluări în fila Fizic a obiectului",
+        "Înregistrați o evaluare cu Stabilește starea în formularul de editare al obiectului (fila Descriere fizică)",
+      acceptOnBoard:
+        "Acceptați sau respingeți evaluările trimise în Evaluări ale stării",
       workflow: "Flux de lucru al tratamentului",
       approve: "Aprobă",
       start: "Începe lucrul",
@@ -10034,6 +10099,7 @@ export default {
       accessions: "Accesiuni",
       deaccessions: "Scoateri din colecție",
       conservation: "Conservare",
+      conditionAssessments: "Evaluări ale stării",
       insurance: "Asigurări",
       loansTransport: "Împrumuturi și transport",
       transitLog: "Jurnal de tranzit",

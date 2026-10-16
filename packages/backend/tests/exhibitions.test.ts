@@ -438,6 +438,7 @@ test("participant editing rejects duplicate objects and preserves installed evid
       summary: "Installation check",
       observations: [],
       photos: [],
+      submit: true,
     },
   );
   await authed.mutation(api.conditionAssessments.accept, {
