@@ -146,6 +146,12 @@ export function readQaCredentials() {
 }
 
 export async function qaStorageState(appUrl = qaAppUrl()) {
+  if (
+    !isLoopback(appUrl) ||
+    !["http:", "https:"].includes(new URL(appUrl).protocol)
+  ) {
+    throw new Error("QA browser sessions require an HTTP loopback URL");
+  }
   const { state } = readState();
   const { email, password } = readQaCredentials();
   const { tokens } = await signInQaUser(state.url, email, password);

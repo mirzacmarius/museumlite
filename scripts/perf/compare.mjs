@@ -12,6 +12,48 @@ if (!beforePath || !afterPath) {
 const before = JSON.parse(readFileSync(beforePath, "utf8"));
 const after = JSON.parse(readFileSync(afterPath, "utf8"));
 
+for (const [side, report] of [
+  ["before", before],
+  ["after", after],
+]) {
+  if (
+    !Number.isInteger(report.runs) ||
+    report.runs < 1 ||
+    !Array.isArray(report.summary?.steps) ||
+    report.summary.steps.length === 0
+  ) {
+    throw new Error(`Invalid ${side} benchmark report`);
+  }
+  for (const row of report.summary.steps) {
+    if (
+      row.timedOut !== 0 ||
+      !["urlChange", "firstShell", "ready"].every((metric) => {
+        const timing = row[metric];
+        return (
+          Number.isFinite(timing?.median) &&
+          timing.median >= 0 &&
+          Number.isFinite(timing.p90) &&
+          timing.p90 >= timing.median &&
+          timing.n === report.runs
+        );
+      })
+    ) {
+      throw new Error(`Incomplete ${side} benchmark: ${row.step}`);
+    }
+  }
+}
+if (
+  before.latencyMs !== after.latencyMs ||
+  before.summary.steps.length !== after.summary.steps.length ||
+  before.summary.steps.some(
+    (row, index) => row.step !== after.summary.steps[index].step,
+  )
+) {
+  throw new Error(
+    "Invalid comparison: latency and navigation steps must match",
+  );
+}
+
 const delta = (a, b) => {
   if (a === null || b === null) return "n/a";
   const change = b - a;

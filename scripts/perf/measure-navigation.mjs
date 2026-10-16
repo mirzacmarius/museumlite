@@ -41,12 +41,7 @@ if (!Number.isFinite(latencyMs) || latencyMs < 0) {
 }
 const baseUrl = options.url.replace(/\/$/, "");
 const outDir = join(root, ".local-qa/perf");
-const HAND_MADE_SKELETON_CLASSES = [
-  "animate-pulse",
-  "bg-muted/60",
-  "bg-muted/50",
-  "bg-muted/40",
-];
+const HAND_MADE_SKELETON_CLASSES = ["animate-pulse"];
 const IDLE_PREFETCH_WINDOW_MS = 3000;
 const STEP_TIMEOUT_MS = 20000;
 
@@ -246,7 +241,10 @@ async function measureRun(browser, storageState, runIndex) {
     let timedOut = false;
     try {
       await page.waitForFunction(
-        () => window.__nav.result()?.ready !== null,
+        () => {
+          const result = window.__nav.result();
+          return result !== null && result.ready !== null;
+        },
         null,
         { timeout: STEP_TIMEOUT_MS },
       );
@@ -254,7 +252,19 @@ async function measureRun(browser, storageState, runIndex) {
       timedOut = true;
     }
     const timings = await page.evaluate(() => window.__nav.result());
-    results.push({ step: step.name, path: step.path, timedOut, ...timings });
+    const complete =
+      timings !== null &&
+      ["urlChange", "firstShell", "ready"].every(
+        (metric) => Number.isFinite(timings[metric]) && timings[metric] >= 0,
+      );
+    results.push({
+      step: step.name,
+      path: step.path,
+      timedOut: timedOut || !complete,
+      urlChange: timings?.urlChange ?? null,
+      firstShell: timings?.firstShell ?? null,
+      ready: timings?.ready ?? null,
+    });
     if (step.path === "/objects") await idle("objects");
   }
   await context.close();
@@ -262,7 +272,7 @@ async function measureRun(browser, storageState, runIndex) {
 }
 
 function percentile(values, fraction) {
-  const sorted = values.filter((value) => value !== null).sort((a, b) => a - b);
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
   if (sorted.length === 0) return null;
   const index = Math.min(
     sorted.length - 1,
@@ -285,7 +295,7 @@ function summarize(measured) {
       entry[metric] = {
         median: percentile(values, 0.5),
         p90: percentile(values, 0.9),
-        n: values.filter((v) => v !== null).length,
+        n: values.filter(Number.isFinite).length,
       };
     }
     summary.push(entry);
@@ -312,7 +322,16 @@ const { storageState } = await qaStorageState(baseUrl);
 const browser = await chromium.launch({ headless: !options.headed });
 const loadBefore = loadavg();
 console.log(`Warm-up run against ${baseUrl}`);
-await measureRun(browser, storageState, 0);
+const warmup = await measureRun(browser, storageState, 0);
+if (warmup.steps.some((step) => step.timedOut)) {
+  await browser.close();
+  const failedSteps = warmup.steps
+    .filter((step) => step.timedOut)
+    .map((step) => step.step);
+  throw new Error(
+    `Warm-up navigation timed out or lost its timing recorder: ${failedSteps.join(", ")}`,
+  );
+}
 const measured = [];
 for (let run = 1; run <= runs; run++) {
   const result = await measureRun(browser, storageState, run);
@@ -366,3 +385,9 @@ console.log(
 );
 console.log(`cold load of / (median): ${report.summary.coldLoadMedianMs} ms`);
 console.log(`wrote ${file}`);
+if (report.summary.steps.some((step) => step.timedOut > 0)) {
+  console.error(
+    "Invalid benchmark: navigation timed out or lost timing samples",
+  );
+  process.exitCode = 1;
+}

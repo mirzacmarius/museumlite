@@ -44,3 +44,7 @@ The report prints median and p90 over `--runs` runs after one warm-up run, and w
 - A gap smaller than the spread between runs is no difference. Look at p90 as well as the median.
 - `ready` depends on the Convex websocket as much as on Next.js. A step whose `ready` does not move while `firstShell` does was waiting on data, not on routing.
 - `timeouts` counts steps whose ready predicate never held within 20 seconds. A non-zero count means the predicate or the page broke. Fix that before trusting the row.
+- Missing or nonfinite timings fail the benchmark. The comparison refuses incomplete reports, failed steps, and reports with different latency or navigation steps.
+- Browser sessions accept only HTTP loopback URLs, so QA credentials stay local.
+
+Run the report-validation regression tests with `bun run --cwd scripts/perf test`.
