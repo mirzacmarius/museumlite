@@ -93,8 +93,8 @@ export default function NewTreatmentPage() {
   };
 
   return (
-    <div className="flex size-full bg-background px-6 py-8">
-      <div className="mx-auto w-full max-w-2xl">
+    <div className="size-full overflow-y-auto bg-background px-6">
+      <div className="mx-auto w-full max-w-2xl py-8">
         <div className="mb-8 flex items-center gap-4">
           <Button
             variant="ghost"

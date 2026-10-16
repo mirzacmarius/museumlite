@@ -4060,6 +4060,16 @@ export default {
       markFollowUpDone: "Marquer le suivi terminé",
       actionSuccess: "Traitement mis à jour",
       actionError: "Impossible de mettre à jour le traitement",
+      errors: {
+        baselineRequired:
+          "Liez une évaluation initiale à ce traitement avant de l'approuver ou de le terminer.",
+        outcomeRequired:
+          "Liez une évaluation finale à ce traitement avant de le terminer.",
+        outcomeNotAccepted:
+          "Validez l'évaluation finale avant de terminer ce traitement.",
+        statusChanged:
+          "Le statut de ce traitement a changé. Vérifiez son statut actuel et réessayez.",
+      },
       followUp: {
         none: "Aucun",
         pending: "En attente",

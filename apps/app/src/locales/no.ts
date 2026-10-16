@@ -4009,6 +4009,16 @@ export default {
       markFollowUpDone: "Marker oppfølging fullført",
       actionSuccess: "Behandling oppdatert",
       actionError: "Kunne ikke oppdatere behandlingen",
+      errors: {
+        baselineRequired:
+          "Knytt en grunnlinjevurdering til behandlingen før du godkjenner eller fullfører den.",
+        outcomeRequired:
+          "Knytt en utfallsvurdering til behandlingen før du fullfører den.",
+        outcomeNotAccepted:
+          "Godkjenn utfallsvurderingen før du fullfører behandlingen.",
+        statusChanged:
+          "Statusen til behandlingen er endret. Sjekk gjeldende status og prøv igjen.",
+      },
       followUp: {
         none: "Ingen",
         pending: "Venter",
