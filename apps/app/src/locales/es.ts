@@ -59,7 +59,7 @@ export default {
 
     title: "Evaluaciones del estado",
     description:
-      "Se conservan las observaciones fechadas y las fotos. Un responsable acepta el borrador para actualizar el estado actual.",
+      "Se conservan las observaciones fechadas y las fotos. Guarda un borrador mientras trabajas y envíalo; un responsable lo acepta para actualizar el estado actual.",
     current: "Estado actual",
     unknown: "Desconocido",
     acceptedSource: "Procede de una evaluación aceptada",
@@ -83,11 +83,24 @@ export default {
     photos: "Fotos de evidencia",
     uploadPhoto: "Subir foto",
     saveDraft: "Guardar borrador",
+    submitForApproval: "Enviar para aprobación",
+    submitting: "Enviando…",
+    editDraft: "Editar borrador",
+    draftHint:
+      "El borrador está guardado. Un responsable solo puede aceptarlo después de que lo envíes.",
+    awaitingApprovalNotice:
+      "Una evaluación de este objeto está pendiente de aprobación. Podrás registrar una nueva cuando un responsable la acepte o la rechace.",
+    openDraftCaption: "Borrador de evaluación en curso",
+    awaitingApprovalCaption: "Evaluación pendiente de aprobación",
     history: "Historial de evaluaciones",
     none: "Aún no hay evaluaciones",
     acceptedStatus: "Aceptada",
-    draftStatus: "Borrador pendiente de revisión",
+    draftStatus: "Borrador",
+    submittedStatus: "Pendiente de aprobación",
+    rejectedStatus: "Rechazada",
     accept: "Aceptar evaluación",
+    reject: "Rechazar evaluación",
+    rejectionReason: "Motivo del rechazo: {reason}",
     loading: "Cargando evaluaciones…",
     saving: "Guardando borrador…",
     observationNumber: "Observación {number}",
@@ -97,11 +110,60 @@ export default {
       summary: "Introduce un resumen.",
       area: "Introduce la zona.",
       observation: "Describe lo observado.",
+      ASSESSMENT_ALREADY_OPEN:
+        "Este objeto ya tiene un borrador o una evaluación pendiente de aprobación. Termina esa primero.",
+      ASSESSMENT_NOT_DRAFT:
+        "Esta evaluación ya se envió, así que no se puede modificar.",
+      ASSESSMENT_NOT_SUBMITTED:
+        "Solo se puede aceptar una evaluación enviada para aprobación.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "Un responsable ya aceptó o rechazó esta evaluación.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "Una foto de evidencia ya no está disponible en este objeto. Quítala de la evaluación e inténtalo de nuevo.",
+      ASSESSMENT_EVIDENCE_UNAVAILABLE:
+        "El objeto o una foto de evidencia ya no está disponible. Rechaza esta evaluación y registra una nueva.",
     },
-    draftSaved: "Borrador guardado. Un responsable puede aceptarlo.",
+    draftSaved: "Borrador guardado. Envíalo para aprobación cuando esté listo.",
     saveFailed: "No se pudo guardar el borrador. Inténtalo de nuevo.",
+    submitted:
+      "Evaluación enviada. Un responsable ya puede aceptarla o rechazarla.",
+    submitFailed: "No se pudo enviar la evaluación. Inténtalo de nuevo.",
     accepted: "Evaluación aceptada. Se actualizó el estado actual.",
     acceptFailed: "No se pudo aceptar la evaluación. Inténtalo de nuevo.",
+    rejected: "Evaluación rechazada. El estado actual no cambia.",
+    rejectFailed: "No se pudo rechazar la evaluación. Inténtalo de nuevo.",
+    rejectDialog: {
+      title: "¿Rechazar esta evaluación?",
+      description:
+        "El estado actual del objeto no cambia y el personal puede registrar una nueva evaluación.",
+      reason: "Motivo (opcional)",
+      confirm: "Rechazar evaluación",
+      rejecting: "Rechazando…",
+    },
+    pendingApprovalCard: "Estado pendiente de aprobación",
+    board: {
+      filterLabel: "Estado de la evaluación",
+      filters: {
+        all: "Todas",
+        pending: "Pendientes de aprobación",
+        accepted: "Aceptadas",
+        rejected: "Rechazadas",
+      },
+      columns: {
+        draft: "Borradores",
+        submitted: "Pendientes de aprobación",
+        accepted: "Aceptadas",
+        rejected: "Rechazadas",
+      },
+      searchPlaceholder: "Buscar evaluaciones...",
+      empty: "No hay evaluaciones aquí",
+      objectUnavailable: "Objeto no disponible",
+      assessedBy: "Evaluada por {name}",
+      decidedBy: "Decidida por {name}",
+      unknownPerson: "desconocido",
+      observationCount: "Observaciones: {count}",
+      photoCount: "Fotos: {count}",
+    },
     invalidPhoto: "Elige una imagen de hasta 20 MB.",
     uploadFailed: "Falló la subida de la foto. Inténtalo de nuevo.",
     uploaded: "Foto subida y seleccionada.",
@@ -4042,7 +4104,9 @@ export default {
       linkBaseline: "Establecer inicial",
       linkOutcome: "Establecer final",
       captureOnObject:
-        "Capturar o aceptar evaluaciones en la pestaña Físico del objeto",
+        "Registra una evaluación con Establecer estado en el formulario de edición del objeto (pestaña Descripción Física)",
+      acceptOnBoard:
+        "Acepta o rechaza las evaluaciones enviadas en Evaluaciones del estado",
       workflow: "Flujo del tratamiento",
       approve: "Aprobar",
       start: "Iniciar trabajo",
@@ -10057,6 +10121,7 @@ export default {
       accessions: "Accesiones",
       deaccessions: "Bajas",
       conservation: "Conservación",
+      conditionAssessments: "Evaluaciones del estado",
       insurance: "Seguros",
       loansTransport: "Préstamos y transporte",
       transitLog: "Registro de transporte",

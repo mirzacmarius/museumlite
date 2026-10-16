@@ -175,6 +175,8 @@ import type * as utils_collectionListHelpers from "../utils/collectionListHelper
 import type * as utils_collectionMetrics from "../utils/collectionMetrics.js";
 import type * as utils_collectionOptionUsages from "../utils/collectionOptionUsages.js";
 import type * as utils_collectionTypeDetailFields from "../utils/collectionTypeDetailFields.js";
+import type * as utils_conditionAssessmentErrors from "../utils/conditionAssessmentErrors.js";
+import type * as utils_conditionAssessmentStatus from "../utils/conditionAssessmentStatus.js";
 import type * as utils_conservationErrors from "../utils/conservationErrors.js";
 import type * as utils_convexAuth from "../utils/convexAuth.js";
 import type * as utils_convexErrorData from "../utils/convexErrorData.js";
@@ -511,6 +513,8 @@ declare const fullApi: ApiFromModules<{
   "utils/collectionMetrics": typeof utils_collectionMetrics;
   "utils/collectionOptionUsages": typeof utils_collectionOptionUsages;
   "utils/collectionTypeDetailFields": typeof utils_collectionTypeDetailFields;
+  "utils/conditionAssessmentErrors": typeof utils_conditionAssessmentErrors;
+  "utils/conditionAssessmentStatus": typeof utils_conditionAssessmentStatus;
   "utils/conservationErrors": typeof utils_conservationErrors;
   "utils/convexAuth": typeof utils_convexAuth;
   "utils/convexErrorData": typeof utils_convexErrorData;

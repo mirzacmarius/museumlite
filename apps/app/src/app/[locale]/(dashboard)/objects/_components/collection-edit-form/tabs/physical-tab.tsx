@@ -218,6 +218,13 @@ function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
             {current ? formatConditionLabel(current, tRoot) : t("unknown")}
           </span>
         ) : null}
+        {detail?.open ? (
+          <span className="text-xs text-muted-foreground">
+            {detail.open.status === "draft"
+              ? t("openDraftCaption")
+              : t("awaitingApprovalCaption")}
+          </span>
+        ) : null}
         {hasPermission("collections.update") ||
         hasPermission("collections.accept_condition") ? (
           <Dialog>

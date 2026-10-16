@@ -134,6 +134,41 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
   expect(hrefOf("Pending image deletion approval 2")).toBe("/image-deletions");
 });
 
+test("condition assessments awaiting approval follow the other approval cards and open the approval page", async () => {
+  work.queries["assignments:listMyAssignments"] = assignments({
+    ...NO_APPROVALS,
+    conservation: 1,
+  });
+  work.queries["conditionAssessments:pendingApprovalCount"] = {
+    count: 99,
+    hasMore: true,
+  };
+  work.permissions = new Set(["collections.accept_condition"]);
+
+  await renderSummary();
+
+  expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual([
+    "View All",
+    "Pending conservation approval 1",
+    "Pending condition approval 99+",
+  ]);
+  expect(hrefOf("Pending condition approval 99+")).toBe(
+    "/condition-assessments?status=pending",
+  );
+});
+
+test("members who cannot accept condition assessments see no condition card", async () => {
+  work.queries["conditionAssessments:pendingApprovalCount"] = {
+    count: 2,
+    hasMore: false,
+  };
+
+  await renderSummary();
+
+  expect(screen.queryAllByRole("link")).toEqual([]);
+  expect(screen.getByText("No work waiting for you.")).toBeTruthy();
+});
+
 test("provenance claims count only for members who review provenance", async () => {
   work.pages["provenance:reviewQueue:unreviewed"] = page(2);
   work.pages["provenance:reviewQueue:disputed"] = page(1);

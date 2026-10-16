@@ -3,6 +3,7 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { getFunctionName } from "convex/server";
+import { ConvexError } from "convex/values";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import { CollectionEditPhysicalTab } from "../../_components/collection-edit-form/tabs/physical-tab";
@@ -31,18 +32,20 @@ const mediaItems = [
     uploadStatus: "completed",
   },
 ];
-const assessments = [
-  {
+function submittedAssessment() {
+  return {
     _id: "assessment-1",
     condition: "Poor",
     assessedAt: 1790812800000,
     assessorName: "Assessor",
-    status: "draft",
+    status: "submitted",
     summary: "Crack at base",
     observations: [],
     photos: [],
-  },
-];
+    rejectionReason: undefined as string | undefined,
+  };
+}
+let assessments = [submittedAssessment()];
 const legacyEntry = {
   condition: "Fair",
   changedAt: 1759276800000,
@@ -52,6 +55,20 @@ const legacyEntry = {
 };
 let detail = acceptedDetail();
 
+interface OpenAssessment {
+  assessmentId: string;
+  status: "draft" | "submitted";
+  assessedAt: number;
+  condition: string;
+  summary: string;
+  observations: {
+    area: string;
+    description: string;
+    severity: "minor" | "moderate" | "severe";
+  }[];
+  photoIds: string[];
+}
+
 function acceptedDetail() {
   return {
     organizationId: "org",
@@ -60,6 +77,7 @@ function acceptedDetail() {
       source: "assessment",
       assessmentId: "assessment-0",
     },
+    open: null as OpenAssessment | null,
     comparison: {},
     legacy: { history: [] as (typeof legacyEntry)[] },
   };
@@ -67,7 +85,9 @@ function acceptedDetail() {
 
 const mutations: Record<string, ReturnType<typeof vi.fn>> = {
   "conditionAssessments:create": vi.fn(),
+  "conditionAssessments:update": vi.fn(),
   "conditionAssessments:accept": vi.fn(),
+  "conditionAssessments:reject": vi.fn(),
   "media:generateUploadUrl": vi.fn(),
   "media:create": vi.fn(),
 };
@@ -102,12 +122,18 @@ vi.mock("@/components/permission-gate", () => ({
 const create = mutations["conditionAssessments:create"] as ReturnType<
   typeof vi.fn
 >;
+const update = mutations["conditionAssessments:update"] as ReturnType<
+  typeof vi.fn
+>;
 
 beforeEach(() => {
   permissions = new Set(ALL_PERMISSIONS);
   detail = acceptedDetail();
+  assessments = [submittedAssessment()];
   for (const mutation of Object.values(mutations)) mutation.mockReset();
   mutations["conditionAssessments:accept"]?.mockResolvedValue(null);
+  mutations["conditionAssessments:reject"]?.mockResolvedValue(null);
+  update.mockResolvedValue(null);
   create.mockResolvedValue("assessment-2");
 });
 afterEach(() => {
@@ -156,14 +182,16 @@ test("viewing an object shows its current condition and history without authorin
     "Add observation",
     "Upload photo",
     "Save draft",
+    "Submit for approval",
     "Accept assessment",
+    "Reject assessment",
   ]) {
     expect(screen.queryByRole("button", { name: control })).toBeNull();
   }
   expect(screen.queryByRole("heading", { name: "New assessment" })).toBeNull();
 });
 
-test("a reviewer who cannot edit the object accepts drafts from the view tab", async () => {
+test("a reviewer who cannot edit the object accepts submitted assessments from the view tab", async () => {
   permissions = new Set(["collections.read", "collections.accept_condition"]);
   await renderOnPage(<PhysicalTab collection={viewedObject} />);
   const user = userEvent.setup();
@@ -488,12 +516,15 @@ test("observations can be removed without changing the remaining observation or 
       photos: ["photo-1"],
     }),
   );
-  expect(
-    screen.getByText("Draft saved. A reviewer can accept it.").textContent,
-  ).toBe("Draft saved. A reviewer can accept it.");
+  expect(create).toHaveBeenCalledWith(
+    expect.objectContaining({ submit: false }),
+  );
+  expect(screen.getByRole("status").textContent).toBe(
+    "Draft saved. Submit it for approval when it is ready.",
+  );
 });
 
-test("a reviewer without capture permission can accept a draft but not record one", async () => {
+test("a reviewer without capture permission can accept a submitted assessment but not record one", async () => {
   permissions.delete("collections.update");
   const user = await renderPanel();
   expect(screen.queryByRole("button", { name: "Save draft" })).toBeNull();
@@ -505,4 +536,212 @@ test("a reviewer without capture permission can accept a draft but not record on
     screen.getByText("Assessment accepted. Current condition updated.")
       .textContent,
   ).toBe("Assessment accepted. Current condition updated.");
+});
+
+function openDraft(): OpenAssessment {
+  return {
+    assessmentId: "assessment-1",
+    status: "draft",
+    assessedAt: new Date(2026, 9, 1, 12).getTime(),
+    condition: "Poor",
+    summary: "Crack at base",
+    observations: [{ area: "Base", description: "Crack", severity: "severe" }],
+    photoIds: ["photo-1"],
+  };
+}
+
+test("Submit for approval sends a new assessment to reviewers", async () => {
+  const user = await renderPanel();
+  await chooseCondition(user, "Fair");
+  await user.type(screen.getByRole("textbox", { name: "Summary" }), "Checked");
+
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
+
+  expect(create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      condition: "Fair",
+      summary: "Checked",
+      submit: true,
+    }),
+  );
+  expect(screen.getByRole("status").textContent).toBe(
+    "Assessment submitted. A reviewer can now accept or reject it.",
+  );
+});
+
+test("an existing draft opens with its saved values and is saved, not created again", async () => {
+  detail.open = openDraft();
+  assessments = [{ ...submittedAssessment(), status: "draft" }];
+  const user = await renderPanel();
+
+  expect(screen.getByRole("heading", { name: "Edit draft" })).toBeTruthy();
+  expect(screen.queryByRole("heading", { name: "New assessment" })).toBeNull();
+  expect(screen.getByRole("combobox", { name: "Condition" }).textContent).toBe(
+    "Poor",
+  );
+  const summary = screen.getByRole<HTMLTextAreaElement>("textbox", {
+    name: "Summary",
+  });
+  expect(summary.value).toBe("Crack at base");
+  expect(
+    screen.getByRole<HTMLInputElement>("checkbox", { name: "base.jpg" })
+      .checked,
+  ).toBe(true);
+  expect(
+    screen.queryByRole("button", { name: "Accept assessment" }),
+  ).toBeNull();
+
+  await user.clear(summary);
+  await user.type(summary, "Crack at base, widened");
+  await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+  expect(create).not.toHaveBeenCalled();
+  expect(update).toHaveBeenLastCalledWith({
+    assessmentId: "assessment-1",
+    assessedAt: openDraft().assessedAt,
+    condition: "Poor",
+    summary: "Crack at base, widened",
+    observations: [{ area: "Base", description: "Crack", severity: "severe" }],
+    photos: ["photo-1"],
+    submit: false,
+  });
+
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
+  expect(update).toHaveBeenLastCalledWith(
+    expect.objectContaining({ assessmentId: "assessment-1", submit: true }),
+  );
+});
+
+test("while an assessment awaits approval, no new one can be started", async () => {
+  detail.open = { ...openDraft(), status: "submitted" };
+  await renderPanel();
+
+  expect(
+    screen.getByText(
+      "An assessment of this object is awaiting approval. You can record a new one after a reviewer accepts or rejects it.",
+    ).textContent,
+  ).toContain("awaiting approval");
+  for (const control of ["Save draft", "Submit for approval"]) {
+    expect(screen.queryByRole("button", { name: control })).toBeNull();
+  }
+  expect(screen.queryByRole("heading", { name: "New assessment" })).toBeNull();
+});
+
+test("the edit form says when the object has a draft or a submitted assessment", async () => {
+  detail.open = openDraft();
+  const tab = (
+    <CollectionEditPhysicalTab
+      formData={{ title: "Vase" }}
+      updateField={vi.fn()}
+      placeholders={() => ""}
+      currentOrganizationId="org"
+      typedCollectionId={"object-1" as Id<"collections">}
+    />
+  );
+  const { unmount } = await renderOnPage(tab);
+  expect(screen.getByText("Draft assessment in progress").textContent).toBe(
+    "Draft assessment in progress",
+  );
+  unmount();
+
+  detail.open = { ...openDraft(), status: "submitted" };
+  await renderOnPage(tab);
+  expect(screen.getByText("Assessment awaiting approval").textContent).toBe(
+    "Assessment awaiting approval",
+  );
+});
+
+test("a reviewer rejects a submitted assessment with a reason", async () => {
+  const user = await renderPanel();
+
+  await user.click(screen.getByRole("button", { name: "Reject assessment" }));
+  const dialog = screen.getByRole("dialog", {
+    name: "Reject this assessment?",
+  });
+  await user.type(
+    within(dialog).getByRole("textbox", { name: "Reason (optional)" }),
+    "Photos missing",
+  );
+  await user.click(
+    within(dialog).getByRole("button", { name: "Reject assessment" }),
+  );
+
+  expect(mutations["conditionAssessments:reject"]).toHaveBeenCalledWith({
+    assessmentId: "assessment-1",
+    reason: "Photos missing",
+  });
+  expect(screen.getByRole("status").textContent).toBe(
+    "Assessment rejected. Current condition is unchanged.",
+  );
+});
+
+test("history shows each status and why an assessment was rejected", async () => {
+  assessments = [
+    { ...submittedAssessment(), _id: "a", status: "draft" },
+    { ...submittedAssessment(), _id: "b", status: "submitted" },
+    {
+      ...submittedAssessment(),
+      _id: "c",
+      status: "rejected",
+      rejectionReason: "Photos missing",
+    },
+  ];
+  await renderOnPage(<PhysicalTab collection={viewedObject} />);
+
+  const panel = screen.getByRole("region", { name: "Condition assessments" });
+  for (const label of [
+    "Assessor · Draft",
+    "Assessor · Awaiting approval",
+    "Assessor · Rejected",
+  ]) {
+    expect(within(panel).getByText(label).textContent).toBe(label);
+  }
+  expect(
+    within(panel).getByText("Reason for rejection: Photos missing").textContent,
+  ).toBe("Reason for rejection: Photos missing");
+});
+
+test("a second assessment is refused in words while one is open", async () => {
+  create.mockRejectedValue(
+    new ConvexError({ code: "ASSESSMENT_ALREADY_OPEN", message: "open" }),
+  );
+  const user = await renderPanel();
+  await chooseCondition(user, "Fair");
+  await user.type(screen.getByRole("textbox", { name: "Summary" }), "Again");
+
+  await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+  expect((await screen.findByRole("alert")).textContent).toBe(
+    "This object already has a draft or an assessment awaiting approval. Finish that one first.",
+  );
+});
+
+test("a draft photo since removed from the object is dropped when the draft is saved", async () => {
+  detail.open = { ...openDraft(), photoIds: ["photo-1", "photo-gone"] };
+  const user = await renderPanel();
+
+  await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+  expect(update).toHaveBeenLastCalledWith(
+    expect.objectContaining({ photos: ["photo-1"] }),
+  );
+});
+
+test("a reviewer can reject a draft nobody will finish but cannot accept it", async () => {
+  assessments = [{ ...submittedAssessment(), status: "draft" }];
+  const user = await renderPanel();
+
+  expect(
+    screen.queryByRole("button", { name: "Accept assessment" }),
+  ).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Reject assessment" }));
+  await user.click(
+    within(
+      screen.getByRole("dialog", { name: "Reject this assessment?" }),
+    ).getByRole("button", { name: "Reject assessment" }),
+  );
+
+  expect(mutations["conditionAssessments:reject"]).toHaveBeenCalledWith({
+    assessmentId: "assessment-1",
+  });
 });

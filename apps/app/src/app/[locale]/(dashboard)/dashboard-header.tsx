@@ -48,6 +48,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   const tInventory = useScopedI18n("inventory");
   const tRecipes = useScopedI18n("preparationRecipes");
   const tImageDeletion = useScopedI18n("imageDeletion.approvals");
+  const tCondition = useScopedI18n("conditionAssessments");
 
   const getPageTitle = (path: string) => {
     // Strip only a leading locale segment: "/entries" also contains "/en".
@@ -81,6 +82,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
     if (/^\/reproduction-requests\/[^/]+$/.test(cleanPath))
       return tReproduction("headerTitle");
     if (cleanPath === "/settings/preparation-recipes") return tRecipes("title");
+    if (cleanPath === "/condition-assessments") return tCondition("title");
     if (cleanPath === "/inventory" || cleanPath.startsWith("/inventory/"))
       return tInventory("title");
 

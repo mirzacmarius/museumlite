@@ -212,6 +212,7 @@ test("installObject succeeds for active objects", async () => {
       summary: "Installation check",
       observations: [],
       photos: [],
+      submit: true,
     },
   );
   await authed.mutation(api.conditionAssessments.accept, {
@@ -308,6 +309,7 @@ test("activateExhibition succeeds when pending objects are active", async () => 
       summary: "Installation check",
       observations: [],
       photos: [],
+      submit: true,
     },
   );
   await authed.mutation(api.conditionAssessments.accept, {
@@ -327,6 +329,7 @@ test("activateExhibition succeeds when pending objects are active", async () => 
       summary: "Installation check",
       observations: [],
       photos: [],
+      submit: true,
     },
   );
   await authed.mutation(api.conditionAssessments.accept, {

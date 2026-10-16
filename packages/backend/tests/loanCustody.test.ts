@@ -408,6 +408,7 @@ test("a partially returned item is not still on loan", async () => {
       summary: "Post-return installation check",
       observations: [],
       photos: [],
+      submit: true,
     },
   );
   await authed.mutation(api.conditionAssessments.accept, {

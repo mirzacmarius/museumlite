@@ -695,6 +695,7 @@ test("recorded installation completes only the explicitly selected task and retr
     summary: "Installation inspection",
     observations: [],
     photos: [],
+    submit: true,
   });
   await authed.mutation(api.conditionAssessments.accept, { assessmentId });
   await expect(

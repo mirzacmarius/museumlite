@@ -58,7 +58,7 @@ export default {
 
     title: "Tilstandsvurderinger",
     description:
-      "Daterte observasjoner og bilder beholdes. En kontrollør godkjenner utkastet for å oppdatere gjeldende tilstand.",
+      "Daterte observasjoner og bilder beholdes. Lagre et utkast mens du arbeider, og send det inn; en kontrollør godkjenner det for å oppdatere gjeldende tilstand.",
     current: "Gjeldende tilstand",
     unknown: "Ukjent",
     acceptedSource: "Fra en godkjent vurdering",
@@ -81,11 +81,24 @@ export default {
     photos: "Dokumentasjonsbilder",
     uploadPhoto: "Last opp bilde",
     saveDraft: "Lagre utkast",
+    submitForApproval: "Send til godkjenning",
+    submitting: "Sender inn…",
+    editDraft: "Rediger utkast",
+    draftHint:
+      "Utkastet er lagret. En kontrollør kan bare godkjenne det etter at du har sendt det inn.",
+    awaitingApprovalNotice:
+      "En vurdering av dette objektet venter på godkjenning. Du kan registrere en ny når en kontrollør har godkjent eller avvist den.",
+    openDraftCaption: "Utkast til vurdering under arbeid",
+    awaitingApprovalCaption: "Vurdering venter på godkjenning",
     history: "Vurderingshistorikk",
     none: "Ingen vurderinger ennå",
     acceptedStatus: "Godkjent",
-    draftStatus: "Utkast til kontroll",
+    draftStatus: "Utkast",
+    submittedStatus: "Venter på godkjenning",
+    rejectedStatus: "Avvist",
     accept: "Godkjenn vurdering",
+    reject: "Avvis vurdering",
+    rejectionReason: "Begrunnelse for avvisning: {reason}",
     loading: "Laster tilstandsvurderinger…",
     saving: "Lagrer utkast…",
     observationNumber: "Observasjon {number}",
@@ -95,11 +108,60 @@ export default {
       summary: "Fyll inn et sammendrag.",
       area: "Fyll inn område.",
       observation: "Beskriv hva du observerte.",
+      ASSESSMENT_ALREADY_OPEN:
+        "Dette objektet har allerede et utkast eller en vurdering som venter på godkjenning. Fullfør den først.",
+      ASSESSMENT_NOT_DRAFT:
+        "Denne vurderingen er allerede sendt inn og kan ikke lenger endres.",
+      ASSESSMENT_NOT_SUBMITTED:
+        "Bare en vurdering som er sendt til godkjenning, kan godkjennes.",
+      ASSESSMENT_ALREADY_DECIDED:
+        "En kontrollør har allerede godkjent eller avvist denne vurderingen.",
+      ASSESSMENT_PHOTO_UNAVAILABLE:
+        "Et dokumentasjonsbilde er ikke lenger tilgjengelig på dette objektet. Fjern det fra vurderingen og prøv igjen.",
+      ASSESSMENT_EVIDENCE_UNAVAILABLE:
+        "Objektet eller et dokumentasjonsbilde er ikke lenger tilgjengelig. Avvis denne vurderingen og registrer en ny.",
     },
-    draftSaved: "Utkast lagret. En kontrollør kan godkjenne det.",
+    draftSaved: "Utkast lagret. Send det til godkjenning når det er klart.",
     saveFailed: "Kunne ikke lagre utkastet. Prøv igjen.",
+    submitted:
+      "Vurderingen er sendt inn. En kontrollør kan nå godkjenne eller avvise den.",
+    submitFailed: "Kunne ikke sende inn vurderingen. Prøv igjen.",
     accepted: "Vurderingen er godkjent. Gjeldende tilstand er oppdatert.",
     acceptFailed: "Kunne ikke godkjenne vurderingen. Prøv igjen.",
+    rejected: "Vurderingen er avvist. Gjeldende tilstand er uendret.",
+    rejectFailed: "Kunne ikke avvise vurderingen. Prøv igjen.",
+    rejectDialog: {
+      title: "Avvise denne vurderingen?",
+      description:
+        "Objektets gjeldende tilstand forblir uendret, og ansatte kan registrere en ny vurdering.",
+      reason: "Begrunnelse (valgfritt)",
+      confirm: "Avvis vurdering",
+      rejecting: "Avviser…",
+    },
+    pendingApprovalCard: "Tilstand som venter på godkjenning",
+    board: {
+      filterLabel: "Vurderingsstatus",
+      filters: {
+        all: "Alle",
+        pending: "Venter på godkjenning",
+        accepted: "Godkjent",
+        rejected: "Avvist",
+      },
+      columns: {
+        draft: "Utkast",
+        submitted: "Venter på godkjenning",
+        accepted: "Godkjent",
+        rejected: "Avvist",
+      },
+      searchPlaceholder: "Søk i vurderinger...",
+      empty: "Ingen vurderinger her",
+      objectUnavailable: "Objektet er utilgjengelig",
+      assessedBy: "Vurdert av {name}",
+      decidedBy: "Avgjort av {name}",
+      unknownPerson: "ukjent",
+      observationCount: "Observasjoner: {count}",
+      photoCount: "Bilder: {count}",
+    },
     invalidPhoto: "Velg et bilde på opptil 20 MB.",
     uploadFailed: "Bildeopplasting mislyktes. Prøv igjen.",
     uploaded: "Bildet er lastet opp og valgt.",
@@ -3996,7 +4058,9 @@ export default {
       linkBaseline: "Sett grunnlinje",
       linkOutcome: "Sett utfall",
       captureOnObject:
-        "Registrer eller godkjenn vurderinger på objektets fysiske fane",
+        "Registrer en vurdering med Angi tilstand i objektets redigeringsskjema (fanen Fysisk Beskrivelse)",
+      acceptOnBoard:
+        "Godkjenn eller avvis innsendte vurderinger under Tilstandsvurderinger",
       workflow: "Behandlingsflyt",
       approve: "Godkjenn",
       start: "Start arbeid",
@@ -9946,6 +10010,7 @@ export default {
       accessions: "Aksesjoner",
       deaccessions: "Deaksesjoner",
       conservation: "Konservering",
+      conditionAssessments: "Tilstandsvurderinger",
       insurance: "Forsikring",
       loansTransport: "Lån og transport",
       transitLog: "Transportlogg",
