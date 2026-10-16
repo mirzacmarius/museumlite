@@ -31,6 +31,7 @@ import {
 } from "./my-assignments-sections";
 import { CARD_CLASS_NAME } from "./my-work-sections";
 import { usePendingConditionApprovalColumn } from "./pending-condition-approvals";
+import { usePendingTransfersColumn } from "./pending-transfers-column";
 
 export const MY_WORK_HREF = "/assignments";
 const PAGE_SIZE = 20;
@@ -259,6 +260,7 @@ export function useMyWorkColumns(
     { disputed: false, queue: unreviewedClaims },
     { disputed: true, queue: disputedClaims },
   ];
+  const transfersColumn = usePendingTransfersColumn(organizationId);
 
   const taskColumn = (
     key: string,
@@ -320,6 +322,7 @@ export function useMyWorkColumns(
       ),
     },
     ...(conditionApprovals ? [conditionApprovals] : []),
+    ...(transfersColumn ? [transfersColumn] : []),
     taskColumn(
       "reviews",
       ClipboardCheck,

@@ -4059,6 +4059,16 @@ export default {
       markFollowUpDone: "Marker oppfølging fullført",
       actionSuccess: "Behandling oppdatert",
       actionError: "Kunne ikke oppdatere behandlingen",
+      errors: {
+        baselineRequired:
+          "Knytt en grunnlinjevurdering til behandlingen før du godkjenner eller fullfører den.",
+        outcomeRequired:
+          "Knytt en utfallsvurdering til behandlingen før du fullfører den.",
+        outcomeNotAccepted:
+          "Godkjenn utfallsvurderingen før du fullfører behandlingen.",
+        statusChanged:
+          "Statusen til behandlingen er endret. Sjekk gjeldende status og prøv igjen.",
+      },
       followUp: {
         none: "Ingen",
         pending: "Venter",
@@ -4840,6 +4850,7 @@ export default {
       assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
       nothingWaiting: "Ingenting venter på deg.",
+      pendingTransfers: "Ventende overføringer",
       pendingApproval: {
         accession: "Aksesjoner som venter på godkjenning",
         deaccession: "Deaksesjoner som venter på godkjenning",
@@ -5644,6 +5655,7 @@ export default {
     },
     loadMore: "Last inn flere",
     loading: "Laster…",
+    showMore: "Vis flere",
     shownOfTotal: "Viser {shown} av {total}",
     matchesShown: "Treff vist: {shown}",
     sort: {

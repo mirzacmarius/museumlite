@@ -3,7 +3,7 @@ import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
@@ -16,6 +16,7 @@ import { acceptReading } from "./utils/alertEpisodes";
 import { batchLookup } from "./utils/batchLookup";
 import { appendCaseHistory } from "./utils/caseHistory";
 import { conditionAssessmentStatusValidator } from "./utils/conditionAssessmentStatus";
+import { conservationError } from "./utils/conservationErrors";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import { countIndexedQuery } from "./utils/indexedCounts";
@@ -66,27 +67,80 @@ const assessmentEvidenceSummary = v.object({
   status: conditionAssessmentStatusValidator,
 });
 
-async function loadTreatmentAssessment(
+interface TreatmentObject {
+  collectionId: Id<"collections">;
+  organizationId: Id<"organizations">;
+}
+
+/**
+ * The assessment when it exists and records this treatment's object; null
+ * otherwise, which the evidence panel shows as not linked.
+ */
+async function getTreatmentAssessment(
   ctx: QueryCtx | MutationCtx,
-  treatment: {
-    collectionId: Id<"collections">;
-    organizationId: Id<"organizations">;
-  },
-  assessmentId: Id<"conditionAssessments">,
-  options: { requireAccepted?: boolean } = {},
+  treatment: TreatmentObject,
+  assessmentId: Id<"conditionAssessments"> | undefined,
 ) {
-  const assessment = await ctx.db.get(assessmentId);
+  const assessment = assessmentId ? await ctx.db.get(assessmentId) : null;
   if (
     !assessment ||
     assessment.collectionId !== treatment.collectionId ||
     assessment.organizationId !== treatment.organizationId
   ) {
-    throw new Error("Assessment must belong to this treatment object");
-  }
-  if (options.requireAccepted && assessment.status !== "accepted") {
-    throw new Error("Outcome assessment must be accepted before completion");
+    return null;
   }
   return assessment;
+}
+
+async function loadTreatmentAssessment(
+  ctx: QueryCtx | MutationCtx,
+  treatment: TreatmentObject,
+  assessmentId: Id<"conditionAssessments">,
+) {
+  const assessment = await getTreatmentAssessment(ctx, treatment, assessmentId);
+  if (!assessment) {
+    throw new Error("Assessment must belong to this treatment object");
+  }
+  return assessment;
+}
+
+const approvalBlockerValidator = v.union(
+  v.literal("TREATMENT_BASELINE_REQUIRED"),
+  v.null(),
+);
+
+const completionBlockerValidator = v.union(
+  v.literal("TREATMENT_OUTCOME_REQUIRED"),
+  v.literal("TREATMENT_OUTCOME_NOT_ACCEPTED"),
+  v.literal("TREATMENT_BASELINE_REQUIRED"),
+  v.null(),
+);
+
+/**
+ * The treatment's linked baseline and outcome assessments, and the evidence
+ * each workflow step still lacks. `approve` and `complete` refuse with the
+ * blocker, and the evidence panel shows it before staff click.
+ */
+async function loadAssessmentEvidence(
+  ctx: QueryCtx | MutationCtx,
+  treatment: Doc<"conservationTreatments">,
+) {
+  const [baseline, outcome] = await Promise.all([
+    getTreatmentAssessment(ctx, treatment, treatment.baselineAssessmentId),
+    getTreatmentAssessment(ctx, treatment, treatment.outcomeAssessmentId),
+  ] as const);
+  const approvalBlocker: Infer<typeof approvalBlockerValidator> = baseline
+    ? null
+    : "TREATMENT_BASELINE_REQUIRED";
+  let completionBlocker: Infer<typeof completionBlockerValidator> = null;
+  if (!outcome) {
+    completionBlocker = "TREATMENT_OUTCOME_REQUIRED";
+  } else if (outcome.status !== "accepted") {
+    completionBlocker = "TREATMENT_OUTCOME_NOT_ACCEPTED";
+  } else if (!baseline) {
+    completionBlocker = "TREATMENT_BASELINE_REQUIRED";
+  }
+  return { baseline, outcome, approvalBlocker, completionBlocker };
 }
 
 async function requireConservationAccess(
@@ -342,6 +396,8 @@ export const getTreatmentEvidence = query({
       dueAt: v.optional(v.number()),
     }),
     attachmentCount: v.number(),
+    approvalBlocker: approvalBlockerValidator,
+    completionBlocker: completionBlockerValidator,
   }),
   handler: async (ctx, args) => {
     const treatment = await ctx.db.get(args.treatmentId);
@@ -354,31 +410,24 @@ export const getTreatmentEvidence = query({
       requirePermission(ctx, treatment.organizationId, "collections.read"),
     ]);
 
-    const summarize = async (assessmentId?: Id<"conditionAssessments">) => {
-      if (!assessmentId) {
-        return null;
-      }
-      const assessment = await ctx.db.get(assessmentId);
-      if (!assessment || assessment.collectionId !== treatment.collectionId) {
-        return null;
-      }
-      return {
+    const summarize = (assessment: Doc<"conditionAssessments"> | null) =>
+      assessment && {
         assessmentId: assessment._id,
         condition: assessment.condition,
         summary: assessment.summary,
         assessedAt: assessment.assessedAt,
         status: assessment.status,
       };
-    };
 
-    const [baseline, outcome, attachments] = await Promise.all([
-      summarize(treatment.baselineAssessmentId),
-      summarize(treatment.outcomeAssessmentId),
+    const [evidence, attachments] = await Promise.all([
+      loadAssessmentEvidence(ctx, treatment),
       ctx.db
         .query("conservationAttachments")
         .withIndex("by_treatment", (q) => q.eq("treatmentId", args.treatmentId))
         .collect(),
     ] as const);
+    const baseline = summarize(evidence.baseline);
+    const outcome = summarize(evidence.outcome);
 
     return {
       treatmentId: treatment._id,
@@ -396,6 +445,8 @@ export const getTreatmentEvidence = query({
         dueAt: treatment.followUpDueAt,
       },
       attachmentCount: attachments.length,
+      approvalBlocker: evidence.approvalBlocker,
+      completionBlocker: evidence.completionBlocker,
     };
   },
 });
@@ -835,19 +886,11 @@ export const approve = mutation({
     }
 
     if (treatment.status !== "proposed") {
-      throw new Error("Treatment is not pending approval");
-    }
-
-    if (!treatment.baselineAssessmentId) {
-      throw new Error(
-        "Baseline condition assessment is required before approval",
+      throw conservationError(
+        "TREATMENT_STATUS_CHANGED",
+        "Treatment is not pending approval",
       );
     }
-    await loadTreatmentAssessment(
-      ctx,
-      treatment,
-      treatment.baselineAssessmentId,
-    );
 
     const approval = await resolveCaseApproval(
       ctx,
@@ -857,6 +900,14 @@ export const approve = mutation({
     );
     if (!approval.allowed) {
       throw approval.refusal;
+    }
+
+    const { approvalBlocker } = await loadAssessmentEvidence(ctx, treatment);
+    if (approvalBlocker) {
+      throw conservationError(
+        approvalBlocker,
+        "Assessment evidence is incomplete for approval",
+      );
     }
 
     if (approval.workflow) {
@@ -1004,7 +1055,10 @@ export const reject = mutation({
     }
 
     if (treatment.status !== "proposed") {
-      throw new Error("Treatment is not pending approval");
+      throw conservationError(
+        "TREATMENT_STATUS_CHANGED",
+        "Treatment is not pending approval",
+      );
     }
 
     const workflowConfig = await getWorkflowConfig(
@@ -1094,7 +1148,10 @@ export const startProgress = mutation({
     }
 
     if (treatment.status !== "approved") {
-      throw new Error("Treatment must be approved before starting");
+      throw conservationError(
+        "TREATMENT_STATUS_CHANGED",
+        "Treatment must be approved before starting",
+      );
     }
     await Promise.all([
       requirePermission(ctx, treatment.organizationId, "collections.update"),
@@ -1134,7 +1191,10 @@ export const complete = mutation({
     }
 
     if (treatment.status !== "in_progress" && treatment.status !== "approved") {
-      throw new Error("Treatment must be approved or in progress to complete");
+      throw conservationError(
+        "TREATMENT_STATUS_CHANGED",
+        "Treatment must be approved or in progress to complete",
+      );
     }
 
     await requirePermission(
@@ -1143,29 +1203,13 @@ export const complete = mutation({
       "collections.update",
     );
 
-    if (!treatment.outcomeAssessmentId) {
-      throw new Error(
-        "Outcome condition assessment is required before completion",
+    const { completionBlocker } = await loadAssessmentEvidence(ctx, treatment);
+    if (completionBlocker) {
+      throw conservationError(
+        completionBlocker,
+        "Assessment evidence is incomplete for completion",
       );
     }
-    await loadTreatmentAssessment(
-      ctx,
-      treatment,
-      treatment.outcomeAssessmentId,
-      {
-        requireAccepted: true,
-      },
-    );
-    if (!treatment.baselineAssessmentId) {
-      throw new Error(
-        "Baseline condition assessment is required before completion",
-      );
-    }
-    await loadTreatmentAssessment(
-      ctx,
-      treatment,
-      treatment.baselineAssessmentId,
-    );
 
     const updates: {
       status: "completed";

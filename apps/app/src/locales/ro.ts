@@ -2120,6 +2120,7 @@ export default {
     },
     loadMore: "Încarcă mai multe",
     loading: "Se încarcă…",
+    showMore: "Afișează mai multe",
     shownOfTotal: "Se afișează {shown} din {total}",
     matchesShown: "Potriviri afișate: {shown}",
     sort: {
@@ -3690,6 +3691,16 @@ export default {
       markFollowUpDone: "Marchează lucrările ulterioare ca finalizate",
       actionSuccess: "Tratament actualizat",
       actionError: "Tratamentul nu a putut fi actualizat",
+      errors: {
+        baselineRequired:
+          "Legați o evaluare inițială de acest tratament înainte de a-l aproba sau finaliza.",
+        outcomeRequired:
+          "Legați o evaluare finală de acest tratament înainte de a-l finaliza.",
+        outcomeNotAccepted:
+          "Acceptați evaluarea finală înainte de a finaliza acest tratament.",
+        statusChanged:
+          "Starea acestui tratament s-a schimbat. Verificați starea curentă și încercați din nou.",
+      },
       followUp: {
         none: "Niciuna",
         pending: "În așteptare",
@@ -7165,6 +7176,7 @@ export default {
       assignedTruncated: "Se afișează primele 50 de dosare atribuite.",
       since: "Din",
       nothingWaiting: "Nu aveți nimic în așteptare.",
+      pendingTransfers: "Transferuri în așteptare",
       pendingApproval: {
         accession: "Accesiuni în așteptarea aprobării",
         deaccession: "Scoateri din colecție în așteptarea aprobării",

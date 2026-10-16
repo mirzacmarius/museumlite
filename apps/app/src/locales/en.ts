@@ -3463,6 +3463,16 @@ export default {
       markFollowUpDone: "Mark follow-up complete",
       actionSuccess: "Treatment updated",
       actionError: "Could not update treatment",
+      errors: {
+        baselineRequired:
+          "Link a baseline assessment to this treatment before approving or completing it.",
+        outcomeRequired:
+          "Link an outcome assessment to this treatment before completing it.",
+        outcomeNotAccepted:
+          "Accept the outcome assessment before completing this treatment.",
+        statusChanged:
+          "This treatment's status has changed. Check its current status and try again.",
+      },
       followUp: {
         none: "None",
         pending: "Pending",
@@ -4788,6 +4798,7 @@ export default {
       assignedTruncated: "Showing the first 50 assigned cases.",
       since: "Since",
       nothingWaiting: "No work waiting for you.",
+      pendingTransfers: "Pending transfers",
       pendingApproval: {
         accession: "Pending accession approval",
         deaccession: "Pending deaccession approval",
@@ -5578,6 +5589,7 @@ export default {
     },
     loadMore: "Load more",
     loading: "Loading…",
+    showMore: "Show more",
     shownOfTotal: "Showing {shown} of {total}",
     matchesShown: "Matches shown: {shown}",
     sort: {

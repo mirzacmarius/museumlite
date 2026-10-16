@@ -176,6 +176,7 @@ import type * as utils_collectionOptionUsages from "../utils/collectionOptionUsa
 import type * as utils_collectionTypeDetailFields from "../utils/collectionTypeDetailFields.js";
 import type * as utils_conditionAssessmentErrors from "../utils/conditionAssessmentErrors.js";
 import type * as utils_conditionAssessmentStatus from "../utils/conditionAssessmentStatus.js";
+import type * as utils_conservationErrors from "../utils/conservationErrors.js";
 import type * as utils_convexAuth from "../utils/convexAuth.js";
 import type * as utils_convexErrorData from "../utils/convexErrorData.js";
 import type * as utils_currency from "../utils/currency.js";
@@ -510,6 +511,7 @@ declare const fullApi: ApiFromModules<{
   "utils/collectionTypeDetailFields": typeof utils_collectionTypeDetailFields;
   "utils/conditionAssessmentErrors": typeof utils_conditionAssessmentErrors;
   "utils/conditionAssessmentStatus": typeof utils_conditionAssessmentStatus;
+  "utils/conservationErrors": typeof utils_conservationErrors;
   "utils/convexAuth": typeof utils_convexAuth;
   "utils/convexErrorData": typeof utils_convexErrorData;
   "utils/currency": typeof utils_currency;

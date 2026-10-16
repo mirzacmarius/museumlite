@@ -15,6 +15,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { RECORD_LOG_PAGE_SIZE, RecordLog } from "@/components/record-log";
 import { withReturnPath } from "@/lib/return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatAccessionMethodLabel } from "./[id]/_components/accession-detail-ui";
@@ -37,7 +38,6 @@ type KanbanColumnProps = {
 };
 
 const PAGE_SIZE = 25;
-const APPROVED_LOG_PAGE_SIZE = 10;
 
 const stepDotStyles: Record<number, string> = {
   0: "bg-zinc-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]",
@@ -104,7 +104,7 @@ export function KanbanColumn({
   const icon = getColumnIcon(column);
   const search = searchQuery.trim();
   const isApprovedLog = column.kind === "approved";
-  const pageSize = isApprovedLog ? APPROVED_LOG_PAGE_SIZE : PAGE_SIZE;
+  const pageSize = isApprovedLog ? RECORD_LOG_PAGE_SIZE : PAGE_SIZE;
   const { results, status, loadMore } = usePaginatedQuery(
     api.accessions.listBoardColumn,
     {
@@ -154,7 +154,7 @@ export function KanbanColumn({
                 </p>
               </div>
             ) : isApprovedLog ? (
-              <ol className="flex flex-col divide-y divide-border/60">
+              <RecordLog>
                 {results.map((accession) => (
                   <ApprovedLogEntry
                     key={accession._id}
@@ -165,7 +165,7 @@ export function KanbanColumn({
                     )}
                   />
                 ))}
-              </ol>
+              </RecordLog>
             ) : (
               results.map((accession) => {
                 const text = accessionBoardText(
