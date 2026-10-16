@@ -114,6 +114,8 @@ describe("API Key Generation Security", () => {
     );
   });
 
+  // A thousand mutations take over 5s on slow CI runners, and a timed-out run
+  // keeps writing into the tests after it.
   test("should generate unique keys (no collisions in 1000+ generations)", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createTestSetup(t);
@@ -140,7 +142,7 @@ describe("API Key Generation Security", () => {
     );
 
     expect(generatedKeys.size).toBe(iterations);
-  });
+  }, 20_000);
 
   test("should generate keys with sufficient entropy (no predictable patterns)", async () => {
     const t = convexTest(schema, modules);

@@ -693,6 +693,8 @@ describe("account recovery without existence disclosure", () => {
     ).toEqual({ tokens: null });
   });
 
+  // password-link hashes a password on each of its 12 requests, which takes
+  // over 5s on slow CI runners.
   test.each([
     "resend-otp",
     "magic-link",
@@ -748,7 +750,7 @@ describe("account recovery without existence disclosure", () => {
       },
     });
     expect(emailsTo(ownerEmail)).toHaveLength(11);
-  });
+  }, 20_000);
 
   test("expiry of an older request does not reset an active email's quota", async () => {
     vi.useFakeTimers();
