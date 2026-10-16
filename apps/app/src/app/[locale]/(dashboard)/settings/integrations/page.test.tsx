@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { getFunctionName } from "convex/server";
 import { beforeEach, expect, test, vi } from "vitest";
@@ -35,8 +35,13 @@ vi.mock("convex/react", () => ({
 vi.mock("@/components/organization-provider", () => ({
   useOrganization: () => ({ currentOrganizationId: "org-1" }),
 }));
+const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
+vi.mock("sonner", () => ({
+  toast: { success: () => {}, info: () => {}, error: toastError },
+}));
 
 beforeEach(() => {
+  toastError.mockReset();
   enableIntegration.mockReset();
   enableIntegration.mockResolvedValue({ ok: true });
   disableIntegration.mockReset();
@@ -53,7 +58,7 @@ test("enabling an integration asks first and Cancel enables nothing", async () =
   expect(screen.queryByRole("alertdialog")).toBeNull();
 
   await user.click(library);
-  screen.getByText("“Library” will be turned on.");
+  screen.getByText("Setting: Library");
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(enableIntegration).not.toHaveBeenCalled();
 
@@ -75,8 +80,9 @@ test("disabling an integration explains that its data is kept", async () => {
   within(dialog).getByRole("heading", {
     name: "Are you sure you want to disable this function?",
   });
+  within(dialog).getByText("Setting: Library");
   within(dialog).getByText(
-    "“Library” will be turned off. The data will be preserved, but the features will no longer be accessible until re-enabled.",
+    "The data will be preserved, but the features will no longer be accessible until re-enabled.",
   );
   await user.click(within(dialog).getByRole("button", { name: "Disable" }));
 
@@ -85,4 +91,22 @@ test("disabling an integration explains that its data is kept", async () => {
     integrationId: "library",
   });
   expect(enableIntegration).not.toHaveBeenCalled();
+});
+
+test("a failed disable says so and leaves the integration on", async () => {
+  enabled = ["library"];
+  disableIntegration.mockRejectedValue(new Error("offline"));
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const user = userEvent.setup();
+  await renderOnPage(<IntegrationsSettingsPage />, "/en/settings/integrations");
+  const library = screen.getByRole("switch", { name: "Library" });
+
+  await user.click(library);
+  await user.click(screen.getByRole("button", { name: "Disable" }));
+
+  await waitFor(() =>
+    expect(toastError).toHaveBeenCalledWith("Failed to disable integration"),
+  );
+  expect(library.getAttribute("aria-checked")).toBe("true");
+  await waitFor(() => expect(library.getAttribute("aria-busy")).toBeNull());
 });

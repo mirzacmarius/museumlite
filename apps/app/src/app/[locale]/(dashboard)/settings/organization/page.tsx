@@ -17,7 +17,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Droplet, Plus, Save } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
-import { ConfirmedSwitch } from "@/components/confirmed-switch";
+import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -205,35 +205,19 @@ function WatermarkSettingsCard({
         <h2 className="text-lg font-medium">{t("watermarkSettings")}</h2>
       </div>
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <p
-              id="watermarkEnabled-label"
-              className="text-sm leading-none font-medium"
-            >
-              {t("enableWatermark")}
-            </p>
-            <p
-              id="watermarkEnabled-description"
-              className="text-xs text-muted-foreground"
-            >
-              {t("applyWatermarkEditedImages")}
-            </p>
-          </div>
-          <ConfirmedSwitch
-            id="watermarkEnabled"
-            labelId="watermarkEnabled-label"
-            descriptionId="watermarkEnabled-description"
-            settingName={t("enableWatermark")}
-            checked={settings.isEnabled}
-            onConfirmedChange={(checked) =>
-              onSettingsChange({
-                ...settings,
-                isEnabled: checked,
-              })
-            }
-          />
-        </div>
+        <ConfirmedSwitchRow
+          label={t("enableWatermark")}
+          description={t("applyWatermarkEditedImages")}
+          descriptionClassName="text-xs"
+          checked={settings.isEnabled}
+          appliesOnSave
+          onConfirmedChange={(checked) =>
+            onSettingsChange({
+              ...settings,
+              isEnabled: checked,
+            })
+          }
+        />
 
         {settings.isEnabled ? (
           <>

@@ -8,7 +8,7 @@ import { Label } from "@v1/ui/label";
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Loader2, Save } from "lucide-react";
 import { useEffect, useReducer } from "react";
-import { ConfirmedSwitch } from "@/components/confirmed-switch";
+import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 import { useScopedI18n } from "@/locales/client";
@@ -81,49 +81,6 @@ function portalSettingsSidebarReducer(
         portalSlug: action.settings.portalSlug,
       };
   }
-}
-
-function PortalSettingSwitch({
-  checked,
-  description,
-  disabled,
-  id,
-  label,
-  onConfirmedChange,
-}: {
-  checked: boolean;
-  description: string;
-  disabled?: boolean;
-  id: string;
-  label: string;
-  onConfirmedChange: (checked: boolean) => void;
-}) {
-  const labelId = `${id}-label`;
-  const descriptionId = `${id}-description`;
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="space-y-0.5">
-        <p
-          id={labelId}
-          className="field-label text-sm leading-none font-medium"
-        >
-          {label}
-        </p>
-        <p id={descriptionId} className="caption text-muted-foreground">
-          {description}
-        </p>
-      </div>
-      <ConfirmedSwitch
-        id={id}
-        labelId={labelId}
-        descriptionId={descriptionId}
-        settingName={label}
-        checked={checked}
-        disabled={disabled}
-        onConfirmedChange={onConfirmedChange}
-      />
-    </div>
-  );
 }
 
 export function PortalSettingsSidebar() {
@@ -260,41 +217,45 @@ export function PortalSettingsSidebar() {
         </div>
 
         <div className="space-y-4">
-          <PortalSettingSwitch
-            id="portal-enabled"
+          <ConfirmedSwitchRow
             label={t("portalEnabled")}
             description={t("publiclyAccessible")}
+            descriptionClassName="text-xs"
             checked={state.isEnabled}
+            appliesOnSave
             onConfirmedChange={(value) =>
               dispatch({ type: "setIsEnabled", value })
             }
           />
-          <PortalSettingSwitch
-            id="search-enabled"
+          <ConfirmedSwitchRow
             label={t("publicSearch")}
             description={t("allowVisitorsToSearch")}
+            descriptionClassName="text-xs"
             checked={state.isSearchEnabled}
             disabled={!state.isEnabled}
+            appliesOnSave
             onConfirmedChange={(value) =>
               dispatch({ type: "setIsSearchEnabled", value })
             }
           />
-          <PortalSettingSwitch
-            id="highres-enabled"
+          <ConfirmedSwitchRow
             label={t("highResDownloads")}
             description={t("allowHighResDownloads")}
+            descriptionClassName="text-xs"
             checked={state.isHighResEnabled}
             disabled={!state.isEnabled}
+            appliesOnSave
             onConfirmedChange={(value) =>
               dispatch({ type: "setIsHighResEnabled", value })
             }
           />
-          <PortalSettingSwitch
-            id="valuations-visible"
+          <ConfirmedSwitchRow
             label={t("showValuations")}
             description={t("displayValuationsPublicly")}
+            descriptionClassName="text-xs"
             checked={state.isValuationVisible}
             disabled={!state.isEnabled}
+            appliesOnSave
             onConfirmedChange={(value) =>
               dispatch({ type: "setIsValuationVisible", value })
             }

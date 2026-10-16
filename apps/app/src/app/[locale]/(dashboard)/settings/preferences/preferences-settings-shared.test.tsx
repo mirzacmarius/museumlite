@@ -58,7 +58,8 @@ test("a preference changes only once its switch is confirmed", async () => {
   screen.getByRole("heading", {
     name: "Are you sure you want to disable this function?",
   });
-  screen.getByText("“Deaccession workflow” will be turned off.");
+  screen.getByText("Setting: Deaccession workflow");
+  screen.getByText("The change takes effect when you save.");
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(onCheckedChange).not.toHaveBeenCalled();
   expect(control.getAttribute("aria-checked")).toBe("true");

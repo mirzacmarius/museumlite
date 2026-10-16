@@ -11,8 +11,9 @@ import {
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
 import { Switch } from "@v1/ui/switch";
+import { cn } from "@v1/ui/utils";
 import { Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useI18n } from "@/locales/client";
 
 interface ConfirmedSwitchProps {
@@ -26,6 +27,8 @@ interface ConfirmedSwitchProps {
   /** The visible setting name. It names the switch for assistive technology but is not a click target. */
   labelId?: string;
   descriptionId?: string;
+  /** The switch edits a form, so the confirmation says the change takes effect on save. */
+  appliesOnSave?: boolean;
   /** Follows the confirmation when enabling has consequences worth stating. */
   enableDetails?: string;
   /** Follows the confirmation when disabling has consequences worth stating. */
@@ -44,6 +47,7 @@ export function ConfirmedSwitch({
   id,
   labelId,
   descriptionId,
+  appliesOnSave,
   enableDetails,
   disableDetails,
 }: ConfirmedSwitchProps) {
@@ -108,20 +112,29 @@ export function ConfirmedSwitch({
                 ? translate("confirmedSwitch.enableTitle")
                 : translate("confirmedSwitch.disableTitle")}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {enabling
-                ? translate("confirmedSwitch.enableDescription", {
-                    setting: settingName,
-                  })
-                : translate("confirmedSwitch.disableDescription", {
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  {translate("confirmedSwitch.setting", {
                     setting: settingName,
                   })}
-              {details ? ` ${details}` : null}
+                </p>
+                {details ? <p>{details}</p> : null}
+                {appliesOnSave ? (
+                  <p>{translate("confirmedSwitch.appliesOnSave")}</p>
+                ) : null}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{translate("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void applyRequest()}>
+            <AlertDialogAction
+              onClick={() => {
+                // The dialog stays clickable while it animates closed.
+                if (!request.open || isApplying) return;
+                void applyRequest();
+              }}
+            >
               {enabling
                 ? translate("confirmedSwitch.enable")
                 : translate("confirmedSwitch.disable")}
@@ -130,5 +143,53 @@ export function ConfirmedSwitch({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+interface ConfirmedSwitchRowProps
+  extends Omit<
+    ConfirmedSwitchProps,
+    "settingName" | "labelId" | "descriptionId"
+  > {
+  label: string;
+  description: string;
+  className?: string;
+  descriptionClassName?: string;
+}
+
+/**
+ * A setting's name and description beside its confirmed switch. The text
+ * names and describes the switch, but only the switch itself toggles.
+ */
+export function ConfirmedSwitchRow({
+  label,
+  description,
+  className,
+  descriptionClassName,
+  ...switchProps
+}: ConfirmedSwitchRowProps) {
+  const textId = useId();
+  const labelId = `${textId}-label`;
+  const descriptionId = `${textId}-description`;
+  return (
+    <div className={cn("flex items-center justify-between gap-4", className)}>
+      <div className="space-y-1">
+        <p id={labelId} className="text-sm leading-none font-medium">
+          {label}
+        </p>
+        <p
+          id={descriptionId}
+          className={cn("text-sm text-muted-foreground", descriptionClassName)}
+        >
+          {description}
+        </p>
+      </div>
+      <ConfirmedSwitch
+        {...switchProps}
+        settingName={label}
+        labelId={labelId}
+        descriptionId={descriptionId}
+      />
+    </div>
   );
 }

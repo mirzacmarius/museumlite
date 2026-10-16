@@ -336,7 +336,12 @@ function IntegrationsSettingsContent() {
     const organizationId = currentOrganizationId as Id<"organizations">;
 
     if (!enabled) {
-      await disableIntegration({ organizationId, integrationId });
+      try {
+        await disableIntegration({ organizationId, integrationId });
+      } catch (error) {
+        console.error("Failed to disable integration:", error);
+        toast.error(tToast("integrationDisableFailed"));
+      }
       return;
     }
 

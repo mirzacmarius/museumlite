@@ -25,7 +25,7 @@ import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { type Dispatch, type FormEvent, useReducer } from "react";
 import { CapabilityGuard } from "@/components/capability-guard";
-import { ConfirmedSwitch } from "@/components/confirmed-switch";
+import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useCapabilities } from "@/hooks/use-capabilities";
@@ -189,7 +189,6 @@ function SiteFormDialogContent({
   const tRoot = useI18n();
   const t = useScopedI18n("untranslatedDashboard.settings");
   const isCreate = mode === "create";
-  const primarySiteId = isCreate ? "isPrimary" : "edit-isPrimary";
 
   return (
     <DialogContent>
@@ -253,32 +252,16 @@ function SiteFormDialogContent({
             />
           </div>
 
-          <div className="flex items-center justify-between gap-x-2 rounded-lg border p-3">
-            <div className="space-y-0.5">
-              <p
-                id={`${primarySiteId}-label`}
-                className="text-sm leading-none font-medium"
-              >
-                {t("primarySite")}
-              </p>
-              <p
-                id={`${primarySiteId}-description`}
-                className="text-sm text-muted-foreground"
-              >
-                {t("setPrimarySite")}
-              </p>
-            </div>
-            <ConfirmedSwitch
-              id={primarySiteId}
-              labelId={`${primarySiteId}-label`}
-              descriptionId={`${primarySiteId}-description`}
-              settingName={t("primarySite")}
-              checked={formData.isPrimary}
-              onConfirmedChange={(checked) =>
-                onUpdateForm({ isPrimary: checked })
-              }
-            />
-          </div>
+          <ConfirmedSwitchRow
+            className="rounded-lg border p-3"
+            label={t("primarySite")}
+            description={t("setPrimarySite")}
+            checked={formData.isPrimary}
+            appliesOnSave
+            onConfirmedChange={(checked) =>
+              onUpdateForm({ isPrimary: checked })
+            }
+          />
         </div>
 
         <DialogFooter>

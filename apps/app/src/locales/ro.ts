@@ -922,8 +922,8 @@ export default {
   confirmedSwitch: {
     enableTitle: "Sigur vrei să activezi această funcție?",
     disableTitle: "Sigur vrei să dezactivezi această funcție?",
-    enableDescription: "Setarea „{setting}” va fi activată.",
-    disableDescription: "Setarea „{setting}” va fi dezactivată.",
+    setting: "Setare: {setting}",
+    appliesOnSave: "Modificarea se aplică după ce salvezi.",
     enable: "Activează",
     disable: "Dezactivează",
   },
@@ -960,12 +960,14 @@ export default {
 
       invalidEmail: "Formatul adresei de email nu este valid",
       createFailed: "Crearea a eșuat. Încearcă din nou.",
-      moduleToggled: "Modul {action}",
+      moduleEnabled: "Modul activat",
+      moduleDisabled: "Modul dezactivat",
       moduleUpdateFailed: "Actualizarea modulelor a eșuat",
       waitingSubscription: "Se așteaptă confirmarea abonamentului...",
       integrationEnabled: "Integrare activată cu succes",
       integrationAlreadyEnabled: "Integrarea este deja activată",
       integrationEnableFailed: "Activarea integrării a eșuat",
+      integrationDisableFailed: "Dezactivarea integrării a eșuat",
       loansApproved: "S-au aprobat cu succes {count} împrumut(uri)",
       someLoansSkipped:
         "{count} împrumut(uri) au fost omise (nu sunt în așteptare)",

@@ -62,7 +62,7 @@ test("a module is enabled only after the confirmation, and Cancel saves nothing"
   within(dialog).getByRole("heading", {
     name: "Are you sure you want to enable this function?",
   });
-  within(dialog).getByText("“Fine Art” will be turned on.");
+  within(dialog).getByText("Setting: Fine Art");
   await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
   expect(updateOrganization).not.toHaveBeenCalled();
   expect(fineArt.getAttribute("aria-checked")).toBe("false");
@@ -87,7 +87,7 @@ test("disabling a module asks to disable it and saves without it", async () => {
   screen.getByRole("heading", {
     name: "Are you sure you want to disable this function?",
   });
-  screen.getByText("“Accounts & CRM” will be turned off.");
+  screen.getByText("Setting: Accounts & CRM");
   await user.click(screen.getByRole("button", { name: "Disable" }));
 
   expect(updateOrganization).toHaveBeenCalledExactlyOnceWith({

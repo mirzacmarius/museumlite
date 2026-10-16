@@ -90,7 +90,7 @@ export default function ModulesSettingsPage() {
         settings: { enabledModules: next },
       });
       toast.success(
-        tToast("moduleToggled", { action: enabled ? "enabled" : "disabled" }),
+        enabled ? tToast("moduleEnabled") : tToast("moduleDisabled"),
       );
     } catch (_error) {
       setEnabledModules(previous);

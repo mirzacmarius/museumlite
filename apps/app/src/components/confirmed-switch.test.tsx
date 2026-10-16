@@ -36,7 +36,10 @@ test("turning a switch on asks first, and Cancel leaves it off", async () => {
   within(dialog).getByRole("heading", {
     name: "Are you sure you want to enable this function?",
   });
-  within(dialog).getByText("“Auto-generation” will be turned on.");
+  within(dialog).getByText("Setting: Auto-generation");
+  expect(
+    within(dialog).queryByText("The change takes effect when you save."),
+  ).toBeNull();
   expect(control.getAttribute("aria-checked")).toBe("false");
 
   await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
@@ -94,7 +97,7 @@ test("the keyboard goes through the same confirmation, on and off", async () => 
   within(dialog).getByRole("heading", {
     name: "Are you sure you want to disable this function?",
   });
-  within(dialog).getByText("“Auto-generation” will be turned off.");
+  within(dialog).getByText("Setting: Auto-generation");
   await user.click(within(dialog).getByRole("button", { name: "Disable" }));
 
   expect(onConfirmedChange).toHaveBeenLastCalledWith(false);
