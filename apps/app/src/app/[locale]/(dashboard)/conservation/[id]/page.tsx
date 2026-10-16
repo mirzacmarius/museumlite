@@ -63,8 +63,8 @@ export default function TreatmentDetailPage({
     TREATMENT_TYPE_STYLES.other;
 
   return (
-    <div className="flex size-full bg-background px-6 py-8">
-      <div className="mx-auto w-full max-w-4xl space-y-8">
+    <div className="size-full overflow-y-auto bg-background px-6">
+      <div className="mx-auto w-full max-w-4xl space-y-8 py-8">
         <div className="flex items-start justify-between">
           <div className="space-y-4">
             <Button
