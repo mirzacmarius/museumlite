@@ -19,13 +19,13 @@ import {
 import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { type Dispatch, type FormEvent, useReducer } from "react";
 import { CapabilityGuard } from "@/components/capability-guard";
+import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useCapabilities } from "@/hooks/use-capabilities";
@@ -252,26 +252,16 @@ function SiteFormDialogContent({
             />
           </div>
 
-          <div className="flex items-center justify-between gap-x-2 rounded-lg border p-3">
-            <div className="space-y-0.5">
-              <Label
-                htmlFor={isCreate ? "isPrimary" : "edit-isPrimary"}
-                className="font-medium"
-              >
-                {t("primarySite")}
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                {t("setPrimarySite")}
-              </p>
-            </div>
-            <Switch
-              id={isCreate ? "isPrimary" : "edit-isPrimary"}
-              checked={formData.isPrimary}
-              onCheckedChange={(checked) =>
-                onUpdateForm({ isPrimary: checked })
-              }
-            />
-          </div>
+          <ConfirmedSwitchRow
+            className="rounded-lg border p-3"
+            label={t("primarySite")}
+            description={t("setPrimarySite")}
+            checked={formData.isPrimary}
+            appliesOnSave
+            onConfirmedChange={(checked) =>
+              onUpdateForm({ isPrimary: checked })
+            }
+          />
         </div>
 
         <DialogFooter>
