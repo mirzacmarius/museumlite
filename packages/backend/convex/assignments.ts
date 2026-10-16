@@ -8,10 +8,12 @@ import {
 } from "./utils/accessionReview";
 import { type CapabilityId, evaluateCapability } from "./utils/capabilities";
 import { organizationAccess } from "./utils/featureGates";
+import { resolveImageDeletionApproval } from "./utils/imageDeletion";
 import {
   type ApprovalCaseType,
   getCurrentUserOrganization,
   getRolePermissionNames,
+  hasPermission,
   resolveCaseApproval,
 } from "./utils/permissions";
 
@@ -65,6 +67,33 @@ async function loadCanActOnApproval(
 }
 
 /**
+ * Image deletions waiting for approval, when the viewer may decide them and
+ * open the page that lists them.
+ */
+async function loadPendingImageDeletions(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const [canOpenPage, approval] = await Promise.all([
+    hasPermission(ctx, organizationId, "media.read"),
+    resolveImageDeletionApproval(ctx, organizationId),
+  ]);
+  if (!canOpenPage || !approval.allowed) return [];
+  const requests = await ctx.db
+    .query("mediaDeletionRequests")
+    .withIndex("by_organization_and_status_and_requestedAt", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "pending"),
+    )
+    .collect();
+  return await Promise.all(
+    requests.map(async (request) => ({
+      ...request,
+      objectTitle: (await ctx.db.get(request.collectionId))?.title,
+    })),
+  );
+}
+
+/**
  * Get user's assignments across the organization
  * Includes: pending workflow items, recently cataloged objects, items needing attention
  */
@@ -83,6 +112,7 @@ export const listMyAssignments = query({
           v.literal("loan"),
           v.literal("exhibition"),
           v.literal("conservation"),
+          v.literal("imageDeletion"),
         ),
         title: v.string(),
         subtitle: v.optional(v.string()),
@@ -141,6 +171,7 @@ export const listMyAssignments = query({
         loan: v.number(),
         exhibition: v.number(),
         conservation: v.number(),
+        imageDeletion: v.number(),
       }),
       totalAssignedAccessions: v.number(),
       totalCatalogedItems: v.number(),
@@ -159,7 +190,8 @@ export const listMyAssignments = query({
         | "deaccession"
         | "loan"
         | "exhibition"
-        | "conservation";
+        | "conservation"
+        | "imageDeletion";
       title: string;
       subtitle?: string;
       status: string;
@@ -192,6 +224,7 @@ export const listMyAssignments = query({
       pendingLoans,
       pendingExhibitions,
       pendingConservation,
+      pendingImageDeletions,
     ] = await Promise.all([
       getAuthUserId(ctx),
       loadCanActOnApproval(ctx, args.organizationId),
@@ -231,6 +264,7 @@ export const listMyAssignments = query({
           q.eq("organizationId", args.organizationId).eq("status", "proposed"),
         )
         .collect(),
+      loadPendingImageDeletions(ctx, args.organizationId),
     ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -431,6 +465,24 @@ export const listMyAssignments = query({
       });
     }
 
+    for (const request of pendingImageDeletions) {
+      const age = Date.now() - request.requestedAt;
+      pendingApprovals.push({
+        _id: request._id,
+        type: "imageDeletion",
+        title: request.fileName,
+        subtitle: request.objectTitle,
+        status: "pending",
+        createdAt: request.requestedAt,
+        urgency:
+          age > 7 * 24 * 60 * 60 * 1000
+            ? "high"
+            : age > 3 * 24 * 60 * 60 * 1000
+              ? "medium"
+              : "low",
+      });
+    }
+
     // Sort by: SLA breached first, then urgency (high first), then age (oldest first)
     pendingApprovals.sort((a, b) => {
       if (a.slaBreached !== b.slaBreached) {
@@ -556,6 +608,7 @@ export const listMyAssignments = query({
       loan: 0,
       exhibition: 0,
       conservation: 0,
+      imageDeletion: 0,
     } satisfies Record<(typeof pendingApprovals)[number]["type"], number>;
     for (const approval of pendingApprovals) {
       pendingApprovalsByType[approval.type] += 1;

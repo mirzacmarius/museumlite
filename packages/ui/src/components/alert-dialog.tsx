@@ -33,23 +33,28 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
 const AlertDialogContent = ({
   className,
+  layerClassName,
   children,
   onOpenAutoFocus,
   onCloseAutoFocus,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> &
-  React.RefAttributes<
-    React.ElementRef<typeof AlertDialogPrimitive.Content>
-  >) => {
+  React.RefAttributes<React.ElementRef<typeof AlertDialogPrimitive.Content>> & {
+    /** Stacking of the overlay and dialog layer, e.g. above another overlay. */
+    layerClassName?: string;
+  }) => {
   const returnFocus = useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus });
 
   return (
     <AlertDialogPortal>
-      <AlertDialogOverlay />
+      <AlertDialogOverlay className={layerClassName} />
       <AlertDialogPrimitive.Content
         ref={ref}
-        className="fixed inset-0 z-50 overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        className={cn(
+          "fixed inset-0 z-50 overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          layerClassName,
+        )}
         {...props}
         {...returnFocus}
       >

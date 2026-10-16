@@ -82,6 +82,7 @@ const organizationScopedTables = [
   "mediaVersions",
   "mediaEditHistory",
   "mediaDownloads",
+  "mediaDeletionRequests",
   "fineArtDetails",
   "wineDetails",
   "vehicleDetails",

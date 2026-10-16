@@ -216,6 +216,7 @@ export function CollectionEditFormLayout({
         mediaId={editingImageId}
         isOpen={!!editingImageId}
         onClose={() => setEditingImageId(null)}
+        allowDelete
       />
     </div>
   );

@@ -1101,6 +1101,32 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_organization", ["organizationId"]),
 
+  // Requests to delete an object's image while the accessions approval
+  // workflow is on (MUS-794, ADR 0018). Decided requests stay as the record.
+  mediaDeletionRequests: defineTable({
+    organizationId: v.id("organizations"),
+    mediaId: v.id("mediaFiles"),
+    collectionId: v.id("collections"),
+    /** The image's file name when requested, kept after it is deleted. */
+    fileName: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
+    requestedBy: v.id("users"),
+    requestedAt: v.number(),
+    decidedBy: v.optional(v.id("users")),
+    decidedAt: v.optional(v.number()),
+  })
+    .index("by_organization_and_status_and_requestedAt", [
+      "organizationId",
+      "status",
+      "requestedAt",
+    ])
+    .index("by_media_and_status", ["mediaId", "status"])
+    .index("by_collection_and_status", ["collectionId", "status"]),
+
   // Fine Art module details (provenance, insurance, valuation)
   fineArtDetails: defineTable({
     ...typeDetailRecordFields,
@@ -4651,7 +4677,8 @@ export default defineSchema({
     linkedAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_taskId", ["taskId"]),
+    .index("by_taskId", ["taskId"])
+    .index("by_reference_id", ["reference.id"]),
 
   // Incidents - damage, loss and emergency response cases (MUS-664, ADR 0015).
   incidents: defineTable({
@@ -4749,7 +4776,9 @@ export default defineSchema({
         retractedAt: v.number(),
       }),
     ),
-  }).index("by_incident", ["incidentId"]),
+  })
+    .index("by_incident", ["incidentId"])
+    .index("by_reference_id", ["reference.id"]),
 
   // The incident's own append-only log, readable only by people in scope.
   incidentEvents: defineTable({
