@@ -19,6 +19,7 @@ import {
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./featureGates";
+import { VALUATION_PERMISSION } from "./valuation";
 import { workflowApprovalError } from "./workflowApprovalErrors";
 import {
   getWorkflowConfig,
@@ -218,6 +219,16 @@ export async function requirePermission(
   if (!has) {
     throw permissionDenied(permissionName);
   }
+}
+
+export async function requireValuationRead(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<void> {
+  await Promise.all([
+    requirePermission(ctx, organizationId, "collections.read"),
+    requirePermission(ctx, organizationId, VALUATION_PERMISSION),
+  ]);
 }
 
 function permissionDenied(permissionName: string) {

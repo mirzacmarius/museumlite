@@ -18,6 +18,7 @@ export function ProvenanceHistoryTab({
   return (
     <div className="space-y-8">
       <ProvenanceClaimsPanel
+        mode="view"
         objectId={collection._id}
         organizationId={collection.organizationId}
         legacyProvenance={collection.provenance}

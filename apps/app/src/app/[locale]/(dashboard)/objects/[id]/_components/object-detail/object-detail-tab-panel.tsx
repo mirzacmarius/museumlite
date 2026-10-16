@@ -160,7 +160,11 @@ export function ObjectDetailTabPanel({
           <ProvenanceHistoryTab collection={collection} />
         )}
         {activeTab === "valuation" && (
-          <ValuationTab collectionId={collectionId} locale={locale} />
+          <ValuationTab
+            mode="view"
+            collectionId={collectionId}
+            locale={locale}
+          />
         )}
         {activeTab === "placement" && (
           <PlacementRelationshipsTab

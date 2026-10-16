@@ -172,7 +172,7 @@ function ProvenanceClaimCard({
   return (
     <li>
       <Link
-        href={`/objects/${claim.objectId}?tab=provenance`}
+        href={`/objects/${claim.objectId}/edit?tab=provenance`}
         className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
       >
         <span className="flex w-full items-center gap-1.5">

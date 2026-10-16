@@ -9,7 +9,7 @@ import type { FunctionReturnType } from "convex/server";
 import { Plus, Scale } from "lucide-react";
 import { useState } from "react";
 import { ClientDate } from "@/components/client-date";
-import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import { usePermissions } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
 import { CALENDAR_DATE_OPTIONS } from "@/lib/format-date";
 import { type FormatLocale, formatMoney } from "@/lib/format-number";
@@ -25,6 +25,7 @@ type ObjectValuation = NonNullable<
 type AppraisalView = ObjectValuation["history"][number];
 
 interface ValuationTabProps {
+  mode: "view" | "edit";
   collectionId: Id<"collections">;
   locale: string;
 }
@@ -43,11 +44,15 @@ function defaultsFrom(appraisal: AppraisalView): AppraisalDefaults {
   };
 }
 
-export function ValuationTab({ collectionId, locale }: ValuationTabProps) {
+export function ValuationTab({
+  mode,
+  collectionId,
+  locale,
+}: ValuationTabProps) {
   const t = useScopedI18n("valuation");
   const now = useClientNow();
   const { hasPermission } = usePermissions();
-  const canRecord = hasPermission("collections.update");
+  const canRecord = mode === "edit" && hasPermission("collections.update");
   const valuation = useQuery(
     api.appraisals.getObjectValuation,
     now === undefined ? "skip" : { collectionId, now },
@@ -67,12 +72,12 @@ export function ValuationTab({ collectionId, locale }: ValuationTabProps) {
             {t("description")}
           </p>
         </div>
-        <PermissionGate permission="collections.update">
-          <Button size="sm" onClick={() => setRecordOpen(true)}>
+        {canRecord ? (
+          <Button type="button" size="sm" onClick={() => setRecordOpen(true)}>
             <Plus className="mr-2 size-4" />
             {t("recordAppraisal")}
           </Button>
-        </PermissionGate>
+        ) : null}
       </div>
 
       {valuation === undefined ? (
@@ -269,7 +274,7 @@ function AppraisalHistoryRow({
         ) : null}
       </div>
       {onCorrect ? (
-        <Button variant="outline" size="sm" onClick={onCorrect}>
+        <Button type="button" variant="outline" size="sm" onClick={onCorrect}>
           {t("supersede")}
         </Button>
       ) : null}

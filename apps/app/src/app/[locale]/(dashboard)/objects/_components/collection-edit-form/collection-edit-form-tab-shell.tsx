@@ -6,8 +6,9 @@ import { Button } from "@v1/ui/button";
 import type { FunctionReturnType } from "convex/server";
 import type React from "react";
 import type { ReactNode, RefObject } from "react";
-import { useI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import type { ObjectTabDefinition } from "../../[id]/_components/object-tab-config";
+import { ValuationTab } from "../../[id]/_components/valuation-tab";
 import type {
   CollectionEditTabId,
   CollectionFormData,
@@ -107,6 +108,7 @@ export function CollectionEditFormTabShell({
   setEditingImageId,
 }: CollectionEditFormTabShellProps) {
   const tRoot = useI18n();
+  const locale = useCurrentLocale();
   const tabProps = {
     formData,
     updateField,
@@ -163,9 +165,17 @@ export function CollectionEditFormTabShell({
           {activeTab === "provenance" ? (
             <CollectionEditProvenanceTab
               {...tabProps}
+              collection={collection}
               editingOwnershipEntryId={editingOwnershipEntryId}
               setEditingOwnershipEntryId={setEditingOwnershipEntryId}
               createOwnershipEntry={createOwnershipEntry}
+            />
+          ) : null}
+          {activeTab === "valuation" ? (
+            <ValuationTab
+              mode="edit"
+              collectionId={typedCollectionId}
+              locale={locale}
             />
           ) : null}
           {activeTab === "placement" ? (

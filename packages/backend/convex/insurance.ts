@@ -48,7 +48,7 @@ import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,
   requireCapability,
-  requirePermission,
+  requireValuationRead,
 } from "./utils/permissions";
 import {
   appraisalAgeDays,
@@ -2526,11 +2526,7 @@ export const checkAppraisalForCoverage = query({
     }
 
     try {
-      await requirePermission(
-        ctx,
-        collection.organizationId,
-        "collections.read",
-      );
+      await requireValuationRead(ctx, collection.organizationId);
     } catch (error) {
       if (
         error instanceof Error &&

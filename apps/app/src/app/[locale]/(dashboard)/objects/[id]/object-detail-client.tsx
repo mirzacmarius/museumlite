@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useMemo, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { usePermissions } from "@/components/permission-gate";
 import { RecordRecoveryState } from "@/components/record-recovery-state";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useRecordViewState } from "@/hooks/use-return-path";
@@ -137,6 +138,7 @@ function ObjectDetailView({
   const locale = useCurrentLocale();
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const { enabledModules, hasFeature } = useFeatureAccess();
+  const { permissions } = usePermissions();
   const collection = objectDetail?.collection ?? null;
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
@@ -182,6 +184,7 @@ function ObjectDetailView({
       collectionType: collection?.collectionType,
       enabledModules,
       locationTrackingEnabled: isLocationTrackingEnabled,
+      permissions,
       features: {
         conservation: hasConservationFeature,
         exhibitions: hasExhibitionsFeature,
@@ -195,6 +198,7 @@ function ObjectDetailView({
     hasExhibitionsFeature,
     hasLoansFeature,
     isLocationTrackingEnabled,
+    permissions,
   ]);
 
   const defaultTab = tabs[0]?.id ?? "general";
@@ -271,6 +275,7 @@ function ObjectDetailView({
           collection={collection}
           collectionGroupName={collectionGroup?.name}
           collectionId={collectionId}
+          editTab={activeTab === defaultTab ? undefined : activeTab}
           linkCopied={state.linkCopied}
           onLinkCopiedChange={(value) =>
             dispatch({ type: "setLinkCopied", value })

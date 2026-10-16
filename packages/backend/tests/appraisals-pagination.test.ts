@@ -11,6 +11,7 @@ describe("appraisals list pagination", () => {
     const t = createConvexTest();
     const { organizationId, userId } = await createOrgUserWithPermissions(t, [
       "collections.read",
+      "collections.view_valuation",
     ]);
     const authed = authedForUser(t, userId);
 
