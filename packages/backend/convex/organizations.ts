@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalQuery, query } from "./_generated/server";
+import schema from "./schema";
 import { getNextCounterPreview } from "./utils/accessionCounter";
 import {
   AccessionNumberParser,
@@ -17,10 +18,18 @@ import {
   enforceUserQuota,
   getTierLimits,
   requireFeatureAccess,
+  requireIntegrationEnabled,
   type SubscriptionTier,
 } from "./utils/featureGates";
-import type { ModuleId } from "./utils/moduleCatalog";
-import { enabledModuleValidator } from "./utils/moduleValidators";
+import {
+  MODULE_INTEGRATION_REQUIREMENTS,
+  moduleSwitchPatch,
+} from "./utils/moduleCatalog";
+import {
+  disabledModuleValidator,
+  enabledModuleValidator,
+  moduleIdValidator,
+} from "./utils/moduleValidators";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
@@ -52,8 +61,6 @@ import {
 } from "./utils/systemRoles";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
-
-type EnabledModule = ModuleId;
 
 type OrganizationSettings = Doc<"organizations">["settings"];
 type PermissionCategory = Doc<"permissions">["category"];
@@ -379,6 +386,12 @@ export const create = mutation({
   },
 });
 
+const organizationDocValidator = v.object({
+  ...schema.tables.organizations.validator.fields,
+  _id: v.id("organizations"),
+  _creationTime: v.number(),
+});
+
 /**
  * Get organization by ID
  */
@@ -386,82 +399,7 @@ export const get = query({
   args: {
     organizationId: v.id("organizations"),
   },
-  returns: v.union(
-    v.object({
-      _id: v.id("organizations"),
-      name: v.string(),
-      slug: v.string(),
-      accountNumber: v.optional(v.string()),
-      customerNumber: v.optional(v.string()),
-      allowsIncomingTransferRequests: v.optional(v.boolean()),
-      type: v.union(
-        v.literal("museum"),
-        v.literal("gallery"),
-        v.literal("library"),
-        v.literal("collector"),
-      ),
-      settings: v.optional(
-        v.object({
-          accessionNumberFormat: v.optional(v.string()),
-          accessionCounterScope: v.optional(
-            v.union(
-              v.literal("global"),
-              v.literal("year"),
-              v.literal("month"),
-              v.literal("day"),
-            ),
-          ),
-          autoGenerateAccessionNumbers: v.optional(v.boolean()),
-          accessionWorkflowEnabled: v.optional(v.boolean()),
-          deaccessionWorkflowEnabled: v.optional(v.boolean()),
-          allowIncomingTransferRequests: v.optional(v.boolean()),
-          locationTrackingEnabled: v.optional(v.boolean()),
-          locationTypes: v.optional(v.array(v.string())),
-          enableDetailedConditionReports: v.optional(v.boolean()),
-          enabledIntegrations: v.optional(v.array(v.string())),
-          enabledModules: v.optional(v.array(enabledModuleValidator)),
-          portalSettings: v.optional(
-            v.object({
-              isEnabled: v.optional(v.boolean()),
-              isSearchEnabled: v.optional(v.boolean()),
-              isHighResEnabled: v.optional(v.boolean()),
-              isValuationVisible: v.optional(v.boolean()),
-              portalSlug: v.optional(v.string()),
-            }),
-          ),
-          watermarkSettings: v.optional(
-            v.object({
-              isEnabled: v.optional(v.boolean()),
-              text: v.optional(v.string()),
-              opacity: v.optional(v.number()),
-              position: v.optional(
-                v.union(
-                  v.literal("center"),
-                  v.literal("top-left"),
-                  v.literal("top-right"),
-                  v.literal("bottom-left"),
-                  v.literal("bottom-right"),
-                ),
-              ),
-            }),
-          ),
-        }),
-      ),
-      subscriptionTier: v.optional(
-        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
-      ),
-      ownerUserId: v.optional(v.id("users")),
-      isActive: v.optional(v.boolean()),
-      requiresPlanSelection: v.optional(v.boolean()),
-      preservedSubscriptionTier: v.optional(
-        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
-      ),
-      parentOrganizationId: v.optional(v.id("organizations")),
-      rootOrganizationId: v.optional(v.id("organizations")),
-      _creationTime: v.number(),
-    }),
-    v.null(),
-  ),
+  returns: v.union(organizationDocValidator, v.null()),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
@@ -603,7 +541,6 @@ export const update = mutation({
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
         enabledIntegrations: v.optional(v.array(v.string())),
-        enabledModules: v.optional(v.array(enabledModuleValidator)),
       }),
     ),
     subscriptionTier: v.optional(
@@ -644,7 +581,6 @@ export const update = mutation({
         locationTypes?: string[];
         enableDetailedConditionReports?: boolean;
         enabledIntegrations?: string[];
-        enabledModules?: EnabledModule[];
       };
       allowsIncomingTransferRequests?: boolean;
       subscriptionTier?: "free" | "pro" | "enterprise";
@@ -680,6 +616,58 @@ export const update = mutation({
       }),
     ]);
 
+    return null;
+  },
+});
+
+export const setModuleEnabled = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    moduleId: moduleIdValidator,
+    enabled: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+    const requiredIntegration = MODULE_INTEGRATION_REQUIREMENTS[args.moduleId];
+    if (args.enabled && requiredIntegration) {
+      await requireIntegrationEnabled(
+        ctx,
+        args.organizationId,
+        requiredIntegration,
+      );
+    }
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    const modulePatch = moduleSwitchPatch(
+      org.settings ?? {},
+      args.moduleId,
+      args.enabled,
+    );
+    await Promise.all([
+      ctx.db.patch(args.organizationId, {
+        settings: { ...org.settings, ...modulePatch },
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action: "updated_organization",
+        entityType: "organization",
+        entityId: args.organizationId,
+        changes: { settings: modulePatch },
+      }),
+    ]);
     return null;
   },
 });
@@ -1282,6 +1270,7 @@ export const listUserOrganizations = query({
           locationTrackingEnabled: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
           enabledModules: v.optional(v.array(enabledModuleValidator)),
+          disabledModules: v.optional(v.array(disabledModuleValidator)),
         }),
       ),
       subscriptionTier: v.optional(
@@ -1329,6 +1318,7 @@ export const listUserOrganizations = query({
                 locationTrackingEnabled: org.settings.locationTrackingEnabled,
                 enabledIntegrations: org.settings.enabledIntegrations,
                 enabledModules: org.settings.enabledModules,
+                disabledModules: org.settings.disabledModules,
               }
             : undefined,
           subscriptionTier: org.subscriptionTier,

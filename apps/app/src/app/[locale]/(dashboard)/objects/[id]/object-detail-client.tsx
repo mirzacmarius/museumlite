@@ -137,7 +137,7 @@ function ObjectDetailView({
   const common = useScopedI18n("common");
   const locale = useCurrentLocale();
   const { currentOrganization, currentOrganizationId } = useOrganization();
-  const { enabledModules, hasFeature } = useFeatureAccess();
+  const { enabledModules, hasFeature, hasModule } = useFeatureAccess();
   const { permissions } = usePermissions();
   const collection = objectDetail?.collection ?? null;
   const collectionGroup = objectDetail?.collectionGroup ?? null;
@@ -167,6 +167,9 @@ function ObjectDetailView({
   const hasLoansFeature = featureOrganizationId
     ? hasFeature("loans", featureOrganizationId)
     : false;
+  const isCommentsModuleEnabled = featureOrganizationId
+    ? hasModule("comments", featureOrganizationId)
+    : false;
   const isLocationTrackingEnabled =
     currentOrganization?.settings?.locationTrackingEnabled ?? true;
   const pendingMoveRequest = useQuery(
@@ -190,6 +193,7 @@ function ObjectDetailView({
         exhibitions: hasExhibitionsFeature,
         loans: hasLoansFeature,
       },
+      modules: { comments: isCommentsModuleEnabled },
     });
   }, [
     collection?.collectionType,
@@ -197,6 +201,7 @@ function ObjectDetailView({
     hasConservationFeature,
     hasExhibitionsFeature,
     hasLoansFeature,
+    isCommentsModuleEnabled,
     isLocationTrackingEnabled,
     permissions,
   ]);

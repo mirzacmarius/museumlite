@@ -4,11 +4,43 @@ import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import {
   authedForUser,
+  capabilityFailureOf,
   createConvexTest,
   createOrgUserWithPermissions,
   rebuildProjection,
 } from "./testHarness";
 import { modules } from "./testSetup";
+
+describe("organizations.setModuleEnabled", () => {
+  test("the Library module turns on only once the library integration is on", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    const admin = authedForUser(t, userId);
+    const enableLibrary = () =>
+      admin.mutation(api.organizations.setModuleEnabled, {
+        organizationId,
+        moduleId: "library",
+        enabled: true,
+      });
+
+    expect(await capabilityFailureOf(enableLibrary())).toMatchObject({
+      reason: "module_disabled",
+    });
+
+    await t.run((ctx) =>
+      ctx.db.patch(organizationId, {
+        settings: { enabledIntegrations: ["library"] },
+      }),
+    );
+    await enableLibrary();
+    const organization = await admin.query(api.organizations.get, {
+      organizationId,
+    });
+    expect(organization?.settings?.enabledModules).toEqual(["library"]);
+  });
+});
 
 describe("organizations.get security (IDOR fix)", () => {
   test("member can read their own org", async () => {

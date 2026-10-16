@@ -27,6 +27,7 @@ const everyObjectTab = [
       enabledModules: COLLECTION_MODULE_IDS,
       permissions: ["collections.view_valuation"],
       features: { conservation: true, exhibitions: true, loans: true },
+      modules: { comments: true },
     }),
   ),
 ];
@@ -58,11 +59,33 @@ for (const [locale, dictionary] of Object.entries({ en, es, fr, no, ro })) {
   });
 }
 
+test("the Comments tab shows only while the Comments module is on, and edit mode never has one", () => {
+  const tabIds = (comments: boolean) => ({
+    view: getObjectViewTabs({
+      permissions: ["collections.read", "collections.update"],
+      features: { conservation: false, exhibitions: false, loans: false },
+      modules: { comments },
+    }).map((tab) => tab.id),
+    edit: getObjectEditTabs({
+      savedObject: true,
+      permissions: ["collections.read", "collections.update"],
+    }).map((tab) => tab.id),
+  });
+
+  expect(tabIds(true).view).toContain("comments");
+  expect(tabIds(false).view).toEqual(
+    tabIds(true).view.filter((id) => id !== "comments"),
+  );
+  expect(tabIds(true).edit).not.toContain("comments");
+  expect(tabIds(false).edit).toEqual(tabIds(true).edit);
+});
+
 test("the Valuation tab needs valuation access in view and edit mode", () => {
   const tabIds = (permissions: string[]) => ({
     view: getObjectViewTabs({
       permissions,
       features: { conservation: true, exhibitions: true, loans: true },
+      modules: { comments: true },
     }).map((tab) => tab.id),
     edit: getObjectEditTabs({ savedObject: true, permissions }).map(
       (tab) => tab.id,

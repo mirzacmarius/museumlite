@@ -35,6 +35,7 @@ export interface ObjectTabDefinition {
   requiredPermission?: string;
   requiresSavedObject?: true;
   featureKey?: "conservation" | "exhibitions" | "loans";
+  moduleKey?: "comments";
 }
 
 const valuationTab: ObjectTabDefinition = {
@@ -114,6 +115,7 @@ const viewBaseTabs: ObjectTabDefinition[] = [
     id: "comments",
     label: "untranslatedRecords.objects.tabs.comments",
     editable: false,
+    moduleKey: "comments",
   },
   {
     id: "logs",
@@ -202,6 +204,9 @@ interface ObjectViewTabOptions extends ObjectTabAccess {
     exhibitions: boolean;
     loans: boolean;
   };
+  modules: {
+    comments: boolean;
+  };
 }
 
 interface ObjectEditTabOptions extends ObjectTabAccess {
@@ -225,6 +230,7 @@ export function getObjectViewTabs(options: ObjectViewTabOptions) {
 
   return orderedTabs.filter((tab): tab is ObjectTabDefinition => {
     if (!tab || !isTabAvailable(tab, options)) return false;
+    if (tab.moduleKey && !options.modules[tab.moduleKey]) return false;
     if (!tab.featureKey) return true;
     return options.features[tab.featureKey];
   });

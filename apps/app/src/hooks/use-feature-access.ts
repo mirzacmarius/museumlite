@@ -35,11 +35,18 @@ export function useFeatureAccess() {
     return hasFeatureTierAccess(scopedTier, featureId);
   };
 
-  const hasModule = (moduleId: ModuleId) =>
-    isOrganizationModuleEnabled(
-      { enabledModules, enabledIntegrations },
+  const hasModule = (
+    moduleId: ModuleId,
+    organizationId?: Id<"organizations">,
+  ) => {
+    const scopedOrganization = organizationId
+      ? organizations.find((org) => org._id === organizationId)
+      : currentOrganization;
+    return isOrganizationModuleEnabled(
+      scopedOrganization?.settings ?? {},
       moduleId,
     );
+  };
 
   const hasIntegration = (integrationId: IntegrationId) => {
     return enabledIntegrations.includes(integrationId);

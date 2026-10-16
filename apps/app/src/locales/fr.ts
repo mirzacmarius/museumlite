@@ -699,6 +699,13 @@ export default {
       description:
         "Gérez les donateurs, prêteurs, institutions, contacts, documents et relations.",
     },
+    comments: {
+      name: "Commentaires",
+      description:
+        "Échangez sur les objets avec vos collègues et mentionnez-les avec @.",
+      disableDetails:
+        "L'onglet Commentaires est masqué sur tous les objets. Les commentaires existants sont conservés et réapparaissent lorsque Commentaires est réactivé.",
+    },
     fine_art: {
       name: "Beaux-Arts",
       description:
