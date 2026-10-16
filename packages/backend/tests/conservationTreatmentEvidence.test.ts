@@ -166,6 +166,14 @@ describe("Conservation treatment assessment evidence", () => {
       },
     );
 
+    const evidence = await authed.query(
+      api.conservationTreatments.getTreatmentEvidence,
+      { treatmentId },
+    );
+    expect(evidence).toMatchObject({
+      baseline: null,
+      approvalBlocker: "TREATMENT_BASELINE_REQUIRED",
+    });
     expect(
       await conservationErrorCode(
         authed.mutation(api.conservationTreatments.approve, { treatmentId }),
@@ -173,6 +181,48 @@ describe("Conservation treatment assessment evidence", () => {
     ).toBe("TREATMENT_BASELINE_REQUIRED");
     const treatment = await t.run(async (ctx) => ctx.db.get(treatmentId));
     expect(treatment?.status).toBe("proposed");
+  });
+
+  test("complete refuses an approved treatment without a baseline", async () => {
+    const { t, authed, collectionId, organizationId, userId } =
+      await setupConservationWithAssessments();
+
+    const outcomeId = await createAcceptedOutcome(authed, collectionId, "Good");
+    const treatmentId = await t.run(async (ctx) =>
+      ctx.db.insert("conservationTreatments", {
+        collectionId,
+        organizationId,
+        treatmentType: "cleaning",
+        title: "Approved before baselines were required",
+        description: "Legacy record",
+        performedBy: userId,
+        performedAt: Date.now(),
+        status: "approved",
+        createdBy: userId,
+        outcomeAssessmentId: outcomeId,
+      }),
+    );
+
+    const evidence = await authed.query(
+      api.conservationTreatments.getTreatmentEvidence,
+      { treatmentId },
+    );
+    expect(evidence).toMatchObject({
+      approvalBlocker: "TREATMENT_BASELINE_REQUIRED",
+      completionBlocker: "TREATMENT_BASELINE_REQUIRED",
+    });
+    expect(
+      await conservationErrorCode(
+        authed.mutation(api.conservationTreatments.complete, { treatmentId }),
+      ),
+    ).toBe("TREATMENT_BASELINE_REQUIRED");
+    expect(
+      await conservationErrorCode(
+        authed.mutation(api.conservationTreatments.reject, { treatmentId }),
+      ),
+    ).toBe("TREATMENT_STATUS_CHANGED");
+    const treatment = await t.run(async (ctx) => ctx.db.get(treatmentId));
+    expect(treatment?.status).toBe("approved");
   });
 
   test("cannot complete without an accepted outcome assessment", async () => {
@@ -248,6 +298,7 @@ describe("Conservation treatment assessment evidence", () => {
       { treatmentId },
     );
     expect(evidence.status).toBe("completed");
+    expect(evidence.completionBlocker).toBeNull();
     expect(evidence.outcome?.status).toBe("accepted");
     expect(evidence.comparison.baselineCondition).toBe("Fair");
     expect(evidence.comparison.outcomeCondition).toBe("Good");

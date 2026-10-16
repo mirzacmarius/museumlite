@@ -20,7 +20,10 @@ import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useActionErrorMessage } from "@/hooks/use-action-error-message";
-import { useConservationErrorMessage } from "@/hooks/use-conservation-error-message";
+import {
+  useConservationErrorCopy,
+  useConservationErrorMessage,
+} from "@/hooks/use-conservation-error-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface TreatmentEvidencePanelProps {
@@ -37,6 +40,7 @@ export function TreatmentEvidencePanel({
   const locale = useCurrentLocale();
   const t = useScopedI18n("conservation");
   const actionErrorMessage = useActionErrorMessage();
+  const conservationErrorCopy = useConservationErrorCopy();
   const conservationErrorMessage = useConservationErrorMessage();
   const evidence = useQuery(api.conservationTreatments.getTreatmentEvidence, {
     treatmentId,
@@ -80,6 +84,13 @@ export function TreatmentEvidencePanel({
     status === "completed" ||
     status === "rejected" ||
     evidence.status === "completed";
+  const awaitsApproval = status === "proposed";
+  const awaitsCompletion = status === "approved" || status === "in_progress";
+  const nextStepBlocker = awaitsApproval
+    ? evidence.approvalBlocker
+    : awaitsCompletion
+      ? evidence.completionBlocker
+      : null;
 
   const runAction = async (key: string, action: () => Promise<unknown>) => {
     try {
@@ -245,7 +256,11 @@ export function TreatmentEvidencePanel({
               type="button"
               size="sm"
               variant="outline"
-              disabled={status !== "proposed" || busyAction !== null}
+              disabled={
+                !awaitsApproval ||
+                evidence.approvalBlocker !== null ||
+                busyAction !== null
+              }
               onClick={() =>
                 runAction("approve", () => approve({ treatmentId }))
               }
@@ -269,7 +284,8 @@ export function TreatmentEvidencePanel({
               type="button"
               size="sm"
               disabled={
-                (status !== "approved" && status !== "in_progress") ||
+                !awaitsCompletion ||
+                evidence.completionBlocker !== null ||
                 busyAction !== null
               }
               onClick={() =>
@@ -280,17 +296,11 @@ export function TreatmentEvidencePanel({
             </Button>
           </PermissionGate>
         </div>
-        {status === "proposed" && !evidence.baseline && (
+        {nextStepBlocker && (
           <p className="text-sm text-white/60">
-            {t("evidence.approveNeedsBaseline")}
+            {conservationErrorCopy(nextStepBlocker)}
           </p>
         )}
-        {(status === "approved" || status === "in_progress") &&
-          evidence.outcome?.status !== "accepted" && (
-            <p className="text-sm text-white/60">
-              {t("evidence.completeNeedsOutcome")}
-            </p>
-          )}
       </div>
 
       {evidence.status === "completed" && (

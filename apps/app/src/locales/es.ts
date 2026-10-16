@@ -4047,17 +4047,13 @@ export default {
       markFollowUpDone: "Marcar seguimiento completado",
       actionSuccess: "Tratamiento actualizado",
       actionError: "No se pudo actualizar el tratamiento",
-      approveNeedsBaseline:
-        "Para aprobar, este tratamiento necesita una evaluación inicial vinculada.",
-      completeNeedsOutcome:
-        "Para completar, este tratamiento necesita una evaluación final aceptada y vinculada.",
       errors: {
         baselineRequired:
           "Vincule una evaluación inicial a este tratamiento antes de aprobarlo o completarlo.",
         outcomeRequired:
           "Vincule una evaluación final a este tratamiento antes de completarlo.",
         outcomeNotAccepted:
-          "Acepte la evaluación final en la pestaña Físico del objeto antes de completar este tratamiento.",
+          "Acepte la evaluación final antes de completar este tratamiento.",
         statusChanged:
           "El estado de este tratamiento ha cambiado. Compruebe su estado actual e inténtelo de nuevo.",
       },

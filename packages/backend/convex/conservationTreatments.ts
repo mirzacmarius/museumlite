@@ -3,7 +3,7 @@ import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
@@ -103,46 +103,43 @@ async function loadTreatmentAssessment(
   return assessment;
 }
 
-async function requireBaselineAssessment(
-  ctx: MutationCtx,
-  treatment: Doc<"conservationTreatments">,
-  stage: "approval" | "completion",
-) {
-  if (
-    !(await getTreatmentAssessment(
-      ctx,
-      treatment,
-      treatment.baselineAssessmentId,
-    ))
-  ) {
-    throw conservationError(
-      "TREATMENT_BASELINE_REQUIRED",
-      `Baseline condition assessment is required before ${stage}`,
-    );
-  }
-}
+const approvalBlockerValidator = v.union(
+  v.literal("TREATMENT_BASELINE_REQUIRED"),
+  v.null(),
+);
 
-async function requireAcceptedOutcomeAssessment(
-  ctx: MutationCtx,
+const completionBlockerValidator = v.union(
+  v.literal("TREATMENT_OUTCOME_REQUIRED"),
+  v.literal("TREATMENT_OUTCOME_NOT_ACCEPTED"),
+  v.literal("TREATMENT_BASELINE_REQUIRED"),
+  v.null(),
+);
+
+/**
+ * The treatment's linked baseline and outcome assessments, and the evidence
+ * each workflow step still lacks. `approve` and `complete` refuse with the
+ * blocker, and the evidence panel shows it before staff click.
+ */
+async function loadAssessmentEvidence(
+  ctx: QueryCtx | MutationCtx,
   treatment: Doc<"conservationTreatments">,
 ) {
-  const outcome = await getTreatmentAssessment(
-    ctx,
-    treatment,
-    treatment.outcomeAssessmentId,
-  );
+  const [baseline, outcome] = await Promise.all([
+    getTreatmentAssessment(ctx, treatment, treatment.baselineAssessmentId),
+    getTreatmentAssessment(ctx, treatment, treatment.outcomeAssessmentId),
+  ] as const);
+  const approvalBlocker: Infer<typeof approvalBlockerValidator> = baseline
+    ? null
+    : "TREATMENT_BASELINE_REQUIRED";
+  let completionBlocker: Infer<typeof completionBlockerValidator> = null;
   if (!outcome) {
-    throw conservationError(
-      "TREATMENT_OUTCOME_REQUIRED",
-      "Outcome condition assessment is required before completion",
-    );
+    completionBlocker = "TREATMENT_OUTCOME_REQUIRED";
+  } else if (outcome.status !== "accepted") {
+    completionBlocker = "TREATMENT_OUTCOME_NOT_ACCEPTED";
+  } else if (!baseline) {
+    completionBlocker = "TREATMENT_BASELINE_REQUIRED";
   }
-  if (outcome.status !== "accepted") {
-    throw conservationError(
-      "TREATMENT_OUTCOME_NOT_ACCEPTED",
-      "Outcome assessment must be accepted before completion",
-    );
-  }
+  return { baseline, outcome, approvalBlocker, completionBlocker };
 }
 
 async function requireConservationAccess(
@@ -398,6 +395,8 @@ export const getTreatmentEvidence = query({
       dueAt: v.optional(v.number()),
     }),
     attachmentCount: v.number(),
+    approvalBlocker: approvalBlockerValidator,
+    completionBlocker: completionBlockerValidator,
   }),
   handler: async (ctx, args) => {
     const treatment = await ctx.db.get(args.treatmentId);
@@ -410,32 +409,24 @@ export const getTreatmentEvidence = query({
       requirePermission(ctx, treatment.organizationId, "collections.read"),
     ]);
 
-    const summarize = async (assessmentId?: Id<"conditionAssessments">) => {
-      const assessment = await getTreatmentAssessment(
-        ctx,
-        treatment,
-        assessmentId,
-      );
-      if (!assessment) {
-        return null;
-      }
-      return {
+    const summarize = (assessment: Doc<"conditionAssessments"> | null) =>
+      assessment && {
         assessmentId: assessment._id,
         condition: assessment.condition,
         summary: assessment.summary,
         assessedAt: assessment.assessedAt,
         status: assessment.status,
       };
-    };
 
-    const [baseline, outcome, attachments] = await Promise.all([
-      summarize(treatment.baselineAssessmentId),
-      summarize(treatment.outcomeAssessmentId),
+    const [evidence, attachments] = await Promise.all([
+      loadAssessmentEvidence(ctx, treatment),
       ctx.db
         .query("conservationAttachments")
         .withIndex("by_treatment", (q) => q.eq("treatmentId", args.treatmentId))
         .collect(),
     ] as const);
+    const baseline = summarize(evidence.baseline);
+    const outcome = summarize(evidence.outcome);
 
     return {
       treatmentId: treatment._id,
@@ -453,6 +444,8 @@ export const getTreatmentEvidence = query({
         dueAt: treatment.followUpDueAt,
       },
       attachmentCount: attachments.length,
+      approvalBlocker: evidence.approvalBlocker,
+      completionBlocker: evidence.completionBlocker,
     };
   },
 });
@@ -908,7 +901,13 @@ export const approve = mutation({
       throw approval.refusal;
     }
 
-    await requireBaselineAssessment(ctx, treatment, "approval");
+    const { approvalBlocker } = await loadAssessmentEvidence(ctx, treatment);
+    if (approvalBlocker) {
+      throw conservationError(
+        approvalBlocker,
+        "Assessment evidence is incomplete for approval",
+      );
+    }
 
     if (approval.workflow) {
       const { state: workflowState, currentStep } = approval.workflow;
@@ -1203,8 +1202,13 @@ export const complete = mutation({
       "collections.update",
     );
 
-    await requireAcceptedOutcomeAssessment(ctx, treatment);
-    await requireBaselineAssessment(ctx, treatment, "completion");
+    const { completionBlocker } = await loadAssessmentEvidence(ctx, treatment);
+    if (completionBlocker) {
+      throw conservationError(
+        completionBlocker,
+        "Assessment evidence is incomplete for completion",
+      );
+    }
 
     const updates: {
       status: "completed";
