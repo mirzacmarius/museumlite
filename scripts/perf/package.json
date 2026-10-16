@@ -1,0 +1,9 @@
+{
+  "name": "museumlite-perf-harness",
+  "private": true,
+  "type": "module",
+  "description": "Standalone navigation benchmark; not a workspace package so Playwright stays out of the app dependency graph.",
+  "dependencies": {
+    "playwright": "1.64.1"
+  }
+}

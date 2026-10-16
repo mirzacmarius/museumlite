@@ -7,6 +7,7 @@ bun run qa:backend                     # start backend on 127.0.0.1:3230 (QA_POR
 bun run convex:local -- deploy --yes   # push packages/backend/convex to it
 bun run qa:seed                        # auth keys, synthetic QA user and organization
 bun run qa:app                         # Next.js app on :3000 pointed at it (QA_APP_PORT to change)
+bun run qa:app -- --build              # production build (apps/app/.next/local-qa), then next start
 bun run qa:session                     # how to get a signed-in browser session
 bun run codegen:local                  # regenerate packages/backend/convex/_generated
 bun run qa:backend -- --stop           # stop the backend
