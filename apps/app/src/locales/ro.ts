@@ -3631,6 +3631,20 @@ export default {
       markFollowUpDone: "Marchează lucrările ulterioare ca finalizate",
       actionSuccess: "Tratament actualizat",
       actionError: "Tratamentul nu a putut fi actualizat",
+      approveNeedsBaseline:
+        "Pentru aprobare, acest tratament are nevoie de o evaluare inițială legată.",
+      completeNeedsOutcome:
+        "Pentru finalizare, acest tratament are nevoie de o evaluare finală acceptată și legată.",
+      errors: {
+        baselineRequired:
+          "Legați o evaluare inițială de acest tratament înainte de a-l aproba sau finaliza.",
+        outcomeRequired:
+          "Legați o evaluare finală de acest tratament înainte de a-l finaliza.",
+        outcomeNotAccepted:
+          "Acceptați evaluarea finală în fila Fizic a obiectului înainte de a finaliza acest tratament.",
+        statusChanged:
+          "Starea acestui tratament s-a schimbat. Verificați starea curentă și încercați din nou.",
+      },
       followUp: {
         none: "Niciuna",
         pending: "În așteptare",

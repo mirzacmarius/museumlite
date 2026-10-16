@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useConservationErrorMessage } from "@/hooks/use-conservation-error-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface TreatmentEvidencePanelProps {
@@ -36,6 +37,7 @@ export function TreatmentEvidencePanel({
   const locale = useCurrentLocale();
   const t = useScopedI18n("conservation");
   const actionErrorMessage = useActionErrorMessage();
+  const conservationErrorMessage = useConservationErrorMessage();
   const evidence = useQuery(api.conservationTreatments.getTreatmentEvidence, {
     treatmentId,
   });
@@ -85,7 +87,10 @@ export function TreatmentEvidencePanel({
       await action();
       toast.success(t("evidence.actionSuccess"));
     } catch (error) {
-      toast.error(actionErrorMessage(error, t("evidence.actionError")));
+      toast.error(
+        conservationErrorMessage(error) ??
+          actionErrorMessage(error, t("evidence.actionError")),
+      );
     } finally {
       setBusyAction(null);
     }
@@ -253,10 +258,7 @@ export function TreatmentEvidencePanel({
               type="button"
               size="sm"
               variant="outline"
-              disabled={
-                (status !== "approved" && status !== "in_progress") ||
-                busyAction !== null
-              }
+              disabled={status !== "approved" || busyAction !== null}
               onClick={() =>
                 runAction("start", () => startProgress({ treatmentId }))
               }
@@ -278,6 +280,17 @@ export function TreatmentEvidencePanel({
             </Button>
           </PermissionGate>
         </div>
+        {status === "proposed" && !evidence.baseline && (
+          <p className="text-sm text-white/60">
+            {t("evidence.approveNeedsBaseline")}
+          </p>
+        )}
+        {(status === "approved" || status === "in_progress") &&
+          evidence.outcome?.status !== "accepted" && (
+            <p className="text-sm text-white/60">
+              {t("evidence.completeNeedsOutcome")}
+            </p>
+          )}
       </div>
 
       {evidence.status === "completed" && (

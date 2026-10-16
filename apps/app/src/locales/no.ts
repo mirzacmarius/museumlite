@@ -4001,6 +4001,20 @@ export default {
       markFollowUpDone: "Marker oppfølging fullført",
       actionSuccess: "Behandling oppdatert",
       actionError: "Kunne ikke oppdatere behandlingen",
+      approveNeedsBaseline:
+        "Godkjenning krever at en grunnlinjevurdering er knyttet til behandlingen.",
+      completeNeedsOutcome:
+        "Fullføring krever at en godkjent utfallsvurdering er knyttet til behandlingen.",
+      errors: {
+        baselineRequired:
+          "Knytt en grunnlinjevurdering til behandlingen før du godkjenner eller fullfører den.",
+        outcomeRequired:
+          "Knytt en utfallsvurdering til behandlingen før du fullfører den.",
+        outcomeNotAccepted:
+          "Godkjenn utfallsvurderingen på objektets fysiske fane før du fullfører behandlingen.",
+        statusChanged:
+          "Statusen til behandlingen er endret. Sjekk gjeldende status og prøv igjen.",
+      },
       followUp: {
         none: "Ingen",
         pending: "Venter",

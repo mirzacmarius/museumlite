@@ -3406,6 +3406,20 @@ export default {
       markFollowUpDone: "Mark follow-up complete",
       actionSuccess: "Treatment updated",
       actionError: "Could not update treatment",
+      approveNeedsBaseline:
+        "Approval needs a baseline assessment linked to this treatment.",
+      completeNeedsOutcome:
+        "Completion needs an accepted outcome assessment linked to this treatment.",
+      errors: {
+        baselineRequired:
+          "Link a baseline assessment to this treatment before approving or completing it.",
+        outcomeRequired:
+          "Link an outcome assessment to this treatment before completing it.",
+        outcomeNotAccepted:
+          "Accept the outcome assessment on the object Physical tab before completing this treatment.",
+        statusChanged:
+          "This treatment's status has changed. Check its current status and try again.",
+      },
       followUp: {
         none: "None",
         pending: "Pending",
