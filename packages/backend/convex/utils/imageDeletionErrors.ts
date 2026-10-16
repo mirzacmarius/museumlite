@@ -16,6 +16,8 @@ export const IMAGE_DELETION_ERROR_CODES = [
   "IMAGE_CITED_AS_EVIDENCE",
   /** The request was already approved or rejected, or its image is gone. */
   "DELETION_REQUEST_CLOSED",
+  /** The image was deleted since the page loaded. */
+  "IMAGE_NOT_FOUND",
 ] as const;
 
 export type ImageDeletionErrorCode =

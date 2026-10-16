@@ -8,7 +8,10 @@ import {
 } from "./utils/accessionReview";
 import { type CapabilityId, evaluateCapability } from "./utils/capabilities";
 import { organizationAccess } from "./utils/featureGates";
-import { resolveImageDeletionApproval } from "./utils/imageDeletion";
+import {
+  PENDING_IMAGE_DELETION_LIMIT,
+  resolveImageDeletionApproval,
+} from "./utils/imageDeletion";
 import {
   type ApprovalCaseType,
   getCurrentUserOrganization,
@@ -84,7 +87,7 @@ async function loadPendingImageDeletions(
     .withIndex("by_organization_and_status_and_requestedAt", (q) =>
       q.eq("organizationId", organizationId).eq("status", "pending"),
     )
-    .collect();
+    .take(PENDING_IMAGE_DELETION_LIMIT);
   return await Promise.all(
     requests.map(async (request) => ({
       ...request,
@@ -484,15 +487,16 @@ export const listMyAssignments = query({
     }
 
     // Sort by: SLA breached first, then urgency (high first), then age (oldest first)
+    // Kinds without an SLA leave slaBreached unset, which counts as not breached.
     pendingApprovals.sort((a, b) => {
-      if (a.slaBreached !== b.slaBreached) {
+      if (Boolean(a.slaBreached) !== Boolean(b.slaBreached)) {
         return a.slaBreached ? -1 : 1;
       }
       const urgencyOrder = { high: 0, medium: 1, low: 2 };
       if (urgencyOrder[a.urgency] !== urgencyOrder[b.urgency]) {
         return urgencyOrder[a.urgency] - urgencyOrder[b.urgency];
       }
-      return a.createdAt - b.createdAt;
+      return a.createdAt - b.createdAt || a._id.localeCompare(b._id);
     });
 
     // Get accessions directly assigned to the user

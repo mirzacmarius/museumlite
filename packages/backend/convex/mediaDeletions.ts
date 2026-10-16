@@ -8,15 +8,13 @@ import {
   destroyObjectImage,
   findPendingDeletionRequest,
   isDeletableObjectImage,
+  PENDING_IMAGE_DELETION_LIMIT,
   resolveImageDeletionApproval,
 } from "./utils/imageDeletion";
 import { imageDeletionError } from "./utils/imageDeletionErrors";
 import { mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
 import { isAccessionWorkflowEnabled } from "./utils/workflowConfigs";
-
-// Pending requests are few; this bounds what one page lists.
-const PENDING_LIST_LIMIT = 100;
 
 async function requireUser(ctx: MutationCtx) {
   const userId = await getAuthUserId(ctx);
@@ -29,7 +27,9 @@ async function loadImageForDeletion(
   mediaId: Id<"mediaFiles">,
 ) {
   const media = await ctx.db.get(mediaId);
-  if (!media) throw new Error("Media not found");
+  if (!media) {
+    throw imageDeletionError("IMAGE_NOT_FOUND", "The image no longer exists");
+  }
   await requirePermission(ctx, media.organizationId, "media.delete");
   return media;
 }
@@ -75,7 +75,12 @@ async function loadPendingRequest(
   requestId: Id<"mediaDeletionRequests">,
 ) {
   const request = await ctx.db.get(requestId);
-  if (!request) throw new Error("Deletion request not found");
+  if (!request) {
+    throw imageDeletionError(
+      "DELETION_REQUEST_CLOSED",
+      "The deletion request no longer exists",
+    );
+  }
   const approval = await resolveImageDeletionApproval(
     ctx,
     request.organizationId,
@@ -124,14 +129,19 @@ export const listPendingForObject = query({
   returns: v.array(v.id("mediaFiles")),
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
-    if (!collection) return [];
-    await requirePermission(ctx, collection.organizationId, "media.read");
+    // Staff who cannot see media get no badges rather than a failing form.
+    if (
+      !collection ||
+      !(await hasPermission(ctx, collection.organizationId, "media.read"))
+    ) {
+      return [];
+    }
     const pending = await ctx.db
       .query("mediaDeletionRequests")
       .withIndex("by_collection_and_status", (q) =>
         q.eq("collectionId", args.collectionId).eq("status", "pending"),
       )
-      .take(PENDING_LIST_LIMIT);
+      .take(PENDING_IMAGE_DELETION_LIMIT);
     return pending.flatMap((request) =>
       request.organizationId === collection.organizationId
         ? [request.mediaId]
@@ -168,15 +178,24 @@ export const listPending = query({
         .withIndex("by_organization_and_status_and_requestedAt", (q) =>
           q.eq("organizationId", args.organizationId).eq("status", "pending"),
         )
-        .take(PENDING_LIST_LIMIT),
+        .take(PENDING_IMAGE_DELETION_LIMIT),
     ]);
     const requests = await Promise.all(
       pending.map(async (request) => {
-        const [media, collection, requester] = await Promise.all([
+        const [storedMedia, storedCollection, requester] = await Promise.all([
           ctx.db.get(request.mediaId),
           ctx.db.get(request.collectionId),
           ctx.db.get(request.requestedBy),
         ]);
+        // An object transferred to another organization shows nothing of it.
+        const media =
+          storedMedia?.organizationId === args.organizationId
+            ? storedMedia
+            : null;
+        const collection =
+          storedCollection?.organizationId === args.organizationId
+            ? storedCollection
+            : null;
         const imageStorageId = media?.thumbnailStorageId ?? media?.storageId;
         return {
           _id: request._id,

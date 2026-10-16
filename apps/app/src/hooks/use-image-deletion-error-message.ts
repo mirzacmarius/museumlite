@@ -22,6 +22,8 @@ export function useImageDeletionErrorMessage() {
         return t("citedAsEvidence");
       case "DELETION_REQUEST_CLOSED":
         return t("requestClosed");
+      case "IMAGE_NOT_FOUND":
+        return t("imageNotFound");
       case undefined:
         return actionErrorMessage(error, fallback);
     }

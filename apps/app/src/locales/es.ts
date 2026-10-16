@@ -10795,6 +10795,8 @@ export default {
       citedAsEvidence:
         "Esta imagen se cita como prueba en una evaluación del estado, una afirmación de procedencia, un incidente, una tarea o una solicitud de reproducción, por lo que no se puede eliminar.",
       requestClosed: "Esta solicitud de eliminación ya se ha decidido.",
+      imageNotFound:
+        "Esta imagen ya no existe. Puede que ya se haya eliminado.",
     },
     approvals: {
       title: "Eliminaciones de imágenes",

@@ -10837,6 +10837,8 @@ export default {
       citedAsEvidence:
         "Cette image est citée comme preuve par un constat d'état, une affirmation de provenance, un incident, une tâche ou une demande de reproduction ; elle ne peut donc pas être supprimée.",
       requestClosed: "Cette demande de suppression a déjà été tranchée.",
+      imageNotFound:
+        "Cette image n'existe plus. Elle a peut-être déjà été supprimée.",
     },
     approvals: {
       title: "Suppressions d'images",

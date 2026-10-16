@@ -10770,6 +10770,8 @@ export default {
       citedAsEvidence:
         "Această imagine este citată ca dovadă într-o evaluare a stării, o afirmație de proveniență, un incident, o sarcină sau o cerere de reproducere, deci nu poate fi ștearsă.",
       requestClosed: "Această cerere de ștergere a fost deja soluționată.",
+      imageNotFound:
+        "Această imagine nu mai există. Poate a fost deja ștearsă.",
     },
     approvals: {
       title: "Ștergeri de imagini",

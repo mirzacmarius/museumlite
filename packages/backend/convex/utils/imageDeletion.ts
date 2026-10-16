@@ -2,13 +2,24 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { imageDeletionError } from "./imageDeletionErrors";
 import { applyUsageCounterDelta } from "./organizationUsageCounters";
-import { resolveCaseApproval } from "./permissions";
+import {
+  getCurrentUserOrganization,
+  hasPermission,
+  resolveCaseApproval,
+} from "./permissions";
 import { canBePrimaryImage, makeOnlyPrimaryImage } from "./primaryMedia";
+import { isCollectionManagerRoleName } from "./systemRoles";
+import { workflowApprovalError } from "./workflowApprovalErrors";
+import { getWorkflowConfig } from "./workflowConfigs";
+import { resolveWorkflowStepState } from "./workflowSteps";
 
 type ReadCtx = QueryCtx | MutationCtx;
 
 // An object has a handful of images; this only bounds legacy outliers.
 const REMAINING_IMAGE_READ_LIMIT = 100;
+
+/** Pending deletion requests one page or count reads at most. */
+export const PENDING_IMAGE_DELETION_LIMIT = 100;
 
 /**
  * Staff may delete an object's images. Documents filed with the object stay
@@ -21,13 +32,42 @@ export function isDeletableObjectImage(media: Doc<"mediaFiles">) {
 /**
  * Image deletion follows the accessions approval workflow: whoever may
  * approve its first step (the Collection Manager by default, and
- * Administrators) decides deletion requests.
+ * Administrators) decides deletion requests. Without a configured first
+ * step, Administrators and Collection Managers decide.
  */
 export async function resolveImageDeletionApproval(
   ctx: ReadCtx,
   organizationId: Id<"organizations">,
 ) {
-  return await resolveCaseApproval(ctx, organizationId, "accession", undefined);
+  const config = await getWorkflowConfig(ctx, organizationId, "accession");
+  if (
+    resolveWorkflowStepState(config?.steps, undefined).firstStep !== undefined
+  ) {
+    return await resolveCaseApproval(
+      ctx,
+      organizationId,
+      "accession",
+      undefined,
+    );
+  }
+  const [membership, isAdministrator] = await Promise.all([
+    getCurrentUserOrganization(ctx, organizationId),
+    hasPermission(ctx, organizationId, "organization.manage_settings"),
+  ]);
+  const role = membership ? await ctx.db.get(membership.roleId) : null;
+  if (
+    isAdministrator ||
+    (role?.isSystemRole === true && isCollectionManagerRoleName(role.name))
+  ) {
+    return { allowed: true as const };
+  }
+  return {
+    allowed: false as const,
+    refusal: workflowApprovalError(
+      "APPROVAL_NOT_PERMITTED",
+      "Only an administrator or a collection manager can decide image deletions",
+    ),
+  };
 }
 
 /**

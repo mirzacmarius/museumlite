@@ -625,6 +625,9 @@ describe("with the accessions approval workflow on", () => {
           .mutation(api.mediaDeletions.reject, { requestId }),
       ),
     ).toBe("DELETION_REQUEST_CLOSED");
+    expect(await deletionRefusal(requestDeletion(museum, mediaId))).toBe(
+      "IMAGE_NOT_FOUND",
+    );
   });
 
   test("an administrator off the workflow step may approve", async () => {
@@ -635,6 +638,85 @@ describe("with the accessions approval workflow on", () => {
       .as("administrator")
       .mutation(api.mediaDeletions.approve, { requestId });
     expect(await museum.media()).toEqual([]);
+  });
+
+  test("without a configured accession workflow, only administrators and collection managers decide", async () => {
+    const museum = await createMuseum({ approvalWorkflow: true });
+    await museum.t.run(async (ctx) => {
+      const config = await ctx.db
+        .query("workflowConfigs")
+        .withIndex("by_organization_and_workflowType", (q) =>
+          q
+            .eq("organizationId", museum.organizationId)
+            .eq("workflowType", "accession"),
+        )
+        .unique();
+      if (config) await ctx.db.delete(config._id);
+      const membership = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user_and_organization", (q) =>
+          q
+            .eq("userId", museum.users.collectionManager)
+            .eq("organizationId", museum.organizationId),
+        )
+        .unique();
+      if (membership) {
+        await ctx.db.patch(membership.roleId, {
+          name: "Collection Manager",
+          isSystemRole: true,
+        });
+      }
+    });
+    const front = await museum.upload("front.jpg");
+    const back = await museum.upload("back.jpg");
+    const frontRequest = await requestDeletion(museum, front);
+    const backRequest = await requestDeletion(museum, back);
+
+    expect(
+      (
+        await refusalOf(
+          museum
+            .as("curator")
+            .mutation(api.mediaDeletions.approve, { requestId: frontRequest }),
+        )
+      ).approval,
+    ).toBe("APPROVAL_NOT_PERMITTED");
+    expect(await museum.pendingApprovals("curator")).toBe(0);
+    expect(await museum.pendingApprovals("collectionManager")).toBe(2);
+    await museum
+      .as("collectionManager")
+      .mutation(api.mediaDeletions.approve, { requestId: frontRequest });
+    await museum
+      .as("administrator")
+      .mutation(api.mediaDeletions.reject, { requestId: backRequest });
+    expect((await museum.media()).map((file) => file._id)).toEqual([back]);
+  });
+
+  test("staff who cannot see media get no pending badges instead of an error", async () => {
+    const museum = await createMuseum({ approvalWorkflow: true });
+    const mediaId = await museum.upload("front.jpg");
+    await requestDeletion(museum, mediaId);
+    const outsiderId = await museum.t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { name: "No media" });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId: museum.organizationId,
+        name: "No media",
+        isSystemRole: false,
+      });
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId: museum.organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+      return userId;
+    });
+    expect(
+      await authedForUser(museum.t, outsiderId).query(
+        api.mediaDeletions.listPendingForObject,
+        { collectionId: museum.collectionId },
+      ),
+    ).toEqual([]);
   });
 
   test("rejecting keeps the image and lets staff ask again later", async () => {

@@ -189,7 +189,8 @@ export function MediaEditorDialog({
   );
 
   // Don't render if not open or no media
-  if (!isOpen || !mediaId) {
+  // A deleted image (null) has nothing to edit; never cover the page for it.
+  if (!isOpen || !mediaId || mediaFile === null) {
     return null;
   }
 

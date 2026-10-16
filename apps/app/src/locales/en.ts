@@ -10538,6 +10538,8 @@ export default {
       citedAsEvidence:
         "This image is cited as evidence by a condition assessment, provenance claim, incident, task or reproduction request, so it cannot be deleted.",
       requestClosed: "This deletion request has already been decided.",
+      imageNotFound:
+        "This image no longer exists. It may already have been deleted.",
     },
     approvals: {
       title: "Image deletions",

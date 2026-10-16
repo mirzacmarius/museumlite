@@ -10657,6 +10657,8 @@ export default {
       citedAsEvidence:
         "Dette bildet er brukt som dokumentasjon i en tilstandsvurdering, en proveniensopplysning, en hendelse, en oppgave eller en reproduksjonsforespørsel, og kan derfor ikke slettes.",
       requestClosed: "Denne sletteforespørselen er allerede avgjort.",
+      imageNotFound:
+        "Dette bildet finnes ikke lenger. Det kan allerede være slettet.",
     },
     approvals: {
       title: "Bildeslettinger",

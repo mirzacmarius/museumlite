@@ -77,7 +77,10 @@ import {
   validateOwnedUploadSize,
 } from "./utils/uploadOwnership";
 import { workflowApprovalError } from "./utils/workflowApprovalErrors";
-import { getWorkflowConfig } from "./utils/workflowConfigs";
+import {
+  getWorkflowConfig,
+  isAccessionWorkflowEnabled,
+} from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
@@ -107,14 +110,6 @@ function getDraftDisplaySource(
   return (
     objectData?.creator?.trim() || objectData?.title?.trim() || "Object intake"
   );
-}
-
-async function isAccessionWorkflowEnabled(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-) {
-  const organization = await ctx.db.get(organizationId);
-  return organization?.settings?.accessionWorkflowEnabled ?? true;
 }
 
 async function ensureAccessionNumberAvailable(
