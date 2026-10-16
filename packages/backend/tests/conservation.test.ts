@@ -30,6 +30,7 @@ async function linkAcceptedOutcome(
       { area: "Surface", description: "Improved", severity: "minor" },
     ],
     photos: [],
+    submit: true,
   });
   await authed.mutation(api.conditionAssessments.accept, {
     assessmentId: outcomeId,
@@ -112,6 +113,7 @@ describe("Conservation treatment lifecycle", () => {
         { area: "Frame", description: "Wear noted", severity: "minor" },
       ],
       photos: [],
+      submit: true,
     });
     await authed.mutation(api.conditionAssessments.accept, {
       assessmentId: baselineId,

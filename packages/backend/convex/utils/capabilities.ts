@@ -20,6 +20,7 @@ export const CAPABILITY_IDS = [
   "exhibitions",
   "installations",
   "conservation",
+  "condition_assessments",
   "insurance",
   "reporting",
   "compliance",
@@ -75,6 +76,12 @@ export const CAPABILITY_MATRIX = {
     feature: "conservation",
     permissions: ["collections.read"],
     route: "/conservation",
+  },
+  // Every reader sees the board; accepting or rejecting needs
+  // `collections.accept_condition`, which the commands check.
+  condition_assessments: {
+    permissions: ["collections.read"],
+    route: "/condition-assessments",
   },
   // Policies predate the Insurance module (2026-09-20), so the module only
   // lists Insurance in navigation; enforcing it would cut off existing data.

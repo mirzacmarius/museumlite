@@ -30,6 +30,7 @@ import {
   useMyAssignments,
 } from "./my-assignments-sections";
 import { CARD_CLASS_NAME } from "./my-work-sections";
+import { usePendingConditionApprovalColumn } from "./pending-condition-approvals";
 
 export const MY_WORK_HREF = "/assignments";
 const PAGE_SIZE = 20;
@@ -241,6 +242,7 @@ export function useMyWorkColumns(
   const assigned = useQuery(api.caseTasks.listMyAssignedCases, {
     organizationId,
   });
+  const conditionApprovals = usePendingConditionApprovalColumn(organizationId);
   const { hasPermission } = usePermissions();
   const canReviewProvenance = hasPermission("collections.review_provenance");
   const unreviewedClaims = usePaginatedQuery(
@@ -317,6 +319,7 @@ export function useMyWorkColumns(
         }),
       ),
     },
+    ...(conditionApprovals ? [conditionApprovals] : []),
     taskColumn(
       "reviews",
       ClipboardCheck,

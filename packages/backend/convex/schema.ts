@@ -21,6 +21,7 @@ import {
   vehicleDetailFields,
   wineDetailFields,
 } from "./utils/collectionTypeDetailFields";
+import { conditionAssessmentStatusValidator } from "./utils/conditionAssessmentStatus";
 import {
   documentationCheckFields,
   documentationFindingValidator,
@@ -2086,12 +2087,20 @@ export default defineSchema({
         fileName: v.string(),
       }),
     ),
-    status: v.union(v.literal("draft"), v.literal("accepted")),
+    // A draft is private work in progress; "submitted" awaits a reviewer,
+    // who accepts or rejects it. One draft or submitted assessment per object.
+    status: conditionAssessmentStatusValidator,
+    submittedBy: v.optional(v.id("users")),
+    submittedAt: v.optional(v.number()),
     acceptedBy: v.optional(v.id("users")),
     acceptedAt: v.optional(v.number()),
+    rejectedBy: v.optional(v.id("users")),
+    rejectedAt: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_collection_and_status_and_acceptedAt", [
       "collectionId",
       "status",

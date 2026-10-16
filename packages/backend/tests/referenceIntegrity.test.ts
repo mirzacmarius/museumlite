@@ -254,6 +254,7 @@ test("exhibition installation observes the current source and invalid return lea
       summary: "Observed before installation",
       observations: [],
       photos: [],
+      submit: true,
     },
   );
   await authorized.mutation(api.conditionAssessments.accept, { assessmentId });

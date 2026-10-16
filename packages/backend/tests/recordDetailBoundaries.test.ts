@@ -83,6 +83,7 @@ test("an object whose condition comes from an accepted assessment opens, also fo
     summary: "Checked on receipt from the borrower",
     observations: [],
     photos: [],
+    submit: true,
   });
   await user.mutation(api.conditionAssessments.accept, { assessmentId });
 

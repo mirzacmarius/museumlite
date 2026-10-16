@@ -261,7 +261,12 @@ function NavigationGroups({
                                 item.locked && "opacity-60",
                               )}
                             >
-                              <Link href={item.url} onClick={onNavigate}>
+                              <Link
+                                href={item.url}
+                                onClick={onNavigate}
+                                // Long names truncate in the narrow sidebar.
+                                title={item.title}
+                              >
                                 {ItemIcon ? <ItemIcon /> : null}
                                 <span>{item.title}</span>
                                 {item.locked ? (

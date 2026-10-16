@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { ConditionAssessmentStatus } from "@v1/backend/convex/utils/conditionAssessmentStatus";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import {
@@ -366,7 +367,7 @@ function AssessmentCard({
     condition: string;
     summary: string;
     assessedAt: number;
-    status: "draft" | "accepted";
+    status: ConditionAssessmentStatus;
   } | null;
   emptyLabel: string;
   locale: string;

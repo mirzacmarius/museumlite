@@ -46,6 +46,7 @@ async function setupConservationWithAssessments() {
       { area: "Surface", description: "Minor abrasion", severity: "minor" },
     ],
     photos: [],
+    submit: true,
   });
   await authed.mutation(api.conditionAssessments.accept, {
     assessmentId: baselineId,
@@ -68,6 +69,7 @@ async function createAcceptedOutcome(
       { area: "Surface", description: "Stabilized", severity: "minor" },
     ],
     photos: [],
+    submit: true,
   });
   await authed.mutation(api.conditionAssessments.accept, {
     assessmentId: outcomeId,
@@ -109,6 +111,7 @@ describe("Conservation treatment assessment evidence", () => {
           { area: "Base", description: "Stable", severity: "minor" },
         ],
         photos: [],
+        submit: true,
       },
     );
     await authed.mutation(api.conservationTreatments.linkBaselineAssessment, {
@@ -159,6 +162,7 @@ describe("Conservation treatment assessment evidence", () => {
           { area: "Canvas", description: "Repaired", severity: "minor" },
         ],
         photos: [],
+        submit: true,
       },
     );
     await authed.mutation(api.conservationTreatments.linkOutcomeAssessment, {
@@ -239,6 +243,7 @@ describe("Conservation treatment assessment evidence", () => {
           { area: "Body", description: "Fine", severity: "minor" },
         ],
         photos: [],
+        submit: true,
       },
     );
 
