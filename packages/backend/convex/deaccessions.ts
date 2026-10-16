@@ -2467,8 +2467,9 @@ export const getDisposalStages = query({
       },
       valuation: {
         linkedAppraisalId: deaccession.appraisalId,
-        value: deaccession.appraisalValue,
-        currency: deaccession.appraisalCurrency,
+        value: deaccession.appraisalValue ?? linkedAppraisal?.value,
+        // Links made before MUS-645 stored no currency.
+        currency: deaccession.appraisalCurrency ?? linkedAppraisal?.currency,
         appraisalDate: deaccession.appraisalDate,
         appraiserName: linkedAppraisal?.appraiserName,
         isCurrent: hasCurrentValuation(deaccession, now),

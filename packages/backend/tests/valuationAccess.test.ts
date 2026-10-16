@@ -444,3 +444,38 @@ test("a Curator links valuation evidence on a pending deaccession without valuat
     appraiserName: "Independent Valuer",
   });
 });
+
+test("a valuation linked before currencies were stored shows its appraisal's currency", async () => {
+  const t = createConvexTest();
+  const { owner, organizationId, collectionId } = await seededMuseum(t);
+  const appraisalId = await owner.mutation(api.appraisals.create, {
+    collectionId,
+    ...appraisal,
+    appraisalDate: Date.now() - 30 * DAY,
+  });
+  const deaccessionId = await owner.mutation(api.deaccessions.create, {
+    organizationId,
+    collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Outside collecting policy",
+    method: "sale",
+    disposition: "Public auction",
+  });
+  await owner.mutation(api.deaccessions.linkAppraisal, {
+    deaccessionId,
+    appraisalId,
+  });
+  await t.run((ctx) =>
+    ctx.db.patch(deaccessionId, { appraisalCurrency: undefined }),
+  );
+
+  const stages = await owner.query(api.deaccessions.getDisposalStages, {
+    deaccessionId,
+  });
+
+  expect(stages?.valuation).toMatchObject({
+    linkedAppraisalId: appraisalId,
+    value: 10_000,
+    currency: "EUR",
+  });
+});
