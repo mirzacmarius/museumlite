@@ -1151,10 +1151,8 @@ export default {
     featuresIncluded: "Features included:",
     configureSettings: "Configure {name} settings",
     settings: "Settings",
-    disableIntegration: "Disable Integration",
-    disableDescription:
-      "Are you sure you want to disable this integration? The data will be preserved, but the features will no longer be accessible until re-enabled.",
-    disable: "Disable",
+    disableConsequence:
+      "The data will be preserved, but the features will no longer be accessible until re-enabled.",
     subscribeToEnable: "Subscribe to Enable",
     subscribeDescription:
       "This integration requires an active subscription. Subscribe now to unlock all features.",
@@ -2340,6 +2338,14 @@ export default {
 
     parentLocation: "Parent location",
   },
+  confirmedSwitch: {
+    enableTitle: "Are you sure you want to enable this function?",
+    disableTitle: "Are you sure you want to disable this function?",
+    setting: "Setting: {setting}",
+    appliesOnSave: "The change takes effect when you save.",
+    enable: "Enable",
+    disable: "Disable",
+  },
   common: {
     importJobUnavailable: "Import job unavailable",
     importJobUnavailableDescription:
@@ -2388,12 +2394,14 @@ export default {
       exportFailed: "Failed to export data",
       invalidEmail: "Invalid email address format",
       createFailed: "Failed to create. Please try again.",
-      moduleToggled: "Module {action}",
+      moduleEnabled: "Module enabled",
+      moduleDisabled: "Module disabled",
       moduleUpdateFailed: "Failed to update modules",
       waitingSubscription: "Waiting for subscription confirmation...",
       integrationEnabled: "Integration enabled successfully",
       integrationAlreadyEnabled: "Integration is already enabled",
       integrationEnableFailed: "Failed to enable integration",
+      integrationDisableFailed: "Failed to disable integration",
       loansApproved: "Successfully approved {count} loan(s)",
       someLoansSkipped: "{count} loan(s) were skipped (not pending)",
       loansApproveFailed: "Failed to approve loans",

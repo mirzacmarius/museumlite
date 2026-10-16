@@ -1182,10 +1182,8 @@ export default {
     featuresIncluded: "Fonctionnalités incluses :",
     configureSettings: "Configurer les paramètres de {name}",
     settings: "Paramètres",
-    disableIntegration: "Désactiver l'intégration",
-    disableDescription:
-      "Êtes-vous sûr de vouloir désactiver cette intégration ? Les données seront conservées, mais les fonctionnalités ne seront plus accessibles jusqu'à la réactivation.",
-    disable: "Désactiver",
+    disableConsequence:
+      "Les données seront conservées, mais les fonctionnalités ne seront plus accessibles jusqu'à la réactivation.",
     subscribeToEnable: "S'abonner pour activer",
     subscribeDescription:
       "Cette intégration nécessite un abonnement actif. Abonnez-vous maintenant pour débloquer toutes les fonctionnalités.",
@@ -2957,6 +2955,14 @@ export default {
 
     parentLocation: "Emplacement parent",
   },
+  confirmedSwitch: {
+    enableTitle: "Êtes-vous sûr de vouloir activer cette fonction ?",
+    disableTitle: "Êtes-vous sûr de vouloir désactiver cette fonction ?",
+    setting: "Réglage : {setting}",
+    appliesOnSave: "La modification prendra effet à l'enregistrement.",
+    enable: "Activer",
+    disable: "Désactiver",
+  },
   common: {
     importJobUnavailable: "Importation indisponible",
     importJobUnavailableDescription:
@@ -3004,12 +3010,14 @@ export default {
       exportFailed: "Échec de l'exportation des données",
       invalidEmail: "Format d'adresse e-mail invalide",
       createFailed: "Échec de la création. Veuillez réessayer.",
-      moduleToggled: "Module {action}",
+      moduleEnabled: "Module activé",
+      moduleDisabled: "Module désactivé",
       moduleUpdateFailed: "Échec de la mise à jour des modules",
       waitingSubscription: "En attente de la confirmation de l'abonnement...",
       integrationEnabled: "Intégration activée avec succès",
       integrationAlreadyEnabled: "L'intégration est déjà activée",
       integrationEnableFailed: "Échec de l'activation de l'intégration",
+      integrationDisableFailed: "Échec de la désactivation de l'intégration",
       loansApproved: "{count} prêt(s) approuvé(s) avec succès",
       someLoansSkipped: "{count} prêt(s) ont été ignoré(s) (non en attente)",
       loansApproveFailed: "Échec de l'approbation des prêts",

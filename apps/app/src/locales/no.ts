@@ -1158,10 +1158,8 @@ export default {
     featuresIncluded: "Inkluderte funksjoner:",
     configureSettings: "Konfigurer {name}-innstillinger",
     settings: "Innstillinger",
-    disableIntegration: "Deaktiver Integrasjon",
-    disableDescription:
-      "Er du sikker på at du vil deaktivere denne integrasjonen? Dataene vil bli bevart, men funksjonene vil ikke være tilgjengelige før den reaktiveres.",
-    disable: "Deaktiver",
+    disableConsequence:
+      "Dataene vil bli bevart, men funksjonene vil ikke være tilgjengelige før den reaktiveres.",
     subscribeToEnable: "Abonner for å Aktivere",
     subscribeDescription:
       "Denne integrasjonen krever et aktivt abonnement. Abonner nå for å låse opp alle funksjoner.",
@@ -2919,6 +2917,14 @@ export default {
 
     parentLocation: "Overordnet plassering",
   },
+  confirmedSwitch: {
+    enableTitle: "Er du sikker på at du vil aktivere denne funksjonen?",
+    disableTitle: "Er du sikker på at du vil deaktivere denne funksjonen?",
+    setting: "Innstilling: {setting}",
+    appliesOnSave: "Endringen trer i kraft når du lagrer.",
+    enable: "Aktiver",
+    disable: "Deaktiver",
+  },
   common: {
     importJobUnavailable: "Importjobb utilgjengelig",
     importJobUnavailableDescription:
@@ -2965,12 +2971,14 @@ export default {
       exportFailed: "Kunne ikke eksportere data",
       invalidEmail: "Ugyldig e-postadresseformat",
       createFailed: "Kunne ikke opprette. Vennligst prøv igjen.",
-      moduleToggled: "Modul {action}",
+      moduleEnabled: "Modul aktivert",
+      moduleDisabled: "Modul deaktivert",
       moduleUpdateFailed: "Kunne ikke oppdatere moduler",
       waitingSubscription: "Venter på abonnementsbekreftelse...",
       integrationEnabled: "Integrasjon aktivert",
       integrationAlreadyEnabled: "Integrasjonen er allerede aktivert",
       integrationEnableFailed: "Kunne ikke aktivere integrasjon",
+      integrationDisableFailed: "Kunne ikke deaktivere integrasjon",
       loansApproved: "{count} lån godkjent",
       someLoansSkipped: "{count} lån ble hoppet over (ikke ventende)",
       loansApproveFailed: "Kunne ikke godkjenne lån",
