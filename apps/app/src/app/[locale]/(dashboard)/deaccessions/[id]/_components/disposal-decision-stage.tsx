@@ -18,6 +18,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ClientDateFns } from "@/components/client-date";
 import { usePermissions } from "@/components/permission-gate";
+import { useClientNow } from "@/hooks/use-client-date-format";
 import { useValuationErrorMessage } from "@/hooks/use-valuation-error-message";
 import { formatMoney } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -176,19 +177,19 @@ function DisposalValuation({
   const valuationErrorMessage = useValuationErrorMessage();
   const locale = useCurrentLocale();
   const { hasPermission } = usePermissions();
+  const now = useClientNow();
   const canLink =
     stages.decision.basis === "pending" && hasPermission("collections.update");
-  const appraisals = useQuery(api.appraisals.listByCollection, {
-    collectionId: deaccession.collectionId,
-  });
+  const linkable = useQuery(
+    api.deaccessions.listLinkableAppraisals,
+    canLink && now !== undefined
+      ? { deaccessionId: deaccession._id, now }
+      : "skip",
+  );
   const linkAppraisal = useMutation(api.deaccessions.linkAppraisal);
   const [selectedId, setSelectedId] = useState<string>("");
   const [isLinking, setIsLinking] = useState(false);
-
-  const linked = appraisals?.find(
-    (appraisal) => appraisal._id === stages.valuation.linkedAppraisalId,
-  );
-  const linkable = appraisals?.filter((appraisal) => !appraisal.isSuperseded);
+  const { valuation } = stages;
 
   const handleLink = async () => {
     const appraisal = linkable?.find((entry) => entry._id === selectedId);
@@ -218,13 +219,13 @@ function DisposalValuation({
     <div className="mt-4 border-t border-border/60 pt-3">
       <p className="text-xs font-medium">{t("valuation.title")}</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        {linked
+        {valuation.linkedAppraisalId && valuation.value !== undefined
           ? t("valuation.linked", {
-              value: formatMoney(linked.value, locale, linked.currency),
-              appraiser: linked.appraiserName,
+              value: formatMoney(valuation.value, locale, valuation.currency),
+              appraiser: valuation.appraiserName ?? "",
             })
           : t("valuation.none")}
-        {linked && !stages.valuation.isCurrent ? (
+        {valuation.linkedAppraisalId && !valuation.isCurrent ? (
           <span className="ml-1">({t("valuation.notCurrent")})</span>
         ) : null}
       </p>

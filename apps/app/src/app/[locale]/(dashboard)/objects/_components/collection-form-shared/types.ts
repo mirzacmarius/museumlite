@@ -97,6 +97,7 @@ export type CollectionEditTabId = Extract<
   | "digital"
   | "accession"
   | "placement"
+  | "valuation"
   | CollectionModuleId
 >;
 

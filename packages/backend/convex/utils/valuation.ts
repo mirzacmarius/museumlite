@@ -14,6 +14,8 @@ import { currencyGroupKey, normalizeCurrency } from "./currency";
  * appraisal that supersedes the old one, which stays in the history.
  */
 
+export const VALUATION_PERMISSION = "collections.view_valuation";
+
 export const appraisalPurposeValidator = v.union(
   v.literal("insurance"),
   v.literal("market"),

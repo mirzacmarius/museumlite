@@ -17,6 +17,7 @@ import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {
   grantPermissionToSystemRoles,
   REVIEWER_SYSTEM_ROLE_NAMES,
+  VALUATION_SYSTEM_ROLE_NAMES,
 } from "./utils/systemRoleGrants";
 import {
   COLLECTION_MANAGER_ROLE_DESCRIPTION,
@@ -25,6 +26,7 @@ import {
   LEGACY_REGISTRAR_ROLE_NAME,
   SYSTEM_ROLE_DEFINITIONS,
 } from "./utils/systemRoles";
+import { VALUATION_PERMISSION } from "./utils/valuation";
 
 function getLocationCodePrefix(type: string) {
   switch (type.trim().toLowerCase()) {
@@ -1745,6 +1747,36 @@ export const grantIncidentCoordinationPermissions = internalMutation({
       await ctx.scheduler.runAfter(
         0,
         internal.migrations.grantIncidentCoordinationPermissions,
+        { cursor: page.continueCursor },
+      );
+    }
+    return { organizationsProcessed: page.page.length, isDone: page.isDone };
+  },
+});
+
+/** Run once after deploy: bunx convex run migrations:grantValuationPermissions */
+export const grantValuationPermissions = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  returns: v.object({
+    organizationsProcessed: v.number(),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("organizations")
+      .paginate({ numItems: 25, cursor: args.cursor ?? null });
+    for (const organization of page.page) {
+      await grantPermissionToSystemRoles(ctx, {
+        organizationId: organization._id,
+        name: VALUATION_PERMISSION,
+        description: "View object valuations and appraisal history",
+        roleNames: VALUATION_SYSTEM_ROLE_NAMES,
+      });
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.grantValuationPermissions,
         { cursor: page.continueCursor },
       );
     }

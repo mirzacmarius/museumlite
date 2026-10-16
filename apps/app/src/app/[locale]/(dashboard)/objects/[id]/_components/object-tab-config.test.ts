@@ -17,23 +17,33 @@ function translation(dictionary: object, key: string) {
 }
 
 const everyObjectTab = [
-  ...getObjectEditTabs(),
+  ...getObjectEditTabs({
+    savedObject: true,
+    permissions: ["collections.view_valuation"],
+  }),
   ...COLLECTION_MODULE_IDS.flatMap((collectionType) =>
     getObjectViewTabs({
       collectionType,
       enabledModules: COLLECTION_MODULE_IDS,
+      permissions: ["collections.view_valuation"],
       features: { conservation: true, exhibitions: true, loans: true },
     }),
   ),
 ];
 
 test("object form tabs have English names", () => {
-  expect(getObjectEditTabs().map((tab) => translation(en, tab.label))).toEqual([
+  expect(
+    getObjectEditTabs({
+      savedObject: true,
+      permissions: ["collections.view_valuation"],
+    }).map((tab) => translation(en, tab.label)),
+  ).toEqual([
     "General",
     "Physical Description",
     "Media",
     "Accession",
     "Provenance and History",
+    "Valuation",
     "Placement and Relationships",
     "Visibility",
   ]);
@@ -47,3 +57,88 @@ for (const [locale, dictionary] of Object.entries({ en, es, fr, no, ro })) {
     expect(unnamed).toEqual([]);
   });
 }
+
+test("the Valuation tab needs valuation access in view and edit mode", () => {
+  const tabIds = (permissions: string[]) => ({
+    view: getObjectViewTabs({
+      permissions,
+      features: { conservation: true, exhibitions: true, loans: true },
+    }).map((tab) => tab.id),
+    edit: getObjectEditTabs({ savedObject: true, permissions }).map(
+      (tab) => tab.id,
+    ),
+  });
+
+  expect(tabIds(["collections.read", "collections.update"])).toEqual({
+    view: [
+      "general",
+      "physical",
+      "media",
+      "accession",
+      "provenance",
+      "placement",
+      "conservation",
+      "exhibitions",
+      "loans",
+      "comments",
+      "logs",
+    ],
+    edit: [
+      "general",
+      "physical",
+      "media",
+      "accession",
+      "provenance",
+      "placement",
+      "digital",
+    ],
+  });
+  expect(
+    tabIds([
+      "collections.read",
+      "collections.update",
+      "collections.view_valuation",
+    ]),
+  ).toEqual({
+    view: [
+      "general",
+      "physical",
+      "media",
+      "accession",
+      "provenance",
+      "valuation",
+      "placement",
+      "conservation",
+      "exhibitions",
+      "loans",
+      "comments",
+      "logs",
+    ],
+    edit: [
+      "general",
+      "physical",
+      "media",
+      "accession",
+      "provenance",
+      "valuation",
+      "placement",
+      "digital",
+    ],
+  });
+});
+
+test("a new object request has no Valuation tab", () => {
+  expect(
+    getObjectEditTabs({
+      permissions: ["collections.view_valuation"],
+    }).map((tab) => tab.id),
+  ).toEqual([
+    "general",
+    "physical",
+    "media",
+    "accession",
+    "provenance",
+    "placement",
+    "digital",
+  ]);
+});

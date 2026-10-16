@@ -32,7 +32,7 @@ async function valuationErrorOf(
 async function setupCurator(t: ConvexTest) {
   const setup = await createOrgUserCollectionWithPermissions(
     t,
-    ["collections.read", "collections.update"],
+    ["collections.read", "collections.update", "collections.view_valuation"],
     { subscriptionTier: "pro", slugPrefix: "valuation" },
   );
   return { ...setup, staff: authedForUser(t, setup.userId) };
@@ -265,7 +265,10 @@ test("staff without collection update permission cannot record or supersede appr
     api.appraisals.create,
     appraisalInput(collectionId),
   );
-  const reader = await addReader(t, organizationId, ["collections.read"]);
+  const reader = await addReader(t, organizationId, [
+    "collections.read",
+    "collections.view_valuation",
+  ]);
 
   await expect(
     reader.mutation(api.appraisals.create, appraisalInput(collectionId)),
@@ -289,7 +292,12 @@ test("a disposal decision records the linked valuation's currency and refuses su
   const { organizationId, collectionId, userId } =
     await createOrgUserCollectionWithPermissions(
       t,
-      ["collections.create", "collections.read", "collections.update"],
+      [
+        "collections.create",
+        "collections.read",
+        "collections.update",
+        "collections.view_valuation",
+      ],
       { subscriptionTier: "pro", slugPrefix: "disposal-valuation" },
     );
   const staff = authedForUser(t, userId);

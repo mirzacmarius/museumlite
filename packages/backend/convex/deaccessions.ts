@@ -53,7 +53,9 @@ import {
 } from "./utils/uploadOwnership";
 import {
   appraisalAgeDays,
+  appraisalPurposeValidator,
   isWithinValuationAge,
+  loadObjectAppraisals,
   VALUATION_MAX_AGE_MS,
 } from "./utils/valuation";
 import { valuationError } from "./utils/valuationErrors";
@@ -2172,6 +2174,8 @@ export const recordRegulatoryApproval = mutation({
 // Valuation/Appraisal Verification
 // ============================================
 
+const LINK_VALUATION_PERMISSION = "collections.update";
+
 /**
  * Link an appraisal to a deaccession and verify it meets requirements
  */
@@ -2200,7 +2204,7 @@ export const linkAppraisal = mutation({
     await requirePermission(
       ctx,
       deaccession.organizationId,
-      "collections.update",
+      LINK_VALUATION_PERMISSION,
     );
 
     if (deaccession.status !== "pending") {
@@ -2271,6 +2275,55 @@ export const linkAppraisal = mutation({
   },
 });
 
+/** The appraisals a pending disposal decision can link, newest first. */
+export const listLinkableAppraisals = query({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+    now: v.number(),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("appraisals"),
+      appraiserName: v.string(),
+      appraisalType: appraisalPurposeValidator,
+      value: v.number(),
+      currency: v.string(),
+      ageDays: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) return [];
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      LINK_VALUATION_PERMISSION,
+    );
+    if (deaccession.status !== "pending" || !isDisposalDecision(deaccession)) {
+      return [];
+    }
+
+    const appraisals = await loadObjectAppraisals(
+      ctx,
+      deaccession.collectionId,
+    );
+    return appraisals.flatMap((appraisal) =>
+      appraisal.supersededBy === undefined
+        ? [
+            {
+              _id: appraisal._id,
+              appraiserName: appraisal.appraiserName,
+              appraisalType: appraisal.appraisalType,
+              value: appraisal.value,
+              currency: appraisal.currency,
+              ageDays: appraisalAgeDays(appraisal, args.now),
+            },
+          ]
+        : [],
+    );
+  },
+});
+
 const disposalCheckValidator = v.object({
   key: v.string(),
   required: v.boolean(),
@@ -2315,6 +2368,7 @@ export const getDisposalStages = query({
         value: v.optional(v.number()),
         currency: v.optional(v.string()),
         appraisalDate: v.optional(v.number()),
+        appraiserName: v.optional(v.string()),
         isCurrent: v.boolean(),
       }),
       exit: v.object({
@@ -2377,14 +2431,18 @@ export const getDisposalStages = query({
       const user = await ctx.db.get(userId);
       return user?.name || user?.username || undefined;
     };
-    const [exceptionAuthorName, exitRecorderName] = await Promise.all([
-      review?.exception
-        ? userName(review.exception.authorizedBy)
-        : Promise.resolve(undefined),
-      deaccession.exitRecord
-        ? userName(deaccession.exitRecord.recordedBy)
-        : Promise.resolve(undefined),
-    ] as const);
+    const [exceptionAuthorName, exitRecorderName, linkedAppraisal] =
+      await Promise.all([
+        review?.exception
+          ? userName(review.exception.authorizedBy)
+          : Promise.resolve(undefined),
+        deaccession.exitRecord
+          ? userName(deaccession.exitRecord.recordedBy)
+          : Promise.resolve(undefined),
+        deaccession.appraisalId
+          ? ctx.db.get(deaccession.appraisalId)
+          : Promise.resolve(null),
+      ] as const);
 
     return {
       appliesToDisposal: isDisposalDecision(deaccession),
@@ -2409,9 +2467,11 @@ export const getDisposalStages = query({
       },
       valuation: {
         linkedAppraisalId: deaccession.appraisalId,
-        value: deaccession.appraisalValue,
-        currency: deaccession.appraisalCurrency,
+        value: deaccession.appraisalValue ?? linkedAppraisal?.value,
+        // Links made before MUS-645 stored no currency.
+        currency: deaccession.appraisalCurrency ?? linkedAppraisal?.currency,
         appraisalDate: deaccession.appraisalDate,
+        appraiserName: linkedAppraisal?.appraiserName,
         isCurrent: hasCurrentValuation(deaccession, now),
       },
       exit: {

@@ -26,6 +26,7 @@ const insurancePermissions = [
   "organization.manage_settings",
   "collections.read",
   "collections.update",
+  "collections.view_valuation",
 ];
 
 async function valuationErrorOf(

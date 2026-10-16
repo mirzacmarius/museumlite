@@ -94,7 +94,12 @@ test("valuation deletion refuses destruction and retains valuation evidence", as
   const t = createConvexTest();
   const { collectionId, userId } = await createOrgUserCollectionWithPermissions(
     t,
-    ["collections.read", "collections.update", "collections.delete"],
+    [
+      "collections.read",
+      "collections.update",
+      "collections.delete",
+      "collections.view_valuation",
+    ],
   );
   const staff = authedForUser(t, userId);
   const appraisalId = await staff.mutation(api.appraisals.create, {

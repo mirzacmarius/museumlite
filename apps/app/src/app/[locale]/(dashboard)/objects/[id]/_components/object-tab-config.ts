@@ -32,7 +32,32 @@ export interface ObjectTabDefinition {
   id: ObjectTabId;
   label: `untranslatedRecords.objects.tabs.${ObjectTabId}`;
   editable: boolean;
+  requiredPermission?: string;
+  requiresSavedObject?: true;
   featureKey?: "conservation" | "exhibitions" | "loans";
+}
+
+const valuationTab: ObjectTabDefinition = {
+  id: "valuation",
+  label: "untranslatedRecords.objects.tabs.valuation",
+  editable: true,
+  requiredPermission: "collections.view_valuation",
+  requiresSavedObject: true,
+};
+
+interface ObjectTabAccess {
+  locationTrackingEnabled?: boolean;
+  permissions?: ReadonlyArray<string>;
+}
+
+function isTabAvailable(tab: ObjectTabDefinition, access: ObjectTabAccess) {
+  if (tab.id === "placement" && access.locationTrackingEnabled === false) {
+    return false;
+  }
+  return (
+    !tab.requiredPermission ||
+    (access.permissions ?? []).includes(tab.requiredPermission)
+  );
 }
 
 const viewBaseTabs: ObjectTabDefinition[] = [
@@ -61,11 +86,7 @@ const viewBaseTabs: ObjectTabDefinition[] = [
     label: "untranslatedRecords.objects.tabs.provenance",
     editable: true,
   },
-  {
-    id: "valuation",
-    label: "untranslatedRecords.objects.tabs.valuation",
-    editable: false,
-  },
+  valuationTab,
   {
     id: "placement",
     label: "untranslatedRecords.objects.tabs.placement",
@@ -127,6 +148,7 @@ const editBaseTabs: ObjectTabDefinition[] = [
     label: "untranslatedRecords.objects.tabs.provenance",
     editable: true,
   },
+  valuationTab,
   {
     id: "placement",
     label: "untranslatedRecords.objects.tabs.placement",
@@ -172,16 +194,22 @@ const moduleTabMap: Record<CollectionModuleId, ObjectTabDefinition> = {
   },
 };
 
-export function getObjectViewTabs(options: {
+interface ObjectViewTabOptions extends ObjectTabAccess {
   collectionType?: string;
   enabledModules?: ReadonlyArray<ModuleId>;
-  locationTrackingEnabled?: boolean;
   features: {
     conservation: boolean;
     exhibitions: boolean;
     loans: boolean;
   };
-}) {
+}
+
+interface ObjectEditTabOptions extends ObjectTabAccess {
+  savedObject?: boolean;
+  typeDetailsTab?: CollectionModuleId;
+}
+
+export function getObjectViewTabs(options: ObjectViewTabOptions) {
   const moduleTab =
     isCollectionModuleId(options.collectionType) &&
     isCollectionTypeEnabled(
@@ -196,27 +224,20 @@ export function getObjectViewTabs(options: {
     : viewBaseTabs;
 
   return orderedTabs.filter((tab): tab is ObjectTabDefinition => {
-    if (!tab) return false;
-    if (tab.id === "placement" && options.locationTrackingEnabled === false) {
-      return false;
-    }
+    if (!tab || !isTabAvailable(tab, options)) return false;
     if (!tab.featureKey) return true;
     return options.features[tab.featureKey];
   });
 }
 
-export function getObjectEditTabs(options?: {
-  locationTrackingEnabled?: boolean;
-  /** Collection type whose intake details the form captures, if any. */
-  typeDetailsTab?: CollectionModuleId;
-}) {
-  const tabs = editBaseTabs.filter((tab) => {
-    if (tab.id === "placement" && options?.locationTrackingEnabled === false) {
-      return false;
-    }
-    return tab.editable;
-  });
-  if (!options?.typeDetailsTab) return tabs;
+export function getObjectEditTabs(options: ObjectEditTabOptions = {}) {
+  const tabs = editBaseTabs.filter(
+    (tab) =>
+      tab.editable &&
+      isTabAvailable(tab, options) &&
+      (!tab.requiresSavedObject || options.savedObject),
+  );
+  if (!options.typeDetailsTab) return tabs;
 
   const [generalTab, ...otherTabs] = tabs;
   const typeDetailsTab = {
