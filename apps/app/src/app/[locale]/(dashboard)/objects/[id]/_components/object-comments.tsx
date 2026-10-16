@@ -13,6 +13,7 @@ import { AtSign, Loader2, MessageSquare, Send } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientRelativeTime } from "@/components/client-date";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 
 type CommentItem = {
@@ -76,6 +77,7 @@ export function ObjectComments({
 }: ObjectCommentsProps) {
   const tRoot = useI18n();
   const locale = useCurrentLocale();
+  const actionErrorMessage = useActionErrorMessage();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [content, setContent] = useState("");
   const [mentionState, setMentionState] = useState<MentionState | null>(null);
@@ -149,7 +151,12 @@ export function ObjectComments({
       setMentionState(null);
     } catch (error) {
       console.error(error);
-      toast.error(tRoot("untranslatedRecords.objects.comments.failedAdd"));
+      toast.error(
+        actionErrorMessage(
+          error,
+          tRoot("untranslatedRecords.objects.comments.failedAdd"),
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
