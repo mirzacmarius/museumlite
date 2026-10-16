@@ -24,8 +24,10 @@ interface RecordLogEntryProps {
   href: string;
   /** Record identifier shown in monospace above the title. */
   reference: string;
-  /** When the record was decided; omitted when not recorded. */
+  /** The date the log is ordered by; omitted when not recorded. */
   date?: number;
+  /** Whether the date carries a meaningful time of day for its tooltip. */
+  showTime?: boolean;
   title: string;
   /** Secondary text after the title, dropped first when space runs out. */
   detail?: string;
@@ -36,12 +38,13 @@ export function RecordLogEntry({
   href,
   reference,
   date,
+  showTime = true,
   title,
   detail,
 }: RecordLogEntryProps) {
   const locale = useCurrentLocale();
   const summary = detail ? `${title} · ${detail}` : title;
-  const decidedAt = date === undefined ? undefined : new Date(date);
+  const loggedAt = date === undefined ? undefined : new Date(date);
 
   return (
     <li>
@@ -56,16 +59,20 @@ export function RecordLogEntry({
           >
             {reference}
           </span>
-          {decidedAt && (
+          {loggedAt && (
             <time
-              dateTime={decidedAt.toISOString()}
-              title={formatDate(decidedAt, locale, {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
+              dateTime={loggedAt.toISOString()}
+              title={
+                showTime
+                  ? formatDate(loggedAt, locale, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : undefined
+              }
               className="shrink-0 text-[10px] text-muted-foreground"
             >
-              {formatDate(decidedAt, locale, { dateStyle: "medium" })}
+              {formatDate(loggedAt, locale, { dateStyle: "medium" })}
             </time>
           )}
         </div>

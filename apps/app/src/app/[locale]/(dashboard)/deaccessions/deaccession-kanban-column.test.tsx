@@ -73,13 +73,13 @@ test("the approved column reads as a compact log of the latest ten deaccessions"
   const entries = screen.getAllByRole("listitem");
   expect(entries).toHaveLength(2);
   const first = within(entries[0] as HTMLElement);
-  expect(first.getByText("112-2026-0102")).toBeTruthy();
-  expect(first.getByText("Oct 2, 2026")).toBeTruthy();
+  expect(first.getByText("DA-112-2026-006")).toBeTruthy();
+  expect(first.queryByText("112-2026-0102")).toBeNull();
+  expect(first.getByText("Oct 2, 2026").getAttribute("title")).toBeNull();
   expect(first.getByTitle("kn kn · Damaged beyond repair")).toBeTruthy();
   expect(first.getByRole("link").getAttribute("href")).toBe(
     "/deaccessions/da-1?from=%2Fdeaccessions",
   );
-  // Without an accession number the deaccession number identifies the row.
   const second = within(entries[1] as HTMLElement);
   expect(second.getByText("DA-112-2026-005")).toBeTruthy();
   expect(screen.getByText("Showing 2 of 12")).toBeTruthy();

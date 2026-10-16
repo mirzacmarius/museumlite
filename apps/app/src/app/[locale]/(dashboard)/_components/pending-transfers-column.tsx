@@ -42,31 +42,41 @@ export function usePendingTransfersColumn(
     ...entry,
     loading: pending === undefined,
     renderCards: () => (
-      <ul className="flex flex-col gap-2">
-        {pending?.requests.map((request) => (
-          <li key={request._id}>
-            <Link
-              href={`/objects/move-requests/${request._id}`}
-              className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
-            >
-              <span className="w-full truncate text-sm font-medium text-foreground">
-                {request.collectionTitle ?? request.sourceAccessionNumber}
-              </span>
-              <span className="w-full truncate text-[11px] text-muted-foreground">
-                {request.sourceAccessionNumber}
-                {" · "}
-                {request.status === "awaiting_acceptance"
-                  ? tRoot(
-                      "untranslatedRecords.accessions.transfers.awaitingAcceptance",
-                    )
-                  : tRoot(
-                      "untranslatedRecords.accessions.transfers.pendingApproval",
-                    )}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-2">
+        <ul className="flex flex-col gap-2">
+          {pending?.requests.map((request) => (
+            <li key={request._id}>
+              <Link
+                href={`/objects/move-requests/${request._id}`}
+                className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
+              >
+                <span className="w-full truncate text-sm font-medium text-foreground">
+                  {request.collectionTitle ?? request.sourceAccessionNumber}
+                </span>
+                <span className="w-full truncate text-[11px] text-muted-foreground">
+                  {request.sourceAccessionNumber}
+                  {" · "}
+                  {request.direction === "incoming"
+                    ? tRoot(
+                        "untranslatedRecords.accessions.transfers.awaitingAcceptance",
+                      )
+                    : tRoot(
+                        "untranslatedRecords.accessions.transfers.pendingApproval",
+                      )}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {pending?.truncated ? (
+          <Link
+            href={TRANSFERS_HREF}
+            className="block px-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {tRoot("common.viewAll")}
+          </Link>
+        ) : null}
+      </div>
     ),
     summaryEntries: [{ ...entry, href: TRANSFERS_HREF }],
   };

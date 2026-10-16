@@ -1352,8 +1352,7 @@ describe("objectMoves", () => {
           _id: requestId,
           collectionTitle: "Move Test Object",
           sourceAccessionNumber: "SRC-001",
-          status: "pending_source_approval",
-          requestedAt: expect.any(Number),
+          direction: "outgoing",
         },
       ],
       truncated: false,
@@ -1365,7 +1364,7 @@ describe("objectMoves", () => {
     const approved = await waitingOn();
     expect(approved.source.requests).toEqual([]);
     expect(approved.target.requests).toMatchObject([
-      { _id: requestId, status: "awaiting_acceptance" },
+      { _id: requestId, direction: "incoming" },
     ]);
 
     await fixture.targetAdmin.mutation(api.objectMoves.accept, {
@@ -1432,9 +1431,41 @@ describe("objectMoves", () => {
     expect(waiting.requests).toHaveLength(50);
     expect(waiting.requests[0]).toMatchObject({
       sourceAccessionNumber: "SRC-50",
-      status: "pending_source_approval",
+      direction: "outgoing",
     });
     expect(waiting.requests.at(-1)?.sourceAccessionNumber).toBe("SRC-1");
+  });
+
+  test("listAwaitingDecision leaves a transfer approved without an observed source location with the source", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizationMoveRequests", {
+        collectionId: fixture.collectionId,
+        sourceOrganizationId: fixture.sourceOrganizationId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        sourceAccessionNumber: "SRC-001",
+        accessionMode: "keep",
+        reason: "Approved before observed source locations",
+        status: "awaiting_acceptance",
+        requestedBy: fixture.requesterId,
+        requestedAt: Date.UTC(2026, 0, 1),
+      });
+    });
+
+    const [source, target] = await Promise.all([
+      fixture.admin.query(api.objectMoves.listAwaitingDecision, {
+        organizationId: fixture.sourceOrganizationId,
+      }),
+      fixture.targetAdmin.query(api.objectMoves.listAwaitingDecision, {
+        organizationId: fixture.targetOrganizationId,
+      }),
+    ]);
+
+    expect(source.requests).toMatchObject([
+      { _id: requestId, direction: "outgoing" },
+    ]);
+    expect(target.requests).toEqual([]);
   });
 
   test("rejecting a request leaves the object unchanged and notifies the requester", async () => {

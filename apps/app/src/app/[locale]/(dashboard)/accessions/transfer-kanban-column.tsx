@@ -129,6 +129,16 @@ function decidedAt(request: TransferRequest) {
   );
 }
 
+/** Why a transfer was rejected, otherwise where it went. */
+function logDetail(request: TransferRequest) {
+  if (request.status !== "rejected") return request.targetOrganizationName;
+  return (
+    request.targetReviewNotes ??
+    request.sourceReviewNotes ??
+    request.targetOrganizationName
+  );
+}
+
 function newestDecisionFirst(left: TransferRequest, right: TransferRequest) {
   return (
     decidedAt(right) - decidedAt(left) ||
@@ -169,7 +179,12 @@ export function TransferKanbanColumn({
   const style = statusStyles[status];
   const Icon = style.icon;
   const isLog = LOG_STATUSES.has(status);
-  const [logLength, setLogLength] = useState(RECORD_LOG_PAGE_SIZE);
+  const [shownLog, setShownLog] = useState({
+    search: searchQuery,
+    length: RECORD_LOG_PAGE_SIZE,
+  });
+  const logLength =
+    shownLog.search === searchQuery ? shownLog.length : RECORD_LOG_PAGE_SIZE;
 
   const filteredRequests = transferRequests.filter((request) => {
     if (request.status !== status || request.direction !== direction) {
@@ -198,10 +213,15 @@ export function TransferKanbanColumn({
 
   return (
     <div className="flex w-80 flex-shrink-0 flex-col">
-      <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
         <span>{title}</span>
-        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
-          {filteredRequests.length}
+        <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] normal-case tracking-normal text-zinc-500">
+          {isLog
+            ? tRoot("listState.shownOfTotal", {
+                shown: Math.min(logLength, logEntries.length),
+                total: logEntries.length,
+              })
+            : filteredRequests.length}
         </span>
       </div>
 
@@ -226,7 +246,7 @@ export function TransferKanbanColumn({
                     reference={request.sourceAccessionNumber}
                     date={decidedAt(request)}
                     title={request.collectionTitle}
-                    detail={request.targetOrganizationName}
+                    detail={logDetail(request)}
                   />
                 ))}
               </RecordLog>
@@ -324,7 +344,10 @@ export function TransferKanbanColumn({
                 size="sm"
                 className="w-full text-xs"
                 onClick={() =>
-                  setLogLength((length) => length + RECORD_LOG_PAGE_SIZE)
+                  setShownLog({
+                    search: searchQuery,
+                    length: logLength + RECORD_LOG_PAGE_SIZE,
+                  })
                 }
               >
                 {tRoot("listState.showMore")}

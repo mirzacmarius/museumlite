@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { getFunctionName } from "convex/server";
 import { beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import { MyWorkSummary } from "./my-work-cards";
+import { MyWorkBoard } from "./work-board";
 
 const NOW = Date.UTC(2026, 9, 15, 9);
 const NO_APPROVALS = {
@@ -158,8 +159,7 @@ function pendingTransfers(count: number, truncated = false) {
       _id: `transfer-${index}`,
       collectionTitle: `Object ${index}`,
       sourceAccessionNumber: `SRC-${index}`,
-      status: "pending_source_approval",
-      requestedAt: NOW,
+      direction: index === 0 ? "incoming" : "outgoing",
     })),
     truncated,
   };
@@ -201,6 +201,35 @@ test("members who cannot decide transfers see no transfers card", async () => {
 
   expect(screen.queryAllByRole("link")).toEqual([]);
   expect(screen.getByText("No work waiting for you.")).toBeTruthy();
+});
+
+test("the My work board lists each waiting transfer and links to the rest", async () => {
+  work.queries["objectMoves:listAwaitingDecision"] = pendingTransfers(2, true);
+  work.permissions = new Set(["organization.manage_settings"]);
+
+  await renderOnPage(
+    <MyWorkBoard organizationId={"org" as Id<"organizations">} />,
+  );
+
+  const column = within(
+    screen.getByRole("heading", { name: /^Pending transfers\s*2\+$/ })
+      .parentElement as HTMLElement,
+  );
+  expect(
+    column
+      .getAllByRole("link")
+      .map((link) => [link.textContent, link.getAttribute("href")]),
+  ).toEqual([
+    [
+      "Object 0SRC-0 · Awaiting acceptance",
+      "/objects/move-requests/transfer-0",
+    ],
+    [
+      "Object 1SRC-1 · Pending transfer approval",
+      "/objects/move-requests/transfer-1",
+    ],
+    ["View All", "/accessions/transfers"],
+  ]);
 });
 
 test("links to My work when no card already opens it", async () => {

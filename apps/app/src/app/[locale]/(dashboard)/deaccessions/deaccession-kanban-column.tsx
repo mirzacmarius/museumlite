@@ -139,8 +139,9 @@ export function DeaccessionKanbanColumn({
                       `/deaccessions/${item._id}`,
                       returnPath,
                     )}
-                    reference={item.accessionNumber || item.deaccessionNumber}
+                    reference={item.deaccessionNumber}
                     date={item.dateDeaccessioned}
+                    showTime={false}
                     title={item.collectionTitle}
                     detail={item.reason || undefined}
                   />

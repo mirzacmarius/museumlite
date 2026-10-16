@@ -1631,9 +1631,11 @@ export const listForOrganization = query({
 const PENDING_TRANSFERS_LIMIT = 50;
 
 /**
- * Transfers waiting on the organization's transfer managers, newest request
- * first: outgoing requests to approve and incoming ones to accept. Members
- * who cannot decide transfers have none waiting.
+ * Transfers waiting on the organization's transfer managers, newest first:
+ * outgoing requests to approve and incoming ones to accept. An accepted-for-
+ * transfer request without an observed source location predates that record
+ * and waits on the source to re-approve, not on the target. Members who
+ * cannot decide transfers have none waiting.
  */
 export const listAwaitingDecision = query({
   args: {
@@ -1645,11 +1647,7 @@ export const listAwaitingDecision = query({
         _id: v.id("organizationMoveRequests"),
         collectionTitle: v.optional(v.string()),
         sourceAccessionNumber: v.string(),
-        status: v.union(
-          v.literal("pending_source_approval"),
-          v.literal("awaiting_acceptance"),
-        ),
-        requestedAt: v.number(),
+        direction: v.union(v.literal("outgoing"), v.literal("incoming")),
       }),
     ),
     truncated: v.boolean(),
@@ -1664,41 +1662,36 @@ export const listAwaitingDecision = query({
       return { requests: [], truncated: false };
     }
 
-    const newest = (
-      side: "source" | "target",
-      status: "pending_source_approval" | "pending" | "awaiting_acceptance",
-    ) =>
-      (side === "source"
-        ? ctx.db
-            .query("organizationMoveRequests")
-            .withIndex("by_source_organization_and_status", (q) =>
-              q
-                .eq("sourceOrganizationId", args.organizationId)
-                .eq("status", status),
-            )
-        : ctx.db
-            .query("organizationMoveRequests")
-            .withIndex("by_target_organization_and_status", (q) =>
-              q
-                .eq("targetOrganizationId", args.organizationId)
-                .eq("status", status),
-            )
-      )
-        .order("desc")
-        .take(PENDING_TRANSFERS_LIMIT + 1);
-
+    const take = PENDING_TRANSFERS_LIMIT + 1;
+    const outgoing = (status: RequestStatus) =>
+      ctx.db
+        .query("organizationMoveRequests")
+        .withIndex("by_source_organization_and_status", (q) =>
+          q
+            .eq("sourceOrganizationId", args.organizationId)
+            .eq("status", status),
+        );
     const batches = await Promise.all([
-      newest("source", "pending_source_approval"),
-      newest("source", "pending"),
-      newest("target", "awaiting_acceptance"),
+      outgoing("pending_source_approval").order("desc").take(take),
+      outgoing("pending").order("desc").take(take),
+      outgoing("awaiting_acceptance")
+        .filter((q) => q.eq(q.field("approvedSourceLocationId"), undefined))
+        .order("desc")
+        .take(take),
+      ctx.db
+        .query("organizationMoveRequests")
+        .withIndex("by_target_organization_and_status", (q) =>
+          q
+            .eq("targetOrganizationId", args.organizationId)
+            .eq("status", "awaiting_acceptance"),
+        )
+        .filter((q) => q.neq(q.field("approvedSourceLocationId"), undefined))
+        .order("desc")
+        .take(take),
     ]);
     const waiting = batches
       .flat()
-      .sort(
-        (left, right) =>
-          right.requestedAt - left.requestedAt ||
-          right._creationTime - left._creationTime,
-      );
+      .sort((left, right) => right._creationTime - left._creationTime);
     const shown = waiting.slice(0, PENDING_TRANSFERS_LIMIT);
     const collections = await batchLookup(
       ctx,
@@ -1711,11 +1704,10 @@ export const listAwaitingDecision = query({
         _id: request._id,
         collectionTitle: collections.get(request.collectionId)?.title,
         sourceAccessionNumber: request.sourceAccessionNumber,
-        status:
-          request.status === "awaiting_acceptance"
-            ? ("awaiting_acceptance" as const)
-            : ("pending_source_approval" as const),
-        requestedAt: request.requestedAt,
+        direction:
+          request.sourceOrganizationId === args.organizationId
+            ? ("outgoing" as const)
+            : ("incoming" as const),
       })),
       truncated: waiting.length > PENDING_TRANSFERS_LIMIT,
     };

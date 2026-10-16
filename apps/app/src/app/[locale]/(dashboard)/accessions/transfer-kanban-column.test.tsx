@@ -39,18 +39,28 @@ function transfer(
   };
 }
 
-async function renderColumn(
+function column(
   status: TransferRequest["status"],
   transferRequests: TransferRequest[],
+  searchQuery = "",
 ) {
-  await renderOnPage(
+  return (
     <TransferKanbanColumn
       status={status}
       direction="outgoing"
       title="Executed transfers"
-      searchQuery=""
+      searchQuery={searchQuery}
       transferRequests={transferRequests}
-    />,
+    />
+  );
+}
+
+async function renderColumn(
+  status: TransferRequest["status"],
+  transferRequests: TransferRequest[],
+) {
+  return await renderOnPage(
+    column(status, transferRequests),
     "/en/accessions/transfers",
   );
 }
@@ -76,19 +86,34 @@ test("executed transfers read as a log, latest decision first", async () => {
     within(entries[1] as HTMLElement).getByText("Sep 3, 2026"),
   ).toBeTruthy();
   expect(screen.queryByText("Ola Nordmann")).toBeNull();
+  expect(screen.getByText("Showing 2 of 2")).toBeTruthy();
 });
 
-test("rejected transfers are dated by whichever organization rejected them", async () => {
+test("rejected transfers are dated and explained by whichever organization rejected them", async () => {
   await renderColumn("rejected", [
     transfer(1, {
       status: "rejected",
       targetReviewedAt: undefined,
       sourceReviewedAt: START + 5 * DAY,
+      sourceReviewNotes: "Not eligible",
+    }),
+    transfer(2, {
+      status: "rejected",
+      sourceReviewedAt: START,
+      sourceReviewNotes: "Approved by source",
+      targetReviewNotes: "No storage space",
     }),
   ]);
 
-  const entry = within(screen.getByRole("listitem"));
-  expect(entry.getByText("Sep 6, 2026")).toBeTruthy();
+  const [first, second] = screen.getAllByRole("listitem");
+  expect(within(first as HTMLElement).getByText("Sep 6, 2026")).toBeTruthy();
+  expect(
+    within(first as HTMLElement).getByTitle("Object 1 · Not eligible"),
+  ).toBeTruthy();
+  expect(within(second as HTMLElement).getByText("Sep 4, 2026")).toBeTruthy();
+  expect(
+    within(second as HTMLElement).getByTitle("Object 2 · No storage space"),
+  ).toBeTruthy();
 });
 
 test("the log shows ten transfers and Show more adds the next ten", async () => {
@@ -104,6 +129,21 @@ test("the log shows ten transfers and Show more adds the next ten", async () => 
   await user.click(screen.getByRole("button", { name: "Show more" }));
   expect(screen.getAllByRole("listitem")).toHaveLength(23);
   expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
+});
+
+test("a new search starts the log again at ten", async () => {
+  const requests = Array.from({ length: 23 }, (_, index) => transfer(index));
+  const { rerender } = await renderColumn("executed", requests);
+
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Show more" }));
+  expect(screen.getAllByRole("listitem")).toHaveLength(20);
+
+  rerender(column("executed", requests, "museum"));
+
+  expect(screen.getAllByRole("listitem")).toHaveLength(10);
+  expect(screen.getByText("Showing 10 of 23")).toBeTruthy();
 });
 
 test("an empty log keeps its empty state", async () => {
