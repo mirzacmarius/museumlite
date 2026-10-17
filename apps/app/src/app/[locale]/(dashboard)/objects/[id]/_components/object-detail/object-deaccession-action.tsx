@@ -43,11 +43,14 @@ export function ObjectDeaccessionAction({
         type="button"
         variant="ghost"
         size="sm"
-        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        className="h-8 gap-1.5 px-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        title={tRoot("objects.bulkActions.deaccession")}
         onClick={() => setOpen(true)}
       >
-        <Archive className="mr-2 size-3.5" />
-        {tRoot("objects.bulkActions.deaccession")}
+        <Archive className="size-4" />
+        <span className="max-md:sr-only">
+          {tRoot("objects.bulkActions.deaccession")}
+        </span>
       </Button>
       <DeaccessionDialog
         open={open}

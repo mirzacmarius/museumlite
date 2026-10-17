@@ -300,6 +300,7 @@ function ObjectDetailView({
           printRecordLabel={t("detail.printRecord")}
           printLabel={t("detail.printLabel")}
           printObjectLabel={t("detail.printObjectLabel")}
+          printMenuLabel={t("qrLabel.print")}
           editObjectLabel={t("detail.editObject")}
         />
 
