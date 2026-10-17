@@ -10421,7 +10421,8 @@ export default {
       title: "Metrics unavailable",
       short: "Unavailable",
       openHealth: "Open metrics health",
-      askAdministrator: "Ask an administrator to rebuild the metrics.",
+      askAdministrator:
+        "Metrics rebuild automatically. Ask an administrator if this persists.",
       storage: "Storage usage unavailable",
       usage: "Usage counts are unavailable until metrics are rebuilt.",
     },
@@ -10430,11 +10431,11 @@ export default {
       building:
         "Metrics are being rebuilt. Values appear when the rebuild completes.",
       invalidated:
-        "A recent change affected more records than can be updated at once. A fresh rebuild is required.",
+        "A recent change affected more records than can be updated at once. A fresh rebuild has started automatically.",
       definition_changed:
-        "Metric definitions changed. A rebuild is required before values are shown.",
+        "Metric definitions changed. Metrics rebuild automatically after the next change to your records.",
       rebuild_failed:
-        "The last metrics rebuild failed. Retry or start a new rebuild.",
+        "The last metrics rebuild failed. It retries automatically; if it keeps failing, an administrator can retry or cancel it.",
     },
     availability: {
       ready: "Ready",
@@ -10453,9 +10454,6 @@ export default {
       reconcile: "Reconciliation",
     },
     actions: {
-      rebuild: "Rebuild metrics",
-      reconcile: "Run reconciliation",
-      starting: "Starting...",
       retry: "Retry",
       retrying: "Retrying...",
       cancel: "Cancel",
@@ -10465,17 +10463,18 @@ export default {
     page: {
       title: "Metrics health",
       description:
-        "Readiness of dashboard, report and usage metrics, rebuild progress and reconciliation results.",
+        "Readiness of dashboard, report and usage metrics. Rebuilds and reconciliations start on their own as records change.",
       selectOrganization: "Select an organization to view metrics health.",
       noPermission:
         "You need permission to manage organization settings to view metrics health.",
       statusTitle: "Status",
-      reconcileNeedsReady:
-        "Reconciliation is available once metrics are ready.",
+      automatic:
+        "Metrics rebuild when they become unavailable, and reconcile after records change, at most once an hour.",
       definitionVersion: "Definition version",
       definitionOutdated: "Stored {stored}, current {current}",
       lastBuilt: "Last built",
       lastVerified: "Last reconciled",
+      nextReconcile: "Next reconciliation",
       invalidated: "Invalidated",
       limits: "Rebuild limits",
       limitsValue:

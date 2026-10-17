@@ -10542,7 +10542,8 @@ export default {
       title: "Målinger utilgjengelige",
       short: "Utilgjengelig",
       openHealth: "Åpne målingsstatus",
-      askAdministrator: "Be en administrator om å bygge målingene på nytt.",
+      askAdministrator:
+        "Målingene bygges automatisk på nytt. Kontakt en administrator hvis dette vedvarer.",
       storage: "Lagringsbruk utilgjengelig",
       usage: "Brukstall er utilgjengelige til målingene er bygget på nytt.",
     },
@@ -10551,11 +10552,11 @@ export default {
       building:
         "Målingene bygges på nytt. Verdiene vises når gjenoppbyggingen er ferdig.",
       invalidated:
-        "En nylig endring påvirket flere poster enn som kan oppdateres samtidig. En ny gjenoppbygging kreves.",
+        "En nylig endring påvirket flere poster enn som kan oppdateres samtidig. En ny gjenoppbygging er startet automatisk.",
       definition_changed:
-        "Målingsdefinisjonene er endret. En gjenoppbygging kreves før verdier vises.",
+        "Målingsdefinisjonene er endret. Målingene bygges automatisk på nytt ved neste endring i postene dine.",
       rebuild_failed:
-        "Siste gjenoppbygging mislyktes. Prøv igjen eller start en ny gjenoppbygging.",
+        "Siste gjenoppbygging mislyktes. Den prøves automatisk på nytt; hvis den fortsatt mislykkes, kan en administrator prøve igjen eller avbryte den.",
     },
     availability: {
       ready: "Klar",
@@ -10574,9 +10575,6 @@ export default {
       reconcile: "Avstemming",
     },
     actions: {
-      rebuild: "Bygg målinger på nytt",
-      reconcile: "Kjør avstemming",
-      starting: "Starter...",
       retry: "Prøv igjen",
       retrying: "Prøver igjen...",
       cancel: "Avbryt",
@@ -10586,16 +10584,18 @@ export default {
     page: {
       title: "Målingsstatus",
       description:
-        "Tilgjengelighet for målinger i oversikt, rapporter og bruk, fremdrift for gjenoppbygging og resultater fra avstemming.",
+        "Tilgjengelighet for målinger i oversikt, rapporter og bruk. Gjenoppbygging og avstemming starter av seg selv når poster endres.",
       selectOrganization: "Velg en organisasjon for å se målingsstatus.",
       noPermission:
         "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å se målingsstatus.",
       statusTitle: "Status",
-      reconcileNeedsReady: "Avstemming er tilgjengelig når målingene er klare.",
+      automatic:
+        "Målingene bygges på nytt når de blir utilgjengelige, og avstemmes etter endringer i postene, høyst én gang i timen.",
       definitionVersion: "Definisjonsversjon",
       definitionOutdated: "Lagret {stored}, gjeldende {current}",
       lastBuilt: "Sist bygget",
       lastVerified: "Sist avstemt",
+      nextReconcile: "Neste avstemming",
       invalidated: "Ugyldiggjort",
       limits: "Grenser for gjenoppbygging",
       limitsValue:

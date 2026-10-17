@@ -10678,7 +10678,8 @@ export default {
       title: "Métricas no disponibles",
       short: "No disponible",
       openHealth: "Abrir estado de métricas",
-      askAdministrator: "Pida a un administrador que reconstruya las métricas.",
+      askAdministrator:
+        "Las métricas se reconstruyen automáticamente. Si el problema persiste, consulte a un administrador.",
       storage: "Uso de almacenamiento no disponible",
       usage:
         "Los recuentos de uso no están disponibles hasta que se reconstruyan las métricas.",
@@ -10688,11 +10689,11 @@ export default {
       building:
         "Las métricas se están reconstruyendo. Los valores aparecerán cuando termine.",
       invalidated:
-        "Un cambio reciente afectó a más registros de los que se pueden actualizar a la vez. Se requiere una nueva reconstrucción.",
+        "Un cambio reciente afectó a más registros de los que se pueden actualizar a la vez. Se ha iniciado automáticamente una nueva reconstrucción.",
       definition_changed:
-        "Las definiciones de métricas cambiaron. Se requiere una reconstrucción antes de mostrar valores.",
+        "Las definiciones de métricas cambiaron. Las métricas se reconstruyen automáticamente con el próximo cambio en sus registros.",
       rebuild_failed:
-        "La última reconstrucción de métricas falló. Reinténtela o inicie una nueva.",
+        "La última reconstrucción de métricas falló. Se reintenta automáticamente; si sigue fallando, un administrador puede reintentarla o cancelarla.",
     },
     availability: {
       ready: "Lista",
@@ -10711,9 +10712,6 @@ export default {
       reconcile: "Conciliación",
     },
     actions: {
-      rebuild: "Reconstruir métricas",
-      reconcile: "Ejecutar conciliación",
-      starting: "Iniciando...",
       retry: "Reintentar",
       retrying: "Reintentando...",
       cancel: "Cancelar",
@@ -10723,18 +10721,19 @@ export default {
     page: {
       title: "Estado de métricas",
       description:
-        "Disponibilidad de las métricas del panel, informes y uso, progreso de reconstrucción y resultados de conciliación.",
+        "Disponibilidad de las métricas del panel, informes y uso. Las reconstrucciones y conciliaciones se inician solas cuando cambian los registros.",
       selectOrganization:
         "Seleccione una organización para ver el estado de las métricas.",
       noPermission:
         "Necesita permiso para gestionar la configuración de la organización para ver el estado de las métricas.",
       statusTitle: "Estado",
-      reconcileNeedsReady:
-        "La conciliación está disponible cuando las métricas están listas.",
+      automatic:
+        "Las métricas se reconstruyen cuando dejan de estar disponibles y se concilian tras los cambios en los registros, como máximo una vez por hora.",
       definitionVersion: "Versión de definición",
       definitionOutdated: "Almacenada {stored}, actual {current}",
       lastBuilt: "Última generación",
       lastVerified: "Última conciliación",
+      nextReconcile: "Próxima conciliación",
       invalidated: "Invalidada",
       limits: "Límites de reconstrucción",
       limitsValue:
