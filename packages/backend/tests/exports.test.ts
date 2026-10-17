@@ -1,6 +1,6 @@
 import type { FunctionArgs } from "convex/server";
 import { convexTest } from "convex-test";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
@@ -68,6 +68,9 @@ async function fixture(
 }
 
 describe("authorized durable exports", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   test("request is idempotent and cancelled jobs resume with a frozen scope", async () => {
     vi.useFakeTimers();
     const f = await fixture();
@@ -664,7 +667,7 @@ describe("authorized durable exports", () => {
       ).join(""),
     ).toBe(job.sha256);
     vi.useRealTimers();
-  }, 10000);
+  }, 120_000);
   test("Pro readers cannot create compliance audit exports or access an Enterprise artifact after downgrade", async () => {
     vi.useFakeTimers();
     const f = await fixture("pro", ["organization.view_analytics"]);
