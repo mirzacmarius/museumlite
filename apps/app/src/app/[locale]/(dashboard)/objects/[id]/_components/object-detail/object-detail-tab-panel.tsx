@@ -148,6 +148,8 @@ export function ObjectDetailTabPanel({
     nextTab?.scrollIntoView({ block: "nearest", inline: "nearest" });
   };
 
+  const activeTabDefinition = tabs.find((tab) => tab.id === activeTab);
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
       <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border/60 bg-background/90 px-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
@@ -195,6 +197,10 @@ export function ObjectDetailTabPanel({
         aria-labelledby={`object-tab-${activeTab}`}
         className="w-full"
       >
+        {/* Sections inside each tab use h3, so the tab name is the h2 between them and the object title. */}
+        {activeTabDefinition ? (
+          <h2 className="sr-only">{tRoot(activeTabDefinition.label)}</h2>
+        ) : null}
         {activeTab === "general" && (
           <GeneralTab
             collection={collection}

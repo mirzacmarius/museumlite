@@ -109,9 +109,8 @@ export function CommandPalette() {
       <Button
         type="button"
         variant="outline"
-        aria-label={translate(
-          "untranslatedComponents.labels.openCommandPalette",
-        )}
+        // The spoken name starts with the visible text so voice control can target it.
+        aria-label={translate("untranslatedComponents.labels.searchObjects")}
         aria-keyshortcuts="Meta+K Ctrl+K"
         // On a phone the trigger is an icon, so notifications stay on screen.
         className="relative size-9 justify-center rounded-[0.5rem] bg-background px-0 text-sm font-normal text-muted-foreground shadow-none sm:w-full sm:justify-start sm:px-3 sm:pr-12 md:w-40 lg:w-64"
@@ -124,9 +123,12 @@ export function CommandPalette() {
         <span className="hidden sm:inline-flex lg:hidden">
           {translate("untranslatedComponents.labels.search")}
         </span>
-        <kbd className="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex"
+        >
           <span className="text-xs">⌘</span>K
-        </kbd>
+        </span>
       </Button>
       <CommandDialog
         open={open}

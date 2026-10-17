@@ -80,7 +80,10 @@ export function NotificationBell() {
         >
           <Bell className="size-4" aria-hidden="true" />
           {unreadCountValue > 0 && (
-            <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+            <span
+              aria-hidden="true"
+              className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground"
+            >
               {unreadCountValue > 9 ? "9+" : unreadCountValue}
             </span>
           )}
