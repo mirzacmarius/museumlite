@@ -9,7 +9,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
 import { CommandPaletteProvider } from "@/components/command-palette-provider";
 import { KeyboardShortcutsProvider } from "@/components/keyboard-shortcuts-provider";
-import { NavigationProgress } from "@/components/navigation-progress";
 import { NotificationBell } from "@/components/notification-bell";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { PermissionProvider } from "@/components/permission-gate";
@@ -55,7 +54,6 @@ async function DashboardShell({ children }: { children: ReactNode }) {
           <KeyboardShortcutsProvider>
             <SidebarProvider>
               <SkipNavigation />
-              <NavigationProgress />
               <AppSidebar preloadedUser={preloadedUser} />
               <SidebarInset className="h-svh min-w-0 overflow-hidden">
                 <DashboardHeader>
