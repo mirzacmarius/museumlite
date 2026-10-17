@@ -89,6 +89,9 @@ export function ObjectDetailHero({
                 alt={activeImage?.title || collection.title}
                 width={176}
                 height={176}
+                // The hero image is the page's largest paint, so fetch it from the server HTML instead of waiting for layout.
+                preload
+                fetchPriority="high"
                 className="size-36 rounded-xl border border-border/60 bg-secondary object-cover shadow-sm sm:size-44"
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">

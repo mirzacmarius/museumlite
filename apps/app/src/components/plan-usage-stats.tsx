@@ -288,14 +288,29 @@ export function SidebarPlanUsage({
   const stats = useQuery(api.organizations.getUsageStats, { organizationId });
 
   if (!stats) {
+    // Placeholders reuse the loaded text sizes so the sidebar footer keeps its height when usage arrives.
     return (
-      <div className={cn("space-y-1.5 px-2 py-1", className)}>
-        <div className="h-3.5 w-16 animate-pulse rounded bg-sidebar-accent" />
+      <div
+        className={cn("space-y-1.5 px-2 py-1", className)}
+        aria-hidden="true"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="inline-block w-16 animate-pulse rounded bg-sidebar-accent text-xs font-medium text-transparent">
+            &nbsp;
+          </span>
+          <span className="inline-block w-10 animate-pulse rounded bg-sidebar-accent text-[11px] font-medium text-transparent">
+            &nbsp;
+          </span>
+        </div>
         {USAGE_METRIC_KEYS.map((metric) => (
-          <div key={metric} className="space-y-1">
-            <div className="flex justify-between gap-2">
-              <div className="h-3 w-14 animate-pulse rounded bg-sidebar-accent" />
-              <div className="h-3 w-12 animate-pulse rounded bg-sidebar-accent" />
+          <div key={metric} className="space-y-1 text-[11px]">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="inline-block w-14 animate-pulse rounded bg-sidebar-accent text-transparent">
+                &nbsp;
+              </span>
+              <span className="inline-block w-12 animate-pulse rounded bg-sidebar-accent text-transparent">
+                &nbsp;
+              </span>
             </div>
             <div className="h-0.5 rounded-full bg-sidebar-accent" />
           </div>
@@ -347,7 +362,7 @@ export function SidebarPlanUsage({
         <Link
           href="/settings/billing"
           onClick={onNavigate}
-          className="shrink-0 text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+          className="shrink-0 text-[11px] font-medium text-primary underline-offset-2 hover:underline dark:text-violet-300"
         >
           {translate("settings.sidebar.billing")}
         </Link>
