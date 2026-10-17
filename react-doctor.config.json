@@ -18,6 +18,10 @@
         "rules": ["react-doctor/design-no-em-dash-in-jsx-text"]
       },
       {
+        "files": ["apps/app/e2e/**", "e2e/**"],
+        "rules": ["react-doctor/no-dynamic-import-path"]
+      },
+      {
         "files": [
           "apps/web/src/app/(marketing)/contact/actions.ts",
           "src/app/(marketing)/contact/actions.ts"

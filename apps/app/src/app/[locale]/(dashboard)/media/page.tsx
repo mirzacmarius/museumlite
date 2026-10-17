@@ -6,12 +6,10 @@ type MediaPageProps = {
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 };
 
-export default async function MediaPage({ searchParams }: MediaPageProps) {
-  const resolvedSearchParams = await searchParams;
-
+export default function MediaPage({ searchParams }: MediaPageProps) {
   return (
     <Suspense fallback={<MediaLoading />}>
-      <MediaPageData searchParams={resolvedSearchParams} />
+      <MediaPageData searchParams={searchParams} />
     </Suspense>
   );
 }

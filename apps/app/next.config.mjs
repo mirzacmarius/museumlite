@@ -19,6 +19,13 @@ const skipTypeCheck =
 const nextConfig = {
   distDir: process.env.LOCAL_QA === "1" ? ".next/local-qa" : ".next",
   turbopack: {},
+  cacheComponents: true,
+  partialPrefetching: true,
+  experimental: {
+    // `bun run test:e2e` drives instant() navigation checks against a
+    // production build made with EXPOSE_TESTING_API=1.
+    exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
+  },
   images: convexImageConfig(),
   // Skip TypeScript checking during build to prevent OOM
   // Type checking runs in CI for faster deployments

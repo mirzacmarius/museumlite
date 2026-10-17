@@ -82,3 +82,7 @@ docs/audits/
 
 # Agent skills live in .claude/skills; other installers also write copies here
 .agents/skills/
+
+# Playwright (apps/app e2e)
+test-results/
+playwright-report/

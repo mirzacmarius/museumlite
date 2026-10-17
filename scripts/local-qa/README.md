@@ -9,6 +9,8 @@ bun run qa:seed                        # auth keys, synthetic QA user and organi
 bun run qa:app                         # Next.js app on :3000 pointed at it (QA_APP_PORT to change)
 bun run qa:app -- --build              # production build (apps/app/.next/local-qa), then next start
 bun run qa:session                     # how to get a signed-in browser session
+EXPOSE_TESTING_API=1 bun run qa:app -- --build   # production build with the instant() testing API
+bun run --cwd apps/app test:e2e        # instant-navigation Playwright tests against that build
 bun run codegen:local                  # regenerate packages/backend/convex/_generated
 bun run qa:backend -- --stop           # stop the backend
 ```
