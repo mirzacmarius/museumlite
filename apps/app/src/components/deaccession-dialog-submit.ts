@@ -155,7 +155,7 @@ export function getDeaccessionDialogCopy(
         "untranslatedComponents.deaccession.moveToAnotherOrganization",
       );
     if (removalType === "archived")
-      return translate("untranslatedComponents.deaccession.archive");
+      return translate("untranslatedComponents.deaccession.removeObject");
     return translate("untranslatedComponents.deaccession.removeOrTransfer");
   })();
 
