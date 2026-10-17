@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { ScrollText } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { useI18n, useScopedI18n } from "@/locales/client";
+import { DetailSection } from "./detail-section";
 
 /**
  * Get the badge color classes based on the action string
@@ -29,7 +30,10 @@ function getActionBadgeClasses(action: string): {
     lowerAction.includes("create") ||
     lowerAction.includes("created")
   ) {
-    return { bg: "bg-emerald-500/10", text: "text-emerald-400" };
+    return {
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-700 dark:text-emerald-400",
+    };
   }
 
   // Update/edit actions - amber
@@ -41,7 +45,10 @@ function getActionBadgeClasses(action: string): {
     lowerAction.includes("change") ||
     lowerAction.includes("changed")
   ) {
-    return { bg: "bg-amber-500/10", text: "text-amber-400" };
+    return {
+      bg: "bg-amber-500/10",
+      text: "text-amber-700 dark:text-amber-400",
+    };
   }
 
   // Default - neutral gray
@@ -63,10 +70,10 @@ function formatChanges(
   if ("previous" in changes && "new" in changes) {
     return (
       <div className="mt-1 flex gap-4">
-        <span className="font-mono text-[10px] text-muted-foreground line-through">
+        <span className="font-mono text-xs text-muted-foreground line-through">
           {String(changes.previous)}
         </span>
-        <span className="font-mono text-[10px] text-foreground">
+        <span className="font-mono text-xs text-foreground">
           {String(changes.new)}
         </span>
       </div>
@@ -76,7 +83,7 @@ function formatChanges(
   // Handle fileName pattern
   if ("fileName" in changes) {
     return (
-      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
         {tRoot("untranslatedRecords.objects.attributes.file")}{" "}
         {String(changes.fileName)}
       </p>
@@ -88,7 +95,7 @@ function formatChanges(
     const previousLocation = changes.previousLocation;
     if (!previousLocation) return null;
     return (
-      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
         {tRoot("untranslatedRecords.objects.logs.previousLocation", {
           location: String(previousLocation),
         })}
@@ -99,7 +106,7 @@ function formatChanges(
   // Handle field changes pattern (e.g., { field: "title", previous: "X", new: "Y" })
   if ("field" in changes) {
     return (
-      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
         {tRoot("untranslatedRecords.objects.logs.fieldChanged", {
           field: String(changes.field),
           previous:
@@ -119,7 +126,7 @@ function formatChanges(
   const entries = Object.entries(changes).slice(0, 2);
   if (entries.length > 0) {
     return (
-      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
         {entries.map(([key, value]) => `${key}: ${String(value)}`).join(", ")}
       </p>
     );
@@ -149,23 +156,22 @@ export function LogsTab({
   });
 
   return (
-    <div className="space-y-6">
-      <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <ScrollText className="size-4 text-orange-500" />
-        {tRoot("untranslatedRecords.objects.detail.auditLog")}
-      </h3>
-
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-secondary/20">
+    <DetailSection
+      title={tRoot("untranslatedRecords.objects.detail.auditLog")}
+      icon={ScrollText}
+      bodyClassName="overflow-hidden p-0 sm:p-0"
+    >
+      <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="border-b border-border/60 bg-secondary/50">
             <tr>
-              <th className="w-32 px-4 py-3 text-[10px] font-semibold uppercase text-muted-foreground">
+              <th className="w-32 px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {tRoot("deaccessions.report.date")}
               </th>
-              <th className="w-48 px-4 py-3 text-[10px] font-semibold uppercase text-muted-foreground">
+              <th className="w-48 px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {tRoot("untranslatedRecords.objects.detail.user")}
               </th>
-              <th className="px-4 py-3 text-[10px] font-semibold uppercase text-muted-foreground">
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {tRoot("untranslatedRecords.objects.detail.actionDetails")}
               </th>
             </tr>
@@ -210,7 +216,7 @@ export function LogsTab({
                             tRoot("untranslatedRecords.objects.comments.user")
                           }
                         />
-                        <AvatarFallback className="bg-secondary text-[9px] text-muted-foreground">
+                        <AvatarFallback className="bg-secondary text-xs text-muted-foreground">
                           {log.userName?.charAt(0) || "?"}
                         </AvatarFallback>
                       </Avatar>
@@ -246,17 +252,17 @@ export function LogsTab({
             )}
           </tbody>
         </table>
-        {auditLogs && auditLogs.length > 0 && (
-          <div className="border-t border-border/60 bg-secondary/30 px-4 py-3 text-center">
-            <button
-              type="button"
-              className="text-xs text-muted-foreground transition-colors hover:text-muted-foreground"
-            >
-              {tRoot("untranslatedRecords.objects.detail.loadOlderLogs")}
-            </button>
-          </div>
-        )}
       </div>
-    </div>
+      {auditLogs && auditLogs.length > 0 && (
+        <div className="border-t border-border/60 bg-secondary/30 px-4 py-3 text-center">
+          <button
+            type="button"
+            className="text-xs text-muted-foreground transition-colors hover:text-muted-foreground"
+          >
+            {tRoot("untranslatedRecords.objects.detail.loadOlderLogs")}
+          </button>
+        </div>
+      )}
+    </DetailSection>
   );
 }

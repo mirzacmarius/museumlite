@@ -3,6 +3,7 @@
 import { Link as LinkIcon } from "lucide-react";
 import { ProvenanceClaimsPanel } from "@/components/provenance/provenance-claims-panel";
 import { useI18n } from "@/locales/client";
+import { DetailLabel } from "./detail-section";
 import type { CollectionData } from "./types";
 
 interface ProvenanceHistoryTabProps {
@@ -26,23 +27,21 @@ export function ProvenanceHistoryTab({
       />
 
       {collection.exhibitionHistory || hasLinks ? (
-        <div className="grid grid-cols-1 gap-6 rounded-xl border border-border/60 bg-secondary/20 p-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 rounded-xl border border-border/60 bg-card p-4 sm:p-6 md:grid-cols-2">
           {collection.exhibitionHistory ? (
-            <div className="grid gap-2">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid content-start gap-2">
+              <DetailLabel>
                 {tRoot("objects.form.exhibitionHistory")}
-              </div>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              </DetailLabel>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                 {collection.exhibitionHistory}
               </p>
             </div>
           ) : null}
 
           {hasLinks ? (
-            <div className="grid gap-2">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("objects.form.links")}
-              </div>
+            <div className="grid content-start gap-2">
+              <DetailLabel>{tRoot("objects.form.links")}</DetailLabel>
               <div className="space-y-1">
                 {collection.links?.map((link) => (
                   <a
@@ -50,10 +49,10 @@ export function ProvenanceHistoryTab({
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex w-max items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent-foreground hover:underline"
+                    className="flex w-max max-w-full items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent-foreground hover:underline"
                   >
                     <LinkIcon className="size-3.5 text-muted-foreground" />
-                    <span>{link.label || link.url}</span>
+                    <span className="truncate">{link.label || link.url}</span>
                   </a>
                 ))}
               </div>

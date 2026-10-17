@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
@@ -12,6 +13,7 @@ import { RecordedValue } from "@/components/recorded-value";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatMoney } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { DetailSection } from "./detail-section";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
 interface FineArtDetailsTabProps {
@@ -63,11 +65,11 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
   if (details === null) {
     return (
       <div className="space-y-6">
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
-          <p className="text-sm text-muted-foreground">
-            {common("noDetailsYet", { module: "fine art" })}
-          </p>
-        </div>
+        <EmptyState
+          variant="card"
+          size="sm"
+          title={common("noDetailsYet", { module: "fine art" })}
+        />
       </div>
     );
   }
@@ -75,10 +77,10 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <DollarSign className="size-4 text-emerald-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <DollarSign className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("appraisedValue")}
             </span>
           </div>
@@ -88,10 +90,10 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
           />
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <DollarSign className="size-4 text-blue-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <DollarSign className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("replacementValue")}
             </span>
           </div>
@@ -101,10 +103,10 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
           />
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Shield className="size-4 text-purple-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <Shield className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("insurancePolicy")}
             </span>
           </div>
@@ -118,10 +120,10 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
           )}
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <FileCheck className="size-4 text-amber-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <FileCheck className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("displayStatus")}
             </span>
           </div>
@@ -129,11 +131,11 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
             className={cn(
               "inline-flex rounded px-2 py-0.5 text-xs font-medium",
               details.displayStatus === "on_display"
-                ? "bg-emerald-500/10 text-emerald-500"
+                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                 : details.displayStatus === "loaned_out"
-                  ? "bg-blue-500/10 text-blue-500"
+                  ? "bg-blue-500/10 text-blue-700 dark:text-blue-400"
                   : details.displayStatus === "in_transit"
-                    ? "bg-amber-500/10 text-amber-500"
+                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
                     : "bg-secondary text-muted-foreground",
             )}
           >
@@ -155,8 +157,8 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
       {details.reappraisalDate && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
           <div className="flex items-center gap-2">
-            <FileCheck className="size-4 text-amber-500" />
-            <span className="text-sm font-medium text-amber-500">
+            <FileCheck className="size-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
               {t("reappraisalDue")}:{" "}
               <ClientDateFns
                 timestamp={details.reappraisalDate}
@@ -170,18 +172,17 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
 
       <FineArtProvenanceSection details={details} />
 
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Truck className="size-4 text-cyan-500" />
-          {t("shippingMovementLog")}
-        </h3>
-
+      <DetailSection
+        title={t("shippingMovementLog")}
+        icon={Truck}
+        bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+      >
         {details.shippingLogs && details.shippingLogs.length > 0 ? (
           <div className="space-y-3">
             {details.shippingLogs.map((log, _index) => (
               <div
                 key={`${log.fromLocation}-${log.toLocation}-${log.departedAt ?? log.arrivedAt ?? ""}`}
-                className="rounded-lg border border-border/60 bg-secondary/20 p-4"
+                className="rounded-lg border border-border/60 bg-card p-4"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -218,13 +219,9 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
             ))}
           </div>
         ) : (
-          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
-              {t("noShippingRecords")}
-            </p>
-          </div>
+          <EmptyState variant="card" size="sm" title={t("noShippingRecords")} />
         )}
-      </div>
+      </DetailSection>
     </div>
   );
 }
@@ -234,12 +231,11 @@ function FineArtProvenanceSection({ details }: { details: FineArtDetails }) {
   const t = useScopedI18n("modules.fineArt");
 
   return (
-    <div>
-      <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-        <History className="size-4 text-purple-500" />
-        {t("provenanceChain")}
-      </h3>
-
+    <DetailSection
+      title={t("provenanceChain")}
+      icon={History}
+      bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+    >
       {details.provenanceChain && details.provenanceChain.length > 0 ? (
         <div className="relative space-y-4 border-l border-border pl-8">
           {details.provenanceChain.map((entry, index) => (
@@ -259,18 +255,18 @@ function FineArtProvenanceSection({ details }: { details: FineArtDetails }) {
                   <div className="size-1.5 rounded-full bg-accent" />
                 )}
               </div>
-              <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
+              <div className="rounded-lg border border-border/60 bg-card p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase",
+                        "rounded px-1.5 py-0.5 text-xs font-medium uppercase",
                         entry.eventType === "sale"
-                          ? "bg-emerald-500/10 text-emerald-500"
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                           : entry.eventType === "auction"
-                            ? "bg-amber-500/10 text-amber-500"
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
                             : entry.eventType === "inheritance"
-                              ? "bg-purple-500/10 text-purple-500"
+                              ? "bg-purple-500/10 text-purple-700 dark:text-purple-400"
                               : "bg-secondary text-muted-foreground",
                       )}
                     >
@@ -310,7 +306,7 @@ function FineArtProvenanceSection({ details }: { details: FineArtDetails }) {
                   </p>
                 )}
                 {entry.verified && (
-                  <div className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500">
+                  <div className="mt-2 flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
                     <FileCheck className="size-3" />
                     {t("verified")}
                   </div>
@@ -320,12 +316,12 @@ function FineArtProvenanceSection({ details }: { details: FineArtDetails }) {
           ))}
         </div>
       ) : (
-        <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-          <p className="text-sm text-muted-foreground">
-            {t("noProvenanceRecorded")}
-          </p>
-        </div>
+        <EmptyState
+          variant="card"
+          size="sm"
+          title={t("noProvenanceRecorded")}
+        />
       )}
-    </div>
+    </DetailSection>
   );
 }

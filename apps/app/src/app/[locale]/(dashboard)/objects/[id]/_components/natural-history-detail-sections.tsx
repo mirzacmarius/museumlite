@@ -5,6 +5,12 @@ import type { FunctionReturnType } from "convex/server";
 import { Calendar, MapPin, TreePine } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import {
+  DetailField,
+  DetailGrid,
+  DetailLabel,
+  DetailSection,
+} from "./detail-section";
 
 type NaturalHistoryDetails = NonNullable<
   FunctionReturnType<typeof api.naturalHistoryDetails.get>
@@ -23,12 +29,11 @@ export function NaturalHistoryDetailSections({
 
   return (
     <>
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <TreePine className="size-4 text-green-500" />
-          {t("taxonomicClassification")}
-        </h3>
-
+      <DetailSection
+        title={t("taxonomicClassification")}
+        icon={TreePine}
+        bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+      >
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {(
             [
@@ -44,245 +49,118 @@ export function NaturalHistoryDetailSections({
           ).map(([labelKey, value]) => (
             <div
               key={labelKey}
-              className="rounded-lg border border-border/60 bg-secondary/20 p-3"
+              className="rounded-lg border border-border/60 bg-card p-3"
             >
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t(labelKey)}
-              </div>
+              <DetailLabel className="mb-1">{t(labelKey)}</DetailLabel>
               <div className="text-sm font-medium text-foreground">
                 {value || "—"}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </DetailSection>
 
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <MapPin className="size-4 text-blue-500" />
-          {t("geolocationData")}
-        </h3>
-
-        <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("latitude")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.latitude || "—"}
-              </div>
+      <DetailSection title={t("geolocationData")} icon={MapPin}>
+        <DetailGrid className="md:grid-cols-4">
+          <DetailField label={t("latitude")} value={details.latitude} />
+          <DetailField label={t("longitude")} value={details.longitude} />
+          <DetailField label={t("altitude")}>
+            <div className="text-sm text-foreground">
+              {details.altitude ? `${details.altitude}${t("meters")}` : "—"}
             </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("longitude")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.longitude || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("altitude")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.altitude ? `${details.altitude}${t("meters")}` : "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("habitat")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.habitat || "—"}
-              </div>
-            </div>
+          </DetailField>
+          <DetailField label={t("habitat")} value={details.habitat} />
+        </DetailGrid>
+        {details.locality ? (
+          <div className="mt-4 pt-4 border-t border-border/40">
+            <DetailLabel className="mb-2">
+              {t("localityDescription")}
+            </DetailLabel>
+            <p className="text-sm text-muted-foreground">{details.locality}</p>
           </div>
-          {details.locality ? (
-            <div className="mt-4 pt-4 border-t border-border/40">
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
-                {t("localityDescription")}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {details.locality}
-              </p>
+        ) : null}
+      </DetailSection>
+
+      <DetailSection title={t("collectionInformation")} icon={Calendar}>
+        <DetailGrid className="md:grid-cols-4">
+          <DetailField label={t("collectionDate")}>
+            <div className="text-sm text-foreground">
+              {details.collectionDate ? (
+                <ClientDateFns
+                  timestamp={details.collectionDate}
+                  format="MMM d, yyyy"
+                  locale={locale}
+                />
+              ) : (
+                "—"
+              )}
             </div>
-          ) : null}
+          </DetailField>
+          <DetailField
+            label={t("collectionMethod")}
+            value={details.collectionMethod}
+          />
+          <DetailField label={t("collector")} value={details.collectorName} />
+          <DetailField label={t("specimenType")} value={details.specimenType} />
+        </DetailGrid>
+      </DetailSection>
+
+      <DetailSection title={t("preservationStorage")} icon={TreePine}>
+        <DetailGrid>
+          <DetailField
+            label={t("preservationMethod")}
+            value={details.preservationMethod}
+          />
+          <DetailField
+            label={t("storageMedium")}
+            value={details.storageMedium}
+          />
+        </DetailGrid>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-4">
+          <DetailField
+            label={t("containerType")}
+            value={details.containerType}
+          />
+          <DetailField label={t("sex")} value={details.sex} />
+          <DetailField label={t("lifeStage")} value={details.lifeStage} />
         </div>
-      </div>
-
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Calendar className="size-4 text-purple-500" />
-          {t("collectionInformation")}
-        </h3>
-
-        <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("collectionDate")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.collectionDate ? (
-                  <ClientDateFns
-                    timestamp={details.collectionDate}
-                    format="MMM d, yyyy"
-                    locale={locale}
-                  />
-                ) : (
-                  "—"
-                )}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("collectionMethod")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.collectionMethod || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("collector")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.collectorName || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("specimenType")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.specimenType || "—"}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <TreePine className="size-4 text-amber-500" />
-          {t("preservationStorage")}
-        </h3>
-
-        <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("preservationMethod")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.preservationMethod || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("storageMedium")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.storageMedium || "—"}
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-4">
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("containerType")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.containerType || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("sex")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.sex || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {t("lifeStage")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.lifeStage || "—"}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </DetailSection>
 
       {details.dnaAvailable || details.tissueAvailable ? (
-        <div>
-          <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <TreePine className="size-4 text-cyan-500" />
-            {t("scientificDataAvailability")}
-          </h3>
-
-          <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {details.dnaAvailable !== undefined ? (
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    {t("dnaAvailable")}
-                  </div>
-                  <div className="text-sm font-medium text-foreground">
-                    {details.dnaAvailable ? common("yes") : common("no")}
-                  </div>
+        <DetailSection title={t("scientificDataAvailability")} icon={TreePine}>
+          <DetailGrid>
+            {details.dnaAvailable !== undefined ? (
+              <DetailField label={t("dnaAvailable")}>
+                <div className="text-sm text-foreground">
+                  {details.dnaAvailable ? common("yes") : common("no")}
                 </div>
-              ) : null}
-              {details.tissueAvailable !== undefined ? (
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    {t("tissueAvailable")}
-                  </div>
-                  <div className="text-sm font-medium text-foreground">
-                    {details.tissueAvailable ? common("yes") : common("no")}
-                  </div>
+              </DetailField>
+            ) : null}
+            {details.tissueAvailable !== undefined ? (
+              <DetailField label={t("tissueAvailable")}>
+                <div className="text-sm text-foreground">
+                  {details.tissueAvailable ? common("yes") : common("no")}
                 </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
+              </DetailField>
+            ) : null}
+          </DetailGrid>
+        </DetailSection>
       ) : null}
 
       {details.geologicalPeriod || details.formation ? (
-        <div>
-          <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <TreePine className="size-4 text-orange-500" />
-            {t("geologicalInformation")}
-          </h3>
-
-          <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {details.geologicalPeriod ? (
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    {t("geologicalPeriod")}
-                  </div>
-                  <div className="text-sm font-medium text-foreground">
-                    {details.geologicalPeriod}
-                  </div>
-                </div>
-              ) : null}
-              {details.formation ? (
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    {t("formation")}
-                  </div>
-                  <div className="text-sm font-medium text-foreground">
-                    {details.formation}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
+        <DetailSection title={t("geologicalInformation")} icon={TreePine}>
+          <DetailGrid>
+            {details.geologicalPeriod ? (
+              <DetailField
+                label={t("geologicalPeriod")}
+                value={details.geologicalPeriod}
+              />
+            ) : null}
+            {details.formation ? (
+              <DetailField label={t("formation")} value={details.formation} />
+            ) : null}
+          </DetailGrid>
+        </DetailSection>
       ) : null}
     </>
   );

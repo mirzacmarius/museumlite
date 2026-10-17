@@ -2,6 +2,7 @@
 
 import { Building2 } from "lucide-react";
 import { useI18n } from "@/locales/client";
+import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 import type { CollectionData } from "./types";
 
 interface AccessionTabProps {
@@ -11,58 +12,45 @@ interface AccessionTabProps {
 export function AccessionTab({ collection }: AccessionTabProps) {
   const tRoot = useI18n();
   return (
-    <div>
-      <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-        <Building2 className="size-4 text-emerald-500" />
-        {tRoot("untranslatedRecords.objects.detail.acquisitionInformation")}
-      </h3>
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div>
-            <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              {tRoot("untranslatedRecords.objects.detail.acquisitionType")}
+    <DetailSection
+      title={tRoot("untranslatedRecords.objects.detail.acquisitionInformation")}
+      icon={Building2}
+    >
+      <DetailGrid>
+        <DetailField
+          label={tRoot("untranslatedRecords.objects.detail.acquisitionType")}
+        >
+          {collection.acquisitionMethod ? (
+            <span className="inline-flex w-fit items-center rounded border border-emerald-500/30 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+              {collection.acquisitionMethod}
             </span>
-            {collection.acquisitionMethod ? (
-              <span className="inline-flex items-center rounded border border-emerald-500/30 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-                {collection.acquisitionMethod}
-              </span>
-            ) : (
-              <span className="text-sm text-muted-foreground">-</span>
-            )}
-          </div>
+          ) : null}
+        </DetailField>
 
-          <div>
-            <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              {tRoot("objects.form.donatedBy")}
-            </span>
-            {collection.donated_by && collection.donated_by.length > 0 ? (
-              <div className="flex items-center gap-2">
-                <div className="flex size-5 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white">
-                  {collection.donated_by[0]?.charAt(0) ?? "?"}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {collection.donated_by.join(", ")}
-                </span>
+        <DetailField label={tRoot("objects.form.donatedBy")}>
+          {collection.donated_by && collection.donated_by.length > 0 ? (
+            <div className="flex items-center gap-2">
+              <div className="flex size-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
+                {collection.donated_by[0]?.charAt(0) ?? "?"}
               </div>
-            ) : (
-              <span className="text-sm text-muted-foreground">-</span>
-            )}
-          </div>
-        </div>
+              <span className="text-sm text-foreground">
+                {collection.donated_by.join(", ")}
+              </span>
+            </div>
+          ) : null}
+        </DetailField>
+      </DetailGrid>
 
-        <div className="mt-4 border-t border-border/50 pt-4">
-          <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            {tRoot("untranslatedRecords.objects.detail.donationDetails")}
-          </span>
-          {collection.donation_info ? (
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-              {collection.donation_info}
-            </p>
-          ) : (
-            <span className="text-sm text-muted-foreground">-</span>
-          )}
-        </div>
-      </div>
-    </div>
+      <DetailField
+        className="mt-5 border-t border-border/50 pt-5"
+        label={tRoot("untranslatedRecords.objects.detail.donationDetails")}
+      >
+        {collection.donation_info ? (
+          <p className="whitespace-pre-wrap text-sm text-foreground">
+            {collection.donation_info}
+          </p>
+        ) : null}
+      </DetailField>
+    </DetailSection>
   );
 }

@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useQuery } from "convex/react";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -52,11 +53,11 @@ export function ArchiveDetailsTab({ collectionId }: ArchiveDetailsTabProps) {
   if (details === null) {
     return (
       <div className="space-y-6">
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
-          <p className="text-sm text-muted-foreground">
-            {common("noDetailsYet", { module: "archive" })}
-          </p>
-        </div>
+        <EmptyState
+          variant="card"
+          size="sm"
+          title={common("noDetailsYet", { module: "archive" })}
+        />
       </div>
     );
   }

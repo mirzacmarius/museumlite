@@ -22,21 +22,21 @@ export function MediaGalleryEmbedsSection({
   return (
     <div className="space-y-3">
       <h4 className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <Box className="size-4 text-cyan-500" />
+        <Box className="size-4 text-muted-foreground" />
         {t("embedsTitle")}
       </h4>
       <div className="space-y-4">
         {embeds.map((embed) => (
           <div
             key={embed.id}
-            className="space-y-2 rounded-xl border border-border/60 bg-secondary/20 p-3"
+            className="space-y-2 rounded-xl border border-border/60 bg-card p-3"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">
                   {embed.label || t("sketchfabDefaultLabel")}
                 </p>
-                <p className="truncate text-[10px] text-muted-foreground">
+                <p className="truncate text-xs text-muted-foreground">
                   {embed.url}
                 </p>
               </div>

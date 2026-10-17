@@ -118,7 +118,7 @@ export function MoveRequestCard({ request, canManage }: MoveRequestCardProps) {
     ) : null;
 
   return (
-    <li className="space-y-3 rounded-lg border border-white/10 p-4">
+    <li className="space-y-3 rounded-lg border border-border/60 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
           <span className="break-words">
@@ -141,7 +141,7 @@ export function MoveRequestCard({ request, canManage }: MoveRequestCardProps) {
           {request.notes}
         </p>
       )}
-      <div className="space-y-1 text-xs text-white/60">
+      <div className="space-y-1 text-xs text-muted-foreground">
         <p>
           {t("requests.requestedBy", {
             name: request.requestedByName ?? unknownUser,
@@ -187,7 +187,7 @@ export function MoveRequestCard({ request, canManage }: MoveRequestCardProps) {
           <ul className="space-y-2 text-xs">
             {request.conflicts.map((conflict) => (
               <li key={conflict.detectedAt}>
-                <p className="text-white/60">
+                <p className="text-muted-foreground">
                   {t("requests.conflictObserved", {
                     date: formatMovementTime(locale, conflict.detectedAt),
                     location: locationLabel(conflict.observedFromLocationName),
@@ -206,10 +206,10 @@ export function MoveRequestCard({ request, canManage }: MoveRequestCardProps) {
       )}
 
       {canManage && isOpen && (
-        <div className="space-y-3 border-t border-white/10 pt-3">
+        <div className="space-y-3 border-t border-border/60 pt-3">
           {isReviewable && currentIssues.length > 0 && (
             <div
-              className="space-y-1 text-sm text-amber-500"
+              className="space-y-1 text-sm text-amber-700 dark:text-amber-400"
               aria-live="polite"
             >
               <p className="text-xs font-medium">

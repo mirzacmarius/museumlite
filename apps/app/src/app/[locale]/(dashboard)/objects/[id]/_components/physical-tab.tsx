@@ -4,6 +4,7 @@ import { Hammer, Ruler, Search, Shapes } from "lucide-react";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n } from "@/locales/client";
 import { ConditionAssessmentPanel } from "./condition-assessment-panel";
+import { DetailLabel, DetailSection } from "./detail-section";
 import { ObjectIncidents } from "./object-incidents";
 import type { CollectionData } from "./types";
 
@@ -64,9 +65,9 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="space-y-5">
             <div>
-              <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <DetailLabel className="mb-2">
                 {tRoot("objects.filters.objectType")}
-              </span>
+              </DetailLabel>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Shapes className="size-3.5 text-muted-foreground" />
@@ -78,9 +79,9 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
             </div>
 
             <div>
-              <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <DetailLabel className="mb-2">
                 {tRoot("objects.form.materials")}
-              </span>
+              </DetailLabel>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <span className="font-serif text-xs text-foreground">M</span>
@@ -92,9 +93,9 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
             </div>
 
             <div>
-              <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <DetailLabel className="mb-2">
                 {tRoot("objects.printView.technique")}
-              </span>
+              </DetailLabel>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Hammer className="size-3.5 text-muted-foreground" />
@@ -107,9 +108,9 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
             </div>
 
             <div>
-              <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <DetailLabel className="mb-2">
                 {tRoot("objects.form.dimensions")}
-              </span>
+              </DetailLabel>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Ruler className="size-3.5 text-muted-foreground" />
@@ -120,11 +121,11 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                <DetailLabel className="mb-2">
                   {tRoot("objects.printView.diameter")}
-                </span>
+                </DetailLabel>
                 <div className="flex items-center gap-3">
                   <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                     <span className="text-xs font-medium text-foreground">
@@ -137,9 +138,9 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                 </div>
               </div>
               <div>
-                <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                <DetailLabel className="mb-2">
                   {tRoot("objects.printView.weight")}
-                </span>
+                </DetailLabel>
                 <div className="flex items-center gap-3">
                   <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                     <span className="text-xs font-medium text-foreground">
@@ -165,41 +166,29 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
         <ConditionAssessmentPanel collectionId={collection._id} />
       </div>
 
-      {/* Inscriptions & Marks */}
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Search className="size-4 text-sky-500" />
-          {tRoot("untranslatedRecords.objects.detail.inscriptionsMarks")}
-        </h3>
-        <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-4">
-          {collection.inscriptions ? (
-            <p className="text-sm text-muted-foreground">
-              {collection.inscriptions}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {tRoot("untranslatedRecords.objects.detail.noInscriptions")}
-            </p>
-          )}
+      <DetailSection
+        title={tRoot("untranslatedRecords.objects.detail.inscriptionsMarks")}
+        icon={Search}
+        bodyClassName="space-y-3"
+      >
+        <p className="text-sm text-muted-foreground">
+          {collection.inscriptions ||
+            tRoot("untranslatedRecords.objects.detail.noInscriptions")}
+        </p>
 
-          {collection.inscriptionMarks &&
-            collection.inscriptionMarks.length > 0 &&
-            collection.inscriptionMarks.map(
-              (
-                mark: NonNullable<CollectionData["inscriptionMarks"]>[number],
-              ) => (
-                <div key={mark.label} className="mt-2 flex items-start gap-2">
-                  <span className="shrink-0 rounded border border-border/60 bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                    {mark.label}
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    {mark.description}
-                  </p>
-                </div>
-              ),
-            )}
-        </div>
-      </div>
+        {collection.inscriptionMarks?.map(
+          (mark: NonNullable<CollectionData["inscriptionMarks"]>[number]) => (
+            <div key={mark.label} className="mt-2 flex items-start gap-2">
+              <span className="shrink-0 rounded border border-border/60 bg-secondary px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                {mark.label}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {mark.description}
+              </p>
+            </div>
+          ),
+        )}
+      </DetailSection>
     </div>
   );
 }

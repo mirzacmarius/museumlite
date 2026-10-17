@@ -33,12 +33,12 @@ export function ObjectIncidents({
   return (
     <section
       aria-labelledby="object-incidents-heading"
-      className="space-y-3 rounded-xl border border-border/60 p-4"
+      className="space-y-3 rounded-xl border border-border/60 bg-card p-4 sm:p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3
           id="object-incidents-heading"
-          className="flex items-center gap-2 text-sm font-medium"
+          className="flex items-center gap-2 text-sm font-semibold text-foreground"
         >
           <Siren className="size-4 text-muted-foreground" aria-hidden="true" />
           {t("title")}

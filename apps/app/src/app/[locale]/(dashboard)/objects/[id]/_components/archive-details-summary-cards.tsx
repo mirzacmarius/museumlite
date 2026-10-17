@@ -36,10 +36,10 @@ export function ArchiveDetailsSummaryCards({
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <FileText className="size-4 text-blue-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <FileText className="size-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("documentType")}
           </span>
         </div>
@@ -53,10 +53,10 @@ export function ArchiveDetailsSummaryCards({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <Shield className="size-4 text-purple-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <Shield className="size-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("confidentiality")}
           </span>
         </div>
@@ -64,15 +64,15 @@ export function ArchiveDetailsSummaryCards({
           className={cn(
             "inline-flex rounded px-2 py-0.5 text-xs font-medium",
             details.confidentialityLevel === "public"
-              ? "bg-emerald-500/10 text-emerald-500"
+              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
               : details.confidentialityLevel === "internal"
-                ? "bg-blue-500/10 text-blue-500"
+                ? "bg-blue-500/10 text-blue-700 dark:text-blue-400"
                 : details.confidentialityLevel === "confidential"
-                  ? "bg-amber-500/10 text-amber-500"
+                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
                   : details.confidentialityLevel === "restricted"
-                    ? "bg-orange-500/10 text-orange-500"
+                    ? "bg-orange-500/10 text-orange-700 dark:text-orange-400"
                     : details.confidentialityLevel === "top_secret"
-                      ? "bg-red-500/10 text-red-500"
+                      ? "bg-destructive/10 text-destructive"
                       : "bg-secondary text-muted-foreground",
           )}
         >
@@ -80,10 +80,10 @@ export function ArchiveDetailsSummaryCards({
         </span>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <Clock className="size-4 text-cyan-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <Clock className="size-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("retention")}
           </span>
         </div>
@@ -104,21 +104,21 @@ export function ArchiveDetailsSummaryCards({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <AlertTriangle className="size-4 text-amber-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <AlertTriangle className="size-4 text-amber-700 dark:text-amber-400" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("status")}
           </span>
         </div>
         <div className="space-y-1">
           {details.legalHold ? (
-            <span className="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-500/10 text-red-500">
+            <span className="inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-destructive/10 text-destructive">
               {t("legalHold")}
             </span>
           ) : null}
           {details.flaggedForDestruction ? (
-            <span className="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium bg-orange-500/10 text-orange-500 ml-1">
+            <span className="inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-orange-500/10 text-orange-700 dark:text-orange-400 ml-1">
               {t("flaggedForDestruction")}
             </span>
           ) : null}

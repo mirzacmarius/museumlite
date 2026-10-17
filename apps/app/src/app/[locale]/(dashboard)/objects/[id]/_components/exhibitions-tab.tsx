@@ -2,12 +2,14 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Presentation } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { useScopedI18n } from "@/locales/client";
+import { DetailSection } from "./detail-section";
 
 interface ExhibitionsTabProps {
   collectionId: string;
@@ -49,12 +51,11 @@ export function ExhibitionsTab({
   }
 
   return (
-    <div className="space-y-6">
-      <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <Presentation className="size-4 text-amber-500" />
-        {tObjects("tabs.exhibitions")}
-      </h3>
-
+    <DetailSection
+      title={tObjects("tabs.exhibitions")}
+      icon={Presentation}
+      bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+    >
       <div className="grid grid-cols-1 gap-4">
         {exhibitions === undefined ? (
           <p className="text-muted-foreground">{t("loadingExhibitions")}</p>
@@ -70,7 +71,7 @@ export function ExhibitionsTab({
               )}
             >
               <div className="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border/60 bg-secondary text-center">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">
+                <span className="text-xs font-bold uppercase text-muted-foreground">
                   {exhibition.isCurrent ? (
                     t("status.now")
                   ) : (
@@ -102,7 +103,7 @@ export function ExhibitionsTab({
                   </p>
                 )}
                 <div className="mt-2 flex gap-2">
-                  <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground">
                     <ClientDate
                       timestamp={exhibition.startDate}
                       locale={locale}
@@ -118,7 +119,7 @@ export function ExhibitionsTab({
                     )}
                   </span>
                   {exhibition.isLoan && exhibition.loanVenue && (
-                    <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground">
                       {t("status.loan")}: {exhibition.loanVenue}
                     </span>
                   )}
@@ -127,19 +128,19 @@ export function ExhibitionsTab({
             </div>
           ))
         ) : collection?.exhibitionHistory ? (
-          <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+          <div className="rounded-xl border border-border/60 bg-card p-4">
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">
               {collection.exhibitionHistory}
             </p>
           </div>
         ) : (
-          <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
-              {t("emptyState.noExhibitions")}
-            </p>
-          </div>
+          <EmptyState
+            variant="card"
+            size="sm"
+            title={t("emptyState.noExhibitions")}
+          />
         )}
       </div>
-    </div>
+    </DetailSection>
   );
 }
