@@ -2,6 +2,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
 import { getConvexServerToken } from "@/lib/convex-server-token";
+import { requireCurrentOrganizationPermission } from "@/lib/organization-permissions";
 import { MediaPageClient } from "./media-page-client";
 
 type MediaFileTypeParam = "all" | "image" | "document" | "3d";
@@ -31,9 +32,12 @@ export async function MediaPageData({
 }: {
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 }) {
+  // The layout's permission check streams beside this page, so check here too
+  // before any media is fetched.
   const [token, searchParams] = await Promise.all([
     getConvexServerToken(),
     searchParamsPromise,
+    requireCurrentOrganizationPermission("organization.manage_settings"),
   ]);
 
   const [organizations, preferredOrgId] = await Promise.all([

@@ -14,7 +14,10 @@ export default defineConfig({
   reporter: "list",
   use: {
     ...devices["Desktop Chrome"],
-    baseURL: process.env.QA_APP_URL ?? "http://localhost:3000",
+    // Same default as qaAppUrl() in scripts/local-qa/lib.mjs.
+    baseURL:
+      process.env.QA_APP_URL ??
+      `http://localhost:${process.env.QA_APP_PORT ?? "3000"}`,
     storageState: "../../.local-qa/storage-state.json",
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
       ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }

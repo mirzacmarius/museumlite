@@ -32,6 +32,9 @@ export default async function globalSetup() {
     api.organizations.listUserOrganizations,
     {},
   );
+  if (!organization) {
+    throw new Error("The QA user has no organization. Run `bun run qa:seed`.");
+  }
   const objects = await client.query(api.collections.list, {
     organizationId: organization._id,
     paginationOpts: { numItems: 100, cursor: null },
