@@ -43,7 +43,6 @@ const navigationLabels: Record<string, string> = {
   "untranslatedComponents.navigation.accountsCrm": "Accounts & CRM",
   "untranslatedComponents.navigation.publicPortal": "Public Portal",
   "untranslatedComponents.navigation.digitalAssets": "Digital Assets",
-  "untranslatedComponents.navigation.preferences": "Preferences",
   "untranslatedComponents.navigation.settings": "Settings",
   "untranslatedComponents.navigation.registration": "Registration",
   "untranslatedComponents.navigation.collectionCare": "Collection Care",

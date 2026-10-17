@@ -9938,7 +9938,6 @@ export default {
       accountsCrm: "Accounts & CRM",
       publicPortal: "Public Portal",
       digitalAssets: "Digital Assets",
-      preferences: "Preferences",
       settings: "Settings",
       registration: "Registration",
       collectionCare: "Collection Care",

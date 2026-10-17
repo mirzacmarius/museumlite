@@ -10061,7 +10061,6 @@ export default {
       accountsCrm: "Kontoer og kunderelasjoner",
       publicPortal: "Offentlig portal",
       digitalAssets: "Digitale ressurser",
-      preferences: "Preferanser",
       settings: "Innstillinger",
       registration: "Registrering",
       collectionCare: "Samlingsvern",

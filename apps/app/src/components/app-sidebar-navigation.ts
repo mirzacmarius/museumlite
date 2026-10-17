@@ -27,7 +27,6 @@ import {
   Shield,
   ShoppingCart,
   Siren,
-  SlidersHorizontal,
   Stethoscope,
   Ticket,
   Truck,
@@ -192,11 +191,6 @@ export function buildSidebarNavigation({
       icon: Globe,
     }),
     { title: label("digitalAssets"), url: "/media", icon: Image },
-    {
-      title: label("preferences"),
-      url: "/settings/preferences",
-      icon: SlidersHorizontal,
-    },
     {
       title: label("settings"),
       url: capabilityRoute("administration"),

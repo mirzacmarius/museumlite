@@ -44,11 +44,7 @@ export function ThemeSwitcher({ triggerClass }: { triggerClass?: string }) {
       </SelectTrigger>
       <SelectContent>
         {themes.map((theme) => (
-          <SelectItem
-            key={theme}
-            value={theme}
-            className={`text-sm font-medium text-primary/60 ${theme === currentTheme && "text-primary"}`}
-          >
+          <SelectItem key={theme} value={theme}>
             {theme && themeLabel(theme)}
           </SelectItem>
         ))}
