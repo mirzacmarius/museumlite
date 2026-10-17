@@ -19,23 +19,40 @@ jobs:
     env:
       CONVEX_LOCAL_BACKEND_VERSION: precompiled-2026-10-06-a3538c6
       CI: true
+      # Vercel Remote Cache. Turbo falls back to the local cache when the
+      # secret is not set. Pull requests only read it, so branch builds
+      # cannot write artifacts that main later restores.
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_CACHE: ${{ github.event_name == 'pull_request' && 'local:rw,remote:r' || 'local:rw,remote:rw' }}
+      # Manual runs check every workspace; pushes and pull requests only the
+      # workspaces Turbo finds affected by the change.
+      AFFECTED: ${{ github.event_name != 'workflow_dispatch' && '--affected' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - uses: ./.github/actions/setup
+
       - name: Select affected workspaces
         id: scope
-        env:
-          CI_BASE_REF: ${{ github.event.pull_request.base.sha }}
-          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
-        run: node scripts/classify-ci.mjs
-
-      - uses: ./.github/actions/setup
-        if: steps.scope.outputs.docs_only != 'true'
+        run: |
+          if [[ -n "$AFFECTED" ]]; then
+            affected=$(./node_modules/.bin/turbo query affected --packages | jq -r '.data.affectedPackages.items[].name')
+          else
+            affected=$(./node_modules/.bin/turbo ls --output=json | jq -r '.packages.items[].name')
+          fi
+          echo "Affected workspaces:" $affected
+          has() { grep -qx "$1" <<<"$affected" && echo true || echo false; }
+          {
+            echo "node_version=$(node -p process.versions.node)"
+            echo "app=$(has @v1/app)"
+            echo "web=$(has @v1/web)"
+            echo "backend=$(has @v1/backend)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Cache Turbo task artifacts
-        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/cache@v4
         with:
           path: .turbo
@@ -45,96 +62,47 @@ jobs:
             turbo-v1-${{ runner.os }}-${{ runner.arch }}-node-${{ steps.scope.outputs.node_version }}-bun-1.3.14-
 
       # These root checks cover policy outside workspace task scripts and run
-      # once for every non-documentation change.
+      # on every change.
       - name: 🧹 Repository guards
-        if: steps.scope.outputs.docs_only != 'true'
         run: |
           bun run lint:scripts
           bun run lint:todos
           bun run lint:patterns
           bun run lint:repo
 
-      - name: Verify CI selection and cache policy
-        if: steps.scope.outputs.docs_only != 'true'
+      - name: Verify cache policy
         run: bun run test:ci-policy
 
       - name: 🔦 Lint
-        if: steps.scope.outputs.docs_only != 'true'
-        run: |
-          if [[ "${{ steps.scope.outputs.full }}" == "true" ]]; then
-            ./node_modules/.bin/turbo run lint
-          else
-            args=()
-            [[ "${{ steps.scope.outputs.app }}" == "true" ]] && args+=(--filter=@v1/app)
-            [[ "${{ steps.scope.outputs.web }}" == "true" ]] && args+=(--filter=@v1/web)
-            [[ "${{ steps.scope.outputs.backend }}" == "true" ]] && args+=(--filter=@v1/backend)
-            ./node_modules/.bin/turbo run lint "${args[@]}"
-          fi
+        run: ./node_modules/.bin/turbo run lint $AFFECTED
 
       - name: 🧑‍💻 React Doctor
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.app == 'true' || steps.scope.outputs.web == 'true'
         run: |
-          if [[ "${{ steps.scope.outputs.full }}" == "true" || "${{ steps.scope.outputs.backend }}" == "true" ]]; then
-            bun run react-doctor
-          else
-            projects="@v1/web"
-            if [[ "${{ steps.scope.outputs.app }}" == "true" ]]; then
-              projects="@v1/app"
-              [[ "${{ steps.scope.outputs.web }}" == "true" ]] && projects+=",@v1/web"
-            fi
-            bun run react-doctor --project "$projects"
-          fi
+          projects=()
+          [[ "${{ steps.scope.outputs.app }}" == "true" ]] && projects+=(@v1/app)
+          [[ "${{ steps.scope.outputs.web }}" == "true" ]] && projects+=(@v1/web)
+          bun run react-doctor --project "$(IFS=,; echo "${projects[*]}")"
 
       - name: 🪐 Typecheck
-        if: steps.scope.outputs.docs_only != 'true'
-        run: |
-          if [[ "${{ steps.scope.outputs.full }}" == "true" ]]; then
-            bun run typecheck
-          else
-            args=()
-            [[ "${{ steps.scope.outputs.app }}" == "true" ]] && args+=(--filter=@v1/app)
-            [[ "${{ steps.scope.outputs.web }}" == "true" ]] && args+=(--filter=@v1/web)
-            [[ "${{ steps.scope.outputs.backend }}" == "true" ]] && args+=(--filter=@v1/backend)
-            ./node_modules/.bin/turbo run typecheck "${args[@]}"
-          fi
-
-      - name: 🌐 Typecheck i18n
-        if: steps.scope.outputs.app == 'true'
-        run: bun run typecheck:i18n
+        run: ./node_modules/.bin/turbo run typecheck typecheck:i18n $AFFECTED
 
       - name: 🧪 Test
-        if: steps.scope.outputs.docs_only != 'true'
-        run: |
-          if [[ "${{ steps.scope.outputs.full }}" == "true" ]]; then
-            bun run test
-          else
-            args=()
-            [[ "${{ steps.scope.outputs.app }}" == "true" ]] && args+=(--filter=@v1/app)
-            [[ "${{ steps.scope.outputs.web }}" == "true" ]] && args+=(--filter=@v1/web)
-            [[ "${{ steps.scope.outputs.backend }}" == "true" ]] && args+=(--filter=@v1/backend)
-            ./node_modules/.bin/turbo run test "${args[@]}"
-          fi
+        run: ./node_modules/.bin/turbo run test $AFFECTED
 
       - name: 🏗️ Build
-        if: steps.scope.outputs.docs_only != 'true'
         env:
           # Hash these placeholders through Turbo without changing test env.
           SKIP_ENV_VALIDATION: "true"
           NEXT_PUBLIC_CONVEX_URL: https://example.convex.cloud
-        run: |
-          if [[ "${{ steps.scope.outputs.full }}" == "true" ]]; then
-            bun run build
-          else
-            args=()
-            [[ "${{ steps.scope.outputs.app }}" == "true" ]] && args+=(--filter=@v1/app)
-            [[ "${{ steps.scope.outputs.web }}" == "true" ]] && args+=(--filter=@v1/web)
-            ./node_modules/.bin/turbo run build "${args[@]}"
-          fi
+        run: ./node_modules/.bin/turbo run build $AFFECTED
 
       # This job validates Convex on a disposable loopback backend only. It
       # deliberately runs outside Turbo so deployment results are never cached.
+      # Pushes to main and manual runs always deploy, which also covers changes
+      # to scripts/local-qa that no workspace owns.
       - name: Cache Convex local backend
-        if: steps.scope.outputs.deploy == 'true' || steps.scope.outputs.full == 'true'
+        if: steps.scope.outputs.backend == 'true' || github.event_name != 'pull_request'
         id: backend-cache
         uses: actions/cache@v4
         with:
@@ -142,7 +110,7 @@ jobs:
           key: convex-local-backend-${{ runner.os }}-${{ env.CONVEX_LOCAL_BACKEND_VERSION }}
 
       - name: Download Convex local backend
-        if: (steps.scope.outputs.deploy == 'true' || steps.scope.outputs.full == 'true') && steps.backend-cache.outputs.cache-hit != 'true'
+        if: (steps.scope.outputs.backend == 'true' || github.event_name != 'pull_request') && steps.backend-cache.outputs.cache-hit != 'true'
         run: |
           dir="$HOME/.cache/convex/binaries/$CONVEX_LOCAL_BACKEND_VERSION"
           mkdir -p "$dir"
@@ -152,21 +120,21 @@ jobs:
           chmod +x "$dir/convex-local-backend"
 
       - name: Start loopback Convex backend
-        if: steps.scope.outputs.deploy == 'true' || steps.scope.outputs.full == 'true'
+        if: steps.scope.outputs.backend == 'true' || github.event_name != 'pull_request'
         run: |
           export CONVEX_LOCAL_BACKEND_BIN="$HOME/.cache/convex/binaries/$CONVEX_LOCAL_BACKEND_VERSION/convex-local-backend"
           bun run qa:backend
 
       - name: 🚀 Deploy Convex functions to loopback backend
-        if: steps.scope.outputs.deploy == 'true' || steps.scope.outputs.full == 'true'
+        if: steps.scope.outputs.backend == 'true' || github.event_name != 'pull_request'
         run: bun run convex:local -- deploy --yes --typecheck disable
 
       - name: 🔑 Seed QA user (auth and public API smoke test)
-        if: steps.scope.outputs.deploy == 'true' || steps.scope.outputs.full == 'true'
+        if: steps.scope.outputs.backend == 'true' || github.event_name != 'pull_request'
         run: bun run qa:seed
 
       - name: Generated Convex code is current
-        if: steps.scope.outputs.deploy == 'true' || steps.scope.outputs.full == 'true'
+        if: steps.scope.outputs.backend == 'true' || github.event_name != 'pull_request'
         run: |
           if [ -n "$(git status --porcelain -- packages/backend/convex/_generated)" ]; then
             git diff -- packages/backend/convex/_generated
@@ -175,5 +143,5 @@ jobs:
           fi
 
       - name: Backend log
-        if: failure() && (steps.scope.outputs.deploy == 'true' || steps.scope.outputs.full == 'true')
+        if: failure() && (steps.scope.outputs.backend == 'true' || github.event_name != 'pull_request')
         run: tail -n 200 .local-qa/backend.log || true

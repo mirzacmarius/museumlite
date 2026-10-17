@@ -68,9 +68,15 @@ async function makeTurboFixture() {
   );
   await put(
     directory,
-    "scripts/cache-command.mjs",
+    "scripts/load-monorepo-env.mjs",
     "// initial command input\n",
   );
+  await put(
+    directory,
+    "scripts/verify-deploy.mjs",
+    "// initial deploy check\n",
+  );
+  await put(directory, ".github/workflows/check.yml", "name: Check\n");
   await put(directory, "patches/runtime.patch", "initial patch\n");
   await put(directory, "biome.json", '{"$schema":"fixture"}\n');
   await put(directory, "tsconfig.json", '{"compilerOptions":{}}\n');
@@ -202,7 +208,7 @@ async function buildRunCount(directory) {
   }
 }
 
-test("installed Turbo reuses web tests and invalidates on source, backend, config, env and patch changes", async () => {
+test("installed Turbo reuses web tests, invalidates on source, backend, config, env and patch changes, and ignores CI-only files", async () => {
   const directory = await makeTurboFixture();
 
   await runWebTest(directory);
@@ -340,14 +346,27 @@ test("installed Turbo reuses web tests and invalidates on source, backend, confi
 
   await put(
     directory,
-    "scripts/cache-command.mjs",
+    "scripts/load-monorepo-env.mjs",
     "// changed command input\n",
   );
   await runWebTest(directory, "large");
   assert.equal(
     await runCount(directory),
     13,
-    "root task scripts invalidate dependent tasks",
+    "root scripts that tasks load invalidate dependent tasks",
+  );
+
+  await put(
+    directory,
+    "scripts/verify-deploy.mjs",
+    "// changed deploy check\n",
+  );
+  await put(directory, ".github/workflows/check.yml", "name: Changed\n");
+  await runWebTest(directory, "large");
+  assert.equal(
+    await runCount(directory),
+    13,
+    "CI configuration and scripts no task loads keep the cache",
   );
 
   await put(
