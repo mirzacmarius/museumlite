@@ -8309,6 +8309,29 @@ export default {
         fromValue: "de «{value}»",
         toValue: "a «{value}»",
         byUser: "Por {name}",
+        actions: {
+          created_collection: "Objeto creado",
+          updated_collection: "Objeto actualizado",
+          archived_collection: "Objeto retirado",
+          restored_collection: "Objeto restaurado",
+          received_collection_from_organization_move:
+            "Objeto recibido de otra organización",
+          added_alternate_accession_number:
+            "Número de accesión alternativo añadido",
+          removed_alternate_accession_number:
+            "Número de accesión alternativo eliminado",
+          created_move_request: "Traslado solicitado",
+          executed_move_request: "Traslado completado",
+          cancelled_move_request: "Solicitud de traslado cancelada",
+          rejected_move_request: "Solicitud de traslado rechazada",
+          move_request_conflict: "Conflicto en la solicitud de traslado",
+          provenance_claim_recorded: "Afirmación de procedencia registrada",
+          provenance_claim_corrected: "Afirmación de procedencia corregida",
+          provenance_claim_retracted: "Afirmación de procedencia retirada",
+          provenance_claim_reviewed: "Afirmación de procedencia revisada",
+          provenance_evidence_added: "Prueba de procedencia añadida",
+          provenance_evidence_retracted: "Prueba de procedencia retirada",
+        },
       },
       actions: {
         add: "Añadir",
@@ -8421,6 +8444,7 @@ export default {
       tabs: {
         general: "General",
         physical: "Descripción física",
+        condition: "Estado de conservación",
         media: "Medios",
         accession: "Accesión",
         provenance: "Procedencia e historial",

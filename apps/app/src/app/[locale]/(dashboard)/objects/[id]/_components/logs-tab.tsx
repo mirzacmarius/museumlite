@@ -3,8 +3,10 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
+import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { ScrollText } from "lucide-react";
+import { useState } from "react";
 import { ClientDate } from "@/components/client-date";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { DetailSection } from "./detail-section";
@@ -135,6 +137,37 @@ function formatChanges(
   return null;
 }
 
+const LOG_PAGE_SIZE = 20;
+/** The most entries the audit log query returns. */
+const LOG_MAX = 100;
+
+const KNOWN_ACTIONS = [
+  "created_collection",
+  "updated_collection",
+  "archived_collection",
+  "restored_collection",
+  "received_collection_from_organization_move",
+  "added_alternate_accession_number",
+  "removed_alternate_accession_number",
+  "created_move_request",
+  "executed_move_request",
+  "cancelled_move_request",
+  "rejected_move_request",
+  "move_request_conflict",
+  "provenance_claim_recorded",
+  "provenance_claim_corrected",
+  "provenance_claim_retracted",
+  "provenance_claim_reviewed",
+  "provenance_evidence_added",
+  "provenance_evidence_retracted",
+] as const;
+
+function isKnownAction(
+  action: string,
+): action is (typeof KNOWN_ACTIONS)[number] {
+  return (KNOWN_ACTIONS as readonly string[]).includes(action);
+}
+
 interface LogsTabProps {
   collectionId: string;
   organizationId: Id<"organizations">;
@@ -148,12 +181,17 @@ export function LogsTab({
 }: LogsTabProps) {
   const tRoot = useI18n();
   const tCommon = useScopedI18n("modules.common");
+  const [limit, setLimit] = useState(LOG_PAGE_SIZE);
   const auditLogs = useQuery(api.auditLog.getByEntity, {
     organizationId,
     entityType: "collection",
     entityId: collectionId,
-    limit: 20,
+    limit,
   });
+  const actionLabel = (action: string) =>
+    isKnownAction(action)
+      ? tRoot(`untranslatedRecords.objects.logs.actions.${action}`)
+      : action;
 
   return (
     <DetailSection
@@ -193,7 +231,7 @@ export function LogsTab({
                   className="group transition-colors hover:bg-secondary/40"
                 >
                   <td className="px-4 py-3 align-top">
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
                       <ClientDate
                         timestamp={log.timestamp}
                         locale={locale}
@@ -226,17 +264,19 @@ export function LogsTab({
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-xs text-foreground">
+                    <p className="text-sm text-foreground">
                       <span
                         className={`font-medium ${getActionBadgeClasses(log.action).text}`}
                       >
-                        {log.action}
+                        {actionLabel(log.action)}
                       </span>
                     </p>
-                    {formatChanges(
-                      log.changes as Record<string, unknown> | undefined,
-                      tRoot,
-                    )}
+                    {log.action === "created_collection"
+                      ? null
+                      : formatChanges(
+                          log.changes as Record<string, unknown> | undefined,
+                          tRoot,
+                        )}
                   </td>
                 </tr>
               ))
@@ -253,16 +293,21 @@ export function LogsTab({
           </tbody>
         </table>
       </div>
-      {auditLogs && auditLogs.length > 0 && (
-        <div className="border-t border-border/60 bg-secondary/30 px-4 py-3 text-center">
-          <button
+      {auditLogs?.length === limit && limit < LOG_MAX ? (
+        <div className="border-t border-border/60 px-4 py-2 text-center">
+          <Button
             type="button"
-            className="text-xs text-muted-foreground transition-colors hover:text-muted-foreground"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={() =>
+              setLimit((current) => Math.min(current + LOG_PAGE_SIZE, LOG_MAX))
+            }
           >
             {tRoot("untranslatedRecords.objects.detail.loadOlderLogs")}
-          </button>
+          </Button>
         </div>
-      )}
+      ) : null}
     </DetailSection>
   );
 }

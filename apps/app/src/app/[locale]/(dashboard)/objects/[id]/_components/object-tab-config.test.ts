@@ -96,6 +96,7 @@ test("the Valuation tab needs valuation access in view and edit mode", () => {
     view: [
       "general",
       "physical",
+      "condition",
       "media",
       "accession",
       "provenance",
@@ -126,6 +127,7 @@ test("the Valuation tab needs valuation access in view and edit mode", () => {
     view: [
       "general",
       "physical",
+      "condition",
       "media",
       "accession",
       "provenance",

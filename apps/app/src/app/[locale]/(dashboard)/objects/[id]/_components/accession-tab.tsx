@@ -11,38 +11,52 @@ interface AccessionTabProps {
 
 export function AccessionTab({ collection }: AccessionTabProps) {
   const tRoot = useI18n();
+  const alternateNumbers = collection.alternateAccessionNumbers ?? [];
   return (
     <DetailSection
       title={tRoot("untranslatedRecords.objects.detail.acquisitionInformation")}
       icon={Building2}
     >
       <DetailGrid>
-        <DetailField
-          label={tRoot("untranslatedRecords.objects.detail.acquisitionType")}
-        >
-          {collection.acquisitionMethod ? (
-            <span className="inline-flex w-fit items-center rounded border border-emerald-500/30 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-              {collection.acquisitionMethod}
-            </span>
-          ) : null}
+        <DetailField label={tRoot("objects.form.accessionNumber")}>
+          <span className="break-all font-mono text-sm text-foreground">
+            {collection.accessionNumber}
+          </span>
         </DetailField>
-
-        <DetailField label={tRoot("objects.form.donatedBy")}>
-          {collection.donated_by && collection.donated_by.length > 0 ? (
-            <div className="flex items-center gap-2">
-              <div className="flex size-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
-                {collection.donated_by[0]?.charAt(0) ?? "?"}
-              </div>
-              <span className="text-sm text-foreground">
-                {collection.donated_by.join(", ")}
-              </span>
+        <DetailField label={tRoot("objects.form.alternateAccessionNumbers")}>
+          {alternateNumbers.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {alternateNumbers.map((number) => (
+                <span
+                  key={number}
+                  className="rounded-md border border-border/60 px-2 py-0.5 font-mono text-xs text-muted-foreground"
+                >
+                  {number}
+                </span>
+              ))}
             </div>
           ) : null}
         </DetailField>
+        <DetailField
+          label={tRoot("untranslatedRecords.objects.detail.acquisitionType")}
+          value={collection.acquisitionMethod}
+        />
+        <DetailField
+          label={tRoot("objects.printView.creditLine")}
+          value={collection.creditLine}
+        />
+        <DetailField
+          label={tRoot("objects.form.donatedBy")}
+          value={collection.donated_by?.join(", ")}
+        />
+        <DetailField
+          label={tRoot("objects.form.donatedDate")}
+          value={collection.donated_date}
+        />
       </DetailGrid>
 
       <DetailField
-        className="mt-5 border-t border-border/50 pt-5"
+        className="mt-5 border-t border-border/60 pt-5"
         label={tRoot("untranslatedRecords.objects.detail.donationDetails")}
       >
         {collection.donation_info ? (

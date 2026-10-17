@@ -34,6 +34,10 @@ const CoinsStampsDetailsTab = dynamic(
     ),
   { loading: LoadingPanel },
 );
+const ConditionTab = dynamic(
+  () => import("../condition-tab").then((mod) => mod.ConditionTab),
+  { loading: LoadingPanel },
+);
 const ConservationTab = dynamic(
   () => import("../conservation-tab").then((mod) => mod.ConservationTab),
   { loading: LoadingPanel },
@@ -201,7 +205,22 @@ export function ObjectDetailTabPanel({
             collectionGroupName={collectionGroupName}
           />
         )}
-        {activeTab === "physical" && <PhysicalTab collection={collection} />}
+        {activeTab === "physical" && (
+          <PhysicalTab
+            collection={collection}
+            onOpenConditionTab={
+              tabs.some((tab) => tab.id === "condition")
+                ? () => onActiveTabChange("condition")
+                : undefined
+            }
+          />
+        )}
+        {activeTab === "condition" && (
+          <ConditionTab
+            collectionId={collectionId}
+            organizationId={organizationId}
+          />
+        )}
         {activeTab === "media" && (
           <MediaTab collectionId={collectionId} collection={collection} />
         )}

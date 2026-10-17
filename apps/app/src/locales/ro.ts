@@ -8298,6 +8298,29 @@ export default {
         fromValue: "din „{value}”",
         toValue: "în „{value}”",
         byUser: "De {name}",
+        actions: {
+          created_collection: "Obiect creat",
+          updated_collection: "Obiect actualizat",
+          archived_collection: "Obiect retras",
+          restored_collection: "Obiect restaurat",
+          received_collection_from_organization_move:
+            "Obiect primit de la altă organizație",
+          added_alternate_accession_number:
+            "Număr de accesiune alternativ adăugat",
+          removed_alternate_accession_number:
+            "Număr de accesiune alternativ eliminat",
+          created_move_request: "Mutare solicitată",
+          executed_move_request: "Mutare finalizată",
+          cancelled_move_request: "Cerere de mutare anulată",
+          rejected_move_request: "Cerere de mutare respinsă",
+          move_request_conflict: "Conflict la cererea de mutare",
+          provenance_claim_recorded: "Afirmație de proveniență înregistrată",
+          provenance_claim_corrected: "Afirmație de proveniență corectată",
+          provenance_claim_retracted: "Afirmație de proveniență retrasă",
+          provenance_claim_reviewed: "Afirmație de proveniență revizuită",
+          provenance_evidence_added: "Dovadă de proveniență adăugată",
+          provenance_evidence_retracted: "Dovadă de proveniență retrasă",
+        },
       },
       actions: {
         add: "Adăugați",
@@ -8410,6 +8433,7 @@ export default {
       tabs: {
         general: "General",
         physical: "Descriere fizică",
+        condition: "Stare de conservare",
         media: "Media",
         accession: "Înregistrare",
         provenance: "Proveniență și istoric",

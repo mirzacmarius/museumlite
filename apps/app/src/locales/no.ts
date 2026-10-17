@@ -8229,6 +8229,29 @@ export default {
         fromValue: "fra «{value}»",
         toValue: "til «{value}»",
         byUser: "Av {name}",
+        actions: {
+          created_collection: "Objekt opprettet",
+          updated_collection: "Objekt oppdatert",
+          archived_collection: "Objekt trukket tilbake",
+          restored_collection: "Objekt gjenopprettet",
+          received_collection_from_organization_move:
+            "Objekt mottatt fra en annen organisasjon",
+          added_alternate_accession_number:
+            "Alternativt aksesjonsnummer lagt til",
+          removed_alternate_accession_number:
+            "Alternativt aksesjonsnummer fjernet",
+          created_move_request: "Flytting forespurt",
+          executed_move_request: "Flytting fullført",
+          cancelled_move_request: "Flytteforespørsel avbrutt",
+          rejected_move_request: "Flytteforespørsel avvist",
+          move_request_conflict: "Konflikt i flytteforespørsel",
+          provenance_claim_recorded: "Provenienspåstand registrert",
+          provenance_claim_corrected: "Provenienspåstand korrigert",
+          provenance_claim_retracted: "Provenienspåstand trukket tilbake",
+          provenance_claim_reviewed: "Provenienspåstand vurdert",
+          provenance_evidence_added: "Proveniensbevis lagt til",
+          provenance_evidence_retracted: "Proveniensbevis trukket tilbake",
+        },
       },
       actions: {
         add: "Legg til",
@@ -8340,6 +8363,7 @@ export default {
       tabs: {
         general: "Generelt",
         physical: "Fysisk beskrivelse",
+        condition: "Tilstand",
         media: "Medier",
         accession: "Registrering",
         provenance: "Proveniens og historikk",

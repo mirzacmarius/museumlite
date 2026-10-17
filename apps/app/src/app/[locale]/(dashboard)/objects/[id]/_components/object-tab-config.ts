@@ -12,6 +12,7 @@ import {
 export const OBJECT_TAB_IDS = [
   "general",
   "physical",
+  "condition",
   "media",
   "accession",
   "placement",
@@ -71,6 +72,11 @@ const viewBaseTabs: ObjectTabDefinition[] = [
     id: "physical",
     label: "untranslatedRecords.objects.tabs.physical",
     editable: true,
+  },
+  {
+    id: "condition",
+    label: "untranslatedRecords.objects.tabs.condition",
+    editable: false,
   },
   {
     id: "media",
