@@ -64,9 +64,9 @@
         "SKIP_TYPE_CHECK",
         "SKIP_ENV_VALIDATION",
         "TZ",
-        "VERCEL",
-        "VERCEL_URL"
+        "VERCEL"
       ],
+      "passThroughEnv": ["VERCEL_URL"],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build", "^topo"],
       "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", ".expo/**"]

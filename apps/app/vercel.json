@@ -1,3 +1,4 @@
 {
-  "buildCommand": "cd ../../packages/backend && npx convex deploy --cmd 'export NEXT_DISABLE_TYPECHECK=1 && cd ../../apps/app && turbo run build' --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL"
+  "buildCommand": "cd ../../packages/backend && npx convex deploy --cmd 'export NEXT_DISABLE_TYPECHECK=1 && cd ../../apps/app && turbo run build' --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL",
+  "ignoreCommand": "npx -y turbo-ignore@2.11.9"
 }

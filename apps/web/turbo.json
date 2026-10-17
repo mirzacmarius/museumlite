@@ -1,0 +1,10 @@
+{
+  "$schema": "../../node_modules/turbo/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "description": "The marketing site falls back to VERCEL_URL for its canonical URL when NEXT_PUBLIC_APP_URL and NEXT_PUBLIC_WEB_URL are unset, so it stays in this hash.",
+      "env": ["$TURBO_EXTENDS$", "VERCEL_URL"]
+    }
+  }
+}
