@@ -611,17 +611,16 @@ export async function runScheduledReconcile(
 ) {
   const state = await getProjectionState(ctx, organizationId);
   if (!state?.reconcileScheduledAt) return null;
-  await ctx.db.patch(state._id, { reconcileScheduledAt: undefined });
-  if (
+  const blocked =
     !state.activeGenerationId ||
     state.availability !== "ready" ||
     state.definitionVersion !== PROJECTION_DEFINITION_VERSION ||
-    state.buildingGenerationId ||
-    state.reconcilingGenerationId
-  ) {
-    return null;
-  }
-  return await startGeneration(ctx, organizationId, "reconcile");
+    state.buildingGenerationId !== undefined ||
+    state.reconcilingGenerationId !== undefined;
+  await ctx.db.patch(state._id, { reconcileScheduledAt: undefined });
+  return blocked
+    ? null
+    : await startGeneration(ctx, organizationId, "reconcile");
 }
 
 type FanOutKind = Doc<"projectionFanOuts">["kind"];
