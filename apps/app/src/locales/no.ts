@@ -9621,7 +9621,7 @@ export default {
         "Be om godkjenning for å overføre dette objektet til en annen organisasjon du tilhører. Du kan beholde det nåværende aksesjonsnummeret eller tildele et nytt.",
       requiresAdministratorApprovalBeforeTheMoveIsExecuted:
         "En administrator må godkjenne før flyttingen gjennomføres",
-      removeItem: "Fjern objekt",
+      removeObject: "Fjern objekt",
       removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater:
         "Fjern objektet fra den aktive samlingen, men behold alle data, historikk og medier. Objektet kan gjenopprettes senere.",
       submittedToDeaccessionApprovalBeforeTheObjectIsArchived:
@@ -9965,7 +9965,7 @@ export default {
         "Dette objektet kan ikke flyttes før hindringene er løst",
       recordSale: "Registrer salg",
       moveToAnotherOrganization: "Flytt til en annen organisasjon",
-      removeItem: "Fjern objekt",
+      removeObject: "Fjern objekt",
       delete: "Slett",
       removeOrTransfer: "Fjern eller overfør",
       recordSaleDetailsFor: "Registrer salgsopplysningene for {title}.",

@@ -9720,7 +9720,7 @@ export default {
         "Solicita la aprobación para trasladar este objeto a otra organización a la que perteneces. Puedes conservar el número de inventario actual o asignar uno nuevo.",
       requiresAdministratorApprovalBeforeTheMoveIsExecuted:
         "Se requiere la aprobación de un administrador antes de realizar el traslado",
-      removeItem: "Retirar objeto",
+      removeObject: "Retirar objeto",
       removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater:
         "Retira el objeto de la colección activa, pero conserva todos sus datos, historial y archivos multimedia. Podrás restaurarlo más adelante.",
       submittedToDeaccessionApprovalBeforeTheObjectIsArchived:
@@ -10079,7 +10079,7 @@ export default {
         "Este objeto no se puede trasladar hasta que se resuelvan los problemas que lo bloquean",
       recordSale: "Registrar la venta",
       moveToAnotherOrganization: "Trasladar a otra organización",
-      removeItem: "Retirar objeto",
+      removeObject: "Retirar objeto",
       delete: "Eliminar",
       removeOrTransfer: "Retirar o trasladar",
       recordSaleDetailsFor: "Registrar los detalles de la venta de {title}.",
