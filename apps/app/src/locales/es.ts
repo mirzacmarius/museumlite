@@ -3127,6 +3127,8 @@ export default {
 
       print: "Imprimir",
       title: "Imprimir etiqueta QR",
+      dialogDescription:
+        "Elige un tamaño de etiqueta, revisa la vista previa e imprime.",
       labelSize: "Tamaño de etiqueta",
       size2x2: "Cuadrado",
       size1x3: "Rectángulo",
@@ -3145,6 +3147,8 @@ export default {
       accessionNumber: "Número de Accesión",
       print: "Imprimir",
       title: "Imprimir etiqueta del objeto",
+      dialogDescription:
+        "Edita el texto y el diseño de la etiqueta, revisa la vista previa e imprime.",
       labelSize: "Tamaño de etiqueta",
       sizeSmall: 'Pequeña (3" × 2")',
       sizeMedium: 'Mediana (4" × 2,5")',
@@ -3476,6 +3480,7 @@ export default {
     },
     printPreview: {
       title: "Vista Previa de Impresión",
+      dialogDescription: "Un resumen imprimible del registro de este objeto.",
       basicInformation: "Información Básica",
       objectType: "Tipo de Objeto",
       objectName: "Nombre del Objeto",

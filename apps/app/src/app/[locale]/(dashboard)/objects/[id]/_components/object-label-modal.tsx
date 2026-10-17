@@ -1,24 +1,31 @@
 "use client";
 
-import { Button } from "@v1/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@v1/ui/dialog";
+import { Dialog } from "@v1/ui/dialog";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
-import { Printer } from "lucide-react";
 import { useReducer, useRef } from "react";
 import {
   ObjectTextLabelGenerator,
   type ObjectTextLabelSize,
 } from "@/components/object-text-label-generator";
 import { useScopedI18n } from "@/locales/client";
+import {
+  PrintDialogShell,
+  PrintInstructions,
+  PrintPreviewStage,
+} from "./print-dialog-shell";
 import type { CollectionData } from "./types";
+
+const OBJECT_LABEL_SIZES = [
+  { value: "small", key: "sizeSmall" },
+  { value: "medium", key: "sizeMedium" },
+  { value: "large", key: "sizeLarge" },
+] as const satisfies readonly {
+  value: ObjectTextLabelSize;
+  key: "sizeSmall" | "sizeMedium" | "sizeLarge";
+}[];
 
 type LabelledObject = Pick<
   CollectionData,
@@ -131,16 +138,17 @@ function ObjectLabelModalContent({
   };
 
   return (
-    <DialogContent
-      aria-describedby={undefined}
-      className="flex flex-col max-w-3xl w-full h-[90vh] p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0 print:bg-white"
+    <PrintDialogShell
+      title={t("title")}
+      description={t("dialogDescription")}
+      cancelLabel={tCommon("cancel")}
+      printLabel={t("print")}
+      onCancel={onClose}
+      onPrint={handlePrint}
+      className="max-w-5xl"
     >
-      <DialogHeader className="flex-shrink-0 print:hidden border-b p-6 pb-4">
-        <DialogTitle>{t("title")}</DialogTitle>
-      </DialogHeader>
-
-      <div className="flex-1 overflow-y-auto print:overflow-visible">
-        <div className="grid gap-6 p-6 border-b print:hidden md:grid-cols-2">
+      <div className="grid min-h-full md:grid-cols-[minmax(0,20rem)_1fr] print:block">
+        <div className="space-y-6 border-b p-4 sm:p-6 md:border-r md:border-b-0 print:hidden">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="object-label-name">{t("objectName")}</Label>
@@ -173,57 +181,40 @@ function ObjectLabelModalContent({
             </div>
             <div className="space-y-2">
               <Label>{t("accessionNumber")}</Label>
-              <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+              <p className="rounded-md border bg-muted px-3 py-2 font-mono text-sm text-muted-foreground">
                 {collection.accessionNumber}
               </p>
             </div>
           </div>
 
-          <div className="space-y-5">
-            <div>
-              <Label className="text-sm font-medium mb-3 block">
-                {t("labelSize")}
-              </Label>
-              <RadioGroup
-                value={formState.labelSize}
-                onValueChange={(value) =>
-                  dispatch({
-                    type: "setLabelSize",
-                    value: value as ObjectTextLabelSize,
-                  })
-                }
-                className="flex flex-col gap-2"
-              >
-                <div className="flex items-center gap-x-2">
-                  <RadioGroupItem value="small" id="object-label-small" />
-                  <Label
-                    htmlFor="object-label-small"
-                    className="cursor-pointer text-sm"
-                  >
-                    {t("sizeSmall")}
-                  </Label>
-                </div>
-                <div className="flex items-center gap-x-2">
-                  <RadioGroupItem value="medium" id="object-label-medium" />
-                  <Label
-                    htmlFor="object-label-medium"
-                    className="cursor-pointer text-sm"
-                  >
-                    {t("sizeMedium")}
-                  </Label>
-                </div>
-                <div className="flex items-center gap-x-2">
-                  <RadioGroupItem value="large" id="object-label-large" />
-                  <Label
-                    htmlFor="object-label-large"
-                    className="cursor-pointer text-sm"
-                  >
-                    {t("sizeLarge")}
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
+          <div className="space-y-3">
+            <Label className="block text-sm font-medium">
+              {t("labelSize")}
+            </Label>
+            <RadioGroup
+              value={formState.labelSize}
+              onValueChange={(value) =>
+                dispatch({
+                  type: "setLabelSize",
+                  value: value as ObjectTextLabelSize,
+                })
+              }
+              className="grid gap-2"
+            >
+              {OBJECT_LABEL_SIZES.map(({ value, key }) => (
+                <Label
+                  key={value}
+                  htmlFor={`object-label-${value}`}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-border/60 px-3 py-2.5 text-sm font-normal transition-colors hover:bg-muted/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                >
+                  <RadioGroupItem value={value} id={`object-label-${value}`} />
+                  {t(key)}
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
 
+          <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <Label htmlFor="object-label-border">{t("showBorder")}</Label>
               <Switch
@@ -267,10 +258,23 @@ function ObjectLabelModalContent({
               />
             </div>
           </div>
+
+          <PrintInstructions
+            title={t("printInstructions")}
+            items={[
+              t("instructionPaperSize"),
+              t("instructionOrientation"),
+              t("instructionMargins"),
+              t("instructionScale"),
+            ]}
+          />
         </div>
 
-        <div className="p-6 flex items-center justify-center min-h-[320px] bg-muted print:bg-white print:p-0 print:min-h-0">
-          <div ref={printRef} className="shadow-lg print:shadow-none print:m-0">
+        <PrintPreviewStage className="min-h-[280px]">
+          <div
+            ref={printRef}
+            className="max-w-full overflow-x-auto shadow-lg print:m-0 print:overflow-visible print:shadow-none"
+          >
             <ObjectTextLabelGenerator
               data={{
                 objectName: formState.objectName.trim() || collection.title,
@@ -285,30 +289,8 @@ function ObjectLabelModalContent({
               accessionFontSizePt={formState.accessionFontSize}
             />
           </div>
-        </div>
-
-        <div className="p-6 border-t bg-status-info/10 print:hidden">
-          <h3 className="text-sm font-medium text-status-info-foreground mb-2">
-            {t("printInstructions")}
-          </h3>
-          <ul className="text-xs text-status-info-foreground space-y-1 list-disc list-inside">
-            <li>{t("instructionPaperSize")}</li>
-            <li>{t("instructionOrientation")}</li>
-            <li>{t("instructionMargins")}</li>
-            <li>{t("instructionScale")}</li>
-          </ul>
-        </div>
+        </PrintPreviewStage>
       </div>
-
-      <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t print:hidden">
-        <Button variant="outline" onClick={onClose}>
-          {tCommon("cancel")}
-        </Button>
-        <Button onClick={handlePrint}>
-          <Printer className="mr-2 size-4" />
-          {t("print")}
-        </Button>
-      </div>
-    </DialogContent>
+    </PrintDialogShell>
   );
 }

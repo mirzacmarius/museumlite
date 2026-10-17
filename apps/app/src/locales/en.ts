@@ -2653,6 +2653,7 @@ export default {
     },
     qrLabel: {
       title: "Print QR Label",
+      dialogDescription: "Choose a label size, check the preview, then print.",
       labelSize: "Label Size",
       size2x2: "Square",
       size1x3: "Rectangle",
@@ -2667,6 +2668,8 @@ export default {
     },
     objectLabel: {
       title: "Print Object Label",
+      dialogDescription:
+        "Edit the label text and layout, check the preview, then print.",
       objectName: "Object Name",
       description: "Description",
       accessionNumber: "Accession Number",
@@ -2906,6 +2909,7 @@ export default {
     },
     printPreview: {
       title: "Print Preview",
+      dialogDescription: "A printable summary of this object's record.",
       basicInformation: "Basic Information",
       objectType: "Object Type",
       objectName: "Object Name",

@@ -3093,6 +3093,8 @@ export default {
 
       print: "Skriv ut",
       title: "Skriv ut QR-etikett",
+      dialogDescription:
+        "Velg etikettstørrelse, sjekk forhåndsvisningen og skriv ut.",
       labelSize: "Etikettstørrelse",
       size2x2: "Kvadrat",
       size1x3: "Rektangel",
@@ -3111,6 +3113,8 @@ export default {
       accessionNumber: "Aksesjonsnummer",
       print: "Skriv ut",
       title: "Skriv ut objektetikett",
+      dialogDescription:
+        "Rediger teksten og oppsettet på etiketten, sjekk forhåndsvisningen og skriv ut.",
       labelSize: "Etikettstørrelse",
       sizeSmall: 'Liten (3" × 2")',
       sizeMedium: 'Middels (4" × 2,5")',
@@ -3440,6 +3444,8 @@ export default {
     },
     printPreview: {
       title: "Forhåndsvisning",
+      dialogDescription:
+        "Et utskriftsvennlig sammendrag av registreringen for dette objektet.",
       basicInformation: "Grunnleggende Informasjon",
       objectType: "Objekttype",
       objectName: "Objektnavn",

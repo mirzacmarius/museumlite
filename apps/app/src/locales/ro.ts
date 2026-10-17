@@ -1096,6 +1096,8 @@ export default {
       showObjectName: "Afișează numele obiectului",
 
       title: "Printează eticheta QR",
+      dialogDescription:
+        "Alegeți dimensiunea etichetei, verificați previzualizarea, apoi tipăriți.",
       labelSize: "Dimensiunea etichetei",
       size2x2: "Pătrat",
       size1x3: "Dreptunghi",
@@ -1111,6 +1113,8 @@ export default {
       qrCodeAlt: "Cod QR către acest obiect",
 
       title: "Printează eticheta obiectului",
+      dialogDescription:
+        "Editați textul și aspectul etichetei, verificați previzualizarea, apoi tipăriți.",
       objectName: "Denumirea obiectului",
       description: "Descriere",
       accessionNumber: "Număr de accesiune",
@@ -1498,6 +1502,7 @@ export default {
     },
     printPreview: {
       title: "Previzualizare la imprimare",
+      dialogDescription: "Un rezumat tipăribil al fișei acestui obiect.",
       basicInformation: "Informații de bază",
       objectType: "Tipul obiectului",
       objectName: "Denumirea obiectului",

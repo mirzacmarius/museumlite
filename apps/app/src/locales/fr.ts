@@ -3136,6 +3136,8 @@ export default {
 
       print: "Imprimer",
       title: "Imprimer une étiquette QR",
+      dialogDescription:
+        "Choisissez une taille d'étiquette, vérifiez l'aperçu, puis imprimez.",
       labelSize: "Taille de l'étiquette",
       size2x2: "Carré",
       size1x3: "Rectangle",
@@ -3153,6 +3155,8 @@ export default {
       accessionNumber: "Numéro d'Accession",
       print: "Imprimer",
       title: "Imprimer une étiquette d'objet",
+      dialogDescription:
+        "Modifiez le texte et la mise en page de l'étiquette, vérifiez l'aperçu, puis imprimez.",
       description: "Description",
       labelSize: "Taille de l'étiquette",
       sizeSmall: 'Petit (3" × 2")',
@@ -3500,6 +3504,7 @@ export default {
     },
     printPreview: {
       title: "Aperçu Avant Impression",
+      dialogDescription: "Un résumé imprimable de la fiche de cet objet.",
       basicInformation: "Informations de Base",
       objectType: "Type d'Objet",
       objectName: "Nom de l'Objet",
