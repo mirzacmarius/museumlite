@@ -1,6 +1,6 @@
 import { render } from "@react-email/render";
+import WelcomeEmail from "@v1/email/emails/welcome";
 import { expect, test, vi } from "vitest";
-import WelcomeEmail from "../../../email/emails/welcome";
 import { ResendOTP } from "../otp/ResendOTP";
 import { ResendOTPPasswordReset } from "../passwordReset/ResendOTPPasswordReset";
 import { sendLocalizedMagicLinkEmail } from "./authCopy";

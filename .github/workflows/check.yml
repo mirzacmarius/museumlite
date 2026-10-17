@@ -69,6 +69,7 @@ jobs:
           bun run lint:todos
           bun run lint:patterns
           bun run lint:repo
+          bun run lint:boundaries
 
       - name: Verify cache policy
         run: bun run test:ci-policy
