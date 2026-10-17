@@ -1,11 +1,14 @@
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
+import type { Preloaded } from "convex/react";
 import { cacheLife } from "next/cache";
 import { Suspense } from "react";
 import { RecordRecoveryState } from "@/components/record-recovery-state";
-import { getConvexServerToken } from "@/lib/convex-server-token";
+import {
+  getConvexServerToken,
+  getConvexServerTokenForPrivateCache,
+} from "@/lib/convex-server-token";
 import { recordErrorKind } from "@/lib/record-recovery";
 import type { ObjectDetailData } from "./_components/types";
 import { ObjectDetailClient } from "./object-detail-client";
@@ -94,54 +97,73 @@ export default function ObjectDetailPage({ params }: ObjectDetailPageProps) {
   );
 }
 
+type ObjectDetailLoad =
+  | {
+      kind: "ready";
+      preloaded: Preloaded<typeof api.collections.getObjectDetail>;
+    }
+  | { kind: "recovery"; recovery: ReturnType<typeof recordErrorKind> }
+  | { kind: "missing-function" };
+
 /**
  * The object's details for this session, kept in the browser for 30 seconds
  * (the shortest stale time a hover prefetch can use). The page subscribes to
- * the live query as soon as it mounts, so an older snapshot is replaced at
- * once, and Convex Auth clears the browser cache when the user changes.
+ * the live query as soon as it mounts, so a snapshot cached before an edit
+ * shows for a moment and is then replaced. Convex Auth clears the browser
+ * cache when the user changes.
+ *
+ * Errors leave a cached function as generic errors without their Convex code,
+ * so expected failures are classified here and returned as values.
  */
-async function loadObjectDetail(collectionId: Id<"collections">) {
+async function loadObjectDetail(
+  collectionId: Id<"collections">,
+): Promise<ObjectDetailLoad> {
   "use cache: private";
   cacheLife({ stale: 30 });
-  const token = await convexAuthNextjsToken();
-  return preloadQuery(
-    api.collections.getObjectDetail,
-    { collectionId },
-    { token },
-  );
+  try {
+    const preloaded = await preloadQuery(
+      api.collections.getObjectDetail,
+      { collectionId },
+      { token: await getConvexServerTokenForPrivateCache() },
+    );
+    return { kind: "ready", preloaded };
+  } catch (error) {
+    const recovery = recordErrorKind(error);
+    if (recovery !== "error") {
+      return { kind: "recovery", recovery };
+    }
+    if (isMissingObjectDetailFunction(error)) {
+      return { kind: "missing-function" };
+    }
+    throw error;
+  }
 }
 
 async function ObjectDetail({ params }: ObjectDetailPageProps) {
   const { id } = await params;
   const collectionId = id as Id<"collections">;
-  try {
-    const preloadedObjectDetail = await loadObjectDetail(collectionId);
-
+  const load = await loadObjectDetail(collectionId);
+  if (load.kind === "ready") {
     return (
       <ObjectDetailClient
         collectionId={collectionId}
-        preloadedObjectDetail={preloadedObjectDetail}
-      />
-    );
-  } catch (error) {
-    const recovery = recordErrorKind(error);
-    if (recovery !== "error") {
-      return <RecordRecoveryState kind={recovery} list="objects" />;
-    }
-    if (!isMissingObjectDetailFunction(error)) {
-      throw error;
-    }
-
-    const initialObjectDetail = await fetchObjectDetailFallback(
-      collectionId,
-      await getConvexServerToken(),
-    );
-
-    return (
-      <ObjectDetailClient
-        collectionId={collectionId}
-        initialObjectDetail={initialObjectDetail}
+        preloadedObjectDetail={load.preloaded}
       />
     );
   }
+  if (load.kind === "recovery") {
+    return <RecordRecoveryState kind={load.recovery} list="objects" />;
+  }
+
+  const initialObjectDetail = await fetchObjectDetailFallback(
+    collectionId,
+    await getConvexServerToken(),
+  );
+
+  return (
+    <ObjectDetailClient
+      collectionId={collectionId}
+      initialObjectDetail={initialObjectDetail}
+    />
+  );
 }
