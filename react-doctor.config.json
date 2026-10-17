@@ -97,6 +97,10 @@
           "src/components/date-picker.tsx"
         ],
         "rules": ["jsx-a11y/no-autofocus"]
+      },
+      {
+        "files": ["apps/app/package.json", "package.json"],
+        "rules": ["react-doctor/require-reduced-motion"]
       }
     ]
   }
