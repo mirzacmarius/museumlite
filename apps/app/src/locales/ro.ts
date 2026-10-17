@@ -10122,7 +10122,6 @@ export default {
       accountsCrm: "Conturi și relații cu clienții",
       publicPortal: "Portal public",
       digitalAssets: "Resurse digitale",
-      preferences: "Preferințe",
       settings: "Setări",
       registration: "Înregistrare",
       collectionCare: "Îngrijirea colecțiilor",

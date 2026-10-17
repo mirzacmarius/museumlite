@@ -10181,7 +10181,6 @@ export default {
       accountsCrm: "Comptes et gestion de la relation client",
       publicPortal: "Portail public",
       digitalAssets: "Ressources numériques",
-      preferences: "Préférences",
       settings: "Paramètres",
       registration: "Régie des collections",
       collectionCare: "Soin des collections",

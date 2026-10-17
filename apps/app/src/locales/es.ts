@@ -10144,7 +10144,6 @@ export default {
       accountsCrm: "Cuentas y gestión de relaciones con clientes",
       publicPortal: "Portal público",
       digitalAssets: "Recursos digitales",
-      preferences: "Preferencias",
       settings: "Configuración",
       registration: "Registro",
       collectionCare: "Cuidado de colecciones",
