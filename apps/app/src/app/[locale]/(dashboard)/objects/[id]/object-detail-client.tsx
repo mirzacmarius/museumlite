@@ -280,13 +280,7 @@ function ObjectDetailView({
           collection={collection}
           collectionGroupName={collectionGroup?.name}
           collectionId={collectionId}
-          editTab={
-            activeTab === defaultTab
-              ? undefined
-              : activeTab === "condition"
-                ? "physical"
-                : activeTab
-          }
+          editTab={activeTab === defaultTab ? undefined : activeTab}
           linkCopied={state.linkCopied}
           onLinkCopiedChange={(value) =>
             dispatch({ type: "setLinkCopied", value })

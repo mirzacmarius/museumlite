@@ -80,9 +80,12 @@ const STATUS_LABEL = {
 export function ConditionAssessmentPanel({
   collectionId,
   mode = "view",
+  showCurrent = true,
 }: {
   collectionId: Id<"collections">;
   mode?: "view" | "edit";
+  /** Off where a summary card beside the panel already shows it. */
+  showCurrent?: boolean;
 }) {
   const t = useScopedI18n("conditionAssessments");
   const translate = useI18n();
@@ -142,19 +145,21 @@ export function ConditionAssessmentPanel({
           </p>
         </div>
       ) : null}
-      <div className="rounded-lg border border-border p-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-          {t("current")}
-        </p>
-        <p className="mt-1 break-words font-medium">
-          {detail.current.condition
-            ? conditionLabel(detail.current.condition)
-            : t("unknown")}
-        </p>
-        {currentCaption ? (
-          <p className="text-xs text-muted-foreground">{t(currentCaption)}</p>
-        ) : null}
-      </div>
+      {showCurrent ? (
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("current")}
+          </p>
+          <p className="mt-1 break-words font-medium">
+            {detail.current.condition
+              ? conditionLabel(detail.current.condition)
+              : t("unknown")}
+          </p>
+          {currentCaption ? (
+            <p className="text-xs text-muted-foreground">{t(currentCaption)}</p>
+          ) : null}
+        </div>
+      ) : null}
       {detail.comparison.currentCondition && comparedBefore ? (
         <div className="rounded-lg border border-border p-4">
           <h3 className="text-sm font-medium">{t("compareTitle")}</h3>

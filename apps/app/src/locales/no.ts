@@ -8363,7 +8363,6 @@ export default {
       tabs: {
         general: "Generelt",
         physical: "Fysisk beskrivelse",
-        condition: "Tilstand",
         media: "Medier",
         accession: "Registrering",
         provenance: "Proveniens og historikk",

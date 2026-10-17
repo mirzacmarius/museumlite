@@ -8433,7 +8433,6 @@ export default {
       tabs: {
         general: "General",
         physical: "Descriere fizică",
-        condition: "Stare de conservare",
         media: "Media",
         accession: "Înregistrare",
         provenance: "Proveniență și istoric",

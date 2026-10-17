@@ -8,7 +8,6 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import { CollectionEditPhysicalTab } from "../../_components/collection-edit-form/tabs/physical-tab";
 import { ConditionAssessmentPanel } from "./condition-assessment-panel";
-import { ConditionTab } from "./condition-tab";
 import { PhysicalTab } from "./physical-tab";
 import type { CollectionData } from "./types";
 
@@ -170,16 +169,19 @@ const viewedObject = {
   condition: "Good",
 } as CollectionData;
 
-test("viewing an object shows its current condition and history without authoring controls", async () => {
-  await renderOnPage(
-    <ConditionTab
-      collectionId={viewedObject._id}
-      organizationId={viewedObject.organizationId}
-    />,
+async function openHistory() {
+  await userEvent.click(
+    screen.getByRole("button", { name: "Assessment history" }),
   );
+}
+
+test("viewing an object shows its current condition and history without authoring controls", async () => {
+  await renderOnPage(<PhysicalTab collection={viewedObject} />);
+  await openHistory();
 
   const panel = screen.getByRole("region", { name: "Condition assessments" });
-  expect(within(panel).getByText("Good").textContent).toBe("Good");
+  expect(screen.getByText("Good").textContent).toBe("Good");
+  expect(within(panel).queryByText("Current condition")).toBeNull();
   expect(within(panel).getByText("Crack at base").textContent).toBe(
     "Crack at base",
   );
@@ -197,33 +199,32 @@ test("viewing an object shows its current condition and history without authorin
   expect(screen.queryByRole("heading", { name: "New assessment" })).toBeNull();
 });
 
-test("the Physical tab sums up the current condition and links to its history", async () => {
-  const openAssessments = vi.fn();
-  await renderOnPage(
-    <PhysicalTab
-      collection={viewedObject}
-      onOpenConditionTab={openAssessments}
-    />,
-  );
+test("the Physical tab sums up the current condition and expands its history in place", async () => {
+  await renderOnPage(<PhysicalTab collection={viewedObject} />);
 
   expect(screen.getByText("Good").textContent).toBe("Good");
   expect(
     screen.queryByRole("region", { name: "Condition assessments" }),
   ).toBeNull();
-  await userEvent.click(
-    screen.getByRole("button", { name: "Assessment history" }),
-  );
-  expect(openAssessments).toHaveBeenCalledOnce();
+  const toggle = screen.getByRole("button", { name: "Assessment history" });
+  expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+  await userEvent.click(toggle);
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  expect(
+    screen.getByRole("region", { name: "Condition assessments" }),
+  ).toBeTruthy();
+
+  await userEvent.click(toggle);
+  expect(
+    screen.queryByRole("region", { name: "Condition assessments" }),
+  ).toBeNull();
 });
 
 test("a reviewer who cannot edit the object accepts submitted assessments from the view tab", async () => {
   permissions = new Set(["collections.read", "collections.accept_condition"]);
-  await renderOnPage(
-    <ConditionTab
-      collectionId={viewedObject._id}
-      organizationId={viewedObject.organizationId}
-    />,
-  );
+  await renderOnPage(<PhysicalTab collection={viewedObject} />);
+  await openHistory();
   const user = userEvent.setup();
 
   expect(screen.queryByRole("button", { name: "Save draft" })).toBeNull();
@@ -236,12 +237,8 @@ test("a reviewer who cannot edit the object accepts submitted assessments from t
 
 test("the view tab lists legacy condition history once, with who recorded it", async () => {
   detail.legacy.history = [legacyEntry];
-  await renderOnPage(
-    <ConditionTab
-      collectionId={viewedObject._id}
-      organizationId={viewedObject.organizationId}
-    />,
-  );
+  await renderOnPage(<PhysicalTab collection={viewedObject} />);
+  await openHistory();
 
   expect(screen.getAllByText("Legacy condition history")).toHaveLength(1);
   const panel = screen.getByRole("region", { name: "Condition assessments" });
@@ -717,12 +714,8 @@ test("history shows each status and why an assessment was rejected", async () =>
       rejectionReason: "Photos missing",
     },
   ];
-  await renderOnPage(
-    <ConditionTab
-      collectionId={viewedObject._id}
-      organizationId={viewedObject.organizationId}
-    />,
-  );
+  await renderOnPage(<PhysicalTab collection={viewedObject} />);
+  await openHistory();
 
   const panel = screen.getByRole("region", { name: "Condition assessments" });
   for (const label of [

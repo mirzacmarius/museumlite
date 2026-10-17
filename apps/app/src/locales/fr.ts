@@ -8474,7 +8474,6 @@ export default {
       tabs: {
         general: "Général",
         physical: "Description physique",
-        condition: "État de conservation",
         media: "Médias",
         accession: "Inventaire",
         provenance: "Provenance et historique",

@@ -8264,7 +8264,6 @@ export default {
       tabs: {
         general: "General",
         physical: "Physical Description",
-        condition: "Condition",
         media: "Media",
         accession: "Accession",
         provenance: "Provenance and History",

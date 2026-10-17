@@ -1,15 +1,17 @@
 "use client";
 
 import { Ruler, Search } from "lucide-react";
+import { useId, useState } from "react";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n } from "@/locales/client";
+import { ConditionAssessmentPanel } from "./condition-assessment-panel";
 import { ConditionSummaryCard } from "./condition-summary-card";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
+import { ObjectIncidents } from "./object-incidents";
 import type { CollectionData } from "./types";
 
 interface PhysicalTabProps {
   collection: CollectionData;
-  onOpenConditionTab?: () => void;
 }
 
 function formatObjectType(
@@ -31,11 +33,10 @@ function formatObjectType(
   }
 }
 
-export function PhysicalTab({
-  collection,
-  onOpenConditionTab,
-}: PhysicalTabProps) {
+export function PhysicalTab({ collection }: PhysicalTabProps) {
   const tRoot = useI18n();
+  const historyId = useId();
+  const [showHistory, setShowHistory] = useState(false);
   const notSpecified = tRoot("untranslatedRecords.objects.status.notSpecified");
   const unit = collection.dimensionUnit ? ` ${collection.dimensionUnit}` : "";
   const measuredDimensions = [
@@ -104,9 +105,20 @@ export function PhysicalTab({
 
         <ConditionSummaryCard
           collectionId={collection._id}
-          onOpenAssessments={onOpenConditionTab}
+          historyId={historyId}
+          historyExpanded={showHistory}
+          onToggleHistory={() => setShowHistory((shown) => !shown)}
         />
       </div>
+
+      {showHistory ? (
+        <div id={historyId}>
+          <ConditionAssessmentPanel
+            collectionId={collection._id}
+            showCurrent={false}
+          />
+        </div>
+      ) : null}
 
       <DetailSection
         title={tRoot("untranslatedRecords.objects.detail.inscriptionsMarks")}
@@ -131,6 +143,11 @@ export function PhysicalTab({
           ),
         )}
       </DetailSection>
+
+      <ObjectIncidents
+        collectionId={collection._id}
+        organizationId={collection.organizationId}
+      />
     </div>
   );
 }

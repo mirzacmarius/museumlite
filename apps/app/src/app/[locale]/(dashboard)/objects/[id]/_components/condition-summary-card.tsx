@@ -3,22 +3,27 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { ArrowRight, HeartPulse } from "lucide-react";
+import { ChevronDown, HeartPulse } from "lucide-react";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatConditionLabel } from "./condition-display";
 import { DetailSection } from "./detail-section";
 
 /**
- * The object's current condition at a glance, with a way into the full
- * assessment history on the Condition tab.
+ * The object's current condition at a glance, with a toggle that expands the
+ * full assessment history below it.
  */
 export function ConditionSummaryCard({
   collectionId,
-  onOpenAssessments,
+  historyId,
+  historyExpanded = false,
+  onToggleHistory,
 }: {
   collectionId: Id<"collections">;
-  onOpenAssessments?: () => void;
+  historyId?: string;
+  historyExpanded?: boolean;
+  onToggleHistory?: () => void;
 }) {
   const t = useScopedI18n("conditionAssessments");
   const translate = useI18n();
@@ -61,16 +66,24 @@ export function ConditionSummaryCard({
                 : t("awaitingApprovalCaption")}
             </p>
           ) : null}
-          {onOpenAssessments ? (
+          {onToggleHistory ? (
             <Button
               type="button"
               variant="outline"
               size="sm"
               className="w-fit"
-              onClick={onOpenAssessments}
+              aria-expanded={historyExpanded}
+              aria-controls={historyId}
+              onClick={onToggleHistory}
             >
               {t("history")}
-              <ArrowRight className="ml-1.5 size-3.5" />
+              <ChevronDown
+                className={cn(
+                  "ml-1.5 size-3.5 transition-transform",
+                  historyExpanded && "rotate-180",
+                )}
+                aria-hidden
+              />
             </Button>
           ) : null}
         </>

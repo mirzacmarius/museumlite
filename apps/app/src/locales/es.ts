@@ -8444,7 +8444,6 @@ export default {
       tabs: {
         general: "General",
         physical: "Descripción física",
-        condition: "Estado de conservación",
         media: "Medios",
         accession: "Accesión",
         provenance: "Procedencia e historial",
