@@ -1,10 +1,10 @@
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import { SidebarInset, SidebarProvider } from "@v1/ui/sidebar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
+import { type ReactNode, Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
 import { CommandPaletteProvider } from "@/components/command-palette-provider";
@@ -14,14 +14,23 @@ import { NotificationBell } from "@/components/notification-bell";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { PermissionProvider } from "@/components/permission-gate";
 import { SkipNavigation } from "@/components/skip-navigation";
+import { getConvexServerToken } from "@/lib/convex-server-token";
 import { DashboardHeader } from "./dashboard-header";
+import { DashboardShellSkeleton } from "./dashboard-shell-skeleton";
 
-export default async function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const token = await convexAuthNextjsToken();
+export default function Layout({ children }: { children: ReactNode }) {
+  // The shell reads the session, so it streams in behind a skeleton. Client
+  // navigations inside the dashboard keep this layout mounted and only render
+  // the page below it.
+  return (
+    <Suspense fallback={<DashboardShellSkeleton />}>
+      <DashboardShell>{children}</DashboardShell>
+    </Suspense>
+  );
+}
+
+async function DashboardShell({ children }: { children: ReactNode }) {
+  const token = await getConvexServerToken();
   const [user, organizations, activeOrgPreference] = await Promise.all([
     fetchQuery(api.users.getUser, {}, { token }),
     fetchQuery(api.organizations.listUserOrganizations, {}, { token }),

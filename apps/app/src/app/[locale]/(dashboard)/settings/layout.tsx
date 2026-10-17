@@ -1,17 +1,15 @@
 import type { ReactNode } from "react";
 import { AdministrationGate } from "@/components/administration-gate";
-import { requireCurrentOrganizationPermission } from "@/lib/organization-permissions";
+import { RequireOrganizationPermission } from "@/components/require-organization-permission";
 import { SettingsLayoutClient } from "./settings-layout-client";
 
-export default async function SettingsLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  await requireCurrentOrganizationPermission("organization.manage_settings");
+export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
-    <AdministrationGate>
-      <SettingsLayoutClient>{children}</SettingsLayoutClient>
-    </AdministrationGate>
+    <>
+      <RequireOrganizationPermission permission="organization.manage_settings" />
+      <AdministrationGate>
+        <SettingsLayoutClient>{children}</SettingsLayoutClient>
+      </AdministrationGate>
+    </>
   );
 }

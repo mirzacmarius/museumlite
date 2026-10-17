@@ -1,13 +1,13 @@
 import "server-only";
 
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { fetchQuery } from "convex/nextjs";
 import { notFound } from "next/navigation";
+import { getConvexServerToken } from "@/lib/convex-server-token";
 
 export async function getCurrentOrganizationPermissions() {
-  const token = await convexAuthNextjsToken();
+  const token = await getConvexServerToken();
   const [organizations, activeOrganizationPreference] = await Promise.all([
     fetchQuery(api.organizations.listUserOrganizations, {}, { token }),
     fetchQuery(

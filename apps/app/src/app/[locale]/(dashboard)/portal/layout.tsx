@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { AdministrationGate } from "@/components/administration-gate";
-import { requireCurrentOrganizationPermission } from "@/lib/organization-permissions";
+import { RequireOrganizationPermission } from "@/components/require-organization-permission";
 
-export default async function PortalLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  await requireCurrentOrganizationPermission("organization.manage_settings");
-  return <AdministrationGate>{children}</AdministrationGate>;
+export default function PortalLayout({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <RequireOrganizationPermission permission="organization.manage_settings" />
+      <AdministrationGate>{children}</AdministrationGate>
+    </>
+  );
 }

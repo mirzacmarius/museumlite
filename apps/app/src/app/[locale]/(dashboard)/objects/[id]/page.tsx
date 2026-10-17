@@ -1,11 +1,13 @@
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
+import { Suspense } from "react";
 import { RecordRecoveryState } from "@/components/record-recovery-state";
+import { getConvexServerToken } from "@/lib/convex-server-token";
 import { recordErrorKind } from "@/lib/record-recovery";
 import type { ObjectDetailData } from "./_components/types";
 import { ObjectDetailClient } from "./object-detail-client";
+import { ObjectDetailSkeleton } from "./object-detail-skeleton";
 
 function isMissingObjectDetailFunction(error: unknown) {
   return (
@@ -78,12 +80,20 @@ async function fetchObjectDetailFallback(
   };
 }
 
-export default async function ObjectDetailPage({
-  params,
-}: {
+type ObjectDetailPageProps = {
   params: Promise<{ id: string }>;
-}) {
-  const [token, { id }] = await Promise.all([convexAuthNextjsToken(), params]);
+};
+
+export default function ObjectDetailPage({ params }: ObjectDetailPageProps) {
+  return (
+    <Suspense fallback={<ObjectDetailSkeleton />}>
+      <ObjectDetail params={params} />
+    </Suspense>
+  );
+}
+
+async function ObjectDetail({ params }: ObjectDetailPageProps) {
+  const [token, { id }] = await Promise.all([getConvexServerToken(), params]);
   const collectionId = id as Id<"collections">;
   try {
     const preloadedObjectDetail = await preloadQuery(
