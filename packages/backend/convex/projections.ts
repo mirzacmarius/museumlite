@@ -24,6 +24,7 @@ import {
   PROJECTION_STEPS,
   retryGeneration,
   startGeneration,
+  runScheduledReconcile as startScheduledReconcile,
 } from "./utils/projectionMaintenance";
 import { PROJECTION_PHASES } from "./utils/projectionSources";
 import {
@@ -72,6 +73,7 @@ const healthValidator = v.object({
   lastBuiltAt: v.optional(v.number()),
   lastVerifiedAt: v.optional(v.number()),
   invalidatedAt: v.optional(v.number()),
+  nextReconcileAt: v.optional(v.number()),
   active: v.union(generationSummary, v.null()),
   building: v.union(generationSummary, v.null()),
   reconciling: v.union(generationSummary, v.null()),
@@ -185,6 +187,7 @@ export const getHealth = query({
       lastBuiltAt: state?.lastBuiltAt,
       lastVerifiedAt: state?.lastVerifiedAt,
       invalidatedAt: state?.invalidatedAt,
+      nextReconcileAt: state?.reconcileScheduledAt,
       active: await summarize(ctx, active),
       building: await summarize(ctx, building),
       reconciling: await summarize(ctx, reconciling),
@@ -394,6 +397,42 @@ export const advanceGeneration = internalAction({
     });
     return null;
   },
+});
+
+/**
+ * Automatic retry of a failed job: resumes it from its checkpoint unless an
+ * administrator already retried, cancelled or replaced it.
+ */
+export const autoRetryGeneration = internalMutation({
+  args: {
+    generationId: v.id("projectionGenerations"),
+    attempts: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const generation = await ctx.db.get(args.generationId);
+    if (
+      generation?.status !== "failed" ||
+      generation.attempts !== args.attempts
+    )
+      return null;
+    const state = await getProjectionState(ctx, generation.organizationId);
+    const current =
+      state?.buildingGenerationId === generation._id ||
+      state?.reconcilingGenerationId === generation._id;
+    if (current && state?.revision === generation.revision) {
+      await retryGeneration(ctx, generation);
+    }
+    return null;
+  },
+});
+
+/** Starts the reconciliation a record change scheduled. */
+export const runScheduledReconcile = internalMutation({
+  args: { organizationId: v.id("organizations") },
+  returns: v.union(v.id("projectionGenerations"), v.null()),
+  handler: async (ctx, args) =>
+    await startScheduledReconcile(ctx, args.organizationId),
 });
 
 export const continueFanOut = internalMutation({

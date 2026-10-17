@@ -10653,7 +10653,7 @@ export default {
       short: "Indisponibil",
       openHealth: "Deschideți starea indicatorilor",
       askAdministrator:
-        "Cereți unui administrator să reconstruiască indicatorii.",
+        "Indicatorii se reconstruiesc automat. Dacă problema persistă, contactați un administrator.",
       storage: "Utilizarea stocării este indisponibilă",
       usage:
         "Contoarele de utilizare sunt indisponibile până la reconstruirea indicatorilor.",
@@ -10664,11 +10664,11 @@ export default {
       building:
         "Indicatorii sunt în curs de reconstruire. Valorile apar la finalizare.",
       invalidated:
-        "O modificare recentă a afectat mai multe înregistrări decât pot fi actualizate deodată. Este necesară o nouă reconstruire.",
+        "O modificare recentă a afectat mai multe înregistrări decât pot fi actualizate deodată. O nouă reconstruire a pornit automat.",
       definition_changed:
-        "Definițiile indicatorilor s-au schimbat. Este necesară o reconstruire înainte de afișarea valorilor.",
+        "Definițiile indicatorilor s-au schimbat. Indicatorii se reconstruiesc automat la următoarea modificare a înregistrărilor.",
       rebuild_failed:
-        "Ultima reconstruire a eșuat. Reîncercați sau porniți o nouă reconstruire.",
+        "Ultima reconstruire a eșuat. Se reîncearcă automat; dacă eșuează în continuare, un administrator o poate reîncerca sau anula.",
     },
     availability: {
       ready: "Pregătit",
@@ -10687,9 +10687,6 @@ export default {
       reconcile: "Reconciliere",
     },
     actions: {
-      rebuild: "Reconstruiți indicatorii",
-      reconcile: "Rulați reconcilierea",
-      starting: "Se pornește...",
       retry: "Reîncercați",
       retrying: "Se reîncearcă...",
       cancel: "Anulați",
@@ -10699,18 +10696,19 @@ export default {
     page: {
       title: "Starea indicatorilor",
       description:
-        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare, progresul reconstruirii și rezultatele reconcilierii.",
+        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare. Reconstruirile și reconcilierile pornesc singure când se modifică înregistrările.",
       selectOrganization:
         "Selectați o organizație pentru a vedea starea indicatorilor.",
       noPermission:
         "Aveți nevoie de permisiunea de a gestiona setările organizației pentru a vedea starea indicatorilor.",
       statusTitle: "Stare",
-      reconcileNeedsReady:
-        "Reconcilierea este disponibilă după ce indicatorii sunt pregătiți.",
+      automatic:
+        "Indicatorii se reconstruiesc când devin indisponibili și se reconciliază după modificarea înregistrărilor, cel mult o dată pe oră.",
       definitionVersion: "Versiunea definiției",
       definitionOutdated: "Stocată {stored}, curentă {current}",
       lastBuilt: "Ultima generare",
       lastVerified: "Ultima reconciliere",
+      nextReconcile: "Următoarea reconciliere",
       invalidated: "Invalidat",
       limits: "Limite de reconstruire",
       limitsValue:

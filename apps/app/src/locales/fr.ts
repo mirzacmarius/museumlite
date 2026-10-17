@@ -10715,7 +10715,7 @@ export default {
       short: "Indisponible",
       openHealth: "Ouvrir l'état des indicateurs",
       askAdministrator:
-        "Demandez à un administrateur de reconstruire les indicateurs.",
+        "Les indicateurs se reconstruisent automatiquement. Si le problème persiste, contactez un administrateur.",
       storage: "Utilisation du stockage indisponible",
       usage:
         "Les compteurs d'utilisation sont indisponibles jusqu'à la reconstruction des indicateurs.",
@@ -10726,11 +10726,11 @@ export default {
       building:
         "Les indicateurs sont en cours de reconstruction. Les valeurs apparaîtront à la fin.",
       invalidated:
-        "Une modification récente a touché plus d'enregistrements que ce qui peut être mis à jour en une fois. Une nouvelle reconstruction est nécessaire.",
+        "Une modification récente a touché plus d'enregistrements que ce qui peut être mis à jour en une fois. Une nouvelle reconstruction a démarré automatiquement.",
       definition_changed:
-        "Les définitions des indicateurs ont changé. Une reconstruction est nécessaire avant d'afficher les valeurs.",
+        "Les définitions des indicateurs ont changé. Les indicateurs se reconstruiront automatiquement à la prochaine modification de vos enregistrements.",
       rebuild_failed:
-        "La dernière reconstruction a échoué. Réessayez ou lancez une nouvelle reconstruction.",
+        "La dernière reconstruction a échoué. Elle est relancée automatiquement ; si l'échec persiste, un administrateur peut la réessayer ou l'annuler.",
     },
     availability: {
       ready: "Prêt",
@@ -10749,9 +10749,6 @@ export default {
       reconcile: "Rapprochement",
     },
     actions: {
-      rebuild: "Reconstruire les indicateurs",
-      reconcile: "Lancer le rapprochement",
-      starting: "Démarrage...",
       retry: "Réessayer",
       retrying: "Nouvelle tentative...",
       cancel: "Annuler",
@@ -10761,18 +10758,19 @@ export default {
     page: {
       title: "État des indicateurs",
       description:
-        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation, progression des reconstructions et résultats des rapprochements.",
+        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation. Les reconstructions et rapprochements démarrent d'eux-mêmes quand les enregistrements changent.",
       selectOrganization:
         "Sélectionnez une organisation pour voir l'état des indicateurs.",
       noPermission:
         "Vous devez pouvoir gérer les paramètres de l'organisation pour voir l'état des indicateurs.",
       statusTitle: "Statut",
-      reconcileNeedsReady:
-        "Le rapprochement est disponible une fois les indicateurs prêts.",
+      automatic:
+        "Les indicateurs se reconstruisent lorsqu'ils deviennent indisponibles et sont rapprochés après les modifications des enregistrements, au plus une fois par heure.",
       definitionVersion: "Version de définition",
       definitionOutdated: "Enregistrée {stored}, actuelle {current}",
       lastBuilt: "Dernière génération",
       lastVerified: "Dernier rapprochement",
+      nextReconcile: "Prochain rapprochement",
       invalidated: "Invalidé",
       limits: "Limites de reconstruction",
       limitsValue:

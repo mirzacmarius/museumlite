@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import {
+  PROJECTION_AUTO_ATTEMPTS,
+  RECONCILE_INTERVAL_MS,
+  RECONCILE_SETTLE_MS,
+} from "../convex/utils/projectionMaintenance";
 import { metricTree } from "../convex/utils/projectionStore";
 import {
   authedForUser,
@@ -575,6 +580,9 @@ describe("failed writes", () => {
         collectionIds: [objectId, objectId],
       }),
     ).rejects.toThrow("Duplicate collection in loan items");
+    // convex-test keeps the timer of a job scheduled by a rolled-back
+    // mutation (here the automatic reconciliation); Convex discards both.
+    vi.clearAllTimers();
 
     const loans = await t.run(
       async (ctx) =>
@@ -656,11 +664,11 @@ describe("wide fan-out", () => {
         await staff.query(api.dashboard.getAnalytics, { organizationId }),
       ).updating,
     ).toBe(false);
-    expect(settled.recentGenerations).toHaveLength(
-      before.recentGenerations.length,
-    );
-    const { health } = await reconcile(staff, settle, organizationId);
-    expect(health.lastReconciliation).toMatchObject({
+    const rebuilds = (health: typeof before) =>
+      health.recentGenerations.filter((job) => job.mode === "rebuild");
+    expect(rebuilds(settled)).toHaveLength(rebuilds(before).length);
+    // The change scheduled a reconciliation, which ran once refreshes settled.
+    expect(settled.lastReconciliation).toMatchObject({
       status: "completed",
       mismatchCount: 0,
     });
@@ -770,6 +778,135 @@ describe("metric aggregate storage", () => {
     });
     await settle();
     expect(await namespaceCount()).toBeLessThanOrEqual(afterFirst * 2);
+  });
+});
+
+describe("automatic health maintenance", () => {
+  const createObject = (
+    staff: ReturnType<typeof authedForUser>,
+    organizationId: Id<"organizations">,
+    accessionNumber: string,
+  ) =>
+    staff.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber,
+      title: accessionNumber,
+    });
+
+  test("a change schedules one reconciliation after a quiet period and spaces the next by the interval", async () => {
+    const { t, staff, organizationId } = await fixture();
+    await rebuildProjection(t, organizationId);
+    const health = () =>
+      staff.query(api.projections.getHealth, { organizationId });
+    expect((await health()).nextReconcileAt).toBeUndefined();
+
+    const changedAt = Date.now();
+    await createObject(staff, organizationId, "AUTO-1");
+    await createObject(staff, organizationId, "AUTO-2");
+    const scheduled = await health();
+    expect(scheduled.nextReconcileAt).toBe(changedAt + RECONCILE_SETTLE_MS);
+    expect(scheduled.lastReconciliation).toBeNull();
+
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const reconciled = await health();
+    expect(reconciled.nextReconcileAt).toBeUndefined();
+    expect(reconciled.lastReconciliation).toMatchObject({
+      status: "completed",
+      mismatchCount: 0,
+    });
+    expect(
+      reconciled.recentGenerations.filter((job) => job.mode === "reconcile"),
+    ).toHaveLength(1);
+
+    await createObject(staff, organizationId, "AUTO-3");
+    const finishedAt = reconciled.lastReconciliation?.finishedAt ?? 0;
+    expect((await health()).nextReconcileAt).toBe(
+      finishedAt + RECONCILE_INTERVAL_MS,
+    );
+  });
+
+  test("a change to an unavailable projection starts a rebuild without an administrator", async () => {
+    const { t, staff, settle, organizationId } = await fixture();
+    await rebuildProjection(t, organizationId);
+    await t.run(async (ctx) => {
+      const state = await ctx.db
+        .query("organizationProjectionStates")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .unique();
+      if (!state) throw new Error("projection state missing");
+      await ctx.db.patch(state._id, { definitionVersion: 1 });
+    });
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({
+      availability: "unavailable",
+      reason: "definition_changed",
+    });
+
+    await createObject(staff, organizationId, "AUTO-1");
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({ building: { mode: "rebuild", status: "building" } });
+
+    await settle();
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({
+      availability: "ready",
+      stateDefinitionVersion: 2,
+      building: null,
+    });
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 1 });
+  });
+
+  test("a failed job retries itself from its checkpoint until the attempt limit", async () => {
+    const { t, staff, organizationId, userId } = await fixture();
+    await insertObjects(t, organizationId, userId, 30);
+    const generationId = await staff.mutation(api.projections.startRebuild, {
+      organizationId,
+    });
+    const building = async () =>
+      (await staff.query(api.projections.getHealth, { organizationId }))
+        .building;
+    const fail = async () => {
+      await t.mutation(internal.projections.markGenerationPageFailed, {
+        generationId,
+        expectedCheckpoint: (await building())?.checkpoint ?? -1,
+        failure: "Simulated page failure",
+      });
+    };
+
+    await t.mutation(internal.projections.applyGenerationPage, {
+      generationId,
+      expectedCheckpoint: 0,
+    });
+    for (let attempt = 1; attempt < PROJECTION_AUTO_ATTEMPTS; attempt++) {
+      await fail();
+      expect(await building()).toMatchObject({
+        status: "failed",
+        attempts: attempt,
+      });
+      vi.runOnlyPendingTimers();
+      await t.finishInProgressScheduledFunctions();
+      expect(await building()).toMatchObject({
+        status: "building",
+        attempts: attempt + 1,
+      });
+    }
+    await fail();
+    vi.runOnlyPendingTimers();
+    await t.finishInProgressScheduledFunctions();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await building()).toMatchObject({
+      status: "failed",
+      attempts: PROJECTION_AUTO_ATTEMPTS,
+    });
   });
 });
 

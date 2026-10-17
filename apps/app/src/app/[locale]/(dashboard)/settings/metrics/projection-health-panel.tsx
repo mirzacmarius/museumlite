@@ -85,63 +85,27 @@ function Row({
 
 function StatusCard({ health, action }: { health: Health; action: JobAction }) {
   const t = useScopedI18n("projectionHealth");
-  const startRebuild = useMutation(api.projections.startRebuild);
-  const startReconcile = useMutation(api.projections.startReconcile);
   const ready = health.availability === "ready";
-  const canReconcile = ready && health.reconciling === null;
   return (
     <section className="rounded-lg border border-white/10 bg-card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h3 className="text-base font-medium">{t("page.statusTitle")}</h3>
-          <Badge variant={ready ? "default" : "destructive"}>
-            {ready
-              ? health.updating
-                ? t("availability.updating")
-                : t("availability.ready")
-              : t("availability.unavailable")}
-          </Badge>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            disabled={health.building !== null || action.pending !== undefined}
-            onClick={() =>
-              action.run("rebuild", () =>
-                startRebuild({ organizationId: action.organizationId }),
-              )
-            }
-          >
-            {action.pending === "rebuild"
-              ? t("actions.starting")
-              : t("actions.rebuild")}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!canReconcile || action.pending !== undefined}
-            onClick={() =>
-              action.run("reconcile", () =>
-                startReconcile({ organizationId: action.organizationId }),
-              )
-            }
-          >
-            {action.pending === "reconcile"
-              ? t("actions.starting")
-              : t("actions.reconcile")}
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <h3 className="text-base font-medium">{t("page.statusTitle")}</h3>
+        <Badge variant={ready ? "default" : "destructive"}>
+          {ready
+            ? health.updating
+              ? t("availability.updating")
+              : t("availability.ready")
+            : t("availability.unavailable")}
+        </Badge>
       </div>
       {!ready && health.reason ? (
         <p className="mt-2 text-sm text-muted-foreground">
           {unavailableReasonLabel(health.reason, t)}
         </p>
       ) : null}
-      {!ready && !health.reconciling ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {t("page.reconcileNeedsReady")}
-        </p>
-      ) : null}
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("page.automatic")}
+      </p>
       <div className="mt-3 divide-y divide-white/10">
         <Row label={t("page.definitionVersion")}>
           {health.stateDefinitionVersion === null ||
@@ -158,6 +122,11 @@ function StatusCard({ health, action }: { health: Health; action: JobAction }) {
         <Row label={t("page.lastVerified")}>
           <RelativeTime timestamp={health.lastVerifiedAt} />
         </Row>
+        {health.nextReconcileAt ? (
+          <Row label={t("page.nextReconcile")}>
+            <RelativeTime timestamp={health.nextReconcileAt} />
+          </Row>
+        ) : null}
         {health.invalidatedAt ? (
           <Row label={t("page.invalidated")}>
             <RelativeTime timestamp={health.invalidatedAt} />
