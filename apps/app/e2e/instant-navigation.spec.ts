@@ -23,7 +23,7 @@ test("Overview to Object Catalog is instant", async ({ page }) => {
   });
 });
 
-test("Object Catalog to an object shows its skeleton at once", async ({
+test("Clicking an object without hovering first shows its skeleton at once", async ({
   page,
 }) => {
   await page.goto("/objects");
@@ -42,6 +42,27 @@ test("Object Catalog to an object shows its skeleton at once", async ({
   await expect(
     page.getByRole("heading", { name: E2E_OBJECT_TITLE }),
   ).toBeVisible();
+});
+
+test("Hovering an object in the catalog prefetches its page", async ({
+  page,
+}) => {
+  await page.goto("/objects");
+  const objectLink = page.getByRole("link", { name: E2E_OBJECT_TITLE });
+  await expect(objectLink).toBeVisible();
+
+  // Hovering shows intent, so the link prefetches this object's details.
+  await objectLink.hover();
+  await page.waitForLoadState("networkidle");
+
+  await instant(page, async () => {
+    await objectLink.click();
+    await page.waitForURL((url) => /\/objects\/[^/]+$/.test(url.pathname));
+    await expect(page.getByTestId("object-detail-skeleton")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: E2E_OBJECT_TITLE }),
+    ).toBeVisible();
+  });
 });
 
 test("Moving between settings pages is instant", async ({ page }) => {

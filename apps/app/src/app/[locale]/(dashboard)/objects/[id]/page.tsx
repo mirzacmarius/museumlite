@@ -1,6 +1,8 @@
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
+import { cacheLife } from "next/cache";
 import { Suspense } from "react";
 import { RecordRecoveryState } from "@/components/record-recovery-state";
 import { getConvexServerToken } from "@/lib/convex-server-token";
@@ -92,15 +94,28 @@ export default function ObjectDetailPage({ params }: ObjectDetailPageProps) {
   );
 }
 
+/**
+ * The object's details for this session, kept in the browser for 30 seconds
+ * (the shortest stale time a hover prefetch can use). The page subscribes to
+ * the live query as soon as it mounts, so an older snapshot is replaced at
+ * once, and Convex Auth clears the browser cache when the user changes.
+ */
+async function loadObjectDetail(collectionId: Id<"collections">) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  const token = await convexAuthNextjsToken();
+  return preloadQuery(
+    api.collections.getObjectDetail,
+    { collectionId },
+    { token },
+  );
+}
+
 async function ObjectDetail({ params }: ObjectDetailPageProps) {
-  const [token, { id }] = await Promise.all([getConvexServerToken(), params]);
+  const { id } = await params;
   const collectionId = id as Id<"collections">;
   try {
-    const preloadedObjectDetail = await preloadQuery(
-      api.collections.getObjectDetail,
-      { collectionId },
-      { token },
-    );
+    const preloadedObjectDetail = await loadObjectDetail(collectionId);
 
     return (
       <ObjectDetailClient
@@ -119,7 +134,7 @@ async function ObjectDetail({ params }: ObjectDetailPageProps) {
 
     const initialObjectDetail = await fetchObjectDetailFallback(
       collectionId,
-      token,
+      await getConvexServerToken(),
     );
 
     return (

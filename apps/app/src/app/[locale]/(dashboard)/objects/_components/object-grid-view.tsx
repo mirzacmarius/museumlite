@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
 import { useReducer } from "react";
 import { toast } from "sonner";
 import {
@@ -40,6 +39,7 @@ import { writeTextToClipboard } from "@/lib/clipboard";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useI18n } from "@/locales/client";
+import { IntentPrefetchLink } from "./intent-prefetch-link";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -437,7 +437,7 @@ function ObjectGridItem({
           />
         </div>
       )}
-      <Link
+      <IntentPrefetchLink
         href={withReturnPath(`/objects/${item._id}`, returnPath)}
         className="block"
       >
@@ -509,7 +509,7 @@ function ObjectGridItem({
             )}
           </div>
         </div>
-      </Link>
+      </IntentPrefetchLink>
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 aspect-square">
         <div className="pointer-events-auto absolute bottom-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 has-[[data-state=open]]:opacity-100 [@media(hover:none)]:opacity-100">

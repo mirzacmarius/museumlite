@@ -23,6 +23,7 @@ import {
   type ColumnId,
   DEFAULT_COLUMN_CONFIG,
 } from "./column-config";
+import { IntentPrefetchLink } from "./intent-prefetch-link";
 import { ObjectActionsMenu, ObjectGridView } from "./object-grid-view";
 import { OBJECT_LIST_KEYS } from "./use-collection-catalog-list";
 import type { ViewMode } from "./view-toggle";
@@ -420,7 +421,7 @@ function CollectionTableRow({
         </td>
       ) : null}
       <td className="px-4 py-3">
-        <Link
+        <IntentPrefetchLink
           href={withReturnPath(`/objects/${item._id}`, returnPath)}
           className="flex flex-col group-hover:cursor-pointer"
         >
@@ -435,7 +436,7 @@ function CollectionTableRow({
               {item.accessionNumber}
             </span>
           ) : null}
-        </Link>
+        </IntentPrefetchLink>
       </td>
       {isColumnVisible(columns, "objectType") ? (
         <td className="px-4 py-3">
