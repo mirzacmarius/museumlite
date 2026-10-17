@@ -9,7 +9,7 @@ bun dev:app                # Main app only (port 3000)
 bun dev:web                # Marketing site only
 
 # Quality checks
-bun run lint               # Biome lint + sherif monorepo check
+bun run lint               # Biome lint + sherif monorepo check + turbo boundaries
 bun run typecheck          # TypeScript check all workspaces
 bun run --cwd packages/backend typecheck # Standalone Convex backend compilation
 bun run format             # Biome format (writes files)
@@ -62,7 +62,7 @@ Running `bun dev` at root starts `convex dev --tail-logs` against the cloud depl
 - `bun run typecheck`
 - `bun run test` (uses `convex-test`; no cloud)
 
-`bun run check` runs everything CI runs except build and loopback deploy: lint (Biome check including formatting and import order, sherif, no bare `TODO`/`FIXME`, runtime-breaking call patterns from `scripts/check-patterns.mjs`), react-doctor, typecheck including i18n (`typecheck:all`), workspace tests, and CI-policy tests (`test:ci-policy`). CI is the source of truth; if it gains a step that needs no backend, add it to the `check` script. Mark intentional follow-up work as `TODO(MUS-123)` instead of a bare `TODO`.
+`bun run check` runs everything CI runs except build and loopback deploy: lint (Biome check including formatting and import order, sherif, `turbo boundaries` (every imported package is declared in that workspace's `package.json`; deliberate exceptions carry a `// @boundaries-ignore <reason>` comment), no bare `TODO`/`FIXME`, runtime-breaking call patterns from `scripts/check-patterns.mjs`), react-doctor, typecheck including i18n (`typecheck:all`), workspace tests, and CI-policy tests (`test:ci-policy`). CI is the source of truth; if it gains a step that needs no backend, add it to the `check` script. Mark intentional follow-up work as `TODO(MUS-123)` instead of a bare `TODO`.
 
 CI (`.github/workflows/check.yml`, check name `check`) runs on every pull request and every push to `main`, and can be dispatched by hand with `gh workflow run check.yml --ref <branch>` (dispatch checks every workspace). It uses one runner and installs dependencies once. Pull requests and pushes run each Turbo task with `--affected`, so only workspaces with changed files, and the workspaces that depend on them, are checked; changes to a `globalDependencies` file in `turbo.json` affect every workspace. Changes outside any workspace (docs, CI configuration, other root scripts) run only the repository guards. The loopback Convex deploy runs when `@v1/backend` is affected, and always on `main` pushes and manual runs. With the `TURBO_TOKEN` secret and `TURBO_TEAM` variable set, CI uses Vercel Remote Cache: pull requests read it and `main` writes it. On a developer machine, `npx turbo login` and `npx turbo link` connect the same cache. Superseded PR runs are cancelled; main-push runs are not.
 

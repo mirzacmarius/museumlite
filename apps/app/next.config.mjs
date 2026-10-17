@@ -1,4 +1,6 @@
+// @boundaries-ignore Shared Next.js config helpers live in the root scripts folder
 import { convexImageConfig } from "../../scripts/convex-image-config.mjs";
+// @boundaries-ignore Shared Next.js config helpers live in the root scripts folder
 import { loadMonorepoEnv } from "../../scripts/load-monorepo-env.mjs";
 
 loadMonorepoEnv(import.meta.url);
