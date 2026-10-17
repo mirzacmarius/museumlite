@@ -3,15 +3,15 @@
   "agentGuidance": true,
   "globalDependencies": [
     "**/.env*",
-    ".github/actions/**",
-    ".github/workflows/**",
     ".gitignore",
     "biome.json",
     "bun.lock",
     "bunfig.toml",
     "package.json",
     "patches/**",
-    "scripts/**",
+    "scripts/apply-patches.js",
+    "scripts/convex-image-config.mjs",
+    "scripts/load-monorepo-env.mjs",
     "tooling/typescript/**",
     "tsconfig*.json"
   ],
