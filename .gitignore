@@ -79,3 +79,6 @@ docs/audits/
 
 # local QA backend state
 .local-qa/
+
+# Agent skills live in .claude/skills; other installers also write copies here
+.agents/skills/
