@@ -2653,6 +2653,7 @@ export default {
     },
     qrLabel: {
       title: "Print QR Label",
+      dialogDescription: "Choose a label size, check the preview, then print.",
       labelSize: "Label Size",
       size2x2: "Square",
       size1x3: "Rectangle",
@@ -2667,6 +2668,8 @@ export default {
     },
     objectLabel: {
       title: "Print Object Label",
+      dialogDescription:
+        "Edit the label text and layout, check the preview, then print.",
       objectName: "Object Name",
       description: "Description",
       accessionNumber: "Accession Number",
@@ -2906,6 +2909,7 @@ export default {
     },
     printPreview: {
       title: "Print Preview",
+      dialogDescription: "A printable summary of this object's record.",
       basicInformation: "Basic Information",
       objectType: "Object Type",
       objectName: "Object Name",
@@ -8127,6 +8131,28 @@ export default {
         fromValue: "from “{value}”",
         toValue: "to “{value}”",
         byUser: "By {name}",
+        actions: {
+          created_collection: "Object created",
+          updated_collection: "Object updated",
+          archived_collection: "Object withdrawn",
+          restored_collection: "Object restored",
+          received_collection_from_organization_move:
+            "Object received from another organization",
+          added_alternate_accession_number: "Alternate accession number added",
+          removed_alternate_accession_number:
+            "Alternate accession number removed",
+          created_move_request: "Move requested",
+          executed_move_request: "Move completed",
+          cancelled_move_request: "Move request cancelled",
+          rejected_move_request: "Move request rejected",
+          move_request_conflict: "Move request conflict",
+          provenance_claim_recorded: "Provenance claim recorded",
+          provenance_claim_corrected: "Provenance claim corrected",
+          provenance_claim_retracted: "Provenance claim retracted",
+          provenance_claim_reviewed: "Provenance claim reviewed",
+          provenance_evidence_added: "Provenance evidence added",
+          provenance_evidence_retracted: "Provenance evidence retracted",
+        },
       },
       actions: {
         add: "Add",

@@ -3136,6 +3136,8 @@ export default {
 
       print: "Imprimer",
       title: "Imprimer une étiquette QR",
+      dialogDescription:
+        "Choisissez une taille d'étiquette, vérifiez l'aperçu, puis imprimez.",
       labelSize: "Taille de l'étiquette",
       size2x2: "Carré",
       size1x3: "Rectangle",
@@ -3153,6 +3155,8 @@ export default {
       accessionNumber: "Numéro d'Accession",
       print: "Imprimer",
       title: "Imprimer une étiquette d'objet",
+      dialogDescription:
+        "Modifiez le texte et la mise en page de l'étiquette, vérifiez l'aperçu, puis imprimez.",
       description: "Description",
       labelSize: "Taille de l'étiquette",
       sizeSmall: 'Petit (3" × 2")',
@@ -3500,6 +3504,7 @@ export default {
     },
     printPreview: {
       title: "Aperçu Avant Impression",
+      dialogDescription: "Un résumé imprimable de la fiche de cet objet.",
       basicInformation: "Informations de Base",
       objectType: "Type d'Objet",
       objectName: "Nom de l'Objet",
@@ -8332,6 +8337,29 @@ export default {
         fromValue: "de « {value} »",
         toValue: "à « {value} »",
         byUser: "Par {name}",
+        actions: {
+          created_collection: "Objet créé",
+          updated_collection: "Objet modifié",
+          archived_collection: "Objet retiré",
+          restored_collection: "Objet restauré",
+          received_collection_from_organization_move:
+            "Objet reçu d’une autre organisation",
+          added_alternate_accession_number:
+            "Numéro d’accession alternatif ajouté",
+          removed_alternate_accession_number:
+            "Numéro d’accession alternatif supprimé",
+          created_move_request: "Déplacement demandé",
+          executed_move_request: "Déplacement effectué",
+          cancelled_move_request: "Demande de déplacement annulée",
+          rejected_move_request: "Demande de déplacement refusée",
+          move_request_conflict: "Conflit de demande de déplacement",
+          provenance_claim_recorded: "Assertion de provenance enregistrée",
+          provenance_claim_corrected: "Assertion de provenance corrigée",
+          provenance_claim_retracted: "Assertion de provenance retirée",
+          provenance_claim_reviewed: "Assertion de provenance examinée",
+          provenance_evidence_added: "Preuve de provenance ajoutée",
+          provenance_evidence_retracted: "Preuve de provenance retirée",
+        },
       },
       actions: {
         add: "Ajouter",

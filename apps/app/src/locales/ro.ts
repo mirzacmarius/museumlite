@@ -1096,6 +1096,8 @@ export default {
       showObjectName: "Afișează numele obiectului",
 
       title: "Printează eticheta QR",
+      dialogDescription:
+        "Alegeți dimensiunea etichetei, verificați previzualizarea, apoi tipăriți.",
       labelSize: "Dimensiunea etichetei",
       size2x2: "Pătrat",
       size1x3: "Dreptunghi",
@@ -1111,6 +1113,8 @@ export default {
       qrCodeAlt: "Cod QR către acest obiect",
 
       title: "Printează eticheta obiectului",
+      dialogDescription:
+        "Editați textul și aspectul etichetei, verificați previzualizarea, apoi tipăriți.",
       objectName: "Denumirea obiectului",
       description: "Descriere",
       accessionNumber: "Număr de accesiune",
@@ -1498,6 +1502,7 @@ export default {
     },
     printPreview: {
       title: "Previzualizare la imprimare",
+      dialogDescription: "Un rezumat tipăribil al fișei acestui obiect.",
       basicInformation: "Informații de bază",
       objectType: "Tipul obiectului",
       objectName: "Denumirea obiectului",
@@ -8293,6 +8298,29 @@ export default {
         fromValue: "din „{value}”",
         toValue: "în „{value}”",
         byUser: "De {name}",
+        actions: {
+          created_collection: "Obiect creat",
+          updated_collection: "Obiect actualizat",
+          archived_collection: "Obiect retras",
+          restored_collection: "Obiect restaurat",
+          received_collection_from_organization_move:
+            "Obiect primit de la altă organizație",
+          added_alternate_accession_number:
+            "Număr de accesiune alternativ adăugat",
+          removed_alternate_accession_number:
+            "Număr de accesiune alternativ eliminat",
+          created_move_request: "Mutare solicitată",
+          executed_move_request: "Mutare finalizată",
+          cancelled_move_request: "Cerere de mutare anulată",
+          rejected_move_request: "Cerere de mutare respinsă",
+          move_request_conflict: "Conflict la cererea de mutare",
+          provenance_claim_recorded: "Afirmație de proveniență înregistrată",
+          provenance_claim_corrected: "Afirmație de proveniență corectată",
+          provenance_claim_retracted: "Afirmație de proveniență retrasă",
+          provenance_claim_reviewed: "Afirmație de proveniență revizuită",
+          provenance_evidence_added: "Dovadă de proveniență adăugată",
+          provenance_evidence_retracted: "Dovadă de proveniență retrasă",
+        },
       },
       actions: {
         add: "Adăugați",

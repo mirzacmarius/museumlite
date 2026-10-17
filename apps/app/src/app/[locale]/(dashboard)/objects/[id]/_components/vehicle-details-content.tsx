@@ -1,6 +1,7 @@
 "use client";
 
 import type { api } from "@v1/backend/convex/_generated/api";
+import { EmptyState } from "@v1/ui/empty-state";
 import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -16,6 +17,7 @@ import { ClientDateFns } from "@/components/client-date";
 import { RecordedValue } from "@/components/recorded-value";
 import { formatMoney, formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 
 type DetailsDoc = NonNullable<
   FunctionReturnType<typeof api.vehicleDetails.get>
@@ -33,10 +35,10 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Car className="size-4 text-blue-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <Car className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("vehicle")}
             </span>
           </div>
@@ -46,10 +48,10 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
           <p className="text-sm text-muted-foreground">{details.model}</p>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
             <Settings className="size-4 text-muted-foreground" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("vin")}
             </span>
           </div>
@@ -58,10 +60,10 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
           </span>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Gauge className="size-4 text-amber-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <Gauge className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("odometer")}
             </span>
           </div>
@@ -73,10 +75,10 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
           </span>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <DollarSign className="size-4 text-emerald-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <DollarSign className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("insuranceValue")}
             </span>
           </div>
@@ -88,111 +90,81 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-          <h4 className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            {tRoot("untranslatedRecords.objects.detail.specifications")}
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.bodyStyle")}
-              </span>
-              <p className="text-sm text-foreground">
-                {details.bodyStyle || "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.fuelType")}
-              </span>
-              <p className="text-sm text-foreground">
-                {details.fuelType || "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.transmission")}
-              </span>
-              <p className="text-sm text-foreground">
-                {details.transmissionType || "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.engineNumber")}
-              </span>
-              <p className="font-mono text-sm text-foreground">
+        <DetailSection
+          title={tRoot("untranslatedRecords.objects.detail.specifications")}
+        >
+          <DetailGrid>
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.bodyStyle")}
+              value={details.bodyStyle}
+            />
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.fuelType")}
+              value={details.fuelType}
+            />
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.transmission")}
+              value={details.transmissionType}
+            />
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.engineNumber")}
+            >
+              <div className="font-mono text-sm text-foreground">
                 {details.engineNumber || "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.exterior")}
-              </span>
-              <p className="text-sm text-foreground">
-                {details.exteriorColor || "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.interior")}
-              </span>
-              <p className="text-sm text-foreground">
-                {details.interiorColor || "—"}
-              </p>
-            </div>
-          </div>
-        </div>
+              </div>
+            </DetailField>
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.exterior")}
+              value={details.exteriorColor}
+            />
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.interior")}
+              value={details.interiorColor}
+            />
+          </DetailGrid>
+        </DetailSection>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-          <h4 className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            {tRoot("untranslatedRecords.objects.detail.registration")}
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.plateNumber")}
-              </span>
-              <p className="font-mono text-sm text-foreground">
+        <DetailSection
+          title={tRoot("untranslatedRecords.objects.detail.registration")}
+        >
+          <DetailGrid>
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.plateNumber")}
+            >
+              <div className="font-mono text-sm text-foreground">
                 {details.registrationNumber || "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.state")}
-              </span>
-              <p className="text-sm text-foreground">
-                {details.registrationState || "—"}
-              </p>
-            </div>
-            <div className="col-span-2">
-              <span className="text-[10px] text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.titleNumber")}
-              </span>
-              <p className="font-mono text-sm text-foreground">
+              </div>
+            </DetailField>
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.state")}
+              value={details.registrationState}
+            />
+            <DetailField
+              label={tRoot("untranslatedRecords.objects.detail.titleNumber")}
+            >
+              <div className="font-mono text-sm text-foreground">
                 {details.titleNumber || "—"}
-              </p>
-            </div>
-          </div>
-        </div>
+              </div>
+            </DetailField>
+          </DetailGrid>
+        </DetailSection>
       </div>
 
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Wrench className="size-4 text-blue-500" />
-          {t("serviceHistory")}
-        </h3>
-
+      <DetailSection
+        title={t("serviceHistory")}
+        icon={Wrench}
+        bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+      >
         {details.serviceLog && details.serviceLog.length > 0 ? (
           <div className="space-y-3">
             {details.serviceLog.map((entry, _index) => (
               <div
                 key={`${entry.serviceDate}-${entry.serviceType}-${entry.description}`}
-                className="rounded-lg border border-border/60 bg-secondary/20 p-4"
+                className="rounded-lg border border-border/60 bg-card p-4"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium uppercase text-blue-500">
+                    <span className="rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium uppercase text-blue-700 dark:text-blue-400">
                       {entry.serviceType}
                     </span>
                     <span className="text-sm font-medium text-foreground">
@@ -223,36 +195,31 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
             ))}
           </div>
         ) : (
-          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
-              {t("noServiceRecords")}
-            </p>
-          </div>
+          <EmptyState variant="card" size="sm" title={t("noServiceRecords")} />
         )}
-      </div>
+      </DetailSection>
 
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Trophy className="size-4 text-amber-500" />
-          {t("eventHistory")}
-        </h3>
-
+      <DetailSection
+        title={t("eventHistory")}
+        icon={Trophy}
+        bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+      >
         {details.eventHistory && details.eventHistory.length > 0 ? (
           <div className="space-y-3">
             {details.eventHistory.map((event, _index) => (
               <div
                 key={`${event.eventDate}-${event.eventType}-${event.eventName ?? ""}`}
-                className="rounded-lg border border-border/60 bg-secondary/20 p-4"
+                className="rounded-lg border border-border/60 bg-card p-4"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "rounded px-2 py-0.5 text-[10px] font-medium uppercase",
+                        "rounded px-2 py-0.5 text-xs font-medium uppercase",
                         event.eventType === "concours"
-                          ? "bg-amber-500/10 text-amber-500"
+                          ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
                           : event.eventType === "race"
-                            ? "bg-rose-500/10 text-rose-500"
+                            ? "bg-rose-500/10 text-rose-700 dark:text-rose-400"
                             : "bg-secondary text-muted-foreground",
                       )}
                     >
@@ -283,7 +250,7 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
                     {event.awards.map((award) => (
                       <span
                         key={award}
-                        className="flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-500"
+                        className="flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400"
                       >
                         <Award className="size-3" />
                         {award}
@@ -295,13 +262,9 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
             ))}
           </div>
         ) : (
-          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
-              {t("noEventHistory")}
-            </p>
-          </div>
+          <EmptyState variant="card" size="sm" title={t("noEventHistory")} />
         )}
-      </div>
+      </DetailSection>
     </div>
   );
 }

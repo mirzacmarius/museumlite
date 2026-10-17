@@ -81,16 +81,16 @@ beforeEach(() => {
 test("an object shows its Comments tab while the Comments module is on", async () => {
   await renderObjectOf("org-current");
 
-  expect(screen.getByRole("button", { name: "Comments" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Logs" })).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "Comments" })).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "Logs" })).toBeTruthy();
 });
 
 test("an object has no Comments tab once the Comments module is off", async () => {
   settingsByOrganization = { "org-current": COMMENTS_OFF };
   await renderObjectOf("org-current");
 
-  expect(screen.queryByRole("button", { name: "Comments" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Logs" })).toBeTruthy();
+  expect(screen.queryByRole("tab", { name: "Comments" })).toBeNull();
+  expect(screen.getByRole("tab", { name: "Logs" })).toBeTruthy();
 });
 
 test("an object follows the Comments module of the organization that holds it", async () => {
@@ -100,5 +100,5 @@ test("an object follows the Comments module of the organization that holds it", 
   };
   await renderObjectOf("org-holder");
 
-  expect(screen.queryByRole("button", { name: "Comments" })).toBeNull();
+  expect(screen.queryByRole("tab", { name: "Comments" })).toBeNull();
 });

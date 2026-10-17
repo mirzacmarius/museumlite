@@ -19,7 +19,7 @@ export function PrintPreviewExtendedSections({
   const t = useScopedI18n("objects.printPreview");
 
   return (
-    <div className="contents">
+    <div className="space-y-5 print:space-y-4">
       {/* Provenance & Acquisition */}
       {(collection.provenance ||
         collection.creditLine ||

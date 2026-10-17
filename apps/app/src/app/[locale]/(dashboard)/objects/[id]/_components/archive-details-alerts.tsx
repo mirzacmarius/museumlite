@@ -21,15 +21,15 @@ export function ArchiveDetailsAlerts({ details }: ArchiveDetailsAlertsProps) {
   return (
     <>
       {details.legalHold ? (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
           <div className="flex items-center gap-2">
-            <Lock className="size-4 text-red-500" />
-            <span className="text-sm font-medium text-red-500">
+            <Lock className="size-4 text-destructive" />
+            <span className="text-sm font-medium text-destructive">
               {t("legalHoldActive")}
             </span>
           </div>
           {details.legalHoldReason ? (
-            <p className="mt-2 text-sm text-red-500/80">
+            <p className="mt-2 text-sm text-destructive/80">
               {t("reason")}: {details.legalHoldReason}
             </p>
           ) : null}
@@ -39,13 +39,13 @@ export function ArchiveDetailsAlerts({ details }: ArchiveDetailsAlertsProps) {
       {details.flaggedForDestruction ? (
         <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-4">
           <div className="flex items-center gap-2">
-            <Trash2 className="size-4 text-orange-500" />
-            <span className="text-sm font-medium text-orange-500">
+            <Trash2 className="size-4 text-orange-700 dark:text-orange-400" />
+            <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
               {t("flaggedForDestruction")}
             </span>
           </div>
           {details.destructionDate ? (
-            <p className="mt-1 text-sm text-orange-500/80">
+            <p className="mt-1 text-sm text-orange-700 dark:text-orange-400/80">
               {t("scheduled")}:{" "}
               <ClientDateFns
                 timestamp={details.destructionDate}
@@ -55,7 +55,7 @@ export function ArchiveDetailsAlerts({ details }: ArchiveDetailsAlertsProps) {
             </p>
           ) : null}
           {details.destructionMethod ? (
-            <p className="mt-1 text-sm text-orange-500/80">
+            <p className="mt-1 text-sm text-orange-700 dark:text-orange-400/80">
               {t("method")}: {details.destructionMethod}
             </p>
           ) : null}

@@ -7,9 +7,9 @@ import {
   ArrowRightLeft,
   Calendar,
   Image as ImageIcon,
-  Info,
   MapPin,
   Maximize2,
+  UserRound,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +17,9 @@ import { useState } from "react";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { useI18n } from "@/locales/client";
 import type { ObjectDetailData } from "../types";
+
+const chipClass =
+  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium";
 
 interface PendingMoveRequest {
   _id: string;
@@ -64,46 +67,45 @@ export function ObjectDetailHero({
       ? selectedImageIndex
       : Math.max(primaryImageIndex, 0);
   const activeImage = heroLightboxImages[activeImageIndex];
+  const heroPreviewUrl =
+    activeImage?.thumbnailUrl ||
+    activeImage?.url ||
+    heroImage?.thumbnailUrl ||
+    heroImage?.url;
 
   return (
-    <div className="border-b border-border/60 bg-secondary/10 p-4 sm:p-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-start sm:gap-8">
+    <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
         <div className="shrink-0">
-          <button
-            type="button"
-            className="group relative block cursor-zoom-in"
-            onClick={() =>
-              (activeImage?.url || heroImage?.url) &&
-              onHeroLightboxOpenChange(true)
-            }
-            aria-label={viewFullSizeLabel}
-          >
-            {activeImage?.url || heroImage?.url ? (
+          {heroPreviewUrl ? (
+            <button
+              type="button"
+              className="group relative block cursor-zoom-in rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              onClick={() => onHeroLightboxOpenChange(true)}
+              aria-label={viewFullSizeLabel}
+            >
               <Image
-                src={
-                  activeImage?.thumbnailUrl ||
-                  activeImage?.url ||
-                  heroImage?.thumbnailUrl ||
-                  heroImage?.url ||
-                  ""
-                }
+                src={heroPreviewUrl}
                 alt={activeImage?.title || collection.title}
-                width={192}
-                height={192}
-                className="size-32 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02] sm:size-48"
+                width={176}
+                height={176}
+                className="size-36 rounded-xl border border-border/60 bg-secondary object-cover shadow-sm sm:size-44"
               />
-            ) : (
-              <div className="flex size-32 items-center justify-center rounded-xl border border-border/60 bg-secondary sm:size-48">
-                <ImageIcon className="size-12 text-muted-foreground" />
+              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                <Maximize2 className="size-6 text-white" />
               </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-zinc-950/50 opacity-0 transition-opacity group-hover:opacity-100">
-              <Maximize2 className="size-6 text-white" />
+            </button>
+          ) : (
+            <div className="flex size-20 items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 sm:size-44">
+              <ImageIcon
+                className="size-8 text-muted-foreground/60 sm:size-10"
+                aria-hidden
+              />
             </div>
-          </button>
+          )}
 
           {heroLightboxImages.length > 1 ? (
-            <div className="mt-3 flex max-w-48 gap-2 overflow-x-auto pb-1">
+            <div className="mt-3 flex max-w-44 gap-2 overflow-x-auto pb-1">
               {heroLightboxImages.map((image, index) => (
                 <button
                   key={image.id}
@@ -116,7 +118,7 @@ export function ObjectDetailHero({
                     },
                   )}
                   aria-current={activeImageIndex === index ? "true" : undefined}
-                  className={`relative size-14 shrink-0 overflow-hidden rounded-md border transition-colors ${
+                  className={`relative size-12 shrink-0 overflow-hidden rounded-md border transition-colors ${
                     activeImageIndex === index
                       ? "border-primary ring-1 ring-primary"
                       : "border-border/60 hover:border-primary/50"
@@ -127,7 +129,7 @@ export function ObjectDetailHero({
                     src={image.thumbnailUrl || image.url}
                     alt=""
                     fill
-                    sizes="56px"
+                    sizes="48px"
                     className="object-cover"
                   />
                 </button>
@@ -143,9 +145,9 @@ export function ObjectDetailHero({
           onClose={() => onHeroLightboxOpenChange(false)}
         />
 
-        <div className="min-w-0 flex-1 space-y-4">
+        <div className="min-w-0 flex-1 space-y-3">
           {pendingMoveRequest ? (
-            <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+            <div className="rounded-xl border border-status-info/30 bg-status-info/10 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm font-medium text-status-info-foreground dark:text-blue-100">
@@ -185,46 +187,59 @@ export function ObjectDetailHero({
           <div className="flex flex-wrap items-center gap-2.5">
             <div
               className={cn(
-                "rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                chipClass,
                 collection.status === "active"
-                  ? "bg-status-success/10 text-status-success-foreground dark:bg-emerald-500/10 dark:text-emerald-400"
-                  : "bg-muted text-muted-foreground",
+                  ? "border-status-success/30 bg-status-success/10 text-status-success-foreground dark:text-emerald-400"
+                  : "border-border bg-muted text-muted-foreground",
               )}
             >
               {getCollectionStatusLabel(collection.status, tRoot)}
             </div>
 
             {isOnDisplay ? (
-              <div className="rounded bg-status-success/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-status-success-foreground dark:bg-emerald-500/10 dark:text-emerald-400">
+              <div
+                className={cn(
+                  chipClass,
+                  "border-status-success/30 bg-status-success/10 text-status-success-foreground dark:text-emerald-400",
+                )}
+              >
                 {onDisplayLabel}
               </div>
             ) : null}
 
-            <div className="break-all rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
+            <div
+              className={cn(
+                chipClass,
+                "break-all border-border bg-muted/60 font-mono text-muted-foreground",
+              )}
+            >
               {collection.accessionNumber}
             </div>
 
             {collection.alternateAccessionNumbers?.map((number) => (
               <div
                 key={number}
-                className="rounded border border-border/60 bg-background/60 px-2 py-1 text-[10px] font-mono text-muted-foreground"
+                className={cn(
+                  chipClass,
+                  "border-dashed border-border font-mono text-muted-foreground",
+                )}
               >
                 {number}
               </div>
             ))}
           </div>
 
-          <h1 className="break-words text-2xl font-semibold tracking-tight">
+          <h1 className="break-words text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
             {collection.title}
           </h1>
 
           {collection.description ? (
-            <p className="break-words text-sm text-muted-foreground">
+            <p className="max-w-3xl break-words text-sm leading-relaxed text-muted-foreground">
               {collection.description}
             </p>
           ) : null}
 
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Calendar className="size-4" />
               <span>{collection.dateCreated || unknownLabel}</span>
@@ -244,7 +259,7 @@ export function ObjectDetailHero({
             ) : null}
             {collection.creator ? (
               <div className="flex items-center gap-2">
-                <Info className="size-4" />
+                <UserRound className="size-4" />
                 <span>{collection.creator}</span>
               </div>
             ) : null}

@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
@@ -70,6 +71,7 @@ export function AppraisalFormDialog({
   supersedes,
 }: AppraisalFormDialogProps) {
   const t = useScopedI18n("valuation");
+  const tCommon = useScopedI18n("common");
   const errorMessage = useValuationErrorMessage();
   const create = useMutation(api.appraisals.create);
   const supersede = useMutation(api.appraisals.supersede);
@@ -268,11 +270,19 @@ export function AppraisalFormDialog({
               />
             </div>
           </div>
-          <div className="flex justify-end">
+          <DialogFooter className="gap-2 pt-2 sm:space-x-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSaving}
+            >
+              {tCommon("cancel")}
+            </Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving ? t("saving") : t("save")}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

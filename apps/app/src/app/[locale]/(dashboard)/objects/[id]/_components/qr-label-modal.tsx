@@ -1,20 +1,29 @@
 "use client";
 
-import { Button } from "@v1/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@v1/ui/dialog";
+import { Dialog } from "@v1/ui/dialog";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
-import { Printer } from "lucide-react";
+import { Switch } from "@v1/ui/switch";
 import { useRef, useState } from "react";
 import type { LabelData, LabelSize } from "@/components/qr-label-generator";
 import { QRLabelGenerator } from "@/components/qr-label-generator";
 import { useScopedI18n } from "@/locales/client";
+import {
+  PrintDialogShell,
+  PrintInstructions,
+  PrintPreviewStage,
+} from "./print-dialog-shell";
 import type { CollectionData } from "./types";
+
+const QR_LABEL_SIZES = [
+  { value: "1x1", key: "size1x1", dimensions: '1" × 1"' },
+  { value: "2x2", key: "size2x2", dimensions: '2" × 2"' },
+  { value: "1x3", key: "size1x3", dimensions: '1" × 3"' },
+] as const satisfies readonly {
+  value: LabelSize;
+  key: "size1x1" | "size2x2" | "size1x3";
+  dimensions: string;
+}[];
 
 interface QRLabelModalProps {
   isOpen: boolean;
@@ -50,82 +59,66 @@ export function QRLabelModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        aria-describedby={undefined}
-        className="flex flex-col max-w-2xl w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0"
+      <PrintDialogShell
+        title={t("title")}
+        description={t("dialogDescription")}
+        cancelLabel={tCommon("cancel")}
+        printLabel={t("print")}
+        onCancel={onClose}
+        onPrint={handlePrint}
+        className="max-w-3xl"
       >
-        <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">
-          <DialogTitle className="text-black">{t("title")}</DialogTitle>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto print:overflow-visible">
-          {/* Label Size Selection */}
-          <div className="p-6 border-b border-zinc-200 print:hidden">
-            <Label className="text-sm font-medium text-black mb-3 block">
-              {t("labelSize")}
-            </Label>
-            <RadioGroup
-              value={labelSize}
-              onValueChange={(value) => setLabelSize(value as LabelSize)}
-              className="flex flex-wrap gap-x-4 gap-y-2"
-            >
-              <div className="flex items-center gap-x-2">
-                <RadioGroupItem value="1x1" id="size-1x1" />
-                <Label
-                  htmlFor="size-1x1"
-                  className="text-sm text-black cursor-pointer"
-                >
-                  {t("size1x1")} (1" × 1")
-                </Label>
-              </div>
-              <div className="flex items-center gap-x-2">
-                <RadioGroupItem value="2x2" id="size-2x2" />
-                <Label
-                  htmlFor="size-2x2"
-                  className="text-sm text-black cursor-pointer"
-                >
-                  {t("size2x2")} (2" × 2")
-                </Label>
-              </div>
-              <div className="flex items-center gap-x-2">
-                <RadioGroupItem value="1x3" id="size-1x3" />
-                <Label
-                  htmlFor="size-1x3"
-                  className="text-sm text-black cursor-pointer"
-                >
-                  {t("size1x3")} (1" × 3")
-                </Label>
-              </div>
-            </RadioGroup>
-            <div className="mt-5 flex items-center justify-between gap-4">
-              <Label
-                htmlFor="qr-label-object-name"
-                id="qr-label-object-name-label"
-                className="text-black"
+        <div className="grid min-h-full md:grid-cols-[minmax(0,17rem)_1fr] print:block">
+          <div className="space-y-6 border-b p-4 sm:p-6 md:border-r md:border-b-0 print:hidden">
+            <div className="space-y-3">
+              <Label className="block text-sm font-medium">
+                {t("labelSize")}
+              </Label>
+              <RadioGroup
+                value={labelSize}
+                onValueChange={(value) => setLabelSize(value as LabelSize)}
+                className="grid gap-2"
               >
+                {QR_LABEL_SIZES.map(({ value, key, dimensions }) => (
+                  <Label
+                    key={value}
+                    htmlFor={`size-${value}`}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-border/60 px-3 py-2.5 text-sm font-normal transition-colors hover:bg-muted/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                  >
+                    <RadioGroupItem value={value} id={`size-${value}`} />
+                    <span className="flex-1">{t(key)}</span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {dimensions}
+                    </span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="qr-label-object-name">
                 {t("showObjectName")}
               </Label>
-              <button
-                type="button"
-                role="switch"
+              <Switch
                 id="qr-label-object-name"
-                aria-labelledby="qr-label-object-name-label"
-                aria-checked={showObjectName}
-                onClick={() => setShowObjectName((visible) => !visible)}
-                className={`inline-flex h-5 w-8 shrink-0 items-center rounded-full border border-zinc-500 p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 ${showObjectName ? "bg-zinc-900" : "bg-zinc-300"}`}
-              >
-                <span
-                  className={`size-3.5 rounded-full bg-white shadow-sm transition-transform ${showObjectName ? "translate-x-3" : "translate-x-0"}`}
-                />
-              </button>
+                checked={showObjectName}
+                onCheckedChange={setShowObjectName}
+              />
             </div>
+            <PrintInstructions
+              title={t("printInstructions")}
+              items={[
+                t("instructionPaperSize"),
+                t("instructionOrientation"),
+                t("instructionMargins"),
+                t("instructionScale"),
+              ]}
+            />
           </div>
 
-          {/* Label Preview */}
-          <div className="p-6 flex items-center justify-center min-h-[400px] bg-zinc-50 print:bg-white print:p-0 print:min-h-0">
+          <PrintPreviewStage className="min-h-[240px]">
             <div
               ref={printRef}
-              className="shadow-lg print:shadow-none print:m-0"
+              className="shadow-lg print:m-0 print:shadow-none"
             >
               <QRLabelGenerator
                 data={labelData}
@@ -133,40 +126,9 @@ export function QRLabelModal({
                 showObjectName={showObjectName}
               />
             </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="p-6 border-t border-zinc-200 bg-blue-50 print:hidden">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">
-              {t("printInstructions")}
-            </h3>
-            <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-              <li>{t("instructionPaperSize")}</li>
-              <li>{t("instructionOrientation")}</li>
-              <li>{t("instructionMargins")}</li>
-              <li>{t("instructionScale")}</li>
-            </ul>
-          </div>
+          </PrintPreviewStage>
         </div>
-
-        {/* Footer Actions */}
-        <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-zinc-200 bg-white print:hidden">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="bg-zinc-900 text-white border-zinc-300 hover:bg-zinc-100 hover:text-black"
-          >
-            {tCommon("cancel")}
-          </Button>
-          <Button
-            onClick={handlePrint}
-            className="bg-zinc-900 text-white hover:bg-zinc-800"
-          >
-            <Printer className="mr-2 size-4" />
-            {t("print")}
-          </Button>
-        </div>
-      </DialogContent>
+      </PrintDialogShell>
     </Dialog>
   );
 }

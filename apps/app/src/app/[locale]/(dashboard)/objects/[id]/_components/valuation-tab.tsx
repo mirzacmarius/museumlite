@@ -18,6 +18,7 @@ import {
   type AppraisalDefaults,
   AppraisalFormDialog,
 } from "./appraisal-form-dialog";
+import { DetailSection } from "./detail-section";
 
 type ObjectValuation = NonNullable<
   FunctionReturnType<typeof api.appraisals.getObjectValuation>
@@ -61,24 +62,22 @@ export function ValuationTab({
   const [correcting, setCorrecting] = useState<AppraisalView | null>(null);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-        <div className="space-y-1">
-          <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <Scale className="size-4 text-emerald-500" />
-            {t("title")}
-          </h3>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            {t("description")}
-          </p>
-        </div>
-        {canRecord ? (
+    <DetailSection
+      title={t("title")}
+      icon={Scale}
+      bodyClassName="space-y-6"
+      actions={
+        canRecord ? (
           <Button type="button" size="sm" onClick={() => setRecordOpen(true)}>
             <Plus className="mr-2 size-4" />
             {t("recordAppraisal")}
           </Button>
-        ) : null}
-      </div>
+        ) : null
+      }
+    >
+      <p className="max-w-2xl text-sm text-muted-foreground">
+        {t("description")}
+      </p>
 
       {valuation === undefined ? (
         <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -89,7 +88,7 @@ export function ValuationTab({
           <section className="space-y-3" aria-labelledby="current-valuations">
             <h4
               id="current-valuations"
-              className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground"
+              className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
             >
               {t("currentTitle")}
             </h4>
@@ -107,7 +106,7 @@ export function ValuationTab({
           <section className="space-y-3" aria-labelledby="appraisal-history">
             <h4
               id="appraisal-history"
-              className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground"
+              className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
             >
               {t("historyTitle")}
             </h4>
@@ -152,7 +151,7 @@ export function ValuationTab({
           }}
         />
       ) : null}
-    </div>
+    </DetailSection>
   );
 }
 
@@ -165,7 +164,7 @@ function CurrentValuationCard({
 }) {
   const t = useScopedI18n("valuation");
   return (
-    <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+    <div className="rounded-xl border border-border/60 bg-card p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-muted-foreground">
           {t(`purposes.${appraisal.purpose}`)} · {appraisal.currency}
@@ -173,7 +172,7 @@ function CurrentValuationCard({
         {appraisal.isWithinValuationAge ? null : (
           <Badge
             variant="outline"
-            className="border-amber-500/30 text-amber-400"
+            className="border-amber-500/30 text-amber-700 dark:text-amber-400"
           >
             {t("renewalDue")}
           </Badge>
@@ -195,7 +194,7 @@ function CurrentValuationCard({
         />
       </p>
       {appraisal.currencyRecognized ? null : (
-        <p className="mt-1 text-xs text-amber-400">
+        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
           {t("currencyNotRecognized")}
         </p>
       )}
@@ -216,12 +215,13 @@ function AppraisalHistoryRow({
   const status = appraisal.isCurrent
     ? {
         label: t("current"),
-        className: "border-emerald-500/30 text-emerald-400",
+        className:
+          "border-emerald-500/30 text-emerald-700 dark:text-emerald-400",
       }
     : appraisal.supersededBy
       ? {
           label: t("supersededBadge"),
-          className: "border-zinc-500/30 text-zinc-400",
+          className: "border-zinc-500/30 text-zinc-700 dark:text-zinc-400",
         }
       : {
           label: t("replacedBadge"),

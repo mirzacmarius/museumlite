@@ -2,6 +2,7 @@
 
 import { CheckCircle, Tag } from "lucide-react";
 import { useI18n } from "@/locales/client";
+import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 import type { CollectionData } from "./types";
 
 interface GeneralTabProps {
@@ -34,93 +35,48 @@ export function GeneralTab({
     : tRoot("untranslatedRecords.objects.enums.generalCollection");
 
   return (
-    <div>
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <Tag className="size-4 text-muted-foreground" />
-            {tRoot("untranslatedRecords.objects.detail.classificationMetadata")}
-          </h3>
+    <DetailSection
+      title={tRoot("untranslatedRecords.objects.detail.classificationMetadata")}
+      icon={Tag}
+    >
+      <DetailGrid>
+        <DetailField
+          label={tRoot("objects.form.collectionType")}
+          value={collectionTypeLabel}
+        />
+        <DetailField
+          label={tRoot("objects.form.objectName")}
+          value={collection.objectName}
+        />
+        <DetailField
+          label={tRoot("objects.form.collectionGroup")}
+          value={collectionGroupName}
+        />
+        <DetailField
+          label={tRoot("objects.form.culture")}
+          value={collection.culture}
+        />
+        <DetailField
+          label={tRoot("untranslatedRecords.objects.detail.artistMaker")}
+          value={collection.creator}
+        />
+        <DetailField
+          label={tRoot("objects.form.period")}
+          value={collection.period}
+        />
+        <DetailField
+          label={tRoot("objects.form.dateCreated")}
+          value={collection.dateCreated}
+        />
+      </DetailGrid>
+      {collection.isHighResDownloadable ? (
+        <div className="mt-5 flex items-center gap-2 border-t border-border/60 pt-4">
+          <CheckCircle className="size-4 text-status-success-foreground" />
+          <span className="text-sm text-muted-foreground">
+            {tRoot("untranslatedRecords.objects.detail.highResDownloadable")}
+          </span>
         </div>
-
-        <div className="space-y-6 rounded-xl border border-border bg-secondary/50 p-6 dark:border-border/60 dark:bg-secondary/20">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <div className="grid gap-1">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("objects.form.collectionType")}
-              </div>
-              <div className="text-sm capitalize text-foreground">
-                {collectionTypeLabel}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("objects.form.objectName")}
-              </div>
-              <div className="text-sm text-foreground">
-                {collection.objectName || "-"}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("objects.form.collectionGroup")}
-              </div>
-              <div className="text-sm text-foreground">
-                {collectionGroupName || "-"}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("objects.form.culture")}
-              </div>
-              <div className="text-sm text-foreground">
-                {collection.culture || "-"}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.detail.artistMaker")}
-              </div>
-              <div className="text-sm text-foreground">
-                {collection.creator || "-"}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("objects.form.period")}
-              </div>
-              <div className="text-sm text-foreground">
-                {collection.period || "-"}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {tRoot("objects.form.dateCreated")}
-              </div>
-              <div className="text-sm text-foreground">
-                {collection.dateCreated || "-"}
-              </div>
-            </div>
-
-            {collection.isHighResDownloadable && (
-              <div className="flex items-center gap-2.5">
-                <CheckCircle className="size-4 text-status-success-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  {tRoot(
-                    "untranslatedRecords.objects.detail.highResDownloadable",
-                  )}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      ) : null}
+    </DetailSection>
   );
 }

@@ -3,6 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
+import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useQuery } from "convex/react";
 import {
@@ -18,6 +19,7 @@ import {
 import { RecordedValue } from "@/components/recorded-value";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useI18n, useScopedI18n } from "@/locales/client";
+import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 
 interface CoinsStampsDetailsTabProps {
   collectionId: string;
@@ -93,11 +95,11 @@ export function CoinsStampsDetailsTab({
   if (details === null) {
     return (
       <div className="space-y-6">
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
-          <p className="text-sm text-muted-foreground">
-            {common("noDetailsYet", { module: "coins and stamps" })}
-          </p>
-        </div>
+        <EmptyState
+          variant="card"
+          size="sm"
+          title={common("noDetailsYet", { module: "coins and stamps" })}
+        />
       </div>
     );
   }
@@ -105,14 +107,14 @@ export function CoinsStampsDetailsTab({
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
             {details.itemCategory === "stamp" ? (
-              <Stamp className="size-4 text-sky-500" />
+              <Stamp className="size-4 text-muted-foreground" />
             ) : (
-              <Coins className="size-4 text-amber-500" />
+              <Coins className="size-4 text-muted-foreground" />
             )}
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("itemCategory")}
             </span>
           </div>
@@ -126,10 +128,10 @@ export function CoinsStampsDetailsTab({
           ) : null}
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Landmark className="size-4 text-emerald-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <Landmark className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("issuer")}
             </span>
           </div>
@@ -144,10 +146,10 @@ export function CoinsStampsDetailsTab({
           ) : null}
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Hash className="size-4 text-blue-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <Hash className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("catalogNumber")}
             </span>
           </div>
@@ -161,10 +163,10 @@ export function CoinsStampsDetailsTab({
           ) : null}
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <BadgeCheck className="size-4 text-purple-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <BadgeCheck className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("grade")}
             </span>
           </div>
@@ -180,85 +182,43 @@ export function CoinsStampsDetailsTab({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border/60 bg-card p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <ScrollText className="size-5 text-muted-foreground" />
-            <h3 className="font-medium">{t("classification")}</h3>
-          </div>
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("denomination")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                {details.denomination || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">{t("currency")}</dt>
-              <dd className="text-sm text-foreground">
-                {details.currency || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("mintOrPrinter")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                {details.mintOrPrinter || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">{t("rarity")}</dt>
-              <dd>
-                <Badge variant="secondary" className="capitalize">
-                  {formatRarity(details.rarity, tRoot)}
-                </Badge>
-              </dd>
-            </div>
-          </dl>
-        </div>
+        <DetailSection title={t("classification")} icon={ScrollText}>
+          <DetailGrid>
+            <DetailField
+              label={t("denomination")}
+              value={details.denomination}
+            />
+            <DetailField label={t("currency")} value={details.currency} />
+            <DetailField
+              label={t("mintOrPrinter")}
+              value={details.mintOrPrinter}
+            />
+            <DetailField label={t("rarity")}>
+              <Badge variant="secondary" className="capitalize">
+                {formatRarity(details.rarity, tRoot)}
+              </Badge>
+            </DetailField>
+          </DetailGrid>
+        </DetailSection>
 
-        <div className="rounded-xl border border-border/60 bg-card p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <ShieldCheck className="size-5 text-muted-foreground" />
-            <h3 className="font-medium">{t("conditionAndValue")}</h3>
-          </div>
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("estimatedValue")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                <RecordedValue value={details.estimatedValue} />
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("acquisitionPrice")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                <RecordedValue value={details.acquisitionPrice} />
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("certificationNumber")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                {details.certificationNumber || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("storageLocation")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                {details.storageLocation || "—"}
-              </dd>
-            </div>
-          </dl>
-        </div>
+        <DetailSection title={t("conditionAndValue")} icon={ShieldCheck}>
+          <DetailGrid>
+            <DetailField label={t("estimatedValue")}>
+              <RecordedValue value={details.estimatedValue} />
+            </DetailField>
+            <DetailField label={t("acquisitionPrice")}>
+              <RecordedValue value={details.acquisitionPrice} />
+            </DetailField>
+            <DetailField
+              label={t("certificationNumber")}
+              value={details.certificationNumber}
+            />
+            <DetailField
+              label={t("storageLocation")}
+              value={details.storageLocation}
+            />
+          </DetailGrid>
+        </DetailSection>
       </div>
 
       {(details.composition ||
@@ -268,58 +228,29 @@ export function CoinsStampsDetailsTab({
         details.watermark ||
         details.color ||
         details.notes) && (
-        <div className="rounded-xl border border-border/60 bg-card p-6">
-          <h3 className="mb-4 font-medium">{t("technicalDetails")}</h3>
-          <dl className="grid gap-4 md:grid-cols-3">
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("composition")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                {details.composition || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">{t("diameter")}</dt>
-              <dd className="text-sm text-foreground">
+        <DetailSection title={t("technicalDetails")}>
+          <DetailGrid className="md:grid-cols-3">
+            <DetailField label={t("composition")} value={details.composition} />
+            <DetailField label={t("diameter")}>
+              <div className="text-sm text-foreground">
                 {details.diameterMm ? `${details.diameterMm} mm` : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">{t("weight")}</dt>
-              <dd className="text-sm text-foreground">
+              </div>
+            </DetailField>
+            <DetailField label={t("weight")}>
+              <div className="text-sm text-foreground">
                 {details.weightGrams ? `${details.weightGrams} g` : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("perforation")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                {details.perforation || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t("watermark")}
-              </dt>
-              <dd className="text-sm text-foreground">
-                {details.watermark || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">{t("color")}</dt>
-              <dd className="text-sm text-foreground">
-                {details.color || "—"}
-              </dd>
-            </div>
-          </dl>
+              </div>
+            </DetailField>
+            <DetailField label={t("perforation")} value={details.perforation} />
+            <DetailField label={t("watermark")} value={details.watermark} />
+            <DetailField label={t("color")} value={details.color} />
+          </DetailGrid>
           {details.notes ? (
             <p className="mt-4 text-sm text-muted-foreground">
               {details.notes}
             </p>
           ) : null}
-        </div>
+        </DetailSection>
       )}
     </div>
   );

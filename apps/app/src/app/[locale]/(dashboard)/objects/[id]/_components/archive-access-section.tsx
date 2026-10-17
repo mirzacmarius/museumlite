@@ -5,6 +5,12 @@ import type { FunctionReturnType } from "convex/server";
 import { FileText, Trash2 } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import {
+  DetailField,
+  DetailGrid,
+  DetailLabel,
+  DetailSection,
+} from "./detail-section";
 
 type DetailsDoc = NonNullable<
   FunctionReturnType<typeof api.archiveDetails.get>
@@ -21,108 +27,78 @@ export function ArchiveAccessSection({ details }: ArchiveAccessSectionProps) {
 
   return (
     <>
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <FileText className="size-4 text-green-500" />
-          {tRoot("modules.archive.physicalDigitalLocation")}
-        </h3>
-
-        <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {tRoot("modules.archive.boxNumber")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.boxNumber || "—"}
-              </div>
+      <DetailSection
+        title={tRoot("modules.archive.physicalDigitalLocation")}
+        icon={FileText}
+      >
+        <DetailGrid className="md:grid-cols-2 lg:grid-cols-4">
+          <DetailField
+            label={tRoot("modules.archive.boxNumber")}
+            value={details.boxNumber}
+          />
+          <DetailField
+            label={tRoot("modules.archive.folderNumber")}
+            value={details.folderNumber}
+          />
+          <DetailField
+            label={tRoot("modules.archive.fileFormat")}
+            value={details.fileFormat}
+          />
+          <DetailField label={tRoot("modules.archive.fileSize")}>
+            <div className="text-sm text-foreground">
+              {details.fileSize
+                ? `${(details.fileSize / 1024 / 1024).toFixed(2)} MB`
+                : "—"}
             </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {tRoot("modules.archive.folderNumber")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.folderNumber || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {tRoot("modules.archive.fileFormat")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.fileFormat || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                {tRoot("modules.archive.fileSize")}
-              </div>
-              <div className="text-sm font-medium text-foreground">
-                {details.fileSize
-                  ? `${(details.fileSize / 1024 / 1024).toFixed(2)} MB`
-                  : "—"}
-              </div>
+          </DetailField>
+        </DetailGrid>
+        {details.pageCount ? (
+          <div className="mt-4 pt-4 border-t border-border/40">
+            <DetailLabel className="mb-2">
+              {tRoot("modules.archive.documentDetails")}
+            </DetailLabel>
+            <DetailGrid>
+              <DetailField
+                label={tRoot("modules.archive.pageCount")}
+                value={details.pageCount}
+              />
+              <DetailField label={tRoot("modules.archive.ocrProcessed")}>
+                <div className="text-sm text-foreground">
+                  {details.ocrProcessed ? common("yes") : common("no")}
+                </div>
+              </DetailField>
+            </DetailGrid>
+          </div>
+        ) : null}
+        {details.keywords && details.keywords.length > 0 ? (
+          <div className="mt-4 pt-4 border-t border-border/40">
+            <DetailLabel className="mb-2">
+              {tRoot("modules.archive.keywords")}
+            </DetailLabel>
+            <div className="flex flex-wrap gap-2">
+              {details.keywords.map((keyword) => (
+                <span
+                  key={keyword}
+                  className="inline-flex rounded px-2 py-0.5 text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400"
+                >
+                  {keyword}
+                </span>
+              ))}
             </div>
           </div>
-          {details.pageCount ? (
-            <div className="mt-4 pt-4 border-t border-border/40">
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
-                {tRoot("modules.archive.documentDetails")}
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    {tRoot("modules.archive.pageCount")}
-                  </div>
-                  <div className="text-sm font-medium text-foreground">
-                    {details.pageCount}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    {tRoot("modules.archive.ocrProcessed")}
-                  </div>
-                  <div className="text-sm font-medium text-foreground">
-                    {details.ocrProcessed ? common("yes") : common("no")}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-          {details.keywords && details.keywords.length > 0 ? (
-            <div className="mt-4 pt-4 border-t border-border/40">
-              <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
-                {tRoot("modules.archive.keywords")}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {details.keywords.map((keyword) => (
-                  <span
-                    key={keyword}
-                    className="inline-flex rounded px-2 py-0.5 text-xs font-medium bg-blue-500/10 text-blue-500"
-                  >
-                    {keyword}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
+        ) : null}
+      </DetailSection>
 
       {details.flaggedForDestruction ? (
-        <div>
-          <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <Trash2 className="size-4 text-red-500" />
-            {tRoot("modules.archive.destructionInformation")}
-          </h3>
-
-          <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div>
-                <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                  {tRoot("modules.archive.destructionDate")}
-                </div>
-                <div className="text-sm font-medium text-foreground">
+        <DetailSection
+          title={tRoot("modules.archive.destructionInformation")}
+          icon={Trash2}
+          bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+        >
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+            <DetailGrid className="md:grid-cols-3">
+              <DetailField label={tRoot("modules.archive.destructionDate")}>
+                <div className="text-sm text-foreground">
                   {details.destructionDate ? (
                     <ClientDateFns
                       timestamp={details.destructionDate}
@@ -133,26 +109,18 @@ export function ArchiveAccessSection({ details }: ArchiveAccessSectionProps) {
                     "—"
                   )}
                 </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                  {tRoot("modules.archive.destructionMethod")}
-                </div>
-                <div className="text-sm font-medium text-foreground">
-                  {details.destructionMethod || "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                  {tRoot("modules.archive.witnessedBy")}
-                </div>
-                <div className="text-sm font-medium text-foreground">
-                  {details.destructionWitnessedBy || "—"}
-                </div>
-              </div>
-            </div>
+              </DetailField>
+              <DetailField
+                label={tRoot("modules.archive.destructionMethod")}
+                value={details.destructionMethod}
+              />
+              <DetailField
+                label={tRoot("modules.archive.witnessedBy")}
+                value={details.destructionWitnessedBy}
+              />
+            </DetailGrid>
           </div>
-        </div>
+        </DetailSection>
       ) : null}
     </>
   );

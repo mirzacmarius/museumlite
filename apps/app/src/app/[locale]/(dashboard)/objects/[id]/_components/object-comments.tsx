@@ -165,10 +165,10 @@ export function ObjectComments({
   const isLoading = comments === undefined;
 
   return (
-    <div className="space-y-6 rounded-xl border border-border/60 bg-secondary/20 p-6">
+    <div className="space-y-6 rounded-xl border border-border/60 bg-card p-4 sm:p-6">
       <div className="flex items-center gap-2">
-        <MessageSquare className="size-4 text-accent-foreground" />
-        <h3 className="text-xs font-medium uppercase tracking-widest text-foreground">
+        <MessageSquare className="size-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-foreground">
           {tRoot("untranslatedRecords.objects.comments.title")}
         </h3>
       </div>
@@ -204,7 +204,7 @@ export function ObjectComments({
               >
                 <Avatar className="size-9">
                   <AvatarImage src={comment.userImage ?? undefined} />
-                  <AvatarFallback className="text-[10px]">
+                  <AvatarFallback className="text-xs">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -282,7 +282,7 @@ export function ObjectComments({
                 >
                   <Avatar className="size-6">
                     <AvatarImage src={user.image ?? undefined} />
-                    <AvatarFallback className="text-[10px]">
+                    <AvatarFallback className="text-xs">
                       {(user.name || user.email || "?").charAt(0)}
                     </AvatarFallback>
                   </Avatar>
@@ -292,7 +292,7 @@ export function ObjectComments({
                         user.email ??
                         tRoot("untranslatedRecords.objects.comments.user")}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       @{user.handle}
                     </p>
                   </div>

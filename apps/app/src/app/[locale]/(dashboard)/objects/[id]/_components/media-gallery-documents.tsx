@@ -2,6 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Edit, FileText } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -38,10 +39,12 @@ export function MediaGalleryDocuments({
 
   if (documents.length === 0) {
     return (
-      <div className="flex h-24 flex-col items-center justify-center rounded-lg border border-dashed">
-        <FileText className="mb-2 size-6 text-muted-foreground" />
-        <p className="text-xs text-muted-foreground">{t("noDocuments")}</p>
-      </div>
+      <EmptyState
+        variant="card"
+        size="sm"
+        icon={FileText}
+        title={t("noDocuments")}
+      />
     );
   }
 
@@ -76,7 +79,7 @@ export function MediaGalleryDocuments({
                     {doc.caption}
                   </p>
                 )}
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {getFileExtensionLabel(doc.fileName)} •{" "}
                   {formatMediaFileSize(doc.fileSize)}
                 </p>

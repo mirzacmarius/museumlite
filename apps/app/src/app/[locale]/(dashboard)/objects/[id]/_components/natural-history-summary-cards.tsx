@@ -22,10 +22,10 @@ export function NaturalHistorySummaryCards({
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <TreePine className="size-4 text-green-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <TreePine className="size-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("species")}
           </span>
         </div>
@@ -39,10 +39,10 @@ export function NaturalHistorySummaryCards({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <MapPin className="size-4 text-blue-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <MapPin className="size-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("location")}
           </span>
         </div>
@@ -58,10 +58,10 @@ export function NaturalHistorySummaryCards({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <Calendar className="size-4 text-purple-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <Calendar className="size-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("collected")}
           </span>
         </div>
@@ -83,10 +83,10 @@ export function NaturalHistorySummaryCards({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
-          <TreePine className="size-4 text-amber-500" />
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <TreePine className="size-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("preservation")}
           </span>
         </div>

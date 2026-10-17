@@ -22,7 +22,7 @@ export function PrintPreviewCoreSections({
   const materials = formatStringListField(collection.materials);
 
   return (
-    <div className="contents">
+    <div className="space-y-5 print:space-y-4">
       {/* Header */}
       <div className="flex items-start gap-4 border-b border-zinc-200 pb-4 print:gap-3 print:pb-3">
         {heroImage?.url && (

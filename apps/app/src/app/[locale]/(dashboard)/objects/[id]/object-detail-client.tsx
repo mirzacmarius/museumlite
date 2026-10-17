@@ -300,6 +300,7 @@ function ObjectDetailView({
           printRecordLabel={t("detail.printRecord")}
           printLabel={t("detail.printLabel")}
           printObjectLabel={t("detail.printObjectLabel")}
+          printMenuLabel={t("qrLabel.print")}
           editObjectLabel={t("detail.editObject")}
         />
 
@@ -308,20 +309,22 @@ function ObjectDetailView({
           {isWithdrawn ? (
             <section
               aria-label={t("withdrawal.noticeLabel")}
-              className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-4"
+              className="border-b border-amber-500/20 bg-amber-500/5"
             >
-              <h2 className="text-sm font-semibold text-foreground">
-                {t("withdrawal.noticeTitle")}
-              </h2>
-              {withdrawalReason ? (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t("withdrawal.reason", { reason: withdrawalReason })}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                  {t("withdrawal.legacyReasonMissing")}
-                </p>
-              )}
+              <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
+                <h2 className="text-sm font-semibold text-foreground">
+                  {t("withdrawal.noticeTitle")}
+                </h2>
+                {withdrawalReason ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("withdrawal.reason", { reason: withdrawalReason })}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                    {t("withdrawal.legacyReasonMissing")}
+                  </p>
+                )}
+              </div>
             </section>
           ) : null}
 

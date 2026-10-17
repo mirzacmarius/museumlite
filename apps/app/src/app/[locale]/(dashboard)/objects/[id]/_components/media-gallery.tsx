@@ -1,7 +1,10 @@
 "use client";
 
+import { EmptyState } from "@v1/ui/empty-state";
 import { Image as ImageIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { useScopedI18n } from "@/locales/client";
+import { DetailSection } from "./detail-section";
 import { MediaGalleryDocuments } from "./media-gallery-documents";
 import { MediaGalleryEmbedsSection } from "./media-gallery-embeds-section";
 import { MediaGalleryImageGrid } from "./media-gallery-image-grid";
@@ -14,6 +17,7 @@ interface MediaGalleryProps {
   mediaType?: "images" | "documents" | "all";
   onOpenLightbox?: (index: number) => void;
   editable?: boolean;
+  actions?: ReactNode;
 }
 
 export function MediaGallery({
@@ -22,6 +26,7 @@ export function MediaGallery({
   mediaType = "all",
   onOpenLightbox,
   editable = false,
+  actions,
 }: MediaGalleryProps) {
   const t = useScopedI18n("objects.mediaGallery");
   const gallery = useMediaGallery({
@@ -53,11 +58,12 @@ export function MediaGallery({
       )}
 
       {showImages && (
-        <div className="space-y-3">
-          <h4 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <ImageIcon className="size-4 text-accent-foreground" />
-            {t("visualMediaTitle")}
-          </h4>
+        <DetailSection
+          title={t("visualMediaTitle")}
+          icon={ImageIcon}
+          actions={actions}
+          bodyClassName="space-y-3 border-0 bg-transparent p-0 sm:p-0"
+        >
           <MediaGalleryImageGrid
             gallery={gallery}
             editable={editable}
@@ -67,21 +73,23 @@ export function MediaGallery({
             <MediaGalleryEmbedsSection embeds={gallery.sketchfabEmbeds} />
           )}
           {!hasVisualMedia && (
-            <div className="flex h-24 flex-col items-center justify-center rounded-lg border border-dashed">
-              <ImageIcon className="mb-2 size-6 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">{t("noMedia")}</p>
-            </div>
+            <EmptyState
+              variant="card"
+              size="sm"
+              icon={ImageIcon}
+              title={t("noMedia")}
+            />
           )}
-        </div>
+        </DetailSection>
       )}
 
       {showDocuments && (
-        <div className="space-y-3">
-          <h4 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            {t("documentsTitle")}
-          </h4>
+        <DetailSection
+          title={t("documentsTitle")}
+          bodyClassName="border-0 bg-transparent p-0 sm:p-0"
+        >
           <MediaGalleryDocuments gallery={gallery} editable={editable} />
-        </div>
+        </DetailSection>
       )}
     </div>
   );

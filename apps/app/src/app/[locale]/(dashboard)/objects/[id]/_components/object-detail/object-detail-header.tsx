@@ -3,8 +3,15 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
+import {
   ArrowLeft,
   Check,
+  ChevronDown,
   Link2,
   Pencil,
   Printer,
@@ -34,6 +41,7 @@ interface ObjectDetailHeaderProps {
   printRecordLabel: string;
   printLabel: string;
   printObjectLabel: string;
+  printMenuLabel: string;
   editObjectLabel: string;
 }
 
@@ -55,6 +63,7 @@ export function ObjectDetailHeader({
   printRecordLabel,
   printLabel,
   printObjectLabel,
+  printMenuLabel,
   editObjectLabel,
 }: ObjectDetailHeaderProps) {
   const back = useBackToResultsLink("objects");
@@ -109,36 +118,35 @@ export function ObjectDetailHeader({
             <Link2 className="size-4" />
           )}
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={iconButtonClass}
-          aria-label={printRecordLabel}
-          title={printRecordLabel}
-          onClick={onPrintClick}
-        >
-          <Printer className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={iconButtonClass}
-          aria-label={printObjectLabel}
-          title={printObjectLabel}
-          onClick={onObjectLabelClick}
-        >
-          <Tags className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={iconButtonClass}
-          aria-label={printLabel}
-          title={printLabel}
-          onClick={onQrLabelClick}
-        >
-          <QrCode className="size-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+              aria-label={printMenuLabel}
+              title={printMenuLabel}
+            >
+              <Printer className="size-4" />
+              <span className="hidden md:inline">{printMenuLabel}</span>
+              <ChevronDown className="size-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-52">
+            <DropdownMenuItem onSelect={onPrintClick}>
+              <Printer className="mr-2 size-4 text-muted-foreground" />
+              {printRecordLabel}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onObjectLabelClick}>
+              <Tags className="mr-2 size-4 text-muted-foreground" />
+              {printObjectLabel}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onQrLabelClick}>
+              <QrCode className="mr-2 size-4 text-muted-foreground" />
+              {printLabel}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <div className="h-4 w-px bg-border" />
         <PermissionGate permission="collections.update">
           <ObjectDeaccessionAction

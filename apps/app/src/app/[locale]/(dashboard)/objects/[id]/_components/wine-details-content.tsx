@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { RecordedValue } from "@/components/recorded-value";
 import { useI18n, useScopedI18n } from "@/locales/client";
+import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 
 type DetailsDoc = NonNullable<FunctionReturnType<typeof api.wineDetails.get>>;
 
@@ -34,10 +35,10 @@ export function WineDetailsContent({
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Grape className="size-4 text-purple-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <Grape className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("vintage")}
             </span>
           </div>
@@ -46,10 +47,10 @@ export function WineDetailsContent({
           </span>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Wine className="size-4 text-rose-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <Wine className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("producer")}
             </span>
           </div>
@@ -63,10 +64,10 @@ export function WineDetailsContent({
           )}
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <MapPin className="size-4 text-amber-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <MapPin className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("cellarLocation")}
             </span>
           </div>
@@ -94,10 +95,10 @@ export function WineDetailsContent({
           </div>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="mb-2 flex items-center gap-2">
-            <GlassWater className="size-4 text-cyan-500" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <GlassWater className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {t("quantity")}
             </span>
           </div>
@@ -126,9 +127,9 @@ export function WineDetailsContent({
               className={cn(
                 "size-4",
                 isInPeakWindow
-                  ? "text-emerald-500"
+                  ? "text-emerald-700 dark:text-emerald-400"
                   : isPastPeak
-                    ? "text-amber-500"
+                    ? "text-amber-700 dark:text-amber-400"
                     : "text-muted-foreground",
               )}
             />
@@ -136,9 +137,9 @@ export function WineDetailsContent({
               className={cn(
                 "text-sm font-medium",
                 isInPeakWindow
-                  ? "text-emerald-500"
+                  ? "text-emerald-700 dark:text-emerald-400"
                   : isPastPeak
-                    ? "text-amber-500"
+                    ? "text-amber-700 dark:text-amber-400"
                     : "text-foreground",
               )}
             >
@@ -146,12 +147,12 @@ export function WineDetailsContent({
               {details.peakWindowEnd}
             </span>
             {isInPeakWindow && (
-              <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-500">
+              <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-bold uppercase text-emerald-700 dark:text-emerald-400">
                 {t("drinkNow")}
               </span>
             )}
             {isPastPeak && (
-              <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-500">
+              <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-bold uppercase text-amber-700 dark:text-amber-400">
                 {t("pastPeak")}
               </span>
             )}
@@ -160,138 +161,83 @@ export function WineDetailsContent({
       )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div>
-          <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <Droplets className="size-4 text-blue-500" />
-            {t("bottleCondition")}
-          </h3>
-          <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  {t("fillLevel")}
-                </span>
-                <p
-                  className={cn(
-                    "mt-1 text-sm font-medium",
-                    details.fillLevel === "into_neck" ||
-                      details.fillLevel === "top_shoulder"
-                      ? "text-emerald-500"
-                      : details.fillLevel === "below_shoulder"
-                        ? "text-rose-500"
-                        : "text-foreground",
-                  )}
-                >
-                  {details.fillLevel === "into_neck"
-                    ? tRoot("untranslatedRecords.objects.enums.fillIntoNeck")
-                    : details.fillLevel === "top_shoulder"
+        <DetailSection title={t("bottleCondition")} icon={Droplets}>
+          <DetailGrid>
+            <DetailField label={t("fillLevel")}>
+              <div
+                className={cn(
+                  "text-sm font-medium",
+                  details.fillLevel === "into_neck" ||
+                    details.fillLevel === "top_shoulder"
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : details.fillLevel === "below_shoulder"
+                      ? "text-rose-700 dark:text-rose-400"
+                      : "text-foreground",
+                )}
+              >
+                {details.fillLevel === "into_neck"
+                  ? tRoot("untranslatedRecords.objects.enums.fillIntoNeck")
+                  : details.fillLevel === "top_shoulder"
+                    ? tRoot("untranslatedRecords.objects.enums.fillTopShoulder")
+                    : details.fillLevel === "high_shoulder"
                       ? tRoot(
-                          "untranslatedRecords.objects.enums.fillTopShoulder",
+                          "untranslatedRecords.objects.enums.fillHighShoulder",
                         )
-                      : details.fillLevel === "high_shoulder"
+                      : details.fillLevel === "mid_shoulder"
                         ? tRoot(
-                            "untranslatedRecords.objects.enums.fillHighShoulder",
+                            "untranslatedRecords.objects.enums.fillMidShoulder",
                           )
-                        : details.fillLevel === "mid_shoulder"
+                        : details.fillLevel === "low_shoulder"
                           ? tRoot(
-                              "untranslatedRecords.objects.enums.fillMidShoulder",
+                              "untranslatedRecords.objects.enums.fillLowShoulder",
                             )
-                          : details.fillLevel === "low_shoulder"
+                          : details.fillLevel === "below_shoulder"
                             ? tRoot(
-                                "untranslatedRecords.objects.enums.fillLowShoulder",
+                                "untranslatedRecords.objects.enums.fillBelowShoulder",
                               )
-                            : details.fillLevel === "below_shoulder"
-                              ? tRoot(
-                                  "untranslatedRecords.objects.enums.fillBelowShoulder",
-                                )
-                              : (details.fillLevel ?? common("notChecked"))}
-                </p>
+                            : (details.fillLevel ?? common("notChecked"))}
               </div>
-              <div>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  {t("closure")}
-                </span>
-                <p className="mt-1 text-sm text-foreground">
-                  {details.closureType || common("unknown")}
-                </p>
+            </DetailField>
+            <DetailField label={t("closure")}>
+              <div className="text-sm text-foreground">
+                {details.closureType || common("unknown")}
               </div>
-              <div>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  {t("label")}
-                </span>
-                <p className="mt-1 text-sm text-foreground">
-                  {details.labelCondition || common("notAssessed")}
-                </p>
+            </DetailField>
+            <DetailField label={t("label")}>
+              <div className="text-sm text-foreground">
+                {details.labelCondition || common("notAssessed")}
               </div>
-              <div>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  {t("capsule")}
-                </span>
-                <p className="mt-1 text-sm text-foreground">
-                  {details.capsuleCondition || common("notAssessed")}
-                </p>
+            </DetailField>
+            <DetailField label={t("capsule")}>
+              <div className="text-sm text-foreground">
+                {details.capsuleCondition || common("notAssessed")}
               </div>
-            </div>
-          </div>
-        </div>
+            </DetailField>
+          </DetailGrid>
+        </DetailSection>
 
         <WineValuationSection details={details} />
       </div>
 
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Wine className="size-4 text-rose-500" />
-          {t("wineDetails")}
-        </h3>
-        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div>
-              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                {t("appellation")}
-              </span>
-              <p className="mt-1 text-sm text-foreground">
-                {details.appellation || "—"}
-              </p>
+      <DetailSection title={t("wineDetails")} icon={Wine}>
+        <DetailGrid className="md:grid-cols-4">
+          <DetailField label={t("appellation")} value={details.appellation} />
+          <DetailField label={t("varietal")} value={details.varietal} />
+          <DetailField label={t("alcohol")}>
+            <div className="text-sm text-foreground">
+              {details.alcoholContent ? `${details.alcoholContent}%` : "—"}
             </div>
-            <div>
-              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                {t("varietal")}
-              </span>
-              <p className="mt-1 text-sm text-foreground">
-                {details.varietal || "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                {t("alcohol")}
-              </span>
-              <p className="mt-1 text-sm text-foreground">
-                {details.alcoholContent ? `${details.alcoholContent}%` : "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                {t("region")}
-              </span>
-              <p className="mt-1 text-sm text-foreground">
-                {details.region || "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+          </DetailField>
+          <DetailField label={t("region")} value={details.region} />
+        </DetailGrid>
+      </DetailSection>
 
       {details.drinkingNotes && (
-        <div>
-          <h3 className="mb-4 text-xs font-medium text-foreground">
-            {t("tastingNotes")}
-          </h3>
-          <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-              {details.drinkingNotes}
-            </p>
-          </div>
-        </div>
+        <DetailSection title={t("tastingNotes")}>
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+            {details.drinkingNotes}
+          </p>
+        </DetailSection>
       )}
     </div>
   );
@@ -301,37 +247,21 @@ function WineValuationSection({ details }: { details: DetailsDoc }) {
   const t = useScopedI18n("modules.wine");
 
   return (
-    <div>
-      <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-        <DollarSign className="size-4 text-emerald-500" />
-        {t("valuation")}
-      </h3>
-      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              {t("purchasePrice")}
-            </span>
-            <p className="mt-1">
-              <RecordedValue
-                value={details.purchasePrice}
-                className="text-lg font-light text-foreground"
-              />
-            </p>
-          </div>
-          <div>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              {t("currentValue")}
-            </span>
-            <p className="mt-1">
-              <RecordedValue
-                value={details.currentValue}
-                className="text-lg font-light text-emerald-500"
-              />
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DetailSection title={t("valuation")} icon={DollarSign}>
+      <DetailGrid>
+        <DetailField label={t("purchasePrice")}>
+          <RecordedValue
+            value={details.purchasePrice}
+            className="text-lg font-light text-foreground"
+          />
+        </DetailField>
+        <DetailField label={t("currentValue")}>
+          <RecordedValue
+            value={details.currentValue}
+            className="text-lg font-light text-emerald-700 dark:text-emerald-400"
+          />
+        </DetailField>
+      </DetailGrid>
+    </DetailSection>
   );
 }

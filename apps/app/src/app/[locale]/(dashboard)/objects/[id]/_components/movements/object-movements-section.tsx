@@ -8,6 +8,7 @@ import { ArrowRight, Truck } from "lucide-react";
 import { useState } from "react";
 import { usePermissions } from "@/components/permission-gate";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { DetailSection } from "../detail-section";
 import {
   type MoveDialogMode,
   MoveObjectFormDialog,
@@ -49,14 +50,13 @@ export function ObjectMovementsSection({
   const sourceLabel = currentLocationLabel || t("noLocation");
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-          <Truck className="size-4 text-amber-500" />
-          {t("title")}
-        </h3>
-        {canManage && (
-          <div className="flex flex-wrap gap-2">
+    <DetailSection
+      title={t("title")}
+      icon={Truck}
+      bodyClassName="space-y-6 border-0 bg-transparent p-0 sm:p-0"
+      actions={
+        canManage ? (
+          <>
             <Button size="sm" onClick={() => setDialogMode("direct")}>
               {t("moveNow")}
             </Button>
@@ -68,13 +68,13 @@ export function ObjectMovementsSection({
             >
               {t("requestMove")}
             </Button>
-          </div>
-        )}
-      </div>
-
+          </>
+        ) : null
+      }
+    >
       {canReadRequests && (
-        <section className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-6">
-          <h4 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+        <section className="space-y-3 rounded-xl border border-border/60 bg-card p-4 sm:p-6">
+          <h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("requests.title")}
           </h4>
           {requests === undefined ? (
@@ -99,8 +99,8 @@ export function ObjectMovementsSection({
         </section>
       )}
 
-      <section className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-6">
-        <h4 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+      <section className="space-y-3 rounded-xl border border-border/60 bg-card p-4 sm:p-6">
+        <h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {t("history.title")}
         </h4>
         {history === undefined ? (
@@ -114,7 +114,7 @@ export function ObjectMovementsSection({
             {history.map((entry) => (
               <li
                 key={entry._id}
-                className="space-y-1 border-b border-white/10 pb-3 last:border-b-0 last:pb-0"
+                className="space-y-1 border-b border-border/60 pb-3 last:border-b-0 last:pb-0"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
@@ -129,11 +129,11 @@ export function ObjectMovementsSection({
                       {entry.toLocationName || t("unknownLocation")}
                     </span>
                   </div>
-                  <time className="text-right text-xs text-white/60">
+                  <time className="text-right text-xs text-muted-foreground">
                     {formatMovementTime(locale, entry.movedAt)}
                   </time>
                 </div>
-                <p className="text-xs text-white/60">
+                <p className="text-xs text-muted-foreground">
                   {t(`history.kind.${entry.movementKind ?? "legacy"}`)} ·{" "}
                   {t("history.movedBy", {
                     name: entry.movedByName ?? t("unknownUser"),
@@ -165,6 +165,6 @@ export function ObjectMovementsSection({
           onClose={() => setDialogMode(null)}
         />
       )}
-    </div>
+    </DetailSection>
   );
 }

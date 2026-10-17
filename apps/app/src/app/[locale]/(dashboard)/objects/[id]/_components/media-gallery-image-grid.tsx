@@ -228,9 +228,7 @@ function MediaGalleryImageCard({
           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 text-xs text-white transition-opacity group-hover:opacity-0">
             <p className="truncate font-medium">{file.fileName}</p>
             {file.caption && (
-              <p className="truncate text-[10px] text-white/70">
-                {file.caption}
-              </p>
+              <p className="truncate text-xs text-white/70">{file.caption}</p>
             )}
           </div>
 
@@ -239,7 +237,7 @@ function MediaGalleryImageCard({
           </div>
 
           {editable && !file.isPrimary && (
-            <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-coarse:opacity-100">
               <button
                 type="button"
                 draggable
@@ -259,7 +257,7 @@ function MediaGalleryImageCard({
           )}
 
           <PermissionGate permission="media.upload">
-            <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100">
+            <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-coarse:opacity-100 focus-within:opacity-100">
               {!file.isPrimary && file.fileType === "image" && (
                 <Button
                   type="button"
