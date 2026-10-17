@@ -83,7 +83,7 @@ export function DeaccessionTypePicker({
         </div>
         <div className="flex-1">
           <h3 className="font-semibold">
-            {translate("untranslatedComponents.labels.archiveObject")}
+            {translate("untranslatedComponents.labels.removeItem")}
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             {translate(

@@ -9757,7 +9757,7 @@ export default {
         "Demandez l’approbation pour transférer cet objet à une autre organisation dont vous êtes membre. Vous pouvez conserver le numéro d’inventaire actuel ou en attribuer un nouveau.",
       requiresAdministratorApprovalBeforeTheMoveIsExecuted:
         "L’approbation d’un administrateur est requise avant le transfert",
-      archiveObject: "Archiver l’objet",
+      removeItem: "Retirer l’objet",
       removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater:
         "Retirez l’objet de la collection active tout en conservant ses données, son historique et ses médias. Il pourra être restauré ultérieurement.",
       submittedToDeaccessionApprovalBeforeTheObjectIsArchived:
@@ -10113,7 +10113,7 @@ export default {
         "Cet objet ne peut pas être transféré tant que les problèmes bloquants ne sont pas résolus",
       recordSale: "Enregistrer la vente",
       moveToAnotherOrganization: "Transférer à une autre organisation",
-      archive: "Archiver",
+      removeItem: "Retirer l’objet",
       delete: "Supprimer",
       removeOrTransfer: "Retirer ou transférer",
       recordSaleDetailsFor: "Enregistrer les détails de la vente de {title}.",

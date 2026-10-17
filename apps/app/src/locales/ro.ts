@@ -9706,7 +9706,7 @@ export default {
         "Solicită aprobarea pentru transferul acestui obiect către o altă organizație din care faci parte. Poți păstra numărul de inventar actual sau poți atribui unul nou.",
       requiresAdministratorApprovalBeforeTheMoveIsExecuted:
         "Este necesară aprobarea unui administrator înainte de efectuarea transferului",
-      archiveObject: "Arhivează obiectul",
+      removeItem: "Elimină obiectul",
       removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater:
         "Elimină obiectul din colecția activă, păstrând toate datele, istoricul și fișierele media. Obiectul poate fi restaurat ulterior.",
       submittedToDeaccessionApprovalBeforeTheObjectIsArchived:
@@ -10054,7 +10054,7 @@ export default {
         "Acest obiect nu poate fi transferat până la rezolvarea problemelor care blochează transferul",
       recordSale: "Înregistrează vânzarea",
       moveToAnotherOrganization: "Transferă către o altă organizație",
-      archive: "Arhivează",
+      removeItem: "Elimină obiectul",
       delete: "Șterge",
       removeOrTransfer: "Elimină sau transferă",
       recordSaleDetailsFor: "Înregistrează detaliile vânzării pentru {title}.",

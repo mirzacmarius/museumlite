@@ -16,6 +16,7 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useBackToResultsLink } from "@/components/record-recovery-state";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import type { ObjectDetailData } from "../types";
+import { ObjectDeaccessionAction } from "./object-deaccession-action";
 
 interface ObjectDetailHeaderProps {
   collection: NonNullable<ObjectDetailData["collection"]>;
@@ -140,6 +141,10 @@ export function ObjectDetailHeader({
         </Button>
         <div className="h-4 w-px bg-border" />
         <PermissionGate permission="collections.update">
+          <ObjectDeaccessionAction
+            collection={collection}
+            collectionId={collectionId}
+          />
           <Button size="sm" asChild>
             <Link
               href={

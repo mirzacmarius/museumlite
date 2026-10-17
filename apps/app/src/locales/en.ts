@@ -9516,7 +9516,7 @@ export default {
         "Request approval to transfer this object to another organization you belong to. You can keep the current accession number or assign a new one.",
       requiresAdministratorApprovalBeforeTheMoveIsExecuted:
         "Requires administrator approval before the move is executed",
-      archiveObject: "Archive Object",
+      removeItem: "Remove item",
       removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater:
         "Remove from the active collection but preserve all data, history, and media. The object can be restored later.",
       submittedToDeaccessionApprovalBeforeTheObjectIsArchived:
@@ -9848,7 +9848,7 @@ export default {
         "This object cannot be moved until the blocking issues are resolved",
       recordSale: "Record sale",
       moveToAnotherOrganization: "Move to another organization",
-      archive: "Archive",
+      removeItem: "Remove item",
       delete: "Delete",
       removeOrTransfer: "Remove or transfer",
       recordSaleDetailsFor: "Record sale details for {title}.",
