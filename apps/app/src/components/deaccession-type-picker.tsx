@@ -6,12 +6,17 @@ import { useI18n } from "@/locales/client";
 import type { ObjectActions, RemovalType } from "./deaccession-dialog-types";
 
 interface DeaccessionTypePickerProps {
-  /** Undefined while loading. */
-  actions?: ObjectActions;
+  /** Undefined while loading; null when the Object allows neither. */
+  actions: ObjectActions | null | undefined;
   onSelect: (type: RemovalType) => void;
 }
 
 type ObjectAction = ObjectActions["deaccession"] | ObjectActions["remove"];
+
+const NOTHING_ALLOWED: ObjectActions = {
+  deaccession: { state: "hidden" },
+  remove: { state: "hidden" },
+};
 
 function useUnavailableReason() {
   const translate = useI18n();
@@ -76,9 +81,10 @@ export function DeaccessionTypePicker({
   const translate = useI18n();
   const unavailableReason = useUnavailableReason();
   const loading = actions === undefined;
+  const allowed = actions === null ? NOTHING_ALLOWED : actions;
   return (
     <div className="grid gap-4 py-4">
-      {actions?.deaccession.state !== "hidden" && (
+      {allowed?.deaccession.state !== "hidden" && (
         <PickerOption
           icon={
             <div className="rounded-full bg-green-500/10 p-2">
@@ -90,14 +96,14 @@ export function DeaccessionTypePicker({
             "untranslatedComponents.labels.recordTheSaleOfThisObjectEnterDetailsAboutTheTransactionIncludingBuyerInformationAndSalePrice",
           )}
           note={
-            actions?.deaccession.state === "available" &&
-            actions.deaccession.approvalSteps > 0
+            allowed?.deaccession.state === "available" &&
+            allowed.deaccession.approvalSteps > 0
               ? translate(
                   "untranslatedComponents.labels.requiresApprovalWorkflow",
                 )
               : null
           }
-          unavailableReason={actions && unavailableReason(actions.deaccession)}
+          unavailableReason={allowed && unavailableReason(allowed.deaccession)}
           disabled={loading}
           onSelect={() => onSelect("sold")}
         />
@@ -121,7 +127,7 @@ export function DeaccessionTypePicker({
         onSelect={() => onSelect("move")}
       />
 
-      {actions?.remove.state !== "hidden" && (
+      {allowed?.remove.state !== "hidden" && (
         <PickerOption
           icon={
             <div className="rounded-full bg-amber-500/10 p-2">
@@ -132,7 +138,7 @@ export function DeaccessionTypePicker({
           description={translate(
             "untranslatedComponents.labels.removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater",
           )}
-          unavailableReason={actions && unavailableReason(actions.remove)}
+          unavailableReason={allowed && unavailableReason(allowed.remove)}
           disabled={loading}
           onSelect={() => onSelect("archived")}
         />

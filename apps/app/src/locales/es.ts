@@ -3575,10 +3575,10 @@ export default {
       viewingCollection: "Grupo de colección: {name}",
     },
     deaccessionAction: {
-      request: "Solicitar desaccesión",
-      inProgress: "Desaccesión en curso",
+      request: "Solicitar la baja",
+      inProgress: "Baja en curso",
       onLoan: "En préstamo",
-      notAccessioned: "Aún no accesionado",
+      notAccessioned: "Aún sin accesión",
     },
     withdrawal: {
       restore: "Restaurar al catálogo",

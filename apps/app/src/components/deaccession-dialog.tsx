@@ -245,7 +245,7 @@ export function DeaccessionDialog({
 
         {!state.removalType && (
           <DeaccessionTypePicker
-            actions={objectActions ?? undefined}
+            actions={objectActions}
             onSelect={(value) => dispatch({ type: "setRemovalType", value })}
           />
         )}

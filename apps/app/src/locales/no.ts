@@ -3541,10 +3541,10 @@ export default {
       viewingCollection: "Samlingsgruppe: {name}",
     },
     deaccessionAction: {
-      request: "Be om fraregistrering",
-      inProgress: "Fraregistrering pågår",
+      request: "Be om deaksesjon",
+      inProgress: "Deaksesjon pågår",
       onLoan: "På utlån",
-      notAccessioned: "Ikke registrert i samlingen ennå",
+      notAccessioned: "Ikke aksesjonert ennå",
     },
     withdrawal: {
       restore: "Gjenopprett til katalogen",

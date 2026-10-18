@@ -1542,7 +1542,7 @@ export default {
       request: "Solicită scoaterea din colecție",
       inProgress: "Scoatere din colecție în curs",
       onLoan: "Împrumutat",
-      notAccessioned: "Încă neînregistrat în colecție",
+      notAccessioned: "Fără accesiune încă",
     },
     withdrawal: {
       restore: "Readu în catalog",

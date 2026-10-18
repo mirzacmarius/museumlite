@@ -21,7 +21,7 @@ const buttonClassName =
 
 /**
  * The Object's Deaccession action as `objectActions.get` reports it: hidden
- * without access, disabled with the reason the server would refuse, a link
+ * without access to Deaccession or Remove object, disabled with the reason the server would refuse, a link
  * to the open Case, or the dialog for sale, transfer and removal.
  */
 export function ObjectDeaccessionAction({
@@ -31,11 +31,16 @@ export function ObjectDeaccessionAction({
 }: ObjectDeaccessionActionProps) {
   const tRoot = useI18n();
   const [open, setOpen] = useState(false);
-  const deaccession = useQuery(api.objectActions.get, {
-    collectionId,
-  })?.deaccession;
-
-  if (!deaccession || deaccession.state === "hidden") {
+  const actions = useQuery(api.objectActions.get, { collectionId });
+  if (!actions) {
+    return null;
+  }
+  // Without Deaccession the dialog still offers Remove object and Move.
+  const deaccession =
+    actions.deaccession.state === "hidden" && actions.remove.state !== "hidden"
+      ? { state: "available" as const, approvalSteps: 0 }
+      : actions.deaccession;
+  if (deaccession.state === "hidden") {
     return null;
   }
 
@@ -71,7 +76,7 @@ export function ObjectDeaccessionAction({
         <span className="max-md:sr-only">
           {tRoot("objects.bulkActions.deaccession")}
         </span>
-        <span className="text-xs max-lg:sr-only">· {reason}</span>
+        <span className="text-xs">{reason}</span>
       </Button>
     );
   }

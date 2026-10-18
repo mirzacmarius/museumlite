@@ -57,11 +57,20 @@ test("with approval steps the action requests a deaccession", async () => {
   ).toBeTruthy();
 });
 
-test("staff without access see no action", async () => {
-  actions = withDeaccession({ state: "hidden" });
+test("staff without access to either action see none", async () => {
+  actions = { deaccession: { state: "hidden" }, remove: { state: "hidden" } };
   await renderAction();
 
   expect(screen.queryByRole("button")).toBeNull();
+});
+
+test("staff who may only remove the object still reach the dialog", async () => {
+  actions = withDeaccession({ state: "hidden" });
+  await renderAction();
+
+  await userEvent.click(screen.getByRole("button", { name: "Deaccession" }));
+
+  expect(screen.getByRole("dialog")).toBeTruthy();
 });
 
 test("an object on loan shows the action disabled with the reason", async () => {
