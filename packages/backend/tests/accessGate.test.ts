@@ -73,6 +73,13 @@ const GATE_CASES: GateCase[] = [
       caller.mutation(api.loans.approve, { loanId }),
   },
   {
+    command: "loans.reject",
+    capability: "loans",
+    permission: "loans.approve",
+    requiredTier: "pro",
+    call: (caller, { loanId }) => caller.mutation(api.loans.reject, { loanId }),
+  },
+  {
     command: "loans.listLoanDocuments",
     capability: "loans",
     permission: "loans.read",

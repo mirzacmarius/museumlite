@@ -68,15 +68,6 @@ describe("Feature Gates - Shared Policy", () => {
 });
 
 describe("Feature Gates - Tier Access", () => {
-  test("free tier should not access pro features (loans)", async () => {
-    const t = convexTest(schema, modules);
-    const reader = await loanReader(t, "free");
-
-    await expect(listLoans(reader)).rejects.toThrow(
-      "Feature requires pro tier",
-    );
-  });
-
   test("pro tier should access pro features (loans)", async () => {
     const t = convexTest(schema, modules);
     const reader = await loanReader(t, "pro");
