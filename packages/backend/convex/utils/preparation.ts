@@ -1,13 +1,12 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
-  CASE_CONFIG,
-  canWorkWith,
   isOpenStatus,
   logTaskEvent,
   MAX_TASKS_PER_CASE,
   UNDATED,
 } from "./caseTaskRules";
+import { CASE_TYPES, canWorkWith } from "./caseTypes";
 import { seesIncident, WORK_PERMISSION } from "./incidentAccess";
 import { memberPermissionNames } from "./memberPermissions";
 import { dispatchNotification } from "./notificationDispatch";
@@ -404,7 +403,7 @@ async function insertSuggestedTask(
     title: "Task Assigned",
     message: `You have been assigned to: ${step.title}`,
     related: {
-      entityType: CASE_CONFIG[event.caseType].notificationEntityType,
+      entityType: CASE_TYPES[event.caseType].entityType,
       entityId: event.caseId,
     },
     email: {

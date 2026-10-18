@@ -1,27 +1,22 @@
+import { caseHref, caseTypeOfEntity } from "./caseTypes";
+
 /**
- * Canonical route for a notification's entity. Objects are stored in the
- * `collections` table, so `collection` notifications open `/objects/:id`.
+ * Canonical route for a notification's entity. Cases open where the app
+ * shows them. Objects are stored in the `collections` table, so `collection`
+ * notifications open `/objects/:id`.
  */
 export function notificationEntityHref(
   entityType: string | undefined,
   entityId: string | undefined,
 ): string | null {
   if (!entityType || !entityId) return null;
+  const caseType = caseTypeOfEntity(entityType);
+  if (caseType) return caseHref(caseType, entityId);
 
   switch (entityType) {
     case "collection":
     case "object":
       return `/objects/${entityId}`;
-    case "accession":
-      return `/accessions/${entityId}`;
-    case "deaccession":
-      return `/deaccessions/${entityId}`;
-    case "loan":
-      return `/loans/${entityId}`;
-    case "exhibition":
-      return `/exhibitions/${entityId}`;
-    case "conservationTreatment":
-      return `/conservation/${entityId}`;
     case "installationTask":
       return "/installations";
     case "location":
@@ -30,14 +25,8 @@ export function notificationEntityHref(
       return `/locations/episodes/${entityId}`;
     case "move_request":
       return `/objects/move-requests/${entityId}`;
-    case "documentationFinding":
-      return `/documentation-quality/${entityId}`;
     case "reproductionRequest":
       return `/reproduction-requests/${entityId}`;
-    case "incident":
-      return `/incidents/${entityId}`;
-    case "inventoryException":
-      return `/inventory/exceptions/${entityId}`;
     default:
       return null;
   }

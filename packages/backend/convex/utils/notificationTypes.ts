@@ -1,4 +1,5 @@
 import { type Infer, v } from "convex/values";
+import { CASE_TYPES, type CaseEntityType } from "./caseTypes";
 
 export const NOTIFICATION_CATEGORIES = [
   "approvals",
@@ -126,29 +127,30 @@ export function slaNotificationType(
   return `sla_${kind}_${workflowType}`;
 }
 
+/** A case's notifications need the case type's read permission. */
+const CASE_ENTITY_READ_PERMISSIONS = Object.fromEntries(
+  Object.values(CASE_TYPES).map(({ entityType, readPermission }) => [
+    entityType,
+    readPermission,
+  ]),
+) as Record<CaseEntityType, string>;
+
 /**
  * The role permission that reads each kind of entity a notification can
  * name. A recipient without it is not sent the notification. Null means the
  * notification only concerns the recipient (their own borrowing or job).
+ * Sensitive incidents also narrow recipients to their scope (ADR 0015).
  */
 export const NOTIFICATION_ENTITY_READ_PERMISSIONS = {
-  accession: "collections.read",
-  deaccession: "collections.read",
+  ...CASE_ENTITY_READ_PERMISSIONS,
   object: "collections.read",
-  exhibition: "collections.read",
   conservation: "collections.read",
-  conservationTreatment: "collections.read",
   conservationAlert: "collections.read",
   alertEpisode: "locations.read",
   move_request: "collections.read",
   acquisition: "collections.read",
   libraryAcquisitionRequest: "collections.read",
-  documentationFinding: "collections.read",
   reproductionRequest: "media.read",
-  // Sensitive incidents also narrow recipients to their scope (ADR 0015).
-  incident: "collections.read",
-  inventoryException: "locations.read",
-  loan: "loans.read",
   transitRecord: "loans.read",
   insurancePolicy: "loans.read",
   insuranceClaim: "loans.read",

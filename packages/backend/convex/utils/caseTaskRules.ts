@@ -1,122 +1,27 @@
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { resolveCase } from "../auditLog";
-import { CAPABILITY_MATRIX, type CapabilityId } from "./capabilities";
+import { requireAuthenticatedUser } from "./authorizationContext";
+import { capabilityUnavailableFromError } from "./capabilities";
 import type { CaseTaskCaseType, CaseTaskStatus } from "./caseTaskValidators";
-import { findingLabel } from "./documentationFindings";
-import { requireVisibleIncident } from "./incidentAccess";
-import type { NotificationEntityType } from "./notificationTypes";
-import { requireCapability } from "./permissions";
-import { workError, workErrorFromError } from "./workErrors";
-
-function workErrorCode(error: unknown) {
-  return workErrorFromError(error)?.code;
-}
+import { CASE_TYPES, type CaseRecord, caseReadPermissions } from "./caseTypes";
+import { requireFeatureAccess } from "./featureGates";
+import { seesIncident } from "./incidentAccess";
+import {
+  getUserPermissions,
+  requireCapability,
+  requirePermission,
+} from "./permissions";
+import { workError } from "./workErrors";
 
 /**
- * Rules every writer of case tasks shares: the case kinds' permissions and
- * notification links, owner eligibility and the task audit trail.
+ * Rules every reader and writer of case tasks shares: who may open a case
+ * and the task audit trail. What each kind of case is lives in `caseTypes`.
  */
 
 export const MAX_TASKS_PER_CASE = 100;
 /** Queue sort key of an undated task, so dated work comes first. */
 export const UNDATED = Number.MAX_SAFE_INTEGER;
-
-type CaseReadPermission = "loans.read" | "collections.read" | "locations.read";
-type CaseWorkPermission =
-  | "loans.update"
-  | "collections.update"
-  | "locations.update";
-
-export interface CaseConfig {
-  readPermission: CaseReadPermission;
-  workPermission: CaseWorkPermission;
-  feature?: "loans" | "exhibitions" | "conservation";
-  /** Capability that opening the case requires, beyond its read permission. */
-  capability?: Extract<CapabilityId, "documentation_quality" | "inventory">;
-  /** Key that files task audit events under the case (see auditEvidence). */
-  auditKey: string;
-  /** Entity type used by notification links to open the case. */
-  notificationEntityType: NotificationEntityType;
-}
-
-export const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
-  loan: {
-    readPermission: "loans.read",
-    workPermission: "loans.update",
-    feature: "loans",
-    auditKey: "loanId",
-    notificationEntityType: "loan",
-  },
-  accession: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    auditKey: "accessionId",
-    notificationEntityType: "accession",
-  },
-  deaccession: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    auditKey: "deaccessionId",
-    notificationEntityType: "deaccession",
-  },
-  exhibition: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    feature: "exhibitions",
-    auditKey: "exhibitionId",
-    notificationEntityType: "exhibition",
-  },
-  conservation: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    feature: "conservation",
-    auditKey: "conservationTreatmentId",
-    notificationEntityType: "conservationTreatment",
-  },
-  documentationFinding: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    capability: "documentation_quality",
-    auditKey: "documentationFindingId",
-    notificationEntityType: "documentationFinding",
-  },
-  incident: {
-    readPermission: "collections.read",
-    workPermission: "collections.update",
-    auditKey: "incidentId",
-    notificationEntityType: "incident",
-  },
-  // Searching, relabelling and returning objects is location work (ADR 0014).
-  inventoryException: {
-    readPermission: "locations.read",
-    workPermission: "locations.update",
-    capability: "inventory",
-    auditKey: "inventoryExceptionId",
-    notificationEntityType: "inventoryException",
-  },
-};
-
-/** The permissions that opening a case of this kind requires. */
-export function caseReadPermissions(caseType: CaseTaskCaseType) {
-  const { readPermission, capability } = CASE_CONFIG[caseType];
-  return capability
-    ? CAPABILITY_MATRIX[capability].permissions
-    : [readPermission];
-}
-
-/** Owners and reviewers need both the read and the work permission of the case kind. */
-export function canWorkWith(
-  permissions: Set<string> | null,
-  caseType: CaseTaskCaseType,
-) {
-  return (
-    !!permissions &&
-    caseReadPermissions(caseType).every((name) => permissions.has(name)) &&
-    permissions.has(CASE_CONFIG[caseType].workPermission)
-  );
-}
 
 export function displayName(user: Doc<"users"> | null) {
   return user?.name || user?.email || undefined;
@@ -161,7 +66,7 @@ export async function logTaskEvent(
     entityType: "caseTask",
     entityId: taskId,
     changes: {
-      [CASE_CONFIG[task.caseType].auditKey]: task.caseId,
+      [`${CASE_TYPES[task.caseType].entityType}Id`]: task.caseId,
       caseType: task.caseType,
       title,
       ...details,
@@ -169,121 +74,101 @@ export async function logTaskEvent(
   });
 }
 
-export type CaseDoc =
-  | Awaited<ReturnType<typeof resolveCase>>
-  | Doc<"documentationFindings">
-  | Doc<"incidents">
-  | Doc<"inventoryExceptions">;
-
-export function isFinding(
-  entity: CaseDoc,
-): entity is Doc<"documentationFindings"> {
-  return "lastCheckNumber" in entity;
-}
-
-export function isIncident(entity: CaseDoc): entity is Doc<"incidents"> {
-  return "incidentNumber" in entity;
-}
-
-export function isInventoryException(
-  entity: CaseDoc,
-): entity is Doc<"inventoryExceptions"> {
-  return "detectedAt" in entity && "sessionId" in entity;
-}
-
-export function caseLabelOf(entity: CaseDoc): string {
-  if (isFinding(entity)) return findingLabel(entity);
-  if (isIncident(entity)) return entity.incidentNumber;
-  if (isInventoryException(entity)) return entity.label;
-  if ("loanNumber" in entity) return entity.loanNumber;
-  if ("deaccessionNumber" in entity) return entity.deaccessionNumber;
-  if ("accessionNumber" in entity) return entity.accessionNumber;
-  return entity.title;
-}
-
 /**
- * A documentation quality finding, for members with the documentation
- * quality capability.
+ * Refuses callers who may not open cases of this kind: the case type's
+ * Capability when it names one, otherwise its read permission, then its plan.
  */
-async function loadFindingCase(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  caseId: string,
-) {
-  await requireCapability(
-    ctx,
-    organizationId,
-    "documentation_quality",
-    CAPABILITY_MATRIX.documentation_quality.permissions,
-  );
-  const findingId = ctx.db.normalizeId("documentationFindings", caseId);
-  const finding = findingId ? await ctx.db.get(findingId) : null;
-  if (!finding || finding.organizationId !== organizationId)
-    throw workError("CASE_NOT_FOUND", "Case not found in this organization");
-  return finding;
-}
-
-/** An incident the caller may see; sensitive ones only within their scope. */
-async function loadIncidentCase(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  caseId: string,
-) {
-  const incidentId = ctx.db.normalizeId("incidents", caseId);
-  const caseMissing = () =>
-    workError("CASE_NOT_FOUND", "Case not found in this organization");
-  if (!incidentId) throw caseMissing();
-  const visible = await requireVisibleIncident(ctx, incidentId).catch(
-    (error: unknown) => {
-      if (workErrorCode(error) === "INCIDENT_NOT_FOUND") throw caseMissing();
-      throw error;
-    },
-  );
-  if (visible.incident.organizationId !== organizationId) throw caseMissing();
-  return visible.incident;
-}
-
-/** An inventory exception, for members with the inventory capability. */
-async function loadInventoryExceptionCase(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  caseId: string,
-) {
-  await requireCapability(
-    ctx,
-    organizationId,
-    "inventory",
-    CAPABILITY_MATRIX.inventory.permissions,
-  );
-  const exceptionId = ctx.db.normalizeId("inventoryExceptions", caseId);
-  const exception = exceptionId ? await ctx.db.get(exceptionId) : null;
-  if (!exception || exception.organizationId !== organizationId)
-    throw workError("CASE_NOT_FOUND", "Case not found in this organization");
-  return exception;
-}
-
-/** Resolves the case for the caller, enforcing the case's read access. */
-export async function loadCase(
+async function requireCaseTypeAccess(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   caseType: CaseTaskCaseType,
-  caseId: string,
-): Promise<CaseDoc> {
-  if (caseType === "documentationFinding")
-    return await loadFindingCase(ctx, organizationId, caseId);
-  if (caseType === "incident")
-    return await loadIncidentCase(ctx, organizationId, caseId);
-  if (caseType === "inventoryException")
-    return await loadInventoryExceptionCase(ctx, organizationId, caseId);
-  try {
-    return await resolveCase(ctx, {
+) {
+  const { capability, readPermission, feature } = CASE_TYPES[caseType];
+  if (capability) {
+    await requireCapability(
+      ctx,
       organizationId,
-      caseType,
-      entityId: caseId,
-    });
+      capability,
+      caseReadPermissions(caseType),
+    );
+    return;
+  }
+  await requirePermission(ctx, organizationId, readPermission);
+  if (feature) await requireFeatureAccess(ctx, organizationId, feature);
+}
+
+/** Whether the caller may open cases of this kind: loadCase's gate as a yes or no. */
+export async function canOpenCaseType(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  caseType: CaseTaskCaseType,
+) {
+  try {
+    await requireCaseTypeAccess(ctx, organizationId, caseType);
+    return true;
   } catch (error) {
-    if (error instanceof Error && error.message === "Case not found")
-      throw workError("CASE_NOT_FOUND", "Case not found in this organization");
+    // The gate refuses members only with a coded failure, so reading the
+    // failure keeps this answer and loadCase's refusal from drifting apart.
+    // Anything else, such as a missing organization, is a fault.
+    if (capabilityUnavailableFromError(error)) return false;
     throw error;
   }
+}
+
+export interface CaseViewer {
+  userId: Id<"users">;
+  permissions: ReadonlySet<string>;
+}
+
+/**
+ * The case in this organization, or null when it is missing or hidden from
+ * the viewer, as a sensitive incident is outside its scope (ADR 0015).
+ * Callers check access to the case type first. Only incidents need the
+ * viewer, so it is read only for them.
+ */
+export async function readVisibleCase<T extends CaseTaskCaseType>(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  caseType: T,
+  caseId: string,
+  viewer: () => Promise<CaseViewer>,
+): Promise<CaseRecord<T> | null> {
+  const table: (typeof CASE_TYPES)[CaseTaskCaseType]["table"] =
+    CASE_TYPES[caseType].table;
+  const id = ctx.db.normalizeId(table, caseId);
+  const doc = id ? await ctx.db.get(id) : null;
+  if (!doc || doc.organizationId !== organizationId) return null;
+  // The id was normalized against this case type's own table.
+  const record = { caseType, doc } as CaseRecord;
+  if (record.caseType === "incident") {
+    const { userId, permissions } = await viewer();
+    if (!seesIncident(record.doc, userId, permissions)) return null;
+  }
+  return record as CaseRecord<T>;
+}
+
+/** Resolves the case for the caller, enforcing the case's read access. */
+export async function loadCase<T extends CaseTaskCaseType>(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  caseType: T,
+  caseId: string,
+): Promise<CaseRecord<T>> {
+  await requireCaseTypeAccess(ctx, organizationId, caseType);
+  const record = await readVisibleCase(
+    ctx,
+    organizationId,
+    caseType,
+    caseId,
+    async () => {
+      const [userId, permissions] = await Promise.all([
+        requireAuthenticatedUser(ctx),
+        getUserPermissions(ctx, organizationId),
+      ]);
+      return { userId, permissions: new Set(permissions) };
+    },
+  );
+  if (!record)
+    throw workError("CASE_NOT_FOUND", "Case not found in this organization");
+  return record;
 }

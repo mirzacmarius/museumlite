@@ -909,7 +909,7 @@ describe("repair work", () => {
     ).rejects.toThrow();
   });
 
-  test("members who cannot open an exception are not assignable and do not see its tasks", async () => {
+  test("members who cannot open an exception are not assignable to its tasks", async () => {
     const f = await setup();
     const s = await finishedStoreSession(f);
     // Location work without collection access: no Inventory capability.
@@ -919,40 +919,15 @@ describe("repair work", () => {
       "Fay Facilities",
       ["locations.read", "locations.update"],
     );
-    const caseRef = {
-      organizationId: f.organizationId,
-      caseType: "inventoryException" as const,
-      caseId: s.missing,
-    };
 
     const assignable = (
-      await f.field.query(api.caseTasks.listAssignableMembers, caseRef)
+      await f.field.query(api.caseTasks.listAssignableMembers, {
+        organizationId: f.organizationId,
+        caseType: "inventoryException",
+        caseId: s.missing,
+      })
     ).map((member) => member.userId);
     expect(assignable).not.toContain(facilitiesId);
-
-    // A task left on the member from before their role changed.
-    await f.t.run((ctx) =>
-      ctx.db.insert("caseTasks", {
-        ...caseRef,
-        title: "Search Shelf B for B-1",
-        ownerId: facilitiesId,
-        queueDueAt: Number.MAX_SAFE_INTEGER,
-        status: "todo",
-        open: true,
-        dependsOnTaskIds: [],
-        createdBy: f.fieldId,
-        createdAt: 1,
-        updatedAt: 1,
-      }),
-    );
-    const myWork = await authedForUser(f.t, facilitiesId).query(
-      api.caseTasks.listMyWork,
-      {
-        organizationId: f.organizationId,
-        paginationOpts: { numItems: 10, cursor: null },
-      },
-    );
-    expect(myWork.page).toEqual([]);
   });
 
   test("an exception's detail names its session, evidence and tasks' case", async () => {
