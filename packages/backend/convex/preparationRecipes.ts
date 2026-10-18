@@ -4,13 +4,12 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import {
-  CASE_CONFIG,
-  canWorkWith,
   displayName,
   loadCase,
   MAX_TASKS_PER_CASE,
 } from "./utils/caseTaskRules";
 import { caseTaskEvidenceKindValidator } from "./utils/caseTaskValidators";
+import { CASE_TYPES, canWorkWith } from "./utils/caseTypes";
 import { requireFeatureAccess } from "./utils/featureGates";
 import {
   memberPermissionNames,
@@ -572,7 +571,7 @@ export const getForCase = query({
       hasPermission(
         ctx,
         args.organizationId,
-        CASE_CONFIG[args.caseType].workPermission,
+        CASE_TYPES[args.caseType].workPermission,
       ),
       recipesForEvent(ctx, event),
       caseTaskCount(ctx, event),
@@ -637,7 +636,7 @@ export const applyToCase = mutation({
     await requirePermission(
       ctx,
       args.organizationId,
-      CASE_CONFIG[args.caseType].workPermission,
+      CASE_TYPES[args.caseType].workPermission,
     );
     if (!(await acceptedCaseEvent(ctx, args)))
       throw workError(

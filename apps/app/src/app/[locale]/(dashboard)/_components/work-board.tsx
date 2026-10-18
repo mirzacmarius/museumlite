@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { caseHref } from "@v1/backend/convex/utils/caseTypes";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import { usePaginatedQuery, useQuery } from "convex/react";
@@ -18,7 +19,6 @@ import {
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { CaseTaskTile } from "@/components/case-tasks/case-task-card";
-import { caseHref } from "@/components/case-tasks/case-task-links";
 import { ClientDate } from "@/components/client-date";
 import { usePermissions } from "@/components/permission-gate";
 import { useHistoricalDateFormat } from "@/components/provenance/use-historical-date-format";

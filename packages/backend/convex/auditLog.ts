@@ -10,12 +10,14 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { internalQuery, query } from "./_generated/server";
 import { auditLogChanges } from "./schema";
+import { loadCase } from "./utils/caseTaskRules";
 import {
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
+import { workError } from "./utils/workErrors";
 
 /** Max recent audit rows scanned for filter dropdown options. */
 const DROPDOWN_SCAN_CAP = 1000;
@@ -744,32 +746,26 @@ export async function resolveCase(
     entityId: string;
   },
 ) {
-  const caseKind = {
-    accession: "accession",
-    deaccession: "deaccession",
-    loan: "loan",
-    exhibition: "exhibition",
-    conservation: "conservationTreatment",
-    acquisition: "libraryAcquisitionRequest",
-  } as const;
+  if (args.caseType !== "acquisition") {
+    const record = await loadCase(
+      ctx,
+      args.organizationId,
+      args.caseType,
+      args.entityId,
+    );
+    return record.doc;
+  }
+  // Acquisition requests hold no Tasks, so they are not a case type yet.
   await requireCaseAccess(
     ctx,
     args.organizationId,
-    caseKind[args.caseType],
+    "libraryAcquisitionRequest",
     (permission) => requirePermission(ctx, args.organizationId, permission),
   );
-  const table = {
-    accession: "accessions",
-    deaccession: "deaccessions",
-    loan: "loans",
-    exhibition: "exhibitions",
-    conservation: "conservationTreatments",
-    acquisition: "libraryAcquisitionRequests",
-  } as const;
-  const id = ctx.db.normalizeId(table[args.caseType], args.entityId);
+  const id = ctx.db.normalizeId("libraryAcquisitionRequests", args.entityId);
   const entity = id ? await ctx.db.get(id) : null;
   if (!entity || entity.organizationId !== args.organizationId)
-    throw new Error("Case not found");
+    throw workError("CASE_NOT_FOUND", "Case not found in this organization");
   return entity;
 }
 

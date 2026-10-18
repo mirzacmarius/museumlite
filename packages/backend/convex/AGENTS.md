@@ -13,6 +13,7 @@ All data, authentication, storage, and scheduled work lives in Convex.
 | Library circulation, holds, fines, acquisitions | `library/` |
 | Shared backend helpers | `utils/` |
 | Accession number generation | `utils/accessionCounter.ts` |
+| Add a kind of Case that can hold Tasks | Its name in `utils/caseTaskValidators.ts`, its definition in `utils/caseTypes.ts` |
 | Backend tests | Tests in this directory and `../tests/` |
 
 Run backend tests from `packages/backend/` using `bun test`. Other checks and env notes are in `docs/agents/dev-environment.md`.

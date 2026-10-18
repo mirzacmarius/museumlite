@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { caseHref } from "@v1/backend/convex/utils/caseTypes";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import { useMutation } from "convex/react";
@@ -13,7 +14,7 @@ import { ClientDate } from "@/components/client-date";
 import { useWorkErrorMessage } from "@/hooks/use-work-error-message";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { type CaseTask, CaseTaskActions } from "./case-task-actions";
-import { caseHref, evidenceHref } from "./case-task-links";
+import { evidenceHref } from "./case-task-links";
 
 const STATUS_STYLES: Record<CaseTask["status"], string> = {
   todo: "border-border bg-muted text-foreground/80",

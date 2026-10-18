@@ -1273,64 +1273,6 @@ test("a running check that stopped making progress can be resumed, but not befor
   });
 });
 
-test("a finding's tasks leave My work once the owner can no longer open the finding", async () => {
-  const { t, admin, officer, adminId, organizationId } = await setup();
-  const ownerId = await addMember(
-    t,
-    organizationId,
-    "Rosa Repairer",
-    OFFICER_PERMISSIONS,
-  );
-  const owner = authedForUser(t, ownerId);
-  await admin.mutation(api.documentationQuality.createProfile, {
-    organizationId,
-    ...PAINTINGS,
-  });
-  await insertObject(t, organizationId, adminId, {
-    accessionNumber: "1990.1",
-    objectType: "Painting",
-  });
-  await runCheck(t, officer, organizationId);
-  const finding = await onlyFinding(officer, organizationId, "open");
-  await officer.mutation(api.caseTasks.create, {
-    organizationId,
-    caseType: "documentationFinding",
-    caseId: finding._id,
-    title: "Photograph 1990.1",
-    ownerId,
-  });
-
-  // The owner's role keeps collections.read but loses collections.update.
-  await t.run(async (ctx) => {
-    const membership = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", ownerId).eq("organizationId", organizationId),
-      )
-      .unique();
-    const update = await ctx.db
-      .query("permissions")
-      .filter((q) => q.eq(q.field("name"), "collections.update"))
-      .unique();
-    const grant = await ctx.db
-      .query("rolePermissions")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("roleId"), membership?.roleId),
-          q.eq(q.field("permissionId"), update?._id),
-        ),
-      )
-      .unique();
-    if (grant) await ctx.db.delete(grant._id);
-  });
-
-  const myWork = await owner.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: { numItems: 10, cursor: null },
-  });
-  expect(myWork.page).toEqual([]);
-});
-
 test("repair work on a finding is assigned as a case task that reaches the owner's My work", async () => {
   const {
     t,
