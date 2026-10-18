@@ -75,7 +75,7 @@ export const createOrganization = internalMutation({
       subscriptionTier: args.subscriptionTier,
       settings: {
         autoGenerateAccessionNumbers: true,
-        accessionNumberFormat: `${args.slug.toUpperCase().substring(0, 3)}-YYYY-###`,
+        accessionNumberFormat: `${args.slug.toUpperCase().substring(0, 3)}-{YYYY}-{###}`,
       },
     });
     await initializeEmptyProjection(ctx, orgId);

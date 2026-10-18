@@ -1267,6 +1267,36 @@ describe("objectMoves", () => {
     expect(collection?.alternateAccessionNumbers).toContain("SRC-001");
   });
 
+  test("an auto accession into an organization with a stored bare-token format generates a real number", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t, {
+      targetSettings: {
+        autoGenerateAccessionNumbers: true,
+        accessionNumberFormat: "TGT-YYYY-###",
+      },
+    });
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "auto",
+        reason: "Auto accession move",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    const collection = await t.run((ctx) => ctx.db.get(fixture.collectionId));
+    expect(collection?.accessionNumber).toBe(
+      `TGT-${new Date().getFullYear()}-001`,
+    );
+  });
+
   test("approving a request moves it from pending to executed in listForOrganization", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);

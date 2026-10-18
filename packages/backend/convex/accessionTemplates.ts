@@ -2,7 +2,10 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { query } from "./_generated/server";
-import { accessionParser } from "./utils/accessionNumberParser";
+import {
+  accessionFormatError,
+  accessionParser,
+} from "./utils/accessionNumberParser";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 
@@ -73,7 +76,7 @@ export const create = mutation({
 
     const validation = accessionParser.validate(args.template, org.slug);
     if (!validation.isValid) {
-      throw new Error(`Invalid template: ${validation.error}`);
+      throw accessionFormatError(validation);
     }
 
     // Check if template already exists
@@ -146,8 +149,7 @@ export const update = mutation({
       "organization.manage_settings",
     );
 
-    // Validate new template if provided
-    if (args.template) {
+    if (args.template !== undefined && args.template !== template.template) {
       const org = await ctx.db.get(template.organizationId);
       if (!org) {
         throw new Error("Organization not found");
@@ -155,7 +157,7 @@ export const update = mutation({
 
       const validation = accessionParser.validate(args.template, org.slug);
       if (!validation.isValid) {
-        throw new Error(`Invalid template: ${validation.error}`);
+        throw accessionFormatError(validation);
       }
     }
 

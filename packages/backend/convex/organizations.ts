@@ -7,6 +7,7 @@ import schema from "./schema";
 import { getNextCounterPreview } from "./utils/accessionCounter";
 import {
   AccessionNumberParser,
+  accessionFormatError,
   accessionParser,
 } from "./utils/accessionNumberParser";
 import { markOptionUsageIndexReady } from "./utils/collectionOptionUsages";
@@ -73,6 +74,27 @@ function getEffectiveRootOrganizationId(
   organization: Doc<"organizations">,
 ): Id<"organizations"> {
   return organization.rootOrganizationId ?? organization._id;
+}
+
+/**
+ * Refuses a new accession number format the generator cannot number objects
+ * with. The stored format is left alone, so saving other settings never fails
+ * on a format the user did not change.
+ */
+function assertAccessionFormatChangeUsable(
+  organization: Doc<"organizations">,
+  format: string | undefined,
+) {
+  if (
+    format === undefined ||
+    format === organization.settings?.accessionNumberFormat
+  ) {
+    return;
+  }
+  const validation = accessionParser.validate(format, organization.slug);
+  if (!validation.isValid) {
+    throw accessionFormatError(validation);
+  }
 }
 
 function hasHierarchyAccess(organization: Doc<"organizations">) {
@@ -565,6 +587,10 @@ export const update = mutation({
     if (!org) {
       throw new Error("Organization not found");
     }
+    assertAccessionFormatChangeUsable(
+      org,
+      args.settings?.accessionNumberFormat,
+    );
 
     await patchOrganizationTransferFieldsIfMissing(ctx, org);
 
@@ -1044,6 +1070,7 @@ export const updateAccessionNumberFormat = mutation({
     if (!org) {
       throw new Error("Organization not found");
     }
+    assertAccessionFormatChangeUsable(org, args.format);
 
     await Promise.all([
       ctx.db.patch(args.organizationId, {
@@ -2013,15 +2040,29 @@ export const validateAccessionFormat = query({
   args: {
     template: v.string(),
     organizationSlug: v.string(),
+    /** The organization's saved, unchanged format, which may use bare tokens. */
+    stored: v.optional(v.boolean()),
   },
   returns: v.object({
     isValid: v.boolean(),
     error: v.optional(v.string()),
+    issues: v.array(
+      v.union(
+        v.object({ code: v.literal("FORMAT_EMPTY") }),
+        v.object({ code: v.literal("COUNTER_MISSING") }),
+        v.object({
+          code: v.literal("UNKNOWN_VARIABLE"),
+          variable: v.string(),
+        }),
+      ),
+    ),
     preview: v.string(),
     examples: v.array(v.string()),
   }),
   handler: async (_ctx, args) => {
-    return accessionParser.validate(args.template, args.organizationSlug);
+    return accessionParser.validate(args.template, args.organizationSlug, {
+      stored: args.stored,
+    });
   },
 });
 

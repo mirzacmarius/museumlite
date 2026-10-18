@@ -612,6 +612,13 @@ export default {
       dailyResets: "Zilnic (Resetează la Miezul Nopții)",
       autoGeneration: "Auto-generare",
       autoGenerateAccession: "Generează automat numerele de accesie",
+      formatErrors: {
+        empty: "Introdu un șablon de format.",
+        counterMissing:
+          "Adaugă un contor precum {example} în șablonul de format, astfel încât fiecare număr să fie unic.",
+        unknownVariable:
+          "{variable} nu este o variabilă acceptată de șablonul de format.",
+      },
       conditionOptions: "Opțiuni Stare",
       standardConditions:
         "Condițiile standard (Excelentă, Foarte Bună, Bună, Slabă) sunt întotdeauna disponibile.",

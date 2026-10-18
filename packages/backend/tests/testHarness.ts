@@ -5,6 +5,10 @@ import { internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import {
+  type AccessionFormatErrorData,
+  accessionFormatErrorFromError,
+} from "../convex/utils/accessionNumberParser";
+import {
   type CapabilityUnavailableData,
   capabilityUnavailableFromError,
 } from "../convex/utils/capabilities";
@@ -210,6 +214,18 @@ export async function capabilityFailureOf(
     await call;
   } catch (error) {
     return capabilityUnavailableFromError(error);
+  }
+  throw new Error("Expected the call to be rejected");
+}
+
+/** Awaits a call expected to fail and returns its accession format refusal. */
+export async function accessionFormatRefusalOf(
+  call: Promise<unknown>,
+): Promise<AccessionFormatErrorData | null> {
+  try {
+    await call;
+  } catch (error) {
+    return accessionFormatErrorFromError(error);
   }
   throw new Error("Expected the call to be rejected");
 }
