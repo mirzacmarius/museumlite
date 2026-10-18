@@ -58,6 +58,7 @@ function board(...columns: Board): Board {
           cards: [],
           hasMore: false,
           byType: NO_APPROVALS,
+          moreImageDeletions: false,
         },
         { key: "reviews", cards: [], hasMore: false },
         { key: "assigned", cards: [], hasMore: false },
@@ -102,6 +103,7 @@ function approvals(
     cards,
     hasMore: false,
     byType: { ...NO_APPROVALS, ...byType },
+    moreImageDeletions: false,
   };
 }
 
@@ -289,6 +291,19 @@ test("unreviewed and disputed provenance claims count together", async () => {
 
   expect(linkTexts()).toEqual(["Provenance claims to review 3"]);
   expect(hrefOf("Provenance claims to review 3")).toBe("/assignments");
+});
+
+test("image deletions beyond the ones counted read as more", async () => {
+  showBoard(
+    board({ ...approvals({ imageDeletion: 100 }), moreImageDeletions: true }),
+  );
+
+  await renderSummary();
+
+  expect(linkTexts()).toEqual([
+    "View All",
+    "Pending image deletion approval 100+",
+  ]);
 });
 
 test("links to My work when no card already opens it", async () => {

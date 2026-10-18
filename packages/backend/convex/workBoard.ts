@@ -44,6 +44,8 @@ const columnValidator = v.union(
   column("approvals", pendingApprovalValidator).extend({
     /** Every approval waiting on the viewer per kind, not only the cards. */
     byType: approvalCountsValidator,
+    /** More image deletions wait than `byType` counts. */
+    moreImageDeletions: v.boolean(),
   }),
   column("conditionApprovals", boardItemValidator),
   column("transfers", transferAwaitingDecisionValidator),

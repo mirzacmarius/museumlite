@@ -132,25 +132,29 @@ async function loadPendingImageDeletions(
     hasPermission(ctx, organizationId, "media.read"),
     resolveImageDeletionApproval(ctx, organizationId),
   ]);
-  if (!canOpenPage || !approval.allowed) return [];
+  if (!canOpenPage || !approval.allowed) return { requests: [], more: false };
   const requests = await ctx.db
     .query("mediaDeletionRequests")
     .withIndex("by_organization_and_status_and_requestedAt", (q) =>
       q.eq("organizationId", organizationId).eq("status", "pending"),
     )
-    .take(PENDING_IMAGE_DELETION_LIMIT);
-  return await Promise.all(
-    requests.map(async (request) => ({
-      ...request,
-      objectTitle: (await ctx.db.get(request.collectionId))?.title,
-    })),
-  );
+    .take(PENDING_IMAGE_DELETION_LIMIT + 1);
+  return {
+    requests: await Promise.all(
+      requests.slice(0, PENDING_IMAGE_DELETION_LIMIT).map(async (request) => ({
+        ...request,
+        objectTitle: (await ctx.db.get(request.collectionId))?.title,
+      })),
+    ),
+    more: requests.length > PENDING_IMAGE_DELETION_LIMIT,
+  };
 }
 
 /**
  * Cases and image deletions the viewer may approve now, most pressing first:
  * past their SLA, then waiting longest. Counts per kind cover every one, not
- * only the cards shown.
+ * only the cards shown, except image deletions past the first
+ * PENDING_IMAGE_DELETION_LIMIT, which `moreImageDeletions` flags.
  */
 export async function readPendingApprovals(
   ctx: QueryCtx,
@@ -158,7 +162,10 @@ export async function readPendingApprovals(
   now: number,
   limit: number,
 ): Promise<
-  ColumnPage<PendingApproval> & { byType: Record<ApprovalType, number> }
+  ColumnPage<PendingApproval> & {
+    byType: Record<ApprovalType, number>;
+    moreImageDeletions: boolean;
+  }
 > {
   const [canActOn, slaConfigs, waiting, imageDeletions] = await Promise.all([
     loadCanActOnApproval(ctx, organizationId),
@@ -206,7 +213,7 @@ export async function readPendingApprovals(
       }),
     )
   ).flat();
-  for (const request of imageDeletions) {
+  for (const request of imageDeletions.requests) {
     ranked.push(
       rank(
         {
@@ -240,8 +247,9 @@ export async function readPendingApprovals(
   for (const { card } of ranked) byType[card.type] += 1;
   return {
     cards: ranked.slice(0, limit).map(({ card }) => card),
-    hasMore: ranked.length > limit,
+    hasMore: ranked.length > limit || imageDeletions.more,
     byType,
+    moreImageDeletions: imageDeletions.more,
   };
 }
 

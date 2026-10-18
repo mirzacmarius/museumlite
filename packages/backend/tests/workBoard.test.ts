@@ -2,6 +2,8 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import type { ApprovalCaseType as ApprovalType } from "../convex/utils/caseTypes";
+import { PENDING_IMAGE_DELETION_LIMIT } from "../convex/utils/imageDeletion";
+import { MAX_SCANNED_ROWS } from "../convex/utils/workBoardColumns";
 import { workErrorFromError } from "../convex/utils/workErrors";
 import { workflowApprovalErrorFromError } from "../convex/utils/workflowApprovalErrors";
 import {
@@ -242,6 +244,42 @@ test("tasks on cases the plan no longer opens are skipped without leaving the co
   );
 });
 
+test("a column stops looking after rows it cannot show and says more may be waiting", async () => {
+  const museum = await createMuseum("free");
+  const registrar = await museum.member("Rita Registrar", REGISTRAR);
+  await museum.t.run(async (ctx) => {
+    // Loans are not on the free plan, so none of these tasks can show.
+    for (let index = 0; index < MAX_SCANNED_ROWS; index++) {
+      await ctx.db.insert("caseTasks", {
+        organizationId: museum.organizationId,
+        caseType: "loan",
+        caseId: museum.cases.loanId,
+        title: `Loan task ${index}`,
+        ownerId: registrar.userId,
+        queueDueAt: NOW + index,
+        status: "todo",
+        open: true,
+        dependsOnTaskIds: [],
+        createdBy: registrar.userId,
+        createdAt: NOW,
+        updatedAt: NOW,
+      });
+    }
+  });
+  await giveTasks(museum, registrar.client, registrar.userId, 1, {
+    caseType: "accession",
+    firstDue: NOW + MAX_SCANNED_ROWS,
+  });
+
+  const tasks = await workColumn(
+    registrar.client,
+    museum.organizationId,
+    "tasks",
+  );
+  expect(tasks?.cards).toEqual([]);
+  expect(tasks?.hasMore).toBe(true);
+});
+
 test("a reviewer sees tasks waiting for their review, and the owner does not", async () => {
   const museum = await createMuseum();
   const registrar = await museum.member("Rita Registrar", REGISTRAR);
@@ -403,7 +441,7 @@ test("only members who decide transfers see the transfers waiting on the organiz
   ]);
 });
 
-test("provenance reviewers see unreviewed claims, then disputed ones, and other staff see no column", async () => {
+test("provenance reviewers see unreviewed and disputed claims together, newest first, and other staff see no column", async () => {
   const museum = await createMuseum();
   const reviewer = await museum.member("Pia Provenance", [
     "collections.read",
@@ -432,6 +470,10 @@ test("provenance reviewers see unreviewed claims, then disputed ones, and other 
     confidence: "probable" as const,
     evidence: [],
   };
+  const oldestId = await reviewer.client.mutation(api.provenance.recordClaim, {
+    ...claim,
+    statement: "Private collection, Vienna, 1920.",
+  });
   const disputedId = await reviewer.client.mutation(
     api.provenance.recordClaim,
     { ...claim, statement: "Paul Rosenberg, Paris, by 1935." },
@@ -441,26 +483,34 @@ test("provenance reviewers see unreviewed claims, then disputed ones, and other 
     decision: "disputed",
     note: "Conflicts with the dealer's records",
   });
-  const unreviewedId = await reviewer.client.mutation(
-    api.provenance.recordClaim,
-    { ...claim, statement: "Galerie Wildenstein, 1936." },
-  );
+  const newestId = await reviewer.client.mutation(api.provenance.recordClaim, {
+    ...claim,
+    statement: "Galerie Wildenstein, 1936.",
+  });
 
   expect(await museum.board(reviewer.client)).toEqual([
     "tasks 0",
     "approvals 0",
     "reviews 0",
     "assigned 0",
-    "provenance 2",
+    "provenance 3",
   ]);
+  const firstTwo = await workColumn(
+    reviewer.client,
+    museum.organizationId,
+    "provenance",
+    { provenance: 2 },
+  );
+  expect(firstTwo?.cards.map((card) => [card.claimId, card.disputed])).toEqual([
+    [newestId, false],
+    [disputedId, true],
+  ]);
+  expect(firstTwo?.hasMore).toBe(true);
   expect(
     (
       await workColumn(reviewer.client, museum.organizationId, "provenance")
-    )?.cards.map((card) => [card.claimId, card.disputed]),
-  ).toEqual([
-    [unreviewedId, false],
-    [disputedId, true],
-  ]);
+    )?.cards.map((card) => card.claimId),
+  ).toEqual([newestId, disputedId, oldestId]);
   expect(await museum.board(researcher.client)).toEqual([
     "tasks 0",
     "approvals 0",
@@ -882,6 +932,59 @@ test("approval counts include every approvable record beyond the cards shown, ol
     accession: 3,
     deaccession: 1,
   });
+});
+
+test("image deletions beyond the ones counted read as more", async () => {
+  const museum = await createMuseum();
+  const admin = await museum.member("Ada Admin", [
+    "media.read",
+    "organization.manage_settings",
+  ]);
+  await museum.t.run(async (ctx) => {
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId: museum.organizationId,
+      accessionNumber: "M-1",
+      title: "Vase",
+      status: "active",
+      catalogedBy: admin.userId,
+      catalogedAt: NOW,
+    });
+    const mediaId = await ctx.db.insert("mediaFiles", {
+      organizationId: museum.organizationId,
+      collectionId,
+      storageId: await ctx.storage.store(new Blob(["photo"])),
+      fileName: "front.jpg",
+      fileType: "image/jpeg",
+      fileSize: 5,
+      mimeType: "image/jpeg",
+      isPrimary: true,
+      uploadedBy: admin.userId,
+      uploadedAt: NOW,
+      uploadStatus: "completed",
+    });
+    for (let index = 0; index <= PENDING_IMAGE_DELETION_LIMIT; index++) {
+      await ctx.db.insert("mediaDeletionRequests", {
+        organizationId: museum.organizationId,
+        mediaId,
+        collectionId,
+        fileName: `front-${index}.jpg`,
+        status: "pending",
+        requestedBy: admin.userId,
+        requestedAt: NOW - index,
+      });
+    }
+  });
+
+  const approvals = await workColumn(
+    admin.client,
+    museum.organizationId,
+    "approvals",
+    { approvals: PENDING_IMAGE_DELETION_LIMIT },
+  );
+  expect(approvals?.byType.imageDeletion).toBe(PENDING_IMAGE_DELETION_LIMIT);
+  expect(approvals?.moreImageDeletions).toBe(true);
+  expect(approvals?.cards).toHaveLength(PENDING_IMAGE_DELETION_LIMIT);
+  expect(approvals?.hasMore).toBe(true);
 });
 
 test("an approval past its SLA comes before older ones within theirs, and only breached or week-old waits are urgent", async () => {

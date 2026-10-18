@@ -72,7 +72,7 @@ export interface WorkColumn {
   /** The cards loaded, which reads as `count+` while more are waiting. */
   count: number;
   hasMore: boolean;
-  renderCards: () => ReactNode;
+  cards: ReactNode;
   summaryEntries: readonly WorkSummaryEntry[];
 }
 
@@ -113,7 +113,7 @@ function BoardColumn({ column }: { column: WorkColumn }) {
         <ColumnHeader column={column} />
       </h2>
       <div className="max-h-96 overflow-y-auto px-2 pb-2 custom-scrollbar">
-        {column.renderCards()}
+        {column.cards}
       </div>
     </section>
   );
@@ -272,7 +272,7 @@ export function useMyWorkColumns(
     /** A column whose one Overview card opens `href`. */
     const single = (
       style: Pick<WorkColumn, "icon" | "accentClassName" | "title">,
-      renderCards: () => ReactNode,
+      cards: ReactNode,
       href = MY_WORK_HREF,
     ): WorkColumn => {
       const counted = {
@@ -283,7 +283,7 @@ export function useMyWorkColumns(
       };
       return {
         ...counted,
-        renderCards,
+        cards,
         summaryEntries: [{ ...counted, href }],
       };
     };
@@ -303,14 +303,13 @@ export function useMyWorkColumns(
                 accentClassName: "text-amber-400",
                 title: t("myWork.reviews"),
               },
-          () =>
-            cardList(
-              column.key,
-              column.cards.map((task) => (
-                <CaseTaskTile key={task._id} task={task} now={now} />
-              )),
-              column.hasMore,
-            ),
+          cardList(
+            column.key,
+            column.cards.map((task) => (
+              <CaseTaskTile key={task._id} task={task} now={now} />
+            )),
+            column.hasMore,
+          ),
         );
       case "approvals":
         return {
@@ -320,14 +319,13 @@ export function useMyWorkColumns(
               accentClassName: "text-amber-400",
               title: tRoot("assignmentsPage.sections.pendingApproval"),
             },
-            () =>
-              cardList(
-                column.key,
-                column.cards.map((item) => (
-                  <PendingApprovalCard key={item._id} item={item} />
-                )),
-                column.hasMore,
-              ),
+            cardList(
+              column.key,
+              column.cards.map((item) => (
+                <PendingApprovalCard key={item._id} item={item} />
+              )),
+              column.hasMore,
+            ),
           ),
           // One Overview card per kind, counting every approval waiting.
           summaryEntries: (Object.keys(APPROVAL_TYPES) as ApprovalType[]).map(
@@ -337,7 +335,7 @@ export function useMyWorkColumns(
               accentClassName: APPROVAL_TYPES[type].accentClassName,
               title: t(`myWork.pendingApproval.${type}`),
               count: column.byType[type],
-              hasMore: false,
+              hasMore: type === "imageDeletion" && column.moreImageDeletions,
               href: pendingApprovalsHref(type, now),
             }),
           ),
@@ -349,14 +347,12 @@ export function useMyWorkColumns(
             accentClassName: "text-pink-400",
             title: tRoot("conditionAssessments.pendingApprovalCard"),
           },
-          () => (
-            <div className="space-y-2">
-              <PendingConditionCards assessments={column.cards} />
-              {canLoadMore(column.key, column.cards.length, column.hasMore) ? (
-                <LoadMoreButton onClick={() => loadMore(column.key)} />
-              ) : null}
-            </div>
-          ),
+          <div className="space-y-2">
+            <PendingConditionCards assessments={column.cards} />
+            {canLoadMore(column.key, column.cards.length, column.hasMore) ? (
+              <LoadMoreButton onClick={() => loadMore(column.key)} />
+            ) : null}
+          </div>,
           PENDING_CONDITION_APPROVALS_HREF,
         );
       case "transfers":
@@ -366,12 +362,10 @@ export function useMyWorkColumns(
             accentClassName: "text-sky-400",
             title: t("myWork.pendingTransfers"),
           },
-          () => (
-            <PendingTransferCards
-              transfers={column.cards}
-              hasMore={column.hasMore}
-            />
-          ),
+          <PendingTransferCards
+            transfers={column.cards}
+            hasMore={column.hasMore}
+          />,
           TRANSFERS_HREF,
         );
       case "assigned":
@@ -381,27 +375,26 @@ export function useMyWorkColumns(
             accentClassName: "text-emerald-400",
             title: t("myWork.assignedCases"),
           },
-          () =>
-            cardList(
-              column.key,
-              column.cards.map((row) => (
-                <li key={`${row.caseType}:${row.caseId}`}>
-                  <Link
-                    href={caseHref(row.caseType, row.caseId)}
-                    className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
-                  >
-                    <span className="w-full truncate text-sm font-medium text-foreground">
-                      {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {t("myWork.since")}{" "}
-                      <ClientDate timestamp={row.since} locale={locale} />
-                    </span>
-                  </Link>
-                </li>
-              )),
-              column.hasMore,
-            ),
+          cardList(
+            column.key,
+            column.cards.map((row) => (
+              <li key={`${row.caseType}:${row.caseId}`}>
+                <Link
+                  href={caseHref(row.caseType, row.caseId)}
+                  className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
+                >
+                  <span className="w-full truncate text-sm font-medium text-foreground">
+                    {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {t("myWork.since")}{" "}
+                    <ClientDate timestamp={row.since} locale={locale} />
+                  </span>
+                </Link>
+              </li>
+            )),
+            column.hasMore,
+          ),
         );
       case "provenance":
         return single(
@@ -410,14 +403,13 @@ export function useMyWorkColumns(
             accentClassName: "text-purple-400",
             title: tRoot("provenance.queue.title"),
           },
-          () =>
-            cardList(
-              column.key,
-              column.cards.map((claim) => (
-                <ProvenanceClaimCard key={claim.claimId} claim={claim} />
-              )),
-              column.hasMore,
-            ),
+          cardList(
+            column.key,
+            column.cards.map((claim) => (
+              <ProvenanceClaimCard key={claim.claimId} claim={claim} />
+            )),
+            column.hasMore,
+          ),
         );
     }
   };

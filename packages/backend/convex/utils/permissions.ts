@@ -13,6 +13,7 @@ import {
   evaluateCapabilityEntitlement,
   permissionMissingMessage,
 } from "./capabilities";
+import type { ApprovalCaseType } from "./caseTypes";
 import {
   type ModuleId,
   organizationAccess,
@@ -444,8 +445,6 @@ export async function canApproveAtStep(
   }
   return false;
 }
-
-export type ApprovalCaseType = Exclude<WorkflowType, "acquisition">;
 
 const APPROVE_COMMAND_PERMISSIONS = {
   accession: {

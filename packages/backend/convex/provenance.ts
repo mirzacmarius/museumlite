@@ -48,7 +48,11 @@ import {
   provenanceReviewDecisionValidator,
   provenanceReviewStatusValidator,
 } from "./utils/provenanceValidators";
-import { type ColumnPage, firstKept } from "./utils/workBoardColumns";
+import {
+  type ColumnPage,
+  firstKept,
+  newestFirst,
+} from "./utils/workBoardColumns";
 
 const evidenceCommonFields = {
   _id: v.id("provenanceEvidence"),
@@ -439,9 +443,8 @@ export const claimAwaitingReviewValidator = provenanceAssertionValidator
   });
 
 /**
- * Current claims awaiting a reviewer: unreviewed ones newest first, then
- * disputed ones still open. Claims on withdrawn Objects wait until
- * restoration. Null for members who do not review provenance, so they never
+ * Current claims awaiting a reviewer, unreviewed or disputed and still open,
+ * newest first. Claims on withdrawn Objects wait until restoration. Null for members who do not review provenance, so they never
  * see the Work board column.
  */
 export async function readClaimsAwaitingReview(
@@ -451,9 +454,9 @@ export async function readClaimsAwaitingReview(
 ): Promise<ColumnPage<Infer<typeof claimAwaitingReviewValidator>> | null> {
   if (!(await hasPermission(ctx, organizationId, PROVENANCE_REVIEW_PERMISSION)))
     return null;
-  async function* awaitingReview() {
-    for (const status of ["unreviewed", "disputed"] as const) {
-      yield* ctx.db
+  const awaitingReview = newestFirst(
+    (["unreviewed", "disputed"] as const).map((status) =>
+      ctx.db
         .query("provenanceClaims")
         .withIndex("by_organization_and_reviewStatus_and_supersededAt", (q) =>
           q
@@ -461,11 +464,11 @@ export async function readClaimsAwaitingReview(
             .eq("reviewStatus", status)
             .eq("supersededAt", undefined),
         )
-        .order("desc");
-    }
-  }
+        .order("desc"),
+    ),
+  );
   const { kept, hasMore } = await firstKept(
-    awaitingReview(),
+    awaitingReview,
     limit,
     async (claim) => {
       const object = await ctx.db.get(claim.objectId);
