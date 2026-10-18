@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { usePaginatedQuery, useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
@@ -21,8 +21,6 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import { AccessionsWorkbenchNav } from "../../accessions-workbench-nav";
-import { usePendingTransferCount } from "../../use-pending-transfer-count";
 import { EntryStatusBadge, entryDueAt } from "./entry-status-badge";
 
 const ENTRY_STATUSES = [
@@ -47,8 +45,6 @@ export function EntriesPageClient({
     parseAsStringLiteral(ENTRY_STATUSES),
   );
   const returnPath = useListReturnPath(ENTRY_LIST_KEYS);
-  const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
-  const pendingTransfers = usePendingTransferCount(organizationId);
   const {
     results,
     status: loadStatus,
@@ -62,10 +58,9 @@ export function EntriesPageClient({
   return (
     <div className="flex h-full flex-col p-6">
       <div className="mb-6 flex min-h-[52px] flex-wrap items-center justify-between gap-4">
-        <div className="max-w-2xl">
-          <h1 className="text-lg font-semibold">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("description")}</p>
-        </div>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          {t("description")}
+        </p>
         <div className="flex items-center gap-3">
           <Select
             value={status ?? ALL}
@@ -98,12 +93,6 @@ export function EntriesPageClient({
           </PermissionGate>
         </div>
       </div>
-
-      <AccessionsWorkbenchNav
-        activeView="entries"
-        pendingAccessions={counts?.pending ?? "-"}
-        pendingTransfers={pendingTransfers}
-      />
 
       <div className="overflow-x-auto rounded-2xl border border-border/60">
         <table className="w-full min-w-[760px] text-sm">

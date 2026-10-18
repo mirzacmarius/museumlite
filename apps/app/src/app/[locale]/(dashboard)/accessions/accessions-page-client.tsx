@@ -21,8 +21,6 @@ import {
 } from "./accession-list-state";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsStats } from "./accessions-stats";
-import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
-import { usePendingTransferCount } from "./use-pending-transfer-count";
 
 type AccessionsPageClientProps = {
   organizationId: Id<"organizations">;
@@ -37,7 +35,6 @@ export function AccessionsPageClient({
   const { searchInput: searchQuery, setSearchInput: setSearchQuery } = list;
   const returnPath = useListReturnPath(ACCESSION_LIST_KEYS);
   const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
-  const pendingTransfers = usePendingTransferCount(organizationId);
 
   const exportAccessionsWithFormat = useMutation(
     api.imports.exportAccessionsWithFormat,
@@ -60,7 +57,7 @@ export function AccessionsPageClient({
 
   return (
     <div className="flex h-full flex-col p-6">
-      <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
+      <div className="mb-6 flex min-h-[52px] flex-wrap items-center justify-between gap-6">
         <div className="space-y-2">
           <AccessionsStats
             stats={{
@@ -72,7 +69,7 @@ export function AccessionsPageClient({
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="group relative">
             <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
             <input
@@ -128,12 +125,6 @@ export function AccessionsPageClient({
           </PermissionGate>
         </div>
       </div>
-
-      <AccessionsWorkbenchNav
-        activeView="overview"
-        pendingAccessions={pending}
-        pendingTransfers={pendingTransfers}
-      />
 
       <Suspense fallback={<AccessionsPageSkeleton />}>
         <AccessionKanban

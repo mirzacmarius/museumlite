@@ -5,7 +5,7 @@ import { ArrowRightLeft, Inbox, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/locales/client";
 
-type AccessionsWorkbenchView = "overview" | "entries" | "transfers";
+export type AccessionsWorkbenchView = "overview" | "entries" | "transfers";
 
 type AccessionsWorkbenchNavProps = {
   activeView: AccessionsWorkbenchView;
@@ -59,7 +59,7 @@ export function AccessionsWorkbenchNav({
   ];
 
   return (
-    <div className="mb-6 rounded-2xl border border-border/60 bg-card/70 p-3">
+    <div className="rounded-2xl border border-border/60 bg-card/70 p-3">
       <div className="grid gap-2 md:grid-cols-3">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -70,7 +70,7 @@ export function AccessionsWorkbenchNav({
               key={item.view}
               href={item.href}
               className={cn(
-                "flex items-center justify-between gap-4 rounded-xl border px-4 py-3 transition-colors",
+                "flex min-w-0 items-center justify-between gap-4 rounded-xl border px-4 py-3 transition-colors",
                 isActive
                   ? "border-primary/35 bg-primary/10 text-foreground"
                   : "border-transparent bg-background/40 text-muted-foreground hover:border-border hover:bg-background/70 hover:text-foreground",

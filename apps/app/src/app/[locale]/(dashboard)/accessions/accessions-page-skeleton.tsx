@@ -15,11 +15,39 @@ const actionPlaceholders = ["export", "import", "create", "delete"] as const;
 
 export function AccessionsPageSkeleton({
   actionsCount = 4,
-  showWorkbenchNav = true,
+  showWorkbenchNav = false,
   statsCount = 3,
 }: AccessionsPageSkeletonProps) {
   return (
     <div className="flex size-full flex-col bg-background p-6">
+      {showWorkbenchNav ? (
+        <div className="mb-6">
+          <div className="mb-4 space-y-2">
+            <div className="h-6 w-32 rounded bg-muted/60" />
+            <div className="h-4 w-72 rounded bg-muted/50" />
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-card/70 p-3">
+            <div className="grid gap-2 md:grid-cols-3">
+              {["overview", "entries", "transfers"].map((id) => (
+                <div
+                  key={id}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-transparent bg-background/40 px-4 py-3"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="size-9 shrink-0 rounded-lg bg-muted/60" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-24 rounded bg-muted/60" />
+                      <div className="h-3 w-40 rounded bg-muted/50" />
+                    </div>
+                  </div>
+                  <div className="h-6 w-9 shrink-0 rounded-full bg-muted/60" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
         <div className="flex gap-4">
           {statPlaceholders.slice(0, statsCount).map((id) => (
@@ -37,28 +65,6 @@ export function AccessionsPageSkeleton({
           ))}
         </div>
       </div>
-
-      {showWorkbenchNav ? (
-        <div className="mb-6 rounded-2xl border border-border/60 bg-card/70 p-3">
-          <div className="grid gap-2 md:grid-cols-2">
-            {["overview", "transfers"].map((id) => (
-              <div
-                key={id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-transparent bg-background/40 px-4 py-3"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="size-9 shrink-0 rounded-lg bg-muted/60" />
-                  <div className="space-y-2">
-                    <div className="h-4 w-24 rounded bg-muted/60" />
-                    <div className="h-3 w-64 rounded bg-muted/50" />
-                  </div>
-                </div>
-                <div className="h-6 w-9 shrink-0 rounded-full bg-muted/60" />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <div className="custom-scrollbar flex-1 overflow-x-auto">
         <div className="flex h-full min-w-max gap-6 pb-4">

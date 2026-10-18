@@ -45,3 +45,20 @@ test.each([
   expect(header.textContent).toContain(title);
   expect(header.textContent).not.toMatch(/\b(New|Import|Fines)\b/);
 });
+
+test.each([
+  "/en/accessions",
+  "/en/accessions/entries",
+  "/en/accessions/transfers",
+])("%s keeps the Accessions title on every tab", async (url) => {
+  await renderOnPage(
+    <SidebarProvider>
+      <DashboardHeader>
+        <button type="button">Search</button>
+      </DashboardHeader>
+    </SidebarProvider>,
+    url,
+  );
+
+  expect(screen.getByRole("banner").textContent).toContain("Accessions");
+});
