@@ -215,7 +215,7 @@ async function isPublicTransferDestination(
  * transfer is approved and accepted: the destination allows incoming transfer
  * requests, or it shares the source's hierarchy on a plan that includes
  * hierarchical transfers. At acceptance the receiving organization reads the
- * refusal, so one outside the hierarchy hears that it stopped accepting.
+ * refusal, so one outside the hierarchy hears it in its own terms.
  */
 async function requireTransferRoute(
   ctx: QueryCtx | MutationCtx,
@@ -237,7 +237,7 @@ async function requireTransferRoute(
     if (decision === "accept" && outsideHierarchy) {
       throw objectMoveError(
         "DESTINATION_NOT_ACCEPTING",
-        "Your organization no longer accepts incoming transfer requests.",
+        "Your organization does not accept incoming transfer requests and is outside the sending organization's hierarchy.",
       );
     }
     throw error;
@@ -2296,7 +2296,8 @@ export const cancel = mutation({
 
     // A source administrator's cancel is their review of the request, so
     // their notes sit where a source rejection's would. A requester without
-    // that role is withdrawing, not reviewing, and leaves no notes.
+    // that role is cancelling their own request, not reviewing it, and leaves no
+    // notes.
     const reviewNotes = isSourceAdmin
       ? args.reviewNotes?.trim() || undefined
       : undefined;

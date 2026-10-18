@@ -7936,6 +7936,7 @@ export default {
         resultingAccessionNumber: "Ny accessionnummer",
         requestedAt: "Forespurt",
         sourceApprovedAt: "Kilde godkjent",
+        sourceCancelledAt: "Kansellert av kilde",
         targetReviewedAt: "Mål gjennomgått",
         executedAt: "Gjennomført",
         reason: "Årsak til flytting",
@@ -10741,7 +10742,7 @@ export default {
       planRequired:
         "Overføringer mellom organisasjoner i samme hierarki krever Pro- eller Enterprise-abonnementet.",
       destinationNotAccepting:
-        "Organisasjonen din tar ikke lenger imot innkommende overføringsforespørsler.",
+        "Organisasjonen din tar ikke imot innkommende overføringsforespørsler og er utenfor avsenderorganisasjonens hierarki.",
     },
     blockers: {
       statusNotActive:

@@ -173,7 +173,7 @@ test("a refused acceptance tells the receiving organization in its own terms", a
   accept.mockRejectedValueOnce(
     objectMoveError(
       "DESTINATION_NOT_ACCEPTING",
-      "Your organization no longer accepts incoming transfer requests.",
+      "Your organization does not accept incoming transfer requests and is outside the sending organization's hierarchy.",
     ),
   );
 
@@ -182,7 +182,7 @@ test("a refused acceptance tells the receiving organization in its own terms", a
 
   expect(accept).toHaveBeenCalledTimes(1);
   expect(toasts.error).toHaveBeenLastCalledWith(
-    "Your organization no longer accepts incoming transfer requests.",
+    "Your organization does not accept incoming transfer requests and is outside the sending organization's hierarchy.",
   );
 });
 
@@ -223,4 +223,25 @@ test("a refused approval says why in the app's language", async () => {
   expect(toasts.error).toHaveBeenLastCalledWith(
     "Failed to approve move request.",
   );
+});
+
+test.each([
+  ["cancelled", "Source cancelled at", "Source approved at"],
+  ["awaiting_acceptance", "Source approved at", "Source cancelled at"],
+])("a %s request names the source review it records", async (status, shown, hidden) => {
+  state.request = {
+    ...moveRequest(status),
+    sourceReviewedAt: Date.UTC(2026, 9, 2),
+  };
+  state.currentUserId = "admin";
+  state.currentOrganizationId = SOURCE;
+  state.permissions = new Set(["organization.manage_settings"]);
+  await renderOnPage(
+    <MoveRequestDetailPageClient />,
+    "/en/objects/move-requests/move-1",
+    { id: "move-1" },
+  );
+
+  expect(screen.getByText(shown)).toBeTruthy();
+  expect(screen.queryByText(hidden)).toBeNull();
 });

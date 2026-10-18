@@ -8029,6 +8029,7 @@ export default {
         resultingAccessionNumber: "Nouveau numéro d’inventaire",
         requestedAt: "Demandé le",
         sourceApprovedAt: "Source approuvée le",
+        sourceCancelledAt: "Annulée par la source le",
         targetReviewedAt: "Cible examinée le",
         executedAt: "Effectué le",
         reason: "Motif du déplacement",
@@ -10919,7 +10920,7 @@ export default {
       planRequired:
         "Les transferts entre organisations d’une même hiérarchie nécessitent l’offre Pro ou Enterprise.",
       destinationNotAccepting:
-        "Votre organisation n’accepte plus les demandes de transfert entrantes.",
+        "Votre organisation n’accepte pas les demandes de transfert entrantes et se trouve hors de la hiérarchie de l’organisation d’origine.",
     },
     blockers: {
       statusNotActive:

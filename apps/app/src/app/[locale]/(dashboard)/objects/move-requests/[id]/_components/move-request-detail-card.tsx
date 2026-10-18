@@ -109,7 +109,9 @@ export function MoveRequestDetailCard({
           {request.sourceReviewedAt && (
             <div>
               <Label className="text-muted-foreground">
-                {tRoot("untranslatedRecords.objects.move.sourceApprovedAt")}
+                {request.status === "cancelled"
+                  ? tRoot("untranslatedRecords.objects.move.sourceCancelledAt")
+                  : tRoot("untranslatedRecords.objects.move.sourceApprovedAt")}
               </Label>
               <p className="mt-1">
                 <ClientDateFns

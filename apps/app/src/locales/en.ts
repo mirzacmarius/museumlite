@@ -7840,6 +7840,7 @@ export default {
         resultingAccessionNumber: "Resulting accession number",
         requestedAt: "Requested at",
         sourceApprovedAt: "Source approved at",
+        sourceCancelledAt: "Source cancelled at",
         targetReviewedAt: "Target reviewed at",
         executedAt: "Executed at",
         reason: "Reason for move",
@@ -10620,7 +10621,7 @@ export default {
       planRequired:
         "Transfers between organizations in the same hierarchy need the Pro or Enterprise plan.",
       destinationNotAccepting:
-        "Your organization no longer accepts incoming transfer requests.",
+        "Your organization does not accept incoming transfer requests and is outside the sending organization's hierarchy.",
     },
     blockers: {
       statusNotActive:

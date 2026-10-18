@@ -8003,6 +8003,7 @@ export default {
         resultingAccessionNumber: "Número de accesión resultante",
         requestedAt: "Solicitado el",
         sourceApprovedAt: "Fuente aprobada el",
+        sourceCancelledAt: "Cancelada por la fuente el",
         targetReviewedAt: "Destino revisado el",
         executedAt: "Ejecutado el",
         reason: "Motivo del traslado",
@@ -10877,7 +10878,7 @@ export default {
       planRequired:
         "Los traslados entre organizaciones de la misma jerarquía requieren el plan Pro o Enterprise.",
       destinationNotAccepting:
-        "Tu organización ya no acepta solicitudes de transferencia entrantes.",
+        "Tu organización no acepta solicitudes de transferencia entrantes y está fuera de la jerarquía de la organización de origen.",
     },
     blockers: {
       statusNotActive:

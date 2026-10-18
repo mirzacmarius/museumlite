@@ -7992,6 +7992,7 @@ export default {
         resultingAccessionNumber: "Numărul de inventar rezultat",
         requestedAt: "Solicitat la",
         sourceApprovedAt: "Sursă aprobată la",
+        sourceCancelledAt: "Anulată de sursă la",
         targetReviewedAt: "Destinație evaluată la",
         executedAt: "Executat la",
         reason: "Motivul mutării",
@@ -10854,7 +10855,7 @@ export default {
       planRequired:
         "Transferurile între organizații din aceeași ierarhie necesită planul Pro sau Enterprise.",
       destinationNotAccepting:
-        "Organizația ta nu mai acceptă solicitări de transfer primite.",
+        "Organizația ta nu acceptă solicitări de transfer primite și este în afara ierarhiei organizației sursă.",
     },
     blockers: {
       statusNotActive:
