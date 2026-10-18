@@ -82,6 +82,7 @@ async function fetchObjectDetailFallback(
           isPrimary: heroImage.isPrimary,
         }
       : null,
+    typeDetails: null,
   };
 }
 

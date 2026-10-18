@@ -10,6 +10,12 @@ export type ObjectDetailData = NonNullable<
   FunctionReturnType<typeof api.collections.getObjectDetail>
 >;
 
+type ObjectTypeDetails = NonNullable<ObjectDetailData["typeDetails"]>;
+
+/** The type-details record the Object detail query serves for one type. */
+export type TypeDetailsRecord<T extends ObjectTypeDetails["collectionType"]> =
+  Extract<ObjectTypeDetails, { collectionType: T }>["details"];
+
 export interface HeroImageData {
   url: string;
   thumbnailUrl?: string | null;

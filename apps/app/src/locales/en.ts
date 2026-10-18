@@ -855,7 +855,6 @@ export default {
       withdrawn: "Withdrawn",
     },
     common: {
-      loading: "Loading {module} details...",
       noDetailsYet: "No {module} details recorded yet",
       notSpecified: "Not specified",
       unknown: "Unknown",

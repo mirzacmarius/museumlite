@@ -3,13 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import * as accessions from "../convex/accessions";
-import * as archiveDetails from "../convex/archiveDetails";
-import * as coinsStampsDetails from "../convex/coinsStampsDetails";
 import * as collections from "../convex/collections";
-import * as fineArtDetails from "../convex/fineArtDetails";
-import * as naturalHistoryDetails from "../convex/naturalHistoryDetails";
-import * as vehicleDetails from "../convex/vehicleDetails";
-import * as wineDetails from "../convex/wineDetails";
 import { expectMatchesReturns } from "./returnsValidation";
 import {
   authedForUser,
@@ -84,9 +78,6 @@ const intakeCases = [
         displayStatus: "in_storage" as const,
       },
     },
-    readDetails: (authed: Authed, collectionId: Id<"collections">) =>
-      authed.query(api.fineArtDetails.get, { collectionId }),
-    detailsQuery: fineArtDetails.get,
   },
   {
     typeDetails: {
@@ -114,9 +105,6 @@ const intakeCases = [
         drinkingNotes: "Cassis and cedar; long finish.",
       },
     },
-    readDetails: (authed: Authed, collectionId: Id<"collections">) =>
-      authed.query(api.wineDetails.get, { collectionId }),
-    detailsQuery: wineDetails.get,
   },
   {
     typeDetails: {
@@ -140,9 +128,6 @@ const intakeCases = [
         insuranceValue: 65000,
       },
     },
-    readDetails: (authed: Authed, collectionId: Id<"collections">) =>
-      authed.query(api.vehicleDetails.get, { collectionId }),
-    detailsQuery: vehicleDetails.get,
   },
   {
     typeDetails: {
@@ -178,9 +163,6 @@ const intakeCases = [
         tissueAvailable: true,
       },
     },
-    readDetails: (authed: Authed, collectionId: Id<"collections">) =>
-      authed.query(api.naturalHistoryDetails.get, { collectionId }),
-    detailsQuery: naturalHistoryDetails.get,
   },
   {
     typeDetails: {
@@ -204,9 +186,6 @@ const intakeCases = [
         keywords: ["merger", "board"],
       },
     },
-    readDetails: (authed: Authed, collectionId: Id<"collections">) =>
-      authed.query(api.archiveDetails.get, { collectionId }),
-    detailsQuery: archiveDetails.get,
   },
   {
     typeDetails: {
@@ -239,22 +218,28 @@ const intakeCases = [
         notes: "From the Hansen bequest.",
       },
     },
-    readDetails: (authed: Authed, collectionId: Id<"collections">) =>
-      authed.query(api.coinsStampsDetails.get, { collectionId }),
-    detailsQuery: coinsStampsDetails.get,
   },
 ];
+
+async function objectTypeDetails(
+  authed: Authed,
+  collectionId: Id<"collections">,
+) {
+  const objectDetail = await authed.query(api.collections.getObjectDetail, {
+    collectionId,
+  });
+  expectMatchesReturns(collections.getObjectDetail, objectDetail);
+  return objectDetail?.typeDetails;
+}
 
 describe.each(
   intakeCases,
 )("$typeDetails.collectionType details entered at intake", ({
   typeDetails,
-  readDetails,
-  detailsQuery,
 }) => {
-  test("survive draft recovery and appear on the published object without re-entry", async () => {
-    const t = createConvexTest();
-    const { organizationId, authed } = await createIntakeRegistrar(t);
+  async function publishTypedObject(t: ConvexTest) {
+    const registrar = await createIntakeRegistrar(t);
+    const { organizationId, authed } = registrar;
 
     const accessionId = await authed.mutation(
       api.accessions.upsertObjectDraft,
@@ -283,10 +268,20 @@ describe.each(
     });
     await authed.mutation(api.accessions.approve, { accessionId });
 
-    const collectionId = await publishedObjectId(authed, accessionId);
-    const details = await readDetails(authed, collectionId);
-    expectMatchesReturns(detailsQuery, details);
-    expect(details).toMatchObject({ collectionId, ...typeDetails.fields });
+    return {
+      ...registrar,
+      collectionId: await publishedObjectId(authed, accessionId),
+    };
+  }
+
+  test("survive draft recovery and appear on the published object without re-entry", async () => {
+    const t = createConvexTest();
+    const { authed, collectionId } = await publishTypedObject(t);
+
+    expect(await objectTypeDetails(authed, collectionId)).toMatchObject({
+      collectionType: typeDetails.collectionType,
+      details: { collectionId, ...typeDetails.fields },
+    });
 
     const objectPage = await authed.query(
       api.collections.getWithModuleDetails,
@@ -297,6 +292,17 @@ describe.each(
       typeDetails.collectionType,
     );
     expect(objectPage?.moduleDetails?.type).toBe(typeDetails.collectionType);
+  });
+
+  test("are not shown on the object while the type's module is off", async () => {
+    const t = createConvexTest();
+    const { organizationId, authed, collectionId } =
+      await publishTypedObject(t);
+    await t.run((ctx) =>
+      ctx.db.patch(organizationId, { settings: { enabledModules: [] } }),
+    );
+
+    expect(await objectTypeDetails(authed, collectionId)).toBeNull();
   });
 });
 
@@ -375,11 +381,14 @@ test("changing a draft's collection type publishes no details for the earlier ty
   await authed.mutation(api.accessions.approve, { accessionId });
 
   const collectionId = await publishedObjectId(authed, accessionId);
+  expect(await objectTypeDetails(authed, collectionId)).toBeNull();
   expect(
-    await authed.query(api.fineArtDetails.get, { collectionId }),
-  ).toBeNull();
-  expect(
-    await authed.query(api.coinsStampsDetails.get, { collectionId }),
+    await t.run((ctx) =>
+      ctx.db
+        .query("fineArtDetails")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .unique(),
+    ),
   ).toBeNull();
 });
 
@@ -477,7 +486,7 @@ test("blank intake values are not published as details", async () => {
     );
     await authed.mutation(api.accessions.approve, { accessionId });
     const collectionId = await publishedObjectId(authed, accessionId);
-    return authed.query(api.archiveDetails.get, { collectionId });
+    return (await objectTypeDetails(authed, collectionId))?.details ?? null;
   };
 
   expect(
@@ -492,29 +501,4 @@ test("blank intake values are not published as details", async () => {
       fields: { documentType: " Board minutes ", keywords: ["", " board "] },
     }),
   ).toMatchObject({ documentType: "Board minutes", keywords: ["board"] });
-});
-
-test("natural history details cannot be written while the module is disabled", async () => {
-  const t = createConvexTest();
-  const { organizationId, userId, authed } = await createIntakeRegistrar(t, {
-    enabledModules: [],
-  });
-  const collectionId = await t.run((ctx) =>
-    ctx.db.insert("collections", {
-      organizationId,
-      accessionNumber: "NH-001",
-      title: "Snowy owl",
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-      collectionType: "natural_history",
-    }),
-  );
-
-  await expect(
-    authed.mutation(api.naturalHistoryDetails.upsert, {
-      collectionId,
-      commonName: "Snowy owl",
-    }),
-  ).rejects.toThrow("Module not enabled: natural_history");
 });

@@ -1,31 +1,21 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
-import { useQuery } from "convex/react";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
+import type { TypeDetailsRecord } from "./types";
 import { VehicleDetailsContent } from "./vehicle-details-content";
 
 interface VehicleDetailsTabProps {
-  collectionId: string;
-  organizationId: Id<"organizations">;
+  details: TypeDetailsRecord<"automotive"> | null;
 }
 
-export function VehicleDetailsTab({ collectionId }: VehicleDetailsTabProps) {
-  const _locale = useCurrentLocale();
+export function VehicleDetailsTab({ details }: VehicleDetailsTabProps) {
   const t = useScopedI18n("modules.vehicle");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("automotive");
-  const details = useQuery(
-    api.vehicleDetails.get,
-    hasModuleAccess
-      ? { collectionId: collectionId as Id<"collections"> }
-      : "skip",
-  );
 
   if (!hasModuleAccess) {
     return (
@@ -37,16 +27,6 @@ export function VehicleDetailsTab({ collectionId }: VehicleDetailsTabProps) {
       >
         <div />
       </FeatureGuard>
-    );
-  }
-
-  if (details === undefined) {
-    return (
-      <div className="flex h-32 items-center justify-center">
-        <p className="text-sm text-muted-foreground">
-          {common("loading", { module: "vehicle" })}
-        </p>
-      </div>
     );
   }
 

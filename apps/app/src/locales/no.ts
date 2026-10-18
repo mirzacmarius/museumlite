@@ -857,7 +857,6 @@ export default {
       renewals: "Fornyelser",
     },
     common: {
-      loading: "Laster {module}-detaljer...",
       noDetailsYet: "Ingen {module}-detaljer registrert ennå",
       notSpecified: "Ikke spesifisert",
       unknown: "Ukjent",

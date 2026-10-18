@@ -1,8 +1,6 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
 import { cn } from "@v1/ui/utils";
-import type { FunctionReturnType } from "convex/server";
 import {
   Calendar,
   DollarSign,
@@ -15,8 +13,9 @@ import {
 import { RecordedValue } from "@/components/recorded-value";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
+import type { TypeDetailsRecord } from "./types";
 
-type DetailsDoc = NonNullable<FunctionReturnType<typeof api.wineDetails.get>>;
+type DetailsDoc = TypeDetailsRecord<"wine">;
 
 interface WineDetailsContentProps {
   details: DetailsDoc;

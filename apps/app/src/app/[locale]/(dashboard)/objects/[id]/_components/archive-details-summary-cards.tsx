@@ -1,15 +1,12 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
 import { cn } from "@v1/ui/utils";
-import type { FunctionReturnType } from "convex/server";
 import { AlertTriangle, Clock, FileText, Shield } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import type { TypeDetailsRecord } from "./types";
 
-type DetailsDoc = NonNullable<
-  FunctionReturnType<typeof api.archiveDetails.get>
->;
+type DetailsDoc = TypeDetailsRecord<"archive">;
 
 interface ArchiveDetailsSummaryCardsProps {
   details: DetailsDoc;

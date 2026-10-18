@@ -1,12 +1,8 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
-import { useQuery } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
 import { DollarSign, FileCheck, History, Shield, Truck } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { RecordedValue } from "@/components/recorded-value";
@@ -15,29 +11,21 @@ import { formatMoney } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { DetailSection } from "./detail-section";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
+import type { TypeDetailsRecord } from "./types";
 
 interface FineArtDetailsTabProps {
-  collectionId: string;
-  organizationId: Id<"organizations">;
+  details: TypeDetailsRecord<"fine_art"> | null;
 }
 
-type FineArtDetails = NonNullable<
-  FunctionReturnType<typeof api.fineArtDetails.get>
->;
+type FineArtDetails = TypeDetailsRecord<"fine_art">;
 
-export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
+export function FineArtDetailsTab({ details }: FineArtDetailsTabProps) {
   const locale = useCurrentLocale();
   const tRoot = useI18n();
   const t = useScopedI18n("modules.fineArt");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("fine_art");
-  const details = useQuery(
-    api.fineArtDetails.get,
-    hasModuleAccess
-      ? { collectionId: collectionId as Id<"collections"> }
-      : "skip",
-  );
 
   if (!hasModuleAccess) {
     return (
@@ -49,16 +37,6 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
       >
         <div />
       </FeatureGuard>
-    );
-  }
-
-  if (details === undefined) {
-    return (
-      <div className="flex h-32 items-center justify-center">
-        <p className="text-sm text-muted-foreground">
-          {common("loading", { module: "fine art" })}
-        </p>
-      </div>
     );
   }
 

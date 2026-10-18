@@ -1,7 +1,5 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
-import type { FunctionReturnType } from "convex/server";
 import { Calendar, MapPin, TreePine } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -11,10 +9,9 @@ import {
   DetailLabel,
   DetailSection,
 } from "./detail-section";
+import type { TypeDetailsRecord } from "./types";
 
-type NaturalHistoryDetails = NonNullable<
-  FunctionReturnType<typeof api.naturalHistoryDetails.get>
->;
+type NaturalHistoryDetails = TypeDetailsRecord<"natural_history">;
 
 interface NaturalHistoryDetailSectionsProps {
   details: NaturalHistoryDetails;

@@ -106,6 +106,7 @@ interface ObjectDetailTabPanelProps {
   collectionId: Id<"collections">;
   collectionGroupName?: string;
   locationPath: ObjectDetailData["locationPath"];
+  typeDetails: ObjectDetailData["typeDetails"];
   locale: string;
   organizationId: Id<"organizations">;
   hasConservationFeature: boolean;
@@ -121,6 +122,7 @@ export function ObjectDetailTabPanel({
   collectionId,
   collectionGroupName,
   locationPath,
+  typeDetails,
   locale,
   organizationId,
   hasConservationFeature,
@@ -265,38 +267,56 @@ export function ObjectDetailTabPanel({
         )}
         {activeTab === "fine_art" && (
           <FineArtDetailsTab
-            collectionId={collectionId}
-            organizationId={organizationId}
+            details={
+              typeDetails?.collectionType === "fine_art"
+                ? typeDetails.details
+                : null
+            }
           />
         )}
         {activeTab === "wine" && (
           <WineDetailsTab
-            collectionId={collectionId}
-            organizationId={organizationId}
+            details={
+              typeDetails?.collectionType === "wine"
+                ? typeDetails.details
+                : null
+            }
           />
         )}
         {activeTab === "automotive" && (
           <VehicleDetailsTab
-            collectionId={collectionId}
-            organizationId={organizationId}
+            details={
+              typeDetails?.collectionType === "automotive"
+                ? typeDetails.details
+                : null
+            }
           />
         )}
         {activeTab === "natural_history" && (
           <NaturalHistoryDetailsTab
-            collectionId={collectionId}
-            organizationId={organizationId}
+            details={
+              typeDetails?.collectionType === "natural_history"
+                ? typeDetails.details
+                : null
+            }
           />
         )}
         {activeTab === "archive" && (
           <ArchiveDetailsTab
-            collectionId={collectionId}
-            organizationId={organizationId}
+            details={
+              typeDetails?.collectionType === "archive"
+                ? typeDetails.details
+                : null
+            }
           />
         )}
         {activeTab === "coins_stamps" && (
           <CoinsStampsDetailsTab
-            collectionId={collectionId}
-            organizationId={organizationId}
+            details={
+              typeDetails?.collectionType === "coins_stamps"
+                ? typeDetails.details
+                : null
+            }
           />
         )}
       </div>

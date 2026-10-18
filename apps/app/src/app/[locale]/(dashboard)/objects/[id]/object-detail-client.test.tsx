@@ -63,6 +63,7 @@ async function renderObjectOf(organizationId: string) {
     collectionGroup: null,
     locationPath: [],
     heroImage: null,
+    typeDetails: null,
   } as unknown as ObjectDetailData;
   await renderOnPage(
     <ObjectDetailClient
