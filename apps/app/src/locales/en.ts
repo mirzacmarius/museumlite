@@ -10625,6 +10625,8 @@ export default {
         "This step is assigned to a different approver role. Ask someone assigned to this step to review it.",
       alreadyApproved:
         "Your approval is already recorded. The case stays pending until the remaining approvers approve it.",
+      alreadyPending:
+        "A request for this object is already waiting for approval. Review it before starting another.",
     },
   },
   imageDeletion: {

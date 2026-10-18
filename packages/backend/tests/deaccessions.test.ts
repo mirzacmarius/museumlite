@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import { workflowApprovalErrorFromError } from "../convex/utils/workflowApprovalErrors";
 import {
   authedForUser,
   createConvexTest,
@@ -84,9 +85,18 @@ test("an object with a deaccession waiting for approval cannot get a second one"
   };
 
   const first = await authed.mutation(api.deaccessions.create, request);
-  await expect(
-    authed.mutation(api.deaccessions.create, request),
-  ).rejects.toThrow("already has a deaccession waiting for approval");
+  const refusal = await authed.mutation(api.deaccessions.create, request).then(
+    () => null,
+    (error) => workflowApprovalErrorFromError(error)?.code,
+  );
+  expect(refusal).toBe("ALREADY_PENDING");
+  // Bulk removal leaves the waiting one as it is.
+  expect(
+    await authed.mutation(api.collections.bulkDeaccession, {
+      collectionIds: [collectionId],
+      reason: "Duplicate object",
+    }),
+  ).toMatchObject({ skipped: 1, failed: 0, awaitingDecision: 0 });
 
   await authed.mutation(api.deaccessions.reject, {
     deaccessionId: first,

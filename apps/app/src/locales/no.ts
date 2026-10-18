@@ -10747,6 +10747,8 @@ export default {
         "Dette steget er tildelt en annen godkjennerrolle. Be noen som er tildelt steget om å gjennomgå det.",
       alreadyApproved:
         "Godkjenningen din er allerede registrert. Saken venter til de øvrige godkjennerne har godkjent den.",
+      alreadyPending:
+        "En forespørsel for dette objektet venter allerede på godkjenning. Se gjennom den før du starter en ny.",
     },
   },
   imageDeletion: {

@@ -284,6 +284,12 @@ export async function createDeaccessionRecord(
     "Cannot remove an object that is currently on loan",
   );
 
+  const deaccessionWorkflowEnabled = await isDeaccessionWorkflowEnabled(
+    ctx,
+    args.organizationId,
+  );
+  await requireDeaccessionInitiation(ctx, args.organizationId, userId);
+
   const waiting = await ctx.db
     .query("deaccessions")
     .withIndex("by_organization_and_collection_and_status", (q) =>
@@ -294,16 +300,11 @@ export async function createDeaccessionRecord(
     )
     .first();
   if (waiting) {
-    throw new ConvexError(
+    throw workflowApprovalError(
+      "ALREADY_PENDING",
       "This object already has a deaccession waiting for approval",
     );
   }
-
-  const deaccessionWorkflowEnabled = await isDeaccessionWorkflowEnabled(
-    ctx,
-    args.organizationId,
-  );
-  await requireDeaccessionInitiation(ctx, args.organizationId, userId);
 
   const deaccessionNumber = args.deaccessionNumber
     ? args.deaccessionNumber

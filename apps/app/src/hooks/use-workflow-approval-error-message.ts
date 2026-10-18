@@ -18,6 +18,8 @@ export function useWorkflowApprovalErrorMessage() {
         return t("approvalNotPermitted");
       case "ALREADY_APPROVED":
         return t("alreadyApproved");
+      case "ALREADY_PENDING":
+        return t("alreadyPending");
       case undefined:
         return capabilityMessage(error) ?? fallback;
     }

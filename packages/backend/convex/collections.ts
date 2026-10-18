@@ -62,6 +62,7 @@ import {
   requireFieldValue,
 } from "./utils/recordEdits";
 import { emitWebhookEvent } from "./utils/webhookEvents";
+import { workflowApprovalErrorFromError } from "./utils/workflowApprovalErrors";
 
 const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
 
@@ -2511,6 +2512,11 @@ export const bulkDeaccession = mutation({
         // A member who may not start a deaccession is refused outright, with
         // the coded reason, instead of failing object by object.
         if (capabilityUnavailableFromError(error)) throw error;
+        // One already waiting for approval is left as it is.
+        if (workflowApprovalErrorFromError(error)?.code === "ALREADY_PENDING") {
+          skipped++;
+          continue;
+        }
         failed++;
       }
     }
