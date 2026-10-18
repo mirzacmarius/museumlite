@@ -157,6 +157,7 @@ const NOTIFICATION_ICONS: Record<string, LucideIcon> = {
   deaccession_approved: Package,
   move_request_created: ArrowRightLeft,
   move_request_approved: ArrowRightLeft,
+  move_request_cancelled: ArrowRightLeft,
   workflow_rejected: ArrowRightLeft,
   workflow_restored: FileText,
   location: MapPin,

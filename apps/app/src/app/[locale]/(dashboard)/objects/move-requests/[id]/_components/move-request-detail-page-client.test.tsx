@@ -116,10 +116,14 @@ test("before approval a source administrator approves or cancels, with Cancel in
   const cancel = button("Cancel request");
   expect(cancel?.getAttribute("data-variant")).toBe("destructive");
 
+  const notes = screen.getByLabelText("Review notes");
+  await userEvent.type(notes, " Duplicate of an earlier request ");
   await userEvent.click(cancel as HTMLElement);
   expect(state.mutations["objectMoves:cancel"]).toHaveBeenCalledWith({
     requestId: "move-1",
+    reviewNotes: "Duplicate of an earlier request",
   });
+  expect((notes as HTMLTextAreaElement).value).toBe("");
 });
 
 test("the requester who cannot approve still cancels with the red Cancel", async () => {

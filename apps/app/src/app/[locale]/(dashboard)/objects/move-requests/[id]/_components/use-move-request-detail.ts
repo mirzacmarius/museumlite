@@ -178,7 +178,11 @@ export function useMoveRequestDetail() {
   const handleCancel = async (moveRequest: MoveRequestDetail) => {
     setIsSubmitting("cancel");
     try {
-      await cancel({ requestId: moveRequest._id });
+      await cancel({
+        requestId: moveRequest._id,
+        reviewNotes: reviewNotes.trim() || undefined,
+      });
+      setReviewNotes("");
       toast.success(
         tRoot("untranslatedRecords.objects.transfer.moveCancelled"),
       );

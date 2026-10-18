@@ -18,6 +18,18 @@ async function refusal(call: Promise<unknown>) {
   throw new Error("Expected the call to be rejected");
 }
 
+function notificationsFor(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.run((ctx) =>
+    ctx.db
+      .query("notifications")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect(),
+  );
+}
+
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|object-moves-session`,
@@ -2078,9 +2090,111 @@ describe("transfer decisions follow how the request was allowed", () => {
 
     await fixture.admin.mutation(api.objectMoves.cancel, { requestId });
 
-    const request = await t.run((ctx) => ctx.db.get(requestId));
+    const [request, requesterNotifications] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      notificationsFor(t, fixture.requesterId),
+    ]);
     expect(request?.status).toBe("cancelled");
     expect(request?.sourceReviewedBy).toBe(fixture.adminId);
+    expect(request?.sourceReviewNotes).toBeUndefined();
+    expect(
+      requesterNotifications
+        .filter(
+          (notification) => notification.type === "move_request_cancelled",
+        )
+        .map(({ title, message }) => ({ title, message })),
+    ).toEqual([
+      {
+        title: "Object Move Cancelled",
+        message:
+          "Your object move request was cancelled by an administrator of the source organization.",
+      },
+    ]);
+  });
+
+  test("a source administrator's cancel notes are kept and sent to the requester", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Administrator stops this request",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.cancel, {
+      requestId,
+      reviewNotes: "  Duplicate of an earlier transfer request.  ",
+    });
+
+    const [request, requesterNotifications, auditEntries] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      notificationsFor(t, fixture.requesterId),
+      t.run((ctx) =>
+        ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", fixture.sourceOrganizationId),
+          )
+          .collect(),
+      ),
+    ]);
+    expect(request).toMatchObject({
+      status: "cancelled",
+      reviewedBy: fixture.adminId,
+      reviewNotes: "Duplicate of an earlier transfer request.",
+      sourceReviewedBy: fixture.adminId,
+      sourceReviewNotes: "Duplicate of an earlier transfer request.",
+    });
+    expect(
+      auditEntries.find(
+        (entry) => entry.action === "cancelled_organization_move_request",
+      )?.changes,
+    ).toEqual({ reviewNotes: "Duplicate of an earlier transfer request." });
+    expect(
+      requesterNotifications
+        .filter(
+          (notification) => notification.type === "move_request_cancelled",
+        )
+        .map(({ title, message }) => ({ title, message })),
+    ).toEqual([
+      {
+        title: "Object Move Cancelled",
+        message: "Duplicate of an earlier transfer request.",
+      },
+    ]);
+  });
+
+  test("a requester cancelling their own request notifies nobody", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Requester changes their mind",
+      },
+    );
+
+    await fixture.requester.mutation(api.objectMoves.cancel, { requestId });
+
+    const notifications = await Promise.all(
+      [fixture.requesterId, fixture.adminId, fixture.targetAdminId].map(
+        (userId) => notificationsFor(t, userId),
+      ),
+    );
+    expect(
+      notifications
+        .flat()
+        .filter(
+          (notification) => notification.type === "move_request_cancelled",
+        ),
+    ).toEqual([]);
   });
 });
 

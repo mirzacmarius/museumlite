@@ -2240,6 +2240,7 @@ export const reject = mutation({
 export const cancel = mutation({
   args: {
     requestId: v.id("organizationMoveRequests"),
+    reviewNotes: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -2270,13 +2271,20 @@ export const cancel = mutation({
       );
     }
 
+    // A source administrator's cancel is their review of the request, so
+    // their notes sit where a source rejection's would.
+    const reviewNotes = args.reviewNotes?.trim() || undefined;
+    const sourceReviewNotes = isSourceAdmin ? reviewNotes : undefined;
+    const now = Date.now();
     await Promise.all([
       ctx.db.patch(args.requestId, {
         status: "cancelled",
         reviewedBy: isSourceAdmin ? userId : undefined,
-        reviewedAt: Date.now(),
+        reviewedAt: now,
+        reviewNotes: sourceReviewNotes,
         sourceReviewedBy: isSourceAdmin ? userId : undefined,
-        sourceReviewedAt: isSourceAdmin ? Date.now() : undefined,
+        sourceReviewedAt: isSourceAdmin ? now : undefined,
+        sourceReviewNotes,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.sourceOrganizationId,
@@ -2284,9 +2292,22 @@ export const cancel = mutation({
         action: "cancelled_organization_move_request",
         entityType: "organizationMoveRequest",
         entityId: args.requestId,
-        changes: {},
+        changes: reviewNotes ? { reviewNotes } : {},
       }),
     ]);
+
+    if (request.requestedBy !== userId) {
+      await dispatchNotification(ctx, {
+        organizationId: request.sourceOrganizationId,
+        type: "move_request_cancelled",
+        recipients: [request.requestedBy],
+        title: "Object Move Cancelled",
+        message:
+          sourceReviewNotes ??
+          "Your object move request was cancelled by an administrator of the source organization.",
+        related: { entityType: "move_request", entityId: args.requestId },
+      });
+    }
 
     return null;
   },
