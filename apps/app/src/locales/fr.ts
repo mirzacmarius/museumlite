@@ -10283,6 +10283,7 @@ export default {
         objectMoveApproved: "Transfert de l’objet approuvé",
         incomingTransferRejected: "Transfert entrant refusé",
         objectMoveRejected: "Transfert de l’objet refusé",
+        objectMoveCancelled: "Transfert de l’objet annulé",
         newTaskAssigned: "Nouvelle tâche attribuée",
         taskAssigned: "Tâche attribuée",
         taskDueSoon: "Échéance de la tâche proche",
@@ -10359,6 +10360,8 @@ export default {
           "La demande {number} porte sur l'utilisation d'une image de l'objet {object}.",
         objectMoveExecuted:
           "Votre demande de transfert d’objet a été approuvée et exécutée.",
+        objectMoveCancelled:
+          "Votre demande de transfert d’objet a été annulée par un administrateur de l’organisation d’origine.",
         onlyActiveObjectsCanMove:
           "Seuls les objets actifs peuvent être transférés à une autre organisation.",
         objectOnLoanCannotMove:
@@ -10915,6 +10918,8 @@ export default {
         "L’organisation de destination est hors de la hiérarchie de votre organisation et n’autorise pas les demandes de transfert entrantes.",
       planRequired:
         "Les transferts entre organisations d’une même hiérarchie nécessitent l’offre Pro ou Enterprise.",
+      destinationNotAccepting:
+        "Votre organisation n’accepte plus les demandes de transfert entrantes.",
     },
     blockers: {
       statusNotActive:
@@ -10943,6 +10948,13 @@ export default {
         "Cet objet a une couverture d’assurance à régler avant de pouvoir être transféré.",
       insuranceClaim:
         "Cet objet figure dans une déclaration de sinistre et ne peut pas être transféré.",
+      collectionNotFound: "Cet objet est introuvable.",
+      targetNotAcceptingTransfers:
+        "L’organisation de destination n’accepte pas les demandes de transfert entrantes.",
+      targetMembershipRequired:
+        "Vous devez être membre de l’organisation de destination pour y transférer un objet.",
+      targetCreatePermissionRequired:
+        "Vous devez avoir l’autorisation de créer des objets dans l’organisation de destination.",
     },
   },
   workflowApprovals: {

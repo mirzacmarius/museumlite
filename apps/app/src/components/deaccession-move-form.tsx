@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { isMoveBlockerCode } from "@v1/backend/convex/utils/objectMoveErrors";
+import type { EligibilityBlockerCode } from "@v1/backend/convex/utils/objectMoveErrors";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -20,8 +20,7 @@ import type { AccessionMode } from "./deaccession-dialog-types";
 import { TransferDestinationPicker } from "./transfer-destination-picker";
 
 interface MoveBlocker {
-  code: string;
-  message: string;
+  code: EligibilityBlockerCode;
 }
 
 interface DeaccessionMoveFormProps {
@@ -195,11 +194,7 @@ export function DeaccessionMoveForm({
               </p>
               <ul className="list-disc space-y-1 pl-4 text-amber-700 dark:text-amber-300">
                 {blockers.map((blocker) => (
-                  <li key={blocker.code}>
-                    {isMoveBlockerCode(blocker.code)
-                      ? blockerMessage(blocker.code)
-                      : blocker.message}
-                  </li>
+                  <li key={blocker.code}>{blockerMessage(blocker.code)}</li>
                 ))}
               </ul>
             </div>

@@ -1,14 +1,15 @@
 import {
-  type MoveBlockerCode,
+  type EligibilityBlockerCode,
   objectMoveErrorFromError,
 } from "@v1/backend/convex/utils/objectMoveErrors";
 import { useScopedI18n } from "@/locales/client";
 import { useActionErrorMessage } from "./use-action-error-message";
 
-/** Why an object cannot be transferred to another organization right now. */
+/** Why an object cannot be transferred to the chosen organization right now. */
 export function useMoveBlockerMessage() {
   const t = useScopedI18n("moveRequests.blockers");
-  return (code: MoveBlockerCode): string => {
+  const tErrors = useScopedI18n("moveRequests.errors");
+  return (code: EligibilityBlockerCode): string => {
     switch (code) {
       case "status_not_active":
         return t("statusNotActive");
@@ -36,13 +37,25 @@ export function useMoveBlockerMessage() {
         return t("insuranceCoverage");
       case "insurance_claim":
         return t("insuranceClaim");
+      case "collection_not_found":
+        return t("collectionNotFound");
+      case "target_not_accepting_transfers":
+        return t("targetNotAcceptingTransfers");
+      case "target_not_in_hierarchy":
+        return tErrors("outsideHierarchy");
+      case "hierarchy_plan_required":
+        return tErrors("planRequired");
+      case "target_membership_required":
+        return t("targetMembershipRequired");
+      case "target_create_permission_required":
+        return t("targetCreatePermissionRequired");
     }
   };
 }
 
 /**
- * Explains why a move request decision failed, in the app's language: coded
- * move request refusals first, then the shared action refusals such as
+ * Explains why a transfer request or decision failed, in the app's language:
+ * coded move request refusals first, then the shared action refusals such as
  * missing permissions and custody conflicts, then the caller's translated
  * fallback. Server error text is never shown.
  */
@@ -61,6 +74,8 @@ export function useObjectMoveErrorMessage() {
       }
       case "DESTINATION_OUTSIDE_HIERARCHY":
         return t("outsideHierarchy");
+      case "DESTINATION_NOT_ACCEPTING":
+        return t("destinationNotAccepting");
       case "HIERARCHY_PLAN_REQUIRED":
         return t("planRequired");
       case undefined:

@@ -28,6 +28,28 @@ export function isMoveBlockerCode(code: string): code is MoveBlockerCode {
 }
 
 /**
+ * Why the chosen destination cannot take the object, found while staff fill
+ * in a transfer request. The hierarchy codes draw the same line as the
+ * DESTINATION_OUTSIDE_HIERARCHY and HIERARCHY_PLAN_REQUIRED refusals.
+ */
+export const TRANSFER_DESTINATION_BLOCKER_CODES = [
+  "collection_not_found",
+  "target_not_accepting_transfers",
+  "target_not_in_hierarchy",
+  "hierarchy_plan_required",
+  "target_membership_required",
+  "target_create_permission_required",
+] as const;
+
+/** Everything a transfer eligibility check can report. */
+export const ELIGIBILITY_BLOCKER_CODES = [
+  ...MOVE_BLOCKER_CODES,
+  ...TRANSFER_DESTINATION_BLOCKER_CODES,
+] as const;
+
+export type EligibilityBlockerCode = (typeof ELIGIBILITY_BLOCKER_CODES)[number];
+
+/**
  * Stable codes for move request refusals staff can act on. Clients map these
  * to translated copy; `message` is English for logs only.
  */
@@ -41,6 +63,11 @@ export const OBJECT_MOVE_ERROR_CODES = [
    * the source organization's hierarchy.
    */
   "DESTINATION_OUTSIDE_HIERARCHY",
+  /**
+   * DESTINATION_OUTSIDE_HIERARCHY as the receiving organization reads it at
+   * acceptance: it stopped allowing incoming transfer requests.
+   */
+  "DESTINATION_NOT_ACCEPTING",
   /** Transfers inside a hierarchy need its root organization on Pro or Enterprise. */
   "HIERARCHY_PLAN_REQUIRED",
 ] as const;

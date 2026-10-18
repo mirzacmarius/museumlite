@@ -38,6 +38,7 @@ function getTitleMatch(title: string): Match | null {
     "Object Move Approved": "objectMoveApproved",
     "Incoming Transfer Rejected": "incomingTransferRejected",
     "Object Move Rejected": "objectMoveRejected",
+    "Object Move Cancelled": "objectMoveCancelled",
     "New Task Assigned": "newTaskAssigned",
     "Task Assigned": "taskAssigned",
     "Task Due Soon": "taskDueSoon",
@@ -226,6 +227,8 @@ function getMessageMatch(message: string): Match | null {
   const staticMessages: Record<string, string> = {
     "Your object move request has been approved and executed.":
       "objectMoveExecuted",
+    "Your object move request was cancelled by an administrator of the source organization.":
+      "objectMoveCancelled",
     "Only active objects can be moved to another organization.":
       "onlyActiveObjectsCanMove",
     "This object is currently on loan and cannot be moved.":

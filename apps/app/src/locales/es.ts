@@ -10247,6 +10247,7 @@ export default {
         objectMoveApproved: "Traslado del objeto aprobado",
         incomingTransferRejected: "Transferencia entrante rechazada",
         objectMoveRejected: "Traslado del objeto rechazado",
+        objectMoveCancelled: "Traslado del objeto cancelado",
         newTaskAssigned: "Nueva tarea asignada",
         taskAssigned: "Tarea asignada",
         taskDueSoon: "La tarea vence pronto",
@@ -10324,6 +10325,8 @@ export default {
           "La solicitud {number} pide usar una imagen del objeto {object}.",
         objectMoveExecuted:
           "Se ha aprobado y completado tu solicitud de traslado del objeto.",
+        objectMoveCancelled:
+          "Un administrador de la organización de origen ha cancelado tu solicitud de traslado del objeto.",
         onlyActiveObjectsCanMove:
           "Solo se pueden trasladar objetos activos a otra organización.",
         objectOnLoanCannotMove:
@@ -10873,6 +10876,8 @@ export default {
         "La organización de destino está fuera de la jerarquía de tu organización y no permite solicitudes de transferencia entrantes.",
       planRequired:
         "Los traslados entre organizaciones de la misma jerarquía requieren el plan Pro o Enterprise.",
+      destinationNotAccepting:
+        "Tu organización ya no acepta solicitudes de transferencia entrantes.",
     },
     blockers: {
       statusNotActive:
@@ -10900,6 +10905,13 @@ export default {
         "Este objeto tiene una cobertura de seguro que debe resolverse antes de poder trasladarlo.",
       insuranceClaim:
         "Este objeto figura en una reclamación de seguro y no se puede trasladar.",
+      collectionNotFound: "No se ha encontrado este objeto.",
+      targetNotAcceptingTransfers:
+        "La organización de destino no acepta solicitudes de transferencia entrantes.",
+      targetMembershipRequired:
+        "Debes ser miembro de la organización de destino para trasladar un objeto allí.",
+      targetCreatePermissionRequired:
+        "Necesitas permiso para crear objetos en la organización de destino.",
     },
   },
   workflowApprovals: {

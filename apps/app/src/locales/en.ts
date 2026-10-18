@@ -10011,6 +10011,7 @@ export default {
         objectMoveApproved: "Object Move Approved",
         incomingTransferRejected: "Incoming Transfer Rejected",
         objectMoveRejected: "Object Move Rejected",
+        objectMoveCancelled: "Object Move Cancelled",
         newTaskAssigned: "New Task Assigned",
         taskAssigned: "Task Assigned",
         taskDueSoon: "Task Due Soon",
@@ -10080,6 +10081,8 @@ export default {
           "Request {number} asks to use an image of {object}.",
         objectMoveExecuted:
           "Your object move request has been approved and executed.",
+        objectMoveCancelled:
+          "Your object move request was cancelled by an administrator of the source organization.",
         onlyActiveObjectsCanMove:
           "Only active objects can be moved to another organization.",
         objectOnLoanCannotMove:
@@ -10616,6 +10619,8 @@ export default {
         "The destination organization is outside your organization's hierarchy and does not allow incoming transfer requests.",
       planRequired:
         "Transfers between organizations in the same hierarchy need the Pro or Enterprise plan.",
+      destinationNotAccepting:
+        "Your organization no longer accepts incoming transfer requests.",
     },
     blockers: {
       statusNotActive:
@@ -10643,6 +10648,13 @@ export default {
         "This object has insurance coverage that must be resolved before it can be moved.",
       insuranceClaim:
         "This object is referenced by an insurance claim and cannot be moved.",
+      collectionNotFound: "This object could not be found.",
+      targetNotAcceptingTransfers:
+        "The destination organization is not accepting incoming transfer requests.",
+      targetMembershipRequired:
+        "You must be a member of the destination organization to move an object there.",
+      targetCreatePermissionRequired:
+        "You need permission to create objects in the destination organization.",
     },
   },
   workflowApprovals: {

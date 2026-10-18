@@ -21,8 +21,11 @@ import { mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { isUnaccessionedEntryObject } from "./utils/objectEntryLifecycle";
 import {
+  ELIGIBILITY_BLOCKER_CODES,
+  type EligibilityBlockerCode,
   type MoveBlockerCode,
   objectMoveError,
+  objectMoveErrorFromError,
 } from "./utils/objectMoveErrors";
 import {
   getCurrentUserOrganization,
@@ -49,7 +52,7 @@ const requestStatusValidator = v.union(
 );
 
 const blockerValidator = v.object({
-  code: v.string(),
+  code: v.union(...ELIGIBILITY_BLOCKER_CODES.map((code) => v.literal(code))),
   message: v.string(),
 });
 
@@ -211,12 +214,14 @@ async function isPublicTransferDestination(
  * The rule `createRequest` admits a destination by, checked again when the
  * transfer is approved and accepted: the destination allows incoming transfer
  * requests, or it shares the source's hierarchy on a plan that includes
- * hierarchical transfers.
+ * hierarchical transfers. At acceptance the receiving organization reads the
+ * refusal, so one outside the hierarchy hears that it stopped accepting.
  */
 async function requireTransferRoute(
   ctx: QueryCtx | MutationCtx,
   sourceOrganizationId: Id<"organizations">,
   targetOrganizationId: Id<"organizations">,
+  decision: "approve" | "accept",
 ) {
   const isPublicDestination = await isPublicTransferDestination(
     ctx,
@@ -224,7 +229,19 @@ async function requireTransferRoute(
     targetOrganizationId,
   );
   if (isPublicDestination) return;
-  await getTransferHierarchy(ctx, sourceOrganizationId, targetOrganizationId);
+  try {
+    await getTransferHierarchy(ctx, sourceOrganizationId, targetOrganizationId);
+  } catch (error) {
+    const outsideHierarchy =
+      objectMoveErrorFromError(error)?.code === "DESTINATION_OUTSIDE_HIERARCHY";
+    if (decision === "accept" && outsideHierarchy) {
+      throw objectMoveError(
+        "DESTINATION_NOT_ACCEPTING",
+        "Your organization no longer accepts incoming transfer requests.",
+      );
+    }
+    throw error;
+  }
 }
 
 function requireNoMoveBlockers(blockers: MoveBlocker[]) {
@@ -1206,7 +1223,7 @@ export const getEligibility = query({
         isEligible: false,
         blockers: [
           {
-            code: "collection_not_found",
+            code: "collection_not_found" as const,
             message: "Object not found.",
           },
         ],
@@ -1219,7 +1236,7 @@ export const getEligibility = query({
       "collections.update",
     );
 
-    const blockers: Array<{ code: string; message: string }> =
+    const blockers: Array<{ code: EligibilityBlockerCode; message: string }> =
       await buildEligibilityBlockers(
         ctx,
         collection,
@@ -1253,8 +1270,12 @@ export const getEligibility = query({
             args.targetOrganizationId,
           );
         } catch (error) {
+          const planRequired =
+            objectMoveErrorFromError(error)?.code === "HIERARCHY_PLAN_REQUIRED";
           blockers.push({
-            code: "target_not_in_hierarchy",
+            code: planRequired
+              ? "hierarchy_plan_required"
+              : "target_not_in_hierarchy",
             message:
               error instanceof Error
                 ? error.message
@@ -1895,6 +1916,7 @@ export const approve = mutation({
       ctx,
       request.sourceOrganizationId,
       request.targetOrganizationId,
+      "approve",
     );
 
     const deaccessionId = await createApprovedTransferDeaccession(
@@ -1996,6 +2018,7 @@ export const accept = mutation({
       ctx,
       request.sourceOrganizationId,
       request.targetOrganizationId,
+      "accept",
     );
 
     assertObservedSourceLocationMatches(
@@ -2272,19 +2295,21 @@ export const cancel = mutation({
     }
 
     // A source administrator's cancel is their review of the request, so
-    // their notes sit where a source rejection's would.
-    const reviewNotes = args.reviewNotes?.trim() || undefined;
-    const sourceReviewNotes = isSourceAdmin ? reviewNotes : undefined;
+    // their notes sit where a source rejection's would. A requester without
+    // that role is withdrawing, not reviewing, and leaves no notes.
+    const reviewNotes = isSourceAdmin
+      ? args.reviewNotes?.trim() || undefined
+      : undefined;
     const now = Date.now();
     await Promise.all([
       ctx.db.patch(args.requestId, {
         status: "cancelled",
         reviewedBy: isSourceAdmin ? userId : undefined,
         reviewedAt: now,
-        reviewNotes: sourceReviewNotes,
+        reviewNotes,
         sourceReviewedBy: isSourceAdmin ? userId : undefined,
         sourceReviewedAt: isSourceAdmin ? now : undefined,
-        sourceReviewNotes,
+        sourceReviewNotes: reviewNotes,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.sourceOrganizationId,
@@ -2303,7 +2328,7 @@ export const cancel = mutation({
         recipients: [request.requestedBy],
         title: "Object Move Cancelled",
         message:
-          sourceReviewNotes ??
+          reviewNotes ??
           "Your object move request was cancelled by an administrator of the source organization.",
         related: { entityType: "move_request", entityId: args.requestId },
       });

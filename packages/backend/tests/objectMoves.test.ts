@@ -1923,7 +1923,7 @@ describe("transfer decisions follow how the request was allowed", () => {
     );
   });
 
-  test("approval and acceptance refuse a destination that stopped allowing incoming transfers, with a code", async () => {
+  test("approval and acceptance refuse a destination that stopped allowing incoming transfers, each in its reader's terms", async () => {
     const t = convexTest(schema, modules);
     const [fixture, destination] = await Promise.all([
       createMoveFixture(t),
@@ -1963,10 +1963,41 @@ describe("transfer decisions follow how the request was allowed", () => {
           targetLocationId: destination.locationId,
         }),
       ),
-    ).toMatchObject({ code: "DESTINATION_OUTSIDE_HIERARCHY" });
+    ).toMatchObject({ code: "DESTINATION_NOT_ACCEPTING" });
     expect(
       (await t.run((ctx) => ctx.db.get(fixture.collectionId)))?.organizationId,
     ).toBe(fixture.sourceOrganizationId);
+  });
+
+  test("eligibility tells a destination outside the hierarchy from a plan without hierarchical transfers", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const outsideId = await createOrganization(
+      t,
+      "Unrelated Museum",
+      `unrelated-${Math.random().toString(36).slice(2, 8)}`,
+    );
+    const blockerCodes = async (targetOrganizationId: Id<"organizations">) =>
+      (
+        await fixture.requester.query(api.objectMoves.getEligibility, {
+          collectionId: fixture.collectionId,
+          targetOrganizationId,
+        })
+      ).blockers.map((blocker) => blocker.code);
+
+    expect(await blockerCodes(outsideId)).toEqual([
+      "target_not_in_hierarchy",
+      "target_membership_required",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.sourceOrganizationId, {
+        subscriptionTier: "free",
+      });
+    });
+    expect(await blockerCodes(fixture.targetOrganizationId)).toEqual([
+      "hierarchy_plan_required",
+    ]);
   });
 
   test("approval refuses a hierarchy transfer once the plan no longer includes it, with a code", async () => {
@@ -2168,7 +2199,7 @@ describe("transfer decisions follow how the request was allowed", () => {
     ]);
   });
 
-  test("a requester cancelling their own request notifies nobody", async () => {
+  test("a requester cancelling their own request keeps no review notes and notifies nobody", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
     const requestId = await fixture.requester.mutation(
@@ -2181,13 +2212,33 @@ describe("transfer decisions follow how the request was allowed", () => {
       },
     );
 
-    await fixture.requester.mutation(api.objectMoves.cancel, { requestId });
+    await fixture.requester.mutation(api.objectMoves.cancel, {
+      requestId,
+      reviewNotes: "Not needed after all.",
+    });
 
-    const notifications = await Promise.all(
-      [fixture.requesterId, fixture.adminId, fixture.targetAdminId].map(
+    const [request, auditEntries, ...notifications] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      t.run((ctx) =>
+        ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", fixture.sourceOrganizationId),
+          )
+          .collect(),
+      ),
+      ...[fixture.requesterId, fixture.adminId, fixture.targetAdminId].map(
         (userId) => notificationsFor(t, userId),
       ),
-    );
+    ]);
+    expect(request?.status).toBe("cancelled");
+    expect(request?.reviewNotes).toBeUndefined();
+    expect(request?.sourceReviewNotes).toBeUndefined();
+    expect(
+      auditEntries.find(
+        (entry) => entry.action === "cancelled_organization_move_request",
+      )?.changes,
+    ).toEqual({});
     expect(
       notifications
         .flat()

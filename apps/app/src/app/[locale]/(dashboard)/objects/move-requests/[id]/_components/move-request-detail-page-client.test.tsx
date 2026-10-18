@@ -50,7 +50,15 @@ vi.mock("@/components/permission-gate", () => ({
   }),
 }));
 vi.mock("@/components/location-selector", () => ({
-  LocationSelector: () => null,
+  LocationSelector: ({
+    onValueChange,
+  }: {
+    onValueChange: (id: string) => void;
+  }) => (
+    <button type="button" onClick={() => onValueChange("north-store")}>
+      North store
+    </button>
+  ),
 }));
 
 function moveRequest(status: string) {
@@ -152,6 +160,30 @@ test("the receiving organization accepts or declines an incoming transfer", asyn
     "destructive",
   );
   expect(button("Cancel request")).toBeNull();
+});
+
+test("a refused acceptance tells the receiving organization in its own terms", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+  const accept = state.mutations["objectMoves:accept"];
+  if (!accept) throw new Error("The page did not set up acceptance");
+  accept.mockRejectedValueOnce(
+    objectMoveError(
+      "DESTINATION_NOT_ACCEPTING",
+      "Your organization no longer accepts incoming transfer requests.",
+    ),
+  );
+
+  await userEvent.click(button("North store") as HTMLElement);
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+
+  expect(accept).toHaveBeenCalledTimes(1);
+  expect(toasts.error).toHaveBeenLastCalledWith(
+    "Your organization no longer accepts incoming transfer requests.",
+  );
 });
 
 test("a refused approval says why in the app's language", async () => {

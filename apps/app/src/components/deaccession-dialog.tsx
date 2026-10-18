@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer } from "react";
 import { toast } from "sonner";
-import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useObjectMoveErrorMessage } from "@/hooks/use-object-move-error-message";
 import { useI18n } from "@/locales/client";
 import { DeaccessionArchiveDeleteForm } from "./deaccession-archive-delete-form";
 import {
@@ -124,7 +124,7 @@ export function DeaccessionDialog({
   initialRemovalType = null,
 }: DeaccessionDialogProps) {
   const translate = useI18n();
-  const actionErrorMessage = useActionErrorMessage();
+  const errorMessage = useObjectMoveErrorMessage();
   const [state, dispatch] = useReducer(
     deaccessionDialogReducer,
     initialDeaccessionDialogState,
@@ -212,7 +212,7 @@ export function DeaccessionDialog({
         value:
           err instanceof RemovalValidationError
             ? err.message
-            : actionErrorMessage(
+            : errorMessage(
                 err,
                 translate("untranslatedComponents.deaccession.processFailed"),
               ),

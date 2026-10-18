@@ -10225,6 +10225,7 @@ export default {
         objectMoveApproved: "Transferul obiectului a fost aprobat",
         incomingTransferRejected: "Transferul primit a fost respins",
         objectMoveRejected: "Transferul obiectului a fost respins",
+        objectMoveCancelled: "Transferul obiectului a fost anulat",
         newTaskAssigned: "Sarcină nouă atribuită",
         taskAssigned: "Sarcină atribuită",
         taskDueSoon: "Sarcina ajunge curând la termen",
@@ -10301,6 +10302,8 @@ export default {
           "Cererea {number} solicită folosirea unei imagini a obiectului {object}.",
         objectMoveExecuted:
           "Solicitarea ta de transfer al obiectului a fost aprobată și executată.",
+        objectMoveCancelled:
+          "Solicitarea ta de transfer al obiectului a fost anulată de un administrator al organizației sursă.",
         onlyActiveObjectsCanMove:
           "Doar obiectele active pot fi transferate către o altă organizație.",
         objectOnLoanCannotMove:
@@ -10850,6 +10853,8 @@ export default {
         "Organizația de destinație este în afara ierarhiei organizației tale și nu permite solicitări de transfer primite.",
       planRequired:
         "Transferurile între organizații din aceeași ierarhie necesită planul Pro sau Enterprise.",
+      destinationNotAccepting:
+        "Organizația ta nu mai acceptă solicitări de transfer primite.",
     },
     blockers: {
       statusNotActive:
@@ -10878,6 +10883,13 @@ export default {
         "Acest obiect are o acoperire de asigurare care trebuie rezolvată înainte de a putea fi transferat.",
       insuranceClaim:
         "Acest obiect apare într-un dosar de daună și nu poate fi transferat.",
+      collectionNotFound: "Acest obiect nu a fost găsit.",
+      targetNotAcceptingTransfers:
+        "Organizația de destinație nu acceptă solicitări de transfer primite.",
+      targetMembershipRequired:
+        "Trebuie să fii membru al organizației de destinație pentru a transfera un obiect acolo.",
+      targetCreatePermissionRequired:
+        "Ai nevoie de permisiunea de a crea obiecte în organizația de destinație.",
     },
   },
   workflowApprovals: {

@@ -10135,6 +10135,7 @@ export default {
         objectMoveApproved: "Flytting av objekt godkjent",
         incomingTransferRejected: "Innkommende overføring avvist",
         objectMoveRejected: "Flytting av objekt avvist",
+        objectMoveCancelled: "Flytting av objekt avbrutt",
         newTaskAssigned: "Ny oppgave tildelt",
         taskAssigned: "Oppgave tildelt",
         taskDueSoon: "Oppgaven har snart frist",
@@ -10206,6 +10207,8 @@ export default {
           "Forespørsel {number} gjelder bruk av et bilde av objektet {object}.",
         objectMoveExecuted:
           "Forespørselen din om å flytte objektet er godkjent og gjennomført.",
+        objectMoveCancelled:
+          "Forespørselen din om å flytte objektet ble avbrutt av en administrator i kildeorganisasjonen.",
         onlyActiveObjectsCanMove:
           "Bare aktive objekter kan flyttes til en annen organisasjon.",
         objectOnLoanCannotMove: "Dette objektet er utlånt og kan ikke flyttes.",
@@ -10737,6 +10740,8 @@ export default {
         "Mottakerorganisasjonen er utenfor organisasjonens hierarki og tillater ikke innkommende overføringsforespørsler.",
       planRequired:
         "Overføringer mellom organisasjoner i samme hierarki krever Pro- eller Enterprise-abonnementet.",
+      destinationNotAccepting:
+        "Organisasjonen din tar ikke lenger imot innkommende overføringsforespørsler.",
     },
     blockers: {
       statusNotActive:
@@ -10764,6 +10769,13 @@ export default {
         "Dette objektet har forsikringsdekning som må avklares før det kan flyttes.",
       insuranceClaim:
         "Dette objektet er nevnt i et forsikringskrav og kan ikke flyttes.",
+      collectionNotFound: "Fant ikke dette objektet.",
+      targetNotAcceptingTransfers:
+        "Mottakerorganisasjonen tar ikke imot innkommende overføringsforespørsler.",
+      targetMembershipRequired:
+        "Du må være medlem av mottakerorganisasjonen for å flytte et objekt dit.",
+      targetCreatePermissionRequired:
+        "Du trenger tillatelse til å opprette objekter i mottakerorganisasjonen.",
     },
   },
   workflowApprovals: {
