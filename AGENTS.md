@@ -32,7 +32,7 @@ Use [the agent documentation index](docs/agents/README.md). Open only the page f
 
 Convex owns data, auth, storage, and scheduled work. Next.js owns UI and routing. Next.js 16 uses `apps/app/src/proxy.ts`; do not create `middleware.ts`.
 
-Agent skills for Convex, Next.js and Turborepo are committed under `.claude/skills` so cloud sessions have them without a global install. `skills-lock.json` records their sources; refresh them with `npx skills update -p`. `.agents/skills` (where `npx convex ai-files update` also writes copies) is gitignored so there is only one committed copy.
+Agent skills for Convex, Next.js and Turborepo are committed under `.claude/skills` so cloud sessions have them without a global install. `skills-lock.json` records their sources; refresh them with `npx skills update -p`. They must be real folders, not links: `.agents/skills` is gitignored, so a link into it is empty in every fresh checkout. The root `convex.json` limits Convex's skill installs to `claude-code`, which makes `npx convex ai-files install`/`update` copy into `.claude/skills` instead of linking to `.agents/skills`; when adding skills with `npx skills add`, pass `--agent claude-code` or `--copy`.
 
 The pstack skills (`/poteto-mode`, `/how`, `/why`, `/interrogate`, `/tdd`, the `principle-*` skills and others) and the `poteto-agent` and `comment-sicko` agents are vendored from cursor/plugins, so they are not in `skills-lock.json`. `.claude/docs/pstack/SOURCE.md` records the source commit and local changes, and `.claude/docs/harness/claude-code.md` maps their Cursor names to Claude Code and sets the MuseumLite rules they follow (they never merge PRs).
 

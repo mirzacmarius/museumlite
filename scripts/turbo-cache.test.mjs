@@ -143,6 +143,7 @@ async function runWebTest(directory, envValue = "small") {
       "--filter=@v1/web",
       "--cache-dir",
       join(directory, ".turbo"),
+      "--cache=local:rw",
     ],
     {
       cwd: directory,
@@ -171,6 +172,7 @@ async function runWebBuild(
       "--filter=@v1/web",
       "--cache-dir",
       join(directory, ".turbo"),
+      "--cache=local:rw",
     ],
     {
       cwd: directory,
