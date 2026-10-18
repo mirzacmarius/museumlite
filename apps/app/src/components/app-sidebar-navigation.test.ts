@@ -21,7 +21,7 @@ const navigationLabels: Record<string, string> = {
   "untranslatedComponents.navigation.locationTracking": "Location & Tracking",
   "untranslatedComponents.navigation.scan": "Scan",
   "untranslatedComponents.navigation.accessions": "Accessions",
-  "untranslatedComponents.navigation.deaccessions": "Deaccessions",
+  "untranslatedComponents.navigation.deaccessions": "Removals",
   "untranslatedComponents.navigation.documentationQuality":
     "Documentation quality",
   "untranslatedComponents.navigation.conservation": "Conservation",
@@ -287,7 +287,7 @@ describe("buildSidebarNavigation", () => {
       "Location & Tracking",
       "Scan",
       "Accessions",
-      "Deaccessions",
+      "Removals",
     ]);
   });
 });

@@ -43,7 +43,9 @@ beforeEach(() => {
 test("an object that allows deaccession opens the dialog", async () => {
   await renderAction();
 
-  await userEvent.click(screen.getByRole("button", { name: "Deaccession" }));
+  await userEvent.click(
+    screen.getByRole("button", { name: "Remove or transfer" }),
+  );
 
   expect(screen.getByRole("dialog")).toBeTruthy();
 });
@@ -53,7 +55,7 @@ test("with approval steps the action requests a deaccession", async () => {
   await renderAction();
 
   expect(
-    screen.getByRole("button", { name: "Request deaccession" }),
+    screen.getByRole("button", { name: "Request removal or transfer" }),
   ).toBeTruthy();
 });
 
@@ -68,7 +70,9 @@ test("staff who may only remove the object still reach the dialog", async () => 
   actions = withDeaccession({ state: "hidden" });
   await renderAction();
 
-  await userEvent.click(screen.getByRole("button", { name: "Deaccession" }));
+  await userEvent.click(
+    screen.getByRole("button", { name: "Remove or transfer" }),
+  );
 
   expect(screen.getByRole("dialog")).toBeTruthy();
 });
@@ -77,7 +81,7 @@ test("an object on loan shows the action disabled with the reason", async () => 
   actions = withDeaccession({ state: "blocked", reason: "on_loan" });
   await renderAction();
 
-  const button = screen.getByRole("button", { name: /Deaccession/ });
+  const button = screen.getByRole("button", { name: /Remove or transfer/ });
   expect(button.hasAttribute("disabled")).toBe(true);
   expect(button.getAttribute("title")).toBe("On loan");
 });
@@ -87,7 +91,9 @@ test("an unaccessioned object shows the action disabled with the reason", async 
   await renderAction();
 
   expect(
-    screen.getByRole("button", { name: /Deaccession/ }).getAttribute("title"),
+    screen
+      .getByRole("button", { name: /Remove or transfer/ })
+      .getAttribute("title"),
   ).toBe("Not yet accessioned");
 });
 
@@ -100,7 +106,7 @@ test("an open Deaccession links to its Case", async () => {
 
   expect(
     screen
-      .getByRole("link", { name: "Deaccession in progress" })
+      .getByRole("link", { name: "Removal in progress" })
       .getAttribute("href"),
   ).toBe("/deaccessions/deaccession-1");
 });

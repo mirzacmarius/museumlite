@@ -227,7 +227,7 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
   expect(linkTexts()).toEqual([
     "My tasks 20+",
     "Pending accession approval 3",
-    "Pending deaccession approval 2",
+    "Pending removal approval 2",
     "Pending exhibition approval 1",
     "Pending conservation approval 1",
     "Pending image deletion approval 2",
@@ -236,7 +236,7 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
   expect(hrefOf("Pending accession approval 3")).toBe(
     "/accessions?status=pending",
   );
-  expect(hrefOf("Pending deaccession approval 2")).toBe(
+  expect(hrefOf("Pending removal approval 2")).toBe(
     "/deaccessions?status=pending",
   );
   expect(hrefOf("Pending exhibition approval 1")).toBe(
