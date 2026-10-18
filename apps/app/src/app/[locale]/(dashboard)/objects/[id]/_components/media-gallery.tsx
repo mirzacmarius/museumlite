@@ -2,7 +2,6 @@
 
 import { EmptyState } from "@v1/ui/empty-state";
 import { Image as ImageIcon } from "lucide-react";
-import type { ReactNode } from "react";
 import { useScopedI18n } from "@/locales/client";
 import { DetailSection } from "./detail-section";
 import { MediaGalleryDocuments } from "./media-gallery-documents";
@@ -17,7 +16,6 @@ interface MediaGalleryProps {
   mediaType?: "images" | "documents" | "all";
   onOpenLightbox?: (index: number) => void;
   editable?: boolean;
-  actions?: ReactNode;
 }
 
 export function MediaGallery({
@@ -26,7 +24,6 @@ export function MediaGallery({
   mediaType = "all",
   onOpenLightbox,
   editable = false,
-  actions,
 }: MediaGalleryProps) {
   const t = useScopedI18n("objects.mediaGallery");
   const gallery = useMediaGallery({
@@ -61,7 +58,6 @@ export function MediaGallery({
         <DetailSection
           title={t("visualMediaTitle")}
           icon={ImageIcon}
-          actions={actions}
           bodyClassName="space-y-3 border-0 bg-transparent p-0 sm:p-0"
         >
           <MediaGalleryImageGrid

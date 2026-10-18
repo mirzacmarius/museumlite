@@ -1,10 +1,5 @@
 "use client";
 
-import { Button } from "@v1/ui/button";
-import { Upload } from "lucide-react";
-import Link from "next/link";
-import { PermissionGate } from "@/components/permission-gate";
-import { useI18n } from "@/locales/client";
 import { DigitalAssetsTab } from "./digital-assets-tab";
 import { MediaGallery } from "./media-gallery";
 import type { CollectionData } from "./types";
@@ -15,30 +10,21 @@ interface MediaTabProps {
   onOpenLightbox?: (index: number) => void;
 }
 
+/**
+ * The object page's Media tab. Media is uploaded from Edit Object:
+ * images in the edit form's image panel, documents in its Media tab.
+ */
 export function MediaTab({
   collectionId,
   collection,
   onOpenLightbox,
 }: MediaTabProps) {
-  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <MediaGallery
         collectionId={collectionId}
         collectionLinks={collection.links}
         onOpenLightbox={onOpenLightbox}
-        actions={
-          <PermissionGate permission="collections.update">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/objects/${collectionId}/edit?tab=media`}>
-                <Upload className="mr-2 size-3.5" />
-                {tRoot(
-                  "untranslatedRecords.collections.media.uploadMediaFiles",
-                )}
-              </Link>
-            </Button>
-          </PermissionGate>
-        }
       />
       <DigitalAssetsTab collection={collection} linksOnly />
     </div>
