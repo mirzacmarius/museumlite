@@ -13,6 +13,8 @@ import PreferencesSettingsPage from "./page";
 
 const updateOrganization = vi.fn();
 const createTemplate = vi.fn();
+const removeTemplate = vi.fn();
+let customTemplates: { _id: string; name: string; template: string }[] = [];
 let organization: {
   _id: string;
   slug: string;
@@ -40,7 +42,7 @@ vi.mock("convex/react", () => ({
       case "organizations:getAccessionTemplatePresets":
         return AccessionNumberParser.getPresets();
       case "accessionTemplates:list":
-        return [];
+        return customTemplates;
       default:
         return undefined;
     }
@@ -51,6 +53,8 @@ vi.mock("convex/react", () => ({
         return updateOrganization;
       case "accessionTemplates:create":
         return createTemplate;
+      case "accessionTemplates:remove":
+        return removeTemplate;
       default:
         return vi.fn();
     }
@@ -82,6 +86,9 @@ beforeEach(() => {
   updateOrganization.mockReset();
   updateOrganization.mockResolvedValue(null);
   createTemplate.mockReset();
+  removeTemplate.mockReset();
+  removeTemplate.mockResolvedValue(null);
+  customTemplates = [];
 });
 
 /** The format template trigger shows the current format as its text. */
@@ -219,4 +226,32 @@ test("saving a stored bare-token format as a template stores its braced form", a
   expect(createTemplate).toHaveBeenCalledWith(
     expect.objectContaining({ template: "NAT-{YYYY}-{###}" }),
   );
+});
+
+test("deleting the library template of the saved format keeps that format", async () => {
+  organization.settings.accessionNumberFormat = "HOUSE-{YYYY}-{####}";
+  customTemplates = [
+    { _id: "template-1", name: "House style", template: "HOUSE-{YYYY}-{####}" },
+  ];
+  const user = userEvent.setup();
+  await renderOnPage(<PreferencesSettingsPage />, "/en/settings/preferences");
+
+  const trigger = screen.getByText("House style").closest("button");
+  if (!trigger) throw new Error("Format template trigger not found");
+  await user.click(trigger);
+  const option = screen
+    .getAllByText("House style")
+    .map((label) => label.closest("[cmdk-item]"))
+    .find(Boolean);
+  if (!(option instanceof HTMLElement)) throw new Error("Template not found");
+  const buttons = option.querySelectorAll("button");
+  const deleteButton = buttons[buttons.length - 1];
+  if (!deleteButton) throw new Error("Delete button not found");
+  await user.click(deleteButton);
+  await user.click(await screen.findByRole("button", { name: "Delete" }));
+  await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+  expect(removeTemplate).toHaveBeenCalledWith({ templateId: "template-1" });
+  expect(screen.queryByText("Enter a format template.")).toBeNull();
+  expect(savedSettings().accessionNumberFormat).toBeUndefined();
 });

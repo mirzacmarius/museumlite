@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import { accessionFormatErrorFromError } from "../convex/utils/accessionNumberParser";
 import {
+  accessionFormatRefusalOf,
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
@@ -14,15 +14,6 @@ async function setup() {
     "collections.read",
   ]);
   return { organizationId, admin: authedForUser(t, userId) };
-}
-
-async function formatRefusalOf(call: Promise<unknown>) {
-  try {
-    await call;
-  } catch (error) {
-    return accessionFormatErrorFromError(error);
-  }
-  throw new Error("Expected the call to be rejected");
 }
 
 describe("accession template library", () => {
@@ -49,7 +40,7 @@ describe("accession template library", () => {
   ])("a new template written with bare tokens, %s, is refused with a coded error", async (format) => {
     const { organizationId, admin } = await setup();
 
-    const refusal = await formatRefusalOf(
+    const refusal = await accessionFormatRefusalOf(
       admin.mutation(api.accessionTemplates.create, {
         organizationId,
         name: "Bare",
@@ -71,7 +62,7 @@ describe("accession template library", () => {
       template: "NAT-{YYYY}-{###}",
     });
 
-    const refusal = await formatRefusalOf(
+    const refusal = await accessionFormatRefusalOf(
       admin.mutation(api.accessionTemplates.update, {
         templateId,
         template: "NAT-{XYZ}-{###}",

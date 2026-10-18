@@ -3,8 +3,8 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
-import { accessionFormatErrorFromError } from "../convex/utils/accessionNumberParser";
 import {
+  accessionFormatRefusalOf,
   authedForUser,
   capabilityFailureOf,
   createConvexTest,
@@ -575,15 +575,6 @@ describe("organizations.getAccessionNumberPreview", () => {
   });
 });
 
-async function accessionFormatRefusalOf(call: Promise<unknown>) {
-  try {
-    await call;
-  } catch (error) {
-    return accessionFormatErrorFromError(error);
-  }
-  throw new Error("Expected the call to be rejected");
-}
-
 describe("saving the accession number format", () => {
   async function setupStoredFormat(accessionNumberFormat: string) {
     const t = createConvexTest();
@@ -605,7 +596,10 @@ describe("saving the accession number format", () => {
     return { t, organizationId, admin: authedForUser(t, userId) };
   }
 
-  /** The Preferences form sends every setting, the untouched format included. */
+  /**
+   * Older Preferences clients and direct API callers send every setting, the
+   * untouched format included.
+   */
   function preferences(accessionNumberFormat: string) {
     return {
       accessionNumberFormat,

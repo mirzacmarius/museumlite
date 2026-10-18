@@ -263,9 +263,15 @@ function usePreferencesPage() {
 
     try {
       await removeTemplate({ templateId: state.deleteTemplateId });
+      // Deleting a library template leaves the organization's format as it
+      // is, so the field goes back to the saved format rather than empty.
       if (state.deleteTemplateId === selectedCustomTemplateId) {
         dispatch((current) => ({
-          formData: { ...current.formData, accessionNumberFormat: "" },
+          formData: {
+            ...current.formData,
+            accessionNumberFormat:
+              organization?.settings?.accessionNumberFormat ?? "",
+          },
         }));
       }
       dispatch({ deleteTemplateId: null });
