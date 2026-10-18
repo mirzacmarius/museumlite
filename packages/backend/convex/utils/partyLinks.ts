@@ -3,7 +3,6 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { objectLabel } from "./collectionDisplayHelpers";
 import { isDisposalDecision } from "./disposalPolicy";
-import { requireLoansAccess } from "./loanAccess";
 import { isOpenEntryStatus } from "./objectEntryValidators";
 import {
   normalizePartyName,
@@ -124,10 +123,10 @@ export async function resolvePartyTarget(
     case "loan": {
       const loan = await ctx.db.get(target.id);
       if (!loan) targetNotFound();
-      await requireLoansAccess(ctx, loan.organizationId);
-      await requirePermission(
+      await requireCapability(
         ctx,
         loan.organizationId,
+        "loans",
         access === "write" ? "loans.update" : "loans.read",
       );
       return {

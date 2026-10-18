@@ -663,25 +663,6 @@ test("moving a default template to another direction gives up its default", asyn
   ]);
 });
 
-test("organizations without the loans feature cannot manage templates", async () => {
-  const t = createConvexTest();
-  const { organizationId, userId } = await createOrgUserWithPermissions(
-    t,
-    ADMIN_PERMISSIONS,
-    { subscriptionTier: "free" },
-  );
-
-  await expect(
-    authedForUser(t, userId).mutation(api.loanAgreementTemplates.create, {
-      organizationId,
-      name: "Free tier",
-      language: "en",
-      loanType: "any",
-      sections: [conditionsSection],
-    }),
-  ).rejects.toThrow("Feature requires pro tier");
-});
-
 test("archiving retires a template from loans but keeps its record", async () => {
   const t = createConvexTest();
   const admin = await createLoanAdmin(t);

@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { requireLoansAccess } from "./loanAccess";
 import { isLoanItemDispatched, isLoanItemReturned } from "./loanItemState";
 import {
   dispatchLoanItems,
@@ -12,7 +11,7 @@ import {
 import { assertAllowedLoanTransition } from "./loanStatusTransitions";
 import { dispatchNotification } from "./notificationDispatch";
 import { logActionAndGetRecipients } from "./organizationAudit";
-import { requirePermission } from "./permissions";
+import { requireCapability } from "./permissions";
 import { withdrawPreparation } from "./preparation";
 
 export async function returnLoanHandler(
@@ -41,10 +40,7 @@ export async function returnLoanHandler(
     "Loan must be active or dispatched to return",
   );
 
-  await Promise.all([
-    requireLoansAccess(ctx, loan.organizationId),
-    requirePermission(ctx, loan.organizationId, "loans.update"),
-  ]);
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
   const movement = await returnLoanItems(ctx, {
     loanId: args.loanId,
@@ -136,10 +132,7 @@ export async function dispatchLoanHandler(
     "Loan must be active to dispatch",
   );
 
-  await Promise.all([
-    requireLoansAccess(ctx, loan.organizationId),
-    requirePermission(ctx, loan.organizationId, "loans.update"),
-  ]);
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
   const dispatchResult = await dispatchLoanItems(ctx, {
     loanId: args.loanId,
@@ -196,10 +189,7 @@ export async function cancelLoanHandler(
     "Can only cancel pending, active, or dispatched loans",
   );
 
-  await Promise.all([
-    requireLoansAccess(ctx, loan.organizationId),
-    requirePermission(ctx, loan.organizationId, "loans.update"),
-  ]);
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
   const loanItems = await ctx.db
     .query("loanItems")
@@ -284,10 +274,7 @@ export async function returnLoanItemHandler(
     throw new Error("Loan is not open for returns");
   }
 
-  await Promise.all([
-    requireLoansAccess(ctx, loan.organizationId),
-    requirePermission(ctx, loan.organizationId, "loans.update"),
-  ]);
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
   const loanItem = await ctx.db
     .query("loanItems")

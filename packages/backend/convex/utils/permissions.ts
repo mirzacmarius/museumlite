@@ -6,17 +6,16 @@ import { internalQuery } from "../_generated/server";
 import { batchGetByIds } from "./batchLookup";
 import {
   type CapabilityId,
+  capabilityOfPermission,
   capabilityStateError,
   capabilityUnavailable,
   evaluateCapability,
+  evaluateCapabilityEntitlement,
   permissionMissingMessage,
 } from "./capabilities";
 import {
-  type FeatureId,
-  hasFeatureAccess,
   type ModuleId,
   organizationAccess,
-  requireFeatureAccess,
   requireModuleEnabled,
 } from "./featureGates";
 import { VALUATION_PERMISSION } from "./valuation";
@@ -71,19 +70,6 @@ export async function getUserIdsWithPermission(
   );
 
   return matchingUserIds.flatMap((userId) => (userId === null ? [] : [userId]));
-}
-
-function getFeatureForPermission(permissionName: string): FeatureId | null {
-  if (permissionName.startsWith("loans.")) {
-    return "loans";
-  }
-  if (permissionName === "collections.approve_exhibition") {
-    return "exhibitions";
-  }
-  if (permissionName === "collections.approve_conservation") {
-    return "conservation";
-  }
-  return null;
 }
 
 /**
@@ -169,10 +155,16 @@ export async function hasPermission(
   organizationId: Id<"organizations">,
   permissionName: string,
 ): Promise<boolean> {
-  const feature = getFeatureForPermission(permissionName);
-  if (feature) {
-    const allowed = await hasFeatureAccess(ctx, organizationId, feature);
-    if (!allowed) {
+  const capability = capabilityOfPermission(permissionName);
+  if (capability) {
+    const organization = await ctx.db.get(organizationId);
+    if (
+      !organization ||
+      evaluateCapabilityEntitlement(
+        capability,
+        organizationAccess(organization),
+      ).status !== "available"
+    ) {
       return false;
     }
   }
@@ -206,24 +198,24 @@ export async function requireLocationAdminPermission(
   ]);
 }
 
+/**
+ * A Permission that belongs to a capability goes through `requireCapability`,
+ * so its module and plan come from the matrix in ADR 0004's order. Any other
+ * Permission needs only the role.
+ */
 export async function requirePermission(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
   permissionName: string,
 ): Promise<void> {
-  const feature = getFeatureForPermission(permissionName);
-  const permissions = await getUserPermissions(ctx, organizationId);
-  // The role before the plan, so members without access are never told to
-  // upgrade (ADR 0004).
-  if (!permissions.includes(permissionName)) {
-    // Non-members keep the plan gate's uncoded refusal.
-    if (feature && !(await getCurrentUserOrganization(ctx, organizationId))) {
-      await requireFeatureAccess(ctx, organizationId, feature);
-    }
-    throw permissionDenied(permissionName);
+  const capability = capabilityOfPermission(permissionName);
+  if (capability) {
+    await requireCapability(ctx, organizationId, capability, permissionName);
+    return;
   }
-  if (feature) {
-    await requireFeatureAccess(ctx, organizationId, feature);
+  const permissions = await getUserPermissions(ctx, organizationId);
+  if (!permissions.includes(permissionName)) {
+    throw permissionDenied(permissionName);
   }
 }
 
@@ -247,8 +239,8 @@ function permissionDenied(permissionName: string) {
 /**
  * Gate for a command that belongs to a capability in the capability matrix,
  * in the same order as the navigation states: membership first, so
- * non-members learn nothing about the organization; then the module, the
- * command's permission and the plan.
+ * non-members get the uncoded refusal and learn nothing about the
+ * organization; then the module, the command's permission and the plan.
  */
 export async function requireCapability(
   ctx: QueryCtx | MutationCtx,
@@ -260,7 +252,7 @@ export async function requireCapability(
     typeof permission === "string" ? [permission] : permission;
   const membership = await getCurrentUserOrganization(ctx, organizationId);
   if (!membership) {
-    throw permissionDenied(required[0] ?? capability);
+    throw new Error(permissionMissingMessage(required[0] ?? capability));
   }
   const [organization, permissions] = await Promise.all([
     ctx.db.get(organizationId),

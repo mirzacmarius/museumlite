@@ -230,7 +230,6 @@ import type * as utils_insuranceStats from "../utils/insuranceStats.js";
 import type * as utils_inventoryErrors from "../utils/inventoryErrors.js";
 import type * as utils_inventoryValidators from "../utils/inventoryValidators.js";
 import type * as utils_legacyTemplates from "../utils/legacyTemplates.js";
-import type * as utils_loanAccess from "../utils/loanAccess.js";
 import type * as utils_loanAgreementErrors from "../utils/loanAgreementErrors.js";
 import type * as utils_loanAgreementPlaceholders from "../utils/loanAgreementPlaceholders.js";
 import type * as utils_loanAgreementValidators from "../utils/loanAgreementValidators.js";
@@ -570,7 +569,6 @@ declare const fullApi: ApiFromModules<{
   "utils/inventoryErrors": typeof utils_inventoryErrors;
   "utils/inventoryValidators": typeof utils_inventoryValidators;
   "utils/legacyTemplates": typeof utils_legacyTemplates;
-  "utils/loanAccess": typeof utils_loanAccess;
   "utils/loanAgreementErrors": typeof utils_loanAgreementErrors;
   "utils/loanAgreementPlaceholders": typeof utils_loanAgreementPlaceholders;
   "utils/loanAgreementValidators": typeof utils_loanAgreementValidators;

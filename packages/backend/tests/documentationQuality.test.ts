@@ -454,15 +454,15 @@ test("members without the documentation quality capability are refused and outsi
       organizationId,
     }),
   );
-  expect(outsider).toMatchObject({ reason: "permission_missing" });
-  expect(outsider).not.toHaveProperty("capability");
+  // Non-members get the uncoded refusal (ADR 0004).
+  expect(outsider).toBeNull();
   expect(
     await capabilityFailureOf(
       foreignAdmin.mutation(api.documentationQuality.archiveProfile, {
         profileId,
       }),
     ),
-  ).toMatchObject({ reason: "permission_missing" });
+  ).toBeNull();
 
   const states = async (member: typeof viewer) =>
     (
@@ -1117,7 +1117,7 @@ test("a finding opens with its repair context, and outsiders see nothing", async
         note: "Not ours",
       }),
     ),
-  ).toMatchObject({ reason: "permission_missing" });
+  ).toBeNull();
 });
 
 const LOCATED = {
@@ -1229,7 +1229,7 @@ test("a check stops when its runner loses access and another member resumes it f
     await capabilityFailureOf(
       officer.mutation(api.documentationQuality.resumeCheck, { checkId }),
     ),
-  ).toMatchObject({ reason: "permission_missing" });
+  ).toBeNull();
 
   await admin.mutation(api.documentationQuality.resumeCheck, { checkId });
   await t.finishAllScheduledFunctions(vi.runAllTimers);

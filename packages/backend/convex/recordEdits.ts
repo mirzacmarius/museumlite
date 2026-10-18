@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
-import { requireLoansAccess } from "./utils/loanAccess";
 import {
   getCurrentUserOrganization,
+  requireCapability,
   requirePermission,
 } from "./utils/permissions";
 import {
@@ -61,10 +61,12 @@ export const getEditState = query({
       case "loan": {
         const loan = await ctx.db.get(target.id);
         if (!loan || !(await isMember(ctx, loan.organizationId))) return null;
-        await Promise.all([
-          requireLoansAccess(ctx, loan.organizationId),
-          requirePermission(ctx, loan.organizationId, "loans.read"),
-        ]);
+        await requireCapability(
+          ctx,
+          loan.organizationId,
+          "loans",
+          "loans.read",
+        );
         return { editVersion: await loanEditVersion(loan) };
       }
     }
