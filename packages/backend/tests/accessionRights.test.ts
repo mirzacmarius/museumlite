@@ -377,6 +377,39 @@ describe("accession rights stay with workflow roles for everyone else", () => {
     ).toBe("permission_missing");
   });
 
+  test("only staff who may start review submit a draft recorded on the accession form", async () => {
+    const museum = await createMuseum();
+    const accessionId = await museum.createCase();
+    const canSubmit = async (member: MemberKey) =>
+      (await museum.as(member).query(api.accessions.get, { accessionId }))
+        ?.canCurrentUserSubmit;
+
+    expect(await canSubmit("cataloger")).toBe(false);
+    expect(await canSubmit("reviewer")).toBe(false);
+    expect(await canSubmit("curator")).toBe(true);
+    expect(await canSubmit("collectionManager")).toBe(true);
+    expect(
+      await refusalOf(
+        museum.as("cataloger").mutation(api.accessions.submitForApproval, {
+          accessionId,
+        }),
+      ),
+    ).toBe("permission_missing");
+    expect(await workflowStepOf(museum.t, accessionId)).toBe(0);
+
+    await museum.as("curator").mutation(api.accessions.submitForApproval, {
+      accessionId,
+    });
+    expect(await workflowStepOf(museum.t, accessionId)).toBe(1);
+    expect(await canSubmit("curator")).toBe(false);
+
+    const second = await museum.createCase();
+    await museum
+      .as("collectionManager")
+      .mutation(api.accessions.submitForApproval, { accessionId: second });
+    expect(await workflowStepOf(museum.t, second)).toBe(1);
+  });
+
   test("Curators still do not decide image deletions", async () => {
     const museum = await createMuseum();
     const canDecide = async (member: MemberKey) =>
@@ -436,6 +469,48 @@ describe("describing the object of an accession case", () => {
     expect(object?.title).toBe("Portrait of a lady");
   });
 
+  test("a source and notes that match the object are still never overwritten", async () => {
+    const museum = await createMuseum();
+    const accessionId = await museum
+      .as("administrator")
+      .mutation(api.accessions.create, {
+        organizationId: museum.organizationId,
+        dateReceived: Date.UTC(2025, 1, 1),
+        source: "Anna Berg",
+        method: "gift",
+        notes: "Self-portrait",
+      });
+    const curator = museum.as("curator");
+    const saved = await curator.mutation(api.accessions.saveObjectDraft, {
+      organizationId: museum.organizationId,
+      accessionId,
+      saveMode: "draft",
+      objectData: {
+        title: "Self-portrait",
+        creator: "Anna Berg",
+        description: "Self-portrait",
+      },
+    });
+    await curator.mutation(api.accessions.saveObjectDraft, {
+      organizationId: museum.organizationId,
+      accessionId,
+      saveMode: "draft",
+      expectedEditVersion: saved.editVersion,
+      objectData: {
+        title: "Self-portrait",
+        creator: "",
+        description: "Oil on board",
+      },
+    });
+
+    const accession = await curator.query(api.accessions.get, {
+      accessionId,
+    });
+    expect(accession?.startedInObjectForm).toBe(false);
+    expect(accession?.source).toBe("Anna Berg");
+    expect(accession?.notes).toBe("Self-portrait");
+  });
+
   test("an intake-form draft's source still follows its object", async () => {
     const museum = await createMuseum();
     const manager = museum.as("collectionManager");
@@ -458,6 +533,7 @@ describe("describing the object of an accession case", () => {
       },
     });
     const draft = await manager.query(api.accessions.get, { accessionId });
+    expect(draft?.startedInObjectForm).toBe(true);
     expect(draft?.source).toBe("Bob Jones");
     expect(draft?.notes).toBe("Birch, with a twisted handle");
   });

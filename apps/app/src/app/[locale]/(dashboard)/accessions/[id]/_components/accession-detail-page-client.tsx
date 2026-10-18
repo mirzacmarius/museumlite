@@ -93,7 +93,10 @@ export function AccessionDetailPageClient() {
     accession.sourceVerificationException !== undefined;
   const isObjectDraft = Boolean(accession.draftObjectData);
   const canEditObjectDraft = accession.status === "pending" && isObjectDraft;
-  const draftEditHref = isObjectDraft
+  // An accession started in the object form is edited there. Any other keeps
+  // the accession form as its Edit, even once its object is described; the
+  // object has its own button.
+  const draftEditHref = accession.startedInObjectForm
     ? `/accessions/${accessionId}/edit-object`
     : `/accessions/${accessionId}/edit`;
   const accessionTitle =

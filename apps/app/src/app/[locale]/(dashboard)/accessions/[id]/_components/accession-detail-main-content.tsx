@@ -19,24 +19,28 @@ import {
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 import { IntakeReviewDecision } from "./intake-review-decision";
 
+/** Shown only to staff who may start review of the accession workflow. */
 function SubmitDraftButton({
+  accession,
   isSubmittingDraft,
   handleSubmitDraft,
-}: Pick<AccessionDetailViewProps, "isSubmittingDraft" | "handleSubmitDraft">) {
+}: Pick<
+  AccessionDetailViewProps,
+  "accession" | "isSubmittingDraft" | "handleSubmitDraft"
+>) {
   const tRoot = useI18n();
+  if (!accession.canCurrentUserSubmit) return null;
   return (
-    <PermissionGate permission="collections.update">
-      <Button
-        size="sm"
-        onClick={() => void handleSubmitDraft()}
-        disabled={isSubmittingDraft}
-      >
-        <CheckCircle className="mr-2 size-4" />
-        {isSubmittingDraft
-          ? tRoot("untranslatedRecords.accessions.detail.submitting")
-          : tRoot("untranslatedRecords.accessions.detail.submitForApproval")}
-      </Button>
-    </PermissionGate>
+    <Button
+      size="sm"
+      onClick={() => void handleSubmitDraft()}
+      disabled={isSubmittingDraft}
+    >
+      <CheckCircle className="mr-2 size-4" />
+      {isSubmittingDraft
+        ? tRoot("untranslatedRecords.accessions.detail.submitting")
+        : tRoot("untranslatedRecords.accessions.detail.submitForApproval")}
+    </Button>
   );
 }
 
@@ -79,6 +83,7 @@ function AccessionDraftCard({
           </PermissionGate>
         )}
         <SubmitDraftButton
+          accession={accession}
           isSubmittingDraft={isSubmittingDraft}
           handleSubmitDraft={handleSubmitDraft}
         />
@@ -96,7 +101,6 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
     configuredWorkflowSteps,
     workflowSummary,
     canEditObjectDraft,
-    draftEditHref,
     draftActionError,
     isSubmittingDraft,
     handleSubmitDraft,
@@ -285,19 +289,24 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                 <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
                   <PermissionGate permission="collections.update">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={draftEditHref}>
+                      <Link href={`/accessions/${accession._id}/edit-object`}>
                         <Edit className="mr-2 size-4" />
-                        {isDraft
+                        {!accession.startedInObjectForm
                           ? tRoot(
-                              "untranslatedRecords.accessions.detail.editDraft",
+                              "untranslatedRecords.accessions.detail.editObject",
                             )
-                          : tRoot("untranslatedRecords.objects.actions.edit")}
+                          : isDraft
+                            ? tRoot(
+                                "untranslatedRecords.accessions.detail.editDraft",
+                              )
+                            : tRoot("untranslatedRecords.objects.actions.edit")}
                       </Link>
                     </Button>
                   </PermissionGate>
                   {isDraft ? (
                     <>
                       <SubmitDraftButton
+                        accession={accession}
                         isSubmittingDraft={isSubmittingDraft}
                         handleSubmitDraft={handleSubmitDraft}
                       />

@@ -1097,6 +1097,8 @@ export default {
     acquisition: "Anskaffelsesarbeidsflyt",
     exhibition: "Utstillingsarbeidsflyt",
     conservation: "Konserveringsarbeidsflyt",
+    accessionReviewerRoles:
+      "Ansatte med rollen Administrator, Collection Manager eller Curator kan alltid sende aksesjoner til godkjenning og godkjenne hvert trinn, uansett hva som er valgt her.",
   },
   users: {
     title: "Brukeradministrasjon",
@@ -7646,6 +7648,7 @@ export default {
         describeObject: "Beskriv objektet",
         describeObjectBeforeSubmit:
           "Beskriv objektet denne aksesjonen registrerer, og send den deretter til godkjenning.",
+        editObject: "Rediger objektet",
         history: "Historikk",
         draftObjectAwaitingReview: "Objektutkast venter på gjennomgang.",
         reviewSummary:

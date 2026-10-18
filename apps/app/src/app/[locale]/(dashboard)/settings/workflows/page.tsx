@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowDown, ArrowUp, Edit, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Edit, Info, Plus, Trash2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -274,20 +274,39 @@ function WorkflowStepsEditor({
   );
 }
 
+/**
+ * Administrators, Collection Managers and Curators start and approve
+ * accessions at every step whatever this workflow names (canInitiateWorkflow,
+ * canApproveAtStep), so its settings say so.
+ */
+function AccessionReviewerRolesNote({ t }: { t: WorkflowsT }) {
+  return (
+    <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+      <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+      {t("accessionReviewerRoles")}
+    </p>
+  );
+}
+
 function WorkflowInitiatorRolesEditor({
   canInitiateRoles,
   onToggleRole,
   roles,
   t,
+  workflowType,
 }: {
   canInitiateRoles: Id<"roles">[];
   onToggleRole: (roleId: Id<"roles">) => void;
   roles: RoleOption[] | undefined;
   t: WorkflowsT;
+  workflowType: WorkflowType | null;
 }) {
   return (
     <div className="space-y-3 pt-2">
       <Label className="text-foreground">{t("canInitiateWorkflow")}</Label>
+      {workflowType === "accession" ? (
+        <AccessionReviewerRolesNote t={t} />
+      ) : null}
       <div className="rounded-lg border border-border bg-muted/30 p-4">
         <div className="grid grid-cols-2 gap-3">
           {roles?.map((role) => (
@@ -328,6 +347,7 @@ function WorkflowEditDialog({
   t,
   title,
   tPlaceholders,
+  workflowType,
 }: {
   formData: WorkflowFormData;
   isOpen: boolean;
@@ -348,6 +368,7 @@ function WorkflowEditDialog({
   t: WorkflowsT;
   title: string;
   tPlaceholders: PlaceholdersT;
+  workflowType: WorkflowType | null;
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -378,6 +399,7 @@ function WorkflowEditDialog({
             onToggleRole={onToggleInitiatorRole}
             roles={roles}
             t={t}
+            workflowType={workflowType}
           />
 
           <DialogFooter>
@@ -597,6 +619,7 @@ export default function WorkflowsSettingsPage() {
         t={t}
         title={getWorkflowTitle(editingWorkflow)}
         tPlaceholders={tPlaceholders}
+        workflowType={editingWorkflow}
       />
     </div>
   );
@@ -679,6 +702,7 @@ function WorkflowCard({
           initiatorCount={initiatorCount}
           t={t}
         />
+        {type === "accession" ? <AccessionReviewerRolesNote t={t} /> : null}
       </div>
     </div>
   );

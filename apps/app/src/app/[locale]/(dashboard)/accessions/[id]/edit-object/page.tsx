@@ -36,16 +36,14 @@ export default function EditAccessionObjectPage() {
     );
   }
 
-  // A pending accession recorded without an object, as on the accession form
-  // or by import, has its object described here. One begun from an entry
-  // already has its object, so its draft opens the accession form.
-  const canDescribeObject =
-    accession.status === "pending" && !accession.collectionId;
+  const isDraft =
+    accession.status === "pending" && accession.workflowStep === 0;
+  // A draft recorded without an object, as on the accession form or by
+  // import, has its object described here. One begun from an entry already
+  // has its object, so its draft opens the accession form.
+  const canDescribeObject = isDraft && !accession.collectionId;
   const shouldEditAccessionFirst =
-    accession.status === "pending" &&
-    accession.workflowStep === 0 &&
-    !accession.draftObjectData &&
-    !canDescribeObject;
+    isDraft && !accession.draftObjectData && !canDescribeObject;
 
   if (shouldEditAccessionFirst) {
     redirect(`/accessions/${accessionId}/edit`);

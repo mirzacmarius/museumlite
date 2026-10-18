@@ -244,12 +244,15 @@ test("draft save does not require workflow initiation permission", async () => {
 
 test("accession approval still requires the configured step role for non-admin users", async () => {
   const t = createConvexTest();
-  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
-    "collections.create",
-    "collections.read",
-    "collections.update",
-    "collections.approve_accession",
-  ]);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
 
   const approverRoleId = await t.run(async (ctx) => {
     return await ctx.db.insert("roles", {
@@ -264,7 +267,8 @@ test("accession approval still requires the configured step role for non-admin u
       organizationId,
       workflowType: "accession",
       steps: [{ stepNumber: 1, roleId: approverRoleId, name: "Approval Step" }],
-      canInitiateRoles: [approverRoleId],
+      // The submitter may start review but is not the step's role.
+      canInitiateRoles: [approverRoleId, roleId],
     });
   });
 

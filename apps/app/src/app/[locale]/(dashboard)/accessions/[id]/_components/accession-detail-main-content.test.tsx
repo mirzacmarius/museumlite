@@ -39,6 +39,8 @@ const caseDraft = {
   method: "bequest",
   status: "pending",
   workflowStep: 0,
+  startedInObjectForm: false,
+  canCurrentUserSubmit: true,
 } as unknown as AccessionDetailRecord;
 
 function renderDraft(
@@ -52,7 +54,7 @@ function renderDraft(
     isDraft: true,
     configuredWorkflowSteps: [],
     workflowSummary: "",
-    canEditObjectDraft: false,
+    canEditObjectDraft: accession.draftObjectData !== undefined,
     draftEditHref: `/accessions/${accession._id}/edit`,
     draftActionError: null,
     isSubmittingDraft: false,
@@ -86,6 +88,48 @@ test("a draft begun from an entry already has its object and is only submitted",
   } as unknown as AccessionDetailRecord);
 
   expect(screen.queryByRole("link", { name: "Describe object" })).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Submit for approval" }),
+  ).toBeTruthy();
+});
+
+test("staff who may not start review, such as a Cataloger, are not offered Submit for approval", async () => {
+  await renderDraft({
+    ...caseDraft,
+    canCurrentUserSubmit: false,
+  } as unknown as AccessionDetailRecord);
+
+  expect(screen.getByText("Not submitted for approval yet")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Describe object" })).toBeTruthy();
+  expect(
+    screen.queryByRole("button", { name: "Submit for approval" }),
+  ).toBeNull();
+});
+
+/** The same draft once a Cataloger has described its object. */
+const describedCaseDraft = {
+  ...caseDraft,
+  draftObjectData: { title: "Self-portrait", creator: "Anna Berg" },
+  canCurrentUserSubmit: false,
+} as unknown as AccessionDetailRecord;
+
+test("a described draft keeps its object button but offers a Cataloger no Submit for approval", async () => {
+  await renderDraft(describedCaseDraft);
+
+  expect(
+    screen.getByRole("link", { name: "Edit object" }).getAttribute("href"),
+  ).toBe("/accessions/acc-20/edit-object");
+  expect(
+    screen.queryByRole("button", { name: "Submit for approval" }),
+  ).toBeNull();
+});
+
+test("a described draft can be submitted by staff who may start review", async () => {
+  await renderDraft({
+    ...describedCaseDraft,
+    canCurrentUserSubmit: true,
+  } as unknown as AccessionDetailRecord);
+
   expect(
     screen.getByRole("button", { name: "Submit for approval" }),
   ).toBeTruthy();
