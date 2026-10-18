@@ -85,7 +85,7 @@ export function MoveRequestDetailPageClient() {
             targetOrganizationId={request.targetOrganizationId}
             submittingAction={isSubmitting}
             availableActions={{
-              sourceReview: permissions.canSourceApproveOrReject,
+              sourceReview: permissions.canSourceApprove,
               targetReview: permissions.canTargetAcceptOrReject,
               cancel: permissions.canCancel,
             }}

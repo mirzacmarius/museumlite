@@ -10866,6 +10866,42 @@ export default {
         "Este número de accesión alternativo ya está en la lista.",
     },
   },
+  moveRequests: {
+    errors: {
+      requestClosed: "Esta solicitud de traslado ya se resolvió o se canceló.",
+      outsideHierarchy:
+        "La organización de destino está fuera de la jerarquía de tu organización y no permite solicitudes de transferencia entrantes.",
+      planRequired:
+        "Los traslados entre organizaciones de la misma jerarquía requieren el plan Pro o Enterprise.",
+    },
+    blockers: {
+      statusNotActive:
+        "Solo se pueden trasladar objetos activos a otra organización.",
+      sameOrganization:
+        "La organización de destino debe ser distinta de la organización actual.",
+      activeLoan: "Este objeto está prestado y no se puede trasladar.",
+      pendingLocationMove:
+        "Ya hay una solicitud de traslado de ubicación pendiente para este objeto.",
+      pendingOrganizationMove:
+        "Ya hay una solicitud pendiente para trasladar este objeto a otra organización.",
+      temporaryCustody:
+        "Este objeto está en custodia temporal por una entrada y no forma parte de la colección.",
+      hasParentObject:
+        "Los objetos vinculados a un objeto principal deben desvincularse antes de poder trasladarse.",
+      hasChildObjects:
+        "Los objetos con objetos secundarios deben desvincularse antes de poder trasladarse.",
+      activeTransit:
+        "Este objeto forma parte de un registro de transporte activo y no se puede trasladar.",
+      activeExhibition:
+        "Este objeto forma parte de una exposición activa y no se puede trasladar.",
+      hasDeaccessions:
+        "Los objetos con una baja registrada no se pueden trasladar a otra organización.",
+      insuranceCoverage:
+        "Este objeto tiene una cobertura de seguro que debe resolverse antes de poder trasladarlo.",
+      insuranceClaim:
+        "Este objeto figura en una reclamación de seguro y no se puede trasladar.",
+    },
+  },
   workflowApprovals: {
     errors: {
       workflowNotConfigured:

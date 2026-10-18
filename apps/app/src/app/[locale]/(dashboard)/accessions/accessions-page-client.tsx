@@ -10,7 +10,7 @@ import {
   ExportButtonWithFormat,
   type ExportFormat,
 } from "@/components/export-button-with-format";
-import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import { PermissionGate } from "@/components/permission-gate";
 import { useListState } from "@/hooks/use-list-state";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { useI18n, useScopedI18n } from "@/locales/client";
@@ -22,6 +22,7 @@ import {
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsStats } from "./accessions-stats";
 import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
+import { usePendingTransferCount } from "./use-pending-transfer-count";
 
 type AccessionsPageClientProps = {
   organizationId: Id<"organizations">;
@@ -36,13 +37,7 @@ export function AccessionsPageClient({
   const { searchInput: searchQuery, setSearchInput: setSearchQuery } = list;
   const returnPath = useListReturnPath(ACCESSION_LIST_KEYS);
   const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
-  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
-  const canReviewTransfers =
-    !permissionsLoading && hasPermission("organization.manage_settings");
-  const transferRequests = useQuery(
-    api.objectMoves.listForOrganization,
-    canReviewTransfers ? { organizationId } : "skip",
-  );
+  const pendingTransfers = usePendingTransferCount(organizationId);
 
   const exportAccessionsWithFormat = useMutation(
     api.imports.exportAccessionsWithFormat,
@@ -53,9 +48,6 @@ export function AccessionsPageClient({
   }
 
   const { pending, approved, rejected, withdrawn } = counts;
-  const pendingTransfers =
-    transferRequests?.filter((request) => request.status === "pending")
-      .length ?? "-";
 
   const handleExport = async (format: ExportFormat) => {
     // Accessions don't support Dublin Core

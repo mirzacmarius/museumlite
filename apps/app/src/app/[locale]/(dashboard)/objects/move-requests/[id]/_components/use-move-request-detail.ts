@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
+import { useObjectMoveErrorMessage } from "@/hooks/use-object-move-error-message";
 import { useI18n } from "@/locales/client";
 
 export type MoveRequestDetail = NonNullable<
@@ -24,6 +25,7 @@ export type MoveRequestSubmitAction =
 
 export function useMoveRequestDetail() {
   const tRoot = useI18n();
+  const errorMessage = useObjectMoveErrorMessage();
   const params = useParams();
   const { currentOrganizationId } = useOrganization();
   const { hasPermission } = usePermissions();
@@ -50,7 +52,7 @@ export function useMoveRequestDetail() {
   const permissions = useMemo(() => {
     if (!request || !currentUser) {
       return {
-        canSourceApproveOrReject: false,
+        canSourceApprove: false,
         canTargetAcceptOrReject: false,
         canCancel: false,
       };
@@ -65,7 +67,7 @@ export function useMoveRequestDetail() {
       hasPermission("organization.manage_settings");
 
     return {
-      canSourceApproveOrReject:
+      canSourceApprove:
         request.status === "pending_source_approval" && isSourceAdmin,
       canTargetAcceptOrReject:
         request.status === "awaiting_acceptance" && isTargetAdmin,
@@ -104,8 +106,13 @@ export function useMoveRequestDetail() {
       });
       setReviewNotes("");
       toast.success(tRoot("untranslatedRecords.objects.transfer.moveApproved"));
-    } catch {
-      toast.error(tRoot("untranslatedRecords.objects.transfer.failedApprove"));
+    } catch (error) {
+      toast.error(
+        errorMessage(
+          error,
+          tRoot("untranslatedRecords.objects.transfer.failedApprove"),
+        ),
+      );
     } finally {
       setIsSubmitting(null);
     }
@@ -128,8 +135,13 @@ export function useMoveRequestDetail() {
       });
       setReviewNotes("");
       toast.success(tRoot("untranslatedRecords.objects.transfer.moveAccepted"));
-    } catch {
-      toast.error(tRoot("untranslatedRecords.objects.transfer.failedAccept"));
+    } catch (error) {
+      toast.error(
+        errorMessage(
+          error,
+          tRoot("untranslatedRecords.objects.transfer.failedAccept"),
+        ),
+      );
     } finally {
       setIsSubmitting(null);
     }
@@ -151,8 +163,13 @@ export function useMoveRequestDetail() {
       });
       setReviewNotes("");
       toast.success(tRoot("untranslatedRecords.objects.transfer.moveRejected"));
-    } catch {
-      toast.error(tRoot("untranslatedRecords.objects.transfer.failedReject"));
+    } catch (error) {
+      toast.error(
+        errorMessage(
+          error,
+          tRoot("untranslatedRecords.objects.transfer.failedReject"),
+        ),
+      );
     } finally {
       setIsSubmitting(null);
     }
@@ -165,8 +182,13 @@ export function useMoveRequestDetail() {
       toast.success(
         tRoot("untranslatedRecords.objects.transfer.moveCancelled"),
       );
-    } catch {
-      toast.error(tRoot("untranslatedRecords.objects.transfer.failedCancel"));
+    } catch (error) {
+      toast.error(
+        errorMessage(
+          error,
+          tRoot("untranslatedRecords.objects.transfer.failedCancel"),
+        ),
+      );
     } finally {
       setIsSubmitting(null);
     }

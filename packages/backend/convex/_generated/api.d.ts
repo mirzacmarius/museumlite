@@ -266,6 +266,7 @@ import type * as utils_objectDraftTypeDetails from "../utils/objectDraftTypeDeta
 import type * as utils_objectEntryErrors from "../utils/objectEntryErrors.js";
 import type * as utils_objectEntryLifecycle from "../utils/objectEntryLifecycle.js";
 import type * as utils_objectEntryValidators from "../utils/objectEntryValidators.js";
+import type * as utils_objectMoveErrors from "../utils/objectMoveErrors.js";
 import type * as utils_objectSearch from "../utils/objectSearch.js";
 import type * as utils_objectTypeDetails from "../utils/objectTypeDetails.js";
 import type * as utils_onboardingCollectionSuggestions from "../utils/onboardingCollectionSuggestions.js";
@@ -608,6 +609,7 @@ declare const fullApi: ApiFromModules<{
   "utils/objectEntryErrors": typeof utils_objectEntryErrors;
   "utils/objectEntryLifecycle": typeof utils_objectEntryLifecycle;
   "utils/objectEntryValidators": typeof utils_objectEntryValidators;
+  "utils/objectMoveErrors": typeof utils_objectMoveErrors;
   "utils/objectSearch": typeof utils_objectSearch;
   "utils/objectTypeDetails": typeof utils_objectTypeDetails;
   "utils/onboardingCollectionSuggestions": typeof utils_onboardingCollectionSuggestions;

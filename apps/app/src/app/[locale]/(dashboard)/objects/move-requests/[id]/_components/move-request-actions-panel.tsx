@@ -152,35 +152,24 @@ function MoveRequestActionsPanelProvider({
   );
 }
 
+/**
+ * Before approval, the requester and source administrators both stop a
+ * request with Cancel; Reject is only the receiving organization's decline.
+ */
 function MoveRequestActionsPanelSourceActions() {
   const tRoot = useI18n();
-  const { submittingAction, availableActions, onApprove, onReject } =
+  const { submittingAction, availableActions, onApprove } =
     useMoveRequestActionsPanel();
-  const { sourceReview, targetReview } = availableActions;
 
-  if (!sourceReview && !targetReview) return null;
+  if (!availableActions.sourceReview) return null;
 
   return (
-    <>
-      {sourceReview && (
-        <Button onClick={onApprove} disabled={submittingAction !== null}>
-          {submittingAction === "approve" && (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          )}
-          {tRoot("untranslatedRecords.objects.move.approve")}
-        </Button>
+    <Button onClick={onApprove} disabled={submittingAction !== null}>
+      {submittingAction === "approve" && (
+        <Loader2 className="mr-2 size-4 animate-spin" />
       )}
-      <Button
-        variant="destructive"
-        onClick={onReject}
-        disabled={submittingAction !== null}
-      >
-        {submittingAction === "reject" && (
-          <Loader2 className="mr-2 size-4 animate-spin" />
-        )}
-        {tRoot("untranslatedRecords.objects.move.reject")}
-      </Button>
-    </>
+      {tRoot("untranslatedRecords.objects.move.approve")}
+    </Button>
   );
 }
 
@@ -190,6 +179,7 @@ function MoveRequestActionsPanelTargetActions() {
     submittingAction,
     availableActions,
     onAccept,
+    onReject,
     targetLocationId,
     onTargetLocationChange,
     targetOrganizationId,
@@ -222,6 +212,16 @@ function MoveRequestActionsPanelTargetActions() {
         )}
         {tRoot("untranslatedRecords.objects.move.accept")}
       </Button>
+      <Button
+        variant="destructive"
+        onClick={onReject}
+        disabled={submittingAction !== null}
+      >
+        {submittingAction === "reject" && (
+          <Loader2 className="mr-2 size-4 animate-spin" />
+        )}
+        {tRoot("untranslatedRecords.objects.move.reject")}
+      </Button>
     </>
   );
 }
@@ -236,7 +236,7 @@ function MoveRequestActionsPanelCancelAction() {
 
   return (
     <Button
-      variant="outline"
+      variant="destructive"
       onClick={onCancel}
       disabled={submittingAction !== null}
     >

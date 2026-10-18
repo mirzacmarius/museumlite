@@ -10608,6 +10608,43 @@ export default {
         "This alternate accession number is already listed.",
     },
   },
+  moveRequests: {
+    errors: {
+      requestClosed:
+        "This transfer request has already been decided or cancelled.",
+      outsideHierarchy:
+        "The destination organization is outside your organization's hierarchy and does not allow incoming transfer requests.",
+      planRequired:
+        "Transfers between organizations in the same hierarchy need the Pro or Enterprise plan.",
+    },
+    blockers: {
+      statusNotActive:
+        "Only active objects can be moved to another organization.",
+      sameOrganization:
+        "The destination organization must be different from the current organization.",
+      activeLoan: "This object is currently on loan and cannot be moved.",
+      pendingLocationMove:
+        "This object already has a pending location move request.",
+      pendingOrganizationMove:
+        "This object already has a pending organization move request.",
+      temporaryCustody:
+        "This object is held under a temporary entry and is not part of the collection.",
+      hasParentObject:
+        "Objects linked to a parent object must be unlinked before they can be moved.",
+      hasChildObjects:
+        "Objects with child objects must be unlinked before they can be moved.",
+      activeTransit:
+        "This object is part of an active transit record and cannot be moved.",
+      activeExhibition:
+        "This object is part of an active exhibition and cannot be moved.",
+      hasDeaccessions:
+        "Objects with deaccession records cannot be moved to another organization.",
+      insuranceCoverage:
+        "This object has insurance coverage that must be resolved before it can be moved.",
+      insuranceClaim:
+        "This object is referenced by an insurance claim and cannot be moved.",
+    },
+  },
   workflowApprovals: {
     errors: {
       workflowNotConfigured:

@@ -10842,6 +10842,44 @@ export default {
         "Acest număr de accesiune alternativ este deja în listă.",
     },
   },
+  moveRequests: {
+    errors: {
+      requestClosed:
+        "Această solicitare de transfer a fost deja soluționată sau anulată.",
+      outsideHierarchy:
+        "Organizația de destinație este în afara ierarhiei organizației tale și nu permite solicitări de transfer primite.",
+      planRequired:
+        "Transferurile între organizații din aceeași ierarhie necesită planul Pro sau Enterprise.",
+    },
+    blockers: {
+      statusNotActive:
+        "Doar obiectele active pot fi transferate către o altă organizație.",
+      sameOrganization:
+        "Organizația de destinație trebuie să fie diferită de organizația curentă.",
+      activeLoan:
+        "Acest obiect este împrumutat în prezent și nu poate fi transferat.",
+      pendingLocationMove:
+        "Obiectul are deja o solicitare în așteptare de mutare într-o altă locație.",
+      pendingOrganizationMove:
+        "Există deja o solicitare în așteptare pentru transferul obiectului către o altă organizație.",
+      temporaryCustody:
+        "Acest obiect se află în custodie temporară printr-o intrare și nu face parte din colecție.",
+      hasParentObject:
+        "Obiectele legate de un obiect părinte trebuie dezlegate înainte de a putea fi transferate.",
+      hasChildObjects:
+        "Obiectele cu obiecte copil trebuie dezlegate înainte de a putea fi transferate.",
+      activeTransit:
+        "Acest obiect face parte dintr-un transport în desfășurare și nu poate fi transferat.",
+      activeExhibition:
+        "Acest obiect face parte dintr-o expoziție activă și nu poate fi transferat.",
+      hasDeaccessions:
+        "Obiectele cu o scoatere din colecție înregistrată nu pot fi transferate către o altă organizație.",
+      insuranceCoverage:
+        "Acest obiect are o acoperire de asigurare care trebuie rezolvată înainte de a putea fi transferat.",
+      insuranceClaim:
+        "Acest obiect apare într-un dosar de daună și nu poate fi transferat.",
+    },
+  },
   workflowApprovals: {
     errors: {
       workflowNotConfigured:

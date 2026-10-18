@@ -10729,6 +10729,43 @@ export default {
         "Dette alternative aksesjonsnummeret står allerede i listen.",
     },
   },
+  moveRequests: {
+    errors: {
+      requestClosed:
+        "Denne overføringsforespørselen er allerede avgjort eller avbrutt.",
+      outsideHierarchy:
+        "Mottakerorganisasjonen er utenfor organisasjonens hierarki og tillater ikke innkommende overføringsforespørsler.",
+      planRequired:
+        "Overføringer mellom organisasjoner i samme hierarki krever Pro- eller Enterprise-abonnementet.",
+    },
+    blockers: {
+      statusNotActive:
+        "Bare aktive objekter kan flyttes til en annen organisasjon.",
+      sameOrganization:
+        "Mottakerorganisasjonen må være en annen enn den nåværende organisasjonen.",
+      activeLoan: "Dette objektet er utlånt og kan ikke flyttes.",
+      pendingLocationMove:
+        "Objektet har allerede en ventende forespørsel om flytting til en annen plassering.",
+      pendingOrganizationMove:
+        "Det finnes allerede en ventende forespørsel om å flytte objektet til en annen organisasjon.",
+      temporaryCustody:
+        "Dette objektet er i midlertidig forvaring under en innlevering og er ikke en del av samlingen.",
+      hasParentObject:
+        "Objekter som er knyttet til et overordnet objekt, må kobles fra før de kan flyttes.",
+      hasChildObjects:
+        "Objekter med underordnede objekter må kobles fra før de kan flyttes.",
+      activeTransit:
+        "Dette objektet er med i en pågående transport og kan ikke flyttes.",
+      activeExhibition:
+        "Dette objektet er med i en aktiv utstilling og kan ikke flyttes.",
+      hasDeaccessions:
+        "Objekter med registrert deaksesjon kan ikke flyttes til en annen organisasjon.",
+      insuranceCoverage:
+        "Dette objektet har forsikringsdekning som må avklares før det kan flyttes.",
+      insuranceClaim:
+        "Dette objektet er nevnt i et forsikringskrav og kan ikke flyttes.",
+    },
+  },
   workflowApprovals: {
     errors: {
       workflowNotConfigured:
