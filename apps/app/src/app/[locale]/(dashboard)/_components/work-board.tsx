@@ -3,74 +3,77 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { caseHref } from "@v1/backend/convex/utils/caseTypes";
+import {
+  MAX_COLUMN_CARDS,
+  WORK_COLUMN_PAGE,
+} from "@v1/backend/convex/utils/workBoardColumns";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
-import { usePaginatedQuery, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   AlertCircle,
+  ArrowRightLeft,
   Briefcase,
   ChevronDown,
   ClipboardCheck,
   ListTodo,
   type LucideIcon,
   ScrollText,
+  Stethoscope,
 } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { CaseTaskTile } from "@/components/case-tasks/case-task-card";
 import { ClientDate } from "@/components/client-date";
-import { usePermissions } from "@/components/permission-gate";
 import { useHistoricalDateFormat } from "@/components/provenance/use-historical-date-format";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { MyWorkBoardSkeleton } from "../dashboard-page-skeleton";
 import {
   APPROVAL_TYPES,
   type ApprovalType,
   PendingApprovalCard,
-  useMyAssignments,
+  pendingApprovalsHref,
 } from "./my-assignments-sections";
 import { CARD_CLASS_NAME } from "./my-work-sections";
-import { usePendingConditionApprovalColumn } from "./pending-condition-approvals";
-import { usePendingTransfersColumn } from "./pending-transfers-column";
+import {
+  PENDING_CONDITION_APPROVALS_HREF,
+  PendingConditionCards,
+} from "./pending-condition-approvals";
+import {
+  PendingTransferCards,
+  TRANSFERS_HREF,
+} from "./pending-transfers-column";
 
 export const MY_WORK_HREF = "/assignments";
-const PAGE_SIZE = 20;
 const CARD_LIST_CLASS_NAME = "flex flex-col gap-2";
 
-type ProvenanceClaim = FunctionReturnType<
-  typeof api.provenance.reviewQueue
->["page"][number];
+type Board = FunctionReturnType<typeof api.workBoard.get>;
+type ColumnKey = Board[number]["key"];
+type ProvenanceClaim = Extract<
+  Board[number],
+  { key: "provenance" }
+>["cards"][number];
 
 export interface WorkSummaryEntry
   extends Pick<
     WorkColumn,
-    "key" | "icon" | "accentClassName" | "title" | "count" | "hasMore"
+    "icon" | "accentClassName" | "title" | "count" | "hasMore"
   > {
+  key: string;
   href: string;
 }
 
 export interface WorkColumn {
-  key: string;
+  key: ColumnKey;
   icon: LucideIcon;
   accentClassName: string;
   title: string;
-  loading: boolean;
+  /** The cards loaded, which reads as `count+` while more are waiting. */
   count: number;
   hasMore: boolean;
   renderCards: () => ReactNode;
   summaryEntries: readonly WorkSummaryEntry[];
-}
-
-function withMyWorkSummary(
-  column: Omit<WorkColumn, "summaryEntries">,
-): WorkColumn {
-  const { key, icon, accentClassName, title, count, hasMore } = column;
-  return {
-    ...column,
-    summaryEntries: [
-      { key, icon, accentClassName, title, count, hasMore, href: MY_WORK_HREF },
-    ],
-  };
 }
 
 function ColumnHeader({
@@ -95,36 +98,22 @@ function ColumnHeader({
       >
         {column.title}
       </span>
-      {column.loading ? null : (
-        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-          {column.count}
-          {column.hasMore ? "+" : ""}
-        </span>
-      )}
+      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+        {column.count}
+        {column.hasMore ? "+" : ""}
+      </span>
     </>
   );
 }
 
-function BoardColumn({
-  column,
-  loadingLabel,
-}: {
-  column: WorkColumn;
-  loadingLabel: string;
-}) {
+function BoardColumn({ column }: { column: WorkColumn }) {
   return (
     <section className="flex min-w-52 max-w-72 flex-1 basis-0 flex-col rounded-lg bg-muted/30">
       <h2 className="flex items-center gap-2 px-3 py-2.5">
         <ColumnHeader column={column} />
       </h2>
       <div className="max-h-96 overflow-y-auto px-2 pb-2 custom-scrollbar">
-        {column.loading ? (
-          <p className="px-1 py-6 text-center text-xs text-muted-foreground">
-            {loadingLabel}
-          </p>
-        ) : (
-          column.renderCards()
-        )}
+        {column.renderCards()}
       </div>
     </section>
   );
@@ -160,13 +149,7 @@ function EmptyColumns({
   );
 }
 
-function ProvenanceClaimCard({
-  claim,
-  disputed,
-}: {
-  claim: ProvenanceClaim;
-  disputed: boolean;
-}) {
+function ProvenanceClaimCard({ claim }: { claim: ProvenanceClaim }) {
   const t = useScopedI18n("provenance");
   const dates = useHistoricalDateFormat();
   return (
@@ -182,12 +165,12 @@ function ProvenanceClaimCard({
           <span
             className={cn(
               "shrink-0 rounded border px-1 py-px text-[10px] font-medium",
-              disputed
+              claim.disputed
                 ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
                 : "border-border bg-muted text-muted-foreground",
             )}
           >
-            {disputed
+            {claim.disputed
               ? t("queue.statuses.disputed")
               : t(`confidence.${claim.confidence}`)}
           </span>
@@ -221,199 +204,224 @@ function LoadMoreButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** Each queue of work waiting on the viewer, with its count and cards. */
+/**
+ * The viewer's Work board with as many cards per column as they loaded. While
+ * a larger page loads, the board they already see stays on screen.
+ */
+function useWorkBoard(organizationId: Id<"organizations">) {
+  const [now] = useState(() => Date.now());
+  const [limits, setLimits] = useState<{
+    organizationId: Id<"organizations">;
+    byColumn: Partial<Record<ColumnKey, number>>;
+  }>({ organizationId, byColumn: {} });
+  const byColumn =
+    limits.organizationId === organizationId ? limits.byColumn : {};
+  const board = useQuery(api.workBoard.get, {
+    organizationId,
+    now,
+    limits: byColumn,
+  });
+  const [shown, setShown] = useState<{
+    organizationId: Id<"organizations">;
+    board: Board;
+  }>();
+  if (board !== undefined && board !== shown?.board) {
+    setShown({ organizationId, board });
+  }
+
+  const limitOf = (key: ColumnKey) => byColumn[key] ?? WORK_COLUMN_PAGE;
+  return {
+    board:
+      board ??
+      (shown?.organizationId === organizationId ? shown.board : undefined),
+    now,
+    /** Whether the column is full at its limit and the board shows more. */
+    canLoadMore: (key: ColumnKey, cards: number, hasMore: boolean) =>
+      hasMore && cards >= limitOf(key) && limitOf(key) < MAX_COLUMN_CARDS,
+    loadMore: (key: ColumnKey) =>
+      setLimits({
+        organizationId,
+        byColumn: { ...byColumn, [key]: limitOf(key) + WORK_COLUMN_PAGE },
+      }),
+  };
+}
+
+/**
+ * Each column of work waiting on the viewer, with its count and cards, in
+ * board order; undefined while the board loads.
+ */
 export function useMyWorkColumns(
   organizationId: Id<"organizations">,
-): WorkColumn[] {
+): WorkColumn[] | undefined {
   const t = useScopedI18n("caseTasks");
   const tRoot = useI18n();
   const locale = useCurrentLocale();
-  const [now] = useState(() => Date.now());
-  const tasks = usePaginatedQuery(
-    api.caseTasks.listMyWork,
-    { organizationId },
-    { initialNumItems: PAGE_SIZE },
-  );
-  const reviews = usePaginatedQuery(
-    api.caseTasks.listReviewQueue,
-    { organizationId },
-    { initialNumItems: PAGE_SIZE },
-  );
-  const assignments = useMyAssignments(organizationId);
-  const assigned = useQuery(api.caseTasks.listMyAssignedCases, {
-    organizationId,
-  });
-  const conditionApprovals = usePendingConditionApprovalColumn(organizationId);
-  const { hasPermission } = usePermissions();
-  const canReviewProvenance = hasPermission("collections.review_provenance");
-  const unreviewedClaims = usePaginatedQuery(
-    api.provenance.reviewQueue,
-    canReviewProvenance ? { organizationId, status: "unreviewed" } : "skip",
-    { initialNumItems: PAGE_SIZE },
-  );
-  const disputedClaims = usePaginatedQuery(
-    api.provenance.reviewQueue,
-    canReviewProvenance ? { organizationId, status: "disputed" } : "skip",
-    { initialNumItems: PAGE_SIZE },
-  );
-  const claimQueues = [
-    { disputed: false, queue: unreviewedClaims },
-    { disputed: true, queue: disputedClaims },
-  ];
-  const transfersColumn = usePendingTransfersColumn(organizationId);
+  const { board, now, canLoadMore, loadMore } = useWorkBoard(organizationId);
+  if (!board) return undefined;
 
-  const taskColumn = (
-    key: string,
-    icon: LucideIcon,
-    accentClassName: string,
-    title: string,
-    queue: typeof tasks | typeof reviews,
-  ): WorkColumn =>
-    withMyWorkSummary({
-      key,
-      icon,
-      accentClassName,
-      title,
-      loading: queue.status === "LoadingFirstPage",
-      count: queue.results.length,
-      hasMore: queue.status === "CanLoadMore",
-      renderCards: () => (
-        <div className="space-y-2">
-          <ul className={CARD_LIST_CLASS_NAME}>
-            {queue.results.map((task) => (
-              <CaseTaskTile key={task._id} task={task} now={now} />
-            ))}
-          </ul>
-          {queue.status === "CanLoadMore" ? (
-            <LoadMoreButton onClick={() => queue.loadMore(PAGE_SIZE)} />
-          ) : null}
-        </div>
-      ),
-    });
+  const cardList = (key: ColumnKey, cards: ReactNode[], hasMore: boolean) => (
+    <div className="space-y-2">
+      <ul className={CARD_LIST_CLASS_NAME}>{cards}</ul>
+      {canLoadMore(key, cards.length, hasMore) ? (
+        <LoadMoreButton onClick={() => loadMore(key)} />
+      ) : null}
+    </div>
+  );
 
-  return [
-    taskColumn("tasks", ListTodo, "text-blue-400", t("myWork.myTasks"), tasks),
+  const present = (column: Board[number]): WorkColumn => {
+    /** A column whose one Overview card opens `href`. */
+    const single = (
+      style: Pick<WorkColumn, "icon" | "accentClassName" | "title">,
+      renderCards: () => ReactNode,
+      href = MY_WORK_HREF,
+    ): WorkColumn => {
+      const counted = {
+        key: column.key,
+        count: column.cards.length,
+        hasMore: column.hasMore,
+        ...style,
+      };
+      return {
+        ...counted,
+        renderCards,
+        summaryEntries: [{ ...counted, href }],
+      };
+    };
 
-    {
-      key: "approvals",
-      icon: AlertCircle,
-      accentClassName: "text-amber-400",
-      title: tRoot("assignmentsPage.sections.pendingApproval"),
-      loading: assignments === undefined,
-      count: assignments?.stats.totalPendingApprovals ?? 0,
-      hasMore: false,
-      renderCards: () => (
-        <ul className={CARD_LIST_CLASS_NAME}>
-          {assignments?.pendingApprovals.map((item) => (
-            <PendingApprovalCard key={item._id} item={item} />
-          ))}
-        </ul>
-      ),
-      summaryEntries: (Object.keys(APPROVAL_TYPES) as ApprovalType[]).map(
-        (type) => ({
-          key: type,
-          icon: APPROVAL_TYPES[type].icon,
-          accentClassName: APPROVAL_TYPES[type].accentClassName,
-          title: t(`myWork.pendingApproval.${type}`),
-          count: assignments?.stats.pendingApprovalsByType[type] ?? 0,
-          hasMore: false,
-          href: APPROVAL_TYPES[type].pendingHref(now),
-        }),
-      ),
-    },
-    ...(conditionApprovals ? [conditionApprovals] : []),
-    ...(transfersColumn ? [transfersColumn] : []),
-    taskColumn(
-      "reviews",
-      ClipboardCheck,
-      "text-amber-400",
-      t("myWork.reviews"),
-      reviews,
-    ),
-    withMyWorkSummary({
-      key: "assigned",
-      icon: Briefcase,
-      accentClassName: "text-emerald-400",
-      title: t("myWork.assignedCases"),
-      loading: assigned === undefined,
-      count: assigned?.cases.length ?? 0,
-      hasMore: assigned?.truncated ?? false,
-      renderCards: () => (
-        <div className="space-y-2">
-          <ul className={CARD_LIST_CLASS_NAME}>
-            {assigned?.cases.map((row) => (
-              <li key={`${row.caseType}:${row.caseId}`}>
-                <Link
-                  href={caseHref(row.caseType, row.caseId)}
-                  className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
-                >
-                  <span className="w-full truncate text-sm font-medium text-foreground">
-                    {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {t("myWork.since")}{" "}
-                    <ClientDate timestamp={row.since} locale={locale} />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {assigned?.truncated ? (
-            <p className="px-1 text-xs text-muted-foreground">
-              {t("myWork.assignedTruncated")}
-            </p>
-          ) : null}
-        </div>
-      ),
-    }),
-    ...(canReviewProvenance
-      ? [
-          withMyWorkSummary({
-            key: "provenance",
+    switch (column.key) {
+      case "tasks":
+      case "reviews":
+        return single(
+          column.key === "tasks"
+            ? {
+                icon: ListTodo,
+                accentClassName: "text-blue-400",
+                title: t("myWork.myTasks"),
+              }
+            : {
+                icon: ClipboardCheck,
+                accentClassName: "text-amber-400",
+                title: t("myWork.reviews"),
+              },
+          () =>
+            cardList(
+              column.key,
+              column.cards.map((task) => (
+                <CaseTaskTile key={task._id} task={task} now={now} />
+              )),
+              column.hasMore,
+            ),
+        );
+      case "approvals":
+        return {
+          ...single(
+            {
+              icon: AlertCircle,
+              accentClassName: "text-amber-400",
+              title: tRoot("assignmentsPage.sections.pendingApproval"),
+            },
+            () =>
+              cardList(
+                column.key,
+                column.cards.map((item) => (
+                  <PendingApprovalCard key={item._id} item={item} />
+                )),
+                column.hasMore,
+              ),
+          ),
+          // One Overview card per kind, counting every approval waiting.
+          summaryEntries: (Object.keys(APPROVAL_TYPES) as ApprovalType[]).map(
+            (type) => ({
+              key: type,
+              icon: APPROVAL_TYPES[type].icon,
+              accentClassName: APPROVAL_TYPES[type].accentClassName,
+              title: t(`myWork.pendingApproval.${type}`),
+              count: column.byType[type],
+              hasMore: false,
+              href: pendingApprovalsHref(type, now),
+            }),
+          ),
+        };
+      case "conditionApprovals":
+        return single(
+          {
+            icon: Stethoscope,
+            accentClassName: "text-pink-400",
+            title: tRoot("conditionAssessments.pendingApprovalCard"),
+          },
+          () => (
+            <div className="space-y-2">
+              <PendingConditionCards assessments={column.cards} />
+              {canLoadMore(column.key, column.cards.length, column.hasMore) ? (
+                <LoadMoreButton onClick={() => loadMore(column.key)} />
+              ) : null}
+            </div>
+          ),
+          PENDING_CONDITION_APPROVALS_HREF,
+        );
+      case "transfers":
+        return single(
+          {
+            icon: ArrowRightLeft,
+            accentClassName: "text-sky-400",
+            title: t("myWork.pendingTransfers"),
+          },
+          () => (
+            <PendingTransferCards
+              transfers={column.cards}
+              hasMore={column.hasMore}
+            />
+          ),
+          TRANSFERS_HREF,
+        );
+      case "assigned":
+        return single(
+          {
+            icon: Briefcase,
+            accentClassName: "text-emerald-400",
+            title: t("myWork.assignedCases"),
+          },
+          () =>
+            cardList(
+              column.key,
+              column.cards.map((row) => (
+                <li key={`${row.caseType}:${row.caseId}`}>
+                  <Link
+                    href={caseHref(row.caseType, row.caseId)}
+                    className={cn(CARD_CLASS_NAME, "flex-col gap-0.5")}
+                  >
+                    <span className="w-full truncate text-sm font-medium text-foreground">
+                      {t(`caseTypes.${row.caseType}`)} {row.caseLabel}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t("myWork.since")}{" "}
+                      <ClientDate timestamp={row.since} locale={locale} />
+                    </span>
+                  </Link>
+                </li>
+              )),
+              column.hasMore,
+            ),
+        );
+      case "provenance":
+        return single(
+          {
             icon: ScrollText,
             accentClassName: "text-purple-400",
             title: tRoot("provenance.queue.title"),
-            loading: claimQueues.some(
-              ({ queue }) => queue.status === "LoadingFirstPage",
+          },
+          () =>
+            cardList(
+              column.key,
+              column.cards.map((claim) => (
+                <ProvenanceClaimCard key={claim.claimId} claim={claim} />
+              )),
+              column.hasMore,
             ),
-            count: claimQueues.reduce(
-              (total, { queue }) => total + queue.results.length,
-              0,
-            ),
-            hasMore: claimQueues.some(
-              ({ queue }) => queue.status === "CanLoadMore",
-            ),
-            renderCards: () => (
-              <div className="space-y-2">
-                <ul className={CARD_LIST_CLASS_NAME}>
-                  {claimQueues.flatMap(({ disputed, queue }) =>
-                    queue.results.map((claim) => (
-                      <ProvenanceClaimCard
-                        key={claim.claimId}
-                        claim={claim}
-                        disputed={disputed}
-                      />
-                    )),
-                  )}
-                </ul>
-                {claimQueues.some(
-                  ({ queue }) => queue.status === "CanLoadMore",
-                ) ? (
-                  <LoadMoreButton
-                    onClick={() => {
-                      for (const { queue } of claimQueues) {
-                        if (queue.status === "CanLoadMore")
-                          queue.loadMore(PAGE_SIZE);
-                      }
-                    }}
-                  />
-                ) : null}
-              </div>
-            ),
-          }),
-        ]
-      : []),
-  ];
+        );
+    }
+  };
+  return board.map(present);
 }
 
 /** Work waiting on the viewer as kanban columns; empty ones stack on the right. */
@@ -424,18 +432,14 @@ export function MyWorkBoard({
 }) {
   const t = useScopedI18n("caseTasks");
   const columns = useMyWorkColumns(organizationId);
-  const isEmpty = (column: WorkColumn) => !column.loading && column.count === 0;
-  const filled = columns.filter((column) => !isEmpty(column));
-  const empty = columns.filter(isEmpty);
+  if (!columns) return <MyWorkBoardSkeleton />;
+  const filled = columns.filter((column) => column.count > 0);
+  const empty = columns.filter((column) => column.count === 0);
 
   return (
     <div className="flex items-start gap-3 overflow-x-auto pb-1 custom-scrollbar">
       {filled.map((column) => (
-        <BoardColumn
-          key={column.key}
-          column={column}
-          loadingLabel={t("myWork.loading")}
-        />
+        <BoardColumn key={column.key} column={column} />
       ))}
       {empty.length > 0 ? (
         <EmptyColumns columns={empty} label={t("myWork.emptyColumns")} />

@@ -113,8 +113,6 @@ export const taskValidator = v.object({
   completedAt: v.optional(v.number()),
 });
 
-type Task = Infer<typeof taskValidator>;
-
 function requiredText(value: string, maxLength: number, field: string) {
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > maxLength)
@@ -412,7 +410,7 @@ export async function readTaskQueue(
   organizationId: Id<"organizations">,
   queue: "owned" | "review",
   limit: number,
-): Promise<ColumnPage<Task>> {
+): Promise<ColumnPage<Awaited<ReturnType<typeof presentTask>>>> {
   const [access, permissions] = await Promise.all([
     viewerAccess(ctx, organizationId),
     getUserPermissions(ctx, organizationId),

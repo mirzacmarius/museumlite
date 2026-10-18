@@ -1524,25 +1524,6 @@ export default {
     totalLocations: "Ubicaciones Totales",
     totalCollectionGroups: "Grupos de Colección",
   },
-  assignments: {
-    pendingApprovals: "Aprobaciones Pendientes",
-    noPendingAssignments: "No hay asignaciones pendientes",
-    allCaughtUpDescription:
-      "Estás al día. Vuelve más tarde para ver nuevos casos que esperan tu aprobación.",
-    typeLabels: {
-      accessions: "Accesiones",
-      loans: "Préstamos",
-      exhibitions: "Exposiciones",
-      conservation: "Conservación",
-
-      accession: "Accesión",
-      deaccession: "Desaccesión",
-      deaccessions: "Bajas",
-      loan: "Préstamo",
-      exhibition: "Exposición",
-    },
-    stepNumber: "Paso {step}",
-  },
   newArrivals: {
     title: "Nuevas Llegadas",
     noRecentAccessions: "No hay accesiones recientes",
@@ -4920,13 +4901,11 @@ export default {
       title: "Mi trabajo",
       description:
         "Tareas de las que es responsable, revisiones pendientes y casos abiertos asignados a usted.",
-      loading: "Cargando…",
       emptyColumns: "Columnas vacías",
       loadMore: "Cargar más",
       myTasks: "Mis tareas",
       reviews: "Pendientes de mi revisión",
       assignedCases: "Casos asignados a mí",
-      assignedTruncated: "Se muestran los primeros 50 casos asignados.",
       since: "Desde",
       nothingWaiting: "No tiene trabajo pendiente.",
       pendingTransfers: "Transferencias pendientes",

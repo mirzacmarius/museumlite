@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { approvalListHref, caseHref } from "@v1/backend/convex/utils/caseTypes";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
@@ -23,30 +24,27 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { ClientRelativeTime } from "@/components/client-date";
-import { useCurrentLocale, useI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { CARD_CLASS_NAME, WorkSection } from "./my-work-sections";
 import {
   OVERVIEW_CARD_GAP_PX,
   OVERVIEW_CARD_MIN_WIDTH_PX,
 } from "./overview-card";
 
-type MyAssignments = FunctionReturnType<
-  typeof api.assignments.listMyAssignments
->;
-type PendingApproval = MyAssignments["pendingApprovals"][number];
+type PendingApproval = Extract<
+  FunctionReturnType<typeof api.workBoard.get>[number],
+  { key: "approvals" }
+>["cards"][number];
 export type ApprovalType = PendingApproval["type"];
-type ObjectStatus = MyAssignments["myCatalogedItems"][number]["status"];
+type ObjectStatus = FunctionReturnType<
+  typeof api.assignments.listMyAssignments
+>["myCatalogedItems"][number]["status"];
 
-const ASSIGNMENTS_LIMIT = 50;
 const MAX_CATALOGED_CARDS = 10;
 const IMAGE_DELETIONS_HREF = "/image-deletions";
 
-interface ApprovalTypeConfig {
+interface ApprovalTypeStyle {
   icon: LucideIcon;
-  href: string;
-  pendingHref: (asOf: number) => string;
-  /** Where one pending item opens; its record page under `href` by default. */
-  itemHref?: (id: string) => string;
   accentClassName: string;
   className: string;
 }
@@ -54,49 +52,42 @@ interface ApprovalTypeConfig {
 export const APPROVAL_TYPES = {
   accession: {
     icon: FileCheck,
-    href: "/accessions",
-    pendingHref: () => "/accessions?status=pending",
     accentClassName: "text-primary",
     className: "border-primary/30 bg-primary/10 text-primary",
   },
   deaccession: {
     icon: FileX,
-    href: "/deaccessions",
-    pendingHref: () => "/deaccessions?status=pending",
     accentClassName: "text-rose-400",
     className: "border-rose-500/30 bg-rose-500/10 text-rose-400",
   },
   loan: {
     icon: Truck,
-    href: "/loans",
-    pendingHref: () => "/loans?status=pending",
     accentClassName: "text-emerald-400",
     className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
   },
   exhibition: {
     icon: Presentation,
-    href: "/exhibitions",
-    pendingHref: (asOf: number) =>
-      `/exhibitions?lifecycle=proposed&asOf=${asOf}`,
     accentClassName: "text-purple-400",
     className: "border-purple-500/30 bg-purple-500/10 text-purple-400",
   },
   conservation: {
     icon: Microscope,
-    href: "/conservation",
-    pendingHref: () => "/conservation?status=proposed",
     accentClassName: "text-cyan-400",
     className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400",
   },
   imageDeletion: {
     icon: ImageMinus,
-    href: IMAGE_DELETIONS_HREF,
-    pendingHref: () => IMAGE_DELETIONS_HREF,
-    itemHref: () => IMAGE_DELETIONS_HREF,
     accentClassName: "text-orange-400",
     className: "border-orange-500/30 bg-orange-500/10 text-orange-400",
   },
-} satisfies Record<ApprovalType, ApprovalTypeConfig>;
+} satisfies Record<ApprovalType, ApprovalTypeStyle>;
+
+/** The page listing every approval of this kind that waits, as of `asOf`. */
+export function pendingApprovalsHref(type: ApprovalType, asOf: number) {
+  return type === "imageDeletion"
+    ? IMAGE_DELETIONS_HREF
+    : approvalListHref(type, asOf);
+}
 
 const STATUS_DOT_CLASS_NAMES = {
   active: "bg-emerald-400",
@@ -105,13 +96,6 @@ const STATUS_DOT_CLASS_NAMES = {
   archived: "bg-amber-400",
   deleted: "bg-red-400",
 } satisfies Record<ObjectStatus, string>;
-
-export function useMyAssignments(organizationId: Id<"organizations">) {
-  return useQuery(api.assignments.listMyAssignments, {
-    organizationId,
-    limit: ASSIGNMENTS_LIMIT,
-  });
-}
 
 export function SectionLink({
   href,
@@ -134,22 +118,27 @@ export function SectionLink({
 export function PendingApprovalCard({ item }: { item: PendingApproval }) {
   const locale = useCurrentLocale();
   const t = useI18n();
-  const config: ApprovalTypeConfig = APPROVAL_TYPES[item.type];
-  const Icon = config.icon;
+  const tCase = useScopedI18n("caseTasks");
+  const style = APPROVAL_TYPES[item.type];
+  const Icon = style.icon;
 
   return (
     <li>
       <Link
-        href={config.itemHref?.(item._id) ?? `${config.href}/${item._id}`}
+        href={
+          item.type === "imageDeletion"
+            ? IMAGE_DELETIONS_HREF
+            : caseHref(item.type, item._id)
+        }
         className={cn(
           CARD_CLASS_NAME,
-          item.urgency === "high" && "border-rose-500/30 bg-rose-500/5",
+          item.urgent && "border-rose-500/30 bg-rose-500/5",
         )}
       >
         <span
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-md border",
-            config.className,
+            style.className,
           )}
         >
           <Icon className="size-3.5" />
@@ -157,9 +146,11 @@ export function PendingApprovalCard({ item }: { item: PendingApproval }) {
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-              {item.title}
+              {item.type === "imageDeletion"
+                ? item.label
+                : `${tCase(`caseTypes.${item.type}`)} ${item.label}`}
             </span>
-            {item.urgency === "high" ? (
+            {item.urgent ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span
@@ -176,14 +167,14 @@ export function PendingApprovalCard({ item }: { item: PendingApproval }) {
               </Tooltip>
             ) : null}
           </span>
-          {item.subtitle ? (
+          {item.detail ? (
             <span className="block truncate text-xs text-muted-foreground">
-              {item.subtitle}
+              {item.detail}
             </span>
           ) : null}
           <span className="block truncate text-[11px] text-muted-foreground">
             <ClientRelativeTime
-              timestamp={item.createdAt}
+              timestamp={item.waitingSince}
               locale={locale}
               options={{ addSuffix: true }}
             />
@@ -296,7 +287,10 @@ export function CatalogedByYouSection({
   organizationId: Id<"organizations">;
 }) {
   const t = useI18n();
-  const assignments = useMyAssignments(organizationId);
+  const assignments = useQuery(api.assignments.listMyAssignments, {
+    organizationId,
+    limit: MAX_CATALOGED_CARDS,
+  });
   const [listRef, cardsPerRow] = useCardsPerRow();
   if (!assignments || assignments.myCatalogedItems.length === 0) return null;
   const { myCatalogedItems, stats } = assignments;
