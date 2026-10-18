@@ -12,6 +12,11 @@ import { internalQuery, query } from "./_generated/server";
 import { auditLogChanges } from "./schema";
 import { loadCase } from "./utils/caseTaskRules";
 import {
+  CASE_TYPES,
+  caseReadPermissions,
+  caseTypeOfEntity,
+} from "./utils/caseTypes";
+import {
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./utils/featureGates";
@@ -174,26 +179,17 @@ interface HistoryFilters {
 
 export const AUDIT_READ_PERMISSION = "organization.view_analytics";
 
+/** Cases filed in the audit log that hold no Tasks, so have no case type. */
 const CASE_ACCESS: Record<
   string,
   {
-    permission: "loans.read" | "collections.read" | "locations.read";
-    feature?: "loans" | "exhibitions" | "conservation";
+    permission: "loans.read" | "collections.read";
+    feature?: "loans";
     module?: "library";
   }
 > = {
-  loan: { permission: "loans.read", feature: "loans" },
   transitRecord: { permission: "loans.read", feature: "loans" },
-  exhibition: { permission: "collections.read", feature: "exhibitions" },
-  conservationTreatment: {
-    permission: "collections.read",
-    feature: "conservation",
-  },
-  accession: { permission: "collections.read" },
-  deaccession: { permission: "collections.read" },
   organizationMoveRequest: { permission: "collections.read" },
-  documentationFinding: { permission: "collections.read" },
-  inventoryException: { permission: "locations.read" },
   libraryAcquisitionRequest: {
     permission: "collections.read",
     module: "library",
@@ -206,6 +202,15 @@ async function requireCaseAccess(
   caseKind: string,
   requireMemberPermission: (permission: string) => Promise<unknown>,
 ) {
+  const caseType = caseTypeOfEntity(caseKind);
+  if (caseType && CASE_TYPES[caseType].auditCase !== false) {
+    // Whoever may open the case may read its history.
+    for (const permission of caseReadPermissions(caseType))
+      await requireMemberPermission(permission);
+    const { feature } = CASE_TYPES[caseType];
+    if (feature) await requireFeatureAccess(ctx, organizationId, feature);
+    return;
+  }
   const access = Object.hasOwn(CASE_ACCESS, caseKind)
     ? CASE_ACCESS[caseKind]
     : undefined;

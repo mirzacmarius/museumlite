@@ -25,9 +25,14 @@ interface CaseTypeDefinition<
   route: string;
   /**
    * Names the case in notifications and in the audit log, where its Task
-   * events are filed under `${entityType}Id`.
+   * events carry it as `${entityType}Id`.
    */
   entityType: EntityType;
+  /**
+   * False keeps the case's audit entries from being filed under it, so the
+   * audit log cannot be filtered by the case and its Tasks cannot cite them.
+   */
+  auditCase?: false;
 }
 
 function define<Table extends TableNames, const EntityType extends string>(
@@ -103,6 +108,8 @@ export const CASE_TYPES = {
     capability: "incidents",
     route: "/incidents",
     entityType: "incident",
+    // The incident's scoped event log is its timeline (ADR 0015).
+    auditCase: false,
   }),
   // Searching, relabelling and returning objects is location work (ADR 0014).
   inventoryException: define({

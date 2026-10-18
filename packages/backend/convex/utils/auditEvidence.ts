@@ -1,5 +1,12 @@
 import type { Id, TableNames } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { CASE_TYPES } from "./caseTypes";
+
+/** Case types whose audit entries, their Tasks' included, are filed under the case. */
+const AUDITED_CASE_KINDS: string[] = Object.values(CASE_TYPES).flatMap(
+  (definition) =>
+    definition.auditCase === false ? [] : [definition.entityType],
+);
 
 const subjectTables: Record<string, TableNames> = {
   collection: "collections",
@@ -66,31 +73,16 @@ export async function captureAuditEvidence(
         ? (ctx.db.normalizeId("collections", referencedObject) ?? undefined)
         : undefined;
   let caseId = [
-    "loan",
-    "accession",
-    "deaccession",
-    "exhibition",
-    "conservationTreatment",
+    ...AUDITED_CASE_KINDS,
     "transitRecord",
     "organizationMoveRequest",
     "libraryAcquisitionRequest",
     "objectEntry",
-    "documentationFinding",
     "reproductionRequest",
-    "inventoryException",
   ].includes(args.entityType)
     ? `${args.entityType}:${args.entityId}`
     : undefined;
-  const references = {
-    loan: "loans",
-    accession: "accessions",
-    deaccession: "deaccessions",
-    exhibition: "exhibitions",
-    conservationTreatment: "conservationTreatments",
-    documentationFinding: "documentationFindings",
-    inventoryException: "inventoryExceptions",
-  } as const;
-  for (const kind of Object.keys(references)) {
+  for (const kind of AUDITED_CASE_KINDS) {
     if (caseId) break;
     const value = text({ ...record(changes.entityData), ...changes }, [
       `${kind}Id`,

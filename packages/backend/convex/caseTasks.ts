@@ -461,7 +461,7 @@ async function presentQueuePage(
         organizationId,
         task.caseType,
         task.caseId,
-        viewer,
+        async () => viewer,
       );
       return record
         ? await presentTask(ctx, task, caseLabel(record), access, allowed.work)
@@ -582,7 +582,7 @@ export const listMyAssignedCases = query({
               {
                 caseType: "accession" as const,
                 caseId: row._id,
-                caseLabel: row.accessionNumber,
+                caseLabel: caseLabel({ caseType: "accession", doc: row }),
                 status: row.status,
                 since: row.dateReceived,
               },
@@ -595,7 +595,7 @@ export const listMyAssignedCases = query({
               {
                 caseType: "deaccession" as const,
                 caseId: row._id,
-                caseLabel: row.deaccessionNumber,
+                caseLabel: caseLabel({ caseType: "deaccession", doc: row }),
                 status: row.status,
                 since: row.dateDeaccessioned,
               },
@@ -611,7 +611,7 @@ export const listMyAssignedCases = query({
               {
                 caseType: "loan" as const,
                 caseId: row._id,
-                caseLabel: row.loanNumber,
+                caseLabel: caseLabel({ caseType: "loan", doc: row }),
                 status: row.status,
                 since: row.startDate,
               },
@@ -835,8 +835,8 @@ export const listEvidenceCandidates = query({
       );
       candidates.push(...perObject.flat());
     }
-    if (access.auditRead) {
-      const caseKind = CASE_TYPES[args.caseType].entityType;
+    const { auditCase, entityType: caseKind } = CASE_TYPES[args.caseType];
+    if (access.auditRead && auditCase !== false) {
       const entries = await ctx.db
         .query("auditLog")
         .withIndex("by_organization_and_caseId_and_timestamp", (q) =>

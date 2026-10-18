@@ -107,7 +107,9 @@ export async function canOpenCaseType(
     await requireCaseTypeAccess(ctx, organizationId, caseType);
     return true;
   } catch (error) {
-    // Members are refused with a coded failure; anything else is a fault.
+    // The gate refuses members only with a coded failure, so reading the
+    // failure keeps this answer and loadCase's refusal from drifting apart.
+    // Anything else, such as a missing organization, is a fault.
     if (capabilityUnavailableFromError(error)) return false;
     throw error;
   }
@@ -121,14 +123,15 @@ export interface CaseViewer {
 /**
  * The case in this organization, or null when it is missing or hidden from
  * the viewer, as a sensitive incident is outside its scope (ADR 0015).
- * Callers check access to the case type first.
+ * Callers check access to the case type first. Only incidents need the
+ * viewer, so it is read only for them.
  */
 export async function readVisibleCase<T extends CaseTaskCaseType>(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   caseType: T,
   caseId: string,
-  viewer: CaseViewer,
+  viewer: () => Promise<CaseViewer>,
 ): Promise<CaseRecord<T> | null> {
   const table: (typeof CASE_TYPES)[CaseTaskCaseType]["table"] =
     CASE_TYPES[caseType].table;
@@ -137,11 +140,10 @@ export async function readVisibleCase<T extends CaseTaskCaseType>(
   if (!doc || doc.organizationId !== organizationId) return null;
   // The id was normalized against this case type's own table.
   const record = { caseType, doc } as CaseRecord;
-  if (
-    record.caseType === "incident" &&
-    !seesIncident(record.doc, viewer.userId, viewer.permissions)
-  )
-    return null;
+  if (record.caseType === "incident") {
+    const { userId, permissions } = await viewer();
+    if (!seesIncident(record.doc, userId, permissions)) return null;
+  }
   return record as CaseRecord<T>;
 }
 
@@ -153,14 +155,19 @@ export async function loadCase<T extends CaseTaskCaseType>(
   caseId: string,
 ): Promise<CaseRecord<T>> {
   await requireCaseTypeAccess(ctx, organizationId, caseType);
-  const [userId, permissions] = await Promise.all([
-    requireAuthenticatedUser(ctx),
-    getUserPermissions(ctx, organizationId),
-  ]);
-  const record = await readVisibleCase(ctx, organizationId, caseType, caseId, {
-    userId,
-    permissions: new Set(permissions),
-  });
+  const record = await readVisibleCase(
+    ctx,
+    organizationId,
+    caseType,
+    caseId,
+    async () => {
+      const [userId, permissions] = await Promise.all([
+        requireAuthenticatedUser(ctx),
+        getUserPermissions(ctx, organizationId),
+      ]);
+      return { userId, permissions: new Set(permissions) };
+    },
+  );
   if (!record)
     throw workError("CASE_NOT_FOUND", "Case not found in this organization");
   return record;

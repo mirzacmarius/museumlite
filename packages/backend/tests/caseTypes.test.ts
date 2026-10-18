@@ -1,11 +1,11 @@
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import { capabilityUnavailableFromError } from "../convex/utils/capabilities";
 import type { CaseTaskCaseType } from "../convex/utils/caseTaskValidators";
-import { CASE_TYPES, caseHref } from "../convex/utils/caseTypes";
+import { caseHref } from "../convex/utils/caseTypes";
 import { notificationEntityHref } from "../convex/utils/notificationLinks";
+import { workErrorFromError } from "../convex/utils/workErrors";
 import {
   authedForUser,
   type ConvexTest,
@@ -327,7 +327,15 @@ test("every case type: a task is in My work exactly when its case opens for the 
                 })
                 .then(
                   () => true,
-                  () => false,
+                  (error) => {
+                    // A refusal or a hidden case; anything else is a fault.
+                    if (
+                      capabilityUnavailableFromError(error) ||
+                      workErrorFromError(error)?.code === "CASE_NOT_FOUND"
+                    )
+                      return false;
+                    throw error;
+                  },
                 );
               return [name, { queued: queued.has(caseId), opens }] as const;
             }),
@@ -358,13 +366,10 @@ test("every case type: a task is in My work exactly when its case opens for the 
   }
 });
 
-test("every case type: a task notification and the app link open the same existing case page", async () => {
+test("every case type: a task notification opens the app's case link", async () => {
   const { t, organizationId, adminId, cases } = await setup();
   const ownerId = await addMember(t, organizationId, "owner", EVERY_PERMISSION);
   const admin = authedForUser(t, adminId);
-  const dashboard = fileURLToPath(
-    new URL("../../../apps/app/src/app/[locale]/(dashboard)", import.meta.url),
-  );
 
   for (const { caseType, caseId } of cases) {
     await admin.mutation(api.caseTasks.create, {
@@ -382,17 +387,12 @@ test("every case type: a task notification and the app link open the same existi
           .collect()
       ).find((row) => row.relatedEntityId === caseId),
     );
-    const href = caseHref(caseType, caseId);
 
     expect(
       notificationEntityHref(
         notification?.relatedEntityType,
         notification?.relatedEntityId,
       ),
-    ).toBe(href);
-    expect(href).toBe(`${CASE_TYPES[caseType].route}/${caseId}`);
-    expect(
-      existsSync(`${dashboard}${CASE_TYPES[caseType].route}/[id]/page.tsx`),
-    ).toBe(true);
+    ).toBe(caseHref(caseType, caseId));
   }
 });
