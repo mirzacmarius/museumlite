@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { useOrganization } from "@/components/organization-provider";
+import { usePermissions } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import {
   AccessionsWorkbenchNav,
@@ -52,7 +53,14 @@ function CountedWorkbenchNav({
   activeView: AccessionsWorkbenchView;
   organizationId: Id<"organizations">;
 }) {
-  const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
+  // Entries and Transfers explain a missing permission themselves, so the
+  // tabs never ask for counts the member cannot read.
+  const { hasPermission, isLoading } = usePermissions();
+  const canReadAccessions = !isLoading && hasPermission("collections.read");
+  const counts = useQuery(
+    api.accessions.getBoardCounts,
+    canReadAccessions ? { organizationId } : "skip",
+  );
   const pendingTransfers = usePendingTransferCount(organizationId);
 
   return (
