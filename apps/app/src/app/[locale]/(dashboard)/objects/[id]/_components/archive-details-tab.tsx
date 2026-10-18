@@ -1,31 +1,21 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
-import { useQuery } from "convex/react";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
 import { ArchiveDetailsContent } from "./archive-details-content";
+import type { TypeDetailsRecord } from "./types";
 
 interface ArchiveDetailsTabProps {
-  collectionId: string;
-  organizationId: Id<"organizations">;
+  details: TypeDetailsRecord<"archive"> | null;
 }
 
-export function ArchiveDetailsTab({ collectionId }: ArchiveDetailsTabProps) {
-  const _locale = useCurrentLocale();
+export function ArchiveDetailsTab({ details }: ArchiveDetailsTabProps) {
   const t = useScopedI18n("modules.archive");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("archive");
-  const details = useQuery(
-    api.archiveDetails.get,
-    hasModuleAccess
-      ? { collectionId: collectionId as Id<"collections"> }
-      : "skip",
-  );
 
   if (!hasModuleAccess) {
     return (
@@ -37,16 +27,6 @@ export function ArchiveDetailsTab({ collectionId }: ArchiveDetailsTabProps) {
       >
         <div />
       </FeatureGuard>
-    );
-  }
-
-  if (details === undefined) {
-    return (
-      <div className="flex h-32 items-center justify-center">
-        <p className="text-sm text-muted-foreground">
-          {common("loading", { module: "archive" })}
-        </p>
-      </div>
     );
   }
 

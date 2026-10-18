@@ -872,7 +872,6 @@ export default {
       renewals: "Renovaciones",
     },
     common: {
-      loading: "Cargando detalles de {module}...",
       noDetailsYet: "Aún no se han registrado detalles de {module}",
       notSpecified: "No especificado",
       unknown: "Desconocido",

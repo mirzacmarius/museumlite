@@ -4,12 +4,9 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
-  typeDetailRecordFields,
-  vehicleDetailFields,
   vehicleEventHistoryEntryValidator,
   vehicleServiceLogEntryValidator,
 } from "./utils/collectionTypeDetailFields";
-import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
@@ -20,45 +17,6 @@ async function requireAutomotiveModule(
 ) {
   await requireModuleEnabled(ctx, organizationId, "automotive");
 }
-
-export const get = query({
-  args: {
-    collectionId: v.id("collections"),
-  },
-  returns: v.union(
-    v.object({
-      _id: v.id("vehicleDetails"),
-      _creationTime: v.number(),
-      ...typeDetailRecordFields,
-      ...vehicleDetailFields,
-    }),
-    v.null(),
-  ),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!collection) {
-      return null;
-    }
-    await Promise.all([
-      requireAutomotiveModule(ctx, collection.organizationId),
-      requirePermission(ctx, collection.organizationId, "collections.read"),
-    ]);
-    const details = await ctx.db
-      .query("vehicleDetails")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .unique();
-
-    return details;
-  },
-});
 
 export const getByVin = query({
   args: {
@@ -105,99 +63,6 @@ export const getByVin = query({
       model: details.model,
       year: details.year,
     };
-  },
-});
-
-export const upsert = mutation({
-  args: {
-    collectionId: v.id("collections"),
-    ...vehicleDetailFields,
-  },
-  returns: v.id("vehicleDetails"),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
-    await Promise.all([
-      requireAutomotiveModule(ctx, collection.organizationId),
-      requirePermission(ctx, collection.organizationId, "collections.update"),
-    ]);
-    const existing = await ctx.db
-      .query("vehicleDetails")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .unique();
-
-    const { collectionId, ...updateData } = args;
-
-    if (existing) {
-      await Promise.all([
-        ctx.db.patch(existing._id, {
-          ...updateData,
-          lastModifiedAt: Date.now(),
-        }),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: collection.organizationId,
-          userId,
-          action: "updated",
-          entityType: "vehicleDetails",
-          entityId: existing._id,
-          changes: updateData,
-        }),
-      ]);
-
-      return existing._id;
-    }
-
-    const id = await ctx.db.insert("vehicleDetails", {
-      collectionId: args.collectionId,
-      organizationId: collection.organizationId,
-      ...updateData,
-      createdAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "created",
-      entityType: "vehicleDetails",
-      entityId: id,
-      changes: updateData,
-    });
-
-    return id;
-  },
-});
-
-export const remove = mutation({
-  args: {
-    vehicleDetailsId: v.id("vehicleDetails"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, details] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.vehicleDetailsId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!details) {
-      throw new Error("Vehicle details not found");
-    }
-    await Promise.all([
-      requireAutomotiveModule(ctx, details.organizationId),
-      requirePermission(ctx, details.organizationId, "collections.delete"),
-    ]);
-    return rejectPermanentEvidenceDeletion();
   },
 });
 

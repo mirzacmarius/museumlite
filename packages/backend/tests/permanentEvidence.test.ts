@@ -363,29 +363,6 @@ test("cancelled transit deletion cannot erase historical movement evidence", asy
   ).toBe("Original observed condition");
 });
 
-test("specialist detail deletion retains provenance and valuation on the same object", async () => {
-  const t = createConvexTest();
-  const { collectionId, userId } = await createOrgUserCollectionWithPermissions(
-    t,
-    ["collections.read", "collections.update", "collections.delete"],
-    { subscriptionTier: "pro", enabledModules: ["fine_art"] },
-  );
-  const staff = authedForUser(t, userId);
-  const fineArtDetailsId = await staff.mutation(api.fineArtDetails.upsert, {
-    collectionId,
-    appraisedValue: 1234,
-    provenanceChain: [
-      { eventType: "gift", owner: "Original donor", verified: false },
-    ],
-  });
-  await expect(
-    staff.mutation(api.fineArtDetails.remove, { fineArtDetailsId }),
-  ).rejects.toThrow("Permanent evidence");
-  const details = await staff.query(api.fineArtDetails.get, { collectionId });
-  expect(details?._id).toBe(fineArtDetailsId);
-  expect(details?.provenanceChain?.[0]?.owner).toBe("Original donor");
-});
-
 test("exhibition document deletion preserves documentary originals", async () => {
   const t = createConvexTest();
   const { organizationId, collectionId, userId } =

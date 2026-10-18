@@ -6783,7 +6783,6 @@ export default {
       withdrawn: "Retras",
     },
     common: {
-      loading: "Se încarcă detaliile pentru {module}...",
       noDetailsYet: "Nu există încă detalii înregistrate pentru {module}",
       notSpecified: "Nespecificat",
       unknown: "Necunoscut",

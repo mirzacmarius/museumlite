@@ -50,6 +50,10 @@ import {
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { mutation } from "./utils/mutationBuilders";
 import { searchObjects } from "./utils/objectSearch";
+import {
+  getObjectTypeDetails,
+  objectTypeDetailsValidator,
+} from "./utils/objectTypeDetails";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 import { getPortalImage } from "./utils/publicMedia";
@@ -631,6 +635,7 @@ export const getObjectDetail = query({
       ),
       locationPath: v.array(objectDetailLocationPathItemValidator),
       heroImage: v.union(objectDetailMediaValidator, v.null()),
+      typeDetails: v.union(objectTypeDetailsValidator, v.null()),
     }),
     v.null(),
   ),
@@ -650,7 +655,7 @@ export const getObjectDetail = query({
       return null;
     }
 
-    const [collectionGroup, locationPath, heroImage, verifier] =
+    const [collectionGroup, locationPath, heroImage, verifier, typeDetails] =
       await Promise.all([
         collection.collectionGroupId
           ? ctx.db.get(collection.collectionGroupId)
@@ -662,6 +667,7 @@ export const getObjectDetail = query({
         collection.verifiedBy
           ? ctx.db.get(collection.verifiedBy)
           : Promise.resolve(null),
+        getObjectTypeDetails(ctx, collection),
       ] as const);
 
     return {
@@ -677,6 +683,7 @@ export const getObjectDetail = query({
         : null,
       locationPath,
       heroImage,
+      typeDetails,
     };
   },
 });

@@ -1,9 +1,7 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
 import { EmptyState } from "@v1/ui/empty-state";
 import { cn } from "@v1/ui/utils";
-import type { FunctionReturnType } from "convex/server";
 import {
   Award,
   Car,
@@ -18,10 +16,9 @@ import { RecordedValue } from "@/components/recorded-value";
 import { formatMoney, formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
+import type { TypeDetailsRecord } from "./types";
 
-type DetailsDoc = NonNullable<
-  FunctionReturnType<typeof api.vehicleDetails.get>
->;
+type DetailsDoc = TypeDetailsRecord<"automotive">;
 
 interface VehicleDetailsContentProps {
   details: DetailsDoc;

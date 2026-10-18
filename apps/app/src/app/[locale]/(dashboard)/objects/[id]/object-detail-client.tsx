@@ -142,6 +142,7 @@ function ObjectDetailView({
   const collection = objectDetail?.collection ?? null;
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
+  const typeDetails = objectDetail?.typeDetails ?? null;
   const heroImage = objectDetail?.heroImage ?? null;
   // The open tab lives in the URL (`?tab=`), so a reload, a shared link or
   // Back from another page returns to it.
@@ -354,6 +355,7 @@ function ObjectDetailView({
             collectionId={collectionId}
             collectionGroupName={collectionGroup?.name}
             locationPath={locationPath}
+            typeDetails={typeDetails}
             locale={locale}
             organizationId={organizationId}
             hasConservationFeature={hasConservationFeature}
