@@ -141,9 +141,9 @@ export function DeaccessionDialog({
     }
   }, [initialRemovalType, open]);
 
-  const workflowConfigs = useQuery(
-    api.organizations.getWorkflowConfigs,
-    organizationId ? { organizationId } : "skip",
+  const objectActions = useQuery(
+    api.objectActions.get,
+    open ? { collectionId } : "skip",
   );
   const moveEligibility = useQuery(
     api.objectMoves.getEligibility,
@@ -158,9 +158,10 @@ export function DeaccessionDialog({
         : "skip",
   );
 
-  const deaccessionWorkflow = workflowConfigs?.find(
-    (workflow) => workflow.workflowType === "deaccession",
-  );
+  const approvalSteps =
+    objectActions?.deaccession.state === "available"
+      ? objectActions.deaccession.approvalSteps
+      : undefined;
 
   const resetForm = () => {
     dispatch({ type: "reset" });
@@ -244,7 +245,7 @@ export function DeaccessionDialog({
 
         {!state.removalType && (
           <DeaccessionTypePicker
-            deaccessionWorkflow={deaccessionWorkflow}
+            actions={objectActions ?? undefined}
             onSelect={(value) => dispatch({ type: "setRemovalType", value })}
           />
         )}
@@ -252,8 +253,7 @@ export function DeaccessionDialog({
         {state.removalType === "sold" && (
           <DeaccessionSoldForm
             isDirectRemovalFlow={isDirectRemovalFlow}
-            deaccessionWorkflow={deaccessionWorkflow}
-            workflowConfigsLoaded={workflowConfigs !== undefined}
+            approvalSteps={approvalSteps}
             date={state.date}
             reason={state.reason}
             method={state.method}

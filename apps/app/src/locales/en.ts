@@ -2439,7 +2439,6 @@ export default {
     setAsPrimary: "Set as primary",
     unavailable: "Unavailable",
     unknown: "Unknown",
-    cannotDeaccession: "Cannot deaccession: the object is on an active loan",
     active: "Active",
     inactive: "Inactive",
     pending: "Pending",
@@ -2945,6 +2944,12 @@ export default {
       none: "None",
       printedOn: "Printed on",
       print: "Print",
+    },
+    deaccessionAction: {
+      request: "Request deaccession",
+      inProgress: "Deaccession in progress",
+      onLoan: "On loan",
+      notAccessioned: "Not yet accessioned",
     },
     withdrawal: {
       restore: "Restore to catalog",
@@ -7933,7 +7938,6 @@ export default {
       },
       edit: {
         editObject: "Edit object",
-        cannotRemoveOnLoan: "Cannot remove while on loan",
         saveChanges: "Saving changes…",
         unsavedAcrossTabs: "You have unsaved field changes across tabs.",
         mediaAlreadyApplied: "Media changes are already applied.",

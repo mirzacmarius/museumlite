@@ -3,7 +3,6 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { RecordFormNotices } from "@/components/record-form/record-form-notices";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
@@ -53,8 +52,6 @@ export function CollectionEditFormLayout({
     setAlternateAccessionDraft,
     conditionChangeNote,
     setConditionChangeNote,
-    deaccessionDialogOpen,
-    setDeaccessionDialogOpen,
     editingOwnershipEntryId,
     setEditingOwnershipEntryId,
     editingImageId,
@@ -63,7 +60,6 @@ export function CollectionEditFormLayout({
     setShowUnsavedDialog,
     images,
     documents,
-    hasActiveLoan,
     hasConditionChanged,
     requiresConditionChangeNote,
     isFormDirty,
@@ -96,11 +92,9 @@ export function CollectionEditFormLayout({
         common={common}
         collectionId={collectionId}
         collection={collection}
-        hasActiveLoan={hasActiveLoan}
         isSubmitting={isSubmitting}
         canUpdateObject={canUpdateObject}
         onNavigate={handleNavigate}
-        onDeaccessionOpen={() => setDeaccessionDialogOpen(true)}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -205,13 +199,6 @@ export function CollectionEditFormLayout({
         isSaving={isSubmitting}
       />
 
-      <DeaccessionDialog
-        open={deaccessionDialogOpen}
-        onOpenChange={setDeaccessionDialogOpen}
-        collectionId={typedCollectionId}
-        collectionTitle={collection.title}
-        organizationId={collection.organizationId}
-      />
       <MediaEditorDialog
         mediaId={editingImageId}
         isOpen={!!editingImageId}

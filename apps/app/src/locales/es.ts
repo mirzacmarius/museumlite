@@ -3047,8 +3047,6 @@ export default {
     setAsPrimary: "Establecer como principal",
     unavailable: "No disponible",
     unknown: "Desconocido",
-    cannotDeaccession:
-      "No se puede desaccesionar: el objeto está en un préstamo activo",
     active: "Activo",
     inactive: "Inactivo",
     pending: "Pendiente",
@@ -3575,6 +3573,12 @@ export default {
       saveMembership: "Guardar selección",
       addObjectsButton: "Añadir objetos",
       viewingCollection: "Grupo de colección: {name}",
+    },
+    deaccessionAction: {
+      request: "Solicitar desaccesión",
+      inProgress: "Desaccesión en curso",
+      onLoan: "En préstamo",
+      notAccessioned: "Aún no accesionado",
     },
     withdrawal: {
       restore: "Restaurar al catálogo",
@@ -8100,7 +8104,6 @@ export default {
       },
       edit: {
         editObject: "Editar objeto",
-        cannotRemoveOnLoan: "No se puede retirar mientras está prestado",
         saveChanges: "Guardando cambios…",
         unsavedAcrossTabs:
           "Hay cambios de campos sin guardar en varias pestañas.",

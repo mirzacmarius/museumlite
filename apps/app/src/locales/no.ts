@@ -3017,7 +3017,6 @@ export default {
     setAsPrimary: "Sett som primær",
     unavailable: "Utilgjengelig",
     unknown: "Ukjent",
-    cannotDeaccession: "Kan ikke avregistrere: objektet er på et aktivt utlån",
     active: "Aktiv",
     inactive: "Inaktiv",
     pending: "Ventende",
@@ -3540,6 +3539,12 @@ export default {
       saveMembership: "Lagre utvalget",
       addObjectsButton: "Legg til objekter",
       viewingCollection: "Samlingsgruppe: {name}",
+    },
+    deaccessionAction: {
+      request: "Be om fraregistrering",
+      inProgress: "Fraregistrering pågår",
+      onLoan: "På utlån",
+      notAccessioned: "Ikke registrert i samlingen ennå",
     },
     withdrawal: {
       restore: "Gjenopprett til katalogen",
@@ -8031,7 +8036,6 @@ export default {
       },
       edit: {
         editObject: "Rediger objekt",
-        cannotRemoveOnLoan: "Kan ikke fjerne mens objektet er utlånt",
         saveChanges: "Lagrer endringer …",
         unsavedAcrossTabs: "Du har ulagrede feltendringer på tvers av faner.",
         mediaAlreadyApplied: "Medieendringene er allerede tatt i bruk.",

@@ -89,7 +89,6 @@ export function useCollectionEditForm() {
   });
   const [localError, setLocalError] = useState<string | null>(null);
   const [alternateAccessionDraft, setAlternateAccessionDraft] = useState("");
-  const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
   const [editingOwnershipEntryId, setEditingOwnershipEntryId] = useState<
     string | null
   >(null);
@@ -182,13 +181,6 @@ export function useCollectionEditForm() {
     api.collectionGroups.list,
     collection ? { organizationId: collection.organizationId } : "skip",
   );
-
-  const loans = useQuery(
-    api.loans.getLoansForCollection,
-    collection ? { collectionId: collection._id } : "skip",
-  );
-  const hasActiveLoan =
-    loans?.some((loan) => loan.status === "active") ?? false;
 
   const baseCondition = normalizeOptionalString(session.baseValues?.condition);
   const hasConditionChanged =
@@ -342,8 +334,6 @@ export function useCollectionEditForm() {
     setAlternateAccessionDraft,
     conditionChangeNote,
     setConditionChangeNote,
-    deaccessionDialogOpen,
-    setDeaccessionDialogOpen,
     editingOwnershipEntryId,
     setEditingOwnershipEntryId,
     editingImageId,
@@ -356,7 +346,6 @@ export function useCollectionEditForm() {
     heroImage: mediaState.heroImage,
     currentLocationPath,
     collectionGroups,
-    hasActiveLoan,
     hasConditionChanged,
     requiresConditionChangeNote,
     isFormDirty,

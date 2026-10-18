@@ -13,12 +13,11 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { useI18n } from "@/locales/client";
-import type { DeaccessionWorkflowConfig } from "./deaccession-dialog-types";
 
 interface DeaccessionSoldFormProps {
   isDirectRemovalFlow: boolean;
-  deaccessionWorkflow?: DeaccessionWorkflowConfig;
-  workflowConfigsLoaded: boolean;
+  /** Configured approval steps; undefined while loading. */
+  approvalSteps?: number;
   date: Date;
   reason: string;
   method: "sale" | "donation" | "transfer" | "destruction";
@@ -34,8 +33,7 @@ interface DeaccessionSoldFormProps {
 
 export function DeaccessionSoldForm({
   isDirectRemovalFlow,
-  deaccessionWorkflow,
-  workflowConfigsLoaded,
+  approvalSteps,
   date,
   reason,
   method,
@@ -57,7 +55,7 @@ export function DeaccessionSoldForm({
         </Button>
       )}
 
-      {deaccessionWorkflow && (
+      {approvalSteps !== undefined && approvalSteps > 0 && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
           <div className="flex items-start gap-3">
             <CheckCircle className="mt-0.5 size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
@@ -67,14 +65,14 @@ export function DeaccessionSoldForm({
               </p>
               <p className="mt-1 text-blue-700 dark:text-blue-300">
                 {translate("untranslatedComponents.labels.thisSaleRequires")}{" "}
-                {deaccessionWorkflow.steps.length === 1
+                {approvalSteps === 1
                   ? translate(
                       "untranslatedComponents.deaccession.administratorApproval",
                     )
                   : translate(
                       "untranslatedComponents.deaccession.approvalSteps",
                       {
-                        count: deaccessionWorkflow.steps.length,
+                        count: approvalSteps,
                       },
                     )}{" "}
                 {translate(
@@ -86,7 +84,7 @@ export function DeaccessionSoldForm({
         </div>
       )}
 
-      {!deaccessionWorkflow && workflowConfigsLoaded && (
+      {approvalSteps === 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 size-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />

@@ -248,6 +248,23 @@ async function logDecisionException(
   });
 }
 
+/** The object's Deaccession still waiting for approval, if any. */
+export async function findWaitingDeaccession(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  collectionId: Id<"collections">,
+) {
+  return await ctx.db
+    .query("deaccessions")
+    .withIndex("by_organization_and_collection_and_status", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("collectionId", collectionId)
+        .eq("status", "pending"),
+    )
+    .first();
+}
+
 export async function createDeaccessionRecord(
   ctx: MutationCtx,
   args: {
@@ -290,16 +307,9 @@ export async function createDeaccessionRecord(
   );
   await requireDeaccessionInitiation(ctx, args.organizationId, userId);
 
-  const waiting = await ctx.db
-    .query("deaccessions")
-    .withIndex("by_organization_and_collection_and_status", (q) =>
-      q
-        .eq("organizationId", args.organizationId)
-        .eq("collectionId", args.collectionId)
-        .eq("status", "pending"),
-    )
-    .first();
-  if (waiting) {
+  if (
+    await findWaitingDeaccession(ctx, args.organizationId, args.collectionId)
+  ) {
     throw workflowApprovalError(
       "ALREADY_PENDING",
       "This object already has a deaccession waiting for approval",
