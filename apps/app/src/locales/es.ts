@@ -308,6 +308,13 @@ export default {
       dailyResets: "Diariamente (Se reinicia a Medianoche)",
       autoGeneration: "Generación Automática",
       autoGenerateAccession: "Generar automáticamente números de accesión",
+      formatErrors: {
+        empty: "Introduce una plantilla de formato.",
+        counterMissing:
+          "Añade un contador como {example} a la plantilla de formato para que cada número sea único.",
+        unknownVariable:
+          "{variable} no es una variable admitida por la plantilla de formato.",
+      },
       conditionOptions: "Opciones de Condición",
       standardConditions:
         "Las condiciones estándar (Excelente, Muy Bueno, Bueno, Pobre) siempre están disponibles.",

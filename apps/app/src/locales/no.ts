@@ -303,6 +303,13 @@ export default {
       dailyResets: "Daglig (Nullstilles Midnatt)",
       autoGeneration: "Automatisk Generering",
       autoGenerateAccession: "Generer automatisk aksesjonsnumre",
+      formatErrors: {
+        empty: "Skriv inn en formatmal.",
+        counterMissing:
+          "Legg til en teller som {example} i formatmalen, slik at hvert nummer blir unikt.",
+        unknownVariable:
+          "{variable} er ikke en variabel som formatmalen støtter.",
+      },
       conditionOptions: "Tilstandsalternativer",
       standardConditions:
         "Standardtilstander (Utmerket, Meget God, God, Dårlig) er alltid tilgjengelige.",

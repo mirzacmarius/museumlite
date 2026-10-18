@@ -5,6 +5,9 @@
  * with date/time components, counters, and organization info.
  */
 
+import { ConvexError } from "convex/values";
+import { convexErrorData } from "./convexErrorData";
+
 export interface ParserContext {
   organizationSlug: string;
   currentDate: Date;
@@ -12,18 +15,120 @@ export interface ParserContext {
   counterScope?: "global" | "year" | "month" | "day";
 }
 
+/**
+ * Why a format cannot number objects. Clients map each code to translated
+ * copy; `variable` is the offending `{...}` text for UNKNOWN_VARIABLE.
+ */
+export type AccessionFormatIssue =
+  | { code: "FORMAT_EMPTY" }
+  | { code: "COUNTER_MISSING" }
+  | { code: "UNKNOWN_VARIABLE"; variable: string };
+
 export interface ValidationResult {
   isValid: boolean;
+  /** English summary of `issues`, for logs only. */
   error?: string;
+  issues: AccessionFormatIssue[];
   preview: string;
   examples: string[];
 }
 
+/**
+ * Organizations seeded before MUS-802 stored formats such as `NAT-YYYY-###`,
+ * with bare tokens. A stored format without any brace is read in that syntax:
+ * a bare `YYYY` is the year and a run of `#` is the counter. Braced variables
+ * are canonical: a format that uses a brace keeps `YYYY` and `#` literal, and
+ * a new format must use braces (see `validate`).
+ */
+export function canonicalAccessionTemplate(template: string): string {
+  if (/[{}]/.test(template)) return template;
+  return template
+    .replace(/YYYY/g, "{YYYY}")
+    .replace(/#+/g, (hashes) => `{${hashes}}`);
+}
+
+const ISSUE_MESSAGES: Record<AccessionFormatIssue["code"], string> = {
+  FORMAT_EMPTY: "Template cannot be empty",
+  COUNTER_MISSING:
+    "Template must contain at least one counter variable ({####}, {###}, etc.)",
+  UNKNOWN_VARIABLE: "Invalid variable",
+};
+
+function issueMessage(issue: AccessionFormatIssue): string {
+  return issue.code === "UNKNOWN_VARIABLE"
+    ? `${ISSUE_MESSAGES[issue.code]}: ${issue.variable}`
+    : ISSUE_MESSAGES[issue.code];
+}
+
+// Type alias (not an interface) so the payload satisfies Convex's Value type.
+export type AccessionFormatErrorData = {
+  code: "ACCESSION_FORMAT_INVALID";
+  message: string;
+  issues: AccessionFormatIssue[];
+};
+
+/** Refuses saving a format that cannot number objects. */
+export function accessionFormatError(
+  validation: Pick<ValidationResult, "issues">,
+): ConvexError<AccessionFormatErrorData> {
+  return new ConvexError({
+    code: "ACCESSION_FORMAT_INVALID",
+    message: `Invalid accession number format: ${validation.issues.map(issueMessage).join(". ")}`,
+    issues: validation.issues,
+  });
+}
+
+function readIssue(value: unknown): AccessionFormatIssue | null {
+  if (typeof value !== "object" || value === null || !("code" in value)) {
+    return null;
+  }
+  switch (value.code) {
+    case "FORMAT_EMPTY":
+    case "COUNTER_MISSING":
+      return { code: value.code };
+    case "UNKNOWN_VARIABLE":
+      return "variable" in value && typeof value.variable === "string"
+        ? { code: value.code, variable: value.variable }
+        : null;
+    default:
+      return null;
+  }
+}
+
+/** Reads a format refusal from a thrown error; null for any other failure. */
+export function accessionFormatErrorFromError(
+  error: unknown,
+): AccessionFormatErrorData | null {
+  const data = convexErrorData(error);
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    !("code" in data) ||
+    data.code !== "ACCESSION_FORMAT_INVALID"
+  ) {
+    return null;
+  }
+  const issues =
+    "issues" in data && Array.isArray(data.issues)
+      ? data.issues.flatMap((issue) => readIssue(issue) ?? [])
+      : [];
+  const message = "message" in data ? data.message : undefined;
+  return {
+    code: "ACCESSION_FORMAT_INVALID",
+    message: typeof message === "string" ? message : data.code,
+    issues,
+  };
+}
+
 export class AccessionNumberParser {
   /**
-   * Parse template and generate accession number
+   * Generate an accession number from a stored template
    */
   parse(template: string, context: ParserContext): string {
+    return this.substitute(canonicalAccessionTemplate(template), context);
+  }
+
+  private substitute(template: string, context: ParserContext): string {
     let result = template;
     const { organizationSlug, currentDate, counterValue } = context;
 
@@ -116,75 +221,61 @@ export class AccessionNumberParser {
   }
 
   /**
-   * Validate template format
+   * Validate a template in the braced syntax. With `stored`, the template is
+   * one already saved, which may still use the bare syntax.
    */
-  validate(template: string, organizationSlug: string): ValidationResult {
-    const errors: string[] = [];
-
-    // Check if template is empty
+  validate(
+    template: string,
+    organizationSlug: string,
+    { stored = false }: { stored?: boolean } = {},
+  ): ValidationResult {
     if (!template || template.trim() === "") {
+      const issues: AccessionFormatIssue[] = [{ code: "FORMAT_EMPTY" }];
       return {
         isValid: false,
-        error: "Template cannot be empty",
+        error: issues.map(issueMessage).join(". "),
+        issues,
         preview: "",
         examples: [],
       };
     }
 
-    // Check if template contains at least one counter
-    const hasCounter =
-      /\{(?:COUNTER:\d+(?::(?:YEAR|MONTH|DAY|GLOBAL))?|#{1,10})\}/.test(
-        template,
-      );
-    if (!hasCounter) {
-      errors.push(
-        "Template must contain at least one counter variable ({####}, {###}, etc.)",
-      );
-    }
-
-    // Check for invalid variable syntax
+    const canonical = stored ? canonicalAccessionTemplate(template) : template;
     const validTokenPattern =
       /\{(?:YYYY|YY|MM|M|DD|D|DDDD|DDD|d|HH|mm|ss|s|SSS|MS|UNIX|Q|WW|W|ORG(?::\d+)?|org(?::\d+)?|COUNTER:\d+(?::(?:YEAR|MONTH|DAY|GLOBAL))?|#{1,10})\}/;
-    const allTokens = template.match(/\{[^}]+\}/g) || [];
-
-    for (const token of allTokens) {
-      if (!validTokenPattern.test(token)) {
-        errors.push(`Invalid variable: ${token}`);
-      }
+    const issues: AccessionFormatIssue[] = (
+      canonical.match(/\{[^}]+\}/g) ?? []
+    ).flatMap((token) =>
+      validTokenPattern.test(token)
+        ? []
+        : [{ code: "UNKNOWN_VARIABLE" as const, variable: token }],
+    );
+    const hasCounter =
+      /\{(?:COUNTER:\d+(?::(?:YEAR|MONTH|DAY|GLOBAL))?|#{1,10})\}/.test(
+        canonical,
+      );
+    if (!hasCounter) {
+      issues.push({ code: "COUNTER_MISSING" });
     }
 
-    // Generate preview
     const testContext: ParserContext = {
       organizationSlug,
       currentDate: new Date(),
       counterValue: 1,
       counterScope: "year",
     };
-
-    let preview = "";
-    try {
-      preview = this.parse(template, testContext);
-    } catch (_err) {
-      errors.push("Failed to generate preview");
-    }
-
-    // Generate examples
-    const examples: string[] = [];
-    if (errors.length === 0) {
-      for (let i = 1; i <= 3; i++) {
-        examples.push(
-          this.parse(template, {
-            ...testContext,
-            counterValue: i,
-          }),
-        );
-      }
-    }
+    const examples =
+      issues.length === 0
+        ? [1, 2, 3].map((counterValue) =>
+            this.substitute(canonical, { ...testContext, counterValue }),
+          )
+        : [];
 
     return {
-      isValid: errors.length === 0,
-      error: errors.join(". "),
-      preview,
+      isValid: issues.length === 0,
+      error: issues.map(issueMessage).join(". "),
+      issues,
+      preview: this.substitute(canonical, testContext),
       examples,
     };
   }
@@ -209,8 +300,9 @@ export class AccessionNumberParser {
    * Extract counter scope from template
    */
   getCounterScopeFromTemplate(
-    template: string,
+    storedTemplate: string,
   ): "global" | "year" | "month" | "day" {
+    const template = canonicalAccessionTemplate(storedTemplate);
     const scopeMatch = template.match(
       /\{COUNTER:\d+:(YEAR|MONTH|DAY|GLOBAL)\}/,
     );

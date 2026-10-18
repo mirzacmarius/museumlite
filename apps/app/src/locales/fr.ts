@@ -308,6 +308,13 @@ export default {
       dailyResets: "Quotidiennement (Réinitialise Minuit)",
       autoGeneration: "Génération Automatique",
       autoGenerateAccession: "Générer automatiquement les numéros d'accession",
+      formatErrors: {
+        empty: "Saisissez un modèle de format.",
+        counterMissing:
+          "Ajoutez un compteur tel que {example} au modèle de format, afin que chaque numéro soit unique.",
+        unknownVariable:
+          "{variable} n'est pas une variable prise en charge par le modèle de format.",
+      },
       conditionOptions: "Options de Condition",
       standardConditions:
         "Les conditions standard (Excellent, Très Bon, Bon, Mauvais) sont toujours disponibles.",

@@ -1,7 +1,9 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import { accessionFormatErrorFromError } from "../convex/utils/accessionNumberParser";
 import {
   authedForUser,
   capabilityFailureOf,
@@ -570,5 +572,233 @@ describe("organizations.getAccessionNumberPreview", () => {
       template: "{YYYY}.{####}",
       scope: "year",
     });
+  });
+});
+
+async function accessionFormatRefusalOf(call: Promise<unknown>) {
+  try {
+    await call;
+  } catch (error) {
+    return accessionFormatErrorFromError(error);
+  }
+  throw new Error("Expected the call to be rejected");
+}
+
+describe("saving the accession number format", () => {
+  async function setupStoredFormat(accessionNumberFormat: string) {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [
+        "organization.manage_settings",
+        "collections.create",
+        "collections.read",
+        "collections.update",
+      ],
+      { subscriptionTier: "pro" },
+    );
+    await t.run((ctx) =>
+      ctx.db.patch(organizationId, {
+        settings: { autoGenerateAccessionNumbers: true, accessionNumberFormat },
+      }),
+    );
+    return { t, organizationId, admin: authedForUser(t, userId) };
+  }
+
+  /** The Preferences form sends every setting, the untouched format included. */
+  function preferences(accessionNumberFormat: string) {
+    return {
+      accessionNumberFormat,
+      accessionCounterScope: "year" as const,
+      autoGenerateAccessionNumbers: true,
+      locationTrackingEnabled: false,
+    };
+  }
+
+  async function storedSettings(
+    t: ReturnType<typeof createConvexTest>,
+    organizationId: Id<"organizations">,
+  ) {
+    return (await t.run((ctx) => ctx.db.get(organizationId)))?.settings;
+  }
+
+  test("saving other preferences keeps a stored bare-token format, which then numbers objects", async () => {
+    const { t, organizationId, admin } =
+      await setupStoredFormat("NAT-YYYY-###");
+
+    await admin.mutation(api.organizations.update, {
+      organizationId,
+      settings: preferences("NAT-YYYY-###"),
+    });
+
+    const settings = await storedSettings(t, organizationId);
+    expect(settings?.accessionNumberFormat).toBe("NAT-YYYY-###");
+    expect(settings?.locationTrackingEnabled).toBe(false);
+    const objectId = await admin.mutation(api.collections.create, {
+      organizationId,
+      title: "Generated",
+    });
+    const object = await t.run((ctx) => ctx.db.get(objectId));
+    expect(object?.accessionNumber).toBe(`NAT-${new Date().getFullYear()}-001`);
+  });
+
+  test("an unchanged stored format without a counter does not block saving other preferences", async () => {
+    const { t, organizationId, admin } = await setupStoredFormat("OBJ-0001");
+
+    await admin.mutation(api.organizations.update, {
+      organizationId,
+      settings: preferences("OBJ-0001"),
+    });
+
+    const settings = await storedSettings(t, organizationId);
+    expect(settings?.accessionNumberFormat).toBe("OBJ-0001");
+    expect(settings?.locationTrackingEnabled).toBe(false);
+  });
+
+  test("a new format without a counter is refused with a coded error and nothing is saved", async () => {
+    const { t, organizationId, admin } =
+      await setupStoredFormat("NAT-YYYY-###");
+
+    const refusal = await accessionFormatRefusalOf(
+      admin.mutation(api.organizations.update, {
+        organizationId,
+        settings: preferences("NAT-{YYYY}"),
+      }),
+    );
+
+    expect(refusal).toMatchObject({
+      code: "ACCESSION_FORMAT_INVALID",
+      issues: [{ code: "COUNTER_MISSING" }],
+    });
+    const settings = await storedSettings(t, organizationId);
+    expect(settings?.accessionNumberFormat).toBe("NAT-YYYY-###");
+    expect(settings?.locationTrackingEnabled).toBeUndefined();
+  });
+
+  test.each([
+    "{ORG:3}-{YYYY}-{####}",
+    "NAT-{YYYY}-{###}",
+  ])("a new format in the braced syntax, %s, is saved", async (format) => {
+    const { t, organizationId, admin } =
+      await setupStoredFormat("NAT-YYYY-###");
+
+    await admin.mutation(api.organizations.update, {
+      organizationId,
+      settings: preferences(format),
+    });
+
+    expect(
+      (await storedSettings(t, organizationId))?.accessionNumberFormat,
+    ).toBe(format);
+  });
+
+  test.each([
+    "HER-YYYY-####",
+    "MUS-YYYY-MM-####",
+  ])("a new format written with bare tokens, %s, is refused", async (format) => {
+    const { t, organizationId, admin } =
+      await setupStoredFormat("NAT-YYYY-###");
+
+    const refusal = await accessionFormatRefusalOf(
+      admin.mutation(api.organizations.update, {
+        organizationId,
+        settings: preferences(format),
+      }),
+    );
+
+    expect(refusal?.issues).toEqual([{ code: "COUNTER_MISSING" }]);
+    expect(
+      (await storedSettings(t, organizationId))?.accessionNumberFormat,
+    ).toBe("NAT-YYYY-###");
+  });
+
+  test("clearing the format is refused rather than silently keeping it", async () => {
+    const { t, organizationId, admin } =
+      await setupStoredFormat("NAT-YYYY-###");
+
+    const refusal = await accessionFormatRefusalOf(
+      admin.mutation(api.organizations.update, {
+        organizationId,
+        settings: preferences(""),
+      }),
+    );
+
+    expect(refusal?.issues).toEqual([{ code: "FORMAT_EMPTY" }]);
+    expect(
+      (await storedSettings(t, organizationId))?.accessionNumberFormat,
+    ).toBe("NAT-YYYY-###");
+  });
+
+  test("the format-only mutation refuses a format without a counter", async () => {
+    const { t, organizationId, admin } =
+      await setupStoredFormat("NAT-YYYY-###");
+
+    const refusal = await accessionFormatRefusalOf(
+      admin.mutation(api.organizations.updateAccessionNumberFormat, {
+        organizationId,
+        format: "NAT-0001",
+        autoGenerate: true,
+      }),
+    );
+
+    expect(refusal?.issues).toEqual([{ code: "COUNTER_MISSING" }]);
+    expect(
+      (await storedSettings(t, organizationId))?.accessionNumberFormat,
+    ).toBe("NAT-YYYY-###");
+  });
+
+  test("validation reports coded issues for the form to translate", async () => {
+    const t = createConvexTest();
+
+    const [stored, edited, unknown] = await Promise.all([
+      t.query(api.organizations.validateAccessionFormat, {
+        template: "NAT-YYYY-###",
+        organizationSlug: "natural-history-museum",
+        stored: true,
+      }),
+      t.query(api.organizations.validateAccessionFormat, {
+        template: "NAT-YYYY-###",
+        organizationSlug: "natural-history-museum",
+      }),
+      t.query(api.organizations.validateAccessionFormat, {
+        template: "NAT-{YYYY}-{XYZ}",
+        organizationSlug: "natural-history-museum",
+      }),
+    ]);
+
+    expect(stored).toMatchObject({
+      isValid: true,
+      issues: [],
+      preview: `NAT-${new Date().getFullYear()}-001`,
+    });
+    expect(edited).toMatchObject({
+      isValid: false,
+      issues: [{ code: "COUNTER_MISSING" }],
+    });
+    expect(unknown).toMatchObject({
+      isValid: false,
+      issues: [
+        { code: "UNKNOWN_VARIABLE", variable: "{XYZ}" },
+        { code: "COUNTER_MISSING" },
+      ],
+    });
+  });
+
+  test("seeded organizations get a format in the braced syntax", async () => {
+    const t = createConvexTest();
+
+    const organizationId = await t.mutation(
+      internal.seedMet.createOrganization,
+      {
+        name: "National Museum of Natural History",
+        slug: "natural-history-museum",
+        type: "museum",
+        subscriptionTier: "enterprise",
+      },
+    );
+
+    expect(
+      (await storedSettings(t, organizationId))?.accessionNumberFormat,
+    ).toBe("NAT-{YYYY}-{###}");
   });
 });

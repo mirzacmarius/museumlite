@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Suspense, useEffect, useMemo, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useAccessionFormatErrorMessage } from "@/hooks/use-accession-format-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 import { IdentifierReview } from "./identifier-review";
@@ -70,6 +71,7 @@ function usePreferencesPage() {
   const t = useScopedI18n("settings");
   const tCommon = useScopedI18n("common");
   const tDashboard = useScopedI18n("untranslatedDashboard.settings");
+  const formatErrors = useAccessionFormatErrorMessage();
   const { currentOrganizationId } = useOrganization();
   const [state, dispatch] = useReducer(
     preferencesPageReducer,
@@ -82,15 +84,32 @@ function usePreferencesPage() {
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
+  const accessionFormat = state.formData.accessionNumberFormat.trim();
+  // Only a format the user changed blocks saving, and it must use the braced
+  // syntax. The saved format reads as stored, so it never blocks the save.
+  const accessionFormatChanged =
+    accessionFormat !==
+    (organization?.settings?.accessionNumberFormat ?? "").trim();
   const validation = useQuery(
     api.organizations.validateAccessionFormat,
-    state.formData.accessionNumberFormat && organization
+    organization && (accessionFormat || accessionFormatChanged)
       ? {
           template: state.formData.accessionNumberFormat,
           organizationSlug: organization.slug,
+          stored: !accessionFormatChanged,
         }
       : "skip",
   );
+  const formatValidation = validation
+    ? {
+        isValid: validation.isValid,
+        preview: validation.preview,
+        error: validation.isValid
+          ? undefined
+          : (formatErrors.issuesMessage(validation.issues) ??
+            t("organization.templateDialog.validTemplateRequired")),
+      }
+    : undefined;
   const presets = useQuery(api.organizations.getAccessionTemplatePresets, {});
   const customTemplates = useQuery(
     api.accessionTemplates.list,
@@ -224,8 +243,12 @@ function usePreferencesPage() {
         saveTemplateName: "",
         saveTemplateDesc: "",
       });
-    } catch {
-      dispatch({ error: t("organization.templateDialog.saveError") });
+    } catch (error) {
+      dispatch({
+        error:
+          formatErrors.errorMessage(error) ??
+          t("organization.templateDialog.saveError"),
+      });
     }
   };
 
@@ -249,12 +272,8 @@ function usePreferencesPage() {
     if (!currentOrganizationId) return;
     dispatch({ error: null });
 
-    if (
-      state.formData.accessionNumberFormat &&
-      validation &&
-      !validation.isValid
-    ) {
-      dispatch({ error: `Invalid accession format: ${validation.error}` });
+    if (accessionFormatChanged && formatValidation?.error) {
+      dispatch({ error: formatValidation.error });
       return;
     }
 
@@ -263,8 +282,9 @@ function usePreferencesPage() {
       await updateOrganization({
         organizationId: currentOrganizationId as Id<"organizations">,
         settings: {
-          accessionNumberFormat:
-            state.formData.accessionNumberFormat.trim() || undefined,
+          accessionNumberFormat: accessionFormatChanged
+            ? accessionFormat
+            : undefined,
           accessionCounterScope: state.formData.accessionCounterScope,
           autoGenerateAccessionNumbers:
             state.formData.autoGenerateAccessionNumbers,
@@ -281,8 +301,12 @@ function usePreferencesPage() {
             state.formData.enableDetailedConditionReports,
         },
       });
-    } catch {
-      dispatch({ error: tDashboard("updatePreferencesFailed") });
+    } catch (error) {
+      dispatch({
+        error:
+          formatErrors.errorMessage(error) ??
+          tDashboard("updatePreferencesFailed"),
+      });
     } finally {
       dispatch({ isSubmitting: false });
     }
@@ -296,7 +320,7 @@ function usePreferencesPage() {
     state,
     dispatch,
     organization,
-    validation,
+    formatValidation,
     systemPresets,
     customTemplateOptions,
     selectedCustomTemplateId,
@@ -316,7 +340,7 @@ export default function PreferencesSettingsPage() {
     state,
     dispatch,
     organization,
-    validation,
+    formatValidation,
     systemPresets,
     customTemplateOptions,
     selectedCustomTemplateId,
@@ -373,7 +397,7 @@ export default function PreferencesSettingsPage() {
         t={t}
         systemPresets={systemPresets}
         customTemplateOptions={customTemplateOptions}
-        validation={validation}
+        validation={formatValidation}
         selectedCustomTemplateId={selectedCustomTemplateId}
         onOpenSaveTemplateModal={openSaveTemplateModal}
         onDeleteTemplate={(id) => dispatch({ deleteTemplateId: id })}
@@ -391,7 +415,7 @@ export default function PreferencesSettingsPage() {
         isUpdate={!!selectedCustomTemplateId}
         onOpenChange={(open) => dispatch({ showSaveModal: open })}
         onSave={handleSaveTemplate}
-        preview={validation?.preview}
+        preview={formatValidation?.preview}
         saveTemplateDesc={state.saveTemplateDesc}
         saveTemplateName={state.saveTemplateName}
         setSaveTemplateDesc={(saveTemplateDesc) =>

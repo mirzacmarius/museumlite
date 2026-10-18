@@ -300,6 +300,13 @@ export default {
       dailyResets: "Daily (Resets Midnight)",
       autoGeneration: "Auto-generation",
       autoGenerateAccession: "Automatically generate accession numbers",
+      formatErrors: {
+        empty: "Enter a format template.",
+        counterMissing:
+          "Add a counter such as {example} to the format template, so each number is unique.",
+        unknownVariable:
+          "{variable} is not a variable the format template supports.",
+      },
       conditionOptions: "Condition Options",
       standardConditions:
         "Standard conditions (Excellent, Very Good, Good, Poor) are always available.",
