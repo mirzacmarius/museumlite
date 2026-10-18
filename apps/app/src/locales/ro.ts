@@ -10860,6 +10860,8 @@ export default {
         "Acest pas este atribuit unui alt rol de aprobator. Roagă o persoană desemnată pentru acest pas să îl verifice.",
       alreadyApproved:
         "Aprobarea ta este deja înregistrată. Dosarul rămâne în așteptare până când îl aprobă ceilalți aprobatori.",
+      alreadyPending:
+        "O cerere pentru acest obiect așteaptă deja aprobarea. Verific-o înainte să începi alta.",
     },
   },
   imageDeletion: {

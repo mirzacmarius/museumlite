@@ -2,7 +2,7 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { resolveCase } from "../auditLog";
-import { CAPABILITY_MATRIX } from "./capabilities";
+import { CAPABILITY_MATRIX, type CapabilityId } from "./capabilities";
 import type { CaseTaskCaseType, CaseTaskStatus } from "./caseTaskValidators";
 import { findingLabel } from "./documentationFindings";
 import { requireVisibleIncident } from "./incidentAccess";
@@ -33,6 +33,8 @@ export interface CaseConfig {
   readPermission: CaseReadPermission;
   workPermission: CaseWorkPermission;
   feature?: "loans" | "exhibitions" | "conservation";
+  /** Capability that opening the case requires, beyond its read permission. */
+  capability?: Extract<CapabilityId, "documentation_quality" | "inventory">;
   /** Key that files task audit events under the case (see auditEvidence). */
   auditKey: string;
   /** Entity type used by notification links to open the case. */
@@ -76,6 +78,7 @@ export const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
   documentationFinding: {
     readPermission: "collections.read",
     workPermission: "collections.update",
+    capability: "documentation_quality",
     auditKey: "documentationFindingId",
     notificationEntityType: "documentationFinding",
   },
@@ -89,21 +92,29 @@ export const CASE_CONFIG: Record<CaseTaskCaseType, CaseConfig> = {
   inventoryException: {
     readPermission: "locations.read",
     workPermission: "locations.update",
+    capability: "inventory",
     auditKey: "inventoryExceptionId",
     notificationEntityType: "inventoryException",
   },
 };
+
+/** The permissions that opening a case of this kind requires. */
+export function caseReadPermissions(caseType: CaseTaskCaseType) {
+  const { readPermission, capability } = CASE_CONFIG[caseType];
+  return capability
+    ? CAPABILITY_MATRIX[capability].permissions
+    : [readPermission];
+}
 
 /** Owners and reviewers need both the read and the work permission of the case kind. */
 export function canWorkWith(
   permissions: Set<string> | null,
   caseType: CaseTaskCaseType,
 ) {
-  const config = CASE_CONFIG[caseType];
   return (
     !!permissions &&
-    permissions.has(config.readPermission) &&
-    permissions.has(config.workPermission)
+    caseReadPermissions(caseType).every((name) => permissions.has(name)) &&
+    permissions.has(CASE_CONFIG[caseType].workPermission)
   );
 }
 

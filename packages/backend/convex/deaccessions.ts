@@ -290,6 +290,22 @@ export async function createDeaccessionRecord(
   );
   await requireDeaccessionInitiation(ctx, args.organizationId, userId);
 
+  const waiting = await ctx.db
+    .query("deaccessions")
+    .withIndex("by_organization_and_collection_and_status", (q) =>
+      q
+        .eq("organizationId", args.organizationId)
+        .eq("collectionId", args.collectionId)
+        .eq("status", "pending"),
+    )
+    .first();
+  if (waiting) {
+    throw workflowApprovalError(
+      "ALREADY_PENDING",
+      "This object already has a deaccession waiting for approval",
+    );
+  }
+
   const deaccessionNumber = args.deaccessionNumber
     ? args.deaccessionNumber
     : await generateNextDeaccessionNumber(ctx, args.organizationId);

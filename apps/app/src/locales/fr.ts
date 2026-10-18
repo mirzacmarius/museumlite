@@ -10926,6 +10926,8 @@ export default {
         "Cette étape est attribuée à un autre rôle approbateur. Demandez à une personne assignée à cette étape de l'examiner.",
       alreadyApproved:
         "Votre approbation est déjà enregistrée. Le dossier reste en attente jusqu'à l'approbation des autres approbateurs.",
+      alreadyPending:
+        "Une demande pour cet objet est déjà en attente d'approbation. Examinez-la avant d'en lancer une autre.",
     },
   },
   imageDeletion: {

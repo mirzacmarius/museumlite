@@ -11,6 +11,7 @@ import {
   type CaseDoc,
   canWorkWith,
   caseLabelOf,
+  caseReadPermissions,
   displayName,
   isFinding,
   isIncident,
@@ -193,7 +194,12 @@ async function canAccessCaseType(
     const allowed = await hasFeatureAccess(ctx, organizationId, config.feature);
     if (!allowed) return false;
   }
-  return await hasPermission(ctx, organizationId, config.readPermission);
+  const granted = await Promise.all(
+    caseReadPermissions(caseType).map((name) =>
+      hasPermission(ctx, organizationId, name),
+    ),
+  );
+  return granted.every(Boolean);
 }
 
 /** The case's label, or null when the viewer may not open the case. */

@@ -10885,6 +10885,8 @@ export default {
         "Este paso está asignado a otro rol aprobador. Pida a alguien asignado a este paso que lo revise.",
       alreadyApproved:
         "Su aprobación ya está registrada. El caso sigue pendiente hasta que lo aprueben los demás aprobadores.",
+      alreadyPending:
+        "Ya hay una solicitud para este objeto pendiente de aprobación. Revísela antes de iniciar otra.",
     },
   },
   imageDeletion: {

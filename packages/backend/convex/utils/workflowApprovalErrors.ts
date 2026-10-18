@@ -13,6 +13,8 @@ export const WORKFLOW_APPROVAL_CODES = [
   "APPROVAL_NOT_PERMITTED",
   /** The caller already approved this step; others still have to. */
   "ALREADY_APPROVED",
+  /** The record already has a request of this kind waiting for approval. */
+  "ALREADY_PENDING",
 ] as const;
 
 export type WorkflowApprovalCode = (typeof WORKFLOW_APPROVAL_CODES)[number];

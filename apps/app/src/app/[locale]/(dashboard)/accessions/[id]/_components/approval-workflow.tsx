@@ -62,6 +62,8 @@ function getApprovalErrorMessage(
         title: t("approval.errors.workflowConfigurationTitle"),
         description: t("approval.errors.workflowConfigurationDescription"),
       };
+    // Approving never starts a request, so nothing can already be pending.
+    case "ALREADY_PENDING":
     case undefined:
       return {
         title: t("approval.errors.defaultTitle"),

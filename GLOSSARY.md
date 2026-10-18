@@ -99,7 +99,7 @@ _Avoid_: Feature (when the combination is meant)
 ### Work
 
 **Case**:
-A workflow record with its own approval history, such as a loan, transit record, exhibition, conservation treatment, accession, deaccession, move request, library acquisition request, documentation Finding or Incident.
+A workflow record with its own approval history, such as a loan, transit record, exhibition, conservation treatment, accession, deaccession, move request, library acquisition request, documentation Finding, Inventory exception or Incident.
 _Avoid_: Ticket, request (as a general term)
 
 **Task**:
