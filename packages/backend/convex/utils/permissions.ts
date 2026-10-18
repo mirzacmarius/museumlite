@@ -212,12 +212,18 @@ export async function requirePermission(
   permissionName: string,
 ): Promise<void> {
   const feature = getFeatureForPermission(permissionName);
+  const permissions = await getUserPermissions(ctx, organizationId);
+  // The role before the plan, so members without access are never told to
+  // upgrade (ADR 0004).
+  if (!permissions.includes(permissionName)) {
+    // Non-members keep the plan gate's uncoded refusal.
+    if (feature && !(await getCurrentUserOrganization(ctx, organizationId))) {
+      await requireFeatureAccess(ctx, organizationId, feature);
+    }
+    throw permissionDenied(permissionName);
+  }
   if (feature) {
     await requireFeatureAccess(ctx, organizationId, feature);
-  }
-  const has = await hasPermission(ctx, organizationId, permissionName);
-  if (!has) {
-    throw permissionDenied(permissionName);
   }
 }
 

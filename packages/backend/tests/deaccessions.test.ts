@@ -53,6 +53,50 @@ test("delete requests create pending deaccessions instead of deleting immediatel
   expect(collection?.status).toBe("active");
 });
 
+test("an object with a deaccession waiting for approval cannot get a second one", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, roleId, collectionId } =
+    await createOrgUserCollectionWithPermissions(
+      t,
+      [
+        "collections.create",
+        "collections.read",
+        "collections.approve_deaccession",
+      ],
+      { roleName: "Collections Admin" },
+    );
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "deaccession",
+      steps: [{ stepNumber: 1, roleId, name: "Approve delete" }],
+      canInitiateRoles: [roleId],
+    });
+  });
+  const authed = authedForUser(t, userId);
+  const request = {
+    organizationId,
+    collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Duplicate object",
+    method: "destruction" as const,
+    targetCollectionStatus: "deleted" as const,
+  };
+
+  const first = await authed.mutation(api.deaccessions.create, request);
+  await expect(
+    authed.mutation(api.deaccessions.create, request),
+  ).rejects.toThrow("already has a deaccession waiting for approval");
+
+  await authed.mutation(api.deaccessions.reject, {
+    deaccessionId: first,
+    comment: "Keep it",
+  });
+  await expect(
+    authed.mutation(api.deaccessions.create, request),
+  ).resolves.toBeDefined();
+});
+
 test("approving an archive request marks the collection as archived", async () => {
   const t = createConvexTest();
   const { organizationId, userId, roleId, collectionId } =

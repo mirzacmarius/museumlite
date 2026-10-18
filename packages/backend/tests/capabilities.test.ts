@@ -322,6 +322,37 @@ describe("capability gates on commands", () => {
     });
   });
 
+  test("a free-plan loan assignment without loans.update names the role, not the plan", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      ["collections.read"],
+      { subscriptionTier: "free" },
+    );
+    const loanId = await t.run((ctx) =>
+      ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "LOAN-1",
+        type: "outgoing",
+        lenderBorrowerName: "Borrowing Museum",
+        startDate: Date.UTC(2026, 0, 1),
+        status: "pending",
+      }),
+    );
+
+    const failure = await capabilityFailureOf(
+      authedForUser(t, userId).mutation(api.workflows.assignLoan, {
+        loanId,
+        userId,
+      }),
+    );
+
+    expect(failure).toMatchObject({
+      reason: "permission_missing",
+      message: "Permission denied: loans.update",
+    });
+  });
+
   test("a free-plan site change without its permission names the role, not the plan", async () => {
     const t = createConvexTest();
     const { organizationId, userId } = await createOrgUserWithPermissions(
