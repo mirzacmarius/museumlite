@@ -15,6 +15,41 @@ Standing delivery authorization (merge, deploy, then In Review) is defined in ro
 - Use Linear priorities when known: urgent, high, medium, low, or none.
 - Use MUS workflow statuses only. Cap active `In Progress` work; park the rest in `Todo` or `Backlog`.
 
+## Operations for the engineering skills
+
+Skills such as `/to-spec`, `/to-tickets`, `/triage`, `/implement` and `/wayfinder` read and write MUS issues through the Linear MCP tools (`mcp__Linear__*`). Without them, use the Linear web app and say so.
+
+- **Create an issue**: `save_issue` with `team: "MUS"`, `title`, `description` (Markdown, real newlines), and labels from the conventions above.
+- **Read an issue**: `get_issue` with the `MUS-nnn` id (`includeRelations: true` when blockers matter), plus `list_comments` for its discussion.
+- **List issues**: `list_issues` with `team: "MUS"` and `state`, `label`, `parentId` or `query` filters.
+- **Make an issue a sub-issue of a parent**: `save_issue` with `parentId: "MUS-nnn"`, on create or later.
+- **Comment on an issue**: `save_comment` with `issueId`.
+- **Apply / remove labels**: `save_issue` with `id` plus `addLabels` / `removeLabels` (never `labels`, which replaces the whole set).
+- **Close**: move the issue to the status the role calls for (see [triage-labels.md](triage-labels.md)) with a comment saying why. Agents never set `Done`, `Canceled` or `Duplicate` on their own (see **Agent handoff** below).
+
+**PRs as a request surface: no.** _(MUS work starts in Linear; `/triage` reads this flag. External PRs are reviewed on GitHub, not triaged here.)_
+
+### When a skill says "publish to the issue tracker"
+
+Create a MUS issue in Linear.
+
+### When a skill says "fetch the relevant ticket"
+
+Read it as in **Read an issue** above. Branches and PRs name it as `MUS-nnn`.
+
+### Wayfinding operations
+
+Used by `/wayfinder`. The **map** is one MUS issue with **child** issues as tickets.
+
+- **Map**: an issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body.
+- **Child ticket**: a sub-issue of the map (`parentId`), labelled `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, it is assigned to the driving dev.
+- **Blocking**: Linear's native relations, `save_issue` with `blockedBy: ["MUS-nnn"]`. A ticket is unblocked when every blocker is `In Review`, `Done` or `Canceled`.
+- **Frontier query**: `list_issues` with `parentId` set to the map, open statuses only; drop any with an open blocker (`get_issue` with `includeRelations`) or an assignee; first in map order wins.
+- **Claim**: `save_issue` with `assignee: "me"`, the session's first write.
+- **Resolve**: comment the answer with `save_comment`, move the ticket to `In Review` (a human sets `Done`), then append a context pointer (gist + link) to the map's Decisions-so-far.
+
+The `wayfinder:*` labels don't exist in MUS yet; create them with `create_issue_label` the first time `/wayfinder` needs one.
+
 ## Workflow statuses
 
 `Backlog`, `Todo`, `In Progress`, `In Review`, `Done`, `Duplicate`, `Canceled`
