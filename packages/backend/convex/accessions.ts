@@ -2295,51 +2295,6 @@ export const unassign = mutation({
   },
 });
 
-/**
- * Get accessions assigned to current user
- */
-export const listMyAssigned = query({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  returns: v.array(
-    v.object({
-      _id: v.id("accessions"),
-      accessionNumber: v.string(),
-      source: v.string(),
-      status: accessionStatusValidator,
-      workflowStep: v.optional(v.number()),
-      dateReceived: v.number(),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      return [];
-    }
-
-    const accessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
-      .collect();
-
-    return accessions.flatMap((accession) =>
-      accession.organizationId === args.organizationId
-        ? [
-            {
-              _id: accession._id,
-              accessionNumber: accession.accessionNumber,
-              source: accession.source,
-              status: accession.status,
-              workflowStep: accession.workflowStep,
-              dateReceived: accession.dateReceived,
-            },
-          ]
-        : [],
-    );
-  },
-});
-
 // ============================================
 // Source Verification
 // ============================================

@@ -1487,24 +1487,6 @@ export default {
     totalLocations: "Total Locations",
     totalCollectionGroups: "Collection Groups",
   },
-  assignments: {
-    pendingApprovals: "Pending Approvals",
-    noPendingAssignments: "No pending assignments",
-    allCaughtUpDescription:
-      "You're all caught up. Check back later for new cases awaiting your approval.",
-    typeLabels: {
-      accession: "Accession",
-      accessions: "Accessions",
-      deaccession: "Deaccession",
-      deaccessions: "Deaccessions",
-      loan: "Loan",
-      loans: "Loans",
-      exhibition: "Exhibition",
-      exhibitions: "Exhibitions",
-      conservation: "Conservation",
-    },
-    stepNumber: "Step {step}",
-  },
   newArrivals: {
     title: "New Arrivals",
     noRecentAccessions: "No recent accessions",
@@ -4817,13 +4799,11 @@ export default {
       title: "My work",
       description:
         "Tasks you own, reviews waiting for you and open cases assigned to you.",
-      loading: "Loading…",
       emptyColumns: "Empty columns",
       loadMore: "Load more",
       myTasks: "My tasks",
       reviews: "Waiting for my review",
       assignedCases: "Cases assigned to me",
-      assignedTruncated: "Showing the first 50 assigned cases.",
       since: "Since",
       nothingWaiting: "No work waiting for you.",
       pendingTransfers: "Pending transfers",

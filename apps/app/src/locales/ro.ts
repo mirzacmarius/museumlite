@@ -4895,24 +4895,6 @@ export default {
       },
     },
   },
-  assignments: {
-    pendingApprovals: "Aprobări în așteptare",
-    noPendingAssignments: "Nu există atribuiri în așteptare",
-    allCaughtUpDescription:
-      "Totul este la zi. Revino mai târziu pentru dosare noi care așteaptă aprobarea ta.",
-    typeLabels: {
-      accession: "Accesiune",
-      accessions: "Accesiuni",
-      deaccession: "Scoatere din colecție",
-      deaccessions: "Scoatere din colecție",
-      loan: "Împrumut",
-      loans: "Împrumuturi",
-      exhibition: "Expoziție",
-      exhibitions: "Expoziții",
-      conservation: "Conservare",
-    },
-    stepNumber: "Pasul {step}",
-  },
   objectTypeDetails: {
     section: {
       title: "Detalii {type}",
@@ -7195,13 +7177,11 @@ export default {
       title: "Munca mea",
       description:
         "Sarcinile de care răspundeți, verificările care vă așteaptă și dosarele deschise atribuite dvs.",
-      loading: "Se încarcă…",
       emptyColumns: "Coloane goale",
       loadMore: "Încarcă mai multe",
       myTasks: "Sarcinile mele",
       reviews: "Așteaptă verificarea mea",
       assignedCases: "Dosare atribuite mie",
-      assignedTruncated: "Se afișează primele 50 de dosare atribuite.",
       since: "Din",
       nothingWaiting: "Nu aveți nimic în așteptare.",
       pendingTransfers: "Transferuri în așteptare",

@@ -8,6 +8,7 @@ import {
   capabilityFailureOf,
   createConvexTest,
 } from "./testHarness";
+import { myTasks } from "./workBoardHarness";
 
 type Member = ReturnType<typeof authedForUser>;
 
@@ -233,8 +234,6 @@ async function setup() {
   };
 }
 
-const FIRST_PAGE = { numItems: 20, cursor: null };
-
 async function workErrorCodeOf(call: Promise<unknown>) {
   try {
     await call;
@@ -269,15 +268,12 @@ test("approving a loan suggests the recipe's steps as owned, dated tasks with th
 
   await admin.mutation(api.loans.approve, { loanId: cases.loanId });
 
-  const registrarWork = await registrar.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: FIRST_PAGE,
-  });
-  expect(registrarWork.page.map((task) => task.title)).toEqual([
+  const registrarWork = await myTasks(registrar, organizationId);
+  expect(registrarWork.map((task) => task.title)).toEqual([
     "Outgoing condition check",
     "Pack the objects",
   ]);
-  const [check, pack] = registrarWork.page;
+  const [check, pack] = registrarWork;
   expect(check).toMatchObject({
     caseType: "loan",
     caseId: cases.loanId,
@@ -295,18 +291,15 @@ test("approving a loan suggests the recipe's steps as owned, dated tasks with th
     { _id: check?._id, title: "Outgoing condition check", status: "todo" },
   ]);
 
-  const adminWork = await admin.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: FIRST_PAGE,
-  });
-  expect(adminWork.page).toMatchObject([
+  const adminWork = await myTasks(admin, organizationId);
+  expect(adminWork).toMatchObject([
     {
       title: "Confirm insurance cover",
       ownerName: "ada",
       dueDate: LOAN_START - 10 * DAY,
     },
   ]);
-  expect(adminWork.page[0]?.requiredEvidence).toBeUndefined();
+  expect(adminWork[0]?.requiredEvidence).toBeUndefined();
 });
 
 test("repeating the event keeps one task and one notification per recipe step", async () => {
@@ -400,11 +393,8 @@ test("steps without an eligible owner are reported and suggested once the case h
     "suggested",
     "suggested",
   ]);
-  const work = await registrar.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: FIRST_PAGE,
-  });
-  expect(work.page.map((task) => task.title)).toEqual([
+  const work = await myTasks(registrar, organizationId);
+  expect(work.map((task) => task.title)).toEqual([
     "Outgoing condition check",
     "Confirm insurance cover",
     "Pack the objects",
@@ -423,20 +413,15 @@ test("accepting an intake suggests catalog, photography and condition work dated
     accessionId: cases.accessionId,
   });
 
-  const work = await registrar.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: FIRST_PAGE,
-  });
+  const work = await myTasks(registrar, organizationId);
   expect(
-    work.page.map(
-      ({ title, caseType, caseLabel, dueDate, requiredEvidence }) => ({
-        title,
-        caseType,
-        caseLabel,
-        dueDate,
-        requiredEvidence,
-      }),
-    ),
+    work.map(({ title, caseType, caseLabel, dueDate, requiredEvidence }) => ({
+      title,
+      caseType,
+      caseLabel,
+      dueDate,
+      requiredEvidence,
+    })),
   ).toEqual([
     {
       title: "Complete the catalog record",
@@ -460,7 +445,7 @@ test("accepting an intake suggests catalog, photography and condition work dated
       requiredEvidence: { kind: "conditionAssessment", linked: false },
     },
   ]);
-  expect(work.page[0]?.suggestion).toEqual({
+  expect(work[0]?.suggestion).toEqual({
     recipeName: "Catalog, photograph and assess condition",
     trigger: "intake_accepted",
     eventAt: TODAY + 9.5 * 60 * 60 * 1000,
@@ -609,11 +594,8 @@ test("a dismissed suggestion stays dismissed when the event repeats and staff ca
     taskId: packId,
   });
 
-  const work = await registrar.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: FIRST_PAGE,
-  });
-  const restored = work.page.find((task) => task._id === packId);
+  const work = await myTasks(registrar, organizationId);
+  const restored = work.find((task) => task._id === packId);
   expect(restored?.status).toBe("todo");
   expect(restored?.cancelReason).toBeUndefined();
 });
@@ -684,11 +666,8 @@ test("cancelling an approved loan withdraws untouched suggestions and keeps star
       withdrawnReason: "loan_cancelled",
     },
   ]);
-  const adminWork = await admin.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: FIRST_PAGE,
-  });
-  expect(adminWork.page).toEqual([]);
+  const adminWork = await myTasks(admin, organizationId);
+  expect(adminWork).toEqual([]);
   expect(
     await workErrorCodeOf(
       registrar.mutation(api.preparationRecipes.applyToCase, caseRef),

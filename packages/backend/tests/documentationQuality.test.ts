@@ -14,6 +14,7 @@ import {
   capabilityFailureOf,
   createConvexTest,
 } from "./testHarness";
+import { myTasks } from "./workBoardHarness";
 
 const OFFICER_PERMISSIONS = ["collections.read", "collections.update"];
 const ADMIN_PERMISSIONS = [
@@ -1335,14 +1336,7 @@ test("repair work on a finding is assigned as a case task that reaches the owner
     dueDate: Date.UTC(2026, 11, 1),
   });
 
-  expect(
-    (
-      await owner.query(api.caseTasks.listMyWork, {
-        organizationId,
-        paginationOpts: { numItems: 10, cursor: null },
-      })
-    ).page,
-  ).toMatchObject([
+  expect(await myTasks(owner, organizationId)).toMatchObject([
     {
       _id: taskId,
       caseType: "documentationFinding",

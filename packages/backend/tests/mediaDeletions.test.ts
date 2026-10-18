@@ -13,6 +13,7 @@ import {
   createConvexTest,
   useSequentialScheduledJobs,
 } from "./testHarness";
+import { workColumn } from "./workBoardHarness";
 
 let restoreTimers = () => {};
 beforeEach(() => {
@@ -210,11 +211,8 @@ async function createMuseum({
         })
       )?.images ?? [],
     pendingApprovals: async (role: RoleKey) =>
-      (
-        await as(role).query(api.assignments.listMyAssignments, {
-          organizationId: fixture.organizationId,
-        })
-      ).stats.pendingApprovalsByType.imageDeletion,
+      (await workColumn(as(role), fixture.organizationId, "approvals"))?.byType
+        .imageDeletion,
   };
 }
 

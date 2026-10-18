@@ -9,20 +9,16 @@ import { WorkSection } from "./my-work-sections";
 import { OVERVIEW_CARD_GRID_STYLE, OverviewCard } from "./overview-card";
 import { MY_WORK_HREF, useMyWorkColumns, type WorkColumn } from "./work-board";
 
-export function MyWorkCards({ groups }: { groups: WorkColumn[] }) {
+/** A card per kind of work waiting; `groups` is undefined while they load. */
+export function MyWorkCards({ groups }: { groups: WorkColumn[] | undefined }) {
   const t = useScopedI18n("caseTasks");
   const tRoot = useI18n();
   const locale = useCurrentLocale();
-  const waiting = groups.flatMap((group) =>
-    group.loading
-      ? []
-      : group.summaryEntries.filter((entry) => entry.count > 0),
+  const waiting = (groups ?? []).flatMap((group) =>
+    group.summaryEntries.filter((entry) => entry.count > 0),
   );
-  const loaded = groups.every((group) => !group.loading);
   const linksToMyWork =
-    loaded &&
-    waiting.length > 0 &&
-    waiting.every((entry) => entry.href !== MY_WORK_HREF);
+    waiting.length > 0 && waiting.every((entry) => entry.href !== MY_WORK_HREF);
 
   return (
     <WorkSection
@@ -49,7 +45,7 @@ export function MyWorkCards({ groups }: { groups: WorkColumn[] }) {
             />
           ))}
         </div>
-      ) : loaded ? (
+      ) : groups ? (
         <p className="text-xs text-muted-foreground">
           {t("myWork.nothingWaiting")}
         </p>

@@ -10,6 +10,7 @@ import {
   createConvexTest,
   custodyConflictOf,
 } from "./testHarness";
+import { myTasks } from "./workBoardHarness";
 
 const FIELD_PERMISSIONS = [
   "collections.read",
@@ -868,14 +869,7 @@ describe("repair work", () => {
       ownerId: f.scannerId,
     });
 
-    expect(
-      (
-        await f.scanner.query(api.caseTasks.listMyWork, {
-          organizationId: f.organizationId,
-          paginationOpts: { numItems: 10, cursor: null },
-        })
-      ).page,
-    ).toMatchObject([
+    expect(await myTasks(f.scanner, f.organizationId)).toMatchObject([
       {
         _id: taskId,
         caseType: "inventoryException",

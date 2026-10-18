@@ -19,6 +19,7 @@ import {
   createConvexTest,
   createOrgUserWithPermissions,
 } from "./testHarness";
+import { workColumn } from "./workBoardHarness";
 
 const RESEARCHER = [
   "collections.read",
@@ -924,11 +925,7 @@ describe("access", () => {
       }),
     ).rejects.toThrow();
     await expect(
-      outsider.staff.query(api.provenance.reviewQueue, {
-        organizationId,
-        status: "unreviewed",
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
+      workColumn(outsider.staff, organizationId, "provenance"),
     ).rejects.toThrow();
     const [claim] = await claimsOf(staff, objectId);
     expect(claim?.reviewStatus).toBe("unreviewed");
@@ -996,34 +993,21 @@ describe("review queue", () => {
       note: "Conflicts with the dealer's records",
     });
 
-    const unreviewed = await staff.query(api.provenance.reviewQueue, {
-      organizationId,
-      status: "unreviewed",
-      paginationOpts: { numItems: 10, cursor: null },
-    });
-    expect(unreviewed.page.map((item) => item.claimId)).toEqual([correctedId]);
-    expect(unreviewed.page[0]).toMatchObject({
+    const queue = await workColumn(staff, organizationId, "provenance");
+    expect(queue?.cards.map((item) => [item.claimId, item.disputed])).toEqual([
+      [correctedId, false],
+      [secondId, true],
+    ]);
+    expect(queue?.cards[0]).toMatchObject({
       objectId,
       objectLabel: expect.stringContaining("Portrait of a lady"),
       statement: "Corrected claim",
     });
-    const disputed = await staff.query(api.provenance.reviewQueue, {
-      organizationId,
-      status: "disputed",
-      paginationOpts: { numItems: 10, cursor: null },
-    });
-    expect(disputed.page.map((item) => item.claimId)).toEqual([secondId]);
 
     const researcher = await addMember(t, organizationId, RESEARCHER);
     expect(
-      await capabilityFailureOf(
-        researcher.client.query(api.provenance.reviewQueue, {
-          organizationId,
-          status: "unreviewed",
-          paginationOpts: { numItems: 10, cursor: null },
-        }),
-      ),
-    ).toMatchObject({ reason: "permission_missing" });
+      await workColumn(researcher.client, organizationId, "provenance"),
+    ).toBeUndefined();
   });
 
   test("repeating the same review decision records it once", async () => {
@@ -1165,12 +1149,8 @@ describe("review findings", () => {
     expect(
       claims.find((claim) => claim._id === correctedId)?.contradictedByClaimIds,
     ).toEqual([secondId]);
-    const queue = await staff.query(api.provenance.reviewQueue, {
-      organizationId,
-      status: "unreviewed",
-      paginationOpts: { numItems: 10, cursor: null },
-    });
-    expect(queue.page.map((item) => item.claimId)).toContain(correctedId);
+    const queue = await workColumn(staff, organizationId, "provenance");
+    expect(queue?.cards.map((item) => item.claimId)).toContain(correctedId);
   });
 
   test("only a reviewer may retract a claim that was reviewed or is contested", async () => {

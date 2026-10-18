@@ -279,6 +279,7 @@ import type * as utils_partyDuplicates from "../utils/partyDuplicates.js";
 import type * as utils_partyErrors from "../utils/partyErrors.js";
 import type * as utils_partyLinks from "../utils/partyLinks.js";
 import type * as utils_partyValidators from "../utils/partyValidators.js";
+import type * as utils_pendingApprovals from "../utils/pendingApprovals.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_polarBilling from "../utils/polarBilling.js";
 import type * as utils_polarComponentSync from "../utils/polarComponentSync.js";
@@ -326,6 +327,7 @@ import type * as utils_webhookDelivery from "../utils/webhookDelivery.js";
 import type * as utils_webhookErrors from "../utils/webhookErrors.js";
 import type * as utils_webhookEvents from "../utils/webhookEvents.js";
 import type * as utils_webhookValidators from "../utils/webhookValidators.js";
+import type * as utils_workBoardColumns from "../utils/workBoardColumns.js";
 import type * as utils_workErrors from "../utils/workErrors.js";
 import type * as utils_workflowApprovalErrors from "../utils/workflowApprovalErrors.js";
 import type * as utils_workflowConfigs from "../utils/workflowConfigs.js";
@@ -337,6 +339,7 @@ import type * as webhookDeliveries from "../webhookDeliveries.js";
 import type * as webhooks from "../webhooks.js";
 import type * as webhooksActions from "../webhooksActions.js";
 import type * as wineDetails from "../wineDetails.js";
+import type * as workBoard from "../workBoard.js";
 import type * as workflowSla from "../workflowSla.js";
 import type * as workflows from "../workflows.js";
 
@@ -618,6 +621,7 @@ declare const fullApi: ApiFromModules<{
   "utils/partyErrors": typeof utils_partyErrors;
   "utils/partyLinks": typeof utils_partyLinks;
   "utils/partyValidators": typeof utils_partyValidators;
+  "utils/pendingApprovals": typeof utils_pendingApprovals;
   "utils/permissions": typeof utils_permissions;
   "utils/polarBilling": typeof utils_polarBilling;
   "utils/polarComponentSync": typeof utils_polarComponentSync;
@@ -665,6 +669,7 @@ declare const fullApi: ApiFromModules<{
   "utils/webhookErrors": typeof utils_webhookErrors;
   "utils/webhookEvents": typeof utils_webhookEvents;
   "utils/webhookValidators": typeof utils_webhookValidators;
+  "utils/workBoardColumns": typeof utils_workBoardColumns;
   "utils/workErrors": typeof utils_workErrors;
   "utils/workflowApprovalErrors": typeof utils_workflowApprovalErrors;
   "utils/workflowConfigs": typeof utils_workflowConfigs;
@@ -676,6 +681,7 @@ declare const fullApi: ApiFromModules<{
   webhooks: typeof webhooks;
   webhooksActions: typeof webhooksActions;
   wineDetails: typeof wineDetails;
+  workBoard: typeof workBoard;
   workflowSla: typeof workflowSla;
   workflows: typeof workflows;
 }>;

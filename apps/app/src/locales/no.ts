@@ -1500,25 +1500,6 @@ export default {
     totalLocations: "Plasseringer totalt",
     totalCollectionGroups: "Samlingsgrupper",
   },
-  assignments: {
-    pendingApprovals: "Ventende godkjenninger",
-    noPendingAssignments: "Ingen ventende oppdrag",
-    allCaughtUpDescription:
-      "Du er à jour. Kom tilbake senere for nye saker som venter på godkjenningen din.",
-    typeLabels: {
-      accessions: "Aksesjoner",
-      loans: "Lån",
-      exhibitions: "Utstillinger",
-      conservation: "Konservering",
-
-      accession: "Aksesjon",
-      deaccession: "Deaksesjon",
-      deaccessions: "Avhendinger",
-      loan: "Lån",
-      exhibition: "Utstilling",
-    },
-    stepNumber: "Steg {step}",
-  },
   newArrivals: {
     title: "Nye ankomster",
     noRecentAccessions: "Ingen nylige aksesjoner",
@@ -4871,13 +4852,11 @@ export default {
       title: "Mitt arbeid",
       description:
         "Oppgaver du er ansvarlig for, gjennomganger som venter på deg og åpne saker tildelt deg.",
-      loading: "Laster…",
       emptyColumns: "Tomme kolonner",
       loadMore: "Last inn flere",
       myTasks: "Mine oppgaver",
       reviews: "Venter på min gjennomgang",
       assignedCases: "Saker tildelt meg",
-      assignedTruncated: "Viser de første 50 tildelte sakene.",
       since: "Siden",
       nothingWaiting: "Ingenting venter på deg.",
       pendingTransfers: "Ventende overføringer",

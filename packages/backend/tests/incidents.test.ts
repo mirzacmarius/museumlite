@@ -8,6 +8,7 @@ import {
   createConvexTest,
   custodyConflictOf,
 } from "./testHarness";
+import { myTasks } from "./workBoardHarness";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -575,11 +576,8 @@ test("work on a sensitive incident stays with the people in its scope", async ()
     ...task,
     ownerId: s.colleagueId,
   });
-  const myWork = await s.colleague.query(api.caseTasks.listMyWork, {
-    organizationId: s.organizationId,
-    paginationOpts: { numItems: 20, cursor: null },
-  });
-  expect(myWork.page.map((row) => [row._id, row.caseLabel])).toEqual([
+  const myWork = await myTasks(s.colleague, s.organizationId);
+  expect(myWork.map((row) => [row._id, row.caseLabel])).toEqual([
     [taskId, expect.stringMatching(/^INC-/)],
   ]);
 
@@ -621,12 +619,7 @@ test("an ordinary incident's tasks reach the owner's queue and every collection 
     ownerId: s.responderId,
   });
   const queue = async () =>
-    (
-      await s.responder.query(api.caseTasks.listMyWork, {
-        organizationId: s.organizationId,
-        paginationOpts: { numItems: 20, cursor: null },
-      })
-    ).page.map((row) => row._id);
+    (await myTasks(s.responder, s.organizationId)).map((row) => row._id);
   expect(await queue()).toEqual([taskId]);
   const reviewer = await s.colleague.query(api.caseTasks.listForCase, {
     organizationId: s.organizationId,

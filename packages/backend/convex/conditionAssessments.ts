@@ -25,6 +25,7 @@ import {
   requireCapability,
   requirePermission,
 } from "./utils/permissions";
+import type { ColumnPage } from "./utils/workBoardColumns";
 
 const observation = v.object({
   area: v.string(),
@@ -45,8 +46,6 @@ const assessmentContent = {
   photos: v.array(v.id("mediaFiles")),
 };
 
-/** Overview shows "99+" beyond this many assessments awaiting approval. */
-export const PENDING_APPROVAL_COUNT_LIMIT = 99;
 /** Board totals stop here and read "999+", so a count never scans a log. */
 export const BOARD_COUNT_LIMIT = 999;
 const BOARD_PERMISSIONS = CAPABILITY_MATRIX.condition_assessments.permissions;
@@ -602,7 +601,7 @@ export const listForObject = query({
   },
 });
 
-const boardItemValidator = v.object({
+export const boardItemValidator = v.object({
   _id: v.id("conditionAssessments"),
   _creationTime: v.number(),
   collectionId: v.id("collections"),
@@ -764,23 +763,25 @@ export const getBoardCounts = query({
 });
 
 /**
- * Assessments awaiting approval, for the Overview card. Zero for members who
- * cannot open the board or accept assessments, so they never see the card.
+ * Submitted assessments waiting for the viewer to accept or reject them,
+ * newest first. Null for members who cannot open the board or accept
+ * assessments, so they never see the Work board column.
  */
-export const pendingApprovalCount = query({
-  args: { organizationId: v.id("organizations") },
-  returns: boundedCount,
-  handler: async (ctx, args) => {
-    const permissions = await getUserPermissions(ctx, args.organizationId);
-    const canAct = [...BOARD_PERMISSIONS, REVIEW_PERMISSION].every(
-      (permission) => permissions.includes(permission),
-    );
-    if (!canAct) return { count: 0, hasMore: false };
-    return await countUpTo(
-      ctx,
-      args.organizationId,
-      "submitted",
-      PENDING_APPROVAL_COUNT_LIMIT,
-    );
-  },
-});
+export async function readAwaitingAcceptance(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  limit: number,
+): Promise<ColumnPage<BoardItem> | null> {
+  const permissions = await getUserPermissions(ctx, organizationId);
+  const canAct = [...BOARD_PERMISSIONS, REVIEW_PERMISSION].every((permission) =>
+    permissions.includes(permission),
+  );
+  if (!canAct) return null;
+  const rows = await statusQuery(ctx, organizationId, "submitted")
+    .order("desc")
+    .take(limit + 1);
+  return {
+    cards: await toBoardItems(ctx, rows.slice(0, limit)),
+    hasMore: rows.length > limit,
+  };
+}

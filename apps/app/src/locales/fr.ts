@@ -1532,25 +1532,6 @@ export default {
     totalLocations: "Emplacements Totaux",
     totalCollectionGroups: "Groupes de Collections",
   },
-  assignments: {
-    pendingApprovals: "Approbations en Attente",
-    noPendingAssignments: "Aucune affectation en attente",
-    allCaughtUpDescription:
-      "Vous êtes à jour. Revenez plus tard pour voir les nouveaux dossiers en attente de votre approbation.",
-    typeLabels: {
-      accessions: "Accessions",
-      loans: "Prêts",
-      exhibitions: "Expositions",
-      conservation: "Conservation",
-
-      accession: "Accession",
-      deaccession: "Déclassement",
-      deaccessions: "Déclassements",
-      loan: "Prêt",
-      exhibition: "Exposition",
-    },
-    stepNumber: "Étape {step}",
-  },
   newArrivals: {
     title: "Nouvelles Arrivées",
     noRecentAccessions: "Aucune accession récente",
@@ -4932,13 +4913,11 @@ export default {
       title: "Mon travail",
       description:
         "Vos tâches, les relectures qui vous attendent et les dossiers ouverts qui vous sont attribués.",
-      loading: "Chargement…",
       emptyColumns: "Colonnes vides",
       loadMore: "Afficher plus",
       myTasks: "Mes tâches",
       reviews: "En attente de ma relecture",
       assignedCases: "Dossiers qui me sont attribués",
-      assignedTruncated: "Affichage des 50 premiers dossiers attribués.",
       since: "Depuis le",
       nothingWaiting: "Aucun travail ne vous attend.",
       pendingTransfers: "Transferts en attente",
