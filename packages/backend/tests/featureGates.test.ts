@@ -9,7 +9,30 @@ import {
   MODULE_IDS,
 } from "../convex/utils/featurePolicy";
 
+import {
+  authedForUser,
+  type ConvexTest,
+  createOrgUserWithPermissions,
+  type SubscriptionTier,
+} from "./testHarness";
 import { modules } from "./testSetup";
+
+/** A member who may read loans; only the plan decides access. */
+async function loanReader(t: ConvexTest, tier: SubscriptionTier | undefined) {
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["loans.read"],
+    { subscriptionTier: tier },
+  );
+  return { organizationId, caller: authedForUser(t, userId) };
+}
+
+function listLoans(reader: Awaited<ReturnType<typeof loanReader>>) {
+  return reader.caller.query(api.loans.list, {
+    organizationId: reader.organizationId,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+}
 
 const createOrg = (
   name: string,
@@ -47,43 +70,18 @@ describe("Feature Gates - Shared Policy", () => {
 describe("Feature Gates - Tier Access", () => {
   test("free tier should not access pro features (loans)", async () => {
     const t = convexTest(schema, modules);
+    const reader = await loanReader(t, "free");
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert(
-        "organizations",
-        createOrg("Free Org", "free-org", "free"),
-      );
-    });
-
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    await expect(listLoans(reader)).rejects.toThrow(
+      "Feature requires pro tier",
+    );
   });
 
   test("pro tier should access pro features (loans)", async () => {
     const t = convexTest(schema, modules);
+    const reader = await loanReader(t, "pro");
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert(
-        "organizations",
-        createOrg("Pro Org", "pro-org", "pro"),
-      );
-    });
-
-    const result = await t
-      .query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      })
-      .catch((e: Error) => {
-        expect(e.message).not.toContain("Feature requires");
-        return { page: [], isDone: true, continueCursor: "" };
-      });
-
-    expect(result).toBeDefined();
+    await expect(listLoans(reader)).resolves.toMatchObject({ page: [] });
   });
 
   test("enterprise tier should access all features", async () => {
@@ -113,87 +111,41 @@ describe("Feature Gates - Tier Access", () => {
 describe("Feature Gates - Billing Transitions", () => {
   test("downgrade from pro to free should block pro features", async () => {
     const t = convexTest(schema, modules);
+    const reader = await loanReader(t, "pro");
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert(
-        "organizations",
-        createOrg("Downgrade Test Org", "downgrade-org", "pro"),
-      );
-    });
-
-    const initialResult = await t
-      .query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      })
-      .catch((e: Error) => {
-        expect(e.message).not.toContain("Feature requires");
-        return { page: [] };
-      });
-    expect(initialResult).toBeDefined();
+    await expect(listLoans(reader)).resolves.toMatchObject({ page: [] });
 
     await t.run(async (ctx) => {
-      await ctx.db.patch(orgId, { subscriptionTier: "free" });
+      await ctx.db.patch(reader.organizationId, { subscriptionTier: "free" });
     });
 
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    await expect(listLoans(reader)).rejects.toThrow(
+      "Feature requires pro tier",
+    );
   });
 
   test("upgrade from free to pro should enable pro features", async () => {
     const t = convexTest(schema, modules);
+    const reader = await loanReader(t, "free");
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert(
-        "organizations",
-        createOrg("Upgrade Test Org", "upgrade-org", "free"),
-      );
-    });
-
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    await expect(listLoans(reader)).rejects.toThrow(
+      "Feature requires pro tier",
+    );
 
     await t.run(async (ctx) => {
-      await ctx.db.patch(orgId, { subscriptionTier: "pro" });
+      await ctx.db.patch(reader.organizationId, { subscriptionTier: "pro" });
     });
 
-    const result = await t
-      .query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      })
-      .catch((e: Error) => {
-        expect(e.message).not.toContain("Feature requires");
-        return { page: [] };
-      });
-    expect(result).toBeDefined();
+    await expect(listLoans(reader)).resolves.toMatchObject({ page: [] });
   });
 
   test("null/undefined tier should default to free", async () => {
     const t = convexTest(schema, modules);
+    const reader = await loanReader(t, undefined);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Default Tier Org",
-        slug: "default-org",
-        type: "museum",
-      });
-    });
-
-    await expect(
-      t.query(api.loans.list, {
-        organizationId: orgId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    ).rejects.toThrow("Feature requires pro tier");
+    await expect(listLoans(reader)).rejects.toThrow(
+      "Feature requires pro tier",
+    );
   });
 });
 

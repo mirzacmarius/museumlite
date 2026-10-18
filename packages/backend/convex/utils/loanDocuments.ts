@@ -2,8 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
-import { requireLoansAccess } from "./loanAccess";
-import { requirePermission } from "./permissions";
+import { requireCapability } from "./permissions";
 import { claimStorageOwnership } from "./uploadOwnership";
 
 export async function uploadLoanDocumentHandler(
@@ -25,10 +24,7 @@ export async function uploadLoanDocumentHandler(
   if (!loan) {
     throw new Error("Loan not found");
   }
-  await Promise.all([
-    requireLoansAccess(ctx, loan.organizationId),
-    requirePermission(ctx, loan.organizationId, "loans.update"),
-  ]);
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
   const documentId = await ctx.db.insert("loanDocuments", {
     loanId: args.loanId,
     storageId: args.storageId,
@@ -56,10 +52,7 @@ export async function listLoanDocumentsHandler(
   if (!loan) {
     throw new Error("Loan not found");
   }
-  await Promise.all([
-    requireLoansAccess(ctx, loan.organizationId),
-    requirePermission(ctx, loan.organizationId, "loans.read"),
-  ]);
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.read");
   const documents = await ctx.db
     .query("loanDocuments")
     .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
@@ -106,6 +99,6 @@ export async function deleteLoanDocumentHandler(
   if (!loan) {
     throw new Error("Loan not found");
   }
-  await requirePermission(ctx, loan.organizationId, "loans.update");
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
   return rejectPermanentEvidenceDeletion();
 }

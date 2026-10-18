@@ -5,7 +5,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { dispatchNotification } from "./notificationDispatch";
 import {
   getUsersToNotifyForWorkflowStep,
-  requirePermission,
+  requireCapability,
 } from "./permissions";
 import { correctPreparation } from "./preparation";
 
@@ -42,7 +42,7 @@ export async function requestLoanExtensionHandler(
 
   // Verify permission
   const [, existingRequest] = await Promise.all([
-    requirePermission(ctx, loan.organizationId, "loans.update"),
+    requireCapability(ctx, loan.organizationId, "loans", "loans.update"),
     ctx.db
       .query("loanExtensionRequests")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
@@ -117,7 +117,12 @@ export async function approveLoanExtensionHandler(
   }
 
   // Verify permission
-  await requirePermission(ctx, request.organizationId, "loans.approve");
+  await requireCapability(
+    ctx,
+    request.organizationId,
+    "loans",
+    "loans.approve",
+  );
 
   const loan = await ctx.db.get(request.loanId);
   if (!loan) {
@@ -189,7 +194,12 @@ export async function rejectLoanExtensionHandler(
   }
 
   // Verify permission
-  await requirePermission(ctx, request.organizationId, "loans.approve");
+  await requireCapability(
+    ctx,
+    request.organizationId,
+    "loans",
+    "loans.approve",
+  );
 
   const loan = await ctx.db.get(request.loanId);
   if (!loan) {
@@ -231,7 +241,7 @@ export async function listLoanExtensionRequestsHandler(
   }
 
   const [, requests] = await Promise.all([
-    requirePermission(ctx, loan.organizationId, "loans.read"),
+    requireCapability(ctx, loan.organizationId, "loans", "loans.read"),
     ctx.db
       .query("loanExtensionRequests")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
