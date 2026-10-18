@@ -11,6 +11,7 @@ import {
   type ConvexTest,
   createConvexTest,
 } from "./testHarness";
+import { myTasks, workColumn } from "./workBoardHarness";
 
 const STAFF_PERMISSIONS = [
   "collections.read",
@@ -640,11 +641,8 @@ test("a reviewed task is approved only by its reviewer, with every step on the c
   });
   await registrar.mutation(api.caseTasks.submitForReview, { taskId });
 
-  const queue = await reviewer.query(api.caseTasks.listReviewQueue, {
-    organizationId,
-    paginationOpts: { numItems: 10, cursor: null },
-  });
-  expect(queue.page).toMatchObject([
+  const queue = await workColumn(reviewer, organizationId, "reviews");
+  expect(queue?.cards).toMatchObject([
     {
       _id: taskId,
       status: "in_review",
@@ -690,12 +688,7 @@ test("a reviewed task is approved only by its reviewer, with every step on the c
     ),
   ).toBe("REVIEWER_ONLY");
   expect(
-    (
-      await reviewer.query(api.caseTasks.listReviewQueue, {
-        organizationId,
-        paginationOpts: { numItems: 10, cursor: null },
-      })
-    ).page,
+    (await workColumn(reviewer, organizationId, "reviews"))?.cards,
   ).toEqual([]);
   expect(
     (await loanTasks(registrar, organizationId, cases.loanId)).get(
@@ -805,7 +798,7 @@ test("completing a task with evidence does not change custody, condition or appr
   ]);
 });
 
-test("My work pages open owned tasks soonest due first and stays bounded", async () => {
+test("the Work board lists open owned tasks soonest due first and stays bounded", async () => {
   const {
     t,
     registrar,
@@ -853,61 +846,30 @@ test("My work pages open owned tasks soonest due first and stays bounded", async
     dueDate: 0,
   });
 
-  const seen: string[] = [];
-  let cursor: string | null = null;
-  let pages = 0;
-  do {
-    const result = await registrar.query(api.caseTasks.listMyWork, {
-      organizationId,
-      paginationOpts: { numItems: 2, cursor },
-    });
-    expect(result.page.length).toBeLessThanOrEqual(2);
-    seen.push(...result.page.map((task) => task.title));
-    cursor = result.isDone ? null : result.continueCursor;
-    pages++;
-  } while (cursor && pages < 10);
-  expect(seen).toEqual([
-    "Due day 1",
-    "Due day 2",
-    "Due day 3",
-    "Due day 5",
-    "Undated",
-  ]);
+  expect(
+    (await workColumn(registrar, organizationId, "tasks", { tasks: 2 }))
+      ?.hasMore,
+  ).toBe(true);
+  expect(
+    (await myTasks(registrar, organizationId)).map((task) => task.title),
+  ).toEqual(["Due day 1", "Due day 2", "Due day 3", "Due day 5", "Undated"]);
 
   expect(
     await workErrorCodeOf(
-      registrar.query(api.caseTasks.listMyWork, {
-        organizationId,
-        paginationOpts: { numItems: 51, cursor: null },
-      }),
+      workColumn(registrar, organizationId, "tasks", { tasks: 101 }),
     ),
   ).toBe("INVALID_INPUT");
-  await expect(
-    foreignStaff.query(api.caseTasks.listMyWork, {
-      organizationId,
-      paginationOpts: { numItems: 10, cursor: null },
-    }),
-  ).rejects.toThrow("Permission denied");
+  await expect(myTasks(foreignStaff, organizationId)).rejects.toThrow(
+    "Permission denied",
+  );
 
   await t.run((ctx) =>
     ctx.db.patch(organizationId, { subscriptionTier: "free" }),
   );
-  const withoutLoans = await registrar.query(api.caseTasks.listMyWork, {
-    organizationId,
-    paginationOpts: { numItems: 10, cursor: null },
-  });
-  expect(withoutLoans.page.map((task) => task.title)).toEqual([
-    "Due day 3",
-    "Undated",
-  ]);
   expect(
-    (
-      await reviewer.query(api.caseTasks.listMyWork, {
-        organizationId,
-        paginationOpts: { numItems: 10, cursor: null },
-      })
-    ).page,
-  ).toEqual([]);
+    (await myTasks(registrar, organizationId)).map((task) => task.title),
+  ).toEqual(["Due day 3", "Undated"]);
+  expect(await myTasks(reviewer, organizationId)).toEqual([]);
 });
 
 test("My work lists open accession, deaccession and loan assignments in this organization", async () => {
@@ -937,12 +899,10 @@ test("My work lists open accession, deaccession and loan assignments in this org
     userId: foreignStaffId,
   });
 
-  const assigned = await registrar.query(api.caseTasks.listMyAssignedCases, {
-    organizationId,
-  });
-  expect(assigned.truncated).toBe(false);
+  const assigned = await workColumn(registrar, organizationId, "assigned");
+  expect(assigned?.hasMore).toBe(false);
   expect(
-    assigned.cases.map((row) => [row.caseType, row.caseId, row.caseLabel]),
+    assigned?.cards.map((row) => [row.caseType, row.caseId, row.caseLabel]),
   ).toEqual(
     expect.arrayContaining([
       ["accession", cases.accessionId, "HOME-A-001"],
@@ -950,7 +910,7 @@ test("My work lists open accession, deaccession and loan assignments in this org
       ["loan", cases.loanId, "HOME-L-001"],
     ]),
   );
-  expect(assigned.cases).toHaveLength(3);
+  expect(assigned?.cards).toHaveLength(3);
 });
 
 test("tasks from another organization cannot be read, moved or reassigned", async () => {
@@ -1059,11 +1019,11 @@ test("reassignment keeps owners and reviewers inside the case's eligible members
     reviewerId: registrarId,
     dueDate: 42,
   });
-  const reassigned = await authedForUser(t, reviewerId).query(
-    api.caseTasks.listMyWork,
-    { organizationId, paginationOpts: { numItems: 10, cursor: null } },
+  const reassigned = await myTasks(
+    authedForUser(t, reviewerId),
+    organizationId,
   );
-  expect(reassigned.page).toMatchObject([
+  expect(reassigned).toMatchObject([
     {
       _id: taskId,
       ownerName: "Victor Reviewer",

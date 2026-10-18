@@ -2,14 +2,15 @@ import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
 
 import { modules } from "../tests/testSetup";
+import { workColumn } from "../tests/workBoardHarness";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { PENDING_APPROVAL_COUNT_LIMIT } from "./conditionAssessments";
 import schema from "./schema";
 import {
   type ConditionAssessmentErrorCode,
   conditionAssessmentErrorFromError,
 } from "./utils/conditionAssessmentErrors";
+import { WORK_COLUMN_PAGE } from "./utils/workBoardColumns";
 
 const REVIEWER_PERMISSIONS = [
   "collections.read",
@@ -17,6 +18,15 @@ const REVIEWER_PERMISSIONS = [
   "collections.accept_condition",
   "media.read",
 ] as const;
+
+/** How many submitted assessments the viewer's Work board shows waiting. */
+async function waitingForAcceptance(
+  client: Parameters<typeof workColumn>[0],
+  organizationId: Id<"organizations">,
+) {
+  const column = await workColumn(client, organizationId, "conditionApprovals");
+  return column && { count: column.cards.length, hasMore: column.hasMore };
+}
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -186,11 +196,10 @@ test("Save draft keeps the assessment a draft that no reviewer can accept", asyn
     condition: "Poor",
     summary: "Poor check",
   });
-  expect(
-    await asUser.query(api.conditionAssessments.pendingApprovalCount, {
-      organizationId,
-    }),
-  ).toEqual({ count: 0, hasMore: false });
+  expect(await waitingForAcceptance(asUser, organizationId)).toEqual({
+    count: 0,
+    hasMore: false,
+  });
   expect(
     await errorCodeOf(
       asUser.mutation(api.conditionAssessments.accept, { assessmentId }),
@@ -250,11 +259,10 @@ test("a draft can be edited and stays a draft until it is submitted", async () =
     submittedBy: userId,
   });
   expect(stored?.submittedAt).toEqual(expect.any(Number));
-  expect(
-    await asUser.query(api.conditionAssessments.pendingApprovalCount, {
-      organizationId,
-    }),
-  ).toEqual({ count: 1, hasMore: false });
+  expect(await waitingForAcceptance(asUser, organizationId)).toEqual({
+    count: 1,
+    hasMore: false,
+  });
   expect(
     (
       await asUser.query(api.conditionAssessments.getForObject, {
@@ -483,7 +491,7 @@ test("capture and acceptance require separate permissions", async () => {
   );
 });
 
-test("the Overview count covers submitted assessments for members who can accept them", async () => {
+test("the Work board counts submitted assessments for members who can accept them", async () => {
   const { t, userId, organizationId, roleId, collectionId } = await setup();
   const asUser = t.withIdentity({ subject: userId });
   const bowlId = await addObject(t, organizationId, userId, "Bowl");
@@ -542,36 +550,28 @@ test("the Overview count covers submitted assessments for members who can accept
     return { otherOrganizationId, outsiderId };
   });
 
-  expect(
-    await asUser.query(api.conditionAssessments.pendingApprovalCount, {
+  expect(await waitingForAcceptance(asUser, organizationId)).toEqual({
+    count: 1,
+    hasMore: false,
+  });
+  await expect(
+    waitingForAcceptance(
+      t.withIdentity({ subject: outsiderId }),
       organizationId,
-    }),
-  ).toEqual({ count: 1, hasMore: false });
-  expect(
-    await t
-      .withIdentity({ subject: outsiderId })
-      .query(api.conditionAssessments.pendingApprovalCount, {
-        organizationId,
-      }),
-  ).toEqual({ count: 0, hasMore: false });
-  expect(
-    await asUser.query(api.conditionAssessments.pendingApprovalCount, {
-      organizationId: otherOrganizationId,
-    }),
-  ).toEqual({ count: 0, hasMore: false });
+    ),
+  ).rejects.toThrow("Permission denied");
+  await expect(
+    waitingForAcceptance(asUser, otherOrganizationId),
+  ).rejects.toThrow("Permission denied");
 
   await revoke(t, roleId, "collections.accept_condition");
-  expect(
-    await asUser.query(api.conditionAssessments.pendingApprovalCount, {
-      organizationId,
-    }),
-  ).toEqual({ count: 0, hasMore: false });
+  expect(await waitingForAcceptance(asUser, organizationId)).toBeUndefined();
 });
 
-test("the Overview count stops at its limit and says there are more", async () => {
+test("the Work board shows a page of waiting assessments and says there are more", async () => {
   const { t, userId, organizationId } = await setup();
   await t.run(async (ctx) => {
-    for (let index = 0; index <= PENDING_APPROVAL_COUNT_LIMIT; index += 1) {
+    for (let index = 0; index <= WORK_COLUMN_PAGE; index += 1) {
       const collectionId = await ctx.db.insert("collections", {
         organizationId,
         accessionNumber: `B-${index}`,
@@ -596,12 +596,11 @@ test("the Overview count stops at its limit and says there are more", async () =
   });
 
   expect(
-    await t
-      .withIdentity({ subject: userId })
-      .query(api.conditionAssessments.pendingApprovalCount, {
-        organizationId,
-      }),
-  ).toEqual({ count: PENDING_APPROVAL_COUNT_LIMIT, hasMore: true });
+    await waitingForAcceptance(
+      t.withIdentity({ subject: userId }),
+      organizationId,
+    ),
+  ).toEqual({ count: WORK_COLUMN_PAGE, hasMore: true });
 });
 
 test("the board lists each status in its own column with counts and search", async () => {

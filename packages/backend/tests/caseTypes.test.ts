@@ -12,6 +12,7 @@ import {
   createConvexTest,
   type SubscriptionTier,
 } from "./testHarness";
+import { myTasks } from "./workBoardHarness";
 
 const EVERY_PERMISSION = [
   "collections.read",
@@ -327,11 +328,8 @@ test("every case type: a task is in My work exactly when its case opens for the 
     return Object.fromEntries(
       await Promise.all(
         members.map(async ({ role, member }) => {
-          const queue = await member.query(api.caseTasks.listMyWork, {
-            organizationId,
-            paginationOpts: { numItems: 50, cursor: null },
-          });
-          const queued = new Set(queue.page.map((task) => task.caseId));
+          const queue = await myTasks(member, organizationId);
+          const queued = new Set(queue.map((task) => task.caseId));
           const rows = await Promise.all(
             cases.map(async ({ name, caseType, caseId }) => {
               const opens = await allowed(

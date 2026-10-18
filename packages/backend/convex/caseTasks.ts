@@ -1,9 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import {
-  paginationOptsValidator,
-  paginationResultValidator,
-} from "convex/server";
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import {
@@ -45,6 +41,7 @@ import {
   requirePermission,
 } from "./utils/permissions";
 import { preparationTriggerValidator } from "./utils/preparationValidators";
+import { type ColumnPage, firstKept } from "./utils/workBoardColumns";
 import { workError } from "./utils/workErrors";
 
 const MAX_DEPENDENCIES = 10;
@@ -68,7 +65,7 @@ const evidenceValidator = v.object({
   linkedByName: v.optional(v.string()),
 });
 
-const taskValidator = v.object({
+export const taskValidator = v.object({
   _id: v.id("caseTasks"),
   caseType: caseTaskCaseTypeValidator,
   caseId: v.string(),
@@ -115,6 +112,8 @@ const taskValidator = v.object({
   updatedAt: v.number(),
   completedAt: v.optional(v.number()),
 });
+
+type Task = Infer<typeof taskValidator>;
 
 function requiredText(value: string, maxLength: number, field: string) {
   const trimmed = value.trim();
@@ -404,34 +403,16 @@ export const listForCase = query({
   },
 });
 
-const MAX_PAGE_SIZE = 50;
-
-async function requireMembership(
+/**
+ * Open tasks the viewer owns, or tasks waiting for their review, soonest due
+ * first. Tasks on cases the viewer cannot open are left out.
+ */
+export async function readTaskQueue(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-) {
-  const userId = await requireUserId(ctx);
-  const membership = await ctx.db
-    .query("userOrganizations")
-    .withIndex("by_user_and_organization", (q) =>
-      q.eq("userId", userId).eq("organizationId", organizationId),
-    )
-    .first();
-  if (!membership) throw new Error("Permission denied: not a member");
-  return userId;
-}
-
-function requirePageSize(numItems: number) {
-  if (!Number.isInteger(numItems) || numItems < 1 || numItems > MAX_PAGE_SIZE)
-    throw workError("INVALID_INPUT", "Page size must be between 1 and 50");
-}
-
-/** Presents a page of queue rows, hiding tasks on cases the viewer cannot open. */
-async function presentQueuePage(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  rows: Doc<"caseTasks">[],
-) {
+  queue: "owned" | "review",
+  limit: number,
+): Promise<ColumnPage<Task>> {
   const [access, permissions] = await Promise.all([
     viewerAccess(ctx, organizationId),
     getUserPermissions(ctx, organizationId),
@@ -452,182 +433,150 @@ async function presentQueuePage(
     }
     return cached;
   };
-  const presented = await Promise.all(
-    rows.map(async (task) => {
-      const allowed = await accessFor(task.caseType);
-      if (!allowed.read) return null;
-      const record = await readVisibleCase(
-        ctx,
-        organizationId,
-        task.caseType,
-        task.caseId,
-        async () => viewer,
-      );
-      return record
-        ? await presentTask(ctx, task, caseLabel(record), access, allowed.work)
-        : null;
-    }),
-  );
-  return presented.flatMap((task) => (task ? [task] : []));
+  const rows =
+    queue === "owned"
+      ? ctx.db
+          .query("caseTasks")
+          .withIndex(
+            "by_organization_and_ownerId_and_open_and_queueDueAt",
+            (q) =>
+              q
+                .eq("organizationId", organizationId)
+                .eq("ownerId", access.userId)
+                .eq("open", true),
+          )
+      : ctx.db
+          .query("caseTasks")
+          .withIndex(
+            "by_organization_and_reviewerId_and_status_and_queueDueAt",
+            (q) =>
+              q
+                .eq("organizationId", organizationId)
+                .eq("reviewerId", access.userId)
+                .eq("status", "in_review"),
+          );
+  const { kept, hasMore } = await firstKept(rows, limit, async (task) => {
+    const allowed = await accessFor(task.caseType);
+    if (!allowed.read) return null;
+    const record = await readVisibleCase(
+      ctx,
+      organizationId,
+      task.caseType,
+      task.caseId,
+      async () => viewer,
+    );
+    return record ? { task, record, canWork: allowed.work } : null;
+  });
+  return {
+    cards: await Promise.all(
+      kept.map(({ task, record, canWork }) =>
+        presentTask(ctx, task, caseLabel(record), access, canWork),
+      ),
+    ),
+    hasMore,
+  };
 }
 
-const queueArgs = {
-  organizationId: v.id("organizations"),
-  paginationOpts: paginationOptsValidator,
-};
-
-/** Open tasks the caller owns, soonest due first. */
-export const listMyWork = query({
-  args: queueArgs,
-  returns: paginationResultValidator(taskValidator),
-  handler: async (ctx, args) => {
-    const userId = await requireMembership(ctx, args.organizationId);
-    requirePageSize(args.paginationOpts.numItems);
-    const result = await ctx.db
-      .query("caseTasks")
-      .withIndex("by_organization_and_ownerId_and_open_and_queueDueAt", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("ownerId", userId)
-          .eq("open", true),
-      )
-      .paginate(args.paginationOpts);
-    return {
-      ...result,
-      page: await presentQueuePage(ctx, args.organizationId, result.page),
-    };
-  },
-});
-
-/** Tasks waiting for the caller's review, soonest due first. */
-export const listReviewQueue = query({
-  args: queueArgs,
-  returns: paginationResultValidator(taskValidator),
-  handler: async (ctx, args) => {
-    const userId = await requireMembership(ctx, args.organizationId);
-    requirePageSize(args.paginationOpts.numItems);
-    const result = await ctx.db
-      .query("caseTasks")
-      .withIndex(
-        "by_organization_and_reviewerId_and_status_and_queueDueAt",
-        (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("reviewerId", userId)
-            .eq("status", "in_review"),
-      )
-      .paginate(args.paginationOpts);
-    return {
-      ...result,
-      page: await presentQueuePage(ctx, args.organizationId, result.page),
-    };
-  },
-});
-
 const ASSIGNED_CASE_SCAN = 100;
-const ASSIGNED_CASE_LIMIT = 50;
 
-/** Open accessions, deaccessions and loans assigned to the caller. */
-export const listMyAssignedCases = query({
-  args: { organizationId: v.id("organizations") },
-  returns: v.object({
-    cases: v.array(
-      v.object({
-        caseType: v.union(
-          v.literal("loan"),
-          v.literal("accession"),
-          v.literal("deaccession"),
-        ),
-        caseId: v.string(),
-        caseLabel: v.string(),
-        status: v.string(),
-        since: v.number(),
-      }),
-    ),
-    truncated: v.boolean(),
-  }),
-  handler: async (ctx, args) => {
-    const userId = await requireMembership(ctx, args.organizationId);
-    const [accessionAccess, deaccessionAccess, loanAccess] = await Promise.all([
-      canOpenCaseType(ctx, args.organizationId, "accession"),
-      canOpenCaseType(ctx, args.organizationId, "deaccession"),
-      canOpenCaseType(ctx, args.organizationId, "loan"),
-    ]);
-    const [accessions, deaccessions, loans] = await Promise.all([
-      accessionAccess
-        ? ctx.db
-            .query("accessions")
-            .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
-            .take(ASSIGNED_CASE_SCAN)
-        : [],
-      deaccessionAccess
-        ? ctx.db
-            .query("deaccessions")
-            .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
-            .take(ASSIGNED_CASE_SCAN)
-        : [],
-      loanAccess
-        ? ctx.db
-            .query("loans")
-            .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
-            .take(ASSIGNED_CASE_SCAN)
-        : [],
-    ]);
-    const here = (row: { organizationId: Id<"organizations"> }) =>
-      row.organizationId === args.organizationId;
-    const cases = [
-      ...accessions.flatMap((row) =>
-        here(row) && row.status === "pending"
-          ? [
-              {
-                caseType: "accession" as const,
-                caseId: row._id,
-                caseLabel: caseLabel({ caseType: "accession", doc: row }),
-                status: row.status,
-                since: row.dateReceived,
-              },
-            ]
-          : [],
-      ),
-      ...deaccessions.flatMap((row) =>
-        here(row) && row.status === "pending"
-          ? [
-              {
-                caseType: "deaccession" as const,
-                caseId: row._id,
-                caseLabel: caseLabel({ caseType: "deaccession", doc: row }),
-                status: row.status,
-                since: row.dateDeaccessioned,
-              },
-            ]
-          : [],
-      ),
-      ...loans.flatMap((row) =>
-        here(row) &&
-        (row.status === "pending" ||
-          row.status === "active" ||
-          row.status === "dispatched")
-          ? [
-              {
-                caseType: "loan" as const,
-                caseId: row._id,
-                caseLabel: caseLabel({ caseType: "loan", doc: row }),
-                status: row.status,
-                since: row.startDate,
-              },
-            ]
-          : [],
-      ),
-    ].sort((a, b) => a.since - b.since);
-    const scanFull = [accessions, deaccessions, loans].some(
-      (rows) => rows.length === ASSIGNED_CASE_SCAN,
-    );
-    return {
-      cases: cases.slice(0, ASSIGNED_CASE_LIMIT),
-      truncated: scanFull || cases.length > ASSIGNED_CASE_LIMIT,
-    };
-  },
+export const assignedCaseValidator = v.object({
+  caseType: v.union(
+    v.literal("loan"),
+    v.literal("accession"),
+    v.literal("deaccession"),
+  ),
+  caseId: v.string(),
+  caseLabel: v.string(),
+  status: v.string(),
+  since: v.number(),
 });
+
+/** Open accessions, deaccessions and loans assigned to the viewer, oldest first. */
+export async function readAssignedCases(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  limit: number,
+): Promise<ColumnPage<Infer<typeof assignedCaseValidator>>> {
+  const userId = await requireUserId(ctx);
+  const [accessionAccess, deaccessionAccess, loanAccess] = await Promise.all([
+    canOpenCaseType(ctx, organizationId, "accession"),
+    canOpenCaseType(ctx, organizationId, "deaccession"),
+    canOpenCaseType(ctx, organizationId, "loan"),
+  ]);
+  const [accessions, deaccessions, loans] = await Promise.all([
+    accessionAccess
+      ? ctx.db
+          .query("accessions")
+          .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
+          .take(ASSIGNED_CASE_SCAN)
+      : [],
+    deaccessionAccess
+      ? ctx.db
+          .query("deaccessions")
+          .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
+          .take(ASSIGNED_CASE_SCAN)
+      : [],
+    loanAccess
+      ? ctx.db
+          .query("loans")
+          .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
+          .take(ASSIGNED_CASE_SCAN)
+      : [],
+  ]);
+  const here = (row: { organizationId: Id<"organizations"> }) =>
+    row.organizationId === organizationId;
+  const cases = [
+    ...accessions.flatMap((row) =>
+      here(row) && row.status === "pending"
+        ? [
+            {
+              caseType: "accession" as const,
+              caseId: row._id,
+              caseLabel: caseLabel({ caseType: "accession", doc: row }),
+              status: row.status,
+              since: row.dateReceived,
+            },
+          ]
+        : [],
+    ),
+    ...deaccessions.flatMap((row) =>
+      here(row) && row.status === "pending"
+        ? [
+            {
+              caseType: "deaccession" as const,
+              caseId: row._id,
+              caseLabel: caseLabel({ caseType: "deaccession", doc: row }),
+              status: row.status,
+              since: row.dateDeaccessioned,
+            },
+          ]
+        : [],
+    ),
+    ...loans.flatMap((row) =>
+      here(row) &&
+      (row.status === "pending" ||
+        row.status === "active" ||
+        row.status === "dispatched")
+        ? [
+            {
+              caseType: "loan" as const,
+              caseId: row._id,
+              caseLabel: caseLabel({ caseType: "loan", doc: row }),
+              status: row.status,
+              since: row.startDate,
+            },
+          ]
+        : [],
+    ),
+  ].sort((a, b) => a.since - b.since || a.caseId.localeCompare(b.caseId));
+  const scanFull = [accessions, deaccessions, loans].some(
+    (rows) => rows.length === ASSIGNED_CASE_SCAN,
+  );
+  return {
+    cards: cases.slice(0, limit),
+    hasMore: scanFull || cases.length > limit,
+  };
+}
 
 const MEMBER_SCAN = 200;
 

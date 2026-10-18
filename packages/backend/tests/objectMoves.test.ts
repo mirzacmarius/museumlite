@@ -5,6 +5,7 @@ import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
 import { rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
+import { workColumn } from "./workBoardHarness";
 
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
@@ -1320,19 +1321,19 @@ describe("objectMoves", () => {
     );
   });
 
-  test("listAwaitingDecision follows a transfer to whichever organization must decide it", async () => {
+  test("the transfers column follows a transfer to whichever organization must decide it", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
     const waitingOn = async () => {
       const [source, target] = await Promise.all([
-        fixture.admin.query(api.objectMoves.listAwaitingDecision, {
-          organizationId: fixture.sourceOrganizationId,
-        }),
-        fixture.targetAdmin.query(api.objectMoves.listAwaitingDecision, {
-          organizationId: fixture.targetOrganizationId,
-        }),
+        workColumn(fixture.admin, fixture.sourceOrganizationId, "transfers"),
+        workColumn(
+          fixture.targetAdmin,
+          fixture.targetOrganizationId,
+          "transfers",
+        ),
       ]);
-      return { source, target };
+      return { source: source?.cards, target: target?.cards };
     };
 
     const requestId = await fixture.requester.mutation(
@@ -1346,24 +1347,21 @@ describe("objectMoves", () => {
     );
 
     const requested = await waitingOn();
-    expect(requested.source).toEqual({
-      requests: [
-        {
-          _id: requestId,
-          collectionTitle: "Move Test Object",
-          sourceAccessionNumber: "SRC-001",
-          direction: "outgoing",
-        },
-      ],
-      truncated: false,
-    });
-    expect(requested.target).toEqual({ requests: [], truncated: false });
+    expect(requested.source).toEqual([
+      {
+        _id: requestId,
+        collectionTitle: "Move Test Object",
+        sourceAccessionNumber: "SRC-001",
+        direction: "outgoing",
+      },
+    ]);
+    expect(requested.target).toEqual([]);
 
     await fixture.admin.mutation(api.objectMoves.approve, { requestId });
 
     const approved = await waitingOn();
-    expect(approved.source.requests).toEqual([]);
-    expect(approved.target.requests).toMatchObject([
+    expect(approved.source).toEqual([]);
+    expect(approved.target).toMatchObject([
       { _id: requestId, direction: "incoming" },
     ]);
 
@@ -1373,11 +1371,11 @@ describe("objectMoves", () => {
     });
 
     const executed = await waitingOn();
-    expect(executed.source.requests).toEqual([]);
-    expect(executed.target.requests).toEqual([]);
+    expect(executed.source).toEqual([]);
+    expect(executed.target).toEqual([]);
   });
 
-  test("listAwaitingDecision has nothing for members who cannot decide transfers", async () => {
+  test("members who cannot decide transfers see no transfers column", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
@@ -1389,19 +1387,15 @@ describe("objectMoves", () => {
     });
 
     const [requesterView, adminView] = await Promise.all([
-      fixture.requester.query(api.objectMoves.listAwaitingDecision, {
-        organizationId: fixture.sourceOrganizationId,
-      }),
-      fixture.admin.query(api.objectMoves.listAwaitingDecision, {
-        organizationId: fixture.sourceOrganizationId,
-      }),
+      workColumn(fixture.requester, fixture.sourceOrganizationId, "transfers"),
+      workColumn(fixture.admin, fixture.sourceOrganizationId, "transfers"),
     ]);
 
-    expect(requesterView).toEqual({ requests: [], truncated: false });
-    expect(adminView.requests).toHaveLength(1);
+    expect(requesterView).toBeUndefined();
+    expect(adminView?.cards).toHaveLength(1);
   });
 
-  test("listAwaitingDecision counts legacy pending requests and caps the list newest first", async () => {
+  test("the transfers column counts legacy pending requests and shows the newest first", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
     const requestedAt = Date.UTC(2026, 9, 1);
@@ -1422,21 +1416,22 @@ describe("objectMoves", () => {
       }
     });
 
-    const waiting = await fixture.admin.query(
-      api.objectMoves.listAwaitingDecision,
-      { organizationId: fixture.sourceOrganizationId },
+    const waiting = await workColumn(
+      fixture.admin,
+      fixture.sourceOrganizationId,
+      "transfers",
     );
 
-    expect(waiting.truncated).toBe(true);
-    expect(waiting.requests).toHaveLength(50);
-    expect(waiting.requests[0]).toMatchObject({
+    expect(waiting?.hasMore).toBe(true);
+    expect(waiting?.cards).toHaveLength(20);
+    expect(waiting?.cards[0]).toMatchObject({
       sourceAccessionNumber: "SRC-50",
       direction: "outgoing",
     });
-    expect(waiting.requests.at(-1)?.sourceAccessionNumber).toBe("SRC-1");
+    expect(waiting?.cards.at(-1)?.sourceAccessionNumber).toBe("SRC-31");
   });
 
-  test("listAwaitingDecision leaves a transfer approved without an observed source location with the source", async () => {
+  test("a transfer approved without an observed source location waits on the source", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
     const requestId = await t.run(async (ctx) => {
@@ -1454,18 +1449,18 @@ describe("objectMoves", () => {
     });
 
     const [source, target] = await Promise.all([
-      fixture.admin.query(api.objectMoves.listAwaitingDecision, {
-        organizationId: fixture.sourceOrganizationId,
-      }),
-      fixture.targetAdmin.query(api.objectMoves.listAwaitingDecision, {
-        organizationId: fixture.targetOrganizationId,
-      }),
+      workColumn(fixture.admin, fixture.sourceOrganizationId, "transfers"),
+      workColumn(
+        fixture.targetAdmin,
+        fixture.targetOrganizationId,
+        "transfers",
+      ),
     ]);
 
-    expect(source.requests).toMatchObject([
+    expect(source?.cards).toMatchObject([
       { _id: requestId, direction: "outgoing" },
     ]);
-    expect(target.requests).toEqual([]);
+    expect(target?.cards).toEqual([]);
   });
 
   test("rejecting a request leaves the object unchanged and notifies the requester", async () => {

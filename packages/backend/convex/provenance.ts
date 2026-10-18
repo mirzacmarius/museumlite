@@ -1,7 +1,3 @@
-import {
-  paginationOptsValidator,
-  paginationResultValidator,
-} from "convex/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -52,6 +48,7 @@ import {
   provenanceReviewDecisionValidator,
   provenanceReviewStatusValidator,
 } from "./utils/provenanceValidators";
+import { type ColumnPage, firstKept } from "./utils/workBoardColumns";
 
 const evidenceCommonFields = {
   _id: v.id("provenanceEvidence"),
@@ -420,7 +417,7 @@ export const listForObject = query({
   },
 });
 
-const reviewQueueItemValidator = provenanceAssertionValidator
+export const claimAwaitingReviewValidator = provenanceAssertionValidator
   .pick(
     "statement",
     "role",
@@ -434,71 +431,71 @@ const reviewQueueItemValidator = provenanceAssertionValidator
     claimId: v.id("provenanceClaims"),
     objectId: v.id("collections"),
     objectLabel: v.string(),
+    /** Disputed and still open, rather than never reviewed. */
+    disputed: v.boolean(),
     contradictsClaimId: v.optional(v.id("provenanceClaims")),
     reviewNote: v.optional(v.string()),
     createdAt: v.number(),
   });
 
 /**
- * Current claims awaiting a reviewer, newest first: unreviewed, or disputed
- * and still open. Claims on withdrawn Objects wait until restoration.
+ * Current claims awaiting a reviewer: unreviewed ones newest first, then
+ * disputed ones still open. Claims on withdrawn Objects wait until
+ * restoration. Null for members who do not review provenance, so they never
+ * see the Work board column.
  */
-export const reviewQueue = query({
-  args: {
-    organizationId: v.id("organizations"),
-    status: v.union(v.literal("unreviewed"), v.literal("disputed")),
-    paginationOpts: paginationOptsValidator,
-  },
-  returns: paginationResultValidator(reviewQueueItemValidator),
-  handler: async (ctx, args) => {
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      PROVENANCE_REVIEW_PERMISSION,
-    );
-    const result = await ctx.db
-      .query("provenanceClaims")
-      .withIndex("by_organization_and_reviewStatus_and_supersededAt", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("reviewStatus", args.status)
-          .eq("supersededAt", undefined),
-      )
-      .order("desc")
-      .paginate(args.paginationOpts);
-    const page = await Promise.all(
-      result.page.map(async (claim) => {
-        const object = await ctx.db.get(claim.objectId);
-        if (
-          !object ||
-          object.organizationId !== args.organizationId ||
-          isWithdrawnObject(object)
-        ) {
-          return null;
-        }
-        return {
-          claimId: claim._id,
-          objectId: claim.objectId,
-          objectLabel: objectLabel(object),
-          statement: claim.statement,
-          role: claim.role,
-          partyKind: claim.partyKind,
-          partyText: claim.partyText,
-          confidence: claim.confidence,
-          startDate: claim.startDate,
-          endDate: claim.endDate,
-          contradictsClaimId: claim.contradictsClaimId,
-          reviewNote: claim.reviewNote,
-          createdAt: claim.createdAt,
-        };
-      }),
-    );
-    return {
-      ...result,
-      page: page.filter((item) => item !== null),
-    };
-  },
-});
+export async function readClaimsAwaitingReview(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  limit: number,
+): Promise<ColumnPage<Infer<typeof claimAwaitingReviewValidator>> | null> {
+  if (!(await hasPermission(ctx, organizationId, PROVENANCE_REVIEW_PERMISSION)))
+    return null;
+  async function* awaitingReview() {
+    for (const status of ["unreviewed", "disputed"] as const) {
+      yield* ctx.db
+        .query("provenanceClaims")
+        .withIndex("by_organization_and_reviewStatus_and_supersededAt", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("reviewStatus", status)
+            .eq("supersededAt", undefined),
+        )
+        .order("desc");
+    }
+  }
+  const { kept, hasMore } = await firstKept(
+    awaitingReview(),
+    limit,
+    async (claim) => {
+      const object = await ctx.db.get(claim.objectId);
+      if (
+        !object ||
+        object.organizationId !== organizationId ||
+        isWithdrawnObject(object)
+      ) {
+        return null;
+      }
+      return {
+        claimId: claim._id,
+        objectId: claim.objectId,
+        objectLabel: objectLabel(object),
+        disputed: claim.reviewStatus === "disputed",
+        statement: claim.statement,
+        role: claim.role,
+        partyKind: claim.partyKind,
+        partyText: claim.partyText,
+        confidence: claim.confidence,
+        startDate: claim.startDate,
+        endDate: claim.endDate,
+        contradictsClaimId: claim.contradictsClaimId,
+        reviewNote: claim.reviewNote,
+        createdAt: claim.createdAt,
+      };
+    },
+  );
+  return { cards: kept, hasMore };
+}
 
 interface ClaimInsert {
   object: Doc<"collections">;

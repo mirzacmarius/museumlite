@@ -1,8 +1,31 @@
 import type { Doc, TableNames } from "../_generated/dataModel";
+import { isAwaitingReview } from "./accessionReview";
 import { CAPABILITY_MATRIX, type CapabilityId } from "./capabilities";
 import type { CaseTaskCaseType } from "./caseTaskValidators";
 import { findingLabel } from "./documentationFindings";
 import type { FeatureId } from "./featurePolicy";
+
+/** How a case of this kind waits for approval on the Work board. */
+interface CaseApproval<Table extends TableNames> {
+  /** The status a case waits for approval in. */
+  status: "pending" | "proposed";
+  /** Whether a case in that status is waiting; every one is unless this says no. */
+  isWaiting?(record: Doc<Table>): boolean;
+  /** When the case began waiting; its SLA and urgency count from here. */
+  waitingSince(record: Doc<Table>): number;
+  /** The line under the case's label on its approval card. */
+  detail(record: Doc<Table>): string | undefined;
+  /**
+   * Opening the list of waiting cases needs this Capability, or the read
+   * permission when unset, so the card never links to a page that refuses.
+   */
+  listCapability?: Extract<
+    CapabilityId,
+    "deaccession" | "loans" | "exhibitions" | "conservation"
+  >;
+  /** The case list filtered to cases waiting for approval as of `asOf`. */
+  listHref(asOf: number): string;
+}
 
 interface CaseTypeDefinition<
   Table extends TableNames,
@@ -33,8 +56,18 @@ interface CaseTypeDefinition<
    * audit log cannot be filtered by the case and its Tasks cannot cite them.
    */
   auditCase?: false;
+  /** Set when the case waits for approval, at the workflow step it records. */
+  approval?: CaseApproval<Table>;
 }
 
+function define<Table extends TableNames, const EntityType extends string>(
+  definition: CaseTypeDefinition<Table, EntityType> & {
+    approval: CaseApproval<Table>;
+  },
+): CaseTypeDefinition<Table, EntityType> & { approval: CaseApproval<Table> };
+function define<Table extends TableNames, const EntityType extends string>(
+  definition: CaseTypeDefinition<Table, EntityType>,
+): CaseTypeDefinition<Table, EntityType>;
 function define<Table extends TableNames, const EntityType extends string>(
   definition: CaseTypeDefinition<Table, EntityType>,
 ) {
@@ -56,6 +89,13 @@ export const CASE_TYPES = {
     feature: "loans",
     route: "/loans",
     entityType: "loan",
+    approval: {
+      status: "pending",
+      waitingSince: (loan) => loan.startDate,
+      detail: (loan) => loan.lenderBorrowerName,
+      listCapability: "loans",
+      listHref: () => "/loans?status=pending",
+    },
   }),
   accession: define({
     table: "accessions",
@@ -64,6 +104,13 @@ export const CASE_TYPES = {
     workPermission: "collections.update",
     route: "/accessions",
     entityType: "accession",
+    approval: {
+      status: "pending",
+      isWaiting: (accession) => isAwaitingReview(accession),
+      waitingSince: (accession) => accession.dateReceived,
+      detail: (accession) => accession.source,
+      listHref: () => "/accessions?status=pending",
+    },
   }),
   deaccession: define({
     table: "deaccessions",
@@ -72,6 +119,13 @@ export const CASE_TYPES = {
     workPermission: "collections.update",
     route: "/deaccessions",
     entityType: "deaccession",
+    approval: {
+      status: "pending",
+      waitingSince: (deaccession) => deaccession.dateDeaccessioned,
+      detail: (deaccession) => deaccession.reason,
+      listCapability: "deaccession",
+      listHref: () => "/deaccessions?status=pending",
+    },
   }),
   exhibition: define({
     table: "exhibitions",
@@ -81,6 +135,13 @@ export const CASE_TYPES = {
     feature: "exhibitions",
     route: "/exhibitions",
     entityType: "exhibition",
+    approval: {
+      status: "proposed",
+      waitingSince: (exhibition) => exhibition.startDate,
+      detail: (exhibition) => exhibition.location,
+      listCapability: "exhibitions",
+      listHref: (asOf) => `/exhibitions?lifecycle=proposed&asOf=${asOf}`,
+    },
   }),
   conservation: define({
     table: "conservationTreatments",
@@ -90,6 +151,13 @@ export const CASE_TYPES = {
     feature: "conservation",
     route: "/conservation",
     entityType: "conservationTreatment",
+    approval: {
+      status: "proposed",
+      waitingSince: (treatment) => treatment.performedAt,
+      detail: (treatment) => treatment.treatmentType,
+      listCapability: "conservation",
+      listHref: () => "/conservation?status=proposed",
+    },
   }),
   documentationFinding: define({
     table: "documentationFindings",
@@ -137,6 +205,41 @@ export type CaseRecord<T extends CaseTaskCaseType = CaseTaskCaseType> = Extract<
 
 export type CaseEntityType =
   (typeof CASE_TYPES)[CaseTaskCaseType]["entityType"];
+
+/** The kinds of Case that wait for approval. */
+export type ApprovalCaseType = {
+  [K in CaseTaskCaseType]: undefined extends (typeof CASE_TYPES)[K]["approval"]
+    ? never
+    : K;
+}[CaseTaskCaseType];
+
+export const APPROVAL_CASE_TYPES = (
+  Object.keys(CASE_TYPES) as CaseTaskCaseType[]
+).filter(
+  (caseType): caseType is ApprovalCaseType =>
+    CASE_TYPES[caseType].approval !== undefined,
+);
+
+/**
+ * When a case began waiting for approval and the line its card shows, or
+ * null when its status alone does not mean it is waiting.
+ */
+export function waitingApproval(record: CaseRecord<ApprovalCaseType>) {
+  // The record pairs each case type with its own table's document.
+  const approval = CASE_TYPES[record.caseType].approval as CaseApproval<
+    CaseTable<ApprovalCaseType>
+  >;
+  if (approval.isWaiting && !approval.isWaiting(record.doc)) return null;
+  return {
+    waitingSince: approval.waitingSince(record.doc),
+    detail: approval.detail(record.doc),
+  };
+}
+
+/** The list of this kind's cases waiting for approval, as of `asOf`. */
+export function approvalListHref(caseType: ApprovalCaseType, asOf: number) {
+  return CASE_TYPES[caseType].approval.listHref(asOf);
+}
 
 export function caseLabel(record: CaseRecord): string {
   // The record pairs each case type with its own table's document.
