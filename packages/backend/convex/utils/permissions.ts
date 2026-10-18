@@ -420,14 +420,14 @@ async function isAccessionReviewerRole(
   );
 }
 
-export type StepApprovalOptions = {
+export interface StepApprovalOptions {
   /**
    * Only the step's own role and organization administrators decide, as for
    * image deletions, which follow the accessions workflow's first step
    * (ADR 0018).
    */
   stepRoleOnly?: boolean;
-};
+}
 
 export async function canApproveAtStep(
   ctx: QueryCtx | MutationCtx,

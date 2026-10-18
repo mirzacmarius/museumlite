@@ -116,7 +116,9 @@ function getDraftDisplaySource(
 /**
  * The creation entry the object form records as an accession's first workflow
  * history entry. Accessions recorded on the accession form, imported, or begun
- * from an entry record their own.
+ * from an entry record their own. These words are stored on every such
+ * accession and identify it (see `startedInObjectForm`), so they must never
+ * change.
  */
 const OBJECT_FORM_CREATION_COMMENTS = {
   draft: "Saved object draft",

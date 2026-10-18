@@ -511,6 +511,26 @@ describe("describing the object of an accession case", () => {
     expect(accession?.notes).toBe("Self-portrait");
   });
 
+  test.each([
+    ["draft", "Saved object draft"],
+    ["submit", "Submitted object request"],
+  ] as const)("an object-form %s records the creation comment that marks it", async (saveMode, comment) => {
+    // Stored accessions are recognized by these exact words, so they must
+    // never change.
+    const museum = await createMuseum();
+    const { accessionId } = await museum
+      .as("collectionManager")
+      .mutation(api.accessions.saveObjectDraft, {
+        organizationId: museum.organizationId,
+        saveMode,
+        objectData: { title: "Carved spoon" },
+      });
+    const creation = await museum.t.run(
+      async (ctx) => (await ctx.db.get(accessionId))?.workflowHistory?.[0],
+    );
+    expect(creation).toMatchObject({ step: 0, comment });
+  });
+
   test("an intake-form draft's source still follows its object", async () => {
     const museum = await createMuseum();
     const manager = museum.as("collectionManager");
