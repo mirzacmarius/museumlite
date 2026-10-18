@@ -166,6 +166,7 @@ import type * as utils_capabilities from "../utils/capabilities.js";
 import type * as utils_caseHistory from "../utils/caseHistory.js";
 import type * as utils_caseTaskRules from "../utils/caseTaskRules.js";
 import type * as utils_caseTaskValidators from "../utils/caseTaskValidators.js";
+import type * as utils_caseTypes from "../utils/caseTypes.js";
 import type * as utils_catalogObjects from "../utils/catalogObjects.js";
 import type * as utils_collectionDetailLifecycle from "../utils/collectionDetailLifecycle.js";
 import type * as utils_collectionDisplayHelpers from "../utils/collectionDisplayHelpers.js";
@@ -504,6 +505,7 @@ declare const fullApi: ApiFromModules<{
   "utils/caseHistory": typeof utils_caseHistory;
   "utils/caseTaskRules": typeof utils_caseTaskRules;
   "utils/caseTaskValidators": typeof utils_caseTaskValidators;
+  "utils/caseTypes": typeof utils_caseTypes;
   "utils/catalogObjects": typeof utils_catalogObjects;
   "utils/collectionDetailLifecycle": typeof utils_collectionDetailLifecycle;
   "utils/collectionDisplayHelpers": typeof utils_collectionDisplayHelpers;
