@@ -233,9 +233,7 @@ test("shows a card per kind of work waiting, each opening that kind's page", asy
     "Pending image deletion approval 2",
   ]);
   expect(hrefOf("My tasks 20+")).toBe("/assignments");
-  expect(hrefOf("Pending accession approval 3")).toBe(
-    "/accessions?status=pending",
-  );
+  expect(hrefOf("Pending accession approval 3")).toBe("/accessions");
   expect(hrefOf("Pending removal approval 2")).toBe(
     "/deaccessions?status=pending",
   );

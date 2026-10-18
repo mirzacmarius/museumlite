@@ -7731,6 +7731,10 @@ export default {
         unknown: "Inconnu",
         submitting: "Envoi en cours…",
         submitForApproval: "Soumettre pour approbation",
+        notSubmitted: "Pas encore soumise pour approbation",
+        describeObject: "Décrire l’objet",
+        describeObjectBeforeSubmit:
+          "Décrivez l’objet que cette accession enregistre, puis soumettez-la pour approbation.",
         history: "Historique",
         draftObjectAwaitingReview: "Brouillon d’objet en attente de révision.",
         reviewSummary:

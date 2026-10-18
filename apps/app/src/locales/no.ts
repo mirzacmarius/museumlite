@@ -7642,6 +7642,10 @@ export default {
         unknown: "Ukjent",
         submitting: "Sender…",
         submitForApproval: "Send til godkjenning",
+        notSubmitted: "Ikke sendt til godkjenning ennå",
+        describeObject: "Beskriv objektet",
+        describeObjectBeforeSubmit:
+          "Beskriv objektet denne aksesjonen registrerer, og send den deretter til godkjenning.",
         history: "Historikk",
         draftObjectAwaitingReview: "Objektutkast venter på gjennomgang.",
         reviewSummary:

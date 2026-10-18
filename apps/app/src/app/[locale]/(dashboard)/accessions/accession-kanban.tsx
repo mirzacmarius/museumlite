@@ -86,17 +86,13 @@ export function AccessionKanban({
     );
   }
 
-  const visibleSteps: WorkflowStep[] = [];
-  for (const step of workflowSteps.steps) {
-    if (statusFilter !== "pending" || step.stepNumber !== -1) {
-      visibleSteps.push(step);
-    }
-  }
+  // Every column shows, Approved included, whichever link opened the board.
+  const steps: WorkflowStep[] = workflowSteps.steps;
 
   return (
     <div className="flex-1 overflow-x-auto custom-scrollbar">
       <div className="flex h-full min-w-max gap-6 pb-4">
-        {visibleSteps.map((step) => (
+        {steps.map((step) => (
           <Suspense
             key={`${step.stepNumber}-${step.name}`}
             fallback={<KanbanColumnSkeleton />}

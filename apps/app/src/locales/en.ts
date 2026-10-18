@@ -7550,6 +7550,10 @@ export default {
         unknown: "Unknown",
         submitting: "Submitting…",
         submitForApproval: "Submit for approval",
+        notSubmitted: "Not submitted for approval yet",
+        describeObject: "Describe object",
+        describeObjectBeforeSubmit:
+          "Describe the object this accession registers, then submit it for approval.",
         history: "History",
         draftObjectAwaitingReview: "Draft object awaiting review.",
         reviewSummary:

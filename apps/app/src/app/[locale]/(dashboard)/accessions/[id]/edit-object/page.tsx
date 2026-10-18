@@ -36,10 +36,16 @@ export default function EditAccessionObjectPage() {
     );
   }
 
+  // A pending accession recorded without an object, as on the accession form
+  // or by import, has its object described here. One begun from an entry
+  // already has its object, so its draft opens the accession form.
+  const canDescribeObject =
+    accession.status === "pending" && !accession.collectionId;
   const shouldEditAccessionFirst =
     accession.status === "pending" &&
     accession.workflowStep === 0 &&
-    !accession.draftObjectData;
+    !accession.draftObjectData &&
+    !canDescribeObject;
 
   if (shouldEditAccessionFirst) {
     redirect(`/accessions/${accessionId}/edit`);
@@ -47,7 +53,7 @@ export default function EditAccessionObjectPage() {
 
   // The form itself keeps a draft that left pending on screen while it
   // holds unsaved input; otherwise only pending drafts open here.
-  if (!accession.draftObjectData) {
+  if (!accession.draftObjectData && !canDescribeObject) {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">

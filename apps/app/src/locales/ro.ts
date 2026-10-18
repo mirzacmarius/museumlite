@@ -7699,6 +7699,10 @@ export default {
         unknown: "Necunoscut",
         submitting: "Se trimite…",
         submitForApproval: "Trimiteți spre aprobare",
+        notSubmitted: "Nu a fost încă trimisă spre aprobare",
+        describeObject: "Descrieți obiectul",
+        describeObjectBeforeSubmit:
+          "Descrieți obiectul pe care îl înregistrează această accesiune, apoi trimiteți-o spre aprobare.",
         history: "Istoric",
         draftObjectAwaitingReview: "Ciornă de obiect în așteptarea revizuirii.",
         reviewSummary:

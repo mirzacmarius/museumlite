@@ -7703,6 +7703,10 @@ export default {
         unknown: "Desconocido",
         submitting: "Enviando…",
         submitForApproval: "Enviar para aprobación",
+        notSubmitted: "Aún no se ha enviado para aprobación",
+        describeObject: "Describir el objeto",
+        describeObjectBeforeSubmit:
+          "Describa el objeto que registra esta accesión y luego envíela para aprobación.",
         history: "Historial",
         draftObjectAwaitingReview: "Borrador de objeto pendiente de revisión.",
         reviewSummary:

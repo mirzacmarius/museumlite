@@ -71,6 +71,7 @@ import {
   recordEditError,
   requireFieldValue,
 } from "./utils/recordEdits";
+import { getRolePresentation } from "./utils/systemRoles";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
@@ -110,6 +111,33 @@ function getDraftDisplaySource(
   return (
     objectData?.creator?.trim() || objectData?.title?.trim() || "Object intake"
   );
+}
+
+/**
+ * The source and notes an object draft save leaves on an accession. An
+ * intake-form draft's source and notes follow its object; an accession
+ * recorded on the case form, whose object is described later, keeps the
+ * source and notes staff recorded for it.
+ */
+function objectDraftCaseFields(
+  existing: Pick<Doc<"accessions">, "source" | "notes" | "draftObjectData">,
+  objectData: { creator?: string; title: string; description?: string },
+) {
+  const description = objectData.description?.trim() || undefined;
+  const sourceFollowsObject =
+    existing.draftObjectData !== undefined &&
+    existing.source === getDraftDisplaySource(existing.draftObjectData);
+  const notesFollowObject =
+    existing.notes === undefined ||
+    (existing.draftObjectData !== undefined &&
+      existing.notes ===
+        (existing.draftObjectData.description?.trim() || undefined));
+  return {
+    source: sourceFollowsObject
+      ? getDraftDisplaySource(objectData)
+      : existing.source,
+    notes: notesFollowObject ? (description ?? existing.notes) : existing.notes,
+  };
 }
 
 async function ensureAccessionNumberAvailable(
@@ -561,8 +589,7 @@ async function saveObjectDraftRecord(
       ctx.db.patch(existing._id, {
         accessionNumber,
         normalizedIdentifier: normalizeIdentifier(accessionNumber),
-        source,
-        notes: normalizedObjectData.description?.trim() || existing.notes,
+        ...objectDraftCaseFields(existing, normalizedObjectData),
         status: shouldAutoApproveSubmit ? "approved" : existing.status,
         approvedBy: shouldAutoApproveSubmit ? userId : existing.approvedBy,
         approvedAt: shouldAutoApproveSubmit ? submittedAt : existing.approvedAt,
@@ -1759,8 +1786,9 @@ export const approve = mutation({
 
 /**
  * Whether the caller may decide on an intake at a workflow step: the approver
- * permission plus that step's role (organization administrators override step
- * roles). Returns the configured step the decision applies to.
+ * permission plus that step's role (administrators, Collection Managers and
+ * Curators act at every step; see canApproveAtStep). Returns the configured
+ * step the decision applies to.
  */
 async function resolveIntakeReviewer(
   ctx: QueryCtx | MutationCtx,
@@ -2173,7 +2201,7 @@ export const getWorkflowSteps = query({
         return {
           stepNumber: step.stepNumber,
           name: step.name,
-          roleName: role?.name,
+          roleName: role ? getRolePresentation(role).name : undefined,
           approvalMode: step.approvalMode,
           requiredApprovals: step.requiredApprovals,
         };
