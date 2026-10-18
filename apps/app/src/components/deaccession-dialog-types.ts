@@ -10,7 +10,9 @@ export interface DeaccessionDialogProps {
   initialRemovalType?: RemovalType | null;
 }
 
-export interface DeaccessionWorkflowConfig {
-  workflowType: string;
-  steps: unknown[];
-}
+/** What the Object allows now, from `objectActions.get`. */
+export type ObjectActions = NonNullable<
+  import("convex/server").FunctionReturnType<
+    typeof import("@v1/backend/convex/_generated/api").api.objectActions.get
+  >
+>;

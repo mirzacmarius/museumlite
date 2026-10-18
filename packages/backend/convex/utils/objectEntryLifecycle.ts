@@ -49,6 +49,15 @@ export async function assertAccessionedIfEntered(
     );
 }
 
+/** True while the object is held under an entry that is still open. */
+export async function isHeldUnderOpenEntry(
+  ctx: Ctx,
+  collectionId: Id<"collections">,
+) {
+  const entry = await entryForObject(ctx, collectionId);
+  return entry !== null && isOpenEntryStatus(entry.status);
+}
+
 /**
  * Property held under an open entry leaves custody only through the entry's
  * exit, and property that exited is not restored to the catalog.

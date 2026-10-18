@@ -96,6 +96,7 @@ import type * as naturalHistoryDetails from "../naturalHistoryDetails.js";
 import type * as notificationEmails from "../notificationEmails.js";
 import type * as notificationEmailsActions from "../notificationEmailsActions.js";
 import type * as notifications from "../notifications.js";
+import type * as objectActions from "../objectActions.js";
 import type * as objectComments from "../objectComments.js";
 import type * as objectEntries from "../objectEntries.js";
 import type * as objectMoves from "../objectMoves.js";
@@ -435,6 +436,7 @@ declare const fullApi: ApiFromModules<{
   notificationEmails: typeof notificationEmails;
   notificationEmailsActions: typeof notificationEmailsActions;
   notifications: typeof notifications;
+  objectActions: typeof objectActions;
   objectComments: typeof objectComments;
   objectEntries: typeof objectEntries;
   objectMoves: typeof objectMoves;
