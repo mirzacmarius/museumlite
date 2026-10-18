@@ -205,3 +205,18 @@ test("a template the library refuses is explained in translated copy", async () 
   expect(createTemplate).toHaveBeenCalledOnce();
   await screen.findByText(COUNTER_MISSING);
 });
+
+test("saving a stored bare-token format as a template stores its braced form", async () => {
+  createTemplate.mockResolvedValue("template-1");
+  const user = userEvent.setup();
+  await renderOnPage(<PreferencesSettingsPage />, "/en/settings/preferences");
+
+  await user.click(formatTemplateTrigger());
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  await user.type(screen.getByLabelText("Template Name *"), "Yearly");
+  await user.click(screen.getByRole("button", { name: "Save Template" }));
+
+  expect(createTemplate).toHaveBeenCalledWith(
+    expect.objectContaining({ template: "NAT-{YYYY}-{###}" }),
+  );
+});

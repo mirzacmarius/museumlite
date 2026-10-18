@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { canonicalAccessionTemplate } from "@v1/backend/convex/utils/accessionNumberParser";
 import { useMutation, useQuery } from "convex/react";
 import { Suspense, useEffect, useMemo, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
@@ -222,19 +223,24 @@ function usePreferencesPage() {
       return;
     }
 
+    // The library takes braced templates only, so a saved bare-token format
+    // is stored in its braced form.
+    const template = accessionFormatChanged
+      ? state.formData.accessionNumberFormat
+      : canonicalAccessionTemplate(state.formData.accessionNumberFormat);
     try {
       if (selectedCustomTemplateId) {
         await updateTemplate({
           templateId: selectedCustomTemplateId,
           name: state.saveTemplateName.trim(),
           description: state.saveTemplateDesc.trim() || undefined,
-          template: state.formData.accessionNumberFormat,
+          template,
         });
       } else {
         await createTemplate({
           organizationId: currentOrganizationId as Id<"organizations">,
           name: state.saveTemplateName.trim(),
-          template: state.formData.accessionNumberFormat,
+          template,
           description: state.saveTemplateDesc.trim() || undefined,
         });
       }
