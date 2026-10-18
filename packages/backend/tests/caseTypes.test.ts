@@ -3,7 +3,7 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { capabilityUnavailableFromError } from "../convex/utils/capabilities";
 import type { CaseTaskCaseType } from "../convex/utils/caseTaskValidators";
-import { caseHref } from "../convex/utils/caseTypes";
+import { CASE_TYPES, caseHref } from "../convex/utils/caseTypes";
 import { notificationEntityHref } from "../convex/utils/notificationLinks";
 import { workErrorFromError } from "../convex/utils/workErrors";
 import {
@@ -33,6 +33,21 @@ const ROLES: Record<string, string[]> = {
   loansOnly: ["loans.read", "loans.update"],
   nothing: [],
 };
+
+/** Whether the call is let through; refusals and hidden cases are not, and anything else is a fault. */
+function allowed(call: Promise<unknown>) {
+  return call.then(
+    () => true,
+    (error) => {
+      if (
+        capabilityUnavailableFromError(error) ||
+        workErrorFromError(error)?.code === "CASE_NOT_FOUND"
+      )
+        return false;
+      throw error;
+    },
+  );
+}
 
 async function addMember(
   t: ConvexTest,
@@ -319,24 +334,13 @@ test("every case type: a task is in My work exactly when its case opens for the 
           const queued = new Set(queue.page.map((task) => task.caseId));
           const rows = await Promise.all(
             cases.map(async ({ name, caseType, caseId }) => {
-              const opens = await member
-                .query(api.caseTasks.listForCase, {
+              const opens = await allowed(
+                member.query(api.caseTasks.listForCase, {
                   organizationId,
                   caseType,
                   caseId,
-                })
-                .then(
-                  () => true,
-                  (error) => {
-                    // A refusal or a hidden case; anything else is a fault.
-                    if (
-                      capabilityUnavailableFromError(error) ||
-                      workErrorFromError(error)?.code === "CASE_NOT_FOUND"
-                    )
-                      return false;
-                    throw error;
-                  },
-                );
+                }),
+              );
               return [name, { queued: queued.has(caseId), opens }] as const;
             }),
           );
@@ -363,6 +367,52 @@ test("every case type: a task is in My work exactly when its case opens for the 
     expect(Object.values(byRole.nothing ?? {}).some((row) => row.opens)).toBe(
       false,
     );
+  }
+});
+
+test("every case type filed in the audit log: its history filters exactly when the case opens", async () => {
+  const { t, organizationId, cases } = await setup();
+  const analysts = await Promise.all(
+    Object.entries(ROLES).map(async ([role, permissions]) => {
+      const userId = await addMember(t, organizationId, `${role}-analyst`, [
+        ...permissions,
+        "organization.view_analytics",
+      ]);
+      return { role, analyst: authedForUser(t, userId) };
+    }),
+  );
+  const filed = cases.filter(
+    ({ caseType }) => CASE_TYPES[caseType].auditCase !== false,
+  );
+
+  for (const tier of ["free", "enterprise"] as const) {
+    await t.run((ctx) =>
+      ctx.db.patch(organizationId, { subscriptionTier: tier }),
+    );
+    for (const { role, analyst } of analysts)
+      for (const { name, caseType, caseId } of filed) {
+        const [filters, opens] = await Promise.all([
+          allowed(
+            analyst.query(api.auditLog.list, {
+              organizationId,
+              caseId: `${CASE_TYPES[caseType].entityType}:${caseId}`,
+            }),
+          ),
+          allowed(
+            analyst.query(api.caseTasks.listForCase, {
+              organizationId,
+              caseType,
+              caseId,
+            }),
+          ),
+        ]);
+        expect({ tier, role, name, filters }).toEqual({
+          tier,
+          role,
+          name,
+          filters: opens,
+        });
+      }
   }
 });
 

@@ -17,6 +17,7 @@ import {
   caseTypeOfEntity,
 } from "./utils/caseTypes";
 import {
+  requireCapabilityEntitlement,
   requireFeatureAccess,
   requireModuleEnabled,
 } from "./utils/featureGates";
@@ -179,7 +180,7 @@ interface HistoryFilters {
 
 export const AUDIT_READ_PERMISSION = "organization.view_analytics";
 
-/** Cases filed in the audit log that hold no Tasks, so have no case type. */
+/** Filterable cases that hold no Tasks, so have no case type. */
 const CASE_ACCESS: Record<
   string,
   {
@@ -207,8 +208,10 @@ async function requireCaseAccess(
     // Whoever may open the case may read its history.
     for (const permission of caseReadPermissions(caseType))
       await requireMemberPermission(permission);
-    const { feature } = CASE_TYPES[caseType];
-    if (feature) await requireFeatureAccess(ctx, organizationId, feature);
+    const { capability, feature } = CASE_TYPES[caseType];
+    if (capability)
+      await requireCapabilityEntitlement(ctx, organizationId, capability);
+    else if (feature) await requireFeatureAccess(ctx, organizationId, feature);
     return;
   }
   const access = Object.hasOwn(CASE_ACCESS, caseKind)
