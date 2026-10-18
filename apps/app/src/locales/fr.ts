@@ -1117,6 +1117,8 @@ export default {
     acquisition: "Flux de travail d'acquisition",
     exhibition: "Flux de travail d'exposition",
     conservation: "Flux de travail de conservation",
+    accessionReviewerRoles:
+      "Le personnel ayant le rôle Administrator, Collection Manager ou Curator peut toujours soumettre des accessions pour approbation et approuver chaque étape, quels que soient les choix faits ici.",
   },
   users: {
     title: "Gestion des utilisateurs",
@@ -7731,6 +7733,11 @@ export default {
         unknown: "Inconnu",
         submitting: "Envoi en cours…",
         submitForApproval: "Soumettre pour approbation",
+        notSubmitted: "Pas encore soumise pour approbation",
+        describeObject: "Décrire l’objet",
+        describeObjectBeforeSubmit:
+          "Décrivez l’objet que cette accession enregistre, puis soumettez-la pour approbation.",
+        editObject: "Modifier l’objet",
         history: "Historique",
         draftObjectAwaitingReview: "Brouillon d’objet en attente de révision.",
         reviewSummary:

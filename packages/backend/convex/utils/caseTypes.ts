@@ -109,7 +109,8 @@ export const CASE_TYPES = {
       isWaiting: (accession) => isAwaitingReview(accession),
       waitingSince: (accession) => accession.dateReceived,
       detail: (accession) => accession.source,
-      listHref: () => "/accessions?status=pending",
+      // The whole board: its review columns and the Approved list (MUS-804).
+      listHref: () => "/accessions",
     },
   }),
   deaccession: define({

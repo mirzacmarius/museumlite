@@ -1112,6 +1112,8 @@ export default {
     acquisition: "Flujo de trabajo de adquisición",
     exhibition: "Flujo de trabajo de exposición",
     conservation: "Flujo de trabajo de conservación",
+    accessionReviewerRoles:
+      "El personal con el rol Administrator, Collection Manager o Curator siempre puede enviar accesiones para aprobación y aprobar cada paso, independientemente de lo que se elija aquí.",
   },
   users: {
     title: "Administración de usuarios",
@@ -7703,6 +7705,11 @@ export default {
         unknown: "Desconocido",
         submitting: "Enviando…",
         submitForApproval: "Enviar para aprobación",
+        notSubmitted: "Aún no se ha enviado para aprobación",
+        describeObject: "Describir el objeto",
+        describeObjectBeforeSubmit:
+          "Describa el objeto que registra esta accesión y luego envíela para aprobación.",
+        editObject: "Editar el objeto",
         history: "Historial",
         draftObjectAwaitingReview: "Borrador de objeto pendiente de revisión.",
         reviewSummary:

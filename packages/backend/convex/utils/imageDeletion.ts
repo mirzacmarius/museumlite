@@ -30,10 +30,11 @@ export function isDeletableObjectImage(media: Doc<"mediaFiles">) {
 }
 
 /**
- * Image deletion follows the accessions approval workflow: whoever may
- * approve its first step (the Collection Manager by default, and
- * Administrators) decides deletion requests. Without a configured first
- * step, Administrators and Collection Managers decide.
+ * Image deletion follows the accessions approval workflow: the role of its
+ * first step (the Collection Manager by default) and Administrators decide
+ * deletion requests. The other accession reviewer roles act on accessions at
+ * every step, not on images. Without a configured first step, Administrators
+ * and Collection Managers decide.
  */
 export async function resolveImageDeletionApproval(
   ctx: ReadCtx,
@@ -48,6 +49,7 @@ export async function resolveImageDeletionApproval(
       organizationId,
       "accession",
       undefined,
+      { stepRoleOnly: true },
     );
   }
   const [membership, isAdministrator] = await Promise.all([

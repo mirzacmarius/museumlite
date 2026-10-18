@@ -1091,6 +1091,8 @@ export default {
     acquisition: "Acquisition Workflow",
     exhibition: "Exhibition Workflow",
     conservation: "Conservation Workflow",
+    accessionReviewerRoles:
+      "Staff with the Administrator, Collection Manager or Curator role can always submit accessions for approval and approve every step, whatever is chosen here.",
   },
   users: {
     title: "User Management",
@@ -7550,6 +7552,11 @@ export default {
         unknown: "Unknown",
         submitting: "Submitting…",
         submitForApproval: "Submit for approval",
+        notSubmitted: "Not submitted for approval yet",
+        describeObject: "Describe object",
+        describeObjectBeforeSubmit:
+          "Describe the object this accession registers, then submit it for approval.",
+        editObject: "Edit object",
         history: "History",
         draftObjectAwaitingReview: "Draft object awaiting review.",
         reviewSummary:

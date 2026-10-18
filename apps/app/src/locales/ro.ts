@@ -5002,6 +5002,8 @@ export default {
     acquisition: "Flux de lucru pentru achiziții",
     exhibition: "Flux de lucru pentru expoziții",
     conservation: "Flux de lucru pentru conservare",
+    accessionReviewerRoles:
+      "Personalul cu rolul Administrator, Collection Manager sau Curator poate întotdeauna să trimită accesiuni spre aprobare și să aprobe fiecare pas, indiferent de ce se alege aici.",
   },
   users: {
     title: "Gestionare Utilizatori",
@@ -7699,6 +7701,11 @@ export default {
         unknown: "Necunoscut",
         submitting: "Se trimite…",
         submitForApproval: "Trimiteți spre aprobare",
+        notSubmitted: "Nu a fost încă trimisă spre aprobare",
+        describeObject: "Descrieți obiectul",
+        describeObjectBeforeSubmit:
+          "Descrieți obiectul pe care îl înregistrează această accesiune, apoi trimiteți-o spre aprobare.",
+        editObject: "Editați obiectul",
         history: "Istoric",
         draftObjectAwaitingReview: "Ciornă de obiect în așteptarea revizuirii.",
         reviewSummary:

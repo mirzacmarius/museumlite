@@ -71,6 +71,7 @@ import {
   recordEditError,
   requireFieldValue,
 } from "./utils/recordEdits";
+import { getRolePresentation } from "./utils/systemRoles";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
@@ -109,6 +110,35 @@ function getDraftDisplaySource(
 ) {
   return (
     objectData?.creator?.trim() || objectData?.title?.trim() || "Object intake"
+  );
+}
+
+/**
+ * The creation entry the object form records as an accession's first workflow
+ * history entry. Accessions recorded on the accession form, imported, or begun
+ * from an entry record their own. These words are stored on every such
+ * accession and identify it (see `startedInObjectForm`), so they must never
+ * change.
+ */
+const OBJECT_FORM_CREATION_COMMENTS = {
+  draft: "Saved object draft",
+  submit: "Submitted object request",
+} as const;
+
+/**
+ * Whether staff started this accession in the object form, read from its
+ * creation entry, which the document keeps. Only then do its source and notes
+ * follow the object; those recorded for any other accession are never
+ * overwritten by an object save.
+ */
+function startedInObjectForm(
+  accession: Pick<Doc<"accessions">, "workflowHistory">,
+) {
+  const creation = accession.workflowHistory?.[0];
+  return (
+    creation?.step === 0 &&
+    (creation.comment === OBJECT_FORM_CREATION_COMMENTS.draft ||
+      creation.comment === OBJECT_FORM_CREATION_COMMENTS.submit)
   );
 }
 
@@ -408,6 +438,35 @@ async function workflowInitiationRefusal(
     : new Error(message);
 }
 
+/**
+ * Whether the caller may submit accessions for review: the workflow's
+ * initiators, which always include administrators, Collection Managers and
+ * Curators (see canInitiateWorkflow), or anyone who may create collection
+ * records when the workflow is off.
+ */
+async function mayStartAccessionReview(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  return (await isAccessionWorkflowEnabled(ctx, organizationId))
+    ? await canInitiateWorkflow(ctx, organizationId, "accession")
+    : await hasPermission(ctx, organizationId, "collections.create");
+}
+
+/** Refuses callers who may not submit accessions for review, coded for members. */
+async function requireAccessionReviewStart(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  if (!(await isAccessionWorkflowEnabled(ctx, organizationId))) {
+    await requirePermission(ctx, organizationId, "collections.create");
+    return;
+  }
+  if (!(await canInitiateWorkflow(ctx, organizationId, "accession"))) {
+    throw await workflowInitiationRefusal(ctx, organizationId);
+  }
+}
+
 const objectDraftSaveValidator = v.object({
   organizationId: v.id("organizations"),
   accessionId: v.optional(v.id("accessions")),
@@ -450,18 +509,8 @@ async function saveObjectDraftRecord(
 
   requireFieldValue("title", normalizedObjectData.title);
 
-  if (args.saveMode === "submit" && accessionWorkflowEnabled) {
-    const canInitiate = await canInitiateWorkflow(
-      ctx,
-      args.organizationId,
-      "accession",
-    );
-
-    if (!canInitiate) {
-      throw await workflowInitiationRefusal(ctx, args.organizationId);
-    }
-  } else if (args.saveMode === "submit") {
-    await requirePermission(ctx, args.organizationId, "collections.create");
+  if (args.saveMode === "submit") {
+    await requireAccessionReviewStart(ctx, args.organizationId);
   }
 
   const source = getDraftDisplaySource(normalizedObjectData);
@@ -561,8 +610,12 @@ async function saveObjectDraftRecord(
       ctx.db.patch(existing._id, {
         accessionNumber,
         normalizedIdentifier: normalizeIdentifier(accessionNumber),
-        source,
-        notes: normalizedObjectData.description?.trim() || existing.notes,
+        ...(startedInObjectForm(existing)
+          ? {
+              source,
+              notes: normalizedObjectData.description?.trim() || existing.notes,
+            }
+          : {}),
         status: shouldAutoApproveSubmit ? "approved" : existing.status,
         approvedBy: shouldAutoApproveSubmit ? userId : existing.approvedBy,
         approvedAt: shouldAutoApproveSubmit ? submittedAt : existing.approvedAt,
@@ -650,8 +703,8 @@ async function saveObjectDraftRecord(
       approvedAt: now,
       comment:
         args.saveMode === "submit"
-          ? "Submitted object request"
-          : "Saved object draft",
+          ? OBJECT_FORM_CREATION_COMMENTS.submit
+          : OBJECT_FORM_CREATION_COMMENTS.draft,
     },
   ];
 
@@ -1094,6 +1147,14 @@ export const get = query({
       ),
       canCurrentUserApprove: v.boolean(),
       canCurrentUserRestore: v.boolean(),
+      /** A draft the viewer may edit and submit for approval. */
+      canCurrentUserSubmit: v.boolean(),
+      /**
+       * Started in the object form, so the object form is its draft's form.
+       * Any other accession is edited in the accession form and has its
+       * object described separately.
+       */
+      startedInObjectForm: v.boolean(),
       approvedBy: v.optional(v.id("users")),
       approvedAt: v.optional(v.number()),
       status: accessionStatusValidator,
@@ -1177,6 +1238,15 @@ export const get = query({
           accession.reviewDecision?.fromStep,
         )
       ).allowed;
+    const canCurrentUserSubmit =
+      accession.status === "pending" &&
+      accession.workflowStep === 0 &&
+      (await hasPermission(
+        ctx,
+        accession.organizationId,
+        "collections.update",
+      )) &&
+      (await mayStartAccessionReview(ctx, accession.organizationId));
     const reviewDecision = accession.reviewDecision;
     const decidedBy = reviewDecision
       ? await ctx.db.get(reviewDecision.decidedBy)
@@ -1218,6 +1288,8 @@ export const get = query({
       },
       canCurrentUserApprove,
       canCurrentUserRestore,
+      canCurrentUserSubmit,
+      startedInObjectForm: startedInObjectForm(accession),
       approvedBy: accession.approvedBy,
       approvedAt: accession.approvedAt,
       status: accession.status,
@@ -1432,6 +1504,8 @@ export const submitForApproval = mutation({
       accession.organizationId,
       "collections.update",
     );
+    // The same rule as submitting from the object form.
+    await requireAccessionReviewStart(ctx, accession.organizationId);
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -1759,8 +1833,9 @@ export const approve = mutation({
 
 /**
  * Whether the caller may decide on an intake at a workflow step: the approver
- * permission plus that step's role (organization administrators override step
- * roles). Returns the configured step the decision applies to.
+ * permission plus that step's role (administrators, Collection Managers and
+ * Curators act at every step; see canApproveAtStep). Returns the configured
+ * step the decision applies to.
  */
 async function resolveIntakeReviewer(
   ctx: QueryCtx | MutationCtx,
@@ -2173,7 +2248,7 @@ export const getWorkflowSteps = query({
         return {
           stepNumber: step.stepNumber,
           name: step.name,
-          roleName: role?.name,
+          roleName: role ? getRolePresentation(role).name : undefined,
           approvalMode: step.approvalMode,
           requiredApprovals: step.requiredApprovals,
         };

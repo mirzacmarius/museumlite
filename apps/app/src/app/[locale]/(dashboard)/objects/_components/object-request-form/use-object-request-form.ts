@@ -45,10 +45,14 @@ import {
 } from "./object-request-values";
 import { useObjectRequestFormLocalMedia } from "./use-object-request-form-local-media";
 
-/** The accession whose object draft the form edits. */
+/**
+ * The accession whose object draft the form edits. One recorded without an
+ * object starts from an empty draft under its accession number.
+ */
 export interface ObjectRequestDraftSource {
   _id: Id<"accessions">;
   status: string;
+  accessionNumber?: string;
   draftObjectData?: ObjectDraftData;
   draftMedia?: DraftMediaItem[];
 }
@@ -95,10 +99,13 @@ export function useObjectRequestForm({
   );
   const latest = useMemo(() => {
     if (!isDraftEditMode) return { values: emptyValues, editVersion: null };
-    if (!accession?.draftObjectData || !editState) return undefined;
+    if (!accession || !editState) return undefined;
     return {
       values: objectRequestValuesFromDraft(
-        accession.draftObjectData,
+        accession.draftObjectData ?? {
+          title: "",
+          accessionNumber: accession.accessionNumber,
+        },
         accession.draftMedia,
         collectionGroupId,
       ),
@@ -217,7 +224,8 @@ export function useObjectRequestForm({
     savedPrimaryImageId !== null && primaryImageId !== savedPrimaryImageId;
   const isFormDirty = session.isDirty || primaryChanged;
   const hasUnsavedChanges = isFormDirty || localMedia.hasLocalMediaSelections;
-  const hasSavedFieldDraft = isDraftEditMode;
+  const hasSavedFieldDraft =
+    isDraftEditMode && accession?.draftObjectData !== undefined;
   const isDraftCurrent = hasSavedFieldDraft && !isFormDirty;
 
   useBeforeUnload(hasUnsavedChanges);

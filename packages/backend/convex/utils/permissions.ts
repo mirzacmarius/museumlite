@@ -19,6 +19,7 @@ import {
   organizationAccess,
   requireModuleEnabled,
 } from "./featureGates";
+import { REVIEWER_SYSTEM_ROLE_NAMES } from "./systemRoleGrants";
 import { VALUATION_PERMISSION } from "./valuation";
 import { workflowApprovalError } from "./workflowApprovalErrors";
 import {
@@ -389,7 +390,43 @@ export async function canInitiateWorkflow(
     );
   }
 
-  return workflowConfig.canInitiateRoles.includes(userOrganization.roleId);
+  if (workflowConfig.canInitiateRoles.includes(userOrganization.roleId)) {
+    return true;
+  }
+  return (
+    workflowType === "accession" &&
+    (await isAccessionReviewerRole(ctx, userOrganization.roleId)) &&
+    (await hasPermission(
+      ctx,
+      organizationId,
+      getFallbackPermissionForWorkflow(workflowType),
+    ))
+  );
+}
+
+/**
+ * Administrators, Collection Managers and Curators act on accessions at every
+ * workflow step and may start their review, whichever role a step names
+ * (MUS-804, MUS-805). Each command still needs its own permission. Custom
+ * roles act only on the steps assigned to them.
+ */
+async function isAccessionReviewerRole(
+  ctx: QueryCtx | MutationCtx,
+  roleId: Id<"roles">,
+) {
+  const role = await ctx.db.get(roleId);
+  return (
+    role?.isSystemRole === true && REVIEWER_SYSTEM_ROLE_NAMES.has(role.name)
+  );
+}
+
+export interface StepApprovalOptions {
+  /**
+   * Only the step's own role and organization administrators decide, as for
+   * image deletions, which follow the accessions workflow's first step
+   * (ADR 0018).
+   */
+  stepRoleOnly?: boolean;
 }
 
 export async function canApproveAtStep(
@@ -397,6 +434,7 @@ export async function canApproveAtStep(
   organizationId: Id<"organizations">,
   workflowType: WorkflowType,
   stepNumber: number,
+  options: StepApprovalOptions = {},
 ): Promise<boolean> {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
@@ -443,7 +481,11 @@ export async function canApproveAtStep(
   if (step.roleId === userOrganization.roleId) {
     return true;
   }
-  return false;
+  return (
+    workflowType === "accession" &&
+    !options.stepRoleOnly &&
+    (await isAccessionReviewerRole(ctx, userOrganization.roleId))
+  );
 }
 
 const APPROVE_COMMAND_PERMISSIONS = {
@@ -468,6 +510,7 @@ export async function resolveCaseApproval(
   organizationId: Id<"organizations">,
   caseType: ApprovalCaseType,
   workflowStep: number | undefined,
+  options: StepApprovalOptions = {},
 ) {
   const permission = APPROVE_COMMAND_PERMISSIONS[caseType];
   const config =
@@ -508,7 +551,15 @@ export async function resolveCaseApproval(
       ),
     };
   }
-  if (!(await canApproveAtStep(ctx, organizationId, caseType, currentStep))) {
+  if (
+    !(await canApproveAtStep(
+      ctx,
+      organizationId,
+      caseType,
+      currentStep,
+      options,
+    ))
+  ) {
     return {
       allowed: false as const,
       refusal: workflowApprovalError(

@@ -18,6 +18,80 @@ import {
 } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 import { IntakeReviewDecision } from "./intake-review-decision";
+
+/** Shown only to staff who may start review of the accession workflow. */
+function SubmitDraftButton({
+  accession,
+  isSubmittingDraft,
+  handleSubmitDraft,
+}: Pick<
+  AccessionDetailViewProps,
+  "accession" | "isSubmittingDraft" | "handleSubmitDraft"
+>) {
+  const tRoot = useI18n();
+  if (!accession.canCurrentUserSubmit) return null;
+  return (
+    <Button
+      size="sm"
+      onClick={() => void handleSubmitDraft()}
+      disabled={isSubmittingDraft}
+    >
+      <CheckCircle className="mr-2 size-4" />
+      {isSubmittingDraft
+        ? tRoot("untranslatedRecords.accessions.detail.submitting")
+        : tRoot("untranslatedRecords.accessions.detail.submitForApproval")}
+    </Button>
+  );
+}
+
+/**
+ * A draft recorded on the accession form, imported, or begun from an entry
+ * has no proposed object to submit with. Staff describe its object here when
+ * it has none yet, and submit it for approval.
+ */
+function AccessionDraftCard({
+  accession,
+  isSubmittingDraft,
+  handleSubmitDraft,
+}: Pick<
+  AccessionDetailViewProps,
+  "accession" | "isSubmittingDraft" | "handleSubmitDraft"
+>) {
+  const tRoot = useI18n();
+  const hasObject = accession.collectionId !== undefined;
+  return (
+    <SectionCard
+      eyebrow={tRoot("untranslatedRecords.accessions.detail.statusDraft")}
+      title={tRoot("untranslatedRecords.accessions.detail.notSubmitted")}
+      description={
+        hasObject
+          ? tRoot("untranslatedRecords.accessions.detail.draftsMustBeSubmitted")
+          : tRoot(
+              "untranslatedRecords.accessions.detail.describeObjectBeforeSubmit",
+            )
+      }
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        {hasObject ? null : (
+          <PermissionGate permission="collections.update">
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/accessions/${accession._id}/edit-object`}>
+                <Edit className="mr-2 size-4" />
+                {tRoot("untranslatedRecords.accessions.detail.describeObject")}
+              </Link>
+            </Button>
+          </PermissionGate>
+        )}
+        <SubmitDraftButton
+          accession={accession}
+          isSubmittingDraft={isSubmittingDraft}
+          handleSubmitDraft={handleSubmitDraft}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
 export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
   const tRoot = useI18n();
   const {
@@ -27,7 +101,6 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
     configuredWorkflowSteps,
     workflowSummary,
     canEditObjectDraft,
-    draftEditHref,
     draftActionError,
     isSubmittingDraft,
     handleSubmitDraft,
@@ -216,34 +289,27 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                 <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
                   <PermissionGate permission="collections.update">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={draftEditHref}>
+                      <Link href={`/accessions/${accession._id}/edit-object`}>
                         <Edit className="mr-2 size-4" />
-                        {isDraft
+                        {!accession.startedInObjectForm
                           ? tRoot(
-                              "untranslatedRecords.accessions.detail.editDraft",
+                              "untranslatedRecords.accessions.detail.editObject",
                             )
-                          : tRoot("untranslatedRecords.objects.actions.edit")}
+                          : isDraft
+                            ? tRoot(
+                                "untranslatedRecords.accessions.detail.editDraft",
+                              )
+                            : tRoot("untranslatedRecords.objects.actions.edit")}
                       </Link>
                     </Button>
                   </PermissionGate>
                   {isDraft ? (
                     <>
-                      <PermissionGate permission="collections.update">
-                        <Button
-                          size="sm"
-                          onClick={() => void handleSubmitDraft()}
-                          disabled={isSubmittingDraft}
-                        >
-                          <CheckCircle className="mr-2 size-4" />
-                          {isSubmittingDraft
-                            ? tRoot(
-                                "untranslatedRecords.accessions.detail.submitting",
-                              )
-                            : tRoot(
-                                "untranslatedRecords.accessions.detail.submitForApproval",
-                              )}
-                        </Button>
-                      </PermissionGate>
+                      <SubmitDraftButton
+                        accession={accession}
+                        isSubmittingDraft={isSubmittingDraft}
+                        handleSubmitDraft={handleSubmitDraft}
+                      />
                       <p className="text-sm text-muted-foreground">
                         {tRoot(
                           "untranslatedRecords.accessions.detail.draftsMustBeSubmitted",
@@ -254,6 +320,12 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                 </div>
               ) : null}
             </SectionCard>
+          ) : isDraft ? (
+            <AccessionDraftCard
+              accession={accession}
+              isSubmittingDraft={isSubmittingDraft}
+              handleSubmitDraft={handleSubmitDraft}
+            />
           ) : null}
 
           <CaseTaskPanel
