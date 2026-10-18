@@ -1,15 +1,12 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
-import type { FunctionReturnType } from "convex/server";
 import { FileText } from "lucide-react";
 
 import { useI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
+import type { TypeDetailsRecord } from "./types";
 
-type DetailsDoc = NonNullable<
-  FunctionReturnType<typeof api.archiveDetails.get>
->;
+type DetailsDoc = TypeDetailsRecord<"archive">;
 
 interface ArchiveDocumentInfoSectionProps {
   details: DetailsDoc;

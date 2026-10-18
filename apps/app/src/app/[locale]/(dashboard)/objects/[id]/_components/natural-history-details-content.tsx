@@ -1,13 +1,10 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
-import type { FunctionReturnType } from "convex/server";
 import { NaturalHistoryDetailSections } from "./natural-history-detail-sections";
 import { NaturalHistorySummaryCards } from "./natural-history-summary-cards";
+import type { TypeDetailsRecord } from "./types";
 
-type NaturalHistoryDetails = NonNullable<
-  FunctionReturnType<typeof api.naturalHistoryDetails.get>
->;
+type NaturalHistoryDetails = TypeDetailsRecord<"natural_history">;
 
 interface NaturalHistoryDetailsContentProps {
   details: NaturalHistoryDetails;

@@ -1,7 +1,5 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
-import type { FunctionReturnType } from "convex/server";
 import { Shield } from "lucide-react";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import {
@@ -10,10 +8,9 @@ import {
   DetailLabel,
   DetailSection,
 } from "./detail-section";
+import type { TypeDetailsRecord } from "./types";
 
-type DetailsDoc = NonNullable<
-  FunctionReturnType<typeof api.archiveDetails.get>
->;
+type DetailsDoc = TypeDetailsRecord<"archive">;
 
 interface ArchiveSecuritySectionProps {
   details: DetailsDoc;

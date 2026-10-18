@@ -1,14 +1,11 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
-import type { FunctionReturnType } from "convex/server";
 import { ArchiveDetailsAlerts } from "./archive-details-alerts";
 import { ArchiveDetailsSections } from "./archive-details-sections";
 import { ArchiveDetailsSummaryCards } from "./archive-details-summary-cards";
+import type { TypeDetailsRecord } from "./types";
 
-type DetailsDoc = NonNullable<
-  FunctionReturnType<typeof api.archiveDetails.get>
->;
+type DetailsDoc = TypeDetailsRecord<"archive">;
 
 interface ArchiveDetailsContentProps {
   details: DetailsDoc;

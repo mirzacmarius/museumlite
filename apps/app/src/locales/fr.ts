@@ -876,7 +876,6 @@ export default {
       renewals: "Renouvellements",
     },
     common: {
-      loading: "Chargement des détails {module}...",
       noDetailsYet: "Aucun détail {module} enregistré pour le moment",
       notSpecified: "Non spécifié",
       unknown: "Inconnu",

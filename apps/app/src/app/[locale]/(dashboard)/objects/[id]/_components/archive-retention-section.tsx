@@ -1,16 +1,13 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
-import type { FunctionReturnType } from "convex/server";
 import { Clock } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
+import type { TypeDetailsRecord } from "./types";
 
-type DetailsDoc = NonNullable<
-  FunctionReturnType<typeof api.archiveDetails.get>
->;
+type DetailsDoc = TypeDetailsRecord<"archive">;
 
 function ClientDaysUntilExpiry({ timestamp }: { timestamp: number }) {
   return useSyncExternalStore(
