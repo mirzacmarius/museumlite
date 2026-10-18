@@ -22,8 +22,8 @@ import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
 import { useBackToResultsLink } from "@/components/record-recovery-state";
 import { writeTextToClipboard } from "@/lib/clipboard";
+import { ObjectDeaccessionAction } from "../../../_components/object-deaccession-action";
 import type { ObjectDetailData } from "../types";
-import { ObjectDeaccessionAction } from "./object-deaccession-action";
 
 interface ObjectDetailHeaderProps {
   collection: NonNullable<ObjectDetailData["collection"]>;
@@ -148,11 +148,12 @@ export function ObjectDetailHeader({
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="h-4 w-px bg-border" />
+        <ObjectDeaccessionAction
+          collectionId={collectionId}
+          collectionTitle={collection.title}
+          organizationId={collection.organizationId}
+        />
         <PermissionGate permission="collections.update">
-          <ObjectDeaccessionAction
-            collection={collection}
-            collectionId={collectionId}
-          />
           <Button size="sm" asChild>
             <Link
               href={

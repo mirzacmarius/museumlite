@@ -1072,8 +1072,6 @@ export default {
     printManifest: "Printează manifestul",
     setAsPrimary: "Setează ca principal",
     unavailable: "Indisponibil",
-    cannotDeaccession:
-      "Nu se poate scoate din colecție — obiectul face parte dintr-un împrumut activ",
     pending: "În așteptare",
     selectAll: "Selectează tot",
     selectAllItems: "Selectează toate obiectele",
@@ -1539,6 +1537,12 @@ export default {
       none: "Niciuna",
       printedOn: "Printează la data de",
       print: "Printează",
+    },
+    deaccessionAction: {
+      request: "Solicită scoaterea din colecție",
+      inProgress: "Scoatere din colecție în curs",
+      onLoan: "Împrumutat",
+      notAccessioned: "Fără accesiune încă",
     },
     withdrawal: {
       restore: "Readu în catalog",
@@ -8087,7 +8091,6 @@ export default {
       },
       edit: {
         editObject: "Editează obiectul",
-        cannotRemoveOnLoan: "Nu poate fi eliminat cât timp este împrumutat",
         saveChanges: "Se salvează modificările…",
         unsavedAcrossTabs:
           "Aveți modificări nesalvate ale câmpurilor în mai multe file.",

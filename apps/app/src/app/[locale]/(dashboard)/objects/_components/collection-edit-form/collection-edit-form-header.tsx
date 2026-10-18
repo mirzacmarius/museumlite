@@ -3,10 +3,9 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import type { FunctionReturnType } from "convex/server";
-import { AlertOctagon, Archive, ArrowLeft, Save } from "lucide-react";
-import { PermissionGate } from "@/components/permission-gate";
-
+import { ArrowLeft, Save } from "lucide-react";
 import { useI18n } from "@/locales/client";
+import { ObjectDeaccessionAction } from "../object-deaccession-action";
 
 type CollectionDoc = NonNullable<
   FunctionReturnType<typeof api.collections.get>
@@ -17,11 +16,9 @@ interface CollectionEditFormHeaderProps {
   common: (key: string) => string;
   collectionId: string;
   collection: CollectionDoc;
-  hasActiveLoan: boolean;
   isSubmitting: boolean;
   canUpdateObject: boolean;
   onNavigate: (href: string) => void;
-  onDeaccessionOpen: () => void;
 }
 
 export function CollectionEditFormHeader({
@@ -29,11 +26,9 @@ export function CollectionEditFormHeader({
   common,
   collectionId,
   collection,
-  hasActiveLoan,
   isSubmitting,
   canUpdateObject,
   onNavigate,
-  onDeaccessionOpen,
 }: CollectionEditFormHeaderProps) {
   const tRoot = useI18n();
   return (
@@ -62,29 +57,11 @@ export function CollectionEditFormHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <PermissionGate permission="collections.update">
-          {collection.status === "active" && !hasActiveLoan ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              onClick={onDeaccessionOpen}
-            >
-              <Archive className="mr-2 size-4" />
-              {tRoot("objects.bulkActions.deaccession")}
-            </Button>
-          ) : null}
-          {collection.status === "active" && hasActiveLoan ? (
-            <div
-              className="hidden items-center text-xs text-muted-foreground lg:flex"
-              title={common("cannotDeaccession")}
-            >
-              <AlertOctagon className="mr-2 size-4" />
-              {tRoot("untranslatedRecords.objects.edit.cannotRemoveOnLoan")}
-            </div>
-          ) : null}
-        </PermissionGate>
+        <ObjectDeaccessionAction
+          collectionId={collection._id}
+          collectionTitle={collection.title}
+          organizationId={collection.organizationId}
+        />
 
         <Button
           type="button"

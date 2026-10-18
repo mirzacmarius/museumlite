@@ -3057,8 +3057,6 @@ export default {
     setAsPrimary: "Définir comme principal",
     unavailable: "Indisponible",
     unknown: "Inconnu",
-    cannotDeaccession:
-      "Impossible de désaccessionner : l'objet est en prêt actif",
     active: "Actif",
     inactive: "Inactif",
     pending: "En attente",
@@ -3584,6 +3582,12 @@ export default {
       saveMembership: "Enregistrer la sélection",
       addObjectsButton: "Ajouter des objets",
       viewingCollection: "Groupe de collection : {name}",
+    },
+    deaccessionAction: {
+      request: "Demander la désaccession",
+      inProgress: "Désaccession en cours",
+      onLoan: "En prêt",
+      notAccessioned: "Pas encore inscrit à l’inventaire",
     },
     withdrawal: {
       restore: "Remettre au catalogue",
@@ -8126,7 +8130,6 @@ export default {
       },
       edit: {
         editObject: "Modifier l’objet",
-        cannotRemoveOnLoan: "Impossible de retirer l’objet pendant son prêt",
         saveChanges: "Enregistrement des modifications…",
         unsavedAcrossTabs:
           "Des modifications de champs ne sont pas enregistrées dans certains onglets.",
