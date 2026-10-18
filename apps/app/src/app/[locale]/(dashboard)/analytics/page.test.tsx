@@ -169,12 +169,13 @@ test("without locations.read, location utilization is unavailable and the rest o
   expect(screen.queryByRole("region", { name: "Location utilization" })).toBe(
     null,
   );
-  expect(screen.getByRole("region", { name: "Loans" })).toBeTruthy();
+  // Loans and the report sections load lazily; wait for them on busy runners.
+  expect(await screen.findByRole("region", { name: "Loans" })).toBeTruthy();
   expect(
-    screen.getByRole("region", { name: "Scheduled reports" }),
+    await screen.findByRole("region", { name: "Scheduled reports" }),
   ).toBeTruthy();
   expect(
-    screen.getByRole("region", { name: "Report exports" }).textContent,
+    (await screen.findByRole("region", { name: "Report exports" })).textContent,
   ).toBe("reports ready; locations omitted");
 });
 
