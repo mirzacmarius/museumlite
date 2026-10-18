@@ -4,8 +4,8 @@ import { Building2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
-import { AccessionsPageClient } from "./accessions-page-client";
-import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
+import { AccessionsPageClient } from "../accessions-page-client";
+import { AccessionsPageSkeleton } from "../accessions-page-skeleton";
 
 export default function AccessionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();

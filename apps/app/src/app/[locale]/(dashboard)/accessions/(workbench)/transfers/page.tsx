@@ -4,21 +4,15 @@ import { Suspense } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
 import { useI18n } from "@/locales/client";
-import { AccessionsPageSkeleton } from "../accessions-page-skeleton";
-import { TransfersBoard } from "../transfers-board";
+import { AccessionsPageSkeleton } from "../../accessions-page-skeleton";
+import { TransfersBoard } from "../../transfers-board";
 export default function AccessionTransfersPage() {
   const tRoot = useI18n();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
 
   if (isLoading || permissionsLoading) {
-    return (
-      <AccessionsPageSkeleton
-        actionsCount={1}
-        showWorkbenchNav={true}
-        statsCount={5}
-      />
-    );
+    return <AccessionsPageSkeleton actionsCount={1} statsCount={5} />;
   }
 
   if (!organizations || organizations.length === 0) {
@@ -52,7 +46,9 @@ export default function AccessionTransfersPage() {
   }
 
   return (
-    <Suspense fallback={<AccessionsPageSkeleton />}>
+    <Suspense
+      fallback={<AccessionsPageSkeleton actionsCount={1} statsCount={5} />}
+    >
       <TransfersBoard organizationId={currentOrganizationId} />
     </Suspense>
   );

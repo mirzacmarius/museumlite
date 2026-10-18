@@ -69,7 +69,9 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
       return t("editExhibition");
     if (/^\/exhibitions\/[^/]+$/.test(cleanPath)) return t("exhibitionDetails");
     if (cleanPath.startsWith("/exhibitions")) return t("exhibitions");
-    if (cleanPath === "/accessions/entries") return tEntries("title");
+    // Every Accessions tab keeps the section's title.
+    if (/^\/accessions\/(entries|transfers)$/.test(cleanPath))
+      return t("pageTitles.accessions");
     if (cleanPath === "/accessions/entries/new")
       return tEntries("receiveForm.title");
     if (/^\/accessions\/entries\/[^/]+$/.test(cleanPath))

@@ -2,19 +2,14 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import { Search } from "lucide-react";
 import { parseAsString, useQueryState } from "nuqs";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
-import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
 import { TransferKanbanColumn } from "./transfer-kanban-column";
-import {
-  countPendingTransfers,
-  usePendingTransferCount,
-} from "./use-pending-transfer-count";
+import { countPendingTransfers } from "./use-pending-transfer-count";
 
 type TransfersBoardProps = {
   organizationId: Id<"organizations">;
@@ -29,10 +24,6 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     organizationId,
     search: deferredSearchQuery || undefined,
   });
-  const accessionCounts = useQuery(api.accessions.getBoardCounts, {
-    organizationId,
-  });
-  const pendingTransfers = usePendingTransferCount(organizationId);
 
   const stats = useMemo(() => {
     if (!transferRequests) {
@@ -67,22 +58,14 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     };
   }, [transferRequests]);
 
-  const pendingAccessions = accessionCounts?.pending ?? "-";
-
   if (transferRequests === undefined) {
-    return (
-      <AccessionsPageSkeleton
-        actionsCount={1}
-        showWorkbenchNav={true}
-        statsCount={5}
-      />
-    );
+    return <AccessionsPageSkeleton actionsCount={1} statsCount={5} />;
   }
 
   return (
     <div className="flex size-full flex-col bg-background p-6">
-      <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
-        <div className="flex gap-4">
+      <div className="mb-6 flex min-h-[52px] flex-wrap items-center justify-between gap-6">
+        <div className="flex flex-wrap gap-4">
           <TransferStat
             label={tRoot("accessions.stats.pending")}
             value={stats.pending}
@@ -108,23 +91,21 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
         <div className="flex items-center gap-3">
           <div className="group relative">
             <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
-            <Input
+            <input
+              type="search"
+              aria-label={tRoot(
+                "untranslatedRecords.accessions.transfer.search",
+              )}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder={tRoot(
                 "untranslatedRecords.accessions.transfer.search",
               )}
-              className="w-64 rounded-md border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background"
+              className="w-64 rounded-md border border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
             />
           </div>
         </div>
       </div>
-
-      <AccessionsWorkbenchNav
-        activeView="transfers"
-        pendingAccessions={pendingAccessions}
-        pendingTransfers={pendingTransfers}
-      />
 
       <div className="flex-1 overflow-x-auto custom-scrollbar">
         <div className="flex h-full min-w-max gap-6 pb-4">
