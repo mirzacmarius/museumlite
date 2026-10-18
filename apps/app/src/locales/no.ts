@@ -7936,6 +7936,7 @@ export default {
         resultingAccessionNumber: "Ny accessionnummer",
         requestedAt: "Forespurt",
         sourceApprovedAt: "Kilde godkjent",
+        sourceCancelledAt: "Kansellert av kilde",
         targetReviewedAt: "Mål gjennomgått",
         executedAt: "Gjennomført",
         reason: "Årsak til flytting",
@@ -10135,6 +10136,7 @@ export default {
         objectMoveApproved: "Flytting av objekt godkjent",
         incomingTransferRejected: "Innkommende overføring avvist",
         objectMoveRejected: "Flytting av objekt avvist",
+        objectMoveCancelled: "Flytting av objekt avbrutt",
         newTaskAssigned: "Ny oppgave tildelt",
         taskAssigned: "Oppgave tildelt",
         taskDueSoon: "Oppgaven har snart frist",
@@ -10206,6 +10208,8 @@ export default {
           "Forespørsel {number} gjelder bruk av et bilde av objektet {object}.",
         objectMoveExecuted:
           "Forespørselen din om å flytte objektet er godkjent og gjennomført.",
+        objectMoveCancelled:
+          "Forespørselen din om å flytte objektet ble avbrutt av en administrator i kildeorganisasjonen.",
         onlyActiveObjectsCanMove:
           "Bare aktive objekter kan flyttes til en annen organisasjon.",
         objectOnLoanCannotMove: "Dette objektet er utlånt og kan ikke flyttes.",
@@ -10727,6 +10731,52 @@ export default {
       draftMedia: "Bilder og dokumenter",
       alternateNumberExists:
         "Dette alternative aksesjonsnummeret står allerede i listen.",
+    },
+  },
+  moveRequests: {
+    errors: {
+      requestClosed:
+        "Denne overføringsforespørselen er allerede avgjort eller avbrutt.",
+      outsideHierarchy:
+        "Mottakerorganisasjonen er utenfor organisasjonens hierarki og tillater ikke innkommende overføringsforespørsler.",
+      planRequired:
+        "Overføringer mellom organisasjoner i samme hierarki krever Pro- eller Enterprise-abonnementet.",
+      destinationNotAccepting:
+        "Organisasjonen din tar ikke imot innkommende overføringsforespørsler og er utenfor avsenderorganisasjonens hierarki.",
+    },
+    blockers: {
+      statusNotActive:
+        "Bare aktive objekter kan flyttes til en annen organisasjon.",
+      sameOrganization:
+        "Mottakerorganisasjonen må være en annen enn den nåværende organisasjonen.",
+      activeLoan: "Dette objektet er utlånt og kan ikke flyttes.",
+      pendingLocationMove:
+        "Objektet har allerede en ventende forespørsel om flytting til en annen plassering.",
+      pendingOrganizationMove:
+        "Det finnes allerede en ventende forespørsel om å flytte objektet til en annen organisasjon.",
+      temporaryCustody:
+        "Dette objektet er i midlertidig forvaring under en innlevering og er ikke en del av samlingen.",
+      hasParentObject:
+        "Objekter som er knyttet til et overordnet objekt, må kobles fra før de kan flyttes.",
+      hasChildObjects:
+        "Objekter med underordnede objekter må kobles fra før de kan flyttes.",
+      activeTransit:
+        "Dette objektet er med i en pågående transport og kan ikke flyttes.",
+      activeExhibition:
+        "Dette objektet er med i en aktiv utstilling og kan ikke flyttes.",
+      hasDeaccessions:
+        "Objekter med registrert deaksesjon kan ikke flyttes til en annen organisasjon.",
+      insuranceCoverage:
+        "Dette objektet har forsikringsdekning som må avklares før det kan flyttes.",
+      insuranceClaim:
+        "Dette objektet er nevnt i et forsikringskrav og kan ikke flyttes.",
+      collectionNotFound: "Fant ikke dette objektet.",
+      targetNotAcceptingTransfers:
+        "Mottakerorganisasjonen tar ikke imot innkommende overføringsforespørsler.",
+      targetMembershipRequired:
+        "Du må være medlem av mottakerorganisasjonen for å flytte et objekt dit.",
+      targetCreatePermissionRequired:
+        "Du trenger tillatelse til å opprette objekter i mottakerorganisasjonen.",
     },
   },
   workflowApprovals: {

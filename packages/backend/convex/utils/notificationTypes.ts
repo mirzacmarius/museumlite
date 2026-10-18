@@ -49,6 +49,7 @@ export const NOTIFICATION_TYPE_CATEGORIES = {
   conservation_pending_approval: "approvals",
   move_request_created: "approvals",
   move_request_approved: "approvals",
+  move_request_cancelled: "approvals",
   loan_extension_requested: "approvals",
   loan_extension_approved: "approvals",
   loan_extension_rejected: "approvals",

@@ -21,6 +21,13 @@ import { mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { isUnaccessionedEntryObject } from "./utils/objectEntryLifecycle";
 import {
+  ELIGIBILITY_BLOCKER_CODES,
+  type EligibilityBlockerCode,
+  type MoveBlockerCode,
+  objectMoveError,
+  objectMoveErrorFromError,
+} from "./utils/objectMoveErrors";
+import {
   getCurrentUserOrganization,
   getUserIdsWithPermission,
   hasPermission,
@@ -45,7 +52,7 @@ const requestStatusValidator = v.union(
 );
 
 const blockerValidator = v.object({
-  code: v.string(),
+  code: v.union(...ELIGIBILITY_BLOCKER_CODES.map((code) => v.literal(code))),
   message: v.string(),
 });
 
@@ -98,7 +105,7 @@ const BLOCKING_COVERAGE_STATUSES = new Set(["active", "pending"]);
 const BLOCKING_LOCATION_MOVE_STATUSES = new Set(["pending", "approved"]);
 
 type MoveBlocker = {
-  code: string;
+  code: MoveBlockerCode;
   message: string;
 };
 
@@ -150,7 +157,8 @@ async function getTransferHierarchy(
   const sourceRootId = getEffectiveRootOrganizationId(sourceOrganization);
   const targetRootId = getEffectiveRootOrganizationId(targetOrganization);
   if (sourceRootId !== targetRootId) {
-    throw new Error(
+    throw objectMoveError(
+      "DESTINATION_OUTSIDE_HIERARCHY",
       "Objects can only be transferred between organizations in the same hierarchy.",
     );
   }
@@ -162,7 +170,10 @@ async function getTransferHierarchy(
 
   const rootTier = rootOrganization.subscriptionTier ?? "free";
   if (rootTier !== "pro" && rootTier !== "enterprise") {
-    throw new Error("Hierarchical transfers require a Pro or Enterprise plan.");
+    throw objectMoveError(
+      "HIERARCHY_PLAN_REQUIRED",
+      "Hierarchical transfers require a Pro or Enterprise plan.",
+    );
   }
 
   return {
@@ -197,6 +208,56 @@ async function isPublicTransferDestination(
   }
 
   return organizationAllowsIncomingTransfers(targetOrganization);
+}
+
+/**
+ * The rule `createRequest` admits a destination by, checked again when the
+ * transfer is approved and accepted: the destination allows incoming transfer
+ * requests, or it shares the source's hierarchy on a plan that includes
+ * hierarchical transfers. At acceptance the receiving organization reads the
+ * refusal, so one outside the hierarchy hears it in its own terms.
+ */
+async function requireTransferRoute(
+  ctx: QueryCtx | MutationCtx,
+  sourceOrganizationId: Id<"organizations">,
+  targetOrganizationId: Id<"organizations">,
+  decision: "approve" | "accept",
+) {
+  const isPublicDestination = await isPublicTransferDestination(
+    ctx,
+    sourceOrganizationId,
+    targetOrganizationId,
+  );
+  if (isPublicDestination) return;
+  try {
+    await getTransferHierarchy(ctx, sourceOrganizationId, targetOrganizationId);
+  } catch (error) {
+    const outsideHierarchy =
+      objectMoveErrorFromError(error)?.code === "DESTINATION_OUTSIDE_HIERARCHY";
+    if (decision === "accept" && outsideHierarchy) {
+      throw objectMoveError(
+        "DESTINATION_NOT_ACCEPTING",
+        "Your organization does not accept incoming transfer requests and is outside the sending organization's hierarchy.",
+      );
+    }
+    throw error;
+  }
+}
+
+function requireNoMoveBlockers(blockers: MoveBlocker[]) {
+  if (blockers.length === 0) return;
+  throw objectMoveError(
+    "MOVE_BLOCKED",
+    blockers.map((blocker) => blocker.message).join(" "),
+    blockers.map((blocker) => blocker.code),
+  );
+}
+
+function moveRequestClosed(status: RequestStatus) {
+  return objectMoveError(
+    "MOVE_REQUEST_CLOSED",
+    `Move request is already ${status}.`,
+  );
 }
 
 const transferDestinationSummaryValidator = v.object({
@@ -1162,7 +1223,7 @@ export const getEligibility = query({
         isEligible: false,
         blockers: [
           {
-            code: "collection_not_found",
+            code: "collection_not_found" as const,
             message: "Object not found.",
           },
         ],
@@ -1175,11 +1236,12 @@ export const getEligibility = query({
       "collections.update",
     );
 
-    const blockers = await buildEligibilityBlockers(
-      ctx,
-      collection,
-      args.targetOrganizationId,
-    );
+    const blockers: Array<{ code: EligibilityBlockerCode; message: string }> =
+      await buildEligibilityBlockers(
+        ctx,
+        collection,
+        args.targetOrganizationId,
+      );
 
     if (args.targetOrganizationId) {
       const isPublicDestination = await isPublicTransferDestination(
@@ -1208,8 +1270,12 @@ export const getEligibility = query({
             args.targetOrganizationId,
           );
         } catch (error) {
+          const planRequired =
+            objectMoveErrorFromError(error)?.code === "HIERARCHY_PLAN_REQUIRED";
           blockers.push({
-            code: "target_not_in_hierarchy",
+            code: planRequired
+              ? "hierarchy_plan_required"
+              : "target_not_in_hierarchy",
             message:
               error instanceof Error
                 ? error.message
@@ -1323,9 +1389,7 @@ export const createRequest = mutation({
       }
     }
 
-    if (blockers.length > 0) {
-      throw new Error(blockers.map((blocker) => blocker.message).join(" "));
-    }
+    requireNoMoveBlockers(blockers);
 
     const reason = args.reason.trim();
     if (!reason) {
@@ -1825,7 +1889,7 @@ export const approve = mutation({
     }
 
     if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
-      throw new Error(`Move request is already ${request.status}.`);
+      throw moveRequestClosed(request.status);
     }
 
     await requirePermission(
@@ -1846,14 +1910,13 @@ export const approve = mutation({
       { ignoreRequestId: request._id },
     );
 
-    if (blockers.length > 0) {
-      throw new Error(blockers.map((blocker) => blocker.message).join(" "));
-    }
+    requireNoMoveBlockers(blockers);
 
-    await getTransferHierarchy(
+    await requireTransferRoute(
       ctx,
       request.sourceOrganizationId,
       request.targetOrganizationId,
+      "approve",
     );
 
     const deaccessionId = await createApprovedTransferDeaccession(
@@ -1937,7 +2000,7 @@ export const accept = mutation({
     }
 
     if (request.status !== "awaiting_acceptance") {
-      throw new Error(`Move request is already ${request.status}.`);
+      throw moveRequestClosed(request.status);
     }
 
     const collection = await ctx.db.get(request.collectionId);
@@ -1951,10 +2014,11 @@ export const accept = mutation({
       );
     }
 
-    await getTransferHierarchy(
+    await requireTransferRoute(
       ctx,
       request.sourceOrganizationId,
       request.targetOrganizationId,
+      "accept",
     );
 
     assertObservedSourceLocationMatches(
@@ -1978,9 +2042,7 @@ export const accept = mutation({
       },
     );
 
-    if (blockers.length > 0) {
-      throw new Error(blockers.map((blocker) => blocker.message).join(" "));
-    }
+    requireNoMoveBlockers(blockers);
 
     const transferScopeSnapshot = await buildTransferScopeSnapshot(
       ctx,
@@ -2130,7 +2192,7 @@ export const reject = mutation({
       normalizedStatus !== "pending_source_approval" &&
       normalizedStatus !== "awaiting_acceptance"
     ) {
-      throw new Error(`Move request is already ${request.status}.`);
+      throw moveRequestClosed(request.status);
     }
 
     const isTargetReview = normalizedStatus === "awaiting_acceptance";
@@ -2201,6 +2263,7 @@ export const reject = mutation({
 export const cancel = mutation({
   args: {
     requestId: v.id("organizationMoveRequests"),
+    reviewNotes: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -2216,7 +2279,7 @@ export const cancel = mutation({
     }
 
     if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
-      throw new Error(`Move request is already ${request.status}.`);
+      throw moveRequestClosed(request.status);
     }
 
     const isSourceAdmin = await hasPermission(
@@ -2231,13 +2294,23 @@ export const cancel = mutation({
       );
     }
 
+    // A source administrator's cancel is their review of the request, so
+    // their notes sit where a source rejection's would. A requester without
+    // that role is cancelling their own request, not reviewing it, and leaves no
+    // notes.
+    const reviewNotes = isSourceAdmin
+      ? args.reviewNotes?.trim() || undefined
+      : undefined;
+    const now = Date.now();
     await Promise.all([
       ctx.db.patch(args.requestId, {
         status: "cancelled",
         reviewedBy: isSourceAdmin ? userId : undefined,
-        reviewedAt: Date.now(),
+        reviewedAt: now,
+        reviewNotes,
         sourceReviewedBy: isSourceAdmin ? userId : undefined,
-        sourceReviewedAt: isSourceAdmin ? Date.now() : undefined,
+        sourceReviewedAt: isSourceAdmin ? now : undefined,
+        sourceReviewNotes: reviewNotes,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.sourceOrganizationId,
@@ -2245,9 +2318,22 @@ export const cancel = mutation({
         action: "cancelled_organization_move_request",
         entityType: "organizationMoveRequest",
         entityId: args.requestId,
-        changes: {},
+        changes: reviewNotes ? { reviewNotes } : {},
       }),
     ]);
+
+    if (request.requestedBy !== userId) {
+      await dispatchNotification(ctx, {
+        organizationId: request.sourceOrganizationId,
+        type: "move_request_cancelled",
+        recipients: [request.requestedBy],
+        title: "Object Move Cancelled",
+        message:
+          reviewNotes ??
+          "Your object move request was cancelled by an administrator of the source organization.",
+        related: { entityType: "move_request", entityId: args.requestId },
+      });
+    }
 
     return null;
   },

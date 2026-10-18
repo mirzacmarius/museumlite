@@ -1,6 +1,7 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { EligibilityBlockerCode } from "@v1/backend/convex/utils/objectMoveErrors";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -13,37 +14,13 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { AlertTriangle, CheckCircle } from "lucide-react";
+import { useMoveBlockerMessage } from "@/hooks/use-object-move-error-message";
 import { useI18n } from "@/locales/client";
 import type { AccessionMode } from "./deaccession-dialog-types";
 import { TransferDestinationPicker } from "./transfer-destination-picker";
 
 interface MoveBlocker {
-  code: string;
-  message: string;
-}
-
-function getMoveBlockerMessage(
-  blocker: MoveBlocker,
-  translate: ReturnType<typeof useI18n>,
-) {
-  const keys: Record<string, string> = {
-    status_not_active: "onlyActiveObjectsCanMove",
-    same_organization: "destinationMustBeDifferentOrganization",
-    active_loan: "objectOnLoanCannotMove",
-    pending_location_move: "pendingLocationMoveRequest",
-    pending_organization_move: "pendingOrganizationMoveRequest",
-    has_parent_object: "parentObjectMustBeUnlinked",
-    has_child_objects: "childObjectsMustBeUnlinked",
-    active_transit: "objectInActiveTransitCannotMove",
-    active_exhibition: "objectInActiveExhibitionCannotMove",
-    has_deaccessions: "objectWithDeaccessionCannotMove",
-    insurance_coverage: "insuranceCoverageMustBeResolved",
-    insurance_claim: "objectReferencedByInsuranceClaim",
-  };
-  const key = keys[blocker.code];
-  return key
-    ? translate(`untranslatedComponents.moveBlockers.${key}`)
-    : blocker.message;
+  code: EligibilityBlockerCode;
 }
 
 interface DeaccessionMoveFormProps {
@@ -80,6 +57,7 @@ export function DeaccessionMoveForm({
   onNotesChange,
 }: DeaccessionMoveFormProps) {
   const translate = useI18n();
+  const blockerMessage = useMoveBlockerMessage();
   return (
     <div className="space-y-4 py-4">
       {!isDirectRemovalFlow && (
@@ -216,9 +194,7 @@ export function DeaccessionMoveForm({
               </p>
               <ul className="list-disc space-y-1 pl-4 text-amber-700 dark:text-amber-300">
                 {blockers.map((blocker) => (
-                  <li key={blocker.code}>
-                    {getMoveBlockerMessage(blocker, translate)}
-                  </li>
+                  <li key={blocker.code}>{blockerMessage(blocker.code)}</li>
                 ))}
               </ul>
             </div>

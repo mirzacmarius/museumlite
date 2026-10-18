@@ -8029,6 +8029,7 @@ export default {
         resultingAccessionNumber: "Nouveau numéro d’inventaire",
         requestedAt: "Demandé le",
         sourceApprovedAt: "Source approuvée le",
+        sourceCancelledAt: "Annulée par la source le",
         targetReviewedAt: "Cible examinée le",
         executedAt: "Effectué le",
         reason: "Motif du déplacement",
@@ -10283,6 +10284,7 @@ export default {
         objectMoveApproved: "Transfert de l’objet approuvé",
         incomingTransferRejected: "Transfert entrant refusé",
         objectMoveRejected: "Transfert de l’objet refusé",
+        objectMoveCancelled: "Transfert de l’objet annulé",
         newTaskAssigned: "Nouvelle tâche attribuée",
         taskAssigned: "Tâche attribuée",
         taskDueSoon: "Échéance de la tâche proche",
@@ -10359,6 +10361,8 @@ export default {
           "La demande {number} porte sur l'utilisation d'une image de l'objet {object}.",
         objectMoveExecuted:
           "Votre demande de transfert d’objet a été approuvée et exécutée.",
+        objectMoveCancelled:
+          "Votre demande de transfert d’objet a été annulée par un administrateur de l’organisation d’origine.",
         onlyActiveObjectsCanMove:
           "Seuls les objets actifs peuvent être transférés à une autre organisation.",
         objectOnLoanCannotMove:
@@ -10905,6 +10909,53 @@ export default {
       draftMedia: "Photos et documents",
       alternateNumberExists:
         "Ce numéro d'accession alternatif figure déjà dans la liste.",
+    },
+  },
+  moveRequests: {
+    errors: {
+      requestClosed:
+        "Cette demande de transfert a déjà été traitée ou annulée.",
+      outsideHierarchy:
+        "L’organisation de destination est hors de la hiérarchie de votre organisation et n’autorise pas les demandes de transfert entrantes.",
+      planRequired:
+        "Les transferts entre organisations d’une même hiérarchie nécessitent l’offre Pro ou Enterprise.",
+      destinationNotAccepting:
+        "Votre organisation n’accepte pas les demandes de transfert entrantes et se trouve hors de la hiérarchie de l’organisation d’origine.",
+    },
+    blockers: {
+      statusNotActive:
+        "Seuls les objets actifs peuvent être transférés à une autre organisation.",
+      sameOrganization:
+        "L’organisation de destination doit être différente de l’organisation actuelle.",
+      activeLoan:
+        "Cet objet est actuellement prêté et ne peut pas être transféré.",
+      pendingLocationMove:
+        "Une demande de transfert d’emplacement est déjà en attente pour cet objet.",
+      pendingOrganizationMove:
+        "Une demande de transfert vers une autre organisation est déjà en attente pour cet objet.",
+      temporaryCustody:
+        "Cet objet est sous garde temporaire au titre d’une entrée et ne fait pas partie de la collection.",
+      hasParentObject:
+        "Les objets liés à un objet parent doivent être dissociés avant de pouvoir être transférés.",
+      hasChildObjects:
+        "Les objets ayant des objets enfants doivent être dissociés avant de pouvoir être transférés.",
+      activeTransit:
+        "Cet objet fait partie d’un transport en cours et ne peut pas être transféré.",
+      activeExhibition:
+        "Cet objet fait partie d’une exposition en cours et ne peut pas être transféré.",
+      hasDeaccessions:
+        "Les objets ayant une désaccession enregistrée ne peuvent pas être transférés à une autre organisation.",
+      insuranceCoverage:
+        "Cet objet a une couverture d’assurance à régler avant de pouvoir être transféré.",
+      insuranceClaim:
+        "Cet objet figure dans une déclaration de sinistre et ne peut pas être transféré.",
+      collectionNotFound: "Cet objet est introuvable.",
+      targetNotAcceptingTransfers:
+        "L’organisation de destination n’accepte pas les demandes de transfert entrantes.",
+      targetMembershipRequired:
+        "Vous devez être membre de l’organisation de destination pour y transférer un objet.",
+      targetCreatePermissionRequired:
+        "Vous devez avoir l’autorisation de créer des objets dans l’organisation de destination.",
     },
   },
   workflowApprovals: {

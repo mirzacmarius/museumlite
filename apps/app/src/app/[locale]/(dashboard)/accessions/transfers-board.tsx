@@ -11,6 +11,10 @@ import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
 import { TransferKanbanColumn } from "./transfer-kanban-column";
+import {
+  countPendingTransfers,
+  usePendingTransferCount,
+} from "./use-pending-transfer-count";
 
 type TransfersBoardProps = {
   organizationId: Id<"organizations">;
@@ -28,6 +32,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
   const accessionCounts = useQuery(api.accessions.getBoardCounts, {
     organizationId,
   });
+  const pendingTransfers = usePendingTransferCount(organizationId);
 
   const stats = useMemo(() => {
     if (!transferRequests) {
@@ -41,11 +46,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     }
 
     return {
-      pending: transferRequests.filter(
-        (request) =>
-          request.status === "pending_source_approval" &&
-          request.direction === "outgoing",
-      ).length,
+      pending: countPendingTransfers(transferRequests),
       incoming: transferRequests.filter(
         (request) =>
           request.status === "awaiting_acceptance" &&
@@ -122,7 +123,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
       <AccessionsWorkbenchNav
         activeView="transfers"
         pendingAccessions={pendingAccessions}
-        pendingTransfers={stats.pending}
+        pendingTransfers={pendingTransfers}
       />
 
       <div className="flex-1 overflow-x-auto custom-scrollbar">

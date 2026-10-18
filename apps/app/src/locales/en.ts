@@ -7840,6 +7840,7 @@ export default {
         resultingAccessionNumber: "Resulting accession number",
         requestedAt: "Requested at",
         sourceApprovedAt: "Source approved at",
+        sourceCancelledAt: "Source cancelled at",
         targetReviewedAt: "Target reviewed at",
         executedAt: "Executed at",
         reason: "Reason for move",
@@ -10011,6 +10012,7 @@ export default {
         objectMoveApproved: "Object Move Approved",
         incomingTransferRejected: "Incoming Transfer Rejected",
         objectMoveRejected: "Object Move Rejected",
+        objectMoveCancelled: "Object Move Cancelled",
         newTaskAssigned: "New Task Assigned",
         taskAssigned: "Task Assigned",
         taskDueSoon: "Task Due Soon",
@@ -10080,6 +10082,8 @@ export default {
           "Request {number} asks to use an image of {object}.",
         objectMoveExecuted:
           "Your object move request has been approved and executed.",
+        objectMoveCancelled:
+          "Your object move request was cancelled by an administrator of the source organization.",
         onlyActiveObjectsCanMove:
           "Only active objects can be moved to another organization.",
         objectOnLoanCannotMove:
@@ -10606,6 +10610,52 @@ export default {
       draftMedia: "Photos and documents",
       alternateNumberExists:
         "This alternate accession number is already listed.",
+    },
+  },
+  moveRequests: {
+    errors: {
+      requestClosed:
+        "This transfer request has already been decided or cancelled.",
+      outsideHierarchy:
+        "The destination organization is outside your organization's hierarchy and does not allow incoming transfer requests.",
+      planRequired:
+        "Transfers between organizations in the same hierarchy need the Pro or Enterprise plan.",
+      destinationNotAccepting:
+        "Your organization does not accept incoming transfer requests and is outside the sending organization's hierarchy.",
+    },
+    blockers: {
+      statusNotActive:
+        "Only active objects can be moved to another organization.",
+      sameOrganization:
+        "The destination organization must be different from the current organization.",
+      activeLoan: "This object is currently on loan and cannot be moved.",
+      pendingLocationMove:
+        "This object already has a pending location move request.",
+      pendingOrganizationMove:
+        "This object already has a pending organization move request.",
+      temporaryCustody:
+        "This object is held under a temporary entry and is not part of the collection.",
+      hasParentObject:
+        "Objects linked to a parent object must be unlinked before they can be moved.",
+      hasChildObjects:
+        "Objects with child objects must be unlinked before they can be moved.",
+      activeTransit:
+        "This object is part of an active transit record and cannot be moved.",
+      activeExhibition:
+        "This object is part of an active exhibition and cannot be moved.",
+      hasDeaccessions:
+        "Objects with deaccession records cannot be moved to another organization.",
+      insuranceCoverage:
+        "This object has insurance coverage that must be resolved before it can be moved.",
+      insuranceClaim:
+        "This object is referenced by an insurance claim and cannot be moved.",
+      collectionNotFound: "This object could not be found.",
+      targetNotAcceptingTransfers:
+        "The destination organization is not accepting incoming transfer requests.",
+      targetMembershipRequired:
+        "You must be a member of the destination organization to move an object there.",
+      targetCreatePermissionRequired:
+        "You need permission to create objects in the destination organization.",
     },
   },
   workflowApprovals: {

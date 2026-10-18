@@ -7992,6 +7992,7 @@ export default {
         resultingAccessionNumber: "Numărul de inventar rezultat",
         requestedAt: "Solicitat la",
         sourceApprovedAt: "Sursă aprobată la",
+        sourceCancelledAt: "Anulată de sursă la",
         targetReviewedAt: "Destinație evaluată la",
         executedAt: "Executat la",
         reason: "Motivul mutării",
@@ -10225,6 +10226,7 @@ export default {
         objectMoveApproved: "Transferul obiectului a fost aprobat",
         incomingTransferRejected: "Transferul primit a fost respins",
         objectMoveRejected: "Transferul obiectului a fost respins",
+        objectMoveCancelled: "Transferul obiectului a fost anulat",
         newTaskAssigned: "Sarcină nouă atribuită",
         taskAssigned: "Sarcină atribuită",
         taskDueSoon: "Sarcina ajunge curând la termen",
@@ -10301,6 +10303,8 @@ export default {
           "Cererea {number} solicită folosirea unei imagini a obiectului {object}.",
         objectMoveExecuted:
           "Solicitarea ta de transfer al obiectului a fost aprobată și executată.",
+        objectMoveCancelled:
+          "Solicitarea ta de transfer al obiectului a fost anulată de un administrator al organizației sursă.",
         onlyActiveObjectsCanMove:
           "Doar obiectele active pot fi transferate către o altă organizație.",
         objectOnLoanCannotMove:
@@ -10840,6 +10844,53 @@ export default {
       draftMedia: "Fotografii și documente",
       alternateNumberExists:
         "Acest număr de accesiune alternativ este deja în listă.",
+    },
+  },
+  moveRequests: {
+    errors: {
+      requestClosed:
+        "Această solicitare de transfer a fost deja soluționată sau anulată.",
+      outsideHierarchy:
+        "Organizația de destinație este în afara ierarhiei organizației tale și nu permite solicitări de transfer primite.",
+      planRequired:
+        "Transferurile între organizații din aceeași ierarhie necesită planul Pro sau Enterprise.",
+      destinationNotAccepting:
+        "Organizația ta nu acceptă solicitări de transfer primite și este în afara ierarhiei organizației sursă.",
+    },
+    blockers: {
+      statusNotActive:
+        "Doar obiectele active pot fi transferate către o altă organizație.",
+      sameOrganization:
+        "Organizația de destinație trebuie să fie diferită de organizația curentă.",
+      activeLoan:
+        "Acest obiect este împrumutat în prezent și nu poate fi transferat.",
+      pendingLocationMove:
+        "Obiectul are deja o solicitare în așteptare de mutare într-o altă locație.",
+      pendingOrganizationMove:
+        "Există deja o solicitare în așteptare pentru transferul obiectului către o altă organizație.",
+      temporaryCustody:
+        "Acest obiect se află în custodie temporară printr-o intrare și nu face parte din colecție.",
+      hasParentObject:
+        "Obiectele legate de un obiect părinte trebuie dezlegate înainte de a putea fi transferate.",
+      hasChildObjects:
+        "Obiectele cu obiecte copil trebuie dezlegate înainte de a putea fi transferate.",
+      activeTransit:
+        "Acest obiect face parte dintr-un transport în desfășurare și nu poate fi transferat.",
+      activeExhibition:
+        "Acest obiect face parte dintr-o expoziție activă și nu poate fi transferat.",
+      hasDeaccessions:
+        "Obiectele cu o scoatere din colecție înregistrată nu pot fi transferate către o altă organizație.",
+      insuranceCoverage:
+        "Acest obiect are o acoperire de asigurare care trebuie rezolvată înainte de a putea fi transferat.",
+      insuranceClaim:
+        "Acest obiect apare într-un dosar de daună și nu poate fi transferat.",
+      collectionNotFound: "Acest obiect nu a fost găsit.",
+      targetNotAcceptingTransfers:
+        "Organizația de destinație nu acceptă solicitări de transfer primite.",
+      targetMembershipRequired:
+        "Trebuie să fii membru al organizației de destinație pentru a transfera un obiect acolo.",
+      targetCreatePermissionRequired:
+        "Ai nevoie de permisiunea de a crea obiecte în organizația de destinație.",
     },
   },
   workflowApprovals: {

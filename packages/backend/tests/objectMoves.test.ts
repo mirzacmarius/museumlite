@@ -3,9 +3,32 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
+import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
 import { rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 import { workColumn } from "./workBoardHarness";
+
+/** The coded refusal a rejected call carries, so the app can translate it. */
+async function refusal(call: Promise<unknown>) {
+  try {
+    await call;
+  } catch (error) {
+    return objectMoveErrorFromError(error) ?? { code: String(error) };
+  }
+  throw new Error("Expected the call to be rejected");
+}
+
+function notificationsFor(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.run((ctx) =>
+    ctx.db
+      .query("notifications")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect(),
+  );
+}
 
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
@@ -1790,6 +1813,439 @@ describe("objectMoves", () => {
     expect(results.some((entry) => entry.accountNumber === "ORG-00456")).toBe(
       true,
     );
+  });
+});
+
+async function createPublicDestination(
+  t: ReturnType<typeof convexTest>,
+  accountNumber: string,
+) {
+  const [organizationId, adminId] = await Promise.all([
+    createOrganization(
+      t,
+      "Public Receiver",
+      `public-receiver-${Math.random().toString(36).slice(2, 8)}`,
+      { allowIncomingTransferRequests: true },
+      { accountNumber, allowsIncomingTransferRequests: true },
+    ),
+    createUser(
+      t,
+      "Receiver Admin",
+      `receiver-admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    ),
+  ]);
+  const [roleId, locationId] = await Promise.all([
+    createRoleWithPermissions(
+      t,
+      organizationId,
+      [
+        "organization.manage_settings",
+        "collections.read",
+        "collections.create",
+      ],
+      "Receiver Admin Role",
+    ),
+    createLocation(t, organizationId),
+  ]);
+  await addMembership(t, adminId, organizationId, roleId);
+  return {
+    organizationId,
+    locationId,
+    admin: authedForUser(t, adminId),
+  };
+}
+
+describe("transfer decisions follow how the request was allowed", () => {
+  test("a transfer to a public destination outside the hierarchy can be approved and accepted", async () => {
+    const t = convexTest(schema, modules);
+    const [fixture, destination] = await Promise.all([
+      createMoveFixture(t),
+      createPublicDestination(t, "ORG-00815"),
+    ]);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: destination.organizationId,
+        accessionMode: "keep",
+        reason: "Transfer to a museum that accepts incoming transfers",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    expect((await t.run((ctx) => ctx.db.get(requestId)))?.status).toBe(
+      "awaiting_acceptance",
+    );
+
+    await destination.admin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: destination.locationId,
+    });
+    const [request, collection] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      t.run((ctx) => ctx.db.get(fixture.collectionId)),
+    ]);
+    expect(request?.status).toBe("executed");
+    expect(collection?.organizationId).toBe(destination.organizationId);
+    expect(collection?.currentLocationId).toBe(destination.locationId);
+  });
+
+  test("a public destination inside a hierarchy without a Pro plan can be approved", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.sourceOrganizationId, {
+        subscriptionTier: "free",
+      });
+      await ctx.db.patch(fixture.targetOrganizationId, {
+        allowsIncomingTransferRequests: true,
+      });
+    });
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Sibling accepts incoming transfers",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    expect((await t.run((ctx) => ctx.db.get(requestId)))?.status).toBe(
+      "executed",
+    );
+  });
+
+  test("approval and acceptance refuse a destination that stopped allowing incoming transfers, each in its reader's terms", async () => {
+    const t = convexTest(schema, modules);
+    const [fixture, destination] = await Promise.all([
+      createMoveFixture(t),
+      createPublicDestination(t, "ORG-00816"),
+    ]);
+    const closeDestination = (open: boolean) =>
+      t.run(async (ctx) => {
+        await ctx.db.patch(destination.organizationId, {
+          allowsIncomingTransferRequests: open,
+          settings: { allowIncomingTransferRequests: open },
+        });
+      });
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: destination.organizationId,
+        accessionMode: "keep",
+        reason: "Destination closes before approval",
+      },
+    );
+
+    await closeDestination(false);
+    expect(
+      await refusal(
+        fixture.admin.mutation(api.objectMoves.approve, { requestId }),
+      ),
+    ).toMatchObject({ code: "DESTINATION_OUTSIDE_HIERARCHY" });
+
+    await closeDestination(true);
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await closeDestination(false);
+    expect(
+      await refusal(
+        destination.admin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: destination.locationId,
+        }),
+      ),
+    ).toMatchObject({ code: "DESTINATION_NOT_ACCEPTING" });
+    expect(
+      (await t.run((ctx) => ctx.db.get(fixture.collectionId)))?.organizationId,
+    ).toBe(fixture.sourceOrganizationId);
+  });
+
+  test("eligibility tells a destination outside the hierarchy from a plan without hierarchical transfers", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const outsideId = await createOrganization(
+      t,
+      "Unrelated Museum",
+      `unrelated-${Math.random().toString(36).slice(2, 8)}`,
+    );
+    const blockerCodes = async (targetOrganizationId: Id<"organizations">) =>
+      (
+        await fixture.requester.query(api.objectMoves.getEligibility, {
+          collectionId: fixture.collectionId,
+          targetOrganizationId,
+        })
+      ).blockers.map((blocker) => blocker.code);
+
+    expect(await blockerCodes(outsideId)).toEqual([
+      "target_not_in_hierarchy",
+      "target_membership_required",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.sourceOrganizationId, {
+        subscriptionTier: "free",
+      });
+    });
+    expect(await blockerCodes(fixture.targetOrganizationId)).toEqual([
+      "hierarchy_plan_required",
+    ]);
+  });
+
+  test("approval refuses a hierarchy transfer once the plan no longer includes it, with a code", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Plan changes before approval",
+      },
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.sourceOrganizationId, {
+        subscriptionTier: "free",
+      });
+    });
+
+    expect(
+      await refusal(
+        fixture.admin.mutation(api.objectMoves.approve, { requestId }),
+      ),
+    ).toMatchObject({ code: "HIERARCHY_PLAN_REQUIRED" });
+  });
+
+  test("approval names what started blocking the object after the request, with a code", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Object goes on loan before approval",
+      },
+    );
+    await t.run(async (ctx) => {
+      const loanId = await ctx.db.insert("loans", {
+        organizationId: fixture.sourceOrganizationId,
+        loanNumber: "LN-815",
+        type: "outgoing",
+        lenderBorrowerName: "Borrower",
+        startDate: Date.now(),
+        status: "active",
+      });
+      await ctx.db.insert("loanItems", {
+        loanId,
+        collectionId: fixture.collectionId,
+      });
+    });
+
+    expect(
+      await refusal(
+        fixture.admin.mutation(api.objectMoves.approve, { requestId }),
+      ),
+    ).toEqual({
+      code: "MOVE_BLOCKED",
+      message: "This object is currently on loan and cannot be moved.",
+      blockers: ["active_loan"],
+    });
+    expect((await t.run((ctx) => ctx.db.get(requestId)))?.status).toBe(
+      "pending_source_approval",
+    );
+  });
+
+  test("a decided request refuses another decision with a code", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Decided twice",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.cancel, { requestId });
+
+    const refusals = await Promise.all([
+      refusal(fixture.admin.mutation(api.objectMoves.approve, { requestId })),
+      refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: fixture.targetLocationId,
+        }),
+      ),
+      refusal(
+        fixture.admin.mutation(api.objectMoves.reject, {
+          requestId,
+          reviewNotes: "Too late",
+        }),
+      ),
+      refusal(
+        fixture.requester.mutation(api.objectMoves.cancel, { requestId }),
+      ),
+    ]);
+    expect(refusals.map((entry) => entry?.code)).toEqual([
+      "MOVE_REQUEST_CLOSED",
+      "MOVE_REQUEST_CLOSED",
+      "MOVE_REQUEST_CLOSED",
+      "MOVE_REQUEST_CLOSED",
+    ]);
+  });
+
+  test("a source administrator who did not make the request can cancel it", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Administrator stops this request",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.cancel, { requestId });
+
+    const [request, requesterNotifications] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      notificationsFor(t, fixture.requesterId),
+    ]);
+    expect(request?.status).toBe("cancelled");
+    expect(request?.sourceReviewedBy).toBe(fixture.adminId);
+    expect(request?.sourceReviewNotes).toBeUndefined();
+    expect(
+      requesterNotifications
+        .filter(
+          (notification) => notification.type === "move_request_cancelled",
+        )
+        .map(({ title, message }) => ({ title, message })),
+    ).toEqual([
+      {
+        title: "Object Move Cancelled",
+        message:
+          "Your object move request was cancelled by an administrator of the source organization.",
+      },
+    ]);
+  });
+
+  test("a source administrator's cancel notes are kept and sent to the requester", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Administrator stops this request",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.cancel, {
+      requestId,
+      reviewNotes: "  Duplicate of an earlier transfer request.  ",
+    });
+
+    const [request, requesterNotifications, auditEntries] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      notificationsFor(t, fixture.requesterId),
+      t.run((ctx) =>
+        ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", fixture.sourceOrganizationId),
+          )
+          .collect(),
+      ),
+    ]);
+    expect(request).toMatchObject({
+      status: "cancelled",
+      reviewedBy: fixture.adminId,
+      reviewNotes: "Duplicate of an earlier transfer request.",
+      sourceReviewedBy: fixture.adminId,
+      sourceReviewNotes: "Duplicate of an earlier transfer request.",
+    });
+    expect(
+      auditEntries.find(
+        (entry) => entry.action === "cancelled_organization_move_request",
+      )?.changes,
+    ).toEqual({ reviewNotes: "Duplicate of an earlier transfer request." });
+    expect(
+      requesterNotifications
+        .filter(
+          (notification) => notification.type === "move_request_cancelled",
+        )
+        .map(({ title, message }) => ({ title, message })),
+    ).toEqual([
+      {
+        title: "Object Move Cancelled",
+        message: "Duplicate of an earlier transfer request.",
+      },
+    ]);
+  });
+
+  test("a requester cancelling their own request keeps no review notes and notifies nobody", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Requester changes their mind",
+      },
+    );
+
+    await fixture.requester.mutation(api.objectMoves.cancel, {
+      requestId,
+      reviewNotes: "Not needed after all.",
+    });
+
+    const [request, auditEntries, ...notifications] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      t.run((ctx) =>
+        ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", fixture.sourceOrganizationId),
+          )
+          .collect(),
+      ),
+      ...[fixture.requesterId, fixture.adminId, fixture.targetAdminId].map(
+        (userId) => notificationsFor(t, userId),
+      ),
+    ]);
+    expect(request?.status).toBe("cancelled");
+    expect(request?.reviewNotes).toBeUndefined();
+    expect(request?.sourceReviewNotes).toBeUndefined();
+    expect(
+      auditEntries.find(
+        (entry) => entry.action === "cancelled_organization_move_request",
+      )?.changes,
+    ).toEqual({});
+    expect(
+      notifications
+        .flat()
+        .filter(
+          (notification) => notification.type === "move_request_cancelled",
+        ),
+    ).toEqual([]);
   });
 });
 

@@ -17,11 +17,12 @@ import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useState } from "react";
 import { ClientDateFns } from "@/components/client-date";
-import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import { PermissionGate } from "@/components/permission-gate";
 import { useListReturnPath } from "@/hooks/use-return-path";
 import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { AccessionsWorkbenchNav } from "../../accessions-workbench-nav";
+import { usePendingTransferCount } from "../../use-pending-transfer-count";
 import { EntryStatusBadge, entryDueAt } from "./entry-status-badge";
 
 const ENTRY_STATUSES = [
@@ -46,14 +47,8 @@ export function EntriesPageClient({
     parseAsStringLiteral(ENTRY_STATUSES),
   );
   const returnPath = useListReturnPath(ENTRY_LIST_KEYS);
-  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
-  const canReviewTransfers =
-    !permissionsLoading && hasPermission("organization.manage_settings");
   const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
-  const transferRequests = useQuery(
-    api.objectMoves.listForOrganization,
-    canReviewTransfers ? { organizationId } : "skip",
-  );
+  const pendingTransfers = usePendingTransferCount(organizationId);
   const {
     results,
     status: loadStatus,
@@ -63,9 +58,6 @@ export function EntriesPageClient({
     { organizationId, status: status ?? undefined },
     { initialNumItems: 50 },
   );
-  const pendingTransfers =
-    transferRequests?.filter((request) => request.status === "pending")
-      .length ?? "-";
 
   return (
     <div className="flex h-full flex-col p-6">

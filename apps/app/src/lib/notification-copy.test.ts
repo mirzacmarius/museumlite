@@ -208,6 +208,31 @@ describe("getNotificationCopy", () => {
     });
   });
 
+  it("translates a cancelled object move and keeps an administrator's own notes as written", () => {
+    const cancelled = (message: string) =>
+      getNotificationCopy(
+        {
+          type: "move_request_cancelled",
+          title: "Object Move Cancelled",
+          message,
+        },
+        dictionaryTranslator(french),
+      );
+
+    expect(
+      cancelled(
+        "Your object move request was cancelled by an administrator of the source organization.",
+      ),
+    ).toEqual({
+      title: "Transfert de l’objet annulé",
+      message:
+        "Votre demande de transfert d’objet a été annulée par un administrateur de l’organisation d’origine.",
+    });
+    expect(cancelled("Doublon d’une demande précédente.").message).toBe(
+      "Doublon d’une demande précédente.",
+    );
+  });
+
   it("leaves system announcements unchanged even when they resemble a built-in", () => {
     const announcement = {
       type: "system_announcement",
