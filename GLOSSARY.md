@@ -59,8 +59,12 @@ Authorized removal of an Object from the permanent collection under institutiona
 _Avoid_: Delete, remove
 
 **Withdrawal**:
-Removal of an Object, or of an intake request a reviewer declined, from routine views while its record is retained and restorable. It asserts neither a change of title nor disposal; a withdrawn intake was never accessioned, so it never produces a Deaccession.
+Taking an Object, or an intake request a reviewer declined, out of routine views while its record is retained and restorable. It asserts neither a change of title nor disposal; a withdrawn intake was never accessioned, so it never produces a Deaccession.
 _Avoid_: Delete, archive (when title or disposal is meant)
+
+**Removal**:
+Staff-facing umbrella for taking an Object out of the routine collection: a Deaccession (by sale, donation, transfer or destruction), a Withdrawal, or a move to another Organization. The Object's Remove or transfer button starts a sale, a move or a Withdrawal. Registration › Removals lists Deaccession and Withdrawal requests, and the Work board counts those waiting for the viewer's approval; a move is tracked as a move request.
+_Avoid_: Deaccession (for the umbrella)
 
 ### Provenance
 
@@ -235,6 +239,7 @@ The accepted word for each term in the app's other locales. Use it wherever Engl
 | Deaccession | baja | désaccession | deaksesjon | scoatere din colecție |
 | Custody | custodia | garde | forvaring | custodie |
 | Withdrawal | retirada | retrait | tilbaketrekking | retragere |
+| Removal | retirada | retrait | fjerning | eliminare |
 | Party | parte | partie | part | parte |
 | Case | caso | dossier | sak | dosar |
 | Task | tarea | tâche | oppgave | sarcină |
@@ -242,3 +247,5 @@ The accepted word for each term in the app's other locales. Use it wherever Engl
 | Incident | incidente | incident | hendelse | incident |
 
 Norwegian uses _gjenstand_ for property received under an Entry, as Spanish uses _bien_ and Romanian _bun_; the Object recorded for it is still _objekt_.
+
+Spanish and French use one word, _retirada_ and _retrait_, for both Removal and Withdrawal, much as English Removal shares its root with the Remove object action. The Remove or transfer button, the Removals list and its approval card use it for the umbrella. Do not add the word for transfer to it: _traslado_ and _transfert_ also name custody Transfers, which the Removals list does not hold.

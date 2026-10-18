@@ -20,9 +20,10 @@ const buttonClassName =
   "h-8 gap-1.5 px-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive";
 
 /**
- * The Object's Deaccession action as `objectActions.get` reports it: hidden
- * without access to Deaccession or Remove object, disabled with the reason the server would refuse, a link
- * to the open Case, or the dialog for sale, transfer and removal.
+ * The Object's Remove or transfer button, from its Deaccession action as
+ * `objectActions.get` reports it: hidden without access to Deaccession or
+ * Remove object, disabled with the reason the server would refuse, a link to
+ * the open Case, or the dialog for sale, transfer and removal.
  */
 export function ObjectDeaccessionAction({
   collectionId,
@@ -74,7 +75,7 @@ export function ObjectDeaccessionAction({
       >
         <Archive className="size-4" aria-hidden="true" />
         <span className="max-md:sr-only">
-          {tRoot("objects.bulkActions.deaccession")}
+          {tRoot("objects.deaccessionAction.removeOrTransfer")}
         </span>
         <span className="text-xs">{reason}</span>
       </Button>
@@ -84,7 +85,7 @@ export function ObjectDeaccessionAction({
   const label =
     deaccession.approvalSteps > 0
       ? tRoot("objects.deaccessionAction.request")
-      : tRoot("objects.bulkActions.deaccession");
+      : tRoot("objects.deaccessionAction.removeOrTransfer");
   return (
     <>
       <Button
