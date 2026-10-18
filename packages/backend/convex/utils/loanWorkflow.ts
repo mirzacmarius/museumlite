@@ -5,7 +5,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { readWorkflowHistoryPage } from "../auditLog";
 import { appendCaseHistory } from "./caseHistory";
 import { markCollectionActive } from "./collectionLifecycle";
-import { requireLoansAccess } from "./loanAccess";
+import { requireCapabilityEntitlement } from "./featureGates";
 import {
   ALLOWED_LOAN_TRANSITIONS,
   assertAllowedLoanTransition,
@@ -17,7 +17,7 @@ import {
 } from "./notificationRecipients";
 import {
   canApproveAtStep,
-  requirePermission,
+  requireCapability,
   resolveCaseApproval,
 } from "./permissions";
 import { suggestPreparation, withdrawPreparation } from "./preparation";
@@ -63,7 +63,7 @@ export async function approveLoanHandler(
 
   assertAllowedLoanTransition(loan.status, "active", "Loan is not pending");
 
-  await requireLoansAccess(ctx, loan.organizationId);
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.approve");
   const approval = await resolveCaseApproval(
     ctx,
     loan.organizationId,
@@ -276,8 +276,6 @@ export async function rejectLoanHandler(
     throw new Error("Loan is not pending approval");
   }
 
-  await requireLoansAccess(ctx, loan.organizationId);
-
   const workflowConfig = await getWorkflowConfig(
     ctx,
     loan.organizationId,
@@ -295,8 +293,11 @@ export async function rejectLoanHandler(
     currentStep,
   );
 
-  if (!canApprove) {
-    await requirePermission(ctx, loan.organizationId, "loans.approve");
+  // A step's Role may reject without loans.approve, but never past the plan.
+  if (canApprove) {
+    await requireCapabilityEntitlement(ctx, loan.organizationId, "loans");
+  } else {
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.approve");
   }
 
   const history = [...(loan.workflowHistory ?? [])];
@@ -359,7 +360,7 @@ export async function getLoanWorkflowHistoryHandler(
     throw new Error("Loan not found");
   }
 
-  await requirePermission(ctx, loan.organizationId, "loans.read");
+  await requireCapability(ctx, loan.organizationId, "loans", "loans.read");
 
   return await readWorkflowHistoryPage(ctx, {
     organizationId: loan.organizationId,
@@ -398,7 +399,12 @@ export async function bulkApproveLoansHandler(
 
       // Check permission for each loan's organization
       try {
-        await requirePermission(ctx, loan.organizationId, "loans.approve");
+        await requireCapability(
+          ctx,
+          loan.organizationId,
+          "loans",
+          "loans.approve",
+        );
       } catch {
         errors.push(`No permission to approve loan ${loan.loanNumber}`);
         skipped++;
@@ -595,7 +601,12 @@ export async function bulkCancelLoansHandler(
 
       // Check permission
       try {
-        await requirePermission(ctx, loan.organizationId, "loans.update");
+        await requireCapability(
+          ctx,
+          loan.organizationId,
+          "loans",
+          "loans.update",
+        );
       } catch {
         errors.push(`No permission to cancel loan ${loan.loanNumber}`);
         skipped++;

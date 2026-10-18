@@ -14,8 +14,6 @@ import {
   markCollectionLoaned,
 } from "./utils/collectionLifecycle";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
-import { hasFeatureAccess } from "./utils/featureGates";
-import { requireLoansAccess } from "./utils/loanAccess";
 import { loanAgreementTemplateError } from "./utils/loanAgreementErrors";
 import { normalizeLoanCurrency } from "./utils/loanCurrency";
 import {
@@ -53,7 +51,7 @@ import { loanPrimaryRole, recordPartyLink } from "./utils/partyLinks";
 import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
-  requirePermission,
+  requireCapability,
 } from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
 import {
@@ -99,15 +97,11 @@ export const create = mutation({
   },
   returns: v.id("loans"),
   handler: async (ctx, args) => {
-    const [userId] = await Promise.all([
-      getAuthUserId(ctx),
-
-      requireLoansAccess(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "loans.create"),
-    ] as const);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    await requireCapability(ctx, args.organizationId, "loans", "loans.create");
 
     // Validate date ordering
     if (args.endDate !== undefined && args.endDate < args.startDate) {
@@ -367,10 +361,7 @@ export const addItems = mutation({
       throw new Error("Can only add items to pending or active loans");
     }
 
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
     // Dedup by collectionId — duplicate entries in the same request are an error
     const uniqueCollectionIds = Array.from(new Set(args.collectionIds));
@@ -439,10 +430,7 @@ export const removeItems = mutation({
       throw new Error("Can only remove items from pending loans");
     }
 
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
     await Promise.all(
       Array.from(args.loanItemIds).map(async (loanItemId) => {
@@ -596,10 +584,7 @@ export const list = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    await Promise.all([
-      requireLoansAccess(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "loans.read"),
-    ]);
+    await requireCapability(ctx, args.organizationId, "loans", "loans.read");
 
     const search = args.search?.trim();
 
@@ -969,10 +954,7 @@ export const update = mutation({
       throw new Error("Loan not found");
     }
 
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
     if (loan.status !== "pending") {
       throw recordEditError(
         "RECORD_NOT_EDITABLE",
@@ -1069,14 +1051,7 @@ export const recordCurrency = mutation({
     if (!loan) {
       throw new Error("Loan not found");
     }
-    const canUpdate = await hasPermission(
-      ctx,
-      loan.organizationId,
-      "loans.update",
-    );
-    if (!canUpdate) {
-      throw new Error("Permission denied: loans.update");
-    }
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
     if (loan.currency) {
       throw loanAgreementTemplateError(
         "CURRENCY_ALREADY_RECORDED",
@@ -1257,10 +1232,7 @@ export const createConditionReport = mutation({
       throw new Error("Loan does not use detailed condition reports");
     }
 
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
     const reportId = await ctx.db.insert("conditionReports", {
       loanItemId: args.loanItemId,
@@ -1331,10 +1303,7 @@ export const updateConditionReport = mutation({
       throw new Error("Loan not found");
     }
 
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.update");
 
     const updates: {
       conditionDescription?: string;
@@ -1405,10 +1374,7 @@ export const getConditionReport = query({
       return null;
     }
 
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.read"),
-    ]);
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.read");
 
     const photoUrls = report.photos
       ? await Promise.all(
@@ -1494,7 +1460,7 @@ export const deleteAllLoans = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "loans.update");
+    await requireCapability(ctx, args.organizationId, "loans", "loans.update");
     return rejectPermanentEvidenceDeletion();
   },
 });
@@ -1616,15 +1582,7 @@ export const getLoansForCollection = query({
       return [];
     }
 
-    const hasLoansFeature = await hasFeatureAccess(
-      ctx,
-      collection.organizationId,
-      "loans",
-    );
-    if (!hasLoansFeature) {
-      return [];
-    }
-
+    // Includes the Loans plan, since the Permission belongs to Loans.
     const canReadLoans = await hasPermission(
       ctx,
       collection.organizationId,
@@ -1951,7 +1909,7 @@ export const createConditionDispute = mutation({
     }
 
     const [, loanItem] = await Promise.all([
-      requirePermission(ctx, loan.organizationId, "loans.update"),
+      requireCapability(ctx, loan.organizationId, "loans", "loans.update"),
       ctx.db
         .query("loanItems")
         .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
@@ -2034,7 +1992,12 @@ export const startDisputeInvestigation = mutation({
       throw new Error("Dispute is not in reported status");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
+    await requireCapability(
+      ctx,
+      dispute.organizationId,
+      "loans",
+      "loans.update",
+    );
     await Promise.all([
       ctx.db.patch(args.disputeId, {
         status: "investigating",
@@ -2091,7 +2054,12 @@ export const updateDisputeInvestigation = mutation({
       throw new Error("Dispute is not under investigation");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
+    await requireCapability(
+      ctx,
+      dispute.organizationId,
+      "loans",
+      "loans.update",
+    );
 
     const updates: Record<string, unknown> = {};
     if (args.investigationNotes !== undefined) {
@@ -2136,7 +2104,12 @@ export const resolveConditionDispute = mutation({
       throw new Error("Dispute cannot be resolved in current status");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
+    await requireCapability(
+      ctx,
+      dispute.organizationId,
+      "loans",
+      "loans.update",
+    );
 
     const updates: Record<string, unknown> = {
       status: args.resolution,
@@ -2246,10 +2219,20 @@ export const withdrawConditionDispute = mutation({
 
     // Only the reporter or admins can withdraw
     if (dispute.reportedBy !== userId) {
-      await requirePermission(ctx, dispute.organizationId, "loans.approve");
+      await requireCapability(
+        ctx,
+        dispute.organizationId,
+        "loans",
+        "loans.approve",
+      );
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
+    await requireCapability(
+      ctx,
+      dispute.organizationId,
+      "loans",
+      "loans.update",
+    );
 
     await Promise.all([
       ctx.db.patch(args.disputeId, {
@@ -2337,7 +2320,12 @@ export const listConditionDisputes = query({
         if (!loan) {
           throw new Error("Loan not found");
         }
-        await requirePermission(ctx, loan.organizationId, "loans.read");
+        await requireCapability(
+          ctx,
+          loan.organizationId,
+          "loans",
+          "loans.read",
+        );
         return ctx.db
           .query("conditionDisputes")
           .withIndex("by_loan", (q) => q.eq("loanId", loanId));
@@ -2347,7 +2335,7 @@ export const listConditionDisputes = query({
       if (!organizationId) {
         throw new Error("Either loanId or organizationId is required");
       }
-      await requirePermission(ctx, organizationId, "loans.read");
+      await requireCapability(ctx, organizationId, "loans", "loans.read");
       const status = args.status;
       return status
         ? ctx.db
@@ -2483,7 +2471,7 @@ export const getConditionDispute = query({
       return null;
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.read");
+    await requireCapability(ctx, dispute.organizationId, "loans", "loans.read");
 
     const [loan, collection, reporter] = await Promise.all([
       ctx.db.get(dispute.loanId),
@@ -2629,7 +2617,7 @@ export const bulkExport = query({
         if (!loan) return;
 
         const [, loanItems] = await Promise.all([
-          requirePermission(ctx, loan.organizationId, "loans.read"),
+          requireCapability(ctx, loan.organizationId, "loans", "loans.read"),
           ctx.db
             .query("loanItems")
             .withIndex("by_loan", (q) => q.eq("loanId", loanId))
@@ -2701,10 +2689,7 @@ export const getStatusDistribution = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await Promise.all([
-      requireLoansAccess(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "loans.read"),
-    ]);
+    await requireCapability(ctx, args.organizationId, "loans", "loans.read");
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>

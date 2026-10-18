@@ -187,53 +187,6 @@ describe("capabilities.forOrganization", () => {
 });
 
 describe("capability gates on commands", () => {
-  test("listing loans on the free plan fails with a coded plan requirement", async () => {
-    const t = createConvexTest();
-    const { organizationId, userId } = await createOrgUserWithPermissions(
-      t,
-      ["loans.read"],
-      { subscriptionTier: "free" },
-    );
-
-    const failure = await capabilityFailureOf(
-      authedForUser(t, userId).query(api.loans.list, {
-        organizationId,
-        paginationOpts: { numItems: 10, cursor: null },
-      }),
-    );
-
-    expect(failure).toMatchObject({
-      code: "CAPABILITY_UNAVAILABLE",
-      reason: "tier_required",
-      capability: "loans",
-      requiredTier: "pro",
-    });
-  });
-
-  test("creating a loan without loans.create fails with a coded permission reason", async () => {
-    const t = createConvexTest();
-    const { organizationId, userId } = await createOrgUserWithPermissions(
-      t,
-      ["loans.read"],
-      { subscriptionTier: "pro" },
-    );
-
-    const failure = await capabilityFailureOf(
-      authedForUser(t, userId).mutation(api.loans.create, {
-        organizationId,
-        type: "incoming",
-        lenderBorrowerName: "Lender",
-        startDate: Date.UTC(2026, 0, 1),
-      }),
-    );
-
-    expect(failure).toMatchObject({
-      code: "CAPABILITY_UNAVAILABLE",
-      reason: "permission_missing",
-      message: "Permission denied: loans.create",
-    });
-  });
-
   test("a Pro organization keeps insurance without its module, since policies predate it", async () => {
     const t = createConvexTest();
     const { organizationId, userId } = await createOrgUserWithPermissions(

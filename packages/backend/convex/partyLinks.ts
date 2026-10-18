@@ -6,7 +6,6 @@ import {
 import { type Infer, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { requireLoansAccess } from "./utils/loanAccess";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import {
   partyDisplayName,
@@ -45,7 +44,7 @@ import {
   partyTargetTypeValidator,
   partyTargetValidator,
 } from "./utils/partyValidators";
-import { requirePermission } from "./utils/permissions";
+import { requireCapability, requirePermission } from "./utils/permissions";
 import { historicalDateValidator } from "./utils/provenanceValidators";
 
 const linkOriginValidator = v.union(v.literal("staff"), v.literal("backfill"));
@@ -466,8 +465,7 @@ export const listLegacyLinks = query({
   handler: async (ctx, args) => {
     await requirePartyAccess(ctx, args.organizationId, "accounts.read");
     if (args.kind === "loan") {
-      await requireLoansAccess(ctx, args.organizationId);
-      await requirePermission(ctx, args.organizationId, "loans.read");
+      await requireCapability(ctx, args.organizationId, "loans", "loans.read");
     } else {
       await requirePermission(ctx, args.organizationId, "collections.read");
     }

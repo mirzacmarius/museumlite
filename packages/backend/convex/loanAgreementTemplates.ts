@@ -3,7 +3,6 @@ import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { requireLoansAccess } from "./utils/loanAccess";
 import { loanAgreementTemplateError } from "./utils/loanAgreementErrors";
 import { parseLoanAgreementTemplateText } from "./utils/loanAgreementPlaceholders";
 import {
@@ -15,7 +14,7 @@ import {
   loanAgreementTemplateStatusValidator,
 } from "./utils/loanAgreementValidators";
 import { mutation } from "./utils/mutationBuilders";
-import { requirePermission } from "./utils/permissions";
+import { requireCapability } from "./utils/permissions";
 
 const templateValidator = v.object({
   _id: v.id("loanAgreementTemplates"),
@@ -100,12 +99,14 @@ async function requireTemplateAdministrator(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  const [userId] = await Promise.all([
-    getAuthUserId(ctx),
-    requireLoansAccess(ctx, organizationId),
-    requirePermission(ctx, organizationId, "organization.manage_settings"),
-  ] as const);
+  const userId = await getAuthUserId(ctx);
   if (!userId) throw new Error("Not authenticated");
+  await requireCapability(
+    ctx,
+    organizationId,
+    "loans",
+    "organization.manage_settings",
+  );
   return userId;
 }
 
@@ -243,7 +244,7 @@ export const list = query({
   },
   returns: v.array(templateSummaryValidator),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "loans.read");
+    await requireCapability(ctx, args.organizationId, "loans", "loans.read");
     const active = await activeTemplates(ctx, args.organizationId);
     if (!args.includeArchived) return active.map(summarize);
     const archived = await ctx.db
@@ -277,7 +278,7 @@ export const listForLoan = query({
   handler: async (ctx, args) => {
     const loan = await ctx.db.get(args.loanId);
     if (!loan) return null;
-    await requirePermission(ctx, loan.organizationId, "loans.read");
+    await requireCapability(ctx, loan.organizationId, "loans", "loans.read");
 
     const active = await activeTemplates(ctx, loan.organizationId);
     const templates = active.filter(
@@ -303,7 +304,7 @@ export const get = query({
   },
   returns: v.union(templateValidator, v.null()),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "loans.read");
+    await requireCapability(ctx, args.organizationId, "loans", "loans.read");
     const template = await ctx.db.get(args.templateId);
     return template?.organizationId === args.organizationId ? template : null;
   },

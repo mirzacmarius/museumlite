@@ -55,12 +55,31 @@ export interface CapabilityRequirement {
   listedWithModule?: ModuleId;
   /** Role permissions needed to open the canonical route. */
   permissions: readonly string[];
+  /**
+   * Permissions that belong to this capability, wherever they are checked:
+   * a Permission belongs to at most one capability, which supplies its
+   * module and plan.
+   */
+  owns?: readonly string[];
   /** Canonical route used by navigation and the command palette. */
   route: string;
 }
 
 export const CAPABILITY_MATRIX = {
-  loans: { feature: "loans", permissions: ["loans.read"], route: "/loans" },
+  loans: {
+    feature: "loans",
+    permissions: ["loans.read"],
+    owns: [
+      "loans.read",
+      "loans.create",
+      "loans.update",
+      "loans.delete",
+      "loans.approve",
+      "loans.view_admin_overview",
+      "loans.view_transport",
+    ],
+    route: "/loans",
+  },
   transit: {
     feature: "loans",
     permissions: ["loans.read"],
@@ -69,6 +88,7 @@ export const CAPABILITY_MATRIX = {
   exhibitions: {
     feature: "exhibitions",
     permissions: ["collections.read"],
+    owns: ["collections.approve_exhibition"],
     route: "/exhibitions",
   },
   installations: {
@@ -79,6 +99,7 @@ export const CAPABILITY_MATRIX = {
   conservation: {
     feature: "conservation",
     permissions: ["collections.read"],
+    owns: ["collections.approve_conservation"],
     route: "/conservation",
   },
   // Every reader sees the board; accepting or rejecting needs
@@ -272,6 +293,21 @@ export function evaluateCapabilityEntitlement(
   access: OrganizationAccess,
 ): CapabilityState {
   return evaluateCapability(capability, access, [], []);
+}
+
+const PERMISSION_OWNERS: ReadonlyMap<string, CapabilityId> = new Map(
+  CAPABILITY_IDS.flatMap((capability) =>
+    (requirementOf(capability).owns ?? []).map(
+      (permission) => [permission, capability] as const,
+    ),
+  ),
+);
+
+/** The capability a Permission belongs to; null for shared Permissions. */
+export function capabilityOfPermission(
+  permission: string,
+): CapabilityId | null {
+  return PERMISSION_OWNERS.get(permission) ?? null;
 }
 
 export function capabilityRoute(capability: CapabilityId): string {
