@@ -3,18 +3,19 @@ import { buttonVariants } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getUnlocalizedPath } from "@/lib/locale-routes";
 import { useScopedI18n } from "@/locales/client";
 
 const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const t = useScopedI18n("settings.sidebar");
-  const pathname = usePathname();
+  const pathname = getUnlocalizedPath(usePathname());
   const isBillingPath = pathname === "/settings/billing";
   const isUsersPath = pathname === "/settings/users";
   const isRolesPath = pathname === "/settings/roles";
   const isSitesPath = pathname === "/settings/sites";
-  const isOrganizationPath = pathname?.startsWith("/settings/organization");
+  const isOrganizationPath = pathname.startsWith("/settings/organization");
   const isPreferencesPath = pathname === "/settings/preferences";
-  const isIntegrationsPath = pathname?.startsWith("/settings/integrations");
+  const isIntegrationsPath = pathname.startsWith("/settings/integrations");
   const isModulesPath = pathname === "/settings/modules";
   const isActivityPath = pathname === "/settings/activity";
   const isDeveloperPath = pathname === "/settings/developer";
