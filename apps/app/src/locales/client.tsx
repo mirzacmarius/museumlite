@@ -35,23 +35,45 @@ const createLooseI18nClient = createI18nClient as unknown as (
   useCurrentLocale: UseCurrentLocale;
 };
 
-export const { useChangeLocale, useCurrentLocale } =
+const { useChangeLocale: useNavigateToLocale, useCurrentLocale } =
   createLooseI18nClient(localeLoaders);
+
+export { useCurrentLocale };
 
 // next-international copies and filters the whole dictionary (about 8,000
 // keys) on every useI18n/useScopedI18n call, which froze long lists for
 // seconds (MUS-820). Translators here are built once per locale and scope.
 const translationsByLocale = new Map<Locale, Promise<Translations>>();
+const loadedTranslations = new Map<Locale, Translations>();
 
 function loadTranslations(locale: Locale) {
   let translations = translationsByLocale.get(locale);
   if (!translations) {
-    translations = localeLoaders[locale]().then((module) =>
-      createTranslations(module.default),
+    translations = localeLoaders[locale]().then(
+      (module) => {
+        const loaded = createTranslations(module.default);
+        loadedTranslations.set(locale, loaded);
+        return loaded;
+      },
+      (error: unknown) => {
+        // A failed chunk load (for example after a deploy) can be retried.
+        translationsByLocale.delete(locale);
+        throw error;
+      },
     );
     translationsByLocale.set(locale, translations);
   }
   return translations;
+}
+
+/** Loads the next locale's translations before navigating to it. */
+export function useChangeLocale() {
+  const navigateToLocale = useNavigateToLocale();
+  return (locale: Locale) => {
+    void loadTranslations(locale)
+      .catch(() => undefined)
+      .then(() => navigateToLocale(locale));
+  };
 }
 
 function isLocale(locale: string): locale is Locale {
@@ -67,7 +89,10 @@ function TranslationsProvider({
   locale: Locale;
   children: ReactNode;
 }) {
-  const translations = use(loadTranslations(locale));
+  // A loaded locale renders without suspending, so switching to it shows no
+  // empty frame.
+  const translations =
+    loadedTranslations.get(locale) ?? use(loadTranslations(locale));
   return (
     <TranslationsContext.Provider value={translations}>
       {children}
