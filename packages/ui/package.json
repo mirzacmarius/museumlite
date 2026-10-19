@@ -44,6 +44,7 @@
     "./loading-button": "./src/components/loading-button.tsx",
     "./logo": "./src/components/logo.tsx",
     "./motion-provider": "./src/components/motion-provider.tsx",
+    "./motion-highlight": "./src/components/motion-highlight.tsx",
     "./popover": "./src/components/popover.tsx",
     "./postcss": "./postcss.config.js",
     "./progress": "./src/components/progress.tsx",

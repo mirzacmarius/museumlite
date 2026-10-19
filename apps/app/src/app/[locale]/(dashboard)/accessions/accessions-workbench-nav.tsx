@@ -1,5 +1,6 @@
 "use client";
 
+import { Highlight, HighlightScope } from "@v1/ui/motion-highlight";
 import { cn } from "@v1/ui/utils";
 import { ArrowRightLeft, Inbox, LayoutGrid } from "lucide-react";
 import Link from "next/link";
@@ -60,49 +61,54 @@ export function AccessionsWorkbenchNav({
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/70 p-3">
-      <div className="grid gap-2 md:grid-cols-3">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeView === item.view;
+      <HighlightScope>
+        <div className="isolate grid gap-2 md:grid-cols-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeView === item.view;
 
-          return (
-            <Link
-              key={item.view}
-              href={item.href}
-              className={cn(
-                "flex min-w-0 items-center justify-between gap-4 rounded-xl border px-4 py-3 transition-colors",
-                isActive
-                  ? "border-primary/35 bg-primary/10 text-foreground"
-                  : "border-transparent bg-background/40 text-muted-foreground hover:border-border hover:bg-background/70 hover:text-foreground",
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <div
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg border",
-                    isActive
-                      ? "border-primary/30 bg-primary/15 text-primary"
-                      : "border-border/60 bg-background text-muted-foreground",
-                  )}
-                >
-                  <Icon className="size-4" />
+            return (
+              <Link
+                key={item.view}
+                href={item.href}
+                className={cn(
+                  "relative flex min-w-0 items-center justify-between gap-4 rounded-xl border px-4 py-3 transition-colors",
+                  isActive
+                    ? "border-transparent text-foreground"
+                    : "border-transparent bg-background/40 text-muted-foreground hover:border-border hover:bg-background/70 hover:text-foreground",
+                )}
+              >
+                {isActive && (
+                  <Highlight className="-inset-px border border-primary/35 bg-primary/10" />
+                )}
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-lg border",
+                      isActive
+                        ? "border-primary/30 bg-primary/15 text-primary"
+                        : "border-border/60 bg-background text-muted-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{item.label}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-              {item.metric === undefined ? null : (
-                <div className="shrink-0 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs font-medium text-foreground">
-                  {item.metric}
-                </div>
-              )}
-            </Link>
-          );
-        })}
-      </div>
+                {item.metric === undefined ? null : (
+                  <div className="shrink-0 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs font-medium text-foreground">
+                    {item.metric}
+                  </div>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </HighlightScope>
     </div>
   );
 }
