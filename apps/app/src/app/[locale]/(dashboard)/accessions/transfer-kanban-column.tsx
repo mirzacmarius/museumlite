@@ -2,7 +2,9 @@
 
 import type { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
+import { useStaggeredEntry } from "@v1/ui/hooks";
 import { ScrollArea } from "@v1/ui/scroll-area";
+import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
 import {
   ArrowRightLeft,
@@ -163,6 +165,7 @@ export function TransferKanbanColumn({
   transferRequests,
 }: TransferKanbanColumnProps) {
   const tRoot = useI18n();
+  const entry = useStaggeredEntry();
   const tMoves = useScopedI18n("moveRequests");
   const locale = useCurrentLocale();
   const style = statusStyles[status];
@@ -242,94 +245,103 @@ export function TransferKanbanColumn({
                 ))}
               </RecordLog>
             ) : (
-              filteredRequests.map((request) => (
-                <Link
-                  key={request._id}
-                  href={`/objects/move-requests/${request._id}`}
-                  className={`group block rounded-xl border p-3 transition-colors ${style.card}`}
-                >
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-400">
-                        <ArrowRightLeft className="size-3" />
-                        {tRoot("accessions.form.methods.transfer")}
+              filteredRequests.map((request, index) => {
+                const enter = entry(request._id, index);
+                return (
+                  <Link
+                    key={request._id}
+                    href={`/objects/move-requests/${request._id}`}
+                    className={cn(
+                      "group block rounded-xl border p-3 transition-colors",
+                      style.card,
+                      enter.className,
+                    )}
+                    style={enter.style}
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-400">
+                          <ArrowRightLeft className="size-3" />
+                          {tRoot("accessions.form.methods.transfer")}
+                        </div>
+                        <p className="mt-2 text-sm font-medium text-white transition-colors group-hover:text-sky-200">
+                          {request.collectionTitle}
+                        </p>
+                        <p className="mt-1 font-mono text-[11px] text-zinc-400">
+                          {request.sourceAccessionNumber}
+                        </p>
                       </div>
-                      <p className="mt-2 text-sm font-medium text-white transition-colors group-hover:text-sky-200">
-                        {request.collectionTitle}
-                      </p>
-                      <p className="mt-1 font-mono text-[11px] text-zinc-400">
-                        {request.sourceAccessionNumber}
-                      </p>
+                      <span
+                        className={`rounded-full px-2 py-1 text-[10px] font-medium ${style.badge}`}
+                      >
+                        {tRoot(statusLabels[status])}
+                      </span>
                     </div>
-                    <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${style.badge}`}
-                    >
-                      {tRoot(statusLabels[status])}
-                    </span>
-                  </div>
 
-                  <div className="space-y-2 text-xs text-zinc-300">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-zinc-500">
-                        {tRoot(
-                          "untranslatedRecords.accessions.transfer.receiver",
-                        )}
-                      </span>
-                      <span className="text-right">
-                        {request.targetOrganizationName}
-                      </span>
+                    <div className="space-y-2 text-xs text-zinc-300">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-zinc-500">
+                          {tRoot(
+                            "untranslatedRecords.accessions.transfer.receiver",
+                          )}
+                        </span>
+                        <span className="text-right">
+                          {request.targetOrganizationName}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-zinc-500">
+                          {tRoot("library.acquisitions.labels.requestedBy")}
+                        </span>
+                        <span className="text-right">
+                          {request.requestedByName}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-zinc-500">
+                          {tRoot(
+                            "untranslatedRecords.accessions.transfer.requested",
+                          )}
+                        </span>
+                        <span className="text-right">
+                          <ClientDateFns
+                            timestamp={request.requestedAt}
+                            format="MMM d, yyyy"
+                            locale={locale}
+                          />
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-zinc-500">
-                        {tRoot("library.acquisitions.labels.requestedBy")}
-                      </span>
-                      <span className="text-right">
-                        {request.requestedByName}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-zinc-500">
-                        {tRoot(
-                          "untranslatedRecords.accessions.transfer.requested",
-                        )}
-                      </span>
-                      <span className="text-right">
-                        <ClientDateFns
-                          timestamp={request.requestedAt}
-                          format="MMM d, yyyy"
-                          locale={locale}
-                        />
-                      </span>
-                    </div>
-                  </div>
 
-                  {status === "cancelled" ? null : (
-                    <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
-                        {tRoot(
-                          "untranslatedRecords.accessions.transfer.handling",
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-200">
-                        {tMoves("accession.chosenByReceiver")}
-                      </p>
-                    </div>
-                  )}
+                    {status === "cancelled" ? null : (
+                      <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
+                          {tRoot(
+                            "untranslatedRecords.accessions.transfer.handling",
+                          )}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-200">
+                          {tMoves("accession.chosenByReceiver")}
+                        </p>
+                      </div>
+                    )}
 
-                  {request.targetReviewNotes || request.sourceReviewNotes ? (
-                    <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
-                        {tRoot(
-                          "untranslatedRecords.accessions.transfer.reviewNotes",
-                        )}
-                      </p>
-                      <p className="mt-1 line-clamp-3 text-xs text-zinc-300">
-                        {request.targetReviewNotes ?? request.sourceReviewNotes}
-                      </p>
-                    </div>
-                  ) : null}
-                </Link>
-              ))
+                    {request.targetReviewNotes || request.sourceReviewNotes ? (
+                      <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
+                          {tRoot(
+                            "untranslatedRecords.accessions.transfer.reviewNotes",
+                          )}
+                        </p>
+                        <p className="mt-1 line-clamp-3 text-xs text-zinc-300">
+                          {request.targetReviewNotes ??
+                            request.sourceReviewNotes}
+                        </p>
+                      </div>
+                    ) : null}
+                  </Link>
+                );
+              })
             )}
             {logEntries.length > logLength ? (
               <Button

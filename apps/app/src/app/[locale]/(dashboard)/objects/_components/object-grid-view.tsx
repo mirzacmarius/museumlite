@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
+import { useStaggeredEntry } from "@v1/ui/hooks";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -542,10 +543,11 @@ export function ObjectGridView({
   selectedIds,
   onSelectItem,
 }: ObjectGridViewProps) {
+  const entry = useStaggeredEntry();
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {items.map((item, index) => (
-        <div key={item._id}>
+        <div key={item._id} {...entry(item._id, index)}>
           <ObjectGridItem
             item={item}
             organizationId={organizationId}

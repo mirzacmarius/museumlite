@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { EmptyState } from "@v1/ui/empty-state";
+import { useStaggeredEntry } from "@v1/ui/hooks";
 import { Input } from "@v1/ui/input";
 import {
   Select,
@@ -291,6 +292,7 @@ function ExhibitionList({
   const now = useClientNow();
   const locale = useCurrentLocale();
   const searchParams = useSearchParams();
+  const entry = useStaggeredEntry();
   const getSearchParam = searchParams.get.bind(searchParams);
   const hasSearchParam = searchParams.has.bind(searchParams);
   const requestedAsOf = Number(getSearchParam("asOf"));
@@ -400,8 +402,8 @@ function ExhibitionList({
     <div className="space-y-3">
       {metricNotice}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-        {filteredExhibitions.map((ex) => (
-          <div key={ex._id}>
+        {filteredExhibitions.map((ex, index) => (
+          <div key={ex._id} {...entry(ex._id, index)}>
             <ExhibitionCard
               exhibition={ex}
               scheduleStatus={getExhibitionScheduleStatus(ex, displayAsOf)}
