@@ -10,6 +10,12 @@ import { LOAN_TABS } from "./use-loan-detail-page";
 
 type LoanTab = (typeof LOAN_TABS)[number];
 
+const TRIGGER_CLASS =
+  "rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground";
+// The active tab's underline, drawn over the trigger's transparent bottom border.
+const INDICATOR_CLASS =
+  "top-auto -bottom-0.5 h-0.5 bg-cyan-500 shadow-none inset-ring-0";
+
 interface LoanDetailTabsProps {
   loan: Loan;
   documents: LoanDocument[];
@@ -41,7 +47,8 @@ export function LoanDetailTabs({
           <TabsList className="h-auto w-max min-w-full justify-start gap-6 rounded-none border-b-0 bg-transparent p-0">
             <TabsTrigger
               value="overview"
-              className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              className={TRIGGER_CLASS}
+              indicatorClassName={INDICATOR_CLASS}
             >
               {tRoot("untranslatedRecords.loans.detail.overviewFor")}{" "}
               {loan.type === "outgoing"
@@ -50,7 +57,8 @@ export function LoanDetailTabs({
             </TabsTrigger>
             <TabsTrigger
               value="objects"
-              className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              className={TRIGGER_CLASS}
+              indicatorClassName={INDICATOR_CLASS}
             >
               {tRoot("loans.actions.objectsTab", {
                 count: loan.items.length,
@@ -58,7 +66,8 @@ export function LoanDetailTabs({
             </TabsTrigger>
             <TabsTrigger
               value="activity"
-              className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              className={TRIGGER_CLASS}
+              indicatorClassName={INDICATOR_CLASS}
             >
               {tActions("activityLog")}
             </TabsTrigger>
