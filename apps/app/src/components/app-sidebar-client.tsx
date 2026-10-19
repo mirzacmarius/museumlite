@@ -21,6 +21,7 @@ import {
 import { Logo } from "@v1/ui/logo";
 import {
   Sidebar,
+  SidebarActiveIndicator,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -632,6 +633,7 @@ function AppSidebarClientInner({
       />
 
       <SidebarContent className="gap-0 py-1">
+        <SidebarActiveIndicator />
         <SidebarSearch onOpen={openCommandPalette} />
 
         <TopLevelNavigation

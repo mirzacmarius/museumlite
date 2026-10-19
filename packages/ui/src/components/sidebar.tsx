@@ -23,8 +23,10 @@ import {
 } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { cva, type VariantProps } from "class-variance-authority";
+import { springValue, useReducedMotion } from "framer-motion";
 import { PanelLeft } from "lucide-react";
 import * as React from "react";
+import { SPRING } from "./motion";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -430,7 +432,7 @@ const SidebarContent = ({
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "relative flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
         className,
       )}
       {...props}
@@ -438,6 +440,163 @@ const SidebarContent = ({
   );
 };
 SidebarContent.displayName = "SidebarContent";
+
+const ACTIVE_ITEM_SELECTOR =
+  "[data-sidebar=menu-button][data-active=true], [data-sidebar=menu-sub-button][data-active=true]";
+
+type Box = { x: number; y: number; width: number; height: number };
+
+/**
+ * Whether the reader sees all of an active item: it is displayed, its group
+ * is not closing, and an opening group has grown past it.
+ */
+function isFullyShown(item: HTMLElement, container: HTMLElement) {
+  const rect = item.getBoundingClientRect();
+  if (rect.height === 0) return false;
+  for (
+    let element = item.parentElement;
+    element && element !== container;
+    element = element.parentElement
+  ) {
+    if (element.dataset.slot !== "collapsible-content") continue;
+    if (element.dataset.state === "closed") return false;
+    if (element.getBoundingClientRect().bottom < rect.bottom - 0.5) {
+      return false;
+    }
+  }
+  return true;
+}
+
+type ActiveItem = { element: HTMLElement; box: Box };
+
+function findActiveItem(container: HTMLElement): ActiveItem | null {
+  const items = container.querySelectorAll<HTMLElement>(ACTIVE_ITEM_SELECTOR);
+  // A parent and its page are both active; the page, later in the DOM, wins.
+  const element = [...items]
+    .reverse()
+    .find((candidate) => isFullyShown(candidate, container));
+  if (!element) return null;
+  const rect = element.getBoundingClientRect();
+  const origin = container.getBoundingClientRect();
+  return {
+    element,
+    box: {
+      x: rect.left - origin.left - container.clientLeft + container.scrollLeft,
+      y: rect.top - origin.top - container.clientTop + container.scrollTop,
+      width: rect.width,
+      height: rect.height,
+    },
+  };
+}
+
+const INDICATOR_SPRING = {
+  stiffness: SPRING.stiffness,
+  damping: SPRING.damping,
+  mass: SPRING.mass,
+};
+
+/**
+ * One background behind the active menu item that springs to the next active
+ * item. Render it first inside `SidebarContent`: it sits in the scroll
+ * content, outside the buttons and groups that clip, and follows the item
+ * through route changes, group toggles, collapse and resize.
+ */
+const SidebarActiveIndicator = ({ className }: { className?: string }) => {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  React.useLayoutEffect(() => {
+    const indicator = ref.current;
+    const container = indicator?.parentElement;
+    if (!indicator || !container) return;
+    const values = {
+      x: springValue<number>(0, INDICATOR_SPRING),
+      y: springValue<number>(0, INDICATOR_SPRING),
+      width: springValue<number>(0, INDICATOR_SPRING),
+      height: springValue<number>(0, INDICATOR_SPRING),
+    };
+    const keys = Object.keys(values) as (keyof Box)[];
+    // Written straight to the element, so a jump paints in the frame that
+    // measured it rather than one frame behind the item.
+    const render = () => {
+      indicator.style.transform = `translate(${values.x.get()}px, ${values.y.get()}px)`;
+      indicator.style.width = `${values.width.get()}px`;
+      indicator.style.height = `${values.height.get()}px`;
+    };
+    const unsubscribe = keys.map((key) => values[key].on("change", render));
+    let current: ActiveItem | null = null;
+
+    const measure = () => {
+      const next = findActiveItem(container);
+      if (next) {
+        const previous = current;
+        // Glide to a newly active item. Layout shifts move the same item, and
+        // the indicator follows those exactly unless a glide is still going.
+        const glide =
+          previous !== null &&
+          !reduceMotion &&
+          (next.element !== previous.element ||
+            keys.some(
+              (key) => Math.abs(values[key].get() - previous.box[key]) > 0.5,
+            ));
+        for (const key of keys) {
+          if (glide) values[key].set(next.box[key]);
+          else values[key].jump(next.box[key]);
+        }
+      }
+      current = next;
+      indicator.style.visibility = next ? "visible" : "hidden";
+      container.toggleAttribute("data-active-indicator", next !== null);
+    };
+
+    // Resize callbacks run after layout and before paint, so measuring in
+    // them keeps up with a group's height animation frame by frame.
+    const resizeObserver = new ResizeObserver(measure);
+    const observeItems = () => {
+      resizeObserver.disconnect();
+      resizeObserver.observe(container);
+      for (const item of container.querySelectorAll(
+        "[data-sidebar=menu-item]",
+      )) {
+        resizeObserver.observe(item);
+      }
+    };
+    const mutationObserver = new MutationObserver((mutations) => {
+      if (mutations.some((mutation) => mutation.type === "childList")) {
+        observeItems();
+      }
+      measure();
+    });
+    mutationObserver.observe(container, {
+      subtree: true,
+      childList: true,
+      attributeFilter: ["data-active", "data-state"],
+    });
+    observeItems();
+    measure();
+
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      for (const stop of unsubscribe) stop();
+      for (const key of keys) values[key].destroy();
+      container.removeAttribute("data-active-indicator");
+    };
+  }, [reduceMotion]);
+
+  return (
+    <span
+      ref={ref}
+      aria-hidden
+      data-sidebar="active-indicator"
+      className={cn(
+        "pointer-events-none invisible absolute left-0 top-0 rounded-md bg-sidebar-accent",
+        className,
+      )}
+    />
+  );
+};
+SidebarActiveIndicator.displayName = "SidebarActiveIndicator";
 
 const SidebarGroup = ({
   className,
@@ -549,8 +708,15 @@ const SidebarMenuItem = ({
 );
 SidebarMenuItem.displayName = "SidebarMenuItem";
 
+/**
+ * The active item's own background, shown only until a
+ * `SidebarActiveIndicator` in the same content has taken over.
+ */
+const ACTIVE_BACKGROUND_FALLBACK =
+  "[&:not([data-active-indicator]_*)]:data-[active=true]:bg-sidebar-accent";
+
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -595,7 +761,11 @@ const SidebarMenuButton = ({
       data-sidebar="menu-button"
       data-size={size}
       data-active={isActive}
-      className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+      className={cn(
+        sidebarMenuButtonVariants({ variant, size }),
+        ACTIVE_BACKGROUND_FALLBACK,
+        className,
+      )}
       {...props}
     />
   );
@@ -765,7 +935,8 @@ const SidebarMenuSubButton = ({
       data-active={isActive}
       className={cn(
         "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
-        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
+        "data-[active=true]:text-sidebar-accent-foreground",
+        ACTIVE_BACKGROUND_FALLBACK,
         size === "sm" && "text-xs",
         size === "md" && "text-sm",
         "group-data-[collapsible=icon]:hidden",
@@ -779,6 +950,7 @@ SidebarMenuSubButton.displayName = "SidebarMenuSubButton";
 
 export {
   Sidebar,
+  SidebarActiveIndicator,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
