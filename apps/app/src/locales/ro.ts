@@ -10857,12 +10857,12 @@ export default {
   },
   moveRequests: {
     accession: {
-      label: "Număr de inventar",
+      label: "Număr de accesiune",
       keep: "Păstrează numărul actual ({number})",
       auto: "Generează un număr nou",
       manual: "Introdu un număr nou",
-      manualLabel: "Număr de inventar nou",
-      manualPlaceholder: "Introdu noul număr de inventar",
+      manualLabel: "Număr de accesiune nou",
+      manualPlaceholder: "Introdu noul număr de accesiune",
       hint: "Dacă atribui un număr nou, cel actual se păstrează la Numere alternative de accesiune.",
       chosenByReceiver: "Ales de organizația destinatară la acceptare",
     },
@@ -10870,9 +10870,9 @@ export default {
     errors: {
       accessionNumberTaken:
         "{number} este deja folosit în organizația ta. Generează sau introdu un număr nou.",
-      accessionNumberRequired: "Introdu noul număr de inventar.",
+      accessionNumberRequired: "Introdu noul număr de accesiune.",
       accessionGenerationUnavailable:
-        "Numerotarea automată a inventarului nu este configurată pentru organizația ta. Introdu un număr nou sau activeaz-o în Preferințe.",
+        "Numerotarea automată a accesiunilor nu este configurată pentru organizația ta. Introdu un număr nou sau activeaz-o în Preferințe.",
       requestClosed:
         "Această solicitare de transfer a fost deja soluționată sau anulată.",
       outsideHierarchy:

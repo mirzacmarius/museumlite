@@ -2253,6 +2253,16 @@ export const reject = mutation({
               .join("\n"),
           })
         : null,
+      transferDeaccession?.status === "approved"
+        ? ctx.runMutation(internal.audit.logAction, {
+            organizationId: request.sourceOrganizationId,
+            userId,
+            action: "rejected_transfer_deaccession",
+            entityType: "deaccession",
+            entityId: transferDeaccession._id,
+            changes: { requestId: request._id, status: "rejected" },
+          })
+        : null,
       ctx.db.patch(args.requestId, {
         status: "rejected",
         reviewedBy: isTargetReview ? request.reviewedBy : userId,

@@ -10922,12 +10922,12 @@ export default {
   },
   moveRequests: {
     accession: {
-      label: "Numéro d’inventaire",
+      label: "Numéro d’accession",
       keep: "Conserver le numéro actuel ({number})",
       auto: "Générer un nouveau numéro",
       manual: "Saisir un nouveau numéro",
-      manualLabel: "Nouveau numéro d’inventaire",
-      manualPlaceholder: "Saisissez le nouveau numéro d’inventaire",
+      manualLabel: "Nouveau numéro d’accession",
+      manualPlaceholder: "Saisissez le nouveau numéro d’accession",
       hint: "Si vous attribuez un nouveau numéro, l’actuel est conservé dans les Numéros d'Accession Alternatifs.",
       chosenByReceiver:
         "Choisi par l’organisation destinataire lors de l’acceptation",
@@ -10936,9 +10936,9 @@ export default {
     errors: {
       accessionNumberTaken:
         "{number} est déjà utilisé dans votre organisation. Générez ou saisissez un nouveau numéro.",
-      accessionNumberRequired: "Saisissez le nouveau numéro d’inventaire.",
+      accessionNumberRequired: "Saisissez le nouveau numéro d’accession.",
       accessionGenerationUnavailable:
-        "La numérotation automatique des inventaires n’est pas configurée pour votre organisation. Saisissez un nouveau numéro ou activez-la dans les Préférences.",
+        "La numérotation automatique des accessions n’est pas configurée pour votre organisation. Saisissez un nouveau numéro ou activez-la dans les Préférences.",
       requestClosed:
         "Cette demande de transfert a déjà été traitée ou annulée.",
       outsideHierarchy:

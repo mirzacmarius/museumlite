@@ -10881,12 +10881,12 @@ export default {
   },
   moveRequests: {
     accession: {
-      label: "Número de inventario",
+      label: "Número de accesión",
       keep: "Conservar el número actual ({number})",
       auto: "Generar un número nuevo",
       manual: "Introducir un número nuevo",
-      manualLabel: "Nuevo número de inventario",
-      manualPlaceholder: "Introduce el nuevo número de inventario",
+      manualLabel: "Nuevo número de accesión",
+      manualPlaceholder: "Introduce el nuevo número de accesión",
       hint: "Si asignas un número nuevo, el actual se conserva en Números de accesión alternativos.",
       chosenByReceiver: "Lo elige la organización receptora al aceptar",
     },
@@ -10894,9 +10894,9 @@ export default {
     errors: {
       accessionNumberTaken:
         "{number} ya se usa en tu organización. Genera o introduce un número nuevo.",
-      accessionNumberRequired: "Introduce el nuevo número de inventario.",
+      accessionNumberRequired: "Introduce el nuevo número de accesión.",
       accessionGenerationUnavailable:
-        "Tu organización no tiene configurada la numeración automática de inventario. Introduce un número nuevo o actívala en Preferencias.",
+        "Tu organización no tiene configurada la numeración automática de accesiones. Introduce un número nuevo o actívala en Preferencias.",
       requestClosed: "Esta solicitud de traslado ya se resolvió o se canceló.",
       outsideHierarchy:
         "La organización de destino está fuera de la jerarquía de tu organización y no permite solicitudes de transferencia entrantes.",
