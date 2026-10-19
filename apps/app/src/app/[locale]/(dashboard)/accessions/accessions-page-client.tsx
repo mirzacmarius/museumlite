@@ -35,6 +35,9 @@ export function AccessionsPageClient({
   const { searchInput: searchQuery, setSearchInput: setSearchQuery } = list;
   const returnPath = useListReturnPath(ACCESSION_LIST_KEYS);
   const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
+  // The board asks for its columns only once it renders, after the counts;
+  // subscribing here loads them alongside the counts instead of after them.
+  useQuery(api.accessions.getWorkflowSteps, { organizationId });
 
   const exportAccessionsWithFormat = useMutation(
     api.imports.exportAccessionsWithFormat,
