@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { Dialog, DialogContent, DialogTitle } from "./dialog";
@@ -46,4 +46,23 @@ test("the dialog's scroll lock lets a picker list inside it take the mouse wheel
   list.dispatchEvent(wheel);
 
   expect(wheel.defaultPrevented).toBe(false);
+});
+
+test("a closed popover animates out, then leaves the page and hands focus back to its trigger", async () => {
+  const user = userEvent.setup();
+  render(
+    <Popover>
+      <PopoverTrigger>Filters</PopoverTrigger>
+      <PopoverContent>Only on display</PopoverContent>
+    </Popover>,
+  );
+  const trigger = screen.getByRole("button", { name: "Filters" });
+  await user.click(trigger);
+  screen.getByText("Only on display");
+
+  await user.keyboard("{Escape}");
+
+  expect(screen.getByText("Only on display")).toBeTruthy();
+  await waitFor(() => expect(screen.queryByText("Only on display")).toBeNull());
+  expect(document.activeElement).toBe(trigger);
 });
