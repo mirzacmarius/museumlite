@@ -574,6 +574,9 @@ export default {
         importFailed: "Échec de l'import.",
         correctionUnsupported:
           "Cet import ne peut pas être corrigé ici. Lancez un nouvel import.",
+        noDataRows: "Le fichier ne contient aucune ligne de données.",
+        missingColumns:
+          "Le fichier n’a pas de colonne {missing}, aucune ligne ne peut donc être importée. Utilisez les noms de colonnes du modèle. Colonnes trouvées : {found}.",
         uploadCorrectedFile: "Téléverser le fichier corrigé",
         correctionFailed: "Impossible d'importer le fichier corrigé.",
         title: "Imports récents",
@@ -7869,10 +7872,7 @@ export default {
           rejected: "Aucun transfert rejeté ne correspond à cette recherche.",
           cancelled: "Aucun transfert annulé ne correspond à cette recherche.",
         },
-        keepAccession: "Conserver le numéro d’accession actuel",
         newAccession: "Générer un nouveau numéro d’accession",
-        requestedAccession: "Numéro d’accession demandé : {number}",
-        manualAccession: "Numéro d’accession saisi manuellement demandé",
       },
       import: {
         fields: {
@@ -8390,16 +8390,12 @@ export default {
         failedApprove: "Échec de l’approbation de la demande de transfert.",
         moveAccepted: "Transfert accepté et terminé.",
         failedAccept: "Échec de l’acceptation de la demande de transfert.",
-        rejectNotesRequired:
-          "Des notes de révision sont requises pour rejeter une demande de transfert.",
         moveRejected: "Demande de transfert rejetée.",
         failedReject: "Échec du rejet de la demande de transfert.",
         moveCancelled: "Demande de transfert annulée.",
         failedCancel: "Échec de l’annulation de la demande de transfert.",
         unknownUser: "Utilisateur inconnu",
         to: "à",
-        numberOnApproval: "Généré à l'approbation de la demande",
-        useRequestedAccessionNumber: "Utiliser le numéro d'accession demandé",
       },
       roles: {
         curator: "Conservateur",
@@ -10289,6 +10285,7 @@ export default {
           "Déclassement en attente de votre approbation",
         deaccessionRejected: "Déclassement refusé",
         objectMoveApproved: "Transfert de l’objet approuvé",
+        transferDeclined: "Transfert refusé",
         incomingTransferRejected: "Transfert entrant refusé",
         objectMoveRejected: "Transfert de l’objet refusé",
         objectMoveCancelled: "Transfert de l’objet annulé",
@@ -10368,6 +10365,11 @@ export default {
           "La demande {number} porte sur l'utilisation d'une image de l'objet {object}.",
         objectMoveExecuted:
           "Votre demande de transfert d’objet a été approuvée et exécutée.",
+        transferDeclined: "{organization} a refusé le transfert de {title}.",
+        transferDeclinedWithReason:
+          "{organization} a refusé le transfert de {title}. Motif : {reason}",
+        objectMoveRejected:
+          "Votre demande de transfert de l’objet a été refusée.",
         objectMoveCancelled:
           "Votre demande de transfert d’objet a été annulée par un administrateur de l’organisation d’origine.",
         onlyActiveObjectsCanMove:
@@ -10919,7 +10921,24 @@ export default {
     },
   },
   moveRequests: {
+    accession: {
+      label: "Numéro d’accession",
+      keep: "Conserver le numéro actuel ({number})",
+      auto: "Générer un nouveau numéro",
+      manual: "Saisir un nouveau numéro",
+      manualLabel: "Nouveau numéro d’accession",
+      manualPlaceholder: "Saisissez le nouveau numéro d’accession",
+      hint: "Si vous attribuez un nouveau numéro, l’actuel est conservé dans les Numéros d'Accession Alternatifs.",
+      chosenByReceiver:
+        "Choisi par l’organisation destinataire lors de l’acceptation",
+    },
+    declinedBy: "Refusé par {organization}",
     errors: {
+      accessionNumberTaken:
+        "{number} est déjà utilisé dans votre organisation. Générez ou saisissez un nouveau numéro.",
+      accessionNumberRequired: "Saisissez le nouveau numéro d’accession.",
+      accessionGenerationUnavailable:
+        "La numérotation automatique des accessions n’est pas configurée pour votre organisation. Saisissez un nouveau numéro ou activez-la dans les Préférences.",
       requestClosed:
         "Cette demande de transfert a déjà été traitée ou annulée.",
       outsideHierarchy:

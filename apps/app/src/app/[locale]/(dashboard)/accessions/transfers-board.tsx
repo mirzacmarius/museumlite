@@ -9,7 +9,10 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { TransferKanbanColumn } from "./transfer-kanban-column";
-import { countPendingTransfers } from "./use-pending-transfer-count";
+import {
+  countIncomingTransfers,
+  countPendingTransfers,
+} from "./use-open-transfer-count";
 
 type TransfersBoardProps = {
   organizationId: Id<"organizations">;
@@ -38,11 +41,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
 
     return {
       pending: countPendingTransfers(transferRequests),
-      incoming: transferRequests.filter(
-        (request) =>
-          request.status === "awaiting_acceptance" &&
-          request.direction === "incoming",
-      ).length,
+      incoming: countIncomingTransfers(transferRequests),
       executed: transferRequests.filter(
         (request) =>
           request.status === "executed" && request.direction === "outgoing",

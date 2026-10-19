@@ -3,25 +3,28 @@
 import { Label } from "@v1/ui/label";
 import { ArrowRightLeft } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
-import { useI18n } from "@/locales/client";
-import {
-  formatMoveRequestAccessionMode,
-  MoveRequestStatusBadge,
-} from "./move-request-utils";
+import { useI18n, useScopedI18n } from "@/locales/client";
+import { MoveRequestStatusBadge } from "./move-request-utils";
 import type { MoveRequestDetail } from "./use-move-request-detail";
 
 interface MoveRequestDetailCardProps {
   request: MoveRequestDetail;
   locale: string;
-  accessionSummary: string | null;
 }
+
+const OPEN_STATUSES = new Set<string>([
+  "pending",
+  "pending_source_approval",
+  "approved_for_transfer",
+  "awaiting_acceptance",
+]);
 
 export function MoveRequestDetailCard({
   request,
   locale,
-  accessionSummary,
 }: MoveRequestDetailCardProps) {
   const tRoot = useI18n();
+  const tAccession = useScopedI18n("moveRequests.accession");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -65,22 +68,26 @@ export function MoveRequestDetailCard({
                 )}
             </p>
           </div>
-          <div>
-            <Label className="text-muted-foreground">
-              {tRoot("untranslatedRecords.accessions.transfer.handling")}
-            </Label>
-            <p className="mt-1">
-              {formatMoveRequestAccessionMode(request.accessionMode, tRoot)}
-            </p>
-          </div>
-          <div>
-            <Label className="text-muted-foreground">
-              {tRoot(
-                "untranslatedRecords.objects.move.resultingAccessionNumber",
-              )}
-            </Label>
-            <p className="mt-1 font-mono text-sm">{accessionSummary}</p>
-          </div>
+          {OPEN_STATUSES.has(request.status) && (
+            <div>
+              <Label className="text-muted-foreground">
+                {tRoot("untranslatedRecords.accessions.transfer.handling")}
+              </Label>
+              <p className="mt-1">{tAccession("chosenByReceiver")}</p>
+            </div>
+          )}
+          {request.status === "executed" && (
+            <div>
+              <Label className="text-muted-foreground">
+                {tRoot(
+                  "untranslatedRecords.objects.move.resultingAccessionNumber",
+                )}
+              </Label>
+              <p className="mt-1 font-mono text-sm">
+                {request.finalAccessionNumber ?? request.sourceAccessionNumber}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">

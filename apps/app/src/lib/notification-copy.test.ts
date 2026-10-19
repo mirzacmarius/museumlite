@@ -261,4 +261,23 @@ describe("getNotificationCopy", () => {
     expect(copy.message).toContain("ACC-2026-014");
     expect(copy.message).not.toContain("pending your approval at step");
   });
+
+  it("tells the sender in their language that the receiver declined a transfer", () => {
+    const copy = (message: string) =>
+      getNotificationCopy(
+        { title: "Transfer Declined", message },
+        dictionaryTranslator(french),
+      );
+
+    expect(
+      copy("Museum Nord declined the transfer of Vase. Reason: No space."),
+    ).toEqual({
+      title: "Transfert refusé",
+      message: "Museum Nord a refusé le transfert de Vase. Motif : No space.",
+    });
+    expect(copy("Museum Nord declined the transfer of St. Olav.")).toEqual({
+      title: "Transfert refusé",
+      message: "Museum Nord a refusé le transfert de St. Olav.",
+    });
+  });
 });

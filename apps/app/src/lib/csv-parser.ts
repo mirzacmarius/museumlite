@@ -9,13 +9,41 @@ export interface CsvTable {
   records: CsvRecord[];
 }
 
+const DELIMITERS = [",", ";", "\t"] as const;
+
 /**
- * RFC 4180 parser: quoted fields may contain commas, doubled quotes and line
- * breaks; CRLF and a leading byte-order mark are accepted. Blank records are
- * dropped but keep their line numbers out of later records.
+ * The separator the header row uses most outside quotes. Spreadsheets set to
+ * a decimal-comma language, such as Numbers or Excel in Norwegian, save CSV
+ * with semicolons.
+ */
+function detectDelimiter(source: string): string {
+  const counts = new Map<string, number>();
+  let inQuotes = false;
+  for (const char of source) {
+    if (char === '"') inQuotes = !inQuotes;
+    else if (!inQuotes && (char === "\n" || char === "\r")) break;
+    else if (!inQuotes && DELIMITERS.some((delimiter) => delimiter === char)) {
+      counts.set(char, (counts.get(char) ?? 0) + 1);
+    }
+  }
+  let best = ",";
+  for (const delimiter of DELIMITERS) {
+    if ((counts.get(delimiter) ?? 0) > (counts.get(best) ?? 0)) {
+      best = delimiter;
+    }
+  }
+  return best;
+}
+
+/**
+ * RFC 4180 parser: quoted fields may contain the separator, doubled quotes
+ * and line breaks; CRLF and a leading byte-order mark are accepted. The
+ * separator is a comma, semicolon or tab, whichever the header row uses.
+ * Blank records are dropped but keep their line numbers out of later records.
  */
 export function parseCsvRecords(text: string): CsvRecord[] {
-  const source = text.startsWith("﻿") ? text.slice(1) : text;
+  const source = text.startsWith("\ufeff") ? text.slice(1) : text;
+  const delimiter = detectDelimiter(source);
   const records: CsvRecord[] = [];
   let values: string[] = [];
   let field = "";
@@ -50,7 +78,7 @@ export function parseCsvRecords(text: string): CsvRecord[] {
     }
     if (char === '"') {
       inQuotes = true;
-    } else if (char === ",") {
+    } else if (char === delimiter) {
       values.push(field);
       field = "";
     } else if (char === "\n" || char === "\r") {

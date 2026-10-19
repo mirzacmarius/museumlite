@@ -11,7 +11,7 @@ import {
   AccessionsWorkbenchNav,
   type AccessionsWorkbenchView,
 } from "./accessions-workbench-nav";
-import { usePendingTransferCount } from "./use-pending-transfer-count";
+import { useOpenTransferCount } from "./use-open-transfer-count";
 
 /**
  * The Accessions title and tabs, shared by Overview, Entries and Transfers so
@@ -39,7 +39,7 @@ export function AccessionsWorkbenchHeader() {
         <AccessionsWorkbenchNav
           activeView={activeView}
           pendingAccessions="-"
-          pendingTransfers="-"
+          openTransfers="-"
         />
       )}
     </div>
@@ -61,13 +61,13 @@ function CountedWorkbenchNav({
     api.accessions.getBoardCounts,
     canReadAccessions ? { organizationId } : "skip",
   );
-  const pendingTransfers = usePendingTransferCount(organizationId);
+  const openTransfers = useOpenTransferCount(organizationId);
 
   return (
     <AccessionsWorkbenchNav
       activeView={activeView}
       pendingAccessions={counts?.pending ?? "-"}
-      pendingTransfers={pendingTransfers}
+      openTransfers={openTransfers}
     />
   );
 }

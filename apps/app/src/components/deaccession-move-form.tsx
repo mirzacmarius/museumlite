@@ -3,20 +3,11 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { EligibilityBlockerCode } from "@v1/backend/convex/utils/objectMoveErrors";
 import { Button } from "@v1/ui/button";
-import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { useMoveBlockerMessage } from "@/hooks/use-object-move-error-message";
 import { useI18n } from "@/locales/client";
-import type { AccessionMode } from "./deaccession-dialog-types";
 import { TransferDestinationPicker } from "./transfer-destination-picker";
 
 interface MoveBlocker {
@@ -28,14 +19,10 @@ interface DeaccessionMoveFormProps {
   collectionId: Id<"collections">;
   blockers: MoveBlocker[];
   targetOrganizationId: Id<"organizations"> | "";
-  accessionMode: AccessionMode;
-  manualAccessionNumber: string;
   reason: string;
   notes: string;
   onBack: () => void;
   onTargetOrganizationChange: (id: Id<"organizations">) => void;
-  onAccessionModeChange: (mode: AccessionMode) => void;
-  onManualAccessionNumberChange: (value: string) => void;
   onReasonChange: (reason: string) => void;
   onNotesChange: (notes: string) => void;
 }
@@ -45,14 +32,10 @@ export function DeaccessionMoveForm({
   collectionId,
   blockers,
   targetOrganizationId,
-  accessionMode,
-  manualAccessionNumber,
   reason,
   notes,
   onBack,
   onTargetOrganizationChange,
-  onAccessionModeChange,
-  onManualAccessionNumberChange,
   onReasonChange,
   onNotesChange,
 }: DeaccessionMoveFormProps) {
@@ -110,62 +93,6 @@ export function DeaccessionMoveForm({
           required
         />
       </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="accession-mode">
-          {translate("untranslatedComponents.labels.accessionNumberHandling")}
-        </Label>
-        <Select
-          value={accessionMode}
-          onValueChange={(value) =>
-            onAccessionModeChange(value as AccessionMode)
-          }
-        >
-          <SelectTrigger id="accession-mode">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="keep">
-              {translate(
-                "untranslatedComponents.labels.keepCurrentAccessionNumber",
-              )}
-            </SelectItem>
-            <SelectItem value="auto">
-              {translate(
-                "untranslatedComponents.labels.generateANewAccessionNumber",
-              )}
-            </SelectItem>
-            <SelectItem value="manual">
-              {translate(
-                "untranslatedComponents.labels.enterANewAccessionNumberManually",
-              )}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
-          {translate(
-            "untranslatedComponents.labels.ifYouAssignANewAccessionNumberTheCurrentOneWillBeStoredInAlternateAccessionNumbers",
-          )}
-        </p>
-      </div>
-
-      {accessionMode === "manual" && (
-        <div className="space-y-2">
-          <Label htmlFor="manual-accession-number">
-            {translate("untranslatedComponents.labels.newAccessionNumber")}
-          </Label>
-          <Input
-            id="manual-accession-number"
-            value={manualAccessionNumber}
-            onChange={(event) =>
-              onManualAccessionNumberChange(event.target.value)
-            }
-            placeholder={translate(
-              "untranslatedComponents.labels.enterTheNewAccessionNumber",
-            )}
-          />
-        </div>
-      )}
 
       <div className="space-y-2">
         <Label htmlFor="move-notes">

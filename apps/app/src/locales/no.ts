@@ -564,6 +564,9 @@ export default {
         importFailed: "Importen mislyktes.",
         correctionUnsupported:
           "Denne importen kan ikke korrigeres her. Start en ny import.",
+        noDataRows: "Filen har ingen rader med data.",
+        missingColumns:
+          "Filen har ingen kolonne for {missing}, så ingen rader kan importeres. Bruk kolonnenavnene fra malen. Kolonner funnet: {found}.",
         uploadCorrectedFile: "Last opp korrigert fil",
         correctionFailed: "Kunne ikke importere den korrigerte filen.",
         title: "Nylige importjobber",
@@ -7778,10 +7781,7 @@ export default {
           rejected: "Ingen avviste overføringer samsvarer med søket.",
           cancelled: "Ingen avbrutte overføringer samsvarer med søket.",
         },
-        keepAccession: "Behold gjeldende aksesjonsnummer",
         newAccession: "Opprett et nytt aksesjonsnummer",
-        requestedAccession: "Foreslått aksesjonsnummer: {number}",
-        manualAccession: "Manuelt aksesjonsnummer forespurt",
       },
       import: {
         fields: {
@@ -8282,16 +8282,12 @@ export default {
         failedApprove: "Kunne ikke godkjenne flytteforespørselen.",
         moveAccepted: "Overføringen er godtatt og fullført.",
         failedAccept: "Kunne ikke godta overføringsforespørselen.",
-        rejectNotesRequired:
-          "Det kreves vurderingsnotater for å avvise en flytteforespørsel.",
         moveRejected: "Flytteforespørselen ble avvist.",
         failedReject: "Kunne ikke avvise flytteforespørselen.",
         moveCancelled: "Flytteforespørselen ble avbrutt.",
         failedCancel: "Kunne ikke avbryte flytteforespørselen.",
         unknownUser: "Ukjent bruker",
         to: "til",
-        numberOnApproval: "Genereres når forespørselen godkjennes",
-        useRequestedAccessionNumber: "Bruk det forespurte aksesjonsnummeret",
       },
       roles: {
         curator: "Kurator",
@@ -10141,6 +10137,7 @@ export default {
           "Kasseringen venter på godkjenning fra deg",
         deaccessionRejected: "Kassering avvist",
         objectMoveApproved: "Flytting av objekt godkjent",
+        transferDeclined: "Overføring avslått",
         incomingTransferRejected: "Innkommende overføring avvist",
         objectMoveRejected: "Flytting av objekt avvist",
         objectMoveCancelled: "Flytting av objekt avbrutt",
@@ -10215,6 +10212,11 @@ export default {
           "Forespørsel {number} gjelder bruk av et bilde av objektet {object}.",
         objectMoveExecuted:
           "Forespørselen din om å flytte objektet er godkjent og gjennomført.",
+        transferDeclined: "{organization} avslo overføringen av {title}.",
+        transferDeclinedWithReason:
+          "{organization} avslo overføringen av {title}. Begrunnelse: {reason}",
+        objectMoveRejected:
+          "Forespørselen din om å flytte objektet ble avvist.",
         objectMoveCancelled:
           "Forespørselen din om å flytte objektet ble avbrutt av en administrator i kildeorganisasjonen.",
         onlyActiveObjectsCanMove:
@@ -10741,7 +10743,23 @@ export default {
     },
   },
   moveRequests: {
+    accession: {
+      label: "Aksesjonsnummer",
+      keep: "Behold nåværende nummer ({number})",
+      auto: "Generer et nytt nummer",
+      manual: "Skriv inn et nytt nummer",
+      manualLabel: "Nytt aksesjonsnummer",
+      manualPlaceholder: "Skriv inn det nye aksesjonsnummeret",
+      hint: "Hvis du gir et nytt nummer, beholdes det nåværende under Alternative aksesjonsnumre.",
+      chosenByReceiver: "Velges av mottakende organisasjon ved mottak",
+    },
+    declinedBy: "Avslått av {organization}",
     errors: {
+      accessionNumberTaken:
+        "{number} er allerede i bruk i organisasjonen din. Generer eller skriv inn et nytt nummer.",
+      accessionNumberRequired: "Skriv inn det nye aksesjonsnummeret.",
+      accessionGenerationUnavailable:
+        "Automatiske aksesjonsnumre er ikke satt opp for organisasjonen din. Skriv inn et nytt nummer, eller slå dem på under Preferanser.",
       requestClosed:
         "Denne overføringsforespørselen er allerede avgjort eller avbrutt.",
       outsideHierarchy:

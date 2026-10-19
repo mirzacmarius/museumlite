@@ -23,18 +23,34 @@ type TemplateRow = Record<string, string | number | undefined> & {
 const BATCH_SIZE = 50;
 
 /**
- * Keeps only the template's columns (matched case-insensitively). Required
- * columns are always present so missing values fail on the server as
+ * Keeps only the template's columns (matched case-insensitively). A file
+ * without a required column is refused before any row is sent, since every
+ * row would fail. Empty required values still fail on the server as
  * recorded, correctable rows.
  */
-function toTemplateRows(text: string, template: ImportTemplate) {
+export function toTemplateRows(
+  text: string,
+  template: ImportTemplate,
+  t: ReturnType<typeof useScopedI18n<"settings.data.importJobs">>,
+) {
   const table = parseCsvTable(text);
   if (table.records.length === 0) {
-    throw new Error("No data rows found in CSV");
+    throw new Error(t("noDataRows"));
   }
   const columnIndex = new Map(
     table.headers.map((header, index) => [header.toLowerCase(), index]),
   );
+  const missing = template.requiredFields.filter(
+    (field) => !columnIndex.has(field.toLowerCase()),
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      t("missingColumns", {
+        missing: missing.join(", "),
+        found: table.headers.filter(Boolean).slice(0, 8).join(", "),
+      }),
+    );
+  }
   const requiredFields = new Set(template.requiredFields);
   return table.records.map((record) => {
     const row: TemplateRow = { rowNumber: record.rowNumber };
@@ -224,7 +240,7 @@ export function useDataImport(
           return;
         }
 
-        const rows = toTemplateRows(text, template);
+        const rows = toTemplateRows(text, template, t);
         const jobId = await startOrResume({
           name: file.name,
           fingerprint,
@@ -264,7 +280,7 @@ export function useDataImport(
         api.imports.getImportTemplateByType,
         { type: job.entityType },
       );
-      const rows = toTemplateRows(await file.text(), jobTemplate);
+      const rows = toTemplateRows(await file.text(), jobTemplate, t);
       reportOutcome(await sendAll(job.entityType, job._id, rows));
     },
     [convex, reportOutcome, sendAll, t],
