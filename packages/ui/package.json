@@ -86,7 +86,8 @@
     "format": "biome format --write .",
     "lint": "biome check . --error-on-warnings",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "spring-easing": "bun scripts/spring-easing.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

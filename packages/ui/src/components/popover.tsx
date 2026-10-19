@@ -2,26 +2,16 @@
 
 import { mergeProps } from "@base-ui/react/merge-props";
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
-import {
-  AnimatePresence,
-  domAnimation,
-  LazyMotion,
-  m,
-  type Transition,
-} from "framer-motion";
+import { AnimatePresence, domAnimation, LazyMotion, m } from "framer-motion";
 import * as React from "react";
 import { cn } from "../utils";
 import { useDialogContentElement } from "./dialog";
+import { SPRING } from "./motion";
 
 // Animate UI's Base UI popover motion (https://animate-ui.com/docs/primitives/base-ui/popover):
 // the popup grows from 0.8 and fades in from its trigger on a spring, and plays
 // the same motion in reverse before it unmounts. Under reduced motion,
 // MotionConfig keeps only the fade.
-const POPOVER_TRANSITION: Transition = {
-  type: "spring",
-  stiffness: 400,
-  damping: 29,
-};
 const HIDDEN = { opacity: 0, scale: 0.8 };
 const SHOWN = { opacity: 1, scale: 1 };
 
@@ -187,7 +177,7 @@ function PopoverContent({
                     initial={HIDDEN}
                     animate={SHOWN}
                     exit={HIDDEN}
-                    transition={POPOVER_TRANSITION}
+                    transition={SPRING}
                   />
                 }
                 {...props}
