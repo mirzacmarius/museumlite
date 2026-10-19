@@ -42,7 +42,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   ],
   title: ["tittel"],
   alternativeTitle: ["alternativ tittel"],
-  creator: ["skaper", "kunstner", "produsent"],
+  creator: ["skaper/kunstner", "skaper", "kunstner", "produsent"],
   objectType: ["objekttype"],
   objectName: ["objektnavn", "gjenstandsnavn"],
   culture: ["kultur"],
@@ -55,7 +55,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   condition: ["tilstand"],
   provenance: ["proveniens"],
   location: ["plassering"],
-  collectionGroup: ["samlingsgruppe", "samling"],
+  collectionGroup: ["samlingsgruppe"],
 };
 
 /**
@@ -81,10 +81,16 @@ export function toTemplateRows(
   });
   const columnIndex = new Map<string, number>();
   for (const field of template.headers) {
-    const name = [field.toLowerCase(), ...(COLUMN_ALIASES[field] ?? [])].find(
-      (candidate) => headerIndex.has(candidate),
-    );
-    if (name !== undefined) columnIndex.set(field, headerIndex.get(name) ?? 0);
+    for (const name of [
+      field.toLowerCase(),
+      ...(COLUMN_ALIASES[field] ?? []),
+    ]) {
+      const index = headerIndex.get(name);
+      if (index !== undefined) {
+        columnIndex.set(field, index);
+        break;
+      }
+    }
   }
   const missing = template.requiredFields.filter(
     (field) => !columnIndex.has(field),
