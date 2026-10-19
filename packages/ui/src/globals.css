@@ -181,6 +181,21 @@
   color: var(--primary-foreground);
 }
 
+/*
+ * Under reduced motion, tw-animate enter and exit animations keep only their
+ * fade. Unlayered, so it beats the zoom and slide utilities in @layer utilities.
+ */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    --tw-enter-scale: 1;
+    --tw-exit-scale: 1;
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-x: 0;
+    --tw-exit-translate-y: 0;
+  }
+}
+
 .hover-trigger .hover-target {
   opacity: 0;
   transform: translateY(4px);
