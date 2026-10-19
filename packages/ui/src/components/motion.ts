@@ -22,3 +22,10 @@ export const SPRING_SMOOTH = {
   damping: 40,
   mass: 1,
 } as const satisfies Transition;
+
+/**
+ * A menu or card that opens on `data-state`: it springs out of its trigger
+ * and leaves quickly. Pair it with the primitive's transform origin.
+ */
+export const FLOATING_MOTION =
+  "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-80 data-[state=open]:ease-spring data-[state=open]:duration-spring data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-80 data-[state=closed]:ease-in data-[state=closed]:duration-150";
