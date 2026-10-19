@@ -58,7 +58,9 @@ test("a closed popover animates out, then leaves the page and hands focus back t
   );
   const trigger = screen.getByRole("button", { name: "Filters" });
   await user.click(trigger);
-  screen.getByText("Only on display");
+  // Closing before the first frame has nothing to animate back from.
+  const popup = screen.getByText("Only on display");
+  await waitFor(() => expect(Number(popup.style.opacity)).toBeGreaterThan(0));
 
   await user.keyboard("{Escape}");
 
