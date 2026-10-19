@@ -143,9 +143,9 @@ export function SearchAutocomplete({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        className="w-[var(--anchor-width)] p-0"
         align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        initialFocus={false}
         id="search-suggestions"
       >
         <div className="max-h-[300px] overflow-y-auto">

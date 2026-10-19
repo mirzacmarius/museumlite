@@ -162,7 +162,7 @@ export function ObjectFiltersDropdown({
         sideOffset={4}
         collisionPadding={12}
         aria-label={t("filters.title")}
-        className="flex max-h-[var(--radix-popover-content-available-height)] w-80 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0"
+        className="flex max-h-[var(--available-height)] w-80 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0"
       >
         <div className="min-h-0 overflow-y-auto overscroll-contain">
           <fieldset

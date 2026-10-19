@@ -89,6 +89,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
     "@diceui/tags-input": "^0.7.2",
     "@headless-tree/core": "^1.6.2",
     "@radix-ui/react-accordion": "^1.2.12",

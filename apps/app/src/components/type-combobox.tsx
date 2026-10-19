@@ -247,9 +247,9 @@ export function TypeCombobox({
           </div>
         </PopoverTrigger>
         <PopoverContent
-          className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0"
+          className="w-[var(--anchor-width)] max-w-[calc(100vw-2rem)] p-0"
           align="start"
-          onOpenAutoFocus={(event) => event.preventDefault()}
+          initialFocus={false}
         >
           <Command shouldFilter={false}>
             <TypeComboboxListContent

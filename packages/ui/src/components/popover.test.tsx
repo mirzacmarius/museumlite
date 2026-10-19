@@ -66,3 +66,17 @@ test("a closed popover animates out, then leaves the page and hands focus back t
   await waitFor(() => expect(screen.queryByText("Only on display")).toBeNull());
   expect(document.activeElement).toBe(trigger);
 });
+
+test("Escape in a picker inside a dialog closes the picker and keeps the dialog open", async () => {
+  const user = userEvent.setup();
+  render(<DialogWithPicker />);
+  await user.click(screen.getByRole("button", { name: "Condition" }));
+  screen.getByRole("listbox", { name: "Conditions" });
+
+  await user.keyboard("{Escape}");
+
+  await waitFor(() =>
+    expect(screen.queryByRole("listbox", { name: "Conditions" })).toBeNull(),
+  );
+  screen.getByRole("dialog", { name: "Set condition" });
+});

@@ -192,7 +192,7 @@ export function ActivityFilters({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <Popover open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger asChild nativeButton={false}>
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
