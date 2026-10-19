@@ -235,6 +235,13 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
+/* Colors ease as usual; the press scale settles on the spring. */
+@utility transition-press {
+  transition:
+    all 150ms ease,
+    scale var(--transition-duration-spring) var(--ease-spring);
+}
+
 @layer utilities {
   .card-elevated {
     @apply rounded-xl border border-border bg-card shadow-lg;
