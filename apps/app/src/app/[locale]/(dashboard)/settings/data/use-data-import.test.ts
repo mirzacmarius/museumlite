@@ -25,12 +25,35 @@ test("a semicolon-separated export from a Norwegian spreadsheet imports by colum
   ]);
 });
 
-test("a file without a required column is refused before any row is sent", () => {
-  expect(() =>
+test("a Norwegian catalogue export imports by its own column names", () => {
+  expect(
     toTemplateRows(
-      "Inventarnr;Tittel\nFM-1;Vase\n",
+      "Tittel;Id;Sist endret;Id;Plassering\nKlubbe : Sandsten;10647;22.11.2016;99;Magasin 2\n",
       OBJECTS,
       translate as never,
     ),
-  ).toThrow('missingColumns:{"missing":"title","found":"Inventarnr, Tittel"}');
+  ).toEqual([
+    {
+      rowNumber: 2,
+      accessionNumber: "10647",
+      title: "Klubbe : Sandsten",
+      location: "Magasin 2",
+    },
+  ]);
+});
+
+test("the template's own column name wins over a Norwegian alias", () => {
+  expect(
+    toTemplateRows(
+      "Id;accessionNumber;title\n7;FM-1;Vase\n",
+      OBJECTS,
+      translate as never,
+    ),
+  ).toEqual([{ rowNumber: 2, accessionNumber: "FM-1", title: "Vase" }]);
+});
+
+test("a file without a required column is refused before any row is sent", () => {
+  expect(() =>
+    toTemplateRows("Navn;Dato\nVase;1850\n", OBJECTS, translate as never),
+  ).toThrow('missingColumns:{"missing":"title","found":"Navn, Dato"}');
 });
