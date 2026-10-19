@@ -1,5 +1,6 @@
 "use client";
 
+import { SlidingNumber } from "@v1/ui/sliding-number";
 import { cn } from "@v1/ui/utils";
 import { parseAsString, useQueryState } from "nuqs";
 import { useScopedI18n } from "@/locales/client";
@@ -30,25 +31,28 @@ export function AccessionsStats({ stats }: AccessionsStatsProps) {
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {t("stats.pending")}
         </span>
-        <span className="text-2xl font-semibold tracking-tight text-foreground">
-          {stats.pending}
-        </span>
+        <SlidingNumber
+          value={stats.pending}
+          className="text-2xl font-semibold tracking-tight text-foreground"
+        />
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {t("stats.approved")}
         </span>
-        <span className="text-2xl font-semibold tracking-tight text-foreground">
-          {stats.approved}
-        </span>
+        <SlidingNumber
+          value={stats.approved}
+          className="text-2xl font-semibold tracking-tight text-foreground"
+        />
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {t("status.rejected")}
         </span>
-        <span className="text-2xl font-semibold tracking-tight text-foreground">
-          {stats.rejected}
-        </span>
+        <SlidingNumber
+          value={stats.rejected}
+          className="text-2xl font-semibold tracking-tight text-foreground"
+        />
       </div>
       <button
         type="button"
@@ -64,9 +68,10 @@ export function AccessionsStats({ stats }: AccessionsStatsProps) {
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground underline decoration-dotted underline-offset-4">
           {tReview("withdrawn")}
         </span>
-        <span className="text-2xl font-semibold tracking-tight text-foreground">
-          {stats.withdrawn}
-        </span>
+        <SlidingNumber
+          value={stats.withdrawn}
+          className="text-2xl font-semibold tracking-tight text-foreground"
+        />
       </button>
     </div>
   );
