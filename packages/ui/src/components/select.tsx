@@ -11,6 +11,11 @@ import type * as React from "react";
 
 import { cn } from "../utils";
 import { FLOATING_MOTION } from "./motion";
+import {
+  Highlight,
+  HighlightScope,
+  useFocusHighlight,
+} from "./motion-highlight";
 
 const Select = SelectPrimitive.Root;
 
@@ -96,7 +101,7 @@ const SelectContent = ({
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+        "relative isolate z-50 max-h-96 min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
         FLOATING_MOTION,
         // Long options wrap inside the screen instead of running off it.
         position === "popper" &&
@@ -114,7 +119,7 @@ const SelectContent = ({
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
         )}
       >
-        {children}
+        <HighlightScope>{children}</HighlightScope>
       </SelectPrimitive.Viewport>
       <SelectScrollDownButton />
     </SelectPrimitive.Content>
@@ -140,25 +145,35 @@ const SelectItem = ({
   className,
   children,
   ref,
+  onFocus,
+  onBlur,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> &
-  React.RefAttributes<React.ElementRef<typeof SelectPrimitive.Item>>) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className,
-    )}
-    {...props}
-  >
-    <span className="absolute right-2 flex size-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
-        <CheckIcon className="size-4" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-  </SelectPrimitive.Item>
-);
+  React.RefAttributes<React.ElementRef<typeof SelectPrimitive.Item>>) => {
+  const { highlighted, ...focusHandlers } = useFocusHighlight({
+    onFocus,
+    onBlur,
+  });
+  return (
+    <SelectPrimitive.Item
+      ref={ref}
+      className={cn(
+        "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className,
+      )}
+      {...props}
+      {...focusHandlers}
+    >
+      {highlighted && <Highlight className="bg-accent" />}
+      <span className="absolute right-2 flex size-3.5 items-center justify-center">
+        <SelectPrimitive.ItemIndicator>
+          <CheckIcon className="size-4" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    </SelectPrimitive.Item>
+  );
+};
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
 const SelectSeparator = ({

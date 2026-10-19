@@ -161,11 +161,7 @@ function WorkflowStepEditor({
             </SelectTrigger>
             <SelectContent className="border-border bg-background text-foreground">
               {roles?.map((role) => (
-                <SelectItem
-                  key={role._id}
-                  value={role._id}
-                  className="focus:bg-muted focus:text-foreground"
-                >
+                <SelectItem key={role._id} value={role._id}>
                   {role.name}
                 </SelectItem>
               ))}

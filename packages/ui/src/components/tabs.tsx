@@ -1,20 +1,11 @@
 "use client";
 
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { LazyMotion, m } from "framer-motion";
 import * as React from "react";
 import { cn } from "../utils";
-import { SPRING } from "./motion";
+import { Highlight, HighlightScope } from "./motion-highlight";
 
-const loadLayoutFeatures = () =>
-  import("./motion-layout-features").then((mod) => mod.domMax);
-
-interface TabsIndicator {
-  activeValue: string | undefined;
-  layoutId: string;
-}
-
-const TabsIndicatorContext = React.createContext<TabsIndicator | null>(null);
+const TabsValueContext = React.createContext<string | undefined>(undefined);
 
 /**
  * Radix tabs whose active indicator slides between triggers on the spring.
@@ -30,11 +21,6 @@ function Tabs({
   const [uncontrolledValue, setUncontrolledValue] =
     React.useState(defaultValue);
   const activeValue = value ?? uncontrolledValue;
-  const layoutId = React.useId();
-  const indicator = React.useMemo(
-    () => ({ activeValue, layoutId }),
-    [activeValue, layoutId],
-  );
   const handleValueChange = React.useCallback(
     (nextValue: string) => {
       setUncontrolledValue(nextValue);
@@ -43,15 +29,15 @@ function Tabs({
     [onValueChange],
   );
   return (
-    <TabsIndicatorContext value={indicator}>
-      <LazyMotion features={loadLayoutFeatures} strict>
+    <TabsValueContext value={activeValue}>
+      <HighlightScope>
         <TabsPrimitive.Root
           value={activeValue}
           onValueChange={handleValueChange}
           {...props}
         />
-      </LazyMotion>
-    </TabsIndicatorContext>
+      </HighlightScope>
+    </TabsValueContext>
   );
 }
 
@@ -84,7 +70,7 @@ function TabsTrigger({
 }: React.ComponentPropsWithRef<typeof TabsPrimitive.Trigger> & {
   indicatorClassName?: string;
 }) {
-  const indicator = React.useContext(TabsIndicatorContext);
+  const activeValue = React.useContext(TabsValueContext);
   return (
     <TabsPrimitive.Trigger
       ref={ref}
@@ -95,14 +81,10 @@ function TabsTrigger({
       )}
       {...props}
     >
-      {indicator?.activeValue === value && (
-        <m.span
-          aria-hidden
-          data-slot="tabs-indicator"
-          layoutId={indicator.layoutId}
-          transition={SPRING}
+      {activeValue === value && (
+        <Highlight
           className={cn(
-            "absolute inset-0 -z-10 rounded-[inherit] bg-background shadow-sm inset-ring inset-ring-input dark:inset-ring-0",
+            "bg-background shadow-sm inset-ring inset-ring-input dark:inset-ring-0",
             indicatorClassName,
           )}
         />

@@ -6,7 +6,9 @@ import { expect, test } from "vitest";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 
 function indicatorTab() {
-  const indicators = document.querySelectorAll("[data-slot=tabs-indicator]");
+  const indicators = document.querySelectorAll(
+    "[role=tab] [data-slot=highlight]",
+  );
   expect(indicators).toHaveLength(1);
   return indicators[0]?.closest("[role=tab]")?.textContent;
 }
