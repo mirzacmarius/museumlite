@@ -7,9 +7,10 @@ const DIGITS = "0123456789";
 const DIGIT_STRIP = ["9", ...DIGITS, "0"].join("\n");
 
 /**
- * A number whose digits roll on the spring to each new value, Animate UI
- * style: from 0 when a digit first appears, then from the old digit only
- * when the value changes. The value itself stays in the DOM as transparent
+ * A number whose digits roll on the spring from the old digit to the new
+ * one when the value changes, Animate UI style. It appears at its value,
+ * without rolling, so a page's stats stay still as it loads. The value
+ * itself stays in the DOM as transparent
  * text, so it sets the layout and is what tests, selection and screen readers
  * read. The rolling digits over it are drawn by CSS from `data-strip` and
  * hidden from assistive technology. Separators and other characters stand
@@ -28,8 +29,13 @@ function SlidingNumber({
     <span className={cn("tabular-nums", className)}>
       {/* Hugs the text, so the digits line up with it however it is aligned. */}
       <span className="relative inline-block whitespace-nowrap">
-        <span className="text-transparent">{text}</span>
-        <span aria-hidden className="absolute inset-0 flex">
+        <span className="text-transparent forced-colors:text-[CanvasText]">
+          {text}
+        </span>
+        <span
+          aria-hidden
+          className="absolute inset-0 flex forced-colors:hidden"
+        >
           {characters.map((character, index) => {
             const digit = DIGITS.indexOf(character);
             // Keyed from the right, so the ones column stays the ones column as
@@ -47,7 +53,7 @@ function SlidingNumber({
                       "--line": digit < 0 ? 0 : digit + 1,
                     } as React.CSSProperties
                   }
-                  className="block whitespace-pre transition-[translate] duration-spring ease-spring [translate:0_calc(var(--line)*-100%/12)] before:content-[attr(data-strip)] starting:[translate:0_calc(min(var(--line),1)*-100%/12)] motion-reduce:transition-none"
+                  className="block whitespace-pre transition-[translate] duration-spring ease-spring [translate:0_calc(var(--line)*-100%/12)] before:content-[attr(data-strip)] motion-reduce:transition-none"
                 />
               </span>
             );

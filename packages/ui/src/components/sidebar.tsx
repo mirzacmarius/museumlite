@@ -444,7 +444,12 @@ SidebarContent.displayName = "SidebarContent";
 const ACTIVE_ITEM_SELECTOR =
   "[data-sidebar=menu-button][data-active=true], [data-sidebar=menu-sub-button][data-active=true]";
 
-type Box = { x: number; y: number; width: number; height: number };
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /**
  * Whether the reader sees all of an active item: it is displayed, its group
@@ -467,7 +472,10 @@ function isFullyShown(item: HTMLElement, container: HTMLElement) {
   return true;
 }
 
-type ActiveItem = { element: HTMLElement; box: Box };
+interface ActiveItem {
+  element: HTMLElement;
+  box: Box;
+}
 
 function findActiveItem(container: HTMLElement): ActiveItem | null {
   const items = container.querySelectorAll<HTMLElement>(ACTIVE_ITEM_SELECTOR);
