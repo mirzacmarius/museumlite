@@ -2,13 +2,7 @@
 
 import { notFound } from "next/navigation";
 import { createI18nClient } from "next-international/client";
-import {
-  createContext,
-  type ReactNode,
-  Suspense,
-  use,
-  useContext,
-} from "react";
+import { createContext, type ReactNode, Suspense, use } from "react";
 import {
   createTranslations,
   type Dictionary,
@@ -118,7 +112,7 @@ export function I18nProviderClient({
 }
 
 function useTranslations() {
-  const translations = useContext(TranslationsContext);
+  const translations = use(TranslationsContext);
   if (!translations) {
     throw new Error("Translations are used outside I18nProviderClient");
   }
