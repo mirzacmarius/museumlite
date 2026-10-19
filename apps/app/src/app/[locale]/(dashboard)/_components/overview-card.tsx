@@ -15,8 +15,6 @@ export const OVERVIEW_CARD_GRID_STYLE = {
 } satisfies CSSProperties;
 
 export interface OverviewCardProps {
-  className?: string;
-  style?: CSSProperties;
   href: string;
   title: string;
   value: string;
@@ -25,8 +23,6 @@ export interface OverviewCardProps {
 }
 
 export function OverviewCard({
-  className,
-  style,
   href,
   title,
   value,
@@ -39,9 +35,7 @@ export function OverviewCard({
       className={cn(
         CARD_CLASS_NAME,
         "flex-col justify-between gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        className,
       )}
-      style={style}
     >
       <span className="flex min-h-8 min-w-0 items-start gap-1.5">
         <Icon

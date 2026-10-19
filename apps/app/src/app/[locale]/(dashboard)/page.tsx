@@ -3,7 +3,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useStaggeredEntry } from "@v1/ui/hooks";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import {
@@ -155,7 +154,6 @@ export default function DashboardPage() {
   const t = useScopedI18n("dashboard");
   const tRoot = useI18n();
   const kpi = useScopedI18n("kpi");
-  const entry = useStaggeredEntry();
 
   const hasAnalyticsPermission = usePermission(
     currentOrganizationId,
@@ -308,12 +306,8 @@ export default function DashboardPage() {
             className="flex flex-col gap-2"
           >
             <div className="grid" style={OVERVIEW_CARD_GRID_STYLE}>
-              {metrics.map((metric, index) => (
-                <OverviewCard
-                  key={metric.href}
-                  {...metric}
-                  {...entry(metric.href, index)}
-                />
+              {metrics.map((metric) => (
+                <OverviewCard key={metric.href} {...metric} />
               ))}
             </div>
             {analyticsData ? (

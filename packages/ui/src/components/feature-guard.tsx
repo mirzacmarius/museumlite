@@ -54,7 +54,7 @@ export function FeatureGuard({
   return (
     <div
       role="status"
-      className="flex flex-col items-center justify-center min-h-[400px] w-full border border-border rounded-lg bg-muted/30 p-8 text-center animate-in fade-in duration-500"
+      className="flex flex-col items-center justify-center min-h-[400px] w-full border border-border rounded-lg bg-muted/30 p-8 text-center"
     >
       <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-4 border border-border">
         <Lock aria-hidden="true" className="size-6 text-muted-foreground" />

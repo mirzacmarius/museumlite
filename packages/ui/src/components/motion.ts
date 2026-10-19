@@ -36,10 +36,3 @@ export const DIALOG_MOTION =
 
 export const OVERLAY_MOTION =
   "duration-200 ease-out data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0";
-
-/**
- * A list item fades and rises in. Only the `from` frame fills, so after the
- * animation the item's own transform and opacity apply again.
- */
-export const ENTRY_MOTION =
-  "animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out fill-mode-backwards";

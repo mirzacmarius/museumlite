@@ -3,9 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useStaggeredEntry } from "@v1/ui/hooks";
 import { ScrollArea } from "@v1/ui/scroll-area";
-import { cn } from "@v1/ui/utils";
 import { usePaginatedQuery } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import {
@@ -117,7 +115,6 @@ export function KanbanColumn({
     { initialNumItems: pageSize },
   );
   const isLoadingFirstPage = status === "LoadingFirstPage";
-  const entry = useStaggeredEntry();
   const countLabel = search
     ? t("kanban.matchesShown", { loaded: results.length })
     : total === undefined
@@ -170,8 +167,7 @@ export function KanbanColumn({
                 ))}
               </RecordLog>
             ) : (
-              results.map((accession, index) => {
-                const enter = entry(accession._id, index);
+              results.map((accession) => {
                 const text = accessionBoardText(
                   accession,
                   t("kanban.unknownSource"),
@@ -184,11 +180,7 @@ export function KanbanColumn({
                       `/accessions/${accession._id}`,
                       returnPath,
                     )}
-                    className={cn(
-                      "group block cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50",
-                      enter.className,
-                    )}
-                    style={enter.style}
+                    className="group block cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50"
                   >
                     <div className="mb-2 flex items-start justify-between">
                       <span className="font-mono text-[10px] text-muted-foreground">

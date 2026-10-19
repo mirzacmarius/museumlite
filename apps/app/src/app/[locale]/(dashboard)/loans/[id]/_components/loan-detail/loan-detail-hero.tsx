@@ -29,7 +29,7 @@ export function LoanDetailHero({
   const tActions = useScopedI18n("loans.actions");
 
   return (
-    <div className="border-b border-border/60 bg-secondary/10 p-4 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:p-8">
+    <div className="border-b border-border/60 bg-secondary/10 p-4 sm:p-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-start sm:gap-8">
         <div className="relative shrink-0">
           <div className="relative flex size-16 items-center justify-center overflow-hidden rounded-xl border border-border bg-background p-2 shadow-2xl sm:size-32">
