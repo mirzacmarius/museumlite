@@ -57,6 +57,7 @@
     "./sidebar": "./src/components/sidebar.tsx",
     "./skeleton": "./src/components/skeleton.tsx",
     "./skeleton-variants": "./src/components/skeleton-variants.tsx",
+    "./sliding-number": "./src/components/sliding-number.tsx",
     "./status-badge": "./src/components/status-badge.tsx",
     "./sticky-form-footer": "./src/components/sticky-form-footer.tsx",
     "./hooks": "./src/hooks/index.ts",
