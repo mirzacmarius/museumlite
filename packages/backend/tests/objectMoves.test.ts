@@ -2249,6 +2249,144 @@ describe("transfer decisions follow how the request was allowed", () => {
   });
 });
 
+describe("the receiving organization decides", () => {
+  async function awaitingAcceptance(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        reason: "Rotation",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    return requestId;
+  }
+
+  test("declining without notes keeps the object with the sender, frees it to move again and tells the sender", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await awaitingAcceptance(fixture);
+
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
+
+    const [request, collection, requesterNotifications, adminNotifications] =
+      await Promise.all([
+        t.run((ctx) => ctx.db.get(requestId)),
+        t.run((ctx) => ctx.db.get(fixture.collectionId)),
+        notificationsFor(t, fixture.requesterId),
+        notificationsFor(t, fixture.adminId),
+      ]);
+    expect(request?.status).toBe("rejected");
+    expect(request?.targetReviewedBy).toBe(fixture.targetAdminId);
+    expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
+    const deaccession = await t.run((ctx) =>
+      ctx.db.get(request!.deaccessionId!),
+    );
+    expect(deaccession?.status).toBe("rejected");
+    for (const notifications of [requesterNotifications, adminNotifications]) {
+      expect(
+        notifications.find((entry) => entry.title === "Transfer Declined")
+          ?.message,
+      ).toBe("Target Museum declined the transfer of Move Test Object.");
+    }
+
+    const eligibility = await fixture.requester.query(
+      api.objectMoves.getEligibility,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+      },
+    );
+    expect(eligibility.blockers).toEqual([]);
+  });
+
+  test("the decline reason reaches the sender", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await awaitingAcceptance(fixture);
+
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, {
+      requestId,
+      reviewNotes: "No storage space this year",
+    });
+
+    const notifications = await notificationsFor(t, fixture.requesterId);
+    expect(
+      notifications.find((entry) => entry.title === "Transfer Declined")
+        ?.message,
+    ).toBe(
+      "Target Museum declined the transfer of Move Test Object. Reason: No storage space this year",
+    );
+  });
+
+  test("the receiver assigns a new accession number on acceptance and the old one becomes an alternate", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await awaitingAcceptance(fixture);
+    expect((await t.run((ctx) => ctx.db.get(requestId)))?.accessionMode).toBe(
+      "keep",
+    );
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+      accessionMode: "manual",
+      requestedAccessionNumber: " TGT-777 ",
+    });
+
+    const [request, collection] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      t.run((ctx) => ctx.db.get(fixture.collectionId)),
+    ]);
+    expect(collection?.accessionNumber).toBe("TGT-777");
+    expect(collection?.alternateAccessionNumbers).toEqual(["SRC-001"]);
+    expect(request?.accessionMode).toBe("manual");
+    expect(request?.finalAccessionNumber).toBe("TGT-777");
+  });
+
+  test("the receiver's accession choice is refused with a code it can fix", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await awaitingAcceptance(fixture);
+    await createCollection(t, {
+      organizationId: fixture.targetOrganizationId,
+      userId: fixture.targetAdminId,
+      accessionNumber: "SRC-001",
+    });
+    const accept = (
+      accessionMode: "keep" | "auto" | "manual",
+      requestedAccessionNumber?: string,
+    ) =>
+      refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: fixture.targetLocationId,
+          accessionMode,
+          requestedAccessionNumber,
+        }),
+      );
+
+    expect(await accept("keep")).toEqual({
+      code: "ACCESSION_NUMBER_TAKEN",
+      message:
+        'Accession number "SRC-001" already exists in the destination organization',
+      accessionNumber: "SRC-001",
+    });
+    expect((await accept("manual", "  "))?.code).toBe(
+      "ACCESSION_NUMBER_REQUIRED",
+    );
+    expect((await accept("auto"))?.code).toBe(
+      "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
+    );
+    expect((await t.run((ctx) => ctx.db.get(requestId)))?.status).toBe(
+      "awaiting_acceptance",
+    );
+  });
+});
+
 describe("organization transfer registry", () => {
   test("backfillOrganizationTransferFields assigns ORG account numbers", async () => {
     const t = convexTest(schema, modules);

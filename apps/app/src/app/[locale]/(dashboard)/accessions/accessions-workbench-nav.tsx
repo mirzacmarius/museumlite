@@ -10,7 +10,7 @@ export type AccessionsWorkbenchView = "overview" | "entries" | "transfers";
 type AccessionsWorkbenchNavProps = {
   activeView: AccessionsWorkbenchView;
   pendingAccessions: number | string;
-  pendingTransfers: number | string;
+  openTransfers: number | string;
 };
 
 interface WorkbenchNavItem {
@@ -25,7 +25,7 @@ interface WorkbenchNavItem {
 export function AccessionsWorkbenchNav({
   activeView,
   pendingAccessions,
-  pendingTransfers,
+  openTransfers,
 }: AccessionsWorkbenchNavProps) {
   const tRoot = useI18n();
   const navItems: WorkbenchNavItem[] = [
@@ -54,7 +54,7 @@ export function AccessionsWorkbenchNav({
         "untranslatedRecords.accessions.workbench.transfersDescription",
       ),
       icon: ArrowRightLeft,
-      metric: pendingTransfers,
+      metric: openTransfers,
     },
   ];
 

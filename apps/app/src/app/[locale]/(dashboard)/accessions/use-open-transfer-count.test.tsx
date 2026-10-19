@@ -6,7 +6,7 @@ import { type FunctionReturnType, getFunctionName } from "convex/server";
 import { beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
-import { usePendingTransferCount } from "./use-pending-transfer-count";
+import { useOpenTransferCount } from "./use-open-transfer-count";
 
 type TransferRequest = FunctionReturnType<
   typeof api.objectMoves.listForOrganization
@@ -64,7 +64,7 @@ function AccessionsView() {
     <AccessionsWorkbenchNav
       activeView="overview"
       pendingAccessions={0}
-      pendingTransfers={usePendingTransferCount(ORGANIZATION)}
+      openTransfers={useOpenTransferCount(ORGANIZATION)}
     />
   );
 }
@@ -79,7 +79,7 @@ beforeEach(() => {
   state.queried = [];
 });
 
-test("the Transfers tab counts a transfer waiting for approval, as the board's Pending column does", async () => {
+test("the Transfers tab counts transfers waiting for approval and incoming ones waiting for acceptance, as the board's Pending and Incoming columns do", async () => {
   state.transfers = [
     transfer(1, "pending_source_approval", "outgoing"),
     transfer(2, "awaiting_acceptance", "incoming"),
@@ -91,7 +91,7 @@ test("the Transfers tab counts a transfer waiting for approval, as the board's P
 
   await renderOnPage(<AccessionsView />, "/en/accessions");
 
-  expect(within(transfersTab()).getByText("1")).toBeTruthy();
+  expect(within(transfersTab()).getByText("2")).toBeTruthy();
   expect(state.queried.length).toBeGreaterThan(0);
   for (const args of state.queried) {
     expect(args).toEqual({ organizationId: ORGANIZATION });

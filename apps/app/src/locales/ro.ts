@@ -861,6 +861,9 @@ export default {
         importFailed: "Importul a eșuat.",
         correctionUnsupported:
           "Acest import nu poate fi corectat aici. Pornește un import nou.",
+        noDataRows: "Fișierul nu are rânduri de date.",
+        missingColumns:
+          "Fișierul nu are coloana {missing}, deci niciun rând nu poate fi importat. Folosește numele coloanelor din șablon. Coloane găsite: {found}.",
         uploadCorrectedFile: "Încarcă fișierul corectat",
         correctionFailed: "Fișierul corectat nu a putut fi importat.",
 
@@ -7836,10 +7839,7 @@ export default {
           rejected: "Niciun transfer respins nu corespunde căutării.",
           cancelled: "Niciun transfer anulat nu corespunde căutării.",
         },
-        keepAccession: "Păstrați numărul actual de accesiune",
         newAccession: "Generați un număr nou de accesiune",
-        requestedAccession: "Număr de accesiune solicitat: {number}",
-        manualAccession: "A fost solicitat un număr de accesiune manual",
       },
       import: {
         fields: {
@@ -8352,16 +8352,12 @@ export default {
         failedApprove: "Aprobarea cererii de transfer a eșuat.",
         moveAccepted: "Transferul a fost acceptat și finalizat.",
         failedAccept: "Acceptarea cererii de transfer a eșuat.",
-        rejectNotesRequired:
-          "Sunt necesare note de evaluare pentru a respinge o cerere de transfer.",
         moveRejected: "Cererea de transfer a fost respinsă.",
         failedReject: "Respingerea cererii de transfer a eșuat.",
         moveCancelled: "Cererea de transfer a fost anulată.",
         failedCancel: "Anularea cererii de transfer a eșuat.",
         unknownUser: "Utilizator necunoscut",
         to: "la",
-        numberOnApproval: "Se generează la aprobarea cererii",
-        useRequestedAccessionNumber: "Folosește numărul de accesiune solicitat",
       },
       roles: {
         curator: "Curator",
@@ -10231,6 +10227,7 @@ export default {
           "Scoaterea din colecție necesită aprobarea ta",
         deaccessionRejected: "Scoatere din colecție respinsă",
         objectMoveApproved: "Transferul obiectului a fost aprobat",
+        transferDeclined: "Transfer refuzat",
         incomingTransferRejected: "Transferul primit a fost respins",
         objectMoveRejected: "Transferul obiectului a fost respins",
         objectMoveCancelled: "Transferul obiectului a fost anulat",
@@ -10310,6 +10307,11 @@ export default {
           "Cererea {number} solicită folosirea unei imagini a obiectului {object}.",
         objectMoveExecuted:
           "Solicitarea ta de transfer al obiectului a fost aprobată și executată.",
+        transferDeclined: "{organization} a refuzat transferul pentru {title}.",
+        transferDeclinedWithReason:
+          "{organization} a refuzat transferul pentru {title}. Motiv: {reason}",
+        objectMoveRejected:
+          "Cererea ta de transfer al obiectului a fost respinsă.",
         objectMoveCancelled:
           "Solicitarea ta de transfer al obiectului a fost anulată de un administrator al organizației sursă.",
         onlyActiveObjectsCanMove:
@@ -10854,7 +10856,23 @@ export default {
     },
   },
   moveRequests: {
+    accession: {
+      label: "Număr de inventar",
+      keep: "Păstrează numărul actual ({number})",
+      auto: "Generează un număr nou",
+      manual: "Introdu un număr nou",
+      manualLabel: "Număr de inventar nou",
+      manualPlaceholder: "Introdu noul număr de inventar",
+      hint: "Dacă atribui un număr nou, cel actual se păstrează la Numere alternative de accesiune.",
+      chosenByReceiver: "Ales de organizația destinatară la acceptare",
+    },
+    declinedBy: "Refuzat de {organization}",
     errors: {
+      accessionNumberTaken:
+        "{number} este deja folosit în organizația ta. Generează sau introdu un număr nou.",
+      accessionNumberRequired: "Introdu noul număr de inventar.",
+      accessionGenerationUnavailable:
+        "Numerotarea automată a inventarului nu este configurată pentru organizația ta. Introdu un număr nou sau activeaz-o în Preferințe.",
       requestClosed:
         "Această solicitare de transfer a fost deja soluționată sau anulată.",
       outsideHierarchy:

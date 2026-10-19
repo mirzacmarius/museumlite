@@ -245,3 +245,75 @@ test.each([
   expect(screen.getByText(shown)).toBeTruthy();
   expect(screen.queryByText(hidden)).toBeNull();
 });
+
+test("the receiving organization declines without writing notes", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+
+  await userEvent.click(button("Reject request") as HTMLElement);
+
+  expect(state.mutations["objectMoves:reject"]).toHaveBeenCalledWith({
+    requestId: "move-1",
+    reviewNotes: undefined,
+  });
+  expect(toasts.error).not.toHaveBeenCalled();
+  expect(toasts.success).toHaveBeenCalledWith("Move request rejected.");
+});
+
+test("the receiving organization chooses the accession number when it accepts", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+  expect(
+    screen.getByText("Chosen by the receiving organization when it accepts"),
+  ).toBeTruthy();
+  const choice = screen.getByRole("combobox", { name: "Accession number" });
+  expect(choice.textContent).toBe("Keep the current number (A-1)");
+
+  await userEvent.click(choice);
+  await userEvent.click(
+    await screen.findByRole("option", { name: "Enter a new number" }),
+  );
+  await userEvent.type(
+    screen.getByLabelText("New accession number"),
+    "NORD-2026-7",
+  );
+  await userEvent.click(button("North store") as HTMLElement);
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+
+  expect(state.mutations["objectMoves:accept"]).toHaveBeenCalledWith({
+    requestId: "move-1",
+    targetLocationId: "north-store",
+    reviewNotes: undefined,
+    accessionMode: "manual",
+    requestedAccessionNumber: "NORD-2026-7",
+  });
+});
+
+test("a taken accession number is named back to the receiving organization", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+  state.mutations["objectMoves:accept"]?.mockRejectedValueOnce(
+    objectMoveError(
+      "ACCESSION_NUMBER_TAKEN",
+      'Accession number "A-1" already exists in the destination organization',
+      undefined,
+      "A-1",
+    ),
+  );
+
+  await userEvent.click(button("North store") as HTMLElement);
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+
+  expect(toasts.error).toHaveBeenLastCalledWith(
+    "A-1 is already used in your organization. Generate or enter a new number.",
+  );
+});

@@ -112,8 +112,16 @@ test("rejected transfers are dated and explained by whichever organization rejec
   ).toBeTruthy();
   expect(within(second as HTMLElement).getByText("Sep 4, 2026")).toBeTruthy();
   expect(
-    within(second as HTMLElement).getByTitle("Object 2 · No storage space"),
+    within(second as HTMLElement).getByTitle(
+      "Object 2 · Declined by Museum Nord: No storage space",
+    ),
   ).toBeTruthy();
+});
+
+test("a receiver's decline without notes still says who declined", async () => {
+  await renderColumn("rejected", [transfer(1, { status: "rejected" })]);
+
+  expect(screen.getByTitle("Object 1 · Declined by Museum Nord")).toBeTruthy();
 });
 
 test("the log shows ten transfers and Show more adds the next ten", async () => {
@@ -161,4 +169,7 @@ test("pending transfers keep their cards", async () => {
 
   expect(screen.queryAllByRole("listitem")).toEqual([]);
   expect(screen.getByText("Ola Nordmann")).toBeTruthy();
+  expect(
+    screen.getByText("Chosen by the receiving organization when it accepts"),
+  ).toBeTruthy();
 });

@@ -25,7 +25,6 @@ import {
   submitDeaccession,
 } from "./deaccession-dialog-submit";
 import type {
-  AccessionMode,
   DeaccessionDialogProps,
   RemovalType,
 } from "./deaccession-dialog-types";
@@ -42,9 +41,7 @@ interface DeaccessionDialogState {
   method: "sale" | "donation" | "transfer" | "destruction";
   disposition: string;
   notes: string;
-  accessionMode: AccessionMode;
   targetOrganizationId: Id<"organizations"> | "";
-  manualAccessionNumber: string;
   isSubmitting: boolean;
   error: string | null;
 }
@@ -59,9 +56,7 @@ type DeaccessionDialogAction =
     }
   | { type: "setDisposition"; value: string }
   | { type: "setNotes"; value: string }
-  | { type: "setAccessionMode"; value: AccessionMode }
   | { type: "setTargetOrganizationId"; value: Id<"organizations"> | "" }
-  | { type: "setManualAccessionNumber"; value: string }
   | { type: "setIsSubmitting"; value: boolean }
   | { type: "setError"; value: string | null }
   | { type: "reset" };
@@ -73,9 +68,7 @@ const initialDeaccessionDialogState: DeaccessionDialogState = {
   method: "sale",
   disposition: "",
   notes: "",
-  accessionMode: "keep",
   targetOrganizationId: "",
-  manualAccessionNumber: "",
   isSubmitting: false,
   error: null,
 };
@@ -97,12 +90,8 @@ function deaccessionDialogReducer(
       return { ...state, disposition: action.value };
     case "setNotes":
       return { ...state, notes: action.value };
-    case "setAccessionMode":
-      return { ...state, accessionMode: action.value };
     case "setTargetOrganizationId":
       return { ...state, targetOrganizationId: action.value };
-    case "setManualAccessionNumber":
-      return { ...state, manualAccessionNumber: action.value };
     case "setIsSubmitting":
       return { ...state, isSubmitting: action.value };
     case "setError":
@@ -185,8 +174,6 @@ export function DeaccessionDialog({
         disposition: state.disposition,
         notes: state.notes,
         targetOrganizationId: state.targetOrganizationId,
-        accessionMode: state.accessionMode,
-        manualAccessionNumber: state.manualAccessionNumber,
         moveEligibility,
         translate,
         createDeaccession,
@@ -276,19 +263,11 @@ export function DeaccessionDialog({
             collectionId={collectionId}
             blockers={blockers}
             targetOrganizationId={state.targetOrganizationId}
-            accessionMode={state.accessionMode}
-            manualAccessionNumber={state.manualAccessionNumber}
             reason={state.reason}
             notes={state.notes}
             onBack={() => dispatch({ type: "setRemovalType", value: null })}
             onTargetOrganizationChange={(value) =>
               dispatch({ type: "setTargetOrganizationId", value })
-            }
-            onAccessionModeChange={(value) =>
-              dispatch({ type: "setAccessionMode", value })
-            }
-            onManualAccessionNumberChange={(value) =>
-              dispatch({ type: "setManualAccessionNumber", value })
             }
             onReasonChange={(value) => dispatch({ type: "setReason", value })}
             onNotesChange={(value) => dispatch({ type: "setNotes", value })}
@@ -327,9 +306,7 @@ export function DeaccessionDialog({
                 (state.removalType === "move" &&
                   (!state.targetOrganizationId ||
                     (moveEligibility !== undefined &&
-                      !moveEligibility.isEligible) ||
-                    (state.accessionMode === "manual" &&
-                      !state.manualAccessionNumber.trim())))
+                      !moveEligibility.isEligible)))
               }
               variant="default"
             >

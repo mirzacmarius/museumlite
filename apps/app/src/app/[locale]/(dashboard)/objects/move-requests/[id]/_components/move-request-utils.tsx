@@ -46,21 +46,3 @@ export function MoveRequestStatusBadge({ status }: { status: string }) {
       return <Badge variant="secondary">{status}</Badge>;
   }
 }
-
-export function formatMoveRequestAccessionMode(
-  mode: string,
-  tRoot: (key: string) => string,
-) {
-  switch (mode) {
-    case "keep":
-      return tRoot("untranslatedComponents.labels.keepCurrentAccessionNumber");
-    case "auto":
-      return tRoot("untranslatedComponents.labels.generateANewAccessionNumber");
-    case "manual":
-      return tRoot(
-        "untranslatedRecords.objects.transfer.useRequestedAccessionNumber",
-      );
-    default:
-      return mode;
-  }
-}

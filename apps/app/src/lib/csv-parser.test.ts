@@ -19,6 +19,22 @@ describe("parseCsvRecords", () => {
     ]);
   });
 
+  test("reads semicolon and tab separated files by their header row", () => {
+    expect(
+      parseCsvRecords('title;dimensions;notes\nVase;"12,5 cm";"a; b"\n').map(
+        (record) => record.values,
+      ),
+    ).toEqual([
+      ["title", "dimensions", "notes"],
+      ["Vase", "12,5 cm", "a; b"],
+    ]);
+    expect(parseCsvRecords("title\tcreator\nVase\tAnon")[1]?.values).toEqual([
+      "Vase",
+      "Anon",
+    ]);
+    expect(parseCsvRecords('"a;b",c\n1,2')[0]?.values).toEqual(["a;b", "c"]);
+  });
+
   test("strips a byte-order mark and rejects an unclosed quote", () => {
     expect(parseCsvRecords("﻿a,b")[0]?.values).toEqual(["a", "b"]);
     expect(() => parseCsvRecords('a\n"open')).toThrow("line 2");

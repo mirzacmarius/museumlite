@@ -571,6 +571,9 @@ export default {
         importFailed: "Error en la importación.",
         correctionUnsupported:
           "Esta importación no se puede corregir aquí. Inicia una nueva importación.",
+        noDataRows: "El archivo no tiene filas de datos.",
+        missingColumns:
+          "El archivo no tiene la columna {missing}, así que no se puede importar ninguna fila. Usa los nombres de columna de la plantilla. Columnas encontradas: {found}.",
         uploadCorrectedFile: "Subir archivo corregido",
         correctionFailed: "No se pudo importar el archivo corregido.",
         title: "Importaciones recientes",
@@ -7843,10 +7846,7 @@ export default {
           cancelled:
             "Ninguna transferencia cancelada coincide con esta búsqueda.",
         },
-        keepAccession: "Conservar el número de accesión actual",
         newAccession: "Generar un nuevo número de accesión",
-        requestedAccession: "Número de accesión solicitado: {number}",
-        manualAccession: "Se solicitó un número de accesión manual",
       },
       import: {
         fields: {
@@ -8362,16 +8362,12 @@ export default {
         failedApprove: "No se pudo aprobar la solicitud de traslado.",
         moveAccepted: "Transferencia aceptada y completada.",
         failedAccept: "No se pudo aceptar la solicitud de transferencia.",
-        rejectNotesRequired:
-          "Se requieren notas de revisión para rechazar una solicitud de traslado.",
         moveRejected: "Solicitud de traslado rechazada.",
         failedReject: "No se pudo rechazar la solicitud de traslado.",
         moveCancelled: "Solicitud de traslado cancelada.",
         failedCancel: "No se pudo cancelar la solicitud de traslado.",
         unknownUser: "Usuario desconocido",
         to: "a",
-        numberOnApproval: "Se genera al aprobar la solicitud",
-        useRequestedAccessionNumber: "Usar el número de accesión solicitado",
       },
       roles: {
         curator: "Conservador",
@@ -10253,6 +10249,7 @@ export default {
           "La baja de colección requiere tu aprobación",
         deaccessionRejected: "Baja de colección rechazada",
         objectMoveApproved: "Traslado del objeto aprobado",
+        transferDeclined: "Transferencia rechazada",
         incomingTransferRejected: "Transferencia entrante rechazada",
         objectMoveRejected: "Traslado del objeto rechazado",
         objectMoveCancelled: "Traslado del objeto cancelado",
@@ -10333,6 +10330,11 @@ export default {
           "La solicitud {number} pide usar una imagen del objeto {object}.",
         objectMoveExecuted:
           "Se ha aprobado y completado tu solicitud de traslado del objeto.",
+        transferDeclined: "{organization} rechazó la transferencia de {title}.",
+        transferDeclinedWithReason:
+          "{organization} rechazó la transferencia de {title}. Motivo: {reason}",
+        objectMoveRejected:
+          "Tu solicitud de traslado del objeto fue rechazada.",
         objectMoveCancelled:
           "Un administrador de la organización de origen ha cancelado tu solicitud de traslado del objeto.",
         onlyActiveObjectsCanMove:
@@ -10878,7 +10880,23 @@ export default {
     },
   },
   moveRequests: {
+    accession: {
+      label: "Número de inventario",
+      keep: "Conservar el número actual ({number})",
+      auto: "Generar un número nuevo",
+      manual: "Introducir un número nuevo",
+      manualLabel: "Nuevo número de inventario",
+      manualPlaceholder: "Introduce el nuevo número de inventario",
+      hint: "Si asignas un número nuevo, el actual se conserva en Números de accesión alternativos.",
+      chosenByReceiver: "Lo elige la organización receptora al aceptar",
+    },
+    declinedBy: "Rechazada por {organization}",
     errors: {
+      accessionNumberTaken:
+        "{number} ya se usa en tu organización. Genera o introduce un número nuevo.",
+      accessionNumberRequired: "Introduce el nuevo número de inventario.",
+      accessionGenerationUnavailable:
+        "Tu organización no tiene configurada la numeración automática de inventario. Introduce un número nuevo o actívala en Preferencias.",
       requestClosed: "Esta solicitud de traslado ya se resolvió o se canceló.",
       outsideHierarchy:
         "La organización de destino está fuera de la jerarquía de tu organización y no permite solicitudes de transferencia entrantes.",

@@ -2,12 +2,21 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
+import type { AccessionMode } from "@/components/deaccession-dialog-types";
 import { LocationSelector } from "@/components/location-selector";
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { MoveRequestSubmitAction } from "./use-move-request-detail";
 
 interface MoveRequestActionsPanelAvailability {
@@ -22,6 +31,11 @@ interface MoveRequestActionsPanelContextValue {
   targetLocationId: string;
   onTargetLocationChange: (value: string) => void;
   targetOrganizationId?: Id<"organizations">;
+  sourceAccessionNumber: string;
+  accessionMode: AccessionMode;
+  onAccessionModeChange: (value: AccessionMode) => void;
+  manualAccessionNumber: string;
+  onManualAccessionNumberChange: (value: string) => void;
   submittingAction: MoveRequestSubmitAction;
   availableActions: MoveRequestActionsPanelAvailability;
   onApprove: () => void;
@@ -49,6 +63,11 @@ interface MoveRequestActionsPanelProps {
   targetLocationId: string;
   onTargetLocationChange: (value: string) => void;
   targetOrganizationId?: Id<"organizations">;
+  sourceAccessionNumber: string;
+  accessionMode: AccessionMode;
+  onAccessionModeChange: (value: AccessionMode) => void;
+  manualAccessionNumber: string;
+  onManualAccessionNumberChange: (value: string) => void;
   submittingAction: MoveRequestSubmitAction;
   availableActions: MoveRequestActionsPanelAvailability;
   onApprove: () => void;
@@ -64,6 +83,11 @@ function MoveRequestActionsPanelProvider({
   targetLocationId,
   onTargetLocationChange,
   targetOrganizationId,
+  sourceAccessionNumber,
+  accessionMode,
+  onAccessionModeChange,
+  manualAccessionNumber,
+  onManualAccessionNumberChange,
   submittingAction,
   availableActions,
   onApprove,
@@ -80,6 +104,11 @@ function MoveRequestActionsPanelProvider({
       targetLocationId,
       onTargetLocationChange,
       targetOrganizationId,
+      sourceAccessionNumber,
+      accessionMode,
+      onAccessionModeChange,
+      manualAccessionNumber,
+      onManualAccessionNumberChange,
       submittingAction,
       availableActions,
       onApprove,
@@ -93,6 +122,11 @@ function MoveRequestActionsPanelProvider({
       targetLocationId,
       onTargetLocationChange,
       targetOrganizationId,
+      sourceAccessionNumber,
+      accessionMode,
+      onAccessionModeChange,
+      manualAccessionNumber,
+      onManualAccessionNumberChange,
       submittingAction,
       availableActions,
       onApprove,
@@ -190,6 +224,7 @@ function MoveRequestActionsPanelTargetActions() {
 
   return (
     <>
+      <MoveRequestActionsPanelAccessionChoice />
       {targetOrganizationId ? (
         <div className="w-full space-y-2">
           <Label>
@@ -223,6 +258,53 @@ function MoveRequestActionsPanelTargetActions() {
         {tRoot("untranslatedRecords.objects.move.reject")}
       </Button>
     </>
+  );
+}
+
+/** The receiving organization decides the object's accession number here. */
+function MoveRequestActionsPanelAccessionChoice() {
+  const t = useScopedI18n("moveRequests.accession");
+  const {
+    sourceAccessionNumber,
+    accessionMode,
+    onAccessionModeChange,
+    manualAccessionNumber,
+    onManualAccessionNumberChange,
+  } = useMoveRequestActionsPanel();
+
+  return (
+    <div className="w-full space-y-2">
+      <Label htmlFor="accession-mode">{t("label")}</Label>
+      <Select
+        value={accessionMode}
+        onValueChange={(value) => onAccessionModeChange(value as AccessionMode)}
+      >
+        <SelectTrigger id="accession-mode">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="keep">
+            {t("keep", { number: sourceAccessionNumber })}
+          </SelectItem>
+          <SelectItem value="auto">{t("auto")}</SelectItem>
+          <SelectItem value="manual">{t("manual")}</SelectItem>
+        </SelectContent>
+      </Select>
+      {accessionMode === "manual" && (
+        <div className="space-y-2 pt-2">
+          <Label htmlFor="manual-accession-number">{t("manualLabel")}</Label>
+          <Input
+            id="manual-accession-number"
+            value={manualAccessionNumber}
+            onChange={(event) =>
+              onManualAccessionNumberChange(event.target.value)
+            }
+            placeholder={t("manualPlaceholder")}
+          />
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">{t("hint")}</p>
+    </div>
   );
 }
 

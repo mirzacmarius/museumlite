@@ -19,8 +19,11 @@ export function MoveRequestDetailPageClient() {
     setReviewNotes,
     targetLocationId,
     setTargetLocationId,
+    accessionMode,
+    setAccessionMode,
+    manualAccessionNumber,
+    setManualAccessionNumber,
     isSubmitting,
-    accessionSummary,
     permissions,
     handleApprove,
     handleAccept,
@@ -69,11 +72,7 @@ export function MoveRequestDetailPageClient() {
             </Link>
           </Button>
 
-          <MoveRequestDetailCard
-            request={request}
-            locale={locale}
-            accessionSummary={accessionSummary}
-          />
+          <MoveRequestDetailCard request={request} locale={locale} />
 
           <MoveRequestObjectLink request={request} />
 
@@ -83,6 +82,11 @@ export function MoveRequestDetailPageClient() {
             targetLocationId={targetLocationId}
             onTargetLocationChange={setTargetLocationId}
             targetOrganizationId={request.targetOrganizationId}
+            sourceAccessionNumber={request.sourceAccessionNumber}
+            accessionMode={accessionMode}
+            onAccessionModeChange={setAccessionMode}
+            manualAccessionNumber={manualAccessionNumber}
+            onManualAccessionNumberChange={setManualAccessionNumber}
             submittingAction={isSubmitting}
             availableActions={{
               sourceReview: permissions.canSourceApprove,

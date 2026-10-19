@@ -78,6 +78,14 @@ export function useObjectMoveErrorMessage() {
         return t("destinationNotAccepting");
       case "HIERARCHY_PLAN_REQUIRED":
         return t("planRequired");
+      case "ACCESSION_NUMBER_TAKEN":
+        return t("accessionNumberTaken", {
+          number: refusal.accessionNumber ?? "",
+        });
+      case "ACCESSION_NUMBER_REQUIRED":
+        return t("accessionNumberRequired");
+      case "ACCESSION_NUMBER_GENERATION_UNAVAILABLE":
+        return t("accessionGenerationUnavailable");
       case undefined:
         return actionMessage(error, fallback);
     }

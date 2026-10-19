@@ -70,6 +70,18 @@ export const OBJECT_MOVE_ERROR_CODES = [
   "DESTINATION_NOT_ACCEPTING",
   /** Transfers inside a hierarchy need its root organization on Pro or Enterprise. */
   "HIERARCHY_PLAN_REQUIRED",
+  /**
+   * The accession number the receiving organization chose is already used
+   * there; `accessionNumber` names it.
+   */
+  "ACCESSION_NUMBER_TAKEN",
+  /** The receiving organization chose to enter a number and left it blank. */
+  "ACCESSION_NUMBER_REQUIRED",
+  /**
+   * The receiving organization chose a generated number but has automatic
+   * numbering turned off, has no format, or ran out of free numbers.
+   */
+  "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
 ] as const;
 
 export type ObjectMoveErrorCode = (typeof OBJECT_MOVE_ERROR_CODES)[number];
@@ -80,15 +92,19 @@ export type ObjectMoveErrorData = {
   message: string;
   /** Set for MOVE_BLOCKED. */
   blockers?: MoveBlockerCode[];
+  /** Set for ACCESSION_NUMBER_TAKEN. */
+  accessionNumber?: string;
 };
 
 export function objectMoveError(
   code: ObjectMoveErrorCode,
   message: string,
   blockers?: MoveBlockerCode[],
+  accessionNumber?: string,
 ): ConvexError<ObjectMoveErrorData> {
   const data: ObjectMoveErrorData = { code, message };
   if (blockers !== undefined) data.blockers = blockers;
+  if (accessionNumber !== undefined) data.accessionNumber = accessionNumber;
   const error = new ConvexError(data);
   error.message = message;
   return error;
@@ -108,6 +124,16 @@ export function objectMoveErrorFromError(
   if (!code) return null;
   const message =
     "message" in data && typeof data.message === "string" ? data.message : code;
+  if (code === "ACCESSION_NUMBER_TAKEN") {
+    return {
+      code,
+      message,
+      accessionNumber:
+        "accessionNumber" in data && typeof data.accessionNumber === "string"
+          ? data.accessionNumber
+          : undefined,
+    };
+  }
   if (code !== "MOVE_BLOCKED") return { code, message };
   const listed: unknown[] =
     "blockers" in data && Array.isArray(data.blockers) ? data.blockers : [];

@@ -20,7 +20,7 @@ import {
   RecordLogEntry,
 } from "@/components/record-log";
 import type { useI18n as useI18nType } from "@/locales/client";
-import { useCurrentLocale, useI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 type TransferRequest = FunctionReturnType<
   typeof api.objectMoves.listForOrganization
@@ -129,14 +129,22 @@ function decidedAt(request: TransferRequest) {
   );
 }
 
-/** Why a transfer was rejected, otherwise where it went. */
-function logDetail(request: TransferRequest) {
+/**
+ * Why a transfer was rejected, otherwise where it went. A receiver's decline
+ * says who declined.
+ */
+function logDetail(
+  request: TransferRequest,
+  declinedBy: (organization: string) => string,
+) {
   if (request.status !== "rejected") return request.targetOrganizationName;
-  return (
-    request.targetReviewNotes ??
-    request.sourceReviewNotes ??
-    request.targetOrganizationName
-  );
+  if (request.targetReviewedAt !== undefined) {
+    const declined = declinedBy(request.targetOrganizationName);
+    return request.targetReviewNotes
+      ? `${declined}: ${request.targetReviewNotes}`
+      : declined;
+  }
+  return request.sourceReviewNotes ?? request.targetOrganizationName;
 }
 
 function newestDecisionFirst(left: TransferRequest, right: TransferRequest) {
@@ -147,26 +155,6 @@ function newestDecisionFirst(left: TransferRequest, right: TransferRequest) {
   );
 }
 
-function getAccessionHandlingSummary(
-  request: TransferRequest,
-  tRoot: Translator,
-) {
-  switch (request.accessionMode) {
-    case "keep":
-      return tRoot("untranslatedRecords.accessions.transfers.keepAccession");
-    case "auto":
-      return tRoot("untranslatedRecords.accessions.transfers.newAccession");
-    case "manual":
-      return request.requestedAccessionNumber
-        ? tRoot("untranslatedRecords.accessions.transfers.requestedAccession", {
-            number: request.requestedAccessionNumber,
-          })
-        : tRoot("untranslatedRecords.accessions.transfers.manualAccession");
-    default:
-      return request.accessionMode;
-  }
-}
-
 export function TransferKanbanColumn({
   status,
   direction,
@@ -175,6 +163,7 @@ export function TransferKanbanColumn({
   transferRequests,
 }: TransferKanbanColumnProps) {
   const tRoot = useI18n();
+  const tMoves = useScopedI18n("moveRequests");
   const locale = useCurrentLocale();
   const style = statusStyles[status];
   const Icon = style.icon;
@@ -246,7 +235,9 @@ export function TransferKanbanColumn({
                     reference={request.sourceAccessionNumber}
                     date={decidedAt(request)}
                     title={request.collectionTitle}
-                    detail={logDetail(request)}
+                    detail={logDetail(request, (organization) =>
+                      tMoves("declinedBy", { organization }),
+                    )}
                   />
                 ))}
               </RecordLog>
@@ -312,16 +303,18 @@ export function TransferKanbanColumn({
                     </div>
                   </div>
 
-                  <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
-                      {tRoot(
-                        "untranslatedRecords.accessions.transfer.handling",
-                      )}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-200">
-                      {getAccessionHandlingSummary(request, tRoot)}
-                    </p>
-                  </div>
+                  {status === "cancelled" ? null : (
+                    <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
+                        {tRoot(
+                          "untranslatedRecords.accessions.transfer.handling",
+                        )}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-200">
+                        {tMoves("accession.chosenByReceiver")}
+                      </p>
+                    </div>
+                  )}
 
                   {request.targetReviewNotes || request.sourceReviewNotes ? (
                     <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">

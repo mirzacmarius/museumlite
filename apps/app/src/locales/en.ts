@@ -556,6 +556,9 @@ export default {
         importFailed: "Import failed.",
         correctionUnsupported:
           "This import cannot be corrected here. Start a new import instead.",
+        noDataRows: "The file has no data rows.",
+        missingColumns:
+          "The file has no {missing} column, so no row can be imported. Use the template's column names. Columns found: {found}.",
         uploadCorrectedFile: "Upload corrected file",
         correctionFailed: "Could not import the corrected file.",
 
@@ -7685,10 +7688,7 @@ export default {
           rejected: "No rejected transfers match this search.",
           cancelled: "No cancelled transfers match this search.",
         },
-        keepAccession: "Keep current accession number",
         newAccession: "Generate a new accession number",
-        requestedAccession: "Requested accession: {number}",
-        manualAccession: "Manual accession requested",
       },
       import: {
         fields: {
@@ -8184,16 +8184,12 @@ export default {
         failedApprove: "Failed to approve move request.",
         moveAccepted: "Transfer accepted and completed.",
         failedAccept: "Failed to accept transfer request.",
-        rejectNotesRequired:
-          "Review notes are required to reject a move request.",
         moveRejected: "Move request rejected.",
         failedReject: "Failed to reject move request.",
         moveCancelled: "Move request cancelled.",
         failedCancel: "Failed to cancel move request.",
         unknownUser: "Unknown user",
         to: "to",
-        numberOnApproval: "Generated when the request is approved",
-        useRequestedAccessionNumber: "Use the requested accession number",
       },
       roles: {
         curator: "Curator",
@@ -10017,6 +10013,7 @@ export default {
         deaccessionRequiresYourApproval: "Deaccession Requires Your Approval",
         deaccessionRejected: "Deaccession Rejected",
         objectMoveApproved: "Object Move Approved",
+        transferDeclined: "Transfer Declined",
         incomingTransferRejected: "Incoming Transfer Rejected",
         objectMoveRejected: "Object Move Rejected",
         objectMoveCancelled: "Object Move Cancelled",
@@ -10089,6 +10086,10 @@ export default {
           "Request {number} asks to use an image of {object}.",
         objectMoveExecuted:
           "Your object move request has been approved and executed.",
+        transferDeclined: "{organization} declined the transfer of {title}.",
+        transferDeclinedWithReason:
+          "{organization} declined the transfer of {title}. Reason: {reason}",
+        objectMoveRejected: "Your object move request was rejected.",
         objectMoveCancelled:
           "Your object move request was cancelled by an administrator of the source organization.",
         onlyActiveObjectsCanMove:
@@ -10620,7 +10621,23 @@ export default {
     },
   },
   moveRequests: {
+    accession: {
+      label: "Accession number",
+      keep: "Keep the current number ({number})",
+      auto: "Generate a new number",
+      manual: "Enter a new number",
+      manualLabel: "New accession number",
+      manualPlaceholder: "Enter the new accession number",
+      hint: "If you assign a new number, the current one is kept under Alternate Accession Numbers.",
+      chosenByReceiver: "Chosen by the receiving organization when it accepts",
+    },
+    declinedBy: "Declined by {organization}",
     errors: {
+      accessionNumberTaken:
+        "{number} is already used in your organization. Generate or enter a new number.",
+      accessionNumberRequired: "Enter the new accession number.",
+      accessionGenerationUnavailable:
+        "Automatic accession numbers are not set up for your organization. Enter a new number, or turn them on in Preferences.",
       requestClosed:
         "This transfer request has already been decided or cancelled.",
       outsideHierarchy:

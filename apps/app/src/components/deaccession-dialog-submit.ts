@@ -1,5 +1,5 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import type { AccessionMode, RemovalType } from "./deaccession-dialog-types";
+import type { RemovalType } from "./deaccession-dialog-types";
 
 type Translate = (
   key: string,
@@ -20,8 +20,6 @@ interface SubmitDeaccessionParams {
   disposition: string;
   notes: string;
   targetOrganizationId: Id<"organizations"> | "";
-  accessionMode: AccessionMode;
-  manualAccessionNumber: string;
   moveEligibility?: { isEligible: boolean } | null;
   translate: Translate;
   createDeaccession: (args: {
@@ -37,8 +35,6 @@ interface SubmitDeaccessionParams {
   createMoveRequest: (args: {
     collectionId: Id<"collections">;
     targetOrganizationId: Id<"organizations">;
-    accessionMode: AccessionMode;
-    requestedAccessionNumber?: string;
     reason: string;
     notes?: string;
   }) => Promise<Id<"organizationMoveRequests">>;
@@ -58,8 +54,6 @@ export async function submitDeaccession({
   disposition,
   notes,
   targetOrganizationId,
-  accessionMode,
-  manualAccessionNumber,
   moveEligibility,
   translate,
   createDeaccession,
@@ -84,14 +78,6 @@ export async function submitDeaccession({
       );
     }
 
-    if (accessionMode === "manual" && !manualAccessionNumber.trim()) {
-      throw new RemovalValidationError(
-        translate(
-          "untranslatedComponents.deaccession.manualAccessionNumberRequired",
-        ),
-      );
-    }
-
     if (moveEligibility && !moveEligibility.isEligible) {
       throw new RemovalValidationError(
         translate(
@@ -103,9 +89,6 @@ export async function submitDeaccession({
     const requestId = await createMoveRequest({
       collectionId,
       targetOrganizationId,
-      accessionMode,
-      requestedAccessionNumber:
-        accessionMode === "manual" ? manualAccessionNumber.trim() : undefined,
       reason: reason.trim(),
       notes: notes.trim() || undefined,
     });

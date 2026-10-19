@@ -7,6 +7,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import type { AccessionMode } from "@/components/deaccession-dialog-types";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
 import { useObjectMoveErrorMessage } from "@/hooks/use-object-move-error-message";
@@ -33,6 +34,12 @@ export function useMoveRequestDetail() {
 
   const [reviewNotes, setReviewNotes] = useState("");
   const [targetLocationId, setTargetLocationId] = useState("");
+  // Unset until the receiver picks, so the request's stored choice shows.
+  const [chosenAccessionMode, setChosenAccessionMode] =
+    useState<AccessionMode | null>(null);
+  const [chosenAccessionNumber, setChosenAccessionNumber] = useState<
+    string | null
+  >(null);
   const [isSubmitting, setIsSubmitting] =
     useState<MoveRequestSubmitAction>(null);
 
@@ -77,25 +84,9 @@ export function useMoveRequestDetail() {
     };
   }, [currentOrganizationId, currentUser, hasPermission, request]);
 
-  const accessionSummary = useMemo(() => {
-    if (!request) {
-      return null;
-    }
-
-    if (request.accessionMode === "keep") {
-      return request.sourceAccessionNumber;
-    }
-
-    if (request.finalAccessionNumber) {
-      return request.finalAccessionNumber;
-    }
-
-    if (request.requestedAccessionNumber) {
-      return request.requestedAccessionNumber;
-    }
-
-    return tRoot("untranslatedRecords.objects.transfer.numberOnApproval");
-  }, [request, tRoot]);
+  const accessionMode = chosenAccessionMode ?? request?.accessionMode ?? "keep";
+  const manualAccessionNumber =
+    chosenAccessionNumber ?? request?.requestedAccessionNumber ?? "";
 
   const handleApprove = async (moveRequest: MoveRequestDetail) => {
     setIsSubmitting("approve");
@@ -132,6 +123,9 @@ export function useMoveRequestDetail() {
         requestId: moveRequest._id,
         targetLocationId: targetLocationId as Id<"locations">,
         reviewNotes: reviewNotes.trim() || undefined,
+        accessionMode,
+        requestedAccessionNumber:
+          accessionMode === "manual" ? manualAccessionNumber.trim() : undefined,
       });
       setReviewNotes("");
       toast.success(tRoot("untranslatedRecords.objects.transfer.moveAccepted"));
@@ -148,18 +142,11 @@ export function useMoveRequestDetail() {
   };
 
   const handleReject = async (moveRequest: MoveRequestDetail) => {
-    if (!reviewNotes.trim()) {
-      toast.error(
-        tRoot("untranslatedRecords.objects.transfer.rejectNotesRequired"),
-      );
-      return;
-    }
-
     setIsSubmitting("reject");
     try {
       await reject({
         requestId: moveRequest._id,
-        reviewNotes: reviewNotes.trim(),
+        reviewNotes: reviewNotes.trim() || undefined,
       });
       setReviewNotes("");
       toast.success(tRoot("untranslatedRecords.objects.transfer.moveRejected"));
@@ -206,8 +193,11 @@ export function useMoveRequestDetail() {
     setReviewNotes,
     targetLocationId,
     setTargetLocationId,
+    accessionMode,
+    setAccessionMode: setChosenAccessionMode,
+    manualAccessionNumber,
+    setManualAccessionNumber: setChosenAccessionNumber,
     isSubmitting,
-    accessionSummary,
     permissions,
     handleApprove,
     handleAccept,

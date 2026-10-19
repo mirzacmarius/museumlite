@@ -293,13 +293,15 @@ async function generateAccessionNumber(
   const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
 
   if (!autoGenerate) {
-    throw new Error(
+    throw objectMoveError(
+      "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
       "Auto-generate accession numbers is disabled for the destination organization.",
     );
   }
 
   if (!template) {
-    throw new Error(
+    throw objectMoveError(
+      "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
       "The destination organization does not have an accession number format configured.",
     );
   }
@@ -366,8 +368,11 @@ async function ensureAccessionNumberAvailable(
     accessionNumber,
   );
   if (conflict) {
-    throw new Error(
+    throw objectMoveError(
+      "ACCESSION_NUMBER_TAKEN",
       `Accession number "${accessionNumber}" already exists in the destination organization`,
+      undefined,
+      accessionNumber,
     );
   }
 }
@@ -411,7 +416,8 @@ async function resolveGeneratedAccessionNumber(
     return accessionNumber;
   }
 
-  throw new Error(
+  throw objectMoveError(
+    "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
     "Unable to generate a unique accession number for the destination organization.",
   );
 }
@@ -572,8 +578,12 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
+  // A transfer the receiving organization declined leaves its deaccession
+  // rejected; the object stayed and may be transferred again.
   const blockingDeaccessions = deaccessions.filter(
-    (deaccession) => deaccession._id !== options.ignoreDeaccessionId,
+    (deaccession) =>
+      deaccession._id !== options.ignoreDeaccessionId &&
+      !(deaccession.method === "transfer" && deaccession.status === "rejected"),
   );
   if (blockingDeaccessions.length > 0) {
     blockers.push({
@@ -1323,7 +1333,9 @@ export const createRequest = mutation({
   args: {
     collectionId: v.id("collections"),
     targetOrganizationId: v.id("organizations"),
-    accessionMode: accessionModeValidator,
+    // The receiving organization chooses the accession number when it
+    // accepts. A mode given here is only the choice it starts from.
+    accessionMode: v.optional(accessionModeValidator),
     requestedAccessionNumber: v.optional(v.string()),
     reason: v.string(),
     notes: v.optional(v.string()),
@@ -1396,10 +1408,12 @@ export const createRequest = mutation({
       throw new Error("A move reason is required.");
     }
 
+    const accessionMode = args.accessionMode ?? "keep";
     let requestedAccessionNumber = args.requestedAccessionNumber?.trim();
-    if (args.accessionMode === "manual") {
+    if (accessionMode === "manual") {
       if (!requestedAccessionNumber) {
-        throw new Error(
+        throw objectMoveError(
+          "ACCESSION_NUMBER_REQUIRED",
           "A new accession number is required when using manual accession mode.",
         );
       }
@@ -1426,7 +1440,7 @@ export const createRequest = mutation({
       sourceOrganizationId: collection.organizationId,
       targetOrganizationId: args.targetOrganizationId,
       sourceAccessionNumber: collection.accessionNumber,
-      accessionMode: args.accessionMode,
+      accessionMode,
       requestedAccessionNumber,
       reason,
       notes: args.notes?.trim() || undefined,
@@ -1451,7 +1465,7 @@ export const createRequest = mutation({
         changes: {
           collectionId: args.collectionId,
           targetOrganizationId: args.targetOrganizationId,
-          accessionMode: args.accessionMode,
+          accessionMode,
           requestedAccessionNumber,
         },
       }),
@@ -1975,6 +1989,10 @@ export const accept = mutation({
     requestId: v.id("organizationMoveRequests"),
     targetLocationId: v.id("locations"),
     reviewNotes: v.optional(v.string()),
+    // The receiving organization's choice of accession number. Omitted, the
+    // request's stored choice applies.
+    accessionMode: v.optional(accessionModeValidator),
+    requestedAccessionNumber: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -2059,20 +2077,28 @@ export const accept = mutation({
       notes: args.reviewNotes?.trim() || undefined,
     });
 
+    const accessionMode = args.accessionMode ?? request.accessionMode;
+    const requestedAccessionNumber =
+      accessionMode !== "manual"
+        ? undefined
+        : args.accessionMode === undefined
+          ? request.requestedAccessionNumber
+          : args.requestedAccessionNumber?.trim() || undefined;
     let finalAccessionNumber = request.sourceAccessionNumber;
-    if (request.accessionMode === "manual") {
-      if (!request.requestedAccessionNumber) {
-        throw new Error(
+    if (accessionMode === "manual") {
+      if (!requestedAccessionNumber) {
+        throw objectMoveError(
+          "ACCESSION_NUMBER_REQUIRED",
           "Manual accession mode requires a requested accession number.",
         );
       }
       await ensureAccessionNumberAvailable(
         ctx,
         request.targetOrganizationId,
-        request.requestedAccessionNumber,
+        requestedAccessionNumber,
       );
-      finalAccessionNumber = request.requestedAccessionNumber;
-    } else if (request.accessionMode === "auto") {
+      finalAccessionNumber = requestedAccessionNumber;
+    } else if (accessionMode === "auto") {
       finalAccessionNumber = await resolveGeneratedAccessionNumber(
         ctx,
         request.targetOrganizationId,
@@ -2115,6 +2141,8 @@ export const accept = mutation({
     await Promise.all([
       ctx.db.patch(args.requestId, {
         status: "executed",
+        accessionMode,
+        requestedAccessionNumber,
         finalAccessionNumber,
         targetReviewedBy: userId,
         targetReviewedAt: now,
@@ -2172,7 +2200,7 @@ export const accept = mutation({
 export const reject = mutation({
   args: {
     requestId: v.id("organizationMoveRequests"),
-    reviewNotes: v.string(),
+    reviewNotes: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -2204,15 +2232,27 @@ export const reject = mutation({
       "organization.manage_settings",
     );
 
-    const reviewNotes = args.reviewNotes.trim();
-    if (!reviewNotes) {
-      throw new Error(
-        "Review notes are required when rejecting a move request.",
-      );
-    }
-
+    const reviewNotes = args.reviewNotes?.trim() || undefined;
     const now = Date.now();
+    // The receiving organization declining sends the object back to the
+    // sender: the transfer deaccession made at source approval is rejected
+    // so the object stays in the source collection and can move again.
+    const transferDeaccession =
+      isTargetReview && request.deaccessionId
+        ? await ctx.db.get(request.deaccessionId)
+        : null;
     await Promise.all([
+      transferDeaccession?.status === "approved"
+        ? ctx.db.patch(transferDeaccession._id, {
+            status: "rejected",
+            notes: [
+              transferDeaccession.notes,
+              "Transfer declined by the receiving organization.",
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          })
+        : null,
       ctx.db.patch(args.requestId, {
         status: "rejected",
         reviewedBy: isTargetReview ? request.reviewedBy : userId,
@@ -2237,21 +2277,19 @@ export const reject = mutation({
           : "rejected_organization_move_request",
         entityType: "organizationMoveRequest",
         entityId: args.requestId,
-        changes: {
-          reviewNotes,
-        },
+        changes: reviewNotes ? { reviewNotes } : {},
       }),
     ]);
 
-    if (request.requestedBy !== userId) {
+    if (isTargetReview) {
+      await notifySenderOfDecline(ctx, request, userId, reviewNotes);
+    } else if (request.requestedBy !== userId) {
       await dispatchNotification(ctx, {
         organizationId: request.sourceOrganizationId,
         type: "workflow_rejected",
         recipients: [request.requestedBy],
-        title: isTargetReview
-          ? "Incoming Transfer Rejected"
-          : "Object Move Rejected",
-        message: reviewNotes,
+        title: "Object Move Rejected",
+        message: reviewNotes ?? "Your object move request was rejected.",
         related: { entityType: "move_request", entityId: args.requestId },
       });
     }
@@ -2259,6 +2297,47 @@ export const reject = mutation({
     return null;
   },
 });
+
+/**
+ * Tells the sending organization that the receiver declined: the requester
+ * and the source administrators who approved transfers, never the person who
+ * declined.
+ */
+async function notifySenderOfDecline(
+  ctx: MutationCtx,
+  request: Doc<"organizationMoveRequests">,
+  declinedBy: Id<"users">,
+  reviewNotes: string | undefined,
+) {
+  const [sourceManagers, collection, targetOrganization] = await Promise.all([
+    getUserIdsWithPermission(
+      ctx,
+      request.sourceOrganizationId,
+      "organization.manage_settings",
+      { excludeUserId: declinedBy },
+    ),
+    ctx.db.get(request.collectionId),
+    ctx.db.get(request.targetOrganizationId),
+  ] as const);
+  const recipients = [
+    ...new Set(
+      [request.requestedBy, ...sourceManagers].filter(
+        (recipient) => recipient !== declinedBy,
+      ),
+    ),
+  ];
+  if (recipients.length === 0) return;
+
+  const declined = `${targetOrganization?.name ?? "The receiving organization"} declined the transfer of ${collection?.title ?? request.sourceAccessionNumber}.`;
+  await dispatchNotification(ctx, {
+    organizationId: request.sourceOrganizationId,
+    type: "workflow_rejected",
+    recipients,
+    title: "Transfer Declined",
+    message: reviewNotes ? `${declined} Reason: ${reviewNotes}` : declined,
+    related: { entityType: "move_request", entityId: request._id },
+  });
+}
 
 export const cancel = mutation({
   args: {

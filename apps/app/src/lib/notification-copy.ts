@@ -36,6 +36,7 @@ function getTitleMatch(title: string): Match | null {
     "Deaccession Requires Your Approval": "deaccessionRequiresYourApproval",
     "Deaccession Rejected": "deaccessionRejected",
     "Object Move Approved": "objectMoveApproved",
+    "Transfer Declined": "transferDeclined",
     "Incoming Transfer Rejected": "incomingTransferRejected",
     "Object Move Rejected": "objectMoveRejected",
     "Object Move Cancelled": "objectMoveCancelled",
@@ -229,6 +230,7 @@ function getMessageMatch(message: string): Match | null {
       "objectMoveExecuted",
     "Your object move request was cancelled by an administrator of the source organization.":
       "objectMoveCancelled",
+    "Your object move request was rejected.": "objectMoveRejected",
     "Only active objects can be moved to another organization.":
       "onlyActiveObjectsCanMove",
     "This object is currently on loan and cannot be moved.":
@@ -394,6 +396,20 @@ function getMessageMatch(message: string): Match | null {
       /^(.+) is awaiting acceptance before the transfer is completed\.$/,
       "transferAwaitingAcceptance",
       (match) => ({ title: match[1] ?? "" }),
+    ],
+    [
+      /^(.+?) declined the transfer of (.+?)\. Reason: ([\s\S]+)$/,
+      "transferDeclinedWithReason",
+      (match) => ({
+        organization: match[1] ?? "",
+        title: match[2] ?? "",
+        reason: match[3] ?? "",
+      }),
+    ],
+    [
+      /^(.+?) declined the transfer of (.+)\.$/,
+      "transferDeclined",
+      (match) => ({ organization: match[1] ?? "", title: match[2] ?? "" }),
     ],
     [
       /^Your object move request has been approved\. The new accession number is (.+)\.$/,
