@@ -15,14 +15,29 @@ import { SPRING } from "./motion";
 const HIDDEN = { opacity: 0, scale: 0.8 };
 const SHOWN = { opacity: 1, scale: 1 };
 
-const PopoverOpenContext = React.createContext(false);
+interface PopoverState {
+  open: boolean;
+  popupRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const PopoverStateContext = React.createContext<PopoverState>({
+  open: false,
+  popupRef: { current: null },
+});
+
+const DIALOG_SELECTOR = '[role="dialog"], [role="alertdialog"]';
 
 // The newest open popover takes Escape. Radix dialogs, sheets and menus listen
 // for Escape on the document and would close themselves first, so the popover
-// claims the key on the window, which hears it before the document does.
+// claims the key on the window, which hears it before the document does. A
+// dialog opened from the popover, which it does not contain, keeps the key.
 const escapeStack: Array<() => void> = [];
 
-function useEscapeCloses(open: boolean, close: () => void) {
+function useEscapeCloses(
+  open: boolean,
+  close: () => void,
+  popupRef: React.RefObject<HTMLDivElement | null>,
+) {
   const closeRef = React.useRef(close);
   closeRef.current = close;
   React.useEffect(() => {
@@ -31,6 +46,11 @@ function useEscapeCloses(open: boolean, close: () => void) {
     escapeStack.push(entry);
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || escapeStack.at(-1) !== entry) return;
+      const dialog =
+        event.target instanceof Element
+          ? event.target.closest(DIALOG_SELECTOR)
+          : null;
+      if (dialog && !dialog.contains(popupRef.current)) return;
       event.stopPropagation();
       event.preventDefault();
       entry();
@@ -40,7 +60,7 @@ function useEscapeCloses(open: boolean, close: () => void) {
       window.removeEventListener("keydown", onKeyDown, { capture: true });
       escapeStack.splice(escapeStack.indexOf(entry), 1);
     };
-  }, [open]);
+  }, [open, popupRef]);
 }
 
 function Popover({
@@ -52,6 +72,8 @@ function Popover({
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
   const open = openProp ?? uncontrolledOpen;
   const actionsRef = React.useRef<PopoverPrimitive.Root.Actions>(null);
+  const popupRef = React.useRef<HTMLDivElement>(null);
+  const state = React.useMemo(() => ({ open, popupRef }), [open]);
   const handleOpenChange = React.useCallback(
     (nextOpen: boolean, details: PopoverPrimitive.Root.ChangeEventDetails) => {
       onOpenChange?.(nextOpen, details);
@@ -59,9 +81,9 @@ function Popover({
     },
     [onOpenChange],
   );
-  useEscapeCloses(open, () => actionsRef.current?.close());
+  useEscapeCloses(open, () => actionsRef.current?.close(), popupRef);
   return (
-    <PopoverOpenContext.Provider value={open}>
+    <PopoverStateContext.Provider value={state}>
       <PopoverPrimitive.Root
         data-slot="popover"
         open={open}
@@ -69,7 +91,7 @@ function Popover({
         actionsRef={actionsRef}
         {...props}
       />
-    </PopoverOpenContext.Provider>
+    </PopoverStateContext.Provider>
   );
 }
 
@@ -120,13 +142,19 @@ function PopoverTrigger({
 
 type PopoverPositionerProps = Pick<
   PopoverPrimitive.Positioner.Props,
-  "align" | "alignOffset" | "collisionPadding" | "side" | "sideOffset"
+  | "align"
+  | "alignOffset"
+  | "anchor"
+  | "collisionPadding"
+  | "side"
+  | "sideOffset"
 >;
 
 function PopoverContent({
   className,
   align = "center",
   alignOffset,
+  anchor,
   collisionPadding,
   side,
   sideOffset = 4,
@@ -138,14 +166,13 @@ function PopoverContent({
     className?: string;
     style?: React.CSSProperties;
   }) {
-  const open = React.useContext(PopoverOpenContext);
+  const { open, popupRef } = React.useContext(PopoverStateContext);
   const dialogContent = useDialogContentElement();
-  const popupRef = React.useRef<HTMLDivElement>(null);
   // Like Radix, content that focuses itself on mount (a calendar's chosen
   // day) keeps that focus instead of losing it to the popup.
   const keepInnerFocus = React.useCallback(
     () => !popupRef.current?.contains(document.activeElement),
-    [],
+    [popupRef],
   );
   return (
     <LazyMotion features={domAnimation}>
@@ -159,6 +186,7 @@ function PopoverContent({
               className="z-50"
               align={align}
               alignOffset={alignOffset}
+              anchor={anchor}
               collisionPadding={collisionPadding}
               side={side}
               sideOffset={sideOffset}

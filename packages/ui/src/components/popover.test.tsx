@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogTitle,
+} from "./alert-dialog";
 import { Dialog, DialogContent, DialogTitle } from "./dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
@@ -81,4 +88,48 @@ test("Escape in a picker inside a dialog closes the picker and keeps the dialog 
     expect(screen.queryByRole("listbox", { name: "Conditions" })).toBeNull(),
   );
   screen.getByRole("dialog", { name: "Set condition" });
+});
+
+/** A picker whose row opens a confirmation, as the type picker's delete does. */
+function PickerWithConfirmation() {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <>
+      <Popover>
+        <PopoverTrigger>Type</PopoverTrigger>
+        <PopoverContent>
+          <div role="listbox" aria-label="Types">
+            <button type="button" onClick={() => setConfirming(true)}>
+              Delete Painting
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Delete Painting?</AlertDialogTitle>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+test("Escape in a confirmation opened from a picker closes the confirmation, not the picker", async () => {
+  const user = userEvent.setup();
+  render(<PickerWithConfirmation />);
+  await user.click(screen.getByRole("button", { name: "Type" }));
+  await user.click(screen.getByRole("button", { name: "Delete Painting" }));
+  screen.getByRole("alertdialog", { name: "Delete Painting?" });
+
+  await user.keyboard("{Escape}");
+
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("alertdialog", { name: "Delete Painting?" }),
+    ).toBeNull(),
+  );
+  expect(
+    screen.getByRole("listbox", { name: "Types", hidden: true }),
+  ).toBeTruthy();
 });
