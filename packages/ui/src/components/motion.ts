@@ -32,7 +32,7 @@ export const FLOATING_MOTION =
 
 /** A dialog grows in on the spring and leaves quickly, like a floating surface. */
 export const DIALOG_MOTION =
-  "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-90 data-[state=open]:slide-in-from-bottom-2 data-[state=open]:ease-spring data-[state=open]:duration-spring data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-90 data-[state=closed]:slide-out-to-bottom-2 data-[state=closed]:ease-in data-[state=closed]:duration-150";
+  "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-90 data-[state=open]:slide-in-from-bottom-4 data-[state=open]:ease-spring data-[state=open]:duration-spring data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-90 data-[state=closed]:slide-out-to-bottom-4 data-[state=closed]:ease-in data-[state=closed]:duration-150";
 
 export const OVERLAY_MOTION =
   "duration-200 ease-out data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0";
