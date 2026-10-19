@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from "@testing-library/react";
-import { useState } from "react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { expect, test } from "vitest";
 import {
   AlertDialog,
