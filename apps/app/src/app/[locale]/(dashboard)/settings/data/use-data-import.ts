@@ -23,7 +23,44 @@ type TemplateRow = Record<string, string | number | undefined> & {
 const BATCH_SIZE = 50;
 
 /**
- * Keeps only the template's columns (matched case-insensitively). A file
+ * Norwegian names a column may carry in exports from other collection
+ * systems, tried after the template's own name. The first names are the
+ * app's own Norwegian field labels.
+ */
+const COLUMN_ALIASES: Record<string, string[]> = {
+  accessionNumber: [
+    "aksesjonsnummer",
+    "inventarnummer",
+    "inventarnr",
+    "inventarnr.",
+    "museumsnummer",
+    "museumsnr",
+    "museumsnr.",
+    "tilvekstnummer",
+    "tilvekstnr.",
+    "id",
+  ],
+  title: ["tittel"],
+  alternativeTitle: ["alternativ tittel"],
+  creator: ["skaper/kunstner", "skaper", "kunstner", "produsent"],
+  objectType: ["objekttype"],
+  objectName: ["objektnavn", "gjenstandsnavn"],
+  culture: ["kultur"],
+  period: ["periode"],
+  dateCreated: ["opprettelsesdato", "datering"],
+  materials: ["materialer", "materiale"],
+  technique: ["teknikk"],
+  dimensions: ["dimensjoner", "mål"],
+  description: ["beskrivelse"],
+  condition: ["tilstand"],
+  provenance: ["proveniens"],
+  location: ["plassering"],
+  collectionGroup: ["samlingsgruppe"],
+};
+
+/**
+ * Keeps only the template's columns, matched case-insensitively by name or a
+ * Norwegian alias; when a name repeats, its first column counts. A file
  * without a required column is refused before any row is sent, since every
  * row would fail. Empty required values still fail on the server as
  * recorded, correctable rows.
@@ -37,11 +74,26 @@ export function toTemplateRows(
   if (table.records.length === 0) {
     throw new Error(t("noDataRows"));
   }
-  const columnIndex = new Map(
-    table.headers.map((header, index) => [header.toLowerCase(), index]),
-  );
+  const headerIndex = new Map<string, number>();
+  table.headers.forEach((header, index) => {
+    const name = header.trim().toLowerCase();
+    if (!headerIndex.has(name)) headerIndex.set(name, index);
+  });
+  const columnIndex = new Map<string, number>();
+  for (const field of template.headers) {
+    for (const name of [
+      field.toLowerCase(),
+      ...(COLUMN_ALIASES[field] ?? []),
+    ]) {
+      const index = headerIndex.get(name);
+      if (index !== undefined) {
+        columnIndex.set(field, index);
+        break;
+      }
+    }
+  }
   const missing = template.requiredFields.filter(
-    (field) => !columnIndex.has(field.toLowerCase()),
+    (field) => !columnIndex.has(field),
   );
   if (missing.length > 0) {
     throw new Error(
@@ -55,7 +107,7 @@ export function toTemplateRows(
   return table.records.map((record) => {
     const row: TemplateRow = { rowNumber: record.rowNumber };
     for (const field of template.headers) {
-      const index = columnIndex.get(field.toLowerCase());
+      const index = columnIndex.get(field);
       const value = index === undefined ? undefined : record.values[index];
       if (value) row[field] = value;
       else if (requiredFields.has(field)) row[field] = "";
