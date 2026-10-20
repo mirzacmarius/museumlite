@@ -255,3 +255,12 @@ test("deleting the library template of the saved format keeps that format", asyn
   expect(screen.queryByText("Enter a format template.")).toBeNull();
   expect(savedSettings().accessionNumberFormat).toBeUndefined();
 });
+
+test("the Locations section only switches tracking and links to the location hierarchy", async () => {
+  await renderOnPage(<PreferencesSettingsPage />, "/en/settings/preferences");
+
+  expect(screen.queryByText("Location Types")).toBeNull();
+  expect(
+    screen.getByRole("link", { name: "Manage locations" }).getAttribute("href"),
+  ).toMatch(/\/locations$/);
+});

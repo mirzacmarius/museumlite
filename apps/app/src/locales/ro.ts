@@ -8335,8 +8335,8 @@ export default {
         priorGroupLinksCount:
           "legătură(i) de grup înregistrate înainte de transfer",
         receivingLocationPlaceholder: "Selectați locația de primire",
-        targetLocationRequired:
-          "Alegeți o locație de primire înainte de a accepta transferul.",
+        receivingLocationHint:
+          "Opțional. Lăsați gol dacă nu urmăriți locațiile; puteți plasa obiectul mai târziu.",
         awaitingAcceptance: "În așteptarea acceptării transferului",
         pendingApproval: "În așteptarea aprobării transferului",
         awaitingAcceptanceShort: "în așteptarea acceptării",
@@ -9271,7 +9271,6 @@ export default {
       statusFailed: "Eșuat",
       statusProcessing: "În procesare",
       saving: "Se salvează…",
-      deleteType: "Ștergeți {type}",
       createNewSite: "Creează un site nou",
       editSite: "Editează site-ul",
       createSiteDescription:
@@ -9366,9 +9365,9 @@ export default {
       preferences: "Preferințe",
       preferencesDescription:
         "Configurați vocabularul catalogului, numerotarea, fluxurile de lucru și urmărirea locațiilor.",
-      locationTypes: "Tipuri de locație",
-      locationTypesPlaceholder: "Galerie, depozit, raft",
-      noCustomLocationTypes: "Nu există tipuri de locație personalizate.",
+      manageLocations: "Gestionați locațiile",
+      manageLocationsDescription:
+        "Adăugați, editați și organizați ierarhia locațiilor în Locații și urmărire.",
       selectOrganizationPreferences:
         "Selectați o organizație pentru a gestiona preferințele.",
       selectOrganizationLibrarySettings:

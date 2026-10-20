@@ -1995,7 +1995,9 @@ export const approve = mutation({
 export const accept = mutation({
   args: {
     requestId: v.id("organizationMoveRequests"),
-    targetLocationId: v.id("locations"),
+    // Omitted, the object arrives without a location: the receiving
+    // organization may not use locations at all.
+    targetLocationId: v.optional(v.id("locations")),
     reviewNotes: v.optional(v.string()),
     // The receiving organization's choice of accession number. Omitted, the
     // request's stored choice applies.
@@ -2052,11 +2054,13 @@ export const accept = mutation({
       request.approvedSourceLocationId,
     );
 
-    await requireTargetTransferLocation(
-      ctx,
-      request.targetOrganizationId,
-      args.targetLocationId,
-    );
+    if (args.targetLocationId) {
+      await requireTargetTransferLocation(
+        ctx,
+        request.targetOrganizationId,
+        args.targetLocationId,
+      );
+    }
 
     const blockers = await buildEligibilityBlockers(
       ctx,
@@ -2127,21 +2131,23 @@ export const accept = mutation({
       userId,
     );
 
-    const arrivalMovementId = await recordTargetTransferArrival(ctx, {
-      collectionId: collection._id,
-      targetOrganizationId: request.targetOrganizationId,
-      targetLocationId: args.targetLocationId,
-      userId,
-      moveRequestId: request._id,
-      reason: request.reason,
-    });
+    const arrivalMovementId = args.targetLocationId
+      ? await recordTargetTransferArrival(ctx, {
+          collectionId: collection._id,
+          targetOrganizationId: request.targetOrganizationId,
+          targetLocationId: args.targetLocationId,
+          userId,
+          moveRequestId: request._id,
+          reason: request.reason,
+        })
+      : undefined;
 
     await recordTransferCustodyEvent(ctx, {
       moveRequestId: request._id,
       collectionId: collection._id,
       organizationId: request.targetOrganizationId,
       phase: "target_arrival",
-      observedLocationId: args.targetLocationId,
+      observedLocationId: args.targetLocationId ?? null,
       actorId: userId,
     });
 

@@ -8169,8 +8169,8 @@ export default {
         priorGroupLinks: "Prior collection group links",
         priorGroupLinksCount: "group link(s) recorded before transfer",
         receivingLocationPlaceholder: "Select receiving location",
-        targetLocationRequired:
-          "Choose a receiving location before accepting the transfer.",
+        receivingLocationHint:
+          "Optional. Leave it empty if you don't track locations; you can place the object later.",
         awaitingAcceptance: "Awaiting transfer acceptance",
         pendingApproval: "Pending transfer approval",
         awaitingAcceptanceShort: "awaiting acceptance",
@@ -9096,7 +9096,6 @@ export default {
       statusFailed: "Failed",
       statusProcessing: "Processing",
       saving: "Saving…",
-      deleteType: "Delete {type}",
       createNewSite: "Create New Site",
       editSite: "Edit Site",
       createSiteDescription:
@@ -9189,9 +9188,9 @@ export default {
       preferences: "Preferences",
       preferencesDescription:
         "Configure catalog vocabulary, numbering, workflows, and location tracking.",
-      locationTypes: "Location Types",
-      locationTypesPlaceholder: "Gallery, Vault, Shelf",
-      noCustomLocationTypes: "No custom location types.",
+      manageLocations: "Manage locations",
+      manageLocationsDescription:
+        "Add, edit and arrange the location hierarchy under Location & Tracking.",
       selectOrganizationPreferences:
         "Please select an organization to manage preferences.",
       selectOrganizationLibrarySettings:

@@ -8343,8 +8343,8 @@ export default {
         priorGroupLinksCount:
           "vínculo(s) de grupo registrados antes de la transferencia",
         receivingLocationPlaceholder: "Seleccione la ubicación de recepción",
-        targetLocationRequired:
-          "Elija una ubicación de recepción antes de aceptar la transferencia.",
+        receivingLocationHint:
+          "Opcional. Déjelo vacío si no gestiona ubicaciones; puede ubicar el objeto más tarde.",
         awaitingAcceptance: "Pendiente de aceptación de la transferencia",
         pendingApproval: "Pendiente de aprobación de la transferencia",
         awaitingAcceptanceShort: "pendiente de aceptación",
@@ -9280,7 +9280,6 @@ export default {
       statusFailed: "Fallido",
       statusProcessing: "En proceso",
       saving: "Guardando…",
-      deleteType: "Eliminar {type}",
       createNewSite: "Crear un sitio",
       editSite: "Editar sitio",
       createSiteDescription:
@@ -9379,9 +9378,9 @@ export default {
       preferences: "Preferencias",
       preferencesDescription:
         "Configura el vocabulario del catálogo, la numeración, los flujos de trabajo y el seguimiento de ubicaciones.",
-      locationTypes: "Tipos de ubicación",
-      locationTypesPlaceholder: "Galería, depósito, estantería",
-      noCustomLocationTypes: "No hay tipos de ubicación personalizados.",
+      manageLocations: "Gestionar ubicaciones",
+      manageLocationsDescription:
+        "Añada, edite y organice la jerarquía de ubicaciones en Ubicación y seguimiento.",
       selectOrganizationPreferences:
         "Selecciona una organización para administrar las preferencias.",
       selectOrganizationLibrarySettings:

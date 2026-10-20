@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
 import type { AccessionMode } from "@/components/deaccession-dialog-types";
 import { LocationSelector } from "@/components/location-selector";
+import { useOrganization } from "@/components/organization-provider";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { MoveRequestSubmitAction } from "./use-move-request-detail";
 
@@ -218,27 +219,41 @@ function MoveRequestActionsPanelTargetActions() {
     onTargetLocationChange,
     targetOrganizationId,
   } = useMoveRequestActionsPanel();
+  const { currentOrganization } = useOrganization();
   const { targetReview } = availableActions;
 
   if (!targetReview) return null;
 
+  // Only the receiving organization reviews, so its own setting decides.
+  const tracksLocations =
+    currentOrganization?.settings?.locationTrackingEnabled ?? true;
+
   return (
     <>
       <MoveRequestActionsPanelAccessionChoice />
-      {targetOrganizationId ? (
+      {targetOrganizationId && tracksLocations ? (
         <div className="w-full space-y-2">
-          <Label>
+          <Label htmlFor="receiving-location">
             {tRoot("untranslatedRecords.objects.transfer.receivingLocation")}
           </Label>
           <LocationSelector
+            id="receiving-location"
             organizationId={targetOrganizationId}
             value={targetLocationId}
             onValueChange={onTargetLocationChange}
-            allowNone={false}
             placeholder={tRoot(
               "untranslatedRecords.objects.transfer.receivingLocationPlaceholder",
             )}
+            aria-describedby="receiving-location-hint"
           />
+          <p
+            id="receiving-location-hint"
+            className="text-xs text-muted-foreground"
+          >
+            {tRoot(
+              "untranslatedRecords.objects.transfer.receivingLocationHint",
+            )}
+          </p>
         </div>
       ) : null}
       <Button onClick={onAccept} disabled={submittingAction !== null}>

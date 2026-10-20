@@ -19,6 +19,8 @@ import {
   syncCollectionGroupMemberships,
 } from "./utils/catalogObjects";
 import {
+  getDisplayedMediaFiles,
+  getDisplayedMediaThumbnailUrl,
   getLocationPathStrings,
   isImageMedia,
 } from "./utils/collectionDisplayHelpers";
@@ -153,10 +155,11 @@ async function getObjectDetailHeroImage(
     return null;
   }
 
+  const shown = await getDisplayedMediaFiles(ctx, preferredMedia);
   const [url, thumbnailUrl] = await Promise.all([
-    ctx.storage.getUrl(preferredMedia.storageId),
-    preferredMedia.thumbnailStorageId
-      ? ctx.storage.getUrl(preferredMedia.thumbnailStorageId)
+    ctx.storage.getUrl(shown.storageId),
+    shown.thumbnailStorageId
+      ? ctx.storage.getUrl(shown.thumbnailStorageId)
       : Promise.resolve(null),
   ] as const);
 
@@ -2172,7 +2175,10 @@ export const getChildObjects = query({
             primaryMedia?.storageId &&
             primaryMedia.organizationId === collection.organizationId
           ) {
-            thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+            thumbnailUrl = await getDisplayedMediaThumbnailUrl(
+              ctx,
+              primaryMedia,
+            );
           }
 
           return {
@@ -2278,7 +2284,10 @@ export const getSiblingObjects = query({
             primaryMedia?.storageId &&
             primaryMedia.organizationId === collection.organizationId
           ) {
-            thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+            thumbnailUrl = await getDisplayedMediaThumbnailUrl(
+              ctx,
+              primaryMedia,
+            );
           }
 
           return {
@@ -2359,7 +2368,7 @@ export const getParentObjectWithThumbnail = query({
       primaryMedia?.storageId &&
       primaryMedia.organizationId === collection.organizationId
     ) {
-      thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+      thumbnailUrl = await getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
     }
 
     return {
@@ -2398,7 +2407,7 @@ export const getThumbnail = query({
 
     let thumbnailUrl: string | null = null;
     if (primaryMedia?.storageId) {
-      thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+      thumbnailUrl = await getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
     }
 
     return { thumbnailUrl };

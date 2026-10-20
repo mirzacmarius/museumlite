@@ -175,6 +175,41 @@ describe("mediaVersions", () => {
     expect(version?.editType).toBe("crop");
   });
 
+  test("the object shows its image's saved edit, and the watermark is remembered", async () => {
+    const t = convexTest(schema, modules);
+    const setup = await createTestSetup(t);
+    const authed = authedForUser(t, setup.userId);
+    const versionStorageId = await uploadVersion(t, setup);
+
+    const before = await authed.query(api.media.getWithMetadata, {
+      mediaId: setup.mediaFileId,
+    });
+    expect(before?.watermarked).toBe(false);
+
+    await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: versionStorageId,
+      editType: "watermark",
+      editMetadata: { watermark: { enabled: true, position: "center" } },
+    });
+
+    const versionUrl = await t.run((ctx) =>
+      ctx.storage.getUrl(versionStorageId),
+    );
+    const [gallery, primaryUrl, detail] = await Promise.all([
+      authed.query(api.media.list, { collectionId: setup.collectionId }),
+      authed.query(api.media.getPrimaryImageUrl, {
+        collectionId: setup.collectionId,
+      }),
+      authed.query(api.media.getWithMetadata, { mediaId: setup.mediaFileId }),
+    ]);
+    expect(gallery[0]?.url).toBe(versionUrl);
+    expect(gallery[0]?.thumbnailUrl).toBeNull();
+    expect(primaryUrl).toBe(versionUrl);
+    expect(detail?.url).toBe(versionUrl);
+    expect(detail?.watermarked).toBe(true);
+  });
+
   test("should increment version number correctly", async () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);

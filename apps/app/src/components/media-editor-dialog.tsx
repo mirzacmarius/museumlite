@@ -4,7 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ImageDeletionDialogs } from "@/components/image-deletion-dialogs";
 import { useOrganization } from "@/components/organization-provider";
@@ -67,6 +67,23 @@ export function MediaEditorDialog({
   const trackEdit = useMutation(api.mediaEdits.trackEdit);
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
 
+  // An image that already carries the watermark starts without another one.
+  const savedWatermark = organizationSettings?.settings?.watermarkSettings;
+  const alreadyWatermarked = mediaFile?.watermarked === true;
+  const watermarkSettings = useMemo<WatermarkSettings | undefined>(
+    () =>
+      savedWatermark
+        ? {
+            isEnabled:
+              (savedWatermark.isEnabled ?? false) && !alreadyWatermarked,
+            text: savedWatermark.text ?? "",
+            opacity: savedWatermark.opacity ?? 0.5,
+            position: savedWatermark.position ?? "bottom-right",
+          }
+        : undefined,
+    [savedWatermark, alreadyWatermarked],
+  );
+
   const handleSave = useCallback(
     async (editedBlob: Blob, editMetadata: EditMetadata) => {
       if (!mediaId || !currentOrganizationId || !mediaFile) {
@@ -113,12 +130,16 @@ export function MediaEditorDialog({
           editType = "watermark";
         }
 
-        // Create new version
+        // Create new version. Its image keeps a watermark burned in before.
+        const watermarked =
+          editMetadata.watermark?.enabled === true || mediaFile.watermarked;
         const versionId = await createVersion({
           mediaId: mediaId,
           storageId: storageId as Id<"_storage">,
           editType,
-          editMetadata,
+          editMetadata: watermarked
+            ? { ...editMetadata, watermarked }
+            : editMetadata,
         });
 
         // Track all individual edits
@@ -219,20 +240,6 @@ export function MediaEditorDialog({
     url: mediaFile.url || "",
     title: mediaFile.fileName,
   };
-
-  // Prepare watermark settings
-  const watermarkSettings: WatermarkSettings | undefined = organizationSettings
-    ?.settings?.watermarkSettings
-    ? {
-        isEnabled:
-          organizationSettings.settings.watermarkSettings.isEnabled ?? false,
-        text: organizationSettings.settings.watermarkSettings.text ?? "",
-        opacity: organizationSettings.settings.watermarkSettings.opacity ?? 0.5,
-        position:
-          organizationSettings.settings.watermarkSettings.position ??
-          "bottom-right",
-      }
-    : undefined;
 
   const canDelete = deletionState?.canDelete === true;
   const deletionPending =
