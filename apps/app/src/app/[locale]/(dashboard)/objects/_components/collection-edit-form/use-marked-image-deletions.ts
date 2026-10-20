@@ -56,21 +56,25 @@ export function useMarkedImageDeletions({
     if (marked.size === 0) return true;
     setIsSending(true);
     setError(null);
+    const entries = [...marked];
+    const results = await Promise.allSettled(
+      entries.map(([mediaId, requiresApproval]) =>
+        requiresApproval
+          ? requestDeletion({ mediaId })
+          : deleteImage({ mediaId }),
+      ),
+    );
     let requested = 0;
     let deleted = 0;
     let refusal: string | null = null;
-    for (const [mediaId, requiresApproval] of marked) {
-      try {
-        if (requiresApproval) {
-          await requestDeletion({ mediaId });
-          requested += 1;
-        } else {
-          await deleteImage({ mediaId });
-          deleted += 1;
-        }
+    for (const [index, result] of results.entries()) {
+      const [mediaId, requiresApproval] = entries[index] ?? [];
+      if (result.status === "rejected") {
+        refusal ??= errorMessage(result.reason, t("imageDeletion.failed"));
+      } else if (mediaId) {
+        if (requiresApproval) requested += 1;
+        else deleted += 1;
         keep(mediaId);
-      } catch (error) {
-        refusal ??= errorMessage(error, t("imageDeletion.failed"));
       }
     }
     setIsSending(false);
