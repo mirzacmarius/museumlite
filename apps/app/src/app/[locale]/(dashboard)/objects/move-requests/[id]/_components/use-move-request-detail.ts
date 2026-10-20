@@ -34,7 +34,7 @@ export function useMoveRequestDetail() {
 
   const [reviewNotes, setReviewNotes] = useState("");
   const [targetLocationId, setTargetLocationId] = useState("");
-  // Unset until the receiver picks, so the request's stored choice shows.
+  // Unset until the receiver picks, so the default below shows.
   const [chosenAccessionMode, setChosenAccessionMode] =
     useState<AccessionMode | null>(null);
   const [chosenAccessionNumber, setChosenAccessionNumber] = useState<
