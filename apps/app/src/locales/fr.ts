@@ -7810,10 +7810,9 @@ export default {
         executed: "Effectué",
         search: "Rechercher des transferts",
         pendingApproval: "Approbation du transfert en attente",
+        awaitingReceiver: "En attente d’acceptation par le destinataire",
         incomingRequests: "Demandes de transfert reçues",
-        executedTransfers: "Transferts effectués",
-        rejectedTransfers: "Transferts refusés",
-        cancelledTransfers: "Transferts annulés",
+        transferLog: "Journal des transferts",
       },
       errors: {
         submitDraft: "Échec de l’envoi du brouillon",
@@ -7868,9 +7867,9 @@ export default {
           approved: "Aucun transfert approuvé n’est en attente pour le moment.",
           incoming:
             "Aucune demande de transfert entrante n’est en attente pour le moment.",
-          executed: "Aucun transfert effectué ne correspond à cette recherche.",
-          rejected: "Aucun transfert rejeté ne correspond à cette recherche.",
-          cancelled: "Aucun transfert annulé ne correspond à cette recherche.",
+          awaitingReceiver:
+            "Aucun transfert n’attend l’acceptation d’un destinataire.",
+          log: "Aucun transfert terminé ne correspond à cette recherche.",
         },
         newAccession: "Générer un nouveau numéro d’accession",
       },

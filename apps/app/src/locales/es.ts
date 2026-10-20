@@ -7783,10 +7783,9 @@ export default {
         executed: "Ejecutado",
         search: "Buscar transferencias",
         pendingApproval: "Aprobación de transferencia pendiente",
+        awaitingReceiver: "Pendientes de aceptación por el receptor",
         incomingRequests: "Solicitudes de transferencia recibidas",
-        executedTransfers: "Transferencias ejecutadas",
-        rejectedTransfers: "Transferencias rechazadas",
-        cancelledTransfers: "Transferencias canceladas",
+        transferLog: "Registro de transferencias",
       },
       errors: {
         submitDraft: "No se pudo enviar el borrador",
@@ -7839,12 +7838,9 @@ export default {
           pending: "No hay aprobaciones de transferencias pendientes.",
           approved: "No hay transferencias aprobadas pendientes.",
           incoming: "No hay solicitudes de transferencia entrantes pendientes.",
-          executed:
-            "Ninguna transferencia realizada coincide con esta búsqueda.",
-          rejected:
-            "Ninguna transferencia rechazada coincide con esta búsqueda.",
-          cancelled:
-            "Ninguna transferencia cancelada coincide con esta búsqueda.",
+          awaitingReceiver:
+            "No hay transferencias pendientes de aceptación por un receptor.",
+          log: "Ninguna transferencia finalizada coincide con esta búsqueda.",
         },
         newAccession: "Generar un nuevo número de accesión",
       },

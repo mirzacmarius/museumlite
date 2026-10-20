@@ -9,6 +9,7 @@ import {
   Ban,
   CheckCircle2,
   Clock3,
+  ScrollText,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
@@ -31,7 +32,8 @@ type TransferDirection = TransferRequest["direction"];
 type Translator = ReturnType<typeof useI18nType>;
 
 type TransferKanbanColumnProps = {
-  status: TransferStatus;
+  /** The statuses the column lists; finished ones make it the transfer log. */
+  statuses: readonly TransferStatus[];
   direction: TransferDirection;
   title: string;
   searchQuery: string;
@@ -97,6 +99,7 @@ const statusLabels: Record<TransferStatus, Parameters<Translator>[0]> = {
 
 function getTransferEmptyMessage(
   status: TransferStatus,
+  direction: TransferDirection,
   tRoot: Translator,
 ): string {
   switch (status) {
@@ -106,20 +109,31 @@ function getTransferEmptyMessage(
     case "approved_for_transfer":
       return tRoot("untranslatedRecords.accessions.transfers.empty.approved");
     case "awaiting_acceptance":
-      return tRoot("untranslatedRecords.accessions.transfers.empty.incoming");
+      return direction === "incoming"
+        ? tRoot("untranslatedRecords.accessions.transfers.empty.incoming")
+        : tRoot(
+            "untranslatedRecords.accessions.transfers.empty.awaitingReceiver",
+          );
     case "executed":
-      return tRoot("untranslatedRecords.accessions.transfers.empty.executed");
     case "rejected":
-      return tRoot("untranslatedRecords.accessions.transfers.empty.rejected");
     case "cancelled":
-      return tRoot("untranslatedRecords.accessions.transfers.empty.cancelled");
+      return tRoot("untranslatedRecords.accessions.transfers.empty.log");
   }
 }
 
-/** Finished transfers read as a log of decisions rather than as cards. */
-const LOG_STATUSES = new Set<TransferStatus>(["executed", "rejected"]);
+/** Finished transfers read as a log of outcomes rather than as cards. */
+const LOG_STATUSES = new Set<TransferStatus>([
+  "executed",
+  "rejected",
+  "cancelled",
+]);
 
-/** When the deciding organization executed or rejected the transfer. */
+const LOG_STYLE = {
+  badge: "bg-zinc-500/15 text-zinc-300",
+  icon: ScrollText,
+};
+
+/** When the transfer was executed, rejected or cancelled. */
 function decidedAt(request: TransferRequest) {
   return (
     request.targetReviewedAt ??
@@ -130,15 +144,15 @@ function decidedAt(request: TransferRequest) {
 }
 
 /**
- * Why a transfer was rejected, otherwise where it went. A receiver's decline
- * says who declined.
+ * Why a transfer was rejected or cancelled, otherwise where it went. A
+ * receiver's decline says who declined.
  */
 function logDetail(
   request: TransferRequest,
   declinedBy: (organization: string) => string,
 ) {
-  if (request.status !== "rejected") return request.targetOrganizationName;
-  if (request.targetReviewedAt !== undefined) {
+  if (request.status === "executed") return request.targetOrganizationName;
+  if (request.status === "rejected" && request.targetReviewedAt !== undefined) {
     const declined = declinedBy(request.targetOrganizationName);
     return request.targetReviewNotes
       ? `${declined}: ${request.targetReviewNotes}`
@@ -156,7 +170,7 @@ function newestDecisionFirst(left: TransferRequest, right: TransferRequest) {
 }
 
 export function TransferKanbanColumn({
-  status,
+  statuses,
   direction,
   title,
   searchQuery,
@@ -165,9 +179,10 @@ export function TransferKanbanColumn({
   const tRoot = useI18n();
   const tMoves = useScopedI18n("moveRequests");
   const locale = useCurrentLocale();
-  const style = statusStyles[status];
-  const Icon = style.icon;
-  const isLog = LOG_STATUSES.has(status);
+  const isLog = statuses.every((status) => LOG_STATUSES.has(status));
+  const firstStatus = statuses[0] ?? "pending_source_approval";
+  const emptyStyle = isLog ? LOG_STYLE : statusStyles[firstStatus];
+  const EmptyIcon = emptyStyle.icon;
   const [shownLog, setShownLog] = useState({
     search: searchQuery,
     length: RECORD_LOG_PAGE_SIZE,
@@ -176,7 +191,7 @@ export function TransferKanbanColumn({
     shownLog.search === searchQuery ? shownLog.length : RECORD_LOG_PAGE_SIZE;
 
   const filteredRequests = transferRequests.filter((request) => {
-    if (request.status !== status || request.direction !== direction) {
+    if (!statuses.includes(request.status) || request.direction !== direction) {
       return false;
     }
 
@@ -219,11 +234,11 @@ export function TransferKanbanColumn({
           <div className="flex flex-col gap-2 p-2">
             {filteredRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className={`rounded-full p-2 ${style.badge}`}>
-                  <Icon className="size-4" />
+                <div className={`rounded-full p-2 ${emptyStyle.badge}`}>
+                  <EmptyIcon className="size-4" />
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  {getTransferEmptyMessage(status, tRoot)}
+                  {getTransferEmptyMessage(firstStatus, direction, tRoot)}
                 </p>
               </div>
             ) : isLog ? (
@@ -238,6 +253,10 @@ export function TransferKanbanColumn({
                     detail={logDetail(request, (organization) =>
                       tMoves("declinedBy", { organization }),
                     )}
+                    status={{
+                      label: tRoot(statusLabels[request.status]),
+                      className: statusStyles[request.status].badge,
+                    }}
                   />
                 ))}
               </RecordLog>
@@ -246,7 +265,7 @@ export function TransferKanbanColumn({
                 <Link
                   key={request._id}
                   href={`/objects/move-requests/${request._id}`}
-                  className={`group block rounded-xl border p-3 transition-colors ${style.card}`}
+                  className={`group block rounded-xl border p-3 transition-colors ${statusStyles[request.status].card}`}
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
@@ -262,9 +281,9 @@ export function TransferKanbanColumn({
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${style.badge}`}
+                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${statusStyles[request.status].badge}`}
                     >
-                      {tRoot(statusLabels[status])}
+                      {tRoot(statusLabels[request.status])}
                     </span>
                   </div>
 
@@ -303,18 +322,16 @@ export function TransferKanbanColumn({
                     </div>
                   </div>
 
-                  {status === "cancelled" ? null : (
-                    <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
-                        {tRoot(
-                          "untranslatedRecords.accessions.transfer.handling",
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-200">
-                        {tMoves("accession.chosenByReceiver")}
-                      </p>
-                    </div>
-                  )}
+                  <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
+                      {tRoot(
+                        "untranslatedRecords.accessions.transfer.handling",
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-200">
+                      {tMoves("accession.chosenByReceiver")}
+                    </p>
+                  </div>
 
                   {request.targetReviewNotes || request.sourceReviewNotes ? (
                     <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
