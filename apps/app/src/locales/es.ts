@@ -59,7 +59,7 @@ export default {
 
     title: "Evaluaciones del estado",
     description:
-      "Se conservan las observaciones fechadas y las fotos. Guarda un borrador mientras trabajas y envíalo; un responsable lo acepta para actualizar el estado actual.",
+      "Se conservan las observaciones fechadas y las fotos. Envía una evaluación para aprobación; un responsable la acepta para actualizar el estado actual.",
     current: "Estado actual",
     unknown: "Desconocido",
     acceptedSource: "Procede de una evaluación aceptada",
@@ -82,7 +82,6 @@ export default {
     remove: "Quitar",
     photos: "Fotos de evidencia",
     uploadPhoto: "Subir foto",
-    saveDraft: "Guardar borrador",
     submitForApproval: "Enviar para aprobación",
     submitting: "Enviando…",
     editDraft: "Editar borrador",
@@ -102,7 +101,6 @@ export default {
     reject: "Rechazar evaluación",
     rejectionReason: "Motivo del rechazo: {reason}",
     loading: "Cargando evaluaciones…",
-    saving: "Guardando borrador…",
     observationNumber: "Observación {number}",
     errors: {
       date: "Elige una fecha que no sea futura.",
@@ -123,8 +121,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "El objeto o una foto de evidencia ya no está disponible. Rechaza esta evaluación y registra una nueva.",
     },
-    draftSaved: "Borrador guardado. Envíalo para aprobación cuando esté listo.",
-    saveFailed: "No se pudo guardar el borrador. Inténtalo de nuevo.",
     submitted:
       "Evaluación enviada. Un responsable ya puede aceptarla o rechazarla.",
     submitFailed: "No se pudo enviar la evaluación. Inténtalo de nuevo.",
@@ -7783,10 +7779,9 @@ export default {
         executed: "Ejecutado",
         search: "Buscar transferencias",
         pendingApproval: "Aprobación de transferencia pendiente",
+        awaitingReceiver: "Pendientes de aceptación por el receptor",
         incomingRequests: "Solicitudes de transferencia recibidas",
-        executedTransfers: "Transferencias ejecutadas",
-        rejectedTransfers: "Transferencias rechazadas",
-        cancelledTransfers: "Transferencias canceladas",
+        transferLog: "Registro de transferencias",
       },
       errors: {
         submitDraft: "No se pudo enviar el borrador",
@@ -7839,12 +7834,9 @@ export default {
           pending: "No hay aprobaciones de transferencias pendientes.",
           approved: "No hay transferencias aprobadas pendientes.",
           incoming: "No hay solicitudes de transferencia entrantes pendientes.",
-          executed:
-            "Ninguna transferencia realizada coincide con esta búsqueda.",
-          rejected:
-            "Ninguna transferencia rechazada coincide con esta búsqueda.",
-          cancelled:
-            "Ninguna transferencia cancelada coincide con esta búsqueda.",
+          awaitingReceiver:
+            "No hay transferencias pendientes de aceptación por un receptor.",
+          log: "Ninguna transferencia finalizada coincide con esta búsqueda.",
         },
         newAccession: "Generar un nuevo número de accesión",
       },
@@ -8128,8 +8120,7 @@ export default {
         noImagesUploaded: "Aún no se han subido imágenes.",
         savedToObject: "Guardado con este objeto",
         conditionChangeNote: "Nota sobre el cambio de estado",
-        detailedDimensionsHint:
-          "Documente las dimensiones, el diámetro y el peso.",
+        detailedDimensionsHint: "Documente el diámetro y el peso.",
         ownershipHistory: "Historial de propiedad",
         ownershipHistoryDescription:
           "Documente la cadena de propiedad entrada por entrada.",
@@ -10957,10 +10948,16 @@ export default {
     pending: "Eliminación pendiente de aprobación",
     pendingDescription:
       "La eliminación de esta imagen espera aprobación. La imagen se conserva hasta que un aprobador decida.",
+    marked: "Marcada para eliminar",
+    markedDescription:
+      "Se elimina, o se envía para aprobación, al seleccionar Actualizar Objeto. Cancelar conserva la imagen.",
+    keepImage: "Conservar imagen",
     confirm: {
       title: "¿Seguro que quieres eliminar esta imagen?",
       approvalHint:
         "Primero un aprobador revisa la eliminación. La imagen se conserva hasta que la apruebe.",
+      sentOnUpdate:
+        "No se elimina nada hasta que selecciones Actualizar Objeto. Cancelar conserva la imagen.",
     },
     finalConfirm: {
       title: "Esto eliminará la imagen.",

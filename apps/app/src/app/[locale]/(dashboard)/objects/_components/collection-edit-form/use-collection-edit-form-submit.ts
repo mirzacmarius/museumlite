@@ -17,6 +17,9 @@ interface UseCollectionEditFormSubmitOptions {
   typedCollectionId: Id<"collections">;
   session: Pick<RecordFormSession<CollectionEditValues>, "isDirty" | "save">;
   hasMediaChanges: boolean;
+  hasMarkedImages: boolean;
+  /** Sends the images marked for deletion; true when all went through. */
+  sendImageDeletions: () => Promise<boolean>;
 }
 
 export function useCollectionEditFormSubmit({
@@ -24,24 +27,51 @@ export function useCollectionEditFormSubmit({
   typedCollectionId,
   session,
   hasMediaChanges,
+  hasMarkedImages,
+  sendImageDeletions,
 }: UseCollectionEditFormSubmitOptions) {
   const { push } = useRouter();
   const updateCollection = useMutation(api.collections.update);
   const { isDirty, save } = session;
 
-  const canUpdateObject = isDirty || hasMediaChanges;
+  const canUpdateObject = isDirty || hasMediaChanges || hasMarkedImages;
 
   const saveRecord = useCallback(
-    (afterSave?: () => void) =>
-      save(
-        ({ values, changedFields, expectedEditVersion }) =>
-          updateCollection({
-            ...collectionUpdatePatch(typedCollectionId, values, changedFields),
-            expectedEditVersion,
-          }),
-        afterSave,
-      ),
-    [save, typedCollectionId, updateCollection],
+    async (afterSave?: () => void) => {
+      const saveFields = (then?: () => void) =>
+        save(
+          ({ values, changedFields, expectedEditVersion }) =>
+            updateCollection({
+              ...collectionUpdatePatch(
+                typedCollectionId,
+                values,
+                changedFields,
+              ),
+              expectedEditVersion,
+            }),
+          then,
+        );
+      if (!hasMarkedImages) {
+        if (isDirty) return saveFields(afterSave);
+        afterSave?.();
+        return true;
+      }
+      // Marked images go only once the fields have saved, so a refused field
+      // leaves every image in place for Cancel to keep; a refused deletion
+      // keeps staff on the form with the reason.
+      if (isDirty && !(await saveFields())) return false;
+      if (!(await sendImageDeletions())) return false;
+      afterSave?.();
+      return true;
+    },
+    [
+      hasMarkedImages,
+      isDirty,
+      save,
+      sendImageDeletions,
+      typedCollectionId,
+      updateCollection,
+    ],
   );
 
   const handleSubmit = useCallback(
@@ -50,14 +80,9 @@ export function useCollectionEditFormSubmit({
       // their submit still bubbles here through the React tree.
       if (event.target !== event.currentTarget) return;
       event.preventDefault();
-      if (!isDirty && hasMediaChanges) {
-        push(`/objects/${collectionId}`);
-        return;
-      }
-
       await saveRecord(() => push(`/objects/${collectionId}`));
     },
-    [collectionId, hasMediaChanges, isDirty, push, saveRecord],
+    [collectionId, push, saveRecord],
   );
 
   return {

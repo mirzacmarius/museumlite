@@ -12,6 +12,7 @@ import { TransferKanbanColumn } from "./transfer-kanban-column";
 import {
   countIncomingTransfers,
   countPendingTransfers,
+  countTransfersAwaitingReceiver,
 } from "./use-open-transfer-count";
 
 type TransfersBoardProps = {
@@ -32,6 +33,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     if (!transferRequests) {
       return {
         pending: "-",
+        awaitingReceiver: "-",
         incoming: "-",
         executed: "-",
         rejected: "-",
@@ -41,6 +43,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
 
     return {
       pending: countPendingTransfers(transferRequests),
+      awaitingReceiver: countTransfersAwaitingReceiver(transferRequests),
       incoming: countIncomingTransfers(transferRequests),
       executed: transferRequests.filter(
         (request) =>
@@ -58,8 +61,15 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
   }, [transferRequests]);
 
   if (transferRequests === undefined) {
-    return <AccessionsPageSkeleton actionsCount={1} statsCount={5} />;
+    return <AccessionsPageSkeleton actionsCount={1} statsCount={6} />;
   }
+
+  const visibleRequests = statusFilter
+    ? transferRequests.filter(
+        (request) =>
+          request.status === statusFilter && request.direction === "outgoing",
+      )
+    : transferRequests;
 
   return (
     <div className="flex size-full flex-col bg-background p-6">
@@ -68,6 +78,12 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
           <TransferStat
             label={tRoot("accessions.stats.pending")}
             value={stats.pending}
+          />
+          <TransferStat
+            label={tRoot(
+              "untranslatedRecords.accessions.transfers.awaitingAcceptance",
+            )}
+            value={stats.awaitingReceiver}
           />
           <TransferStat
             label={tRoot("loans.filters.incoming")}
@@ -109,89 +125,38 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
       <div className="flex-1 overflow-x-auto custom-scrollbar">
         <div className="flex h-full min-w-max gap-6 pb-4">
           <TransferKanbanColumn
-            status="pending_source_approval"
+            statuses={["pending_source_approval"]}
             direction="outgoing"
             title={tRoot(
               "untranslatedRecords.accessions.transfer.pendingApproval",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={
-              statusFilter
-                ? transferRequests.filter(
-                    (request) =>
-                      request.status === statusFilter &&
-                      request.direction === "outgoing",
-                  )
-                : transferRequests
-            }
+            transferRequests={visibleRequests}
           />
           <TransferKanbanColumn
-            status="awaiting_acceptance"
+            statuses={["awaiting_acceptance"]}
+            direction="outgoing"
+            title={tRoot(
+              "untranslatedRecords.accessions.transfer.awaitingReceiver",
+            )}
+            searchQuery={deferredSearchQuery}
+            transferRequests={visibleRequests}
+          />
+          <TransferKanbanColumn
+            statuses={["awaiting_acceptance"]}
             direction="incoming"
             title={tRoot(
               "untranslatedRecords.accessions.transfer.incomingRequests",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={
-              statusFilter
-                ? transferRequests.filter(
-                    (request) =>
-                      request.status === statusFilter &&
-                      request.direction === "outgoing",
-                  )
-                : transferRequests
-            }
+            transferRequests={visibleRequests}
           />
           <TransferKanbanColumn
-            status="executed"
+            statuses={["executed", "rejected", "cancelled"]}
             direction="outgoing"
-            title={tRoot(
-              "untranslatedRecords.accessions.transfer.executedTransfers",
-            )}
+            title={tRoot("untranslatedRecords.accessions.transfer.transferLog")}
             searchQuery={deferredSearchQuery}
-            transferRequests={
-              statusFilter
-                ? transferRequests.filter(
-                    (request) =>
-                      request.status === statusFilter &&
-                      request.direction === "outgoing",
-                  )
-                : transferRequests
-            }
-          />
-          <TransferKanbanColumn
-            status="rejected"
-            direction="outgoing"
-            title={tRoot(
-              "untranslatedRecords.accessions.transfer.rejectedTransfers",
-            )}
-            searchQuery={deferredSearchQuery}
-            transferRequests={
-              statusFilter
-                ? transferRequests.filter(
-                    (request) =>
-                      request.status === statusFilter &&
-                      request.direction === "outgoing",
-                  )
-                : transferRequests
-            }
-          />
-          <TransferKanbanColumn
-            status="cancelled"
-            direction="outgoing"
-            title={tRoot(
-              "untranslatedRecords.accessions.transfer.cancelledTransfers",
-            )}
-            searchQuery={deferredSearchQuery}
-            transferRequests={
-              statusFilter
-                ? transferRequests.filter(
-                    (request) =>
-                      request.status === statusFilter &&
-                      request.direction === "outgoing",
-                  )
-                : transferRequests
-            }
+            transferRequests={visibleRequests}
           />
         </div>
       </div>

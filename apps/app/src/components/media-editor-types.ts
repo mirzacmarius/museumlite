@@ -29,7 +29,11 @@ export interface MediaEditorProps {
 export interface MediaEditorDeletion {
   /** The image already waits for deletion approval. */
   pending: boolean;
+  /** Marked for deletion in the form, to be sent with Update Object. */
+  marked: boolean;
   onDelete: () => void;
+  /** Takes back the mark, keeping the image. */
+  onKeep: () => void;
 }
 
 export interface EditMetadata {

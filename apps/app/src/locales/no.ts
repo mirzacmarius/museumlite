@@ -58,7 +58,7 @@ export default {
 
     title: "Tilstandsvurderinger",
     description:
-      "Daterte observasjoner og bilder beholdes. Lagre et utkast mens du arbeider, og send det inn; en kontrollør godkjenner det for å oppdatere gjeldende tilstand.",
+      "Daterte observasjoner og bilder beholdes. Send en vurdering til godkjenning; en kontrollør godkjenner den for å oppdatere gjeldende tilstand.",
     current: "Gjeldende tilstand",
     unknown: "Ukjent",
     acceptedSource: "Fra en godkjent vurdering",
@@ -80,7 +80,6 @@ export default {
     remove: "Fjern",
     photos: "Dokumentasjonsbilder",
     uploadPhoto: "Last opp bilde",
-    saveDraft: "Lagre utkast",
     submitForApproval: "Send til godkjenning",
     submitting: "Sender inn…",
     editDraft: "Rediger utkast",
@@ -100,7 +99,6 @@ export default {
     reject: "Avvis vurdering",
     rejectionReason: "Begrunnelse for avvisning: {reason}",
     loading: "Laster tilstandsvurderinger…",
-    saving: "Lagrer utkast…",
     observationNumber: "Observasjon {number}",
     errors: {
       date: "Velg en dato som ikke er fram i tid.",
@@ -121,8 +119,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "Objektet eller et dokumentasjonsbilde er ikke lenger tilgjengelig. Avvis denne vurderingen og registrer en ny.",
     },
-    draftSaved: "Utkast lagret. Send det til godkjenning når det er klart.",
-    saveFailed: "Kunne ikke lagre utkastet. Prøv igjen.",
     submitted:
       "Vurderingen er sendt inn. En kontrollør kan nå godkjenne eller avvise den.",
     submitFailed: "Kunne ikke sende inn vurderingen. Prøv igjen.",
@@ -7722,10 +7718,9 @@ export default {
         executed: "Gjennomført",
         search: "Søk i overføringer",
         pendingApproval: "Venter på godkjenning av overføring",
+        awaitingReceiver: "Venter på aksept fra mottaker",
         incomingRequests: "Innkommende overføringsforespørsler",
-        executedTransfers: "Gjennomførte overføringer",
-        rejectedTransfers: "Avslåtte overføringer",
-        cancelledTransfers: "Avlyste overføringer",
+        transferLog: "Overføringslogg",
       },
       errors: {
         submitDraft: "Kunne ikke sende inn utkastet",
@@ -7777,9 +7772,9 @@ export default {
           pending: "Ingen overføringer venter på godkjenning nå.",
           approved: "Ingen godkjente overføringer venter nå.",
           incoming: "Ingen innkommende overføringsforespørsler venter nå.",
-          executed: "Ingen gjennomførte overføringer samsvarer med søket.",
-          rejected: "Ingen avviste overføringer samsvarer med søket.",
-          cancelled: "Ingen avbrutte overføringer samsvarer med søket.",
+          awaitingReceiver:
+            "Ingen overføringer venter på aksept fra en mottaker.",
+          log: "Ingen avsluttede overføringer samsvarer med søket.",
         },
         newAccession: "Opprett et nytt aksesjonsnummer",
       },
@@ -8055,7 +8050,7 @@ export default {
         noImagesUploaded: "Ingen bilder er lastet opp ennå.",
         savedToObject: "Lagret med dette objektet",
         conditionChangeNote: "Merknad om tilstandsendring",
-        detailedDimensionsHint: "Registrer mål, diameter og vekt.",
+        detailedDimensionsHint: "Registrer diameter og vekt.",
         ownershipHistory: "Eierhistorikk",
         ownershipHistoryDescription: "Dokumenter eierrekken post for post.",
         ownershipHistoryHint:
@@ -10821,10 +10816,16 @@ export default {
     pending: "Sletting venter på godkjenning",
     pendingDescription:
       "Slettingen av dette bildet venter på godkjenning. Bildet blir værende til en godkjenner har bestemt seg.",
+    marked: "Merket for sletting",
+    markedDescription:
+      "Slettes, eller sendes til godkjenning, når du velger Oppdater Objekt. Avbryt beholder bildet.",
+    keepImage: "Behold bildet",
     confirm: {
       title: "Er du sikker på at du vil slette dette bildet?",
       approvalHint:
         "En godkjenner vurderer slettingen først. Bildet blir værende til slettingen er godkjent.",
+      sentOnUpdate:
+        "Ingenting slettes før du velger Oppdater Objekt. Avbryt beholder bildet.",
     },
     finalConfirm: {
       title: "Dette sletter bildet.",

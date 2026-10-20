@@ -17,13 +17,20 @@ import {
   type WatermarkSettings,
 } from "./media-editor";
 
+/** How the object's edit form collects image deletions until it is updated. */
+export interface MediaEditorDialogDeletion {
+  marked: boolean;
+  onMark: (requiresApproval: boolean) => void;
+  onKeep: () => void;
+}
+
 interface MediaEditorDialogProps {
   mediaId: Id<"mediaFiles"> | null;
   isOpen: boolean;
   onClose: () => void;
   onSaved?: () => void;
   /** Offers deleting the image, as the object's edit form does. */
-  allowDelete?: boolean;
+  deletion?: MediaEditorDialogDeletion;
 }
 
 export function MediaEditorDialog({
@@ -31,7 +38,7 @@ export function MediaEditorDialog({
   isOpen,
   onClose,
   onSaved,
-  allowDelete = false,
+  deletion,
 }: MediaEditorDialogProps) {
   const translate = useI18n();
   const actionErrorMessage = useActionErrorMessage();
@@ -46,7 +53,7 @@ export function MediaEditorDialog({
   );
   const deletionState = useQuery(
     api.mediaDeletions.getDeletionState,
-    allowDelete && isOpen && mediaId ? { mediaId } : "skip",
+    deletion && isOpen && mediaId ? { mediaId } : "skip",
   );
 
   // Load organization for watermark settings
@@ -243,22 +250,26 @@ export function MediaEditorDialog({
         onSave={handleSave}
         watermarkSettings={watermarkSettings}
         deletion={
-          canDelete || deletionPending
+          deletion && (canDelete || deletionPending)
             ? {
                 pending: deletionPending,
+                marked: deletion.marked,
                 onDelete: () => setIsConfirmingDelete(true),
+                onKeep: deletion.onKeep,
               }
             : undefined
         }
       />
-      {canDelete && deletionState ? (
+      {deletion && canDelete && deletionState ? (
         <ImageDeletionDialogs
-          mediaId={mediaFile._id}
           fileName={mediaFile.fileName}
           requiresApproval={deletionState.requiresApproval}
           open={isConfirmingDelete}
           onOpenChange={setIsConfirmingDelete}
-          onDone={onClose}
+          onConfirm={() => {
+            deletion.onMark(deletionState.requiresApproval);
+            onClose();
+          }}
         />
       ) : null}
     </>

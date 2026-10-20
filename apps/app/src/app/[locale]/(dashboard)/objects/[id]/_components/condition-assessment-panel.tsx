@@ -81,11 +81,14 @@ export function ConditionAssessmentPanel({
   collectionId,
   mode = "view",
   showCurrent = true,
+  onSubmitted,
 }: {
   collectionId: Id<"collections">;
   mode?: "view" | "edit";
   /** Off where a summary card beside the panel already shows it. */
   showCurrent?: boolean;
+  /** Called once an assessment is submitted, e.g. to close its dialog. */
+  onSubmitted?: () => void;
 }) {
   const t = useScopedI18n("conditionAssessments");
   const translate = useI18n();
@@ -241,6 +244,7 @@ export function ConditionAssessmentPanel({
           organizationId={detail.organizationId}
           draft={draft}
           onNotice={setNotice}
+          onSubmitted={onSubmitted}
         />
       ) : null}
       {notice ? (
@@ -338,19 +342,21 @@ export function ConditionAssessmentPanel({
 }
 
 /**
- * The assessment staff are recording: a new one, or the object's draft.
- * Saving keeps a draft; submitting sends it to a reviewer.
+ * The assessment staff are recording: a new one, or a draft saved before
+ * drafts were retired. Submitting sends it to a reviewer.
  */
 function AssessmentForm({
   collectionId,
   organizationId,
   draft,
   onNotice,
+  onSubmitted,
 }: {
   collectionId: Id<"collections">;
   organizationId: Id<"organizations">;
   draft: OpenAssessment | null;
   onNotice: (notice: string) => void;
+  onSubmitted?: () => void;
 }) {
   const t = useScopedI18n("conditionAssessments");
   const { hasPermission } = usePermissions();
@@ -380,7 +386,7 @@ function AssessmentForm({
   const [photoIds, setPhotoIds] = useState<Id<"mediaFiles">[]>(
     draft?.photoIds ?? [],
   );
-  const [busy, setBusy] = useState<"save" | "submit" | "upload" | null>(null);
+  const [busy, setBusy] = useState<"submit" | "upload" | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [refusal, setRefusal] = useState<Refusal | null>(null);
   const canUpload =
@@ -423,13 +429,13 @@ function AssessmentForm({
     return errors;
   }
 
-  async function save(submit: boolean) {
+  async function submit() {
     setRefusal(null);
     onNotice("");
     const errors = validate();
     setFieldErrors(errors);
     if (focusFirstFieldInError(errors)) return;
-    setBusy(submit ? "submit" : "save");
+    setBusy("submit");
     const content = {
       assessedAt: assessedAtFor(day, Date.now()),
       condition: condition.trim(),
@@ -447,7 +453,7 @@ function AssessmentForm({
           !draft?.photoIds.includes(id) ||
           media.some((item) => item._id === id),
       ),
-      submit,
+      submit: true,
     };
     try {
       if (draft) {
@@ -455,25 +461,21 @@ function AssessmentForm({
       } else {
         await create({ collectionId, ...content });
       }
-      onNotice(submit ? t("submitted") : t("draftSaved"));
+      onNotice(t("submitted"));
+      onSubmitted?.();
     } catch (cause) {
-      setRefusal({
-        message: errorMessage(
-          cause,
-          submit ? t("submitFailed") : t("saveFailed"),
-        ),
-      });
+      setRefusal({ message: errorMessage(cause, t("submitFailed")) });
     } finally {
       setBusy(null);
     }
   }
 
-  function saveDraft(event: React.FormEvent<HTMLFormElement>) {
+  function submitForApproval(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     // The edit form opens this panel in a dialog portal, and React still
     // bubbles the submit to the object form around it.
     event.stopPropagation();
-    void save(false);
+    void submit();
   }
 
   async function uploadPhoto(file: File) {
@@ -522,7 +524,7 @@ function AssessmentForm({
   return (
     <form
       noValidate
-      onSubmit={saveDraft}
+      onSubmit={submitForApproval}
       className="space-y-4 rounded-lg border border-border p-4"
     >
       <div>
@@ -730,17 +732,8 @@ function AssessmentForm({
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <Button
           type="submit"
-          variant="outline"
           disabled={busy !== null}
           className="w-full sm:w-auto"
-        >
-          {busy === "save" ? t("saving") : t("saveDraft")}
-        </Button>
-        <Button
-          type="button"
-          disabled={busy !== null}
-          className="w-full sm:w-auto"
-          onClick={() => void save(true)}
         >
           {busy === "submit" ? t("submitting") : t("submitForApproval")}
         </Button>

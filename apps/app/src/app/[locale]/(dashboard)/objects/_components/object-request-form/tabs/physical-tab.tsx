@@ -23,7 +23,6 @@ import {
 export function ObjectRequestPhysicalTab({
   formData,
   updateField,
-  placeholders,
   currentOrganizationId,
   fieldErrors = NO_FIELD_ERRORS,
 }: CollectionFormTabProps) {
@@ -76,21 +75,7 @@ export function ObjectRequestPhysicalTab({
                 )}
               </p>
             </div>
-            <div className="grid gap-5 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="dimensions">
-                  {tRoot("objects.form.dimensions")}
-                </Label>
-                <Input
-                  id="dimensions"
-                  value={formData.dimensions || ""}
-                  onChange={(event) =>
-                    updateField("dimensions", event.target.value)
-                  }
-                  placeholder={placeholders("dimensions")}
-                />
-              </div>
-
+            <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="dimensionDiameter">
                   {tRoot("objects.printView.diameter")}

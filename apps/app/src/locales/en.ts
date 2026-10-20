@@ -56,7 +56,7 @@ export default {
 
     title: "Condition assessments",
     description:
-      "Dated observations and photos are retained. Save a draft while you work, then submit it; a reviewer accepts it to update current condition.",
+      "Dated observations and photos are retained. Submit an assessment for approval; a reviewer accepts it to update current condition.",
     current: "Current condition",
     unknown: "Unknown",
     acceptedSource: "From an accepted assessment",
@@ -78,7 +78,6 @@ export default {
     remove: "Remove",
     photos: "Evidence photos",
     uploadPhoto: "Upload photo",
-    saveDraft: "Save draft",
     submitForApproval: "Submit for approval",
     submitting: "Submitting…",
     editDraft: "Edit draft",
@@ -98,7 +97,6 @@ export default {
     reject: "Reject assessment",
     rejectionReason: "Reason for rejection: {reason}",
     loading: "Loading condition assessments…",
-    saving: "Saving draft…",
     observationNumber: "Observation {number}",
     errors: {
       date: "Choose a date that is not in the future.",
@@ -119,8 +117,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "The object or an evidence photo is no longer available. Reject this assessment and record a new one.",
     },
-    draftSaved: "Draft saved. Submit it for approval when it is ready.",
-    saveFailed: "Could not save the draft. Try again.",
     submitted: "Assessment submitted. A reviewer can now accept or reject it.",
     submitFailed: "Could not submit the assessment. Try again.",
     accepted: "Assessment accepted. Current condition updated.",
@@ -7629,10 +7625,9 @@ export default {
         executed: "Executed",
         search: "Search transfers",
         pendingApproval: "Pending transfer approval",
+        awaitingReceiver: "Awaiting acceptance from receiver",
         incomingRequests: "Incoming transfer requests",
-        executedTransfers: "Executed transfers",
-        rejectedTransfers: "Rejected transfers",
-        cancelledTransfers: "Cancelled transfers",
+        transferLog: "Transfer log",
       },
       errors: {
         submitDraft: "Failed to submit draft",
@@ -7684,9 +7679,9 @@ export default {
           pending: "No transfer approvals are waiting right now.",
           approved: "No approved transfers are waiting right now.",
           incoming: "No incoming transfer requests are waiting right now.",
-          executed: "No executed transfers match this search.",
-          rejected: "No rejected transfers match this search.",
-          cancelled: "No cancelled transfers match this search.",
+          awaitingReceiver:
+            "No transfers are waiting for a receiver to accept them.",
+          log: "No finished transfers match this search.",
         },
         newAccession: "Generate a new accession number",
       },
@@ -7957,7 +7952,7 @@ export default {
         noImagesUploaded: "No images uploaded yet.",
         savedToObject: "Saved to this object",
         conditionChangeNote: "Condition change note",
-        detailedDimensionsHint: "Document dimensions, diameter, and weight.",
+        detailedDimensionsHint: "Document diameter and weight.",
         ownershipHistory: "Ownership history",
         ownershipHistoryDescription:
           "Document the chain of ownership entry by entry.",
@@ -10699,10 +10694,16 @@ export default {
     pending: "Deletion awaiting approval",
     pendingDescription:
       "Deletion of this image is waiting for approval. The image stays until an approver decides.",
+    marked: "Marked for deletion",
+    markedDescription:
+      "Deleted, or sent for approval, when you select Update Object. Cancel keeps the image.",
+    keepImage: "Keep image",
     confirm: {
       title: "Are you sure you want to delete this image?",
       approvalHint:
         "An approver reviews the deletion first. The image stays until they approve it.",
+      sentOnUpdate:
+        "Nothing is deleted until you select Update Object. Cancel keeps the image.",
     },
     finalConfirm: {
       title: "This will delete the image.",

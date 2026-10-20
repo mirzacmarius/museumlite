@@ -35,20 +35,26 @@ function transfer(
     requestedAt: START + index * DAY,
     targetReviewedAt: START + index * DAY + DAY,
     direction: "outgoing",
+    awaitsSourceReapproval: false,
     ...overrides,
   };
 }
 
+type Statuses = TransferRequest["status"][];
+
+const LOG: Statuses = ["executed", "rejected", "cancelled"];
+
 function column(
-  status: TransferRequest["status"],
+  statuses: Statuses,
   transferRequests: TransferRequest[],
   searchQuery = "",
+  direction: TransferRequest["direction"] = "outgoing",
 ) {
   return (
     <TransferKanbanColumn
-      status={status}
-      direction="outgoing"
-      title="Executed transfers"
+      statuses={statuses}
+      direction={direction}
+      title="Transfer log"
       searchQuery={searchQuery}
       transferRequests={transferRequests}
     />
@@ -56,22 +62,26 @@ function column(
 }
 
 async function renderColumn(
-  status: TransferRequest["status"],
+  statuses: Statuses,
   transferRequests: TransferRequest[],
+  direction: TransferRequest["direction"] = "outgoing",
 ) {
   return await renderOnPage(
-    column(status, transferRequests),
+    column(statuses, transferRequests, "", direction),
     "/en/accessions/transfers",
   );
 }
 
 test("executed transfers read as a log, latest decision first", async () => {
-  await renderColumn("executed", [
-    transfer(1),
-    transfer(2, { targetReviewedAt: START + 40 * DAY }),
-    transfer(3, { direction: "incoming" }),
-    transfer(4, { status: "rejected" }),
-  ]);
+  await renderColumn(
+    ["executed"],
+    [
+      transfer(1),
+      transfer(2, { targetReviewedAt: START + 40 * DAY }),
+      transfer(3, { direction: "incoming" }),
+      transfer(4, { status: "rejected" }),
+    ],
+  );
 
   const entries = screen.getAllByRole("listitem");
   expect(entries).toHaveLength(2);
@@ -90,20 +100,23 @@ test("executed transfers read as a log, latest decision first", async () => {
 });
 
 test("rejected transfers are dated and explained by whichever organization rejected them", async () => {
-  await renderColumn("rejected", [
-    transfer(1, {
-      status: "rejected",
-      targetReviewedAt: undefined,
-      sourceReviewedAt: START + 5 * DAY,
-      sourceReviewNotes: "Not eligible",
-    }),
-    transfer(2, {
-      status: "rejected",
-      sourceReviewedAt: START,
-      sourceReviewNotes: "Approved by source",
-      targetReviewNotes: "No storage space",
-    }),
-  ]);
+  await renderColumn(
+    ["rejected"],
+    [
+      transfer(1, {
+        status: "rejected",
+        targetReviewedAt: undefined,
+        sourceReviewedAt: START + 5 * DAY,
+        sourceReviewNotes: "Not eligible",
+      }),
+      transfer(2, {
+        status: "rejected",
+        sourceReviewedAt: START,
+        sourceReviewNotes: "Approved by source",
+        targetReviewNotes: "No storage space",
+      }),
+    ],
+  );
 
   const [first, second] = screen.getAllByRole("listitem");
   expect(within(first as HTMLElement).getByText("Sep 6, 2026")).toBeTruthy();
@@ -119,14 +132,14 @@ test("rejected transfers are dated and explained by whichever organization rejec
 });
 
 test("a receiver's decline without notes still says who declined", async () => {
-  await renderColumn("rejected", [transfer(1, { status: "rejected" })]);
+  await renderColumn(["rejected"], [transfer(1, { status: "rejected" })]);
 
   expect(screen.getByTitle("Object 1 · Declined by Museum Nord")).toBeTruthy();
 });
 
 test("the log shows ten transfers and Show more adds the next ten", async () => {
   await renderColumn(
-    "executed",
+    ["executed"],
     Array.from({ length: 23 }, (_, index) => transfer(index)),
   );
 
@@ -141,35 +154,104 @@ test("the log shows ten transfers and Show more adds the next ten", async () => 
 
 test("a new search starts the log again at ten", async () => {
   const requests = Array.from({ length: 23 }, (_, index) => transfer(index));
-  const { rerender } = await renderColumn("executed", requests);
+  const { rerender } = await renderColumn(["executed"], requests);
 
   await userEvent
     .setup()
     .click(screen.getByRole("button", { name: "Show more" }));
   expect(screen.getAllByRole("listitem")).toHaveLength(20);
 
-  rerender(column("executed", requests, "museum"));
+  rerender(column(["executed"], requests, "museum"));
 
   expect(screen.getAllByRole("listitem")).toHaveLength(10);
   expect(screen.getByText("Showing 10 of 23")).toBeTruthy();
 });
 
 test("an empty log keeps its empty state", async () => {
-  await renderColumn("rejected", []);
+  await renderColumn(LOG, []);
 
   expect(
-    screen.getByText("No rejected transfers match this search."),
+    screen.getByText("No finished transfers match this search."),
+  ).toBeTruthy();
+});
+
+test("the transfer log lists every outcome, each marked with its status", async () => {
+  await renderColumn(LOG, [
+    transfer(1, { targetReviewedAt: START + 3 * DAY }),
+    transfer(2, {
+      status: "rejected",
+      targetReviewedAt: undefined,
+      sourceReviewedAt: START + 2 * DAY,
+      sourceReviewNotes: "Not eligible",
+    }),
+    transfer(3, {
+      status: "cancelled",
+      targetReviewedAt: undefined,
+      reviewedAt: START + DAY,
+      sourceReviewNotes: "Wrong object",
+    }),
+    transfer(4, { status: "awaiting_acceptance" }),
+  ]);
+
+  const [executed, rejected, cancelled, ...rest] =
+    screen.getAllByRole("listitem");
+  expect(rest).toEqual([]);
+  expect(
+    within(executed as HTMLElement).getByText("Transfer executed"),
+  ).toBeTruthy();
+  expect(within(rejected as HTMLElement).getByText("Rejected")).toBeTruthy();
+  expect(within(cancelled as HTMLElement).getByText("Cancelled")).toBeTruthy();
+  expect(
+    within(cancelled as HTMLElement).getByTitle("Object 3 · Wrong object"),
+  ).toBeTruthy();
+  expect(screen.getByText("Showing 3 of 3")).toBeTruthy();
+});
+
+test("the sender sees its transfers awaiting the receiver's acceptance", async () => {
+  await renderColumn(
+    ["awaiting_acceptance"],
+    [
+      transfer(1, { status: "awaiting_acceptance" }),
+      transfer(2, { status: "awaiting_acceptance", direction: "incoming" }),
+    ],
+  );
+
+  expect(screen.getByText("Object 1")).toBeTruthy();
+  expect(screen.queryByText("Object 2")).toBeNull();
+  expect(screen.getByText("Awaiting acceptance")).toBeTruthy();
+});
+
+test("an empty awaiting-acceptance column says nothing waits for a receiver", async () => {
+  await renderColumn(["awaiting_acceptance"], []);
+
+  expect(
+    screen.getByText("No transfers are waiting for a receiver to accept them."),
   ).toBeTruthy();
 });
 
 test("pending transfers keep their cards", async () => {
-  await renderColumn("pending_source_approval", [
-    transfer(1, { status: "pending_source_approval" }),
-  ]);
+  await renderColumn(
+    ["pending_source_approval"],
+    [transfer(1, { status: "pending_source_approval" })],
+  );
 
   expect(screen.queryAllByRole("listitem")).toEqual([]);
   expect(screen.getByText("Ola Nordmann")).toBeTruthy();
   expect(
     screen.getByText("Chosen by the receiving organization when it accepts"),
   ).toBeTruthy();
+});
+
+test("an older approval the source must re-approve waits in Pending, not for the receiver", async () => {
+  const older = transfer(1, {
+    status: "awaiting_acceptance",
+    awaitsSourceReapproval: true,
+  });
+  const { unmount } = await renderColumn(["awaiting_acceptance"], [older]);
+  expect(screen.queryByText("Object 1")).toBeNull();
+  unmount();
+
+  await renderColumn(["pending_source_approval"], [older]);
+  expect(screen.getByText("Object 1")).toBeTruthy();
+  expect(screen.getByText("Pending transfer approval")).toBeTruthy();
 });

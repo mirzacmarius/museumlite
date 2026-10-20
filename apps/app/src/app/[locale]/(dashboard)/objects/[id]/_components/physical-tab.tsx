@@ -46,9 +46,11 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
   ]
     .filter(Boolean)
     .join(" × ");
-  const dimensions =
-    collection.dimensions ||
-    (measuredDimensions ? `${measuredDimensions}${unit}` : undefined);
+  // Free-text dimensions are no longer entered in the form; imported and
+  // older records still show theirs until height, width or depth is measured.
+  const dimensions = measuredDimensions
+    ? `${measuredDimensions}${unit}`
+    : collection.dimensions;
   const diameter =
     collection.dimensionDiameter ||
     (!collection.dimensionHeight &&

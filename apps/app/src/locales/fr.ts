@@ -59,7 +59,7 @@ export default {
 
     title: "Évaluations de l'état",
     description:
-      "Les observations datées et les photos sont conservées. Enregistrez un brouillon pendant votre travail, puis soumettez-le ; un responsable le valide pour actualiser l'état courant.",
+      "Les observations datées et les photos sont conservées. Soumettez une évaluation pour validation ; un responsable la valide pour actualiser l'état courant.",
     current: "État courant",
     unknown: "Inconnu",
     acceptedSource: "Issu d'une évaluation validée",
@@ -82,7 +82,6 @@ export default {
     remove: "Retirer",
     photos: "Photos justificatives",
     uploadPhoto: "Téléverser une photo",
-    saveDraft: "Enregistrer le brouillon",
     submitForApproval: "Soumettre pour validation",
     submitting: "Envoi en cours…",
     editDraft: "Modifier le brouillon",
@@ -102,7 +101,6 @@ export default {
     reject: "Rejeter l'évaluation",
     rejectionReason: "Motif du rejet : {reason}",
     loading: "Chargement des évaluations…",
-    saving: "Enregistrement du brouillon…",
     observationNumber: "Observation {number}",
     errors: {
       date: "Choisissez une date qui n'est pas dans le futur.",
@@ -123,9 +121,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "L'objet ou une photo justificative n'est plus disponible. Rejetez cette évaluation et enregistrez-en une nouvelle.",
     },
-    draftSaved:
-      "Brouillon enregistré. Soumettez-le pour validation lorsqu'il est prêt.",
-    saveFailed: "Impossible d'enregistrer le brouillon. Réessayez.",
     submitted:
       "Évaluation soumise. Un responsable peut maintenant la valider ou la rejeter.",
     submitFailed: "Impossible de soumettre l'évaluation. Réessayez.",
@@ -7810,10 +7805,9 @@ export default {
         executed: "Effectué",
         search: "Rechercher des transferts",
         pendingApproval: "Approbation du transfert en attente",
+        awaitingReceiver: "En attente d’acceptation par le destinataire",
         incomingRequests: "Demandes de transfert reçues",
-        executedTransfers: "Transferts effectués",
-        rejectedTransfers: "Transferts refusés",
-        cancelledTransfers: "Transferts annulés",
+        transferLog: "Journal des transferts",
       },
       errors: {
         submitDraft: "Échec de l’envoi du brouillon",
@@ -7868,9 +7862,9 @@ export default {
           approved: "Aucun transfert approuvé n’est en attente pour le moment.",
           incoming:
             "Aucune demande de transfert entrante n’est en attente pour le moment.",
-          executed: "Aucun transfert effectué ne correspond à cette recherche.",
-          rejected: "Aucun transfert rejeté ne correspond à cette recherche.",
-          cancelled: "Aucun transfert annulé ne correspond à cette recherche.",
+          awaitingReceiver:
+            "Aucun transfert n’attend l’acceptation d’un destinataire.",
+          log: "Aucun transfert terminé ne correspond à cette recherche.",
         },
         newAccession: "Générer un nouveau numéro d’accession",
       },
@@ -8156,8 +8150,7 @@ export default {
         noImagesUploaded: "Aucune image téléversée pour le moment.",
         savedToObject: "Enregistré avec cet objet",
         conditionChangeNote: "Note sur le changement d’état",
-        detailedDimensionsHint:
-          "Renseignez les dimensions, le diamètre et le poids.",
+        detailedDimensionsHint: "Renseignez le diamètre et le poids.",
         ownershipHistory: "Historique de propriété",
         ownershipHistoryDescription:
           "Documentez la chaîne de propriété étape par étape.",
@@ -11001,10 +10994,16 @@ export default {
     pending: "Suppression en attente d'approbation",
     pendingDescription:
       "La suppression de cette image attend une approbation. L'image reste jusqu'à la décision d'un approbateur.",
+    marked: "Marquée pour suppression",
+    markedDescription:
+      "Supprimée, ou envoyée pour approbation, lorsque vous sélectionnez Mettre à Jour l'Objet. Annuler conserve l'image.",
+    keepImage: "Conserver l'image",
     confirm: {
       title: "Voulez-vous vraiment supprimer cette image ?",
       approvalHint:
         "Un approbateur examine d'abord la suppression. L'image reste jusqu'à son approbation.",
+      sentOnUpdate:
+        "Rien n'est supprimé avant que vous sélectionniez Mettre à Jour l'Objet. Annuler conserve l'image.",
     },
     finalConfirm: {
       title: "Cette action supprimera l'image.",

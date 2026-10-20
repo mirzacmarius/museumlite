@@ -60,7 +60,7 @@ export default {
 
     title: "Evaluări ale stării",
     description:
-      "Observațiile datate și fotografiile sunt păstrate. Salvează o ciornă cât lucrezi, apoi trimite-o; un responsabil o acceptă pentru a actualiza starea curentă.",
+      "Observațiile datate și fotografiile sunt păstrate. Trimite o evaluare spre aprobare; un responsabil o acceptă pentru a actualiza starea curentă.",
     current: "Stare curentă",
     unknown: "Necunoscută",
     acceptedSource: "Dintr-o evaluare acceptată",
@@ -82,7 +82,6 @@ export default {
     remove: "Elimină",
     photos: "Fotografii probatorii",
     uploadPhoto: "Încarcă fotografie",
-    saveDraft: "Salvează ciorna",
     submitForApproval: "Trimite spre aprobare",
     submitting: "Se trimite…",
     editDraft: "Editează ciorna",
@@ -102,7 +101,6 @@ export default {
     reject: "Respinge evaluarea",
     rejectionReason: "Motivul respingerii: {reason}",
     loading: "Se încarcă evaluările…",
-    saving: "Se salvează ciorna…",
     observationNumber: "Observația {number}",
     errors: {
       date: "Alege o dată care nu este în viitor.",
@@ -123,9 +121,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "Obiectul sau o fotografie probatorie nu mai este disponibilă. Respinge această evaluare și înregistrează una nouă.",
     },
-    draftSaved:
-      "Ciorna a fost salvată. Trimite-o spre aprobare când este gata.",
-    saveFailed: "Ciorna nu a putut fi salvată. Încearcă din nou.",
     submitted:
       "Evaluarea a fost trimisă. Un responsabil o poate accepta sau respinge acum.",
     submitFailed: "Evaluarea nu a putut fi trimisă. Încearcă din nou.",
@@ -7779,10 +7774,9 @@ export default {
         executed: "Executat",
         search: "Caută transferuri",
         pendingApproval: "Aprobare de transfer în așteptare",
+        awaitingReceiver: "În așteptarea acceptării de către destinatar",
         incomingRequests: "Solicitări de transfer primite",
-        executedTransfers: "Transferuri executate",
-        rejectedTransfers: "Transferuri respinse",
-        cancelledTransfers: "Transferuri anulate",
+        transferLog: "Jurnal de transferuri",
       },
       errors: {
         submitDraft: "Trimiterea ciornei a eșuat",
@@ -7835,9 +7829,9 @@ export default {
           pending: "Nu există aprobări de transfer în așteptare.",
           approved: "Nu există transferuri aprobate în așteptare.",
           incoming: "Nu există cereri de transfer primite în așteptare.",
-          executed: "Niciun transfer efectuat nu corespunde căutării.",
-          rejected: "Niciun transfer respins nu corespunde căutării.",
-          cancelled: "Niciun transfer anulat nu corespunde căutării.",
+          awaitingReceiver:
+            "Niciun transfer nu așteaptă acceptarea unui destinatar.",
+          log: "Niciun transfer finalizat nu corespunde căutării.",
         },
         newAccession: "Generați un număr nou de accesiune",
       },
@@ -8117,8 +8111,7 @@ export default {
         noImagesUploaded: "Nu au fost încărcate încă imagini.",
         savedToObject: "Salvat la acest obiect",
         conditionChangeNote: "Notă privind schimbarea stării",
-        detailedDimensionsHint:
-          "Înregistrați dimensiunile, diametrul și greutatea.",
+        detailedDimensionsHint: "Înregistrați diametrul și greutatea.",
         ownershipHistory: "Istoricul proprietății",
         ownershipHistoryDescription:
           "Documentați lanțul de proprietate, intrare cu intrare.",
@@ -10935,10 +10928,16 @@ export default {
     pending: "Ștergere în așteptarea aprobării",
     pendingDescription:
       "Ștergerea acestei imagini așteaptă aprobarea. Imaginea rămâne până când un aprobator decide.",
+    marked: "Marcată pentru ștergere",
+    markedDescription:
+      "Este ștearsă sau trimisă spre aprobare când selectezi Actualizează obiectul. Anulează păstrează imaginea.",
+    keepImage: "Păstrează imaginea",
     confirm: {
       title: "Sigur vrei să ștergi această imagine?",
       approvalHint:
         "Mai întâi un aprobator verifică ștergerea. Imaginea rămâne până când o aprobă.",
+      sentOnUpdate:
+        "Nu se șterge nimic până nu selectezi Actualizează obiectul. Anulează păstrează imaginea.",
     },
     finalConfirm: {
       title: "Imaginea va fi ștearsă.",

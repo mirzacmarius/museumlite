@@ -7,6 +7,7 @@ import {
   RotateCw,
   Save,
   Trash2,
+  Undo2,
   X,
 } from "lucide-react";
 import { useI18n } from "@/locales/client";
@@ -41,6 +42,24 @@ function DeletionControl({ deletion }: { deletion: MediaEditorDeletion }) {
           {translate("imageDeletion.pending")}
         </span>
       </span>
+    );
+  }
+  if (deletion.marked) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          deletion.onKeep();
+        }}
+        className="flex shrink-0 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 p-2 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-500/20 sm:px-2.5 sm:py-1 dark:text-amber-300"
+        title={translate("imageDeletion.markedDescription")}
+      >
+        <Undo2 className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className="sr-only sm:not-sr-only">
+          {translate("imageDeletion.keepImage")}
+        </span>
+      </button>
     );
   }
   return (

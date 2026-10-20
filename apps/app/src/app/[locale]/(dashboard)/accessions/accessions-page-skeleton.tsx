@@ -10,6 +10,7 @@ const statPlaceholders = [
   "rejected",
   "incoming",
   "cancelled",
+  "awaiting",
 ] as const;
 const actionPlaceholders = ["export", "import", "create", "delete"] as const;
 

@@ -4,7 +4,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Edit, Hourglass, Star, Upload } from "lucide-react";
+import { Edit, Hourglass, Star, Trash2, Undo2, Upload } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
 import { PermissionGate } from "@/components/permission-gate";
@@ -28,6 +28,9 @@ export interface CollectionEditMediaTabProps extends CollectionFormTabProps {
   handleDocumentSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleSetPrimary: (mediaId: string) => void;
   setEditingImageId: (id: Id<"mediaFiles"> | null) => void;
+  /** Images marked for deletion, sent when the object is updated. */
+  markedImageIds: ReadonlyMap<Id<"mediaFiles">, unknown>;
+  onKeepImage: (id: Id<"mediaFiles">) => void;
   hasConditionChanged: boolean;
   requiresConditionChangeNote: boolean;
   conditionChangeNote: string;
@@ -43,6 +46,8 @@ export function CollectionEditMediaTab({
   handleDocumentSelect,
   handleSetPrimary,
   setEditingImageId,
+  markedImageIds,
+  onKeepImage,
 }: CollectionEditMediaTabProps) {
   const tRoot = useI18n();
   const pendingDeletion = new Set<string>(
@@ -83,7 +88,15 @@ export function CollectionEditMediaTab({
                   ) : (
                     <div />
                   )}
-                  {pendingDeletion.has(file._id) ? (
+                  {markedImageIds.has(file._id) ? (
+                    <div
+                      className="flex min-w-0 items-center gap-1 rounded-full bg-amber-700 px-2 py-1 text-[10px] font-medium text-white"
+                      title={tRoot("imageDeletion.markedDescription")}
+                    >
+                      <Trash2 className="size-3 shrink-0" aria-hidden="true" />
+                      <span>{tRoot("imageDeletion.marked")}</span>
+                    </div>
+                  ) : pendingDeletion.has(file._id) ? (
                     <div
                       className="flex min-w-0 items-center gap-1 rounded-full bg-amber-700 px-2 py-1 text-[10px] font-medium text-white"
                       title={tRoot("imageDeletion.pendingDescription")}
@@ -102,6 +115,19 @@ export function CollectionEditMediaTab({
                     {file.fileName}
                   </div>
                   <div className="flex items-center gap-1">
+                    {markedImageIds.has(file._id) ? (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="size-8"
+                        onClick={() => onKeepImage(file._id)}
+                        title={tRoot("imageDeletion.keepImage")}
+                        aria-label={tRoot("imageDeletion.keepImage")}
+                      >
+                        <Undo2 className="size-3.5" />
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       size="icon"

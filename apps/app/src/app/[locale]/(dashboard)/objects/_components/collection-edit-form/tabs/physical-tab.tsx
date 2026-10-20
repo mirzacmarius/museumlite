@@ -15,6 +15,8 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useQuery } from "convex/react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { usePermissions } from "@/components/permission-gate";
@@ -42,7 +44,6 @@ export interface CollectionEditPhysicalTabProps extends CollectionFormTabProps {
 export function CollectionEditPhysicalTab({
   formData,
   updateField,
-  placeholders,
   currentOrganizationId,
   fieldErrors = NO_FIELD_ERRORS,
   typedCollectionId,
@@ -105,21 +106,7 @@ export function CollectionEditPhysicalTab({
                 )}
               </p>
             </div>
-            <div className="grid gap-5 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="dimensions">
-                  {tRoot("objects.form.dimensions")}
-                </Label>
-                <Input
-                  id="dimensions"
-                  value={formData.dimensions || ""}
-                  onChange={(event) =>
-                    updateField("dimensions", event.target.value)
-                  }
-                  placeholder={placeholders("dimensions")}
-                />
-              </div>
-
+            <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="dimensionDiameter">
                   {tRoot("objects.printView.diameter")}
@@ -203,6 +190,7 @@ function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
   const tRoot = useI18n();
   const t = useScopedI18n("conditionAssessments");
   const { hasPermission } = usePermissions();
+  const [dialogOpen, setDialogOpen] = useState(false);
   const detail = useQuery(api.conditionAssessments.getForObject, {
     collectionId,
   });
@@ -227,7 +215,7 @@ function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
         ) : null}
         {hasPermission("collections.update") ||
         hasPermission("collections.accept_condition") ? (
-          <Dialog>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button type="button" variant="outline">
                 {t("setCondition")}
@@ -241,6 +229,10 @@ function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
               <ConditionAssessmentPanel
                 collectionId={collectionId}
                 mode="edit"
+                onSubmitted={() => {
+                  setDialogOpen(false);
+                  toast.success(t("submitted"));
+                }}
               />
             </DialogContent>
           </Dialog>

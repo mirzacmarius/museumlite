@@ -31,6 +31,8 @@ interface RecordLogEntryProps {
   title: string;
   /** Secondary text after the title, dropped first when space runs out. */
   detail?: string;
+  /** How the record ended, where a log holds more than one outcome. */
+  status?: { label: string; className: string };
 }
 
 /** One finished record as a two-line log row: identifier and date, then title. */
@@ -41,6 +43,7 @@ export function RecordLogEntry({
   showTime = true,
   title,
   detail,
+  status,
 }: RecordLogEntryProps) {
   const locale = useCurrentLocale();
   const summary = detail ? `${title} · ${detail}` : title;
@@ -59,6 +62,13 @@ export function RecordLogEntry({
           >
             {reference}
           </span>
+          {status && (
+            <span
+              className={`ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${status.className}`}
+            >
+              {status.label}
+            </span>
+          )}
           {loggedAt && (
             <time
               dateTime={loggedAt.toISOString()}
