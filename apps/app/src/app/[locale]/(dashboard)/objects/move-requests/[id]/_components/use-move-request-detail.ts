@@ -110,18 +110,13 @@ export function useMoveRequestDetail() {
   };
 
   const handleAccept = async (moveRequest: MoveRequestDetail) => {
-    if (!targetLocationId || targetLocationId === "__none__") {
-      toast.error(
-        tRoot("untranslatedRecords.objects.transfer.targetLocationRequired"),
-      );
-      return;
-    }
-
     setIsSubmitting("accept");
     try {
       await accept({
         requestId: moveRequest._id,
-        targetLocationId: targetLocationId as Id<"locations">,
+        targetLocationId: targetLocationId
+          ? (targetLocationId as Id<"locations">)
+          : undefined,
         reviewNotes: reviewNotes.trim() || undefined,
         accessionMode,
         requestedAccessionNumber:

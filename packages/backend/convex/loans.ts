@@ -9,6 +9,7 @@ import { workflowHistoryPageValidator } from "./auditLog";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds } from "./utils/batchLookup";
 import { recentCaseHistory } from "./utils/caseHistory";
+import { getDisplayedMediaFiles } from "./utils/collectionDisplayHelpers";
 import {
   markCollectionActive,
   markCollectionLoaned,
@@ -2496,7 +2497,11 @@ export const getConditionDispute = query({
 
       if (primaryMedia?.storageId) {
         primaryImageUrl =
-          (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+          (await ctx.storage.getUrl(
+            (
+              await getDisplayedMediaFiles(ctx, primaryMedia)
+            ).storageId,
+          )) ?? undefined;
       }
     }
 

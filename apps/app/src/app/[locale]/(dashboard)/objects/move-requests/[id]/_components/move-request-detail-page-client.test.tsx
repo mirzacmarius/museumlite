@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   request: null as Record<string, unknown> | null,
   currentUserId: "admin",
   currentOrganizationId: "source-org",
+  locationTrackingEnabled: true,
   permissions: new Set<string>(),
   mutations: {} as Record<string, ReturnType<typeof vi.fn>>,
 }));
@@ -41,6 +42,10 @@ vi.mock("convex/react", () => ({
 vi.mock("@/components/organization-provider", () => ({
   useOrganization: () => ({
     currentOrganizationId: state.currentOrganizationId,
+    currentOrganization: {
+      _id: state.currentOrganizationId,
+      settings: { locationTrackingEnabled: state.locationTrackingEnabled },
+    },
   }),
 }));
 vi.mock("@/components/permission-gate", () => ({
@@ -108,6 +113,7 @@ function button(name: string) {
 
 beforeEach(() => {
   state.mutations = {};
+  state.locationTrackingEnabled = true;
   toasts.success.mockReset();
   toasts.error.mockReset();
 });
@@ -316,4 +322,39 @@ test("a taken accession number is named back to the receiving organization", asy
   expect(toasts.error).toHaveBeenLastCalledWith(
     "A-1 is already used in your organization. Generate or enter a new number.",
   );
+});
+
+test("the receiving organization accepts without choosing a location", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+  expect(
+    screen.getByText(/Optional\. Leave it empty if you don't track locations/),
+  ).toBeTruthy();
+
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+
+  expect(toasts.error).not.toHaveBeenCalled();
+  expect(state.mutations["objectMoves:accept"]).toHaveBeenCalledWith({
+    requestId: "move-1",
+    targetLocationId: undefined,
+    reviewNotes: undefined,
+    accessionMode: "keep",
+    requestedAccessionNumber: undefined,
+  });
+});
+
+test("a receiver that turned off locations is not asked for one", async () => {
+  state.locationTrackingEnabled = false;
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+
+  expect(screen.queryByText("Receiving location")).toBeNull();
+  expect(button("North store")).toBeNull();
+  expect(button("Accept and complete transfer")).toBeTruthy();
 });

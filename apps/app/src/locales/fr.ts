@@ -8373,8 +8373,8 @@ export default {
         priorGroupLinksCount:
           "lien(s) de groupe enregistrés avant le transfert",
         receivingLocationPlaceholder: "Sélectionnez l'emplacement de réception",
-        targetLocationRequired:
-          "Choisissez un emplacement de réception avant d'accepter le transfert.",
+        receivingLocationHint:
+          "Facultatif. Laissez vide si vous ne suivez pas les emplacements ; vous pourrez placer l’objet plus tard.",
         awaitingAcceptance: "En attente de l’acceptation du transfert",
         pendingApproval: "En attente de l’approbation du transfert",
         awaitingAcceptanceShort: "en attente d’acceptation",
@@ -9238,6 +9238,7 @@ export default {
       metadataDescription:
         "Consultez les métadonnées, les détails du fichier et les versions disponibles.",
       download: "Télécharger",
+      downloadOriginal: "Télécharger l’original",
       versions: "Versions",
       current: "Actuelle",
       typeFilter: "Type",
@@ -9316,7 +9317,6 @@ export default {
       statusFailed: "Échoué",
       statusProcessing: "En cours",
       saving: "Enregistrement…",
-      deleteType: "Supprimer {type}",
       createNewSite: "Créer un site",
       editSite: "Modifier le site",
       createSiteDescription:
@@ -9415,9 +9415,9 @@ export default {
       preferences: "Préférences",
       preferencesDescription:
         "Configurez le vocabulaire du catalogue, la numérotation, les flux de travail et le suivi des emplacements.",
-      locationTypes: "Types d’emplacement",
-      locationTypesPlaceholder: "Galerie, réserve, étagère",
-      noCustomLocationTypes: "Aucun type d’emplacement personnalisé.",
+      manageLocations: "Gérer les emplacements",
+      manageLocationsDescription:
+        "Ajoutez, modifiez et organisez la hiérarchie des emplacements dans Emplacements et suivi.",
       selectOrganizationPreferences:
         "Sélectionnez une organisation pour gérer les préférences.",
       selectOrganizationLibrarySettings:

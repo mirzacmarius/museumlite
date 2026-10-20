@@ -13,6 +13,57 @@ export function isImageMedia(media: {
   );
 }
 
+/**
+ * The files an image shows in the app: its current edited version when it has
+ * one, so saved crops and watermarks appear. A version has no thumbnail.
+ */
+export async function getDisplayedMediaFiles(
+  ctx: Pick<QueryCtx, "db">,
+  media: Doc<"mediaFiles">,
+): Promise<{
+  storageId: Id<"_storage">;
+  thumbnailStorageId?: Id<"_storage">;
+  version: Doc<"mediaVersions"> | null;
+}> {
+  const version = media.currentVersionId
+    ? await ctx.db.get(media.currentVersionId)
+    : null;
+  if (
+    version &&
+    version.originalMediaId === media._id &&
+    version.organizationId === media.organizationId
+  ) {
+    return { storageId: version.storageId, version };
+  }
+  return {
+    storageId: media.storageId,
+    thumbnailStorageId: media.thumbnailStorageId,
+    version: null,
+  };
+}
+
+/**
+ * Whether an edited version carries the watermark, burned in by this edit
+ * (`watermark`) or by an earlier one it was made from (`watermarked`).
+ */
+export function isWatermarkedVersion(version: Doc<"mediaVersions"> | null) {
+  const metadata = version?.editMetadata as
+    | { watermarked?: unknown; watermark?: { enabled?: unknown } }
+    | undefined;
+  return (
+    metadata?.watermarked === true || metadata?.watermark?.enabled === true
+  );
+}
+
+/** The URL of an image's thumbnail, or of the image when it has none. */
+export async function getDisplayedMediaThumbnailUrl(
+  ctx: Pick<QueryCtx, "db" | "storage">,
+  media: Doc<"mediaFiles">,
+) {
+  const files = await getDisplayedMediaFiles(ctx, media);
+  return await ctx.storage.getUrl(files.thumbnailStorageId ?? files.storageId);
+}
+
 export async function getCollectionPrimaryImageUrls(
   ctx: Pick<QueryCtx, "db" | "storage">,
   collectionIds: Id<"collections">[],
@@ -32,12 +83,8 @@ export async function getCollectionPrimaryImageUrls(
         return [collectionId, undefined] as const;
       }
 
-      const storageId =
-        preferredMedia.thumbnailStorageId ??
-        (isImageMedia(preferredMedia) ? preferredMedia.storageId : undefined);
-      const url = storageId
-        ? ((await ctx.storage.getUrl(storageId)) ?? undefined)
-        : undefined;
+      const url =
+        (await getDisplayedMediaThumbnailUrl(ctx, preferredMedia)) ?? undefined;
 
       return [collectionId, url] as const;
     }),

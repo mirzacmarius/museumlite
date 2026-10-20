@@ -23,8 +23,6 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
 import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useI18n } from "@/locales/client";
 
@@ -92,83 +90,6 @@ export function PreferenceSwitch({
       appliesOnSave
       onConfirmedChange={onCheckedChange}
     />
-  );
-}
-
-export function LocationTypesEditor({
-  locationTypes,
-  onChange,
-}: {
-  locationTypes: string[];
-  onChange: (locationTypes: string[]) => void;
-}) {
-  const tRoot = useI18n();
-  const [newLocationType, setNewLocationType] = useState("");
-
-  const addLocationType = () => {
-    const trimmed = newLocationType.trim();
-    if (!trimmed) return;
-    if (
-      locationTypes.some((type) => type.toLowerCase() === trimmed.toLowerCase())
-    ) {
-      setNewLocationType("");
-      return;
-    }
-    onChange([...locationTypes, trimmed]);
-    setNewLocationType("");
-  };
-
-  return (
-    <div className="space-y-3">
-      <Label>{tRoot("untranslatedDashboard.settings.locationTypes")}</Label>
-      <div className="flex gap-2">
-        <Input
-          value={newLocationType}
-          onChange={(event) => setNewLocationType(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              addLocationType();
-            }
-          }}
-          placeholder={tRoot(
-            "untranslatedDashboard.settings.locationTypesPlaceholder",
-          )}
-        />
-        <Button type="button" variant="outline" onClick={addLocationType}>
-          <Plus className="mr-2 size-4" />
-          {tRoot("untranslatedRecords.objects.actions.add")}
-        </Button>
-      </div>
-      {locationTypes.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {locationTypes.map((type) => (
-            <div
-              key={type}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-1"
-            >
-              <span className="text-sm">{type}</span>
-              <button
-                type="button"
-                onClick={() =>
-                  onChange(locationTypes.filter((item) => item !== type))
-                }
-                className="text-muted-foreground hover:text-destructive"
-                aria-label={tRoot("untranslatedDashboard.settings.deleteType", {
-                  type,
-                })}
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          {tRoot("untranslatedDashboard.settings.noCustomLocationTypes")}
-        </p>
-      )}
-    </div>
   );
 }
 

@@ -13,6 +13,7 @@ import {
 } from "./auditLog";
 import { batchLookup } from "./utils/batchLookup";
 import { appendCaseHistory, recentCaseHistory } from "./utils/caseHistory";
+import { getDisplayedMediaFiles } from "./utils/collectionDisplayHelpers";
 import {
   applyCollectionDisposition,
   canRestoreRejectedDisposition,
@@ -1567,7 +1568,11 @@ export const getExportData = query({
         .first();
       if (primaryMedia?.storageId) {
         primaryImageUrl =
-          (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+          (await ctx.storage.getUrl(
+            (
+              await getDisplayedMediaFiles(ctx, primaryMedia)
+            ).storageId,
+          )) ?? undefined;
       }
     }
 

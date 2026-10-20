@@ -8267,8 +8267,8 @@ export default {
         priorGroupLinks: "Tidligere koblinger til samlingsgrupper",
         priorGroupLinksCount: "gruppekobling(er) registrert før overføringen",
         receivingLocationPlaceholder: "Velg mottakende plassering",
-        targetLocationRequired:
-          "Velg en mottakende plassering før du godtar overføringen.",
+        receivingLocationHint:
+          "Valgfritt. La feltet stå tomt hvis dere ikke bruker plasseringer; objektet kan plasseres senere.",
         awaitingAcceptance: "Venter på at overføringen godtas",
         pendingApproval: "Venter på godkjenning av overføringen",
         awaitingAcceptanceShort: "venter på godkjenning",
@@ -9119,6 +9119,7 @@ export default {
       metadataDescription:
         "Se mediemetadata, fildetaljer og tilgjengelige versjoner.",
       download: "Last ned",
+      downloadOriginal: "Last ned originalen",
       versions: "Versjoner",
       current: "Gjeldende",
       typeFilter: "Type",
@@ -9193,7 +9194,6 @@ export default {
       statusFailed: "Mislykket",
       statusProcessing: "Behandler",
       saving: "Lagrer…",
-      deleteType: "Slett {type}",
       createNewSite: "Opprett nytt sted",
       editSite: "Rediger sted",
       createSiteDescription:
@@ -9289,9 +9289,9 @@ export default {
       preferences: "Innstillinger",
       preferencesDescription:
         "Konfigurer katalogvokabular, nummerering, arbeidsflyter og stedssporing.",
-      locationTypes: "Stedstyper",
-      locationTypesPlaceholder: "Galleri, magasin, hylle",
-      noCustomLocationTypes: "Ingen egendefinerte stedstyper.",
+      manageLocations: "Administrer plasseringer",
+      manageLocationsDescription:
+        "Legg til, rediger og ordne plasseringshierarkiet under Plassering og sporing.",
       selectOrganizationPreferences:
         "Velg en organisasjon for å administrere innstillingene.",
       selectOrganizationLibrarySettings:

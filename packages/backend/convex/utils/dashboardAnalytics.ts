@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { getDisplayedMediaThumbnailUrl } from "./collectionDisplayHelpers";
 import {
   metric,
   openProjection,
@@ -60,9 +61,8 @@ export async function buildRecentCollectionGroups(
           );
           if (primaryMedia) {
             imageUrl =
-              (await ctx.storage.getUrl(
-                primaryMedia.thumbnailStorageId ?? primaryMedia.storageId,
-              )) ?? undefined;
+              (await getDisplayedMediaThumbnailUrl(ctx, primaryMedia)) ??
+              undefined;
           }
 
           if (!imageUrl) {
@@ -83,9 +83,8 @@ export async function buildRecentCollectionGroups(
             );
             if (anyMedia) {
               imageUrl =
-                (await ctx.storage.getUrl(
-                  anyMedia.thumbnailStorageId ?? anyMedia.storageId,
-                )) ?? undefined;
+                (await getDisplayedMediaThumbnailUrl(ctx, anyMedia)) ??
+                undefined;
             }
           }
         }

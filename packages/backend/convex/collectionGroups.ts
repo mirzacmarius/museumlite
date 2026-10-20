@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { query } from "./_generated/server";
 import { syncCollectionGroupMemberships } from "./utils/catalogObjects";
+import { getDisplayedMediaThumbnailUrl } from "./utils/collectionDisplayHelpers";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getUserRole, requirePermission } from "./utils/permissions";
 
@@ -152,10 +153,7 @@ async function getCollectionGroupThumbnailUrl(
         return null;
       }
 
-      if (primaryMedia.thumbnailStorageId) {
-        return ctx.storage.getUrl(primaryMedia.thumbnailStorageId);
-      }
-      return ctx.storage.getUrl(primaryMedia.storageId);
+      return getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
     }),
   );
 
@@ -177,10 +175,7 @@ async function getCollectionGroupThumbnailUrl(
         return null;
       }
 
-      if (anyMedia.thumbnailStorageId) {
-        return ctx.storage.getUrl(anyMedia.thumbnailStorageId);
-      }
-      return ctx.storage.getUrl(anyMedia.storageId);
+      return getDisplayedMediaThumbnailUrl(ctx, anyMedia);
     }),
   );
 

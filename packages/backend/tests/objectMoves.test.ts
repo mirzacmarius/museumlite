@@ -2353,6 +2353,31 @@ describe("the receiving organization decides", () => {
     );
   });
 
+  test("a receiver without locations accepts the transfer and the object arrives unplaced", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await awaitingAcceptance(fixture);
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, { requestId });
+
+    const [request, collection, arrival] = await Promise.all([
+      t.run((ctx) => ctx.db.get(requestId)),
+      t.run((ctx) => ctx.db.get(fixture.collectionId)),
+      t.run((ctx) =>
+        ctx.db
+          .query("organizationTransferCustodyEvents")
+          .filter((q) => q.eq(q.field("phase"), "target_arrival"))
+          .unique(),
+      ),
+    ]);
+    expect(request?.status).toBe("executed");
+    expect(request?.acceptedTargetLocationId).toBeUndefined();
+    expect(request?.targetArrivalMovementId).toBeUndefined();
+    expect(collection?.organizationId).toBe(fixture.targetOrganizationId);
+    expect(collection?.currentLocationId).toBeUndefined();
+    expect(arrival?.observedLocationId).toBeUndefined();
+  });
+
   test("the receiver assigns a new accession number on acceptance and the old one becomes an alternate", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);

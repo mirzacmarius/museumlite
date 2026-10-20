@@ -33,7 +33,6 @@ const initialPreferencesFormData: PreferencesFormData = {
   deaccessionWorkflowEnabled: true,
   allowIncomingTransferRequests: false,
   locationTrackingEnabled: true,
-  locationTypes: [],
   enableDetailedConditionReports: false,
 };
 
@@ -146,7 +145,6 @@ function usePreferencesPage() {
           false,
         locationTrackingEnabled:
           organization.settings?.locationTrackingEnabled ?? true,
-        locationTypes: organization.settings?.locationTypes || [],
         enableDetailedConditionReports:
           organization.settings?.enableDetailedConditionReports ?? false,
       },
@@ -305,10 +303,6 @@ function usePreferencesPage() {
           allowIncomingTransferRequests:
             state.formData.allowIncomingTransferRequests,
           locationTrackingEnabled: state.formData.locationTrackingEnabled,
-          locationTypes:
-            state.formData.locationTypes.length > 0
-              ? state.formData.locationTypes
-              : undefined,
           enableDetailedConditionReports:
             state.formData.enableDetailedConditionReports,
         },

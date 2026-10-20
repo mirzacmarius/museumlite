@@ -6,6 +6,11 @@ import type { Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
+import {
+  getDisplayedMediaFiles,
+  getDisplayedMediaThumbnailUrl,
+  isWatermarkedVersion,
+} from "./utils/collectionDisplayHelpers";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireExhibitionAccess } from "./utils/exhibitionAccess";
 import { enforceMediaQuota } from "./utils/featureGates";
@@ -270,9 +275,10 @@ export const list = query({
 
     const mediaWithUrls = await Promise.all(
       mediaFiles.map(async (media) => {
-        const url = await ctx.storage.getUrl(media.storageId);
-        const thumbnailUrl = media.thumbnailStorageId
-          ? await ctx.storage.getUrl(media.thumbnailStorageId)
+        const shown = await getDisplayedMediaFiles(ctx, media);
+        const url = await ctx.storage.getUrl(shown.storageId);
+        const thumbnailUrl = shown.thumbnailStorageId
+          ? await ctx.storage.getUrl(shown.thumbnailStorageId)
           : null;
 
         return {
@@ -445,9 +451,7 @@ export const getThumbnailUrl = query({
 
     await requirePermission(ctx, media.organizationId, "media.read");
 
-    return media.thumbnailStorageId
-      ? await ctx.storage.getUrl(media.thumbnailStorageId)
-      : await ctx.storage.getUrl(media.storageId);
+    return await getDisplayedMediaThumbnailUrl(ctx, media);
   },
 });
 
@@ -476,17 +480,7 @@ export const getPrimaryImageUrl = query({
       throw new Error("Media organization does not match collection");
     }
 
-    // Return thumbnail URL if available, otherwise fallback to original
-    if (primaryMedia.thumbnailStorageId) {
-      return await ctx.storage.getUrl(primaryMedia.thumbnailStorageId);
-    }
-
-    // Only return original URL if it's an image type
-    if (isImageMedia(primaryMedia)) {
-      return await ctx.storage.getUrl(primaryMedia.storageId);
-    }
-
-    return null;
+    return await getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
   },
 });
 
@@ -535,33 +529,12 @@ export const getBatchPrimaryImageUrls = query({
       }),
     );
 
-    // Collect all storage IDs that need URLs
-    const storageIdsToFetch: Array<{
-      collectionId: Id<"collections">;
-      storageId: Id<"_storage">;
-    }> = [];
-
-    for (const result of primaryMediaResults) {
-      if (result.media) {
-        if (result.media.thumbnailStorageId) {
-          storageIdsToFetch.push({
-            collectionId: result.collectionId,
-            storageId: result.media.thumbnailStorageId,
-          });
-        } else if (isImageMedia(result.media)) {
-          storageIdsToFetch.push({
-            collectionId: result.collectionId,
-            storageId: result.media.storageId,
-          });
-        }
-      }
-    }
-
-    // Batch fetch all URLs
     const urlResults = await Promise.all(
-      storageIdsToFetch.map(async (item) => ({
-        collectionId: item.collectionId,
-        url: await ctx.storage.getUrl(item.storageId),
+      primaryMediaResults.map(async (result) => ({
+        collectionId: result.collectionId,
+        url: result.media
+          ? await getDisplayedMediaThumbnailUrl(ctx, result.media)
+          : null,
       })),
     );
 
@@ -1081,8 +1054,12 @@ export const getWithMetadata = query({
       copyright: v.optional(v.string()),
       url: v.union(v.string(), v.null()),
       thumbnailUrl: v.union(v.string(), v.null()),
+      // The upload before any edit, when the shown image is an edited version.
+      originalUrl: v.union(v.string(), v.null()),
       uploadedAt: v.number(),
       currentVersionId: v.optional(v.id("mediaVersions")),
+      // The shown version already carries the organization's watermark.
+      watermarked: v.boolean(),
       metadata: v.optional(metadataValidator),
       metadataExtracted: v.optional(v.boolean()),
       rightsStatus: v.optional(
@@ -1124,13 +1101,17 @@ export const getWithMetadata = query({
 
     await requirePermission(ctx, media.organizationId, "media.read");
 
-    const [collection, url] = await Promise.all([
+    const [collection, shown] = await Promise.all([
       ctx.db.get(media.collectionId),
-      ctx.storage.getUrl(media.storageId),
+      getDisplayedMediaFiles(ctx, media),
     ]);
-    const thumbnailUrl = media.thumbnailStorageId
-      ? await ctx.storage.getUrl(media.thumbnailStorageId)
-      : null;
+    const [url, thumbnailUrl, originalUrl] = await Promise.all([
+      ctx.storage.getUrl(shown.storageId),
+      shown.thumbnailStorageId
+        ? ctx.storage.getUrl(shown.thumbnailStorageId)
+        : null,
+      shown.version ? ctx.storage.getUrl(media.storageId) : null,
+    ]);
 
     return {
       _id: media._id,
@@ -1147,8 +1128,10 @@ export const getWithMetadata = query({
       copyright: media.copyright,
       url,
       thumbnailUrl,
+      originalUrl,
       uploadedAt: media.uploadedAt,
       currentVersionId: media.currentVersionId,
+      watermarked: isWatermarkedVersion(shown.version),
       metadata: media.metadata,
       metadataExtracted: media.metadataExtracted,
       rightsStatus: media.rightsStatus,

@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Save } from "lucide-react";
+import { MapPin, Save } from "lucide-react";
+import Link from "next/link";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { PermissionGate } from "@/components/permission-gate";
 import { TemplateCombobox } from "@/components/template-combobox";
@@ -18,7 +19,6 @@ import { TypeCombobox } from "@/components/type-combobox";
 import { useScopedI18n } from "@/locales/client";
 import {
   type CounterScope,
-  LocationTypesEditor,
   PreferenceSwitch,
   SettingsSection,
 } from "./preferences-settings-shared";
@@ -31,7 +31,6 @@ export interface PreferencesFormData {
   deaccessionWorkflowEnabled: boolean;
   allowIncomingTransferRequests: boolean;
   locationTrackingEnabled: boolean;
-  locationTypes: string[];
   enableDetailedConditionReports: boolean;
 }
 
@@ -270,12 +269,19 @@ export function PreferencesSettingsForm({
               }))
             }
           />
-          <LocationTypesEditor
-            locationTypes={formData.locationTypes}
-            onChange={(locationTypes) =>
-              setFormData((prev) => ({ ...prev, locationTypes }))
-            }
-          />
+          {formData.locationTrackingEnabled ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {tDashboard("manageLocationsDescription")}
+              </p>
+              <Button asChild variant="outline">
+                <Link href="/locations">
+                  <MapPin className="mr-2 size-4" />
+                  {tDashboard("manageLocations")}
+                </Link>
+              </Button>
+            </div>
+          ) : null}
         </div>
       </SettingsSection>
 
