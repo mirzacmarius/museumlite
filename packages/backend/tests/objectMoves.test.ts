@@ -1320,6 +1320,37 @@ describe("objectMoves", () => {
     );
   });
 
+  test("listForOrganization marks an approved transfer without an observed source as awaiting the source's re-approval", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Older approval",
+      },
+    );
+    const awaitsSourceReapproval = async () => {
+      const requests = await fixture.admin.query(
+        api.objectMoves.listForOrganization,
+        { organizationId: fixture.sourceOrganizationId },
+      );
+      return requests.find((request) => request._id === requestId)
+        ?.awaitsSourceReapproval;
+    };
+
+    expect(await awaitsSourceReapproval()).toBe(false);
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    expect(await awaitsSourceReapproval()).toBe(false);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(requestId, { approvedSourceLocationId: undefined });
+    });
+    expect(await awaitsSourceReapproval()).toBe(true);
+  });
+
   test("approving a request moves it from pending to executed in listForOrganization", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);

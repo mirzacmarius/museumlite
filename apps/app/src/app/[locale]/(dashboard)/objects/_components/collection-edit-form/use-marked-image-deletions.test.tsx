@@ -132,7 +132,7 @@ test("keeping a marked image, or leaving without updating, sends nothing", async
   expect(mutations.requestImageDeletion).not.toHaveBeenCalled();
 });
 
-test("field changes save after the marked images are sent", async () => {
+test("marked images are sent once the field changes have saved", async () => {
   const user = userEvent.setup();
   await renderOnPage(<EditForm isDirty />, "/en/objects/object-1/edit");
 
@@ -144,9 +144,24 @@ test("field changes save after the marked images are sent", async () => {
     mediaId: FRONT,
   });
   expect(save).toHaveBeenCalledOnce();
-  expect(
-    mutations.requestImageDeletion.mock.invocationCallOrder[0],
-  ).toBeLessThan(save.mock.invocationCallOrder[0] as number);
+  expect(save.mock.invocationCallOrder[0]).toBeLessThan(
+    mutations.requestImageDeletion.mock.invocationCallOrder[0] as number,
+  );
+});
+
+test("when the fields are refused, no image is deleted, so Cancel still keeps them all", async () => {
+  save.mockResolvedValue(false);
+  const user = userEvent.setup();
+  await renderOnPage(<EditForm isDirty />, "/en/objects/object-1/edit");
+
+  await user.click(screen.getByRole("button", { name: "Delete front" }));
+  await user.click(screen.getByRole("button", { name: "Delete back" }));
+  await user.click(updateButton());
+
+  await waitFor(() => expect(save).toHaveBeenCalledOnce());
+  expect(mutations.requestImageDeletion).not.toHaveBeenCalled();
+  expect(mutations.deleteImage).not.toHaveBeenCalled();
+  expect(push).not.toHaveBeenCalled();
 });
 
 test("a refused deletion keeps staff on the form with the reason and the image still marked", async () => {
@@ -164,7 +179,7 @@ test("a refused deletion keeps staff on the form with the reason and the image s
     "This image is cited as evidence by a condition assessment, provenance claim, incident, task or reproduction request, so it cannot be deleted.",
   );
   expect(mutations.deleteImage).toHaveBeenCalledWith({ mediaId: BACK });
-  expect(save).not.toHaveBeenCalled();
+  expect(save).toHaveBeenCalledOnce();
   expect(push).not.toHaveBeenCalled();
   expect(updateButton().disabled).toBe(false);
 });

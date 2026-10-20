@@ -83,6 +83,11 @@ const organizationMoveRequestSummaryValidator = v.object({
   targetReviewNotes: v.optional(v.string()),
   deaccessionId: v.optional(v.id("deaccessions")),
   direction: v.union(v.literal("outgoing"), v.literal("incoming")),
+  /**
+   * Awaiting acceptance, but recorded before the observed source location
+   * was, so the source re-approves it before the target can decide.
+   */
+  awaitsSourceReapproval: v.boolean(),
 });
 
 const ACTIVE_LOAN_STATUSES = new Set(["active", "dispatched"]);
@@ -1680,6 +1685,9 @@ export const listForOrganization = query({
           targetReviewNotes: request.targetReviewNotes,
           deaccessionId: request.deaccessionId,
           direction,
+          awaitsSourceReapproval:
+            normalizeRequestStatus(request.status) === "awaiting_acceptance" &&
+            request.approvedSourceLocationId === undefined,
         };
       }),
     );

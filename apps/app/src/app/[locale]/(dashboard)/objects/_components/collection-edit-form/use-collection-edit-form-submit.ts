@@ -38,23 +38,40 @@ export function useCollectionEditFormSubmit({
 
   const saveRecord = useCallback(
     async (afterSave?: () => void) => {
-      // Marked images go first, so a refused deletion keeps staff on the form
-      // with the reason before they leave it.
-      if (!(await sendImageDeletions())) return false;
-      if (!isDirty) {
+      const saveFields = (then?: () => void) =>
+        save(
+          ({ values, changedFields, expectedEditVersion }) =>
+            updateCollection({
+              ...collectionUpdatePatch(
+                typedCollectionId,
+                values,
+                changedFields,
+              ),
+              expectedEditVersion,
+            }),
+          then,
+        );
+      if (!hasMarkedImages) {
+        if (isDirty) return saveFields(afterSave);
         afterSave?.();
         return true;
       }
-      return save(
-        ({ values, changedFields, expectedEditVersion }) =>
-          updateCollection({
-            ...collectionUpdatePatch(typedCollectionId, values, changedFields),
-            expectedEditVersion,
-          }),
-        afterSave,
-      );
+      // Marked images go only once the fields have saved, so a refused field
+      // leaves every image in place for Cancel to keep; a refused deletion
+      // keeps staff on the form with the reason.
+      if (isDirty && !(await saveFields())) return false;
+      if (!(await sendImageDeletions())) return false;
+      afterSave?.();
+      return true;
     },
-    [isDirty, save, sendImageDeletions, typedCollectionId, updateCollection],
+    [
+      hasMarkedImages,
+      isDirty,
+      save,
+      sendImageDeletions,
+      typedCollectionId,
+      updateCollection,
+    ],
   );
 
   const handleSubmit = useCallback(

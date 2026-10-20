@@ -35,6 +35,7 @@ function transfer(
     requestedAt: START + index * DAY,
     targetReviewedAt: START + index * DAY + DAY,
     direction: "outgoing",
+    awaitsSourceReapproval: false,
     ...overrides,
   };
 }
@@ -239,4 +240,18 @@ test("pending transfers keep their cards", async () => {
   expect(
     screen.getByText("Chosen by the receiving organization when it accepts"),
   ).toBeTruthy();
+});
+
+test("an older approval the source must re-approve waits in Pending, not for the receiver", async () => {
+  const older = transfer(1, {
+    status: "awaiting_acceptance",
+    awaitsSourceReapproval: true,
+  });
+  const { unmount } = await renderColumn(["awaiting_acceptance"], [older]);
+  expect(screen.queryByText("Object 1")).toBeNull();
+  unmount();
+
+  await renderColumn(["pending_source_approval"], [older]);
+  expect(screen.getByText("Object 1")).toBeTruthy();
+  expect(screen.getByText("Pending transfer approval")).toBeTruthy();
 });

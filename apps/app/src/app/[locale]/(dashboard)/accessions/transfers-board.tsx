@@ -12,6 +12,7 @@ import { TransferKanbanColumn } from "./transfer-kanban-column";
 import {
   countIncomingTransfers,
   countPendingTransfers,
+  countTransfersAwaitingReceiver,
 } from "./use-open-transfer-count";
 
 type TransfersBoardProps = {
@@ -42,11 +43,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
 
     return {
       pending: countPendingTransfers(transferRequests),
-      awaitingReceiver: transferRequests.filter(
-        (request) =>
-          request.status === "awaiting_acceptance" &&
-          request.direction === "outgoing",
-      ).length,
+      awaitingReceiver: countTransfersAwaitingReceiver(transferRequests),
       incoming: countIncomingTransfers(transferRequests),
       executed: transferRequests.filter(
         (request) =>

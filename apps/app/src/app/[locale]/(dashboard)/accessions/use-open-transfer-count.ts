@@ -11,6 +11,18 @@ type TransferRequest = FunctionReturnType<
 >[number];
 
 /**
+ * Where a transfer stands on the board: an older approval the source must
+ * re-approve waits for source approval again, as the Work board counts it.
+ */
+export function boardStatus(
+  request: TransferRequest,
+): TransferRequest["status"] {
+  return request.awaitsSourceReapproval
+    ? "pending_source_approval"
+    : request.status;
+}
+
+/**
  * Outgoing transfers waiting for this organization's approval: the Transfers
  * board's Pending column. Legacy `pending` requests arrive normalized.
  */
@@ -19,7 +31,18 @@ export function countPendingTransfers(
 ): number {
   return requests.filter(
     (request) =>
-      request.status === "pending_source_approval" &&
+      boardStatus(request) === "pending_source_approval" &&
+      request.direction === "outgoing",
+  ).length;
+}
+
+/** Outgoing transfers the source approved, waiting for the receiver. */
+export function countTransfersAwaitingReceiver(
+  requests: readonly TransferRequest[],
+): number {
+  return requests.filter(
+    (request) =>
+      boardStatus(request) === "awaiting_acceptance" &&
       request.direction === "outgoing",
   ).length;
 }
@@ -30,7 +53,7 @@ export function countIncomingTransfers(
 ): number {
   return requests.filter(
     (request) =>
-      request.status === "awaiting_acceptance" &&
+      boardStatus(request) === "awaiting_acceptance" &&
       request.direction === "incoming",
   ).length;
 }

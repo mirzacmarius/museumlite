@@ -55,6 +55,7 @@ function transfer(
     requestedByName: "Ola Nordmann",
     requestedAt: Date.UTC(2026, 9, 1) + index,
     direction,
+    awaitsSourceReapproval: false,
   };
 }
 
@@ -96,6 +97,20 @@ test("the Transfers tab counts transfers waiting for approval and incoming ones 
   for (const args of state.queried) {
     expect(args).toEqual({ organizationId: ORGANIZATION });
   }
+});
+
+test("an older approval the source must re-approve counts as waiting for approval, not for the receiver", async () => {
+  state.transfers = [
+    {
+      ...transfer(1, "awaiting_acceptance", "outgoing"),
+      awaitsSourceReapproval: true,
+    },
+    transfer(2, "awaiting_acceptance", "outgoing"),
+  ];
+
+  await renderOnPage(<AccessionsView />, "/en/accessions");
+
+  expect(within(transfersTab()).getByText("1")).toBeTruthy();
 });
 
 test("the Transfers tab shows no count while loading or for members who cannot review transfers", async () => {

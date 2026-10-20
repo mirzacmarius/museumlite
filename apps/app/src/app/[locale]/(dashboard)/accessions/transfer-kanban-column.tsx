@@ -22,6 +22,7 @@ import {
 } from "@/components/record-log";
 import type { useI18n as useI18nType } from "@/locales/client";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { boardStatus } from "./use-open-transfer-count";
 
 type TransferRequest = FunctionReturnType<
   typeof api.objectMoves.listForOrganization
@@ -191,7 +192,10 @@ export function TransferKanbanColumn({
     shownLog.search === searchQuery ? shownLog.length : RECORD_LOG_PAGE_SIZE;
 
   const filteredRequests = transferRequests.filter((request) => {
-    if (!statuses.includes(request.status) || request.direction !== direction) {
+    if (
+      !statuses.includes(boardStatus(request)) ||
+      request.direction !== direction
+    ) {
       return false;
     }
 
@@ -265,7 +269,7 @@ export function TransferKanbanColumn({
                 <Link
                   key={request._id}
                   href={`/objects/move-requests/${request._id}`}
-                  className={`group block rounded-xl border p-3 transition-colors ${statusStyles[request.status].card}`}
+                  className={`group block rounded-xl border p-3 transition-colors ${statusStyles[boardStatus(request)].card}`}
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
@@ -281,9 +285,9 @@ export function TransferKanbanColumn({
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${statusStyles[request.status].badge}`}
+                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${statusStyles[boardStatus(request)].badge}`}
                     >
-                      {tRoot(statusLabels[request.status])}
+                      {tRoot(statusLabels[boardStatus(request)])}
                     </span>
                   </div>
 
