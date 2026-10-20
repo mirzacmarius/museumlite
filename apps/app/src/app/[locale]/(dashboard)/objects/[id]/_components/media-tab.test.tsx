@@ -134,6 +134,8 @@ test("Edit Object offers image upload in its image panel and document upload in 
         handleDocumentSelect={onDocumentSelect}
         handleSetPrimary={vi.fn()}
         setEditingImageId={vi.fn()}
+        markedImageIds={new Map()}
+        onKeepImage={vi.fn()}
         hasConditionChanged={false}
         requiresConditionChangeNote={false}
         conditionChangeNote=""
@@ -159,4 +161,44 @@ test("Edit Object offers image upload in its image panel and document upload in 
     new File(["report"], "loan-agreement.pdf", { type: "application/pdf" }),
   );
   expect(onDocumentSelect).toHaveBeenCalledOnce();
+});
+
+test("an image marked for deletion says so in Edit Object and can be kept", async () => {
+  const user = userEvent.setup();
+  const onKeepImage = vi.fn();
+  await renderOnPage(
+    <CollectionEditMediaTab
+      formData={createEmptyFormData()}
+      updateField={vi.fn()}
+      placeholders={(key) => key}
+      currentOrganizationId={"org-1" as Id<"organizations">}
+      isLocationTrackingEnabled={false}
+      collection={
+        objectRecord as unknown as CollectionEditMediaTabProps["collection"]
+      }
+      typedCollectionId={objectId}
+      images={[frontView] as unknown as CollectionEditMediaTabProps["images"]}
+      documents={[]}
+      common={(key) => key}
+      t={(key) => key}
+      documentInputRef={createRef<HTMLInputElement>()}
+      handleDocumentSelect={vi.fn()}
+      handleSetPrimary={vi.fn()}
+      setEditingImageId={vi.fn()}
+      markedImageIds={new Map([[frontView._id as Id<"mediaFiles">, true]])}
+      onKeepImage={onKeepImage}
+      hasConditionChanged={false}
+      requiresConditionChangeNote={false}
+      conditionChangeNote=""
+      onConditionChangeNoteChange={vi.fn()}
+    />,
+    "/en/objects/object-1/edit?tab=media",
+    { id: "object-1" },
+  );
+
+  expect(screen.getByText("Marked for deletion").textContent).toBe(
+    "Marked for deletion",
+  );
+  await user.click(screen.getByRole("button", { name: "Keep image" }));
+  expect(onKeepImage).toHaveBeenCalledWith(frontView._id);
 });

@@ -62,8 +62,11 @@ export function CollectionEditFormLayout({
     documents,
     hasConditionChanged,
     requiresConditionChangeNote,
-    isFormDirty,
+    hasUnsavedChanges,
     hasMediaChanges,
+    markedImageIds,
+    markImageForDeletion,
+    keepImage,
     canUpdateObject,
     updateField,
     createOwnershipEntry,
@@ -173,6 +176,8 @@ export function CollectionEditFormLayout({
             handleDocumentSelect={handleDocumentSelect}
             handleSetPrimary={handleSetPrimary}
             setEditingImageId={setEditingImageId}
+            markedImageIds={markedImageIds}
+            onKeepImage={keepImage}
           />
         </form>
       </div>
@@ -181,7 +186,7 @@ export function CollectionEditFormLayout({
         error={error}
         state={resolveCollectionEditFormFooterState({
           isSubmitting,
-          isFormDirty,
+          isFormDirty: hasUnsavedChanges,
           hasMediaChanges,
         })}
         canUpdateObject={canUpdateObject}
@@ -203,7 +208,16 @@ export function CollectionEditFormLayout({
         mediaId={editingImageId}
         isOpen={!!editingImageId}
         onClose={() => setEditingImageId(null)}
-        allowDelete
+        deletion={
+          editingImageId
+            ? {
+                marked: markedImageIds.has(editingImageId),
+                onMark: (requiresApproval) =>
+                  markImageForDeletion(editingImageId, requiresApproval),
+                onKeep: () => keepImage(editingImageId),
+              }
+            : undefined
+        }
       />
     </div>
   );

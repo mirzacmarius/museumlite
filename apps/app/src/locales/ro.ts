@@ -10928,10 +10928,16 @@ export default {
     pending: "Ștergere în așteptarea aprobării",
     pendingDescription:
       "Ștergerea acestei imagini așteaptă aprobarea. Imaginea rămâne până când un aprobator decide.",
+    marked: "Marcată pentru ștergere",
+    markedDescription:
+      "Este ștearsă sau trimisă spre aprobare când selectezi Actualizează obiectul. Anulează păstrează imaginea.",
+    keepImage: "Păstrează imaginea",
     confirm: {
       title: "Sigur vrei să ștergi această imagine?",
       approvalHint:
         "Mai întâi un aprobator verifică ștergerea. Imaginea rămâne până când o aprobă.",
+      sentOnUpdate:
+        "Nu se șterge nimic până nu selectezi Actualizează obiectul. Anulează păstrează imaginea.",
     },
     finalConfirm: {
       title: "Imaginea va fi ștearsă.",

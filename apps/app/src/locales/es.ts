@@ -10948,10 +10948,16 @@ export default {
     pending: "Eliminación pendiente de aprobación",
     pendingDescription:
       "La eliminación de esta imagen espera aprobación. La imagen se conserva hasta que un aprobador decida.",
+    marked: "Marcada para eliminar",
+    markedDescription:
+      "Se elimina, o se envía para aprobación, al seleccionar Actualizar Objeto. Cancelar conserva la imagen.",
+    keepImage: "Conservar imagen",
     confirm: {
       title: "¿Seguro que quieres eliminar esta imagen?",
       approvalHint:
         "Primero un aprobador revisa la eliminación. La imagen se conserva hasta que la apruebe.",
+      sentOnUpdate:
+        "No se elimina nada hasta que selecciones Actualizar Objeto. Cancelar conserva la imagen.",
     },
     finalConfirm: {
       title: "Esto eliminará la imagen.",

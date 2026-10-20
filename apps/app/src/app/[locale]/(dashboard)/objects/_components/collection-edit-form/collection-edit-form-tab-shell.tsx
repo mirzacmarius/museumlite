@@ -70,6 +70,8 @@ interface CollectionEditFormTabShellProps {
   handleDocumentSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSetPrimary: CollectionEditMediaTabProps["handleSetPrimary"];
   setEditingImageId: CollectionEditMediaTabProps["setEditingImageId"];
+  markedImageIds: CollectionEditMediaTabProps["markedImageIds"];
+  onKeepImage: CollectionEditMediaTabProps["onKeepImage"];
 }
 
 export function CollectionEditFormTabShell({
@@ -106,6 +108,8 @@ export function CollectionEditFormTabShell({
   handleDocumentSelect,
   handleSetPrimary,
   setEditingImageId,
+  markedImageIds,
+  onKeepImage,
 }: CollectionEditFormTabShellProps) {
   const tRoot = useI18n();
   const locale = useCurrentLocale();
@@ -205,6 +209,8 @@ export function CollectionEditFormTabShell({
               handleDocumentSelect={handleDocumentSelect}
               handleSetPrimary={handleSetPrimary}
               setEditingImageId={setEditingImageId}
+              markedImageIds={markedImageIds}
+              onKeepImage={onKeepImage}
               hasConditionChanged={hasConditionChanged}
               requiresConditionChangeNote={requiresConditionChangeNote}
               conditionChangeNote={conditionChangeNote}

@@ -10994,10 +10994,16 @@ export default {
     pending: "Suppression en attente d'approbation",
     pendingDescription:
       "La suppression de cette image attend une approbation. L'image reste jusqu'à la décision d'un approbateur.",
+    marked: "Marquée pour suppression",
+    markedDescription:
+      "Supprimée, ou envoyée pour approbation, lorsque vous sélectionnez Mettre à Jour l'Objet. Annuler conserve l'image.",
+    keepImage: "Conserver l'image",
     confirm: {
       title: "Voulez-vous vraiment supprimer cette image ?",
       approvalHint:
         "Un approbateur examine d'abord la suppression. L'image reste jusqu'à son approbation.",
+      sentOnUpdate:
+        "Rien n'est supprimé avant que vous sélectionniez Mettre à Jour l'Objet. Annuler conserve l'image.",
     },
     finalConfirm: {
       title: "Cette action supprimera l'image.",

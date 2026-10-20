@@ -40,6 +40,7 @@ import {
 } from "./collection-edit-values";
 import { useCollectionEditFormMedia } from "./use-collection-edit-form-media";
 import { useCollectionEditFormSubmit } from "./use-collection-edit-form-submit";
+import { useMarkedImageDeletions } from "./use-marked-image-deletions";
 
 const EMPTY_EDIT_VALUES: CollectionEditValues = {
   ...EMPTY_EDIT_FORM,
@@ -162,6 +163,7 @@ export function useCollectionEditForm() {
     setError: setLocalError,
     t,
   });
+  const imageDeletions = useMarkedImageDeletions({ setError: setLocalError });
 
   const resolvedCurrentLocationId =
     formData.currentLocationId ||
@@ -189,8 +191,9 @@ export function useCollectionEditForm() {
   const requiresConditionChangeNote =
     hasConditionChanged && baseCondition.length > 0;
   const isFormDirty = session.isDirty;
+  const hasUnsavedChanges = isFormDirty || imageDeletions.hasMarkedImages;
 
-  useBeforeUnload(isFormDirty);
+  useBeforeUnload(hasUnsavedChanges);
 
   const conditionChangeNote = formData.conditionChangeNote;
   useEffect(() => {
@@ -204,13 +207,20 @@ export function useCollectionEditForm() {
     typedCollectionId,
     session,
     hasMediaChanges: mediaState.hasMediaChanges,
+    hasMarkedImages: imageDeletions.hasMarkedImages,
+    sendImageDeletions: imageDeletions.sendImageDeletions,
   });
 
+  const { forgetInput } = session;
+  const { keepAllImages } = imageDeletions;
   const navigation = useFormNavigationGuard({
-    hasUnsavedChanges: isFormDirty,
+    hasUnsavedChanges,
     onNavigate: submitState.push,
     onSaveBeforeNavigate: submitState.saveRecord,
-    onDiscard: session.forgetInput,
+    onDiscard: useCallback(() => {
+      forgetInput();
+      keepAllImages();
+    }, [forgetInput, keepAllImages]),
   });
 
   const updateField = useCallback(
@@ -328,7 +338,7 @@ export function useCollectionEditForm() {
     activeTab,
     setActiveTab,
     tabs,
-    isSubmitting: session.saving,
+    isSubmitting: session.saving || imageDeletions.isSendingImageDeletions,
     error: localError,
     alternateAccessionDraft,
     setAlternateAccessionDraft,
@@ -349,7 +359,11 @@ export function useCollectionEditForm() {
     hasConditionChanged,
     requiresConditionChangeNote,
     isFormDirty,
+    hasUnsavedChanges,
     hasMediaChanges: mediaState.hasMediaChanges,
+    markedImageIds: imageDeletions.markedImageIds,
+    markImageForDeletion: imageDeletions.markImageForDeletion,
+    keepImage: imageDeletions.keepImage,
     canUpdateObject: submitState.canUpdateObject,
     updateField,
     createOwnershipEntry,

@@ -10816,10 +10816,16 @@ export default {
     pending: "Sletting venter på godkjenning",
     pendingDescription:
       "Slettingen av dette bildet venter på godkjenning. Bildet blir værende til en godkjenner har bestemt seg.",
+    marked: "Merket for sletting",
+    markedDescription:
+      "Slettes, eller sendes til godkjenning, når du velger Oppdater Objekt. Avbryt beholder bildet.",
+    keepImage: "Behold bildet",
     confirm: {
       title: "Er du sikker på at du vil slette dette bildet?",
       approvalHint:
         "En godkjenner vurderer slettingen først. Bildet blir værende til slettingen er godkjent.",
+      sentOnUpdate:
+        "Ingenting slettes før du velger Oppdater Objekt. Avbryt beholder bildet.",
     },
     finalConfirm: {
       title: "Dette sletter bildet.",

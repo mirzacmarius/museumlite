@@ -10694,10 +10694,16 @@ export default {
     pending: "Deletion awaiting approval",
     pendingDescription:
       "Deletion of this image is waiting for approval. The image stays until an approver decides.",
+    marked: "Marked for deletion",
+    markedDescription:
+      "Deleted, or sent for approval, when you select Update Object. Cancel keeps the image.",
+    keepImage: "Keep image",
     confirm: {
       title: "Are you sure you want to delete this image?",
       approvalHint:
         "An approver reviews the deletion first. The image stays until they approve it.",
+      sentOnUpdate:
+        "Nothing is deleted until you select Update Object. Cancel keeps the image.",
     },
     finalConfirm: {
       title: "This will delete the image.",

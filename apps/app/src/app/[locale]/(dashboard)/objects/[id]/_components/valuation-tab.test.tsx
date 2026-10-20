@@ -59,6 +59,8 @@ function EditFormValuationTab() {
     typedCollectionId: objectId,
     session: { isDirty: true, save: saveObject },
     hasMediaChanges: false,
+    hasMarkedImages: false,
+    sendImageDeletions: async () => true,
   });
   return (
     <form onSubmit={handleSubmit}>

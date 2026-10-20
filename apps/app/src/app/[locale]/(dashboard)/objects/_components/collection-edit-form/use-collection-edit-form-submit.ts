@@ -17,6 +17,9 @@ interface UseCollectionEditFormSubmitOptions {
   typedCollectionId: Id<"collections">;
   session: Pick<RecordFormSession<CollectionEditValues>, "isDirty" | "save">;
   hasMediaChanges: boolean;
+  hasMarkedImages: boolean;
+  /** Sends the images marked for deletion; true when all went through. */
+  sendImageDeletions: () => Promise<boolean>;
 }
 
 export function useCollectionEditFormSubmit({
@@ -24,24 +27,34 @@ export function useCollectionEditFormSubmit({
   typedCollectionId,
   session,
   hasMediaChanges,
+  hasMarkedImages,
+  sendImageDeletions,
 }: UseCollectionEditFormSubmitOptions) {
   const { push } = useRouter();
   const updateCollection = useMutation(api.collections.update);
   const { isDirty, save } = session;
 
-  const canUpdateObject = isDirty || hasMediaChanges;
+  const canUpdateObject = isDirty || hasMediaChanges || hasMarkedImages;
 
   const saveRecord = useCallback(
-    (afterSave?: () => void) =>
-      save(
+    async (afterSave?: () => void) => {
+      // Marked images go first, so a refused deletion keeps staff on the form
+      // with the reason before they leave it.
+      if (!(await sendImageDeletions())) return false;
+      if (!isDirty) {
+        afterSave?.();
+        return true;
+      }
+      return save(
         ({ values, changedFields, expectedEditVersion }) =>
           updateCollection({
             ...collectionUpdatePatch(typedCollectionId, values, changedFields),
             expectedEditVersion,
           }),
         afterSave,
-      ),
-    [save, typedCollectionId, updateCollection],
+      );
+    },
+    [isDirty, save, sendImageDeletions, typedCollectionId, updateCollection],
   );
 
   const handleSubmit = useCallback(
@@ -50,14 +63,9 @@ export function useCollectionEditFormSubmit({
       // their submit still bubbles here through the React tree.
       if (event.target !== event.currentTarget) return;
       event.preventDefault();
-      if (!isDirty && hasMediaChanges) {
-        push(`/objects/${collectionId}`);
-        return;
-      }
-
       await saveRecord(() => push(`/objects/${collectionId}`));
     },
-    [collectionId, hasMediaChanges, isDirty, push, saveRecord],
+    [collectionId, push, saveRecord],
   );
 
   return {
