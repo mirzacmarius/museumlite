@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { getDisplayedMediaThumbnailUrl } from "./utils/collectionDisplayHelpers";
 
 /**
  * The objects the viewer cataloged, and those they changed this week, in the
@@ -79,7 +80,7 @@ export const listMyAssignments = query({
 
         let thumbnailUrl: string | undefined;
         if (primaryMedia?.storageId) {
-          const url = await ctx.storage.getUrl(primaryMedia.storageId);
+          const url = await getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
           thumbnailUrl = url ?? undefined;
         }
 
@@ -109,7 +110,7 @@ export const listMyAssignments = query({
 
         let thumbnailUrl: string | undefined;
         if (primaryMedia?.storageId) {
-          const url = await ctx.storage.getUrl(primaryMedia.storageId);
+          const url = await getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
           thumbnailUrl = url ?? undefined;
         }
 

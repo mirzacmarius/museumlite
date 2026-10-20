@@ -9194,6 +9194,7 @@ export default {
       metadataDescription:
         "Consultați metadatele media, detaliile fișierului și versiunile disponibile.",
       download: "Descarcă",
+      downloadOriginal: "Descarcă originalul",
       versions: "Versiuni",
       current: "Curentă",
       typeFilter: "Tip",

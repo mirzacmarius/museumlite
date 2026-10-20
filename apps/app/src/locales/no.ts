@@ -9119,6 +9119,7 @@ export default {
       metadataDescription:
         "Se mediemetadata, fildetaljer og tilgjengelige versjoner.",
       download: "Last ned",
+      downloadOriginal: "Last ned originalen",
       versions: "Versjoner",
       current: "Gjeldende",
       typeFilter: "Type",
@@ -9288,9 +9289,9 @@ export default {
       preferences: "Innstillinger",
       preferencesDescription:
         "Konfigurer katalogvokabular, nummerering, arbeidsflyter og stedssporing.",
-      manageLocations: "Administrer steder",
+      manageLocations: "Administrer plasseringer",
       manageLocationsDescription:
-        "Legg til, rediger og ordne stedshierarkiet under Plassering og sporing.",
+        "Legg til, rediger og ordne plasseringshierarkiet under Plassering og sporing.",
       selectOrganizationPreferences:
         "Velg en organisasjon for å administrere innstillingene.",
       selectOrganizationLibrarySettings:

@@ -1054,6 +1054,8 @@ export const getWithMetadata = query({
       copyright: v.optional(v.string()),
       url: v.union(v.string(), v.null()),
       thumbnailUrl: v.union(v.string(), v.null()),
+      // The upload before any edit, when the shown image is an edited version.
+      originalUrl: v.union(v.string(), v.null()),
       uploadedAt: v.number(),
       currentVersionId: v.optional(v.id("mediaVersions")),
       // The shown version already carries the organization's watermark.
@@ -1103,11 +1105,12 @@ export const getWithMetadata = query({
       ctx.db.get(media.collectionId),
       getDisplayedMediaFiles(ctx, media),
     ]);
-    const [url, thumbnailUrl] = await Promise.all([
+    const [url, thumbnailUrl, originalUrl] = await Promise.all([
       ctx.storage.getUrl(shown.storageId),
       shown.thumbnailStorageId
         ? ctx.storage.getUrl(shown.thumbnailStorageId)
         : null,
+      shown.version ? ctx.storage.getUrl(media.storageId) : null,
     ]);
 
     return {
@@ -1125,6 +1128,7 @@ export const getWithMetadata = query({
       copyright: media.copyright,
       url,
       thumbnailUrl,
+      originalUrl,
       uploadedAt: media.uploadedAt,
       currentVersionId: media.currentVersionId,
       watermarked: isWatermarkedVersion(shown.version),

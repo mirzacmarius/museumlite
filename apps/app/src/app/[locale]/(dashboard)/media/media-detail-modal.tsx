@@ -185,6 +185,19 @@ export function MediaDetailModal({
                     </a>
                   </Button>
                 )}
+                {item.originalUrl && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    asChild
+                    className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                  >
+                    <a href={item.originalUrl} download>
+                      <Download className="mr-1 size-3" />
+                      {t("untranslatedDashboard.media.downloadOriginal")}
+                    </a>
+                  </Button>
+                )}
               </div>
 
               <MediaPublicationPanel mediaId={mediaId} item={item} />

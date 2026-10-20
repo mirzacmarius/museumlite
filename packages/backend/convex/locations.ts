@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { query } from "./_generated/server";
 import { customFieldValue } from "./schema";
+import { getDisplayedMediaThumbnailUrl } from "./utils/collectionDisplayHelpers";
 import {
   assessCollectionMovement,
   moveCollectionToLocation,
@@ -2180,12 +2181,11 @@ export const getObjectsAtLocation = query({
 
         let thumbnailUrl: string | null = null;
 
-        if (primaryMedia?.thumbnailStorageId) {
-          thumbnailUrl =
-            (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ?? null;
-        } else if (primaryMedia?.fileType === "image") {
-          thumbnailUrl =
-            (await ctx.storage.getUrl(primaryMedia.storageId)) ?? null;
+        if (
+          primaryMedia &&
+          (primaryMedia.thumbnailStorageId || primaryMedia.fileType === "image")
+        ) {
+          thumbnailUrl = await getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
         }
 
         return {

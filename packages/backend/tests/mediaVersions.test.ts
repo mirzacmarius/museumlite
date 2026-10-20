@@ -185,6 +185,7 @@ describe("mediaVersions", () => {
       mediaId: setup.mediaFileId,
     });
     expect(before?.watermarked).toBe(false);
+    expect(before?.originalUrl).toBeNull();
 
     await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
@@ -196,18 +197,27 @@ describe("mediaVersions", () => {
     const versionUrl = await t.run((ctx) =>
       ctx.storage.getUrl(versionStorageId),
     );
-    const [gallery, primaryUrl, detail] = await Promise.all([
+    const [gallery, primaryUrl, detail, catalog] = await Promise.all([
       authed.query(api.media.list, { collectionId: setup.collectionId }),
       authed.query(api.media.getPrimaryImageUrl, {
         collectionId: setup.collectionId,
       }),
       authed.query(api.media.getWithMetadata, { mediaId: setup.mediaFileId }),
+      authed.query(api.media.getBatchPrimaryImageUrls, {
+        collectionIds: [setup.collectionId],
+      }),
     ]);
     expect(gallery[0]?.url).toBe(versionUrl);
     expect(gallery[0]?.thumbnailUrl).toBeNull();
     expect(primaryUrl).toBe(versionUrl);
+    expect(catalog).toEqual([
+      { collectionId: setup.collectionId, url: versionUrl },
+    ]);
     expect(detail?.url).toBe(versionUrl);
     expect(detail?.watermarked).toBe(true);
+    expect(detail?.originalUrl).toBe(
+      await t.run((ctx) => ctx.storage.getUrl(setup.storageId)),
+    );
   });
 
   test("should increment version number correctly", async () => {

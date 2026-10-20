@@ -9202,6 +9202,7 @@ export default {
       metadataDescription:
         "Consulta los metadatos, los detalles del archivo y las versiones disponibles.",
       download: "Descargar",
+      downloadOriginal: "Descargar original",
       versions: "Versiones",
       current: "Actual",
       typeFilter: "Tipo",

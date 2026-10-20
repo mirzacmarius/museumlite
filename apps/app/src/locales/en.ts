@@ -9024,6 +9024,7 @@ export default {
       metadataDescription:
         "View media metadata, file details, and available versions.",
       download: "Download",
+      downloadOriginal: "Download original",
       versions: "Versions",
       current: "Current",
       typeFilter: "Type",

@@ -9238,6 +9238,7 @@ export default {
       metadataDescription:
         "Consultez les métadonnées, les détails du fichier et les versions disponibles.",
       download: "Télécharger",
+      downloadOriginal: "Télécharger l’original",
       versions: "Versions",
       current: "Actuelle",
       typeFilter: "Type",
