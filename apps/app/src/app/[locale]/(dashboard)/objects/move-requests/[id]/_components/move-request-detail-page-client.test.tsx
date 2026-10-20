@@ -279,7 +279,7 @@ test("the receiving organization chooses the accession number when it accepts", 
     screen.getByText("Chosen by the receiving organization when it accepts"),
   ).toBeTruthy();
   const choice = screen.getByRole("combobox", { name: "Accession number" });
-  expect(choice.textContent).toBe("Keep the current number (A-1)");
+  expect(choice.textContent).toBe("Generate a new number");
 
   await userEvent.click(choice);
   await userEvent.click(
@@ -341,7 +341,7 @@ test("the receiving organization accepts without choosing a location", async () 
     requestId: "move-1",
     targetLocationId: undefined,
     reviewNotes: undefined,
-    accessionMode: "keep",
+    accessionMode: "auto",
     requestedAccessionNumber: undefined,
   });
 });
@@ -357,4 +357,18 @@ test("a receiver that turned off locations is not asked for one", async () => {
   expect(screen.queryByText("Receiving location")).toBeNull();
   expect(button("North store")).toBeNull();
   expect(button("Accept and complete transfer")).toBeTruthy();
+});
+
+test("the back link returns to the Transfers board", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+
+  expect(
+    screen
+      .getByRole("link", { name: "Back to transfers" })
+      .getAttribute("href"),
+  ).toMatch(/\/accessions\/transfers$/);
 });

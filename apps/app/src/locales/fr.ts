@@ -8036,7 +8036,7 @@ export default {
         reason: "Motif du déplacement",
         loading: "Chargement de la demande de déplacement…",
         notFound: "Demande de déplacement introuvable.",
-        backToObjects: "Retour aux objets",
+        backToTransfers: "Retour aux transferts",
         openObject: "Ouvrir l’objet",
         awaitingAcceptance: "En attente d’acceptation",
         selectOrganization: "Sélectionnez une organisation pour continuer.",

@@ -7999,7 +7999,7 @@ export default {
         reason: "Motivul mutării",
         loading: "Se încarcă solicitarea de mutare…",
         notFound: "Solicitarea de mutare nu a fost găsită.",
-        backToObjects: "Înapoi la obiecte",
+        backToTransfers: "Înapoi la transferuri",
         openObject: "Deschide obiectul",
         awaitingAcceptance: "În așteptarea acceptării",
         selectOrganization: "Selectați o organizație pentru a continua.",

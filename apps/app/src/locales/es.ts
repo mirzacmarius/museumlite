@@ -8008,7 +8008,7 @@ export default {
         reason: "Motivo del traslado",
         loading: "Cargando solicitud de traslado…",
         notFound: "No se encontró la solicitud de traslado.",
-        backToObjects: "Volver a los objetos",
+        backToTransfers: "Volver a las transferencias",
         openObject: "Abrir objeto",
         awaitingAcceptance: "A la espera de aceptación",
         selectOrganization: "Seleccione una organización para continuar.",

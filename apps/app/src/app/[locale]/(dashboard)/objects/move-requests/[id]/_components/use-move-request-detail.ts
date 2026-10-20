@@ -84,7 +84,11 @@ export function useMoveRequestDetail() {
     };
   }, [currentOrganizationId, currentUser, hasPermission, request]);
 
-  const accessionMode = chosenAccessionMode ?? request?.accessionMode ?? "keep";
+  // Senders never choose, so a stored "keep" is only the request's default:
+  // the receiver starts from a newly generated number.
+  const accessionMode =
+    chosenAccessionMode ??
+    (request?.accessionMode === "manual" ? "manual" : "auto");
   const manualAccessionNumber =
     chosenAccessionNumber ?? request?.requestedAccessionNumber ?? "";
 
