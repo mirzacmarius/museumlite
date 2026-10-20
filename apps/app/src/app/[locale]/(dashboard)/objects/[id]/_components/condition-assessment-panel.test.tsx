@@ -780,3 +780,44 @@ test("a reviewer can reject a draft nobody will finish but cannot accept it", as
     assessmentId: "assessment-1",
   });
 });
+
+test("the Physical tab shows measured dimensions over older free-text ones", async () => {
+  const { unmount } = await renderOnPage(
+    <PhysicalTab
+      collection={{
+        ...viewedObject,
+        dimensions: "50 × 60 cm",
+        dimensionHeight: 10,
+        dimensionWidth: 20,
+        dimensionUnit: "cm",
+      }}
+    />,
+  );
+  expect(screen.getByText("H: 10 × W: 20 cm").textContent).toBe(
+    "H: 10 × W: 20 cm",
+  );
+  expect(screen.queryByText("50 × 60 cm")).toBeNull();
+  unmount();
+
+  await renderOnPage(
+    <PhysicalTab collection={{ ...viewedObject, dimensions: "50 × 60 cm" }} />,
+  );
+  expect(screen.getByText("50 × 60 cm").textContent).toBe("50 × 60 cm");
+});
+
+test("the edit Physical tab asks for height, width and depth, not free-text dimensions", async () => {
+  await renderOnPage(
+    <CollectionEditPhysicalTab
+      formData={{ title: "Vase", dimensions: "50 × 60 cm" }}
+      updateField={vi.fn()}
+      placeholders={() => ""}
+      currentOrganizationId="org"
+      typedCollectionId={"object-1" as Id<"collections">}
+    />,
+  );
+
+  expect(screen.queryByRole("textbox", { name: "Dimensions" })).toBeNull();
+  for (const name of ["Height", "Width", "Depth", "Diameter", "Weight"]) {
+    expect(screen.getByRole("textbox", { name })).toBeTruthy();
+  }
+});

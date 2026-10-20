@@ -8050,7 +8050,7 @@ export default {
         noImagesUploaded: "Ingen bilder er lastet opp ennå.",
         savedToObject: "Lagret med dette objektet",
         conditionChangeNote: "Merknad om tilstandsendring",
-        detailedDimensionsHint: "Registrer mål, diameter og vekt.",
+        detailedDimensionsHint: "Registrer diameter og vekt.",
         ownershipHistory: "Eierhistorikk",
         ownershipHistoryDescription: "Dokumenter eierrekken post for post.",
         ownershipHistoryHint:

@@ -8120,8 +8120,7 @@ export default {
         noImagesUploaded: "Aún no se han subido imágenes.",
         savedToObject: "Guardado con este objeto",
         conditionChangeNote: "Nota sobre el cambio de estado",
-        detailedDimensionsHint:
-          "Documente las dimensiones, el diámetro y el peso.",
+        detailedDimensionsHint: "Documente el diámetro y el peso.",
         ownershipHistory: "Historial de propiedad",
         ownershipHistoryDescription:
           "Documente la cadena de propiedad entrada por entrada.",

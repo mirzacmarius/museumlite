@@ -28,25 +28,6 @@ type ParityFieldProps = Pick<
   "formData" | "updateField" | "fieldErrors"
 >;
 
-export function AlternativeTitleField({
-  formData,
-  updateField,
-}: ParityFieldProps) {
-  const t = useScopedI18n("recordForm.objectFields");
-  return (
-    <div className="space-y-2">
-      <Label htmlFor="alternativeTitle">{t("alternativeTitle")}</Label>
-      <Input
-        id="alternativeTitle"
-        value={formData.alternativeTitle || ""}
-        onChange={(event) =>
-          updateField("alternativeTitle", event.target.value)
-        }
-      />
-    </div>
-  );
-}
-
 export function TagsField({ formData, updateField }: ParityFieldProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("recordForm.objectFields");

@@ -8150,8 +8150,7 @@ export default {
         noImagesUploaded: "Aucune image téléversée pour le moment.",
         savedToObject: "Enregistré avec cet objet",
         conditionChangeNote: "Note sur le changement d’état",
-        detailedDimensionsHint:
-          "Renseignez les dimensions, le diamètre et le poids.",
+        detailedDimensionsHint: "Renseignez le diamètre et le poids.",
         ownershipHistory: "Historique de propriété",
         ownershipHistoryDescription:
           "Documentez la chaîne de propriété étape par étape.",

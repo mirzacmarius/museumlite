@@ -10,10 +10,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { TypeCombobox } from "@/components/type-combobox";
 import { useI18n } from "@/locales/client";
-import {
-  AlternativeTitleField,
-  TagsField,
-} from "../../collection-form-shared/catalog-parity-fields";
+import { TagsField } from "../../collection-form-shared/catalog-parity-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
@@ -202,11 +199,6 @@ export function CollectionEditGeneralTab({
               placeholder={placeholders("objectName")}
             />
           </div>
-
-          <AlternativeTitleField
-            formData={formData}
-            updateField={updateField}
-          />
 
           <div className="space-y-2">
             <Label id="objectType-label" htmlFor="objectType">

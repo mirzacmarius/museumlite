@@ -8111,8 +8111,7 @@ export default {
         noImagesUploaded: "Nu au fost încărcate încă imagini.",
         savedToObject: "Salvat la acest obiect",
         conditionChangeNote: "Notă privind schimbarea stării",
-        detailedDimensionsHint:
-          "Înregistrați dimensiunile, diametrul și greutatea.",
+        detailedDimensionsHint: "Înregistrați diametrul și greutatea.",
         ownershipHistory: "Istoricul proprietății",
         ownershipHistoryDescription:
           "Documentați lanțul de proprietate, intrare cu intrare.",

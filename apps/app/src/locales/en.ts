@@ -7952,7 +7952,7 @@ export default {
         noImagesUploaded: "No images uploaded yet.",
         savedToObject: "Saved to this object",
         conditionChangeNote: "Condition change note",
-        detailedDimensionsHint: "Document dimensions, diameter, and weight.",
+        detailedDimensionsHint: "Document diameter and weight.",
         ownershipHistory: "Ownership history",
         ownershipHistoryDescription:
           "Document the chain of ownership entry by entry.",
