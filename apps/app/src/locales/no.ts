@@ -7944,7 +7944,7 @@ export default {
         reason: "Årsak til flytting",
         loading: "Laster flytteforespørsel …",
         notFound: "Fant ikke flytteforespørselen.",
-        backToObjects: "Tilbake til objekter",
+        backToTransfers: "Tilbake til overføringer",
         openObject: "Åpne objekt",
         awaitingAcceptance: "Venter på godkjenning",
         selectOrganization: "Velg en organisasjon for å fortsette.",

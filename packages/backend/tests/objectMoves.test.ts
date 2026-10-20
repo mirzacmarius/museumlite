@@ -2334,6 +2334,25 @@ describe("the receiving organization decides", () => {
     expect(eligibility.blockers).toEqual([]);
   });
 
+  test("a declined transfer puts the object back in the sender's catalog", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const catalog = async () =>
+      (
+        await fixture.admin.query(api.collections.list, {
+          organizationId: fixture.sourceOrganizationId,
+          paginationOpts: { numItems: 20, cursor: null },
+        })
+      ).page.map((object) => object._id);
+    expect(await catalog()).toContain(fixture.collectionId);
+    const requestId = await awaitingAcceptance(fixture);
+    expect(await catalog()).not.toContain(fixture.collectionId);
+
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
+
+    expect(await catalog()).toContain(fixture.collectionId);
+  });
+
   test("the decline reason reaches the sender", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);

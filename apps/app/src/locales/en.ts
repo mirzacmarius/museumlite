@@ -7848,7 +7848,7 @@ export default {
         reason: "Reason for move",
         loading: "Loading move request…",
         notFound: "Move request not found.",
-        backToObjects: "Back to objects",
+        backToTransfers: "Back to transfers",
         openObject: "Open object",
         awaitingAcceptance: "Awaiting acceptance",
         selectOrganization: "Select an organization to continue.",

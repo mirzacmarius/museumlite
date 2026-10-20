@@ -3,6 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { TRANSFERS_HREF } from "@/app/[locale]/(dashboard)/_components/pending-transfers-column";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { MoveRequestActionsPanel } from "./move-request-actions-panel";
 import { MoveRequestDetailCard } from "./move-request-detail-card";
@@ -66,9 +67,9 @@ export function MoveRequestDetailPageClient() {
       <div className="flex-1 overflow-y-auto px-6">
         <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-6 py-6">
           <Button variant="ghost" size="sm" asChild className="w-fit">
-            <Link href="/objects">
+            <Link href={TRANSFERS_HREF}>
               <ArrowLeft className="mr-2 size-4" />
-              {tRoot("untranslatedRecords.objects.move.backToObjects")}
+              {tRoot("untranslatedRecords.objects.move.backToTransfers")}
             </Link>
           </Button>
 

@@ -34,7 +34,7 @@ export function useMoveRequestDetail() {
 
   const [reviewNotes, setReviewNotes] = useState("");
   const [targetLocationId, setTargetLocationId] = useState("");
-  // Unset until the receiver picks, so the request's stored choice shows.
+  // Unset until the receiver picks, so the default below shows.
   const [chosenAccessionMode, setChosenAccessionMode] =
     useState<AccessionMode | null>(null);
   const [chosenAccessionNumber, setChosenAccessionNumber] = useState<
@@ -84,7 +84,11 @@ export function useMoveRequestDetail() {
     };
   }, [currentOrganizationId, currentUser, hasPermission, request]);
 
-  const accessionMode = chosenAccessionMode ?? request?.accessionMode ?? "keep";
+  // Senders never choose, so a stored "keep" is only the request's default:
+  // the receiver starts from a newly generated number.
+  const accessionMode =
+    chosenAccessionMode ??
+    (request?.accessionMode === "manual" ? "manual" : "auto");
   const manualAccessionNumber =
     chosenAccessionNumber ?? request?.requestedAccessionNumber ?? "";
 
