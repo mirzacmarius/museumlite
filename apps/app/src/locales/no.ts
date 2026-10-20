@@ -58,7 +58,7 @@ export default {
 
     title: "Tilstandsvurderinger",
     description:
-      "Daterte observasjoner og bilder beholdes. Lagre et utkast mens du arbeider, og send det inn; en kontrollør godkjenner det for å oppdatere gjeldende tilstand.",
+      "Daterte observasjoner og bilder beholdes. Send en vurdering til godkjenning; en kontrollør godkjenner den for å oppdatere gjeldende tilstand.",
     current: "Gjeldende tilstand",
     unknown: "Ukjent",
     acceptedSource: "Fra en godkjent vurdering",
@@ -80,7 +80,6 @@ export default {
     remove: "Fjern",
     photos: "Dokumentasjonsbilder",
     uploadPhoto: "Last opp bilde",
-    saveDraft: "Lagre utkast",
     submitForApproval: "Send til godkjenning",
     submitting: "Sender inn…",
     editDraft: "Rediger utkast",
@@ -100,7 +99,6 @@ export default {
     reject: "Avvis vurdering",
     rejectionReason: "Begrunnelse for avvisning: {reason}",
     loading: "Laster tilstandsvurderinger…",
-    saving: "Lagrer utkast…",
     observationNumber: "Observasjon {number}",
     errors: {
       date: "Velg en dato som ikke er fram i tid.",
@@ -121,8 +119,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "Objektet eller et dokumentasjonsbilde er ikke lenger tilgjengelig. Avvis denne vurderingen og registrer en ny.",
     },
-    draftSaved: "Utkast lagret. Send det til godkjenning når det er klart.",
-    saveFailed: "Kunne ikke lagre utkastet. Prøv igjen.",
     submitted:
       "Vurderingen er sendt inn. En kontrollør kan nå godkjenne eller avvise den.",
     submitFailed: "Kunne ikke sende inn vurderingen. Prøv igjen.",

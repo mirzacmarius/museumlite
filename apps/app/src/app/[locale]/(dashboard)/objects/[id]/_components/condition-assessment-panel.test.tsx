@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { getFunctionName } from "convex/server";
@@ -189,7 +189,6 @@ test("viewing an object shows its current condition and history without authorin
     "Set condition",
     "Add observation",
     "Upload photo",
-    "Save draft",
     "Submit for approval",
     "Accept assessment",
     "Reject assessment",
@@ -273,7 +272,7 @@ test("an object with no recorded condition reads Unknown without a legacy captio
   ).toBeNull();
 });
 
-test("the edit Physical tab sets condition through an assessment dialog, not the legacy picker", async () => {
+test("the edit Physical tab sets condition through an assessment dialog that closes once submitted", async () => {
   const outerSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
   await renderOnPage(
     <form onSubmit={outerSubmit}>
@@ -298,12 +297,24 @@ test("the edit Physical tab sets condition through an assessment dialog, not the
     within(dialog).getByRole("textbox", { name: "Summary" }),
     "Crack at base",
   );
-  await user.click(within(dialog).getByRole("button", { name: "Save draft" }));
+  expect(
+    within(dialog).queryByRole("button", { name: "Save draft" }),
+  ).toBeNull();
+  await user.click(
+    within(dialog).getByRole("button", { name: "Submit for approval" }),
+  );
 
   expect(create).toHaveBeenCalledWith(
-    expect.objectContaining({ condition: "Poor", summary: "Crack at base" }),
+    expect.objectContaining({
+      condition: "Poor",
+      summary: "Crack at base",
+      submit: true,
+    }),
   );
   expect(outerSubmit).not.toHaveBeenCalled();
+  await waitFor(() =>
+    expect(screen.queryByRole("dialog", { name: "Set condition" })).toBeNull(),
+  );
 });
 
 test("an accession's object draft keeps its intake condition picker", async () => {
@@ -374,7 +385,7 @@ test("an assessment of today recorded in the morning is not dated in the future"
     screen.getByRole("textbox", { name: "Summary" }),
     "Checked on receipt from the borrower",
   );
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   expect(create).toHaveBeenCalledTimes(1);
   const { assessedAt } = create.mock.calls[0]?.[0] as { assessedAt: number };
@@ -403,19 +414,19 @@ test("an assessment recorded the morning after the app was opened is dated that 
   const user = await renderPanel();
   await chooseCondition(user, "Good");
   await user.type(screen.getByRole("textbox", { name: "Summary" }), "Check");
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   expect(create).toHaveBeenCalledWith(
     expect.objectContaining({ assessedAt: nextMorning.getTime() }),
   );
 });
 
-test("saving without a condition says so at the field and focuses it, keeping the summary", async () => {
+test("submitting without a condition says so at the field and focuses it, keeping the summary", async () => {
   const user = await renderPanel();
   const summary = screen.getByRole("textbox", { name: "Summary" });
   await user.type(summary, "Checked on receipt from the borrower");
 
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   const condition = screen.getByRole("combobox", { name: "Condition" });
   expect(condition.getAttribute("aria-invalid")).toBe("true");
@@ -430,7 +441,7 @@ test("saving without a condition says so at the field and focuses it, keeping th
   expect(create).not.toHaveBeenCalled();
 });
 
-test("a refused save is explained in words, takes focus and keeps the input", async () => {
+test("a refused submission is explained in words, takes focus and keeps the input", async () => {
   create.mockRejectedValue(new Error("[Request ID: 1a2b] Server Error"));
   const user = await renderPanel();
   await chooseCondition(user, "Fair");
@@ -439,10 +450,12 @@ test("a refused save is explained in words, takes focus and keeps the input", as
     "Checked on receipt from the borrower",
   );
 
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   const refusal = await screen.findByRole("alert");
-  expect(refusal.textContent).toBe("Could not save the draft. Try again.");
+  expect(refusal.textContent).toBe(
+    "Could not submit the assessment. Try again.",
+  );
   expect(document.activeElement).toBe(refusal);
   expect(screen.getByRole("combobox", { name: "Condition" }).textContent).toBe(
     "Fair",
@@ -475,7 +488,7 @@ test("photo upload is an application button, and the uploaded photo becomes evid
   );
   await chooseCondition(user, "Poor");
   await user.type(screen.getByRole("textbox", { name: "Summary" }), "Crack");
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   expect(fetchUpload).toHaveBeenCalledWith(
     "https://upload.test/1",
@@ -533,7 +546,7 @@ test("observations can be removed without changing the remaining observation or 
   );
   await user.click(screen.getAllByRole("button", { name: "Remove" })[0]!);
   await user.click(screen.getByRole("checkbox", { name: "base.jpg" }));
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
   expect(create).toHaveBeenCalledWith(
     expect.objectContaining({
       condition: "Poor",
@@ -545,10 +558,7 @@ test("observations can be removed without changing the remaining observation or 
     }),
   );
   expect(create).toHaveBeenCalledWith(
-    expect.objectContaining({ submit: false }),
-  );
-  expect(screen.getByRole("status").textContent).toBe(
-    "Draft saved. Submit it for approval when it is ready.",
+    expect.objectContaining({ submit: true }),
   );
 });
 
@@ -578,10 +588,11 @@ function openDraft(): OpenAssessment {
   };
 }
 
-test("Submit for approval sends a new assessment to reviewers", async () => {
+test("Submit for approval is the only way to record an assessment, and sends it to reviewers", async () => {
   const user = await renderPanel();
   await chooseCondition(user, "Fair");
   await user.type(screen.getByRole("textbox", { name: "Summary" }), "Checked");
+  expect(screen.queryByRole("button", { name: "Save draft" })).toBeNull();
 
   await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
@@ -597,7 +608,7 @@ test("Submit for approval sends a new assessment to reviewers", async () => {
   );
 });
 
-test("an existing draft opens with its saved values and is saved, not created again", async () => {
+test("a draft saved before drafts were retired opens with its saved values and is submitted, not created again", async () => {
   detail.open = openDraft();
   assessments = [{ ...submittedAssessment(), status: "draft" }];
   const user = await renderPanel();
@@ -621,7 +632,7 @@ test("an existing draft opens with its saved values and is saved, not created ag
 
   await user.clear(summary);
   await user.type(summary, "Crack at base, widened");
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   expect(create).not.toHaveBeenCalled();
   expect(update).toHaveBeenLastCalledWith({
@@ -631,13 +642,8 @@ test("an existing draft opens with its saved values and is saved, not created ag
     summary: "Crack at base, widened",
     observations: [{ area: "Base", description: "Crack", severity: "severe" }],
     photos: ["photo-1"],
-    submit: false,
+    submit: true,
   });
-
-  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
-  expect(update).toHaveBeenLastCalledWith(
-    expect.objectContaining({ assessmentId: "assessment-1", submit: true }),
-  );
 });
 
 test("while an assessment awaits approval, no new one can be started", async () => {
@@ -649,9 +655,9 @@ test("while an assessment awaits approval, no new one can be started", async () 
       "An assessment of this object is awaiting approval. You can record a new one after a reviewer accepts or rejects it.",
     ).textContent,
   ).toContain("awaiting approval");
-  for (const control of ["Save draft", "Submit for approval"]) {
-    expect(screen.queryByRole("button", { name: control })).toBeNull();
-  }
+  expect(
+    screen.queryByRole("button", { name: "Submit for approval" }),
+  ).toBeNull();
   expect(screen.queryByRole("heading", { name: "New assessment" })).toBeNull();
 });
 
@@ -738,18 +744,18 @@ test("a second assessment is refused in words while one is open", async () => {
   await chooseCondition(user, "Fair");
   await user.type(screen.getByRole("textbox", { name: "Summary" }), "Again");
 
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   expect((await screen.findByRole("alert")).textContent).toBe(
     "This object already has a draft or an assessment awaiting approval. Finish that one first.",
   );
 });
 
-test("a draft photo since removed from the object is dropped when the draft is saved", async () => {
+test("a draft photo since removed from the object is dropped when the draft is submitted", async () => {
   detail.open = { ...openDraft(), photoIds: ["photo-1", "photo-gone"] };
   const user = await renderPanel();
 
-  await user.click(screen.getByRole("button", { name: "Save draft" }));
+  await user.click(screen.getByRole("button", { name: "Submit for approval" }));
 
   expect(update).toHaveBeenLastCalledWith(
     expect.objectContaining({ photos: ["photo-1"] }),

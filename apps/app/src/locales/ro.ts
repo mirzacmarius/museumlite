@@ -60,7 +60,7 @@ export default {
 
     title: "Evaluări ale stării",
     description:
-      "Observațiile datate și fotografiile sunt păstrate. Salvează o ciornă cât lucrezi, apoi trimite-o; un responsabil o acceptă pentru a actualiza starea curentă.",
+      "Observațiile datate și fotografiile sunt păstrate. Trimite o evaluare spre aprobare; un responsabil o acceptă pentru a actualiza starea curentă.",
     current: "Stare curentă",
     unknown: "Necunoscută",
     acceptedSource: "Dintr-o evaluare acceptată",
@@ -82,7 +82,6 @@ export default {
     remove: "Elimină",
     photos: "Fotografii probatorii",
     uploadPhoto: "Încarcă fotografie",
-    saveDraft: "Salvează ciorna",
     submitForApproval: "Trimite spre aprobare",
     submitting: "Se trimite…",
     editDraft: "Editează ciorna",
@@ -102,7 +101,6 @@ export default {
     reject: "Respinge evaluarea",
     rejectionReason: "Motivul respingerii: {reason}",
     loading: "Se încarcă evaluările…",
-    saving: "Se salvează ciorna…",
     observationNumber: "Observația {number}",
     errors: {
       date: "Alege o dată care nu este în viitor.",
@@ -123,9 +121,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "Obiectul sau o fotografie probatorie nu mai este disponibilă. Respinge această evaluare și înregistrează una nouă.",
     },
-    draftSaved:
-      "Ciorna a fost salvată. Trimite-o spre aprobare când este gata.",
-    saveFailed: "Ciorna nu a putut fi salvată. Încearcă din nou.",
     submitted:
       "Evaluarea a fost trimisă. Un responsabil o poate accepta sau respinge acum.",
     submitFailed: "Evaluarea nu a putut fi trimisă. Încearcă din nou.",

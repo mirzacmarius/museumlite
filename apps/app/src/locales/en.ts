@@ -56,7 +56,7 @@ export default {
 
     title: "Condition assessments",
     description:
-      "Dated observations and photos are retained. Save a draft while you work, then submit it; a reviewer accepts it to update current condition.",
+      "Dated observations and photos are retained. Submit an assessment for approval; a reviewer accepts it to update current condition.",
     current: "Current condition",
     unknown: "Unknown",
     acceptedSource: "From an accepted assessment",
@@ -78,7 +78,6 @@ export default {
     remove: "Remove",
     photos: "Evidence photos",
     uploadPhoto: "Upload photo",
-    saveDraft: "Save draft",
     submitForApproval: "Submit for approval",
     submitting: "Submitting…",
     editDraft: "Edit draft",
@@ -98,7 +97,6 @@ export default {
     reject: "Reject assessment",
     rejectionReason: "Reason for rejection: {reason}",
     loading: "Loading condition assessments…",
-    saving: "Saving draft…",
     observationNumber: "Observation {number}",
     errors: {
       date: "Choose a date that is not in the future.",
@@ -119,8 +117,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "The object or an evidence photo is no longer available. Reject this assessment and record a new one.",
     },
-    draftSaved: "Draft saved. Submit it for approval when it is ready.",
-    saveFailed: "Could not save the draft. Try again.",
     submitted: "Assessment submitted. A reviewer can now accept or reject it.",
     submitFailed: "Could not submit the assessment. Try again.",
     accepted: "Assessment accepted. Current condition updated.",

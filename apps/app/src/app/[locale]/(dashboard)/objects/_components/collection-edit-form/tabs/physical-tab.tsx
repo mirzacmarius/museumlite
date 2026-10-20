@@ -15,6 +15,8 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useQuery } from "convex/react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { usePermissions } from "@/components/permission-gate";
@@ -203,6 +205,7 @@ function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
   const tRoot = useI18n();
   const t = useScopedI18n("conditionAssessments");
   const { hasPermission } = usePermissions();
+  const [dialogOpen, setDialogOpen] = useState(false);
   const detail = useQuery(api.conditionAssessments.getForObject, {
     collectionId,
   });
@@ -227,7 +230,7 @@ function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
         ) : null}
         {hasPermission("collections.update") ||
         hasPermission("collections.accept_condition") ? (
-          <Dialog>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button type="button" variant="outline">
                 {t("setCondition")}
@@ -241,6 +244,10 @@ function ConditionField({ collectionId }: { collectionId: Id<"collections"> }) {
               <ConditionAssessmentPanel
                 collectionId={collectionId}
                 mode="edit"
+                onSubmitted={() => {
+                  setDialogOpen(false);
+                  toast.success(t("submitted"));
+                }}
               />
             </DialogContent>
           </Dialog>

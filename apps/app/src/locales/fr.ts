@@ -59,7 +59,7 @@ export default {
 
     title: "Évaluations de l'état",
     description:
-      "Les observations datées et les photos sont conservées. Enregistrez un brouillon pendant votre travail, puis soumettez-le ; un responsable le valide pour actualiser l'état courant.",
+      "Les observations datées et les photos sont conservées. Soumettez une évaluation pour validation ; un responsable la valide pour actualiser l'état courant.",
     current: "État courant",
     unknown: "Inconnu",
     acceptedSource: "Issu d'une évaluation validée",
@@ -82,7 +82,6 @@ export default {
     remove: "Retirer",
     photos: "Photos justificatives",
     uploadPhoto: "Téléverser une photo",
-    saveDraft: "Enregistrer le brouillon",
     submitForApproval: "Soumettre pour validation",
     submitting: "Envoi en cours…",
     editDraft: "Modifier le brouillon",
@@ -102,7 +101,6 @@ export default {
     reject: "Rejeter l'évaluation",
     rejectionReason: "Motif du rejet : {reason}",
     loading: "Chargement des évaluations…",
-    saving: "Enregistrement du brouillon…",
     observationNumber: "Observation {number}",
     errors: {
       date: "Choisissez une date qui n'est pas dans le futur.",
@@ -123,9 +121,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "L'objet ou une photo justificative n'est plus disponible. Rejetez cette évaluation et enregistrez-en une nouvelle.",
     },
-    draftSaved:
-      "Brouillon enregistré. Soumettez-le pour validation lorsqu'il est prêt.",
-    saveFailed: "Impossible d'enregistrer le brouillon. Réessayez.",
     submitted:
       "Évaluation soumise. Un responsable peut maintenant la valider ou la rejeter.",
     submitFailed: "Impossible de soumettre l'évaluation. Réessayez.",

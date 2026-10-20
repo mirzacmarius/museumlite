@@ -59,7 +59,7 @@ export default {
 
     title: "Evaluaciones del estado",
     description:
-      "Se conservan las observaciones fechadas y las fotos. Guarda un borrador mientras trabajas y envíalo; un responsable lo acepta para actualizar el estado actual.",
+      "Se conservan las observaciones fechadas y las fotos. Envía una evaluación para aprobación; un responsable la acepta para actualizar el estado actual.",
     current: "Estado actual",
     unknown: "Desconocido",
     acceptedSource: "Procede de una evaluación aceptada",
@@ -82,7 +82,6 @@ export default {
     remove: "Quitar",
     photos: "Fotos de evidencia",
     uploadPhoto: "Subir foto",
-    saveDraft: "Guardar borrador",
     submitForApproval: "Enviar para aprobación",
     submitting: "Enviando…",
     editDraft: "Editar borrador",
@@ -102,7 +101,6 @@ export default {
     reject: "Rechazar evaluación",
     rejectionReason: "Motivo del rechazo: {reason}",
     loading: "Cargando evaluaciones…",
-    saving: "Guardando borrador…",
     observationNumber: "Observación {number}",
     errors: {
       date: "Elige una fecha que no sea futura.",
@@ -123,8 +121,6 @@ export default {
       ASSESSMENT_EVIDENCE_UNAVAILABLE:
         "El objeto o una foto de evidencia ya no está disponible. Rechaza esta evaluación y registra una nueva.",
     },
-    draftSaved: "Borrador guardado. Envíalo para aprobación cuando esté listo.",
-    saveFailed: "No se pudo guardar el borrador. Inténtalo de nuevo.",
     submitted:
       "Evaluación enviada. Un responsable ya puede aceptarla o rechazarla.",
     submitFailed: "No se pudo enviar la evaluación. Inténtalo de nuevo.",
