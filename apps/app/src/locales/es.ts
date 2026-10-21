@@ -3087,15 +3087,14 @@ export default {
       itemsAddedToGroup: "Objetos añadidos al grupo de colección: {count}",
       itemsAddToGroupFailed:
         "No se pudieron añadir los objetos al grupo de colección",
-      selectDeaccessionReason:
-        "Por favor proporciona una razón para la desaccesión",
+      selectDeaccessionReason: "Por favor proporciona una razón para la baja",
       itemsAwaitingDecision:
-        "{count} solicitud(es) de desaccesión pendientes de decisión de aprobación",
-      itemsDeaccessioned: "Objetos desaccesionados: {count}",
+        "{count} solicitud(es) de baja pendientes de decisión de aprobación",
+      itemsDeaccessioned: "Objetos dados de baja: {count}",
       someItemsSkipped:
-        "Omitidos porque ya están desaccesionados, esperan una decisión o se están trasladando: {count}",
+        "Omitidos porque ya están dados de baja, esperan una decisión o están en una transferencia: {count}",
       failedOnLoan: "{count} fallaron (pueden estar en préstamo)",
-      itemsDeaccessionFailed: "No se pudieron desaccesionar los objetos",
+      itemsDeaccessionFailed: "No se pudieron dar de baja los objetos",
       imageOrderUpdated: "Orden de imágenes actualizado",
       imageOrderUpdateFailed: "Error al actualizar orden de imágenes",
     },

@@ -37,11 +37,13 @@ export function ObjectDeaccessionAction({
   if (!actions) {
     return null;
   }
-  // Without Deaccession the dialog still offers Remove object and Move, and
-  // whatever stops Remove object stops the Move too.
+  // Without Deaccession the dialog still offers Remove object and Move. A
+  // transfer in progress stops both; whatever else stops Remove object leaves
+  // the Move to the server to decide.
   const deaccession =
     actions.deaccession.state === "hidden" && actions.remove.state !== "hidden"
-      ? actions.remove.state === "blocked"
+      ? actions.remove.state === "blocked" &&
+        actions.remove.reason === "in_transfer"
         ? actions.remove
         : { state: "available" as const, approvalSteps: 0 }
       : actions.deaccession;

@@ -107,8 +107,12 @@ export async function hasOpenDeaccession(
   return false;
 }
 
-/** A transfer nobody has executed, declined or cancelled yet. */
-const OPEN_TRANSFER_STATUSES = new Set<
+/**
+ * The statuses of a transfer nobody has executed, declined or cancelled yet:
+ * the transfers that make an Object ineligible to move again, and whose
+ * approved Removal holds it.
+ */
+export const OPEN_TRANSFER_STATUSES = new Set<
   Doc<"organizationMoveRequests">["status"]
 >([
   "pending",

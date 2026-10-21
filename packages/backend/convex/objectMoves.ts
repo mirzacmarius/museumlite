@@ -36,6 +36,7 @@ import {
 import {
   executedTransferDeaccessionIds,
   holdsObject,
+  OPEN_TRANSFER_STATUSES,
 } from "./utils/openDeaccessions";
 import {
   getCurrentUserOrganization,
@@ -140,13 +141,6 @@ type EligibilityCheckOptions = {
   ignoreRequestId?: Id<"organizationMoveRequests">;
   ignoreDeaccessionId?: Id<"deaccessions">;
 };
-
-const ACTIVE_REQUEST_STATUSES = new Set([
-  "pending",
-  "pending_source_approval",
-  "approved_for_transfer",
-  "awaiting_acceptance",
-]);
 
 function normalizeRequestStatus(status: RequestStatus): RequestStatus {
   return status === "pending" ? "pending_source_approval" : status;
@@ -398,7 +392,7 @@ async function buildEligibilityBlockers(
   if (
     moveRequests.some(
       (request) =>
-        ACTIVE_REQUEST_STATUSES.has(request.status) &&
+        OPEN_TRANSFER_STATUSES.has(request.status) &&
         request._id !== options.ignoreRequestId,
     )
   ) {
@@ -1666,8 +1660,7 @@ export const getPendingForCollection = query({
     ] as const);
 
     const pendingRequest =
-      request.find((entry) => ACTIVE_REQUEST_STATUSES.has(entry.status)) ??
-      null;
+      request.find((entry) => OPEN_TRANSFER_STATUSES.has(entry.status)) ?? null;
 
     if (!pendingRequest) {
       return null;

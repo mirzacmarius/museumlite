@@ -4133,6 +4133,65 @@ describe("a transfer's Removal is numbered and found like any other Removal (MUS
     });
   });
 
+  test("the bulk status change job leaves an Object a transfer holds for the receiver to accept", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await approvedTransfer(fixture);
+    const administrator = await senderAdministrator(t, fixture);
+
+    vi.useFakeTimers();
+    const jobId = await administrator.mutation(
+      api.batchOperations.createBulkStatusChangeJob,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        collectionIds: [fixture.collectionId],
+        newStatus: "archived",
+        reason: "Clean-up",
+      },
+    );
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    vi.useRealTimers();
+
+    expect(
+      await administrator.query(api.batchOperations.getBatchJobStatus, {
+        jobId,
+      }),
+    ).toMatchObject({
+      successCount: 0,
+      failureCount: 1,
+      errors: [
+        {
+          itemId: fixture.collectionId,
+          error: expect.stringContaining("being transferred"),
+        },
+      ],
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+    expect(
+      await fixture.targetAdmin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({ status: "executed" });
+  });
+
+  test("an Object sent back to its first museum is not held by the transfer that took it away", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await transferToTarget(fixture);
+    await sendBack(t, fixture);
+    const administrator = await senderAdministrator(t, fixture);
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "available", approvalSteps: 0 },
+      remove: { state: "available" },
+    });
+  });
+
   test("a Removal with method transfer that no transfer made does not say a transfer is in progress", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
