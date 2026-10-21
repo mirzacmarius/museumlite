@@ -31,6 +31,7 @@ import {
   partyTargetOf,
   readablePartyTargetLabel,
   recordPartyLink,
+  refuseClosedTarget,
   resolvePartyTarget,
   syncRecordPartyField,
 } from "./utils/partyLinks";
@@ -301,7 +302,7 @@ export const link = mutation({
     if (current?.accountId === account._id) {
       return current._id;
     }
-    if (resolved.policy === "closed") partyRecordLocked();
+    if (resolved.policy === "closed") refuseClosedTarget(resolved);
     if (
       resolved.undatedLinks &&
       (args.effectiveFrom !== undefined || args.effectiveTo !== undefined)
@@ -387,7 +388,7 @@ export const supersede = mutation({
         "This party link has already been superseded",
       );
     }
-    if (resolved.policy !== "open") partyRecordLocked();
+    if (resolved.policy !== "open") refuseClosedTarget(resolved);
     await endPartyLink(ctx, existing, userId, args.reason);
     if (resolved.mirroredRoles?.includes(existing.role)) {
       await syncRecordPartyField(ctx, target, existing.role, null);

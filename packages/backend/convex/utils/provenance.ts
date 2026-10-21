@@ -300,12 +300,17 @@ export async function requireProvenanceObject(
     access !== "read" &&
     (await provenanceArrivingFrom(ctx, object)).length > 0
   ) {
-    throw provenanceError(
-      "PROVENANCE_STILL_ARRIVING",
-      "Part of this Object's provenance is still arriving from an organization that held it before",
-    );
+    provenanceStillArriving();
   }
   return object;
+}
+
+/** Refuses a change while part of the Object's provenance is still arriving. */
+export function provenanceStillArriving(): never {
+  throw provenanceError(
+    "PROVENANCE_STILL_ARRIVING",
+    "Part of this Object's provenance is still arriving from an organization that held it before",
+  );
 }
 
 /** Loads a claim and its Object with the caller's access enforced. */

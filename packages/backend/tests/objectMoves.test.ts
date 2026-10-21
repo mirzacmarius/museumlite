@@ -3467,11 +3467,42 @@ describe("provenance follows a transferred Object", () => {
     }
   });
 
-  test("a Party is not linked to a claim while part of the history is still on its way", async () => {
+  test("a Party linked to a claim waits while part of the history is still on its way", async () => {
     vi.useFakeTimers();
     try {
       const t = convexTest(schema, modules);
       const fixture = await createMoveFixture(t);
+      const { userId, client: registrar } = await staffAt(
+        t,
+        fixture.sourceOrganizationId,
+        ["collections.read", "collections.update", "accounts.read"],
+        "Registrar",
+      );
+      const [bergId, dahlId] = await t.run(async (ctx) => {
+        const sender = await ctx.db.get(fixture.sourceOrganizationId);
+        await ctx.db.patch(fixture.sourceOrganizationId, {
+          settings: { ...sender?.settings, enabledModules: ["accounts"] },
+        });
+        const party = {
+          organizationId: fixture.sourceOrganizationId,
+          accountType: "institution" as const,
+          holderType: "privatePerson" as const,
+          createdBy: userId,
+          createdAt: Date.now(),
+        };
+        return await Promise.all([
+          ctx.db.insert("accounts", {
+            ...party,
+            accountNumber: "ACC-BERG",
+            businessName: "Johan Berg",
+          }),
+          ctx.db.insert("accounts", {
+            ...party,
+            accountNumber: "ACC-DAHL",
+            businessName: "Anna Dahl",
+          }),
+        ]);
+      });
       const claimId = await fixture.requester.mutation(
         api.provenance.recordClaim,
         {
@@ -3484,53 +3515,60 @@ describe("provenance follows a transferred Object", () => {
           evidence: [],
         },
       );
-      // 2 more claims and 100 citations: the last citations follow later.
+      const target = { type: "provenanceClaim" as const, id: claimId };
+      const linkId = await registrar.mutation(api.partyLinks.link, {
+        target,
+        accountId: bergId,
+        role: "owner",
+      });
+      // 2 more claims and 100 citations: on the way back, the last
+      // citations follow the claim later.
       await recordLedgerClaims(fixture, 2, 50);
       await transferToTarget(fixture);
-      const { userId, client: registrar } = await staffAt(
-        t,
-        fixture.targetOrganizationId,
-        ["collections.read", "collections.update", "accounts.read"],
-        "Receiving Registrar",
-      );
-      const accountId = await t.run(async (ctx) => {
-        const receiver = await ctx.db.get(fixture.targetOrganizationId);
-        await ctx.db.patch(fixture.targetOrganizationId, {
-          settings: { ...receiver?.settings, enabledModules: ["accounts"] },
-        });
-        return await ctx.db.insert("accounts", {
-          organizationId: fixture.targetOrganizationId,
-          accountNumber: "ACC-BERG",
-          accountType: "institution",
-          holderType: "privatePerson",
-          businessName: "Johan Berg",
-          createdBy: userId,
-          createdAt: Date.now(),
-        });
-      });
-      const target = { type: "provenanceClaim" as const, id: claimId };
-      const link = () =>
-        registrar.mutation(api.partyLinks.link, {
-          target,
-          accountId,
-          role: "owner",
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+      await sendBack(t, fixture);
+      const endLink = () =>
+        registrar.mutation(api.partyLinks.supersede, {
+          linkId,
+          reason: "The ledger names his son",
         });
 
       expect(
         await registrar.query(api.partyLinks.listForTarget, { target }),
-      ).toMatchObject({ policy: "closed", links: [] });
-      // Refused for the reason the provenance tab gives, not as a closed record.
-      expect(await refusal(link())).toMatchObject({
-        code: "PROVENANCE_STILL_ARRIVING",
+      ).toMatchObject({
+        policy: "closed",
+        links: [expect.objectContaining({ _id: linkId, isCurrent: true })],
       });
+      // Naming the Party already linked changes nothing.
+      expect(
+        await registrar.mutation(api.partyLinks.link, {
+          target,
+          accountId: bergId,
+          role: "owner",
+        }),
+      ).toBe(linkId);
+      // Refused for the reason the provenance tab gives, not as a closed record.
+      for (const change of [
+        () =>
+          registrar.mutation(api.partyLinks.link, {
+            target,
+            accountId: dahlId,
+            role: "owner",
+          }),
+        endLink,
+      ]) {
+        expect(await refusal(change())).toMatchObject({
+          code: "PROVENANCE_STILL_ARRIVING",
+        });
+      }
       await t.finishAllScheduledFunctions(() => vi.runAllTimers());
 
-      await link();
+      await endLink();
       expect(
         await registrar.query(api.partyLinks.listForTarget, { target }),
       ).toMatchObject({
         policy: "open",
-        links: [expect.objectContaining({ accountId, isCurrent: true })],
+        links: [expect.objectContaining({ _id: linkId, isCurrent: false })],
       });
     } finally {
       vi.useRealTimers();

@@ -16,8 +16,11 @@ import {
   requireCapability,
   requirePermission,
 } from "./permissions";
-import { isWithdrawnObject, provenanceArrivingFrom } from "./provenance";
-import { provenanceError } from "./provenanceErrors";
+import {
+  isWithdrawnObject,
+  provenanceArrivingFrom,
+  provenanceStillArriving,
+} from "./provenance";
 import { REPRODUCTION_READ_PERMISSIONS } from "./reproductionRequestAccess";
 
 /** History rows read per target; supersession history stays small. */
@@ -81,6 +84,11 @@ export interface ResolvedPartyTarget {
   recordNamesEveryLink?: boolean;
   /** Links carry no dates; the record keeps them as partial dates. */
   undatedLinks?: boolean;
+  /**
+   * A provenance claim whose Object's provenance is still arriving from a
+   * transfer: its parties wait with the rest of it (ADR 0006).
+   */
+  provenanceArriving?: boolean;
 }
 
 type TargetAccess = "read" | "write";
@@ -171,17 +179,13 @@ export async function resolvePartyTarget(
       if (!claim) targetNotFound();
       await requirePermission(ctx, claim.organizationId, collectionsPermission);
       const object = await ctx.db.get(claim.objectId);
-      // Like every provenance change, a link waits while part of the Object's
-      // provenance is still arriving from a transfer (ADR 0006).
+      const withdrawn = isWithdrawnObject(object);
+      // As for every other provenance change, a withdrawn Object is refused
+      // first, then one whose provenance is still arriving (ADR 0006).
       const arriving =
+        !withdrawn &&
         object !== null &&
         (await provenanceArrivingFrom(ctx, object)).length > 0;
-      if (arriving && access === "write") {
-        throw provenanceError(
-          "PROVENANCE_STILL_ARRIVING",
-          "Part of this Object's provenance is still arriving from an organization that held it before",
-        );
-      }
       return {
         organizationId: claim.organizationId,
         label: object ? objectLabel(object) : "",
@@ -189,15 +193,14 @@ export async function resolvePartyTarget(
         allowedRoles:
           claim.partyKind === "named" && claim.role ? [claim.role] : [],
         policy:
-          claim.supersededAt === undefined &&
-          !isWithdrawnObject(object) &&
-          !arriving
+          claim.supersededAt === undefined && !withdrawn && !arriving
             ? "open"
             : "closed",
         primaryRole: claim.role,
         recordAssertedName: claim.partyText,
         recordNamesEveryLink: true,
         undatedLinks: true,
+        provenanceArriving: arriving,
       };
     }
     case "appraisal": {
@@ -358,6 +361,15 @@ export function partyRecordLocked(): never {
     "PARTY_RECORD_LOCKED",
     "This record's parties cannot be changed here",
   );
+}
+
+/**
+ * Refuses a change on a target whose parties are closed here. A provenance
+ * claim that waits for the rest of its Object's provenance says so instead.
+ */
+export function refuseClosedTarget(resolved: ResolvedPartyTarget): never {
+  if (resolved.provenanceArriving) provenanceStillArriving();
+  partyRecordLocked();
 }
 
 function targetFields(target: PartyTarget) {
