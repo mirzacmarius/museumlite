@@ -3059,7 +3059,8 @@ export default {
       itemsAwaitingDecision:
         "{count} forespørsel(er) om fraregistrering venter på godkjenningsvedtak",
       itemsDeaccessioned: "Objekter avregistrert: {count}",
-      someItemsSkipped: "Hoppet over fordi de er på aktivt utlån: {count}",
+      someItemsSkipped:
+        "Hoppet over fordi de allerede er avregistrert, venter på vedtak eller blir overført: {count}",
       failedOnLoan: "{count} feilet (kan være på utlån)",
       itemsDeaccessionFailed: "Kunne ikke avregistrere objektene",
       imageOrderUpdated: "Bilderekkefølge oppdatert",

@@ -1063,7 +1063,7 @@ export default {
       selectDeaccessionReason: "Indică motivul scoaterii din colecție",
       itemsDeaccessioned: "Obiecte scoase din colecție: {count}",
       someItemsSkipped:
-        "Omise pentru că fac parte dintr-un împrumut activ: {count}",
+        "Omise pentru că sunt deja scoase din colecție, așteaptă o decizie sau sunt în curs de transfer: {count}",
       failedOnLoan:
         "Operația a eșuat pentru {count} obiect(e) (este posibil să fie împrumutate)",
       itemsDeaccessionFailed: "Scoaterea obiectelor din colecție a eșuat",

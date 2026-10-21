@@ -3958,6 +3958,51 @@ describe("a transfer's Removal is numbered and found like any other Removal (MUS
     return requestId;
   }
 
+  // A sender administrator who may also withdraw and edit Objects.
+  async function senderAdministrator(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const [administratorId, administratorRoleId] = await Promise.all([
+      createUser(t, "Administrator", "administrator@test.dev"),
+      createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        [
+          "organization.manage_settings",
+          "collections.read",
+          "collections.update",
+          "collections.delete",
+        ],
+        "Administrator",
+      ),
+    ]);
+    await addMembership(
+      t,
+      administratorId,
+      fixture.sourceOrganizationId,
+      administratorRoleId,
+    );
+    return authedForUser(t, administratorId);
+  }
+
+  function saleOf(fixture: Awaited<ReturnType<typeof createMoveFixture>>) {
+    return {
+      organizationId: fixture.sourceOrganizationId,
+      collectionId: fixture.collectionId,
+      dateDeaccessioned: Date.UTC(2026, 0, 2),
+      reason: "Sold at auction",
+      method: "sale" as const,
+    };
+  }
+
+  function refusalOf(attempt: Promise<unknown>) {
+    return attempt.then(
+      () => null,
+      (error) => workflowApprovalErrorFromError(error)?.code,
+    );
+  }
+
   async function searchRemovals(
     fixture: Awaited<ReturnType<typeof createMoveFixture>>,
     column: { kind: "approved" } | { kind: "rejected" },
@@ -3995,39 +4040,8 @@ describe("a transfer's Removal is numbered and found like any other Removal (MUS
     const t = convexTest(schema, modules);
     const fixture = await senderWithRemovals(t);
     const requestId = await approvedTransfer(fixture);
-    // A sender administrator who may also withdraw Objects.
-    const [administratorId, administratorRoleId] = await Promise.all([
-      createUser(t, "Administrator", "administrator@test.dev"),
-      createRoleWithPermissions(
-        t,
-        fixture.sourceOrganizationId,
-        [
-          "organization.manage_settings",
-          "collections.read",
-          "collections.delete",
-        ],
-        "Administrator",
-      ),
-    ]);
-    await addMembership(
-      t,
-      administratorId,
-      fixture.sourceOrganizationId,
-      administratorRoleId,
-    );
-    const administrator = authedForUser(t, administratorId);
-    const sale = {
-      organizationId: fixture.sourceOrganizationId,
-      collectionId: fixture.collectionId,
-      dateDeaccessioned: Date.UTC(2026, 0, 2),
-      reason: "Sold at auction",
-      method: "sale" as const,
-    };
-    const refusalOf = (attempt: Promise<unknown>) =>
-      attempt.then(
-        () => null,
-        (error) => workflowApprovalErrorFromError(error)?.code,
-      );
+    const administrator = await senderAdministrator(t, fixture);
+    const sale = saleOf(fixture);
 
     expect(
       await administrator.query(api.objectActions.get, {
@@ -4054,6 +4068,17 @@ describe("a transfer's Removal is numbered and found like any other Removal (MUS
         reason: "Sold at auction",
       }),
     ).toEqual({ deaccessioned: 0, awaitingDecision: 0, failed: 0, skipped: 1 });
+    const bulkStatusChange = await administrator.mutation(
+      api.batchOperations.quickBulkStatusChange,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        collectionIds: [fixture.collectionId],
+        newStatus: "archived",
+        reason: "Clean-up",
+      },
+    );
+    expect(bulkStatusChange.failureCount).toBe(1);
+    expect(bulkStatusChange.errors[0]?.error).toContain("being transferred");
 
     await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
 
@@ -4074,6 +4099,66 @@ describe("a transfer's Removal is numbered and found like any other Removal (MUS
         })
       )?.deaccession,
     ).toEqual({ state: "in_progress", deaccessionId: saleId });
+  });
+
+  test("a refused sale or Withdrawal leaves the transfer for the receiver to accept", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithRemovals(t);
+    const requestId = await approvedTransfer(fixture);
+    const administrator = await senderAdministrator(t, fixture);
+
+    expect(
+      await refusalOf(
+        administrator.mutation(api.deaccessions.create, saleOf(fixture)),
+      ),
+    ).toBe("OBJECT_IN_TRANSFER");
+    expect(
+      await refusalOf(
+        administrator.mutation(api.collections.archiveCollection, {
+          collectionId: fixture.collectionId,
+          reason: "Duplicate record",
+        }),
+      ),
+    ).toBe("OBJECT_IN_TRANSFER");
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    expect(
+      await fixture.targetAdmin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({
+      status: "executed",
+      collection: { organizationId: fixture.targetOrganizationId },
+    });
+  });
+
+  test("a Removal with method transfer that no transfer made does not say a transfer is in progress", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const administrator = await senderAdministrator(t, fixture);
+    // As seeded sample data records one: approved, with no transfer request.
+    await t.run((ctx) =>
+      ctx.db.insert("deaccessions", {
+        organizationId: fixture.sourceOrganizationId,
+        collectionId: fixture.collectionId,
+        deaccessionNumber: "DA-SOU-2025-001",
+        dateDeaccessioned: Date.UTC(2025, 0, 1),
+        reason: "Rotation",
+        method: "transfer",
+        status: "approved",
+        targetCollectionStatus: "deaccessioned",
+      }),
+    );
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "available", approvalSteps: 0 },
+      remove: { state: "available" },
+    });
   });
 
   test("a declined transfer's Removal is found among the rejected", async () => {

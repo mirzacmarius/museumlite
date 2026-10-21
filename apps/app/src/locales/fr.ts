@@ -3100,7 +3100,8 @@ export default {
       itemsAwaitingDecision:
         "{count} demande(s) de désaccessionnement en attente de décision d'approbation",
       itemsDeaccessioned: "Objets désaccessionnés : {count}",
-      someItemsSkipped: "Ignorés car en prêt actif : {count}",
+      someItemsSkipped:
+        "Ignorés car déjà désaccessionnés, en attente de décision ou en cours de transfert : {count}",
       failedOnLoan: "{count} échec(s) (peut-être en prêt)",
       itemsDeaccessionFailed: "Impossible de désaccessionner les objets",
       imageOrderUpdated: "Ordre des images mis à jour",

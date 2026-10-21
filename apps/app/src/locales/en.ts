@@ -2483,7 +2483,8 @@ export default {
       itemsAwaitingDecision:
         "{count} deaccession request(s) are awaiting an approval decision",
       itemsDeaccessioned: "Objects deaccessioned: {count}",
-      someItemsSkipped: "Skipped because they are on an active loan: {count}",
+      someItemsSkipped:
+        "Skipped because they are already deaccessioned, awaiting a decision or being transferred: {count}",
       failedOnLoan: "{count} failed (may be on loan)",
       itemsDeaccessionFailed: "Could not deaccession the objects",
       imageOrderUpdated: "Image order updated",

@@ -37,10 +37,13 @@ export function ObjectDeaccessionAction({
   if (!actions) {
     return null;
   }
-  // Without Deaccession the dialog still offers Remove object and Move.
+  // Without Deaccession the dialog still offers Remove object and Move, and
+  // whatever stops Remove object stops the Move too.
   const deaccession =
     actions.deaccession.state === "hidden" && actions.remove.state !== "hidden"
-      ? { state: "available" as const, approvalSteps: 0 }
+      ? actions.remove.state === "blocked"
+        ? actions.remove
+        : { state: "available" as const, approvalSteps: 0 }
       : actions.deaccession;
   if (deaccession.state === "hidden") {
     return null;

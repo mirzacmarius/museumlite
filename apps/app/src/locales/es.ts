@@ -3092,7 +3092,8 @@ export default {
       itemsAwaitingDecision:
         "{count} solicitud(es) de desaccesión pendientes de decisión de aprobación",
       itemsDeaccessioned: "Objetos desaccesionados: {count}",
-      someItemsSkipped: "Omitidos por estar en un préstamo activo: {count}",
+      someItemsSkipped:
+        "Omitidos porque ya están desaccesionados, esperan una decisión o se están trasladando: {count}",
       failedOnLoan: "{count} fallaron (pueden estar en préstamo)",
       itemsDeaccessionFailed: "No se pudieron desaccesionar los objetos",
       imageOrderUpdated: "Orden de imágenes actualizado",

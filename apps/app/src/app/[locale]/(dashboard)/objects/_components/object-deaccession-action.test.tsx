@@ -111,6 +111,18 @@ test("an object waiting for its transfer's receiver shows the action disabled wi
   ).toBe("Transfer in progress");
 });
 
+test("staff who may only remove the object see why it cannot be removed", async () => {
+  actions = {
+    deaccession: { state: "hidden" },
+    remove: { state: "blocked", reason: "in_transfer" },
+  };
+  await renderAction();
+
+  const button = screen.getByRole("button", { name: /Remove or transfer/ });
+  expect(button.hasAttribute("disabled")).toBe(true);
+  expect(button.getAttribute("title")).toBe("Transfer in progress");
+});
+
 test("an open Deaccession links to its Case", async () => {
   actions = withDeaccession({
     state: "in_progress",
