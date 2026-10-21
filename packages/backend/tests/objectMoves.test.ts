@@ -4664,6 +4664,12 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
       awaitsSenderReapproval: true,
     });
     expect(work?.cards).toMatchObject([{ _id: requestId }]);
+    // An approval stays one: the sender approves it again or cancels it.
+    expect(
+      await refusal(
+        fixture.admin.mutation(api.objectMoves.reject, { requestId }),
+      ),
+    ).toMatchObject({ code: "TRANSFER_AWAITS_SENDER" });
 
     await fixture.admin.mutation(api.objectMoves.approve, { requestId });
 

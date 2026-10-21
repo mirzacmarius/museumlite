@@ -2106,15 +2106,15 @@ export const reject = mutation({
     // one they approved before they approve again or cancel, and the
     // receiver cannot decide it yet (ADR 0020).
     const isTargetReview = stage === "waiting_for_receiver";
-    const isSenderAdmin =
+    const actsForSender =
       !isTargetReview &&
       (await hasPermission(
         ctx,
         request.sourceOrganizationId,
         "organization.manage_settings",
       ));
-    const isSenderDecline = isSenderAdmin && !awaitsSenderReapproval(request);
-    if (!isSenderAdmin) {
+    const isSenderDecline = actsForSender && !awaitsSenderReapproval(request);
+    if (!actsForSender) {
       await requirePermission(
         ctx,
         request.targetOrganizationId,
