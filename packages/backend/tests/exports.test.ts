@@ -333,12 +333,16 @@ describe("authorized durable exports", () => {
         });
     });
     vi.advanceTimersByTime(20000);
+    // One export at a time: convex-test files a blob that one action stores
+    // under whatever transaction another function has open, and the store
+    // throws if that transaction ends first, which fails the export.
     const objects = await f.user.mutation(api.exports.create, {
       organizationId: f.organizationId,
       requestKey: "large-objects",
       format: "jsonl",
       source: { kind: "objects", mode: "filtered", filters: {} },
     });
+    await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
     const audit = await f.user.mutation(api.exports.create, {
       organizationId: f.organizationId,
       requestKey: "large-audit",

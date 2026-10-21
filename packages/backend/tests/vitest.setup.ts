@@ -1,5 +1,6 @@
 import aggregateTest from "@convex-dev/aggregate/test";
 import { vi } from "vitest";
+import { indexConvexTestDatabaseByTable } from "./convexTestTableIndex";
 
 vi.stubEnv("CONVEX_SITE_URL", "https://example.convex.site");
 
@@ -15,6 +16,13 @@ vi.mock("convex-test", async (importOriginal) => {
 
   const convexTest: typeof actual.convexTest = ((schema, modules) => {
     const t = actual.convexTest(schema, modules);
+    indexConvexTestDatabaseByTable(
+      (
+        globalThis as {
+          Convex?: { components?: Record<string, { db?: unknown }> };
+        }
+      ).Convex?.components?.[""]?.db,
+    );
     aggregateTest.register(t, "metrics");
 
     const wrapAs =
