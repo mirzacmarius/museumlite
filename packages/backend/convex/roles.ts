@@ -8,7 +8,10 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
-import { getRolePresentation } from "./utils/systemRoles";
+import {
+  compareRolesForDisplay,
+  getRolePresentation,
+} from "./utils/systemRoles";
 
 /**
  * Create a custom role
@@ -290,6 +293,7 @@ export const listRoles = query({
         q.eq("organizationId", args.organizationId),
       )
       .collect();
+    roles.sort(compareRolesForDisplay);
 
     const rolesWithPermissions = await Promise.all(
       roles.map(async (role) => {
