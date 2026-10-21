@@ -302,7 +302,7 @@ export async function requireProvenanceObject(
   ) {
     throw provenanceError(
       "PROVENANCE_STILL_ARRIVING",
-      "Part of this Object's provenance is still arriving from its previous organization",
+      "Part of this Object's provenance is still arriving from an organization that held it before",
     );
   }
   return object;
@@ -413,7 +413,8 @@ export async function rehomeObjectProvenance(
  * provenance; none once all of it is with the organization holding the
  * Object. A long history moves in batches, possibly behind a later transfer,
  * and provenance a transfer left behind before it moved with its Object
- * stays until the repair moves it.
+ * stays until the repair moves it. Only the Object's latest
+ * OBJECT_MOVE_REQUEST_LIMIT transfer requests, of any status, are read.
  */
 export async function provenanceArrivingFrom(
   ctx: QueryCtx | MutationCtx,

@@ -7,7 +7,6 @@ import { custodyConflictFromError } from "../convex/utils/custodyErrors";
 import { identifierErrorFromError } from "../convex/utils/identifierErrors";
 import { imageDeletionErrorFromError } from "../convex/utils/imageDeletionErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
-import { partyErrorFromError } from "../convex/utils/partyErrors";
 import { provenanceErrorFromError } from "../convex/utils/provenanceErrors";
 import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
@@ -23,7 +22,6 @@ async function refusal(call: Promise<unknown>) {
       identifierErrorFromError(error) ??
       provenanceErrorFromError(error) ??
       imageDeletionErrorFromError(error) ??
-      partyErrorFromError(error) ??
       custodyConflictFromError(error) ?? { code: String(error) }
     );
   }
@@ -3518,8 +3516,12 @@ describe("provenance follows a transferred Object", () => {
           role: "owner",
         });
 
+      expect(
+        await registrar.query(api.partyLinks.listForTarget, { target }),
+      ).toMatchObject({ policy: "closed", links: [] });
+      // Refused for the reason the provenance tab gives, not as a closed record.
       expect(await refusal(link())).toMatchObject({
-        code: "PARTY_RECORD_LOCKED",
+        code: "PROVENANCE_STILL_ARRIVING",
       });
       await t.finishAllScheduledFunctions(() => vi.runAllTimers());
 

@@ -135,7 +135,7 @@ test("while part of its provenance is still arriving from a transfer, the object
 
     expect(
       screen.getByText(
-        "Part of this object's provenance is still arriving from its previous organization. You can record or review provenance once it is here.",
+        "Part of this object's provenance is still arriving from an organization that held it before. You can record or review provenance once it is here.",
       ),
     ).not.toBeNull();
     expect(

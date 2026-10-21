@@ -7012,7 +7012,7 @@ export default {
     withdrawn:
       "Dette objektet er trukket tilbake. Gjenopprett det for å registrere eller vurdere proveniens.",
     arriving:
-      "Deler av proveniensen til dette objektet er fortsatt på vei fra den forrige organisasjonen. Du kan registrere eller vurdere proveniens når den er kommet fram.",
+      "Deler av proveniensen til dette objektet er fortsatt på vei fra en organisasjon som hadde det tidligere. Du kan registrere eller vurdere proveniens når den er kommet fram.",
     truncated: "Bare de {count} nyeste påstandene vises.",
     history: "Rettede og trukne påstander ({count})",
     roles: {
@@ -7244,7 +7244,7 @@ export default {
       objectWithdrawn:
         "Dette objektet er trukket tilbake. Gjenopprett det før du endrer proveniensen.",
       stillArriving:
-        "Deler av proveniensen til dette objektet er fortsatt på vei fra den forrige organisasjonen. Prøv igjen om et øyeblikk.",
+        "Deler av proveniensen til dette objektet er fortsatt på vei fra en organisasjon som hadde det tidligere. Prøv igjen om et øyeblikk.",
       claimNotFound:
         "Den påstanden er ikke lenger tilgjengelig. Oppdater og prøv igjen.",
       claimSuperseded:

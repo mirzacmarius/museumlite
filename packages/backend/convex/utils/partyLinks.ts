@@ -17,6 +17,7 @@ import {
   requirePermission,
 } from "./permissions";
 import { isWithdrawnObject, provenanceArrivingFrom } from "./provenance";
+import { provenanceError } from "./provenanceErrors";
 import { REPRODUCTION_READ_PERMISSIONS } from "./reproductionRequestAccess";
 
 /** History rows read per target; supersession history stays small. */
@@ -172,17 +173,27 @@ export async function resolvePartyTarget(
       const object = await ctx.db.get(claim.objectId);
       // Like every provenance change, a link waits while part of the Object's
       // provenance is still arriving from a transfer (ADR 0006).
-      const open =
-        claim.supersededAt === undefined &&
-        !isWithdrawnObject(object) &&
-        (!object || (await provenanceArrivingFrom(ctx, object)).length === 0);
+      const arriving =
+        object !== null &&
+        (await provenanceArrivingFrom(ctx, object)).length > 0;
+      if (arriving && access === "write") {
+        throw provenanceError(
+          "PROVENANCE_STILL_ARRIVING",
+          "Part of this Object's provenance is still arriving from an organization that held it before",
+        );
+      }
       return {
         organizationId: claim.organizationId,
         label: object ? objectLabel(object) : "",
         // Only a named holder whose role the claim states can be a Party.
         allowedRoles:
           claim.partyKind === "named" && claim.role ? [claim.role] : [],
-        policy: open ? "open" : "closed",
+        policy:
+          claim.supersededAt === undefined &&
+          !isWithdrawnObject(object) &&
+          !arriving
+            ? "open"
+            : "closed",
         primaryRole: claim.role,
         recordAssertedName: claim.partyText,
         recordNamesEveryLink: true,

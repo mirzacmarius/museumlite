@@ -7155,7 +7155,7 @@ export default {
     withdrawn:
       "This object is withdrawn. Restore it to record or review provenance.",
     arriving:
-      "Part of this object's provenance is still arriving from its previous organization. You can record or review provenance once it is here.",
+      "Part of this object's provenance is still arriving from an organization that held it before. You can record or review provenance once it is here.",
     truncated: "Only the {count} most recent claims are shown.",
     history: "Corrected and retracted claims ({count})",
     roles: {
@@ -7387,7 +7387,7 @@ export default {
       objectWithdrawn:
         "This object is withdrawn. Restore it before changing its provenance.",
       stillArriving:
-        "Part of this object's provenance is still arriving from its previous organization. Try again in a moment.",
+        "Part of this object's provenance is still arriving from an organization that held it before. Try again in a moment.",
       claimNotFound:
         "That claim is no longer available. Refresh and try again.",
       claimSuperseded:
