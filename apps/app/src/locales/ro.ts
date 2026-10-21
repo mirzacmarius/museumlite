@@ -2809,6 +2809,7 @@ export default {
       destruction: "Distrugere (cu martor)",
       transfer: "Transfer",
     },
+    transferDeclinedBy: "Transfer refuzat de {organization}",
     detail: {
       loading: "Se încarcă...",
       notFound: "Dezafectarea nu a fost găsită",
@@ -10874,6 +10875,8 @@ export default {
         "Transferurile între organizații din aceeași ierarhie necesită planul Pro sau Enterprise.",
       destinationNotAccepting:
         "Organizația ta nu acceptă solicitări de transfer primite și este în afara ierarhiei organizației sursă.",
+      sourceLocationChanged:
+        "Aprobarea organizației sursă nu mai corespunde locației actuale a acestui obiect. Refuză transferul, iar organizația sursă poate trimite o solicitare nouă.",
     },
     blockers: {
       statusNotActive:

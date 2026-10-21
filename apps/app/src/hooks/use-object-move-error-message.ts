@@ -86,6 +86,8 @@ export function useObjectMoveErrorMessage() {
         return t("accessionNumberRequired");
       case "ACCESSION_NUMBER_GENERATION_UNAVAILABLE":
         return t("accessionGenerationUnavailable");
+      case "SOURCE_LOCATION_CHANGED":
+        return t("sourceLocationChanged");
       case undefined:
         return actionMessage(error, fallback);
     }

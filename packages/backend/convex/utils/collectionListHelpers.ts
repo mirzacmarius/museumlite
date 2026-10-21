@@ -10,6 +10,7 @@ import {
   isCountedOnDisplay,
 } from "./collectionMetrics";
 import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
+import { hasOpenDeaccession } from "./openDeaccessions";
 
 interface CollectionListFilters {
   organizationId: Id<"organizations">;
@@ -205,20 +206,12 @@ export async function filterCollectionListPage(
           .first();
         if (!membership) return false;
       }
-      if (args.status !== "deleted" && collection.status !== "deaccessioned") {
-        for (const status of ["pending", "approved"] as const) {
-          const deaccession = await ctx.db
-            .query("deaccessions")
-            .withIndex("by_organization_and_collection_and_status", (q) =>
-              q
-                .eq("organizationId", args.organizationId)
-                .eq("collectionId", collection._id)
-                .eq("status", status),
-            )
-            .first();
-          if (deaccession?.organizationId === args.organizationId) return false;
-        }
-      }
+      if (
+        args.status !== "deleted" &&
+        collection.status !== "deaccessioned" &&
+        (await hasOpenDeaccession(ctx, args.organizationId, collection._id))
+      )
+        return false;
       return true;
     }),
   );

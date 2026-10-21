@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import type { Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { isUnaccessionedEntryObject } from "./objectEntryLifecycle";
+import { hasOpenDeaccession, isOpenDeaccession } from "./openDeaccessions";
 
 type CountCtx = Pick<QueryCtx, "db">;
 
@@ -38,18 +39,8 @@ export async function getPageInventoryEvidence(
     // Property held under an entry is incoming until it is accessioned.
     if (await isUnaccessionedEntryObject(ctx, row._id))
       inventoryLoanAssociations.incoming.add(row._id);
-    for (const status of ["pending", "approved"] as const) {
-      const deaccession = await ctx.db
-        .query("deaccessions")
-        .withIndex("by_organization_and_collection_and_status", (q) =>
-          q
-            .eq("organizationId", organizationId)
-            .eq("collectionId", row._id)
-            .eq("status", status),
-        )
-        .first();
-      if (deaccession) openDeaccessionCollectionIds.add(row._id);
-    }
+    if (await hasOpenDeaccession(ctx, organizationId, row._id))
+      openDeaccessionCollectionIds.add(row._id);
   }
   return { openDeaccessionCollectionIds, inventoryLoanAssociations };
 }
@@ -149,7 +140,11 @@ export async function countOpenDeaccessionCollectionIds(
         q.eq("organizationId", organizationId).eq("status", status),
       );
     for await (const deaccession of rows) {
-      collectionIds.add(deaccession.collectionId);
+      if (
+        !collectionIds.has(deaccession.collectionId) &&
+        (await isOpenDeaccession(ctx, deaccession))
+      )
+        collectionIds.add(deaccession.collectionId);
     }
   }
   return collectionIds;

@@ -1,9 +1,11 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { custodyConflict } from "./custodyErrors";
 import {
   moveCollectionToLocation,
   requireCollectionInOrganization,
 } from "./locationIntegrity";
+import { objectMoveError } from "./objectMoveErrors";
 
 export interface TransferScopeSnapshot {
   sourceOrganizationId: Id<"organizations">;
@@ -45,14 +47,16 @@ export function assertObservedSourceLocationMatches(
   approvedSourceLocationId: Id<"locations"> | null | undefined,
 ) {
   if (approvedSourceLocationId === undefined) {
-    throw new Error(
+    throw objectMoveError(
+      "SOURCE_LOCATION_CHANGED",
       "Transfer has no observed source location. The source organization must re-approve before acceptance.",
     );
   }
   const observed = collection.currentLocationId ?? null;
   const expected = approvedSourceLocationId ?? null;
   if (observed !== expected) {
-    throw new Error(
+    throw objectMoveError(
+      "SOURCE_LOCATION_CHANGED",
       "Object is no longer at the source location observed when the transfer was approved.",
     );
   }
@@ -65,16 +69,18 @@ export async function requireTargetTransferLocation(
 ): Promise<Doc<"locations">> {
   const location = await ctx.db.get(targetLocationId);
   if (!location || location.organizationId !== targetOrganizationId) {
-    throw new Error(
+    throw custodyConflict(
+      "REFERENCE_NOT_FOUND",
       "Destination location must belong to the receiving organization.",
     );
   }
-  if (!location.isActive) {
-    throw new Error(`Location ${location.name} is unavailable for receipt.`);
-  }
   const status = location.status ?? "active";
-  if (status !== "active" && status !== "restricted") {
-    throw new Error(`Location ${location.name} is unavailable for receipt.`);
+  if (!location.isActive || (status !== "active" && status !== "restricted")) {
+    throw custodyConflict(
+      "DESTINATION_UNAVAILABLE",
+      `Location ${location.name} is unavailable for receipt.`,
+      { locationName: location.name },
+    );
   }
   return location;
 }

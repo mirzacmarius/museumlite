@@ -1430,49 +1430,6 @@ export const update = mutation({
 });
 
 /**
- * Update workflow step (for Kanban drag-and-drop)
- */
-export const updateWorkflowStep = mutation({
-  args: {
-    accessionId: v.id("accessions"),
-    workflowStep: v.number(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, accession] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.accessionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!accession) {
-      throw new Error("Accession not found");
-    }
-
-    if (accession.status !== "pending") {
-      throw new Error("Can only update workflow step for pending accessions");
-    }
-
-    if (args.workflowStep < 0 || args.workflowStep > 2) {
-      throw new Error("Invalid workflow step");
-    }
-
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.update",
-    );
-
-    await ctx.db.patch(args.accessionId, {
-      workflowStep: args.workflowStep,
-    });
-
-    return null;
-  },
-});
-
-/**
  * Submit for approval
  */
 export const submitForApproval = mutation({

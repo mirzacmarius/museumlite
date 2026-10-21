@@ -177,7 +177,11 @@ export function DeaccessionKanbanColumn({
 
                   <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
                     <span className="truncate">
-                      {t(`method.${item.method}`)}
+                      {item.transferDeclinedBy
+                        ? t("transferDeclinedBy", {
+                            organization: item.transferDeclinedBy,
+                          })
+                        : t(`method.${item.method}`)}
                     </span>
                     <span className="shrink-0 text-muted-foreground">
                       <ClientDateFns

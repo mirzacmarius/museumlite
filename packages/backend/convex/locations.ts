@@ -15,6 +15,7 @@ import {
   movementKindValidator,
 } from "./utils/movementValidators";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { isOpenDeaccession } from "./utils/openDeaccessions";
 import {
   hasPermission,
   requireLocationAdminPermission,
@@ -926,9 +927,13 @@ export const deleteLocation = mutation({
           .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
           .collect();
 
-        const alreadyInFlow = existingDeaccessions.some(
-          (deaccession) => deaccession.status !== "rejected",
-        );
+        let alreadyInFlow = false;
+        for (const deaccession of existingDeaccessions) {
+          if (await isOpenDeaccession(ctx, deaccession)) {
+            alreadyInFlow = true;
+            break;
+          }
+        }
 
         if (!alreadyInFlow) {
           objectsRequiringDeaccession.push(object);

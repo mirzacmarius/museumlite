@@ -270,6 +270,7 @@ import type * as utils_objectMoveErrors from "../utils/objectMoveErrors.js";
 import type * as utils_objectSearch from "../utils/objectSearch.js";
 import type * as utils_objectTypeDetails from "../utils/objectTypeDetails.js";
 import type * as utils_onboardingCollectionSuggestions from "../utils/onboardingCollectionSuggestions.js";
+import type * as utils_openDeaccessions from "../utils/openDeaccessions.js";
 import type * as utils_operationalKpis from "../utils/operationalKpis.js";
 import type * as utils_organizationAudit from "../utils/organizationAudit.js";
 import type * as utils_organizationDeletionTimings from "../utils/organizationDeletionTimings.js";
@@ -613,6 +614,7 @@ declare const fullApi: ApiFromModules<{
   "utils/objectSearch": typeof utils_objectSearch;
   "utils/objectTypeDetails": typeof utils_objectTypeDetails;
   "utils/onboardingCollectionSuggestions": typeof utils_onboardingCollectionSuggestions;
+  "utils/openDeaccessions": typeof utils_openDeaccessions;
   "utils/operationalKpis": typeof utils_operationalKpis;
   "utils/organizationAudit": typeof utils_organizationAudit;
   "utils/organizationDeletionTimings": typeof utils_organizationDeletionTimings;

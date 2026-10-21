@@ -23,10 +23,10 @@ import { isUnaccessionedEntryObject } from "./utils/objectEntryLifecycle";
 import {
   ELIGIBILITY_BLOCKER_CODES,
   type EligibilityBlockerCode,
-  type MoveBlockerCode,
   objectMoveError,
   objectMoveErrorFromError,
 } from "./utils/objectMoveErrors";
+import { executedTransferDeaccessionIds } from "./utils/openDeaccessions";
 import {
   getCurrentUserOrganization,
   getUserIdsWithPermission,
@@ -110,7 +110,7 @@ const BLOCKING_COVERAGE_STATUSES = new Set(["active", "pending"]);
 const BLOCKING_LOCATION_MOVE_STATUSES = new Set(["pending", "approved"]);
 
 type MoveBlocker = {
-  code: MoveBlockerCode;
+  code: EligibilityBlockerCode;
   message: string;
 };
 
@@ -584,11 +584,15 @@ async function buildEligibilityBlockers(
     .collect();
 
   // A rejected Removal, whatever its method, left the object in the
-  // collection, so it may be transferred again.
+  // collection, and the Removal of an executed transfer closed when the object
+  // arrived, so neither stops the object from being transferred again.
+  const closedTransferDeaccessionIds =
+    executedTransferDeaccessionIds(moveRequests);
   const blockingDeaccessions = deaccessions.filter(
     (deaccession) =>
       deaccession._id !== options.ignoreDeaccessionId &&
-      deaccession.status !== "rejected",
+      deaccession.status !== "rejected" &&
+      !closedTransferDeaccessionIds.has(deaccession._id),
   );
   if (blockingDeaccessions.length > 0) {
     blockers.push({
@@ -1375,17 +1379,8 @@ export const createRequest = mutation({
       args.targetOrganizationId,
     );
 
-    if (isPublicDestination) {
-      const targetOrganization = await ctx.db.get(args.targetOrganizationId);
-      if (
-        !targetOrganization ||
-        !organizationAllowsIncomingTransfers(targetOrganization)
-      ) {
-        throw new Error(
-          "This organization is not accepting incoming transfer requests.",
-        );
-      }
-    } else {
+    // A public destination is one that allows incoming transfer requests.
+    if (!isPublicDestination) {
       await requirePermission(
         ctx,
         args.targetOrganizationId,
@@ -1400,9 +1395,11 @@ export const createRequest = mutation({
         getCurrentUserOrganization(ctx, args.targetOrganizationId),
       ]);
       if (!membership) {
-        throw new Error(
-          "You must be a member of the destination organization to move an object there.",
-        );
+        blockers.push({
+          code: "target_membership_required",
+          message:
+            "You must be a member of the destination organization to move an object there.",
+        });
       }
     }
 

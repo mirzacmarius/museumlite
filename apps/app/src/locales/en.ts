@@ -6250,6 +6250,7 @@ export default {
       destruction: "Destruction (Witnessed)",
       transfer: "Transfer",
     },
+    transferDeclinedBy: "Transfer declined by {organization}",
     detail: {
       loading: "Loading...",
       notFound: "Deaccession not found",
@@ -10641,6 +10642,8 @@ export default {
         "Transfers between organizations in the same hierarchy need the Pro or Enterprise plan.",
       destinationNotAccepting:
         "Your organization does not accept incoming transfer requests and is outside the sending organization's hierarchy.",
+      sourceLocationChanged:
+        "The sending organization's approval no longer matches where this object is. Decline the transfer, and they can send a new request.",
     },
     blockers: {
       statusNotActive:
