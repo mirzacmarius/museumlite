@@ -402,7 +402,7 @@ export const listForObject = query({
       })),
     );
     const withdrawn = isWithdrawnObject(object);
-    const arriving = arrivingFrom !== null;
+    const arriving = arrivingFrom.length > 0;
     const locked = withdrawn || arriving;
     return {
       viewer: {

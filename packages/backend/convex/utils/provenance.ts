@@ -20,6 +20,8 @@ export const MAX_EVIDENCE_PER_CLAIM = 50;
 export const MAX_REVIEWS_PER_OBJECT = 500;
 /** Provenance rows one transaction moves to the Object's new organization. */
 const REHOME_BATCH = 100;
+/** Transfer requests of one Object read to find where its provenance is. */
+const OBJECT_MOVE_REQUEST_LIMIT = 50;
 
 const TEXT_LIMITS = {
   // Legacy provenance text can be long; it is turned into a claim whole.
@@ -294,7 +296,10 @@ export async function requireProvenanceObject(
       "Restore the Object before changing its provenance",
     );
   }
-  if (access !== "read" && (await provenanceArrivingFrom(ctx, object))) {
+  if (
+    access !== "read" &&
+    (await provenanceArrivingFrom(ctx, object)).length > 0
+  ) {
     throw provenanceError(
       "PROVENANCE_STILL_ARRIVING",
       "Part of this Object's provenance is still arriving from its previous organization",
@@ -404,34 +409,38 @@ export async function rehomeObjectProvenance(
 }
 
 /**
- * The organization that still holds part of an Object's provenance after the
- * Object's latest transfer, or null once all of it is with the organization
- * holding the Object. A long history moves in batches, and provenance a
- * transfer left behind before it moved with its Object stays until the
- * repair moves it.
+ * The organizations a transferred Object left that still hold part of its
+ * provenance; none once all of it is with the organization holding the
+ * Object. A long history moves in batches, possibly behind a later transfer,
+ * and provenance a transfer left behind before it moved with its Object
+ * stays until the repair moves it.
  */
 export async function provenanceArrivingFrom(
   ctx: QueryCtx | MutationCtx,
   object: Pick<Doc<"collections">, "_id" | "organizationId">,
-): Promise<Id<"organizations"> | null> {
-  let sourceOrganizationId: Id<"organizations"> | null = null;
-  for await (const request of ctx.db
+): Promise<Id<"organizations">[]> {
+  const requests = await ctx.db
     .query("organizationMoveRequests")
     .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
-    .order("desc")) {
-    if (request.status === "executed") {
-      sourceOrganizationId = request.sourceOrganizationId;
-      break;
-    }
-  }
-  if (
-    !sourceOrganizationId ||
-    sourceOrganizationId === object.organizationId ||
-    !(await holdsProvenance(ctx, sourceOrganizationId, object._id))
-  ) {
-    return null;
-  }
-  return sourceOrganizationId;
+    .order("desc")
+    .take(OBJECT_MOVE_REQUEST_LIMIT);
+  const sources = [
+    ...new Set(
+      requests
+        .filter(
+          (request) =>
+            request.status === "executed" &&
+            request.sourceOrganizationId !== object.organizationId,
+        )
+        .map((request) => request.sourceOrganizationId),
+    ),
+  ];
+  const held = await Promise.all(
+    sources.map((organizationId) =>
+      holdsProvenance(ctx, organizationId, object._id),
+    ),
+  );
+  return sources.filter((_, index) => held[index]);
 }
 
 /** Whether an organization holds any of an Object's claims, evidence or reviews. */

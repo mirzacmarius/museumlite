@@ -1841,7 +1841,7 @@ export const backfillPublicRenditions = internalMutation({
 
 const repairTotalsValidator = v.object({
   identifierKeysRewritten: v.number(),
-  transfersWithProvenanceMoved: v.number(),
+  transfersWithProvenanceLeftBehind: v.number(),
   objectsSharingANumber: v.number(),
   objectsNotChecked: v.number(),
 });
@@ -1870,7 +1870,9 @@ async function isLatestExecutedMove(
  *   number, so the receiver's register finds it by the number it has;
  * - provenance claims, evidence and reviews still filed under the sender
  *   move to the organization holding the Object now, in batches scheduled
- *   per Object.
+ *   per Object. Until they have, the Object's provenance counts as still
+ *   arriving and cannot be changed (ADR 0006), so the repair runs right
+ *   after the deploy that ships it.
  * No number changes and nothing is deleted. `objectsSharingANumber` counts
  * transferred Objects whose number another Object in their organization
  * also has; both are kept as they are, and Settings › Preferences identifier
@@ -1898,7 +1900,7 @@ export const repairTransferredObjects = internalMutation({
       .paginate({ cursor: args.cursor, numItems: 10 });
     const totals = {
       identifierKeysRewritten: 0,
-      transfersWithProvenanceMoved: 0,
+      transfersWithProvenanceLeftBehind: 0,
       objectsSharingANumber: 0,
       objectsNotChecked: 0,
       ...args.totals,
@@ -1920,7 +1922,7 @@ export const repairTransferredObjects = internalMutation({
           objectId: object._id,
           fromOrganizationId: request.sourceOrganizationId,
         });
-        totals.transfersWithProvenanceMoved += 1;
+        totals.transfersWithProvenanceLeftBehind += 1;
       }
       if (await isLatestExecutedMove(ctx, request)) {
         const { matches, needsBackfill } = await findIdentifierMatches(
@@ -1938,7 +1940,7 @@ export const repairTransferredObjects = internalMutation({
     }
     if (page.isDone) {
       console.log(
-        `Repaired transferred Objects: rewrote ${totals.identifierKeysRewritten} identifier keys, moved provenance left behind by ${totals.transfersWithProvenanceMoved} transfers; ${totals.objectsSharingANumber} transferred Objects share their number with another Object, and ${totals.objectsNotChecked} could not be checked until their organization's register is fully indexed`,
+        `Repaired transferred Objects: rewrote ${totals.identifierKeysRewritten} identifier keys, scheduled moving the provenance ${totals.transfersWithProvenanceLeftBehind} transfers left behind; ${totals.objectsSharingANumber} transferred Objects share their number with another Object, and ${totals.objectsNotChecked} could not be checked until their organization's register is fully indexed`,
       );
     } else {
       await ctx.scheduler.runAfter(

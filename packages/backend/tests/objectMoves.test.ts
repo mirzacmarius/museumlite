@@ -7,6 +7,7 @@ import { custodyConflictFromError } from "../convex/utils/custodyErrors";
 import { identifierErrorFromError } from "../convex/utils/identifierErrors";
 import { imageDeletionErrorFromError } from "../convex/utils/imageDeletionErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
+import { partyErrorFromError } from "../convex/utils/partyErrors";
 import { provenanceErrorFromError } from "../convex/utils/provenanceErrors";
 import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
@@ -22,6 +23,7 @@ async function refusal(call: Promise<unknown>) {
       identifierErrorFromError(error) ??
       provenanceErrorFromError(error) ??
       imageDeletionErrorFromError(error) ??
+      partyErrorFromError(error) ??
       custodyConflictFromError(error) ?? { code: String(error) }
     );
   }
@@ -2987,6 +2989,25 @@ describe("provenance follows a transferred Object", () => {
     return claimIds;
   }
 
+  /** The receiver transfers the Object on to a museum outside the hierarchy. */
+  async function transferOnward(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+    destination: Awaited<ReturnType<typeof createPublicDestination>>,
+  ) {
+    const curator = await addReceivingCurator(t, fixture);
+    const requestId = await curator.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: destination.organizationId,
+      reason: "Long-term deposit with a regional museum",
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.approve, { requestId });
+    await destination.admin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: destination.locationId,
+    });
+  }
+
   const claimShown = (claimId: Id<"provenanceClaims">) =>
     expect.objectContaining({
       _id: claimId,
@@ -3287,6 +3308,232 @@ describe("provenance follows a transferred Object", () => {
       vi.useRealTimers();
     }
   });
+
+  test("a history that a further transfer overtakes keeps the last receiver waiting until all of it is there", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const [fixture, destination] = await Promise.all([
+        createMoveFixture(t),
+        createPublicDestination(t, "ORG-00921"),
+      ]);
+      // 3 claims and 150 citations: the Object moves on before the citations
+      // the first transfer left for later have followed it.
+      const [, , lastClaimId] = await recordLedgerClaims(fixture, 3, 50);
+      if (!lastClaimId) throw new Error("Expected three claims");
+      await transferToTarget(fixture);
+      await transferOnward(t, fixture, destination);
+      const { client: curator } = await staffAt(
+        t,
+        destination.organizationId,
+        ["collections.read", "collections.update"],
+        "Onward Curator",
+      );
+      const correction = {
+        claimId: lastClaimId,
+        reason: "The entry number was misread",
+        statement: "Listed in the founder's ledger, entry 33.",
+        partyKind: "named" as const,
+        partyText: "Johan Berg",
+        confidence: "probable" as const,
+      };
+
+      expect(
+        await curator.query(api.provenance.listForObject, {
+          objectId: fixture.collectionId,
+        }),
+      ).toMatchObject({
+        provenanceArriving: true,
+        viewer: { canRecord: false },
+      });
+      expect(
+        await refusal(
+          curator.mutation(api.provenance.correctClaim, correction),
+        ),
+      ).toMatchObject({ code: "PROVENANCE_STILL_ARRIVING" });
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+      const correctionId = await curator.mutation(
+        api.provenance.correctClaim,
+        correction,
+      );
+      const provenance = await curator.query(api.provenance.listForObject, {
+        objectId: fixture.collectionId,
+      });
+      expect(provenance?.provenanceArriving).toBe(false);
+      expect(
+        provenance?.claims.find((claim) => claim._id === correctionId)
+          ?.evidence,
+      ).toHaveLength(50);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("provenance that past transfers left behind keeps the Object waiting wherever it went next, until the repair brings it", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const [fixture, destination] = await Promise.all([
+        createMoveFixture(t),
+        createPublicDestination(t, "ORG-00922"),
+      ]);
+      const mediaId = await t.run(async (ctx) =>
+        ctx.db.insert("mediaFiles", {
+          collectionId: fixture.collectionId,
+          organizationId: fixture.sourceOrganizationId,
+          storageId: await ctx.storage.store(new Blob(["jpeg"])),
+          fileName: "founders-study.jpg",
+          fileType: "image",
+          fileSize: 4,
+          mimeType: "image/jpeg",
+          mediaCategory: "image",
+          isPrimary: false,
+          uploadedBy: fixture.requesterId,
+          uploadedAt: Date.now(),
+          uploadStatus: "completed",
+        }),
+      );
+      const { client: researcher } = await staffAt(
+        t,
+        fixture.sourceOrganizationId,
+        ["collections.read", "collections.update", "media.read"],
+        "Sending Researcher",
+      );
+      const claimId = await researcher.mutation(api.provenance.recordClaim, {
+        objectId: fixture.collectionId,
+        statement: "Photographed in the founder's study, 1910.",
+        partyKind: "named",
+        partyText: "Johan Berg",
+        confidence: "documented",
+        evidence: [{ source: { kind: "media", mediaId } }],
+      });
+      await transferToTarget(fixture);
+      await transferOnward(t, fixture, destination);
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+      // Transfers accepted before provenance moved with its Object left it
+      // with the first museum.
+      await t.run(async (ctx) => {
+        const [claims, evidence] = await Promise.all([
+          ctx.db.query("provenanceClaims").collect(),
+          ctx.db.query("provenanceEvidence").collect(),
+        ]);
+        for (const row of [...claims, ...evidence]) {
+          await ctx.db.patch(row._id, {
+            organizationId: fixture.sourceOrganizationId,
+          });
+        }
+        const target = await ctx.db.get(destination.organizationId);
+        await ctx.db.patch(destination.organizationId, {
+          settings: { ...target?.settings, accessionWorkflowEnabled: false },
+        });
+      });
+      const { client: cataloger } = await staffAt(
+        t,
+        destination.organizationId,
+        ["collections.read", "media.read", "media.delete"],
+        "Onward Cataloger",
+      );
+      const provenance = () =>
+        cataloger.query(api.provenance.listForObject, {
+          objectId: fixture.collectionId,
+        });
+
+      expect(await provenance()).toMatchObject({
+        provenanceArriving: true,
+        claims: [],
+      });
+      expect(
+        await refusal(
+          cataloger.mutation(api.mediaDeletions.deleteImage, { mediaId }),
+        ),
+      ).toMatchObject({ code: "IMAGE_CITED_AS_EVIDENCE" });
+      await t.mutation(internal.migrations.repairTransferredObjects, {
+        cursor: null,
+      });
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+      expect(await provenance()).toMatchObject({
+        provenanceArriving: false,
+        claims: [
+          expect.objectContaining({
+            _id: claimId,
+            evidence: [
+              expect.objectContaining({ mediaId, url: expect.any(String) }),
+            ],
+          }),
+        ],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a Party is not linked to a claim while part of the history is still on its way", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const fixture = await createMoveFixture(t);
+      const claimId = await fixture.requester.mutation(
+        api.provenance.recordClaim,
+        {
+          objectId: fixture.collectionId,
+          statement: "Bought by the museum's founder in Bergen, 1902.",
+          role: "owner",
+          partyKind: "named",
+          partyText: "Johan Berg",
+          confidence: "probable",
+          evidence: [],
+        },
+      );
+      // 2 more claims and 100 citations: the last citations follow later.
+      await recordLedgerClaims(fixture, 2, 50);
+      await transferToTarget(fixture);
+      const { userId, client: registrar } = await staffAt(
+        t,
+        fixture.targetOrganizationId,
+        ["collections.read", "collections.update", "accounts.read"],
+        "Receiving Registrar",
+      );
+      const accountId = await t.run(async (ctx) => {
+        const receiver = await ctx.db.get(fixture.targetOrganizationId);
+        await ctx.db.patch(fixture.targetOrganizationId, {
+          settings: { ...receiver?.settings, enabledModules: ["accounts"] },
+        });
+        return await ctx.db.insert("accounts", {
+          organizationId: fixture.targetOrganizationId,
+          accountNumber: "ACC-BERG",
+          accountType: "institution",
+          holderType: "privatePerson",
+          businessName: "Johan Berg",
+          createdBy: userId,
+          createdAt: Date.now(),
+        });
+      });
+      const target = { type: "provenanceClaim" as const, id: claimId };
+      const link = () =>
+        registrar.mutation(api.partyLinks.link, {
+          target,
+          accountId,
+          role: "owner",
+        });
+
+      expect(await refusal(link())).toMatchObject({
+        code: "PARTY_RECORD_LOCKED",
+      });
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+      await link();
+      expect(
+        await registrar.query(api.partyLinks.listForTarget, { target }),
+      ).toMatchObject({
+        policy: "open",
+        links: [expect.objectContaining({ accountId, isCurrent: true })],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("repairing Objects transferred before the register and provenance followed them", () => {
@@ -3336,7 +3583,7 @@ describe("repairing Objects transferred before the register and provenance follo
         }),
       ).toEqual({
         identifierKeysRewritten: 1,
-        transfersWithProvenanceMoved: 1,
+        transfersWithProvenanceLeftBehind: 1,
         objectsSharingANumber: 0,
         objectsNotChecked: 0,
         isDone: true,
@@ -3366,7 +3613,7 @@ describe("repairing Objects transferred before the register and provenance follo
         }),
       ).toEqual({
         identifierKeysRewritten: 0,
-        transfersWithProvenanceMoved: 0,
+        transfersWithProvenanceLeftBehind: 0,
         objectsSharingANumber: 0,
         objectsNotChecked: 0,
         isDone: true,
@@ -3427,7 +3674,7 @@ describe("repairing Objects transferred before the register and provenance follo
       }),
     ).toEqual({
       identifierKeysRewritten: 0,
-      transfersWithProvenanceMoved: 0,
+      transfersWithProvenanceLeftBehind: 0,
       objectsSharingANumber: 1,
       objectsNotChecked: 0,
       isDone: true,

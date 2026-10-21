@@ -123,9 +123,7 @@ async function isCitedAsEvidence(ctx: ReadCtx, media: Doc<"mediaFiles">) {
     _id: media.collectionId,
     organizationId: media.organizationId,
   });
-  for (const organizationId of arrivingFrom
-    ? [media.organizationId, arrivingFrom]
-    : [media.organizationId]) {
+  for (const organizationId of [media.organizationId, ...arrivingFrom]) {
     for await (const evidence of ctx.db
       .query("provenanceEvidence")
       .withIndex("by_organization_and_objectId", (q) =>
