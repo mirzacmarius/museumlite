@@ -19,9 +19,11 @@ function Checkbox({
       )}
       {...props}
     >
+      {/* Mounted while unchecked too, so the check animates on a change of state but not on page load. */}
       <CheckboxPrimitive.Indicator
+        forceMount
         data-slot="checkbox-indicator"
-        className="grid place-content-center text-current transition-none [&>svg]:size-3.5"
+        className="grid scale-50 place-content-center text-current opacity-0 transition-[scale,opacity] duration-spring ease-spring motion-reduce:scale-100 data-[state=checked]:scale-100 data-[state=checked]:opacity-100 data-[state=indeterminate]:scale-100 data-[state=indeterminate]:opacity-100 [&>svg]:size-3.5 [&_path]:[stroke-dasharray:24] [&_path]:[stroke-dashoffset:24] [&_path]:transition-[stroke-dashoffset] [&_path]:duration-300 [&_path]:ease-out motion-reduce:[&_path]:[stroke-dashoffset:0] data-[state=checked]:[&_path]:[stroke-dashoffset:0] data-[state=indeterminate]:[&_path]:[stroke-dashoffset:0]"
       >
         <CheckIcon />
       </CheckboxPrimitive.Indicator>

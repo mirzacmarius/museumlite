@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useState } from "react";
 import { useReturnFocus } from "../hooks/use-return-focus";
 import { useUiLocale } from "../locale";
 import { cn } from "../utils";
+import { DIALOG_MOTION, OVERLAY_MOTION } from "./motion";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -35,7 +36,8 @@ const DialogOverlay = ({
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-zinc-950/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-zinc-950/80",
+      OVERLAY_MOTION,
       className,
     )}
     {...props}
@@ -82,7 +84,10 @@ const DialogContent = ({
       {/* The overlay scrolls, so a dialog taller than the screen stays reachable. */}
       <DialogPrimitive.Content
         ref={contentRef}
-        className="fixed inset-0 z-50 overflow-y-auto duration-200 print:overflow-visible data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        className={cn(
+          "fixed inset-0 z-50 overflow-y-auto print:overflow-visible",
+          DIALOG_MOTION,
+        )}
         {...props}
         {...returnFocus}
       >

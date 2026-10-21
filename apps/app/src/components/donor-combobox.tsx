@@ -134,7 +134,7 @@ export function DonorCombobox({
   return (
     <div>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+        <PopoverTrigger asChild nativeButton={false}>
           <DonorComboboxTrigger
             listId={listId}
             disabled={disabled}

@@ -5,6 +5,7 @@ import type * as React from "react";
 import { useReturnFocus } from "../hooks/use-return-focus";
 import { cn } from "../utils";
 import { buttonVariants } from "./button";
+import { DIALOG_MOTION, OVERLAY_MOTION } from "./motion";
 
 const AlertDialog = AlertDialogPrimitive.Root;
 
@@ -22,7 +23,8 @@ const AlertDialogOverlay = ({
   >) => (
   <AlertDialogPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-zinc-950/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-zinc-950/80",
+      OVERLAY_MOTION,
       className,
     )}
     {...props}
@@ -52,7 +54,8 @@ const AlertDialogContent = ({
       <AlertDialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed inset-0 z-50 overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "fixed inset-0 z-50 overflow-y-auto",
+          DIALOG_MOTION,
           layerClassName,
         )}
         {...props}

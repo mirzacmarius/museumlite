@@ -34,7 +34,10 @@ function RadioGroupItem({
       )}
       {...props}
     >
-      <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
+      <RadioGroupPrimitive.Indicator
+        forceMount
+        className="flex scale-0 items-center justify-center opacity-0 transition-[scale,opacity] duration-spring ease-spring motion-reduce:scale-100 data-[state=checked]:scale-100 data-[state=checked]:opacity-100"
+      >
         <Circle className="size-3.5 fill-primary" />
       </RadioGroupPrimitive.Indicator>
     </RadioGroupPrimitive.Item>

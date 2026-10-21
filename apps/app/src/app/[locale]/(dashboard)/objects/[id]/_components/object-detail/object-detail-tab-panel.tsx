@@ -1,6 +1,7 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Highlight, HighlightScope } from "@v1/ui/motion-highlight";
 import { cn } from "@v1/ui/utils";
 import dynamic from "next/dynamic";
 import type { KeyboardEvent } from "react";
@@ -155,42 +156,47 @@ export function ObjectDetailTabPanel({
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
       <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border/60 bg-background/90 px-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
-        <div
-          role="tablist"
-          aria-label={collection.title}
-          className="-mb-px flex gap-1 overflow-x-auto [scrollbar-width:none] max-sm:[mask-image:linear-gradient(to_right,black_85%,transparent)] [&::-webkit-scrollbar]:hidden"
-        >
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                id={`object-tab-${tab.id}`}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-controls="object-tab-panel"
-                tabIndex={isActive ? 0 : -1}
-                onClick={(event) => {
-                  event.currentTarget.scrollIntoView({
-                    block: "nearest",
-                    inline: "nearest",
-                  });
-                  onActiveTabChange(tab.id);
-                }}
-                onKeyDown={handleTabKeyDown}
-                className={cn(
-                  "shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                  isActive
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-              >
-                {tRoot(tab.label)}
-              </button>
-            );
-          })}
-        </div>
+        <HighlightScope>
+          <div
+            role="tablist"
+            aria-label={collection.title}
+            className="isolate -mb-px flex gap-1 overflow-x-auto [scrollbar-width:none] max-sm:[mask-image:linear-gradient(to_right,black_85%,transparent)] [&::-webkit-scrollbar]:hidden"
+          >
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  id={`object-tab-${tab.id}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls="object-tab-panel"
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={(event) => {
+                    event.currentTarget.scrollIntoView({
+                      block: "nearest",
+                      inline: "nearest",
+                    });
+                    onActiveTabChange(tab.id);
+                  }}
+                  onKeyDown={handleTabKeyDown}
+                  className={cn(
+                    "relative shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                    isActive
+                      ? "border-transparent text-foreground"
+                      : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                  )}
+                >
+                  {isActive && (
+                    <Highlight className="top-auto -bottom-0.5 h-0.5 rounded-none bg-primary" />
+                  )}
+                  {tRoot(tab.label)}
+                </button>
+              );
+            })}
+          </div>
+        </HighlightScope>
       </div>
 
       <div

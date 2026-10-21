@@ -21,6 +21,7 @@ import {
 import { Logo } from "@v1/ui/logo";
 import {
   Sidebar,
+  SidebarActiveIndicator,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -63,6 +64,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { SidebarPlanUsage } from "@/components/plan-usage-stats";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { useSignOut } from "@/hooks/use-sign-out";
+import { getUnlocalizedPath } from "@/lib/locale-routes";
 import { useI18n, useScopedI18n } from "@/locales/client";
 
 function getUserInitials(user: {
@@ -569,7 +571,7 @@ function AppSidebarClientInner({
   const { isMobile, setOpenMobile } = useSidebar();
   const user = usePreloadedQuery(preloadedUser);
   const signOut = useSignOut();
-  const pathname = usePathname();
+  const pathname = getUnlocalizedPath(usePathname());
   const { replace } = useRouter();
 
   const handleOrganizationChange = React.useCallback(
@@ -608,9 +610,9 @@ function AppSidebarClientInner({
     if (url === "/") return pathname === "/";
     if (url.includes("?")) {
       const basePath = url.split("?")[0];
-      return pathname?.startsWith(basePath ?? "");
+      return pathname.startsWith(basePath ?? "");
     }
-    return pathname?.startsWith(url);
+    return pathname.startsWith(url);
   };
 
   const lockedLabel = translate("untranslatedComponents.navigation.locked");
@@ -631,6 +633,7 @@ function AppSidebarClientInner({
       />
 
       <SidebarContent className="gap-0 py-1">
+        <SidebarActiveIndicator />
         <SidebarSearch onOpen={openCommandPalette} />
 
         <TopLevelNavigation
