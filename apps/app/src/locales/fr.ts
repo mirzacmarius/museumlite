@@ -6406,6 +6406,7 @@ export default {
       destruction: "Destruction (Attestée)",
       transfer: "Transfert",
     },
+    transferDeclinedBy: "Transfert refusé par {organization}",
     detail: {
       loading: "Chargement...",
       notFound: "Désaccession non trouvée",
@@ -10940,6 +10941,8 @@ export default {
         "Les transferts entre organisations d’une même hiérarchie nécessitent l’offre Pro ou Enterprise.",
       destinationNotAccepting:
         "Votre organisation n’accepte pas les demandes de transfert entrantes et se trouve hors de la hiérarchie de l’organisation d’origine.",
+      sourceLocationChanged:
+        "L’approbation de l’organisation d’origine ne correspond plus à l’emplacement actuel de cet objet. Refusez le transfert : elle pourra envoyer une nouvelle demande.",
     },
     blockers: {
       statusNotActive:

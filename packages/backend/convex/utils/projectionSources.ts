@@ -7,6 +7,7 @@ import {
 import { normalizeCurrency } from "./currency";
 import { getExhibitionLifecycle } from "./exhibitionMetrics";
 import { coverageTarget, needsTargetReview } from "./insuranceCoverage";
+import { isOpenDeaccession } from "./openDeaccessions";
 import {
   distinctScope,
   type ProjectionFact,
@@ -240,10 +241,7 @@ export async function computeSourceFacts(
         add("quality.missing_reference");
         break;
       }
-      if (
-        deaccession.status === "pending" ||
-        deaccession.status === "approved"
-      ) {
+      if (await isOpenDeaccession(ctx, deaccession)) {
         add("openDeaccession", 1, objectScope(deaccession.collectionId));
       }
       if (placement.siteId) {

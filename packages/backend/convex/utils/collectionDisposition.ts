@@ -8,6 +8,7 @@ import {
 } from "./collectionLifecycle";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { assertEntryAllowsStatus } from "./objectEntryLifecycle";
+import { isOpenDeaccession } from "./openDeaccessions";
 import { requirePermission } from "./permissions";
 
 export async function archiveCollectionHandler(
@@ -134,11 +135,16 @@ export async function restoreCollectionHandler(
             .eq("status", "approved"),
         )
         .collect()
-        .then((decisions) =>
-          decisions.find(
-            (decision) => decision.targetCollectionStatus !== "archived",
-          ),
-        ),
+        .then(async (decisions) => {
+          for (const decision of decisions) {
+            if (
+              decision.targetCollectionStatus !== "archived" &&
+              (await isOpenDeaccession(ctx, decision))
+            )
+              return decision;
+          }
+          return undefined;
+        }),
     ] as const);
   if (activeIdentity && activeIdentity._id !== collection._id) {
     throw new Error("An active object already uses this accession number");

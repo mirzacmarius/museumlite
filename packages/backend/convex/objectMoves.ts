@@ -23,10 +23,13 @@ import { isUnaccessionedEntryObject } from "./utils/objectEntryLifecycle";
 import {
   ELIGIBILITY_BLOCKER_CODES,
   type EligibilityBlockerCode,
-  type MoveBlockerCode,
   objectMoveError,
   objectMoveErrorFromError,
 } from "./utils/objectMoveErrors";
+import {
+  executedTransferDeaccessionIds,
+  holdsObject,
+} from "./utils/openDeaccessions";
 import {
   getCurrentUserOrganization,
   getUserIdsWithPermission,
@@ -110,7 +113,7 @@ const BLOCKING_COVERAGE_STATUSES = new Set(["active", "pending"]);
 const BLOCKING_LOCATION_MOVE_STATUSES = new Set(["pending", "approved"]);
 
 type MoveBlocker = {
-  code: MoveBlockerCode;
+  code: EligibilityBlockerCode;
   message: string;
 };
 
@@ -583,12 +586,14 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  // A transfer the receiving organization declined leaves its deaccession
-  // rejected; the object stayed and may be transferred again.
+  // A rejected Removal, whatever its method, left the object in the
+  // collection, and the Removal of an executed transfer closed when the object
+  // arrived, so neither stops the object from being transferred again.
+  const closedByTransfer = executedTransferDeaccessionIds(moveRequests);
   const blockingDeaccessions = deaccessions.filter(
     (deaccession) =>
       deaccession._id !== options.ignoreDeaccessionId &&
-      !(deaccession.method === "transfer" && deaccession.status === "rejected"),
+      holdsObject(deaccession, closedByTransfer),
   );
   if (blockingDeaccessions.length > 0) {
     blockers.push({
@@ -1375,35 +1380,20 @@ export const createRequest = mutation({
       args.targetOrganizationId,
     );
 
-    if (isPublicDestination) {
-      const targetOrganization = await ctx.db.get(args.targetOrganizationId);
-      if (
-        !targetOrganization ||
-        !organizationAllowsIncomingTransfers(targetOrganization)
-      ) {
-        throw new Error(
-          "This organization is not accepting incoming transfer requests.",
-        );
-      }
-    } else {
+    // A public destination is one that allows incoming transfer requests.
+    // Any other must be in the hierarchy, and the requester must be able to
+    // add objects there, which only its members can.
+    if (!isPublicDestination) {
       await requirePermission(
         ctx,
         args.targetOrganizationId,
         "collections.create",
       );
-      const [, membership] = await Promise.all([
-        getTransferHierarchy(
-          ctx,
-          collection.organizationId,
-          args.targetOrganizationId,
-        ),
-        getCurrentUserOrganization(ctx, args.targetOrganizationId),
-      ]);
-      if (!membership) {
-        throw new Error(
-          "You must be a member of the destination organization to move an object there.",
-        );
-      }
+      await getTransferHierarchy(
+        ctx,
+        collection.organizationId,
+        args.targetOrganizationId,
+      );
     }
 
     requireNoMoveBlockers(blockers);

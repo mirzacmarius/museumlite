@@ -6385,6 +6385,7 @@ export default {
       destruction: "Destrucción (Presenciada)",
       transfer: "Transferencia",
     },
+    transferDeclinedBy: "Transferencia rechazada por {organization}",
     detail: {
       loading: "Cargando...",
       notFound: "Desaccesión no encontrada",
@@ -10895,6 +10896,8 @@ export default {
         "Los traslados entre organizaciones de la misma jerarquía requieren el plan Pro o Enterprise.",
       destinationNotAccepting:
         "Tu organización no acepta solicitudes de transferencia entrantes y está fuera de la jerarquía de la organización de origen.",
+      sourceLocationChanged:
+        "La aprobación de la organización de origen ya no coincide con la ubicación actual de este objeto. Rechaza el traslado y podrá enviar una solicitud nueva.",
     },
     blockers: {
       statusNotActive:

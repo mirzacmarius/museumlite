@@ -103,3 +103,33 @@ test("pending review steps keep their cards", async () => {
   expect(screen.getByText("Destruction (Witnessed)")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Load more" })).toBeTruthy();
 });
+
+test("a transfer the receiver declined says so instead of reading as a refused removal", async () => {
+  usePaginatedQuery.mockReturnValue({
+    results: [
+      {
+        _id: "da-3",
+        deaccessionNumber: "TR-HERITA-1760000000000",
+        collectionId: "obj-3",
+        collectionTitle: "Silver beaker",
+        dateDeaccessioned: Date.UTC(2026, 9, 20, 12),
+        reason: "sold",
+        method: "transfer",
+        targetCollectionStatus: "deaccessioned",
+        status: "rejected",
+        transferDeclinedBy: "Fredrikstad Museum",
+      },
+      { ...rows[1], status: "rejected" },
+    ],
+    status: "Exhausted",
+    loadMore,
+  });
+
+  await renderColumn({ kind: "rejected" });
+
+  expect(
+    screen.getByText("Transfer declined by Fredrikstad Museum"),
+  ).toBeTruthy();
+  expect(screen.queryByText("Transfer")).toBeNull();
+  expect(screen.getByText("Sale / Auction")).toBeTruthy();
+});

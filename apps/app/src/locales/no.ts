@@ -6329,6 +6329,7 @@ export default {
       destruction: "Destruksjon (Vitnet)",
       transfer: "Overføring",
     },
+    transferDeclinedBy: "Overføring avslått av {organization}",
     detail: {
       loading: "Laster...",
       notFound: "Deaksesjon ikke funnet",
@@ -10763,6 +10764,8 @@ export default {
         "Overføringer mellom organisasjoner i samme hierarki krever Pro- eller Enterprise-abonnementet.",
       destinationNotAccepting:
         "Organisasjonen din tar ikke imot innkommende overføringsforespørsler og er utenfor avsenderorganisasjonens hierarki.",
+      sourceLocationChanged:
+        "Godkjenningen fra avsenderorganisasjonen stemmer ikke lenger med hvor dette objektet er nå. Avslå overføringen, så kan de sende en ny forespørsel.",
     },
     blockers: {
       statusNotActive:

@@ -21,12 +21,6 @@ export const MOVE_BLOCKER_CODES = [
   "insurance_claim",
 ] as const;
 
-export type MoveBlockerCode = (typeof MOVE_BLOCKER_CODES)[number];
-
-export function isMoveBlockerCode(code: string): code is MoveBlockerCode {
-  return MOVE_BLOCKER_CODES.some((candidate) => candidate === code);
-}
-
 /**
  * Why the chosen destination cannot take the object, found while staff fill
  * in a transfer request. The hierarchy codes draw the same line as the
@@ -48,6 +42,12 @@ export const ELIGIBILITY_BLOCKER_CODES = [
 ] as const;
 
 export type EligibilityBlockerCode = (typeof ELIGIBILITY_BLOCKER_CODES)[number];
+
+function isEligibilityBlockerCode(
+  code: string,
+): code is EligibilityBlockerCode {
+  return ELIGIBILITY_BLOCKER_CODES.some((candidate) => candidate === code);
+}
 
 /**
  * Stable codes for move request refusals staff can act on. Clients map these
@@ -82,6 +82,12 @@ export const OBJECT_MOVE_ERROR_CODES = [
    * numbering turned off, has no format, or ran out of free numbers.
    */
   "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
+  /**
+   * The object is no longer at the Location the sending organization approved
+   * the transfer from, or the approval recorded none. The receiver declines,
+   * and the sender can request the transfer again.
+   */
+  "SOURCE_LOCATION_CHANGED",
 ] as const;
 
 export type ObjectMoveErrorCode = (typeof OBJECT_MOVE_ERROR_CODES)[number];
@@ -91,7 +97,7 @@ export type ObjectMoveErrorData = {
   code: ObjectMoveErrorCode;
   message: string;
   /** Set for MOVE_BLOCKED. */
-  blockers?: MoveBlockerCode[];
+  blockers?: EligibilityBlockerCode[];
   /** Set for ACCESSION_NUMBER_TAKEN. */
   accessionNumber?: string;
 };
@@ -99,7 +105,7 @@ export type ObjectMoveErrorData = {
 export function objectMoveError(
   code: ObjectMoveErrorCode,
   message: string,
-  blockers?: MoveBlockerCode[],
+  blockers?: EligibilityBlockerCode[],
   accessionNumber?: string,
 ): ConvexError<ObjectMoveErrorData> {
   const data: ObjectMoveErrorData = { code, message };
@@ -141,8 +147,8 @@ export function objectMoveErrorFromError(
     code,
     message,
     blockers: listed.filter(
-      (blocker): blocker is MoveBlockerCode =>
-        typeof blocker === "string" && isMoveBlockerCode(blocker),
+      (blocker): blocker is EligibilityBlockerCode =>
+        typeof blocker === "string" && isEligibilityBlockerCode(blocker),
     ),
   };
 }

@@ -40,6 +40,7 @@ import { dispatchNotification } from "./utils/notificationDispatch";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
+import { transferRequestsOf } from "./utils/openDeaccessions";
 import { requireLinkableParty } from "./utils/parties";
 import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
@@ -545,17 +546,52 @@ const deaccessionListItemValidator = v.object({
     v.literal("rejected"),
   ),
   workflowStep: v.optional(v.number()),
+  // The receiving organization, for a transfer it declined.
+  transferDeclinedBy: v.optional(v.string()),
 });
+
+/**
+ * The receiving organization's name for each transfer Deaccession it
+ * declined. Its decline rejects the Deaccession made at the sender's approval,
+ * which is not a Removal the sender refused.
+ */
+async function getTransferDecliners(
+  ctx: QueryCtx,
+  rows: Doc<"deaccessions">[],
+) {
+  const decliners = new Map<Id<"deaccessions">, string>();
+  await Promise.all(
+    rows
+      .filter((row) => row.method === "transfer" && row.status === "rejected")
+      .map(async (row) => {
+        const requests = await transferRequestsOf(ctx, row.collectionId);
+        const request = requests.find(
+          (candidate) =>
+            candidate.deaccessionId === row._id &&
+            candidate.status === "rejected" &&
+            candidate.targetReviewedAt !== undefined,
+        );
+        const receiver = request
+          ? await ctx.db.get(request.targetOrganizationId)
+          : null;
+        if (receiver) decliners.set(row._id, receiver.name);
+      }),
+  );
+  return decliners;
+}
 
 async function toDeaccessionListItems(
   ctx: QueryCtx,
   rows: Doc<"deaccessions">[],
 ) {
-  const collections = await batchLookup(
-    ctx,
-    rows.map((row) => row.collectionId),
-    "collections",
-  );
+  const [collections, decliners] = await Promise.all([
+    batchLookup(
+      ctx,
+      rows.map((row) => row.collectionId),
+      "collections",
+    ),
+    getTransferDecliners(ctx, rows),
+  ]);
   return rows.map((row) => {
     const collection = collections.get(row.collectionId);
     return {
@@ -570,6 +606,7 @@ async function toDeaccessionListItems(
       targetCollectionStatus: resolveTargetCollectionStatus(row),
       status: row.status,
       workflowStep: row.workflowStep,
+      transferDeclinedBy: decliners.get(row._id),
     };
   });
 }

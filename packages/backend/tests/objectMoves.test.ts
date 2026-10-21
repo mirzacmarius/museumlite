@@ -3,8 +3,9 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
+import { custodyConflictFromError } from "../convex/utils/custodyErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
-import { rebuildProjection } from "./testHarness";
+import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 import { workColumn } from "./workBoardHarness";
 
@@ -13,7 +14,10 @@ async function refusal(call: Promise<unknown>) {
   try {
     await call;
   } catch (error) {
-    return objectMoveErrorFromError(error) ?? { code: String(error) };
+    return (
+      objectMoveErrorFromError(error) ??
+      custodyConflictFromError(error) ?? { code: String(error) }
+    );
   }
   throw new Error("Expected the call to be rejected");
 }
@@ -975,12 +979,43 @@ describe("objectMoves", () => {
       });
     });
 
-    await expect(
-      fixture.targetAdmin.mutation(api.objectMoves.accept, {
-        requestId,
-        targetLocationId: fixture.targetLocationId,
-      }),
-    ).rejects.toThrow(/source location observed/);
+    expect(
+      await refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: fixture.targetLocationId,
+        }),
+      ),
+    ).toMatchObject({ code: "SOURCE_LOCATION_CHANGED" });
+  });
+
+  test("acceptance into a closed receiving location is refused with a code naming it", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        reason: "Closed receiving location",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await t.run((ctx) =>
+      ctx.db.patch(fixture.targetLocationId, { status: "closed" }),
+    );
+
+    expect(
+      await refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: fixture.targetLocationId,
+        }),
+      ),
+    ).toMatchObject({
+      code: "DESTINATION_UNAVAILABLE",
+      locationName: "Receiving Bay",
+    });
   });
 
   test("replaying accept on an executed transfer is a no-op", async () => {
@@ -2353,6 +2388,26 @@ describe("the receiving organization decides", () => {
     expect(await catalog()).toContain(fixture.collectionId);
   });
 
+  test("the sender's Removals board names the receiver that declined", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await awaitingAcceptance(fixture);
+
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
+
+    const rejected = await fixture.admin.query(
+      api.deaccessions.listBoardColumn,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        column: { kind: "rejected" },
+        paginationOpts: { numItems: 10, cursor: null },
+      },
+    );
+    expect(rejected.page).toMatchObject([
+      { method: "transfer", transferDeclinedBy: "Target Museum" },
+    ]);
+  });
+
   test("the decline reason reaches the sender", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -2459,6 +2514,239 @@ describe("the receiving organization decides", () => {
     expect((await t.run((ctx) => ctx.db.get(requestId)))?.status).toBe(
       "awaiting_acceptance",
     );
+  });
+});
+
+describe("a rejected Removal leaves the Object free to move", () => {
+  async function addRegistrar(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const registrarId = await createUser(
+      t,
+      "Registrar",
+      `registrar-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    const roleId = await createRoleWithPermissions(
+      t,
+      fixture.sourceOrganizationId,
+      [
+        "collections.create",
+        "collections.read",
+        "collections.approve_deaccession",
+      ],
+      "Registrar Role",
+    );
+    await addMembership(t, registrarId, fixture.sourceOrganizationId, roleId);
+    return authedForUser(t, registrarId);
+  }
+
+  // Without a disposition the sale waits for an approver's decision.
+  function offerForSale(
+    registrar: ReturnType<typeof authedForUser>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    return registrar.mutation(api.deaccessions.create, {
+      organizationId: fixture.sourceOrganizationId,
+      collectionId: fixture.collectionId,
+      dateDeaccessioned: Date.now(),
+      reason: "Offered for sale",
+      method: "sale",
+    });
+  }
+
+  function requestMove(fixture: Awaited<ReturnType<typeof createMoveFixture>>) {
+    return fixture.requester.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.targetOrganizationId,
+      reason: "Rotation",
+    });
+  }
+
+  test("an Object whose sale was rejected can be moved to another organization (MUS-833)", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const registrar = await addRegistrar(t, fixture);
+    const deaccessionId = await offerForSale(registrar, fixture);
+
+    await registrar.mutation(api.deaccessions.reject, {
+      deaccessionId,
+      comment: "The board keeps it",
+    });
+
+    const eligibility = await fixture.requester.query(
+      api.objectMoves.getEligibility,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+      },
+    );
+    expect(eligibility.blockers).toEqual([]);
+    await expect(requestMove(fixture)).resolves.toBeDefined();
+  });
+
+  test("a sale still waiting for a decision keeps the Object from moving", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const registrar = await addRegistrar(t, fixture);
+    await offerForSale(registrar, fixture);
+
+    expect(await refusal(requestMove(fixture))).toMatchObject({
+      code: "MOVE_BLOCKED",
+      blockers: ["has_deaccessions"],
+    });
+  });
+});
+
+describe("a finished transfer leaves the Object free to move on", () => {
+  async function transferToTarget(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        reason: "Rotation",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+  }
+
+  // A curator at the receiving museum who may also add objects to the first.
+  async function addReceivingCurator(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const curatorId = await createUser(
+      t,
+      "Receiving Curator",
+      `receiving-curator-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    const [targetRoleId, sourceRoleId] = await Promise.all([
+      createRoleWithPermissions(
+        t,
+        fixture.targetOrganizationId,
+        ["collections.read", "collections.update"],
+        "Receiving Curator Role",
+      ),
+      createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        ["collections.read", "collections.create"],
+        "Returning Curator Role",
+      ),
+    ]);
+    await addMembership(
+      t,
+      curatorId,
+      fixture.targetOrganizationId,
+      targetRoleId,
+    );
+    await addMembership(
+      t,
+      curatorId,
+      fixture.sourceOrganizationId,
+      sourceRoleId,
+    );
+    return authedForUser(t, curatorId);
+  }
+
+  // The receiving museum sends the Object back into its first Location.
+  async function sendBack(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const curator = await addReceivingCurator(t, fixture);
+    const requestId = await curator.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.sourceOrganizationId,
+      reason: "Return after the exhibition season",
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.admin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.locationId,
+    });
+  }
+
+  test("an Object received by transfer can be transferred again", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await transferToTarget(fixture);
+    const curator = await addReceivingCurator(t, fixture);
+
+    const eligibility = await curator.query(api.objectMoves.getEligibility, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.sourceOrganizationId,
+    });
+    expect(eligibility.blockers).toEqual([]);
+  });
+
+  test("an Object sent back to its first museum is in that museum's catalog again", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await transferToTarget(fixture);
+    await sendBack(t, fixture);
+
+    const [catalog, search] = await Promise.all([
+      fixture.admin.query(api.collections.list, {
+        organizationId: fixture.sourceOrganizationId,
+        paginationOpts: { numItems: 20, cursor: null },
+      }),
+      fixture.admin.query(api.collections.search, {
+        organizationId: fixture.sourceOrganizationId,
+        searchQuery: "Move Test Object",
+      }),
+    ]);
+    expect(catalog.page.map((object) => object._id)).toContain(
+      fixture.collectionId,
+    );
+    expect(search.results.map((object) => object._id)).toContain(
+      fixture.collectionId,
+    );
+  });
+
+  test("an Object sent back to its first museum counts on that museum's Overview again", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const analystId = await createUser(
+      t,
+      "Analyst",
+      `analyst-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    await addMembership(
+      t,
+      analystId,
+      fixture.sourceOrganizationId,
+      await createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        ["organization.view_analytics"],
+        "Analyst Role",
+      ),
+    );
+    await rebuildProjection(t, fixture.sourceOrganizationId);
+    await rebuildProjection(t, fixture.targetOrganizationId);
+    const objectsOnOverview = async () =>
+      expectReady(
+        await authedForUser(t, analystId).query(api.dashboard.getAnalytics, {
+          organizationId: fixture.sourceOrganizationId,
+        }),
+      ).objects;
+    expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
+
+    await transferToTarget(fixture);
+    expect(await objectsOnOverview()).toMatchObject({ total: 0, active: 0 });
+    await sendBack(t, fixture);
+
+    expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
+    await rebuildProjection(t, fixture.sourceOrganizationId);
+    expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
   });
 });
 
