@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { identifierError } from "@v1/backend/convex/utils/identifierErrors";
 import { objectMoveError } from "@v1/backend/convex/utils/objectMoveErrors";
 import { getFunctionName } from "convex/server";
 import { beforeEach, expect, test, vi } from "vitest";
@@ -311,11 +312,10 @@ test("a taken accession number is named back to the receiving organization", asy
     canManage: true,
   });
   state.mutations["objectMoves:accept"]?.mockRejectedValueOnce(
-    objectMoveError(
-      "ACCESSION_NUMBER_TAKEN",
-      'Accession number "A-1" already exists in the destination organization',
-      undefined,
-      "A-1",
+    identifierError(
+      "IDENTIFIER_IN_USE",
+      "Identifier 'A-1' already exists in the catalog register.",
+      { register: "catalog", identifier: "A-1" },
     ),
   );
 
@@ -324,6 +324,38 @@ test("a taken accession number is named back to the receiving organization", asy
 
   expect(toasts.error).toHaveBeenLastCalledWith(
     "A-1 is already used in your organization. Generate or enter a new number.",
+  );
+});
+
+test("a receiver that cannot generate or index numbers is told what to set up", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+  const accept = state.mutations["objectMoves:accept"];
+  accept?.mockRejectedValueOnce(
+    identifierError(
+      "NUMBERING_NOT_CONFIGURED",
+      "Number generation is not configured.",
+      { register: "catalog" },
+    ),
+  );
+  accept?.mockRejectedValueOnce(
+    identifierError(
+      "IDENTIFIER_REVIEW_REQUIRED",
+      "Identifier review required.",
+      { register: "catalog" },
+    ),
+  );
+
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+  expect(toasts.error).toHaveBeenLastCalledWith(
+    "Automatic accession numbers are not set up for your organization. Enter a new number, or turn them on in Preferences.",
+  );
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+  expect(toasts.error).toHaveBeenLastCalledWith(
+    "Complete the identifier review for the catalog register in Settings › Preferences before assigning new numbers.",
   );
 });
 

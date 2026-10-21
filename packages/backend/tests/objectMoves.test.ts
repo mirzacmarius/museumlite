@@ -4,6 +4,7 @@ import { api, internal } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
 import { custodyConflictFromError } from "../convex/utils/custodyErrors";
+import { identifierErrorFromError } from "../convex/utils/identifierErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
 import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
@@ -16,6 +17,7 @@ async function refusal(call: Promise<unknown>) {
   } catch (error) {
     return (
       objectMoveErrorFromError(error) ??
+      identifierErrorFromError(error) ??
       custodyConflictFromError(error) ?? { code: String(error) }
     );
   }
@@ -2525,18 +2527,15 @@ describe("the receiving organization decides", () => {
         }),
       );
 
-    expect(await accept("keep")).toEqual({
-      code: "ACCESSION_NUMBER_TAKEN",
-      message:
-        'Accession number "SRC-001" already exists in the destination organization',
-      accessionNumber: "SRC-001",
+    expect(await accept("keep")).toMatchObject({
+      code: "IDENTIFIER_IN_USE",
+      register: "catalog",
+      identifier: "SRC-001",
     });
     expect((await accept("manual", "  "))?.code).toBe(
       "ACCESSION_NUMBER_REQUIRED",
     );
-    expect((await accept("auto"))?.code).toBe(
-      "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
-    );
+    expect((await accept("auto"))?.code).toBe("NUMBERING_NOT_CONFIGURED");
     expect((await t.run((ctx) => ctx.db.get(requestId)))?.status).toBe(
       "awaiting_acceptance",
     );
@@ -2624,82 +2623,79 @@ describe("a rejected Removal leaves the Object free to move", () => {
   });
 });
 
-describe("a finished transfer leaves the Object free to move on", () => {
-  async function transferToTarget(
-    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
-  ) {
-    const requestId = await fixture.requester.mutation(
-      api.objectMoves.createRequest,
-      {
-        collectionId: fixture.collectionId,
-        targetOrganizationId: fixture.targetOrganizationId,
-        reason: "Rotation",
-      },
-    );
-    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
-    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
-      requestId,
-      targetLocationId: fixture.targetLocationId,
-    });
-  }
-
-  // A curator at the receiving museum who may also add objects to the first.
-  async function addReceivingCurator(
-    t: ReturnType<typeof convexTest>,
-    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
-  ) {
-    const curatorId = await createUser(
-      t,
-      "Receiving Curator",
-      `receiving-curator-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    );
-    const [targetRoleId, sourceRoleId] = await Promise.all([
-      createRoleWithPermissions(
-        t,
-        fixture.targetOrganizationId,
-        ["collections.read", "collections.update"],
-        "Receiving Curator Role",
-      ),
-      createRoleWithPermissions(
-        t,
-        fixture.sourceOrganizationId,
-        ["collections.read", "collections.create"],
-        "Returning Curator Role",
-      ),
-    ]);
-    await addMembership(
-      t,
-      curatorId,
-      fixture.targetOrganizationId,
-      targetRoleId,
-    );
-    await addMembership(
-      t,
-      curatorId,
-      fixture.sourceOrganizationId,
-      sourceRoleId,
-    );
-    return authedForUser(t, curatorId);
-  }
-
-  // The receiving museum sends the Object back into its first Location.
-  async function sendBack(
-    t: ReturnType<typeof convexTest>,
-    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
-  ) {
-    const curator = await addReceivingCurator(t, fixture);
-    const requestId = await curator.mutation(api.objectMoves.createRequest, {
+/** Requests, approves and accepts a transfer of the fixture's Object. */
+async function transferToTarget(
+  fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  accession: {
+    accessionMode?: "keep" | "auto" | "manual";
+    requestedAccessionNumber?: string;
+  } = {},
+) {
+  const requestId = await fixture.requester.mutation(
+    api.objectMoves.createRequest,
+    {
       collectionId: fixture.collectionId,
-      targetOrganizationId: fixture.sourceOrganizationId,
-      reason: "Return after the exhibition season",
-    });
-    await fixture.targetAdmin.mutation(api.objectMoves.approve, { requestId });
-    await fixture.admin.mutation(api.objectMoves.accept, {
-      requestId,
-      targetLocationId: fixture.locationId,
-    });
-  }
+      targetOrganizationId: fixture.targetOrganizationId,
+      reason: "Rotation",
+    },
+  );
+  await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+  await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+    requestId,
+    targetLocationId: fixture.targetLocationId,
+    ...accession,
+  });
+  return requestId;
+}
 
+// A curator at the receiving museum who may also add objects to the first.
+async function addReceivingCurator(
+  t: ReturnType<typeof convexTest>,
+  fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+) {
+  const curatorId = await createUser(
+    t,
+    "Receiving Curator",
+    `receiving-curator-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+  );
+  const [targetRoleId, sourceRoleId] = await Promise.all([
+    createRoleWithPermissions(
+      t,
+      fixture.targetOrganizationId,
+      ["collections.read", "collections.update"],
+      "Receiving Curator Role",
+    ),
+    createRoleWithPermissions(
+      t,
+      fixture.sourceOrganizationId,
+      ["collections.read", "collections.create"],
+      "Returning Curator Role",
+    ),
+  ]);
+  await addMembership(t, curatorId, fixture.targetOrganizationId, targetRoleId);
+  await addMembership(t, curatorId, fixture.sourceOrganizationId, sourceRoleId);
+  return authedForUser(t, curatorId);
+}
+
+// The receiving museum sends the Object back into its first Location.
+async function sendBack(
+  t: ReturnType<typeof convexTest>,
+  fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+) {
+  const curator = await addReceivingCurator(t, fixture);
+  const requestId = await curator.mutation(api.objectMoves.createRequest, {
+    collectionId: fixture.collectionId,
+    targetOrganizationId: fixture.sourceOrganizationId,
+    reason: "Return after the exhibition season",
+  });
+  await fixture.targetAdmin.mutation(api.objectMoves.approve, { requestId });
+  await fixture.admin.mutation(api.objectMoves.accept, {
+    requestId,
+    targetLocationId: fixture.locationId,
+  });
+}
+
+describe("a finished transfer leaves the Object free to move on", () => {
   test("an Object received by transfer can be transferred again", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -2854,6 +2850,245 @@ describe("the receiver's Transfer log", () => {
       [declined, received].sort(),
     );
     expect(ownName).toEqual([]);
+  });
+});
+
+describe("the receiver's register finds a transferred Object by its number", () => {
+  test("a new number files the Object under it, not under the sender's number", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    // Indexed by its number, as every save path leaves an Object.
+    await t.run((ctx) =>
+      ctx.db.patch(fixture.collectionId, { normalizedIdentifier: "src-001" }),
+    );
+    await transferToTarget(fixture, {
+      accessionMode: "manual",
+      requestedAccessionNumber: "TGT-777",
+    });
+
+    const inspect = (identifier: string) =>
+      fixture.targetAdmin.query(api.identifiers.inspect, {
+        organizationId: fixture.targetOrganizationId,
+        register: "catalog",
+        identifier,
+      });
+    expect((await inspect("tgt-777")).matches).toEqual([
+      { _id: fixture.collectionId, identifier: "TGT-777" },
+    ]);
+    expect((await inspect("SRC-001")).matches).toEqual([]);
+  });
+
+  test("a number the receiver already uses, in any capitalization, is refused", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await createCollection(t, {
+      organizationId: fixture.targetOrganizationId,
+      userId: fixture.targetAdminId,
+      accessionNumber: "src-001",
+    });
+
+    expect(await refusal(transferToTarget(fixture))).toMatchObject({
+      code: "IDENTIFIER_IN_USE",
+      identifier: "SRC-001",
+    });
+    expect(
+      (await t.run((ctx) => ctx.db.get(fixture.collectionId)))?.organizationId,
+    ).toBe(fixture.sourceOrganizationId);
+  });
+});
+
+describe("provenance follows a transferred Object", () => {
+  async function recordReviewedClaim(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const reviewerId = await createUser(
+      t,
+      "Provenance Reviewer",
+      `reviewer-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    const roleId = await createRoleWithPermissions(
+      t,
+      fixture.sourceOrganizationId,
+      ["collections.read", "collections.review_provenance"],
+      "Provenance Reviewer",
+    );
+    await addMembership(t, reviewerId, fixture.sourceOrganizationId, roleId);
+    const claimId = await fixture.requester.mutation(
+      api.provenance.recordClaim,
+      {
+        objectId: fixture.collectionId,
+        statement: "Bought by the museum's founder in Bergen, 1902.",
+        partyKind: "named",
+        partyText: "Johan Berg",
+        confidence: "probable",
+        evidence: [
+          { source: { kind: "citation", citation: "Founder's ledger, 1902" } },
+        ],
+      },
+    );
+    await authedForUser(t, reviewerId).mutation(api.provenance.reviewClaim, {
+      claimId,
+      decision: "accepted",
+    });
+    return claimId;
+  }
+
+  const claimShown = (claimId: Id<"provenanceClaims">) =>
+    expect.objectContaining({
+      _id: claimId,
+      statement: "Bought by the museum's founder in Bergen, 1902.",
+      reviewStatus: "accepted",
+      evidence: [
+        expect.objectContaining({ citation: "Founder's ledger, 1902" }),
+      ],
+      reviews: [expect.objectContaining({ decision: "accepted" })],
+    });
+
+  test("the receiver sees the Object's claims with their evidence and reviews", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const claimId = await recordReviewedClaim(t, fixture);
+
+    await transferToTarget(fixture);
+
+    const provenance = await fixture.targetAdmin.query(
+      api.provenance.listForObject,
+      { objectId: fixture.collectionId },
+    );
+    expect(provenance?.claims).toEqual([claimShown(claimId)]);
+  });
+
+  test("an Object sent back keeps the claims both museums recorded", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const claimId = await recordReviewedClaim(t, fixture);
+    await transferToTarget(fixture);
+    const curator = await addReceivingCurator(t, fixture);
+    const receiverClaimId = await curator.mutation(api.provenance.recordClaim, {
+      objectId: fixture.collectionId,
+      statement: "Shown at the Target Museum, 2026.",
+      partyKind: "named",
+      partyText: "Target Museum",
+      role: "custodian",
+      confidence: "possible",
+      evidence: [],
+    });
+
+    await sendBack(t, fixture);
+
+    const provenance = await fixture.admin.query(api.provenance.listForObject, {
+      objectId: fixture.collectionId,
+    });
+    expect(provenance?.claims.map((claim) => claim._id).sort()).toEqual(
+      [claimId, receiverClaimId].sort(),
+    );
+  });
+});
+
+describe("repairing Objects transferred before the register and provenance followed them", () => {
+  test("rewrites the identifier key and moves the provenance, once", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const claimId = await fixture.requester.mutation(
+      api.provenance.recordClaim,
+      {
+        objectId: fixture.collectionId,
+        statement: "Bought by the museum's founder in Bergen, 1902.",
+        partyKind: "named",
+        partyText: "Johan Berg",
+        confidence: "probable",
+        evidence: [
+          { source: { kind: "citation", citation: "Founder's ledger, 1902" } },
+        ],
+      },
+    );
+    await transferToTarget(fixture, {
+      accessionMode: "manual",
+      requestedAccessionNumber: "TGT-777",
+    });
+    // What a transfer accepted before this fix left behind.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.collectionId, {
+        normalizedIdentifier: "src-001",
+      });
+      const [claims, evidence] = await Promise.all([
+        ctx.db.query("provenanceClaims").collect(),
+        ctx.db.query("provenanceEvidence").collect(),
+      ]);
+      for (const row of [...claims, ...evidence]) {
+        await ctx.db.patch(row._id, {
+          organizationId: fixture.sourceOrganizationId,
+        });
+      }
+    });
+
+    expect(
+      await t.mutation(internal.migrations.repairTransferredObjects, {
+        cursor: null,
+      }),
+    ).toEqual({
+      identifierKeysRewritten: 1,
+      sharedNumbers: 0,
+      provenanceRecordsMoved: 2,
+      isDone: true,
+    });
+
+    const [register, provenance] = await Promise.all([
+      fixture.targetAdmin.query(api.identifiers.inspect, {
+        organizationId: fixture.targetOrganizationId,
+        register: "catalog",
+        identifier: "TGT-777",
+      }),
+      fixture.targetAdmin.query(api.provenance.listForObject, {
+        objectId: fixture.collectionId,
+      }),
+    ]);
+    expect(register.matches).toEqual([
+      { _id: fixture.collectionId, identifier: "TGT-777" },
+    ]);
+    expect(provenance?.claims.map((claim) => claim._id)).toEqual([claimId]);
+    expect(
+      await t.mutation(internal.migrations.repairTransferredObjects, {
+        cursor: null,
+      }),
+    ).toEqual({
+      identifierKeysRewritten: 0,
+      sharedNumbers: 0,
+      provenanceRecordsMoved: 0,
+      isDone: true,
+    });
+  });
+
+  test("counts a number another Object took meanwhile, and changes neither Object", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await transferToTarget(fixture, {
+      accessionMode: "manual",
+      requestedAccessionNumber: "TGT-777",
+    });
+    await t.run((ctx) =>
+      ctx.db.patch(fixture.collectionId, { normalizedIdentifier: "src-001" }),
+    );
+    const otherId = await createCollection(t, {
+      organizationId: fixture.targetOrganizationId,
+      userId: fixture.targetAdminId,
+      accessionNumber: "TGT-777",
+    });
+    await t.run((ctx) =>
+      ctx.db.patch(otherId, { normalizedIdentifier: "tgt-777" }),
+    );
+
+    expect(
+      await t.mutation(internal.migrations.repairTransferredObjects, {
+        cursor: null,
+      }),
+    ).toMatchObject({ identifierKeysRewritten: 1, sharedNumbers: 1 });
+    const [moved, other] = await t.run((ctx) =>
+      Promise.all([ctx.db.get(fixture.collectionId), ctx.db.get(otherId)]),
+    );
+    expect(moved?.accessionNumber).toBe("TGT-777");
+    expect(other?.accessionNumber).toBe("TGT-777");
   });
 });
 

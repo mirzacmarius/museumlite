@@ -8,10 +8,12 @@ import {
   assignCustomerNumberIfMissing,
   parseCustomerNumber,
 } from "./utils/customerNumber";
+import { normalizeIdentifier } from "./utils/identifiers";
 import { COORDINATE_PERMISSION } from "./utils/incidentAccess";
 import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { keepOldestPrimaryImage } from "./utils/primaryMedia";
+import { rehomeObjectProvenance } from "./utils/provenance";
 import { syncPublicRendition } from "./utils/publicMedia";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {
@@ -1831,5 +1833,80 @@ export const backfillPublicRenditions = internalMutation({
       );
     }
     return { processed: page.page.length, isDone: page.isDone };
+  },
+});
+
+/**
+ * Migration: repair Objects that transfers moved before the receiver's
+ * register and the Object's provenance followed them. For every executed
+ * transfer:
+ * - the Object's identifier key is rewritten when it no longer matches its
+ *   number, so the receiver's register finds it by the number it has;
+ * - provenance claims, evidence and reviews still filed under the sender
+ *   move to the organization holding the Object now.
+ * No number changes and nothing is deleted. `sharedNumbers` counts Objects
+ * whose number another Object took meanwhile; both are kept as they are and
+ * listed in Settings › Preferences identifier review. Rerunnable; each page
+ * schedules the next.
+ *
+ * Run: bunx convex run migrations:repairTransferredObjects '{"cursor":null}'
+ */
+export const repairTransferredObjects = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  returns: v.object({
+    identifierKeysRewritten: v.number(),
+    sharedNumbers: v.number(),
+    provenanceRecordsMoved: v.number(),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("organizationMoveRequests")
+      .paginate({ cursor: args.cursor, numItems: 25 });
+    let identifierKeysRewritten = 0;
+    let sharedNumbers = 0;
+    let provenanceRecordsMoved = 0;
+    for (const request of page.page) {
+      if (request.status !== "executed") continue;
+      const object = await ctx.db.get(request.collectionId);
+      if (!object) continue;
+      const normalizedIdentifier = normalizeIdentifier(object.accessionNumber);
+      if (object.normalizedIdentifier !== normalizedIdentifier) {
+        await ctx.db.patch(object._id, { normalizedIdentifier });
+        identifierKeysRewritten += 1;
+        const sharing = await ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+            q
+              .eq("organizationId", object.organizationId)
+              .eq("normalizedIdentifier", normalizedIdentifier),
+          )
+          .take(2);
+        if (sharing.length > 1) sharedNumbers += 1;
+      }
+      if (request.sourceOrganizationId !== object.organizationId) {
+        provenanceRecordsMoved += await rehomeObjectProvenance(ctx, {
+          objectId: object._id,
+          fromOrganizationId: request.sourceOrganizationId,
+          toOrganizationId: object.organizationId,
+        });
+      }
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.repairTransferredObjects,
+        { cursor: page.continueCursor },
+      );
+    }
+    console.log(
+      `Rewrote ${identifierKeysRewritten} identifier keys (${sharedNumbers} shared with another Object), moved ${provenanceRecordsMoved} provenance records`,
+    );
+    return {
+      identifierKeysRewritten,
+      sharedNumbers,
+      provenanceRecordsMoved,
+      isDone: page.isDone,
+    };
   },
 });

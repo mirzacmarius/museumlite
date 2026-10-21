@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requirePermission } from "./permissions";
@@ -329,6 +330,65 @@ export async function loadObjectClaims(
       q.eq("organizationId", object.organizationId).eq("objectId", object._id),
     )
     .take(MAX_CLAIMS_PER_OBJECT);
+}
+
+/**
+ * Moves an Object's provenance claims, their evidence and their review
+ * decisions from one organization to another, when the Object moves there.
+ * Re-homing changes which organization holds a claim, never what it says
+ * (ADR 0006). Party links stay with the organization whose accounts they
+ * name. Fails rather than leave part of the record behind.
+ */
+export async function rehomeObjectProvenance(
+  ctx: MutationCtx,
+  args: {
+    objectId: Id<"collections">;
+    fromOrganizationId: Id<"organizations">;
+    toOrganizationId: Id<"organizations">;
+  },
+) {
+  const [claims, evidence, reviews] = await Promise.all([
+    ctx.db
+      .query("provenanceClaims")
+      .withIndex("by_organization_and_objectId_and_supersededAt", (q) =>
+        q
+          .eq("organizationId", args.fromOrganizationId)
+          .eq("objectId", args.objectId),
+      )
+      .take(MAX_CLAIMS_PER_OBJECT + 1),
+    ctx.db
+      .query("provenanceEvidence")
+      .withIndex("by_organization_and_objectId", (q) =>
+        q
+          .eq("organizationId", args.fromOrganizationId)
+          .eq("objectId", args.objectId),
+      )
+      .take(MAX_EVIDENCE_PER_OBJECT + 1),
+    ctx.db
+      .query("provenanceReviews")
+      .withIndex("by_organization_and_objectId", (q) =>
+        q
+          .eq("organizationId", args.fromOrganizationId)
+          .eq("objectId", args.objectId),
+      )
+      .take(MAX_REVIEWS_PER_OBJECT + 1),
+  ]);
+  if (
+    claims.length > MAX_CLAIMS_PER_OBJECT ||
+    evidence.length > MAX_EVIDENCE_PER_OBJECT ||
+    reviews.length > MAX_REVIEWS_PER_OBJECT
+  ) {
+    throw new ConvexError(
+      `An object's provenance can move with at most ${MAX_CLAIMS_PER_OBJECT} claims, ${MAX_EVIDENCE_PER_OBJECT} evidence items and ${MAX_REVIEWS_PER_OBJECT} review decisions.`,
+    );
+  }
+  const organizationId = args.toOrganizationId;
+  await Promise.all([
+    ...claims.map((claim) => ctx.db.patch(claim._id, { organizationId })),
+    ...evidence.map((row) => ctx.db.patch(row._id, { organizationId })),
+    ...reviews.map((review) => ctx.db.patch(review._id, { organizationId })),
+  ]);
+  return claims.length + evidence.length + reviews.length;
 }
 
 export async function loadClaimEvidence(
