@@ -1091,6 +1091,7 @@ export default {
   },
   objects: {
     backToObject: "Înapoi la obiect",
+    backToCatalog: "Înapoi la catalogul obiectelor",
     selectObject: "Selectează {title}",
     selectAllShown: "Selectează toate obiectele afișate",
     searchLabel: "Caută obiecte",
@@ -10861,6 +10862,8 @@ export default {
       chosenByReceiver: "Ales de organizația destinatară la acceptare",
     },
     declinedBy: "Refuzat de {organization}",
+    receivedFrom: "Primit de la {organization}",
+    sentTo: "Trimis către {organization}",
     errors: {
       accessionNumberTaken:
         "{number} este deja folosit în organizația ta. Generează sau introdu un număr nou.",

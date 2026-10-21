@@ -4,7 +4,6 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { Search } from "lucide-react";
-import { parseAsString, useQueryState } from "nuqs";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
@@ -21,7 +20,6 @@ type TransfersBoardProps = {
 
 export function TransfersBoard({ organizationId }: TransfersBoardProps) {
   const tRoot = useI18n();
-  const [statusFilter] = useQueryState("status", parseAsString.withDefault(""));
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const transferRequests = useQuery(api.objectMoves.listForOrganization, {
@@ -45,17 +43,15 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
       pending: countPendingTransfers(transferRequests),
       awaitingReceiver: countTransfersAwaitingReceiver(transferRequests),
       incoming: countIncomingTransfers(transferRequests),
+      // The Transfer log's entries, sent and received alike.
       executed: transferRequests.filter(
-        (request) =>
-          request.status === "executed" && request.direction === "outgoing",
+        (request) => request.status === "executed",
       ).length,
       rejected: transferRequests.filter(
-        (request) =>
-          request.status === "rejected" && request.direction === "outgoing",
+        (request) => request.status === "rejected",
       ).length,
       cancelled: transferRequests.filter(
-        (request) =>
-          request.status === "cancelled" && request.direction === "outgoing",
+        (request) => request.status === "cancelled",
       ).length,
     };
   }, [transferRequests]);
@@ -63,13 +59,6 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
   if (transferRequests === undefined) {
     return <AccessionsPageSkeleton actionsCount={1} statsCount={6} />;
   }
-
-  const visibleRequests = statusFilter
-    ? transferRequests.filter(
-        (request) =>
-          request.status === statusFilter && request.direction === "outgoing",
-      )
-    : transferRequests;
 
   return (
     <div className="flex size-full flex-col bg-background p-6">
@@ -131,7 +120,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.pendingApproval",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={visibleRequests}
+            transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             statuses={["awaiting_acceptance"]}
@@ -140,7 +129,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.awaitingReceiver",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={visibleRequests}
+            transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             statuses={["awaiting_acceptance"]}
@@ -149,14 +138,13 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
               "untranslatedRecords.accessions.transfer.incomingRequests",
             )}
             searchQuery={deferredSearchQuery}
-            transferRequests={visibleRequests}
+            transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             statuses={["executed", "rejected", "cancelled"]}
-            direction="outgoing"
             title={tRoot("untranslatedRecords.accessions.transfer.transferLog")}
             searchQuery={deferredSearchQuery}
-            transferRequests={visibleRequests}
+            transferRequests={transferRequests}
           />
         </div>
       </div>

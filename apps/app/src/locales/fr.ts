@@ -3112,6 +3112,7 @@ export default {
   },
   objects: {
     backToObject: "Retour à l'objet",
+    backToCatalog: "Retour au catalogue des objets",
     selectObject: "Sélectionner {title}",
     selectAllShown: "Sélectionner tous les objets affichés",
     searchLabel: "Rechercher des objets",
@@ -10927,6 +10928,8 @@ export default {
         "Choisi par l’organisation destinataire lors de l’acceptation",
     },
     declinedBy: "Refusé par {organization}",
+    receivedFrom: "Reçu de {organization}",
+    sentTo: "Envoyé à {organization}",
     errors: {
       accessionNumberTaken:
         "{number} est déjà utilisé dans votre organisation. Générez ou saisissez un nouveau numéro.",

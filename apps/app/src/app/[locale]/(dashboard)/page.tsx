@@ -254,7 +254,7 @@ export default function DashboardPage() {
       accentClassName: "text-amber-400",
     },
     {
-      href: "/accessions/transfers?status=pending_source_approval",
+      href: "/accessions/transfers",
       title: tRoot("dashboard.pendingOutgoingTransferApprovals"),
       value: formatMetricValue(analyticsData?.transfers.pending, locale),
       icon: ArrowLeftRight,

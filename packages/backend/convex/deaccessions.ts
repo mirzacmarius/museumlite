@@ -546,20 +546,29 @@ const deaccessionListItemValidator = v.object({
     v.literal("rejected"),
   ),
   workflowStep: v.optional(v.number()),
-  // The receiving organization, for a transfer it declined.
-  transferDeclinedBy: v.optional(v.string()),
+  // The transfer request and its receiving organization, for a transfer the
+  // receiver declined.
+  declinedTransfer: v.optional(
+    v.object({
+      requestId: v.id("organizationMoveRequests"),
+      receiverName: v.string(),
+    }),
+  ),
 });
 
 /**
- * The receiving organization's name for each transfer Deaccession it
- * declined. Its decline rejects the Deaccession made at the sender's approval,
- * which is not a Removal the sender refused.
+ * The request and receiving organization of each transfer Deaccession the
+ * receiver declined. Its decline rejects the Deaccession made at the sender's
+ * approval, which is not a Removal the sender refused.
  */
-async function getTransferDecliners(
+async function getDeclinedTransfers(
   ctx: QueryCtx,
   rows: Doc<"deaccessions">[],
 ) {
-  const decliners = new Map<Id<"deaccessions">, string>();
+  const declined = new Map<
+    Id<"deaccessions">,
+    { requestId: Id<"organizationMoveRequests">; receiverName: string }
+  >();
   await Promise.all(
     rows
       .filter((row) => row.method === "transfer" && row.status === "rejected")
@@ -574,23 +583,28 @@ async function getTransferDecliners(
         const receiver = request
           ? await ctx.db.get(request.targetOrganizationId)
           : null;
-        if (receiver) decliners.set(row._id, receiver.name);
+        if (request && receiver) {
+          declined.set(row._id, {
+            requestId: request._id,
+            receiverName: receiver.name,
+          });
+        }
       }),
   );
-  return decliners;
+  return declined;
 }
 
 async function toDeaccessionListItems(
   ctx: QueryCtx,
   rows: Doc<"deaccessions">[],
 ) {
-  const [collections, decliners] = await Promise.all([
+  const [collections, declinedTransfers] = await Promise.all([
     batchLookup(
       ctx,
       rows.map((row) => row.collectionId),
       "collections",
     ),
-    getTransferDecliners(ctx, rows),
+    getDeclinedTransfers(ctx, rows),
   ]);
   return rows.map((row) => {
     const collection = collections.get(row.collectionId);
@@ -606,7 +620,7 @@ async function toDeaccessionListItems(
       targetCollectionStatus: resolveTargetCollectionStatus(row),
       status: row.status,
       workflowStep: row.workflowStep,
-      transferDeclinedBy: decliners.get(row._id),
+      declinedTransfer: declinedTransfers.get(row._id),
     };
   });
 }

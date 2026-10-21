@@ -2493,6 +2493,7 @@ export default {
   },
   objects: {
     backToObject: "Back to object",
+    backToCatalog: "Back to Object Catalog",
     selectObject: "Select {title}",
     selectAllShown: "Select all shown objects",
     searchLabel: "Search objects",
@@ -10628,6 +10629,8 @@ export default {
       chosenByReceiver: "Chosen by the receiving organization when it accepts",
     },
     declinedBy: "Declined by {organization}",
+    receivedFrom: "Received from {organization}",
+    sentTo: "Sent to {organization}",
     errors: {
       accessionNumberTaken:
         "{number} is already used in your organization. Generate or enter a new number.",

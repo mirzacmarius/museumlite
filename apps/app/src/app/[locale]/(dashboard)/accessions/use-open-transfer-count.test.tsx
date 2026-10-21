@@ -47,6 +47,8 @@ function transfer(
     collectionTitle: `Object ${index}`,
     sourceAccessionNumber: `112-2026-${index}`,
     accessionMode: "keep",
+    sourceOrganizationId: "source" as Id<"organizations">,
+    sourceOrganizationName: "Museum Sør",
     targetOrganizationId: "target" as Id<"organizations">,
     targetOrganizationName: "Museum Nord",
     reason: "Rotation",

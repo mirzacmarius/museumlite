@@ -2404,7 +2404,10 @@ describe("the receiving organization decides", () => {
       },
     );
     expect(rejected.page).toMatchObject([
-      { method: "transfer", transferDeclinedBy: "Target Museum" },
+      {
+        method: "transfer",
+        declinedTransfer: { requestId, receiverName: "Target Museum" },
+      },
     ]);
   });
 
@@ -2475,6 +2478,29 @@ describe("the receiving organization decides", () => {
     expect(collection?.alternateAccessionNumbers).toEqual(["SRC-001"]);
     expect(request?.accessionMode).toBe("manual");
     expect(request?.finalAccessionNumber).toBe("TGT-777");
+  });
+
+  test("the transfer page says whether the receiver can generate a new accession number", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t, {
+      targetSettings: { autoGenerateAccessionNumbers: true },
+    });
+    const requestId = await awaitingAcceptance(fixture);
+    const receiverGenerates = async () =>
+      (await fixture.targetAdmin.query(api.objectMoves.get, { requestId }))
+        ?.receiverGeneratesAccessionNumbers;
+
+    // Switched on without a number format, there is nothing to generate from.
+    expect(await receiverGenerates()).toBe(false);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.targetOrganizationId, {
+        settings: {
+          autoGenerateAccessionNumbers: true,
+          accessionNumberFormat: "TGT-{YYYY}-{###}",
+        },
+      });
+    });
+    expect(await receiverGenerates()).toBe(true);
   });
 
   test("the receiver's accession choice is refused with a code it can fix", async () => {
@@ -2747,6 +2773,87 @@ describe("a finished transfer leaves the Object free to move on", () => {
     expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
     await rebuildProjection(t, fixture.sourceOrganizationId);
     expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
+  });
+});
+
+describe("the receiver's Transfer log", () => {
+  test("lists what reached the receiver, named by its sender, and nothing the sender stopped", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const request = (reason: string) =>
+      fixture.requester.mutation(api.objectMoves.createRequest, {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        reason,
+      });
+
+    const refusedBySender = await request("Refused by the sender");
+    await fixture.admin.mutation(api.objectMoves.reject, {
+      requestId: refusedBySender,
+    });
+    const cancelled = await request("Cancelled by the requester");
+    await fixture.requester.mutation(api.objectMoves.cancel, {
+      requestId: cancelled,
+    });
+    const declined = await request("Declined by the receiver");
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId: declined,
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, {
+      requestId: declined,
+    });
+    const received = await request("Received");
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId: received,
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId: received,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    const [log, searched, ownName] = await Promise.all([
+      fixture.targetAdmin.query(api.objectMoves.listForOrganization, {
+        organizationId: fixture.targetOrganizationId,
+      }),
+      fixture.targetAdmin.query(api.objectMoves.listForOrganization, {
+        organizationId: fixture.targetOrganizationId,
+        search: "source museum",
+      }),
+      // The viewer's own name is on every row, so it matches none.
+      fixture.targetAdmin.query(api.objectMoves.listForOrganization, {
+        organizationId: fixture.targetOrganizationId,
+        search: "target museum",
+      }),
+    ]);
+    const entries = log.map(
+      ({ _id, status, direction, sourceOrganizationName }) => ({
+        _id,
+        status,
+        direction,
+        sourceOrganizationName,
+      }),
+    );
+    expect(entries).toHaveLength(2);
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        {
+          _id: declined,
+          status: "rejected",
+          direction: "incoming",
+          sourceOrganizationName: "Source Museum",
+        },
+        {
+          _id: received,
+          status: "executed",
+          direction: "incoming",
+          sourceOrganizationName: "Source Museum",
+        },
+      ]),
+    );
+    expect(searched.map((entry) => entry._id).sort()).toEqual(
+      [declined, received].sort(),
+    );
+    expect(ownName).toEqual([]);
   });
 });
 
