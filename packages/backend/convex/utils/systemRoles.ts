@@ -1,5 +1,6 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { SUPER_ADMIN_ROLE_NAME } from "./superAdmins";
 
 export const ADMIN_ROLE_NAME = "Administrator";
 export const LEGACY_ADMIN_ROLE_NAME = "admin";
@@ -36,6 +37,7 @@ export interface SystemRoleDefinition {
   description: string;
 }
 
+/** System roles from the most to the least responsibility, as role lists show them. */
 export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDefinition[] = [
   {
     recognizedNames: [LEGACY_ADMIN_ROLE_NAME, ADMIN_ROLE_NAME],
@@ -43,14 +45,14 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDefinition[] = [
     description: ADMIN_ROLE_DESCRIPTION,
   },
   {
-    recognizedNames: [LEGACY_CURATOR_ROLE_NAME, CURATOR_ROLE_NAME],
-    name: CURATOR_ROLE_NAME,
-    description: CURATOR_ROLE_DESCRIPTION,
-  },
-  {
     recognizedNames: [LEGACY_REGISTRAR_ROLE_NAME, COLLECTION_MANAGER_ROLE_NAME],
     name: COLLECTION_MANAGER_ROLE_NAME,
     description: COLLECTION_MANAGER_ROLE_DESCRIPTION,
+  },
+  {
+    recognizedNames: [LEGACY_CURATOR_ROLE_NAME, CURATOR_ROLE_NAME],
+    name: CURATOR_ROLE_NAME,
+    description: CURATOR_ROLE_DESCRIPTION,
   },
   {
     recognizedNames: [LEGACY_CATALOGER_ROLE_NAME, CATALOGER_ROLE_NAME],
@@ -91,6 +93,27 @@ export function getRolePresentation(
   return definition
     ? { name: definition.name, description: definition.description }
     : { name: role.name, description: role.description };
+}
+
+/**
+ * Orders roles as Role Management and role pickers list them: the owner role,
+ * then the system roles from Administrator down to Viewer, then custom roles
+ * in the order they were created.
+ */
+export function compareRolesForDisplay(
+  a: RolePresentationSource & { _creationTime: number },
+  b: RolePresentationSource & { _creationTime: number },
+): number {
+  return displayRank(a) - displayRank(b) || a._creationTime - b._creationTime;
+}
+
+function displayRank(role: RolePresentationSource) {
+  if (!role.isSystemRole) return SYSTEM_ROLE_DEFINITIONS.length + 2;
+  if (role.name === SUPER_ADMIN_ROLE_NAME) return 0;
+  const index = SYSTEM_ROLE_DEFINITIONS.findIndex(({ recognizedNames }) =>
+    recognizedNames.includes(role.name),
+  );
+  return index === -1 ? SYSTEM_ROLE_DEFINITIONS.length + 1 : index + 1;
 }
 
 export function isCollectionManagerRoleName(name: string): boolean {

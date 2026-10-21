@@ -910,6 +910,50 @@ describe("roles", () => {
       expect(curatorRole?.permissions[0].name).toBe("collections.read");
     });
 
+    test("lists system roles from Administrator down to Viewer, then custom roles", async () => {
+      const t = convexTest(schema, modules);
+
+      const orgId = await t.run(async (ctx) => {
+        const orgId = await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+        for (const [name, isSystemRole] of [
+          ["Volunteer", false],
+          ["viewer", true],
+          ["Cataloger", true],
+          ["Curator", true],
+          ["registrar", true],
+          ["Photographer", false],
+          ["Administrator", true],
+          ["super_admin", true],
+        ] as const) {
+          await ctx.db.insert("roles", {
+            organizationId: orgId,
+            name,
+            isSystemRole,
+          });
+        }
+        return orgId;
+      });
+
+      const roles = await t.query(api.roles.listRoles, {
+        organizationId: orgId,
+      });
+
+      expect(roles.map((role) => role.name)).toEqual([
+        "super_admin",
+        "Administrator",
+        "Collection Manager",
+        "Curator",
+        "Cataloger",
+        "Viewer",
+        "Volunteer",
+        "Photographer",
+      ]);
+    });
+
     test("should return empty array for organization with no roles", async () => {
       const t = convexTest(schema, modules);
 
