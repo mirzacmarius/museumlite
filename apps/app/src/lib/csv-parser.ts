@@ -35,13 +35,20 @@ function detectDelimiter(source: string): string {
   return best;
 }
 
+/** Why a file cannot be read as a CSV table. */
+export type CsvFileProblem =
+  | { code: "empty" }
+  | { code: "unclosedQuote"; line: number };
+
 /**
  * RFC 4180 parser: quoted fields may contain the separator, doubled quotes
  * and line breaks; CRLF and a leading byte-order mark are accepted. The
  * separator is a comma, semicolon or tab, whichever the header row uses.
  * Blank records are dropped but keep their line numbers out of later records.
  */
-export function parseCsvRecords(text: string): CsvRecord[] {
+function readCsvRecords(
+  text: string,
+): { records: CsvRecord[] } | { problem: CsvFileProblem } {
   const source = text.startsWith("\ufeff") ? text.slice(1) : text;
   const delimiter = detectDelimiter(source);
   const records: CsvRecord[] = [];
@@ -91,25 +98,52 @@ export function parseCsvRecords(text: string): CsvRecord[] {
     }
   }
   if (inQuotes) {
-    throw new Error(`Unclosed quoted field starting on line ${recordStart}`);
+    return { problem: { code: "unclosedQuote", line: recordStart } };
   }
   if (field !== "" || values.length > 0) endRecord();
-  return records;
+  return { records };
 }
 
-/** Header row plus data records; headers and values are trimmed. */
-export function parseCsvTable(text: string): CsvTable {
-  const [header, ...records] = parseCsvRecords(text);
-  if (!header) {
-    throw new Error("CSV file is empty");
-  }
+function describeProblem(problem: CsvFileProblem) {
+  return problem.code === "empty"
+    ? "CSV file is empty"
+    : `Unclosed quoted field starting on line ${problem.line}`;
+}
+
+/** {@link readCsvRecords}, throwing an English error for a file problem. */
+export function parseCsvRecords(text: string): CsvRecord[] {
+  const result = readCsvRecords(text);
+  if ("problem" in result) throw new Error(describeProblem(result.problem));
+  return result.records;
+}
+
+/**
+ * Header row plus data records, or why the file has neither; headers and
+ * values are trimmed.
+ */
+export function readCsvTable(
+  text: string,
+): { table: CsvTable } | { problem: CsvFileProblem } {
+  const result = readCsvRecords(text);
+  if ("problem" in result) return result;
+  const [header, ...records] = result.records;
+  if (!header) return { problem: { code: "empty" } };
   return {
-    headers: header.values.map((value) => value.trim()),
-    records: records.map((record) => ({
-      rowNumber: record.rowNumber,
-      values: record.values.map((value) => value.trim()),
-    })),
+    table: {
+      headers: header.values.map((value) => value.trim()),
+      records: records.map((record) => ({
+        rowNumber: record.rowNumber,
+        values: record.values.map((value) => value.trim()),
+      })),
+    },
   };
+}
+
+/** {@link readCsvTable}, throwing an English error for a file problem. */
+export function parseCsvTable(text: string): CsvTable {
+  const result = readCsvTable(text);
+  if ("problem" in result) throw new Error(describeProblem(result.problem));
+  return result.table;
 }
 
 /** SHA-256 of the file text, used to recognise a re-uploaded source file. */

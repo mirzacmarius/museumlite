@@ -857,6 +857,8 @@ export default {
         correctionUnsupported:
           "Acest import nu poate fi corectat aici. Pornește un import nou.",
         noDataRows: "Fișierul nu are rânduri de date.",
+        unclosedQuote:
+          "Ghilimelele din rândul {row} nu sunt închise, deci fișierul nu poate fi citit. Verifică ghilimelele din acel rând.",
         missingColumns:
           "Fișierul nu are coloana {missing}, deci niciun rând nu poate fi importat. Folosește numele coloanelor din șablon. Coloane găsite: {found}.",
         uploadCorrectedFile: "Încarcă fișierul corectat",

@@ -568,6 +568,8 @@ export default {
         correctionUnsupported:
           "Esta importación no se puede corregir aquí. Inicia una nueva importación.",
         noDataRows: "El archivo no tiene filas de datos.",
+        unclosedQuote:
+          "Unas comillas de la fila {row} no se cierran, así que no se puede leer el archivo. Revisa las comillas de esa fila.",
         missingColumns:
           "El archivo no tiene la columna {missing}, así que no se puede importar ninguna fila. Usa los nombres de columna de la plantilla. Columnas encontradas: {found}.",
         uploadCorrectedFile: "Subir archivo corregido",

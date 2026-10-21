@@ -553,6 +553,8 @@ export default {
         correctionUnsupported:
           "This import cannot be corrected here. Start a new import instead.",
         noDataRows: "The file has no data rows.",
+        unclosedQuote:
+          "A quotation mark in row {row} is never closed, so the file cannot be read. Check the quotation marks in that row.",
         missingColumns:
           "The file has no {missing} column, so no row can be imported. Use the template's column names. Columns found: {found}.",
         uploadCorrectedFile: "Upload corrected file",

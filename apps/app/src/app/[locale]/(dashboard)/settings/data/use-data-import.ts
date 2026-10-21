@@ -6,7 +6,7 @@ import { useConvex, useMutation } from "convex/react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useActionErrorMessage } from "@/hooks/use-action-error-message";
-import { parseCsvTable, sha256Hex } from "@/lib/csv-parser";
+import { readCsvTable, sha256Hex } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
 import { downloadCsv, type ImportType } from "./data-csv-utils";
 
@@ -64,6 +64,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
 /** Why a file is refused before any of its rows is sent. */
 export type TemplateRowsRefusal =
   | { code: "noDataRows" }
+  | { code: "unclosedQuote"; row: number }
   | { code: "missingColumns"; missing: string[]; found: string[] };
 
 /**
@@ -77,7 +78,16 @@ export function toTemplateRows(
   text: string,
   template: ImportTemplate,
 ): { rows: TemplateRow[] } | { refusal: TemplateRowsRefusal } {
-  const table = parseCsvTable(text);
+  const read = readCsvTable(text);
+  if ("problem" in read) {
+    return {
+      refusal:
+        read.problem.code === "empty"
+          ? { code: "noDataRows" }
+          : { code: "unclosedQuote", row: read.problem.line },
+    };
+  }
+  const { table } = read;
   if (table.records.length === 0) {
     return { refusal: { code: "noDataRows" } };
   }
@@ -265,13 +275,19 @@ export function useDataImport(
   }, [template, importType]);
 
   const refusalMessage = useCallback(
-    (refusal: TemplateRowsRefusal) =>
-      refusal.code === "noDataRows"
-        ? t("noDataRows")
-        : t("missingColumns", {
+    (refusal: TemplateRowsRefusal) => {
+      switch (refusal.code) {
+        case "noDataRows":
+          return t("noDataRows");
+        case "unclosedQuote":
+          return t("unclosedQuote", { row: refusal.row });
+        case "missingColumns":
+          return t("missingColumns", {
             missing: refusal.missing.join(", "),
             found: refusal.found.join(", "),
-          }),
+          });
+      }
+    },
     [t],
   );
 

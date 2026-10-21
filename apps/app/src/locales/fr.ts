@@ -570,6 +570,8 @@ export default {
         correctionUnsupported:
           "Cet import ne peut pas être corrigé ici. Lancez un nouvel import.",
         noDataRows: "Le fichier ne contient aucune ligne de données.",
+        unclosedQuote:
+          "Un guillemet de la ligne {row} n’est jamais fermé, le fichier ne peut donc pas être lu. Vérifiez les guillemets de cette ligne.",
         missingColumns:
           "Le fichier n’a pas de colonne {missing}, aucune ligne ne peut donc être importée. Utilisez les noms de colonnes du modèle. Colonnes trouvées : {found}.",
         uploadCorrectedFile: "Téléverser le fichier corrigé",

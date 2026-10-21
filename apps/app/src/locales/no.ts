@@ -561,6 +561,8 @@ export default {
         correctionUnsupported:
           "Denne importen kan ikke korrigeres her. Start en ny import.",
         noDataRows: "Filen har ingen rader med data.",
+        unclosedQuote:
+          "Et anførselstegn i rad {row} lukkes aldri, så filen kan ikke leses. Sjekk anførselstegnene i den raden.",
         missingColumns:
           "Filen har ingen kolonne for {missing}, så ingen rader kan importeres. Bruk kolonnenavnene fra malen. Kolonner funnet: {found}.",
         uploadCorrectedFile: "Last opp korrigert fil",

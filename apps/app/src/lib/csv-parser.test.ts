@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { parseCsvRecords, parseCsvTable, sha256Hex } from "./csv-parser";
+import {
+  parseCsvRecords,
+  parseCsvTable,
+  readCsvTable,
+  sha256Hex,
+} from "./csv-parser";
 
 describe("parseCsvRecords", () => {
   test("keeps quoted commas, doubled quotes and line breaks in one field", () => {
@@ -48,6 +53,18 @@ describe("parseCsvTable", () => {
       records: [{ rowNumber: 2, values: ["1", "2"] }],
     });
     expect(() => parseCsvTable("\n\n")).toThrow("empty");
+  });
+});
+
+describe("readCsvTable", () => {
+  test("returns an empty file or an unclosed quote as a problem", () => {
+    expect(readCsvTable("\ufeff\n")).toEqual({ problem: { code: "empty" } });
+    expect(readCsvTable('a\n"open')).toEqual({
+      problem: { code: "unclosedQuote", line: 2 },
+    });
+    expect(readCsvTable("a\n1")).toEqual({
+      table: { headers: ["a"], records: [{ rowNumber: 2, values: ["1"] }] },
+    });
   });
 });
 
