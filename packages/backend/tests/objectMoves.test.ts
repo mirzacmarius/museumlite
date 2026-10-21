@@ -4523,6 +4523,102 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
     expect(await stageOf(fixture.targetAdmin, requestId)).toBe("received");
   });
 
+  test("an earlier approval is the sender's administrators' to approve again or cancel, and cancelling it never reaches the receiver", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await requested(fixture);
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId,
+      reviewNotes: "Approved by the board",
+    });
+    // What an approval left before the observed source Location was kept.
+    await t.run((ctx) =>
+      ctx.db.patch(requestId, { approvedSourceLocationId: undefined }),
+    );
+    const approved = await fixture.admin.query(api.objectMoves.get, {
+      requestId,
+    });
+
+    expect(
+      (await fixture.requester.query(api.objectMoves.get, { requestId }))
+        ?.actions,
+    ).toEqual([]);
+    expect(
+      await refusal(
+        fixture.requester.mutation(api.objectMoves.cancel, { requestId }),
+      ),
+    ).toMatchObject({ code: expect.stringContaining("Permission denied") });
+    expect(
+      await refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId }),
+      ),
+    ).toMatchObject({ code: "TRANSFER_AWAITS_SENDER" });
+
+    await fixture.admin.mutation(api.objectMoves.cancel, {
+      requestId,
+      reviewNotes: "No longer offered",
+    });
+
+    expect(
+      await fixture.admin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({
+      stage: "cancelled",
+      approvedBySender: true,
+      sourceReviewedAt: approved?.sourceReviewedAt,
+      sourceReviewNotes: "Approved by the board",
+      decision: { decidedBy: "sender", notes: "No longer offered" },
+    });
+    expect(await listedStage(fixture, "target", requestId)).toBeUndefined();
+    expect(
+      await fixture.targetAdmin.query(api.objectMoves.getBoardCounts, {
+        organizationId: fixture.targetOrganizationId,
+      }),
+    ).toMatchObject({ cancelled: 0 });
+    expect(
+      (await notificationsFor(t, fixture.targetAdminId)).filter(
+        (notification) => notification.type === "move_request_cancelled",
+      ),
+    ).toEqual([]);
+    const rejectedRemovals = await fixture.admin.query(
+      api.deaccessions.listBoardColumn,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        column: { kind: "rejected" },
+        paginationOpts: { numItems: 10, cursor: null },
+      },
+    );
+    expect(rejectedRemovals.page).toMatchObject([
+      { _id: approved?.deaccessionId, method: "transfer" },
+    ]);
+  });
+
+  test("the transfer page asks for a receiving Location only when the receiver tracks locations, whoever views it", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await requested(fixture);
+    const tracksLocations = () =>
+      Promise.all(
+        [fixture.admin, fixture.targetAdmin].map(async (viewer) => {
+          const request = await viewer.query(api.objectMoves.get, {
+            requestId,
+          });
+          return request?.receiverTracksLocations;
+        }),
+      );
+
+    await fixture.admin.mutation(api.organizations.update, {
+      organizationId: fixture.sourceOrganizationId,
+      settings: { locationTrackingEnabled: false },
+    });
+    expect(await tracksLocations()).toEqual([true, true]);
+
+    await fixture.targetAdmin.mutation(api.organizations.update, {
+      organizationId: fixture.targetOrganizationId,
+      settings: { locationTrackingEnabled: false },
+    });
+    expect(await tracksLocations()).toEqual([false, false]);
+  });
+
   test("a request stored as approved for transfer waits for the sender, who approves it into the receiver's hands", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);

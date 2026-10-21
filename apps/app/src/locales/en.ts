@@ -10016,6 +10016,7 @@ export default {
         deaccessionRejected: "Deaccession Rejected",
         objectMoveApproved: "Object Move Approved",
         transferDeclined: "Transfer Declined",
+        transferCancelled: "Transfer Cancelled",
         incomingTransferRejected: "Incoming Transfer Rejected",
         objectMoveRejected: "Object Move Rejected",
         objectMoveCancelled: "Object Move Cancelled",
@@ -10091,6 +10092,9 @@ export default {
         transferDeclined: "{organization} declined the transfer of {title}.",
         transferDeclinedWithReason:
           "{organization} declined the transfer of {title}. Reason: {reason}",
+        transferCancelled: "{organization} cancelled the transfer of {title}.",
+        transferCancelledWithReason:
+          "{organization} cancelled the transfer of {title}. Reason: {reason}",
         objectMoveRejected: "Your object move request was rejected.",
         objectMoveCancelled:
           "Your object move request was cancelled by an administrator of the source organization.",

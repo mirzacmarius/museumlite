@@ -10227,6 +10227,7 @@ export default {
         deaccessionRejected: "Scoatere din colecție respinsă",
         objectMoveApproved: "Transferul obiectului a fost aprobat",
         transferDeclined: "Transfer refuzat",
+        transferCancelled: "Transfer anulat",
         incomingTransferRejected: "Transferul primit a fost respins",
         objectMoveRejected: "Transferul obiectului a fost respins",
         objectMoveCancelled: "Transferul obiectului a fost anulat",
@@ -10309,6 +10310,9 @@ export default {
         transferDeclined: "{organization} a refuzat transferul pentru {title}.",
         transferDeclinedWithReason:
           "{organization} a refuzat transferul pentru {title}. Motiv: {reason}",
+        transferCancelled: "{organization} a anulat transferul pentru {title}.",
+        transferCancelledWithReason:
+          "{organization} a anulat transferul pentru {title}. Motiv: {reason}",
         objectMoveRejected:
           "Cererea ta de transfer al obiectului a fost respinsă.",
         objectMoveCancelled:

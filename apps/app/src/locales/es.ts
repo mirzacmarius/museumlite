@@ -10247,6 +10247,7 @@ export default {
         deaccessionRejected: "Baja de colección rechazada",
         objectMoveApproved: "Traslado del objeto aprobado",
         transferDeclined: "Transferencia rechazada",
+        transferCancelled: "Transferencia cancelada",
         incomingTransferRejected: "Transferencia entrante rechazada",
         objectMoveRejected: "Traslado del objeto rechazado",
         objectMoveCancelled: "Traslado del objeto cancelado",
@@ -10330,6 +10331,10 @@ export default {
         transferDeclined: "{organization} rechazó la transferencia de {title}.",
         transferDeclinedWithReason:
           "{organization} rechazó la transferencia de {title}. Motivo: {reason}",
+        transferCancelled:
+          "{organization} canceló la transferencia de {title}.",
+        transferCancelledWithReason:
+          "{organization} canceló la transferencia de {title}. Motivo: {reason}",
         objectMoveRejected:
           "Tu solicitud de traslado del objeto fue rechazada.",
         objectMoveCancelled:

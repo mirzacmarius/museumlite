@@ -2101,24 +2101,42 @@ export const reject = mutation({
       throw moveRequestClosed(request.status);
     }
 
-    // Whichever side the transfer waits for decides it.
+    // The receiver declines a transfer that waits for them. Before that, the
+    // sender's administrators may decline a request they have not approved;
+    // one they approved before they approve again or cancel, and the
+    // receiver cannot decide it yet (ADR 0020).
     const isTargetReview = stage === "waiting_for_receiver";
-    await requirePermission(
-      ctx,
-      isTargetReview
-        ? request.targetOrganizationId
-        : request.sourceOrganizationId,
-      "organization.manage_settings",
-    );
+    const isSenderDecline =
+      !isTargetReview &&
+      !awaitsSenderReapproval(request) &&
+      (await hasPermission(
+        ctx,
+        request.sourceOrganizationId,
+        "organization.manage_settings",
+      ));
+    if (!isSenderDecline) {
+      await requirePermission(
+        ctx,
+        request.targetOrganizationId,
+        "organization.manage_settings",
+      );
+    }
+    if (!isTargetReview && !isSenderDecline) {
+      throw objectMoveError(
+        "TRANSFER_AWAITS_SENDER",
+        "The sending organization has to approve this transfer before the receiving organization can decide it.",
+      );
+    }
 
     const reviewNotes = args.reviewNotes?.trim() || undefined;
     const now = Date.now();
-    // A declined transfer leaves the object with the sender: the Removal the
-    // sender's approval made is rejected, so the object stays in the source
-    // collection and can move again.
-    const transferDeaccession = request.deaccessionId
-      ? await ctx.db.get(request.deaccessionId)
-      : null;
+    // The receiving organization declining sends the object back to the
+    // sender: the Removal the sender's approval made is rejected, so the
+    // object stays in the source collection and can move again.
+    const transferDeaccession =
+      isTargetReview && request.deaccessionId
+        ? await ctx.db.get(request.deaccessionId)
+        : null;
     await Promise.all([
       transferDeaccession
         ? rejectTransferDeaccession(
@@ -2126,9 +2144,7 @@ export const reject = mutation({
             transferDeaccession,
             request._id,
             userId,
-            isTargetReview
-              ? "Transfer declined by the receiving organization."
-              : "Transfer declined by the sending organization.",
+            "Transfer declined by the receiving organization.",
           )
         : null,
       ctx.db.patch(args.requestId, {
@@ -2241,8 +2257,11 @@ export const cancel = mutation({
     }
 
     // The sender's administrators may cancel until the receiver decides; the
-    // requester only while the transfer waits for the sender (ADR 0020).
-    if (stage === "waiting_for_receiver") {
+    // requester only their own request, until the sender approves it
+    // (ADR 0020).
+    const requesterMayCancel =
+      stage === "waiting_for_sender" && !awaitsSenderReapproval(request);
+    if (!requesterMayCancel) {
       await requirePermission(
         ctx,
         request.sourceOrganizationId,
@@ -2250,7 +2269,7 @@ export const cancel = mutation({
       );
     }
     const isSourceAdmin =
-      stage === "waiting_for_receiver" ||
+      !requesterMayCancel ||
       (await hasPermission(
         ctx,
         request.sourceOrganizationId,

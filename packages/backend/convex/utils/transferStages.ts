@@ -104,6 +104,7 @@ type ReviewedRequest = StagedRequest &
     Doc<"organizationMoveRequests">,
     | "deaccessionId"
     | "executedAt"
+    | "requestedAt"
     | "reviewedAt"
     | "reviewNotes"
     | "sourceReviewedAt"
@@ -113,10 +114,11 @@ type ReviewedRequest = StagedRequest &
   >;
 
 /**
- * Whether the receiving Organization has had the transfer: the sender
- * approved it. One the sender declined or cancelled before approving never
- * reached the receiver; one the sender cancelled after approving did, and
- * its approval made the transfer's Removal.
+ * Whether the receiving Organization has had the transfer: it waited for
+ * them. One the sender declined or cancelled before that never reached the
+ * receiver, including an earlier approval cancelled while it waited to be
+ * approved again; one cancelled while the receiver decided did, and only
+ * that approval recorded the sender's Location.
  */
 export function reachedReceiver(request: ReviewedRequest) {
   switch (transferStage(request)) {
@@ -128,22 +130,27 @@ export function reachedReceiver(request: ReviewedRequest) {
     case "declined":
       return request.targetReviewedAt !== undefined;
     case "cancelled":
-      return request.deaccessionId !== undefined;
+      return request.approvedSourceLocationId !== undefined;
   }
 }
 
 /**
  * Whether `sourceReviewedAt` records the sender's approval, not a decline or
  * a cancel before approval: the transfer reached the receiver, or waits for
- * the sender to approve it again.
+ * the sender to approve it again. A cancel after approval keeps the approval
+ * and rejects the Removal it made.
  */
 export function approvedBySender(request: ReviewedRequest) {
+  if (transferStage(request) === "cancelled") {
+    return request.deaccessionId !== undefined || reachedReceiver(request);
+  }
   return reachedReceiver(request) || awaitsSenderReapproval(request);
 }
 
 /**
  * How the transfer ended: the receiver accepted or declined it, or the
- * sender declined or cancelled it. Undefined while it is open.
+ * sender declined or cancelled it. Undefined while it is open. A row from
+ * before these dates were recorded is dated by its request.
  */
 export function transferDecision(
   request: ReviewedRequest,
@@ -158,7 +165,7 @@ export function transferDecision(
           request.executedAt ??
           request.targetReviewedAt ??
           request.reviewedAt ??
-          0,
+          request.requestedAt,
         decidedBy: "receiver",
         notes: request.targetReviewNotes,
       };
@@ -170,13 +177,17 @@ export function transferDecision(
             notes: request.targetReviewNotes,
           }
         : {
-            decidedAt: request.sourceReviewedAt ?? request.reviewedAt ?? 0,
+            decidedAt:
+              request.sourceReviewedAt ??
+              request.reviewedAt ??
+              request.requestedAt,
             decidedBy: "sender",
             notes: request.sourceReviewNotes,
           };
     case "cancelled":
       return {
-        decidedAt: request.reviewedAt ?? request.sourceReviewedAt ?? 0,
+        decidedAt:
+          request.reviewedAt ?? request.sourceReviewedAt ?? request.requestedAt,
         decidedBy: "sender",
         notes: request.reviewNotes,
       };
@@ -189,7 +200,7 @@ export function transferDecision(
  * and the receiver, not the Organization they have selected, so an
  * administrator of both sees both sides' actions. Decisions stay with each
  * side's administrators; the requester may also cancel their own request
- * while it waits for the sender, and the sender's administrators may cancel
+ * until the sender approves it, and the sender's administrators may cancel
  * until the receiver decides (ADR 0020). The sender stops a transfer by
  * cancelling it: declining is the receiver's.
  */
@@ -220,7 +231,10 @@ export async function transferActionsFor(
         takesNotes: true,
       });
     }
-    if (senderAdmin || request.requestedBy === userId) {
+    if (
+      senderAdmin ||
+      (request.requestedBy === userId && !awaitsSenderReapproval(request))
+    ) {
       actions.push({
         action: "cancel",
         organizationId: sender,

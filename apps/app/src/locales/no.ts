@@ -10140,6 +10140,7 @@ export default {
         deaccessionRejected: "Kassering avvist",
         objectMoveApproved: "Flytting av objekt godkjent",
         transferDeclined: "Overføring avslått",
+        transferCancelled: "Overføring avbrutt",
         incomingTransferRejected: "Innkommende overføring avvist",
         objectMoveRejected: "Flytting av objekt avvist",
         objectMoveCancelled: "Flytting av objekt avbrutt",
@@ -10217,6 +10218,9 @@ export default {
         transferDeclined: "{organization} avslo overføringen av {title}.",
         transferDeclinedWithReason:
           "{organization} avslo overføringen av {title}. Begrunnelse: {reason}",
+        transferCancelled: "{organization} avbrøt overføringen av {title}.",
+        transferCancelledWithReason:
+          "{organization} avbrøt overføringen av {title}. Begrunnelse: {reason}",
         objectMoveRejected:
           "Forespørselen din om å flytte objektet ble avvist.",
         objectMoveCancelled:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import french from "../locales/fr";
+import norwegian from "../locales/no";
 import romanian from "../locales/ro";
 import { getNotificationCopy } from "./notification-copy";
 
@@ -278,6 +279,25 @@ describe("getNotificationCopy", () => {
     expect(copy("Museum Nord declined the transfer of St. Olav.")).toEqual({
       title: "Transfert refusé",
       message: "Museum Nord a refusé le transfert de St. Olav.",
+    });
+  });
+
+  it("tells the receiver in their language that the sender cancelled a transfer", () => {
+    const copy = (message: string) =>
+      getNotificationCopy(
+        { title: "Transfer Cancelled", message },
+        dictionaryTranslator(norwegian),
+      );
+
+    expect(
+      copy("Museum Sør cancelled the transfer of Vase. Reason: Sold."),
+    ).toEqual({
+      title: "Overføring avbrutt",
+      message: "Museum Sør avbrøt overføringen av Vase. Begrunnelse: Sold.",
+    });
+    expect(copy("Museum Sør cancelled the transfer of St. Olav.")).toEqual({
+      title: "Overføring avbrutt",
+      message: "Museum Sør avbrøt overføringen av St. Olav.",
     });
   });
 });
