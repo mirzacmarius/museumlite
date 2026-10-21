@@ -8,6 +8,7 @@ import {
   resolveCaseApproval,
 } from "./permissions";
 import { canBePrimaryImage, makeOnlyPrimaryImage } from "./primaryMedia";
+import { provenanceArrivingFrom } from "./provenance";
 import { isCollectionManagerRoleName } from "./systemRoles";
 import { workflowApprovalError } from "./workflowApprovalErrors";
 import { getWorkflowConfig } from "./workflowConfigs";
@@ -117,15 +118,22 @@ async function isCitedAsEvidence(ctx: ReadCtx, media: Doc<"mediaFiles">) {
       return true;
     }
   }
-  for await (const evidence of ctx.db
-    .query("provenanceEvidence")
-    .withIndex("by_organization_and_objectId", (q) =>
-      q
-        .eq("organizationId", media.organizationId)
-        .eq("objectId", media.collectionId),
-    )) {
-    if (evidence.kind === "media" && evidence.mediaId === media._id) {
-      return true;
+  // Evidence still on its way from a transfer cites the image as well.
+  const arrivingFrom = await provenanceArrivingFrom(ctx, {
+    _id: media.collectionId,
+    organizationId: media.organizationId,
+  });
+  for (const organizationId of [media.organizationId, ...arrivingFrom]) {
+    for await (const evidence of ctx.db
+      .query("provenanceEvidence")
+      .withIndex("by_organization_and_objectId", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("objectId", media.collectionId),
+      )) {
+      if (evidence.kind === "media" && evidence.mediaId === media._id) {
+        return true;
+      }
     }
   }
   return false;

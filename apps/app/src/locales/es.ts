@@ -7069,6 +7069,8 @@ export default {
     loading: "Cargando procedencia…",
     withdrawn:
       "Este objeto está retirado. Restáuralo para registrar o revisar su procedencia.",
+    arriving:
+      "Parte de la procedencia de este objeto todavía está llegando desde una organización que lo tuvo antes. Podrás registrar o revisar su procedencia cuando haya llegado.",
     truncated: "Solo se muestran las {count} afirmaciones más recientes.",
     history: "Afirmaciones corregidas y retractadas ({count})",
     roles: {
@@ -7300,6 +7302,8 @@ export default {
         "Este objeto ya no está disponible. Actualiza e inténtalo de nuevo.",
       objectWithdrawn:
         "Este objeto está retirado. Restáuralo antes de cambiar su procedencia.",
+      stillArriving:
+        "Parte de la procedencia de este objeto todavía está llegando desde una organización que lo tuvo antes. Inténtalo de nuevo en un momento.",
       claimNotFound:
         "Esa afirmación ya no está disponible. Actualiza e inténtalo de nuevo.",
       claimSuperseded:

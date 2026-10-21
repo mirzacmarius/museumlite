@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { beforeEach, expect, test, vi } from "vitest";
@@ -126,6 +126,8 @@ function ImportFile({ type }: { type: ImportType }) {
   );
 }
 
+// The file is read and fingerprinted after the upload returns, so a test
+// waits for what it shows.
 async function chooseFile(text: string, name: string, type: ImportType) {
   await renderOnPage(<ImportFile type={type} />, "/en/settings/data");
   await userEvent
@@ -146,15 +148,17 @@ test.each([
 ])("a refused file says why before any row is sent: %j", async (text, message) => {
   await chooseFile(text, "catalogue.csv", "objects");
 
-  expect(toasts.error).toHaveBeenCalledWith(message);
+  await waitFor(() => expect(toasts.error).toHaveBeenCalledWith(message));
   expect(mutation).not.toHaveBeenCalled();
 });
 
 test("an XML file is refused for anything but objects", async () => {
   await chooseFile("<records/>", "records.xml", "accessions");
 
-  expect(toasts.error).toHaveBeenCalledWith(
-    "XML import is only supported for objects.",
+  await waitFor(() =>
+    expect(toasts.error).toHaveBeenCalledWith(
+      "XML import is only supported for objects.",
+    ),
   );
   expect(mutation).not.toHaveBeenCalled();
 });

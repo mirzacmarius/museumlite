@@ -1,3 +1,4 @@
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requirePermission } from "./permissions";
@@ -17,6 +18,10 @@ export const MAX_EVIDENCE_PER_OBJECT = 500;
 export const MAX_EVIDENCE_PER_CLAIM = 50;
 /** Review decisions read per Object. */
 export const MAX_REVIEWS_PER_OBJECT = 500;
+/** Provenance rows one transaction moves to the Object's new organization. */
+const REHOME_BATCH = 100;
+/** Transfer requests of one Object read to find where its provenance is. */
+const OBJECT_MOVE_REQUEST_LIMIT = 50;
 
 const TEXT_LIMITS = {
   // Legacy provenance text can be long; it is turned into a claim whole.
@@ -264,7 +269,8 @@ type ProvenanceAccess = "read" | "write" | "review";
  * Loads an Object and enforces the caller's access to its provenance:
  * `collections.read` to read, `collections.update` to record and
  * `collections.review_provenance` to review. Writes are refused on withdrawn
- * Objects until they are restored.
+ * Objects until they are restored, and while part of a transferred Object's
+ * provenance is still on its way, so no change is decided from part of it.
  */
 export async function requireProvenanceObject(
   ctx: QueryCtx | MutationCtx,
@@ -285,12 +291,31 @@ export async function requireProvenanceObject(
         : PROVENANCE_REVIEW_PERMISSION,
   );
   if (access !== "read" && isWithdrawnObject(object)) {
-    throw provenanceError(
-      "PROVENANCE_OBJECT_WITHDRAWN",
-      "Restore the Object before changing its provenance",
-    );
+    provenanceObjectWithdrawn();
+  }
+  if (
+    access !== "read" &&
+    (await provenanceArrivingFrom(ctx, object)).length > 0
+  ) {
+    provenanceStillArriving();
   }
   return object;
+}
+
+/** Refuses a change while the Object is withdrawn. */
+export function provenanceObjectWithdrawn(): never {
+  throw provenanceError(
+    "PROVENANCE_OBJECT_WITHDRAWN",
+    "Restore the Object before changing its provenance",
+  );
+}
+
+/** Refuses a change while part of the Object's provenance is still arriving. */
+export function provenanceStillArriving(): never {
+  throw provenanceError(
+    "PROVENANCE_STILL_ARRIVING",
+    "Part of this Object's provenance is still arriving from an organization that held it before",
+  );
 }
 
 /** Loads a claim and its Object with the caller's access enforced. */
@@ -329,6 +354,133 @@ export async function loadObjectClaims(
       q.eq("organizationId", object.organizationId).eq("objectId", object._id),
     )
     .take(MAX_CLAIMS_PER_OBJECT);
+}
+
+/**
+ * Moves an Object's provenance claims, their evidence and their review
+ * decisions from one organization to another, when the Object moves there.
+ * Re-homing changes which organization holds a claim, never what it says
+ * (ADR 0006). Party links stay with the organization whose accounts they
+ * name. One call moves up to REHOME_BATCH rows and schedules the rest.
+ */
+export async function rehomeObjectProvenance(
+  ctx: MutationCtx,
+  args: {
+    objectId: Id<"collections">;
+    fromOrganizationId: Id<"organizations">;
+    toOrganizationId: Id<"organizations">;
+  },
+) {
+  const claims = await ctx.db
+    .query("provenanceClaims")
+    .withIndex("by_organization_and_objectId_and_supersededAt", (q) =>
+      q
+        .eq("organizationId", args.fromOrganizationId)
+        .eq("objectId", args.objectId),
+    )
+    .take(REHOME_BATCH);
+  const evidence =
+    claims.length < REHOME_BATCH
+      ? await ctx.db
+          .query("provenanceEvidence")
+          .withIndex("by_organization_and_objectId", (q) =>
+            q
+              .eq("organizationId", args.fromOrganizationId)
+              .eq("objectId", args.objectId),
+          )
+          .take(REHOME_BATCH - claims.length)
+      : [];
+  const read = claims.length + evidence.length;
+  const reviews =
+    read < REHOME_BATCH
+      ? await ctx.db
+          .query("provenanceReviews")
+          .withIndex("by_organization_and_objectId", (q) =>
+            q
+              .eq("organizationId", args.fromOrganizationId)
+              .eq("objectId", args.objectId),
+          )
+          .take(REHOME_BATCH - read)
+      : [];
+  const organizationId = args.toOrganizationId;
+  await Promise.all([
+    ...claims.map((claim) => ctx.db.patch(claim._id, { organizationId })),
+    ...evidence.map((row) => ctx.db.patch(row._id, { organizationId })),
+    ...reviews.map((review) => ctx.db.patch(review._id, { organizationId })),
+  ]);
+  const moved = read + reviews.length;
+  if (moved === REHOME_BATCH) {
+    await ctx.scheduler.runAfter(0, internal.provenance.rehomeRemaining, {
+      objectId: args.objectId,
+      fromOrganizationId: args.fromOrganizationId,
+    });
+  }
+  return moved;
+}
+
+/**
+ * The organizations a transferred Object left that still hold part of its
+ * provenance; none once all of it is with the organization holding the
+ * Object. A long history moves in batches, possibly behind a later transfer,
+ * and provenance a transfer left behind before it moved with its Object
+ * stays until the repair moves it. Only the Object's latest
+ * OBJECT_MOVE_REQUEST_LIMIT transfer requests, of any status, are read.
+ */
+export async function provenanceArrivingFrom(
+  ctx: QueryCtx | MutationCtx,
+  object: Pick<Doc<"collections">, "_id" | "organizationId">,
+): Promise<Id<"organizations">[]> {
+  const requests = await ctx.db
+    .query("organizationMoveRequests")
+    .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
+    .order("desc")
+    .take(OBJECT_MOVE_REQUEST_LIMIT);
+  const sources = [
+    ...new Set(
+      requests
+        .filter(
+          (request) =>
+            request.status === "executed" &&
+            request.sourceOrganizationId !== object.organizationId,
+        )
+        .map((request) => request.sourceOrganizationId),
+    ),
+  ];
+  const held = await Promise.all(
+    sources.map((organizationId) =>
+      holdsProvenance(ctx, organizationId, object._id),
+    ),
+  );
+  return sources.filter((_, index) => held[index]);
+}
+
+/** Whether an organization holds any of an Object's claims, evidence or reviews. */
+export async function holdsProvenance(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  objectId: Id<"collections">,
+) {
+  const [claim, evidence, review] = await Promise.all([
+    ctx.db
+      .query("provenanceClaims")
+      .withIndex("by_organization_and_objectId_and_supersededAt", (q) =>
+        q.eq("organizationId", organizationId).eq("objectId", objectId),
+      )
+      .first(),
+    ctx.db
+      .query("provenanceEvidence")
+      .withIndex("by_organization_and_objectId", (q) =>
+        q.eq("organizationId", organizationId).eq("objectId", objectId),
+      )
+      .first(),
+    ctx.db
+      .query("provenanceReviews")
+      .withIndex("by_organization_and_objectId", (q) =>
+        q.eq("organizationId", organizationId).eq("objectId", objectId),
+      )
+      .first(),
+  ]);
+  return claim !== null || evidence !== null || review !== null;
 }
 
 export async function loadClaimEvidence(

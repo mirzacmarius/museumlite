@@ -5761,6 +5761,8 @@ export default {
     loading: "Se încarcă proveniența…",
     withdrawn:
       "Acest obiect este retras. Restaurează-l pentru a înregistra sau a analiza proveniența.",
+    arriving:
+      "O parte din proveniența acestui obiect este încă pe drum de la o organizație care l-a deținut anterior. Poți înregistra sau analiza proveniența după ce ajunge.",
     truncated: "Sunt afișate doar cele mai recente {count} afirmații.",
     history: "Afirmații corectate și retrase ({count})",
     roles: {
@@ -5992,6 +5994,8 @@ export default {
         "Acest obiect nu mai este disponibil. Reîmprospătează și încearcă din nou.",
       objectWithdrawn:
         "Acest obiect este retras. Restaurează-l înainte de a-i modifica proveniența.",
+      stillArriving:
+        "O parte din proveniența acestui obiect este încă pe drum de la o organizație care l-a deținut anterior. Încearcă din nou peste câteva clipe.",
       claimNotFound:
         "Afirmația nu mai este disponibilă. Reîmprospătează și încearcă din nou.",
       claimSuperseded:

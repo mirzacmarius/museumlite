@@ -8,10 +8,15 @@ import {
   assignCustomerNumberIfMissing,
   parseCustomerNumber,
 } from "./utils/customerNumber";
+import {
+  findIdentifierMatches,
+  normalizeIdentifier,
+} from "./utils/identifiers";
 import { COORDINATE_PERMISSION } from "./utils/incidentAccess";
 import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { keepOldestPrimaryImage } from "./utils/primaryMedia";
+import { holdsProvenance } from "./utils/provenance";
 import { syncPublicRendition } from "./utils/publicMedia";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {
@@ -1831,5 +1836,119 @@ export const backfillPublicRenditions = internalMutation({
       );
     }
     return { processed: page.page.length, isDone: page.isDone };
+  },
+});
+
+const repairTotalsValidator = v.object({
+  identifierKeysRewritten: v.number(),
+  transfersWithProvenanceLeftBehind: v.number(),
+  objectsSharingANumber: v.number(),
+  objectsNotChecked: v.number(),
+});
+
+// An Object moved more than once is counted on its latest transfer only.
+async function isLatestExecutedMove(
+  ctx: MutationCtx,
+  request: Doc<"organizationMoveRequests">,
+) {
+  const requests = await ctx.db
+    .query("organizationMoveRequests")
+    .withIndex("by_collection", (q) =>
+      q.eq("collectionId", request.collectionId),
+    )
+    .order("desc")
+    .take(50);
+  const latest = requests.find((other) => other.status === "executed");
+  return latest?._id === request._id;
+}
+
+/**
+ * Migration: repair Objects that transfers moved before the receiver's
+ * register and the Object's provenance followed them. For every executed
+ * transfer:
+ * - the Object's identifier key is rewritten when it no longer matches its
+ *   number, so the receiver's register finds it by the number it has;
+ * - provenance claims, evidence and reviews still filed under the sender
+ *   move to the organization holding the Object now, in batches scheduled
+ *   per Object. Until they have, the Object's provenance counts as still
+ *   arriving and cannot be changed (ADR 0006), so the repair runs right
+ *   after the deploy that ships it.
+ * No number changes and nothing is deleted. `objectsSharingANumber` counts
+ * transferred Objects whose number another Object in their organization
+ * also has; both are kept as they are, and Settings › Preferences identifier
+ * review lists them once the organization's register is fully indexed.
+ * `objectsNotChecked` counts transferred Objects whose organization has more
+ * unindexed Objects than one check reads, so `objectsSharingANumber` is a
+ * lower bound until that register is indexed and the repair runs again.
+ * Rerunnable; each page schedules the next with the totals so far, and the
+ * last page logs them.
+ *
+ * Run: bunx convex run migrations:repairTransferredObjects '{"cursor":null}'
+ */
+export const repairTransferredObjects = internalMutation({
+  args: {
+    cursor: v.union(v.string(), v.null()),
+    totals: v.optional(repairTotalsValidator),
+  },
+  returns: v.object({
+    ...repairTotalsValidator.fields,
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("organizationMoveRequests")
+      .paginate({ cursor: args.cursor, numItems: 10 });
+    const totals = {
+      identifierKeysRewritten: 0,
+      transfersWithProvenanceLeftBehind: 0,
+      objectsSharingANumber: 0,
+      objectsNotChecked: 0,
+      ...args.totals,
+    };
+    for (const request of page.page) {
+      if (request.status !== "executed") continue;
+      const object = await ctx.db.get(request.collectionId);
+      if (!object) continue;
+      const normalizedIdentifier = normalizeIdentifier(object.accessionNumber);
+      if (object.normalizedIdentifier !== normalizedIdentifier) {
+        await ctx.db.patch(object._id, { normalizedIdentifier });
+        totals.identifierKeysRewritten += 1;
+      }
+      if (
+        request.sourceOrganizationId !== object.organizationId &&
+        (await holdsProvenance(ctx, request.sourceOrganizationId, object._id))
+      ) {
+        await ctx.scheduler.runAfter(0, internal.provenance.rehomeRemaining, {
+          objectId: object._id,
+          fromOrganizationId: request.sourceOrganizationId,
+        });
+        totals.transfersWithProvenanceLeftBehind += 1;
+      }
+      if (await isLatestExecutedMove(ctx, request)) {
+        const { matches, needsBackfill } = await findIdentifierMatches(
+          ctx,
+          object.organizationId,
+          "catalog",
+          object.accessionNumber,
+        );
+        if (matches.some((match) => match._id !== object._id)) {
+          totals.objectsSharingANumber += 1;
+        } else if (needsBackfill) {
+          totals.objectsNotChecked += 1;
+        }
+      }
+    }
+    if (page.isDone) {
+      console.log(
+        `Repaired transferred Objects: rewrote ${totals.identifierKeysRewritten} identifier keys, scheduled moving the provenance ${totals.transfersWithProvenanceLeftBehind} transfers left behind; ${totals.objectsSharingANumber} transferred Objects share their number with another Object, and ${totals.objectsNotChecked} could not be checked until their organization's register is fully indexed`,
+      );
+    } else {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.repairTransferredObjects,
+        { cursor: page.continueCursor, totals },
+      );
+    }
+    return { ...totals, isDone: page.isDone };
   },
 });

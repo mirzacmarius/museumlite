@@ -5,7 +5,7 @@ import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { objectLabel } from "./utils/collectionDisplayHelpers";
 import { hasModuleEnabled } from "./utils/featureGates";
-import { mutation } from "./utils/mutationBuilders";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { partyDisplayName, requireLinkableParty } from "./utils/parties";
 import {
   currentPartyLink,
@@ -27,7 +27,9 @@ import {
   MAX_REVIEWS_PER_OBJECT,
   optionalProvenanceText,
   PROVENANCE_REVIEW_PERMISSION,
+  provenanceArrivingFrom,
   provenanceClaimSortKey,
+  rehomeObjectProvenance,
   requireContradictedClaim,
   requiredProvenanceReason,
   requireProvenanceClaim,
@@ -242,7 +244,8 @@ async function claimPartyView(
 /**
  * An Object's provenance: current claims in chronological order, then
  * corrected and retracted claims, each with its evidence, review and the
- * claims it contradicts. Also states what the viewer may do.
+ * claims it contradicts. Also states what the viewer may do, which is nothing
+ * while part of a transferred Object's history is still on its way.
  */
 export const listForObject = query({
   args: { objectId: v.id("collections") },
@@ -254,6 +257,7 @@ export const listForObject = query({
         canLinkParties: v.boolean(),
       }),
       objectWithdrawn: v.boolean(),
+      provenanceArriving: v.boolean(),
       claims: v.array(claimViewValidator),
       truncated: v.boolean(),
     }),
@@ -264,14 +268,21 @@ export const listForObject = query({
     if (!object) return null;
     const organizationId = object.organizationId;
     await requirePermission(ctx, organizationId, "collections.read");
-    const [canUpdate, canReview, canReadMedia, partiesVisible, claims] =
-      await Promise.all([
-        hasPermission(ctx, organizationId, "collections.update"),
-        hasPermission(ctx, organizationId, PROVENANCE_REVIEW_PERMISSION),
-        hasPermission(ctx, organizationId, "media.read"),
-        canReadParties(ctx, organizationId),
-        loadObjectClaims(ctx, object),
-      ]);
+    const [
+      canUpdate,
+      canReview,
+      canReadMedia,
+      partiesVisible,
+      claims,
+      arrivingFrom,
+    ] = await Promise.all([
+      hasPermission(ctx, organizationId, "collections.update"),
+      hasPermission(ctx, organizationId, PROVENANCE_REVIEW_PERMISSION),
+      hasPermission(ctx, organizationId, "media.read"),
+      canReadParties(ctx, organizationId),
+      loadObjectClaims(ctx, object),
+      provenanceArrivingFrom(ctx, object),
+    ]);
     const [evidenceRows, reviewRows] = await Promise.all([
       ctx.db
         .query("provenanceEvidence")
@@ -391,13 +402,16 @@ export const listForObject = query({
       })),
     );
     const withdrawn = isWithdrawnObject(object);
+    const arriving = arrivingFrom.length > 0;
+    const locked = withdrawn || arriving;
     return {
       viewer: {
-        canRecord: canUpdate && !withdrawn,
-        canReview: canReview && !withdrawn,
-        canLinkParties: canUpdate && partiesVisible && !withdrawn,
+        canRecord: canUpdate && !locked,
+        canReview: canReview && !locked,
+        canLinkParties: canUpdate && partiesVisible && !locked,
       },
       objectWithdrawn: withdrawn,
+      provenanceArriving: arriving,
       claims: views.sort((left, right) => {
         if (left.isCurrent !== right.isCurrent) return left.isCurrent ? -1 : 1;
         if (!left.isCurrent) {
@@ -1030,6 +1044,31 @@ export const retractEvidence = mutation({
       entityType: "collection",
       entityId: object._id,
       changes: { claimId: claim._id, evidenceId: evidence._id, reason },
+    });
+    return null;
+  },
+});
+
+/**
+ * Moves the rest of a transferred Object's provenance from an organization it
+ * left to the one holding it now, a batch at a time. An Object that went back
+ * to that organization already sits with what is left.
+ */
+export const rehomeRemaining = internalMutation({
+  args: {
+    objectId: v.id("collections"),
+    fromOrganizationId: v.id("organizations"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const object = await ctx.db.get(args.objectId);
+    if (!object || object.organizationId === args.fromOrganizationId) {
+      return null;
+    }
+    await rehomeObjectProvenance(ctx, {
+      objectId: object._id,
+      fromOrganizationId: args.fromOrganizationId,
+      toOrganizationId: object.organizationId,
     });
     return null;
   },

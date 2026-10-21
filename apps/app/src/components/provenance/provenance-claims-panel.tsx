@@ -148,6 +148,12 @@ export function ProvenanceClaimsPanel({
         </p>
       ) : null}
 
+      {provenance.provenanceArriving ? (
+        <p className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-muted-foreground">
+          {t("arriving")}
+        </p>
+      ) : null}
+
       {current.length === 0 ? (
         <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">{t("empty")}</p>

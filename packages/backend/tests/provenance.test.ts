@@ -933,10 +933,15 @@ describe("access", () => {
 
   test("provenance is read-only while the Object is withdrawn", async () => {
     const t = createConvexTest();
-    const { staff, objectId } = await createMuseum(t);
+    const { staff, objectId, organizationId, userId } = await createMuseum(t);
     const claimId = await staff.mutation(api.provenance.recordClaim, {
       objectId,
       ...rosenbergClaim,
+    });
+    const linkId = await staff.mutation(api.partyLinks.link, {
+      target: { type: "provenanceClaim", id: claimId },
+      accountId: await insertParty(t, organizationId, userId, "Rosenberg"),
+      role: "owner",
     });
     await t.run(async (ctx) =>
       ctx.db.patch(objectId, { status: "archived", archivedAt: Date.now() }),
@@ -965,6 +970,24 @@ describe("access", () => {
       target: { type: "provenanceClaim", id: claimId },
     });
     expect(links.policy).toBe("closed");
+    // A Party dialog opened before the withdrawal gives the same advice.
+    expect(
+      await provenanceErrorOf(
+        staff.mutation(api.partyLinks.link, {
+          target: { type: "provenanceClaim", id: claimId },
+          accountId: await insertParty(t, organizationId, userId, "Other"),
+          role: "owner",
+        }),
+      ),
+    ).toMatchObject({ code: "PROVENANCE_OBJECT_WITHDRAWN" });
+    expect(
+      await provenanceErrorOf(
+        staff.mutation(api.partyLinks.supersede, {
+          linkId,
+          reason: "Wrong holder",
+        }),
+      ),
+    ).toMatchObject({ code: "PROVENANCE_OBJECT_WITHDRAWN" });
   });
 });
 

@@ -3,12 +3,15 @@ import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import { getNextCounterValue } from "./utils/accessionCounter";
-import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds, batchLookup } from "./utils/batchLookup";
 import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import { getExhibitionsForObject } from "./utils/exhibitionParticipation";
 import { buildUpdatedAccessionState } from "./utils/identifierHistory";
+import {
+  ensureIdentifierAvailable,
+  generateConfiguredIdentifier,
+  normalizeIdentifier,
+} from "./utils/identifiers";
 import {
   assertObservedSourceLocationMatches,
   buildTransferScopeSnapshot,
@@ -36,6 +39,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { rehomeObjectProvenance } from "./utils/provenance";
 import type { ColumnPage } from "./utils/workBoardColumns";
 
 const accessionModeValidator = v.union(
@@ -307,154 +311,12 @@ const transferDestinationLookupValidator = v.union(
 
 /**
  * Whether the organization can generate a new accession number for an
- * object it receives: what `generateAccessionNumber` refuses without.
+ * object it receives: what `generateConfiguredIdentifier` refuses without.
  */
 function generatesAccessionNumbers(organization: Doc<"organizations">) {
   return Boolean(
     organization.settings?.autoGenerateAccessionNumbers &&
       organization.settings.accessionNumberFormat,
-  );
-}
-
-async function generateAccessionNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-): Promise<string> {
-  const org = await ctx.db.get(organizationId);
-  if (!org) {
-    throw new Error("Organization not found");
-  }
-
-  const template = org.settings?.accessionNumberFormat;
-  const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
-
-  if (!autoGenerate) {
-    throw objectMoveError(
-      "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
-      "Auto-generate accession numbers is disabled for the destination organization.",
-    );
-  }
-
-  if (!template) {
-    throw objectMoveError(
-      "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
-      "The destination organization does not have an accession number format configured.",
-    );
-  }
-
-  const now = new Date();
-  const counterScope =
-    org.settings?.accessionCounterScope ||
-    accessionParser.getCounterScopeFromTemplate(template);
-  const scopeKey = accessionParser.getScopeKey(counterScope, now);
-
-  const counterValue = await getNextCounterValue(
-    ctx,
-    organizationId,
-    counterScope,
-    scopeKey,
-  );
-
-  return accessionParser.parse(template, {
-    organizationSlug: org.slug,
-    currentDate: now,
-    counterValue,
-    counterScope,
-  });
-}
-
-async function findAccessionConflict(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">,
-  accessionNumber: string,
-) {
-  const primaryConflict = await ctx.db
-    .query("collections")
-    .withIndex("by_organization_and_accessionNumber", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .eq("accessionNumber", accessionNumber),
-    )
-    .first();
-
-  if (primaryConflict) {
-    return primaryConflict;
-  }
-
-  const collections = await ctx.db
-    .query("collections")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .collect();
-
-  return (
-    collections.find((collection) =>
-      collection.alternateAccessionNumbers?.includes(accessionNumber),
-    ) ?? null
-  );
-}
-
-async function ensureAccessionNumberAvailable(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">,
-  accessionNumber: string,
-) {
-  const conflict = await findAccessionConflict(
-    ctx,
-    organizationId,
-    accessionNumber,
-  );
-  if (conflict) {
-    throw objectMoveError(
-      "ACCESSION_NUMBER_TAKEN",
-      `Accession number "${accessionNumber}" already exists in the destination organization`,
-      undefined,
-      accessionNumber,
-    );
-  }
-}
-
-async function resolveGeneratedAccessionNumberAttempt(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  attempt: number,
-): Promise<string | null> {
-  if (attempt >= 5) {
-    return null;
-  }
-
-  const accessionNumber = await generateAccessionNumber(ctx, organizationId);
-  const conflict = await findAccessionConflict(
-    ctx,
-    organizationId,
-    accessionNumber,
-  );
-  if (!conflict) {
-    return accessionNumber;
-  }
-
-  return resolveGeneratedAccessionNumberAttempt(
-    ctx,
-    organizationId,
-    attempt + 1,
-  );
-}
-
-async function resolveGeneratedAccessionNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-) {
-  const accessionNumber = await resolveGeneratedAccessionNumberAttempt(
-    ctx,
-    organizationId,
-    0,
-  );
-  if (accessionNumber) {
-    return accessionNumber;
-  }
-
-  throw objectMoveError(
-    "ACCESSION_NUMBER_GENERATION_UNAVAILABLE",
-    "Unable to generate a unique accession number for the destination organization.",
   );
 }
 
@@ -842,6 +704,11 @@ async function executeMove(
     moveCollectionDetailRecords(ctx, collection._id, targetOrganizationId),
     moveConservationRecords(ctx, collection._id, targetOrganizationId),
     moveConditionAssessmentRecords(ctx, collection._id, targetOrganizationId),
+    rehomeObjectProvenance(ctx, {
+      objectId: collection._id,
+      fromOrganizationId: collection.organizationId,
+      toOrganizationId: targetOrganizationId,
+    }),
   ]);
   const [comments, appraisals] = await Promise.all([
     ctx.db
@@ -872,6 +739,8 @@ async function executeMove(
     collectionGroupId: undefined,
     currentLocationId: undefined,
     accessionNumber: accessionState.accessionNumber,
+    // The receiver's register finds the Object by the number it now has.
+    normalizedIdentifier: normalizeIdentifier(accessionState.accessionNumber),
     alternateAccessionNumbers: accessionState.alternateAccessionNumbers,
     accessionNumberHistory: accessionState.accessionNumberHistory,
     lastModifiedBy: executedBy,
@@ -1441,9 +1310,10 @@ export const createRequest = mutation({
         );
       }
 
-      await ensureAccessionNumberAvailable(
+      await ensureIdentifierAvailable(
         ctx,
         args.targetOrganizationId,
+        "catalog",
         requestedAccessionNumber,
       );
     } else {
@@ -1451,9 +1321,10 @@ export const createRequest = mutation({
     }
 
     if (args.accessionMode === "keep") {
-      await ensureAccessionNumberAvailable(
+      await ensureIdentifierAvailable(
         ctx,
         args.targetOrganizationId,
+        "catalog",
         collection.accessionNumber,
       );
     }
@@ -2136,21 +2007,24 @@ export const accept = mutation({
           "Manual accession mode requires a requested accession number.",
         );
       }
-      await ensureAccessionNumberAvailable(
+      await ensureIdentifierAvailable(
         ctx,
         request.targetOrganizationId,
+        "catalog",
         requestedAccessionNumber,
       );
       finalAccessionNumber = requestedAccessionNumber;
     } else if (accessionMode === "auto") {
-      finalAccessionNumber = await resolveGeneratedAccessionNumber(
+      finalAccessionNumber = await generateConfiguredIdentifier(
         ctx,
         request.targetOrganizationId,
+        "catalog",
       );
     } else {
-      await ensureAccessionNumberAvailable(
+      await ensureIdentifierAvailable(
         ctx,
         request.targetOrganizationId,
+        "catalog",
         request.sourceAccessionNumber,
       );
     }
