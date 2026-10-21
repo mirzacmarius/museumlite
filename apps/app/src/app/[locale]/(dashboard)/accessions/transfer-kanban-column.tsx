@@ -20,62 +20,56 @@ import {
   RecordLog,
   RecordLogEntry,
 } from "@/components/record-log";
+import { TRANSFER_STAGE_LABELS } from "@/components/transfer-stage";
 import type { useI18n as useI18nType } from "@/locales/client";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
-import { boardStatus } from "./use-open-transfer-count";
 
 type TransferRequest = FunctionReturnType<
   typeof api.objectMoves.listForOrganization
 >[number];
 
-type TransferStatus = TransferRequest["status"];
+type TransferStage = TransferRequest["stage"];
 type TransferDirection = TransferRequest["direction"];
 type Translator = ReturnType<typeof useI18nType>;
 
 type TransferKanbanColumnProps = {
-  /** The statuses the column lists; finished ones make it the transfer log. */
-  statuses: readonly TransferStatus[];
+  /** The stages the column lists; finished ones make it the transfer log. */
+  stages: readonly TransferStage[];
   /** Omitted, the column lists transfers sent and received. */
   direction?: TransferDirection;
   title: string;
+  /**
+   * The board's search, which the backend already applied. A new search
+   * starts the log again at its first page.
+   */
   searchQuery: string;
   transferRequests: TransferRequest[];
 };
 
-const statusStyles: Record<
-  TransferStatus,
+const stageStyles: Record<
+  TransferStage,
   {
     badge: string;
     card: string;
     icon: typeof Clock3;
   }
 > = {
-  pending: {
+  waiting_for_sender: {
     badge: "bg-sky-500/15 text-sky-300",
     card: "border-sky-500/30 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(9,9,11,0.92))]",
     icon: Clock3,
   },
-  pending_source_approval: {
-    badge: "bg-sky-500/15 text-sky-300",
-    card: "border-sky-500/30 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(9,9,11,0.92))]",
-    icon: Clock3,
-  },
-  approved_for_transfer: {
+  waiting_for_receiver: {
     badge: "bg-amber-500/15 text-amber-300",
     card: "border-amber-500/30 bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(9,9,11,0.92))]",
     icon: Clock3,
   },
-  awaiting_acceptance: {
-    badge: "bg-amber-500/15 text-amber-300",
-    card: "border-amber-500/30 bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(9,9,11,0.92))]",
-    icon: Clock3,
-  },
-  executed: {
+  received: {
     badge: "bg-emerald-500/15 text-emerald-300",
     card: "border-emerald-500/30 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(9,9,11,0.92))]",
     icon: CheckCircle2,
   },
-  rejected: {
+  declined: {
     badge: "bg-rose-500/15 text-rose-300",
     card: "border-rose-500/30 bg-[linear-gradient(180deg,rgba(244,63,94,0.12),rgba(9,9,11,0.92))]",
     icon: XCircle,
@@ -87,46 +81,31 @@ const statusStyles: Record<
   },
 };
 
-const statusLabels: Record<TransferStatus, Parameters<Translator>[0]> = {
-  pending: "untranslatedRecords.accessions.transfers.awaitingApproval",
-  pending_source_approval:
-    "untranslatedRecords.accessions.transfers.pendingApproval",
-  approved_for_transfer: "untranslatedRecords.accessions.transfers.approved",
-  awaiting_acceptance:
-    "untranslatedRecords.accessions.transfers.awaitingAcceptance",
-  executed: "untranslatedRecords.accessions.transfers.executed",
-  rejected: "untranslatedRecords.accessions.transfers.rejected",
-  cancelled: "untranslatedRecords.accessions.transfers.cancelled",
-};
-
 function getTransferEmptyMessage(
-  status: TransferStatus,
+  stage: TransferStage,
   direction: TransferDirection | undefined,
   tRoot: Translator,
 ): string {
-  switch (status) {
-    case "pending":
-    case "pending_source_approval":
+  switch (stage) {
+    case "waiting_for_sender":
       return tRoot("untranslatedRecords.accessions.transfers.empty.pending");
-    case "approved_for_transfer":
-      return tRoot("untranslatedRecords.accessions.transfers.empty.approved");
-    case "awaiting_acceptance":
+    case "waiting_for_receiver":
       return direction === "incoming"
         ? tRoot("untranslatedRecords.accessions.transfers.empty.incoming")
         : tRoot(
             "untranslatedRecords.accessions.transfers.empty.awaitingReceiver",
           );
-    case "executed":
-    case "rejected":
+    case "received":
+    case "declined":
     case "cancelled":
       return tRoot("untranslatedRecords.accessions.transfers.empty.log");
   }
 }
 
 /** Finished transfers read as a log of outcomes rather than as cards. */
-const LOG_STATUSES = new Set<TransferStatus>([
-  "executed",
-  "rejected",
+const LOG_STAGES = new Set<TransferStage>([
+  "received",
+  "declined",
   "cancelled",
 ]);
 
@@ -135,38 +114,34 @@ const LOG_STYLE = {
   icon: ScrollText,
 };
 
-/** When the transfer was executed, rejected or cancelled. */
+/** When the transfer was received, declined or cancelled. */
 function decidedAt(request: TransferRequest) {
-  return (
-    request.targetReviewedAt ??
-    request.sourceReviewedAt ??
-    request.reviewedAt ??
-    request.requestedAt
-  );
+  return request.decision?.decidedAt ?? request.requestedAt;
 }
 
 /**
- * Where a transfer went or came from, otherwise why it was rejected or
- * cancelled. A receiver's decline says who declined.
+ * Where a transfer went or came from, otherwise which organization declined
+ * or cancelled it, and why.
  */
 function logDetail(
   request: TransferRequest,
   tMoves: ReturnType<typeof useScopedI18n<"moveRequests">>,
 ) {
-  if (request.status === "executed") {
+  if (request.stage === "received") {
     return request.direction === "incoming"
       ? tMoves("receivedFrom", { organization: request.sourceOrganizationName })
       : tMoves("sentTo", { organization: request.targetOrganizationName });
   }
-  if (request.status === "rejected" && request.targetReviewedAt !== undefined) {
-    const declined = tMoves("declinedBy", {
-      organization: request.targetOrganizationName,
-    });
-    return request.targetReviewNotes
-      ? `${declined}: ${request.targetReviewNotes}`
-      : declined;
-  }
-  return request.sourceReviewNotes ?? request.targetOrganizationName;
+  const decider =
+    request.decision?.decidedBy === "receiver"
+      ? request.targetOrganizationName
+      : request.sourceOrganizationName;
+  const outcome =
+    request.stage === "cancelled"
+      ? tMoves("cancelledBy", { organization: decider })
+      : tMoves("declinedBy", { organization: decider });
+  const notes = request.decision?.notes;
+  return notes ? `${outcome}: ${notes}` : outcome;
 }
 
 function newestDecisionFirst(left: TransferRequest, right: TransferRequest) {
@@ -178,7 +153,7 @@ function newestDecisionFirst(left: TransferRequest, right: TransferRequest) {
 }
 
 export function TransferKanbanColumn({
-  statuses,
+  stages,
   direction,
   title,
   searchQuery,
@@ -187,9 +162,9 @@ export function TransferKanbanColumn({
   const tRoot = useI18n();
   const tMoves = useScopedI18n("moveRequests");
   const locale = useCurrentLocale();
-  const isLog = statuses.every((status) => LOG_STATUSES.has(status));
-  const firstStatus = statuses[0] ?? "pending_source_approval";
-  const emptyStyle = isLog ? LOG_STYLE : statusStyles[firstStatus];
+  const isLog = stages.every((stage) => LOG_STAGES.has(stage));
+  const firstStage = stages[0] ?? "waiting_for_sender";
+  const emptyStyle = isLog ? LOG_STYLE : stageStyles[firstStage];
   const EmptyIcon = emptyStyle.icon;
   const [shownLog, setShownLog] = useState({
     search: searchQuery,
@@ -198,36 +173,11 @@ export function TransferKanbanColumn({
   const logLength =
     shownLog.search === searchQuery ? shownLog.length : RECORD_LOG_PAGE_SIZE;
 
-  const filteredRequests = transferRequests.filter((request) => {
-    if (
-      !statuses.includes(boardStatus(request)) ||
-      (direction !== undefined && request.direction !== direction)
-    ) {
-      return false;
-    }
-
-    if (!searchQuery) {
-      return true;
-    }
-
-    const search = searchQuery.toLowerCase();
-    return (
-      request.collectionTitle.toLowerCase().includes(search) ||
-      request.sourceAccessionNumber.toLowerCase().includes(search) ||
-      // The other organization: the viewer's own name matches every row.
-      (request.direction === "incoming"
-        ? request.sourceOrganizationName
-        : request.targetOrganizationName
-      )
-        .toLowerCase()
-        .includes(search) ||
-      request.requestedByName.toLowerCase().includes(search) ||
-      request.reason.toLowerCase().includes(search) ||
-      request.requestedAccessionNumber?.toLowerCase().includes(search) ||
-      request.finalAccessionNumber?.toLowerCase().includes(search) ||
-      false
-    );
-  });
+  const filteredRequests = transferRequests.filter(
+    (request) =>
+      stages.includes(request.stage) &&
+      (direction === undefined || request.direction === direction),
+  );
   const logEntries = isLog
     ? filteredRequests.toSorted(newestDecisionFirst)
     : [];
@@ -255,7 +205,7 @@ export function TransferKanbanColumn({
                   <EmptyIcon className="size-4" />
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  {getTransferEmptyMessage(firstStatus, direction, tRoot)}
+                  {getTransferEmptyMessage(firstStage, direction, tRoot)}
                 </p>
               </div>
             ) : isLog ? (
@@ -269,8 +219,8 @@ export function TransferKanbanColumn({
                     title={request.collectionTitle}
                     detail={logDetail(request, tMoves)}
                     status={{
-                      label: tRoot(statusLabels[request.status]),
-                      className: statusStyles[request.status].badge,
+                      label: tRoot(TRANSFER_STAGE_LABELS[request.stage]),
+                      className: stageStyles[request.stage].badge,
                     }}
                   />
                 ))}
@@ -280,7 +230,7 @@ export function TransferKanbanColumn({
                 <Link
                   key={request._id}
                   href={`/objects/move-requests/${request._id}`}
-                  className={`group block rounded-xl border p-3 transition-colors ${statusStyles[boardStatus(request)].card}`}
+                  className={`group block rounded-xl border p-3 transition-colors ${stageStyles[request.stage].card}`}
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
@@ -296,9 +246,9 @@ export function TransferKanbanColumn({
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${statusStyles[boardStatus(request)].badge}`}
+                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${stageStyles[request.stage].badge}`}
                     >
-                      {tRoot(statusLabels[boardStatus(request)])}
+                      {tRoot(TRANSFER_STAGE_LABELS[request.stage])}
                     </span>
                   </div>
 
@@ -336,6 +286,12 @@ export function TransferKanbanColumn({
                       </span>
                     </div>
                   </div>
+
+                  {request.awaitsSenderReapproval ? (
+                    <p className="mt-3 text-xs text-sky-200">
+                      {tMoves("reapprovalNote")}
+                    </p>
+                  ) : null}
 
                   <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">

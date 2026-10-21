@@ -1,6 +1,7 @@
 "use client";
 
 import type { api } from "@v1/backend/convex/_generated/api";
+import type { TransferStage } from "@v1/backend/convex/utils/transferStages";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -33,7 +34,7 @@ type CollectionDoc = NonNullable<
 
 interface PendingMoveRequest {
   _id: string;
-  status: string;
+  stage: TransferStage;
   targetOrganizationName: string;
 }
 
@@ -95,7 +96,7 @@ export function CollectionEditFormHero({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
                     <ArrowRightLeft className="size-4" />
-                    {pendingMoveRequest.status === "awaiting_acceptance"
+                    {pendingMoveRequest.stage === "waiting_for_receiver"
                       ? tRoot(
                           "untranslatedRecords.objects.transfer.awaitingAcceptance",
                         )
@@ -105,7 +106,7 @@ export function CollectionEditFormHero({
                   </div>
                   <p className="text-sm text-blue-200/80">
                     {tRoot("untranslatedRecords.objects.move.thisObject")}{" "}
-                    {pendingMoveRequest.status === "awaiting_acceptance"
+                    {pendingMoveRequest.stage === "waiting_for_receiver"
                       ? tRoot(
                           "untranslatedRecords.objects.transfer.awaitingAcceptanceShort",
                         )

@@ -4,15 +4,10 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { Search } from "lucide-react";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { TransferKanbanColumn } from "./transfer-kanban-column";
-import {
-  countIncomingTransfers,
-  countPendingTransfers,
-  countTransfersAwaitingReceiver,
-} from "./use-open-transfer-count";
 
 type TransfersBoardProps = {
   organizationId: Id<"organizations">;
@@ -26,35 +21,8 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     organizationId,
     search: deferredSearchQuery || undefined,
   });
-
-  const stats = useMemo(() => {
-    if (!transferRequests) {
-      return {
-        pending: "-",
-        awaitingReceiver: "-",
-        incoming: "-",
-        executed: "-",
-        rejected: "-",
-        cancelled: "-",
-      };
-    }
-
-    return {
-      pending: countPendingTransfers(transferRequests),
-      awaitingReceiver: countTransfersAwaitingReceiver(transferRequests),
-      incoming: countIncomingTransfers(transferRequests),
-      // The Transfer log's entries, sent and received alike.
-      executed: transferRequests.filter(
-        (request) => request.status === "executed",
-      ).length,
-      rejected: transferRequests.filter(
-        (request) => request.status === "rejected",
-      ).length,
-      cancelled: transferRequests.filter(
-        (request) => request.status === "cancelled",
-      ).length,
-    };
-  }, [transferRequests]);
+  // The whole board's counts, whatever the search, as the Transfers tab shows.
+  const counts = useQuery(api.objectMoves.getBoardCounts, { organizationId });
 
   if (transferRequests === undefined) {
     return <AccessionsPageSkeleton actionsCount={1} statsCount={6} />;
@@ -66,29 +34,29 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
         <div className="flex flex-wrap gap-4">
           <TransferStat
             label={tRoot("accessions.stats.pending")}
-            value={stats.pending}
+            value={counts?.waitingForApproval ?? "-"}
           />
           <TransferStat
             label={tRoot(
               "untranslatedRecords.accessions.transfers.awaitingAcceptance",
             )}
-            value={stats.awaitingReceiver}
+            value={counts?.waitingForReceiver ?? "-"}
           />
           <TransferStat
             label={tRoot("loans.filters.incoming")}
-            value={stats.incoming}
+            value={counts?.incoming ?? "-"}
           />
           <TransferStat
             label={tRoot("untranslatedRecords.accessions.transfer.executed")}
-            value={stats.executed}
+            value={counts?.received ?? "-"}
           />
           <TransferStat
             label={tRoot("accessions.status.rejected")}
-            value={stats.rejected}
+            value={counts?.declined ?? "-"}
           />
           <TransferStat
             label={tRoot("loans.status.cancelled")}
-            value={stats.cancelled}
+            value={counts?.cancelled ?? "-"}
           />
         </div>
 
@@ -114,7 +82,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
       <div className="flex-1 overflow-x-auto custom-scrollbar">
         <div className="flex h-full min-w-max gap-6 pb-4">
           <TransferKanbanColumn
-            statuses={["pending_source_approval"]}
+            stages={["waiting_for_sender"]}
             direction="outgoing"
             title={tRoot(
               "untranslatedRecords.accessions.transfer.pendingApproval",
@@ -123,7 +91,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
-            statuses={["awaiting_acceptance"]}
+            stages={["waiting_for_receiver"]}
             direction="outgoing"
             title={tRoot(
               "untranslatedRecords.accessions.transfer.awaitingReceiver",
@@ -132,7 +100,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
-            statuses={["awaiting_acceptance"]}
+            stages={["waiting_for_receiver"]}
             direction="incoming"
             title={tRoot(
               "untranslatedRecords.accessions.transfer.incomingRequests",
@@ -141,7 +109,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
-            statuses={["executed", "rejected", "cancelled"]}
+            stages={["received", "declined", "cancelled"]}
             title={tRoot("untranslatedRecords.accessions.transfer.transferLog")}
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}

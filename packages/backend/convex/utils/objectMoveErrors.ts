@@ -56,6 +56,11 @@ function isEligibilityBlockerCode(
 export const OBJECT_MOVE_ERROR_CODES = [
   /** Another decision already approved, executed, rejected or cancelled it. */
   "MOVE_REQUEST_CLOSED",
+  /**
+   * The receiving organization tried to decide a transfer that still waits
+   * for the sending organization's approval, or its approval again.
+   */
+  "TRANSFER_AWAITS_SENDER",
   /** The object cannot move now; `blockers` says why. */
   "MOVE_BLOCKED",
   /**

@@ -481,7 +481,7 @@ describe("Dashboard: getAnalytics", () => {
       board
         .flatMap((request) =>
           request.direction === "outgoing" &&
-          request.status === "pending_source_approval"
+          request.stage === "waiting_for_sender"
             ? [request.reason]
             : [],
         )

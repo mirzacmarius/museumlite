@@ -16,7 +16,6 @@ export function MoveRequestDetailPageClient() {
   const {
     currentOrganizationId,
     request,
-    currentUser,
     reviewNotes,
     setReviewNotes,
     targetLocationId,
@@ -26,10 +25,10 @@ export function MoveRequestDetailPageClient() {
     manualAccessionNumber,
     setManualAccessionNumber,
     isSubmitting,
-    permissions,
+    canOpenTransfers,
     handleApprove,
     handleAccept,
-    handleReject,
+    handleDecline,
     handleCancel,
   } = useMoveRequestDetail();
   // Only staff of the organization holding the object can open it.
@@ -38,7 +37,7 @@ export function MoveRequestDetailPageClient() {
   // Staff who cannot open the Transfers board go back to the object, or to
   // the Object Catalog once the object has left.
   const back = useBackToResults(
-    permissions.canOpenTransfers || !request
+    canOpenTransfers || !request
       ? TRANSFERS_HREF
       : holdsObject
         ? `/objects/${request.collectionId}`
@@ -55,7 +54,7 @@ export function MoveRequestDetailPageClient() {
     );
   }
 
-  if (request === undefined || currentUser === undefined) {
+  if (request === undefined) {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
@@ -84,7 +83,7 @@ export function MoveRequestDetailPageClient() {
               <ArrowLeft className="mr-2 size-4" />
               {back.fromResults
                 ? tRoot("recordRecovery.backToResults")
-                : permissions.canOpenTransfers
+                : canOpenTransfers
                   ? tRoot("untranslatedRecords.objects.move.backToTransfers")
                   : holdsObject
                     ? tRoot("objects.backToObject")
@@ -101,21 +100,33 @@ export function MoveRequestDetailPageClient() {
             onReviewNotesChange={setReviewNotes}
             targetLocationId={targetLocationId}
             onTargetLocationChange={setTargetLocationId}
-            targetOrganizationId={request.targetOrganizationId}
+            receiverTracksLocations={request.receiverTracksLocations}
             sourceAccessionNumber={request.sourceAccessionNumber}
             accessionMode={accessionMode}
             onAccessionModeChange={setAccessionMode}
             manualAccessionNumber={manualAccessionNumber}
             onManualAccessionNumberChange={setManualAccessionNumber}
             submittingAction={isSubmitting}
-            availableActions={{
-              sourceReview: permissions.canSourceApprove,
-              targetReview: permissions.canTargetAcceptOrReject,
-              cancel: permissions.canCancel,
+            actions={request.actions}
+            sender={{
+              id: request.sourceOrganizationId,
+              name:
+                request.sourceOrganization?.name ??
+                tRoot(
+                  "untranslatedRecords.objects.moveRequest.unknownOrganization",
+                ),
+            }}
+            receiver={{
+              id: request.targetOrganizationId,
+              name:
+                request.targetOrganization?.name ??
+                tRoot(
+                  "untranslatedRecords.objects.moveRequest.unknownOrganization",
+                ),
             }}
             onApprove={() => handleApprove(request)}
             onAccept={() => handleAccept(request)}
-            onReject={() => handleReject(request)}
+            onDecline={() => handleDecline(request)}
             onCancel={() => handleCancel(request)}
           />
         </div>

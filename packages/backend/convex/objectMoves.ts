@@ -36,7 +36,6 @@ import {
 import {
   executedTransferDeaccessionIds,
   holdsObject,
-  OPEN_TRANSFER_STATUSES,
 } from "./utils/openDeaccessions";
 import {
   getCurrentUserOrganization,
@@ -45,22 +44,24 @@ import {
   requirePermission,
 } from "./utils/permissions";
 import { rehomeObjectProvenance } from "./utils/provenance";
+import {
+  approvedBySender,
+  awaitsSenderReapproval,
+  isOpenTransfer,
+  reachedReceiver,
+  type TransferStage,
+  transferActionsFor,
+  transferDecision,
+  transferDecisionValidator,
+  transferStage,
+  transferStageValidator,
+} from "./utils/transferStages";
 import type { ColumnPage } from "./utils/workBoardColumns";
 
 const accessionModeValidator = v.union(
   v.literal("keep"),
   v.literal("auto"),
   v.literal("manual"),
-);
-
-const requestStatusValidator = v.union(
-  v.literal("pending_source_approval"),
-  v.literal("approved_for_transfer"),
-  v.literal("awaiting_acceptance"),
-  v.literal("pending"),
-  v.literal("executed"),
-  v.literal("rejected"),
-  v.literal("cancelled"),
 );
 
 const blockerValidator = v.object({
@@ -82,7 +83,11 @@ const organizationMoveRequestSummaryValidator = v.object({
   targetOrganizationName: v.string(),
   reason: v.string(),
   notes: v.optional(v.string()),
-  status: requestStatusValidator,
+  stage: transferStageValidator,
+  /** The sender approved it before its Location was recorded and approves it again. */
+  awaitsSenderReapproval: v.boolean(),
+  /** How the transfer ended; absent while it is open. */
+  decision: v.optional(transferDecisionValidator),
   requestedBy: v.id("users"),
   requestedByName: v.string(),
   requestedAt: v.number(),
@@ -97,11 +102,6 @@ const organizationMoveRequestSummaryValidator = v.object({
   targetReviewNotes: v.optional(v.string()),
   deaccessionId: v.optional(v.id("deaccessions")),
   direction: v.union(v.literal("outgoing"), v.literal("incoming")),
-  /**
-   * Awaiting acceptance, but recorded before the observed source location
-   * was, so the source re-approves it before the target can decide.
-   */
-  awaitsSourceReapproval: v.boolean(),
 });
 
 const ACTIVE_LOAN_STATUSES = new Set(["active", "dispatched"]);
@@ -141,25 +141,6 @@ type EligibilityCheckOptions = {
   ignoreRequestId?: Id<"organizationMoveRequests">;
   ignoreDeaccessionId?: Id<"deaccessions">;
 };
-
-function normalizeRequestStatus(status: RequestStatus): RequestStatus {
-  return status === "pending" ? "pending_source_approval" : status;
-}
-
-/**
- * Whether the receiving organization ever had the request before it: the
- * source approved it. One the source rejected or cancelled never reached it.
- */
-function reachedReceiver(request: {
-  status: RequestStatus;
-  targetReviewedAt?: number;
-}) {
-  const status = normalizeRequestStatus(request.status);
-  if (status === "pending_source_approval" || status === "cancelled") {
-    return false;
-  }
-  return status !== "rejected" || request.targetReviewedAt !== undefined;
-}
 
 function getEffectiveRootOrganizationId(organization: {
   _id: Id<"organizations">;
@@ -392,8 +373,7 @@ async function buildEligibilityBlockers(
   if (
     moveRequests.some(
       (request) =>
-        OPEN_TRANSFER_STATUSES.has(request.status) &&
-        request._id !== options.ignoreRequestId,
+        isOpenTransfer(request) && request._id !== options.ignoreRequestId,
     )
   ) {
     blockers.push({
@@ -1378,7 +1358,11 @@ export const get = query({
 
     return {
       ...request,
-      status: normalizeRequestStatus(request.status),
+      stage: transferStage(request),
+      awaitsSenderReapproval: awaitsSenderReapproval(request),
+      approvedBySender: approvedBySender(request),
+      decision: transferDecision(request),
+      actions: await transferActionsFor(ctx, request, userId),
       collection,
       sourceOrganization,
       targetOrganization,
@@ -1393,6 +1377,9 @@ export const get = query({
       receiverGeneratesAccessionNumbers: targetOrganization
         ? generatesAccessionNumbers(targetOrganization)
         : false,
+      // The receiver's own setting, whichever Organization the viewer selected.
+      receiverTracksLocations:
+        targetOrganization?.settings?.locationTrackingEnabled ?? true,
     };
   },
 });
@@ -1400,7 +1387,6 @@ export const get = query({
 export const listForOrganization = query({
   args: {
     organizationId: v.id("organizations"),
-    status: v.optional(requestStatusValidator),
     search: v.optional(v.string()),
   },
   returns: v.array(organizationMoveRequestSummaryValidator),
@@ -1411,37 +1397,20 @@ export const listForOrganization = query({
       "organization.manage_settings",
     );
 
-    const sourceRequests = args.status
-      ? await ctx.db
-          .query("organizationMoveRequests")
-          .withIndex("by_source_organization_and_status", (q) =>
-            q
-              .eq("sourceOrganizationId", args.organizationId)
-              .eq("status", args.status!),
-          )
-          .collect()
-      : await ctx.db
-          .query("organizationMoveRequests")
-          .withIndex("by_source_organization", (q) =>
-            q.eq("sourceOrganizationId", args.organizationId),
-          )
-          .collect();
-
-    const targetRequests = args.status
-      ? await ctx.db
-          .query("organizationMoveRequests")
-          .withIndex("by_target_organization_and_status", (q) =>
-            q
-              .eq("targetOrganizationId", args.organizationId)
-              .eq("status", args.status!),
-          )
-          .collect()
-      : await ctx.db
-          .query("organizationMoveRequests")
-          .withIndex("by_target_organization", (q) =>
-            q.eq("targetOrganizationId", args.organizationId),
-          )
-          .collect();
+    const [sourceRequests, targetRequests] = await Promise.all([
+      ctx.db
+        .query("organizationMoveRequests")
+        .withIndex("by_source_organization", (q) =>
+          q.eq("sourceOrganizationId", args.organizationId),
+        )
+        .collect(),
+      ctx.db
+        .query("organizationMoveRequests")
+        .withIndex("by_target_organization", (q) =>
+          q.eq("targetOrganizationId", args.organizationId),
+        )
+        .collect(),
+    ]);
 
     const requestsById = new Map<
       Id<"organizationMoveRequests">,
@@ -1496,7 +1465,9 @@ export const listForOrganization = query({
             targetOrganization?.name ?? "Unknown organization",
           reason: request.reason,
           notes: request.notes,
-          status: normalizeRequestStatus(request.status),
+          stage: transferStage(request),
+          awaitsSenderReapproval: awaitsSenderReapproval(request),
+          decision: transferDecision(request),
           requestedBy: request.requestedBy,
           requestedByName:
             requestedByUser?.name ??
@@ -1516,9 +1487,6 @@ export const listForOrganization = query({
           targetReviewNotes: request.targetReviewNotes,
           deaccessionId: request.deaccessionId,
           direction,
-          awaitsSourceReapproval:
-            normalizeRequestStatus(request.status) === "awaiting_acceptance" &&
-            request.approvedSourceLocationId === undefined,
         };
       }),
     );
@@ -1552,6 +1520,93 @@ export const listForOrganization = query({
   },
 });
 
+const transferBoardCountsValidator = v.object({
+  /** Outgoing transfers waiting for this Organization's approval. */
+  waitingForApproval: v.number(),
+  /** Outgoing transfers this Organization approved, waiting for the receiver. */
+  waitingForReceiver: v.number(),
+  /** Incoming transfers waiting for this Organization to accept or decline. */
+  incoming: v.number(),
+  received: v.number(),
+  declined: v.number(),
+  cancelled: v.number(),
+  /**
+   * What waits on this Organization's decision, the Transfers tab count:
+   * the transfers to approve and the incoming ones, as the Work board's
+   * column lists them.
+   */
+  awaitingDecision: v.number(),
+});
+
+type TransferBoardColumn = Exclude<
+  keyof Infer<typeof transferBoardCountsValidator>,
+  "awaitingDecision"
+>;
+
+function boardColumn(
+  stage: TransferStage,
+  direction: "outgoing" | "incoming",
+): TransferBoardColumn {
+  switch (stage) {
+    case "waiting_for_sender":
+      return "waitingForApproval";
+    case "waiting_for_receiver":
+      return direction === "incoming" ? "incoming" : "waitingForReceiver";
+    default:
+      return stage;
+  }
+}
+
+/**
+ * The Transfers board's totals, independent of its search: every transfer
+ * `listForOrganization` lists, counted by stage and direction. Null for
+ * members who cannot decide transfers.
+ */
+export const getBoardCounts = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.union(transferBoardCountsValidator, v.null()),
+  handler: async (ctx, args) => {
+    const canDecide = await hasPermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+    if (!canDecide) return null;
+
+    const counts: Record<TransferBoardColumn, number> = {
+      waitingForApproval: 0,
+      waitingForReceiver: 0,
+      incoming: 0,
+      received: 0,
+      declined: 0,
+      cancelled: 0,
+    };
+    const sent = ctx.db
+      .query("organizationMoveRequests")
+      .withIndex("by_source_organization", (q) =>
+        q.eq("sourceOrganizationId", args.organizationId),
+      );
+    for await (const request of sent) {
+      counts[boardColumn(transferStage(request), "outgoing")] += 1;
+    }
+    const received = ctx.db
+      .query("organizationMoveRequests")
+      .withIndex("by_target_organization", (q) =>
+        q.eq("targetOrganizationId", args.organizationId),
+      );
+    for await (const request of received) {
+      if (!reachedReceiver(request)) continue;
+      counts[boardColumn(transferStage(request), "incoming")] += 1;
+    }
+    return {
+      ...counts,
+      awaitingDecision: counts.waitingForApproval + counts.incoming,
+    };
+  },
+});
+
 export const transferAwaitingDecisionValidator = v.object({
   _id: v.id("organizationMoveRequests"),
   collectionTitle: v.optional(v.string()),
@@ -1561,10 +1616,9 @@ export const transferAwaitingDecisionValidator = v.object({
 
 /**
  * Transfers waiting on the organization's transfer managers, newest first:
- * outgoing requests to approve and incoming ones to accept. An accepted-for-
- * transfer request without an observed source location predates that record
- * and waits on the source to re-approve, not on the target. Null for members
- * who cannot decide transfers, so they never see the Work board column.
+ * outgoing ones waiting for the sender and incoming ones waiting for the
+ * receiver, as `transferStage` places them. Null for members who cannot
+ * decide transfers, so they never see the Work board column.
  */
 export async function readAwaitingDecision(
   ctx: QueryCtx,
@@ -1588,6 +1642,7 @@ export async function readAwaitingDecision(
   const batches = await Promise.all([
     outgoing("pending_source_approval").order("desc").take(take),
     outgoing("pending").order("desc").take(take),
+    outgoing("approved_for_transfer").order("desc").take(take),
     outgoing("awaiting_acceptance")
       .filter((q) => q.eq(q.field("approvedSourceLocationId"), undefined))
       .order("desc")
@@ -1636,7 +1691,7 @@ export const getPendingForCollection = query({
       _id: v.id("organizationMoveRequests"),
       targetOrganizationId: v.id("organizations"),
       targetOrganizationName: v.string(),
-      status: requestStatusValidator,
+      stage: transferStageValidator,
       reason: v.string(),
       accessionMode: accessionModeValidator,
       requestedAt: v.number(),
@@ -1659,8 +1714,7 @@ export const getPendingForCollection = query({
         .collect(),
     ] as const);
 
-    const pendingRequest =
-      request.find((entry) => OPEN_TRANSFER_STATUSES.has(entry.status)) ?? null;
+    const pendingRequest = request.find(isOpenTransfer) ?? null;
 
     if (!pendingRequest) {
       return null;
@@ -1675,7 +1729,7 @@ export const getPendingForCollection = query({
       targetOrganizationId: pendingRequest.targetOrganizationId,
       targetOrganizationName:
         targetOrganization?.name ?? "Unknown organization",
-      status: normalizeRequestStatus(pendingRequest.status),
+      stage: transferStage(pendingRequest),
       reason: pendingRequest.reason,
       accessionMode: pendingRequest.accessionMode,
       requestedAt: pendingRequest.requestedAt,
@@ -1701,52 +1755,7 @@ export const approve = mutation({
       throw new Error("Move request not found");
     }
 
-    if (
-      request.status === "awaiting_acceptance" &&
-      request.approvedSourceLocationId === undefined
-    ) {
-      await requirePermission(
-        ctx,
-        request.sourceOrganizationId,
-        "organization.manage_settings",
-      );
-      const collection = await ctx.db.get(request.collectionId);
-      if (!collection) {
-        throw new Error("Collection not found");
-      }
-      if (collection.organizationId !== request.sourceOrganizationId) {
-        throw new Error(
-          "This transfer request no longer matches the object's organization.",
-        );
-      }
-      const now = Date.now();
-      const approvedSourceLocationId = collection.currentLocationId ?? null;
-      await Promise.all([
-        ctx.db.patch(args.requestId, {
-          approvedSourceLocationId,
-          sourceReviewedBy: userId,
-          sourceReviewedAt: now,
-          sourceReviewNotes:
-            args.reviewNotes?.trim() || request.sourceReviewNotes,
-        }),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: request.sourceOrganizationId,
-          userId,
-          action: "approved_organization_move_request_for_transfer",
-          entityType: "organizationMoveRequest",
-          entityId: args.requestId,
-          changes: {
-            collectionId: request.collectionId,
-            targetOrganizationId: request.targetOrganizationId,
-            approvedSourceLocationId,
-            reboundObservedSource: true,
-          },
-        }),
-      ]);
-      return null;
-    }
-
-    if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
+    if (transferStage(request) !== "waiting_for_sender") {
       throw moveRequestClosed(request.status);
     }
 
@@ -1760,12 +1769,23 @@ export const approve = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
+    if (collection.organizationId !== request.sourceOrganizationId) {
+      throw new Error(
+        "This transfer request no longer matches the object's organization.",
+      );
+    }
 
+    // An approval the sender makes again passes the same checks as the
+    // first, and keeps the Removal that first approval made.
+    const reapproval = awaitsSenderReapproval(request);
     const blockers = await buildEligibilityBlockers(
       ctx,
       collection,
       request.targetOrganizationId,
-      { ignoreRequestId: request._id },
+      {
+        ignoreRequestId: request._id,
+        ignoreDeaccessionId: request.deaccessionId,
+      },
     );
 
     requireNoMoveBlockers(blockers);
@@ -1787,16 +1807,19 @@ export const approve = mutation({
       "organization.manage_settings",
       { excludeUserId: userId },
     );
+    const reviewNotes =
+      args.reviewNotes?.trim() ||
+      (reapproval ? request.sourceReviewNotes : undefined);
     const now = Date.now();
     await Promise.all([
       ctx.db.patch(args.requestId, {
         status: "awaiting_acceptance",
         sourceReviewedBy: userId,
         sourceReviewedAt: now,
-        sourceReviewNotes: args.reviewNotes?.trim() || undefined,
+        sourceReviewNotes: reviewNotes,
         reviewedBy: userId,
         reviewedAt: now,
-        reviewNotes: args.reviewNotes?.trim() || undefined,
+        reviewNotes,
         deaccessionId,
         approvedSourceLocationId: collection.currentLocationId ?? null,
       }),
@@ -1810,6 +1833,7 @@ export const approve = mutation({
           collectionId: request.collectionId,
           targetOrganizationId: request.targetOrganizationId,
           deaccessionId,
+          ...(reapproval ? { reapproval: true } : {}),
         },
       }),
       dispatchNotification(ctx, {
@@ -1857,11 +1881,17 @@ export const accept = mutation({
       "organization.manage_settings",
     );
 
-    if (request.status === "executed") {
+    const stage = transferStage(request);
+    if (stage === "received") {
       return null;
     }
-
-    if (request.status !== "awaiting_acceptance") {
+    if (stage === "waiting_for_sender") {
+      throw objectMoveError(
+        "TRANSFER_AWAITS_SENDER",
+        "The sending organization has to approve this transfer before the receiving organization can decide it.",
+      );
+    }
+    if (stage !== "waiting_for_receiver") {
       throw moveRequestClosed(request.status);
     }
 
@@ -2066,28 +2096,43 @@ export const reject = mutation({
       throw new Error("Move request not found");
     }
 
-    const normalizedStatus = normalizeRequestStatus(request.status);
-    if (
-      normalizedStatus !== "pending_source_approval" &&
-      normalizedStatus !== "awaiting_acceptance"
-    ) {
+    const stage = transferStage(request);
+    if (stage !== "waiting_for_sender" && stage !== "waiting_for_receiver") {
       throw moveRequestClosed(request.status);
     }
 
-    const isTargetReview = normalizedStatus === "awaiting_acceptance";
-    await requirePermission(
-      ctx,
-      isTargetReview
-        ? request.targetOrganizationId
-        : request.sourceOrganizationId,
-      "organization.manage_settings",
-    );
+    // The receiver declines a transfer that waits for them. Before that, the
+    // sender's administrators may decline a request they have not approved;
+    // one they approved before they approve again or cancel, and the
+    // receiver cannot decide it yet (ADR 0020).
+    const isTargetReview = stage === "waiting_for_receiver";
+    const actsForSender =
+      !isTargetReview &&
+      (await hasPermission(
+        ctx,
+        request.sourceOrganizationId,
+        "organization.manage_settings",
+      ));
+    const isSenderDecline = actsForSender && !awaitsSenderReapproval(request);
+    if (!actsForSender) {
+      await requirePermission(
+        ctx,
+        request.targetOrganizationId,
+        "organization.manage_settings",
+      );
+    }
+    if (!isTargetReview && !isSenderDecline) {
+      throw objectMoveError(
+        "TRANSFER_AWAITS_SENDER",
+        "The sending organization has to approve this transfer before the receiving organization can decide it.",
+      );
+    }
 
     const reviewNotes = args.reviewNotes?.trim() || undefined;
     const now = Date.now();
     // The receiving organization declining sends the object back to the
-    // sender: the transfer deaccession made at source approval is rejected
-    // so the object stays in the source collection and can move again.
+    // sender: the Removal the sender's approval made is rejected, so the
+    // object stays in the source collection and can move again.
     const transferDeaccession =
       isTargetReview && request.deaccessionId
         ? await ctx.db.get(request.deaccessionId)
@@ -2206,16 +2251,30 @@ export const cancel = mutation({
       throw new Error("Move request not found");
     }
 
-    if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
+    const stage = transferStage(request);
+    if (stage !== "waiting_for_sender" && stage !== "waiting_for_receiver") {
       throw moveRequestClosed(request.status);
     }
 
-    const isSourceAdmin = await hasPermission(
-      ctx,
-      request.sourceOrganizationId,
-      "organization.manage_settings",
-    );
-
+    // The sender's administrators may cancel until the receiver decides; the
+    // requester only their own request, until the sender approves it
+    // (ADR 0020).
+    const openToRequester =
+      stage === "waiting_for_sender" && !awaitsSenderReapproval(request);
+    if (!openToRequester) {
+      await requirePermission(
+        ctx,
+        request.sourceOrganizationId,
+        "organization.manage_settings",
+      );
+    }
+    const isSourceAdmin =
+      !openToRequester ||
+      (await hasPermission(
+        ctx,
+        request.sourceOrganizationId,
+        "organization.manage_settings",
+      ));
     if (request.requestedBy !== userId && !isSourceAdmin) {
       throw new Error(
         "Only the requester or a source organization administrator can cancel this move request.",
@@ -2225,20 +2284,38 @@ export const cancel = mutation({
     // A source administrator's cancel is their review of the request, so
     // their notes sit where a source rejection's would. A requester without
     // that role is cancelling their own request, not reviewing it, and leaves no
-    // notes.
+    // notes. Once the sender approved, the approval stays where it is and the
+    // cancel is recorded beside it.
     const reviewNotes = isSourceAdmin
       ? args.reviewNotes?.trim() || undefined
       : undefined;
+    const approved = approvedBySender(request);
+    const transferDeaccession = request.deaccessionId
+      ? await ctx.db.get(request.deaccessionId)
+      : null;
     const now = Date.now();
     await Promise.all([
+      transferDeaccession
+        ? rejectTransferDeaccession(
+            ctx,
+            transferDeaccession,
+            request._id,
+            userId,
+            "Transfer cancelled by the sending organization.",
+          )
+        : null,
       ctx.db.patch(args.requestId, {
         status: "cancelled",
         reviewedBy: isSourceAdmin ? userId : undefined,
         reviewedAt: now,
         reviewNotes,
-        sourceReviewedBy: isSourceAdmin ? userId : undefined,
-        sourceReviewedAt: isSourceAdmin ? now : undefined,
-        sourceReviewNotes: reviewNotes,
+        ...(approved
+          ? {}
+          : {
+              sourceReviewedBy: isSourceAdmin ? userId : undefined,
+              sourceReviewedAt: isSourceAdmin ? now : undefined,
+              sourceReviewNotes: reviewNotes,
+            }),
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.sourceOrganizationId,
@@ -2262,7 +2339,43 @@ export const cancel = mutation({
         related: { entityType: "move_request", entityId: args.requestId },
       });
     }
+    if (stage === "waiting_for_receiver") {
+      await notifyReceiverOfCancel(ctx, request, userId, reviewNotes);
+    }
 
     return null;
   },
 });
+
+/**
+ * Tells the receiving organization's administrators, who were waiting to
+ * decide, that the sender cancelled the transfer.
+ */
+async function notifyReceiverOfCancel(
+  ctx: MutationCtx,
+  request: Doc<"organizationMoveRequests">,
+  cancelledBy: Id<"users">,
+  reviewNotes: string | undefined,
+) {
+  const [targetManagers, collection, sourceOrganization] = await Promise.all([
+    getUserIdsWithPermission(
+      ctx,
+      request.targetOrganizationId,
+      "organization.manage_settings",
+      { excludeUserId: cancelledBy },
+    ),
+    ctx.db.get(request.collectionId),
+    ctx.db.get(request.sourceOrganizationId),
+  ] as const);
+  if (targetManagers.length === 0) return;
+
+  const cancelled = `${sourceOrganization?.name ?? "The sending organization"} cancelled the transfer of ${collection?.title ?? request.sourceAccessionNumber}.`;
+  await dispatchNotification(ctx, {
+    organizationId: request.targetOrganizationId,
+    type: "move_request_cancelled",
+    recipients: targetManagers,
+    title: "Transfer Cancelled",
+    message: reviewNotes ? `${cancelled} Reason: ${reviewNotes}` : cancelled,
+    related: { entityType: "move_request", entityId: request._id },
+  });
+}

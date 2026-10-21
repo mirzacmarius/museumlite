@@ -7678,16 +7678,13 @@ export default {
         noneEntered: "No source entered yet",
       },
       transfers: {
-        awaitingApproval: "Awaiting approval",
         pendingApproval: "Pending transfer approval",
-        approved: "Approved for transfer",
         awaitingAcceptance: "Awaiting acceptance",
         executed: "Transfer executed",
         rejected: "Rejected",
         cancelled: "Cancelled",
         empty: {
           pending: "No transfer approvals are waiting right now.",
-          approved: "No approved transfers are waiting right now.",
           incoming: "No incoming transfer requests are waiting right now.",
           awaitingReceiver:
             "No transfers are waiting for a receiver to accept them.",
@@ -7853,6 +7850,7 @@ export default {
         requestedAt: "Requested at",
         sourceApprovedAt: "Source approved at",
         sourceCancelledAt: "Source cancelled at",
+        sourceDeclinedAt: "Source declined at",
         targetReviewedAt: "Target reviewed at",
         executedAt: "Executed at",
         reason: "Reason for move",
@@ -7860,7 +7858,6 @@ export default {
         notFound: "Move request not found.",
         backToTransfers: "Back to transfers",
         openObject: "Open object",
-        awaitingAcceptance: "Awaiting acceptance",
         selectOrganization: "Select an organization to continue.",
         openTransfer: "Open transfer request",
         thisObject: "This object is",
@@ -10019,6 +10016,7 @@ export default {
         deaccessionRejected: "Deaccession Rejected",
         objectMoveApproved: "Object Move Approved",
         transferDeclined: "Transfer Declined",
+        transferCancelled: "Transfer Cancelled",
         incomingTransferRejected: "Incoming Transfer Rejected",
         objectMoveRejected: "Object Move Rejected",
         objectMoveCancelled: "Object Move Cancelled",
@@ -10094,6 +10092,9 @@ export default {
         transferDeclined: "{organization} declined the transfer of {title}.",
         transferDeclinedWithReason:
           "{organization} declined the transfer of {title}. Reason: {reason}",
+        transferCancelled: "{organization} cancelled the transfer of {title}.",
+        transferCancelledWithReason:
+          "{organization} cancelled the transfer of {title}. Reason: {reason}",
         objectMoveRejected: "Your object move request was rejected.",
         objectMoveCancelled:
           "Your object move request was cancelled by an administrator of the source organization.",
@@ -10637,8 +10638,12 @@ export default {
       chosenByReceiver: "Chosen by the receiving organization when it accepts",
     },
     declinedBy: "Declined by {organization}",
+    cancelledBy: "Cancelled by {organization}",
     receivedFrom: "Received from {organization}",
     sentTo: "Sent to {organization}",
+    actingFor: "On behalf of {organization}",
+    reapprovalNote:
+      "Approved under an earlier version of transfers, so the sending organization has to approve it again before the receiving organization decides.",
     errors: {
       accessionNumberTaken:
         "{number} is already used in your organization. Generate or enter a new number.",
@@ -10647,6 +10652,8 @@ export default {
         "Automatic accession numbers are not set up for your organization. Enter a new number, or turn them on in Preferences.",
       requestClosed:
         "This transfer request has already been decided or cancelled.",
+      awaitsSender:
+        "The sending organization has to approve this transfer before you can accept or decline it.",
       outsideHierarchy:
         "The destination organization is outside your organization's hierarchy and does not allow incoming transfer requests.",
       planRequired:

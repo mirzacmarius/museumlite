@@ -37,6 +37,7 @@ function getTitleMatch(title: string): Match | null {
     "Deaccession Rejected": "deaccessionRejected",
     "Object Move Approved": "objectMoveApproved",
     "Transfer Declined": "transferDeclined",
+    "Transfer Cancelled": "transferCancelled",
     "Incoming Transfer Rejected": "incomingTransferRejected",
     "Object Move Rejected": "objectMoveRejected",
     "Object Move Cancelled": "objectMoveCancelled",
@@ -409,6 +410,20 @@ function getMessageMatch(message: string): Match | null {
     [
       /^(.+?) declined the transfer of (.+)\.$/,
       "transferDeclined",
+      (match) => ({ organization: match[1] ?? "", title: match[2] ?? "" }),
+    ],
+    [
+      /^(.+?) cancelled the transfer of (.+?)\. Reason: ([\s\S]+)$/,
+      "transferCancelledWithReason",
+      (match) => ({
+        organization: match[1] ?? "",
+        title: match[2] ?? "",
+        reason: match[3] ?? "",
+      }),
+    ],
+    [
+      /^(.+?) cancelled the transfer of (.+)\.$/,
+      "transferCancelled",
       (match) => ({ organization: match[1] ?? "", title: match[2] ?? "" }),
     ],
     [

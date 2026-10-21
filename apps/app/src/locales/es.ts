@@ -7832,16 +7832,13 @@ export default {
         noneEntered: "Aún no se ha indicado la fuente",
       },
       transfers: {
-        awaitingApproval: "Pendiente de aprobación",
         pendingApproval: "Aprobación de la transferencia pendiente",
-        approved: "Aprobado para la transferencia",
         awaitingAcceptance: "Pendiente de aceptación",
         executed: "Transferencia realizada",
         rejected: "Rechazado",
         cancelled: "Cancelado",
         empty: {
           pending: "No hay aprobaciones de transferencias pendientes.",
-          approved: "No hay transferencias aprobadas pendientes.",
           incoming: "No hay solicitudes de transferencia entrantes pendientes.",
           awaitingReceiver:
             "No hay transferencias pendientes de aceptación por un receptor.",
@@ -8012,6 +8009,7 @@ export default {
         requestedAt: "Solicitado el",
         sourceApprovedAt: "Fuente aprobada el",
         sourceCancelledAt: "Cancelada por la fuente el",
+        sourceDeclinedAt: "Rechazada por la fuente el",
         targetReviewedAt: "Destino revisado el",
         executedAt: "Ejecutado el",
         reason: "Motivo del traslado",
@@ -8019,7 +8017,6 @@ export default {
         notFound: "No se encontró la solicitud de traslado.",
         backToTransfers: "Volver a los traslados",
         openObject: "Abrir objeto",
-        awaitingAcceptance: "A la espera de aceptación",
         selectOrganization: "Seleccione una organización para continuar.",
         openTransfer: "Abrir solicitud de transferencia",
         thisObject: "Este objeto está",
@@ -10250,6 +10247,7 @@ export default {
         deaccessionRejected: "Baja de colección rechazada",
         objectMoveApproved: "Traslado del objeto aprobado",
         transferDeclined: "Transferencia rechazada",
+        transferCancelled: "Transferencia cancelada",
         incomingTransferRejected: "Transferencia entrante rechazada",
         objectMoveRejected: "Traslado del objeto rechazado",
         objectMoveCancelled: "Traslado del objeto cancelado",
@@ -10333,6 +10331,10 @@ export default {
         transferDeclined: "{organization} rechazó la transferencia de {title}.",
         transferDeclinedWithReason:
           "{organization} rechazó la transferencia de {title}. Motivo: {reason}",
+        transferCancelled:
+          "{organization} canceló la transferencia de {title}.",
+        transferCancelledWithReason:
+          "{organization} canceló la transferencia de {title}. Motivo: {reason}",
         objectMoveRejected:
           "Tu solicitud de traslado del objeto fue rechazada.",
         objectMoveCancelled:
@@ -10891,8 +10893,12 @@ export default {
       chosenByReceiver: "Lo elige la organización receptora al aceptar",
     },
     declinedBy: "Rechazada por {organization}",
+    cancelledBy: "Cancelada por {organization}",
     receivedFrom: "Recibido de {organization}",
     sentTo: "Enviado a {organization}",
+    actingFor: "En nombre de {organization}",
+    reapprovalNote:
+      "Se aprobó con una versión anterior de las transferencias, así que la organización de origen debe aprobarla de nuevo antes de que decida la organización receptora.",
     errors: {
       accessionNumberTaken:
         "{number} ya se usa en tu organización. Genera o introduce un número nuevo.",
@@ -10900,6 +10906,8 @@ export default {
       accessionGenerationUnavailable:
         "Tu organización no tiene configurada la numeración automática de accesiones. Introduce un número nuevo o actívala en Preferencias.",
       requestClosed: "Esta solicitud de traslado ya se resolvió o se canceló.",
+      awaitsSender:
+        "La organización de origen debe aprobar esta transferencia antes de que puedas aceptarla o rechazarla.",
       outsideHierarchy:
         "La organización de destino está fuera de la jerarquía de tu organización y no permite solicitudes de transferencia entrantes.",
       planRequired:

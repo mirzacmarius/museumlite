@@ -7771,16 +7771,13 @@ export default {
         noneEntered: "Ingen kilde er oppgitt ennå",
       },
       transfers: {
-        awaitingApproval: "Venter på godkjenning",
         pendingApproval: "Venter på godkjenning av overføringen",
-        approved: "Godkjent for overføring",
         awaitingAcceptance: "Venter på aksept",
         executed: "Overføring gjennomført",
         rejected: "Avvist",
         cancelled: "Avbrutt",
         empty: {
           pending: "Ingen overføringer venter på godkjenning nå.",
-          approved: "Ingen godkjente overføringer venter nå.",
           incoming: "Ingen innkommende overføringsforespørsler venter nå.",
           awaitingReceiver:
             "Ingen overføringer venter på aksept fra en mottaker.",
@@ -7949,6 +7946,7 @@ export default {
         requestedAt: "Forespurt",
         sourceApprovedAt: "Kilde godkjent",
         sourceCancelledAt: "Kansellert av kilde",
+        sourceDeclinedAt: "Avslått av kilde",
         targetReviewedAt: "Mål gjennomgått",
         executedAt: "Gjennomført",
         reason: "Årsak til flytting",
@@ -7956,7 +7954,6 @@ export default {
         notFound: "Fant ikke flytteforespørselen.",
         backToTransfers: "Tilbake til overføringer",
         openObject: "Åpne objekt",
-        awaitingAcceptance: "Venter på godkjenning",
         selectOrganization: "Velg en organisasjon for å fortsette.",
         openTransfer: "Åpne overføringsforespørsel",
         thisObject: "Dette objektet er",
@@ -10143,6 +10140,7 @@ export default {
         deaccessionRejected: "Kassering avvist",
         objectMoveApproved: "Flytting av objekt godkjent",
         transferDeclined: "Overføring avslått",
+        transferCancelled: "Overføring avbrutt",
         incomingTransferRejected: "Innkommende overføring avvist",
         objectMoveRejected: "Flytting av objekt avvist",
         objectMoveCancelled: "Flytting av objekt avbrutt",
@@ -10220,6 +10218,9 @@ export default {
         transferDeclined: "{organization} avslo overføringen av {title}.",
         transferDeclinedWithReason:
           "{organization} avslo overføringen av {title}. Begrunnelse: {reason}",
+        transferCancelled: "{organization} avbrøt overføringen av {title}.",
+        transferCancelledWithReason:
+          "{organization} avbrøt overføringen av {title}. Begrunnelse: {reason}",
         objectMoveRejected:
           "Forespørselen din om å flytte objektet ble avvist.",
         objectMoveCancelled:
@@ -10759,8 +10760,12 @@ export default {
       chosenByReceiver: "Velges av mottakende organisasjon ved mottak",
     },
     declinedBy: "Avslått av {organization}",
+    cancelledBy: "Avbrutt av {organization}",
     receivedFrom: "Mottatt fra {organization}",
     sentTo: "Sendt til {organization}",
+    actingFor: "På vegne av {organization}",
+    reapprovalNote:
+      "Godkjent i en tidligere versjon av overføringer, så avsenderorganisasjonen må godkjenne den på nytt før mottakerorganisasjonen avgjør den.",
     errors: {
       accessionNumberTaken:
         "{number} er allerede i bruk i organisasjonen din. Generer eller skriv inn et nytt nummer.",
@@ -10769,6 +10774,8 @@ export default {
         "Automatiske aksesjonsnumre er ikke satt opp for organisasjonen din. Skriv inn et nytt nummer, eller slå dem på under Preferanser.",
       requestClosed:
         "Denne overføringsforespørselen er allerede avgjort eller avbrutt.",
+      awaitsSender:
+        "Avsenderorganisasjonen må godkjenne denne overføringen før du kan godta eller avslå den.",
       outsideHierarchy:
         "Mottakerorganisasjonen er utenfor organisasjonens hierarki og tillater ikke innkommende overføringsforespørsler.",
       planRequired:

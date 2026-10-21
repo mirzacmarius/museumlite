@@ -2,10 +2,11 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { TransferViewerAction } from "@v1/backend/convex/utils/transferStages";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import type { AccessionMode } from "@/components/deaccession-dialog-types";
 import { useOrganization } from "@/components/organization-provider";
@@ -17,12 +18,7 @@ export type MoveRequestDetail = NonNullable<
   FunctionReturnType<typeof api.objectMoves.get>
 >;
 
-export type MoveRequestSubmitAction =
-  | "approve"
-  | "accept"
-  | "reject"
-  | "cancel"
-  | null;
+export type MoveRequestSubmitAction = TransferViewerAction["action"] | null;
 
 export function useMoveRequestDetail() {
   const tRoot = useI18n();
@@ -49,44 +45,15 @@ export function useMoveRequestDetail() {
       ? { requestId: requestId as Id<"organizationMoveRequests"> }
       : "skip",
   );
-  const currentUser = useQuery(api.users.getUser, {});
 
   const approve = useMutation(api.objectMoves.approve);
   const accept = useMutation(api.objectMoves.accept);
   const reject = useMutation(api.objectMoves.reject);
   const cancel = useMutation(api.objectMoves.cancel);
 
-  const permissions = useMemo(() => {
-    // The Transfers board is for the organization's transfer managers.
-    const canOpenTransfers = hasPermission("organization.manage_settings");
-    if (!request || !currentUser) {
-      return {
-        canSourceApprove: false,
-        canTargetAcceptOrReject: false,
-        canCancel: false,
-        canOpenTransfers,
-      };
-    }
-
-    const isRequester = request.requestedBy === currentUser._id;
-    const isSourceAdmin =
-      currentOrganizationId === request.sourceOrganization?._id &&
-      hasPermission("organization.manage_settings");
-    const isTargetAdmin =
-      currentOrganizationId === request.targetOrganization?._id &&
-      hasPermission("organization.manage_settings");
-
-    return {
-      canSourceApprove:
-        request.status === "pending_source_approval" && isSourceAdmin,
-      canTargetAcceptOrReject:
-        request.status === "awaiting_acceptance" && isTargetAdmin,
-      canCancel:
-        request.status === "pending_source_approval" &&
-        (isRequester || isSourceAdmin),
-      canOpenTransfers,
-    };
-  }, [currentOrganizationId, currentUser, hasPermission, request]);
+  // The Transfers board is for the organization's transfer managers. What
+  // the viewer may do with this transfer is the backend's `actions`.
+  const canOpenTransfers = hasPermission("organization.manage_settings");
 
   // Senders never choose, so a stored "keep" is only the request's default:
   // the receiver starts from a newly generated number when it can generate
@@ -149,8 +116,8 @@ export function useMoveRequestDetail() {
     }
   };
 
-  const handleReject = async (moveRequest: MoveRequestDetail) => {
-    setIsSubmitting("reject");
+  const handleDecline = async (moveRequest: MoveRequestDetail) => {
+    setIsSubmitting("decline");
     try {
       await reject({
         requestId: moveRequest._id,
@@ -196,7 +163,6 @@ export function useMoveRequestDetail() {
   return {
     currentOrganizationId,
     request,
-    currentUser,
     reviewNotes,
     setReviewNotes,
     targetLocationId,
@@ -206,10 +172,10 @@ export function useMoveRequestDetail() {
     manualAccessionNumber,
     setManualAccessionNumber: setChosenAccessionNumber,
     isSubmitting,
-    permissions,
+    canOpenTransfers,
     handleApprove,
     handleAccept,
-    handleReject,
+    handleDecline,
     handleCancel,
   };
 }

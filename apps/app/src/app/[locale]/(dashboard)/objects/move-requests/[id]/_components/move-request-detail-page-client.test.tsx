@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { identifierError } from "@v1/backend/convex/utils/identifierErrors";
 import { objectMoveError } from "@v1/backend/convex/utils/objectMoveErrors";
@@ -11,11 +11,25 @@ import { MoveRequestDetailPageClient } from "./move-request-detail-page-client";
 const SOURCE = "source-org";
 const TARGET = "target-org";
 
+type ViewerAction = {
+  action: "approve" | "accept" | "decline" | "cancel";
+  organizationId: string;
+  takesNotes: boolean;
+};
+
+/** What the backend offers each side's administrators. */
+const SENDER_ADMIN: ViewerAction[] = [
+  { action: "approve", organizationId: SOURCE, takesNotes: true },
+  { action: "cancel", organizationId: SOURCE, takesNotes: true },
+];
+const RECEIVER_ADMIN: ViewerAction[] = [
+  { action: "accept", organizationId: TARGET, takesNotes: true },
+  { action: "decline", organizationId: TARGET, takesNotes: true },
+];
+
 const state = vi.hoisted(() => ({
   request: null as Record<string, unknown> | null,
-  currentUserId: "admin",
   currentOrganizationId: "source-org",
-  locationTrackingEnabled: true,
   permissions: new Set<string>(),
   mutations: {} as Record<string, ReturnType<typeof vi.fn>>,
 }));
@@ -28,8 +42,6 @@ vi.mock("convex/react", () => ({
     switch (getFunctionName(query)) {
       case "objectMoves:get":
         return state.request;
-      case "users:getUser":
-        return { _id: state.currentUserId };
       default:
         return undefined;
     }
@@ -43,10 +55,6 @@ vi.mock("convex/react", () => ({
 vi.mock("@/components/organization-provider", () => ({
   useOrganization: () => ({
     currentOrganizationId: state.currentOrganizationId,
-    currentOrganization: {
-      _id: state.currentOrganizationId,
-      settings: { locationTrackingEnabled: state.locationTrackingEnabled },
-    },
   }),
 }));
 vi.mock("@/components/permission-gate", () => ({
@@ -67,10 +75,14 @@ vi.mock("@/components/location-selector", () => ({
   ),
 }));
 
-function moveRequest(status: string) {
+function moveRequest(stage: string) {
   return {
     _id: "move-1",
-    status,
+    stage,
+    awaitsSenderReapproval: false,
+    approvedBySender: stage === "waiting_for_receiver" || stage === "received",
+    actions: [] as ViewerAction[],
+    receiverTracksLocations: true,
     collectionId: "object-1",
     collection: {
       _id: "object-1",
@@ -93,13 +105,24 @@ function moveRequest(status: string) {
   };
 }
 
+/**
+ * Opens the transfer at `stage` for a viewer who selected
+ * `viewer.organizationId`, offered `options.actions` as the backend decides.
+ */
 async function openRequest(
-  status: string,
-  viewer: { userId: string; organizationId: string; canManage: boolean },
-  options: { url?: string; request?: Record<string, unknown> } = {},
+  stage: string,
+  viewer: { organizationId: string; canManage: boolean },
+  options: {
+    actions?: ViewerAction[];
+    url?: string;
+    request?: Record<string, unknown>;
+  } = {},
 ) {
-  state.request = { ...moveRequest(status), ...options.request };
-  state.currentUserId = viewer.userId;
+  state.request = {
+    ...moveRequest(stage),
+    actions: options.actions ?? [],
+    ...options.request,
+  };
   state.currentOrganizationId = viewer.organizationId;
   state.permissions = new Set(
     viewer.canManage ? ["organization.manage_settings"] : [],
@@ -115,28 +138,35 @@ function button(name: string) {
   return screen.queryByRole("button", { name });
 }
 
+function onBehalfOf(organization: string) {
+  return within(
+    screen.getByRole("group", { name: `On behalf of ${organization}` }),
+  );
+}
+
 beforeEach(() => {
   state.mutations = {};
-  state.locationTrackingEnabled = true;
   toasts.success.mockReset();
   toasts.error.mockReset();
 });
 
-test("before approval a source administrator approves or cancels, with Cancel in red and no separate Reject", async () => {
-  await openRequest("pending_source_approval", {
-    userId: "admin",
-    organizationId: SOURCE,
-    canManage: true,
-  });
+const SENDER = { organizationId: SOURCE, canManage: true };
+const RECEIVER = { organizationId: TARGET, canManage: true };
 
-  expect(button("Approve for transfer")).toBeTruthy();
+test("before approval a source administrator approves or cancels, with Cancel in red and no separate Reject", async () => {
+  await openRequest("waiting_for_sender", SENDER, { actions: SENDER_ADMIN });
+
+  const sender = onBehalfOf("Museum Sør");
+  expect(
+    sender.getByRole("button", { name: "Approve for transfer" }),
+  ).toBeTruthy();
   expect(button("Reject request")).toBeNull();
-  const cancel = button("Cancel request");
-  expect(cancel?.getAttribute("data-variant")).toBe("destructive");
+  const cancel = sender.getByRole("button", { name: "Cancel request" });
+  expect(cancel.getAttribute("data-variant")).toBe("destructive");
 
   const notes = screen.getByLabelText("Review notes");
   await userEvent.type(notes, " Duplicate of an earlier request ");
-  await userEvent.click(cancel as HTMLElement);
+  await userEvent.click(cancel);
   expect(state.mutations["objectMoves:cancel"]).toHaveBeenCalledWith({
     requestId: "move-1",
     reviewNotes: "Duplicate of an earlier request",
@@ -144,39 +174,129 @@ test("before approval a source administrator approves or cancels, with Cancel in
   expect((notes as HTMLTextAreaElement).value).toBe("");
 });
 
-test("the requester who cannot approve still cancels with the red Cancel", async () => {
-  await openRequest("pending_source_approval", {
-    userId: "requester",
-    organizationId: SOURCE,
-    canManage: false,
-  });
+test("the requester who cannot approve still cancels with the red Cancel, without review notes", async () => {
+  await openRequest(
+    "waiting_for_sender",
+    { organizationId: SOURCE, canManage: false },
+    {
+      actions: [
+        { action: "cancel", organizationId: SOURCE, takesNotes: false },
+      ],
+    },
+  );
 
   expect(button("Approve for transfer")).toBeNull();
   expect(button("Reject request")).toBeNull();
   expect(button("Cancel request")?.getAttribute("data-variant")).toBe(
     "destructive",
   );
+  expect(screen.queryByLabelText("Review notes")).toBeNull();
 });
 
 test("the receiving organization accepts or declines an incoming transfer", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
 
-  expect(button("Accept and complete transfer")).toBeTruthy();
-  expect(button("Reject request")?.getAttribute("data-variant")).toBe(
-    "destructive",
-  );
+  const receiver = onBehalfOf("Museum Nord");
+  expect(
+    receiver.getByRole("button", { name: "Accept and complete transfer" }),
+  ).toBeTruthy();
+  expect(
+    receiver
+      .getByRole("button", { name: "Reject request" })
+      .getAttribute("data-variant"),
+  ).toBe("destructive");
   expect(button("Cancel request")).toBeNull();
 });
 
+test("an administrator of both organizations sees each side's actions, each on behalf of its organization", async () => {
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: [
+      ...RECEIVER_ADMIN,
+      { action: "cancel", organizationId: SOURCE, takesNotes: true },
+    ],
+  });
+
+  const receiver = onBehalfOf("Museum Nord");
+  expect(
+    receiver.getByRole("button", { name: "Accept and complete transfer" }),
+  ).toBeTruthy();
+  expect(receiver.getByRole("button", { name: "Reject request" })).toBeTruthy();
+  expect(receiver.queryByRole("button", { name: "Cancel request" })).toBeNull();
+
+  const sender = onBehalfOf("Museum Sør");
+  expect(
+    sender.queryByRole("button", { name: "Approve for transfer" }),
+  ).toBeNull();
+  await userEvent.click(sender.getByRole("button", { name: "Cancel request" }));
+  expect(state.mutations["objectMoves:cancel"]).toHaveBeenCalledWith({
+    requestId: "move-1",
+    reviewNotes: undefined,
+  });
+});
+
+test("the sending organization cancels an approved transfer while the receiver decides", async () => {
+  await openRequest("waiting_for_receiver", SENDER, {
+    actions: [{ action: "cancel", organizationId: SOURCE, takesNotes: true }],
+  });
+
+  expect(button("Accept and complete transfer")).toBeNull();
+  expect(button("Reject request")).toBeNull();
+  await userEvent.type(
+    screen.getByLabelText("Review notes"),
+    "The object is needed for an exhibition",
+  );
+  await userEvent.click(button("Cancel request") as HTMLElement);
+
+  expect(state.mutations["objectMoves:cancel"]).toHaveBeenCalledWith({
+    requestId: "move-1",
+    reviewNotes: "The object is needed for an exhibition",
+  });
+  expect(toasts.success).toHaveBeenCalledWith("Move request cancelled.");
+});
+
+test("a transfer the sender must approve again waits for the sender, with a note", async () => {
+  await openRequest("waiting_for_sender", RECEIVER, {
+    request: {
+      awaitsSenderReapproval: true,
+      approvedBySender: true,
+      sourceReviewedAt: Date.UTC(2026, 9, 2),
+    },
+  });
+
+  expect(screen.getByText("Pending transfer approval")).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Approved under an earlier version of transfers, so the sending organization has to approve it again before the receiving organization decides.",
+    ),
+  ).toBeTruthy();
+  expect(screen.getByText("Source approved at")).toBeTruthy();
+  expect(button("Accept and complete transfer")).toBeNull();
+  expect(screen.queryByRole("group")).toBeNull();
+});
+
+test("an acceptance that reaches a transfer waiting for the sender says so", async () => {
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
+  });
+  state.mutations["objectMoves:accept"]?.mockRejectedValueOnce(
+    objectMoveError(
+      "TRANSFER_AWAITS_SENDER",
+      "The sending organization has to approve this transfer before the receiving organization can decide it.",
+    ),
+  );
+
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+
+  expect(toasts.error).toHaveBeenLastCalledWith(
+    "The sending organization has to approve this transfer before you can accept or decline it.",
+  );
+});
+
 test("a refused acceptance tells the receiving organization in its own terms", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
   const accept = state.mutations["objectMoves:accept"];
   if (!accept) throw new Error("The page did not set up acceptance");
@@ -197,11 +317,7 @@ test("a refused acceptance tells the receiving organization in its own terms", a
 });
 
 test("a refused approval says why in the app's language", async () => {
-  await openRequest("pending_source_approval", {
-    userId: "admin",
-    organizationId: SOURCE,
-    canManage: true,
-  });
+  await openRequest("waiting_for_sender", SENDER, { actions: SENDER_ADMIN });
   const approve = state.mutations["objectMoves:approve"];
   if (!approve) throw new Error("The page did not set up approval");
 
@@ -235,32 +351,84 @@ test("a refused approval says why in the app's language", async () => {
   );
 });
 
-test.each([
-  ["cancelled", "Source cancelled at", "Source approved at"],
-  ["awaiting_acceptance", "Source approved at", "Source cancelled at"],
-])("a %s request names the source review it records", async (status, shown, hidden) => {
-  state.request = {
-    ...moveRequest(status),
-    sourceReviewedAt: Date.UTC(2026, 9, 2),
-  };
-  state.currentUserId = "admin";
-  state.currentOrganizationId = SOURCE;
-  state.permissions = new Set(["organization.manage_settings"]);
-  await renderOnPage(
-    <MoveRequestDetailPageClient />,
-    "/en/objects/move-requests/move-1",
-    { id: "move-1" },
-  );
+const APPROVED = Date.UTC(2026, 9, 2);
+const DECIDED = Date.UTC(2026, 9, 5);
 
-  expect(screen.getByText(shown)).toBeTruthy();
-  expect(screen.queryByText(hidden)).toBeNull();
+test.each([
+  {
+    name: "a request cancelled before approval",
+    stage: "cancelled",
+    request: {
+      approvedBySender: false,
+      sourceReviewedAt: DECIDED,
+      decision: { decidedAt: DECIDED, decidedBy: "sender" },
+    },
+    shown: ["Source cancelled at"],
+    hidden: ["Source approved at", "Source declined at"],
+  },
+  {
+    name: "a transfer waiting for the receiver",
+    stage: "waiting_for_receiver",
+    request: { approvedBySender: true, sourceReviewedAt: APPROVED },
+    shown: ["Source approved at"],
+    hidden: ["Source cancelled at", "Source declined at"],
+  },
+  {
+    name: "a request the sender declined",
+    stage: "declined",
+    request: {
+      approvedBySender: false,
+      sourceReviewedAt: DECIDED,
+      decision: { decidedAt: DECIDED, decidedBy: "sender" },
+    },
+    shown: ["Source declined at"],
+    hidden: ["Source approved at", "Source cancelled at"],
+  },
+  {
+    name: "a transfer the sender cancelled after approving it",
+    stage: "cancelled",
+    request: {
+      approvedBySender: true,
+      sourceReviewedAt: APPROVED,
+      decision: { decidedAt: DECIDED, decidedBy: "sender" },
+    },
+    shown: ["Source approved at", "Source cancelled at"],
+    hidden: ["Source declined at"],
+  },
+])("$name names the source decisions it records", async ({
+  stage,
+  request,
+  shown,
+  hidden,
+}) => {
+  await openRequest(stage, SENDER, { request });
+
+  for (const label of shown) expect(screen.getByText(label)).toBeTruthy();
+  for (const label of hidden) expect(screen.queryByText(label)).toBeNull();
+});
+
+test("the sender's cancel notes are the transfer's review notes", async () => {
+  await openRequest("cancelled", SENDER, {
+    request: {
+      approvedBySender: true,
+      sourceReviewedAt: APPROVED,
+      sourceReviewNotes: "Approved for the exchange",
+      reviewNotes: "Needed for an exhibition",
+      decision: {
+        decidedAt: DECIDED,
+        decidedBy: "sender",
+        notes: "Needed for an exhibition",
+      },
+    },
+  });
+
+  expect(screen.getByText("Needed for an exhibition")).toBeTruthy();
+  expect(screen.queryByText("Approved for the exchange")).toBeNull();
 });
 
 test("the receiving organization declines without writing notes", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
 
   await userEvent.click(button("Reject request") as HTMLElement);
@@ -274,10 +442,8 @@ test("the receiving organization declines without writing notes", async () => {
 });
 
 test("the receiving organization chooses the accession number when it accepts", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
   expect(
     screen.getByText("Chosen by the receiving organization when it accepts"),
@@ -306,10 +472,8 @@ test("the receiving organization chooses the accession number when it accepts", 
 });
 
 test("a taken accession number is named back to the receiving organization", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
   state.mutations["objectMoves:accept"]?.mockRejectedValueOnce(
     identifierError(
@@ -328,10 +492,8 @@ test("a taken accession number is named back to the receiving organization", asy
 });
 
 test("a receiver that cannot generate or index numbers is told what to set up", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
   const accept = state.mutations["objectMoves:accept"];
   accept?.mockRejectedValueOnce(
@@ -360,10 +522,8 @@ test("a receiver that cannot generate or index numbers is told what to set up", 
 });
 
 test("the receiving organization accepts without choosing a location", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
   expect(
     screen.getByText(/Optional\. Leave it empty if you don't track locations/),
@@ -381,13 +541,12 @@ test("the receiving organization accepts without choosing a location", async () 
   });
 });
 
-test("a receiver that turned off locations is not asked for one", async () => {
-  state.locationTrackingEnabled = false;
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
-  });
+test("a receiver that turned off locations is not asked for one, whichever organization the viewer selected", async () => {
+  await openRequest(
+    "waiting_for_receiver",
+    { organizationId: SOURCE, canManage: true },
+    { actions: RECEIVER_ADMIN, request: { receiverTracksLocations: false } },
+  );
 
   expect(screen.queryByText("Receiving location")).toBeNull();
   expect(button("North store")).toBeNull();
@@ -395,10 +554,8 @@ test("a receiver that turned off locations is not asked for one", async () => {
 });
 
 test("the back link returns to the Transfers board", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
 
   expect(
@@ -409,8 +566,7 @@ test("the back link returns to the Transfers board", async () => {
 });
 
 test("staff who cannot open the Transfers board go back to the object", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "requester",
+  await openRequest("waiting_for_receiver", {
     organizationId: SOURCE,
     canManage: false,
   });
@@ -423,12 +579,12 @@ test("staff who cannot open the Transfers board go back to the object", async ()
 
 test("once the object has left, staff who cannot open the Transfers board go back to the Object Catalog", async () => {
   await openRequest(
-    "executed",
-    { userId: "requester", organizationId: SOURCE, canManage: false },
+    "received",
+    { organizationId: SOURCE, canManage: false },
     {
       request: {
         collection: {
-          ...moveRequest("executed").collection,
+          ...moveRequest("received").collection,
           organizationId: TARGET,
         },
       },
@@ -444,20 +600,14 @@ test("once the object has left, staff who cannot open the Transfers board go bac
 });
 
 test("only the organization holding the object is offered to open it", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "target-admin",
-    organizationId: TARGET,
-    canManage: true,
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
   });
   expect(screen.queryByRole("link", { name: "Open object" })).toBeNull();
 });
 
 test("the sending organization opens the object while it still holds it", async () => {
-  await openRequest("awaiting_acceptance", {
-    userId: "admin",
-    organizationId: SOURCE,
-    canManage: true,
-  });
+  await openRequest("waiting_for_receiver", SENDER);
   expect(
     screen.getByRole("link", { name: "Open object" }).getAttribute("href"),
   ).toMatch(/\/objects\/object-1$/);
@@ -465,8 +615,8 @@ test("the sending organization opens the object while it still holds it", async 
 
 test("opened from a list, the back link returns to it", async () => {
   await openRequest(
-    "rejected",
-    { userId: "requester", organizationId: SOURCE, canManage: false },
+    "declined",
+    { organizationId: SOURCE, canManage: false },
     { url: "/en/objects/move-requests/move-1?from=%2Fdeaccessions" },
   );
 
@@ -476,11 +626,10 @@ test("opened from a list, the back link returns to it", async () => {
 });
 
 test("a receiver without automatic numbering starts from the current number", async () => {
-  await openRequest(
-    "awaiting_acceptance",
-    { userId: "target-admin", organizationId: TARGET, canManage: true },
-    { request: { receiverGeneratesAccessionNumbers: false } },
-  );
+  await openRequest("waiting_for_receiver", RECEIVER, {
+    actions: RECEIVER_ADMIN,
+    request: { receiverGeneratesAccessionNumbers: false },
+  });
 
   expect(
     screen.getByRole("combobox", { name: "Accession number" }).textContent,

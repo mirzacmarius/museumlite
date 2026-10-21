@@ -1,6 +1,10 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type {
+  TransferAction,
+  TransferViewerAction,
+} from "@v1/backend/convex/utils/transferStages";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -16,14 +20,13 @@ import { Loader2 } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
 import type { AccessionMode } from "@/components/deaccession-dialog-types";
 import { LocationSelector } from "@/components/location-selector";
-import { useOrganization } from "@/components/organization-provider";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { MoveRequestSubmitAction } from "./use-move-request-detail";
 
-interface MoveRequestActionsPanelAvailability {
-  sourceReview: boolean;
-  targetReview: boolean;
-  cancel: boolean;
+/** One side of the transfer: the sending or the receiving organization. */
+interface MoveRequestSide {
+  id: Id<"organizations">;
+  name: string;
 }
 
 interface MoveRequestActionsPanelContextValue {
@@ -31,17 +34,19 @@ interface MoveRequestActionsPanelContextValue {
   onReviewNotesChange: (value: string) => void;
   targetLocationId: string;
   onTargetLocationChange: (value: string) => void;
-  targetOrganizationId?: Id<"organizations">;
+  receiverTracksLocations: boolean;
   sourceAccessionNumber: string;
   accessionMode: AccessionMode;
   onAccessionModeChange: (value: AccessionMode) => void;
   manualAccessionNumber: string;
   onManualAccessionNumberChange: (value: string) => void;
   submittingAction: MoveRequestSubmitAction;
-  availableActions: MoveRequestActionsPanelAvailability;
+  actions: TransferViewerAction[];
+  sender: MoveRequestSide;
+  receiver: MoveRequestSide;
   onApprove: () => void;
   onAccept: () => void;
-  onReject: () => void;
+  onDecline: () => void;
   onCancel: () => void;
 }
 
@@ -58,42 +63,46 @@ function useMoveRequestActionsPanel() {
   return context;
 }
 
-interface MoveRequestActionsPanelProps {
-  reviewNotes: string;
-  onReviewNotesChange: (value: string) => void;
-  targetLocationId: string;
-  onTargetLocationChange: (value: string) => void;
-  targetOrganizationId?: Id<"organizations">;
-  sourceAccessionNumber: string;
-  accessionMode: AccessionMode;
-  onAccessionModeChange: (value: AccessionMode) => void;
-  manualAccessionNumber: string;
-  onManualAccessionNumberChange: (value: string) => void;
-  submittingAction: MoveRequestSubmitAction;
-  availableActions: MoveRequestActionsPanelAvailability;
-  onApprove: () => void;
-  onAccept: () => void;
-  onReject: () => void;
-  onCancel: () => void;
+/** Whether the viewer may take `action` for `side`. */
+function offers(
+  actions: TransferViewerAction[],
+  action: TransferAction,
+  side: MoveRequestSide,
+) {
+  return actions.some(
+    (offered) =>
+      offered.action === action && offered.organizationId === side.id,
+  );
+}
+
+interface MoveRequestActionsPanelProps
+  extends MoveRequestActionsPanelContextValue {
   children?: ReactNode;
 }
 
+/**
+ * The decisions the backend offers the viewer, grouped by the organization
+ * each one acts for, so an administrator of both organizations sees which
+ * side every button decides for.
+ */
 function MoveRequestActionsPanelProvider({
   reviewNotes,
   onReviewNotesChange,
   targetLocationId,
   onTargetLocationChange,
-  targetOrganizationId,
+  receiverTracksLocations,
   sourceAccessionNumber,
   accessionMode,
   onAccessionModeChange,
   manualAccessionNumber,
   onManualAccessionNumberChange,
   submittingAction,
-  availableActions,
+  actions,
+  sender,
+  receiver,
   onApprove,
   onAccept,
-  onReject,
+  onDecline,
   onCancel,
   children,
 }: MoveRequestActionsPanelProps) {
@@ -104,17 +113,19 @@ function MoveRequestActionsPanelProvider({
       onReviewNotesChange,
       targetLocationId,
       onTargetLocationChange,
-      targetOrganizationId,
+      receiverTracksLocations,
       sourceAccessionNumber,
       accessionMode,
       onAccessionModeChange,
       manualAccessionNumber,
       onManualAccessionNumberChange,
       submittingAction,
-      availableActions,
+      actions,
+      sender,
+      receiver,
       onApprove,
       onAccept,
-      onReject,
+      onDecline,
       onCancel,
     }),
     [
@@ -122,31 +133,28 @@ function MoveRequestActionsPanelProvider({
       onReviewNotesChange,
       targetLocationId,
       onTargetLocationChange,
-      targetOrganizationId,
+      receiverTracksLocations,
       sourceAccessionNumber,
       accessionMode,
       onAccessionModeChange,
       manualAccessionNumber,
       onManualAccessionNumberChange,
       submittingAction,
-      availableActions,
+      actions,
+      sender,
+      receiver,
       onApprove,
       onAccept,
-      onReject,
+      onDecline,
       onCancel,
     ],
   );
 
-  if (
-    !availableActions.sourceReview &&
-    !availableActions.targetReview &&
-    !availableActions.cancel
-  ) {
+  if (actions.length === 0) {
     return null;
   }
 
-  const showReviewNotes =
-    availableActions.sourceReview || availableActions.targetReview;
+  const showReviewNotes = actions.some((action) => action.takesNotes);
 
   return (
     <MoveRequestActionsPanelContext.Provider value={value}>
@@ -172,107 +180,146 @@ function MoveRequestActionsPanelProvider({
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
-            {children ?? (
-              <>
-                <MoveRequestActionsPanel.SourceActions />
-                <MoveRequestActionsPanel.TargetActions />
-                <MoveRequestActionsPanel.CancelAction />
-              </>
-            )}
-          </div>
+          {children ?? (
+            <>
+              <MoveRequestActionsPanel.ReceiverActions />
+              <MoveRequestActionsPanel.SenderActions />
+            </>
+          )}
         </div>
       </div>
     </MoveRequestActionsPanelContext.Provider>
   );
 }
 
-/**
- * Before approval, the requester and source administrators both stop a
- * request with Cancel; Reject is only the receiving organization's decline.
- */
-function MoveRequestActionsPanelSourceActions() {
-  const tRoot = useI18n();
-  const { submittingAction, availableActions, onApprove } =
-    useMoveRequestActionsPanel();
-
-  if (!availableActions.sourceReview) return null;
-
+/** The decisions taken for one organization, captioned with its name. */
+function MoveRequestActionsPanelGroup({
+  side,
+  children,
+}: {
+  side: MoveRequestSide;
+  children: ReactNode;
+}) {
+  const tMoves = useScopedI18n("moveRequests");
   return (
-    <Button onClick={onApprove} disabled={submittingAction !== null}>
-      {submittingAction === "approve" && (
-        <Loader2 className="mr-2 size-4 animate-spin" />
-      )}
-      {tRoot("untranslatedRecords.objects.move.approve")}
-    </Button>
+    <fieldset className="min-w-0 space-y-3">
+      <legend className="text-sm font-medium text-muted-foreground">
+        {tMoves("actingFor", { organization: side.name })}
+      </legend>
+      <div className="flex flex-wrap gap-3">{children}</div>
+    </fieldset>
   );
 }
 
-function MoveRequestActionsPanelTargetActions() {
+/**
+ * The sender's administrators approve; they, or the requester before
+ * approval, stop the transfer with Cancel. Declining is the receiver's.
+ */
+function MoveRequestActionsPanelSenderActions() {
+  const tRoot = useI18n();
+  const { submittingAction, actions, sender, onApprove, onCancel } =
+    useMoveRequestActionsPanel();
+  const approve = offers(actions, "approve", sender);
+  const cancel = offers(actions, "cancel", sender);
+
+  if (!approve && !cancel) return null;
+
+  return (
+    <MoveRequestActionsPanelGroup side={sender}>
+      {approve && (
+        <Button onClick={onApprove} disabled={submittingAction !== null}>
+          {submittingAction === "approve" && (
+            <Loader2 className="mr-2 size-4 animate-spin" />
+          )}
+          {tRoot("untranslatedRecords.objects.move.approve")}
+        </Button>
+      )}
+      {cancel && (
+        <Button
+          variant="destructive"
+          onClick={onCancel}
+          disabled={submittingAction !== null}
+        >
+          {submittingAction === "cancel" && (
+            <Loader2 className="mr-2 size-4 animate-spin" />
+          )}
+          {tRoot("untranslatedRecords.objects.move.cancel")}
+        </Button>
+      )}
+    </MoveRequestActionsPanelGroup>
+  );
+}
+
+function MoveRequestActionsPanelReceiverActions() {
   const tRoot = useI18n();
   const {
     submittingAction,
-    availableActions,
+    actions,
+    receiver,
     onAccept,
-    onReject,
+    onDecline,
     targetLocationId,
     onTargetLocationChange,
-    targetOrganizationId,
+    receiverTracksLocations,
   } = useMoveRequestActionsPanel();
-  const { currentOrganization } = useOrganization();
-  const { targetReview } = availableActions;
+  const accept = offers(actions, "accept", receiver);
+  const decline = offers(actions, "decline", receiver);
 
-  if (!targetReview) return null;
-
-  // Only the receiving organization reviews, so its own setting decides.
-  const tracksLocations =
-    currentOrganization?.settings?.locationTrackingEnabled ?? true;
+  if (!accept && !decline) return null;
 
   return (
-    <>
-      <MoveRequestActionsPanelAccessionChoice />
-      {targetOrganizationId && tracksLocations ? (
-        <div className="w-full space-y-2">
-          <Label htmlFor="receiving-location">
-            {tRoot("untranslatedRecords.objects.transfer.receivingLocation")}
-          </Label>
-          <LocationSelector
-            id="receiving-location"
-            organizationId={targetOrganizationId}
-            value={targetLocationId}
-            onValueChange={onTargetLocationChange}
-            placeholder={tRoot(
-              "untranslatedRecords.objects.transfer.receivingLocationPlaceholder",
+    <MoveRequestActionsPanelGroup side={receiver}>
+      {accept && (
+        <>
+          <MoveRequestActionsPanelAccessionChoice />
+          {receiverTracksLocations ? (
+            <div className="w-full space-y-2">
+              <Label htmlFor="receiving-location">
+                {tRoot(
+                  "untranslatedRecords.objects.transfer.receivingLocation",
+                )}
+              </Label>
+              <LocationSelector
+                id="receiving-location"
+                organizationId={receiver.id}
+                value={targetLocationId}
+                onValueChange={onTargetLocationChange}
+                placeholder={tRoot(
+                  "untranslatedRecords.objects.transfer.receivingLocationPlaceholder",
+                )}
+                aria-describedby="receiving-location-hint"
+              />
+              <p
+                id="receiving-location-hint"
+                className="text-xs text-muted-foreground"
+              >
+                {tRoot(
+                  "untranslatedRecords.objects.transfer.receivingLocationHint",
+                )}
+              </p>
+            </div>
+          ) : null}
+          <Button onClick={onAccept} disabled={submittingAction !== null}>
+            {submittingAction === "accept" && (
+              <Loader2 className="mr-2 size-4 animate-spin" />
             )}
-            aria-describedby="receiving-location-hint"
-          />
-          <p
-            id="receiving-location-hint"
-            className="text-xs text-muted-foreground"
-          >
-            {tRoot(
-              "untranslatedRecords.objects.transfer.receivingLocationHint",
-            )}
-          </p>
-        </div>
-      ) : null}
-      <Button onClick={onAccept} disabled={submittingAction !== null}>
-        {submittingAction === "accept" && (
-          <Loader2 className="mr-2 size-4 animate-spin" />
-        )}
-        {tRoot("untranslatedRecords.objects.move.accept")}
-      </Button>
-      <Button
-        variant="destructive"
-        onClick={onReject}
-        disabled={submittingAction !== null}
-      >
-        {submittingAction === "reject" && (
-          <Loader2 className="mr-2 size-4 animate-spin" />
-        )}
-        {tRoot("untranslatedRecords.objects.move.reject")}
-      </Button>
-    </>
+            {tRoot("untranslatedRecords.objects.move.accept")}
+          </Button>
+        </>
+      )}
+      {decline && (
+        <Button
+          variant="destructive"
+          onClick={onDecline}
+          disabled={submittingAction !== null}
+        >
+          {submittingAction === "decline" && (
+            <Loader2 className="mr-2 size-4 animate-spin" />
+          )}
+          {tRoot("untranslatedRecords.objects.move.reject")}
+        </Button>
+      )}
+    </MoveRequestActionsPanelGroup>
   );
 }
 
@@ -323,33 +370,10 @@ function MoveRequestActionsPanelAccessionChoice() {
   );
 }
 
-function MoveRequestActionsPanelCancelAction() {
-  const tRoot = useI18n();
-  const { submittingAction, availableActions, onCancel } =
-    useMoveRequestActionsPanel();
-  const { cancel } = availableActions;
-
-  if (!cancel) return null;
-
-  return (
-    <Button
-      variant="destructive"
-      onClick={onCancel}
-      disabled={submittingAction !== null}
-    >
-      {submittingAction === "cancel" && (
-        <Loader2 className="mr-2 size-4 animate-spin" />
-      )}
-      {tRoot("untranslatedRecords.objects.move.cancel")}
-    </Button>
-  );
-}
-
 export const MoveRequestActionsPanel = Object.assign(
   MoveRequestActionsPanelProvider,
   {
-    SourceActions: MoveRequestActionsPanelSourceActions,
-    TargetActions: MoveRequestActionsPanelTargetActions,
-    CancelAction: MoveRequestActionsPanelCancelAction,
+    SenderActions: MoveRequestActionsPanelSenderActions,
+    ReceiverActions: MoveRequestActionsPanelReceiverActions,
   },
 );
