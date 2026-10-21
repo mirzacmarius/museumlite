@@ -73,6 +73,7 @@ function moveRequest(status: string) {
     collectionId: "object-1",
     collection: {
       _id: "object-1",
+      organizationId: SOURCE,
       title: "Viking brooch",
       accessionNumber: "A-1",
     },
@@ -385,6 +386,48 @@ test("staff who cannot open the Transfers board go back to the object", async ()
   expect(screen.queryByRole("link", { name: "Back to transfers" })).toBeNull();
   expect(
     screen.getByRole("link", { name: "Back to object" }).getAttribute("href"),
+  ).toMatch(/\/objects\/object-1$/);
+});
+
+test("once the object has left, staff who cannot open the Transfers board go back to the Object Catalog", async () => {
+  await openRequest(
+    "executed",
+    { userId: "requester", organizationId: SOURCE, canManage: false },
+    {
+      request: {
+        collection: {
+          ...moveRequest("executed").collection,
+          organizationId: TARGET,
+        },
+      },
+    },
+  );
+
+  expect(screen.queryByRole("link", { name: "Back to object" })).toBeNull();
+  expect(
+    screen
+      .getByRole("link", { name: "Back to Object Catalog" })
+      .getAttribute("href"),
+  ).toMatch(/\/objects$/);
+});
+
+test("only the organization holding the object is offered to open it", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "target-admin",
+    organizationId: TARGET,
+    canManage: true,
+  });
+  expect(screen.queryByRole("link", { name: "Open object" })).toBeNull();
+});
+
+test("the sending organization opens the object while it still holds it", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "admin",
+    organizationId: SOURCE,
+    canManage: true,
+  });
+  expect(
+    screen.getByRole("link", { name: "Open object" }).getAttribute("href"),
   ).toMatch(/\/objects\/object-1$/);
 });
 

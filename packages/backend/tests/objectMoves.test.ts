@@ -2811,13 +2811,18 @@ describe("the receiver's Transfer log", () => {
       targetLocationId: fixture.targetLocationId,
     });
 
-    const [log, searched] = await Promise.all([
+    const [log, searched, ownName] = await Promise.all([
       fixture.targetAdmin.query(api.objectMoves.listForOrganization, {
         organizationId: fixture.targetOrganizationId,
       }),
       fixture.targetAdmin.query(api.objectMoves.listForOrganization, {
         organizationId: fixture.targetOrganizationId,
         search: "source museum",
+      }),
+      // The viewer's own name is on every row, so it matches none.
+      fixture.targetAdmin.query(api.objectMoves.listForOrganization, {
+        organizationId: fixture.targetOrganizationId,
+        search: "target museum",
       }),
     ]);
     const entries = log.map(
@@ -2848,6 +2853,7 @@ describe("the receiver's Transfer log", () => {
     expect(searched.map((entry) => entry._id).sort()).toEqual(
       [declined, received].sort(),
     );
+    expect(ownName).toEqual([]);
   });
 });
 

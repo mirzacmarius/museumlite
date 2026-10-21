@@ -3112,6 +3112,7 @@ export default {
   },
   objects: {
     backToObject: "Retour à l'objet",
+    backToCatalog: "Retour au catalogue des objets",
     selectObject: "Sélectionner {title}",
     selectAllShown: "Sélectionner tous les objets affichés",
     searchLabel: "Rechercher des objets",

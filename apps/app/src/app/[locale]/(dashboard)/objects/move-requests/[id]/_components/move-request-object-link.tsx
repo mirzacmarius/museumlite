@@ -7,9 +7,14 @@ import type { MoveRequestDetail } from "./use-move-request-detail";
 
 interface MoveRequestObjectLinkProps {
   request: MoveRequestDetail;
+  /** Whether the viewer's organization holds the object, so can open it. */
+  canOpen: boolean;
 }
 
-export function MoveRequestObjectLink({ request }: MoveRequestObjectLinkProps) {
+export function MoveRequestObjectLink({
+  request,
+  canOpen,
+}: MoveRequestObjectLinkProps) {
   const tRoot = useI18n();
   if (!request.collection?._id) {
     return null;
@@ -27,11 +32,13 @@ export function MoveRequestObjectLink({ request }: MoveRequestObjectLinkProps) {
             {request.collection.accessionNumber}
           </p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/objects/${request.collection._id}`}>
-            {tRoot("untranslatedRecords.objects.move.openObject")}
-          </Link>
-        </Button>
+        {canOpen && (
+          <Button variant="outline" asChild>
+            <Link href={`/objects/${request.collection._id}`}>
+              {tRoot("untranslatedRecords.objects.move.openObject")}
+            </Link>
+          </Button>
+        )}
       </div>
     </div>
   );

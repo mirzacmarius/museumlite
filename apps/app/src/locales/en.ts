@@ -2493,6 +2493,7 @@ export default {
   },
   objects: {
     backToObject: "Back to object",
+    backToCatalog: "Back to Object Catalog",
     selectObject: "Select {title}",
     selectAllShown: "Select all shown objects",
     searchLabel: "Search objects",

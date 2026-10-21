@@ -214,8 +214,13 @@ export function TransferKanbanColumn({
     return (
       request.collectionTitle.toLowerCase().includes(search) ||
       request.sourceAccessionNumber.toLowerCase().includes(search) ||
-      request.sourceOrganizationName.toLowerCase().includes(search) ||
-      request.targetOrganizationName.toLowerCase().includes(search) ||
+      // The other organization: the viewer's own name matches every row.
+      (request.direction === "incoming"
+        ? request.sourceOrganizationName
+        : request.targetOrganizationName
+      )
+        .toLowerCase()
+        .includes(search) ||
       request.requestedByName.toLowerCase().includes(search) ||
       request.reason.toLowerCase().includes(search) ||
       request.requestedAccessionNumber?.toLowerCase().includes(search) ||

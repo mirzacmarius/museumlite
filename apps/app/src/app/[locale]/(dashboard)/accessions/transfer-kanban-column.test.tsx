@@ -207,6 +207,11 @@ test("without a direction the log lists transfers sent and received, each saying
   expect(
     screen.getByTitle("Object 2 · Received from Museum Vest"),
   ).toBeTruthy();
+
+  // The viewer's own name is on every row, so it matches none.
+  rerender(log("museum sør"));
+
+  expect(screen.queryAllByRole("listitem")).toEqual([]);
 });
 
 test("an empty log keeps its empty state", async () => {

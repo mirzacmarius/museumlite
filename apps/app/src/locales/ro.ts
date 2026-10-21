@@ -1091,6 +1091,7 @@ export default {
   },
   objects: {
     backToObject: "Înapoi la obiect",
+    backToCatalog: "Înapoi la catalogul obiectelor",
     selectObject: "Selectează {title}",
     selectAllShown: "Selectează toate obiectele afișate",
     searchLabel: "Caută obiecte",

@@ -32,11 +32,17 @@ export function MoveRequestDetailPageClient() {
     handleReject,
     handleCancel,
   } = useMoveRequestDetail();
-  // Staff who cannot open the Transfers board go back to the object.
+  // Only staff of the organization holding the object can open it.
+  const holdsObject =
+    request?.collection?.organizationId === currentOrganizationId;
+  // Staff who cannot open the Transfers board go back to the object, or to
+  // the Object Catalog once the object has left.
   const back = useBackToResults(
     permissions.canOpenTransfers || !request
       ? TRANSFERS_HREF
-      : `/objects/${request.collectionId}`,
+      : holdsObject
+        ? `/objects/${request.collectionId}`
+        : "/objects",
   );
 
   if (!currentOrganizationId) {
@@ -80,13 +86,15 @@ export function MoveRequestDetailPageClient() {
                 ? tRoot("recordRecovery.backToResults")
                 : permissions.canOpenTransfers
                   ? tRoot("untranslatedRecords.objects.move.backToTransfers")
-                  : tRoot("objects.backToObject")}
+                  : holdsObject
+                    ? tRoot("objects.backToObject")
+                    : tRoot("objects.backToCatalog")}
             </Link>
           </Button>
 
           <MoveRequestDetailCard request={request} locale={locale} />
 
-          <MoveRequestObjectLink request={request} />
+          <MoveRequestObjectLink request={request} canOpen={holdsObject} />
 
           <MoveRequestActionsPanel
             reviewNotes={reviewNotes}

@@ -3071,6 +3071,7 @@ export default {
   },
   objects: {
     backToObject: "Tilbake til objektet",
+    backToCatalog: "Tilbake til objektkatalogen",
     selectObject: "Velg {title}",
     selectAllShown: "Velg alle viste objekter",
     searchLabel: "Søk i objekter",
