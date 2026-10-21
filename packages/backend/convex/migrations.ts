@@ -8,7 +8,10 @@ import {
   assignCustomerNumberIfMissing,
   parseCustomerNumber,
 } from "./utils/customerNumber";
-import { normalizeIdentifier } from "./utils/identifiers";
+import {
+  findIdentifierMatches,
+  normalizeIdentifier,
+} from "./utils/identifiers";
 import { COORDINATE_PERMISSION } from "./utils/incidentAccess";
 import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
@@ -1836,6 +1839,28 @@ export const backfillPublicRenditions = internalMutation({
   },
 });
 
+const repairTotalsValidator = v.object({
+  identifierKeysRewritten: v.number(),
+  transfersWithProvenanceMoved: v.number(),
+  objectsSharingANumber: v.number(),
+});
+
+// An Object moved more than once is counted on its latest transfer only.
+async function isLatestExecutedMove(
+  ctx: MutationCtx,
+  request: Doc<"organizationMoveRequests">,
+) {
+  const requests = await ctx.db
+    .query("organizationMoveRequests")
+    .withIndex("by_collection", (q) =>
+      q.eq("collectionId", request.collectionId),
+    )
+    .order("desc")
+    .take(50);
+  const latest = requests.find((other) => other.status === "executed");
+  return latest?._id === request._id;
+}
+
 /**
  * Migration: repair Objects that transfers moved before the receiver's
  * register and the Object's provenance followed them. For every executed
@@ -1843,29 +1868,34 @@ export const backfillPublicRenditions = internalMutation({
  * - the Object's identifier key is rewritten when it no longer matches its
  *   number, so the receiver's register finds it by the number it has;
  * - provenance claims, evidence and reviews still filed under the sender
- *   move to the organization holding the Object now.
- * No number changes and nothing is deleted. `sharedNumbers` counts Objects
- * whose number another Object took meanwhile; both are kept as they are and
- * listed in Settings › Preferences identifier review. Rerunnable; each page
- * schedules the next.
+ *   move to the organization holding the Object now, in batches.
+ * No number changes and nothing is deleted. `objectsSharingANumber` counts
+ * transferred Objects whose number another Object in their organization
+ * also has; both are kept as they are and listed in Settings › Preferences
+ * identifier review. Rerunnable; each page schedules the next with the
+ * totals so far, and the last page logs them.
  *
  * Run: bunx convex run migrations:repairTransferredObjects '{"cursor":null}'
  */
 export const repairTransferredObjects = internalMutation({
-  args: { cursor: v.union(v.string(), v.null()) },
+  args: {
+    cursor: v.union(v.string(), v.null()),
+    totals: v.optional(repairTotalsValidator),
+  },
   returns: v.object({
-    identifierKeysRewritten: v.number(),
-    sharedNumbers: v.number(),
-    provenanceRecordsMoved: v.number(),
+    ...repairTotalsValidator.fields,
     isDone: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const page = await ctx.db
       .query("organizationMoveRequests")
-      .paginate({ cursor: args.cursor, numItems: 25 });
-    let identifierKeysRewritten = 0;
-    let sharedNumbers = 0;
-    let provenanceRecordsMoved = 0;
+      .paginate({ cursor: args.cursor, numItems: 10 });
+    const totals = {
+      identifierKeysRewritten: 0,
+      transfersWithProvenanceMoved: 0,
+      objectsSharingANumber: 0,
+      ...args.totals,
+    };
     for (const request of page.page) {
       if (request.status !== "executed") continue;
       const object = await ctx.db.get(request.collectionId);
@@ -1873,40 +1903,41 @@ export const repairTransferredObjects = internalMutation({
       const normalizedIdentifier = normalizeIdentifier(object.accessionNumber);
       if (object.normalizedIdentifier !== normalizedIdentifier) {
         await ctx.db.patch(object._id, { normalizedIdentifier });
-        identifierKeysRewritten += 1;
-        const sharing = await ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_normalizedIdentifier", (q) =>
-            q
-              .eq("organizationId", object.organizationId)
-              .eq("normalizedIdentifier", normalizedIdentifier),
-          )
-          .take(2);
-        if (sharing.length > 1) sharedNumbers += 1;
+        totals.identifierKeysRewritten += 1;
       }
-      if (request.sourceOrganizationId !== object.organizationId) {
-        provenanceRecordsMoved += await rehomeObjectProvenance(ctx, {
+      if (
+        request.sourceOrganizationId !== object.organizationId &&
+        (await rehomeObjectProvenance(ctx, {
           objectId: object._id,
           fromOrganizationId: request.sourceOrganizationId,
           toOrganizationId: object.organizationId,
-        });
+        })) > 0
+      ) {
+        totals.transfersWithProvenanceMoved += 1;
+      }
+      if (await isLatestExecutedMove(ctx, request)) {
+        const { matches } = await findIdentifierMatches(
+          ctx,
+          object.organizationId,
+          "catalog",
+          object.accessionNumber,
+        );
+        if (matches.some((match) => match._id !== object._id)) {
+          totals.objectsSharingANumber += 1;
+        }
       }
     }
-    if (!page.isDone) {
+    if (page.isDone) {
+      console.log(
+        `Repaired transferred Objects: rewrote ${totals.identifierKeysRewritten} identifier keys, moved provenance left behind by ${totals.transfersWithProvenanceMoved} transfers; ${totals.objectsSharingANumber} transferred Objects share their number with another Object`,
+      );
+    } else {
       await ctx.scheduler.runAfter(
         0,
         internal.migrations.repairTransferredObjects,
-        { cursor: page.continueCursor },
+        { cursor: page.continueCursor, totals },
       );
     }
-    console.log(
-      `Rewrote ${identifierKeysRewritten} identifier keys (${sharedNumbers} shared with another Object), moved ${provenanceRecordsMoved} provenance records`,
-    );
-    return {
-      identifierKeysRewritten,
-      sharedNumbers,
-      provenanceRecordsMoved,
-      isDone: page.isDone,
-    };
+    return { ...totals, isDone: page.isDone };
   },
 });

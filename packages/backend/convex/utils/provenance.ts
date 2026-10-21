@@ -1,4 +1,4 @@
-import { ConvexError } from "convex/values";
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requirePermission } from "./permissions";
@@ -18,6 +18,8 @@ export const MAX_EVIDENCE_PER_OBJECT = 500;
 export const MAX_EVIDENCE_PER_CLAIM = 50;
 /** Review decisions read per Object. */
 export const MAX_REVIEWS_PER_OBJECT = 500;
+/** Provenance rows one transaction moves to the Object's new organization. */
+const REHOME_BATCH = 100;
 
 const TEXT_LIMITS = {
   // Legacy provenance text can be long; it is turned into a claim whole.
@@ -337,7 +339,7 @@ export async function loadObjectClaims(
  * decisions from one organization to another, when the Object moves there.
  * Re-homing changes which organization holds a claim, never what it says
  * (ADR 0006). Party links stay with the organization whose accounts they
- * name. Fails rather than leave part of the record behind.
+ * name. One call moves up to REHOME_BATCH rows and schedules the rest.
  */
 export async function rehomeObjectProvenance(
   ctx: MutationCtx,
@@ -347,48 +349,51 @@ export async function rehomeObjectProvenance(
     toOrganizationId: Id<"organizations">;
   },
 ) {
-  const [claims, evidence, reviews] = await Promise.all([
-    ctx.db
-      .query("provenanceClaims")
-      .withIndex("by_organization_and_objectId_and_supersededAt", (q) =>
-        q
-          .eq("organizationId", args.fromOrganizationId)
-          .eq("objectId", args.objectId),
-      )
-      .take(MAX_CLAIMS_PER_OBJECT + 1),
-    ctx.db
-      .query("provenanceEvidence")
-      .withIndex("by_organization_and_objectId", (q) =>
-        q
-          .eq("organizationId", args.fromOrganizationId)
-          .eq("objectId", args.objectId),
-      )
-      .take(MAX_EVIDENCE_PER_OBJECT + 1),
-    ctx.db
-      .query("provenanceReviews")
-      .withIndex("by_organization_and_objectId", (q) =>
-        q
-          .eq("organizationId", args.fromOrganizationId)
-          .eq("objectId", args.objectId),
-      )
-      .take(MAX_REVIEWS_PER_OBJECT + 1),
-  ]);
-  if (
-    claims.length > MAX_CLAIMS_PER_OBJECT ||
-    evidence.length > MAX_EVIDENCE_PER_OBJECT ||
-    reviews.length > MAX_REVIEWS_PER_OBJECT
-  ) {
-    throw new ConvexError(
-      `An object's provenance can move with at most ${MAX_CLAIMS_PER_OBJECT} claims, ${MAX_EVIDENCE_PER_OBJECT} evidence items and ${MAX_REVIEWS_PER_OBJECT} review decisions.`,
-    );
-  }
+  const claims = await ctx.db
+    .query("provenanceClaims")
+    .withIndex("by_organization_and_objectId_and_supersededAt", (q) =>
+      q
+        .eq("organizationId", args.fromOrganizationId)
+        .eq("objectId", args.objectId),
+    )
+    .take(REHOME_BATCH);
+  const evidence =
+    claims.length < REHOME_BATCH
+      ? await ctx.db
+          .query("provenanceEvidence")
+          .withIndex("by_organization_and_objectId", (q) =>
+            q
+              .eq("organizationId", args.fromOrganizationId)
+              .eq("objectId", args.objectId),
+          )
+          .take(REHOME_BATCH - claims.length)
+      : [];
+  const read = claims.length + evidence.length;
+  const reviews =
+    read < REHOME_BATCH
+      ? await ctx.db
+          .query("provenanceReviews")
+          .withIndex("by_organization_and_objectId", (q) =>
+            q
+              .eq("organizationId", args.fromOrganizationId)
+              .eq("objectId", args.objectId),
+          )
+          .take(REHOME_BATCH - read)
+      : [];
   const organizationId = args.toOrganizationId;
   await Promise.all([
     ...claims.map((claim) => ctx.db.patch(claim._id, { organizationId })),
     ...evidence.map((row) => ctx.db.patch(row._id, { organizationId })),
     ...reviews.map((review) => ctx.db.patch(review._id, { organizationId })),
   ]);
-  return claims.length + evidence.length + reviews.length;
+  const moved = read + reviews.length;
+  if (moved === REHOME_BATCH) {
+    await ctx.scheduler.runAfter(0, internal.provenance.rehomeRemaining, {
+      objectId: args.objectId,
+      fromOrganizationId: args.fromOrganizationId,
+    });
+  }
+  return moved;
 }
 
 export async function loadClaimEvidence(

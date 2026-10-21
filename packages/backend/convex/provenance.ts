@@ -5,7 +5,7 @@ import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
 import { requireAuthenticatedUser } from "./utils/authorizationContext";
 import { objectLabel } from "./utils/collectionDisplayHelpers";
 import { hasModuleEnabled } from "./utils/featureGates";
-import { mutation } from "./utils/mutationBuilders";
+import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { partyDisplayName, requireLinkableParty } from "./utils/parties";
 import {
   currentPartyLink,
@@ -28,6 +28,7 @@ import {
   optionalProvenanceText,
   PROVENANCE_REVIEW_PERMISSION,
   provenanceClaimSortKey,
+  rehomeObjectProvenance,
   requireContradictedClaim,
   requiredProvenanceReason,
   requireProvenanceClaim,
@@ -1030,6 +1031,31 @@ export const retractEvidence = mutation({
       entityType: "collection",
       entityId: object._id,
       changes: { claimId: claim._id, evidenceId: evidence._id, reason },
+    });
+    return null;
+  },
+});
+
+/**
+ * Moves the rest of a transferred Object's provenance from an organization it
+ * left to the one holding it now, a batch at a time. An Object back where it
+ * started already sits with what is left.
+ */
+export const rehomeRemaining = internalMutation({
+  args: {
+    objectId: v.id("collections"),
+    fromOrganizationId: v.id("organizations"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const object = await ctx.db.get(args.objectId);
+    if (!object || object.organizationId === args.fromOrganizationId) {
+      return null;
+    }
+    await rehomeObjectProvenance(ctx, {
+      objectId: object._id,
+      fromOrganizationId: args.fromOrganizationId,
+      toOrganizationId: object.organizationId,
     });
     return null;
   },
