@@ -8,6 +8,7 @@ import {
   assignCustomerNumberIfMissing,
   parseCustomerNumber,
 } from "./utils/customerNumber";
+import { upsertDeaccessionSearchDocument } from "./utils/deaccessionSearch";
 import {
   findIdentifierMatches,
   normalizeIdentifier,
@@ -1946,6 +1947,59 @@ export const repairTransferredObjects = internalMutation({
       await ctx.scheduler.runAfter(
         0,
         internal.migrations.repairTransferredObjects,
+        { cursor: page.continueCursor, totals },
+      );
+    }
+    return { ...totals, isDone: page.isDone };
+  },
+});
+
+const deaccessionSearchTotalsValidator = v.object({
+  deaccessionsChecked: v.number(),
+  searchDocumentsCreated: v.number(),
+});
+
+/**
+ * Migration: write the search document of every Deaccession, so the Removals
+ * board search finds the Deaccessions that transfers to another Organization made
+ * before MUS-842, which never had one. Existing documents are refreshed.
+ * Rerunnable; each page schedules the next with the totals so far, and the
+ * last page logs them.
+ *
+ * Run: bunx convex run migrations:backfillDeaccessionSearchDocuments '{"cursor":null}'
+ */
+export const backfillDeaccessionSearchDocuments = internalMutation({
+  args: {
+    cursor: v.union(v.string(), v.null()),
+    totals: v.optional(deaccessionSearchTotalsValidator),
+  },
+  returns: v.object({
+    ...deaccessionSearchTotalsValidator.fields,
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("deaccessions")
+      .paginate({ cursor: args.cursor, numItems: 100 });
+    const totals = {
+      deaccessionsChecked: 0,
+      searchDocumentsCreated: 0,
+      ...args.totals,
+    };
+    for (const deaccession of page.page) {
+      totals.deaccessionsChecked += 1;
+      if (await upsertDeaccessionSearchDocument(ctx, deaccession)) {
+        totals.searchDocumentsCreated += 1;
+      }
+    }
+    if (page.isDone) {
+      console.log(
+        `Backfilled Deaccession search documents: checked ${totals.deaccessionsChecked} Deaccessions and created the ${totals.searchDocumentsCreated} that were missing`,
+      );
+    } else {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.backfillDeaccessionSearchDocuments,
         { cursor: page.continueCursor, totals },
       );
     }

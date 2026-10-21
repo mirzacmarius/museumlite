@@ -3,6 +3,10 @@ import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
+import {
+  createTransferDeaccession,
+  rejectTransferDeaccession,
+} from "./deaccessions";
 import { batchGetByIds, batchLookup } from "./utils/batchLookup";
 import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import { getExhibitionsForObject } from "./utils/exhibitionParticipation";
@@ -746,70 +750,6 @@ async function executeMove(
     lastModifiedBy: executedBy,
     lastModifiedAt: now,
   });
-}
-
-async function createApprovedTransferDeaccession(
-  ctx: MutationCtx,
-  request: {
-    _id: Id<"organizationMoveRequests">;
-    sourceOrganizationId: Id<"organizations">;
-    targetOrganizationId: Id<"organizations">;
-    collectionId: Id<"collections">;
-    sourceAccessionNumber: string;
-    reason: string;
-    deaccessionId?: Id<"deaccessions">;
-  },
-  userId: Id<"users">,
-) {
-  if (request.deaccessionId) {
-    return request.deaccessionId;
-  }
-
-  const [sourceOrganization, targetOrganization] = await Promise.all([
-    ctx.db.get(request.sourceOrganizationId),
-    ctx.db.get(request.targetOrganizationId),
-  ] as const);
-  if (!sourceOrganization || !targetOrganization) {
-    throw new Error("Organization not found");
-  }
-
-  const now = Date.now();
-  const deaccessionId = await ctx.db.insert("deaccessions", {
-    organizationId: request.sourceOrganizationId,
-    collectionId: request.collectionId,
-    deaccessionNumber: `TR-${sourceOrganization.slug.toUpperCase().slice(0, 6)}-${now}`,
-    dateDeaccessioned: now,
-    reason: request.reason,
-    method: "transfer",
-    disposition: `Transfer to ${targetOrganization.name}`,
-    approvedBy: userId,
-    approvedAt: now,
-    status: "approved",
-    targetCollectionStatus: "deaccessioned",
-    notes: `Created from transfer request for ${request.sourceAccessionNumber}.`,
-    workflowHistory: [
-      {
-        step: 1,
-        approvedBy: userId,
-        approvedAt: now,
-        comment: "Approved for transfer",
-      },
-    ],
-  });
-
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId: request.sourceOrganizationId,
-    userId,
-    action: "created_transfer_deaccession",
-    entityType: "deaccession",
-    entityId: deaccessionId,
-    changes: {
-      requestId: request._id,
-      targetOrganizationId: request.targetOrganizationId,
-    },
-  });
-
-  return deaccessionId;
 }
 
 type TransferDestinationSummary = {
@@ -1844,11 +1784,9 @@ export const approve = mutation({
       "approve",
     );
 
-    const deaccessionId = await createApprovedTransferDeaccession(
-      ctx,
-      request,
-      userId,
-    );
+    const deaccessionId =
+      request.deaccessionId ??
+      (await createTransferDeaccession(ctx, request, userId));
 
     const targetManagers = await getUserIdsWithPermission(
       ctx,
@@ -2162,26 +2100,14 @@ export const reject = mutation({
         ? await ctx.db.get(request.deaccessionId)
         : null;
     await Promise.all([
-      transferDeaccession?.status === "approved"
-        ? ctx.db.patch(transferDeaccession._id, {
-            status: "rejected",
-            notes: [
-              transferDeaccession.notes,
-              "Transfer declined by the receiving organization.",
-            ]
-              .filter(Boolean)
-              .join("\n"),
-          })
-        : null,
-      transferDeaccession?.status === "approved"
-        ? ctx.runMutation(internal.audit.logAction, {
-            organizationId: request.sourceOrganizationId,
+      transferDeaccession
+        ? rejectTransferDeaccession(
+            ctx,
+            transferDeaccession,
+            request._id,
             userId,
-            action: "rejected_transfer_deaccession",
-            entityType: "deaccession",
-            entityId: transferDeaccession._id,
-            changes: { requestId: request._id, status: "rejected" },
-          })
+            "Transfer declined by the receiving organization.",
+          )
         : null,
       ctx.db.patch(args.requestId, {
         status: "rejected",
