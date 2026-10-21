@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useConvex, useMutation } from "convex/react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { parseCsvTable, sha256Hex } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
 import { downloadCsv, type ImportType } from "./data-csv-utils";
@@ -25,7 +26,10 @@ const BATCH_SIZE = 50;
 /**
  * Norwegian names a column may carry in exports from other collection
  * systems, tried after the template's own name. The first names are the
- * app's own Norwegian field labels.
+ * app's own Norwegian field labels. Location ("Plassering") and collection
+ * ("Samling") columns are left out: a source system's names rarely match this
+ * museum's Locations and groups, and the server fails every row whose name it
+ * cannot find.
  */
 const COLUMN_ALIASES: Record<string, string[]> = {
   accessionNumber: [
@@ -54,9 +58,13 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   description: ["beskrivelse"],
   condition: ["tilstand"],
   provenance: ["proveniens"],
-  location: ["plassering"],
   collectionGroup: ["samlingsgruppe"],
 };
+
+/** Why a file is refused before any of its rows is sent. */
+export type TemplateRowsRefusal =
+  | { code: "noDataRows" }
+  | { code: "missingColumns"; missing: string[]; found: string[] };
 
 /**
  * Keeps only the template's columns, matched case-insensitively by name or a
@@ -68,11 +76,10 @@ const COLUMN_ALIASES: Record<string, string[]> = {
 export function toTemplateRows(
   text: string,
   template: ImportTemplate,
-  t: ReturnType<typeof useScopedI18n<"settings.data.importJobs">>,
-) {
+): { rows: TemplateRow[] } | { refusal: TemplateRowsRefusal } {
   const table = parseCsvTable(text);
   if (table.records.length === 0) {
-    throw new Error(t("noDataRows"));
+    return { refusal: { code: "noDataRows" } };
   }
   const headerIndex = new Map<string, number>();
   table.headers.forEach((header, index) => {
@@ -96,15 +103,16 @@ export function toTemplateRows(
     (field) => !columnIndex.has(field),
   );
   if (missing.length > 0) {
-    throw new Error(
-      t("missingColumns", {
-        missing: missing.join(", "),
-        found: table.headers.filter(Boolean).slice(0, 8).join(", "),
-      }),
-    );
+    return {
+      refusal: {
+        code: "missingColumns",
+        missing,
+        found: table.headers.filter(Boolean).slice(0, 8),
+      },
+    };
   }
   const requiredFields = new Set(template.requiredFields);
-  return table.records.map((record) => {
+  const rows = table.records.map((record) => {
     const row: TemplateRow = { rowNumber: record.rowNumber };
     for (const field of template.headers) {
       const index = columnIndex.get(field);
@@ -114,6 +122,7 @@ export function toTemplateRows(
     }
     return row;
   });
+  return { rows };
 }
 
 export function useDataImport(
@@ -122,6 +131,7 @@ export function useDataImport(
   template: ImportTemplate | null | undefined,
 ) {
   const t = useScopedI18n("settings.data.importJobs");
+  const actionMessage = useActionErrorMessage();
   const convex = useConvex();
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -254,6 +264,17 @@ export function useDataImport(
     downloadCsv(`${importType}_template.csv`, csv);
   }, [template, importType]);
 
+  const refusalMessage = useCallback(
+    (refusal: TemplateRowsRefusal) =>
+      refusal.code === "noDataRows"
+        ? t("noDataRows")
+        : t("missingColumns", {
+            missing: refusal.missing.join(", "),
+            found: refusal.found.join(", "),
+          }),
+    [t],
+  );
+
   const reportOutcome = useCallback(
     (failed: number) => {
       if (failed > 0) toast.warning(t("finishedWithFailures", { failed }));
@@ -274,7 +295,8 @@ export function useDataImport(
 
         if (file.name.toLowerCase().endsWith(".xml")) {
           if (importType !== "objects") {
-            throw new Error(t("xmlObjectsOnly"));
+            toast.error(t("xmlObjectsOnly"));
+            return;
           }
           // The server sets the record count from the XML on first use.
           const jobId = await startOrResume({
@@ -292,16 +314,20 @@ export function useDataImport(
           return;
         }
 
-        const rows = toTemplateRows(text, template, t);
+        const parsed = toTemplateRows(text, template);
+        if ("refusal" in parsed) {
+          toast.error(refusalMessage(parsed.refusal));
+          return;
+        }
         const jobId = await startOrResume({
           name: file.name,
           fingerprint,
-          totalItems: rows.length,
+          totalItems: parsed.rows.length,
           matchTotal: true,
         });
-        reportOutcome(await sendAll(importType, jobId, rows));
+        reportOutcome(await sendAll(importType, jobId, parsed.rows));
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t("importFailed"));
+        toast.error(actionMessage(error, t("importFailed")));
       } finally {
         setImporting(false);
         if (fileInputRef.current) {
@@ -310,9 +336,11 @@ export function useDataImport(
       }
     },
     [
+      actionMessage,
       importObjectsDublinCore,
       importType,
       organizationId,
+      refusalMessage,
       reportOutcome,
       sendAll,
       startOrResume,
@@ -321,21 +349,26 @@ export function useDataImport(
     ],
   );
 
-  /** Re-sends an edited copy of a job's file; the server skips accepted rows. */
+  /**
+   * Re-sends an edited copy of a job's file; the server skips accepted rows.
+   * Resolves with the reason, in the app's language, when the file is
+   * refused before any row is sent.
+   */
   const uploadCorrection = useCallback(
     async (
       job: { _id: Id<"importJobs">; entityType?: ImportType },
       file: File,
-    ) => {
-      if (!job.entityType) throw new Error(t("correctionUnsupported"));
+    ): Promise<string | undefined> => {
+      if (!job.entityType) return t("correctionUnsupported");
       const jobTemplate = await convex.query(
         api.imports.getImportTemplateByType,
         { type: job.entityType },
       );
-      const rows = toTemplateRows(await file.text(), jobTemplate, t);
-      reportOutcome(await sendAll(job.entityType, job._id, rows));
+      const parsed = toTemplateRows(await file.text(), jobTemplate);
+      if ("refusal" in parsed) return refusalMessage(parsed.refusal);
+      reportOutcome(await sendAll(job.entityType, job._id, parsed.rows));
     },
-    [convex, reportOutcome, sendAll, t],
+    [convex, refusalMessage, reportOutcome, sendAll, t],
   );
 
   return {

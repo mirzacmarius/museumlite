@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, query } from "./_generated/server";
+import { getDisplayedMediaThumbnailUrl } from "./utils/collectionDisplayHelpers";
 import {
   assertImageCanBeDeleted,
   destroyObjectImage,
@@ -196,7 +197,6 @@ export const listPending = query({
           storedCollection?.organizationId === args.organizationId
             ? storedCollection
             : null;
-        const imageStorageId = media?.thumbnailStorageId ?? media?.storageId;
         return {
           _id: request._id,
           mediaId: request.mediaId,
@@ -204,8 +204,9 @@ export const listPending = query({
           fileName: request.fileName,
           objectTitle: collection?.title ?? null,
           accessionNumber: collection?.accessionNumber ?? null,
-          imageUrl: imageStorageId
-            ? await ctx.storage.getUrl(imageStorageId)
+          // The image as the Object shows it, with its saved edit.
+          imageUrl: media
+            ? await getDisplayedMediaThumbnailUrl(ctx, media)
             : null,
           requestedAt: request.requestedAt,
           requestedByName: requester?.name || requester?.email || null,

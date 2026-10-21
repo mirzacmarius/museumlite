@@ -593,6 +593,25 @@ describe("with the accessions approval workflow on", () => {
     ).toEqual([[requestId, "front.jpg", "Painted chest", "cataloger user"]]);
   });
 
+  test("approvers see the image as the object shows it, with its saved edit", async () => {
+    const museum = await createMuseum({ approvalWorkflow: true });
+    const mediaId = await museum.upload("front.jpg");
+    await museum.drain();
+    await addVersion(museum, mediaId);
+    await requestDeletion(museum, mediaId);
+
+    const [[shown], pending] = await Promise.all([
+      museum.media(),
+      museum.as("collectionManager").query(api.mediaDeletions.listPending, {
+        organizationId: museum.organizationId,
+      }),
+    ]);
+    expect(shown?.url).toBeTruthy();
+    expect(pending.requests[0]?.imageUrl).toBe(
+      shown?.thumbnailUrl ?? shown?.url,
+    );
+  });
+
   test("approving deletes the image and clears the pending approval", async () => {
     const museum = await createMuseum({ approvalWorkflow: true });
     const mediaId = await museum.upload("front.jpg");
