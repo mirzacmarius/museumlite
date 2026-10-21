@@ -2106,15 +2106,15 @@ export const reject = mutation({
     // one they approved before they approve again or cancel, and the
     // receiver cannot decide it yet (ADR 0020).
     const isTargetReview = stage === "waiting_for_receiver";
-    const isSenderDecline =
+    const isSenderAdmin =
       !isTargetReview &&
-      !awaitsSenderReapproval(request) &&
       (await hasPermission(
         ctx,
         request.sourceOrganizationId,
         "organization.manage_settings",
       ));
-    if (!isSenderDecline) {
+    const isSenderDecline = isSenderAdmin && !awaitsSenderReapproval(request);
+    if (!isSenderAdmin) {
       await requirePermission(
         ctx,
         request.targetOrganizationId,
@@ -2259,9 +2259,9 @@ export const cancel = mutation({
     // The sender's administrators may cancel until the receiver decides; the
     // requester only their own request, until the sender approves it
     // (ADR 0020).
-    const requesterMayCancel =
+    const openToRequester =
       stage === "waiting_for_sender" && !awaitsSenderReapproval(request);
-    if (!requesterMayCancel) {
+    if (!openToRequester) {
       await requirePermission(
         ctx,
         request.sourceOrganizationId,
@@ -2269,7 +2269,7 @@ export const cancel = mutation({
       );
     }
     const isSourceAdmin =
-      !requesterMayCancel ||
+      !openToRequester ||
       (await hasPermission(
         ctx,
         request.sourceOrganizationId,

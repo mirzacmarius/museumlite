@@ -4329,6 +4329,20 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
       .then((request) => request?.stage);
   }
 
+  /** What the receiver's administrator finds in their notifications. */
+  async function receiverNotices(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+    type: string,
+  ) {
+    const center = await fixture.targetAdmin.query(
+      api.notifications.getNotificationCenter,
+      { organizationId: fixture.targetOrganizationId },
+    );
+    return center.notifications.filter(
+      (notification) => notification.type === type,
+    );
+  }
+
   test("the transfer page, both boards, their counts, the Work board and the Object read one stage as the transfer moves on", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -4511,11 +4525,9 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
       deaccessionId: before?.deaccessionId,
       sourceReviewNotes: "Approved by the board",
     });
-    expect(
-      (await notificationsFor(t, fixture.targetAdminId)).filter(
-        (notification) => notification.type === "move_request_created",
-      ),
-    ).toHaveLength(2);
+    expect(await receiverNotices(fixture, "move_request_created")).toHaveLength(
+      2,
+    );
     await fixture.targetAdmin.mutation(api.objectMoves.accept, {
       requestId,
       targetLocationId: fixture.targetLocationId,
@@ -4553,6 +4565,15 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
         fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId }),
       ),
     ).toMatchObject({ code: "TRANSFER_AWAITS_SENDER" });
+    // An approval stays one: the sender approves it again or cancels it.
+    expect(
+      await refusal(
+        fixture.admin.mutation(api.objectMoves.reject, {
+          requestId,
+          reviewNotes: "Declined after all",
+        }),
+      ),
+    ).toMatchObject({ code: "TRANSFER_AWAITS_SENDER" });
 
     await fixture.admin.mutation(api.objectMoves.cancel, {
       requestId,
@@ -4574,11 +4595,9 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
         organizationId: fixture.targetOrganizationId,
       }),
     ).toMatchObject({ cancelled: 0 });
-    expect(
-      (await notificationsFor(t, fixture.targetAdminId)).filter(
-        (notification) => notification.type === "move_request_cancelled",
-      ),
-    ).toEqual([]);
+    expect(await receiverNotices(fixture, "move_request_cancelled")).toEqual(
+      [],
+    );
     const rejectedRemovals = await fixture.admin.query(
       api.deaccessions.listBoardColumn,
       {
@@ -4660,6 +4679,52 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
     });
   });
 
+  test("a transfer that ended before its decision was dated is dated by its request", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestedAt = Date.UTC(2026, 0, 1);
+    const ended = await t.run((ctx) =>
+      Promise.all(
+        (["executed", "rejected", "cancelled"] as const).map((status) =>
+          ctx.db.insert("organizationMoveRequests", {
+            collectionId: fixture.collectionId,
+            sourceOrganizationId: fixture.sourceOrganizationId,
+            targetOrganizationId: fixture.targetOrganizationId,
+            sourceAccessionNumber: "SRC-001",
+            accessionMode: "keep",
+            reason: "Ended under the old flow",
+            status,
+            requestedBy: fixture.requesterId,
+            requestedAt,
+          }),
+        ),
+      ),
+    );
+
+    const decisions = await Promise.all(
+      ended.map(async (requestId) => {
+        const request = await fixture.admin.query(api.objectMoves.get, {
+          requestId,
+        });
+        return { stage: request?.stage, decision: request?.decision };
+      }),
+    );
+    expect(decisions).toEqual([
+      {
+        stage: "received",
+        decision: { decidedAt: requestedAt, decidedBy: "receiver" },
+      },
+      {
+        stage: "declined",
+        decision: { decidedAt: requestedAt, decidedBy: "sender" },
+      },
+      {
+        stage: "cancelled",
+        decision: { decidedAt: requestedAt, decidedBy: "sender" },
+      },
+    ]);
+  });
+
   test("the sender's administrators can cancel an approved transfer until the receiver decides, which frees the Object and tells the receiver", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -4717,11 +4782,9 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
       })),
     ).toEqual([{ _id: requestId, stage: "cancelled", direction: "incoming" }]);
     expect(
-      (await notificationsFor(t, fixture.targetAdminId))
-        .filter(
-          (notification) => notification.type === "move_request_cancelled",
-        )
-        .map(({ title, message }) => ({ title, message })),
+      (await receiverNotices(fixture, "move_request_cancelled")).map(
+        ({ title, message }) => ({ title, message }),
+      ),
     ).toEqual([
       {
         title: "Transfer Cancelled",

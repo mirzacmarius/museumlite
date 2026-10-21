@@ -201,8 +201,8 @@ export function transferDecision(
  * administrator of both sees both sides' actions. Decisions stay with each
  * side's administrators; the requester may also cancel their own request
  * until the sender approves it, and the sender's administrators may cancel
- * until the receiver decides (ADR 0020). The sender stops a transfer by
- * cancelling it: declining is the receiver's.
+ * until the receiver decides (ADR 0020). The sender is offered Cancel to
+ * stop a transfer: Decline is offered to the receiver only.
  */
 export async function transferActionsFor(
   ctx: QueryCtx,
