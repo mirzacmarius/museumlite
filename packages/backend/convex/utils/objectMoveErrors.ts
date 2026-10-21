@@ -21,8 +21,6 @@ export const MOVE_BLOCKER_CODES = [
   "insurance_claim",
 ] as const;
 
-export type MoveBlockerCode = (typeof MOVE_BLOCKER_CODES)[number];
-
 /**
  * Why the chosen destination cannot take the object, found while staff fill
  * in a transfer request. The hierarchy codes draw the same line as the

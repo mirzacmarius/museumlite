@@ -9,8 +9,10 @@ import {
   classifyInventoryRecord,
   isCountedOnDisplay,
 } from "./collectionMetrics";
-import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
-import { hasOpenDeaccession } from "./openDeaccessions";
+import {
+  hasOpenDeaccession,
+  openDeaccessionCollectionIds,
+} from "./openDeaccessions";
 
 interface CollectionListFilters {
   organizationId: Id<"organizations">;
@@ -222,7 +224,7 @@ export async function getCollectionsWithOpenDeaccessions(
   ctx: Pick<QueryCtx, "db">,
   organizationId: Id<"organizations">,
 ) {
-  return countOpenDeaccessionCollectionIds(ctx, organizationId);
+  return openDeaccessionCollectionIds(ctx, organizationId);
 }
 
 export type CollectionListPageItem = {

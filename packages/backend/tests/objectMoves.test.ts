@@ -5,7 +5,7 @@ import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
 import { custodyConflictFromError } from "../convex/utils/custodyErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
-import { rebuildProjection } from "./testHarness";
+import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 import { workColumn } from "./workBoardHarness";
 
@@ -2656,6 +2656,24 @@ describe("a finished transfer leaves the Object free to move on", () => {
     return authedForUser(t, curatorId);
   }
 
+  // The receiving museum sends the Object back into its first Location.
+  async function sendBack(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const curator = await addReceivingCurator(t, fixture);
+    const requestId = await curator.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.sourceOrganizationId,
+      reason: "Return after the exhibition season",
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.approve, { requestId });
+    await fixture.admin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.locationId,
+    });
+  }
+
   test("an Object received by transfer can be transferred again", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -2673,17 +2691,7 @@ describe("a finished transfer leaves the Object free to move on", () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
     await transferToTarget(fixture);
-    const curator = await addReceivingCurator(t, fixture);
-    const requestId = await curator.mutation(api.objectMoves.createRequest, {
-      collectionId: fixture.collectionId,
-      targetOrganizationId: fixture.sourceOrganizationId,
-      reason: "Return after the exhibition season",
-    });
-    await fixture.targetAdmin.mutation(api.objectMoves.approve, { requestId });
-    await fixture.admin.mutation(api.objectMoves.accept, {
-      requestId,
-      targetLocationId: fixture.locationId,
-    });
+    await sendBack(t, fixture);
 
     const [catalog, search] = await Promise.all([
       fixture.admin.query(api.collections.list, {
@@ -2701,6 +2709,44 @@ describe("a finished transfer leaves the Object free to move on", () => {
     expect(search.results.map((object) => object._id)).toContain(
       fixture.collectionId,
     );
+  });
+
+  test("an Object sent back to its first museum counts on that museum's Overview again", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const analystId = await createUser(
+      t,
+      "Analyst",
+      `analyst-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    await addMembership(
+      t,
+      analystId,
+      fixture.sourceOrganizationId,
+      await createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        ["organization.view_analytics"],
+        "Analyst Role",
+      ),
+    );
+    await rebuildProjection(t, fixture.sourceOrganizationId);
+    await rebuildProjection(t, fixture.targetOrganizationId);
+    const objectsOnOverview = async () =>
+      expectReady(
+        await authedForUser(t, analystId).query(api.dashboard.getAnalytics, {
+          organizationId: fixture.sourceOrganizationId,
+        }),
+      ).objects;
+    expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
+
+    await transferToTarget(fixture);
+    expect(await objectsOnOverview()).toMatchObject({ total: 0, active: 0 });
+    await sendBack(t, fixture);
+
+    expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
+    await rebuildProjection(t, fixture.sourceOrganizationId);
+    expect(await objectsOnOverview()).toMatchObject({ total: 1, active: 1 });
   });
 });
 

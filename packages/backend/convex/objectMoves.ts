@@ -26,7 +26,10 @@ import {
   objectMoveError,
   objectMoveErrorFromError,
 } from "./utils/objectMoveErrors";
-import { executedTransferDeaccessionIds } from "./utils/openDeaccessions";
+import {
+  executedTransferDeaccessionIds,
+  holdsObject,
+} from "./utils/openDeaccessions";
 import {
   getCurrentUserOrganization,
   getUserIdsWithPermission,
@@ -586,13 +589,11 @@ async function buildEligibilityBlockers(
   // A rejected Removal, whatever its method, left the object in the
   // collection, and the Removal of an executed transfer closed when the object
   // arrived, so neither stops the object from being transferred again.
-  const closedTransferDeaccessionIds =
-    executedTransferDeaccessionIds(moveRequests);
+  const closedByTransfer = executedTransferDeaccessionIds(moveRequests);
   const blockingDeaccessions = deaccessions.filter(
     (deaccession) =>
       deaccession._id !== options.ignoreDeaccessionId &&
-      deaccession.status !== "rejected" &&
-      !closedTransferDeaccessionIds.has(deaccession._id),
+      holdsObject(deaccession, closedByTransfer),
   );
   if (blockingDeaccessions.length > 0) {
     blockers.push({
@@ -1380,27 +1381,19 @@ export const createRequest = mutation({
     );
 
     // A public destination is one that allows incoming transfer requests.
+    // Any other must be in the hierarchy, and the requester must be able to
+    // add objects there, which only its members can.
     if (!isPublicDestination) {
       await requirePermission(
         ctx,
         args.targetOrganizationId,
         "collections.create",
       );
-      const [, membership] = await Promise.all([
-        getTransferHierarchy(
-          ctx,
-          collection.organizationId,
-          args.targetOrganizationId,
-        ),
-        getCurrentUserOrganization(ctx, args.targetOrganizationId),
-      ]);
-      if (!membership) {
-        blockers.push({
-          code: "target_membership_required",
-          message:
-            "You must be a member of the destination organization to move an object there.",
-        });
-      }
+      await getTransferHierarchy(
+        ctx,
+        collection.organizationId,
+        args.targetOrganizationId,
+      );
     }
 
     requireNoMoveBlockers(blockers);

@@ -40,6 +40,7 @@ import { dispatchNotification } from "./utils/notificationDispatch";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
+import { transferRequestsOf } from "./utils/openDeaccessions";
 import { requireLinkableParty } from "./utils/parties";
 import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
@@ -563,12 +564,7 @@ async function getTransferDecliners(
     rows
       .filter((row) => row.method === "transfer" && row.status === "rejected")
       .map(async (row) => {
-        const requests = await ctx.db
-          .query("organizationMoveRequests")
-          .withIndex("by_collection", (q) =>
-            q.eq("collectionId", row.collectionId),
-          )
-          .collect();
+        const requests = await transferRequestsOf(ctx, row.collectionId);
         const request = requests.find(
           (candidate) =>
             candidate.deaccessionId === row._id &&

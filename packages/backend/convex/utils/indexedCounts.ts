@@ -2,7 +2,7 @@ import { ConvexError } from "convex/values";
 import type { Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { isUnaccessionedEntryObject } from "./objectEntryLifecycle";
-import { hasOpenDeaccession, isOpenDeaccession } from "./openDeaccessions";
+import { hasOpenDeaccession } from "./openDeaccessions";
 
 type CountCtx = Pick<QueryCtx, "db">;
 
@@ -126,26 +126,4 @@ export async function countDeaccessionsByStatus(
         q.eq("organizationId", organizationId).eq("status", status),
       ),
   );
-}
-
-export async function countOpenDeaccessionCollectionIds(
-  ctx: CountCtx,
-  organizationId: Id<"organizations">,
-) {
-  const collectionIds = new Set<Id<"collections">>();
-  for (const status of ["pending", "approved"] as const) {
-    const rows = ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", status),
-      );
-    for await (const deaccession of rows) {
-      if (
-        !collectionIds.has(deaccession.collectionId) &&
-        (await isOpenDeaccession(ctx, deaccession))
-      )
-        collectionIds.add(deaccession.collectionId);
-    }
-  }
-  return collectionIds;
 }
