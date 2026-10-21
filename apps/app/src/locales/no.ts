@@ -3538,6 +3538,7 @@ export default {
       inProgress: "Fjerning pågår",
       onLoan: "På utlån",
       notAccessioned: "Ikke aksesjonert ennå",
+      inTransfer: "Overføring pågår",
     },
     withdrawal: {
       restore: "Gjenopprett til katalogen",
@@ -10821,6 +10822,8 @@ export default {
         "Godkjenningen din er allerede registrert. Saken venter til de øvrige godkjennerne har godkjent den.",
       alreadyPending:
         "En forespørsel for dette objektet venter allerede på godkjenning. Se gjennom den før du starter en ny.",
+      objectInTransfer:
+        "Dette objektet blir overført til en annen organisasjon. Det kan ikke fjernes før overføringen er avsluttet.",
     },
   },
   imageDeletion: {

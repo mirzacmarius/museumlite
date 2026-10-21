@@ -107,6 +107,34 @@ export async function hasOpenDeaccession(
 }
 
 /**
+ * The approved Deaccession of a transfer that has not executed: while it
+ * holds the Object, no other Removal or Withdrawal starts (ADR 0019).
+ */
+export async function findOpenTransferDeaccession(
+  ctx: ReadCtx,
+  organizationId: Id<"organizations">,
+  collectionId: Id<"collections">,
+) {
+  let closedByTransfer: Set<Id<"deaccessions">> | undefined;
+  const approved = ctx.db
+    .query("deaccessions")
+    .withIndex("by_organization_and_collection_and_status", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("collectionId", collectionId)
+        .eq("status", "approved"),
+    );
+  for await (const deaccession of approved) {
+    if (deaccession.method !== "transfer") continue;
+    closedByTransfer ??= executedTransferDeaccessionIds(
+      await transferRequestsOf(ctx, collectionId),
+    );
+    if (holdsObject(deaccession, closedByTransfer)) return deaccession;
+  }
+  return null;
+}
+
+/**
  * The Objects of an Organization with an open Deaccession, reading its
  * executed transfers once rather than once per Deaccession.
  */

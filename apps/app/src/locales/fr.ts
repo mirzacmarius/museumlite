@@ -3580,6 +3580,7 @@ export default {
       inProgress: "Retrait en cours",
       onLoan: "En prêt",
       notAccessioned: "Pas encore inscrit à l’inventaire",
+      inTransfer: "Transfert en cours",
     },
     withdrawal: {
       restore: "Remettre au catalogue",
@@ -10999,6 +11000,8 @@ export default {
         "Votre approbation est déjà enregistrée. Le dossier reste en attente jusqu'à l'approbation des autres approbateurs.",
       alreadyPending:
         "Une demande pour cet objet est déjà en attente d'approbation. Examinez-la avant d'en lancer une autre.",
+      objectInTransfer:
+        "Cet objet est en cours de transfert vers une autre organisation. Il ne peut pas être retiré avant la fin du transfert.",
     },
   },
   imageDeletion: {

@@ -41,7 +41,10 @@ import { dispatchNotification } from "./utils/notificationDispatch";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
-import { transferRequestsOf } from "./utils/openDeaccessions";
+import {
+  findOpenTransferDeaccession,
+  transferRequestsOf,
+} from "./utils/openDeaccessions";
 import { requireLinkableParty } from "./utils/parties";
 import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
@@ -245,12 +248,20 @@ export async function createDeaccessionRecord(
   );
   await requireDeaccessionInitiation(ctx, args.organizationId, userId);
 
-  if (
-    await findWaitingDeaccession(ctx, args.organizationId, args.collectionId)
-  ) {
+  const [waiting, inTransfer] = await Promise.all([
+    findWaitingDeaccession(ctx, args.organizationId, args.collectionId),
+    findOpenTransferDeaccession(ctx, args.organizationId, args.collectionId),
+  ] as const);
+  if (waiting) {
     throw workflowApprovalError(
       "ALREADY_PENDING",
       "This object already has a deaccession waiting for approval",
+    );
+  }
+  if (inTransfer) {
+    throw workflowApprovalError(
+      "OBJECT_IN_TRANSFER",
+      "This object is being transferred to another organization",
     );
   }
 

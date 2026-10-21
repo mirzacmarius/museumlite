@@ -9,6 +9,7 @@ import {
   isHeldUnderOpenEntry,
   isUnaccessionedEntryObject,
 } from "./utils/objectEntryLifecycle";
+import { findOpenTransferDeaccession } from "./utils/openDeaccessions";
 import { hasPermission } from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
 import {
@@ -18,12 +19,16 @@ import {
 
 const hidden = v.object({ state: v.literal("hidden") });
 
+// A transfer to another organization that has not executed holds the Object.
+const blockedReason = v.union(
+  v.literal("on_loan"),
+  v.literal("not_accessioned"),
+  v.literal("in_transfer"),
+);
+
 const deaccessionActionValidator = v.union(
   hidden,
-  v.object({
-    state: v.literal("blocked"),
-    reason: v.union(v.literal("on_loan"), v.literal("not_accessioned")),
-  }),
+  v.object({ state: v.literal("blocked"), reason: blockedReason }),
   v.object({
     state: v.literal("in_progress"),
     deaccessionId: v.id("deaccessions"),
@@ -35,10 +40,7 @@ const deaccessionActionValidator = v.union(
 
 const removeActionValidator = v.union(
   hidden,
-  v.object({
-    state: v.literal("blocked"),
-    reason: v.union(v.literal("on_loan"), v.literal("not_accessioned")),
-  }),
+  v.object({ state: v.literal("blocked"), reason: blockedReason }),
   v.object({ state: v.literal("available") }),
 );
 
@@ -78,15 +80,23 @@ export const get = query({
     }
     const { organizationId } = collection;
 
-    const [initiation, canRemove, onLoan, unaccessioned, openEntry, waiting] =
-      await Promise.all([
-        deaccessionInitiationState(ctx, organizationId, userId),
-        hasPermission(ctx, organizationId, "collections.delete"),
-        isCollectionOnLoan(ctx, collection._id),
-        isUnaccessionedEntryObject(ctx, collection._id),
-        isHeldUnderOpenEntry(ctx, collection._id),
-        findWaitingDeaccession(ctx, organizationId, collection._id),
-      ]);
+    const [
+      initiation,
+      canRemove,
+      onLoan,
+      unaccessioned,
+      openEntry,
+      waiting,
+      inTransfer,
+    ] = await Promise.all([
+      deaccessionInitiationState(ctx, organizationId, userId),
+      hasPermission(ctx, organizationId, "collections.delete"),
+      isCollectionOnLoan(ctx, collection._id),
+      isUnaccessionedEntryObject(ctx, collection._id),
+      isHeldUnderOpenEntry(ctx, collection._id),
+      findWaitingDeaccession(ctx, organizationId, collection._id),
+      findOpenTransferDeaccession(ctx, organizationId, collection._id),
+    ]);
 
     const deaccession = async () => {
       if (initiation?.status !== "available" || !isInCatalog(collection)) {
@@ -94,6 +104,9 @@ export const get = query({
       }
       if (waiting) {
         return { state: "in_progress" as const, deaccessionId: waiting._id };
+      }
+      if (inTransfer) {
+        return { state: "blocked" as const, reason: "in_transfer" as const };
       }
       if (unaccessioned) {
         return {
@@ -119,6 +132,9 @@ export const get = query({
     const remove = () => {
       if (!canRemove || !isInCatalog(collection)) {
         return { state: "hidden" as const };
+      }
+      if (inTransfer) {
+        return { state: "blocked" as const, reason: "in_transfer" as const };
       }
       if (onLoan) {
         return { state: "blocked" as const, reason: "on_loan" as const };

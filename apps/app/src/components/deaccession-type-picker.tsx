@@ -3,7 +3,11 @@
 import { Archive, ArrowRightLeft, DollarSign } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/locales/client";
-import type { ObjectActions, RemovalType } from "./deaccession-dialog-types";
+import {
+  BLOCKED_REASON_KEYS,
+  type ObjectActions,
+  type RemovalType,
+} from "./deaccession-dialog-types";
 
 interface DeaccessionTypePickerProps {
   /** Undefined while loading; null when the Object allows neither. */
@@ -24,9 +28,7 @@ function useUnavailableReason() {
     if (action.state === "in_progress")
       return translate("objects.deaccessionAction.inProgress");
     if (action.state !== "blocked") return null;
-    return action.reason === "on_loan"
-      ? translate("objects.deaccessionAction.onLoan")
-      : translate("objects.deaccessionAction.notAccessioned");
+    return translate(BLOCKED_REASON_KEYS[action.reason]);
   };
 }
 

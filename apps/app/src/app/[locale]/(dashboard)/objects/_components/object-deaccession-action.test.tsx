@@ -97,6 +97,20 @@ test("an unaccessioned object shows the action disabled with the reason", async 
   ).toBe("Not yet accessioned");
 });
 
+test("an object waiting for its transfer's receiver shows the action disabled with the reason", async () => {
+  actions = {
+    deaccession: { state: "blocked", reason: "in_transfer" },
+    remove: { state: "blocked", reason: "in_transfer" },
+  };
+  await renderAction();
+
+  expect(
+    screen
+      .getByRole("button", { name: /Remove or transfer/ })
+      .getAttribute("title"),
+  ).toBe("Transfer in progress");
+});
+
 test("an open Deaccession links to its Case", async () => {
   actions = withDeaccession({
     state: "in_progress",

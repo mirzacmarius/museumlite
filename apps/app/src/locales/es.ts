@@ -3572,6 +3572,7 @@ export default {
       inProgress: "Retirada en curso",
       onLoan: "En préstamo",
       notAccessioned: "Aún sin accesión",
+      inTransfer: "Traslado en curso",
     },
     withdrawal: {
       restore: "Restaurar al catálogo",
@@ -10953,6 +10954,8 @@ export default {
         "Su aprobación ya está registrada. El caso sigue pendiente hasta que lo aprueben los demás aprobadores.",
       alreadyPending:
         "Ya hay una solicitud para este objeto pendiente de aprobación. Revísela antes de iniciar otra.",
+      objectInTransfer:
+        "Este objeto se está trasladando a otra organización. No se puede retirar hasta que termine el traslado.",
     },
   },
   imageDeletion: {

@@ -62,8 +62,9 @@ function getApprovalErrorMessage(
         title: t("approval.errors.workflowConfigurationTitle"),
         description: t("approval.errors.workflowConfigurationDescription"),
       };
-    // Approving never starts a request, so nothing can already be pending.
+    // Approving an accession never starts a Removal, so neither can refuse.
     case "ALREADY_PENDING":
+    case "OBJECT_IN_TRANSFER":
     case undefined:
       return {
         title: t("approval.errors.defaultTitle"),

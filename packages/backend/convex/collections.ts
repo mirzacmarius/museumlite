@@ -2528,8 +2528,10 @@ export const bulkDeaccession = mutation({
         // A member who may not start a deaccession is refused outright, with
         // the coded reason, instead of failing object by object.
         if (capabilityUnavailableFromError(error)) throw error;
-        // One already waiting for approval is left as it is.
-        if (workflowApprovalErrorFromError(error)?.code === "ALREADY_PENDING") {
+        // One already waiting for approval, or held by a transfer to another
+        // organization, is left as it is.
+        const refusal = workflowApprovalErrorFromError(error)?.code;
+        if (refusal === "ALREADY_PENDING" || refusal === "OBJECT_IN_TRANSFER") {
           skipped++;
           continue;
         }

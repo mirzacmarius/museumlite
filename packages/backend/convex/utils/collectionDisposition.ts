@@ -8,8 +8,12 @@ import {
 } from "./collectionLifecycle";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { assertEntryAllowsStatus } from "./objectEntryLifecycle";
-import { isOpenDeaccession } from "./openDeaccessions";
+import {
+  findOpenTransferDeaccession,
+  isOpenDeaccession,
+} from "./openDeaccessions";
 import { requirePermission } from "./permissions";
+import { workflowApprovalError } from "./workflowApprovalErrors";
 
 export async function archiveCollectionHandler(
   ctx: MutationCtx,
@@ -51,6 +55,18 @@ export async function archiveCollectionHandler(
     "Cannot archive an object that is currently on loan",
   );
   await assertEntryAllowsStatus(ctx, args.collectionId, "archived");
+  if (
+    await findOpenTransferDeaccession(
+      ctx,
+      collection.organizationId,
+      args.collectionId,
+    )
+  ) {
+    throw workflowApprovalError(
+      "OBJECT_IN_TRANSFER",
+      "Cannot withdraw an object that is being transferred to another organization",
+    );
+  }
 
   await Promise.all([
     applyCollectionDisposition(ctx, {

@@ -1552,6 +1552,7 @@ export default {
       inProgress: "Eliminare în curs",
       onLoan: "Împrumutat",
       notAccessioned: "Fără accesiune încă",
+      inTransfer: "Transfer în curs",
     },
     withdrawal: {
       restore: "Readu în catalog",
@@ -10933,6 +10934,8 @@ export default {
         "Aprobarea ta este deja înregistrată. Dosarul rămâne în așteptare până când îl aprobă ceilalți aprobatori.",
       alreadyPending:
         "O cerere pentru acest obiect așteaptă deja aprobarea. Verific-o înainte să începi alta.",
+      objectInTransfer:
+        "Acest obiect este în curs de transfer către altă organizație. Nu poate fi eliminat până la încheierea transferului.",
     },
   },
   imageDeletion: {

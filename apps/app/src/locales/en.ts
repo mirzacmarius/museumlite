@@ -2944,6 +2944,7 @@ export default {
       inProgress: "Removal in progress",
       onLoan: "On loan",
       notAccessioned: "Not yet accessioned",
+      inTransfer: "Transfer in progress",
     },
     withdrawal: {
       restore: "Restore to catalog",
@@ -10699,6 +10700,8 @@ export default {
         "Your approval is already recorded. The case stays pending until the remaining approvers approve it.",
       alreadyPending:
         "A request for this object is already waiting for approval. Review it before starting another.",
+      objectInTransfer:
+        "This object is being transferred to another organization. It can't be removed until the transfer ends.",
     },
   },
   imageDeletion: {

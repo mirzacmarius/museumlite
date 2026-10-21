@@ -31,6 +31,19 @@ test("options the Object does not allow are hidden or disabled with the reason",
   ).toBe(false);
 });
 
+test("an object held by its transfer offers neither a sale nor a removal", async () => {
+  await renderPicker({
+    deaccession: { state: "blocked", reason: "in_transfer" },
+    remove: { state: "blocked", reason: "in_transfer" },
+  });
+
+  for (const name of [/Object Sold/i, /Remove object/i]) {
+    const option = screen.getByRole("button", { name });
+    expect(option.hasAttribute("disabled")).toBe(true);
+    expect(option.textContent).toContain("Transfer in progress");
+  }
+});
+
 test("an approval workflow is noted on the sale option", async () => {
   await renderPicker({
     deaccession: { state: "available", approvalSteps: 1 },

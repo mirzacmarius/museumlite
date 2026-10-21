@@ -16,3 +16,15 @@ export type ObjectActions = NonNullable<
     typeof import("@v1/backend/convex/_generated/api").api.objectActions.get
   >
 >;
+
+type BlockedReason = Extract<
+  ObjectActions["deaccession"] | ObjectActions["remove"],
+  { state: "blocked" }
+>["reason"];
+
+/** The copy for each reason `objectActions.get` gives for a blocked action. */
+export const BLOCKED_REASON_KEYS = {
+  on_loan: "objects.deaccessionAction.onLoan",
+  not_accessioned: "objects.deaccessionAction.notAccessioned",
+  in_transfer: "objects.deaccessionAction.inTransfer",
+} as const satisfies Record<BlockedReason, string>;

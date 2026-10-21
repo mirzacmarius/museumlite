@@ -8,6 +8,7 @@ import { identifierErrorFromError } from "../convex/utils/identifierErrors";
 import { imageDeletionErrorFromError } from "../convex/utils/imageDeletionErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
 import { provenanceErrorFromError } from "../convex/utils/provenanceErrors";
+import { workflowApprovalErrorFromError } from "../convex/utils/workflowApprovalErrors";
 import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 import { workColumn } from "./workBoardHarness";
@@ -3984,9 +3985,95 @@ describe("a transfer's Removal is numbered and found like any other Removal (MUS
       {
         collectionId: fixture.collectionId,
         method: "transfer",
-        deaccessionNumber: expect.stringMatching(/^DA-/),
+        // The sender's own sequence, after the sale's DA-SOU-…-001.
+        deaccessionNumber: expect.stringMatching(/^DA-SOU-\d{4}-002$/),
       },
     ]);
+  });
+
+  test("while the receiver decides, the transfer's Removal holds the Object: no sale or Withdrawal starts until it is declined", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithRemovals(t);
+    const requestId = await approvedTransfer(fixture);
+    // A sender administrator who may also withdraw Objects.
+    const [administratorId, administratorRoleId] = await Promise.all([
+      createUser(t, "Administrator", "administrator@test.dev"),
+      createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        [
+          "organization.manage_settings",
+          "collections.read",
+          "collections.delete",
+        ],
+        "Administrator",
+      ),
+    ]);
+    await addMembership(
+      t,
+      administratorId,
+      fixture.sourceOrganizationId,
+      administratorRoleId,
+    );
+    const administrator = authedForUser(t, administratorId);
+    const sale = {
+      organizationId: fixture.sourceOrganizationId,
+      collectionId: fixture.collectionId,
+      dateDeaccessioned: Date.UTC(2026, 0, 2),
+      reason: "Sold at auction",
+      method: "sale" as const,
+    };
+    const refusalOf = (attempt: Promise<unknown>) =>
+      attempt.then(
+        () => null,
+        (error) => workflowApprovalErrorFromError(error)?.code,
+      );
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "blocked", reason: "in_transfer" },
+      remove: { state: "blocked", reason: "in_transfer" },
+    });
+    expect(
+      await refusalOf(administrator.mutation(api.deaccessions.create, sale)),
+    ).toBe("OBJECT_IN_TRANSFER");
+    expect(
+      await refusalOf(
+        administrator.mutation(api.collections.archiveCollection, {
+          collectionId: fixture.collectionId,
+          reason: "Duplicate record",
+        }),
+      ),
+    ).toBe("OBJECT_IN_TRANSFER");
+    expect(
+      await administrator.mutation(api.collections.bulkDeaccession, {
+        collectionIds: [fixture.collectionId],
+        reason: "Sold at auction",
+      }),
+    ).toEqual({ deaccessioned: 0, awaitingDecision: 0, failed: 0, skipped: 1 });
+
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "available", approvalSteps: 0 },
+      remove: { state: "available" },
+    });
+    // Without a disposition the sale waits for an approver.
+    const saleId = await administrator.mutation(api.deaccessions.create, sale);
+    expect(
+      (
+        await administrator.query(api.objectActions.get, {
+          collectionId: fixture.collectionId,
+        })
+      )?.deaccession,
+    ).toEqual({ state: "in_progress", deaccessionId: saleId });
   });
 
   test("a declined transfer's Removal is found among the rejected", async () => {
