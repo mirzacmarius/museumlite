@@ -21,12 +21,20 @@ const POLL_MS = 15_000;
 const START_TIMEOUT_MS = 3 * 60_000;
 const READY_TIMEOUT_MS = 20 * 60_000;
 const ALIAS_TIMEOUT_MS = 2 * 60_000;
+// `vercel inspect app.museumlite.com` prints megabytes of JSON, more than
+// execFileSync's 1 MiB default.
+const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 
 function vercel(args) {
   const output = execFileSync(
     "vercel",
     [...args, "--scope", SCOPE, "--format", "json"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000 },
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 60_000,
+      maxBuffer: MAX_OUTPUT_BYTES,
+    },
   );
   return JSON.parse(output);
 }
