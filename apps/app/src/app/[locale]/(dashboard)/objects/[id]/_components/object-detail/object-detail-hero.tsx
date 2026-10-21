@@ -1,5 +1,6 @@
 "use client";
 
+import type { TransferStage } from "@v1/backend/convex/utils/transferStages";
 import { Button } from "@v1/ui/button";
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { cn } from "@v1/ui/utils";
@@ -23,7 +24,7 @@ const chipClass =
 
 interface PendingMoveRequest {
   _id: string;
-  status: string;
+  stage: TransferStage;
   targetOrganizationName: string;
 }
 
@@ -155,7 +156,7 @@ export function ObjectDetailHero({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm font-medium text-status-info-foreground dark:text-blue-100">
                     <ArrowRightLeft className="size-4" />
-                    {pendingMoveRequest.status === "awaiting_acceptance"
+                    {pendingMoveRequest.stage === "waiting_for_receiver"
                       ? tRoot(
                           "untranslatedRecords.objects.transfer.awaitingAcceptance",
                         )
@@ -165,7 +166,7 @@ export function ObjectDetailHero({
                   </div>
                   <p className="text-sm text-status-info-foreground dark:text-blue-200/80">
                     {tRoot("untranslatedRecords.objects.move.thisObject")}{" "}
-                    {pendingMoveRequest.status === "awaiting_acceptance"
+                    {pendingMoveRequest.stage === "waiting_for_receiver"
                       ? tRoot(
                           "untranslatedRecords.objects.transfer.awaitingAcceptanceShort",
                         )

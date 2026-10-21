@@ -7827,16 +7827,13 @@ export default {
         noneEntered: "Sursa nu a fost introdusă încă",
       },
       transfers: {
-        awaitingApproval: "În așteptarea aprobării",
         pendingApproval: "Aprobarea transferului este în așteptare",
-        approved: "Aprobat pentru transfer",
         awaitingAcceptance: "În așteptarea acceptării",
         executed: "Transfer efectuat",
         rejected: "Respins",
         cancelled: "Anulat",
         empty: {
           pending: "Nu există aprobări de transfer în așteptare.",
-          approved: "Nu există transferuri aprobate în așteptare.",
           incoming: "Nu există cereri de transfer primite în așteptare.",
           awaitingReceiver:
             "Niciun transfer nu așteaptă acceptarea unui destinatar.",
@@ -8003,6 +8000,7 @@ export default {
         requestedAt: "Solicitat la",
         sourceApprovedAt: "Sursă aprobată la",
         sourceCancelledAt: "Anulată de sursă la",
+        sourceDeclinedAt: "Refuzată de sursă la",
         targetReviewedAt: "Destinație evaluată la",
         executedAt: "Executat la",
         reason: "Motivul mutării",
@@ -8010,7 +8008,6 @@ export default {
         notFound: "Solicitarea de mutare nu a fost găsită.",
         backToTransfers: "Înapoi la transferuri",
         openObject: "Deschide obiectul",
-        awaitingAcceptance: "În așteptarea acceptării",
         selectOrganization: "Selectați o organizație pentru a continua.",
         openTransfer: "Deschide solicitarea de transfer",
         thisObject: "Acest obiect este",
@@ -10869,8 +10866,12 @@ export default {
       chosenByReceiver: "Ales de organizația destinatară la acceptare",
     },
     declinedBy: "Refuzat de {organization}",
+    cancelledBy: "Anulat de {organization}",
     receivedFrom: "Primit de la {organization}",
     sentTo: "Trimis către {organization}",
+    actingFor: "În numele organizației {organization}",
+    reapprovalNote:
+      "Aprobat într-o versiune anterioară a transferurilor, așa că organizația sursă trebuie să îl aprobe din nou înainte ca organizația destinatară să decidă.",
     errors: {
       accessionNumberTaken:
         "{number} este deja folosit în organizația ta. Generează sau introdu un număr nou.",
@@ -10879,6 +10880,8 @@ export default {
         "Numerotarea automată a accesiunilor nu este configurată pentru organizația ta. Introdu un număr nou sau activeaz-o în Preferințe.",
       requestClosed:
         "Această solicitare de transfer a fost deja soluționată sau anulată.",
+      awaitsSender:
+        "Organizația sursă trebuie să aprobe acest transfer înainte să îl poți accepta sau refuza.",
       outsideHierarchy:
         "Organizația de destinație este în afara ierarhiei organizației tale și nu permite solicitări de transfer primite.",
       planRequired:

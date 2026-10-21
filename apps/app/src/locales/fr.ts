@@ -7859,9 +7859,7 @@ export default {
         noneEntered: "Aucune source saisie pour le moment",
       },
       transfers: {
-        awaitingApproval: "En attente d’approbation",
         pendingApproval: "Approbation du transfert en attente",
-        approved: "Approuvé pour le transfert",
         awaitingAcceptance: "En attente d’acceptation",
         executed: "Transfert effectué",
         rejected: "Rejeté",
@@ -7869,7 +7867,6 @@ export default {
         empty: {
           pending:
             "Aucune approbation de transfert n’est en attente pour le moment.",
-          approved: "Aucun transfert approuvé n’est en attente pour le moment.",
           incoming:
             "Aucune demande de transfert entrante n’est en attente pour le moment.",
           awaitingReceiver:
@@ -8041,6 +8038,7 @@ export default {
         requestedAt: "Demandé le",
         sourceApprovedAt: "Source approuvée le",
         sourceCancelledAt: "Annulée par la source le",
+        sourceDeclinedAt: "Refusée par la source le",
         targetReviewedAt: "Cible examinée le",
         executedAt: "Effectué le",
         reason: "Motif du déplacement",
@@ -8048,7 +8046,6 @@ export default {
         notFound: "Demande de déplacement introuvable.",
         backToTransfers: "Retour aux transferts",
         openObject: "Ouvrir l’objet",
-        awaitingAcceptance: "En attente d’acceptation",
         selectOrganization: "Sélectionnez une organisation pour continuer.",
         openTransfer: "Ouvrir la demande de transfert",
         thisObject: "Cet objet est",
@@ -10936,8 +10933,12 @@ export default {
         "Choisi par l’organisation destinataire lors de l’acceptation",
     },
     declinedBy: "Refusé par {organization}",
+    cancelledBy: "Annulé par {organization}",
     receivedFrom: "Reçu de {organization}",
     sentTo: "Envoyé à {organization}",
+    actingFor: "Au nom de {organization}",
+    reapprovalNote:
+      "Approuvé avec une version antérieure des transferts : l’organisation d’origine doit l’approuver à nouveau avant que l’organisation destinataire décide.",
     errors: {
       accessionNumberTaken:
         "{number} est déjà utilisé dans votre organisation. Générez ou saisissez un nouveau numéro.",
@@ -10946,6 +10947,8 @@ export default {
         "La numérotation automatique des accessions n’est pas configurée pour votre organisation. Saisissez un nouveau numéro ou activez-la dans les Préférences.",
       requestClosed:
         "Cette demande de transfert a déjà été traitée ou annulée.",
+      awaitsSender:
+        "L’organisation d’origine doit approuver ce transfert avant que vous puissiez l’accepter ou le refuser.",
       outsideHierarchy:
         "L’organisation de destination est hors de la hiérarchie de votre organisation et n’autorise pas les demandes de transfert entrantes.",
       planRequired:

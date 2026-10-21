@@ -4,7 +4,7 @@ import { Label } from "@v1/ui/label";
 import { ArrowRightLeft } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { useI18n, useScopedI18n } from "@/locales/client";
-import { MoveRequestStatusBadge } from "./move-request-utils";
+import { TransferStageBadge } from "./move-request-utils";
 import type { MoveRequestDetail } from "./use-move-request-detail";
 
 interface MoveRequestDetailCardProps {
@@ -12,19 +12,19 @@ interface MoveRequestDetailCardProps {
   locale: string;
 }
 
-const OPEN_STATUSES = new Set<string>([
-  "pending",
-  "pending_source_approval",
-  "approved_for_transfer",
-  "awaiting_acceptance",
-]);
-
 export function MoveRequestDetailCard({
   request,
   locale,
 }: MoveRequestDetailCardProps) {
   const tRoot = useI18n();
-  const tAccession = useScopedI18n("moveRequests.accession");
+  const tMoves = useScopedI18n("moveRequests");
+  const isOpen =
+    request.stage === "waiting_for_sender" ||
+    request.stage === "waiting_for_receiver";
+  // A decline or cancel by the sending organization, dated by the backend.
+  const senderDecision =
+    request.decision?.decidedBy === "sender" ? request.decision : undefined;
+  const reviewNotes = request.decision?.notes ?? request.sourceReviewNotes;
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -41,8 +41,13 @@ export function MoveRequestDetailCard({
             {request.sourceAccessionNumber}
           </p>
         </div>
-        <MoveRequestStatusBadge status={request.status} />
+        <TransferStageBadge stage={request.stage} />
       </div>
+      {request.awaitsSenderReapproval && (
+        <p className="mt-4 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-200">
+          {tMoves("reapprovalNote")}
+        </p>
+      )}
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
@@ -68,15 +73,15 @@ export function MoveRequestDetailCard({
                 )}
             </p>
           </div>
-          {OPEN_STATUSES.has(request.status) && (
+          {isOpen && (
             <div>
               <Label className="text-muted-foreground">
                 {tRoot("untranslatedRecords.accessions.transfer.handling")}
               </Label>
-              <p className="mt-1">{tAccession("chosenByReceiver")}</p>
+              <p className="mt-1">{tMoves("accession.chosenByReceiver")}</p>
             </div>
           )}
-          {request.status === "executed" && (
+          {request.stage === "received" && (
             <div>
               <Label className="text-muted-foreground">
                 {tRoot(
@@ -113,16 +118,30 @@ export function MoveRequestDetailCard({
               />
             </p>
           </div>
-          {request.sourceReviewedAt && (
+          {request.approvedBySender && request.sourceReviewedAt && (
             <div>
               <Label className="text-muted-foreground">
-                {request.status === "cancelled"
-                  ? tRoot("untranslatedRecords.objects.move.sourceCancelledAt")
-                  : tRoot("untranslatedRecords.objects.move.sourceApprovedAt")}
+                {tRoot("untranslatedRecords.objects.move.sourceApprovedAt")}
               </Label>
               <p className="mt-1">
                 <ClientDateFns
                   timestamp={request.sourceReviewedAt}
+                  format="MMMM d, yyyy 'at' p"
+                  locale={locale}
+                />
+              </p>
+            </div>
+          )}
+          {senderDecision && (
+            <div>
+              <Label className="text-muted-foreground">
+                {request.stage === "cancelled"
+                  ? tRoot("untranslatedRecords.objects.move.sourceCancelledAt")
+                  : tRoot("untranslatedRecords.objects.move.sourceDeclinedAt")}
+              </Label>
+              <p className="mt-1">
+                <ClientDateFns
+                  timestamp={senderDecision.decidedAt}
                   format="MMMM d, yyyy 'at' p"
                   locale={locale}
                 />
@@ -231,14 +250,12 @@ export function MoveRequestDetailCard({
           </div>
         )}
 
-        {(request.sourceReviewNotes || request.targetReviewNotes) && (
+        {reviewNotes && (
           <div>
             <Label className="text-muted-foreground">
               {tRoot("untranslatedRecords.accessions.transfer.reviewNotes")}
             </Label>
-            <p className="mt-1 whitespace-pre-wrap">
-              {request.targetReviewNotes ?? request.sourceReviewNotes}
-            </p>
+            <p className="mt-1 whitespace-pre-wrap">{reviewNotes}</p>
           </div>
         )}
       </div>

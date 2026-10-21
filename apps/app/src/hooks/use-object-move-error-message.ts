@@ -84,6 +84,8 @@ export function useObjectMoveErrorMessage() {
     switch (refusal?.code) {
       case "MOVE_REQUEST_CLOSED":
         return t("requestClosed");
+      case "TRANSFER_AWAITS_SENDER":
+        return t("awaitsSender");
       case "MOVE_BLOCKED": {
         const reasons = (refusal.blockers ?? []).map(blockerMessage);
         return reasons.length > 0 ? reasons.join(" ") : fallback;

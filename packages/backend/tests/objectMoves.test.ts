@@ -398,6 +398,24 @@ async function createMoveFixture(
   };
 }
 
+/** The transfer's stage on the sender's or the receiver's Transfers board. */
+async function listedStage(
+  fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  side: "source" | "target",
+  requestId: Id<"organizationMoveRequests">,
+) {
+  const requests = await (side === "source"
+    ? fixture.admin
+    : fixture.targetAdmin
+  ).query(api.objectMoves.listForOrganization, {
+    organizationId:
+      side === "source"
+        ? fixture.sourceOrganizationId
+        : fixture.targetOrganizationId,
+  });
+  return requests.find((request) => request._id === requestId)?.stage;
+}
+
 describe("objectMoves", () => {
   test("creates a move request and notifies source admins", async () => {
     const t = convexTest(schema, modules);
@@ -633,7 +651,8 @@ describe("objectMoves", () => {
       targetOrganizationName: "Target Museum",
       reason: "Curatorial transfer for gallery rotation",
       notes: "Handle with registrar review",
-      status: "pending_source_approval",
+      stage: "waiting_for_sender",
+      awaitsSenderReapproval: false,
       requestedBy: fixture.requesterId,
       requestedByName: "Requester",
       direction: "outgoing",
@@ -1061,7 +1080,7 @@ describe("objectMoves", () => {
     expect(custodyEvents).toHaveLength(2);
   });
 
-  test("in-flight acceptance rejects a missing observed source after the object moves", async () => {
+  test("in-flight acceptance without an observed source waits for the sender to approve again", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
@@ -1094,12 +1113,14 @@ describe("objectMoves", () => {
       });
     });
 
-    await expect(
-      fixture.targetAdmin.mutation(api.objectMoves.accept, {
-        requestId,
-        targetLocationId: fixture.targetLocationId,
-      }),
-    ).rejects.toThrow(/observed source location/);
+    expect(
+      await refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: fixture.targetLocationId,
+        }),
+      ),
+    ).toMatchObject({ code: "TRANSFER_AWAITS_SENDER" });
 
     const [collection, request] = await Promise.all([
       t.run(async (ctx) => ctx.db.get(fixture.collectionId)),
@@ -1362,7 +1383,7 @@ describe("objectMoves", () => {
     );
   });
 
-  test("listForOrganization marks an approved transfer without an observed source as awaiting the source's re-approval", async () => {
+  test("listForOrganization puts an approval made without an observed source back with the sender, to approve again", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
     const requestId = await fixture.requester.mutation(
@@ -1374,43 +1395,52 @@ describe("objectMoves", () => {
         reason: "Older approval",
       },
     );
-    const awaitsSourceReapproval = async () => {
+    const listed = async () => {
       const requests = await fixture.admin.query(
         api.objectMoves.listForOrganization,
         { organizationId: fixture.sourceOrganizationId },
       );
-      return requests.find((request) => request._id === requestId)
-        ?.awaitsSourceReapproval;
+      const request = requests.find((entry) => entry._id === requestId);
+      return {
+        stage: request?.stage,
+        awaitsSenderReapproval: request?.awaitsSenderReapproval,
+      };
     };
 
-    expect(await awaitsSourceReapproval()).toBe(false);
+    expect(await listed()).toEqual({
+      stage: "waiting_for_sender",
+      awaitsSenderReapproval: false,
+    });
     await fixture.admin.mutation(api.objectMoves.approve, { requestId });
-    expect(await awaitsSourceReapproval()).toBe(false);
+    expect(await listed()).toEqual({
+      stage: "waiting_for_receiver",
+      awaitsSenderReapproval: false,
+    });
 
     await t.run(async (ctx) => {
       await ctx.db.patch(requestId, { approvedSourceLocationId: undefined });
     });
-    expect(await awaitsSourceReapproval()).toBe(true);
+    expect(await listed()).toEqual({
+      stage: "waiting_for_sender",
+      awaitsSenderReapproval: true,
+    });
   });
 
-  test("approving a request moves it from pending to executed in listForOrganization", async () => {
+  test("approving a request moves it from waiting for the sender to received in listForOrganization", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
-    const [requestId, pendingRequests] = await Promise.all([
-      fixture.requester.mutation(api.objectMoves.createRequest, {
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
         collectionId: fixture.collectionId,
         targetOrganizationId: fixture.targetOrganizationId,
         accessionMode: "keep",
         reason: "Lifecycle approval test",
-      }),
-      fixture.admin.query(api.objectMoves.listForOrganization, {
-        organizationId: fixture.sourceOrganizationId,
-        status: "pending_source_approval",
-      }),
-    ]);
-    expect(pendingRequests.some((request) => request._id === requestId)).toBe(
-      true,
+      },
+    );
+    expect(await listedStage(fixture, "source", requestId)).toBe(
+      "waiting_for_sender",
     );
 
     await fixture.admin.mutation(api.objectMoves.approve, {
@@ -1418,15 +1448,8 @@ describe("objectMoves", () => {
       reviewNotes: "Approved during lifecycle test",
     });
 
-    const incomingRequests = await fixture.targetAdmin.query(
-      api.objectMoves.listForOrganization,
-      {
-        organizationId: fixture.targetOrganizationId,
-        status: "awaiting_acceptance",
-      },
-    );
-    expect(incomingRequests.some((request) => request._id === requestId)).toBe(
-      true,
+    expect(await listedStage(fixture, "target", requestId)).toBe(
+      "waiting_for_receiver",
     );
 
     await fixture.targetAdmin.mutation(api.objectMoves.accept, {
@@ -1435,16 +1458,7 @@ describe("objectMoves", () => {
       reviewNotes: "Accepted during lifecycle test",
     });
 
-    const executedRequests = await fixture.admin.query(
-      api.objectMoves.listForOrganization,
-      {
-        organizationId: fixture.sourceOrganizationId,
-        status: "executed",
-      },
-    );
-    expect(executedRequests.some((request) => request._id === requestId)).toBe(
-      true,
-    );
+    expect(await listedStage(fixture, "source", requestId)).toBe("received");
   });
 
   test("the transfers column follows a transfer to whichever organization must decide it", async () => {
@@ -1634,7 +1648,7 @@ describe("objectMoves", () => {
     ).toBe(true);
   });
 
-  test("rejecting a request moves it to rejected in listForOrganization", async () => {
+  test("rejecting a request moves it to declined in listForOrganization", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
@@ -1653,19 +1667,10 @@ describe("objectMoves", () => {
       reviewNotes: "Rejected during lifecycle test",
     });
 
-    const rejectedRequests = await fixture.admin.query(
-      api.objectMoves.listForOrganization,
-      {
-        organizationId: fixture.sourceOrganizationId,
-        status: "rejected",
-      },
-    );
-    expect(rejectedRequests.some((request) => request._id === requestId)).toBe(
-      true,
-    );
+    expect(await listedStage(fixture, "source", requestId)).toBe("declined");
   });
 
-  test("target rejection leaves the object unchanged and appears in source rejected list", async () => {
+  test("target rejection leaves the object unchanged and reads as declined in the source's list", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
@@ -1688,24 +1693,19 @@ describe("objectMoves", () => {
       reviewNotes: "Target cannot accept custody",
     });
 
-    const [request, collection, rejectedRequests] = await Promise.all([
+    const [request, collection, stage] = await Promise.all([
       t.run(async (ctx) => {
         return await ctx.db.get(requestId);
       }),
       t.run(async (ctx) => {
         return await ctx.db.get(fixture.collectionId);
       }),
-      fixture.admin.query(api.objectMoves.listForOrganization, {
-        organizationId: fixture.sourceOrganizationId,
-        status: "rejected",
-      }),
+      listedStage(fixture, "source", requestId),
     ]);
     expect(request?.status).toBe("rejected");
     expect(request?.targetReviewNotes).toBe("Target cannot accept custody");
     expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
-    expect(rejectedRequests.some((entry) => entry._id === requestId)).toBe(
-      true,
-    );
+    expect(stage).toBe("declined");
   });
 
   test("cancelling a pending request leaves the object unchanged", async () => {
@@ -1754,16 +1754,7 @@ describe("objectMoves", () => {
 
     await fixture.requester.mutation(api.objectMoves.cancel, { requestId });
 
-    const cancelledRequests = await fixture.admin.query(
-      api.objectMoves.listForOrganization,
-      {
-        organizationId: fixture.sourceOrganizationId,
-        status: "cancelled",
-      },
-    );
-    expect(cancelledRequests.some((request) => request._id === requestId)).toBe(
-      true,
-    );
+    expect(await listedStage(fixture, "source", requestId)).toBe("cancelled");
   });
 
   test("lookupTransferDestinationByAccountNumber rejects destinations that disallow incoming transfers", async () => {
@@ -2778,7 +2769,7 @@ describe("a finished transfer leaves the Object free to move on", () => {
 });
 
 describe("the receiver's Transfer log", () => {
-  test("lists what reached the receiver, named by its sender, and nothing the sender stopped", async () => {
+  test("lists what reached the receiver, named by its sender, and nothing the sender stopped before approving it", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
     const request = (reason: string) =>
@@ -2802,6 +2793,13 @@ describe("the receiver's Transfer log", () => {
     });
     await fixture.targetAdmin.mutation(api.objectMoves.reject, {
       requestId: declined,
+    });
+    const withdrawn = await request("Cancelled by the sender after approval");
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId: withdrawn,
+    });
+    await fixture.admin.mutation(api.objectMoves.cancel, {
+      requestId: withdrawn,
     });
     const received = await request("Received");
     await fixture.admin.mutation(api.objectMoves.approve, {
@@ -2827,32 +2825,42 @@ describe("the receiver's Transfer log", () => {
       }),
     ]);
     const entries = log.map(
-      ({ _id, status, direction, sourceOrganizationName }) => ({
+      ({ _id, stage, direction, sourceOrganizationName, decision }) => ({
         _id,
-        status,
+        stage,
         direction,
         sourceOrganizationName,
+        decidedBy: decision?.decidedBy,
       }),
     );
-    expect(entries).toHaveLength(2);
+    expect(entries).toHaveLength(3);
     expect(entries).toEqual(
       expect.arrayContaining([
         {
           _id: declined,
-          status: "rejected",
+          stage: "declined",
           direction: "incoming",
           sourceOrganizationName: "Source Museum",
+          decidedBy: "receiver",
+        },
+        {
+          _id: withdrawn,
+          stage: "cancelled",
+          direction: "incoming",
+          sourceOrganizationName: "Source Museum",
+          decidedBy: "sender",
         },
         {
           _id: received,
-          status: "executed",
+          stage: "received",
           direction: "incoming",
           sourceOrganizationName: "Source Museum",
+          decidedBy: "receiver",
         },
       ]),
     );
     expect(searched.map((entry) => entry._id).sort()).toEqual(
-      [declined, received].sort(),
+      [declined, withdrawn, received].sort(),
     );
     expect(ownName).toEqual([]);
   });
@@ -4298,5 +4306,430 @@ describe("a transfer's Removal is numbered and found like any other Removal (MUS
       log.mockRestore();
       vi.useRealTimers();
     }
+  });
+});
+
+describe("a transfer's stage and who acts on it next (MUS-846)", () => {
+  async function requested(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    return await fixture.requester.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.targetOrganizationId,
+      reason: "Rotation",
+    });
+  }
+
+  function stageOf(
+    viewer: ReturnType<typeof authedForUser>,
+    requestId: Id<"organizationMoveRequests">,
+  ) {
+    return viewer
+      .query(api.objectMoves.get, { requestId })
+      .then((request) => request?.stage);
+  }
+
+  test("the transfer page, both boards, their counts, the Work board and the Object read one stage as the transfer moves on", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    // The Object page is read in whichever organization holds the Object.
+    const everywhere = async (holder = fixture.admin) => {
+      const [
+        page,
+        sent,
+        received,
+        sentCounts,
+        receivedCounts,
+        senderWork,
+        receiverWork,
+        onObject,
+      ] = await Promise.all([
+        stageOf(fixture.admin, requestId),
+        listedStage(fixture, "source", requestId),
+        listedStage(fixture, "target", requestId),
+        fixture.admin.query(api.objectMoves.getBoardCounts, {
+          organizationId: fixture.sourceOrganizationId,
+        }),
+        fixture.targetAdmin.query(api.objectMoves.getBoardCounts, {
+          organizationId: fixture.targetOrganizationId,
+        }),
+        workColumn(fixture.admin, fixture.sourceOrganizationId, "transfers"),
+        workColumn(
+          fixture.targetAdmin,
+          fixture.targetOrganizationId,
+          "transfers",
+        ),
+        holder.query(api.objectMoves.getPendingForCollection, {
+          collectionId: fixture.collectionId,
+        }),
+      ]);
+      return {
+        page,
+        sent,
+        received,
+        sentCounts,
+        receivedCounts,
+        senderWork: senderWork?.cards.length,
+        receiverWork: receiverWork?.cards.length,
+        onObject: onObject?.stage,
+      };
+    };
+    const counts = (
+      overrides: Partial<{
+        waitingForApproval: number;
+        waitingForReceiver: number;
+        incoming: number;
+        received: number;
+      }>,
+    ) => {
+      const columns = {
+        waitingForApproval: 0,
+        waitingForReceiver: 0,
+        incoming: 0,
+        received: 0,
+        declined: 0,
+        cancelled: 0,
+        ...overrides,
+      };
+      return {
+        ...columns,
+        awaitingDecision: columns.waitingForApproval + columns.incoming,
+      };
+    };
+
+    const requestId = await requested(fixture);
+    expect(await everywhere()).toEqual({
+      page: "waiting_for_sender",
+      sent: "waiting_for_sender",
+      received: undefined,
+      sentCounts: counts({ waitingForApproval: 1 }),
+      receivedCounts: counts({}),
+      senderWork: 1,
+      receiverWork: 0,
+      onObject: "waiting_for_sender",
+    });
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    expect(await everywhere()).toEqual({
+      page: "waiting_for_receiver",
+      sent: "waiting_for_receiver",
+      received: "waiting_for_receiver",
+      sentCounts: counts({ waitingForReceiver: 1 }),
+      receivedCounts: counts({ incoming: 1 }),
+      senderWork: 0,
+      receiverWork: 1,
+      onObject: "waiting_for_receiver",
+    });
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+      reviewNotes: "Arrived safely",
+    });
+    expect(await everywhere(fixture.targetAdmin)).toEqual({
+      page: "received",
+      sent: "received",
+      received: "received",
+      sentCounts: counts({ received: 1 }),
+      receivedCounts: counts({ received: 1 }),
+      senderWork: 0,
+      receiverWork: 0,
+      onObject: undefined,
+    });
+    expect(
+      (await fixture.targetAdmin.query(api.objectMoves.get, { requestId }))
+        ?.decision,
+    ).toMatchObject({ decidedBy: "receiver", notes: "Arrived safely" });
+  });
+
+  test("members who cannot decide transfers get no board counts", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await requested(fixture);
+
+    expect(
+      await fixture.requester.query(api.objectMoves.getBoardCounts, {
+        organizationId: fixture.sourceOrganizationId,
+      }),
+    ).toBeNull();
+  });
+
+  test("an approval made before the sender's Location was recorded waits for the sender to approve again, and keeps its Removal", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await requested(fixture);
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId,
+      reviewNotes: "Approved by the board",
+    });
+    // What an approval left before the observed source Location was kept.
+    await t.run((ctx) =>
+      ctx.db.patch(requestId, { approvedSourceLocationId: undefined }),
+    );
+    const before = await fixture.admin.query(api.objectMoves.get, {
+      requestId,
+    });
+
+    expect(before).toMatchObject({
+      stage: "waiting_for_sender",
+      awaitsSenderReapproval: true,
+      actions: [
+        {
+          action: "approve",
+          organizationId: fixture.sourceOrganizationId,
+          takesNotes: true,
+        },
+        {
+          action: "cancel",
+          organizationId: fixture.sourceOrganizationId,
+          takesNotes: true,
+        },
+      ],
+    });
+    expect(
+      (await fixture.targetAdmin.query(api.objectMoves.get, { requestId }))
+        ?.actions,
+    ).toEqual([]);
+    expect(await listedStage(fixture, "target", requestId)).toBeUndefined();
+    expect(
+      await refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: fixture.targetLocationId,
+        }),
+      ),
+    ).toMatchObject({ code: "TRANSFER_AWAITS_SENDER" });
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+
+    const after = await fixture.admin.query(api.objectMoves.get, {
+      requestId,
+    });
+    expect(after).toMatchObject({
+      stage: "waiting_for_receiver",
+      awaitsSenderReapproval: false,
+      deaccessionId: before?.deaccessionId,
+      sourceReviewNotes: "Approved by the board",
+    });
+    expect(
+      (await notificationsFor(t, fixture.targetAdminId)).filter(
+        (notification) => notification.type === "move_request_created",
+      ),
+    ).toHaveLength(2);
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+    expect(await stageOf(fixture.targetAdmin, requestId)).toBe("received");
+  });
+
+  test("a request stored as approved for transfer waits for the sender, who approves it into the receiver's hands", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await t.run((ctx) =>
+      ctx.db.insert("organizationMoveRequests", {
+        collectionId: fixture.collectionId,
+        sourceOrganizationId: fixture.sourceOrganizationId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        sourceAccessionNumber: "SRC-001",
+        accessionMode: "keep",
+        reason: "Approved under the old flow",
+        status: "approved_for_transfer",
+        requestedBy: fixture.requesterId,
+        requestedAt: Date.UTC(2026, 0, 1),
+      }),
+    );
+
+    const [page, work] = await Promise.all([
+      fixture.admin.query(api.objectMoves.get, { requestId }),
+      workColumn(fixture.admin, fixture.sourceOrganizationId, "transfers"),
+    ]);
+    expect(page).toMatchObject({
+      stage: "waiting_for_sender",
+      awaitsSenderReapproval: true,
+    });
+    expect(work?.cards).toMatchObject([{ _id: requestId }]);
+
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+
+    expect(
+      await fixture.targetAdmin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({
+      stage: "waiting_for_receiver",
+      deaccessionId: expect.any(String),
+      actions: [
+        { action: "accept", organizationId: fixture.targetOrganizationId },
+        { action: "decline", organizationId: fixture.targetOrganizationId },
+      ],
+    });
+  });
+
+  test("the sender's administrators can cancel an approved transfer until the receiver decides, which frees the Object and tells the receiver", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await requested(fixture);
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId,
+      reviewNotes: "Approved by the board",
+    });
+    const approved = await fixture.admin.query(api.objectMoves.get, {
+      requestId,
+    });
+
+    expect(
+      (await fixture.requester.query(api.objectMoves.get, { requestId }))
+        ?.actions,
+    ).toEqual([]);
+    expect(
+      await refusal(
+        fixture.requester.mutation(api.objectMoves.cancel, { requestId }),
+      ),
+    ).toMatchObject({ code: expect.stringContaining("Permission denied") });
+    expect(
+      await refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.cancel, { requestId }),
+      ),
+    ).toMatchObject({ code: expect.stringContaining("Permission denied") });
+
+    await fixture.admin.mutation(api.objectMoves.cancel, {
+      requestId,
+      reviewNotes: "Lent to an exhibition instead",
+    });
+
+    expect(
+      await fixture.admin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({
+      stage: "cancelled",
+      approvedBySender: true,
+      sourceReviewedAt: approved?.sourceReviewedAt,
+      sourceReviewNotes: "Approved by the board",
+      decision: {
+        decidedBy: "sender",
+        notes: "Lent to an exhibition instead",
+      },
+      actions: [],
+    });
+    const receiverLog = await fixture.targetAdmin.query(
+      api.objectMoves.listForOrganization,
+      { organizationId: fixture.targetOrganizationId },
+    );
+    expect(
+      receiverLog.map(({ _id, stage, direction }) => ({
+        _id,
+        stage,
+        direction,
+      })),
+    ).toEqual([{ _id: requestId, stage: "cancelled", direction: "incoming" }]);
+    expect(
+      (await notificationsFor(t, fixture.targetAdminId))
+        .filter(
+          (notification) => notification.type === "move_request_cancelled",
+        )
+        .map(({ title, message }) => ({ title, message })),
+    ).toEqual([
+      {
+        title: "Transfer Cancelled",
+        message:
+          "Source Museum cancelled the transfer of Move Test Object. Reason: Lent to an exhibition instead",
+      },
+    ]);
+    const rejectedRemovals = await fixture.admin.query(
+      api.deaccessions.listBoardColumn,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        column: { kind: "rejected" },
+        paginationOpts: { numItems: 10, cursor: null },
+      },
+    );
+    expect(rejectedRemovals.page).toMatchObject([
+      { _id: approved?.deaccessionId, method: "transfer" },
+    ]);
+    expect(
+      await refusal(
+        fixture.targetAdmin.mutation(api.objectMoves.accept, {
+          requestId,
+          targetLocationId: fixture.targetLocationId,
+        }),
+      ),
+    ).toMatchObject({ code: "MOVE_REQUEST_CLOSED" });
+    // The Object can be sent again.
+    await expect(requested(fixture)).resolves.toBeDefined();
+  });
+
+  test("an administrator of both organizations sees each side's actions, named for the organization they act for", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const [bothId, sourceRoleId, targetRoleId] = await Promise.all([
+      createUser(t, "Registrar of both", "both@test.dev"),
+      createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        ["organization.manage_settings", "collections.read"],
+        "Source Administrator",
+      ),
+      createRoleWithPermissions(
+        t,
+        fixture.targetOrganizationId,
+        ["organization.manage_settings", "collections.read"],
+        "Target Administrator",
+      ),
+    ]);
+    await Promise.all([
+      addMembership(t, bothId, fixture.sourceOrganizationId, sourceRoleId),
+      addMembership(t, bothId, fixture.targetOrganizationId, targetRoleId),
+    ]);
+    const both = authedForUser(t, bothId);
+    const actionsOf = async (viewer: ReturnType<typeof authedForUser>) =>
+      (await viewer.query(api.objectMoves.get, { requestId }))?.actions;
+
+    const requestId = await requested(fixture);
+    expect(await actionsOf(both)).toEqual([
+      {
+        action: "approve",
+        organizationId: fixture.sourceOrganizationId,
+        takesNotes: true,
+      },
+      {
+        action: "cancel",
+        organizationId: fixture.sourceOrganizationId,
+        takesNotes: true,
+      },
+    ]);
+    // The requester may cancel their own request, without review notes.
+    expect(await actionsOf(fixture.requester)).toEqual([
+      {
+        action: "cancel",
+        organizationId: fixture.sourceOrganizationId,
+        takesNotes: false,
+      },
+    ]);
+    expect(await actionsOf(fixture.targetAdmin)).toEqual([]);
+
+    await both.mutation(api.objectMoves.approve, { requestId });
+
+    expect(await actionsOf(both)).toEqual([
+      {
+        action: "accept",
+        organizationId: fixture.targetOrganizationId,
+        takesNotes: true,
+      },
+      {
+        action: "decline",
+        organizationId: fixture.targetOrganizationId,
+        takesNotes: true,
+      },
+      {
+        action: "cancel",
+        organizationId: fixture.sourceOrganizationId,
+        takesNotes: true,
+      },
+    ]);
+    expect(await actionsOf(fixture.requester)).toEqual([]);
+
+    await both.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+    expect(await actionsOf(both)).toEqual([]);
   });
 });
