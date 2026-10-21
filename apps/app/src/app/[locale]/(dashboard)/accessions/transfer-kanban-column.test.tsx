@@ -26,6 +26,8 @@ function transfer(
     collectionTitle: `Object ${index}`,
     sourceAccessionNumber: `112-2026-${String(index).padStart(4, "0")}`,
     accessionMode: "keep",
+    sourceOrganizationId: "source" as Id<"organizations">,
+    sourceOrganizationName: "Museum Sør",
     targetOrganizationId: "target" as Id<"organizations">,
     targetOrganizationName: "Museum Nord",
     reason: "Rotation",
@@ -88,7 +90,7 @@ test("executed transfers read as a log, latest decision first", async () => {
   const first = within(entries[0] as HTMLElement);
   expect(first.getByText("112-2026-0002")).toBeTruthy();
   expect(first.getByText("Oct 11, 2026")).toBeTruthy();
-  expect(first.getByTitle("Object 2 · Museum Nord")).toBeTruthy();
+  expect(first.getByTitle("Object 2 · Sent to Museum Nord")).toBeTruthy();
   expect(first.getByRole("link").getAttribute("href")).toBe(
     "/objects/move-requests/move-2",
   );
@@ -165,6 +167,46 @@ test("a new search starts the log again at ten", async () => {
 
   expect(screen.getAllByRole("listitem")).toHaveLength(10);
   expect(screen.getByText("Showing 10 of 23")).toBeTruthy();
+});
+
+test("without a direction the log lists transfers sent and received, each saying which way it went", async () => {
+  const requests = [
+    transfer(1),
+    transfer(2, {
+      direction: "incoming",
+      sourceOrganizationId: "sender" as Id<"organizations">,
+      sourceOrganizationName: "Museum Vest",
+      targetOrganizationName: "Museum Sør",
+      targetReviewedAt: START + 40 * DAY,
+    }),
+  ];
+  const log = (searchQuery: string) => (
+    <TransferKanbanColumn
+      statuses={LOG}
+      title="Transfer log"
+      searchQuery={searchQuery}
+      transferRequests={requests}
+    />
+  );
+  const { rerender } = await renderOnPage(log(""), "/en/accessions/transfers");
+
+  const [received, sent, ...rest] = screen.getAllByRole("listitem");
+  expect(rest).toEqual([]);
+  expect(
+    within(received as HTMLElement).getByTitle(
+      "Object 2 · Received from Museum Vest",
+    ),
+  ).toBeTruthy();
+  expect(
+    within(sent as HTMLElement).getByTitle("Object 1 · Sent to Museum Nord"),
+  ).toBeTruthy();
+
+  rerender(log("museum vest"));
+
+  expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  expect(
+    screen.getByTitle("Object 2 · Received from Museum Vest"),
+  ).toBeTruthy();
 });
 
 test("an empty log keeps its empty state", async () => {

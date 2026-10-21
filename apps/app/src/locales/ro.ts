@@ -10861,6 +10861,8 @@ export default {
       chosenByReceiver: "Ales de organizația destinatară la acceptare",
     },
     declinedBy: "Refuzat de {organization}",
+    receivedFrom: "Primit de la {organization}",
+    sentTo: "Trimis către {organization}",
     errors: {
       accessionNumberTaken:
         "{number} este deja folosit în organizația ta. Generează sau introdu un număr nou.",

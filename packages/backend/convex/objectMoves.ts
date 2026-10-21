@@ -67,6 +67,8 @@ const organizationMoveRequestSummaryValidator = v.object({
   finalAccessionNumber: v.optional(v.string()),
   requestedAccessionNumber: v.optional(v.string()),
   accessionMode: accessionModeValidator,
+  sourceOrganizationId: v.id("organizations"),
+  sourceOrganizationName: v.string(),
   targetOrganizationId: v.id("organizations"),
   targetOrganizationName: v.string(),
   reason: v.string(),
@@ -140,6 +142,21 @@ const ACTIVE_REQUEST_STATUSES = new Set([
 
 function normalizeRequestStatus(status: RequestStatus): RequestStatus {
   return status === "pending" ? "pending_source_approval" : status;
+}
+
+/**
+ * Whether the receiving organization ever had the request before it: the
+ * source approved it. One the source rejected or cancelled never reached it.
+ */
+function reachedReceiver(request: {
+  status: RequestStatus;
+  targetReviewedAt?: number;
+}) {
+  const status = normalizeRequestStatus(request.status);
+  if (status === "pending_source_approval" || status === "cancelled") {
+    return false;
+  }
+  return status !== "rejected" || request.targetReviewedAt !== undefined;
 }
 
 function getEffectiveRootOrganizationId(organization: {
@@ -287,6 +304,17 @@ const transferDestinationLookupValidator = v.union(
     message: v.string(),
   }),
 );
+
+/**
+ * Whether the organization can generate a new accession number for an
+ * object it receives: what `generateAccessionNumber` refuses without.
+ */
+function generatesAccessionNumbers(organization: Doc<"organizations">) {
+  return Boolean(
+    organization.settings?.autoGenerateAccessionNumbers &&
+      organization.settings.accessionNumberFormat,
+  );
+}
 
 async function generateAccessionNumber(
   ctx: MutationCtx,
@@ -1557,6 +1585,9 @@ export const get = query({
       custodyEvents,
       approvedSourceLocation,
       acceptedTargetLocation,
+      receiverGeneratesAccessionNumbers: targetOrganization
+        ? generatesAccessionNumbers(targetOrganization)
+        : false,
     };
   },
 });
@@ -1611,10 +1642,7 @@ export const listForOrganization = query({
       Id<"organizationMoveRequests">,
       (typeof sourceRequests)[number]
     >();
-    const visibleTargetRequests = targetRequests.filter(
-      (request) =>
-        normalizeRequestStatus(request.status) !== "pending_source_approval",
-    );
+    const visibleTargetRequests = targetRequests.filter(reachedReceiver);
     for (const request of [...sourceRequests, ...visibleTargetRequests]) {
       requestsById.set(request._id, request);
     }
@@ -1622,12 +1650,17 @@ export const listForOrganization = query({
 
     let enrichedRequests = await Promise.all(
       requests.map(async (request) => {
-        const [collection, targetOrganization, requestedByUser] =
-          await Promise.all([
-            ctx.db.get(request.collectionId),
-            ctx.db.get(request.targetOrganizationId),
-            ctx.db.get(request.requestedBy),
-          ] as const);
+        const [
+          collection,
+          sourceOrganization,
+          targetOrganization,
+          requestedByUser,
+        ] = await Promise.all([
+          ctx.db.get(request.collectionId),
+          ctx.db.get(request.sourceOrganizationId),
+          ctx.db.get(request.targetOrganizationId),
+          ctx.db.get(request.requestedBy),
+        ] as const);
         const reviewedByUser = request.reviewedBy
           ? await ctx.db.get(request.reviewedBy)
           : null;
@@ -1650,6 +1683,9 @@ export const listForOrganization = query({
           finalAccessionNumber: request.finalAccessionNumber,
           requestedAccessionNumber: request.requestedAccessionNumber,
           accessionMode: request.accessionMode,
+          sourceOrganizationId: request.sourceOrganizationId,
+          sourceOrganizationName:
+            sourceOrganization?.name ?? "Unknown organization",
           targetOrganizationId: request.targetOrganizationId,
           targetOrganizationName:
             targetOrganization?.name ?? "Unknown organization",
@@ -1688,6 +1724,7 @@ export const listForOrganization = query({
         return (
           request.collectionTitle.toLowerCase().includes(search) ||
           request.sourceAccessionNumber.toLowerCase().includes(search) ||
+          request.sourceOrganizationName.toLowerCase().includes(search) ||
           request.targetOrganizationName.toLowerCase().includes(search) ||
           request.reason.toLowerCase().includes(search) ||
           request.notes?.toLowerCase().includes(search) ||

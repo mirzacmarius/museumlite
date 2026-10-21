@@ -151,7 +151,12 @@ export function DeaccessionKanbanColumn({
               results.map((item) => (
                 <Link
                   key={item._id}
-                  href={withReturnPath(`/deaccessions/${item._id}`, returnPath)}
+                  href={withReturnPath(
+                    item.declinedTransfer
+                      ? `/objects/move-requests/${item.declinedTransfer.requestId}`
+                      : `/deaccessions/${item._id}`,
+                    returnPath,
+                  )}
                   className="group block cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50"
                 >
                   <div className="mb-2 flex items-start justify-between">
@@ -177,9 +182,9 @@ export function DeaccessionKanbanColumn({
 
                   <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
                     <span className="truncate">
-                      {item.transferDeclinedBy
+                      {item.declinedTransfer
                         ? t("transferDeclinedBy", {
-                            organization: item.transferDeclinedBy,
+                            organization: item.declinedTransfer.receiverName,
                           })
                         : t(`method.${item.method}`)}
                     </span>

@@ -10927,6 +10927,8 @@ export default {
         "Choisi par l’organisation destinataire lors de l’acceptation",
     },
     declinedBy: "Refusé par {organization}",
+    receivedFrom: "Reçu de {organization}",
+    sentTo: "Envoyé à {organization}",
     errors: {
       accessionNumberTaken:
         "{number} est déjà utilisé dans votre organisation. Générez ou saisissez un nouveau numéro.",

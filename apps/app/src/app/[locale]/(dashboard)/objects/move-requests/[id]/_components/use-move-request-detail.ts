@@ -57,11 +57,14 @@ export function useMoveRequestDetail() {
   const cancel = useMutation(api.objectMoves.cancel);
 
   const permissions = useMemo(() => {
+    // The Transfers board is for the organization's transfer managers.
+    const canOpenTransfers = hasPermission("organization.manage_settings");
     if (!request || !currentUser) {
       return {
         canSourceApprove: false,
         canTargetAcceptOrReject: false,
         canCancel: false,
+        canOpenTransfers,
       };
     }
 
@@ -81,14 +84,20 @@ export function useMoveRequestDetail() {
       canCancel:
         request.status === "pending_source_approval" &&
         (isRequester || isSourceAdmin),
+      canOpenTransfers,
     };
   }, [currentOrganizationId, currentUser, hasPermission, request]);
 
   // Senders never choose, so a stored "keep" is only the request's default:
-  // the receiver starts from a newly generated number.
+  // the receiver starts from a newly generated number when it can generate
+  // one, and otherwise keeps the current number.
   const accessionMode =
     chosenAccessionMode ??
-    (request?.accessionMode === "manual" ? "manual" : "auto");
+    (request?.accessionMode === "manual"
+      ? "manual"
+      : request?.receiverGeneratesAccessionNumbers
+        ? "auto"
+        : "keep");
   const manualAccessionNumber =
     chosenAccessionNumber ?? request?.requestedAccessionNumber ?? "";
 

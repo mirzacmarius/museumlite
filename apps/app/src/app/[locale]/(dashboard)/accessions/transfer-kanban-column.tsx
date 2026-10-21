@@ -35,7 +35,8 @@ type Translator = ReturnType<typeof useI18nType>;
 type TransferKanbanColumnProps = {
   /** The statuses the column lists; finished ones make it the transfer log. */
   statuses: readonly TransferStatus[];
-  direction: TransferDirection;
+  /** Omitted, the column lists transfers sent and received. */
+  direction?: TransferDirection;
   title: string;
   searchQuery: string;
   transferRequests: TransferRequest[];
@@ -100,7 +101,7 @@ const statusLabels: Record<TransferStatus, Parameters<Translator>[0]> = {
 
 function getTransferEmptyMessage(
   status: TransferStatus,
-  direction: TransferDirection,
+  direction: TransferDirection | undefined,
   tRoot: Translator,
 ): string {
   switch (status) {
@@ -145,16 +146,22 @@ function decidedAt(request: TransferRequest) {
 }
 
 /**
- * Why a transfer was rejected or cancelled, otherwise where it went. A
- * receiver's decline says who declined.
+ * Where a transfer went or came from, otherwise why it was rejected or
+ * cancelled. A receiver's decline says who declined.
  */
 function logDetail(
   request: TransferRequest,
-  declinedBy: (organization: string) => string,
+  tMoves: ReturnType<typeof useScopedI18n<"moveRequests">>,
 ) {
-  if (request.status === "executed") return request.targetOrganizationName;
+  if (request.status === "executed") {
+    return request.direction === "incoming"
+      ? tMoves("receivedFrom", { organization: request.sourceOrganizationName })
+      : tMoves("sentTo", { organization: request.targetOrganizationName });
+  }
   if (request.status === "rejected" && request.targetReviewedAt !== undefined) {
-    const declined = declinedBy(request.targetOrganizationName);
+    const declined = tMoves("declinedBy", {
+      organization: request.targetOrganizationName,
+    });
     return request.targetReviewNotes
       ? `${declined}: ${request.targetReviewNotes}`
       : declined;
@@ -194,7 +201,7 @@ export function TransferKanbanColumn({
   const filteredRequests = transferRequests.filter((request) => {
     if (
       !statuses.includes(boardStatus(request)) ||
-      request.direction !== direction
+      (direction !== undefined && request.direction !== direction)
     ) {
       return false;
     }
@@ -207,6 +214,7 @@ export function TransferKanbanColumn({
     return (
       request.collectionTitle.toLowerCase().includes(search) ||
       request.sourceAccessionNumber.toLowerCase().includes(search) ||
+      request.sourceOrganizationName.toLowerCase().includes(search) ||
       request.targetOrganizationName.toLowerCase().includes(search) ||
       request.requestedByName.toLowerCase().includes(search) ||
       request.reason.toLowerCase().includes(search) ||
@@ -254,9 +262,7 @@ export function TransferKanbanColumn({
                     reference={request.sourceAccessionNumber}
                     date={decidedAt(request)}
                     title={request.collectionTitle}
-                    detail={logDetail(request, (organization) =>
-                      tMoves("declinedBy", { organization }),
-                    )}
+                    detail={logDetail(request, tMoves)}
                     status={{
                       label: tRoot(statusLabels[request.status]),
                       className: statusStyles[request.status].badge,

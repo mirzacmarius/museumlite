@@ -10750,6 +10750,8 @@ export default {
       chosenByReceiver: "Velges av mottakende organisasjon ved mottak",
     },
     declinedBy: "Avslått av {organization}",
+    receivedFrom: "Mottatt fra {organization}",
+    sentTo: "Sendt til {organization}",
     errors: {
       accessionNumberTaken:
         "{number} er allerede i bruk i organisasjonen din. Generer eller skriv inn et nytt nummer.",

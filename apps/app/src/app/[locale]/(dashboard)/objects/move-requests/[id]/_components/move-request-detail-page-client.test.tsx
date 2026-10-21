@@ -87,14 +87,16 @@ function moveRequest(status: string) {
     targetOrganization: { _id: TARGET, name: "Museum Nord" },
     requestedByUser: { name: "Ola Nordmann" },
     custodyEvents: [],
+    receiverGeneratesAccessionNumbers: true,
   };
 }
 
 async function openRequest(
   status: string,
   viewer: { userId: string; organizationId: string; canManage: boolean },
+  options: { url?: string; request?: Record<string, unknown> } = {},
 ) {
-  state.request = moveRequest(status);
+  state.request = { ...moveRequest(status), ...options.request };
   state.currentUserId = viewer.userId;
   state.currentOrganizationId = viewer.organizationId;
   state.permissions = new Set(
@@ -102,7 +104,7 @@ async function openRequest(
   );
   await renderOnPage(
     <MoveRequestDetailPageClient />,
-    "/en/objects/move-requests/move-1",
+    options.url ?? "/en/objects/move-requests/move-1",
     { id: "move-1" },
   );
 }
@@ -371,4 +373,45 @@ test("the back link returns to the Transfers board", async () => {
       .getByRole("link", { name: "Back to transfers" })
       .getAttribute("href"),
   ).toMatch(/\/accessions\/transfers$/);
+});
+
+test("staff who cannot open the Transfers board go back to the object", async () => {
+  await openRequest("awaiting_acceptance", {
+    userId: "requester",
+    organizationId: SOURCE,
+    canManage: false,
+  });
+
+  expect(screen.queryByRole("link", { name: "Back to transfers" })).toBeNull();
+  expect(
+    screen.getByRole("link", { name: "Back to object" }).getAttribute("href"),
+  ).toMatch(/\/objects\/object-1$/);
+});
+
+test("opened from a list, the back link returns to it", async () => {
+  await openRequest(
+    "rejected",
+    { userId: "requester", organizationId: SOURCE, canManage: false },
+    { url: "/en/objects/move-requests/move-1?from=%2Fdeaccessions" },
+  );
+
+  expect(
+    screen.getByRole("link", { name: "Back to results" }).getAttribute("href"),
+  ).toBe("/deaccessions");
+});
+
+test("a receiver without automatic numbering starts from the current number", async () => {
+  await openRequest(
+    "awaiting_acceptance",
+    { userId: "target-admin", organizationId: TARGET, canManage: true },
+    { request: { receiverGeneratesAccessionNumbers: false } },
+  );
+
+  expect(
+    screen.getByRole("combobox", { name: "Accession number" }).textContent,
+  ).toBe("Keep the current number (A-1)");
+  await userEvent.click(button("Accept and complete transfer") as HTMLElement);
+  expect(state.mutations["objectMoves:accept"]).toHaveBeenCalledWith(
+    expect.objectContaining({ accessionMode: "keep" }),
+  );
 });

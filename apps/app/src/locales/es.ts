@@ -10883,6 +10883,8 @@ export default {
       chosenByReceiver: "Lo elige la organización receptora al aceptar",
     },
     declinedBy: "Rechazada por {organization}",
+    receivedFrom: "Recibido de {organization}",
+    sentTo: "Enviado a {organization}",
     errors: {
       accessionNumberTaken:
         "{number} ya se usa en tu organización. Genera o introduce un número nuevo.",

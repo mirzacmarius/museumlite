@@ -117,7 +117,10 @@ test("a transfer the receiver declined says so instead of reading as a refused r
         method: "transfer",
         targetCollectionStatus: "deaccessioned",
         status: "rejected",
-        transferDeclinedBy: "Fredrikstad Museum",
+        declinedTransfer: {
+          requestId: "move-3",
+          receiverName: "Fredrikstad Museum",
+        },
       },
       { ...rows[1], status: "rejected" },
     ],
@@ -127,9 +130,12 @@ test("a transfer the receiver declined says so instead of reading as a refused r
 
   await renderColumn({ kind: "rejected" });
 
-  expect(
-    screen.getByText("Transfer declined by Fredrikstad Museum"),
-  ).toBeTruthy();
+  const declined = screen.getByText("Transfer declined by Fredrikstad Museum");
+  expect(declined.closest("a")?.getAttribute("href")).toBe(
+    "/objects/move-requests/move-3?from=%2Fdeaccessions",
+  );
   expect(screen.queryByText("Transfer")).toBeNull();
-  expect(screen.getByText("Sale / Auction")).toBeTruthy();
+  expect(
+    screen.getByText("Sale / Auction").closest("a")?.getAttribute("href"),
+  ).toBe("/deaccessions/da-2?from=%2Fdeaccessions");
 });
