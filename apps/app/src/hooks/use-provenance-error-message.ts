@@ -22,6 +22,8 @@ export function useProvenanceErrorMessage() {
         return t("objectNotFound");
       case "PROVENANCE_OBJECT_WITHDRAWN":
         return t("objectWithdrawn");
+      case "PROVENANCE_STILL_ARRIVING":
+        return t("stillArriving");
       case "PROVENANCE_CLAIM_NOT_FOUND":
         return t("claimNotFound");
       case "PROVENANCE_CLAIM_SUPERSEDED":

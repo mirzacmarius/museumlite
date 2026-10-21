@@ -36,6 +36,9 @@ const claim: ProvenanceClaimView = {
   reviews: [],
 };
 
+// Whether part of the object's provenance is still arriving from a transfer.
+let arriving = false;
+
 vi.mock("convex/react", () => ({
   useQuery: (reference: unknown, args: unknown) => {
     if (args === "skip") return undefined;
@@ -43,8 +46,13 @@ vi.mock("convex/react", () => ({
     if (name === "media:list") return [];
     if (name === "provenance:listForObject") {
       return {
-        viewer: { canRecord: true, canReview: true, canLinkParties: true },
+        viewer: {
+          canRecord: !arriving,
+          canReview: !arriving,
+          canLinkParties: !arriving,
+        },
         objectWithdrawn: false,
+        provenanceArriving: arriving,
         claims: [claim],
         truncated: false,
       };
@@ -93,8 +101,8 @@ test("viewing an object lists its claims without claim authoring", async () => {
   expect(visibleButtons()).toEqual([]);
 });
 
-test("editing an object records, reviews, corrects and retracts claims", async () => {
-  await renderOnPage(
+function renderEditTab() {
+  return renderOnPage(
     <CollectionEditProvenanceTab
       collection={object}
       formData={EMPTY_EDIT_FORM}
@@ -109,9 +117,32 @@ test("editing an object records, reviews, corrects and retracts claims", async (
     "/en/objects/object-1/edit",
     { id: "object-1" },
   );
+}
+
+test("editing an object records, reviews, corrects and retracts claims", async () => {
+  await renderEditTab();
 
   expect(
     screen.getByText("Bought from the artist's studio in 1921"),
   ).not.toBeNull();
   expect(visibleButtons()).toEqual(authoringButtons);
+});
+
+test("while part of its provenance is still arriving from a transfer, the object says so and waits", async () => {
+  arriving = true;
+  try {
+    await renderEditTab();
+
+    expect(
+      screen.getByText(
+        "Part of this object's provenance is still arriving from its previous organization. You can record or review provenance once it is here.",
+      ),
+    ).not.toBeNull();
+    expect(
+      screen.getByText("Bought from the artist's studio in 1921"),
+    ).not.toBeNull();
+    expect(visibleButtons()).toEqual([]);
+  } finally {
+    arriving = false;
+  }
 });

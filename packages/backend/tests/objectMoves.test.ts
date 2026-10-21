@@ -5,7 +5,9 @@ import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
 import { custodyConflictFromError } from "../convex/utils/custodyErrors";
 import { identifierErrorFromError } from "../convex/utils/identifierErrors";
+import { imageDeletionErrorFromError } from "../convex/utils/imageDeletionErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
+import { provenanceErrorFromError } from "../convex/utils/provenanceErrors";
 import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 import { workColumn } from "./workBoardHarness";
@@ -18,6 +20,8 @@ async function refusal(call: Promise<unknown>) {
     return (
       objectMoveErrorFromError(error) ??
       identifierErrorFromError(error) ??
+      provenanceErrorFromError(error) ??
+      imageDeletionErrorFromError(error) ??
       custodyConflictFromError(error) ?? { code: String(error) }
     );
   }
@@ -2934,6 +2938,55 @@ describe("provenance follows a transferred Object", () => {
     return claimId;
   }
 
+  /** A member of one organization with a role holding these Permissions. */
+  async function staffAt(
+    t: ReturnType<typeof convexTest>,
+    organizationId: Id<"organizations">,
+    permissions: string[],
+    name: string,
+  ) {
+    const userId = await createUser(
+      t,
+      name,
+      `staff-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    const roleId = await createRoleWithPermissions(
+      t,
+      organizationId,
+      permissions,
+      `${name} Role`,
+    );
+    await addMembership(t, userId, organizationId, roleId);
+    return { userId, client: authedForUser(t, userId) };
+  }
+
+  /** Claims recorded by the sender, each citing that many ledger pages. */
+  async function recordLedgerClaims(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+    count: number,
+    pages: number,
+  ) {
+    const claimIds: Id<"provenanceClaims">[] = [];
+    for (let entry = 1; entry <= count; entry++) {
+      claimIds.push(
+        await fixture.requester.mutation(api.provenance.recordClaim, {
+          objectId: fixture.collectionId,
+          statement: `Listed in the founder's ledger, entry ${entry}.`,
+          partyKind: "named",
+          partyText: "Johan Berg",
+          confidence: "probable",
+          evidence: Array.from({ length: pages }, (_, page) => ({
+            source: {
+              kind: "citation" as const,
+              citation: `Founder's ledger, entry ${entry}, page ${page + 1}`,
+            },
+          })),
+        }),
+      );
+    }
+    return claimIds;
+  }
+
   const claimShown = (claimId: Id<"provenanceClaims">) =>
     expect.objectContaining({
       _id: claimId,
@@ -2985,28 +3038,50 @@ describe("provenance follows a transferred Object", () => {
     );
   });
 
-  test("an Object with a long provenance history moves with all of it", async () => {
+  test("a long provenance history arrives whole, and the receiver is told until it has", async () => {
     vi.useFakeTimers();
     try {
       const t = convexTest(schema, modules);
       const fixture = await createMoveFixture(t);
-      const citations = Array.from({ length: 50 }, (_, index) => ({
-        source: {
-          kind: "citation" as const,
-          citation: `Founder's ledger, page ${index + 1}`,
-        },
-      }));
-      // 11 claims and 550 citations, more than one transaction moves.
-      for (let year = 1900; year <= 1910; year++) {
-        await fixture.requester.mutation(api.provenance.recordClaim, {
+      // 9 claims and 450 citations: more than one transaction moves, and
+      // all of it fits on the provenance tab.
+      const claimIds = await recordLedgerClaims(fixture, 9, 50);
+      await transferToTarget(fixture);
+      const curator = await addReceivingCurator(t, fixture);
+      const provenance = () =>
+        curator.query(api.provenance.listForObject, {
           objectId: fixture.collectionId,
-          statement: `Listed in the founder's ledger, ${year}.`,
-          partyKind: "named",
-          partyText: "Johan Berg",
-          confidence: "probable",
-          evidence: citations,
         });
-      }
+
+      expect(await provenance()).toMatchObject({
+        provenanceArriving: true,
+        viewer: { canRecord: false, canReview: false, canLinkParties: false },
+      });
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+      const arrived = await provenance();
+      expect(arrived).toMatchObject({
+        provenanceArriving: false,
+        viewer: { canRecord: true },
+        truncated: false,
+      });
+      expect(
+        new Map(
+          arrived?.claims.map((claim) => [claim._id, claim.evidence.length]),
+        ),
+      ).toEqual(new Map(claimIds.map((claimId) => [claimId, 50])));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a history longer than the provenance tab shows moves with its Object too", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const fixture = await createMoveFixture(t);
+      // 11 claims and 550 citations, more than the tab reads at once.
+      await recordLedgerClaims(fixture, 11, 50);
       const rowsHeldBy = (organizationId: Id<"organizations">) =>
         t.run(async (ctx) => {
           const [claims, evidence] = await Promise.all([
@@ -3031,16 +3106,183 @@ describe("provenance follows a transferred Object", () => {
         });
 
       await transferToTarget(fixture);
-      expect(await rowsHeldBy(fixture.sourceOrganizationId)).toBeGreaterThan(0);
       await t.finishAllScheduledFunctions(() => vi.runAllTimers());
 
-      expect(await rowsHeldBy(fixture.sourceOrganizationId)).toBe(0);
-      expect(await rowsHeldBy(fixture.targetOrganizationId)).toBe(561);
       const provenance = await fixture.targetAdmin.query(
         api.provenance.listForObject,
         { objectId: fixture.collectionId },
       );
+      expect(provenance).toMatchObject({
+        provenanceArriving: false,
+        truncated: true,
+      });
       expect(provenance?.claims).toHaveLength(11);
+      // The tab shows 500 citations; the rest arrived too.
+      expect(await rowsHeldBy(fixture.sourceOrganizationId)).toBe(0);
+      expect(await rowsHeldBy(fixture.targetOrganizationId)).toBe(561);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("the receiver changes nothing in a history that is still on its way", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const fixture = await createMoveFixture(t);
+      // 3 claims and 150 citations: the first transaction moves the claims
+      // and 97 citations; the last claim's citations follow later.
+      const [firstClaimId, secondClaimId, lastClaimId] =
+        await recordLedgerClaims(fixture, 3, 50);
+      if (!firstClaimId || !secondClaimId || !lastClaimId) {
+        throw new Error("Expected three claims");
+      }
+      await transferToTarget(fixture);
+      const curator = await addReceivingCurator(t, fixture);
+      const { client: reviewer } = await staffAt(
+        t,
+        fixture.targetOrganizationId,
+        ["collections.read", "collections.review_provenance"],
+        "Receiving Reviewer",
+      );
+      const shown = await curator.query(api.provenance.listForObject, {
+        objectId: fixture.collectionId,
+      });
+      const citationId = shown?.claims.find(
+        (claim) => claim._id === firstClaimId,
+      )?.evidence[0]?._id;
+      if (!citationId) throw new Error("Expected a citation that arrived");
+      const correction = {
+        claimId: lastClaimId,
+        reason: "The entry number was misread",
+        statement: "Listed in the founder's ledger, entry 33.",
+        partyKind: "named" as const,
+        partyText: "Johan Berg",
+        confidence: "probable" as const,
+      };
+
+      for (const change of [
+        () =>
+          curator.mutation(api.provenance.recordClaim, {
+            objectId: fixture.collectionId,
+            statement: "Shown at the Target Museum, 2026.",
+            partyKind: "named",
+            partyText: "Target Museum",
+            role: "custodian",
+            confidence: "possible",
+            evidence: [],
+          }),
+        () => curator.mutation(api.provenance.correctClaim, correction),
+        () =>
+          curator.mutation(api.provenance.retractClaim, {
+            claimId: lastClaimId,
+            reason: "Recorded on the wrong object",
+          }),
+        () =>
+          curator.mutation(api.provenance.addEvidence, {
+            claimId: secondClaimId,
+            source: {
+              kind: "citation",
+              citation: "Founder's ledger, loose sheet",
+            },
+          }),
+        () =>
+          curator.mutation(api.provenance.retractEvidence, {
+            evidenceId: citationId,
+            reason: "Cites the wrong page",
+          }),
+        () =>
+          reviewer.mutation(api.provenance.reviewClaim, {
+            claimId: lastClaimId,
+            decision: "accepted",
+          }),
+      ]) {
+        expect(await refusal(change())).toMatchObject({
+          code: "PROVENANCE_STILL_ARRIVING",
+        });
+      }
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+      const correctionId = await curator.mutation(
+        api.provenance.correctClaim,
+        correction,
+      );
+      const provenance = await curator.query(api.provenance.listForObject, {
+        objectId: fixture.collectionId,
+      });
+      expect(
+        provenance?.claims.find((claim) => claim._id === correctionId)
+          ?.evidence,
+      ).toHaveLength(50);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("an image that evidence still on its way cites cannot be deleted", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const fixture = await createMoveFixture(t);
+      await recordLedgerClaims(fixture, 3, 50);
+      const mediaId = await t.run(async (ctx) =>
+        ctx.db.insert("mediaFiles", {
+          collectionId: fixture.collectionId,
+          organizationId: fixture.sourceOrganizationId,
+          storageId: await ctx.storage.store(new Blob(["jpeg"])),
+          fileName: "ledger-page.jpg",
+          fileType: "image",
+          fileSize: 4,
+          mimeType: "image/jpeg",
+          mediaCategory: "image",
+          isPrimary: false,
+          uploadedBy: fixture.requesterId,
+          uploadedAt: Date.now(),
+          uploadStatus: "completed",
+        }),
+      );
+      // Cited after the 150 citations, so it moves after the first batch.
+      const { client: researcher } = await staffAt(
+        t,
+        fixture.sourceOrganizationId,
+        ["collections.read", "collections.update", "media.read"],
+        "Sending Researcher",
+      );
+      await researcher.mutation(api.provenance.recordClaim, {
+        objectId: fixture.collectionId,
+        statement: "Photographed in the founder's study, 1910.",
+        partyKind: "named",
+        partyText: "Johan Berg",
+        confidence: "documented",
+        evidence: [{ source: { kind: "media", mediaId } }],
+      });
+      await transferToTarget(fixture);
+      await t.run(async (ctx) => {
+        const target = await ctx.db.get(fixture.targetOrganizationId);
+        await ctx.db.patch(fixture.targetOrganizationId, {
+          settings: { ...target?.settings, accessionWorkflowEnabled: false },
+        });
+      });
+      const { client: cataloger } = await staffAt(
+        t,
+        fixture.targetOrganizationId,
+        ["collections.read", "media.read", "media.delete"],
+        "Receiving Cataloger",
+      );
+
+      expect(
+        await refusal(
+          cataloger.mutation(api.mediaDeletions.deleteImage, { mediaId }),
+        ),
+      ).toMatchObject({ code: "IMAGE_CITED_AS_EVIDENCE" });
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+      expect(
+        (
+          await cataloger.query(api.media.list, {
+            collectionId: fixture.collectionId,
+          })
+        ).map((media) => media._id),
+      ).toEqual([mediaId]);
     } finally {
       vi.useRealTimers();
     }
@@ -3049,76 +3291,89 @@ describe("provenance follows a transferred Object", () => {
 
 describe("repairing Objects transferred before the register and provenance followed them", () => {
   test("rewrites the identifier key and moves the provenance, once", async () => {
-    const t = convexTest(schema, modules);
-    const fixture = await createMoveFixture(t);
-    const claimId = await fixture.requester.mutation(
-      api.provenance.recordClaim,
-      {
-        objectId: fixture.collectionId,
-        statement: "Bought by the museum's founder in Bergen, 1902.",
-        partyKind: "named",
-        partyText: "Johan Berg",
-        confidence: "probable",
-        evidence: [
-          { source: { kind: "citation", citation: "Founder's ledger, 1902" } },
-        ],
-      },
-    );
-    await transferToTarget(fixture, {
-      accessionMode: "manual",
-      requestedAccessionNumber: "TGT-777",
-    });
-    // What a transfer accepted before this fix left behind.
-    await t.run(async (ctx) => {
-      await ctx.db.patch(fixture.collectionId, {
-        normalizedIdentifier: "src-001",
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const fixture = await createMoveFixture(t);
+      const claimId = await fixture.requester.mutation(
+        api.provenance.recordClaim,
+        {
+          objectId: fixture.collectionId,
+          statement: "Bought by the museum's founder in Bergen, 1902.",
+          partyKind: "named",
+          partyText: "Johan Berg",
+          confidence: "probable",
+          evidence: [
+            {
+              source: { kind: "citation", citation: "Founder's ledger, 1902" },
+            },
+          ],
+        },
+      );
+      await transferToTarget(fixture, {
+        accessionMode: "manual",
+        requestedAccessionNumber: "TGT-777",
       });
-      const [claims, evidence] = await Promise.all([
-        ctx.db.query("provenanceClaims").collect(),
-        ctx.db.query("provenanceEvidence").collect(),
-      ]);
-      for (const row of [...claims, ...evidence]) {
-        await ctx.db.patch(row._id, {
-          organizationId: fixture.sourceOrganizationId,
+      // What a transfer accepted before this fix left behind.
+      await t.run(async (ctx) => {
+        await ctx.db.patch(fixture.collectionId, {
+          normalizedIdentifier: "src-001",
         });
-      }
-    });
+        const [claims, evidence] = await Promise.all([
+          ctx.db.query("provenanceClaims").collect(),
+          ctx.db.query("provenanceEvidence").collect(),
+        ]);
+        for (const row of [...claims, ...evidence]) {
+          await ctx.db.patch(row._id, {
+            organizationId: fixture.sourceOrganizationId,
+          });
+        }
+      });
 
-    expect(
-      await t.mutation(internal.migrations.repairTransferredObjects, {
-        cursor: null,
-      }),
-    ).toEqual({
-      identifierKeysRewritten: 1,
-      transfersWithProvenanceMoved: 1,
-      objectsSharingANumber: 0,
-      isDone: true,
-    });
+      expect(
+        await t.mutation(internal.migrations.repairTransferredObjects, {
+          cursor: null,
+        }),
+      ).toEqual({
+        identifierKeysRewritten: 1,
+        transfersWithProvenanceMoved: 1,
+        objectsSharingANumber: 0,
+        objectsNotChecked: 0,
+        isDone: true,
+      });
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
 
-    const [register, provenance] = await Promise.all([
-      fixture.targetAdmin.query(api.identifiers.inspect, {
-        organizationId: fixture.targetOrganizationId,
-        register: "catalog",
-        identifier: "TGT-777",
-      }),
-      fixture.targetAdmin.query(api.provenance.listForObject, {
-        objectId: fixture.collectionId,
-      }),
-    ]);
-    expect(register.matches).toEqual([
-      { _id: fixture.collectionId, identifier: "TGT-777" },
-    ]);
-    expect(provenance?.claims.map((claim) => claim._id)).toEqual([claimId]);
-    expect(
-      await t.mutation(internal.migrations.repairTransferredObjects, {
-        cursor: null,
-      }),
-    ).toEqual({
-      identifierKeysRewritten: 0,
-      transfersWithProvenanceMoved: 0,
-      objectsSharingANumber: 0,
-      isDone: true,
-    });
+      const [register, provenance] = await Promise.all([
+        fixture.targetAdmin.query(api.identifiers.inspect, {
+          organizationId: fixture.targetOrganizationId,
+          register: "catalog",
+          identifier: "TGT-777",
+        }),
+        fixture.targetAdmin.query(api.provenance.listForObject, {
+          objectId: fixture.collectionId,
+        }),
+      ]);
+      expect(register.matches).toEqual([
+        { _id: fixture.collectionId, identifier: "TGT-777" },
+      ]);
+      expect(provenance).toMatchObject({
+        provenanceArriving: false,
+        claims: [expect.objectContaining({ _id: claimId })],
+      });
+      expect(
+        await t.mutation(internal.migrations.repairTransferredObjects, {
+          cursor: null,
+        }),
+      ).toEqual({
+        identifierKeysRewritten: 0,
+        transfersWithProvenanceMoved: 0,
+        objectsSharingANumber: 0,
+        objectsNotChecked: 0,
+        isDone: true,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("counts a number another Object took meanwhile, and changes neither Object", async () => {
@@ -3174,7 +3429,55 @@ describe("repairing Objects transferred before the register and provenance follo
       identifierKeysRewritten: 0,
       transfersWithProvenanceMoved: 0,
       objectsSharingANumber: 1,
+      objectsNotChecked: 0,
       isDone: true,
+    });
+  });
+
+  test("counts an Object it could not check while its organization's register is not fully indexed", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await transferToTarget(fixture);
+    // More unindexed Objects than one check reads, then the one that
+    // already had the kept number SRC-001 as src-001.
+    const unindexedIds: Id<"collections">[] = [];
+    for (let number = 1; number <= 101; number++) {
+      unindexedIds.push(
+        await createCollection(t, {
+          organizationId: fixture.targetOrganizationId,
+          userId: fixture.targetAdminId,
+          accessionNumber: `LEG-${number}`,
+        }),
+      );
+    }
+    unindexedIds.push(
+      await createCollection(t, {
+        organizationId: fixture.targetOrganizationId,
+        userId: fixture.targetAdminId,
+        accessionNumber: "src-001",
+      }),
+    );
+    const repair = () =>
+      t.mutation(internal.migrations.repairTransferredObjects, {
+        cursor: null,
+      });
+
+    expect(await repair()).toMatchObject({
+      objectsSharingANumber: 0,
+      objectsNotChecked: 1,
+    });
+    await t.run(async (ctx) => {
+      for (const collectionId of unindexedIds) {
+        const object = await ctx.db.get(collectionId);
+        if (!object) continue;
+        await ctx.db.patch(collectionId, {
+          normalizedIdentifier: object.accessionNumber.toLowerCase(),
+        });
+      }
+    });
+    expect(await repair()).toMatchObject({
+      objectsSharingANumber: 1,
+      objectsNotChecked: 0,
     });
   });
 

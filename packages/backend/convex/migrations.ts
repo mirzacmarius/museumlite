@@ -16,7 +16,7 @@ import { COORDINATE_PERMISSION } from "./utils/incidentAccess";
 import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { keepOldestPrimaryImage } from "./utils/primaryMedia";
-import { rehomeObjectProvenance } from "./utils/provenance";
+import { holdsProvenance } from "./utils/provenance";
 import { syncPublicRendition } from "./utils/publicMedia";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {
@@ -1843,6 +1843,7 @@ const repairTotalsValidator = v.object({
   identifierKeysRewritten: v.number(),
   transfersWithProvenanceMoved: v.number(),
   objectsSharingANumber: v.number(),
+  objectsNotChecked: v.number(),
 });
 
 // An Object moved more than once is counted on its latest transfer only.
@@ -1868,12 +1869,17 @@ async function isLatestExecutedMove(
  * - the Object's identifier key is rewritten when it no longer matches its
  *   number, so the receiver's register finds it by the number it has;
  * - provenance claims, evidence and reviews still filed under the sender
- *   move to the organization holding the Object now, in batches.
+ *   move to the organization holding the Object now, in batches scheduled
+ *   per Object.
  * No number changes and nothing is deleted. `objectsSharingANumber` counts
  * transferred Objects whose number another Object in their organization
- * also has; both are kept as they are and listed in Settings › Preferences
- * identifier review. Rerunnable; each page schedules the next with the
- * totals so far, and the last page logs them.
+ * also has; both are kept as they are, and Settings › Preferences identifier
+ * review lists them once the organization's register is fully indexed.
+ * `objectsNotChecked` counts transferred Objects whose organization has more
+ * unindexed Objects than one check reads, so `objectsSharingANumber` is a
+ * lower bound until that register is indexed and the repair runs again.
+ * Rerunnable; each page schedules the next with the totals so far, and the
+ * last page logs them.
  *
  * Run: bunx convex run migrations:repairTransferredObjects '{"cursor":null}'
  */
@@ -1894,6 +1900,7 @@ export const repairTransferredObjects = internalMutation({
       identifierKeysRewritten: 0,
       transfersWithProvenanceMoved: 0,
       objectsSharingANumber: 0,
+      objectsNotChecked: 0,
       ...args.totals,
     };
     for (const request of page.page) {
@@ -1907,16 +1914,16 @@ export const repairTransferredObjects = internalMutation({
       }
       if (
         request.sourceOrganizationId !== object.organizationId &&
-        (await rehomeObjectProvenance(ctx, {
+        (await holdsProvenance(ctx, request.sourceOrganizationId, object._id))
+      ) {
+        await ctx.scheduler.runAfter(0, internal.provenance.rehomeRemaining, {
           objectId: object._id,
           fromOrganizationId: request.sourceOrganizationId,
-          toOrganizationId: object.organizationId,
-        })) > 0
-      ) {
+        });
         totals.transfersWithProvenanceMoved += 1;
       }
       if (await isLatestExecutedMove(ctx, request)) {
-        const { matches } = await findIdentifierMatches(
+        const { matches, needsBackfill } = await findIdentifierMatches(
           ctx,
           object.organizationId,
           "catalog",
@@ -1924,12 +1931,14 @@ export const repairTransferredObjects = internalMutation({
         );
         if (matches.some((match) => match._id !== object._id)) {
           totals.objectsSharingANumber += 1;
+        } else if (needsBackfill) {
+          totals.objectsNotChecked += 1;
         }
       }
     }
     if (page.isDone) {
       console.log(
-        `Repaired transferred Objects: rewrote ${totals.identifierKeysRewritten} identifier keys, moved provenance left behind by ${totals.transfersWithProvenanceMoved} transfers; ${totals.objectsSharingANumber} transferred Objects share their number with another Object`,
+        `Repaired transferred Objects: rewrote ${totals.identifierKeysRewritten} identifier keys, moved provenance left behind by ${totals.transfersWithProvenanceMoved} transfers; ${totals.objectsSharingANumber} transferred Objects share their number with another Object, and ${totals.objectsNotChecked} could not be checked until their organization's register is fully indexed`,
       );
     } else {
       await ctx.scheduler.runAfter(

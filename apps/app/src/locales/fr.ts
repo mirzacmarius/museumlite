@@ -7096,6 +7096,8 @@ export default {
     loading: "Chargement de la provenance…",
     withdrawn:
       "Cet objet est retiré. Restaurez-le pour enregistrer ou examiner sa provenance.",
+    arriving:
+      "Une partie de la provenance de cet objet arrive encore de son organisation précédente. Vous pourrez enregistrer ou examiner sa provenance une fois qu'elle sera arrivée.",
     truncated:
       "Seules les {count} assertions les plus récentes sont affichées.",
     history: "Assertions corrigées et rétractées ({count})",
@@ -7329,6 +7331,8 @@ export default {
         "Cet objet n'est plus disponible. Actualisez et réessayez.",
       objectWithdrawn:
         "Cet objet est retiré. Restaurez-le avant de modifier sa provenance.",
+      stillArriving:
+        "Une partie de la provenance de cet objet arrive encore de son organisation précédente. Réessayez dans un instant.",
       claimNotFound:
         "Cette assertion n'est plus disponible. Actualisez et réessayez.",
       claimSuperseded:
