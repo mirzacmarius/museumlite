@@ -20,6 +20,8 @@ export function useWorkflowApprovalErrorMessage() {
         return t("alreadyApproved");
       case "ALREADY_PENDING":
         return t("alreadyPending");
+      case "OBJECT_IN_TRANSFER":
+        return t("objectInTransfer");
       case undefined:
         return capabilityMessage(error) ?? fallback;
     }

@@ -3087,14 +3087,14 @@ export default {
       itemsAddedToGroup: "Objetos añadidos al grupo de colección: {count}",
       itemsAddToGroupFailed:
         "No se pudieron añadir los objetos al grupo de colección",
-      selectDeaccessionReason:
-        "Por favor proporciona una razón para la desaccesión",
+      selectDeaccessionReason: "Por favor proporciona una razón para la baja",
       itemsAwaitingDecision:
-        "{count} solicitud(es) de desaccesión pendientes de decisión de aprobación",
-      itemsDeaccessioned: "Objetos desaccesionados: {count}",
-      someItemsSkipped: "Omitidos por estar en un préstamo activo: {count}",
+        "{count} solicitud(es) de baja pendientes de decisión de aprobación",
+      itemsDeaccessioned: "Objetos dados de baja: {count}",
+      someItemsSkipped:
+        "Omitidos porque ya están dados de baja, esperan una decisión o están en una transferencia: {count}",
       failedOnLoan: "{count} fallaron (pueden estar en préstamo)",
-      itemsDeaccessionFailed: "No se pudieron desaccesionar los objetos",
+      itemsDeaccessionFailed: "No se pudieron dar de baja los objetos",
       imageOrderUpdated: "Orden de imágenes actualizado",
       imageOrderUpdateFailed: "Error al actualizar orden de imágenes",
     },
@@ -3572,6 +3572,7 @@ export default {
       inProgress: "Retirada en curso",
       onLoan: "En préstamo",
       notAccessioned: "Aún sin accesión",
+      inTransfer: "Traslado en curso",
     },
     withdrawal: {
       restore: "Restaurar al catálogo",
@@ -10953,6 +10954,8 @@ export default {
         "Su aprobación ya está registrada. El caso sigue pendiente hasta que lo aprueben los demás aprobadores.",
       alreadyPending:
         "Ya hay una solicitud para este objeto pendiente de aprobación. Revísela antes de iniciar otra.",
+      objectInTransfer:
+        "Este objeto se está trasladando a otra organización. No se puede retirar hasta que termine el traslado.",
     },
   },
   imageDeletion: {

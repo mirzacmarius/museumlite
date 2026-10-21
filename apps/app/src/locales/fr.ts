@@ -3100,7 +3100,8 @@ export default {
       itemsAwaitingDecision:
         "{count} demande(s) de désaccessionnement en attente de décision d'approbation",
       itemsDeaccessioned: "Objets désaccessionnés : {count}",
-      someItemsSkipped: "Ignorés car en prêt actif : {count}",
+      someItemsSkipped:
+        "Ignorés car déjà désaccessionnés, en attente de décision ou en cours de transfert : {count}",
       failedOnLoan: "{count} échec(s) (peut-être en prêt)",
       itemsDeaccessionFailed: "Impossible de désaccessionner les objets",
       imageOrderUpdated: "Ordre des images mis à jour",
@@ -3580,6 +3581,7 @@ export default {
       inProgress: "Retrait en cours",
       onLoan: "En prêt",
       notAccessioned: "Pas encore inscrit à l’inventaire",
+      inTransfer: "Transfert en cours",
     },
     withdrawal: {
       restore: "Remettre au catalogue",
@@ -10999,6 +11001,8 @@ export default {
         "Votre approbation est déjà enregistrée. Le dossier reste en attente jusqu'à l'approbation des autres approbateurs.",
       alreadyPending:
         "Une demande pour cet objet est déjà en attente d'approbation. Examinez-la avant d'en lancer une autre.",
+      objectInTransfer:
+        "Cet objet est en cours de transfert vers une autre organisation. Il ne peut pas être retiré avant la fin du transfert.",
     },
   },
   imageDeletion: {

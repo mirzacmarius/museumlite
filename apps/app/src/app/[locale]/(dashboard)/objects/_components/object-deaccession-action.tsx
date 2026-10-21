@@ -8,6 +8,7 @@ import { Archive, Clock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
+import { BLOCKED_REASON_KEYS } from "@/components/deaccession-dialog-types";
 import { useI18n } from "@/locales/client";
 
 interface ObjectDeaccessionActionProps {
@@ -36,10 +37,15 @@ export function ObjectDeaccessionAction({
   if (!actions) {
     return null;
   }
-  // Without Deaccession the dialog still offers Remove object and Move.
+  // Without Deaccession the dialog still offers Remove object and Move. A
+  // transfer in progress stops both; whatever else stops Remove object leaves
+  // the Move to the server to decide.
   const deaccession =
     actions.deaccession.state === "hidden" && actions.remove.state !== "hidden"
-      ? { state: "available" as const, approvalSteps: 0 }
+      ? actions.remove.state === "blocked" &&
+        actions.remove.reason === "in_transfer"
+        ? actions.remove
+        : { state: "available" as const, approvalSteps: 0 }
       : actions.deaccession;
   if (deaccession.state === "hidden") {
     return null;
@@ -59,11 +65,7 @@ export function ObjectDeaccessionAction({
   }
 
   if (deaccession.state === "blocked") {
-    const reason = tRoot(
-      deaccession.reason === "on_loan"
-        ? "objects.deaccessionAction.onLoan"
-        : "objects.deaccessionAction.notAccessioned",
-    );
+    const reason = tRoot(BLOCKED_REASON_KEYS[deaccession.reason]);
     return (
       <Button
         type="button"

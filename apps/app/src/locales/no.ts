@@ -3055,13 +3055,14 @@ export default {
       selectCollectionGroup: "Vennligst velg en samlingsgruppe",
       itemsAddedToGroup: "Objekter lagt til i samlingsgruppen: {count}",
       itemsAddToGroupFailed: "Kunne ikke legge objektene til i samlingsgruppen",
-      selectDeaccessionReason: "Vennligst oppgi en årsak for fraregistrering",
+      selectDeaccessionReason: "Vennligst oppgi en årsak for deaksesjonen",
       itemsAwaitingDecision:
-        "{count} forespørsel(er) om fraregistrering venter på godkjenningsvedtak",
-      itemsDeaccessioned: "Objekter avregistrert: {count}",
-      someItemsSkipped: "Hoppet over fordi de er på aktivt utlån: {count}",
+        "{count} forespørsel(er) om deaksesjon venter på godkjenningsvedtak",
+      itemsDeaccessioned: "Objekter deaksesjonert: {count}",
+      someItemsSkipped:
+        "Hoppet over fordi de allerede er deaksesjonert, venter på vedtak eller blir overført: {count}",
       failedOnLoan: "{count} feilet (kan være på utlån)",
-      itemsDeaccessionFailed: "Kunne ikke avregistrere objektene",
+      itemsDeaccessionFailed: "Kunne ikke deaksesjonere objektene",
       imageOrderUpdated: "Bilderekkefølge oppdatert",
       imageOrderUpdateFailed: "Kunne ikke oppdatere bilderekkefølge",
     },
@@ -3538,6 +3539,7 @@ export default {
       inProgress: "Fjerning pågår",
       onLoan: "På utlån",
       notAccessioned: "Ikke aksesjonert ennå",
+      inTransfer: "Overføring pågår",
     },
     withdrawal: {
       restore: "Gjenopprett til katalogen",
@@ -10821,6 +10823,8 @@ export default {
         "Godkjenningen din er allerede registrert. Saken venter til de øvrige godkjennerne har godkjent den.",
       alreadyPending:
         "En forespørsel for dette objektet venter allerede på godkjenning. Se gjennom den før du starter en ny.",
+      objectInTransfer:
+        "Dette objektet blir overført til en annen organisasjon. Det kan ikke fjernes før overføringen er avsluttet.",
     },
   },
   imageDeletion: {

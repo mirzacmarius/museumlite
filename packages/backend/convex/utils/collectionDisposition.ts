@@ -8,7 +8,7 @@ import {
 } from "./collectionLifecycle";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { assertEntryAllowsStatus } from "./objectEntryLifecycle";
-import { isOpenDeaccession } from "./openDeaccessions";
+import { assertNotInTransfer, isOpenDeaccession } from "./openDeaccessions";
 import { requirePermission } from "./permissions";
 
 export async function archiveCollectionHandler(
@@ -51,6 +51,7 @@ export async function archiveCollectionHandler(
     "Cannot archive an object that is currently on loan",
   );
   await assertEntryAllowsStatus(ctx, args.collectionId, "archived");
+  await assertNotInTransfer(ctx, collection, "archived");
 
   await Promise.all([
     applyCollectionDisposition(ctx, {

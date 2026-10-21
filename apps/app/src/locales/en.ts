@@ -2483,7 +2483,8 @@ export default {
       itemsAwaitingDecision:
         "{count} deaccession request(s) are awaiting an approval decision",
       itemsDeaccessioned: "Objects deaccessioned: {count}",
-      someItemsSkipped: "Skipped because they are on an active loan: {count}",
+      someItemsSkipped:
+        "Skipped because they are already deaccessioned, awaiting a decision or being transferred: {count}",
       failedOnLoan: "{count} failed (may be on loan)",
       itemsDeaccessionFailed: "Could not deaccession the objects",
       imageOrderUpdated: "Image order updated",
@@ -2944,6 +2945,7 @@ export default {
       inProgress: "Removal in progress",
       onLoan: "On loan",
       notAccessioned: "Not yet accessioned",
+      inTransfer: "Transfer in progress",
     },
     withdrawal: {
       restore: "Restore to catalog",
@@ -10699,6 +10701,8 @@ export default {
         "Your approval is already recorded. The case stays pending until the remaining approvers approve it.",
       alreadyPending:
         "A request for this object is already waiting for approval. Review it before starting another.",
+      objectInTransfer:
+        "This object is being transferred to another organization. It can't be removed until the transfer ends.",
     },
   },
   imageDeletion: {

@@ -186,6 +186,7 @@ import type * as utils_custodyErrors from "../utils/custodyErrors.js";
 import type * as utils_customerNumber from "../utils/customerNumber.js";
 import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_deaccessionInitiation from "../utils/deaccessionInitiation.js";
+import type * as utils_deaccessionSearch from "../utils/deaccessionSearch.js";
 import type * as utils_deliveryLedger from "../utils/deliveryLedger.js";
 import type * as utils_disposalPolicy from "../utils/disposalPolicy.js";
 import type * as utils_documentationChecks from "../utils/documentationChecks.js";
@@ -530,6 +531,7 @@ declare const fullApi: ApiFromModules<{
   "utils/customerNumber": typeof utils_customerNumber;
   "utils/dashboardAnalytics": typeof utils_dashboardAnalytics;
   "utils/deaccessionInitiation": typeof utils_deaccessionInitiation;
+  "utils/deaccessionSearch": typeof utils_deaccessionSearch;
   "utils/deliveryLedger": typeof utils_deliveryLedger;
   "utils/disposalPolicy": typeof utils_disposalPolicy;
   "utils/documentationChecks": typeof utils_documentationChecks;

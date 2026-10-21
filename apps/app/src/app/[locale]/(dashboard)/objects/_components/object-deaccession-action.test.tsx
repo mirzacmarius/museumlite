@@ -97,6 +97,46 @@ test("an unaccessioned object shows the action disabled with the reason", async 
   ).toBe("Not yet accessioned");
 });
 
+test("an object waiting for its transfer's receiver shows the action disabled with the reason", async () => {
+  actions = {
+    deaccession: { state: "blocked", reason: "in_transfer" },
+    remove: { state: "blocked", reason: "in_transfer" },
+  };
+  await renderAction();
+
+  expect(
+    screen
+      .getByRole("button", { name: /Remove or transfer/ })
+      .getAttribute("title"),
+  ).toBe("Transfer in progress");
+});
+
+test("staff who may only remove the object see why it cannot be removed", async () => {
+  actions = {
+    deaccession: { state: "hidden" },
+    remove: { state: "blocked", reason: "in_transfer" },
+  };
+  await renderAction();
+
+  const button = screen.getByRole("button", { name: /Remove or transfer/ });
+  expect(button.hasAttribute("disabled")).toBe(true);
+  expect(button.getAttribute("title")).toBe("Transfer in progress");
+});
+
+test("staff who may only remove an object on a pending loan can still open the dialog to move it", async () => {
+  actions = {
+    deaccession: { state: "hidden" },
+    remove: { state: "blocked", reason: "on_loan" },
+  };
+  await renderAction();
+
+  await userEvent.click(
+    screen.getByRole("button", { name: "Remove or transfer" }),
+  );
+
+  expect(screen.getByRole("dialog")).toBeTruthy();
+});
+
 test("an open Deaccession links to its Case", async () => {
   actions = withDeaccession({
     state: "in_progress",

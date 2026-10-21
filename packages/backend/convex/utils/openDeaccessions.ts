@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { workflowApprovalError } from "./workflowApprovalErrors";
 
 type ReadCtx = Pick<QueryCtx, "db">;
 
@@ -104,6 +105,69 @@ export async function hasOpenDeaccession(
     if (holdsObject(deaccession, closedByTransfer ?? new Set())) return true;
   }
   return false;
+}
+
+/**
+ * The statuses of a transfer nobody has executed, declined or cancelled yet:
+ * the transfers that make an Object ineligible to move again, and whose
+ * approved Removal holds it.
+ */
+export const OPEN_TRANSFER_STATUSES = new Set<
+  Doc<"organizationMoveRequests">["status"]
+>([
+  "pending",
+  "pending_source_approval",
+  "approved_for_transfer",
+  "awaiting_acceptance",
+]);
+
+/**
+ * The approved Removal of an open transfer from this Organization, which its
+ * sender's approval made: while it holds the Object, no other Removal or
+ * Withdrawal starts (ADR 0019). A Deaccession with method transfer that no
+ * open transfer made holds nothing here.
+ */
+export async function findOpenTransferDeaccession(
+  ctx: ReadCtx,
+  organizationId: Id<"organizations">,
+  collectionId: Id<"collections">,
+) {
+  for (const request of await transferRequestsOf(ctx, collectionId)) {
+    if (
+      request.sourceOrganizationId !== organizationId ||
+      request.deaccessionId === undefined ||
+      !OPEN_TRANSFER_STATUSES.has(request.status)
+    ) {
+      continue;
+    }
+    const deaccession = await ctx.db.get(request.deaccessionId);
+    if (deaccession?.status === "approved") return deaccession;
+  }
+  return null;
+}
+
+/**
+ * Refuses to withdraw or delete an Object that an open transfer holds: the
+ * receiver could no longer accept it (ADR 0019).
+ */
+export async function assertNotInTransfer(
+  ctx: ReadCtx,
+  collection: Pick<Doc<"collections">, "_id" | "organizationId">,
+  status: Doc<"collections">["status"],
+) {
+  if (status !== "archived" && status !== "deleted") return;
+  if (
+    await findOpenTransferDeaccession(
+      ctx,
+      collection.organizationId,
+      collection._id,
+    )
+  ) {
+    throw workflowApprovalError(
+      "OBJECT_IN_TRANSFER",
+      "Cannot withdraw an object that is being transferred to another organization",
+    );
+  }
 }
 
 /**

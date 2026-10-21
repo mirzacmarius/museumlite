@@ -15,6 +15,11 @@ export const WORKFLOW_APPROVAL_CODES = [
   "ALREADY_APPROVED",
   /** The record already has a request of this kind waiting for approval. */
   "ALREADY_PENDING",
+  /**
+   * The Object's transfer to another organization has not executed, and the
+   * transfer's approved Removal holds it until then.
+   */
+  "OBJECT_IN_TRANSFER",
 ] as const;
 
 export type WorkflowApprovalCode = (typeof WORKFLOW_APPROVAL_CODES)[number];

@@ -15,6 +15,7 @@ import {
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { assertEntryAllowsStatus } from "./utils/objectEntryLifecycle";
+import { assertNotInTransfer } from "./utils/openDeaccessions";
 import { requirePermission } from "./utils/permissions";
 
 // ============================================
@@ -791,6 +792,7 @@ async function processBulkStatusChange(
   userId: Id<"users">,
 ) {
   await assertEntryAllowsStatus(ctx, collection._id, payload.newStatus);
+  await assertNotInTransfer(ctx, collection, payload.newStatus);
   const now = Date.now();
   const updates: Partial<CollectionDoc> = {
     status: payload.newStatus,
@@ -974,6 +976,7 @@ export const quickBulkStatusChange = mutation({
             };
           }
           await assertEntryAllowsStatus(ctx, collectionId, args.newStatus);
+          await assertNotInTransfer(ctx, collection, args.newStatus);
 
           const updates: Partial<CollectionDoc> = {
             status: args.newStatus,

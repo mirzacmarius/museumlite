@@ -8,6 +8,7 @@ import { identifierErrorFromError } from "../convex/utils/identifierErrors";
 import { imageDeletionErrorFromError } from "../convex/utils/imageDeletionErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
 import { provenanceErrorFromError } from "../convex/utils/provenanceErrors";
+import { workflowApprovalErrorFromError } from "../convex/utils/workflowApprovalErrors";
 import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup.js";
 import { workColumn } from "./workBoardHarness";
@@ -3913,5 +3914,389 @@ describe("object move projections", () => {
     });
 
     expect(await usage()).toEqual([0, 1]);
+  });
+});
+
+describe("a transfer's Removal is numbered and found like any other Removal (MUS-842)", () => {
+  // The sender already records Removals, so its board search reads their
+  // search documents instead of matching each page.
+  async function senderWithRemovals(t: ReturnType<typeof convexTest>) {
+    const fixture = await createMoveFixture(t);
+    const paintingId = await t.run((ctx) =>
+      ctx.db.insert("collections", {
+        organizationId: fixture.sourceOrganizationId,
+        accessionNumber: "SRC-200",
+        title: "Harbour painting",
+        status: "active",
+        catalogedBy: fixture.adminId,
+        catalogedAt: Date.now(),
+      }),
+    );
+    await t.mutation(internal.deaccessions.createInternal, {
+      organizationId: fixture.sourceOrganizationId,
+      collectionId: paintingId,
+      createdByUserId: fixture.adminId,
+      dateDeaccessioned: Date.UTC(2026, 0, 1),
+      reason: "Sold at auction",
+      method: "sale",
+    });
+    return fixture;
+  }
+
+  async function approvedTransfer(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        reason: "Rotation",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    return requestId;
+  }
+
+  // A sender administrator who may also withdraw and edit Objects.
+  async function senderAdministrator(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const [administratorId, administratorRoleId] = await Promise.all([
+      createUser(t, "Administrator", "administrator@test.dev"),
+      createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        [
+          "organization.manage_settings",
+          "collections.read",
+          "collections.update",
+          "collections.delete",
+        ],
+        "Administrator",
+      ),
+    ]);
+    await addMembership(
+      t,
+      administratorId,
+      fixture.sourceOrganizationId,
+      administratorRoleId,
+    );
+    return authedForUser(t, administratorId);
+  }
+
+  function saleOf(fixture: Awaited<ReturnType<typeof createMoveFixture>>) {
+    return {
+      organizationId: fixture.sourceOrganizationId,
+      collectionId: fixture.collectionId,
+      dateDeaccessioned: Date.UTC(2026, 0, 2),
+      reason: "Sold at auction",
+      method: "sale" as const,
+    };
+  }
+
+  function refusalOf(attempt: Promise<unknown>) {
+    return attempt.then(
+      () => null,
+      (error) => workflowApprovalErrorFromError(error)?.code,
+    );
+  }
+
+  async function searchRemovals(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+    column: { kind: "approved" } | { kind: "rejected" },
+    search: string,
+  ) {
+    return (
+      await fixture.admin.query(api.deaccessions.listBoardColumn, {
+        organizationId: fixture.sourceOrganizationId,
+        column,
+        search,
+        paginationOpts: { numItems: 10, cursor: null },
+      })
+    ).page;
+  }
+
+  test("the sender's approval numbers its Removal like any other, and the Removals search finds it", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithRemovals(t);
+
+    await approvedTransfer(fixture);
+
+    expect(
+      await searchRemovals(fixture, { kind: "approved" }, "Move Test Object"),
+    ).toMatchObject([
+      {
+        collectionId: fixture.collectionId,
+        method: "transfer",
+        // The sender's own sequence, after the sale's DA-SOU-…-001.
+        deaccessionNumber: expect.stringMatching(/^DA-SOU-\d{4}-002$/),
+      },
+    ]);
+  });
+
+  test("while the receiver decides, the transfer's Removal holds the Object: no sale or Withdrawal starts until it is declined", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithRemovals(t);
+    const requestId = await approvedTransfer(fixture);
+    const administrator = await senderAdministrator(t, fixture);
+    const sale = saleOf(fixture);
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "blocked", reason: "in_transfer" },
+      remove: { state: "blocked", reason: "in_transfer" },
+    });
+    expect(
+      await refusalOf(administrator.mutation(api.deaccessions.create, sale)),
+    ).toBe("OBJECT_IN_TRANSFER");
+    expect(
+      await refusalOf(
+        administrator.mutation(api.collections.archiveCollection, {
+          collectionId: fixture.collectionId,
+          reason: "Duplicate record",
+        }),
+      ),
+    ).toBe("OBJECT_IN_TRANSFER");
+    expect(
+      await administrator.mutation(api.collections.bulkDeaccession, {
+        collectionIds: [fixture.collectionId],
+        reason: "Sold at auction",
+      }),
+    ).toEqual({ deaccessioned: 0, awaitingDecision: 0, failed: 0, skipped: 1 });
+    const bulkStatusChange = await administrator.mutation(
+      api.batchOperations.quickBulkStatusChange,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        collectionIds: [fixture.collectionId],
+        newStatus: "archived",
+        reason: "Clean-up",
+      },
+    );
+    expect(bulkStatusChange.failureCount).toBe(1);
+    expect(bulkStatusChange.errors[0]?.error).toContain("being transferred");
+
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "available", approvalSteps: 0 },
+      remove: { state: "available" },
+    });
+    // Without a disposition the sale waits for an approver.
+    const saleId = await administrator.mutation(api.deaccessions.create, sale);
+    expect(
+      (
+        await administrator.query(api.objectActions.get, {
+          collectionId: fixture.collectionId,
+        })
+      )?.deaccession,
+    ).toEqual({ state: "in_progress", deaccessionId: saleId });
+  });
+
+  test("a refused sale or Withdrawal leaves the transfer for the receiver to accept", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithRemovals(t);
+    const requestId = await approvedTransfer(fixture);
+    const administrator = await senderAdministrator(t, fixture);
+
+    expect(
+      await refusalOf(
+        administrator.mutation(api.deaccessions.create, saleOf(fixture)),
+      ),
+    ).toBe("OBJECT_IN_TRANSFER");
+    expect(
+      await refusalOf(
+        administrator.mutation(api.collections.archiveCollection, {
+          collectionId: fixture.collectionId,
+          reason: "Duplicate record",
+        }),
+      ),
+    ).toBe("OBJECT_IN_TRANSFER");
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    expect(
+      await fixture.targetAdmin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({
+      status: "executed",
+      collection: { organizationId: fixture.targetOrganizationId },
+    });
+  });
+
+  test("the bulk status change job leaves an Object a transfer holds for the receiver to accept", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await approvedTransfer(fixture);
+    const administrator = await senderAdministrator(t, fixture);
+
+    vi.useFakeTimers();
+    const jobId = await administrator.mutation(
+      api.batchOperations.createBulkStatusChangeJob,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        collectionIds: [fixture.collectionId],
+        newStatus: "archived",
+        reason: "Clean-up",
+      },
+    );
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    vi.useRealTimers();
+
+    expect(
+      await administrator.query(api.batchOperations.getBatchJobStatus, {
+        jobId,
+      }),
+    ).toMatchObject({
+      successCount: 0,
+      failureCount: 1,
+      errors: [
+        {
+          itemId: fixture.collectionId,
+          error: expect.stringContaining("being transferred"),
+        },
+      ],
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+    expect(
+      await fixture.targetAdmin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({ status: "executed" });
+  });
+
+  test("an Object sent back to its first museum is not held by the transfer that took it away", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    await transferToTarget(fixture);
+    await sendBack(t, fixture);
+    const administrator = await senderAdministrator(t, fixture);
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "available", approvalSteps: 0 },
+      remove: { state: "available" },
+    });
+  });
+
+  test("a Removal with method transfer that no transfer made does not say a transfer is in progress", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const administrator = await senderAdministrator(t, fixture);
+    // As seeded sample data records one: approved, with no transfer request.
+    await t.run((ctx) =>
+      ctx.db.insert("deaccessions", {
+        organizationId: fixture.sourceOrganizationId,
+        collectionId: fixture.collectionId,
+        deaccessionNumber: "DA-SOU-2025-001",
+        dateDeaccessioned: Date.UTC(2025, 0, 1),
+        reason: "Rotation",
+        method: "transfer",
+        status: "approved",
+        targetCollectionStatus: "deaccessioned",
+      }),
+    );
+
+    expect(
+      await administrator.query(api.objectActions.get, {
+        collectionId: fixture.collectionId,
+      }),
+    ).toEqual({
+      deaccession: { state: "available", approvalSteps: 0 },
+      remove: { state: "available" },
+    });
+  });
+
+  test("a declined transfer's Removal is found among the rejected", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithRemovals(t);
+    const requestId = await approvedTransfer(fixture);
+
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
+
+    expect(
+      await searchRemovals(fixture, { kind: "rejected" }, "Move Test Object"),
+    ).toMatchObject([
+      {
+        collectionId: fixture.collectionId,
+        declinedTransfer: { requestId, receiverName: "Target Museum" },
+      },
+    ]);
+    expect(
+      await searchRemovals(fixture, { kind: "approved" }, "Move Test Object"),
+    ).toEqual([]);
+  });
+
+  test("the repair gives the Removals that earlier transfers made a search document, page after page", async () => {
+    vi.useFakeTimers();
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const t = convexTest(schema, modules);
+      const fixture = await senderWithRemovals(t);
+      // What transfers approved before this fix left behind: Removals with a
+      // TR- number and no search document, the last for another Object.
+      await t.run(async (ctx) => {
+        const tapestryId = await ctx.db.insert("collections", {
+          organizationId: fixture.sourceOrganizationId,
+          accessionNumber: "SRC-300",
+          title: "Legacy tapestry",
+          status: "active",
+          catalogedBy: fixture.adminId,
+          catalogedAt: Date.now(),
+        });
+        for (let index = 0; index <= 100; index++) {
+          await ctx.db.insert("deaccessions", {
+            organizationId: fixture.sourceOrganizationId,
+            collectionId: index === 100 ? tapestryId : fixture.collectionId,
+            deaccessionNumber: `TR-SOURCE-${1_760_000_000_000 + index}`,
+            dateDeaccessioned: Date.UTC(2025, 0, 1) + index,
+            reason: "Rotation",
+            method: "transfer",
+            disposition: "Transfer to Target Museum",
+            status: index === 100 ? "approved" : "rejected",
+            targetCollectionStatus: "deaccessioned",
+          });
+        }
+      });
+      const tapestryFound = async () =>
+        (
+          await searchRemovals(fixture, { kind: "approved" }, "Legacy tapestry")
+        ).map((row) => row.collectionTitle);
+
+      expect(await tapestryFound()).toEqual([]);
+      expect(
+        await t.mutation(
+          internal.migrations.backfillDeaccessionSearchDocuments,
+          { cursor: null },
+        ),
+      ).toEqual({
+        deaccessionsChecked: 100,
+        searchDocumentsCreated: 99,
+        isDone: false,
+      });
+      expect(await tapestryFound()).toEqual([]);
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+      expect(await tapestryFound()).toEqual(["Legacy tapestry"]);
+      expect(log).toHaveBeenCalledWith(
+        "Backfilled Deaccession search documents: checked 102 Deaccessions and created the 101 that were missing",
+      );
+    } finally {
+      log.mockRestore();
+      vi.useRealTimers();
+    }
   });
 });

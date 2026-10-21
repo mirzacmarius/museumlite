@@ -20,6 +20,7 @@ import {
   markCollectionActive,
 } from "./utils/collectionLifecycle";
 import { requireDeaccessionInitiation } from "./utils/deaccessionInitiation";
+import { syncDeaccessionSearchDocument } from "./utils/deaccessionSearch";
 import {
   DISPOSAL_POLICY_VERSION,
   type DisposalDecisionCheckKey,
@@ -40,7 +41,10 @@ import { dispatchNotification } from "./utils/notificationDispatch";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
-import { transferRequestsOf } from "./utils/openDeaccessions";
+import {
+  findOpenTransferDeaccession,
+  transferRequestsOf,
+} from "./utils/openDeaccessions";
 import { requireLinkableParty } from "./utils/parties";
 import { syncExitRecipientLink } from "./utils/partyLinks";
 import {
@@ -83,71 +87,6 @@ function resolveTargetCollectionStatus(deaccession: {
   targetCollectionStatus?: "deaccessioned" | "archived" | "deleted";
 }) {
   return deaccession.targetCollectionStatus ?? "deaccessioned";
-}
-
-function buildSearchText(values: Array<string | null | undefined>) {
-  return values
-    .flatMap((value) => {
-      const trimmedValue = value?.trim();
-      return trimmedValue ? [trimmedValue] : [];
-    })
-    .join(" ");
-}
-
-async function buildDeaccessionSearchText(
-  ctx: MutationCtx,
-  deaccession: Doc<"deaccessions">,
-) {
-  const collection = await ctx.db.get(deaccession.collectionId);
-
-  return buildSearchText([
-    deaccession.deaccessionNumber,
-    deaccession.reason,
-    deaccession.disposition,
-    deaccession.notes,
-    collection?.title,
-    collection?.accessionNumber,
-    deaccession.method,
-  ]);
-}
-
-async function upsertDeaccessionSearchDocument(
-  ctx: MutationCtx,
-  deaccession: Doc<"deaccessions">,
-) {
-  const [searchText, existing] = await Promise.all([
-    buildDeaccessionSearchText(ctx, deaccession),
-    ctx.db
-      .query("deaccessionSearchDocuments")
-      .withIndex("by_deaccession", (q) =>
-        q.eq("deaccessionId", deaccession._id),
-      )
-      .first(),
-  ] as const);
-  const fields = {
-    organizationId: deaccession.organizationId,
-    deaccessionId: deaccession._id,
-    status: deaccession.status,
-    searchText,
-    dateDeaccessioned: deaccession.dateDeaccessioned,
-  };
-
-  if (existing) {
-    await ctx.db.patch(existing._id, fields);
-    return;
-  }
-
-  await ctx.db.insert("deaccessionSearchDocuments", fields);
-}
-
-async function syncDeaccessionSearchDocument(
-  ctx: MutationCtx,
-  deaccessionId: Id<"deaccessions">,
-) {
-  const deaccession = await ctx.db.get(deaccessionId);
-  if (deaccession) {
-    await upsertDeaccessionSearchDocument(ctx, deaccession);
-  }
 }
 
 async function restoreRejectedCollectionStatus(
@@ -309,12 +248,20 @@ export async function createDeaccessionRecord(
   );
   await requireDeaccessionInitiation(ctx, args.organizationId, userId);
 
-  if (
-    await findWaitingDeaccession(ctx, args.organizationId, args.collectionId)
-  ) {
+  const [waiting, inTransfer] = await Promise.all([
+    findWaitingDeaccession(ctx, args.organizationId, args.collectionId),
+    findOpenTransferDeaccession(ctx, args.organizationId, args.collectionId),
+  ] as const);
+  if (waiting) {
     throw workflowApprovalError(
       "ALREADY_PENDING",
       "This object already has a deaccession waiting for approval",
+    );
+  }
+  if (inTransfer) {
+    throw workflowApprovalError(
+      "OBJECT_IN_TRANSFER",
+      "This object is being transferred to another organization",
     );
   }
 
@@ -439,6 +386,108 @@ export async function createDeaccessionRecord(
   }
 
   return deaccessionId;
+}
+
+/**
+ * Records the Deaccession a move to another Organization makes when the
+ * sender approves it (ADR 0019). It is approved at once but leaves the
+ * Object's status alone: the move holds the Object until the receiver accepts
+ * or declines.
+ */
+export async function createTransferDeaccession(
+  ctx: MutationCtx,
+  request: Pick<
+    Doc<"organizationMoveRequests">,
+    | "_id"
+    | "sourceOrganizationId"
+    | "targetOrganizationId"
+    | "collectionId"
+    | "sourceAccessionNumber"
+    | "reason"
+  >,
+  userId: Id<"users">,
+) {
+  const targetOrganization = await ctx.db.get(request.targetOrganizationId);
+  if (!targetOrganization) {
+    throw new Error("Organization not found");
+  }
+
+  const deaccessionNumber = await generateNextDeaccessionNumber(
+    ctx,
+    request.sourceOrganizationId,
+  );
+  const now = Date.now();
+  const deaccessionId = await ctx.db.insert("deaccessions", {
+    organizationId: request.sourceOrganizationId,
+    collectionId: request.collectionId,
+    deaccessionNumber,
+    dateDeaccessioned: now,
+    reason: request.reason,
+    method: "transfer",
+    disposition: `Transfer to ${targetOrganization.name}`,
+    approvedBy: userId,
+    approvedAt: now,
+    status: "approved",
+    targetCollectionStatus: "deaccessioned",
+    notes: `Created from transfer request for ${request.sourceAccessionNumber}.`,
+    workflowHistory: [
+      {
+        step: 1,
+        approvedBy: userId,
+        approvedAt: now,
+        comment: "Approved for transfer",
+      },
+    ],
+  });
+  await Promise.all([
+    syncDeaccessionSearchDocument(ctx, deaccessionId),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.sourceOrganizationId,
+      userId,
+      action: "created_transfer_deaccession",
+      entityType: "deaccession",
+      entityId: deaccessionId,
+      changes: {
+        requestId: request._id,
+        targetOrganizationId: request.targetOrganizationId,
+        deaccessionNumber,
+      },
+    }),
+  ]);
+
+  return deaccessionId;
+}
+
+/**
+ * Rejects a move's approved Deaccession when the move ends without the Object
+ * leaving. The Object's status was never changed, so nothing is restored; the
+ * rejected Deaccession stays as the record of the attempt (ADR 0019).
+ */
+export async function rejectTransferDeaccession(
+  ctx: MutationCtx,
+  deaccession: Doc<"deaccessions">,
+  requestId: Id<"organizationMoveRequests">,
+  userId: Id<"users">,
+  note: string,
+) {
+  if (deaccession.method !== "transfer" || deaccession.status !== "approved") {
+    return;
+  }
+  await ctx.db.patch(deaccession._id, {
+    status: "rejected",
+    notes: [deaccession.notes, note].filter(Boolean).join("\n"),
+  });
+  await Promise.all([
+    syncDeaccessionSearchDocument(ctx, deaccession._id),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: deaccession.organizationId,
+      userId,
+      action: "rejected_transfer_deaccession",
+      entityType: "deaccession",
+      entityId: deaccession._id,
+      changes: { requestId, status: "rejected" },
+    }),
+  ]);
 }
 
 /**
@@ -843,34 +892,6 @@ export const getBoardCounts = query({
       rejected,
       columns,
     };
-  },
-});
-
-export const backfillSearchDocuments = mutation({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  returns: v.object({
-    updatedCount: v.number(),
-  }),
-  handler: async (ctx, args) => {
-    const [, deaccessions] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.read"),
-      ctx.db
-        .query("deaccessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
-
-    await Promise.all(
-      Array.from(deaccessions).map(async (deaccession) => {
-        await upsertDeaccessionSearchDocument(ctx, deaccession);
-      }),
-    );
-
-    return { updatedCount: deaccessions.length };
   },
 });
 
