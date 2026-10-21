@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { Highlight, HighlightScope } from "@v1/ui/motion-highlight";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -81,24 +82,29 @@ export function DeaccessionsPageClient({
           />
 
           <div className="flex flex-wrap items-center gap-3">
-            <fieldset className="flex rounded-lg bg-muted p-1">
-              <legend className="sr-only">{t("table.status")}</legend>
-              {DEACCESSION_STATUS_FILTERS.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  aria-pressed={statusFilter === status}
-                  onClick={() => list.update({ filters: { status } })}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                    statusFilter === status
-                      ? "bg-card shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t(`filters.${status}`)}
-                </button>
-              ))}
-            </fieldset>
+            <HighlightScope>
+              <fieldset className="isolate flex rounded-lg bg-muted p-1">
+                <legend className="sr-only">{t("table.status")}</legend>
+                {DEACCESSION_STATUS_FILTERS.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    aria-pressed={statusFilter === status}
+                    onClick={() => list.update({ filters: { status } })}
+                    className={`relative rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                      statusFilter === status
+                        ? ""
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {statusFilter === status && (
+                      <Highlight className="bg-card shadow-sm" />
+                    )}
+                    {t(`filters.${status}`)}
+                  </button>
+                ))}
+              </fieldset>
+            </HighlightScope>
 
             <div className="group relative">
               <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />

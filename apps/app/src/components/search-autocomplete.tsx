@@ -3,7 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import { Popover, PopoverContent } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Clock, Search, X } from "lucide-react";
@@ -28,6 +28,7 @@ export function SearchAutocomplete({
 }: SearchAutocompleteProps) {
   const translate = useI18n();
   const [open, setOpen] = React.useState(false);
+  const fieldRef = React.useRef<HTMLDivElement>(null);
   const { currentOrganizationId } = useOrganization();
   const debouncedValue = useDebouncedValue(value, debounceMs);
 
@@ -108,44 +109,41 @@ export function SearchAutocomplete({
 
   return (
     <Popover open={showDropdown} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div className={cn("relative w-full", className)}>
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            value={value}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            placeholder={
-              placeholder ??
-              translate("untranslatedComponents.labels.searchObjects")
-            }
-            className="pl-9 pr-9"
-            aria-label={translate(
-              "untranslatedComponents.labels.searchWithAutocomplete",
-            )}
-            aria-autocomplete="list"
-            aria-expanded={showDropdown}
-            aria-controls={showDropdown ? "search-suggestions" : undefined}
-          />
-          {value && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={translate(
-                "untranslatedComponents.labels.clearSearch",
-              )}
-            >
-              <X className="size-4" />
-            </button>
+      <div ref={fieldRef} className={cn("relative w-full", className)}>
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          type="text"
+          value={value}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          placeholder={
+            placeholder ??
+            translate("untranslatedComponents.labels.searchObjects")
+          }
+          className="pl-9 pr-9"
+          aria-label={translate(
+            "untranslatedComponents.labels.searchWithAutocomplete",
           )}
-        </div>
-      </PopoverTrigger>
+          aria-autocomplete="list"
+          aria-expanded={showDropdown}
+          aria-controls={showDropdown ? "search-suggestions" : undefined}
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={translate("untranslatedComponents.labels.clearSearch")}
+          >
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        anchor={fieldRef}
+        className="w-[var(--anchor-width)] p-0"
         align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        initialFocus={false}
         id="search-suggestions"
       >
         <div className="max-h-[300px] overflow-y-auto">

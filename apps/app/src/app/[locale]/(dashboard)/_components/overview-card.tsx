@@ -1,3 +1,4 @@
+import { SlidingNumber } from "@v1/ui/sliding-number";
 import { cn } from "@v1/ui/utils";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -45,9 +46,10 @@ export function OverviewCard({
           {title}
         </span>
       </span>{" "}
-      <span className="text-xl font-semibold leading-7 tabular-nums text-foreground">
-        {value}
-      </span>
+      <SlidingNumber
+        value={value}
+        className="text-xl font-semibold leading-7 text-foreground"
+      />
     </Link>
   );
 }

@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import type * as React from "react";
 import { cn } from "../utils";
+import { SlidingNumber } from "./sliding-number";
 
 interface KpiCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
@@ -82,7 +83,9 @@ const KpiCard = ({
         <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           {title}
         </div>
-        <div className="text-lg font-semibold text-foreground">{value}</div>
+        <div className="text-lg font-semibold text-foreground">
+          <SlidingNumber value={value} />
+        </div>
       </div>
     </div>
   );

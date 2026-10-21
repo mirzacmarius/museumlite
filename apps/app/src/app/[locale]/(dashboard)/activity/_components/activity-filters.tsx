@@ -9,9 +9,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import { Popover, PopoverContent } from "@v1/ui/popover";
 import { Calendar as CalendarIcon, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { formatDateFns } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -63,6 +63,7 @@ export function ActivityFilters({
   const t = useScopedI18n("activity");
   const locale = useCurrentLocale();
   const [customRangeOpen, setCustomRangeOpen] = useState(false);
+  const dateRangeButtonRef = useRef<HTMLButtonElement>(null);
   const [dateRangePicker, setDateRangePicker] = useState<DateRange | undefined>(
     dateRange.start || dateRange.end
       ? {
@@ -164,7 +165,11 @@ export function ActivityFilters({
       {/* Date Range Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="justify-between">
+          <Button
+            ref={dateRangeButtonRef}
+            variant="outline"
+            className="justify-between"
+          >
             <div className="flex items-center gap-2">
               <CalendarIcon className="size-4" />
               <span className="text-sm">
@@ -191,29 +196,27 @@ export function ActivityFilters({
             {t("dateRangePresets.allTime")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <Popover open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
-            <PopoverTrigger asChild>
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setCustomRangeOpen(true);
-                }}
-              >
-                {t("dateRangePresets.customRange")}
-              </DropdownMenuItem>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={dateRangePicker}
-                onSelect={handleCustomRangeSelect}
-                numberOfMonths={2}
-                captionLayout="dropdown"
-              />
-            </PopoverContent>
-          </Popover>
+          <DropdownMenuItem onSelect={() => setCustomRangeOpen(true)}>
+            {t("dateRangePresets.customRange")}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {/* Outside the menu, which closes as the calendar opens under its button. */}
+      <Popover open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
+        <PopoverContent
+          anchor={dateRangeButtonRef}
+          className="w-auto p-0"
+          align="start"
+        >
+          <Calendar
+            mode="range"
+            selected={dateRangePicker}
+            onSelect={handleCustomRangeSelect}
+            numberOfMonths={2}
+            captionLayout="dropdown"
+          />
+        </PopoverContent>
+      </Popover>
 
       {/* Type Filter */}
       <div className="relative">

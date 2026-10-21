@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen } from "@testing-library/react";
+import { screen, waitForElementToBeRemoved } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   AccessionNumberParser,
@@ -110,6 +110,8 @@ async function changeFormat(format: string) {
     await user.paste(format);
   }
   await user.keyboard("{Escape}");
+  // The popover animates closed before it leaves the page.
+  await waitForElementToBeRemoved(input);
   return user;
 }
 

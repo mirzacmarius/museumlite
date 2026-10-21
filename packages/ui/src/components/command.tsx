@@ -3,8 +3,8 @@
 import type { DialogProps } from "@radix-ui/react-dialog";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { Command as CommandPrimitive } from "cmdk";
-import type * as React from "react";
+import { Command as CommandPrimitive, useCommandState } from "cmdk";
+import * as React from "react";
 import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 import {
@@ -13,6 +13,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "./dialog";
+import { Highlight, HighlightScope } from "./motion-highlight";
 
 const Command = ({
   className,
@@ -87,15 +88,21 @@ CommandInput.displayName = CommandPrimitive.Input.displayName;
 
 const CommandList = ({
   className,
+  children,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.List> &
   React.RefAttributes<React.ElementRef<typeof CommandPrimitive.List>>) => (
   <CommandPrimitive.List
     ref={ref}
-    className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className)}
+    className={cn(
+      "isolate max-h-[300px] overflow-y-auto overflow-x-hidden",
+      className,
+    )}
     {...props}
-  />
+  >
+    <HighlightScope>{children}</HighlightScope>
+  </CommandPrimitive.List>
 );
 
 CommandList.displayName = CommandPrimitive.List.displayName;
@@ -123,7 +130,7 @@ const CommandGroup = ({
   <CommandPrimitive.Group
     ref={ref}
     className={cn(
-      "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
+      "p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
       className,
     )}
     {...props}
@@ -148,19 +155,41 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
 
 const CommandItem = ({
   className,
+  children,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> &
-  React.RefAttributes<React.ElementRef<typeof CommandPrimitive.Item>>) => (
-  <CommandPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
-      className,
-    )}
-    {...props}
-  />
-);
+  React.RefAttributes<React.ElementRef<typeof CommandPrimitive.Item>>) => {
+  const itemRef = React.useRef<HTMLDivElement | null>(null);
+  const setRefs = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      itemRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
+  // cmdk does not tell an item it is selected, so read its data-selected
+  // after each change of the list's selection.
+  const selectedValue = useCommandState((state) => state.value);
+  const [selected, setSelected] = React.useState(false);
+  React.useLayoutEffect(() => {
+    setSelected(itemRef.current?.dataset.selected === "true");
+  }, [selectedValue]);
+  return (
+    <CommandPrimitive.Item
+      ref={setRefs}
+      className={cn(
+        "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
+        className,
+      )}
+      {...props}
+    >
+      {selected && <Highlight className="bg-accent" />}
+      {children}
+    </CommandPrimitive.Item>
+  );
+};
 
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 

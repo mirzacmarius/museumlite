@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { expect, test } from "vitest";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogTitle,
+} from "./alert-dialog";
 import { Dialog, DialogContent, DialogTitle } from "./dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
@@ -46,4 +53,83 @@ test("the dialog's scroll lock lets a picker list inside it take the mouse wheel
   list.dispatchEvent(wheel);
 
   expect(wheel.defaultPrevented).toBe(false);
+});
+
+test("a closed popover animates out, then leaves the page and hands focus back to its trigger", async () => {
+  const user = userEvent.setup();
+  render(
+    <Popover>
+      <PopoverTrigger>Filters</PopoverTrigger>
+      <PopoverContent>Only on display</PopoverContent>
+    </Popover>,
+  );
+  const trigger = screen.getByRole("button", { name: "Filters" });
+  await user.click(trigger);
+  // Closing before the first frame has nothing to animate back from.
+  const popup = screen.getByText("Only on display");
+  await waitFor(() => expect(Number(popup.style.opacity)).toBeGreaterThan(0));
+
+  await user.keyboard("{Escape}");
+
+  expect(screen.getByText("Only on display")).toBeTruthy();
+  await waitFor(() => expect(screen.queryByText("Only on display")).toBeNull());
+  expect(document.activeElement).toBe(trigger);
+});
+
+test("Escape in a picker inside a dialog closes the picker and keeps the dialog open", async () => {
+  const user = userEvent.setup();
+  render(<DialogWithPicker />);
+  await user.click(screen.getByRole("button", { name: "Condition" }));
+  screen.getByRole("listbox", { name: "Conditions" });
+
+  await user.keyboard("{Escape}");
+
+  await waitFor(() =>
+    expect(screen.queryByRole("listbox", { name: "Conditions" })).toBeNull(),
+  );
+  screen.getByRole("dialog", { name: "Set condition" });
+});
+
+/** A picker whose row opens a confirmation, as the type picker's delete does. */
+function PickerWithConfirmation() {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <>
+      <Popover>
+        <PopoverTrigger>Type</PopoverTrigger>
+        <PopoverContent>
+          <div role="listbox" aria-label="Types">
+            <button type="button" onClick={() => setConfirming(true)}>
+              Delete Painting
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Delete Painting?</AlertDialogTitle>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+test("Escape in a confirmation opened from a picker closes the confirmation, not the picker", async () => {
+  const user = userEvent.setup();
+  render(<PickerWithConfirmation />);
+  await user.click(screen.getByRole("button", { name: "Type" }));
+  await user.click(screen.getByRole("button", { name: "Delete Painting" }));
+  screen.getByRole("alertdialog", { name: "Delete Painting?" });
+
+  await user.keyboard("{Escape}");
+
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("alertdialog", { name: "Delete Painting?" }),
+    ).toBeNull(),
+  );
+  expect(
+    screen.getByRole("listbox", { name: "Types", hidden: true }),
+  ).toBeTruthy();
 });

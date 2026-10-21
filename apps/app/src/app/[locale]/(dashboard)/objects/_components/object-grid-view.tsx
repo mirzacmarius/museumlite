@@ -228,7 +228,7 @@ export function ObjectActionsMenu({
           className="w-44 border-border bg-popover text-popover-foreground"
         >
           <DropdownMenuItem
-            className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+            className="cursor-pointer"
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -245,7 +245,7 @@ export function ObjectActionsMenu({
               : tRoot("untranslatedRecords.objects.actions.copyLink")}
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+            className="cursor-pointer"
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -256,7 +256,7 @@ export function ObjectActionsMenu({
             {tRoot("objects.objectLabel.print")}
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+            className="cursor-pointer"
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -271,7 +271,7 @@ export function ObjectActionsMenu({
               <DropdownMenuSeparator />
               <PermissionGate permission="collections.update">
                 <DropdownMenuItem
-                  className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                  className="cursor-pointer"
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -282,7 +282,7 @@ export function ObjectActionsMenu({
                   {tRoot("untranslatedRecords.objects.status.sold")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                  className="cursor-pointer"
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -295,7 +295,7 @@ export function ObjectActionsMenu({
               </PermissionGate>
               <PermissionGate permission="collections.delete">
                 <DropdownMenuItem
-                  className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                  className="cursor-pointer"
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -312,7 +312,7 @@ export function ObjectActionsMenu({
             <PermissionGate permission="collections.update">
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                className="cursor-pointer"
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();

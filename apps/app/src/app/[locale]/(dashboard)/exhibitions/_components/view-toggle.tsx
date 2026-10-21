@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
+import { Highlight, HighlightScope } from "@v1/ui/motion-highlight";
 import { cn } from "@v1/ui/utils";
 import { Calendar, LayoutGrid } from "lucide-react";
 import { useScopedI18n } from "@/locales/client";
@@ -21,33 +22,40 @@ export function ExhibitionViewToggle({
   const t = useScopedI18n("exhibitions");
 
   return (
-    <div
-      className={cn("inline-flex rounded-md border border-border", className)}
-    >
-      <Button
-        variant="ghost"
-        size="sm"
+    <HighlightScope>
+      <div
         className={cn(
-          "rounded-r-none border-r border-border px-3",
-          value === "gallery" && "bg-accent text-accent-foreground",
+          "isolate inline-flex rounded-md border border-border",
+          className,
         )}
-        onClick={() => onChange("gallery")}
-        aria-label={t("viewMode.gallery")}
       >
-        <LayoutGrid className="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(
-          "rounded-l-none px-3",
-          value === "timeline" && "bg-accent text-accent-foreground",
-        )}
-        onClick={() => onChange("timeline")}
-        aria-label={t("viewMode.timeline")}
-      >
-        <Calendar className="size-4" />
-      </Button>
-    </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "relative rounded-r-none border-r border-border px-3",
+            value === "gallery" && "text-accent-foreground",
+          )}
+          onClick={() => onChange("gallery")}
+          aria-label={t("viewMode.gallery")}
+        >
+          {value === "gallery" && <Highlight className="bg-accent" />}
+          <LayoutGrid className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "relative rounded-l-none px-3",
+            value === "timeline" && "text-accent-foreground",
+          )}
+          onClick={() => onChange("timeline")}
+          aria-label={t("viewMode.timeline")}
+        >
+          {value === "timeline" && <Highlight className="bg-accent" />}
+          <Calendar className="size-4" />
+        </Button>
+      </div>
+    </HighlightScope>
   );
 }

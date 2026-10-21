@@ -44,6 +44,7 @@
     "./loading-button": "./src/components/loading-button.tsx",
     "./logo": "./src/components/logo.tsx",
     "./motion-provider": "./src/components/motion-provider.tsx",
+    "./motion-highlight": "./src/components/motion-highlight.tsx",
     "./popover": "./src/components/popover.tsx",
     "./postcss": "./postcss.config.js",
     "./progress": "./src/components/progress.tsx",
@@ -56,6 +57,7 @@
     "./sidebar": "./src/components/sidebar.tsx",
     "./skeleton": "./src/components/skeleton.tsx",
     "./skeleton-variants": "./src/components/skeleton-variants.tsx",
+    "./sliding-number": "./src/components/sliding-number.tsx",
     "./status-badge": "./src/components/status-badge.tsx",
     "./sticky-form-footer": "./src/components/sticky-form-footer.tsx",
     "./hooks": "./src/hooks/index.ts",
@@ -86,9 +88,11 @@
     "format": "biome format --write .",
     "lint": "biome check . --error-on-warnings",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "spring-easing": "bun scripts/spring-easing.ts"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
     "@diceui/tags-input": "^0.7.2",
     "@headless-tree/core": "^1.6.2",
     "@radix-ui/react-accordion": "^1.2.12",

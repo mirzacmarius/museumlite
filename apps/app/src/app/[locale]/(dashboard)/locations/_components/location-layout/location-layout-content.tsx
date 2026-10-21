@@ -2,6 +2,7 @@
 
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Highlight, HighlightScope } from "@v1/ui/motion-highlight";
 import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -199,35 +200,38 @@ export function LocationLayoutContent({
           {hasSublocations ? t("locationsAndObjects") : t("objects")}
         </span>
         {hasSublocations && (
-          <fieldset
-            aria-label={t("listingStyle")}
-            className="inline-flex rounded-md border border-border p-0.5"
-          >
-            {(
-              [
-                { value: "grid", label: "grid", icon: LayoutGrid },
-                { value: "thread", label: "thread", icon: MessagesSquare },
-                { value: "diagram", label: "diagram", icon: GitBranch },
-                { value: "outline", label: "outline", icon: ListTree },
-              ] as const
-            ).map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={viewStyle === value}
-                onClick={() => setViewStyle(value)}
-                className={cn(
-                  "flex h-7 items-center gap-1.5 rounded px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-indigo-400",
-                  viewStyle === value
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="size-3.5" />
-                {t(label)}
-              </button>
-            ))}
-          </fieldset>
+          <HighlightScope>
+            <fieldset
+              aria-label={t("listingStyle")}
+              className="isolate inline-flex rounded-md border border-border p-0.5"
+            >
+              {(
+                [
+                  { value: "grid", label: "grid", icon: LayoutGrid },
+                  { value: "thread", label: "thread", icon: MessagesSquare },
+                  { value: "diagram", label: "diagram", icon: GitBranch },
+                  { value: "outline", label: "outline", icon: ListTree },
+                ] as const
+              ).map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={viewStyle === value}
+                  onClick={() => setViewStyle(value)}
+                  className={cn(
+                    "relative flex h-7 items-center gap-1.5 rounded px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-indigo-400",
+                    viewStyle === value
+                      ? "text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {viewStyle === value && <Highlight className="bg-accent" />}
+                  <Icon className="size-3.5" />
+                  {t(label)}
+                </button>
+              ))}
+            </fieldset>
+          </HighlightScope>
         )}
       </div>
       {objectsAtLocation === undefined ? (

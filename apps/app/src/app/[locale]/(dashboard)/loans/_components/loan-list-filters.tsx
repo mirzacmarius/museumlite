@@ -1,9 +1,15 @@
 "use client";
 
 import { Input } from "@v1/ui/input";
+import { Highlight, HighlightScope } from "@v1/ui/motion-highlight";
+import { cn } from "@v1/ui/utils";
 import { Search } from "lucide-react";
 import { useScopedI18n } from "@/locales/client";
 import type { LoanStatus, LoanType } from "./types";
+
+const SEGMENT_CLASS_NAME =
+  "relative whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-all";
+const SEGMENT_IDLE_CLASS_NAME = "text-muted-foreground hover:text-foreground";
 
 interface LoanListFiltersProps {
   statusFilter: LoanStatus;
@@ -25,47 +31,46 @@ export function LoanListFilters({
   onSearchQueryChange,
 }: LoanListFiltersProps) {
   const t = useScopedI18n("loans");
+  // One of these is on at most; Pending is an independent toggle beside them.
+  const directionFilters = [
+    {
+      label: t("filters.allLoans"),
+      pressed: typeFilter === "all" && statusFilter === "all",
+      onClick: onShowAll,
+    },
+    {
+      label: t("filters.outgoing"),
+      pressed: typeFilter === "outgoing",
+      onClick: () => onTypeFilterChange("outgoing"),
+    },
+    {
+      label: t("filters.incoming"),
+      pressed: typeFilter === "incoming",
+      onClick: () => onTypeFilterChange("incoming"),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex min-w-max self-start rounded-lg bg-muted p-1">
-          <button
-            type="button"
-            onClick={onShowAll}
-            aria-pressed={typeFilter === "all" && statusFilter === "all"}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
-              typeFilter === "all" && statusFilter === "all"
-                ? "bg-card shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t("filters.allLoans")}
-          </button>
-          <button
-            type="button"
-            onClick={() => onTypeFilterChange("outgoing")}
-            aria-pressed={typeFilter === "outgoing"}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
-              typeFilter === "outgoing"
-                ? "bg-card shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t("filters.outgoing")}
-          </button>
-          <button
-            type="button"
-            onClick={() => onTypeFilterChange("incoming")}
-            aria-pressed={typeFilter === "incoming"}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
-              typeFilter === "incoming"
-                ? "bg-card shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t("filters.incoming")}
-          </button>
+        <div className="isolate flex min-w-max self-start rounded-lg bg-muted p-1">
+          <HighlightScope>
+            {directionFilters.map((filter) => (
+              <button
+                key={filter.label}
+                type="button"
+                onClick={filter.onClick}
+                aria-pressed={filter.pressed}
+                className={cn(
+                  SEGMENT_CLASS_NAME,
+                  !filter.pressed && SEGMENT_IDLE_CLASS_NAME,
+                )}
+              >
+                {filter.pressed && <Highlight className="bg-card shadow-sm" />}
+                {filter.label}
+              </button>
+            ))}
+          </HighlightScope>
           <button
             type="button"
             onClick={() =>
@@ -74,11 +79,12 @@ export function LoanListFilters({
               )
             }
             aria-pressed={statusFilter === "pending"}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+            className={cn(
+              SEGMENT_CLASS_NAME,
               statusFilter === "pending"
                 ? "bg-card shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+                : SEGMENT_IDLE_CLASS_NAME,
+            )}
           >
             {t("filters.pending")}
           </button>
