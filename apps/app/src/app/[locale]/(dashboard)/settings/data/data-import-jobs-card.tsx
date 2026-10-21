@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useDownloadImportFailures } from "@/hooks/use-download-import-failures";
 import { useScopedI18n } from "@/locales/client";
 
@@ -24,7 +25,11 @@ type ImportJob = FunctionReturnType<typeof api.imports.listImportJobs>[number];
 
 interface DataImportJobsCardProps {
   importJobs: ImportJob[];
-  onUploadCorrection: (job: ImportJob, file: File) => Promise<void>;
+  /** Resolves with the reason, in the app's language, when the file is refused. */
+  onUploadCorrection: (
+    job: ImportJob,
+    file: File,
+  ) => Promise<string | undefined>;
 }
 
 const ACTIVE_STATUSES = new Set(["pending", "processing"]);
@@ -39,6 +44,7 @@ export function DataImportJobsCard({
   const correctionJobRef = useRef<ImportJob | null>(null);
   const cancelImportJob = useMutation(api.imports.cancelImportJob);
   const downloadFailures = useDownloadImportFailures();
+  const actionMessage = useActionErrorMessage();
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
 
   if (importJobs.length === 0) {
@@ -68,7 +74,7 @@ export function DataImportJobsCard({
       await cancelImportJob({ jobId: job._id });
       toast.success(t("cancelled"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("cancelFailed"));
+      toast.error(actionMessage(error, t("cancelFailed")));
     } finally {
       setBusyJobId(null);
     }
@@ -79,7 +85,7 @@ export function DataImportJobsCard({
     try {
       await downloadFailures(job._id, `import-${job._id}-failed-rows.csv`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("downloadFailed"));
+      toast.error(actionMessage(error, t("downloadFailed")));
     } finally {
       setBusyJobId(null);
     }
@@ -90,11 +96,10 @@ export function DataImportJobsCard({
     if (!job) return;
     setBusyJobId(job._id);
     try {
-      await onUploadCorrection(job, file);
+      const refusal = await onUploadCorrection(job, file);
+      if (refusal) toast.error(refusal);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("correctionFailed"),
-      );
+      toast.error(actionMessage(error, t("correctionFailed")));
     } finally {
       setBusyJobId(null);
       correctionJobRef.current = null;
