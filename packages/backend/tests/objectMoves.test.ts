@@ -2462,6 +2462,87 @@ describe("the receiving organization decides", () => {
   });
 });
 
+describe("a rejected Removal leaves the Object free to move", () => {
+  async function addRegistrar(
+    t: ReturnType<typeof convexTest>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const registrarId = await createUser(
+      t,
+      "Registrar",
+      `registrar-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    const roleId = await createRoleWithPermissions(
+      t,
+      fixture.sourceOrganizationId,
+      [
+        "collections.create",
+        "collections.read",
+        "collections.approve_deaccession",
+      ],
+      "Registrar Role",
+    );
+    await addMembership(t, registrarId, fixture.sourceOrganizationId, roleId);
+    return authedForUser(t, registrarId);
+  }
+
+  // Without a disposition the sale waits for an approver's decision.
+  function offerForSale(
+    registrar: ReturnType<typeof authedForUser>,
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    return registrar.mutation(api.deaccessions.create, {
+      organizationId: fixture.sourceOrganizationId,
+      collectionId: fixture.collectionId,
+      dateDeaccessioned: Date.now(),
+      reason: "Offered for sale",
+      method: "sale",
+    });
+  }
+
+  function requestMove(fixture: Awaited<ReturnType<typeof createMoveFixture>>) {
+    return fixture.requester.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.targetOrganizationId,
+      reason: "Rotation",
+    });
+  }
+
+  test("an Object whose sale was rejected can be moved to another organization (MUS-833)", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const registrar = await addRegistrar(t, fixture);
+    const deaccessionId = await offerForSale(registrar, fixture);
+
+    await registrar.mutation(api.deaccessions.reject, {
+      deaccessionId,
+      comment: "The board keeps it",
+    });
+
+    const eligibility = await fixture.requester.query(
+      api.objectMoves.getEligibility,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+      },
+    );
+    expect(eligibility.blockers).toEqual([]);
+    await expect(requestMove(fixture)).resolves.toBeDefined();
+  });
+
+  test("a sale still waiting for a decision keeps the Object from moving", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const registrar = await addRegistrar(t, fixture);
+    await offerForSale(registrar, fixture);
+
+    expect(await refusal(requestMove(fixture))).toMatchObject({
+      code: "MOVE_BLOCKED",
+      blockers: ["has_deaccessions"],
+    });
+  });
+});
+
 describe("organization transfer registry", () => {
   test("backfillOrganizationTransferFields assigns ORG account numbers", async () => {
     const t = convexTest(schema, modules);

@@ -583,12 +583,12 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  // A transfer the receiving organization declined leaves its deaccession
-  // rejected; the object stayed and may be transferred again.
+  // A rejected Removal, whatever its method, left the object in the
+  // collection, so it may be transferred again.
   const blockingDeaccessions = deaccessions.filter(
     (deaccession) =>
       deaccession._id !== options.ignoreDeaccessionId &&
-      !(deaccession.method === "transfer" && deaccession.status === "rejected"),
+      deaccession.status !== "rejected",
   );
   if (blockingDeaccessions.length > 0) {
     blockers.push({
