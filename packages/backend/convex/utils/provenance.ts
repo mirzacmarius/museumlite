@@ -291,10 +291,7 @@ export async function requireProvenanceObject(
         : PROVENANCE_REVIEW_PERMISSION,
   );
   if (access !== "read" && isWithdrawnObject(object)) {
-    throw provenanceError(
-      "PROVENANCE_OBJECT_WITHDRAWN",
-      "Restore the Object before changing its provenance",
-    );
+    provenanceObjectWithdrawn();
   }
   if (
     access !== "read" &&
@@ -303,6 +300,14 @@ export async function requireProvenanceObject(
     provenanceStillArriving();
   }
   return object;
+}
+
+/** Refuses a change while the Object is withdrawn. */
+export function provenanceObjectWithdrawn(): never {
+  throw provenanceError(
+    "PROVENANCE_OBJECT_WITHDRAWN",
+    "Restore the Object before changing its provenance",
+  );
 }
 
 /** Refuses a change while part of the Object's provenance is still arriving. */

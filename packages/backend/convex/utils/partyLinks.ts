@@ -19,6 +19,7 @@ import {
 import {
   isWithdrawnObject,
   provenanceArrivingFrom,
+  provenanceObjectWithdrawn,
   provenanceStillArriving,
 } from "./provenance";
 import { REPRODUCTION_READ_PERMISSIONS } from "./reproductionRequestAccess";
@@ -84,6 +85,8 @@ export interface ResolvedPartyTarget {
   recordNamesEveryLink?: boolean;
   /** Links carry no dates; the record keeps them as partial dates. */
   undatedLinks?: boolean;
+  /** A provenance claim whose Object is withdrawn until it is restored. */
+  objectWithdrawn?: boolean;
   /**
    * A provenance claim whose Object's provenance is still arriving from a
    * transfer: its parties wait with the rest of it (ADR 0006).
@@ -180,8 +183,8 @@ export async function resolvePartyTarget(
       await requirePermission(ctx, claim.organizationId, collectionsPermission);
       const object = await ctx.db.get(claim.objectId);
       const withdrawn = isWithdrawnObject(object);
-      // As for every other provenance change, a withdrawn Object is refused
-      // first, then one whose provenance is still arriving (ADR 0006).
+      // Refused in the same order as requireProvenanceObject: a withdrawn
+      // Object first, then one whose provenance is still arriving.
       const arriving =
         !withdrawn &&
         object !== null &&
@@ -200,6 +203,7 @@ export async function resolvePartyTarget(
         recordAssertedName: claim.partyText,
         recordNamesEveryLink: true,
         undatedLinks: true,
+        objectWithdrawn: withdrawn,
         provenanceArriving: arriving,
       };
     }
@@ -365,9 +369,11 @@ export function partyRecordLocked(): never {
 
 /**
  * Refuses a change on a target whose parties are closed here. A provenance
- * claim that waits for the rest of its Object's provenance says so instead.
+ * claim whose Object is withdrawn, or waits for the rest of its provenance,
+ * says so instead, as the Object's other provenance changes do.
  */
 export function refuseClosedTarget(resolved: ResolvedPartyTarget): never {
+  if (resolved.objectWithdrawn) provenanceObjectWithdrawn();
   if (resolved.provenanceArriving) provenanceStillArriving();
   partyRecordLocked();
 }
