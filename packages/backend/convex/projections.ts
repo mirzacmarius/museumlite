@@ -525,6 +525,45 @@ export const retryFailedForOrganization = internalMutation({
 const ROLLOUT_PAGE_SIZE = 20;
 
 /**
+ * Cron: rebuilds every projection an older definition built, so a definition
+ * change heals without waiting for the organization's next record change.
+ * A running or failed rebuild keeps `buildingGenerationId` and is left to its
+ * own retries; a purged organization has no state and is never resurrected.
+ */
+export const rebuildOutdatedProjections = internalMutation({
+  args: { after: v.optional(v.number()) },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const states = await ctx.db
+      .query("organizationProjectionStates")
+      .withIndex("by_creation_time", (q) =>
+        args.after === undefined ? q : q.gt("_creationTime", args.after),
+      )
+      .take(ROLLOUT_PAGE_SIZE);
+    let started = 0;
+    for (const state of states) {
+      if (
+        state.definitionVersion === PROJECTION_DEFINITION_VERSION ||
+        state.buildingGenerationId
+      ) {
+        continue;
+      }
+      await startGeneration(ctx, state.organizationId, "rebuild");
+      started += 1;
+    }
+    const last = states.at(-1);
+    if (states.length === ROLLOUT_PAGE_SIZE && last) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.projections.rebuildOutdatedProjections,
+        { after: last._creationTime },
+      );
+    }
+    return started;
+  },
+});
+
+/**
  * Rollout entry point: walks organizations in bounded pages and starts a
  * rebuild for every organization without a ready or running projection.
  */

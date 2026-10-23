@@ -865,6 +865,49 @@ describe("automatic health maintenance", () => {
     ).toMatchObject({ total: 1 });
   });
 
+  test("the outdated-projection cron rebuilds an idle organization after a definition change (MUS-850)", async () => {
+    const { t, staff, settle, organizationId } = await fixture();
+    const other = await createOrgUserWithPermissions(t, ADMIN_PERMISSIONS, {
+      organizationName: "Current Museum",
+      slugPrefix: "current-museum",
+      subscriptionTier: "enterprise",
+    });
+    await rebuildProjection(t, organizationId);
+    await rebuildProjection(t, other.organizationId);
+    await t.run(async (ctx) => {
+      const state = await ctx.db
+        .query("organizationProjectionStates")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .unique();
+      if (!state) throw new Error("projection state missing");
+      await ctx.db.patch(state._id, { definitionVersion: 1 });
+    });
+
+    expect(
+      await t.mutation(internal.projections.rebuildOutdatedProjections, {}),
+    ).toBe(1);
+    expect(
+      await t.mutation(internal.projections.rebuildOutdatedProjections, {}),
+    ).toBe(0);
+    await settle();
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({
+      availability: "ready",
+      stateDefinitionVersion: 3,
+      building: null,
+    });
+    const otherHealth = await authedForUser(t, other.userId).query(
+      api.projections.getHealth,
+      { organizationId: other.organizationId },
+    );
+    expect(
+      otherHealth.recentGenerations.filter((job) => job.mode === "rebuild"),
+    ).toHaveLength(1);
+  });
+
   test("a failed job retries itself from its checkpoint until the attempt limit", async () => {
     const { t, staff, organizationId, userId } = await fixture();
     await insertObjects(t, organizationId, userId, 30);
