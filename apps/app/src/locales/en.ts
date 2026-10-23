@@ -2963,6 +2963,8 @@ export default {
       inTransfer: "Transfer in progress",
     },
     withdrawal: {
+      reasonRequired:
+        "Enter a reason for removing the object from the catalog.",
       restore: "Restore to catalog",
       restored: "Object restored to the routine catalog.",
       restoreFailed: "The object could not be restored. Refresh and try again.",
@@ -8213,6 +8215,7 @@ export default {
         actions: {
           created_collection: "Object created",
           updated_collection: "Object updated",
+          deleted_collection: "Object marked deleted",
           archived_collection: "Object withdrawn",
           restored_collection: "Object restored",
           received_collection_from_organization_move:

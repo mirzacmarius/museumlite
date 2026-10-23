@@ -335,6 +335,7 @@ import type * as utils_webhookDelivery from "../utils/webhookDelivery.js";
 import type * as utils_webhookErrors from "../utils/webhookErrors.js";
 import type * as utils_webhookEvents from "../utils/webhookEvents.js";
 import type * as utils_webhookValidators from "../utils/webhookValidators.js";
+import type * as utils_withdrawalErrors from "../utils/withdrawalErrors.js";
 import type * as utils_workBoardColumns from "../utils/workBoardColumns.js";
 import type * as utils_workErrors from "../utils/workErrors.js";
 import type * as utils_workflowApprovalErrors from "../utils/workflowApprovalErrors.js";
@@ -685,6 +686,7 @@ declare const fullApi: ApiFromModules<{
   "utils/webhookErrors": typeof utils_webhookErrors;
   "utils/webhookEvents": typeof utils_webhookEvents;
   "utils/webhookValidators": typeof utils_webhookValidators;
+  "utils/withdrawalErrors": typeof utils_withdrawalErrors;
   "utils/workBoardColumns": typeof utils_workBoardColumns;
   "utils/workErrors": typeof utils_workErrors;
   "utils/workflowApprovalErrors": typeof utils_workflowApprovalErrors;

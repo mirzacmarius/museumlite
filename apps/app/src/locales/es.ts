@@ -3590,6 +3590,7 @@ export default {
       inTransfer: "Traslado en curso",
     },
     withdrawal: {
+      reasonRequired: "Indica un motivo para retirar el objeto del catálogo.",
       restore: "Restaurar al catálogo",
       restored: "Objeto restaurado al catálogo habitual.",
       restoreFailed:
@@ -8388,6 +8389,7 @@ export default {
         actions: {
           created_collection: "Objeto creado",
           updated_collection: "Objeto actualizado",
+          deleted_collection: "Objeto marcado como eliminado",
           archived_collection: "Objeto retirado",
           restored_collection: "Objeto restaurado",
           received_collection_from_organization_move:

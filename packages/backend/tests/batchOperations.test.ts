@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
@@ -467,6 +467,64 @@ describe("bulk status change runs the single Withdrawal and restore checks (MUS-
     );
     await t.run(async (ctx) => {
       expect((await ctx.db.get(deaccessionedId))?.status).toBe("deaccessioned");
+    });
+  });
+
+  test("a bulk Withdrawal job records the Object on loan as failed and withdraws the others", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = convexTest(schema, modules);
+      const { organizationId, userId, onLoanId, freeId } = await bulkFixture(t);
+      const asUser = t.withIdentity({ subject: userId });
+
+      const jobId = await asUser.mutation(
+        api.batchOperations.createBulkStatusChangeJob,
+        {
+          organizationId,
+          collectionIds: [onLoanId, freeId],
+          newStatus: "archived",
+          reason: "Duplicate records",
+        },
+      );
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+      const job = await t.run((ctx) => ctx.db.get(jobId));
+      expect(job).toMatchObject({
+        status: "completed",
+        successCount: 1,
+        failureCount: 1,
+        errors: [
+          { itemId: onLoanId, error: expect.stringContaining("on loan") },
+        ],
+      });
+      await t.run(async (ctx) => {
+        expect((await ctx.db.get(onLoanId))?.status).toBe("active");
+        expect((await ctx.db.get(freeId))?.status).toBe("archived");
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a withdrawn Object is not counted as deleted by a bulk change with the same reason", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, freeId } = await bulkFixture(t);
+    const asUser = t.withIdentity({ subject: userId });
+    const change = (newStatus: "archived" | "deleted") =>
+      asUser.mutation(api.batchOperations.quickBulkStatusChange, {
+        organizationId,
+        collectionIds: [freeId],
+        newStatus,
+        reason: "Duplicate records",
+      });
+
+    expect((await change("archived")).successCount).toBe(1);
+    expect((await change("archived")).successCount).toBe(1);
+    expect((await change("deleted")).errors[0]?.error).toContain(
+      "already withdrawn",
+    );
+    await t.run(async (ctx) => {
+      expect((await ctx.db.get(freeId))?.status).toBe("archived");
     });
   });
 

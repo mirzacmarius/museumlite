@@ -3599,6 +3599,7 @@ export default {
       inTransfer: "Transfert en cours",
     },
     withdrawal: {
+      reasonRequired: "Indiquez une raison pour retirer l'objet du catalogue.",
       restore: "Remettre au catalogue",
       restored: "Objet remis dans le catalogue courant.",
       restoreFailed:
@@ -8418,6 +8419,7 @@ export default {
         actions: {
           created_collection: "Objet créé",
           updated_collection: "Objet modifié",
+          deleted_collection: "Objet marqué comme supprimé",
           archived_collection: "Objet retiré",
           restored_collection: "Objet restauré",
           received_collection_from_organization_move:

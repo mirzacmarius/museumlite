@@ -82,7 +82,9 @@ export const listMine = query({
     );
     return summaries
       .filter((summary) => summary !== null)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort(
+        (a, b) => a.name.localeCompare(b.name) || a._id.localeCompare(b._id),
+      );
   },
 });
 

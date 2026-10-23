@@ -16,6 +16,7 @@ import {
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
+import { withdrawalError } from "./utils/withdrawalErrors";
 
 // ============================================
 // Constants
@@ -215,7 +216,7 @@ async function requireBulkStatusPermission(
   }
   await requirePermission(ctx, args.organizationId, "collections.delete");
   if (!args.reason?.trim()) {
-    throw new Error("Reason is required");
+    throw withdrawalError("WITHDRAWAL_REASON_REQUIRED");
   }
 }
 

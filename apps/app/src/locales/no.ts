@@ -3557,6 +3557,7 @@ export default {
       inTransfer: "Overføring pågår",
     },
     withdrawal: {
+      reasonRequired: "Oppgi en grunn for å trekke objektet ut av katalogen.",
       restore: "Gjenopprett til katalogen",
       restored: "Objektet er gjenopprettet i den vanlige katalogen.",
       restoreFailed:
@@ -8312,6 +8313,7 @@ export default {
         actions: {
           created_collection: "Objekt opprettet",
           updated_collection: "Objekt oppdatert",
+          deleted_collection: "Objekt merket som slettet",
           archived_collection: "Objekt trukket tilbake",
           restored_collection: "Objekt gjenopprettet",
           received_collection_from_organization_move:

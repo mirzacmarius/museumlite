@@ -1599,6 +1599,8 @@ export default {
       inTransfer: "Transfer în curs",
     },
     withdrawal: {
+      reasonRequired:
+        "Introduceți un motiv pentru retragerea obiectului din catalog.",
       restore: "Readu în catalog",
       restored: "Obiectul a fost readus în catalogul obișnuit.",
       restoreFailed:
@@ -8379,6 +8381,7 @@ export default {
         actions: {
           created_collection: "Obiect creat",
           updated_collection: "Obiect actualizat",
+          deleted_collection: "Obiect marcat ca șters",
           archived_collection: "Obiect retras",
           restored_collection: "Obiect restaurat",
           received_collection_from_organization_move:

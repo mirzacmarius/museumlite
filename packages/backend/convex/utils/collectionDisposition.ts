@@ -11,6 +11,7 @@ import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { assertEntryAllowsStatus } from "./objectEntryLifecycle";
 import { assertNotInTransfer, isOpenDeaccession } from "./openDeaccessions";
 import { requirePermission } from "./permissions";
+import { withdrawalError } from "./withdrawalErrors";
 
 type WithdrawalStatus = "archived" | "deleted";
 
@@ -53,10 +54,10 @@ export async function withdrawObject(
 ) {
   const trimmedReason = reason.trim();
   if (!trimmedReason) {
-    throw new Error("Reason is required");
+    throw withdrawalError("WITHDRAWAL_REASON_REQUIRED");
   }
   if (
-    (collection.status === "archived" || collection.status === "deleted") &&
+    collection.status === targetStatus &&
     (collection.archivedReason ?? collection.deletedReason) === trimmedReason
   ) {
     return;
