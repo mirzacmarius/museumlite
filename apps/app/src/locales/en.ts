@@ -1753,6 +1753,8 @@ export default {
         "One or more selected objects are no longer available. Refresh and try again.",
       notActive:
         "One or more selected objects are not active. Select only active objects.",
+      objectInTransfer:
+        "One or more selected objects are being transferred to another organization. They can't be loaned until the transfer ends.",
       exportedLoans: "Exported {count} loan{plural}",
       loansApproved: "{count} loan{plural} approved",
       someLoansSkipped: "{count} loan{plural} skipped",

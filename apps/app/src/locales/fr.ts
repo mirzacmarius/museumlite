@@ -2356,6 +2356,8 @@ export default {
         "Un ou plusieurs objets sélectionnés ne sont plus disponibles. Actualisez et réessayez.",
       notActive:
         "Un ou plusieurs objets sélectionnés ne sont pas actifs. Sélectionnez uniquement des objets actifs.",
+      objectInTransfer:
+        "Un ou plusieurs objets sélectionnés sont en cours de transfert vers une autre organisation. Ils ne peuvent pas être prêtés avant la fin du transfert.",
       exportedLoans: "{count} prêt(s) exporté(s)",
       loansApproved: "{count} prêt(s) approuvé(s)",
       someLoansSkipped: "{count} prêt(s) ignoré(s)",

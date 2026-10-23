@@ -15,6 +15,8 @@ export function useLoanObjectErrorMessage() {
         return t("notActive");
       case "OBJECT_ON_ACTIVE_LOAN":
         return t("alreadyInActiveLoan");
+      case "OBJECT_IN_TRANSFER":
+        return t("objectInTransfer");
       case undefined:
         return null;
     }

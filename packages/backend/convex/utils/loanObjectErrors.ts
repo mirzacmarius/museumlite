@@ -12,6 +12,8 @@ export const LOAN_OBJECT_CODES = [
   "OBJECT_NOT_ACTIVE",
   /** Already on another pending or active loan. */
   "OBJECT_ON_ACTIVE_LOAN",
+  /** Held by an open transfer to another organization (ADR 0019). */
+  "OBJECT_IN_TRANSFER",
 ] as const;
 
 export type LoanObjectCode = (typeof LOAN_OBJECT_CODES)[number];
@@ -26,6 +28,8 @@ const MESSAGES: Record<LoanObjectCode, string> = {
   OBJECT_UNAVAILABLE: "A selected object is not available",
   OBJECT_NOT_ACTIVE: "A selected object is not active",
   OBJECT_ON_ACTIVE_LOAN: "A selected object is already on an active loan",
+  OBJECT_IN_TRANSFER:
+    "A selected object is being transferred to another organization",
 };
 
 export function loanObjectError(

@@ -2274,6 +2274,8 @@ export default {
         "Uno o más de los objetos seleccionados ya no están disponibles. Actualice e inténtelo de nuevo.",
       notActive:
         "Uno o más de los objetos seleccionados no están activos. Seleccione solo objetos activos.",
+      objectInTransfer:
+        "Uno o más de los objetos seleccionados se están trasladando a otra organización. No se pueden prestar hasta que termine el traslado.",
       exportedLoans: "{count} préstamo{plural} exportado{plural}",
       loansApproved: "{count} préstamo{plural} aprobado{plural}",
       someLoansSkipped: "{count} préstamo{plural} omitido{plural}",

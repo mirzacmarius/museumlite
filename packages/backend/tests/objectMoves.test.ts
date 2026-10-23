@@ -6,6 +6,7 @@ import schema from "../convex/schema.js";
 import { custodyConflictFromError } from "../convex/utils/custodyErrors";
 import { identifierErrorFromError } from "../convex/utils/identifierErrors";
 import { imageDeletionErrorFromError } from "../convex/utils/imageDeletionErrors";
+import { loanObjectErrorFromError } from "../convex/utils/loanObjectErrors";
 import { objectMoveErrorFromError } from "../convex/utils/objectMoveErrors";
 import { provenanceErrorFromError } from "../convex/utils/provenanceErrors";
 import { workflowApprovalErrorFromError } from "../convex/utils/workflowApprovalErrors";
@@ -4896,5 +4897,105 @@ describe("a transfer's stage and who acts on it next (MUS-846)", () => {
       targetLocationId: fixture.targetLocationId,
     });
     expect(await actionsOf(both)).toEqual([]);
+  });
+});
+
+describe("a loan cannot take an Object a transfer holds (MUS-847)", () => {
+  async function senderWithLoanDesk(t: ReturnType<typeof convexTest>) {
+    const fixture = await createMoveFixture(t);
+    const [registrarId, registrarRoleId] = await Promise.all([
+      createUser(t, "Registrar", "registrar@test.dev"),
+      createRoleWithPermissions(
+        t,
+        fixture.sourceOrganizationId,
+        ["loans.create", "loans.read", "loans.update", "collections.read"],
+        "Loan Desk",
+      ),
+    ]);
+    await addMembership(
+      t,
+      registrarId,
+      fixture.sourceOrganizationId,
+      registrarRoleId,
+    );
+    const registrar = authedForUser(t, registrarId);
+    const createLoan = (collectionIds: Id<"collections">[]) =>
+      registrar.mutation(api.loans.create, {
+        organizationId: fixture.sourceOrganizationId,
+        type: "outgoing",
+        lenderBorrowerName: "Partner Museum",
+        startDate: Date.UTC(2026, 0, 15),
+        collectionIds,
+      });
+    const pendingLoanId = await createLoan([]);
+    const addToPendingLoan = () =>
+      registrar.mutation(api.loans.addItems, {
+        loanId: pendingLoanId,
+        collectionIds: [fixture.collectionId],
+      });
+    return { ...fixture, createLoan, addToPendingLoan };
+  }
+
+  async function approvedTransfer(
+    fixture: Awaited<ReturnType<typeof createMoveFixture>>,
+  ) {
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        reason: "Rotation",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    return requestId;
+  }
+
+  function loanRefusalOf(attempt: Promise<unknown>) {
+    return attempt.then(
+      () => null,
+      (error) => loanObjectErrorFromError(error)?.code,
+    );
+  }
+
+  test("while the receiver decides, neither a new loan nor a pending one takes the Object, and the receiver can still accept", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithLoanDesk(t);
+    const requestId = await approvedTransfer(fixture);
+
+    expect(await loanRefusalOf(fixture.addToPendingLoan())).toBe(
+      "OBJECT_IN_TRANSFER",
+    );
+    expect(
+      await loanRefusalOf(fixture.createLoan([fixture.collectionId])),
+    ).toBe("OBJECT_IN_TRANSFER");
+    expect(
+      await t.run((ctx) => ctx.db.get(fixture.collectionId)),
+    ).toMatchObject({ status: "active" });
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      targetLocationId: fixture.targetLocationId,
+    });
+
+    expect(
+      await fixture.targetAdmin.query(api.objectMoves.get, { requestId }),
+    ).toMatchObject({
+      status: "executed",
+      collection: { organizationId: fixture.targetOrganizationId },
+    });
+  });
+
+  test("once the receiver declines, the Object can go on a loan again", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await senderWithLoanDesk(t);
+    const requestId = await approvedTransfer(fixture);
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, { requestId });
+
+    await fixture.addToPendingLoan();
+
+    expect(
+      await t.run((ctx) => ctx.db.get(fixture.collectionId)),
+    ).toMatchObject({ status: "loaned" });
   });
 });
