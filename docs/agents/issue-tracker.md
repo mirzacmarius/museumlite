@@ -60,7 +60,7 @@ Apply when finishing work tied to a MUS issue (prompt, branch, PR, or link).
 
 1. Resolve the MUS id (for example `MUS-501`). Ask once if missing.
 2. Complete the normal delivery path under standing authorization in `AGENTS.md` (commit, Standards and Spec review, PR, `Check / check`, merge, production deploy).
-3. Keep the issue `In Progress` until `node scripts/verify-deploy.mjs <merge-sha>` passes. It finds the Vercel production deployment for the commit, fails within 3 minutes if none started, waits for READY and confirms https://app.museumlite.com serves it. Do not poll GitHub commit statuses for this; Vercel can skip a commit without posting one.
+3. Keep the issue `In Progress` until the deploy is verified. Locally, `node scripts/verify-deploy.mjs <merge-sha>` does it: it finds the Vercel production deployment for the commit and fails within 3 minutes if none started, waits for READY, confirms https://app.museumlite.com serves that deployment, and checks that the site answers below HTTP 500. Claude Code cloud sessions have no `vercel` CLI, so they make the first three checks with the Vercel connector: a production deployment of project `museumlite` (team `orvibo`) for the full 40-character merge SHA, its state reaching `READY`, and the `app.museumlite.com` alias pointing at it. They make the HTTP check only when their network reaches the site. No deployment within 3 minutes is a failed deploy. Do not poll GitHub commit statuses for this; Vercel can skip a commit without posting one.
 4. Comment on the issue with PR link, deployed commit SHA, app URL, and a **Review checklist**.
 5. Move the issue to `In Review` only after that deploy verification.
 6. Never set `Done`, `Canceled`, or `Duplicate` unless a human asks after review.

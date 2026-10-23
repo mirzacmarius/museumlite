@@ -16,4 +16,4 @@ Local changes:
 - `convex-nextjs`: `{baseDir}` replaced with `.claude/skills/convex-nextjs`.
 - `polar-sh-nextjs-convex`: the upstream folder is `polar-nextjs-convex`; the folder here uses the skill's `name:`.
 
-None of these skills merges a PR. The MuseumLite rule in `.claude/docs/harness/claude-code.md` still applies: never merge a PR or arm auto-merge; Marius approves each merge.
+None of these skills merges a PR. Merging to `main` follows the standing delivery authorization in `AGENTS.md`.

@@ -8,7 +8,8 @@ Local changes:
 
 - Dropped every `agents/openai.yaml` (Codex-only metadata).
 - Renamed three skills whose names were taken: `tdd` and `teach` by pstack, `code-review` by Claude Code's built-in review. They are `mp-tdd`, `mp-teach` and `mp-code-review` (folder and `name:`), and the references to them in `ask-matt`, `implement`, `implement-spec`, `mp-tdd` and `mp-teach` point at the new names.
+- `diagnosing-bugs`: Phase 1's "Be aggressive. Be creative. Refuse to give up." is a plain instruction to try several kinds of loop, so it no longer pulls against the skill's "stop and say so" exit.
 
-None of these skills merges a PR to `main`. `implement-spec` merges subagent branches into its own integration branch only. The MuseumLite rule in `.claude/docs/harness/claude-code.md` still applies: never merge a PR or arm auto-merge; Marius approves each merge.
+None of these skills merges a PR to `main`. `implement-spec` merges subagent branches into its own integration branch only. Merging to `main` follows the standing delivery authorization in `AGENTS.md`.
 
 To update, copy each path in the upstream `plugin.json` into `.claude/skills/` again (without `agents/`) and reapply these changes.
