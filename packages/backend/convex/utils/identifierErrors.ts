@@ -19,6 +19,12 @@ export const IDENTIFIER_CODES = [
   "NUMBERING_EXHAUSTED",
   /** Only a pending, unpublished accession can change its catalog number. */
   "CATALOG_NUMBER_LOCKED",
+  /** A conflict review needs a note of 1–2000 characters. */
+  "REVIEW_NOTE_INVALID",
+  /** Historical numbers must be indexed before a conflict can be reviewed. */
+  "INDEX_INCOMPLETE",
+  /** The record's number no longer conflicts with another record's. */
+  "NO_CONFLICT",
 ] as const;
 
 export type IdentifierCode = (typeof IDENTIFIER_CODES)[number];

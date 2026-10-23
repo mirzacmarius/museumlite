@@ -5,8 +5,11 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
 import type { FieldMapping } from "@/components/import-field-mapper";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useCsvFileProblemMessage } from "@/hooks/use-csv-file-problem-message";
 import { useTrackedImportFlow } from "@/hooks/use-tracked-import-flow";
 import { parseCsvObjects, sha256Hex } from "@/lib/csv-parser";
+import { useScopedI18n } from "@/locales/client";
 import {
   EMPTY_IMPORT_STATE,
   IMPORT_TEMPLATES,
@@ -80,6 +83,9 @@ export function useImportObjects({
   fileInputRef,
 }: UseImportObjectsOptions) {
   const importBatch = useMutation(api.imports.importObjectsBatch);
+  const t = useScopedI18n("trackedImport");
+  const actionMessage = useActionErrorMessage();
+  const csvMessage = useCsvFileProblemMessage();
   const run = useTrackedImportFlow<ParsedRow>({
     organizationId: currentOrganizationId,
     entityType: "objects",
@@ -113,7 +119,9 @@ export function useImportObjects({
         } catch (error) {
           setState({
             ...EMPTY_IMPORT_STATE,
-            errors: [error instanceof Error ? error.message : "Invalid CSV"],
+            errors: [
+              csvMessage(error) ?? actionMessage(error, t("importFailed")),
+            ],
           });
         }
       })();
@@ -122,7 +130,7 @@ export function useImportObjects({
         fileInputRef.current.value = "";
       }
     },
-    [fileInputRef, setState],
+    [actionMessage, csvMessage, fileInputRef, setState, t],
   );
 
   const handleSaveMappings = useCallback(

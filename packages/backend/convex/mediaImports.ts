@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, query } from "./_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
+import { importRefusal } from "./utils/importErrors";
 import {
   applyImportJobProgress,
   getStoredRowResult,
@@ -83,7 +84,7 @@ async function loadMediaImportJob(
     job.type !== "media" ||
     (organizationId !== undefined && job.organizationId !== organizationId)
   ) {
-    throw new Error("Import job not found");
+    throw importRefusal("IMPORT_JOB_NOT_FOUND");
   }
   return job;
 }
@@ -91,12 +92,10 @@ async function loadMediaImportJob(
 /** A job that can still take new files; cancelled jobs refuse further work. */
 function assertAcceptsFiles(job: Doc<"importJobs">) {
   if (job.status === "cancelled") {
-    throw new Error(
-      "This import was cancelled. Start a new import to continue.",
-    );
+    throw importRefusal("IMPORT_JOB_CANCELLED");
   }
   if (job.status === "failed") {
-    throw new Error("This import failed and cannot accept more files.");
+    throw importRefusal("IMPORT_JOB_FAILED");
   }
   // Jobs from before per-file outcomes counted every file as processed, so
   // their progress cannot be continued truthfully.

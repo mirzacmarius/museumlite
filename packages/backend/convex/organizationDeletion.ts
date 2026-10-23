@@ -3,11 +3,9 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, query } from "./_generated/server";
-import {
-  isOrganizationEvidenceProtected,
-  rejectPermanentEvidenceDeletion,
-} from "./utils/evidenceRetention";
+import { isOrganizationEvidenceProtected } from "./utils/evidenceRetention";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { organizationDeletionError } from "./utils/organizationDeletionErrors";
 import {
   addMs,
   ORGANIZATION_DELETION_FINAL_NOTICE_DISPLAY_MS,
@@ -375,13 +373,11 @@ export const requestDeletion = mutation({
     );
 
     if (await isOrganizationEvidenceProtected(ctx, args.organizationId)) {
-      rejectPermanentEvidenceDeletion();
+      throw organizationDeletionError("EVIDENCE_PROTECTED");
     }
 
     if (organization.parentOrganizationId) {
-      throw new ConvexError(
-        "Sub-organizations cannot be deleted from this screen",
-      );
+      throw organizationDeletionError("SUB_ORGANIZATION");
     }
 
     const existingDeletion = await getActiveDeletionForOrganization(
@@ -470,7 +466,7 @@ export const approveDeletion = mutation({
     );
 
     if (await isOrganizationEvidenceProtected(ctx, args.organizationId)) {
-      rejectPermanentEvidenceDeletion();
+      throw organizationDeletionError("EVIDENCE_PROTECTED");
     }
 
     const deletion = await getActiveDeletionForOrganization(
@@ -560,7 +556,7 @@ export const cancelDeletion = mutation({
     }
 
     if (!deletion) {
-      throw new ConvexError("No active deletion process found");
+      throw organizationDeletionError("NO_ACTIVE_DELETION");
     }
 
     if (
@@ -569,7 +565,7 @@ export const cancelDeletion = mutation({
       deletion.status !== "awaiting_final_notice" &&
       deletion.status !== "pending_purge"
     ) {
-      throw new ConvexError("Deletion process is no longer active");
+      throw organizationDeletionError("NO_ACTIVE_DELETION");
     }
 
     await cancelDeletionRecord(ctx, deletion);
@@ -610,7 +606,7 @@ export const transferOwnership = mutation({
     }
 
     if (args.newOwnerUserId === userId) {
-      throw new ConvexError("You are already the organization owner");
+      throw organizationDeletionError("ALREADY_OWNER");
     }
 
     const organization = await requireOrganizationSuperAdmin(
@@ -625,9 +621,7 @@ export const transferOwnership = mutation({
       args.newOwnerUserId,
     );
     if (!isNewOwnerSuperAdmin) {
-      throw new ConvexError(
-        "Ownership can only be transferred to another SuperAdmin",
-      );
+      throw organizationDeletionError("NEW_OWNER_NOT_SUPER_ADMIN");
     }
 
     const membership = await ctx.db
@@ -640,7 +634,7 @@ export const transferOwnership = mutation({
       .first();
 
     if (!membership) {
-      throw new ConvexError("New owner must be a member of the organization");
+      throw organizationDeletionError("NEW_OWNER_NOT_MEMBER");
     }
 
     await promoteToSuperAdmin(ctx, args.organizationId, args.newOwnerUserId);

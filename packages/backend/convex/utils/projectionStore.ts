@@ -5,7 +5,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { projectionFact } from "./projectionValidators";
 
-export const PROJECTION_DEFINITION_VERSION = 2;
+export const PROJECTION_DEFINITION_VERSION = 3;
 
 export type ProjectionFact = Infer<typeof projectionFact>;
 export type ProjectionGeneration = Doc<"projectionGenerations">;

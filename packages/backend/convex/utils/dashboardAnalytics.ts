@@ -282,12 +282,14 @@ function analyticsFromTotals(
       rejected: metric(totals, "deaccessions.rejected"),
     },
     transfers: {
-      pending:
-        metric(organizationTotals, "transfers.pending") +
-        metric(organizationTotals, "transfers.pending_source_approval"),
-      executed: metric(organizationTotals, "transfers.executed"),
-      rejected: metric(organizationTotals, "transfers.rejected"),
-      cancelled: metric(organizationTotals, "transfers.cancelled"),
+      pending: metric(organizationTotals, "transfers.stage.waiting_for_sender"),
+      waitingForReceiver: metric(
+        organizationTotals,
+        "transfers.stage.waiting_for_receiver",
+      ),
+      executed: metric(organizationTotals, "transfers.stage.received"),
+      rejected: metric(organizationTotals, "transfers.stage.declined"),
+      cancelled: metric(organizationTotals, "transfers.stage.cancelled"),
     },
     locations: { total: metric(totals, "locations.total") },
   };

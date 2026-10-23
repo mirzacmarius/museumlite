@@ -24,6 +24,7 @@ import {
 } from "@/app/[locale]/(dashboard)/library/catalog/_components/catalog-item-form/use-catalog-item-form-helpers";
 import type { IsbnLookupData } from "@/components/library/isbn-lookup";
 import { useOrganization } from "@/components/organization-provider";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
 
@@ -34,6 +35,7 @@ export function EditCatalogItemPageClient() {
   const { currentOrganizationId } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const tEdit = useScopedI18n("library.catalog.edit");
+  const actionMessage = useActionErrorMessage();
   const tNew = useScopedI18n("library.catalog.new");
   const tLib = useScopedI18n("library");
   const { getItemTypeLabel, getAudienceLabel } = useCatalogItemFormLabels();
@@ -71,7 +73,7 @@ export function EditCatalogItemPageClient() {
       await updateItem(catalogItemFormToUpdatePayload(itemId, formData));
       push(`/library/catalog/${itemId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : tEdit("updateFailed"));
+      setError(actionMessage(err, tEdit("updateFailed")));
     } finally {
       setIsSaving(false);
     }

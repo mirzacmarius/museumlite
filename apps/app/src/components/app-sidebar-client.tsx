@@ -44,6 +44,7 @@ import {
   Check,
   ChevronRight,
   ChevronsUpDown,
+  LayoutGrid,
   Lock,
   LogOut,
   Search,
@@ -297,14 +298,17 @@ function OrganizationSwitcher({
   isMobile,
   organizations,
   onOrganizationChange,
+  onNavigate,
 }: {
   currentOrg: SidebarOrganization | undefined;
   currentOrganizationId: Id<"organizations"> | null | undefined;
   isMobile: boolean;
   organizations: SidebarOrganization[];
   onOrganizationChange: (organizationId: Id<"organizations">) => void;
+  onNavigate: () => void;
 }) {
   const translate = useI18n();
+  const tOverview = useScopedI18n("organizationsOverview");
   return (
     <SidebarHeader className="px-2 pb-1 pt-2">
       <SidebarMenu>
@@ -358,6 +362,13 @@ function OrganizationSwitcher({
                   )}
                 </DropdownMenuItem>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="gap-2 p-2">
+                <Link href="/organizations" onClick={onNavigate}>
+                  <LayoutGrid className="size-4" />
+                  {tOverview("menuLink")}
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
@@ -406,6 +417,7 @@ function UserMenu({
 }) {
   const translate = useI18n();
   const t = useScopedI18n("account");
+  const tOverview = useScopedI18n("organizationsOverview");
   const userAvatarUrl = user?.avatarUrl ?? user?.image ?? undefined;
   const userInitials = getUserInitials(user ?? {});
 
@@ -480,6 +492,13 @@ function UserMenu({
                   </div>
                 </Link>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/organizations" onClick={onNavigate}>
+                  <LayoutGrid />
+                  {tOverview("menuLink")}
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               {currentOrganizationId ? (
                 <>
@@ -630,6 +649,7 @@ function AppSidebarClientInner({
         isMobile={isMobile}
         organizations={organizations}
         onOrganizationChange={handleOrganizationChange}
+        onNavigate={closeMobileSidebar}
       />
 
       <SidebarContent className="gap-0 py-1">

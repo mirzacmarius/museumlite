@@ -3,6 +3,7 @@
 import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { importRefusal } from "@v1/backend/convex/utils/importErrors";
 import { beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import type { ImportType } from "./data-csv-utils";
@@ -15,9 +16,11 @@ const toasts = vi.hoisted(() => ({
   error: vi.fn(),
 }));
 const query = vi.hoisted(() => vi.fn());
+const captureException = vi.hoisted(() => vi.fn());
 const mutation = vi.hoisted(() => vi.fn());
 
 vi.mock("sonner", () => ({ toast: toasts }));
+vi.mock("@sentry/nextjs", () => ({ captureException }));
 vi.mock("convex/react", () => ({
   useMutation: () => mutation,
   useConvex: () => ({ query }),
@@ -34,6 +37,7 @@ beforeEach(() => {
   for (const toast of Object.values(toasts)) toast.mockReset();
   mutation.mockReset();
   query.mockReset();
+  captureException.mockReset();
   query.mockResolvedValue(OBJECTS);
 });
 
@@ -176,4 +180,37 @@ test("a refused corrected file resolves with why, and sends no row", async () =>
 
   expect(refusal).toBe("The file has no data rows.");
   expect(mutation).not.toHaveBeenCalled();
+});
+
+test("a Dublin Core file the server refuses says why in the app's language (MUS-845)", async () => {
+  query.mockResolvedValueOnce(null);
+  mutation
+    .mockResolvedValueOnce("job-1")
+    .mockRejectedValueOnce(
+      importRefusal("DUBLIN_CORE_TOO_MANY_RECORDS", { limit: 50 }),
+    );
+
+  await chooseFile("<records/>", "records.xml", "objects");
+
+  await waitFor(() =>
+    expect(toasts.error).toHaveBeenCalledWith(
+      "A Dublin Core file can have at most 50 records. Split the file and import each part.",
+    ),
+  );
+  expect(captureException).not.toHaveBeenCalled();
+});
+
+test("a failure without a code shows the fallback and is reported (MUS-844)", async () => {
+  const failure = new Error(
+    "[CONVEX M(imports:importObjectsDublinCore)] Server Error",
+  );
+  query.mockResolvedValueOnce(null);
+  mutation.mockResolvedValueOnce("job-1").mockRejectedValueOnce(failure);
+
+  await chooseFile("<records/>", "records.xml", "objects");
+
+  await waitFor(() =>
+    expect(toasts.error).toHaveBeenCalledWith("Import failed."),
+  );
+  expect(captureException).toHaveBeenCalledWith(failure);
 });

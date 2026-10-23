@@ -392,6 +392,19 @@ export default {
           confirm: "Cancelar eliminación",
           cancel: "Mantener eliminación programada",
         },
+        refusals: {
+          evidenceProtected:
+            "Esta organización conserva registros permanentes del museo, así que no se puede eliminar. Retira los objetos del catálogo; sus registros siguen disponibles.",
+          subOrganization:
+            "Una suborganización no se puede eliminar desde esta pantalla.",
+          noActiveDeletion:
+            "No hay ninguna eliminación en curso que cancelar. Puede que ya se haya cancelado o completado.",
+          alreadyOwner: "Ya eres el propietario de esta organización.",
+          newOwnerNotSuperAdmin:
+            "La propiedad solo se puede transferir a otro SuperAdmin.",
+          newOwnerNotMember:
+            "El nuevo propietario debe ser miembro de esta organización.",
+        },
         requestError:
           "No se pudo programar la eliminación. Inténtalo de nuevo.",
         cancelError: "No se pudo cancelar la eliminación. Inténtalo de nuevo.",
@@ -4574,6 +4587,15 @@ export default {
       },
     },
     scheduledReports: {
+      refusals: {
+        nameInvalid: "Escribe un nombre de informe de 1 a 200 caracteres.",
+        generatorUnavailable:
+          "Solo se pueden generar informes de KPI operativos.",
+        configUnsupported:
+          "Este informe tiene rangos de fechas, filtros o envío por correo de una versión anterior. Los informes de KPI son instantáneas actuales; borra esos ajustes para ejecutarlo.",
+        alreadyRunning: "Este informe ya se está ejecutando.",
+        runNotRetryable: "Solo se puede reintentar una ejecución fallida.",
+      },
       title: "Informes programados",
       nameLabel: "Nombre del informe",
       namePlaceholder: "KPI operativos semanales",
@@ -5308,6 +5330,37 @@ export default {
       save: "Guardar",
       saving: "Guardando...",
       cancel: "Cancelar",
+    },
+  },
+  organizationsOverview: {
+    title: "Todas mis organizaciones",
+    description:
+      "Todas las organizaciones de las que formas parte. Abre una para trabajar en ella.",
+    menuLink: "Todas mis organizaciones",
+    searchPlaceholder: "Buscar organizaciones",
+    searchLabel: "Buscar organizaciones",
+    current: "Actual",
+    open: "Abrir",
+    role: "Tu rol: {role}",
+    memberSince: "Miembro desde {date}",
+    partOf: "Parte de {name}",
+    objects: "Objetos",
+    activeLoans: "Préstamos activos",
+    locations: "Ubicaciones",
+    metricsUnavailable: "Los recuentos se están preparando.",
+    noResults: "Ninguna organización coincide con «{query}».",
+    empty: "Todavía no formas parte de ninguna organización.",
+    createOrganization: "Crear organización",
+    types: {
+      museum: "Museo",
+      gallery: "Galería",
+      library: "Biblioteca",
+      collector: "Coleccionista",
+    },
+    tiers: {
+      free: "Gratis",
+      pro: "Pro",
+      enterprise: "Enterprise",
     },
   },
   organizationsNew: {
@@ -7377,6 +7430,33 @@ export default {
     resumeNotice:
       "Este archivo se importó el {date}: {attempted} de {total} filas procesadas, {accepted} aceptadas, {failed} con error. Al reanudar se omiten las filas aceptadas.",
     resumeImport: "Reanudar importación",
+    csvProblems: {
+      noDataRows: "El archivo no tiene filas de datos.",
+      unclosedQuote:
+        "Unas comillas de la fila {row} no se cierran, así que no se puede leer el archivo. Revisa las comillas de esa fila.",
+      tooManyRows:
+        "Este archivo tiene {rows} filas. Divídelo en archivos de como máximo {max} filas.",
+    },
+    refusals: {
+      jobNotFound:
+        "No se encontró esta importación. Inicia una importación nueva.",
+      jobWrongType:
+        "Esta importación se inició para otro tipo de registro. Inicia una importación nueva.",
+      jobCancelled:
+        "Esta importación se canceló. Inicia una importación nueva para continuar.",
+      jobFailed:
+        "Esta importación falló y no puede continuar. Inicia una importación nueva.",
+      tooManyRows:
+        "Una importación puede tener como máximo {limit} filas. Divide el archivo e importa cada parte.",
+      rowNotInImport:
+        "La fila {row} no estaba en el archivo original. Un archivo corregido debe mantener las mismas filas en el mismo orden.",
+      dublinCoreNoRecords:
+        "El archivo XML no tiene registros Dublin Core que la aplicación pueda leer.",
+      dublinCoreTooManyRecords:
+        "Un archivo Dublin Core puede tener como máximo {limit} registros. Divide el archivo e importa cada parte.",
+      dublinCoreRecordCountChanged:
+        "Este archivo XML tiene un número de registros distinto al de la importación que reanuda. Inicia una importación nueva para un archivo modificado.",
+    },
   },
   inventory: {
     title: "Inventario",
@@ -11026,6 +11106,14 @@ export default {
       accession: "registro de accesiones",
     },
     errors: {
+      reviewNoteInvalid:
+        "Escribe una nota de revisión de 1 a 2000 caracteres que describa la evidencia histórica.",
+      indexIncomplete:
+        "Termina de indexar los números históricos del {register} antes de registrar la revisión de un conflicto.",
+      noConflict:
+        "Este número ya no entra en conflicto con otro registro del {register}.",
+      reviewFailed:
+        "No se pudo guardar la revisión del identificador. Inténtalo de nuevo.",
       invalid:
         "Use entre 1 y 256 caracteres visibles para el número. Los números históricos existentes no cambian.",
       inUse:

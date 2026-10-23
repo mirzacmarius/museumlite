@@ -384,6 +384,19 @@ export default {
           confirm: "Avbryt sletting",
           cancel: "Behold planlagt sletting",
         },
+        refusals: {
+          evidenceProtected:
+            "Denne organisasjonen har permanente museumsposter, så den kan ikke slettes. Trekk heller objekter ut av katalogen; postene deres forblir tilgjengelige.",
+          subOrganization:
+            "En underorganisasjon kan ikke slettes fra denne siden.",
+          noActiveDeletion:
+            "Det er ingen sletting i gang å avbryte. Den kan allerede være avbrutt eller fullført.",
+          alreadyOwner: "Du er allerede eier av denne organisasjonen.",
+          newOwnerNotSuperAdmin:
+            "Eierskap kan bare overføres til en annen SuperAdmin.",
+          newOwnerNotMember:
+            "Den nye eieren må være medlem av denne organisasjonen.",
+        },
         requestError: "Kunne ikke planlegge sletting. Prøv igjen.",
         cancelError: "Kunne ikke avbryte sletting. Prøv igjen.",
         transferError: "Kunne ikke overføre eierskap. Prøv igjen.",
@@ -4525,6 +4538,14 @@ export default {
       },
     },
     scheduledReports: {
+      refusals: {
+        nameInvalid: "Skriv et rapportnavn på 1 til 200 tegn.",
+        generatorUnavailable: "Bare operative nøkkeltallsrapporter kan lages.",
+        configUnsupported:
+          "Denne rapporten har datoperioder, filtre eller e-postlevering fra en eldre versjon. Nøkkeltallsrapporter er øyeblikksbilder; fjern disse innstillingene for å kjøre den.",
+        alreadyRunning: "Denne rapporten kjører allerede.",
+        runNotRetryable: "Bare en mislykket kjøring kan prøves på nytt.",
+      },
       title: "Planlagte rapporter",
       nameLabel: "Rapportnavn",
       namePlaceholder: "Ukentlige operative KPI-er",
@@ -5260,6 +5281,37 @@ export default {
       save: "Lagre",
       saving: "Lagrer...",
       cancel: "Avbryt",
+    },
+  },
+  organizationsOverview: {
+    title: "Alle mine organisasjoner",
+    description:
+      "Alle organisasjoner du er medlem av. Åpne en for å jobbe i den.",
+    menuLink: "Alle mine organisasjoner",
+    searchPlaceholder: "Søk i organisasjoner",
+    searchLabel: "Søk i organisasjoner",
+    current: "Gjeldende",
+    open: "Åpne",
+    role: "Din rolle: {role}",
+    memberSince: "Medlem siden {date}",
+    partOf: "Del av {name}",
+    objects: "Objekter",
+    activeLoans: "Aktive utlån",
+    locations: "Plasseringer",
+    metricsUnavailable: "Tallene blir klargjort.",
+    noResults: "Ingen organisasjon samsvarer med «{query}».",
+    empty: "Du er ikke medlem av noen organisasjon ennå.",
+    createOrganization: "Opprett organisasjon",
+    types: {
+      museum: "Museum",
+      gallery: "Galleri",
+      library: "Bibliotek",
+      collector: "Samler",
+    },
+    tiers: {
+      free: "Gratis",
+      pro: "Pro",
+      enterprise: "Enterprise",
     },
   },
   organizationsNew: {
@@ -7316,6 +7368,32 @@ export default {
     resumeNotice:
       "Denne filen ble importert {date}: {attempted} av {total} rader forsøkt, {accepted} godtatt, {failed} feilet. Fortsettelse hopper over godtatte rader.",
     resumeImport: "Fortsett import",
+    csvProblems: {
+      noDataRows: "Filen har ingen datarader.",
+      unclosedQuote:
+        "Et anførselstegn i rad {row} lukkes aldri, så filen kan ikke leses. Sjekk anførselstegnene i den raden.",
+      tooManyRows:
+        "Denne filen har {rows} rader. Del den opp i filer på høyst {max} rader.",
+    },
+    refusals: {
+      jobNotFound: "Fant ikke denne importen. Start en ny import.",
+      jobWrongType:
+        "Denne importen ble startet for en annen type post. Start en ny import.",
+      jobCancelled:
+        "Denne importen ble avbrutt. Start en ny import for å fortsette.",
+      jobFailed:
+        "Denne importen mislyktes og kan ikke fortsette. Start en ny import.",
+      tooManyRows:
+        "En import kan ha høyst {limit} rader. Del opp filen og importer hver del.",
+      rowNotInImport:
+        "Rad {row} fantes ikke i den opprinnelige filen. En rettet fil må ha de samme radene i samme rekkefølge.",
+      dublinCoreNoRecords:
+        "XML-filen har ingen Dublin Core-poster appen kan lese.",
+      dublinCoreTooManyRecords:
+        "En Dublin Core-fil kan ha høyst {limit} poster. Del opp filen og importer hver del.",
+      dublinCoreRecordCountChanged:
+        "Denne XML-filen har et annet antall poster enn importen den fortsetter. Start en ny import for en endret fil.",
+    },
   },
   inventory: {
     title: "Inventering",
@@ -10896,6 +10974,13 @@ export default {
       accession: "aksesjonsregisteret",
     },
     errors: {
+      reviewNoteInvalid:
+        "Skriv et vurderingsnotat på 1 til 2000 tegn som beskriver det historiske grunnlaget.",
+      indexIncomplete:
+        "Fullfør indekseringen av de historiske numrene i {register} før du registrerer en konfliktvurdering.",
+      noConflict:
+        "Dette nummeret er ikke lenger i konflikt med en annen post i {register}.",
+      reviewFailed: "Identifikatorvurderingen kunne ikke lagres. Prøv igjen.",
       invalid:
         "Bruk 1 til 256 synlige tegn i nummeret. Eksisterende historiske numre endres ikke.",
       inUse:

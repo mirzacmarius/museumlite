@@ -2,7 +2,8 @@ import { identifierErrorFromError } from "@v1/backend/convex/utils/identifierErr
 import { useScopedI18n } from "@/locales/client";
 
 /**
- * Translates identifier refusals (invalid, duplicate or unavailable numbers).
+ * Translates identifier refusals (invalid, duplicate or unavailable numbers,
+ * and conflict reviews that cannot be recorded).
  * Returns null for any other failure so callers keep their own handling.
  */
 export function useIdentifierErrorMessage() {
@@ -27,6 +28,12 @@ export function useIdentifierErrorMessage() {
         return t("errors.numberingExhausted", { register });
       case "CATALOG_NUMBER_LOCKED":
         return t("errors.catalogNumberLocked");
+      case "REVIEW_NOTE_INVALID":
+        return t("errors.reviewNoteInvalid");
+      case "INDEX_INCOMPLETE":
+        return t("errors.indexIncomplete", { register });
+      case "NO_CONFLICT":
+        return t("errors.noConflict", { register });
     }
   };
 }

@@ -1,4 +1,4 @@
-import { parseCsvTable } from "@/lib/csv-parser";
+import { type CsvReadProblem, readCsvTable } from "@/lib/csv-parser";
 
 export interface ParsedRow {
   /** Line in the source file; the row's stable identity on its import job. */
@@ -26,6 +26,7 @@ export interface AccountImportMessages {
   csvMissingRequiredColumns: (columns: string) => string;
   invalidAccountType: (row: number, value: string) => string;
   emptyValue: () => string;
+  unreadableFile: (problem: CsvReadProblem) => string;
 }
 
 const DEFAULT_MESSAGES: AccountImportMessages = {
@@ -36,6 +37,10 @@ const DEFAULT_MESSAGES: AccountImportMessages = {
   invalidAccountType: (row, value) =>
     `Row ${row}: Invalid accountType "${value}". Use: lender, borrower, both, institution, or patron`,
   emptyValue: () => "empty",
+  unreadableFile: (problem) =>
+    problem.code === "empty"
+      ? "CSV must have a header row and at least one data row"
+      : `A quotation mark in row ${problem.line} is never closed`,
 };
 
 const OPTIONAL_COLUMNS = [
@@ -75,16 +80,15 @@ export function parseAccountCsv(
   fileErrors: string[];
   rowErrors: string[];
 } {
-  let table: ReturnType<typeof parseCsvTable>;
-  try {
-    table = parseCsvTable(text);
-  } catch (error) {
+  const read = readCsvTable(text);
+  if ("problem" in read) {
     return {
       rows: [],
-      fileErrors: [error instanceof Error ? error.message : "Unreadable CSV"],
+      fileErrors: [messages.unreadableFile(read.problem)],
       rowErrors: [],
     };
   }
+  const { table } = read;
   if (table.records.length === 0) {
     return {
       rows: [],

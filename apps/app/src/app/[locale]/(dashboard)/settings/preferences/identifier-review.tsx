@@ -6,10 +6,12 @@ import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { ConvexError } from "convex/values";
 import Link from "next/link";
 import { useReducer, useState } from "react";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useIdentifierErrorMessage } from "@/hooks/use-identifier-error-message";
+import { useScopedI18n } from "@/locales/client";
 
 interface ReviewState {
   cursor: string | null;
@@ -102,6 +104,9 @@ function IdentifierRegisterReview({
   register: "catalog" | "accession";
 }) {
   const { hasPermission } = usePermissions();
+  const tIdentifiers = useScopedI18n("identifiers");
+  const identifierMessage = useIdentifierErrorMessage();
+  const actionMessage = useActionErrorMessage();
   const [state, dispatch] = useReducer(reviewReducer, INITIAL_REVIEW_STATE);
   const result = useQuery(api.identifiers.listConflicts, {
     organizationId,
@@ -119,11 +124,8 @@ function IdentifierRegisterReview({
       dispatch({
         type: "set-error",
         error:
-          err instanceof ConvexError && typeof err.data === "string"
-            ? err.data
-            : err instanceof Error
-              ? err.message
-              : "Identifier review failed. Retry the operation.",
+          identifierMessage(err) ??
+          actionMessage(err, tIdentifiers("errors.reviewFailed")),
       });
     } finally {
       dispatch({ type: "set-working", isWorking: false });

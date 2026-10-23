@@ -6,6 +6,7 @@ import { useConvex, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { sha256Hex } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
 import {
@@ -35,10 +36,6 @@ interface UseMediaImportOptions {
   csvInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
-function errorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
-}
-
 /**
  * Runs a media import as a tracked job: each selected file is one item with a
  * durable outcome, so resuming or retrying skips attached files and reuses
@@ -53,6 +50,7 @@ export function useMediaImport({
 }: UseMediaImportOptions) {
   const t = useScopedI18n("collections");
   const tracked = useScopedI18n("trackedImport");
+  const actionMessage = useActionErrorMessage();
   const convex = useConvex();
   const createJob = useMutation(api.mediaImports.createMediaImportJob);
   const generateUrl = useMutation(api.mediaImports.generateBulkUploadUrl);
@@ -249,7 +247,7 @@ export function useMediaImport({
               if (error) problems.push(`${action.file.name}: ${error}`);
             } catch (error) {
               problems.push(
-                `${action.file.name}: ${errorMessage(error, tracked("importFailed"))}`,
+                `${action.file.name}: ${actionMessage(error, tracked("importFailed"))}`,
               );
             }
           }
@@ -261,7 +259,7 @@ export function useMediaImport({
           ),
         );
       } catch (error) {
-        problems.push(errorMessage(error, tracked("importFailed")));
+        problems.push(actionMessage(error, tracked("importFailed")));
       }
       setState((prev) => ({
         ...prev,
@@ -322,7 +320,7 @@ export function useMediaImport({
         });
         await runItems(jobId, files);
       } catch (error) {
-        toast.error(errorMessage(error, tracked("importFailed")));
+        toast.error(actionMessage(error, tracked("importFailed")));
       }
     },
     [

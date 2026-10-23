@@ -391,6 +391,19 @@ export default {
           confirm: "Annuler la suppression",
           cancel: "Garder la suppression planifiée",
         },
+        refusals: {
+          evidenceProtected:
+            "Cette organisation conserve des fiches muséales permanentes, elle ne peut donc pas être supprimée. Retirez plutôt les objets du catalogue ; leurs fiches restent disponibles.",
+          subOrganization:
+            "Une sous-organisation ne peut pas être supprimée depuis cet écran.",
+          noActiveDeletion:
+            "Aucune suppression en cours à annuler. Elle a peut-être déjà été annulée ou terminée.",
+          alreadyOwner: "Vous êtes déjà le propriétaire de cette organisation.",
+          newOwnerNotSuperAdmin:
+            "La propriété ne peut être transférée qu'à un autre SuperAdmin.",
+          newOwnerNotMember:
+            "Le nouveau propriétaire doit être membre de cette organisation.",
+        },
         requestError:
           "Impossible de planifier la suppression. Veuillez réessayer.",
         cancelError: "Impossible d'annuler la suppression. Veuillez réessayer.",
@@ -4581,6 +4594,15 @@ export default {
       },
     },
     scheduledReports: {
+      refusals: {
+        nameInvalid: "Saisissez un nom de rapport de 1 à 200 caractères.",
+        generatorUnavailable:
+          "Seuls les rapports d'indicateurs opérationnels peuvent être générés.",
+        configUnsupported:
+          "Ce rapport comporte des périodes, des filtres ou un envoi par e-mail d'une ancienne version. Les rapports d'indicateurs sont des instantanés ; effacez ces réglages pour l'exécuter.",
+        alreadyRunning: "Ce rapport est déjà en cours d'exécution.",
+        runNotRetryable: "Seule une exécution échouée peut être relancée.",
+      },
       title: "Rapports planifiés",
       nameLabel: "Nom du rapport",
       namePlaceholder: "KPI opérationnels hebdomadaires",
@@ -5324,6 +5346,37 @@ export default {
       save: "Enregistrer",
       saving: "Enregistrement...",
       cancel: "Annuler",
+    },
+  },
+  organizationsOverview: {
+    title: "Toutes mes organisations",
+    description:
+      "Toutes les organisations dont vous faites partie. Ouvrez-en une pour y travailler.",
+    menuLink: "Toutes mes organisations",
+    searchPlaceholder: "Rechercher des organisations",
+    searchLabel: "Rechercher des organisations",
+    current: "Actuelle",
+    open: "Ouvrir",
+    role: "Votre rôle : {role}",
+    memberSince: "Membre depuis le {date}",
+    partOf: "Fait partie de {name}",
+    objects: "Objets",
+    activeLoans: "Prêts actifs",
+    locations: "Emplacements",
+    metricsUnavailable: "Les décomptes sont en préparation.",
+    noResults: "Aucune organisation ne correspond à « {query} ».",
+    empty: "Vous ne faites encore partie d'aucune organisation.",
+    createOrganization: "Créer une organisation",
+    types: {
+      museum: "Musée",
+      gallery: "Galerie",
+      library: "Bibliothèque",
+      collector: "Collectionneur",
+    },
+    tiers: {
+      free: "Gratuit",
+      pro: "Pro",
+      enterprise: "Enterprise",
     },
   },
   organizationsNew: {
@@ -7406,6 +7459,32 @@ export default {
     resumeNotice:
       "Ce fichier a été importé le {date} : {attempted} sur {total} lignes traitées, {accepted} acceptées, {failed} en échec. La reprise ignore les lignes acceptées.",
     resumeImport: "Reprendre l'import",
+    csvProblems: {
+      noDataRows: "Le fichier ne contient aucune ligne de données.",
+      unclosedQuote:
+        "Un guillemet de la ligne {row} n'est jamais fermé, le fichier ne peut donc pas être lu. Vérifiez les guillemets de cette ligne.",
+      tooManyRows:
+        "Ce fichier contient {rows} lignes. Divisez-le en fichiers d'au plus {max} lignes.",
+    },
+    refusals: {
+      jobNotFound: "Cet import est introuvable. Lancez un nouvel import.",
+      jobWrongType:
+        "Cet import a été lancé pour un autre type de fiche. Lancez un nouvel import.",
+      jobCancelled:
+        "Cet import a été annulé. Lancez un nouvel import pour continuer.",
+      jobFailed:
+        "Cet import a échoué et ne peut pas continuer. Lancez un nouvel import.",
+      tooManyRows:
+        "Un import peut contenir au plus {limit} lignes. Divisez le fichier et importez chaque partie.",
+      rowNotInImport:
+        "La ligne {row} ne figurait pas dans le fichier d'origine. Un fichier corrigé doit garder les mêmes lignes dans le même ordre.",
+      dublinCoreNoRecords:
+        "Le fichier XML ne contient aucune notice Dublin Core lisible par l'application.",
+      dublinCoreTooManyRecords:
+        "Un fichier Dublin Core peut contenir au plus {limit} notices. Divisez le fichier et importez chaque partie.",
+      dublinCoreRecordCountChanged:
+        "Ce fichier XML n'a pas le même nombre de notices que l'import qu'il reprend. Lancez un nouvel import pour un fichier modifié.",
+    },
   },
   inventory: {
     title: "Inventaire",
@@ -11074,6 +11153,14 @@ export default {
       accession: "registre des accessions",
     },
     errors: {
+      reviewNoteInvalid:
+        "Rédigez une note de révision de 1 à 2000 caractères décrivant les preuves historiques.",
+      indexIncomplete:
+        "Terminez l'indexation des numéros historiques du {register} avant d'enregistrer la révision d'un conflit.",
+      noConflict:
+        "Ce numéro n'entre plus en conflit avec une autre fiche du {register}.",
+      reviewFailed:
+        "La révision de l'identifiant n'a pas pu être enregistrée. Réessayez.",
       invalid:
         "Utilisez de 1 à 256 caractères visibles pour le numéro. Les numéros historiques existants restent inchangés.",
       inUse:

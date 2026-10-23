@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { convexErrorData } from "./convexErrorData";
+import { importRefusal } from "./importErrors";
 
 export const MAX_IMPORT_BATCH_ROWS = 100;
 export const MAX_IMPORT_TOTAL_ITEMS = 100_000;
@@ -98,9 +99,9 @@ export function validateImportJobTotal(totalItems: number) {
     totalItems < 1 ||
     totalItems > MAX_IMPORT_TOTAL_ITEMS
   ) {
-    throw new Error(
-      `An import must contain between 1 and ${MAX_IMPORT_TOTAL_ITEMS} rows`,
-    );
+    throw importRefusal("IMPORT_TOO_MANY_ROWS", {
+      limit: MAX_IMPORT_TOTAL_ITEMS,
+    });
   }
 }
 
@@ -113,18 +114,16 @@ export async function requireWritableImportJob(
 ) {
   const job = await ctx.db.get(jobId);
   if (!job || job.organizationId !== organizationId || job.type !== "csv") {
-    throw new Error("Import job not found");
+    throw importRefusal("IMPORT_JOB_NOT_FOUND");
   }
   if (job.entityType !== undefined && job.entityType !== entityType) {
-    throw new Error("Import job belongs to a different record type");
+    throw importRefusal("IMPORT_JOB_WRONG_TYPE");
   }
   if (job.status === "cancelled") {
-    throw new Error(
-      "This import was cancelled. Start a new import to continue.",
-    );
+    throw importRefusal("IMPORT_JOB_CANCELLED");
   }
   if (job.status === "failed") {
-    throw new Error("This import failed and cannot accept more rows.");
+    throw importRefusal("IMPORT_JOB_FAILED");
   }
   return job;
 }
@@ -310,9 +309,9 @@ export async function runTrackedImportBatch<Row extends { rowNumber?: number }>(
   if (finished) {
     const unknown = sourceRows.find((_, index) => !previousResults[index]);
     if (unknown) {
-      throw new Error(
-        `Row ${unknown.rowNumber} is not part of this import. A corrected file must keep the same rows in the same order.`,
-      );
+      throw importRefusal("IMPORT_ROW_NOT_IN_IMPORT", {
+        row: unknown.rowNumber,
+      });
     }
   }
 

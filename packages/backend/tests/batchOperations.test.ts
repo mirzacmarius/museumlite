@@ -349,3 +349,139 @@ describe("batchOperations schema", () => {
     expect(batchJobs).toHaveLength(0);
   });
 });
+
+describe("bulk status change runs the single Withdrawal and restore checks (MUS-848)", () => {
+  async function bulkFixture(t: ReturnType<typeof convexTest>) {
+    return await t.run(async (ctx) => {
+      const [organizationId, userId, updateId, deleteId] = await Promise.all([
+        ctx.db.insert("organizations", {
+          name: "Bulk Org",
+          slug: "bulk-checks",
+          type: "museum",
+        }),
+        ctx.db.insert("users", { email: "bulk-checks@example.com" }),
+        ctx.db.insert("permissions", {
+          name: "collections.update",
+          category: "collections",
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.delete",
+          category: "collections",
+        }),
+      ]);
+      const roleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Collection staff",
+        isSystemRole: false,
+      });
+      await Promise.all([
+        ctx.db.insert("rolePermissions", { roleId, permissionId: updateId }),
+        ctx.db.insert("rolePermissions", { roleId, permissionId: deleteId }),
+        ctx.db.insert("userOrganizations", {
+          userId,
+          organizationId,
+          roleId,
+          joinedAt: Date.now(),
+        }),
+      ]);
+      const object = (
+        accessionNumber: string,
+        status: "active" | "deaccessioned",
+      ) =>
+        ctx.db.insert("collections", {
+          organizationId,
+          accessionNumber,
+          title: `Object ${accessionNumber}`,
+          status,
+          catalogedBy: userId,
+          catalogedAt: Date.now(),
+        });
+      const [onLoanId, deaccessionedId, freeId] = await Promise.all([
+        object("B-001", "active"),
+        object("B-002", "deaccessioned"),
+        object("B-003", "active"),
+      ]);
+      const loanId = await ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "LN-BULK",
+        type: "outgoing",
+        lenderBorrowerName: "Borrower",
+        startDate: Date.now(),
+        status: "active",
+      });
+      await ctx.db.insert("loanItems", {
+        loanId,
+        collectionId: onLoanId,
+        custodyStatus: "pending",
+      });
+      return { organizationId, userId, onLoanId, deaccessionedId, freeId };
+    });
+  }
+
+  test("a bulk Withdrawal refuses an Object on an active loan and keeps the others", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, onLoanId, freeId } = await bulkFixture(t);
+    const asUser = t.withIdentity({ subject: userId });
+
+    const result = await asUser.mutation(
+      api.batchOperations.quickBulkStatusChange,
+      {
+        organizationId,
+        collectionIds: [onLoanId, freeId],
+        newStatus: "archived",
+        reason: "Duplicate records",
+      },
+    );
+
+    expect(result.successCount).toBe(1);
+    expect(result.errors).toEqual([
+      {
+        itemId: onLoanId,
+        error: expect.stringContaining("currently on loan"),
+      },
+    ]);
+    await t.run(async (ctx) => {
+      expect((await ctx.db.get(onLoanId))?.status).toBe("active");
+      expect((await ctx.db.get(freeId))?.archivedReason).toBe(
+        "Duplicate records",
+      );
+    });
+  });
+
+  test("a bulk restore refuses a deaccessioned Object", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, deaccessionedId } = await bulkFixture(t);
+    const asUser = t.withIdentity({ subject: userId });
+
+    const result = await asUser.mutation(
+      api.batchOperations.quickBulkStatusChange,
+      {
+        organizationId,
+        collectionIds: [deaccessionedId],
+        newStatus: "active",
+      },
+    );
+
+    expect(result.errors[0]?.error).toContain(
+      "Can only restore archived or deleted objects",
+    );
+    await t.run(async (ctx) => {
+      expect((await ctx.db.get(deaccessionedId))?.status).toBe("deaccessioned");
+    });
+  });
+
+  test("a bulk Withdrawal job needs a reason", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, freeId } = await bulkFixture(t);
+    const asUser = t.withIdentity({ subject: userId });
+
+    await expect(
+      asUser.mutation(api.batchOperations.createBulkStatusChangeJob, {
+        organizationId,
+        collectionIds: [freeId],
+        newStatus: "deleted",
+        reason: " ",
+      }),
+    ).rejects.toThrow("Reason is required");
+  });
+});

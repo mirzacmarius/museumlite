@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { usePermissions } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 
 function BatchJobDetails({ jobId }: { jobId: Id<"batchJobs"> }) {
   const job = useQuery(api.batchOperations.getBatchJobStatus, { jobId });
   const cancel = useMutation(api.batchOperations.cancelBatchJob);
   const { hasPermission } = usePermissions();
+  const actionMessage = useActionErrorMessage();
   const [error, setError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   if (job === undefined) return <p role="status">Loading job…</p>;
@@ -55,9 +57,7 @@ function BatchJobDetails({ jobId }: { jobId: Id<"batchJobs"> }) {
             try {
               await cancel({ jobId });
             } catch (cause) {
-              setError(
-                cause instanceof Error ? cause.message : "Could not cancel job",
-              );
+              setError(actionMessage(cause, "Could not cancel job"));
             } finally {
               setIsCancelling(false);
             }

@@ -1,4 +1,4 @@
-import { parseCsvTable } from "@/lib/csv-parser";
+import { readCsvTable } from "@/lib/csv-parser";
 
 export interface ParsedRow {
   /** Line in the source file; the row's stable identity on its import job. */
@@ -23,7 +23,8 @@ export interface ParseError {
     | "typeRequired";
   row?: number;
   columns?: string;
-  detail?: string;
+  /** For an unreadable file: the line where an unclosed quotation mark starts. */
+  line?: number;
 }
 
 export const MAX_LOCATION_IMPORT_ROWS = 1000;
@@ -45,20 +46,18 @@ export function parseCSV(text: string): {
   rows: ParsedRow[];
   errors: ParseError[];
 } {
-  let table: ReturnType<typeof parseCsvTable>;
-  try {
-    table = parseCsvTable(text);
-  } catch (error) {
+  const read = readCsvTable(text);
+  if ("problem" in read) {
     return {
       rows: [],
       errors: [
-        {
-          type: "unreadableFile",
-          detail: error instanceof Error ? error.message : undefined,
-        },
+        read.problem.code === "empty"
+          ? { type: "csvMustHaveRows" }
+          : { type: "unreadableFile", line: read.problem.line },
       ],
     };
   }
+  const { table } = read;
   if (table.records.length === 0) {
     return { rows: [], errors: [{ type: "csvMustHaveRows" }] };
   }

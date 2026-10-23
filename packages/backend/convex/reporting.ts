@@ -22,6 +22,10 @@ import {
   buildLoanTrendSeries,
 } from "./utils/projectionReports";
 import { projectionUnavailableResult } from "./utils/projectionValidators";
+import {
+  reportingError,
+  reportingErrorFromError,
+} from "./utils/reportingErrors";
 
 // ============================================
 // VALIDATORS
@@ -100,9 +104,7 @@ function runResultState(run: Doc<"reportRuns">) {
 
 function validateKpiConfig(config: Doc<"scheduledReports">["reportConfig"]) {
   if (config && Object.values(config).some((value) => value !== undefined))
-    throw new Error(
-      "KPI reports are current snapshots. Date ranges, filters and comparisons are unavailable; clear the legacy configuration to retry.",
-    );
+    throw reportingError("REPORT_CONFIG_UNSUPPORTED");
 }
 
 function validateDelivery(args: {
@@ -117,9 +119,7 @@ function validateDelivery(args: {
     args.includeAttachment !== undefined ||
     args.attachmentFormat !== undefined
   )
-    throw new Error(
-      "Email delivery and attachment formats are unavailable. KPI output is stored as JSON.",
-    );
+    throw reportingError("REPORT_CONFIG_UNSUPPORTED");
 }
 
 // ============================================
@@ -180,13 +180,11 @@ export const createScheduledReport = mutation({
     }
 
     if (args.reportType !== "operational_kpis") {
-      throw new Error(
-        "Report generator unavailable. Only operational KPIs are supported.",
-      );
+      throw reportingError("REPORT_GENERATOR_UNAVAILABLE");
     }
 
     if (!args.name.trim() || args.name.length > 200)
-      throw new Error("Enter a report name of 1–200 characters");
+      throw reportingError("REPORT_NAME_INVALID");
 
     validateKpiConfig(args.reportConfig);
     validateDelivery(args);
@@ -285,9 +283,9 @@ export const updateScheduledReport = mutation({
       args.name !== undefined &&
       (!args.name.trim() || args.name.length > 200)
     )
-      throw new Error("Enter a report name of 1–200 characters");
+      throw reportingError("REPORT_NAME_INVALID");
     if (report.reportType !== "operational_kpis" && args.isActive === true)
-      throw new Error("Report generator unavailable");
+      throw reportingError("REPORT_GENERATOR_UNAVAILABLE");
     if (args.reportConfig !== undefined) validateKpiConfig(args.reportConfig);
     validateDelivery(args);
     const schedule = args.schedule ?? report.schedule;
@@ -583,9 +581,9 @@ export const retryReportRun = mutation({
       run.status === "running" &&
       Date.now() - (run.lastAttemptAt ?? run.startedAt) < 15 * 60_000
     )
-      throw new Error("Report is already running");
+      throw reportingError("REPORT_ALREADY_RUNNING");
     if (run.status !== "failed" && run.status !== "running")
-      throw new Error("This run cannot be retried");
+      throw reportingError("REPORT_RUN_NOT_RETRYABLE");
     const report = run.scheduledReportId
       ? await ctx.db.get(run.scheduledReportId)
       : null;
@@ -595,7 +593,7 @@ export const retryReportRun = mutation({
       report.reportType !== "operational_kpis" ||
       report.reportType !== run.reportType
     )
-      throw new Error("Report generator unavailable");
+      throw reportingError("REPORT_GENERATOR_UNAVAILABLE");
     validateKpiConfig(report.reportConfig);
     await ctx.db.patch(run._id, {
       status: "running",
@@ -909,7 +907,8 @@ export const generateReport = internalMutation({
       return null;
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+        reportingErrorFromError(error)?.message ??
+        (error instanceof Error ? error.message : "Unknown error");
 
       await ctx.db.patch(args.runId, {
         status: "failed",

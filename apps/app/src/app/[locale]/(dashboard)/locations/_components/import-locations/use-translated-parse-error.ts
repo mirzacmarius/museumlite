@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback } from "react";
+import { useCsvFileProblemMessage } from "@/hooks/use-csv-file-problem-message";
 import { useScopedI18n } from "@/locales/client";
 import type { ParseError } from "../../import/import-csv";
 
 export function useTranslatedParseError() {
   const t = useScopedI18n("locations.importErrors");
+  const csvMessage = useCsvFileProblemMessage();
 
   return useCallback(
     (error: ParseError): string => {
@@ -16,9 +18,10 @@ export function useTranslatedParseError() {
         case "tooManyRows":
           return t("tooManyRows", { max: error.columns ?? "" });
         case "unreadableFile":
-          return error.detail
-            ? `${t("unreadableFile")} ${error.detail}`
-            : t("unreadableFile");
+          return error.line === undefined
+            ? t("unreadableFile")
+            : (csvMessage({ code: "unclosedQuote", line: error.line }) ??
+                t("unreadableFile"));
         case "missingRequiredColumns":
           return t("missingRequiredColumns", { columns: error.columns ?? "" });
         case "nameRequired":
@@ -31,6 +34,6 @@ export function useTranslatedParseError() {
           return "Unknown error";
       }
     },
-    [t],
+    [csvMessage, t],
   );
 }

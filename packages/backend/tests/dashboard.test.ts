@@ -339,7 +339,7 @@ describe("Dashboard: getAnalytics", () => {
     expect(analytics.accessions.rejected).toBe(0);
   });
 
-  test("counts transfer requests by status for the source organization only", async () => {
+  test("counts transfer requests by the Transfers board stage for the source organization only (MUS-849)", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createTestOrg(t);
 
@@ -448,6 +448,42 @@ describe("Dashboard: getAnalytics", () => {
         requestedBy: userId,
         requestedAt: Date.now() + 3,
       });
+      // A legacy approval and one made without an observed source Location
+      // wait for the sender again; a current approval waits for the receiver.
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Legacy approval",
+        status: "approved_for_transfer",
+        requestedBy: userId,
+        requestedAt: Date.now() + 5,
+      });
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Approved before the Location was recorded",
+        status: "awaiting_acceptance",
+        requestedBy: userId,
+        requestedAt: Date.now() + 6,
+      });
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Waiting for the receiver",
+        status: "awaiting_acceptance",
+        approvedSourceLocationId: null,
+        requestedBy: userId,
+        requestedAt: Date.now() + 7,
+      });
       await ctx.db.insert("organizationMoveRequests", {
         collectionId: otherCollectionId,
         sourceOrganizationId: otherSourceOrganizationId,
@@ -473,7 +509,18 @@ describe("Dashboard: getAnalytics", () => {
       }),
     );
 
-    expect(analytics.transfers.pending).toBe(2);
+    expect(analytics.transfers.pending).toBe(4);
+    expect(analytics.transfers.waitingForReceiver).toBe(1);
+    const boardCounts = await authed.query(api.objectMoves.getBoardCounts, {
+      organizationId,
+    });
+    expect(boardCounts).toMatchObject({
+      waitingForApproval: analytics.transfers.pending,
+      waitingForReceiver: analytics.transfers.waitingForReceiver,
+      received: analytics.transfers.executed,
+      declined: analytics.transfers.rejected,
+      cancelled: analytics.transfers.cancelled,
+    });
     const board = await authed.query(api.objectMoves.listForOrganization, {
       organizationId,
     });
@@ -486,7 +533,12 @@ describe("Dashboard: getAnalytics", () => {
             : [],
         )
         .sort(),
-    ).toEqual(["Canonical source approval", "Pending transfer"]);
+    ).toEqual([
+      "Approved before the Location was recorded",
+      "Canonical source approval",
+      "Legacy approval",
+      "Pending transfer",
+    ]);
     expect(analytics.transfers.executed).toBe(1);
     expect(analytics.transfers.rejected).toBe(1);
     expect(analytics.transfers.cancelled).toBe(1);

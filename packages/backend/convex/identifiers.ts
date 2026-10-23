@@ -202,8 +202,10 @@ export const reviewConflict = mutation({
       throw new ConvexError("Record not found");
     const note = args.note.trim();
     if (!note || note.length > 2000)
-      throw new ConvexError(
+      throw identifierError(
+        "REVIEW_NOTE_INVALID",
         "Provide a review note of 1–2000 characters describing the historical evidence.",
+        { register: args.register },
       );
     const { matches, needsBackfill } = await findIdentifierMatches(
       ctx,
@@ -212,11 +214,17 @@ export const reviewConflict = mutation({
       row.accessionNumber,
     );
     if (needsBackfill)
-      throw new ConvexError(
+      throw identifierError(
+        "INDEX_INCOMPLETE",
         "Complete the identifier index before recording conflict review.",
+        { register: args.register },
       );
     if (matches.length < 2)
-      throw new ConvexError("No identifier conflict exists for this record.");
+      throw identifierError(
+        "NO_CONFLICT",
+        "No identifier conflict exists for this record.",
+        { register: args.register },
+      );
     await recordIdentifierConflictReview(ctx, {
       organizationId: args.organizationId,
       register: args.register,
