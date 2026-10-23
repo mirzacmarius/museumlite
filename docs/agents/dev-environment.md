@@ -18,11 +18,11 @@ bun run format             # Biome format (writes files)
 bun run test               # Run all workspace tests (app + backend)
 
 # Testing (from packages/backend/)
-bun test                   # Run backend tests once (finite vitest run)
+bun run test               # Run backend tests once (placeholder guard, then vitest run)
 bun test:watch             # Run backend tests in watch mode
 bun test:once              # Placeholder guard, then vitest run
-bun test loans.test.ts     # Run single test file
-bun test -t "approve"      # Run tests matching pattern
+bun run test loans.test.ts # Run single test file
+bun run test -t "approve"  # Run tests matching pattern
 
 # Utilities
 bunx knip                  # Find unused exports/dependencies
