@@ -122,6 +122,7 @@ function OrganizationCard({
   const t = useScopedI18n("organizationsOverview");
   const locale = useCurrentLocale();
   const { metrics } = organization;
+  const joinedAt = new Date(organization.joinedAt);
 
   return (
     <li className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4">
@@ -181,7 +182,7 @@ function OrganizationCard({
           </p>
           <p className="truncate">
             {t("memberSince", {
-              date: formatDate(new Date(organization.joinedAt), locale),
+              date: formatDate(joinedAt, locale),
             })}
           </p>
         </div>

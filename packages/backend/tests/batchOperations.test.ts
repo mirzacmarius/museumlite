@@ -353,28 +353,34 @@ describe("batchOperations schema", () => {
 describe("bulk status change runs the single Withdrawal and restore checks (MUS-848)", () => {
   async function bulkFixture(t: ReturnType<typeof convexTest>) {
     return await t.run(async (ctx) => {
-      const [organizationId, userId, updateId, deleteId] = await Promise.all([
-        ctx.db.insert("organizations", {
-          name: "Bulk Org",
-          slug: "bulk-checks",
-          type: "museum",
-        }),
-        ctx.db.insert("users", { email: "bulk-checks@example.com" }),
-        ctx.db.insert("permissions", {
-          name: "collections.update",
-          category: "collections",
-        }),
-        ctx.db.insert("permissions", {
-          name: "collections.delete",
-          category: "collections",
-        }),
-      ]);
+      const [organizationId, userId, readId, updateId, deleteId] =
+        await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Bulk Org",
+            slug: "bulk-checks",
+            type: "museum",
+          }),
+          ctx.db.insert("users", { email: "bulk-checks@example.com" }),
+          ctx.db.insert("permissions", {
+            name: "collections.read",
+            category: "collections",
+          }),
+          ctx.db.insert("permissions", {
+            name: "collections.update",
+            category: "collections",
+          }),
+          ctx.db.insert("permissions", {
+            name: "collections.delete",
+            category: "collections",
+          }),
+        ]);
       const roleId = await ctx.db.insert("roles", {
         organizationId,
         name: "Collection staff",
         isSystemRole: false,
       });
       await Promise.all([
+        ctx.db.insert("rolePermissions", { roleId, permissionId: readId }),
         ctx.db.insert("rolePermissions", { roleId, permissionId: updateId }),
         ctx.db.insert("rolePermissions", { roleId, permissionId: deleteId }),
         ctx.db.insert("userOrganizations", {
@@ -488,7 +494,9 @@ describe("bulk status change runs the single Withdrawal and restore checks (MUS-
       );
       await t.finishAllScheduledFunctions(vi.runAllTimers);
 
-      const job = await t.run((ctx) => ctx.db.get(jobId));
+      const job = await asUser.query(api.batchOperations.getBatchJobStatus, {
+        jobId,
+      });
       expect(job).toMatchObject({
         status: "completed",
         successCount: 1,
@@ -497,10 +505,10 @@ describe("bulk status change runs the single Withdrawal and restore checks (MUS-
           { itemId: onLoanId, error: expect.stringContaining("on loan") },
         ],
       });
-      await t.run(async (ctx) => {
-        expect((await ctx.db.get(onLoanId))?.status).toBe("active");
-        expect((await ctx.db.get(freeId))?.status).toBe("archived");
-      });
+      const object = (collectionId: typeof onLoanId) =>
+        asUser.query(api.collections.get, { collectionId });
+      expect((await object(onLoanId))?.status).toBe("active");
+      expect((await object(freeId))?.status).toBe("archived");
     } finally {
       vi.useRealTimers();
     }
