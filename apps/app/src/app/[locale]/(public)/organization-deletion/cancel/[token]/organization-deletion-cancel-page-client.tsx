@@ -7,6 +7,8 @@ import { useMutation, useQuery } from "convex/react";
 import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useOrganizationDeletionErrorMessage } from "@/hooks/use-organization-deletion-error-message";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -21,6 +23,8 @@ export function OrganizationDeletionCancelPageClient({ params }: PageProps) {
   const { token, locale: routeLocale } = use(params);
   const locale = useCurrentLocale();
   const t = useScopedI18n("organizationDeletionCancelPage");
+  const deletionMessage = useOrganizationDeletionErrorMessage();
+  const actionMessage = useActionErrorMessage();
 
   const [error, setError] = useState<string | null>(null);
   const [isCancelled, setIsCancelled] = useState(false);
@@ -51,7 +55,7 @@ export function OrganizationDeletionCancelPageClient({ params }: PageProps) {
       await cancelDeletion({ token });
       setIsCancelled(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("error"));
+      setError(deletionMessage(err) ?? actionMessage(err, t("error")));
     } finally {
       setIsSubmitting(false);
     }

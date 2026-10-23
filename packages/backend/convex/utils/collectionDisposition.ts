@@ -1,15 +1,19 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import {
   applyCollectionDisposition,
   markCollectionActive,
 } from "./collectionLifecycle";
+import { isDisposalDecision } from "./disposalPolicy";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { assertEntryAllowsStatus } from "./objectEntryLifecycle";
 import { assertNotInTransfer, isOpenDeaccession } from "./openDeaccessions";
 import { requirePermission } from "./permissions";
+import { withdrawalError } from "./withdrawalErrors";
+
+type WithdrawalStatus = "archived" | "deleted";
 
 export async function archiveCollectionHandler(
   ctx: MutationCtx,
@@ -26,15 +30,37 @@ export async function archiveCollectionHandler(
     throw new Error("Collection not found");
   }
   await requirePermission(ctx, collection.organizationId, "collections.delete");
-  if (!args.reason.trim()) {
-    throw new Error("Reason is required");
+  await withdrawObject(ctx, collection, {
+    userId,
+    reason: args.reason,
+    targetStatus: "archived",
+  });
+  return null;
+}
+
+/**
+ * Withdraws one Object from the catalog. The single Remove item path and the
+ * bulk status change both go through here, so they refuse the same Objects.
+ * Callers check the caller's permission first.
+ */
+export async function withdrawObject(
+  ctx: MutationCtx,
+  collection: Doc<"collections">,
+  {
+    reason,
+    targetStatus,
+    userId,
+  }: { userId: Id<"users">; reason: string; targetStatus: WithdrawalStatus },
+) {
+  const trimmedReason = reason.trim();
+  if (!trimmedReason) {
+    throw withdrawalError("WITHDRAWAL_REASON_REQUIRED");
   }
   if (
-    (collection.status === "archived" || collection.status === "deleted") &&
-    (collection.archivedReason ?? collection.deletedReason) ===
-      args.reason.trim()
+    collection.status === targetStatus &&
+    (collection.archivedReason ?? collection.deletedReason) === trimmedReason
   ) {
-    return null;
+    return;
   }
   if (collection.status === "archived" || collection.status === "deleted") {
     throw new Error("Object is already withdrawn");
@@ -47,34 +73,35 @@ export async function archiveCollectionHandler(
 
   await assertCollectionNotOnLoan(
     ctx,
-    args.collectionId,
+    collection._id,
     "Cannot archive an object that is currently on loan",
   );
-  await assertEntryAllowsStatus(ctx, args.collectionId, "archived");
-  await assertNotInTransfer(ctx, collection, "archived");
+  await assertEntryAllowsStatus(ctx, collection._id, targetStatus);
+  await assertNotInTransfer(ctx, collection, targetStatus);
 
   await Promise.all([
     applyCollectionDisposition(ctx, {
-      collectionId: args.collectionId,
+      collectionId: collection._id,
       changedBy: userId,
-      targetStatus: "archived",
-      reason: args.reason.trim(),
+      targetStatus,
+      reason: trimmedReason,
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: collection.organizationId,
       userId,
-      action: "archived_collection",
+      action:
+        targetStatus === "archived"
+          ? "archived_collection"
+          : "deleted_collection",
       entityType: "collection",
-      entityId: args.collectionId,
+      entityId: collection._id,
       changes: {
-        reason: args.reason.trim(),
+        reason: trimmedReason,
         accessionNumber: collection.accessionNumber,
         title: collection.title,
       },
     }),
   ] as const);
-
-  return null;
 }
 
 export async function restoreCollectionHandler(
@@ -93,17 +120,29 @@ export async function restoreCollectionHandler(
   }
 
   await requirePermission(ctx, collection.organizationId, "collections.update");
+  await restoreObject(ctx, collection, userId);
+  return null;
+}
 
+/**
+ * Brings one withdrawn Object back to the collection. Shared by the single
+ * restore and the bulk status change; callers check the permission first.
+ */
+export async function restoreObject(
+  ctx: MutationCtx,
+  collection: Doc<"collections">,
+  userId: Id<"users">,
+) {
   if (collection.status !== "archived" && collection.status !== "deleted") {
     throw new Error("Can only restore archived or deleted objects");
   }
 
   await assertCollectionNotOnLoan(
     ctx,
-    args.collectionId,
+    collection._id,
     "An object with an active loan cannot be restored",
   );
-  await assertEntryAllowsStatus(ctx, args.collectionId, "active");
+  await assertEntryAllowsStatus(ctx, collection._id, "active");
 
   const [activeIdentity, pendingDeaccession, conflictingApprovedDeaccession] =
     await Promise.all([
@@ -123,7 +162,7 @@ export async function restoreCollectionHandler(
         .withIndex("by_organization_and_collection_and_status", (q) =>
           q
             .eq("organizationId", collection.organizationId)
-            .eq("collectionId", args.collectionId)
+            .eq("collectionId", collection._id)
             .eq("status", "pending"),
         )
         .first(),
@@ -132,14 +171,14 @@ export async function restoreCollectionHandler(
         .withIndex("by_organization_and_collection_and_status", (q) =>
           q
             .eq("organizationId", collection.organizationId)
-            .eq("collectionId", args.collectionId)
+            .eq("collectionId", collection._id)
             .eq("status", "approved"),
         )
         .collect()
         .then(async (decisions) => {
           for (const decision of decisions) {
             if (
-              decision.targetCollectionStatus !== "archived" &&
+              isDisposalDecision(decision) &&
               (await isOpenDeaccession(ctx, decision))
             )
               return decision;
@@ -158,7 +197,7 @@ export async function restoreCollectionHandler(
 
   await Promise.all([
     markCollectionActive(ctx, {
-      collectionId: args.collectionId,
+      collectionId: collection._id,
       changedBy: userId,
       clearDisposition: true,
     }),
@@ -167,7 +206,7 @@ export async function restoreCollectionHandler(
       userId,
       action: "restored_collection",
       entityType: "collection",
-      entityId: args.collectionId,
+      entityId: collection._id,
       changes: {
         previousStatus: collection.status,
         accessionNumber: collection.accessionNumber,
@@ -178,6 +217,4 @@ export async function restoreCollectionHandler(
       },
     }),
   ] as const);
-
-  return null;
 }

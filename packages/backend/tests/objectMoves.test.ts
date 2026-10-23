@@ -2555,6 +2555,7 @@ describe("a rejected Removal leaves the Object free to move", () => {
       [
         "collections.create",
         "collections.read",
+        "collections.update",
         "collections.approve_deaccession",
       ],
       "Registrar Role",
@@ -2617,6 +2618,41 @@ describe("a rejected Removal leaves the Object free to move", () => {
       code: "MOVE_BLOCKED",
       blockers: ["has_deaccessions"],
     });
+  });
+
+  test("an Object restored after its Withdrawal can be moved to another organization (MUS-843)", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const registrar = await addRegistrar(t, fixture);
+    const deaccessionId = await registrar.mutation(api.deaccessions.create, {
+      organizationId: fixture.sourceOrganizationId,
+      collectionId: fixture.collectionId,
+      dateDeaccessioned: Date.now(),
+      reason: "Duplicate catalog record",
+      method: "destruction",
+      targetCollectionStatus: "archived",
+    });
+    // With no approval workflow the Withdrawal is approved at once.
+    await t.run(async (ctx) => {
+      expect((await ctx.db.get(deaccessionId))?.status).toBe("approved");
+    });
+    expect(await refusal(requestMove(fixture))).toMatchObject({
+      code: "MOVE_BLOCKED",
+    });
+
+    await registrar.mutation(api.collections.restoreCollection, {
+      collectionId: fixture.collectionId,
+    });
+
+    const eligibility = await fixture.requester.query(
+      api.objectMoves.getEligibility,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+      },
+    );
+    expect(eligibility.blockers).toEqual([]);
+    await expect(requestMove(fixture)).resolves.toBeDefined();
   });
 });
 

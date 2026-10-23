@@ -31,6 +31,7 @@ import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
+import { importRefusal } from "./utils/importErrors";
 import {
   type ImportEntityType,
   importEntityTypeValidator,
@@ -1371,18 +1372,16 @@ export const importObjectsDublinCore = mutation({
 
     const metadataRecords = fromDublinCoreXML(args.xml);
     if (metadataRecords.length === 0) {
-      throw new Error("No valid Dublin Core records found in XML");
+      throw importRefusal("DUBLIN_CORE_NO_RECORDS");
     }
     if (metadataRecords.length > MAX_IMPORT_BATCH_ROWS) {
-      throw new Error(
-        `A Dublin Core file can contain at most ${MAX_IMPORT_BATCH_ROWS} records`,
-      );
+      throw importRefusal("DUBLIN_CORE_TOO_MANY_RECORDS", {
+        limit: MAX_IMPORT_BATCH_ROWS,
+      });
     }
     if (job.totalItems !== metadataRecords.length) {
       if (toImportJobView(job).attemptedItems > 0) {
-        throw new Error(
-          "This XML has a different number of records than the original import",
-        );
+        throw importRefusal("DUBLIN_CORE_RECORD_COUNT_CHANGED");
       }
       await ctx.db.patch(job._id, {
         totalItems: metadataRecords.length,

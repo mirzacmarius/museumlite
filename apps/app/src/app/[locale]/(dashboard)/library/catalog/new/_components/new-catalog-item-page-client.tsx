@@ -21,6 +21,7 @@ import {
 } from "@/app/[locale]/(dashboard)/library/catalog/_components/catalog-item-form/use-catalog-item-form-helpers";
 import type { IsbnLookupData } from "@/components/library/isbn-lookup";
 import { useOrganization } from "@/components/organization-provider";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
 
@@ -29,6 +30,7 @@ export function NewCatalogItemPageClient() {
   const { currentOrganizationId } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const tNew = useScopedI18n("library.catalog.new");
+  const actionMessage = useActionErrorMessage();
   const tLib = useScopedI18n("library");
   const { getItemTypeLabel, getAudienceLabel } = useCatalogItemFormLabels();
 
@@ -63,7 +65,7 @@ export function NewCatalogItemPageClient() {
       );
       push(`/library/catalog/${itemId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : tNew("createFailed"));
+      setError(actionMessage(err, tNew("createFailed")));
     } finally {
       setIsSaving(false);
     }

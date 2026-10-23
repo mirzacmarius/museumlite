@@ -450,6 +450,37 @@ export default {
       skip: "Omite pentru moment",
     },
   },
+  organizationsOverview: {
+    title: "Toate organizațiile mele",
+    description:
+      "Toate organizațiile din care faceți parte. Deschideți una pentru a lucra în ea.",
+    menuLink: "Toate organizațiile mele",
+    searchPlaceholder: "Căutați organizații",
+    searchLabel: "Căutați organizații",
+    current: "Curentă",
+    open: "Deschide",
+    role: "Rolul dvs.: {role}",
+    memberSince: "Membru din {date}",
+    partOf: "Face parte din {name}",
+    objects: "Obiecte",
+    activeLoans: "Împrumuturi active",
+    locations: "Locații",
+    metricsUnavailable: "Numărătorile sunt în pregătire.",
+    noResults: "Nicio organizație nu corespunde cu „{query}”.",
+    empty: "Nu faceți încă parte din nicio organizație.",
+    createOrganization: "Creați o organizație",
+    types: {
+      museum: "Muzeu",
+      gallery: "Galerie",
+      library: "Bibliotecă",
+      collector: "Colecționar",
+    },
+    tiers: {
+      free: "Gratuit",
+      pro: "Pro",
+      enterprise: "Enterprise",
+    },
+  },
   organizationsNew: {
     title: "Detalii organizație",
     description:
@@ -696,6 +727,19 @@ export default {
             "Organizația va fi reactivată, iar ștergerea va fi oprită.",
           confirm: "Anulează ștergerea",
           cancel: "Păstrează ștergerea programată",
+        },
+        refusals: {
+          evidenceProtected:
+            "Această organizație deține înregistrări permanente ale muzeului, așa că nu poate fi ștearsă. Retrageți în schimb obiectele din catalog; înregistrările lor rămân disponibile.",
+          subOrganization:
+            "O suborganizație nu poate fi ștearsă din acest ecran.",
+          noActiveDeletion:
+            "Nu există nicio ștergere în curs de anulat. Poate a fost deja anulată sau finalizată.",
+          alreadyOwner: "Sunteți deja proprietarul acestei organizații.",
+          newOwnerNotSuperAdmin:
+            "Proprietatea poate fi transferată doar altui SuperAdmin.",
+          newOwnerNotMember:
+            "Noul proprietar trebuie să fie membru al acestei organizații.",
         },
         requestError: "Programarea ștergerii a eșuat. Încearcă din nou.",
         cancelError: "Anularea ștergerii a eșuat. Încearcă din nou.",
@@ -1555,6 +1599,8 @@ export default {
       inTransfer: "Transfer în curs",
     },
     withdrawal: {
+      reasonRequired:
+        "Introduceți un motiv pentru retragerea obiectului din catalog.",
       restore: "Readu în catalog",
       restored: "Obiectul a fost readus în catalogul obișnuit.",
       restoreFailed:
@@ -4558,6 +4604,15 @@ export default {
       exportAllReports: "Exportă toate rapoartele",
     },
     scheduledReports: {
+      refusals: {
+        nameInvalid:
+          "Introduceți un nume de raport de 1 până la 200 de caractere.",
+        generatorUnavailable: "Pot fi generate doar rapoarte KPI operaționale.",
+        configUnsupported:
+          "Acest raport are intervale de date, filtre sau trimitere prin e-mail dintr-o versiune mai veche. Rapoartele KPI sunt instantanee curente; ștergeți aceste setări pentru a-l rula.",
+        alreadyRunning: "Acest raport rulează deja.",
+        runNotRetryable: "Doar o rulare eșuată poate fi reîncercată.",
+      },
       title: "Rapoarte programate",
       nameLabel: "Numele raportului",
       namePlaceholder: "KPI operaționali săptămânali",
@@ -6068,6 +6123,32 @@ export default {
     resumeNotice:
       "Acest fișier a fost importat la {date}: {attempted} din {total} rânduri încercate, {accepted} acceptate, {failed} eșuate. Reluarea omite rândurile acceptate.",
     resumeImport: "Reia importul",
+    csvProblems: {
+      noDataRows: "Fișierul nu are rânduri de date.",
+      unclosedQuote:
+        "Ghilimelele din rândul {row} nu sunt închise, așa că fișierul nu poate fi citit. Verificați ghilimelele din acel rând.",
+      tooManyRows:
+        "Acest fișier are {rows} rânduri. Împărțiți-l în fișiere de cel mult {max} rânduri.",
+    },
+    refusals: {
+      jobNotFound: "Acest import nu a fost găsit. Începeți un import nou.",
+      jobWrongType:
+        "Acest import a fost început pentru alt tip de înregistrare. Începeți un import nou.",
+      jobCancelled:
+        "Acest import a fost anulat. Începeți un import nou pentru a continua.",
+      jobFailed:
+        "Acest import a eșuat și nu poate continua. Începeți un import nou.",
+      tooManyRows:
+        "Un import poate avea cel mult {limit} rânduri. Împărțiți fișierul și importați fiecare parte.",
+      rowNotInImport:
+        "Rândul {row} nu era în fișierul original. Un fișier corectat trebuie să păstreze aceleași rânduri în aceeași ordine.",
+      dublinCoreNoRecords:
+        "Fișierul XML nu are înregistrări Dublin Core pe care aplicația să le poată citi.",
+      dublinCoreTooManyRecords:
+        "Un fișier Dublin Core poate avea cel mult {limit} înregistrări. Împărțiți fișierul și importați fiecare parte.",
+      dublinCoreRecordCountChanged:
+        "Acest fișier XML are alt număr de înregistrări decât importul pe care îl reia. Începeți un import nou pentru un fișier modificat.",
+    },
   },
   activityLog: {
     historyPreview:
@@ -8300,6 +8381,7 @@ export default {
         actions: {
           created_collection: "Obiect creat",
           updated_collection: "Obiect actualizat",
+          deleted_collection: "Obiect marcat ca șters",
           archived_collection: "Obiect retras",
           restored_collection: "Obiect restaurat",
           received_collection_from_organization_move:
@@ -11005,6 +11087,14 @@ export default {
       accession: "registrul de accesiuni",
     },
     errors: {
+      reviewNoteInvalid:
+        "Scrieți o notă de revizuire de 1 până la 2000 de caractere care descrie dovezile istorice.",
+      indexIncomplete:
+        "Terminați indexarea numerelor istorice din {register} înainte de a înregistra revizuirea unui conflict.",
+      noConflict:
+        "Acest număr nu mai este în conflict cu altă înregistrare din {register}.",
+      reviewFailed:
+        "Revizuirea identificatorului nu a putut fi salvată. Încercați din nou.",
       invalid:
         "Folosiți între 1 și 256 de caractere vizibile pentru număr. Numerele istorice existente rămân neschimbate.",
       inUse:

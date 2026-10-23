@@ -17,6 +17,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useScopedI18n } from "@/locales/client";
 
 interface MediaImportUnmappedReviewProps {
@@ -29,6 +30,7 @@ export function MediaImportUnmappedReview({
   onComplete,
 }: MediaImportUnmappedReviewProps) {
   const t = useScopedI18n("collections");
+  const actionMessage = useActionErrorMessage();
   const unmappedFiles = useQuery(api.mediaImports.getUnmappedFiles, { jobId });
   const mapFile = useMutation(api.mediaImports.mapFileToCollection);
 
@@ -71,9 +73,7 @@ export function MediaImportUnmappedReview({
       });
       setHandledFiles((prev) => new Set(prev).add(storageId));
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : t("mediaImport.errorMapFailed"),
-      );
+      toast.error(actionMessage(err, t("mediaImport.errorMapFailed")));
     }
   };
 

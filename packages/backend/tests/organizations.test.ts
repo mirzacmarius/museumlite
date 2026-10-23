@@ -270,7 +270,7 @@ describe("getUsageStats", () => {
     expect(before.metrics).toEqual({
       availability: "unavailable",
       reason: "not_built",
-      definitionVersion: 2,
+      definitionVersion: 3,
     });
     expect(before.objects.used).toBeNull();
     expect(before.storage.used).toBeNull();

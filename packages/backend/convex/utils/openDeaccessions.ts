@@ -48,22 +48,56 @@ export function executedTransferDeaccessionIds(
   );
 }
 
+type HoldingFields = Pick<
+  Doc<"deaccessions">,
+  "_id" | "status" | "method" | "targetCollectionStatus"
+>;
+
+/** A Withdrawal (Remove item) hides the Object instead of disposing of it. */
+function isWithdrawal(deaccession: HoldingFields) {
+  return (
+    deaccession.targetCollectionStatus === "archived" ||
+    deaccession.targetCollectionStatus === "deleted"
+  );
+}
+
+/** Whether `holdsObject` needs the Object's status to decide. */
+function needsObjectStatus(deaccession: HoldingFields) {
+  return deaccession.status === "approved" && isWithdrawal(deaccession);
+}
+
 /**
  * Whether a Deaccession still holds its Object: pending, or approved and not
- * closed by an executed transfer. A rejected one left the Object in the
- * collection. `closedByTransfer` holds the Deaccessions executed transfers
- * closed.
+ * closed. A rejected one left the Object in the collection. An approved
+ * Removal closes when its transfer executes (`closedByTransfer` holds those),
+ * and an approved Withdrawal closes when its Object is restored, so it holds
+ * only while the Object is still withdrawn.
  */
 export function holdsObject(
-  deaccession: Pick<Doc<"deaccessions">, "_id" | "status" | "method">,
+  deaccession: HoldingFields,
   closedByTransfer: ReadonlySet<Id<"deaccessions">>,
+  objectStatus: Doc<"collections">["status"] | undefined,
 ) {
   if (deaccession.status === "rejected") return false;
+  if (deaccession.status === "pending") return true;
+  if (isWithdrawal(deaccession)) {
+    return (
+      objectStatus === undefined ||
+      objectStatus === "archived" ||
+      objectStatus === "deleted"
+    );
+  }
   return (
-    deaccession.status === "pending" ||
-    deaccession.method !== "transfer" ||
-    !closedByTransfer.has(deaccession._id)
+    deaccession.method !== "transfer" || !closedByTransfer.has(deaccession._id)
   );
+}
+
+async function objectStatusFor(
+  ctx: ReadCtx,
+  deaccession: HoldingFields & Pick<Doc<"deaccessions">, "collectionId">,
+) {
+  if (!needsObjectStatus(deaccession)) return undefined;
+  return (await ctx.db.get(deaccession.collectionId))?.status;
 }
 
 /** Whether one Deaccession still holds its Object; see `holdsObject`. */
@@ -77,7 +111,11 @@ export async function isOpenDeaccession(
           await transferRequestsOf(ctx, deaccession.collectionId),
         )
       : new Set<Id<"deaccessions">>();
-  return holdsObject(deaccession, closedByTransfer);
+  return holdsObject(
+    deaccession,
+    closedByTransfer,
+    await objectStatusFor(ctx, deaccession),
+  );
 }
 
 /** Whether the Object has an open Deaccession in this Organization. */
@@ -103,7 +141,14 @@ export async function hasOpenDeaccession(
         await transferRequestsOf(ctx, collectionId),
       );
     }
-    if (holdsObject(deaccession, closedByTransfer ?? new Set())) return true;
+    if (
+      holdsObject(
+        deaccession,
+        closedByTransfer ?? new Set(),
+        await objectStatusFor(ctx, deaccession),
+      )
+    )
+      return true;
   }
   return false;
 }
@@ -180,7 +225,13 @@ export async function openDeaccessionCollectionIds(
         q.eq("organizationId", organizationId).eq("status", status),
       );
     for await (const deaccession of deaccessions) {
-      if (holdsObject(deaccession, closedByTransfer)) {
+      if (
+        holdsObject(
+          deaccession,
+          closedByTransfer,
+          await objectStatusFor(ctx, deaccession),
+        )
+      ) {
         collectionIds.add(deaccession.collectionId);
       }
     }

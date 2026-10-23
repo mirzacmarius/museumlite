@@ -66,6 +66,7 @@ export const getAnalytics = query({
       }),
       transfers: v.object({
         pending: v.number(),
+        waitingForReceiver: v.number(),
         executed: v.number(),
         rejected: v.number(),
         cancelled: v.number(),

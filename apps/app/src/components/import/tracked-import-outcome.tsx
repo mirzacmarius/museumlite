@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { type ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useDownloadImportFailures } from "@/hooks/use-download-import-failures";
 import { useScopedI18n } from "@/locales/client";
 
@@ -34,8 +35,12 @@ interface TrackedImportOutcomeProps {
   viewLabel: string;
   onReset: () => void;
   onRetryFailed: () => Promise<void>;
-  /** Omit when the import has no corrected-file workflow (e.g. media files). */
-  onUploadCorrection?: (file: File) => Promise<void>;
+  /**
+   * Resolves with the reason, in the app's language, when the corrected file
+   * is refused before any row is sent. Omit when the import has no
+   * corrected-file workflow (e.g. media files).
+   */
+  onUploadCorrection?: (file: File) => Promise<string | undefined>;
   /** Continues an interrupted import in place; shown only when unfinished. */
   onResume?: () => Promise<void>;
   /** Overrides for row-oriented copy, e.g. when items are files. */
@@ -67,6 +72,7 @@ export function TrackedImportOutcome({
 }: TrackedImportOutcomeProps) {
   const t = useScopedI18n("trackedImport");
   const downloadFailures = useDownloadImportFailures();
+  const actionMessage = useActionErrorMessage();
   const correctionInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const failed = importJob?.failedItems ?? 0;
@@ -84,12 +90,14 @@ export function TrackedImportOutcome({
       ? "text-amber-500"
       : "text-green-500";
 
+  /** Runs an action; a string it resolves with is a refusal to show. */
   async function run(action: () => Promise<unknown>, fallback: string) {
     setBusy(true);
     try {
-      await action();
+      const refusal = await action();
+      if (typeof refusal === "string") toast.error(refusal);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : fallback);
+      toast.error(actionMessage(error, fallback));
     } finally {
       setBusy(false);
     }
@@ -158,14 +166,12 @@ export function TrackedImportOutcome({
             variant="outline"
             disabled={busy}
             onClick={() =>
-              run(
-                () =>
-                  downloadFailures(
-                    importJob._id,
-                    `${fileName?.replace(/\.csv$/i, "") ?? "import"}-failed-rows.csv`,
-                  ),
-                t("downloadFailed"),
-              )
+              run(async () => {
+                await downloadFailures(
+                  importJob._id,
+                  `${fileName?.replace(/\.csv$/i, "") ?? "import"}-failed-rows.csv`,
+                );
+              }, t("downloadFailed"))
             }
           >
             <Download className="mr-2 size-4" />

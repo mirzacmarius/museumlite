@@ -4,6 +4,8 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useCallback, useState } from "react";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useCsvFileProblemMessage } from "@/hooks/use-csv-file-problem-message";
 import { useScopedI18n } from "@/locales/client";
 import {
   assertSameSourceRows,
@@ -23,15 +25,19 @@ interface TrackedImportRun<Row> {
 
 /**
  * Import run state shared by the CSV import pages. `parseCorrection` turns an
- * edited copy of the file into rows using the page's own column rules.
+ * edited copy of the file into rows using the page's own column rules, or
+ * returns why the file is refused, in the app's language. It may also throw a
+ * `CsvFileError`.
  */
 export function useTrackedImportFlow<Row extends TrackedImportRow>(options: {
   organizationId: string | null;
   entityType: ImportEntityType;
   sendBatch: Parameters<typeof useTrackedImportRunner<Row>>[0]["sendBatch"];
-  parseCorrection: (text: string) => Row[];
+  parseCorrection: (text: string) => Row[] | string;
 }) {
   const t = useScopedI18n("trackedImport");
+  const actionMessage = useActionErrorMessage();
+  const csvMessage = useCsvFileProblemMessage();
   const runner = useTrackedImportRunner<Row>(options);
   const [run, setRun] = useState<TrackedImportRun<Row>>({
     jobId: null,
@@ -55,12 +61,12 @@ export function useTrackedImportFlow<Row extends TrackedImportRow>(options: {
         setRun({
           jobId,
           phase: "complete",
-          errors: [error instanceof Error ? error.message : t("importFailed")],
+          errors: [actionMessage(error, t("importFailed"))],
           sentRows: sourceRows,
         });
       }
     },
-    [runner, t],
+    [actionMessage, runner, t],
   );
 
   const start = useCallback(
@@ -81,11 +87,11 @@ export function useTrackedImportFlow<Row extends TrackedImportRow>(options: {
       } catch (error) {
         setRun((prev) => ({
           ...prev,
-          errors: [error instanceof Error ? error.message : t("importFailed")],
+          errors: [actionMessage(error, t("importFailed"))],
         }));
       }
     },
-    [runner, send, t],
+    [actionMessage, runner, send, t],
   );
 
   const retryFailed = useCallback(async () => {
@@ -98,21 +104,31 @@ export function useTrackedImportFlow<Row extends TrackedImportRow>(options: {
     );
   }, [run.jobId, run.sentRows, runner, send]);
 
+  /** Resolves with the reason when the corrected file is refused. */
   const uploadCorrection = useCallback(
-    async (file: File) => {
+    async (file: File): Promise<string | undefined> => {
       if (!run.jobId) return;
-      const corrected = options.parseCorrection(await file.text());
+      const text = await file.text();
+      let corrected: Row[] | string;
+      try {
+        corrected = options.parseCorrection(text);
+      } catch (error) {
+        const refusal = csvMessage(error);
+        if (refusal) return refusal;
+        throw error;
+      }
+      if (typeof corrected === "string") return corrected;
       try {
         assertSameSourceRows(run.sentRows, corrected);
       } catch (error) {
         if (error instanceof ImportCorrectionMismatchError) {
-          throw new Error(t("correctionMismatch"));
+          return t("correctionMismatch");
         }
         throw error;
       }
       await send(run.jobId, corrected);
     },
-    [options, run.jobId, run.sentRows, send, t],
+    [csvMessage, options, run.jobId, run.sentRows, send, t],
   );
 
   const cancel = useCallback(async () => {

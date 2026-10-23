@@ -28,7 +28,9 @@ import {
 import { useReducer, useState } from "react";
 import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useClientTimeZone } from "@/hooks/use-client-date-format";
+import { useReportingErrorMessage } from "@/hooks/use-reporting-error-message";
 import { formatScheduleWeekday, SCHEDULE_WEEKDAYS } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -53,6 +55,14 @@ const DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   hour: "2-digit",
   minute: "2-digit",
 };
+
+/** Report refusals get their own copy; anything else the action's fallback. */
+function useReportFailureMessage() {
+  const reportingMessage = useReportingErrorMessage();
+  const actionMessage = useActionErrorMessage();
+  return (error: unknown, fallback: string) =>
+    reportingMessage(error) ?? actionMessage(error, fallback);
+}
 
 export function ScheduledReportsCard({
   organizationId,
@@ -127,6 +137,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 function ScheduledReportForm({ organizationId }: ScheduledReportsCardProps) {
   const t = useScopedI18n("analytics.scheduledReports");
+  const failureMessage = useReportFailureMessage();
   const locale = useCurrentLocale();
   const [state, dispatch] = useReducer(formReducer, INITIAL_FORM_STATE);
   const timezone = useClientTimeZone();
@@ -171,7 +182,7 @@ function ScheduledReportForm({ organizationId }: ScheduledReportsCardProps) {
       toast.success(t("created"));
     } catch (error) {
       dispatch({ type: "set-creating", value: false });
-      toast.error(error instanceof Error ? error.message : t("createFailed"));
+      toast.error(failureMessage(error, t("createFailed")));
     }
   }
 
@@ -342,6 +353,7 @@ function ScheduledReportList({
 
 function ScheduledReportRow({ report }: { report: ScheduledReport }) {
   const t = useScopedI18n("analytics.scheduledReports");
+  const failureMessage = useReportFailureMessage();
   const locale = useCurrentLocale();
   const [isBusy, setIsBusy] = useState(false);
   const updateScheduledReport = useMutation(
@@ -362,7 +374,7 @@ function ScheduledReportRow({ report }: { report: ScheduledReport }) {
   }
 
   function handleActionFailure(error: unknown, fallback: string) {
-    toast.error(error instanceof Error ? error.message : fallback);
+    toast.error(failureMessage(error, fallback));
   }
 
   return (
@@ -512,6 +524,7 @@ function RecentReportRuns({ organizationId }: ScheduledReportsCardProps) {
 
 function ReportRunRow({ run }: { run: ReportRun }) {
   const t = useScopedI18n("analytics.scheduledReports");
+  const failureMessage = useReportFailureMessage();
   const locale = useCurrentLocale();
   const convex = useConvex();
   const retryReportRun = useMutation(api.reporting.retryReportRun);
@@ -550,9 +563,7 @@ function ReportRunRow({ run }: { run: ReportRun }) {
         link.click();
         URL.revokeObjectURL(url);
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t("downloadFailed"),
-        );
+        toast.error(failureMessage(error, t("downloadFailed")));
       }
     });
   }
@@ -563,7 +574,7 @@ function ReportRunRow({ run }: { run: ReportRun }) {
         await retryReportRun({ runId: run._id });
         toast.success(t("retryStarted"));
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t("retryFailed"));
+        toast.error(failureMessage(error, t("retryFailed")));
       }
     });
   }

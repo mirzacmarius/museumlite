@@ -36,9 +36,25 @@ function detectDelimiter(source: string): string {
 }
 
 /** Why a file cannot be read as a CSV table. */
-export type CsvFileProblem =
+export type CsvReadProblem =
   | { code: "empty" }
   | { code: "unclosedQuote"; line: number };
+
+/** A read problem, or a file too long to import. */
+export type CsvFileProblem =
+  | CsvReadProblem
+  | { code: "tooManyRows"; rows: number; max: number };
+
+/**
+ * A file problem thrown by the parsing helpers. `message` is English for
+ * logs; staff see the problem through `useCsvFileProblemMessage`.
+ */
+export class CsvFileError extends Error {
+  constructor(readonly problem: CsvFileProblem) {
+    super(describeProblem(problem));
+    this.name = "CsvFileError";
+  }
+}
 
 /**
  * RFC 4180 parser: quoted fields may contain the separator, doubled quotes
@@ -48,7 +64,7 @@ export type CsvFileProblem =
  */
 function readCsvRecords(
   text: string,
-): { records: CsvRecord[] } | { problem: CsvFileProblem } {
+): { records: CsvRecord[] } | { problem: CsvReadProblem } {
   const source = text.startsWith("\ufeff") ? text.slice(1) : text;
   const delimiter = detectDelimiter(source);
   const records: CsvRecord[] = [];
@@ -105,15 +121,20 @@ function readCsvRecords(
 }
 
 function describeProblem(problem: CsvFileProblem) {
-  return problem.code === "empty"
-    ? "CSV file is empty"
-    : `Unclosed quoted field starting on line ${problem.line}`;
+  switch (problem.code) {
+    case "empty":
+      return "CSV file is empty or has no data rows";
+    case "unclosedQuote":
+      return `Unclosed quoted field starting on line ${problem.line}`;
+    case "tooManyRows":
+      return `This file has ${problem.rows} rows. Split it into files of at most ${problem.max} rows.`;
+  }
 }
 
-/** {@link readCsvRecords}, throwing an English error for a file problem. */
+/** {@link readCsvRecords}, throwing a {@link CsvFileError} for a file problem. */
 export function parseCsvRecords(text: string): CsvRecord[] {
   const result = readCsvRecords(text);
-  if ("problem" in result) throw new Error(describeProblem(result.problem));
+  if ("problem" in result) throw new CsvFileError(result.problem);
   return result.records;
 }
 
@@ -123,7 +144,7 @@ export function parseCsvRecords(text: string): CsvRecord[] {
  */
 export function readCsvTable(
   text: string,
-): { table: CsvTable } | { problem: CsvFileProblem } {
+): { table: CsvTable } | { problem: CsvReadProblem } {
   const result = readCsvRecords(text);
   if ("problem" in result) return result;
   const [header, ...records] = result.records;
@@ -139,10 +160,10 @@ export function readCsvTable(
   };
 }
 
-/** {@link readCsvTable}, throwing an English error for a file problem. */
+/** {@link readCsvTable}, throwing a {@link CsvFileError} for a file problem. */
 export function parseCsvTable(text: string): CsvTable {
   const result = readCsvTable(text);
-  if ("problem" in result) throw new Error(describeProblem(result.problem));
+  if ("problem" in result) throw new CsvFileError(result.problem);
   return result.table;
 }
 
@@ -169,12 +190,14 @@ export function parseCsvObjects(
 ): { headers: string[]; rows: CsvObjectRow[] } {
   const table = parseCsvTable(text);
   if (table.records.length === 0) {
-    throw new Error("CSV file has no data rows");
+    throw new CsvFileError({ code: "empty" });
   }
   if (table.records.length > maxRows) {
-    throw new Error(
-      `This file has ${table.records.length} rows. Split it into files of at most ${maxRows} rows.`,
-    );
+    throw new CsvFileError({
+      code: "tooManyRows",
+      rows: table.records.length,
+      max: maxRows,
+    });
   }
   return {
     headers: table.headers,

@@ -34,6 +34,7 @@ import { TrackedImportProgress } from "@/components/import/tracked-import-progre
 import { ImportJobUnavailable } from "@/components/import-job-unavailable";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useCsvFileProblemMessage } from "@/hooks/use-csv-file-problem-message";
 import { useTrackedImportFlow } from "@/hooks/use-tracked-import-flow";
 import { sha256Hex } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
@@ -315,6 +316,7 @@ function AccountImportPreviewStep({
 export default function ImportAccountsPage() {
   const t = useScopedI18n("accounts.csvImport");
   const tImport = useScopedI18n("untranslatedDashboard.accountsImport");
+  const csvMessage = useCsvFileProblemMessage();
   const tAccounts = useScopedI18n("accounts");
   const _tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
@@ -329,6 +331,8 @@ export default function ImportAccountsPage() {
     invalidAccountType: (row, value) =>
       tImport("invalidAccountType", { row, value }),
     emptyValue: () => tImport("emptyValue"),
+    unreadableFile: (problem) =>
+      csvMessage(problem) ?? tImport("csvMissingHeaderAndRows"),
   };
 
   const importBatch = useMutation(api.imports.importAccountsBatch);
@@ -338,7 +342,7 @@ export default function ImportAccountsPage() {
     sendBatch: importBatch,
     parseCorrection: (text) => {
       const { rows, fileErrors } = parseAccountCsv(text, importMessages);
-      if (fileErrors.length > 0) throw new Error(fileErrors.join(" "));
+      if (fileErrors.length > 0) return fileErrors.join(" ");
       return rows;
     },
   });

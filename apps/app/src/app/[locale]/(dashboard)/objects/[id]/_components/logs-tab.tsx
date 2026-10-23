@@ -145,6 +145,7 @@ const KNOWN_ACTIONS = [
   "created_collection",
   "updated_collection",
   "archived_collection",
+  "deleted_collection",
   "restored_collection",
   "received_collection_from_organization_move",
   "added_alternate_accession_number",

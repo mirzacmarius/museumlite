@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { syncCollectionGroupMemberships } from "./utils/catalogObjects";
+import { restoreObject, withdrawObject } from "./utils/collectionDisposition";
 import { replaceCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { errorMessageForRecord } from "./utils/custodyErrors";
 import {
@@ -14,9 +15,8 @@ import {
 } from "./utils/locationIntegrity";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
-import { assertEntryAllowsStatus } from "./utils/objectEntryLifecycle";
-import { assertNotInTransfer } from "./utils/openDeaccessions";
 import { requirePermission } from "./utils/permissions";
+import { withdrawalError } from "./utils/withdrawalErrors";
 
 // ============================================
 // Constants
@@ -198,6 +198,29 @@ export const createBulkMoveJob = mutation({
 });
 
 /**
+ * A bulk status change withdraws or restores each Object the way the single
+ * Remove item and restore do, so it needs the same permission and a reason
+ * for a Withdrawal.
+ */
+async function requireBulkStatusPermission(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    newStatus: "active" | "archived" | "deleted";
+    reason?: string;
+  },
+) {
+  if (args.newStatus === "active") {
+    await requirePermission(ctx, args.organizationId, "collections.update");
+    return;
+  }
+  await requirePermission(ctx, args.organizationId, "collections.delete");
+  if (!args.reason?.trim()) {
+    throw withdrawalError("WITHDRAWAL_REASON_REQUIRED");
+  }
+}
+
+/**
  * Create a bulk status change job
  */
 export const createBulkStatusChangeJob = mutation({
@@ -226,11 +249,7 @@ export const createBulkStatusChangeJob = mutation({
       throw new Error("Maximum 1000 items per batch operation");
     }
 
-    if (args.newStatus === "deleted") {
-      await requirePermission(ctx, args.organizationId, "collections.delete");
-    } else {
-      await requirePermission(ctx, args.organizationId, "collections.update");
-    }
+    await requireBulkStatusPermission(ctx, args);
 
     await assertCollectionsBelongToOrg(
       ctx,
@@ -791,34 +810,15 @@ async function processBulkStatusChange(
   },
   userId: Id<"users">,
 ) {
-  await assertEntryAllowsStatus(ctx, collection._id, payload.newStatus);
-  await assertNotInTransfer(ctx, collection, payload.newStatus);
-  const now = Date.now();
-  const updates: Partial<CollectionDoc> = {
-    status: payload.newStatus,
-    lastModifiedBy: userId,
-    lastModifiedAt: now,
-  };
-
-  if (payload.newStatus === "archived") {
-    updates.archivedAt = now;
-    updates.archivedBy = userId;
-    updates.archivedReason = payload.reason;
-  } else if (payload.newStatus === "deleted") {
-    updates.deletedAt = now;
-    updates.deletedBy = userId;
-    updates.deletedReason = payload.reason;
-  } else if (payload.newStatus === "active") {
-    // Clear archived/deleted fields when restoring
-    updates.archivedAt = undefined;
-    updates.archivedBy = undefined;
-    updates.archivedReason = undefined;
-    updates.deletedAt = undefined;
-    updates.deletedBy = undefined;
-    updates.deletedReason = undefined;
+  if (payload.newStatus === "active") {
+    await restoreObject(ctx, collection, userId);
+    return;
   }
-
-  await ctx.db.patch(collection._id, updates);
+  await withdrawObject(ctx, collection, {
+    userId,
+    reason: payload.reason ?? "",
+    targetStatus: payload.newStatus,
+  });
 }
 
 // ============================================
@@ -951,13 +951,8 @@ export const quickBulkStatusChange = mutation({
       );
     }
 
-    if (args.newStatus === "deleted") {
-      await requirePermission(ctx, args.organizationId, "collections.delete");
-    } else {
-      await requirePermission(ctx, args.organizationId, "collections.update");
-    }
+    await requireBulkStatusPermission(ctx, args);
 
-    const now = Date.now();
     const statusResults = await Promise.all(
       args.collectionIds.map(async (collectionId) => {
         try {
@@ -975,33 +970,7 @@ export const quickBulkStatusChange = mutation({
               error: "Collection belongs to different organization",
             };
           }
-          await assertEntryAllowsStatus(ctx, collectionId, args.newStatus);
-          await assertNotInTransfer(ctx, collection, args.newStatus);
-
-          const updates: Partial<CollectionDoc> = {
-            status: args.newStatus,
-            lastModifiedBy: userId,
-            lastModifiedAt: now,
-          };
-
-          if (args.newStatus === "archived") {
-            updates.archivedAt = now;
-            updates.archivedBy = userId;
-            updates.archivedReason = args.reason;
-          } else if (args.newStatus === "deleted") {
-            updates.deletedAt = now;
-            updates.deletedBy = userId;
-            updates.deletedReason = args.reason;
-          } else if (args.newStatus === "active") {
-            updates.archivedAt = undefined;
-            updates.archivedBy = undefined;
-            updates.archivedReason = undefined;
-            updates.deletedAt = undefined;
-            updates.deletedBy = undefined;
-            updates.deletedReason = undefined;
-          }
-
-          await ctx.db.patch(collectionId, updates);
+          await processBulkStatusChange(ctx, collection, args, userId);
           return { success: true as const };
         } catch (error) {
           return {

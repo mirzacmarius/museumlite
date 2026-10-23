@@ -304,7 +304,7 @@ async function buildEligibilityBlockers(
   collection: {
     _id: Id<"collections">;
     organizationId: Id<"organizations">;
-    status: string;
+    status: Doc<"collections">["status"];
     parentObjectId?: Id<"collections">;
   },
   targetOrganizationId?: Id<"organizations">,
@@ -455,13 +455,14 @@ async function buildEligibilityBlockers(
     .collect();
 
   // A rejected Removal, whatever its method, left the object in the
-  // collection, and the Removal of an executed transfer closed when the object
-  // arrived, so neither stops the object from being transferred again.
+  // collection, the Removal of an executed transfer closed when the object
+  // arrived, and a Withdrawal closed when the object was restored, so none of
+  // them stops the object from being transferred again.
   const closedByTransfer = executedTransferDeaccessionIds(moveRequests);
   const blockingDeaccessions = deaccessions.filter(
     (deaccession) =>
       deaccession._id !== options.ignoreDeaccessionId &&
-      holdsObject(deaccession, closedByTransfer),
+      holdsObject(deaccession, closedByTransfer, collection.status),
   );
   if (blockingDeaccessions.length > 0) {
     blockers.push({

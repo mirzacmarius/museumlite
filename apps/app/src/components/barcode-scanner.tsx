@@ -132,23 +132,21 @@ export function BarcodeScanner({
 
       setStatus("scanning");
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-
-      if (errorMsg.includes("Permission") || errorMsg.includes("NotAllowed")) {
-        setStatus("permission-denied");
-        setErrorMessage(
-          translate(
+      // The camera's own error text is English; callers get the copy shown here.
+      const errorName = error instanceof Error ? error.name : "";
+      const errorText = error instanceof Error ? error.message : String(error);
+      const permissionDenied =
+        errorName === "NotAllowedError" ||
+        errorText.includes("Permission") ||
+        errorText.includes("NotAllowed");
+      const message = permissionDenied
+        ? translate(
             "untranslatedComponents.labels.cameraPermissionDeniedEnableBrowserAccess",
-          ),
-        );
-      } else {
-        setStatus("error");
-        setErrorMessage(translate(`${LABELS}.failedToStartScanner`));
-      }
-
-      if (onScanError) {
-        onScanError(errorMsg);
-      }
+          )
+        : translate(`${LABELS}.failedToStartScanner`);
+      setStatus(permissionDenied ? "permission-denied" : "error");
+      setErrorMessage(message);
+      onScanError?.(message);
     }
   }, [disabled, status, fps, qrbox, aspectRatio, onScanSuccess, onScanError]);
 

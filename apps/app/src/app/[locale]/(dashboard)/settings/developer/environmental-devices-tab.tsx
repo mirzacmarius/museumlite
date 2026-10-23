@@ -30,6 +30,7 @@ import {
 import { type FormEvent, useReducer } from "react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ClientDateText } from "./developer-shared";
@@ -115,6 +116,7 @@ function EnvironmentalDevicesContent({
   organizationId: Id<"organizations">;
 }) {
   const t = useScopedI18n("settings.developer.environmentalDevices");
+  const actionMessage = useActionErrorMessage();
   const devices = useQuery(api.environmentalDevices.list, { organizationId });
   const locations = useQuery(api.environmentalDevices.listLocations, {
     organizationId,
@@ -153,7 +155,7 @@ function EnvironmentalDevicesContent({
       patchState({ oneTimeCredential: result.token, name: "" });
     } catch (cause) {
       patchState({
-        error: cause instanceof Error ? cause.message : t("errors.register"),
+        error: actionMessage(cause, t("errors.register")),
       });
     } finally {
       patchState({ isWorking: false });
@@ -178,7 +180,7 @@ function EnvironmentalDevicesContent({
       updateProbeForm(deviceId, { probeId: "" });
     } catch (cause) {
       patchState({
-        error: cause instanceof Error ? cause.message : t("errors.bind"),
+        error: actionMessage(cause, t("errors.bind")),
       });
     } finally {
       patchState({ isWorking: false });
@@ -192,7 +194,7 @@ function EnvironmentalDevicesContent({
       patchState({ oneTimeCredential: result.token });
     } catch (cause) {
       patchState({
-        error: cause instanceof Error ? cause.message : t("errors.rotate"),
+        error: actionMessage(cause, t("errors.rotate")),
       });
     } finally {
       patchState({ isWorking: false });
@@ -205,7 +207,7 @@ function EnvironmentalDevicesContent({
       await revokeDevice({ organizationId, deviceId });
     } catch (cause) {
       patchState({
-        error: cause instanceof Error ? cause.message : t("errors.revoke"),
+        error: actionMessage(cause, t("errors.revoke")),
       });
     } finally {
       patchState({ isWorking: false });

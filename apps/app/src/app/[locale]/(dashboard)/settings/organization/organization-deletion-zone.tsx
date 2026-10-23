@@ -25,6 +25,8 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { AlertTriangle, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
+import { useOrganizationDeletionErrorMessage } from "@/hooks/use-organization-deletion-error-message";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -78,6 +80,10 @@ export function OrganizationDeletionZone({
 }: OrganizationDeletionZoneProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("settings.organization.deletion");
+  const deletionMessage = useOrganizationDeletionErrorMessage();
+  const actionMessage = useActionErrorMessage();
+  const refusalMessage = (err: unknown, fallback: string) =>
+    deletionMessage(err) ?? actionMessage(err, fallback);
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,7 +140,7 @@ export function OrganizationDeletionZone({
     try {
       await requestDeletion({ organizationId });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("requestError"));
+      setError(refusalMessage(err, t("requestError")));
     } finally {
       setIsSubmitting(false);
     }
@@ -146,7 +152,7 @@ export function OrganizationDeletionZone({
     try {
       await cancelDeletion({ organizationId });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("cancelError"));
+      setError(refusalMessage(err, t("cancelError")));
     } finally {
       setIsSubmitting(false);
     }
@@ -165,7 +171,7 @@ export function OrganizationDeletionZone({
       });
       setSelectedOwnerId("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("transferError"));
+      setError(refusalMessage(err, t("transferError")));
     } finally {
       setIsSubmitting(false);
     }

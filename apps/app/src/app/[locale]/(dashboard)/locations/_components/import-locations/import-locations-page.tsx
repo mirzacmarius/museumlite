@@ -41,7 +41,7 @@ export function ImportLocationsPage() {
     parseCorrection: (text) => {
       const { rows, errors } = parseCSV(text);
       const fatal = errors.find((error) => error.row === undefined);
-      if (fatal) throw new Error(translateParseError(fatal));
+      if (fatal) return translateParseError(fatal);
       return rows;
     },
   });

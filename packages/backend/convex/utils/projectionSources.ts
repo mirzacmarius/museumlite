@@ -14,6 +14,7 @@ import {
   type ProjectionGeneration,
   readTotals,
 } from "./projectionStore";
+import { transferStage } from "./transferStages";
 import {
   appraisalExpiresAt,
   INSURANCE_APPRAISAL_MAX_AGE_MS,
@@ -512,8 +513,10 @@ export async function computeSourceFacts(
       break;
     }
     case "organizationMoveRequests": {
+      // Counted by the stage the Transfers board shows, not the stored
+      // status, so legacy rows land where the board puts them (ADR 0020).
       const request = doc as Doc<"organizationMoveRequests">;
-      add(`transfers.${request.status}`);
+      add(`transfers.stage.${transferStage(request)}`);
       break;
     }
     case "auditLog": {

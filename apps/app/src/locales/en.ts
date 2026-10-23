@@ -382,6 +382,19 @@ export default {
           confirm: "Cancel deletion",
           cancel: "Keep scheduled deletion",
         },
+        refusals: {
+          evidenceProtected:
+            "This organization holds permanent museum records, so it can't be deleted. Withdraw objects from the catalog instead; their records stay available.",
+          subOrganization:
+            "A sub-organization can't be deleted from this screen.",
+          noActiveDeletion:
+            "There is no deletion in progress to cancel. It may already have been cancelled or completed.",
+          alreadyOwner: "You are already the owner of this organization.",
+          newOwnerNotSuperAdmin:
+            "Ownership can only be transferred to another SuperAdmin.",
+          newOwnerNotMember:
+            "The new owner must be a member of this organization.",
+        },
         requestError: "Failed to schedule deletion. Please try again.",
         cancelError: "Failed to cancel deletion. Please try again.",
         transferError: "Failed to transfer ownership. Please try again.",
@@ -2950,6 +2963,8 @@ export default {
       inTransfer: "Transfer in progress",
     },
     withdrawal: {
+      reasonRequired:
+        "Enter a reason for removing the object from the catalog.",
       restore: "Restore to catalog",
       restored: "Object restored to the routine catalog.",
       restoreFailed: "The object could not be restored. Refresh and try again.",
@@ -4478,6 +4493,14 @@ export default {
       },
     },
     scheduledReports: {
+      refusals: {
+        nameInvalid: "Enter a report name of 1 to 200 characters.",
+        generatorUnavailable: "Only operational KPI reports can be generated.",
+        configUnsupported:
+          "This report has date ranges, filters or email delivery from an older version. KPI reports are current snapshots; clear those settings to run it.",
+        alreadyRunning: "This report is already running.",
+        runNotRetryable: "Only a failed run can be retried.",
+      },
       title: "Scheduled Reports",
       nameLabel: "Report name",
       namePlaceholder: "Weekly operational KPIs",
@@ -5202,6 +5225,36 @@ export default {
       save: "Save",
       saving: "Saving...",
       cancel: "Cancel",
+    },
+  },
+  organizationsOverview: {
+    title: "All my organizations",
+    description: "Every organization you belong to. Open one to work in it.",
+    menuLink: "All my organizations",
+    searchPlaceholder: "Search organizations",
+    searchLabel: "Search organizations",
+    current: "Current",
+    open: "Open",
+    role: "Your role: {role}",
+    memberSince: "Member since {date}",
+    partOf: "Part of {name}",
+    objects: "Objects",
+    activeLoans: "Active loans",
+    locations: "Locations",
+    metricsUnavailable: "Counts are being prepared.",
+    noResults: "No organization matches “{query}”.",
+    empty: "You don't belong to any organization yet.",
+    createOrganization: "Create organization",
+    types: {
+      museum: "Museum",
+      gallery: "Gallery",
+      library: "Library",
+      collector: "Collector",
+    },
+    tiers: {
+      free: "Free",
+      pro: "Pro",
+      enterprise: "Enterprise",
     },
   },
   organizationsNew: {
@@ -7459,6 +7512,31 @@ export default {
     resumeNotice:
       "This file was imported on {date}: {attempted} of {total} rows attempted, {accepted} accepted, {failed} failed. Resuming skips accepted rows.",
     resumeImport: "Resume import",
+    csvProblems: {
+      noDataRows: "The file has no data rows.",
+      unclosedQuote:
+        "A quotation mark in row {row} is never closed, so the file cannot be read. Check the quotation marks in that row.",
+      tooManyRows:
+        "This file has {rows} rows. Split it into files of at most {max} rows.",
+    },
+    refusals: {
+      jobNotFound: "This import could not be found. Start a new import.",
+      jobWrongType:
+        "This import was started for another kind of record. Start a new import.",
+      jobCancelled:
+        "This import was cancelled. Start a new import to continue.",
+      jobFailed: "This import failed and can't continue. Start a new import.",
+      tooManyRows:
+        "An import can have at most {limit} rows. Split the file and import each part.",
+      rowNotInImport:
+        "Row {row} was not in the original file. A corrected file must keep the same rows in the same order.",
+      dublinCoreNoRecords:
+        "The XML file has no Dublin Core records the app can read.",
+      dublinCoreTooManyRecords:
+        "A Dublin Core file can have at most {limit} records. Split the file and import each part.",
+      dublinCoreRecordCountChanged:
+        "This XML file has a different number of records than the import it resumes. Start a new import for a changed file.",
+    },
   },
   untranslatedRecords: {
     loans: {
@@ -8137,6 +8215,7 @@ export default {
         actions: {
           created_collection: "Object created",
           updated_collection: "Object updated",
+          deleted_collection: "Object marked deleted",
           archived_collection: "Object withdrawn",
           restored_collection: "Object restored",
           received_collection_from_organization_move:
@@ -10768,6 +10847,13 @@ export default {
   identifiers: {
     registers: { catalog: "catalog register", accession: "accession register" },
     errors: {
+      reviewNoteInvalid:
+        "Write a review note of 1 to 2000 characters describing the historical evidence.",
+      indexIncomplete:
+        "Finish indexing the historical numbers in the {register} before recording a conflict review.",
+      noConflict:
+        "This number no longer conflicts with another record in the {register}.",
+      reviewFailed: "The identifier review could not be saved. Try again.",
       invalid:
         "Use 1 to 256 visible characters for the number. Existing historical numbers stay unchanged.",
       inUse:
