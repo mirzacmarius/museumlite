@@ -115,6 +115,7 @@ import type * as partyLinks from "../partyLinks.js";
 import type * as passwordRecovery_NeutralPassword from "../passwordRecovery/NeutralPassword.js";
 import type * as passwordRecovery_authRecoveryErrors from "../passwordRecovery/authRecoveryErrors.js";
 import type * as passwordRecovery_codeRequestLimit from "../passwordRecovery/codeRequestLimit.js";
+import type * as passwordRecovery_unprovenSecrets from "../passwordRecovery/unprovenSecrets.js";
 import type * as passwordRecovery_verification from "../passwordRecovery/verification.js";
 import type * as passwordReset_ResendOTPPasswordReset from "../passwordReset/ResendOTPPasswordReset.js";
 import type * as preparationRecipes from "../preparationRecipes.js";
@@ -466,6 +467,7 @@ declare const fullApi: ApiFromModules<{
   "passwordRecovery/NeutralPassword": typeof passwordRecovery_NeutralPassword;
   "passwordRecovery/authRecoveryErrors": typeof passwordRecovery_authRecoveryErrors;
   "passwordRecovery/codeRequestLimit": typeof passwordRecovery_codeRequestLimit;
+  "passwordRecovery/unprovenSecrets": typeof passwordRecovery_unprovenSecrets;
   "passwordRecovery/verification": typeof passwordRecovery_verification;
   "passwordReset/ResendOTPPasswordReset": typeof passwordReset_ResendOTPPasswordReset;
   preparationRecipes: typeof preparationRecipes;
