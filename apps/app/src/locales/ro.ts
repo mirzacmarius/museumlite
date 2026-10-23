@@ -1961,6 +1961,8 @@ export default {
         "Unul sau mai multe obiecte selectate nu mai sunt disponibile. Reîmprospătează pagina și încearcă din nou.",
       notActive:
         "Unul sau mai multe obiecte selectate nu sunt active. Selectează doar obiecte active.",
+      objectInTransfer:
+        "Unul sau mai multe obiecte selectate sunt în curs de transfer către altă organizație. Nu pot fi împrumutate până la încheierea transferului.",
       exportedLoans: "Împrumuturi exportate: {count}",
       loansApproved: "Împrumuturi aprobate: {count}",
       someLoansSkipped: "Împrumuturi omise: {count}",

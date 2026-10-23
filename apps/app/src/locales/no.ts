@@ -2321,6 +2321,8 @@ export default {
         "Ett eller flere av de valgte objektene er ikke lenger tilgjengelige. Oppdater og prøv igjen.",
       notActive:
         "Ett eller flere av de valgte objektene er ikke aktive. Velg bare aktive objekter.",
+      objectInTransfer:
+        "Ett eller flere av de valgte objektene blir overført til en annen organisasjon. De kan ikke lånes ut før overføringen er avsluttet.",
       exportedLoans: "Eksportert {count} lån",
       loansApproved: "{count} lån godkjent",
       someLoansSkipped: "{count} lån hoppet over",

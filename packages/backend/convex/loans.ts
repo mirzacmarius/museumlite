@@ -47,6 +47,7 @@ import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import { assertAccessionedIfEntered } from "./utils/objectEntryLifecycle";
+import { findOpenTransferDeaccession } from "./utils/openDeaccessions";
 import { requireLinkableParty } from "./utils/parties";
 import { loanPrimaryRole, recordPartyLink } from "./utils/partyLinks";
 import {
@@ -66,6 +67,36 @@ import { emitWebhookEvent } from "./utils/webhookEvents";
 import { workflowApprovalError } from "./utils/workflowApprovalErrors";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
+
+/**
+ * Refuses an Object a new loan item cannot take: another organization's,
+ * already on a loan, out of the active collection, held by an open transfer
+ * (the receiver could no longer accept it, ADR 0019), or entered but not yet
+ * accessioned.
+ */
+async function assertLoanCanTake(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  collectionId: Id<"collections">,
+) {
+  const collection = await ctx.db.get(collectionId);
+  if (!collection || collection.organizationId !== organizationId) {
+    throw loanObjectError("OBJECT_UNAVAILABLE");
+  }
+  if (
+    collection.status === "loaned" ||
+    (await isCollectionOnLoan(ctx, collectionId))
+  ) {
+    throw loanObjectError("OBJECT_ON_ACTIVE_LOAN");
+  }
+  if (collection.status !== "active") {
+    throw loanObjectError("OBJECT_NOT_ACTIVE");
+  }
+  if (await findOpenTransferDeaccession(ctx, organizationId, collectionId)) {
+    throw loanObjectError("OBJECT_IN_TRANSFER");
+  }
+  await assertAccessionedIfEntered(ctx, collectionId);
+}
 
 /**
  * Create loan record
@@ -228,26 +259,10 @@ export const create = mutation({
       }
       const dedupedItems = Array.from(seenCollectionIds.values());
 
-      // Verify collections belong to organization, are active, and not on another active loan
+      // Verify collections belong to organization and a loan can take them
       await Promise.all(
         dedupedItems.map(async (item) => {
-          const collection = await ctx.db.get(item.collectionId);
-          if (
-            !collection ||
-            collection.organizationId !== args.organizationId
-          ) {
-            throw loanObjectError("OBJECT_UNAVAILABLE");
-          }
-          if (
-            collection.status === "loaned" ||
-            (await isCollectionOnLoan(ctx, item.collectionId))
-          ) {
-            throw loanObjectError("OBJECT_ON_ACTIVE_LOAN");
-          }
-          if (collection.status !== "active") {
-            throw loanObjectError("OBJECT_NOT_ACTIVE");
-          }
-          await assertAccessionedIfEntered(ctx, item.collectionId);
+          await assertLoanCanTake(ctx, args.organizationId, item.collectionId);
 
           await ctx.db.insert("loanItems", {
             loanId,
@@ -370,23 +385,10 @@ export const addItems = mutation({
       throw new Error("Duplicate collection in loan items");
     }
 
-    // Verify collections belong to organization, are active, and not on another active loan
+    // Verify collections belong to organization and a loan can take them
     await Promise.all(
       uniqueCollectionIds.map(async (collectionId) => {
-        const collection = await ctx.db.get(collectionId);
-        if (!collection || collection.organizationId !== loan.organizationId) {
-          throw loanObjectError("OBJECT_UNAVAILABLE");
-        }
-        if (
-          collection.status === "loaned" ||
-          (await isCollectionOnLoan(ctx, collectionId))
-        ) {
-          throw loanObjectError("OBJECT_ON_ACTIVE_LOAN");
-        }
-        if (collection.status !== "active") {
-          throw loanObjectError("OBJECT_NOT_ACTIVE");
-        }
-        await assertAccessionedIfEntered(ctx, collectionId);
+        await assertLoanCanTake(ctx, loan.organizationId, collectionId);
 
         // Create loan item
         await ctx.db.insert("loanItems", {
