@@ -27,6 +27,7 @@ import { Clock, Mail, Trash2, UserCog, UserPlus } from "lucide-react";
 import { useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useClientDate } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -108,6 +109,7 @@ export default function UsersSettingsPage() {
   const locale = useCurrentLocale();
   const t = useScopedI18n("users");
   const tPlaceholders = useScopedI18n("settings.placeholders");
+  const explainError = useActionErrorMessage();
   const { currentOrganizationId } = useOrganization();
   const [inviteState, dispatchInvite] = useReducer(
     inviteReducer,
@@ -176,7 +178,7 @@ export default function UsersSettingsPage() {
       console.error("Error inviting user:", err);
       dispatchInvite({
         type: "submit-error",
-        error: t("inviteFailed"),
+        error: explainError(err, t("inviteFailed")),
       });
     }
   };
@@ -203,7 +205,7 @@ export default function UsersSettingsPage() {
       });
     } catch (err) {
       console.error("Error updating user role:", err);
-      alert(t("updateRoleFailed"));
+      alert(explainError(err, t("updateRoleFailed")));
     }
   };
 

@@ -1143,6 +1143,8 @@ export default {
     role: "Rol",
     emailRequired: "Se requiere dirección de correo electrónico",
     roleRequired: "Se requiere rol",
+    superAdminRequired:
+      "Solo un SuperAdmin puede asignar el rol de SuperAdmin.",
     inviteFailed: "Error al invitar al usuario. Por favor, inténtelo de nuevo.",
     removeConfirm:
       "¿Está seguro de que desea eliminar este usuario de la organización?",

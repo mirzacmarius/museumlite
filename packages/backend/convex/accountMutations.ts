@@ -7,6 +7,7 @@ import {
   EMAIL_ACCOUNT_PROVIDERS,
   PASSWORD_PROVIDERS,
 } from "./accountConstants";
+import { releaseUnprovenSecret } from "./passwordRecovery/unprovenSecrets";
 import { internalMutation } from "./utils/mutationBuilders";
 
 const passwordAccountValidator = v.object({
@@ -221,6 +222,8 @@ export const confirmEmailChange = internalMutation({
         .withIndex("accountId", (q) => q.eq("accountId", account._id))
         .unique();
       if (verificationCode) await ctx.db.delete(verificationCode._id);
+      // Marking the account verified would make an unproven password work.
+      await releaseUnprovenSecret(ctx, account);
       await ctx.db.patch(account._id, {
         providerAccountId: pending.email,
         emailVerified: pending.email,

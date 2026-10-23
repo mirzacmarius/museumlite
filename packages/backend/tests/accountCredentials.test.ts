@@ -79,6 +79,7 @@ async function setupPasswordUser() {
         userId,
         provider,
         providerAccountId: "owner@example.test",
+        emailVerified: "owner@example.test",
         secret,
       });
     }

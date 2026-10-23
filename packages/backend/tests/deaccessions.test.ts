@@ -1,3 +1,4 @@
+import { anyApi } from "convex/server";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -525,4 +526,34 @@ describe("the Object's actions match what the mutations allow", () => {
       }),
     ).toBeNull();
   });
+});
+
+test("a signed-out caller cannot record a regulatory approval", async () => {
+  const t = createConvexTest();
+  const { organizationId, collectionId } =
+    await createOrgUserCollectionWithPermissions(t, ["collections.update"]);
+  const deaccessionId = await t.run((ctx) =>
+    ctx.db.insert("deaccessions", {
+      organizationId,
+      collectionId,
+      deaccessionNumber: "DEA-1",
+      dateDeaccessioned: Date.now(),
+      reason: "Duplicate object",
+      method: "sale",
+      status: "pending",
+      regulatoryApprovalRequired: true,
+      regulatoryApprovalStatus: "requested",
+      regulatoryApprovalToken: "regulatory-token",
+    }),
+  );
+
+  await expect(
+    t.mutation(anyApi.deaccessions?.recordRegulatoryApproval, {
+      token: "regulatory-token",
+      approved: true,
+    }),
+  ).rejects.toThrow();
+  expect(
+    (await t.run((ctx) => ctx.db.get(deaccessionId)))?.regulatoryApprovalStatus,
+  ).toBe("requested");
 });

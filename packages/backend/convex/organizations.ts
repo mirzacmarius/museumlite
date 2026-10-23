@@ -1449,6 +1449,10 @@ export const inviteUser = mutation({
     if (!role || role.organizationId !== args.organizationId) {
       throw new ConvexError("Invalid role for organization");
     }
+    const superAdminRole = await getSuperAdminRole(ctx, args.organizationId);
+    if (superAdminRole && args.roleId === superAdminRole._id) {
+      await requireSuperAdmin(ctx, args.organizationId, userId);
+    }
 
     // If the user already exists, ensure they are not already in the organization.
     const existingUser = await ctx.db

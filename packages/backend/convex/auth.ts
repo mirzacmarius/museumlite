@@ -4,7 +4,7 @@ import { Email } from "@convex-dev/auth/providers/Email";
 import { convexAuth } from "@convex-dev/auth/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { action, internalAction } from "./_generated/server";
 import { sendLocalizedMagicLinkEmail } from "./email/authCopy";
 import { env } from "./env";
@@ -16,6 +16,7 @@ import {
   enforceCodeRequestLimit,
 } from "./passwordRecovery/codeRequestLimit";
 import { NeutralPassword } from "./passwordRecovery/NeutralPassword";
+import { releaseUnprovenSecret } from "./passwordRecovery/unprovenSecrets";
 import { ResendOTPPasswordReset } from "./passwordReset/ResendOTPPasswordReset";
 import { internalMutation } from "./utils/mutationBuilders";
 
@@ -62,9 +63,13 @@ const passwordWithCode = NeutralPassword({
   verify: ResendOTP,
 });
 
+// Opening the emailed link verifies the account in any browser, so the
+// mailbox owner's click would vouch for a password someone else chose.
+// Existing accounts keep signing in.
 const passwordWithEmailLinkVerification = NeutralPassword({
   id: "password-link",
   profile: normalizedEmailProfile,
+  signUp: false,
   verify: verifyProvider,
 });
 
@@ -182,12 +187,55 @@ export const deliverCodeRequest = internalAction({
   },
 });
 
+/** Convex Auth stores verification codes as lower-case hex SHA-256 digests. */
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(input),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
 // Charge the per-email code-request quota in the same transaction that
 // replaces the outstanding code, so a rejected request cannot delete it.
+// Drop a sign-up password in the transaction that links its account to a
+// verified user, so no later failure can leave it behind.
 export const store = internalMutation({
   args: { args: v.any() },
   returns: v.any(),
   handler: async (ctx, args) => {
+    if (
+      !("_handler" in configuredAuth.store) ||
+      typeof configuredAuth.store._handler !== "function"
+    ) {
+      throw new Error("Unsupported Convex Auth store handler");
+    }
+    if (args.args.type === "createAccountFromCredentials") {
+      const result = await configuredAuth.store._handler(ctx, args);
+      const account: Doc<"authAccounts"> | undefined = result?.account;
+      if (account && (await releaseUnprovenSecret(ctx, account))) {
+        return { ...result, account: await ctx.db.get(account._id) };
+      }
+      return result;
+    }
+    // Redeeming a code verifies its account, which would make a password
+    // stored on it before this rule existed start working.
+    if (
+      args.args.type === "verifyCodeAndSignIn" &&
+      typeof args.args.params?.code === "string"
+    ) {
+      const codeHash = await sha256Hex(args.args.params.code);
+      const verificationCode = await ctx.db
+        .query("authVerificationCodes")
+        .withIndex("code", (q) => q.eq("code", codeHash))
+        .unique();
+      const account = verificationCode
+        ? await ctx.db.get(verificationCode.accountId)
+        : null;
+      if (account) await releaseUnprovenSecret(ctx, account);
+    }
     if (
       args.args.type === "createVerificationCode" &&
       args.args.codeRequestReserved !== true
@@ -205,12 +253,6 @@ export const store = internalMutation({
           account?.provider.startsWith("password") ?? false,
         ),
       );
-    }
-    if (
-      !("_handler" in configuredAuth.store) ||
-      typeof configuredAuth.store._handler !== "function"
-    ) {
-      throw new Error("Unsupported Convex Auth store handler");
     }
     return await configuredAuth.store._handler(ctx, args);
   },

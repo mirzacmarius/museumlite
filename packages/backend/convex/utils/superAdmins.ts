@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { convexErrorData } from "./convexErrorData";
 
 export const SUPER_ADMIN_ROLE_NAME = "super_admin";
 
@@ -139,6 +140,19 @@ export async function countSuperAdmins(
   return superAdminUserIds.length;
 }
 
+export const SUPER_ADMIN_REQUIRED_CODE = "SUPER_ADMIN_REQUIRED";
+
+/** True for the refusal `requireSuperAdmin` throws, on the server or client. */
+export function isSuperAdminRequiredError(error: unknown): boolean {
+  const data = convexErrorData(error);
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "code" in data &&
+    data.code === SUPER_ADMIN_REQUIRED_CODE
+  );
+}
+
 export async function requireSuperAdmin(
   ctx: OrgCtx,
   organizationId: Id<"organizations">,
@@ -146,7 +160,10 @@ export async function requireSuperAdmin(
 ) {
   const isSuperAdmin = await isUserSuperAdmin(ctx, organizationId, userId);
   if (!isSuperAdmin) {
-    throw new ConvexError("Only a SuperAdmin can perform this action");
+    throw new ConvexError({
+      code: SUPER_ADMIN_REQUIRED_CODE,
+      message: "Only a SuperAdmin can perform this action",
+    });
   }
 }
 

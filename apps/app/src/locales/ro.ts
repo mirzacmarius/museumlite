@@ -5079,6 +5079,7 @@ export default {
     role: "Rol",
     emailRequired: "Adresa de email este obligatorie",
     roleRequired: "Rolul este obligatoriu",
+    superAdminRequired: "Doar un SuperAdmin poate acorda rolul de SuperAdmin.",
     inviteFailed:
       "Nu s-a putut invita utilizatorul. Te rugăm să încerci din nou.",
     removeConfirm:
