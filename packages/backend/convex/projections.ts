@@ -26,6 +26,7 @@ import {
   startGeneration,
   runScheduledReconcile as startScheduledReconcile,
 } from "./utils/projectionMaintenance";
+import { outdatedProjectionReason } from "./utils/projectionReads";
 import { PROJECTION_PHASES } from "./utils/projectionSources";
 import {
   PROJECTION_DEFINITION_VERSION,
@@ -178,7 +179,7 @@ export const getHealth = query({
         ? ("unavailable" as const)
         : (state?.availability ?? ("unavailable" as const)),
       reason: definitionChanged
-        ? ("definition_changed" as const)
+        ? await outdatedProjectionReason(ctx, state)
         : state
           ? state.reason
           : ("not_built" as const),

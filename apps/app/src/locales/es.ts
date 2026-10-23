@@ -10779,7 +10779,7 @@ export default {
       invalidated:
         "Un cambio reciente afectó a más registros de los que se pueden actualizar a la vez. Se ha iniciado automáticamente una nueva reconstrucción.",
       definition_changed:
-        "Las definiciones de métricas cambiaron. Las métricas se reconstruyen automáticamente con el próximo cambio en sus registros.",
+        "Las definiciones de métricas cambiaron. La reconstrucción comienza automáticamente en unos minutos.",
       rebuild_failed:
         "La última reconstrucción de métricas falló. Se reintenta automáticamente; si sigue fallando, un administrador puede reintentarla o cancelarla.",
     },

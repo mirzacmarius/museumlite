@@ -10645,7 +10645,7 @@ export default {
       invalidated:
         "En nylig endring påvirket flere poster enn som kan oppdateres samtidig. En ny gjenoppbygging er startet automatisk.",
       definition_changed:
-        "Målingsdefinisjonene er endret. Målingene bygges automatisk på nytt ved neste endring i postene dine.",
+        "Målingsdefinisjonene er endret. En ny oppbygging starter automatisk i løpet av noen minutter.",
       rebuild_failed:
         "Siste gjenoppbygging mislyktes. Den prøves automatisk på nytt; hvis den fortsatt mislykkes, kan en administrator prøve igjen eller avbryte den.",
     },

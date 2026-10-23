@@ -1,5 +1,5 @@
 import { ConvexError, type Infer } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import {
   getProjectionState,
@@ -15,6 +15,22 @@ import {
   sumMetricRanges,
 } from "./projectionStore";
 import type { projectionUnavailableResult } from "./projectionValidators";
+
+/**
+ * Why a projection an older definition built is unavailable: the rebuild the
+ * cron or a record change started is running or has failed, otherwise it is
+ * still waiting for one to start.
+ */
+export async function outdatedProjectionReason(
+  ctx: Pick<QueryCtx, "db">,
+  state: Doc<"organizationProjectionStates">,
+): Promise<"building" | "rebuild_failed" | "definition_changed"> {
+  const building = state.buildingGenerationId
+    ? await ctx.db.get(state.buildingGenerationId)
+    : null;
+  if (!building) return "definition_changed";
+  return building.status === "failed" ? "rebuild_failed" : "building";
+}
 
 /** Maximum time buckets one trend read may request. */
 export const PROJECTION_MAX_BUCKETS = 400;
@@ -84,7 +100,7 @@ export async function openProjection(
   });
   if (!state) return unavailable("not_built");
   if (state.definitionVersion !== PROJECTION_DEFINITION_VERSION) {
-    return unavailable("definition_changed");
+    return unavailable(await outdatedProjectionReason(ctx, state));
   }
   if (state.availability !== "ready" || !state.activeGenerationId) {
     return unavailable(state.reason ?? "not_built");

@@ -10523,7 +10523,7 @@ export default {
       invalidated:
         "A recent change affected more records than can be updated at once. A fresh rebuild has started automatically.",
       definition_changed:
-        "Metric definitions changed. Metrics rebuild automatically after the next change to your records.",
+        "Metric definitions changed. A rebuild starts automatically within a few minutes.",
       rebuild_failed:
         "The last metrics rebuild failed. It retries automatically; if it keeps failing, an administrator can retry or cancel it.",
     },
