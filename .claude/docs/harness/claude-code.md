@@ -53,7 +53,7 @@ Automations, Bugbot, Cursor cloud agents, and Cursor's pull request tool have no
 
 These override any pstack playbook step.
 
-- Merging to `main` deploys to production. Never merge a PR, arm auto-merge, or run the Shipping or Autopilot-full landing steps. Stop at a green, merge-ready PR and report it.
+- Merging to `main` deploys to production. Never merge a PR, arm auto-merge, or run the Shipping or Autopilot-full landing steps, even for work the standing delivery authorization in `AGENTS.md` would merge. Stop at a green, merge-ready PR and report it.
 - `AGENTS.md`, `CLAUDE.md`, and `CODING_STANDARDS.md` win over pstack skills where they disagree.
-- Cloud sessions have no `gh` CLI, so `poteto-mode/scripts/watch-pr` does not run there. Use the GitHub MCP tools and PR activity subscriptions instead.
+- In Claude Code cloud sessions `gh` is not logged in, so `poteto-mode/scripts/watch-pr` does not run there. Use the GitHub MCP tools and PR activity subscriptions instead.
 - `make-bot-ui` and the Benny automations were left out: they target Cursor's Grok Bot and automations, which Claude Code lacks.
