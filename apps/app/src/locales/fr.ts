@@ -10817,7 +10817,7 @@ export default {
       invalidated:
         "Une modification récente a touché plus d'enregistrements que ce qui peut être mis à jour en une fois. Une nouvelle reconstruction a démarré automatiquement.",
       definition_changed:
-        "Les définitions des indicateurs ont changé. Les indicateurs se reconstruiront automatiquement à la prochaine modification de vos enregistrements.",
+        "Les définitions des indicateurs ont changé. Une reconstruction démarre automatiquement dans quelques minutes.",
       rebuild_failed:
         "La dernière reconstruction a échoué. Elle est relancée automatiquement ; si l'échec persiste, un administrateur peut la réessayer ou l'annuler.",
     },

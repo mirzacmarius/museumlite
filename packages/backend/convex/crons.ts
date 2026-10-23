@@ -87,4 +87,12 @@ crons.interval(
   {},
 );
 
+// Metrics built by an older definition rebuild without waiting for a record change
+crons.interval(
+  "rebuild-outdated-projections",
+  { minutes: 15 },
+  internal.projections.rebuildOutdatedProjections,
+  {},
+);
+
 export default crons;

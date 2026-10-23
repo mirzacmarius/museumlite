@@ -10756,7 +10756,7 @@ export default {
       invalidated:
         "O modificare recentă a afectat mai multe înregistrări decât pot fi actualizate deodată. O nouă reconstruire a pornit automat.",
       definition_changed:
-        "Definițiile indicatorilor s-au schimbat. Indicatorii se reconstruiesc automat la următoarea modificare a înregistrărilor.",
+        "Definițiile indicatorilor s-au schimbat. Reconstruirea începe automat în câteva minute.",
       rebuild_failed:
         "Ultima reconstruire a eșuat. Se reîncearcă automat; dacă eșuează în continuare, un administrator o poate reîncerca sau anula.",
     },

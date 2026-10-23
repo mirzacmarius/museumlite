@@ -865,6 +865,153 @@ describe("automatic health maintenance", () => {
     ).toMatchObject({ total: 1 });
   });
 
+  async function outdate(t: ConvexTest, organizationId: Id<"organizations">) {
+    await t.run(async (ctx) => {
+      const state = await ctx.db
+        .query("organizationProjectionStates")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .unique();
+      if (!state) throw new Error("projection state missing");
+      await ctx.db.patch(state._id, { definitionVersion: 1 });
+    });
+  }
+
+  test("the outdated-projection cron rebuilds idle organizations past its first page after a definition change (MUS-850)", async () => {
+    const t = createConvexTest();
+    // A full first page of outdated organizations, created before the one
+    // under test so that one is only reached by the scheduled continuation.
+    const earlier = await t.run(async (ctx) => {
+      const ids: Id<"organizations">[] = [];
+      for (let index = 0; index < 20; index++) {
+        const organizationId = await ctx.db.insert("organizations", {
+          name: `Earlier Museum ${index}`,
+          slug: `earlier-museum-${index}`,
+          type: "museum",
+        });
+        await ctx.db.insert("organizationProjectionStates", {
+          organizationId,
+          definitionVersion: 1,
+          revision: 0,
+          availability: "unavailable",
+          reason: "not_built",
+        });
+        ids.push(organizationId);
+      }
+      return ids;
+    });
+    const setup = await createOrgUserWithPermissions(t, ADMIN_PERMISSIONS, {
+      organizationName: "Projection Museum",
+      slugPrefix: "projection-museum",
+      subscriptionTier: "enterprise",
+    });
+    const current = await createOrgUserWithPermissions(t, ADMIN_PERMISSIONS, {
+      organizationName: "Current Museum",
+      slugPrefix: "current-museum",
+      subscriptionTier: "enterprise",
+    });
+    const staff = authedForUser(t, setup.userId);
+    await rebuildProjection(t, setup.organizationId);
+    await rebuildProjection(t, current.organizationId);
+    await outdate(t, setup.organizationId);
+    expect(
+      await staff.query(api.projections.getHealth, {
+        organizationId: setup.organizationId,
+      }),
+    ).toMatchObject({
+      availability: "unavailable",
+      reason: "definition_changed",
+    });
+
+    expect(
+      await t.mutation(internal.projections.rebuildOutdatedProjections, {}),
+    ).toBe(20);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+    expect(
+      await staff.query(api.projections.getHealth, {
+        organizationId: setup.organizationId,
+      }),
+    ).toMatchObject({
+      availability: "ready",
+      stateDefinitionVersion: 3,
+      building: null,
+    });
+    expect(
+      await t.mutation(internal.projections.rebuildOutdatedProjections, {}),
+    ).toBe(0);
+    const states = await t.run((ctx) =>
+      ctx.db.query("organizationProjectionStates").collect(),
+    );
+    expect(states).toHaveLength(earlier.length + 2);
+    expect(
+      states.every(
+        (state) =>
+          state.definitionVersion === 3 && state.availability === "ready",
+      ),
+    ).toBe(true);
+    const currentHealth = await authedForUser(t, current.userId).query(
+      api.projections.getHealth,
+      { organizationId: current.organizationId },
+    );
+    expect(
+      currentHealth.recentGenerations.filter((job) => job.mode === "rebuild"),
+    ).toHaveLength(1);
+  });
+
+  test("an outdated projection reports its running or failed rebuild, and the cron leaves a failed one to its retries (MUS-850)", async () => {
+    const { t, staff, organizationId, userId } = await fixture();
+    await insertObjects(t, organizationId, userId, 30);
+    await rebuildProjection(t, organizationId);
+    await outdate(t, organizationId);
+
+    expect(
+      await t.mutation(internal.projections.rebuildOutdatedProjections, {}),
+    ).toBe(1);
+    const health = () =>
+      staff.query(api.projections.getHealth, { organizationId });
+    expect(await health()).toMatchObject({
+      availability: "unavailable",
+      reason: "building",
+      building: { mode: "rebuild", status: "building" },
+    });
+    expect(
+      await staff.query(api.dashboard.getAnalytics, { organizationId }),
+    ).toMatchObject({ availability: "unavailable", reason: "building" });
+    expect(
+      await t.mutation(internal.projections.rebuildOutdatedProjections, {}),
+    ).toBe(0);
+
+    const building = async () => (await health()).building;
+    const generationId = (await building())?._id;
+    if (!generationId) throw new Error("rebuild missing");
+    const fail = async () => {
+      await t.mutation(internal.projections.markGenerationPageFailed, {
+        generationId,
+        expectedCheckpoint: (await building())?.checkpoint ?? -1,
+        failure: "Simulated page failure",
+      });
+    };
+    for (let attempt = 1; attempt < PROJECTION_AUTO_ATTEMPTS; attempt++) {
+      await fail();
+      vi.runOnlyPendingTimers();
+      await t.finishInProgressScheduledFunctions();
+    }
+    await fail();
+    expect(await health()).toMatchObject({
+      availability: "unavailable",
+      reason: "rebuild_failed",
+      building: { status: "failed", attempts: PROJECTION_AUTO_ATTEMPTS },
+    });
+    expect(
+      await staff.query(api.dashboard.getAnalytics, { organizationId }),
+    ).toMatchObject({ availability: "unavailable", reason: "rebuild_failed" });
+    expect(
+      await t.mutation(internal.projections.rebuildOutdatedProjections, {}),
+    ).toBe(0);
+  });
+
   test("a failed job retries itself from its checkpoint until the attempt limit", async () => {
     const { t, staff, organizationId, userId } = await fixture();
     await insertObjects(t, organizationId, userId, 30);
