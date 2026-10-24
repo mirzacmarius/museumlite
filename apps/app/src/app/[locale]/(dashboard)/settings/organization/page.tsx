@@ -2,6 +2,14 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  MAX_ADDRESS_LINE_LENGTH,
+  MAX_PHONE_LENGTH,
+  ORGANIZATION_ADDRESS_LINES,
+  type OrganizationAddress,
+  type OrganizationAddressLine,
+  organizationContactErrorFromError,
+} from "@v1/backend/convex/utils/organizationContact";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -19,7 +27,7 @@ import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { PermissionGate, usePermissions } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { OrganizationDeletionZone } from "./organization-deletion-zone";
 
@@ -35,6 +43,40 @@ interface WatermarkSettings {
   text: string;
   opacity: number;
   position: WatermarkPosition;
+}
+
+type ContactField = OrganizationAddressLine | "phone";
+type ContactDetails = Record<ContactField, string>;
+
+const CONTACT_FIELD_LABELS = {
+  street: "organization.streetAddressLabel",
+  street2: "organization.addressLine2Label",
+  postalCode: "organization.postalCodeLabel",
+  city: "organization.cityLabel",
+  region: "organization.regionLabel",
+  country: "organization.countryLabel",
+  phone: "organization.phoneLabel",
+} as const satisfies Record<ContactField, string>;
+
+const CONTACT_FIELDS: ContactField[] = [...ORGANIZATION_ADDRESS_LINES, "phone"];
+
+/** Street lines take a full row; the other fields pair up. */
+const FULL_ROW_FIELDS = new Set<ContactField>(["street", "street2"]);
+
+function contactDetailsOf(organization: {
+  address?: OrganizationAddress;
+  phone?: string;
+}): ContactDetails {
+  const address = organization.address ?? {};
+  return {
+    street: address.street ?? "",
+    street2: address.street2 ?? "",
+    postalCode: address.postalCode ?? "",
+    city: address.city ?? "",
+    region: address.region ?? "",
+    country: address.country ?? "",
+    phone: organization.phone ?? "",
+  };
 }
 
 function OrganizationSettingsHeader({
@@ -153,6 +195,52 @@ function BasicInformationCard({
             {labels.slugCannotChange}
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactDetailsCard({
+  details,
+  disabled,
+  onDetailsChange,
+}: {
+  details: ContactDetails;
+  disabled: boolean;
+  onDetailsChange: (details: ContactDetails) => void;
+}) {
+  const t = useScopedI18n("settings");
+  return (
+    <div className="rounded-lg border border-border bg-card p-6">
+      <h2 className="mb-4 text-lg font-medium">
+        {t("organization.addressAndPhone")}
+      </h2>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {CONTACT_FIELDS.map((name) => {
+          const id = `organization-${name}`;
+          const isPhone = name === "phone";
+          return (
+            <div
+              key={name}
+              className={cn(
+                "space-y-2",
+                FULL_ROW_FIELDS.has(name) && "sm:col-span-2",
+              )}
+            >
+              <Label htmlFor={id}>{t(CONTACT_FIELD_LABELS[name])}</Label>
+              <Input
+                id={id}
+                type={isPhone ? "tel" : "text"}
+                maxLength={isPhone ? MAX_PHONE_LENGTH : MAX_ADDRESS_LINE_LENGTH}
+                value={details[name]}
+                disabled={disabled}
+                onChange={(event) =>
+                  onDetailsChange({ ...details, [name]: event.target.value })
+                }
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -330,9 +418,13 @@ export default function OrganizationSettingsPage() {
   const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
+  const { hasPermission } = usePermissions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [contactDetails, setContactDetails] = useState<ContactDetails>(() =>
+    contactDetailsOf({}),
+  );
   const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>(
     {
       isEnabled: false,
@@ -356,6 +448,7 @@ export default function OrganizationSettingsPage() {
   useEffect(() => {
     if (!organization) return;
     setName(organization.name);
+    setContactDetails(contactDetailsOf(organization));
     setWatermarkSettings({
       isEnabled: organization.settings?.watermarkSettings?.isEnabled ?? false,
       text: organization.settings?.watermarkSettings?.text || "",
@@ -413,12 +506,23 @@ export default function OrganizationSettingsPage() {
 
     setIsSubmitting(true);
     try {
+      const { phone, ...address } = contactDetails;
       await updateOrganization({
         organizationId: currentOrganizationId as Id<"organizations">,
         name: name.trim(),
+        address,
+        phone,
       });
-    } catch {
-      setError(t("organization.updateError"));
+    } catch (saveError) {
+      const contactError = organizationContactErrorFromError(saveError);
+      setError(
+        contactError
+          ? t("organization.contactFieldTooLong", {
+              field: t(CONTACT_FIELD_LABELS[contactError.field]),
+              limit: contactError.limit,
+            })
+          : t("organization.updateError"),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -468,6 +572,12 @@ export default function OrganizationSettingsPage() {
           onNameChange={setName}
           organization={organization}
           customerNumber={organization.customerNumber ?? null}
+        />
+
+        <ContactDetailsCard
+          details={contactDetails}
+          disabled={!hasPermission("organization.manage_settings")}
+          onDetailsChange={setContactDetails}
         />
 
         <PermissionGate permission="organization.manage_settings">

@@ -17,11 +17,11 @@ import type { LabelData, LabelSize } from "@/components/qr-label-generator";
 import { QRLabelSheet } from "@/components/qr-label-generator";
 import { useScopedI18n } from "@/locales/client";
 
-const LABEL_SIZES: LabelSize[] = ["1x1", "2x2", "1x3"];
+const LABEL_SIZES: LabelSize[] = ["1x1", "2x2", "3x1"];
 const SIZE_DIMENSIONS: Record<LabelSize, string> = {
   "1x1": '(1" × 1")',
   "2x2": '(2" × 2")',
-  "1x3": '(1" × 3")',
+  "3x1": '(3" × 1")',
 };
 
 /**
