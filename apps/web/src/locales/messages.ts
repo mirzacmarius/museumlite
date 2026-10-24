@@ -312,7 +312,7 @@ const en = {
   "marketing.contact.emailInvalid": "Please enter a valid email address.",
   "marketing.contact.messageTooLong": "Your message is too long.",
   "marketing.contact.rateLimited":
-    "We have received several requests in a short time. Please wait a few minutes, then try again.",
+    "We have received several requests in a short time. Please try again later.",
   "public.collectionUnavailable":
     "This collection URL is not configured for this organization",
   "public.tryAdjustingFilters": "Try adjusting your filters",
@@ -701,7 +701,7 @@ const fr: WebMessages = {
     "Veuillez saisir une adresse e-mail valide.",
   "marketing.contact.messageTooLong": "Votre message est trop long.",
   "marketing.contact.rateLimited":
-    "Nous avons reçu plusieurs demandes en peu de temps. Veuillez patienter quelques minutes, puis réessayer.",
+    "Nous avons reçu plusieurs demandes en peu de temps. Veuillez réessayer plus tard.",
   "public.collectionUnavailable":
     "Cette adresse de collection n’est pas configurée pour cette organisation",
   "public.tryAdjustingFilters": "Essayez de modifier vos filtres",
@@ -1086,7 +1086,7 @@ const es: WebMessages = {
   "marketing.contact.emailInvalid": "Escriba una dirección de correo válida.",
   "marketing.contact.messageTooLong": "El mensaje es demasiado largo.",
   "marketing.contact.rateLimited":
-    "Hemos recibido varias solicitudes en poco tiempo. Espere unos minutos e inténtelo de nuevo.",
+    "Hemos recibido varias solicitudes en poco tiempo. Inténtelo de nuevo más tarde.",
   "public.collectionUnavailable":
     "Esta URL de colección no está configurada para esta organización",
   "public.tryAdjustingFilters": "Pruebe a cambiar los filtros",
@@ -1467,7 +1467,7 @@ const no: WebMessages = {
   "marketing.contact.emailInvalid": "Skriv inn en gyldig e-postadresse.",
   "marketing.contact.messageTooLong": "Meldingen er for lang.",
   "marketing.contact.rateLimited":
-    "Vi har mottatt flere forespørsler på kort tid. Vent noen minutter, og prøv igjen.",
+    "Vi har mottatt flere forespørsler på kort tid. Prøv igjen senere.",
   "public.collectionUnavailable":
     "Denne samlingsadressen er ikke konfigurert for organisasjonen",
   "public.tryAdjustingFilters": "Prøv å endre filtrene",
@@ -1848,7 +1848,7 @@ const ro: WebMessages = {
   "marketing.contact.emailInvalid": "Introduceți o adresă de e-mail validă.",
   "marketing.contact.messageTooLong": "Mesajul este prea lung.",
   "marketing.contact.rateLimited":
-    "Am primit mai multe solicitări într-un timp scurt. Așteptați câteva minute, apoi încercați din nou.",
+    "Am primit mai multe solicitări într-un timp scurt. Încercați din nou mai târziu.",
   "public.collectionUnavailable":
     "Această adresă a colecției nu este configurată pentru organizație",
   "public.tryAdjustingFilters": "Încercați să modificați filtrele",
