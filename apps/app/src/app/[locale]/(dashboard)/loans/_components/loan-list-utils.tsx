@@ -1,3 +1,4 @@
+import { csvTextCell } from "@v1/backend/convex/utils/spreadsheetText";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { formatDate } from "@/lib/format-date";
 import type { LoanListRow } from "./types";
@@ -67,20 +68,25 @@ export function getPartnerInitial(name: string) {
   return name.charAt(0).toUpperCase();
 }
 
+function isoDay(timestamp: number) {
+  return new Date(timestamp).toISOString().split("T")[0] ?? "";
+}
+
+/** Text cells are quoted with formulas disarmed, like the server exports. */
 export function buildSelectedLoansCsv(
   loans: LoanListRow[],
   headers: string[],
 ): string {
-  const headerRow = headers.join(",");
+  const headerRow = headers.map(csvTextCell).join(",");
   const rows = loans.map((loan) =>
     [
-      loan.loanNumber,
-      loan.type,
-      `"${loan.lenderBorrowerName}"`,
-      new Date(loan.startDate).toISOString().split("T")[0],
-      loan.endDate ? new Date(loan.endDate).toISOString().split("T")[0] : "",
-      loan.status,
-      loan.itemCount,
+      csvTextCell(loan.loanNumber),
+      csvTextCell(loan.type),
+      csvTextCell(loan.lenderBorrowerName),
+      isoDay(loan.startDate),
+      loan.endDate ? isoDay(loan.endDate) : "",
+      csvTextCell(loan.status),
+      loan.itemCount ?? "",
     ].join(","),
   );
   return [headerRow, ...rows].join("\n");

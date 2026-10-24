@@ -218,6 +218,7 @@ import type * as utils_formatConverters from "../utils/formatConverters.js";
 import type * as utils_identifierErrors from "../utils/identifierErrors.js";
 import type * as utils_identifierHistory from "../utils/identifierHistory.js";
 import type * as utils_identifiers from "../utils/identifiers.js";
+import type * as utils_imageDecoding from "../utils/imageDecoding.js";
 import type * as utils_imageDeletion from "../utils/imageDeletion.js";
 import type * as utils_imageDeletionErrors from "../utils/imageDeletionErrors.js";
 import type * as utils_importErrors from "../utils/importErrors.js";
@@ -323,6 +324,7 @@ import type * as utils_reproductionRequestErrors from "../utils/reproductionRequ
 import type * as utils_reproductionRequestValidators from "../utils/reproductionRequestValidators.js";
 import type * as utils_siteUsage from "../utils/siteUsage.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
+import type * as utils_spreadsheetText from "../utils/spreadsheetText.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_superAdmins from "../utils/superAdmins.js";
 import type * as utils_systemRoleGrants from "../utils/systemRoleGrants.js";
@@ -572,6 +574,7 @@ declare const fullApi: ApiFromModules<{
   "utils/identifierErrors": typeof utils_identifierErrors;
   "utils/identifierHistory": typeof utils_identifierHistory;
   "utils/identifiers": typeof utils_identifiers;
+  "utils/imageDecoding": typeof utils_imageDecoding;
   "utils/imageDeletion": typeof utils_imageDeletion;
   "utils/imageDeletionErrors": typeof utils_imageDeletionErrors;
   "utils/importErrors": typeof utils_importErrors;
@@ -677,6 +680,7 @@ declare const fullApi: ApiFromModules<{
   "utils/reproductionRequestValidators": typeof utils_reproductionRequestValidators;
   "utils/siteUsage": typeof utils_siteUsage;
   "utils/spectrum": typeof utils_spectrum;
+  "utils/spreadsheetText": typeof utils_spreadsheetText;
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/superAdmins": typeof utils_superAdmins;
   "utils/systemRoleGrants": typeof utils_systemRoleGrants;

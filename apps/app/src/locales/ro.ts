@@ -6503,7 +6503,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Introdu un nume pentru endpoint.",
-      WEBHOOK_URL_INVALID: "Introdu un URL HTTPS valid.",
+      WEBHOOK_URL_INVALID: "Introdu un URL HTTPS public.",
       WEBHOOK_EVENT_UNSUPPORTED:
         "Unul dintre evenimentele selectate nu este disponibil.",
       WEBHOOK_LIMIT_REACHED:

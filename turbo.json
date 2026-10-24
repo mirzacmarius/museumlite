@@ -12,6 +12,7 @@
     "scripts/apply-patches.js",
     "scripts/convex-image-config.mjs",
     "scripts/load-monorepo-env.mjs",
+    "scripts/security-headers.mjs",
     "tooling/typescript/**",
     "tsconfig*.json"
   ],

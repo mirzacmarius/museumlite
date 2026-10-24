@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import { openDecodableImage } from "./utils/imageDecoding";
 import { derivativeSize } from "./utils/reproductionRequestValidators";
 
 /**
@@ -30,11 +31,10 @@ export const makeDerivative = internalAction({
         await fail();
         return null;
       }
-      const sharp = (await import("sharp")).default;
-      const { data, info } = await sharp(
-        Buffer.from(await source.arrayBuffer()),
-        { limitInputPixels: 100_000_000 },
-      )
+      const image = await openDecodableImage(await source.arrayBuffer(), {
+        limitInputPixels: 100_000_000,
+      });
+      const { data, info } = await image
         .rotate()
         .resize({
           width: args.maxDimension,

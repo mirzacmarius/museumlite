@@ -20,7 +20,6 @@ import {
   fromDublinCoreXML,
   toDublinCoreXML,
 } from "./utils/dublinCore";
-import { protectSpreadsheetText } from "./utils/exportEncoding";
 import {
   enforceExportQuota,
   recordExportUsage,
@@ -67,6 +66,7 @@ import {
   entryToSpectrumXML,
   toSpectrumXML,
 } from "./utils/spectrum";
+import { csvTextCell } from "./utils/spreadsheetText";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
 
@@ -194,10 +194,6 @@ function getExportLocationCode(location: {
   locationCode?: string;
 }) {
   return location.locationCode ?? getFallbackLocationCode(location._id);
-}
-
-function csvTextCell(value: string) {
-  return `"${protectSpreadsheetText(value).replace(/"/g, '""')}"`;
 }
 
 export const createImportJob = mutation({

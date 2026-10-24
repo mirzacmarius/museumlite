@@ -24,14 +24,73 @@ export function isSupportedWebhookEvent(
   return WEBHOOK_EVENT_TYPES.some((supported) => supported === event);
 }
 
-export function isHttpsWebhookUrl(url: string): boolean {
+const PRIVATE_HOST_NAMES = new Set(["localhost", "ip6-localhost"]);
+const PRIVATE_HOST_SUFFIXES = [".localhost", ".local", ".internal", ".arpa"];
+
+function isPrivateIpv4(host: string): boolean {
+  const octets = host.split(".");
+  if (octets.length !== 4) return false;
+  const [a, b] = octets.map((octet) =>
+    /^\d{1,3}$/.test(octet) ? Number(octet) : Number.NaN,
+  );
+  if (octets.some((octet) => !/^\d{1,3}$/.test(octet) || Number(octet) > 255))
+    return false;
+  if (a === undefined || b === undefined) return false;
+  // Unspecified, loopback, private, carrier-grade NAT, link-local (cloud
+  // metadata lives there), multicast and reserved ranges.
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    a >= 224
+  );
+}
+
+function isPrivateIpv6(host: string): boolean {
+  const address = host.replace(/^\[|\]$/g, "").toLowerCase();
+  if (address === "::" || address === "::1") return true;
+  // IPv4-mapped addresses, dotted or as the URL parser writes them (hex).
+  const mapped = address.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mapped?.[1]) return isPrivateIpv4(mapped[1]);
+  const mappedHex = address.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (mappedHex?.[1] && mappedHex[2]) {
+    const high = Number.parseInt(mappedHex[1], 16);
+    const low = Number.parseInt(mappedHex[2], 16);
+    return isPrivateIpv4(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`);
+  }
+  // Unique local (fc00::/7) and link-local (fe80::/10) addresses.
+  return /^f[cd]/.test(address) || /^fe[89ab]/.test(address);
+}
+
+/** Loopback, private and internal hosts never receive a webhook. */
+export function isPrivateWebhookHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host.startsWith("[")) return isPrivateIpv6(host);
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return isPrivateIpv4(host);
+  return (
+    PRIVATE_HOST_NAMES.has(host) ||
+    PRIVATE_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix)) ||
+    !host.includes(".")
+  );
+}
+
+/**
+ * Whether `url` is an HTTPS address on a public host, without credentials.
+ * Endpoints that fail this are refused when saved and skipped at delivery.
+ */
+export function isPublicHttpsWebhookUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     return (
       parsed.protocol === "https:" &&
       parsed.hostname.length > 0 &&
       parsed.username === "" &&
-      parsed.password === ""
+      parsed.password === "" &&
+      !isPrivateWebhookHost(parsed.hostname)
     );
   } catch {
     return false;
@@ -66,7 +125,7 @@ export function endpointIneligibility(
   if (eventType !== WEBHOOK_TEST_EVENT && !webhook.events.includes(eventType)) {
     return "endpoint_unsubscribed";
   }
-  if (!isHttpsWebhookUrl(webhook.url)) return "endpoint_insecure";
+  if (!isPublicHttpsWebhookUrl(webhook.url)) return "endpoint_insecure";
   return null;
 }
 

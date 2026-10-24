@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import { openDecodableImage } from "./utils/imageDecoding";
 
 /**
  * Internal action: Process thumbnail using Node.js image processing
@@ -15,9 +16,6 @@ export const processThumbnail = internalAction({
   },
   returns: v.union(v.id("_storage"), v.null()),
   handler: async (ctx, args) => {
-    // Import sharp dynamically (Node.js only)
-    const sharp = (await import("sharp")).default;
-
     try {
       // Get the image URL from storage
       const imageUrl = await ctx.storage.getUrl(args.storageId);
@@ -31,10 +29,10 @@ export const processThumbnail = internalAction({
         throw new Error(`Failed to download image: ${response.statusText}`);
       }
 
-      const imageBuffer = Buffer.from(await response.arrayBuffer());
-
-      // Process image with sharp - resize to 300x300, maintain aspect ratio
-      const thumbnailBuffer = await sharp(imageBuffer)
+      // Only JPEG, PNG, WebP and TIFF bytes reach the image library; the
+      // thumbnail is 300x300 at most, keeping the aspect ratio.
+      const image = await openDecodableImage(await response.arrayBuffer());
+      const thumbnailBuffer = await image
         .resize(300, 300, {
           fit: "inside",
           withoutEnlargement: true,

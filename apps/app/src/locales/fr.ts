@@ -1491,7 +1491,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Saisissez un nom pour le point de terminaison.",
-      WEBHOOK_URL_INVALID: "Saisissez une URL HTTPS valide.",
+      WEBHOOK_URL_INVALID: "Saisissez une URL HTTPS publique.",
       WEBHOOK_EVENT_UNSUPPORTED:
         "L'un des événements sélectionnés n'est pas disponible.",
       WEBHOOK_LIMIT_REACHED:

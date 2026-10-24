@@ -1450,7 +1450,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Enter a name for the endpoint.",
-      WEBHOOK_URL_INVALID: "Enter a valid HTTPS URL.",
+      WEBHOOK_URL_INVALID: "Enter a public HTTPS URL.",
       WEBHOOK_EVENT_UNSUPPORTED: "One of the selected events is not available.",
       WEBHOOK_LIMIT_REACHED:
         "This organization already has the maximum number of webhook endpoints.",

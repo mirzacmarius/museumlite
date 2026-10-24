@@ -1461,7 +1461,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Skriv inn et navn på endepunktet.",
-      WEBHOOK_URL_INVALID: "Skriv inn en gyldig HTTPS-URL.",
+      WEBHOOK_URL_INVALID: "Skriv inn en offentlig HTTPS-URL.",
       WEBHOOK_EVENT_UNSUPPORTED:
         "En av de valgte hendelsene er ikke tilgjengelig.",
       WEBHOOK_LIMIT_REACHED:

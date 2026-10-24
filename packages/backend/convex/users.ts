@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-
+import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { action, internalQuery, query } from "./_generated/server";
 import { PASSWORD_PROVIDERS } from "./accountConstants";
 import {
@@ -28,6 +28,22 @@ const AVATAR_IMAGE_TYPE_SET = new Set<string>(AVATAR_IMAGE_TYPES);
 function validateAvatarFileType(mimeType: string): boolean {
   return AVATAR_IMAGE_TYPE_SET.has(mimeType);
 }
+
+/** Upload URLs one user may request: a steady rate with room for a batch. */
+export const UPLOAD_URLS_PER_MINUTE = 60;
+export const UPLOAD_URL_BURST = 120;
+const uploadLimiter = new RateLimiter(components.rateLimiter, {
+  ownedUploadUrls: {
+    kind: "token bucket",
+    rate: UPLOAD_URLS_PER_MINUTE,
+    period: MINUTE,
+    capacity: UPLOAD_URL_BURST,
+  },
+});
+
+/** Uploads never attached to a record, and spent upload sessions, go after this. */
+export const ABANDONED_UPLOAD_AGE_MS = 24 * 60 * 60 * 1000;
+const ABANDONED_UPLOAD_BATCH = 100;
 
 export const getUser = query({
   args: {},
@@ -237,24 +253,43 @@ export const generateUploadUrl = mutation({
         .unique();
       if (!membership) throw new Error("Organization access required");
     }
-    return await createAuthorizedUploadUrl(ctx, userId, args.organizationId);
+    const quota = await uploadLimiter.limit(ctx, "ownedUploadUrls", {
+      key: userId,
+    });
+    if (!quota.ok) {
+      throw new Error("Too many uploads at once. Try again in a minute.");
+    }
+    return await createAuthorizedUploadUrl(
+      ctx,
+      userId,
+      args.organizationId,
+      args.mimeType,
+    );
   },
 });
 
+/** The open upload session for `token`, or null. */
 export const checkUploadIntent = internalQuery({
   args: { token: v.string() },
-  returns: v.boolean(),
+  returns: v.union(v.null(), v.object({ mimeType: v.optional(v.string()) })),
   handler: async (ctx, args) => {
     const intent = await ctx.db
       .query("uploadIntents")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    return Boolean(intent && !intent.usedAt && intent.expiresAt > Date.now());
+    if (!intent || intent.usedAt || intent.expiresAt <= Date.now()) {
+      return null;
+    }
+    return { mimeType: intent.mimeType };
   },
 });
 
 export const completeOwnedUpload = internalMutation({
-  args: { token: v.string(), storageId: v.id("_storage") },
+  args: {
+    token: v.string(),
+    storageId: v.id("_storage"),
+    contentType: v.optional(v.string()),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     const intent = await ctx.db
@@ -274,9 +309,60 @@ export const completeOwnedUpload = internalMutation({
       storageId: args.storageId,
       uploadedBy: intent.uploadedBy,
       organizationId: intent.organizationId,
+      contentType: args.contentType || undefined,
       uploadedAt: Date.now(),
+      unclaimedSince: Date.now(),
     });
     await ctx.db.patch(intent._id, { usedAt: Date.now() });
+    return null;
+  },
+});
+
+/**
+ * Deletes uploads that were never attached to a record, with their files,
+ * and upload sessions that expired, once they are a day old. Runs hourly
+ * from crons.ts and reschedules itself while a full batch remains.
+ */
+export const deleteAbandonedUploads = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const cutoff = Date.now() - ABANDONED_UPLOAD_AGE_MS;
+    const [abandoned, expiredIntents] = await Promise.all([
+      ctx.db
+        .query("storageOwnership")
+        .withIndex("by_unclaimedSince", (q) =>
+          q.gt("unclaimedSince", 0).lt("unclaimedSince", cutoff),
+        )
+        .take(ABANDONED_UPLOAD_BATCH),
+      ctx.db
+        .query("uploadIntents")
+        .withIndex("by_expiresAt", (q) => q.lt("expiresAt", cutoff))
+        .take(ABANDONED_UPLOAD_BATCH),
+    ]);
+    for (const upload of abandoned) {
+      if (upload.ownerType || upload.ownerId) {
+        await ctx.db.patch(upload._id, { unclaimedSince: undefined });
+        continue;
+      }
+      if (await ctx.db.system.get("_storage", upload.storageId)) {
+        await ctx.storage.delete(upload.storageId);
+      }
+      await ctx.db.delete(upload._id);
+    }
+    for (const intent of expiredIntents) {
+      await ctx.db.delete(intent._id);
+    }
+    if (
+      abandoned.length === ABANDONED_UPLOAD_BATCH ||
+      expiredIntents.length === ABANDONED_UPLOAD_BATCH
+    ) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.users.deleteAbandonedUploads,
+        {},
+      );
+    }
     return null;
   },
 });
@@ -290,6 +376,19 @@ export const updateUserImage = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       return null;
+    }
+    // An avatar is served back from storage, so only an upload that arrived
+    // as an image may become one.
+    const [upload, file] = await Promise.all([
+      ctx.db
+        .query("storageOwnership")
+        .withIndex("by_storageId", (q) => q.eq("storageId", args.imageId))
+        .unique(),
+      ctx.db.system.get("_storage", args.imageId),
+    ]);
+    const contentType = upload?.contentType ?? file?.contentType ?? "";
+    if (!validateAvatarFileType(contentType)) {
+      throw new Error("Avatar must be a JPEG, PNG or WebP image");
     }
     await claimStorageOwnership(ctx, {
       storageId: args.imageId,

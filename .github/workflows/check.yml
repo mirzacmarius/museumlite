@@ -74,6 +74,9 @@ jobs:
       - name: Verify cache policy
         run: bun run test:ci-policy
 
+      - name: Test config helpers
+        run: bun run test:scripts
+
       - name: 🔦 Lint
         run: ./node_modules/.bin/turbo run lint $AFFECTED
 
