@@ -163,6 +163,8 @@ export interface ImportedObjectFields {
   culture?: string;
   period?: string;
   dateCreated?: string;
+  /** Canonical EDTF; the importer checks it first, so a bad value fails one row. */
+  dateCreatedEdtf?: string;
   materials?: string;
   technique?: string;
   dimensions?: string;
@@ -224,6 +226,7 @@ export async function createImportedCatalogObject(
     culture: trimmed(args.fields.culture),
     period: trimmed(args.fields.period),
     dateCreated: trimmed(args.fields.dateCreated),
+    dateCreatedEdtf: trimmed(args.fields.dateCreatedEdtf),
     materials: trimmed(args.fields.materials),
     technique: trimmed(args.fields.technique),
     dimensions: trimmed(args.fields.dimensions),

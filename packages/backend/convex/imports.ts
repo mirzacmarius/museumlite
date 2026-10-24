@@ -59,7 +59,9 @@ import {
   requireLocationAdminPermission,
   requirePermission,
 } from "./utils/permissions";
+import { productionDateSummary } from "./utils/productionDates";
 import { canReadRecord } from "./utils/recordAccess";
+import { canonicalEdtf } from "./utils/recordEdits";
 import {
   accessionsToSpectrumEntries,
   collectionsToSpectrum,
@@ -131,6 +133,23 @@ function resolveUniqueName<Id extends string>(
     );
   }
   return matches[0] as { _id: Id; name: string };
+}
+
+/**
+ * A CSV row's structured date made as stored. CSVs write EDTF that starts
+ * with "-" behind an apostrophe, so exactly one is dropped; text that is not
+ * EDTF the parser reads (see utils/productionDates.ts) fails the row.
+ */
+function importedEdtf(value: string | undefined) {
+  const text = value?.trim().replace(/^'(?=-)/, "");
+  if (!text) return undefined;
+  const edtf = canonicalEdtf(text);
+  if (edtf === undefined) {
+    throw new Error(
+      "dateCreatedEdtf must be an EDTF date MuseumLite reads, such as 1850, 1850~, 185X or 1848/1852, without seasons or times, and an interval cannot end before it starts",
+    );
+  }
+  return edtf;
 }
 
 const importBatchResultValidator = v.object({
@@ -792,6 +811,8 @@ export const exportObjects = mutation({
       culture: v.optional(v.string()),
       period: v.optional(v.string()),
       dateCreated: v.optional(v.string()),
+      /** The EDTF staff entered, so a re-import keeps it; never a reading. */
+      dateCreatedEdtf: v.optional(v.string()),
       materials: v.optional(v.string()),
       technique: v.optional(v.string()),
       dimensions: v.optional(v.string()),
@@ -863,6 +884,7 @@ export const exportObjects = mutation({
           culture: o.culture,
           period: o.period,
           dateCreated: o.dateCreated,
+          dateCreatedEdtf: o.dateCreatedEdtf,
           materials: o.materials,
           technique: o.technique,
           dimensions: o.dimensions,
@@ -1223,6 +1245,7 @@ export const importObjectsBatch = mutation({
         culture: v.optional(v.string()),
         period: v.optional(v.string()),
         dateCreated: v.optional(v.string()),
+        dateCreatedEdtf: v.optional(v.string()),
         materials: v.optional(v.string()),
         technique: v.optional(v.string()),
         dimensions: v.optional(v.string()),
@@ -1275,6 +1298,7 @@ export const importObjectsBatch = mutation({
       args.batchIndex,
       async (row, rowNumber) => {
         if (!row.title.trim()) throw new Error("Title is required");
+        const dateCreatedEdtf = importedEdtf(row.dateCreatedEdtf);
         const locationId = row.location?.trim()
           ? resolveUniqueName(locationsByName, row.location, "location")._id
           : undefined;
@@ -1331,7 +1355,7 @@ export const importObjectsBatch = mutation({
           organizationId: args.organizationId,
           userId,
           accessionNumber: row.accessionNumber,
-          fields,
+          fields: { ...fields, dateCreatedEdtf },
           locationId,
           collectionGroupId,
           collectionGroupIds,
@@ -1402,6 +1426,7 @@ export const importObjectsDublinCore = mutation({
           culture: collection.culture,
           period: collection.period,
           dateCreated: collection.dateCreated,
+          dateCreatedEdtf: collection.dateCreatedEdtf,
           materials: collection.materials,
           technique: collection.technique,
           dimensions: collection.dimensions,
@@ -1719,6 +1744,7 @@ export const exportObjectsWithFormat = mutation({
     const exportRows = await Promise.all(
       filtered.map(async (o) => {
         const membership = await getCollectionGroupMembershipIds(ctx, o);
+        const made = productionDateSummary(o);
         return {
           accessionNumber: o.accessionNumber,
           title: o.title,
@@ -1729,6 +1755,10 @@ export const exportObjectsWithFormat = mutation({
           culture: o.culture,
           period: o.period,
           dateCreated: o.dateCreated,
+          dateCreatedEdtf: o.dateCreatedEdtf,
+          productionDateEdtf: made?.edtf,
+          productionEarliestYear: made?.earliestYear,
+          productionLatestYear: made?.latestYear,
           materials: o.materials,
           technique: o.technique,
           dimensions: o.dimensions,
@@ -1795,6 +1825,10 @@ export const exportObjectsWithFormat = mutation({
       "culture",
       "period",
       "dateCreated",
+      "dateCreatedEdtf",
+      "productionDateEdtf",
+      "productionEarliestYear",
+      "productionLatestYear",
       "materials",
       "technique",
       "dimensions",
@@ -1807,31 +1841,42 @@ export const exportObjectsWithFormat = mutation({
       "status",
       "createdAt",
     ];
+    // Years are bare numbers: a text cell would turn -499 into '-499.
+    const yearCell = (year: number | undefined) =>
+      year === undefined ? "" : String(year);
     const csvRows = [headers.join(",")];
     for (const row of exportRows) {
-      const values = [
-        row.accessionNumber,
-        row.title,
-        row.alternativeTitle || "",
-        row.creator || "",
-        row.objectType || "",
-        row.objectName || "",
-        row.culture || "",
-        row.period || "",
-        row.dateCreated || "",
-        row.materials || "",
-        row.technique || "",
-        row.dimensions || "",
-        row.description || "",
-        row.condition || "",
-        row.provenance || "",
-        row.location || "",
-        row.collectionGroup || "",
-        JSON.stringify(row.collectionGroups),
-        row.status || "",
-        new Date(row.createdAt).toISOString(),
+      const cells = [
+        ...[
+          row.accessionNumber,
+          row.title,
+          row.alternativeTitle || "",
+          row.creator || "",
+          row.objectType || "",
+          row.objectName || "",
+          row.culture || "",
+          row.period || "",
+          row.dateCreated || "",
+          row.dateCreatedEdtf || "",
+          row.productionDateEdtf || "",
+        ].map(csvTextCell),
+        yearCell(row.productionEarliestYear),
+        yearCell(row.productionLatestYear),
+        ...[
+          row.materials || "",
+          row.technique || "",
+          row.dimensions || "",
+          row.description || "",
+          row.condition || "",
+          row.provenance || "",
+          row.location || "",
+          row.collectionGroup || "",
+          JSON.stringify(row.collectionGroups),
+          row.status || "",
+          new Date(row.createdAt).toISOString(),
+        ].map(csvTextCell),
       ];
-      csvRows.push(values.map(csvTextCell).join(","));
+      csvRows.push(cells.join(","));
     }
     return csvRows.join("\n");
   },
@@ -2195,6 +2240,7 @@ export const getImportTemplateByType = query({
           "culture",
           "period",
           "dateCreated",
+          "dateCreatedEdtf",
           "materials",
           "technique",
           "dimensions",
@@ -2213,7 +2259,8 @@ export const getImportTemplateByType = query({
           "Oil on canvas",
           "American",
           "19th Century",
-          "1850",
+          "c. 1850",
+          "1850~",
           "Oil, Canvas",
           "Oil painting",
           "24 x 36 inches",

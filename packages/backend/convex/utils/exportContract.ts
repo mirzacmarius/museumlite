@@ -1,43 +1,7 @@
 import { v } from "convex/values";
-import {
-  advancedFilterGroupValidator,
-  filterCombinationValidator,
-} from "./catalogFilterValidators";
+import { catalogFiltersValidator } from "./catalogFilterValidators";
 import { appraisalPurposeValidator } from "./valuation";
 
-export const objectExportFilters = v.object({
-  search: v.optional(v.string()),
-  inventoryMetricScope: v.optional(
-    v.union(
-      v.literal("owned"),
-      v.literal("incoming"),
-      v.literal("unclassified"),
-    ),
-  ),
-  status: v.optional(
-    v.union(
-      v.literal("active"),
-      v.literal("loaned"),
-      v.literal("archived"),
-      v.literal("deaccessioned"),
-      v.literal("deleted"),
-    ),
-  ),
-  objectType: v.optional(v.string()),
-  displayStatus: v.optional(v.string()),
-  culture: v.optional(v.string()),
-  period: v.optional(v.string()),
-  materials: v.optional(v.string()),
-  condition: v.optional(v.string()),
-  hasImage: v.optional(v.boolean()),
-  catalogedFrom: v.optional(v.number()),
-  catalogedTo: v.optional(v.number()),
-  includeDeaccessioned: v.optional(v.boolean()),
-  locationIds: v.optional(v.array(v.id("locations"))),
-  collectionGroupId: v.optional(v.id("collectionGroups")),
-  advancedFilters: v.optional(v.array(advancedFilterGroupValidator)),
-  filterCombinations: v.optional(filterCombinationValidator),
-});
 export const auditExportFilters = v.object({
   userId: v.optional(v.id("users")),
   entityType: v.optional(v.string()),
@@ -92,7 +56,8 @@ export const exportSource = v.union(
   v.object({
     kind: v.literal("objects"),
     mode: v.union(v.literal("filtered"), v.literal("selected")),
-    filters: objectExportFilters,
+    // The catalog's own filters, so a filtered export takes what the list takes.
+    filters: catalogFiltersValidator,
   }),
   v.object({ kind: v.literal("audit"), filters: auditExportFilters }),
   v.object({

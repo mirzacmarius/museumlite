@@ -480,3 +480,46 @@ describe("SPECTRUM Round-trip Conversions", () => {
     expect(converted.status).toBe(original.status);
   });
 });
+
+describe("SPECTRUM production date", () => {
+  it("keeps the date as written and adds the EDTF in effect and its years", () => {
+    const record = collectionToSpectrum({
+      accessionNumber: "2024.001",
+      title: "Coin",
+      dateCreated: "c. 500 BC",
+    });
+
+    expect(record).toMatchObject({
+      dateCreated: "c. 500 BC",
+      productionDateEdtf: "-0499~",
+      productionDateEarliest: -504,
+      productionDateLatest: -494,
+    });
+    const xml = toSpectrumXML(record);
+    expect(xml).toContain(
+      [
+        "  <dateCreated>c. 500 BC</dateCreated>",
+        "  <productionDateEdtf>-0499~</productionDateEdtf>",
+        "  <productionDateEarliest>-504</productionDateEarliest>",
+        "  <productionDateLatest>-494</productionDateLatest>",
+      ].join("\n"),
+    );
+  });
+
+  it("uses the structured date over the text and leaves an open side out", () => {
+    const record = collectionToSpectrum({
+      accessionNumber: "2024.002",
+      title: "Vase",
+      dateCreated: "Ming dynasty",
+      dateCreatedEdtf: "../1644",
+    });
+
+    expect(record.productionDateEdtf).toBe("../1644");
+    expect(record.productionDateEarliest).toBeUndefined();
+    expect(toSpectrumXML(record)).not.toContain("<productionDateEarliest>");
+    expect(
+      collectionToSpectrum({ title: "Box", dateCreated: "unknown" })
+        .productionDateEdtf,
+    ).toBeUndefined();
+  });
+});

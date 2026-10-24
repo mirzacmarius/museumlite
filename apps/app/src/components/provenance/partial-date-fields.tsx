@@ -13,6 +13,7 @@ import {
 import { useScopedI18n } from "@/locales/client";
 import type {
   PartialDateDraft,
+  PartialDateEra,
   PartialDatePrecisionChoice,
   PartialDateQualifierChoice,
 } from "./historical-date";
@@ -24,12 +25,21 @@ const PRECISIONS: PartialDatePrecisionChoice[] = [
   "year",
   "decade",
 ];
-const QUALIFIERS: PartialDateQualifierChoice[] = [
+const QUALIFIERS: readonly PartialDateQualifierChoice[] = [
   "exact",
   "circa",
   "notAfter",
   "notBefore",
 ];
+const ERAS: readonly PartialDateEra[] = ["ad", "bc"];
+
+/** Links each control to an error message shown outside the fields. */
+interface PartialDateErrorProps {
+  "aria-invalid"?: true;
+  "aria-describedby"?: string;
+}
+
+const NO_ERROR_PROPS: PartialDateErrorProps = {};
 
 interface PartialDateFieldsProps {
   id: string;
@@ -37,6 +47,11 @@ interface PartialDateFieldsProps {
   value: PartialDateDraft;
   onChange: (value: PartialDateDraft) => void;
   disabled?: boolean;
+  /** The qualifiers offered; all four by default. */
+  qualifiers?: readonly PartialDateQualifierChoice[];
+  /** Offers an AD/BC era for a year. Off for provenance claims. */
+  allowBc?: boolean;
+  errorProps?: PartialDateErrorProps;
 }
 
 /**
@@ -49,12 +64,14 @@ export function PartialDateFields({
   value,
   onChange,
   disabled = false,
+  qualifiers = QUALIFIERS,
+  allowBc = false,
+  errorProps = NO_ERROR_PROPS,
 }: PartialDateFieldsProps) {
   const t = useScopedI18n("provenance.dateInput");
   const update = (patch: Partial<PartialDateDraft>) =>
     onChange({ ...value, ...patch });
   const stated = value.precision !== "none";
-  const showMonth = value.precision === "day" || value.precision === "month";
 
   return (
     <fieldset className="space-y-2 rounded-lg border border-border/60 p-3">
@@ -71,7 +88,7 @@ export function PartialDateFields({
               update({ precision: precision as PartialDatePrecisionChoice })
             }
           >
-            <SelectTrigger id={`${id}-precision`}>
+            <SelectTrigger id={`${id}-precision`} {...errorProps}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -95,11 +112,11 @@ export function PartialDateFields({
                 update({ qualifier: qualifier as PartialDateQualifierChoice })
               }
             >
-              <SelectTrigger id={`${id}-qualifier`}>
+              <SelectTrigger id={`${id}-qualifier`} {...errorProps}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {QUALIFIERS.map((qualifier) => (
+                {qualifiers.map((qualifier) => (
                   <SelectItem key={qualifier} value={qualifier}>
                     {t(`qualifiers.${qualifier}`)}
                   </SelectItem>
@@ -111,48 +128,14 @@ export function PartialDateFields({
       </div>
       {stated ? (
         <>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1.5">
-              <Label htmlFor={`${id}-year`} className="text-xs">
-                {t("year")}
-              </Label>
-              <Input
-                id={`${id}-year`}
-                inputMode="numeric"
-                value={value.year}
-                disabled={disabled}
-                onChange={(event) => update({ year: event.target.value })}
-              />
-            </div>
-            {showMonth ? (
-              <div className="space-y-1.5">
-                <Label htmlFor={`${id}-month`} className="text-xs">
-                  {t("month")}
-                </Label>
-                <Input
-                  id={`${id}-month`}
-                  inputMode="numeric"
-                  value={value.month}
-                  disabled={disabled}
-                  onChange={(event) => update({ month: event.target.value })}
-                />
-              </div>
-            ) : null}
-            {value.precision === "day" ? (
-              <div className="space-y-1.5">
-                <Label htmlFor={`${id}-day`} className="text-xs">
-                  {t("day")}
-                </Label>
-                <Input
-                  id={`${id}-day`}
-                  inputMode="numeric"
-                  value={value.day}
-                  disabled={disabled}
-                  onChange={(event) => update({ day: event.target.value })}
-                />
-              </div>
-            ) : null}
-          </div>
+          <PartialDateParts
+            id={id}
+            value={value}
+            update={update}
+            disabled={disabled}
+            showEra={allowBc && value.precision === "year"}
+            errorProps={errorProps}
+          />
           {value.precision === "decade" ? (
             <p className="text-xs text-muted-foreground">{t("decadeHint")}</p>
           ) : null}
@@ -172,5 +155,95 @@ export function PartialDateFields({
         </>
       ) : null}
     </fieldset>
+  );
+}
+
+/** The year, month and day the precision asks for, and a year's era. */
+function PartialDateParts({
+  id,
+  value,
+  update,
+  disabled,
+  showEra,
+  errorProps,
+}: {
+  id: string;
+  value: PartialDateDraft;
+  update: (patch: Partial<PartialDateDraft>) => void;
+  disabled: boolean;
+  showEra: boolean;
+  errorProps: PartialDateErrorProps;
+}) {
+  const t = useScopedI18n("provenance.dateInput");
+  const showMonth = value.precision === "day" || value.precision === "month";
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <div className="space-y-1.5">
+        <Label htmlFor={`${id}-year`} className="text-xs">
+          {t("year")}
+        </Label>
+        <Input
+          id={`${id}-year`}
+          inputMode="numeric"
+          value={value.year}
+          disabled={disabled}
+          onChange={(event) => update({ year: event.target.value })}
+          {...errorProps}
+        />
+      </div>
+      {showEra ? (
+        <div className="col-span-2 space-y-1.5">
+          <Label htmlFor={`${id}-era`} className="text-xs">
+            {t("era")}
+          </Label>
+          <Select
+            value={value.era ?? "ad"}
+            disabled={disabled}
+            onValueChange={(era) => update({ era: era === "bc" ? "bc" : "ad" })}
+          >
+            <SelectTrigger id={`${id}-era`} {...errorProps}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ERAS.map((era) => (
+                <SelectItem key={era} value={era}>
+                  {t(`eras.${era}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+      {showMonth ? (
+        <div className="space-y-1.5">
+          <Label htmlFor={`${id}-month`} className="text-xs">
+            {t("month")}
+          </Label>
+          <Input
+            id={`${id}-month`}
+            inputMode="numeric"
+            value={value.month}
+            disabled={disabled}
+            onChange={(event) => update({ month: event.target.value })}
+            {...errorProps}
+          />
+        </div>
+      ) : null}
+      {value.precision === "day" ? (
+        <div className="space-y-1.5">
+          <Label htmlFor={`${id}-day`} className="text-xs">
+            {t("day")}
+          </Label>
+          <Input
+            id={`${id}-day`}
+            inputMode="numeric"
+            value={value.day}
+            disabled={disabled}
+            onChange={(event) => update({ day: event.target.value })}
+            {...errorProps}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

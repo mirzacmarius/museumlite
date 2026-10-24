@@ -597,7 +597,11 @@ export default defineSchema({
     objectName: v.optional(v.string()),
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
+    // Date made, as written; shown as entered.
     dateCreated: v.optional(v.string()),
+    // The date made as EDTF when staff structured it (canonical, see
+    // `utils/productionDates.ts`); it then wins over what the text reads as.
+    dateCreatedEdtf: v.optional(v.string()),
     materials: v.optional(v.string()),
     technique: v.optional(v.string()), // e.g., "Carved, Drill-work, Polished"
     dimensions: v.optional(v.string()),
@@ -890,11 +894,33 @@ export default defineSchema({
     objectTypes: v.array(v.string()),
     materials: v.array(v.string()),
     catalogedAt: v.number(),
+    // Date made sort keys (`productionSortKeys`): undated Objects sort last
+    // both ways. Written from version 3; earlier documents lack them.
+    madeSortEarliest: v.optional(v.number()),
+    madeSortLatest: v.optional(v.number()),
     version: v.number(),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization_and_culture", ["organizationId", "culture"])
     .index("by_organization_and_period", ["organizationId", "period"])
+    .index("by_organization_and_madeSortEarliest", [
+      "organizationId",
+      "madeSortEarliest",
+    ])
+    .index("by_organization_and_madeSortLatest", [
+      "organizationId",
+      "madeSortLatest",
+    ])
+    .index("by_organization_and_status_and_madeSortEarliest", [
+      "organizationId",
+      "status",
+      "madeSortEarliest",
+    ])
+    .index("by_organization_and_status_and_madeSortLatest", [
+      "organizationId",
+      "status",
+      "madeSortLatest",
+    ])
     .searchIndex("search_text", {
       searchField: "text",
       filterFields: [
@@ -5338,7 +5364,8 @@ export default defineSchema({
     requestKey: v.string(),
     source: exportSource,
     format: exportFormat,
-    schemaVersion: v.literal(1),
+    // Object jobs are version 2 (date made columns); others stay version 1.
+    schemaVersion: v.union(v.literal(1), v.literal(2)),
     asOf: v.number(),
     captureStartedAt: v.number(),
     captureCompletedAt: v.optional(v.number()),

@@ -3236,6 +3236,15 @@ export default {
       advancedSearchActive: "Búsqueda avanzada: {count}",
       advancedChip: "Avanzada",
       advancedConditions: "Reglas: {count}",
+      madeRange: "Fecha de producción",
+      madeFrom: "Producido desde",
+      madeTo: "Producido hasta",
+      era: "Era",
+      eraAd: "d. C.",
+      eraBc: "a. C.",
+      madeYearInvalid: "Introduce un año entero entre 1 y 9999.",
+      madeRangeReversed:
+        "Introduce un año inicial igual o anterior al año final.",
     },
     search: {
       matchedIn: "Coincide en {field}",
@@ -3269,7 +3278,7 @@ export default {
         objectName: "Nombre del objeto",
         culture: "Cultura",
         period: "Período",
-        dateCreated: "Fecha de creación",
+        dateCreated: "Fecha de producción",
         materials: "Materiales",
         technique: "Técnica",
         condition: "Estado de conservación",
@@ -3312,6 +3321,8 @@ export default {
       overwriteWarning: "Objetos cuyo valor registrado se reemplaza: {count}",
       overwriteWarningCapped:
         "Objetos contados hasta ahora cuyo valor registrado se reemplaza: {count}",
+      clearsStructuredDate:
+        "Al establecer o vaciar la fecha de producción también se elimina cualquier fecha estructurada, de modo que se use el texto nuevo.",
       start: "Aplicar la edición",
       starting: "Iniciando…",
       progressRunning:
@@ -3335,7 +3346,7 @@ export default {
         objectName: "Nombre del objeto",
         culture: "Cultura",
         period: "Período",
-        dateCreated: "Fecha de creación",
+        dateCreated: "Fecha de producción",
         materials: "Materiales",
         technique: "Técnica",
         description: "Descripción",
@@ -3394,6 +3405,7 @@ export default {
       location: "Ubicación",
       objectType: "Tipo de Objeto",
       status: "Estado",
+      dateMade: "Fecha de producción",
     },
     bulkActions: {
       objectsSelected: "{count} objeto{s} seleccionado{s}",
@@ -3479,7 +3491,7 @@ export default {
       creator: "Creador/Artista",
       culture: "Cultura",
       period: "Período",
-      dateCreated: "Fecha de Creación",
+      dateCreated: "Fecha de producción",
       materials: "Materiales",
       dimensions: "Dimensiones",
       condition: "Condición",
@@ -3499,6 +3511,34 @@ export default {
       publicUrlSlug: "URL Pública",
       owner: "Propietario",
       to: "A",
+      productionDate: {
+        legend: "Fecha estructurada",
+        description:
+          "Opcional. Determina cómo el catálogo ordena, filtra y exporta este objeto; el texto de arriba se muestra tal como se escribió.",
+        from: "Desde",
+        to: "Hasta",
+        hint: "Rellena Desde para una sola fecha, o Desde y Hasta para un intervalo. A más tardar y No antes de solo se aplican a Desde por sí sola.",
+        readAs: "Se lee como {date}.",
+        years: "La ordenación y los filtros usan {years}.",
+        yearsFrom:
+          "La ordenación y los filtros usan los años desde {start} en adelante.",
+        yearsUntil: "La ordenación y los filtros usan los años hasta {end}.",
+        onOrAfter: "{date} o posterior",
+        undated: "Sin fecha para la ordenación y los filtros.",
+        notRead:
+          "No se lee como fecha, así que se muestra tal como se escribió. Añade una fecha estructurada para ordenar y filtrar por ella.",
+        useReading: "Usar como fecha estructurada",
+        mismatch:
+          "El texto se lee como {text}, pero la fecha estructurada es {date}. La ordenación, los filtros y las exportaciones usan la fecha estructurada.",
+        edtf: "EDTF {edtf}",
+        fixed:
+          "Esta fecha estructurada no se puede cambiar aquí. Bórrala para introducir otra.",
+        clear: "Borrar la fecha estructurada",
+        invalid:
+          "Revisa la fecha estructurada: introduce las partes que pide su precisión y un final igual o posterior al inicio.",
+        openInRange:
+          "A más tardar y No antes de solo se aplican a Desde por sí sola. Elige Tal como se indica o Hacia (circa) para un intervalo.",
+      },
       placeholders: {
         title: "Ingresa el título del objeto",
         accessionNumber: "Auto-generado si está vacío",
@@ -3507,7 +3547,7 @@ export default {
         selectTypes: "Selecciona o agrega tipos...",
         culture: "ej., Francés",
         period: "ej., Siglo XIX",
-        dateCreated: "ej., 1850",
+        dateCreated: "ej., hacia 1850, 1850–1860 o siglo XIX",
         creator: "ej., Vincent van Gogh",
         dimensions: "ej., 50 x 60 cm",
         location: "Selecciona una ubicación (opcional)",
@@ -3621,7 +3661,7 @@ export default {
       objectType: "Tipo de Objeto",
       objectName: "Nombre del Objeto",
       creatorArtist: "Creador/Artista",
-      dateCreated: "Fecha de Creación",
+      dateCreated: "Fecha de producción",
       culture: "Cultura",
       period: "Período",
       materials: "Materiales",
@@ -3653,7 +3693,7 @@ export default {
       objectType: "Tipo de Objeto",
       objectName: "Nombre del Objeto",
       creatorArtist: "Creador/Artista",
-      dateCreated: "Fecha de Creación",
+      dateCreated: "Fecha de producción",
       culture: "Cultura",
       period: "Período",
       physicalDescription: "Descripción Física",
@@ -5992,6 +6032,8 @@ export default {
       newest: "Más recientes primero",
       oldest: "Más antiguos primero",
       identifier: "Identificador (A–Z)",
+      madeEarliest: "Fecha de producción, más antigua primero",
+      madeLatest: "Fecha de producción, más reciente primero",
     },
     allTypes: "Todos los tipos",
   },
@@ -6038,7 +6080,7 @@ export default {
       object_type: "Tipo de objeto",
       object_name: "Nombre del objeto",
       maker: "Autor",
-      production_date: "Fecha de creación",
+      production_date: "Fecha de producción",
       materials: "Materiales",
       dimensions: "Dimensiones",
       inscriptions: "Inscripciones y marcas",
@@ -7510,6 +7552,11 @@ export default {
       },
       uncertain: "La fuente no está segura",
       decadeHint: "Indica el primer año de la década, por ejemplo 1920.",
+      era: "Era",
+      eras: {
+        ad: "d. C.",
+        bc: "a. C.",
+      },
     },
     retract: {
       title: "¿Retractar la afirmación?",
@@ -8220,7 +8267,8 @@ export default {
           objectName: "Nombre del objeto",
           culture: "Cultura",
           period: "Período",
-          dateCreated: "Fecha de creación",
+          dateCreated: "Fecha de producción",
+          dateCreatedEdtf: "Fecha de producción (EDTF)",
           materials: "Materiales",
           technique: "Técnica",
           dimensions: "Dimensiones",
@@ -8241,7 +8289,10 @@ export default {
           objectName: "Nombre específico del objeto",
           culture: "Origen cultural",
           period: "Período histórico",
-          dateCreated: "Fecha o período de creación",
+          dateCreated:
+            "Fecha o período tal como se escribió, como hacia 1850 o siglo XIX",
+          dateCreatedEdtf:
+            "Fecha estructurada en EDTF, como 1850~, 185X o 1850/1860",
           materials: "Materiales utilizados",
           technique: "Técnica de producción",
           dimensions: "Dimensiones físicas",
@@ -8364,7 +8415,7 @@ export default {
         bodyStyle: "Tipo de carrocería",
         caption: "Pie de foto",
         dateAcquired: "Fecha de adquisición",
-        dateCreatedLabel: "Fecha de creación",
+        dateCreatedLabel: "Fecha de producción",
         engineNumber: "N.º de motor",
         exterior: "Exterior",
         fuelType: "Tipo de combustible",
@@ -8592,6 +8643,7 @@ export default {
         fieldChanged: "Se cambió «{field}»{previous}{next}",
         fromValue: "de «{value}»",
         toValue: "a «{value}»",
+        structuredDateRemoved: "Se eliminó la fecha estructurada «{value}»",
         byUser: "Por {name}",
         actions: {
           created_collection: "Objeto creado",
@@ -11101,6 +11153,8 @@ export default {
       invalid: "Algunos campos requieren atención antes de guardar.",
       saveFailed:
         "No se pudieron guardar sus cambios. Compruebe su conexión e inténtelo de nuevo.",
+      productionDateInvalid:
+        "La fecha estructurada no es una fecha válida. Revise sus partes e inténtelo de nuevo.",
     },
     notices: {
       recoveredTitle: "Se encontraron cambios sin guardar",

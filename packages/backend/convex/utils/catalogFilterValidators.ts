@@ -122,6 +122,13 @@ export const catalogFilterFields = {
   search: v.optional(v.string()),
   catalogedFrom: v.optional(v.number()),
   catalogedTo: v.optional(v.number()),
+  /**
+   * Inclusive years of a date made range, astronomical as in EDTF (0 is 1 BC,
+   * -499 is 500 BC). An Object matches when its dates meet the range; one
+   * with no date it can be read as never does.
+   */
+  madeFrom: v.optional(v.number()),
+  madeTo: v.optional(v.number()),
   advancedFilters: v.optional(v.array(advancedFilterGroupValidator)),
   filterCombinations: v.optional(filterCombinationValidator),
 };
@@ -129,3 +136,22 @@ export const catalogFilterFields = {
 export const catalogFiltersValidator = v.object(catalogFilterFields);
 
 export type CatalogFilters = Infer<typeof catalogFiltersValidator>;
+
+/**
+ * Orders of the Object Catalog; newest first is the default. Date made orders
+ * list undated Objects last both ways. Kept out of the filters: bulk edits and
+ * exports page in creation order.
+ */
+export const CATALOG_SORTS = [
+  "newest",
+  "oldest",
+  "identifier",
+  "madeEarliest",
+  "madeLatest",
+] as const;
+
+export type CatalogSort = (typeof CATALOG_SORTS)[number];
+
+export const catalogSortValidator = v.union(
+  ...CATALOG_SORTS.map((sort) => v.literal(sort)),
+);

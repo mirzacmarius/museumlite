@@ -8,3 +8,6 @@ export const ACQUISITION_METHODS = [
   "Trade",
   "Transfer",
 ] as const;
+
+/** Id prefix of the structured date made's From and To inputs. */
+export const STRUCTURED_DATE_MADE_ID = "dateCreatedEdtf";

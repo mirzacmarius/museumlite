@@ -1,5 +1,6 @@
 import type { FieldMapping } from "@/components/import-field-mapper";
 import type { CsvObjectRow } from "@/lib/csv-parser";
+import { convertToCSV } from "@/lib/format-converters";
 
 export interface ParsedRow {
   /** Line in the source file, used as the row's stable identity on the job. */
@@ -13,6 +14,7 @@ export interface ParsedRow {
   culture?: string;
   period?: string;
   dateCreated?: string;
+  dateCreatedEdtf?: string;
   materials?: string;
   technique?: string;
   dimensions?: string;
@@ -64,6 +66,7 @@ export const OPTIONAL_COLUMNS = [
   "culture",
   "period",
   "dateCreated",
+  "dateCreatedEdtf",
   "materials",
   "technique",
   "dimensions",
@@ -75,6 +78,26 @@ export const OPTIONAL_COLUMNS = [
   "collectionGroups",
 ];
 export const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
+
+/** The downloadable template: its columns, with one example row. */
+export const OBJECT_IMPORT_TEMPLATE_CSV = convertToCSV([
+  {
+    title: "Portrait of a Lady",
+    accessionNumber: "2024.001",
+    creator: "Unknown Artist",
+    objectType: "painting",
+    culture: "European",
+    period: "19th Century",
+    dateCreated: "c. 1850",
+    dateCreatedEdtf: "1850~",
+    materials: "Oil on canvas",
+    dimensions: "24 x 18 inches",
+    condition: "Good",
+    location: "Main Gallery",
+    collectionGroup: "European Art",
+    collectionGroups: '["European Art"]',
+  } satisfies Omit<ParsedRow, "rowNumber">,
+]);
 
 export const TARGET_FIELDS = [
   {
@@ -139,6 +162,13 @@ export const TARGET_FIELDS = [
     required: false,
     description:
       "untranslatedRecords.collections.import.fieldDescriptions.dateCreated",
+  },
+  {
+    id: "dateCreatedEdtf",
+    label: "untranslatedRecords.collections.import.fields.dateCreatedEdtf",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.dateCreatedEdtf",
   },
   {
     id: "materials",

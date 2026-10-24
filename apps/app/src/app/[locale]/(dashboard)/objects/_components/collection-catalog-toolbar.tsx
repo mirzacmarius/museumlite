@@ -76,6 +76,8 @@ export function CollectionCatalogToolbar({
     filters.photograph !== "" ||
     filters.catalogedFrom !== "" ||
     filters.catalogedTo !== "" ||
+    filters.madeFrom !== "" ||
+    filters.madeTo !== "" ||
     advancedCount > 0;
 
   const facetFilters = {
@@ -86,6 +88,8 @@ export function CollectionCatalogToolbar({
     photograph: filters.photograph,
     catalogedFrom: filters.catalogedFrom,
     catalogedTo: filters.catalogedTo,
+    madeFrom: filters.madeFrom,
+    madeTo: filters.madeTo,
   };
 
   const secondaryFilters = {

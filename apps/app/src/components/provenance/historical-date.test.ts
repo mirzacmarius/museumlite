@@ -128,6 +128,25 @@ describe("partial date drafts", () => {
     }
   });
 
+  test("a year before Christ is refused: claims hold years from 1 AD", () => {
+    expect(
+      historicalDateFromDraft({
+        ...EMPTY_PARTIAL_DATE,
+        precision: "year",
+        year: "500",
+        era: "bc",
+      }),
+    ).toBeNull();
+    expect(
+      historicalDateFromDraft({
+        ...EMPTY_PARTIAL_DATE,
+        precision: "year",
+        year: "500",
+        era: "ad",
+      }),
+    ).toMatchObject({ year: 500 });
+  });
+
   test("round-trips a recorded date", () => {
     const date = {
       precision: "day" as const,

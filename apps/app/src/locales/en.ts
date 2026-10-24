@@ -2584,6 +2584,14 @@ export default {
       advancedSearchActive: "Advanced search: {count}",
       advancedChip: "Advanced",
       advancedConditions: "Rules: {count}",
+      madeRange: "Date made",
+      madeFrom: "Made from",
+      madeTo: "Made until",
+      era: "Era",
+      eraAd: "AD",
+      eraBc: "BC",
+      madeYearInvalid: "Enter a whole year from 1 to 9999.",
+      madeRangeReversed: "Enter a start year on or before the end year.",
     },
     search: {
       matchedIn: "Matched in {field}",
@@ -2617,7 +2625,7 @@ export default {
         objectName: "Object name",
         culture: "Culture",
         period: "Period",
-        dateCreated: "Date created",
+        dateCreated: "Date made",
         materials: "Materials",
         technique: "Technique",
         condition: "Condition",
@@ -2659,6 +2667,8 @@ export default {
       overwriteWarning: "Objects whose recorded value is replaced: {count}",
       overwriteWarningCapped:
         "Objects counted so far whose recorded value is replaced: {count}",
+      clearsStructuredDate:
+        "Setting or clearing Date made also removes any structured date, so the new text is used.",
       start: "Apply edit",
       starting: "Starting…",
       progressRunning: "Editing {field}: {checked} checked, {changed} changed",
@@ -2680,7 +2690,7 @@ export default {
         objectName: "Object name",
         culture: "Culture",
         period: "Period",
-        dateCreated: "Date created",
+        dateCreated: "Date made",
         materials: "Materials",
         technique: "Technique",
         description: "Description",
@@ -2748,6 +2758,7 @@ export default {
       location: "Location",
       objectType: "Object Type",
       status: "Status",
+      dateMade: "Date made",
     },
     bulkActions: {
       objectsSelected: "{count} object{s} selected",
@@ -2892,7 +2903,7 @@ export default {
       creator: "Creator",
       culture: "Culture",
       period: "Period",
-      dateCreated: "Date Created",
+      dateCreated: "Date made",
       materials: "Materials",
       dimensions: "Dimensions",
       condition: "Condition",
@@ -2915,6 +2926,33 @@ export default {
       publicUrlSlug: "Public URL Slug",
       owner: "Owner",
       to: "To",
+      productionDate: {
+        legend: "Structured date",
+        description:
+          "Optional. Sets how the catalog sorts, filters and exports this Object; the text above is shown as written.",
+        from: "From",
+        to: "To",
+        hint: "Fill in From for one date, or From and To for a range. By and After apply only to From on its own.",
+        readAs: "Read as {date}.",
+        years: "Sorting and filters use {years}.",
+        yearsFrom: "Sorting and filters use {start} onwards.",
+        yearsUntil: "Sorting and filters use up to {end}.",
+        onOrAfter: "{date} or later",
+        undated: "Undated for sorting and filters.",
+        notRead:
+          "Not read as a date, so it is shown as written. Add a structured date to sort and filter by it.",
+        useReading: "Use as structured date",
+        mismatch:
+          "The text reads as {text}, but the structured date is {date}. Sorting, filters and exports use the structured date.",
+        edtf: "EDTF {edtf}",
+        fixed:
+          "This structured date cannot be changed here. Clear it to enter another.",
+        clear: "Clear structured date",
+        invalid:
+          "Check the structured date: enter the parts its precision needs, and an end on or after the start.",
+        openInRange:
+          "By and After apply only to From on its own. Choose As given or Circa for a range.",
+      },
       placeholders: {
         title: "Enter object title",
         accessionNumber: "Auto-generated if empty",
@@ -2923,7 +2961,7 @@ export default {
         selectTypes: "Select or add types...",
         culture: "e.g., French",
         period: "e.g., 19th Century",
-        dateCreated: "e.g., 1850",
+        dateCreated: "e.g., c. 1850, 1850–1860 or 19th century",
         creator: "e.g., Vincent van Gogh",
         dimensions: "e.g., 50 x 60 cm",
         location: "Select a location (optional)",
@@ -3016,7 +3054,7 @@ export default {
       objectType: "Object Type",
       objectName: "Object Name",
       creatorArtist: "Creator/Artist",
-      dateCreated: "Date Created",
+      dateCreated: "Date made",
       culture: "Culture",
       period: "Period",
       materials: "Materials",
@@ -3079,7 +3117,7 @@ export default {
       objectType: "Object Type",
       objectName: "Object Name",
       creatorArtist: "Creator/Artist",
-      dateCreated: "Date Created",
+      dateCreated: "Date made",
       culture: "Culture",
       period: "Period",
       physicalDescription: "Physical Description",
@@ -5867,6 +5905,8 @@ export default {
       newest: "Newest first",
       oldest: "Oldest first",
       identifier: "Identifier (A–Z)",
+      madeEarliest: "Date made, earliest first",
+      madeLatest: "Date made, latest first",
     },
     allTypes: "All types",
   },
@@ -7588,6 +7628,11 @@ export default {
       },
       uncertain: "The source is unsure",
       decadeHint: "Enter the first year of the decade, for example 1920.",
+      era: "Era",
+      eras: {
+        ad: "AD",
+        bc: "BC",
+      },
     },
     retract: {
       title: "Retract claim?",
@@ -8054,7 +8099,8 @@ export default {
           objectName: "Object Name",
           culture: "Culture",
           period: "Period",
-          dateCreated: "Date Created",
+          dateCreated: "Date made",
+          dateCreatedEdtf: "Date made (EDTF)",
           materials: "Materials",
           technique: "Technique",
           dimensions: "Dimensions",
@@ -8074,7 +8120,10 @@ export default {
           objectName: "Specific name of the object",
           culture: "Cultural origin",
           period: "Historical period",
-          dateCreated: "Creation date or period",
+          dateCreated:
+            "Date or period as written, such as c. 1850 or 19th century",
+          dateCreatedEdtf:
+            "Structured date in EDTF, such as 1850~, 185X or 1850/1860",
           materials: "Materials used",
           technique: "Production technique",
           dimensions: "Physical dimensions",
@@ -8195,7 +8244,7 @@ export default {
         bodyStyle: "Body Style",
         caption: "Caption",
         dateAcquired: "Date Acquired",
-        dateCreatedLabel: "Date created",
+        dateCreatedLabel: "Date made",
         engineNumber: "Engine #",
         exterior: "Exterior",
         fuelType: "Fuel Type",
@@ -8412,6 +8461,7 @@ export default {
         fieldChanged: "Changed “{field}”{previous}{next}",
         fromValue: "from “{value}”",
         toValue: "to “{value}”",
+        structuredDateRemoved: "Structured date “{value}” removed",
         byUser: "By {name}",
         actions: {
           created_collection: "Object created",
@@ -10837,6 +10887,8 @@ export default {
       invalid: "Some fields need attention before you can save.",
       saveFailed:
         "Your changes could not be saved. Check your connection and try again.",
+      productionDateInvalid:
+        "The structured date is not a valid date. Check its parts and try again.",
     },
     notices: {
       recoveredTitle: "Unsaved changes found",

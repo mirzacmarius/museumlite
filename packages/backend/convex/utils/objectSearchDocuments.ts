@@ -5,14 +5,22 @@ import {
   OBJECT_SEARCH_FIELDS,
   type ObjectSearchField,
 } from "./catalogFilterValidators";
+import {
+  effectiveProductionDate,
+  productionSortKeys,
+  productionYears,
+} from "./productionDates";
 
 export { OBJECT_SEARCH_FIELDS, type ObjectSearchField };
 
 /**
  * Bump when the document's composition changes; the backfill then rewrites
- * every Organization's documents before its search reads them again.
+ * every Organization's documents before its search reads them again. That
+ * includes any change to what `productionDates` reads a date as: the stored
+ * date made sort keys would otherwise disagree with the year filter, which
+ * reads the records directly.
  */
-export const OBJECT_SEARCH_DOCUMENT_VERSION = 2;
+export const OBJECT_SEARCH_DOCUMENT_VERSION = 3;
 
 /** Characters of the description a document indexes. */
 const DESCRIPTION_TEXT_LIMIT = 4000;
@@ -117,6 +125,15 @@ export function objectSearchFieldTexts(
   });
 }
 
+/** Date made sort keys: the years of the date in effect, undated last. */
+function madeSortKeys(collection: Doc<"collections">) {
+  const date = effectiveProductionDate(collection);
+  const { sortEarliest, sortLatest } = productionSortKeys(
+    date ? productionYears(date) : null,
+  );
+  return { madeSortEarliest: sortEarliest, madeSortLatest: sortLatest };
+}
+
 /** The document for an Object, given whether it has a photograph. */
 export function composeObjectSearchDocument(
   collection: Doc<"collections">,
@@ -138,6 +155,7 @@ export function composeObjectSearchDocument(
     objectTypes: foldedList(collection.objectType),
     materials: foldedList(collection.materials),
     catalogedAt: collection.catalogedAt,
+    ...madeSortKeys(collection),
     version: OBJECT_SEARCH_DOCUMENT_VERSION,
   };
 }

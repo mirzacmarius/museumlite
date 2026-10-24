@@ -33,6 +33,8 @@ export interface RecordFormNoticeSession {
 interface RecordFormNoticesProps {
   session: RecordFormNoticeSession;
   fieldLabel: (field: string) => string;
+  /** A colleague's value as text for a field whose form value is not text. */
+  fieldValue?: (field: string, value: unknown) => string | null;
   /** Shows a field, switching tabs if needed, and focuses it. */
   onGoToField?: (field: string) => void;
 }
@@ -87,6 +89,7 @@ function shownValue(value: unknown) {
 export function RecordFormNotices({
   session,
   fieldLabel,
+  fieldValue,
   onGoToField,
 }: RecordFormNoticesProps) {
   const t = useScopedI18n("recordForm.notices");
@@ -279,7 +282,7 @@ export function RecordFormNotices({
       ) : null}
 
       {Object.entries(session.overlaps).map(([field, theirValue]) => {
-        const shown = shownValue(theirValue);
+        const shown = fieldValue?.(field, theirValue) ?? shownValue(theirValue);
         return (
           <Notice
             key={field}

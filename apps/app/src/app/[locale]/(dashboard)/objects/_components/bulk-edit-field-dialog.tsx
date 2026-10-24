@@ -342,6 +342,12 @@ export function BulkEditFieldDialog({
               </div>
             ) : null}
 
+            {field === "dateCreated" && operation !== "replace" ? (
+              <p className="text-xs text-muted-foreground">
+                {t("clearsStructuredDate")}
+              </p>
+            ) : null}
+
             <BulkEditPreview
               preview={preview}
               selectionTooLarge={selectionTooLarge}

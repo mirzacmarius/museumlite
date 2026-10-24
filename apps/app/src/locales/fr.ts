@@ -3245,6 +3245,15 @@ export default {
       advancedSearchActive: "Recherche avancée : {count}",
       advancedChip: "Avancée",
       advancedConditions: "Règles : {count}",
+      madeRange: "Date de production",
+      madeFrom: "Produit à partir de",
+      madeTo: "Produit jusqu’en",
+      era: "Ère",
+      eraAd: "apr. J.-C.",
+      eraBc: "av. J.-C.",
+      madeYearInvalid: "Saisissez une année entière comprise entre 1 et 9999.",
+      madeRangeReversed:
+        "Saisissez une année de début antérieure ou égale à l’année de fin.",
     },
     search: {
       matchedIn: "Correspondance dans {field}",
@@ -3278,7 +3287,7 @@ export default {
         objectName: "Nom de l’objet",
         culture: "Culture",
         period: "Période",
-        dateCreated: "Date de création",
+        dateCreated: "Date de production",
         materials: "Matériaux",
         technique: "Technique",
         condition: "État de conservation",
@@ -3322,6 +3331,8 @@ export default {
         "Objets dont la valeur enregistrée est remplacée : {count}",
       overwriteWarningCapped:
         "Objets comptés jusqu’ici dont la valeur enregistrée est remplacée : {count}",
+      clearsStructuredDate:
+        "Définir ou vider la date de production supprime aussi toute date structurée, afin que le nouveau texte soit utilisé.",
       start: "Appliquer la modification",
       starting: "Démarrage…",
       progressRunning:
@@ -3345,7 +3356,7 @@ export default {
         objectName: "Nom de l’objet",
         culture: "Culture",
         period: "Période",
-        dateCreated: "Date de création",
+        dateCreated: "Date de production",
         materials: "Matériaux",
         technique: "Technique",
         description: "Description",
@@ -3404,6 +3415,7 @@ export default {
       location: "Emplacement",
       objectType: "Type d'Objet",
       status: "Statut",
+      dateMade: "Date de production",
     },
     bulkActions: {
       objectsSelected: "{count} objet{s} sélectionné{s}",
@@ -3516,7 +3528,7 @@ export default {
       creator: "Créateur",
       culture: "Culture",
       period: "Période",
-      dateCreated: "Date de Création",
+      dateCreated: "Date de production",
       materials: "Matériaux",
       dimensions: "Dimensions",
       condition: "Condition",
@@ -3539,6 +3551,34 @@ export default {
       publicUrlSlug: "Slug d'URL Publique",
       owner: "Propriétaire",
       to: "À",
+      productionDate: {
+        legend: "Date structurée",
+        description:
+          "Facultatif. Détermine comment le catalogue trie, filtre et exporte cet objet ; le texte ci-dessus s'affiche tel qu'il a été écrit.",
+        from: "De",
+        to: "À",
+        hint: "Remplissez De pour une seule date, ou De et À pour une période. Au plus tard et Pas avant ne s'appliquent qu'à De seul.",
+        readAs: "Lu comme {date}.",
+        years: "Le tri et les filtres utilisent {years}.",
+        yearsFrom:
+          "Le tri et les filtres utilisent les années à partir de {start}.",
+        yearsUntil: "Le tri et les filtres utilisent les années jusqu'à {end}.",
+        onOrAfter: "{date} ou après",
+        undated: "Sans date pour le tri et les filtres.",
+        notRead:
+          "Pas lu comme une date : le texte s'affiche tel qu'il a été écrit. Ajoutez une date structurée pour trier et filtrer selon celle-ci.",
+        useReading: "Utiliser comme date structurée",
+        mismatch:
+          "Le texte se lit comme {text}, mais la date structurée est {date}. Le tri, les filtres et les exports utilisent la date structurée.",
+        edtf: "EDTF {edtf}",
+        fixed:
+          "Cette date structurée ne peut pas être modifiée ici. Effacez-la pour en saisir une autre.",
+        clear: "Effacer la date structurée",
+        invalid:
+          "Vérifiez la date structurée : saisissez les parties que demande sa précision, et une fin égale ou postérieure au début.",
+        openInRange:
+          "Au plus tard et Pas avant ne s'appliquent qu'à De seul. Choisissez Telle qu'indiquée ou Vers (circa) pour une période.",
+      },
       placeholders: {
         title: "Entrez le titre de l'objet",
         accessionNumber: "Généré automatiquement si vide",
@@ -3547,7 +3587,7 @@ export default {
         selectTypes: "Sélectionner ou ajouter des types...",
         culture: "par exemple, Français",
         period: "par exemple, 19ème Siècle",
-        dateCreated: "par exemple, 1850",
+        dateCreated: "par exemple, vers 1850, 1850–1860 ou XIXe siècle",
         creator: "par exemple, Vincent van Gogh",
         dimensions: "par exemple, 50 x 60 cm",
         location: "Sélectionner un emplacement (optionnel)",
@@ -3644,7 +3684,7 @@ export default {
       objectType: "Type d'Objet",
       objectName: "Nom de l'Objet",
       creatorArtist: "Créateur/Artiste",
-      dateCreated: "Date de Création",
+      dateCreated: "Date de production",
       culture: "Culture",
       period: "Période",
       materials: "Matériaux",
@@ -3676,7 +3716,7 @@ export default {
       objectType: "Type d'Objet",
       objectName: "Nom de l'Objet",
       creatorArtist: "Créateur/Artiste",
-      dateCreated: "Date de Création",
+      dateCreated: "Date de production",
       culture: "Culture",
       period: "Période",
       physicalDescription: "Description Physique",
@@ -6013,6 +6053,8 @@ export default {
       newest: "Plus récents d'abord",
       oldest: "Plus anciens d'abord",
       identifier: "Identifiant (A–Z)",
+      madeEarliest: "Date de production, la plus ancienne d’abord",
+      madeLatest: "Date de production, la plus récente d’abord",
     },
     allTypes: "Tous les types",
   },
@@ -6060,7 +6102,7 @@ export default {
       object_type: "Type d’objet",
       object_name: "Dénomination",
       maker: "Auteur",
-      production_date: "Date de réalisation",
+      production_date: "Date de production",
       materials: "Matériaux",
       dimensions: "Dimensions",
       inscriptions: "Inscriptions et marques",
@@ -7539,6 +7581,11 @@ export default {
       uncertain: "La source est incertaine",
       decadeHint:
         "Saisissez la première année de la décennie, par exemple 1920.",
+      era: "Ère",
+      eras: {
+        ad: "apr. J.-C.",
+        bc: "av. J.-C.",
+      },
     },
     retract: {
       title: "Rétracter l'assertion ?",
@@ -8247,7 +8294,8 @@ export default {
           objectName: "Nom de l’objet",
           culture: "Culture",
           period: "Période",
-          dateCreated: "Date de création",
+          dateCreated: "Date de production",
+          dateCreatedEdtf: "Date de production (EDTF)",
           materials: "Matériaux",
           technique: "Technique",
           dimensions: "Dimensions",
@@ -8268,7 +8316,10 @@ export default {
           objectName: "Nom spécifique de l’objet",
           culture: "Origine culturelle",
           period: "Période historique",
-          dateCreated: "Date ou période de création",
+          dateCreated:
+            "Date ou période telle qu’écrite, par exemple vers 1850 ou XIXe siècle",
+          dateCreatedEdtf:
+            "Date structurée en EDTF, par exemple 1850~, 185X ou 1850/1860",
           materials: "Matériaux utilisés",
           technique: "Technique de fabrication",
           dimensions: "Dimensions physiques",
@@ -8391,7 +8442,7 @@ export default {
         bodyStyle: "Type de carrosserie",
         caption: "Légende",
         dateAcquired: "Date d’acquisition",
-        dateCreatedLabel: "Date de création",
+        dateCreatedLabel: "Date de production",
         engineNumber: "N° de moteur",
         exterior: "Extérieur",
         fuelType: "Type de carburant",
@@ -8621,6 +8672,7 @@ export default {
         fieldChanged: "Modification de « {field} »{previous}{next}",
         fromValue: "de « {value} »",
         toValue: "à « {value} »",
+        structuredDateRemoved: "Suppression de la date structurée « {value} »",
         byUser: "Par {name}",
         actions: {
           created_collection: "Objet créé",
@@ -11140,6 +11192,8 @@ export default {
       invalid: "Certains champs doivent être corrigés avant l'enregistrement.",
       saveFailed:
         "Vos modifications n'ont pas pu être enregistrées. Vérifiez votre connexion et réessayez.",
+      productionDateInvalid:
+        "La date structurée n'est pas une date valide. Vérifiez ses parties et réessayez.",
     },
     notices: {
       recoveredTitle: "Modifications non enregistrées trouvées",

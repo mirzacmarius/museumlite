@@ -39,6 +39,7 @@ const EXPORT_HEADERS: Record<ImportType, string[]> = {
     "culture",
     "period",
     "dateCreated",
+    "dateCreatedEdtf",
     "materials",
     "technique",
     "dimensions",

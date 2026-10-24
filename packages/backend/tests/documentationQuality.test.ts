@@ -5,6 +5,7 @@ import {
   type QualityErrorData,
   qualityErrorFromError,
 } from "../convex/utils/documentationQualityErrors";
+import { objectEvidence } from "../convex/utils/documentationRequirements";
 import { normalizeIdentifier } from "../convex/utils/identifiers";
 import { notificationEntityHref } from "../convex/utils/notificationLinks";
 import {
@@ -623,6 +624,28 @@ test("the Object ID profile reports the checklist categories an object lacks", a
       (finding) => "objectId" in finding && finding.objectId === deaccessioned,
     ),
   ).toBe(false);
+});
+
+test("a production date is recorded by its text, even text that reads as no date, or by a structured date alone", async () => {
+  const { t, adminId, organizationId } = await setup();
+  const objectId = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "2001.9",
+  });
+  const missing = (fields: {
+    dateCreated?: string;
+    dateCreatedEdtf?: string;
+  }) =>
+    t.run(async (ctx) => {
+      const object = await ctx.db.get(objectId);
+      if (!object) throw new Error("Expected the object");
+      return await objectEvidence(ctx, { ...object, ...fields })([
+        "production_date",
+      ]);
+    });
+
+  expect(await missing({})).toEqual(["production_date"]);
+  expect(await missing({ dateCreated: "Ming dynasty" })).toEqual([]);
+  expect(await missing({ dateCreatedEdtf: "1850~" })).toEqual([]);
 });
 
 test("duplicate identifiers are surfaced without renumbering and reviewed through the identifier register", async () => {
