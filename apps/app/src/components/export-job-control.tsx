@@ -20,6 +20,7 @@ import { stableStringify } from "@/lib/record-form";
 import { useScopedI18n } from "@/locales/client";
 
 type ExportStatus = FunctionReturnType<typeof api.exports.status>["status"];
+type ExportJob = FunctionReturnType<typeof api.exports.list>[number];
 const CANCELLABLE_STATUSES = new Set<ExportStatus>([
   "selecting",
   "queued",
@@ -33,6 +34,33 @@ const RESUMABLE_STATUSES = new Set<ExportStatus>([
   "failed",
   "cancelled",
 ]);
+
+function exportKey(job: ExportJob) {
+  return job.source.kind === "objects" && job.source.mode === "selected"
+    ? job.jobId
+    : `${job.format}:${stableStringify(job.source)}`;
+}
+
+/**
+ * One row per source and format, newest first. A new export replaces the
+ * earlier one of the same results once it completes; until then the earlier
+ * download stays listed. Selected-object exports don't record which objects
+ * they hold, so none of them replaces another.
+ */
+function latestExports(jobs: ExportJob[]): ExportJob[] {
+  const newest = new Map<string, ExportJob>();
+  const newestCompleted = new Map<string, ExportJob>();
+  for (const job of jobs) {
+    const key = exportKey(job);
+    if (!newest.has(key)) newest.set(key, job);
+    if (job.status === "completed" && !newestCompleted.has(key))
+      newestCompleted.set(key, job);
+  }
+  return jobs.filter((job) => {
+    const key = exportKey(job);
+    return newest.get(key) === job || newestCompleted.get(key) === job;
+  });
+}
 
 /** Translated label of an export job's status. */
 function useExportStatusLabel() {
@@ -89,12 +117,6 @@ export function ExportJobControl({
   const jobs = useQuery(
     api.exports.list,
     sourceAllowed ? { organizationId } : "skip",
-  );
-  // Only the newest export of exactly this source shows, in either format: a
-  // new export replaces it, and exports of other filters or criteria stay out.
-  const sourceKey = stableStringify(source);
-  const job = jobs?.find(
-    (candidate) => stableStringify(candidate.source) === sourceKey,
   );
   const token = useAuthToken();
   const [busy, setBusy] = useState(false);
@@ -240,101 +262,117 @@ export function ExportJobControl({
           {error}
         </p>
       )}
-      {job && (
-        <div className="mt-3 border-t py-2">
-          <p>
-            {job.source.kind === "audit"
-              ? t("sourceAudit")
-              : job.source.kind === "register"
-                ? t("sourceRegister", {
-                    profile: registerLabels[job.source.profile],
-                  })
-                : job.source.mode === "selected"
-                  ? t("sourceSelected")
-                  : t("sourceCatalog")}{" "}
-            · {job.format.toUpperCase()} · {statusLabel(job.status)} ·{" "}
-            {t(
-              job.source.kind === "audit"
-                ? "progressAudit"
-                : job.source.kind === "register"
-                  ? "progressRegister"
-                  : "progress",
-              {
-                rows: job.rows,
-                scanned: job.scanned,
-                pages: job.checkpoint,
-              },
-            )}
-            {job.selected > 0
-              ? ` · ${t("selectedCount", { count: job.selected })}`
-              : ""}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t("cutoff", {
-              asOf: formatIsoTimestamp(job.asOf),
-              expiresAt: formatIsoTimestamp(job.expiresAt),
-            })}
-          </p>
-          {job.error && <p role="alert">{t(exportJobErrorKey(job.error))}</p>}
-          {job.status === "completed" &&
-            job.source.kind === "register" &&
-            job.totals && (
-              <RegisterTotals
-                profile={job.source.profile}
-                totals={job.totals}
-              />
-            )}
-          <div className="flex gap-2 mt-2">
-            {CANCELLABLE_STATUSES.has(job.status) && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => void run(() => cancel({ jobId: job.jobId }))}
-              >
-                {t("cancel")}
-              </Button>
-            )}
-            {RESUMABLE_STATUSES.has(job.status) && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => void run(() => resume({ jobId: job.jobId }))}
-              >
-                {job.status === "failed"
-                  ? t("retry")
-                  : job.status === "cancelled"
-                    ? t("resume")
-                    : t("recover")}
-              </Button>
-            )}
-            {job.status === "completed" && (
-              <>
-                <Button
-                  size="sm"
-                  disabled={busy}
-                  onClick={() =>
-                    void run(() => download(job.jobId, job.format))
-                  }
-                >
-                  {t("download", { count: job.rows })}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() =>
-                    void run(() => download(job.jobId, "manifest.json", true))
-                  }
-                >
-                  {t("downloadManifest")}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <ul className="space-y-3 mt-3">
+        {latestExports(
+          jobs?.filter(
+            (job) =>
+              job.source.kind === source.kind &&
+              (job.source.kind !== "register" ||
+                source.kind !== "register" ||
+                job.source.profile === source.profile),
+          ) ?? [],
+        )
+          .slice(0, 5)
+          .map((job) => (
+            <li key={job.jobId} className="border-t py-2">
+              <p>
+                {job.source.kind === "audit"
+                  ? t("sourceAudit")
+                  : job.source.kind === "register"
+                    ? t("sourceRegister", {
+                        profile: registerLabels[job.source.profile],
+                      })
+                    : job.source.mode === "selected"
+                      ? t("sourceSelected")
+                      : t("sourceCatalog")}{" "}
+                · {job.format.toUpperCase()} · {statusLabel(job.status)} ·{" "}
+                {t(
+                  job.source.kind === "audit"
+                    ? "progressAudit"
+                    : job.source.kind === "register"
+                      ? "progressRegister"
+                      : "progress",
+                  {
+                    rows: job.rows,
+                    scanned: job.scanned,
+                    pages: job.checkpoint,
+                  },
+                )}
+                {job.selected > 0
+                  ? ` · ${t("selectedCount", { count: job.selected })}`
+                  : ""}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("cutoff", {
+                  asOf: formatIsoTimestamp(job.asOf),
+                  expiresAt: formatIsoTimestamp(job.expiresAt),
+                })}
+              </p>
+              {job.error && (
+                <p role="alert">{t(exportJobErrorKey(job.error))}</p>
+              )}
+              {job.status === "completed" &&
+                job.source.kind === "register" &&
+                job.totals && (
+                  <RegisterTotals
+                    profile={job.source.profile}
+                    totals={job.totals}
+                  />
+                )}
+              <div className="flex gap-2 mt-2">
+                {CANCELLABLE_STATUSES.has(job.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void run(() => cancel({ jobId: job.jobId }))}
+                  >
+                    {t("cancel")}
+                  </Button>
+                )}
+                {RESUMABLE_STATUSES.has(job.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void run(() => resume({ jobId: job.jobId }))}
+                  >
+                    {job.status === "failed"
+                      ? t("retry")
+                      : job.status === "cancelled"
+                        ? t("resume")
+                        : t("recover")}
+                  </Button>
+                )}
+                {job.status === "completed" && (
+                  <>
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() =>
+                        void run(() => download(job.jobId, job.format))
+                      }
+                    >
+                      {t("download", { count: job.rows })}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() =>
+                        void run(() =>
+                          download(job.jobId, "manifest.json", true),
+                        )
+                      }
+                    >
+                      {t("downloadManifest")}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+      </ul>
     </details>
   );
 }
