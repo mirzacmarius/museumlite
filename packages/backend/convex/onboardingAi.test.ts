@@ -1,13 +1,22 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { createConvexTestWithRateLimiter } from "../tests/testHarness";
 import { modules } from "../tests/testSetup";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { SUGGESTION_REQUEST_BURST } from "./onboardingAi";
 import schema from "./schema";
+import { isSuggestionsRateLimited } from "./utils/collectionSuggestionErrors";
 import {
+  boundedSuggestionInput,
   buildTemplateCollectionSuggestions,
+  COLLECTION_DESCRIPTION_MAX_LENGTH,
   parseCollectionSetupSuggestionJson,
 } from "./utils/onboardingCollectionSuggestions";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
@@ -82,7 +91,7 @@ describe("onboarding collection suggestions", () => {
   });
 
   test("generateCollectionSuggestions uses template in tests", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
         name: "Suggest User",
@@ -102,5 +111,62 @@ describe("onboarding collection suggestions", () => {
 
     expect(result.source).toBe("template");
     expect(result.collectionGroups.length).toBeGreaterThan(0);
+  });
+
+  test("the model sees a trimmed, capped request", () => {
+    const input = boundedSuggestionInput({
+      organizationName: `  ${"N".repeat(300)}  `,
+      organizationType: "library",
+      description: `  ${"d".repeat(COLLECTION_DESCRIPTION_MAX_LENGTH + 500)}`,
+    });
+
+    expect(input.organizationName).toHaveLength(200);
+    expect(input.description).toHaveLength(COLLECTION_DESCRIPTION_MAX_LENGTH);
+    expect(input.organizationType).toBe("library");
+  });
+
+  test("one user's suggestion requests are limited, then recover", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const [busyUserId, otherUserId] = await t.run(async (ctx) =>
+      Promise.all(
+        ["busy", "other"].map((name) =>
+          ctx.db.insert("users", { name, email: `${name}@test.dev` }),
+        ),
+      ),
+    );
+    const request = {
+      organizationName: "Harbor Gallery",
+      organizationType: "gallery" as const,
+      description: "Contemporary painting and photography.",
+    };
+    const busy = authedForUser(t, busyUserId!);
+
+    for (let asked = 0; asked < SUGGESTION_REQUEST_BURST; asked++) {
+      await busy.action(
+        api.onboardingAi.generateCollectionSuggestions,
+        request,
+      );
+    }
+    const refusal = await busy
+      .action(api.onboardingAi.generateCollectionSuggestions, request)
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+    expect(isSuggestionsRateLimited(refusal)).toBe(true);
+
+    const other = await authedForUser(t, otherUserId!).action(
+      api.onboardingAi.generateCollectionSuggestions,
+      request,
+    );
+    expect(other.source).toBe("template");
+
+    vi.advanceTimersByTime(6 * 60 * 1000);
+    const recovered = await busy.action(
+      api.onboardingAi.generateCollectionSuggestions,
+      request,
+    );
+    expect(recovered.source).toBe("template");
   });
 });

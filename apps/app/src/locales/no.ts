@@ -5546,6 +5546,8 @@ export default {
         "f.eks. regionalhistorisk museum med malerier, tekstiler og arkivfotografier…",
       generate: "Lag forslag",
       generateFailed: "Kunne ikke lage forslag. Prøv igjen.",
+      rateLimited:
+        "Du har bedt om forslag flere ganger på rad. Vent noen minutter, og prøv igjen.",
       applyFailed: "Kunne ikke lagre samlingsgruppene. Prøv igjen.",
       objectTypesLabel: "Foreslåtte objekttyper",
       groupsLabel: "Foreslåtte samlingsgrupper",

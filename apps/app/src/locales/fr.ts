@@ -5617,6 +5617,8 @@ export default {
       generate: "Générer des suggestions",
       generateFailed:
         "Impossible de générer des suggestions. Veuillez réessayer.",
+      rateLimited:
+        "Vous avez demandé des suggestions plusieurs fois de suite. Patientez quelques minutes, puis réessayez.",
       applyFailed:
         "Impossible d'enregistrer les groupes de collections. Veuillez réessayer.",
       objectTypesLabel: "Types d'objets suggérés",

@@ -439,6 +439,8 @@ export default {
         "de ex., muzeu de istorie regională cu picturi, textile și fotografii de arhivă…",
       generate: "Generează sugestii",
       generateFailed: "Nu s-au putut genera sugestii. Încearcă din nou.",
+      rateLimited:
+        "Ai cerut sugestii de mai multe ori la rând. Așteaptă câteva minute, apoi încearcă din nou.",
       applyFailed:
         "Nu s-au putut salva grupurile de colecții. Încearcă din nou.",
       objectTypesLabel: "Tipuri de obiecte sugerate",

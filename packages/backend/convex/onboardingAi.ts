@@ -1,14 +1,30 @@
 "use node";
 
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
 import { v } from "convex/values";
+import { components } from "./_generated/api";
 import { action } from "./_generated/server";
+import { suggestionsRateLimited } from "./utils/collectionSuggestionErrors";
 import {
+  boundedSuggestionInput,
   buildTemplateCollectionSuggestions,
   type CollectionSetupSuggestion,
   type OrganizationType,
   parseCollectionSetupSuggestionJson,
 } from "./utils/onboardingCollectionSuggestions";
+
+/** Suggestion requests one user may make: a few retries, then one every 6 minutes. */
+export const SUGGESTION_REQUESTS_PER_HOUR = 10;
+export const SUGGESTION_REQUEST_BURST = 5;
+const suggestionLimiter = new RateLimiter(components.rateLimiter, {
+  collectionSuggestions: {
+    kind: "token bucket",
+    rate: SUGGESTION_REQUESTS_PER_HOUR,
+    period: HOUR,
+    capacity: SUGGESTION_REQUEST_BURST,
+  },
+});
 
 const organizationTypeValidator = v.union(
   v.literal("museum"),
@@ -85,16 +101,21 @@ export const generateCollectionSuggestions = action({
       throw new Error("Not authenticated");
     }
 
-    const trimmedName = args.organizationName.trim();
-    if (!trimmedName) {
+    const input = boundedSuggestionInput({
+      organizationName: args.organizationName,
+      organizationType: args.organizationType as OrganizationType,
+      description: args.description,
+    });
+    if (!input.organizationName) {
       throw new Error("Organization name is required");
     }
 
-    const input = {
-      organizationName: trimmedName,
-      organizationType: args.organizationType as OrganizationType,
-      description: args.description,
-    };
+    const quota = await suggestionLimiter.limit(ctx, "collectionSuggestions", {
+      key: userId,
+    });
+    if (!quota.ok) {
+      throw suggestionsRateLimited(quota.retryAfter);
+    }
 
     if (process.env.VITEST === "true" || process.env.NODE_ENV === "test") {
       return buildTemplateCollectionSuggestions(input);

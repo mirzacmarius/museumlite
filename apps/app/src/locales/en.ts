@@ -5478,6 +5478,8 @@ export default {
         "e.g. Regional history museum with paintings, textiles, and archival photographs…",
       generate: "Generate suggestions",
       generateFailed: "Could not generate suggestions. Please try again.",
+      rateLimited:
+        "You have asked for suggestions several times in a row. Wait a few minutes, then try again.",
       applyFailed: "Could not save collection groups. Please try again.",
       objectTypesLabel: "Suggested object types",
       groupsLabel: "Suggested collection groups",

@@ -2,6 +2,8 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { isSuggestionsRateLimited } from "@v1/backend/convex/utils/collectionSuggestionErrors";
+import { COLLECTION_DESCRIPTION_MAX_LENGTH } from "@v1/backend/convex/utils/onboardingCollectionSuggestions";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
@@ -99,10 +101,12 @@ export function CollectionSetupStep({
         selectedIds: new Set(withIds.map((group) => group.id)),
         isGenerating: false,
       }));
-    } catch {
+    } catch (error) {
       setSetup((current) => ({
         ...current,
-        error: t("onboardingPage.collectionSetup.generateFailed"),
+        error: isSuggestionsRateLimited(error)
+          ? t("onboardingPage.collectionSetup.rateLimited")
+          : t("onboardingPage.collectionSetup.generateFailed"),
         isGenerating: false,
       }));
     }
@@ -203,6 +207,7 @@ export function CollectionSetupStep({
               }))
             }
             placeholder={t("onboardingPage.collectionSetup.promptPlaceholder")}
+            maxLength={COLLECTION_DESCRIPTION_MAX_LENGTH}
             rows={4}
           />
         </div>
