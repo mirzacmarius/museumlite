@@ -171,7 +171,8 @@ export default defineSchema({
     buildingGenerationId: v.optional(v.id("projectionGenerations")),
     reconcilingGenerationId: v.optional(v.id("projectionGenerations")),
     lastReconciliationId: v.optional(v.id("projectionGenerations")),
-    // When the next automatic reconciliation is due; set while one is scheduled.
+    // Set by a reconciliation scheduled before automatic reconciliation was
+    // turned off; its job clears it without starting one.
     reconcileScheduledAt: v.optional(v.number()),
     lastBuiltAt: v.optional(v.number()),
     lastVerifiedAt: v.optional(v.number()),

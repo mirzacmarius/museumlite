@@ -36,10 +36,6 @@ export const PROJECTION_DISCREPANCY_ROW_LIMIT = 200;
 const MAX_DEPENDENCY_DEPTH = 4;
 /** Delay before a reconcile re-checks for pending wide refreshes. */
 const FAN_OUT_WAIT_MS = 1_000;
-/** Quiet period after a change before the automatic reconciliation starts. */
-export const RECONCILE_SETTLE_MS = 5 * 60 * 1000;
-/** Minimum spacing between automatic reconciliations of one organization. */
-export const RECONCILE_INTERVAL_MS = 60 * 60 * 1000;
 /** Attempts, including the first, before a failed job waits for an administrator. */
 export const PROJECTION_AUTO_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 30_000;
@@ -160,11 +156,16 @@ export async function startGeneration(
 ) {
   const state = await ensureProjectionState(ctx, organizationId);
   const now = Date.now();
-  const { slot, slotsInUse } = claimMetricSlot(state.metricSlotsInUse);
-  await ctx.db.patch(state._id, { metricSlotsInUse: slotsInUse });
+  // A reconciliation checks the live tree's sums against its recomputed
+  // totals, so it builds no tree of its own and needs no metric slot.
+  const metric =
+    mode === "rebuild" ? claimMetricSlot(state.metricSlotsInUse) : null;
+  if (metric) {
+    await ctx.db.patch(state._id, { metricSlotsInUse: metric.slotsInUse });
+  }
   const generationId = await ctx.db.insert("projectionGenerations", {
     ...emptyGeneration(organizationId, mode, state.revision, now),
-    metricSlot: slot,
+    ...(metric ? { metricSlot: metric.slot } : { skipsMetricTree: true }),
     ...(requestedBy ? { requestedBy } : {}),
     ...(mode === "reconcile" && state.activeGenerationId
       ? { baselineGenerationId: state.activeGenerationId }
@@ -559,10 +560,11 @@ export async function handleSourceChange(
 }
 
 /**
- * Keeps metrics health current as records change, so nobody has to start
- * jobs by hand: an unavailable or outdated projection starts a rebuild unless
- * one is already running or awaiting retry, and a ready one schedules a
- * reconciliation.
+ * Keeps metrics available as records change, so nobody has to start a
+ * rebuild by hand: an unavailable or outdated projection starts one unless
+ * one is already running or awaiting retry. A ready projection needs nothing
+ * more, since the change already updated it; reconciliations start only by
+ * hand.
  */
 async function maintainHealth(ctx: Ctx, organizationId: Id<"organizations">) {
   const state = await getProjectionState(ctx, organizationId);
@@ -573,54 +575,21 @@ async function maintainHealth(ctx: Ctx, organizationId: Id<"organizations">) {
     state.definitionVersion !== PROJECTION_DEFINITION_VERSION
   ) {
     await startGeneration(ctx, organizationId, "rebuild");
-    return;
   }
-  await scheduleReconcile(ctx, state);
 }
 
 /**
- * Schedules one automatic reconciliation after a quiet period, and no sooner
- * than `RECONCILE_INTERVAL_MS` after the previous one finished. Changes made
- * while one is scheduled or running are covered by it.
+ * Clears the mark of a reconciliation that a record change scheduled before
+ * automatic reconciliation was turned off. It no longer starts one.
  */
-async function scheduleReconcile(
-  ctx: Ctx,
-  state: Doc<"organizationProjectionStates">,
-) {
-  if (state.reconcilingGenerationId || state.reconcileScheduledAt) return;
-  const last = state.lastReconciliationId
-    ? await ctx.db.get(state.lastReconciliationId)
-    : null;
-  const now = Date.now();
-  const due = Math.max(
-    now + RECONCILE_SETTLE_MS,
-    (last?.finishedAt ?? 0) + RECONCILE_INTERVAL_MS,
-  );
-  await ctx.db.patch(state._id, { reconcileScheduledAt: due });
-  await ctx.scheduler.runAfter(
-    due - now,
-    internal.projections.runScheduledReconcile,
-    { organizationId: state.organizationId },
-  );
-}
-
-/** Starts the scheduled reconciliation when the projection is still ready. */
-export async function runScheduledReconcile(
+export async function clearScheduledReconcile(
   ctx: Ctx,
   organizationId: Id<"organizations">,
 ) {
   const state = await getProjectionState(ctx, organizationId);
-  if (!state?.reconcileScheduledAt) return null;
-  const blocked =
-    !state.activeGenerationId ||
-    state.availability !== "ready" ||
-    state.definitionVersion !== PROJECTION_DEFINITION_VERSION ||
-    state.buildingGenerationId !== undefined ||
-    state.reconcilingGenerationId !== undefined;
-  await ctx.db.patch(state._id, { reconcileScheduledAt: undefined });
-  return blocked
-    ? null
-    : await startGeneration(ctx, organizationId, "reconcile");
+  if (state?.reconcileScheduledAt) {
+    await ctx.db.patch(state._id, { reconcileScheduledAt: undefined });
+  }
 }
 
 type FanOutKind = Doc<"projectionFanOuts">["kind"];
@@ -1503,6 +1472,36 @@ export async function cancelGeneration(
 }
 
 /**
+ * Empties every metric tree the given contributions wrote to. A retired
+ * generation takes no writes and keeps its slot until it is collected, so its
+ * trees hold only its own entries: clearing a tree once removes them all,
+ * where deleting entry by entry walks the tree again for each. `min` reads one
+ * path, so a tree an earlier page already cleared costs two small reads.
+ */
+async function clearMetricTrees(
+  ctx: Ctx,
+  generation: ProjectionGeneration,
+  contributions: Doc<"projectionContributions">[],
+) {
+  const namespaces = new Set<string>();
+  for (const contribution of contributions) {
+    for (const entry of datedEntries(
+      generation,
+      contribution.sourceTable,
+      contribution.sourceId,
+      contribution.facts,
+    ).values()) {
+      namespaces.add(entry.namespace);
+    }
+  }
+  for (const namespace of namespaces) {
+    if (await metricTree.min(ctx, { namespace })) {
+      await metricTree.clear(ctx, { namespace });
+    }
+  }
+}
+
+/**
  * Deletes one bounded page of a retired generation's projection data. The
  * generation document and its discrepancies remain as review evidence.
  */
@@ -1528,19 +1527,10 @@ export async function collectGenerationPage(
     .query("projectionContributions")
     .withIndex("by_generationId", (q) => q.eq("generationId", generationId))
     .take(PROJECTION_PAGE_SIZE);
+  if (!generation.skipsMetricTree) {
+    await clearMetricTrees(ctx, generation, contributions);
+  }
   for (const contribution of contributions) {
-    for (const entry of datedEntries(
-      generation,
-      contribution.sourceTable,
-      contribution.sourceId,
-      contribution.facts,
-    ).values()) {
-      await metricTree.deleteIfExists(ctx, {
-        namespace: entry.namespace,
-        key: entry.key,
-        id: entry.id,
-      });
-    }
     await ctx.db.delete(contribution._id);
   }
   if (contributions.length > 0) return "continue" as const;

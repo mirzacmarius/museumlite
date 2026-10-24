@@ -11039,19 +11039,18 @@ export default {
     page: {
       title: "Starea indicatorilor",
       description:
-        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare. Reconstruirile și reconcilierile pornesc singure când se modifică înregistrările.",
+        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare. Se actualizează la fiecare modificare a înregistrărilor.",
       selectOrganization:
         "Selectați o organizație pentru a vedea starea indicatorilor.",
       noPermission:
         "Aveți nevoie de permisiunea de a gestiona setările organizației pentru a vedea starea indicatorilor.",
       statusTitle: "Stare",
       automatic:
-        "Indicatorii se reconstruiesc când devin indisponibili și se reconciliază după modificarea înregistrărilor, cel mult o dată pe oră.",
+        "Indicatorii se reconstruiesc singuri când devin indisponibili. O reconciliere renumără toate înregistrările și rulează doar când o pornește echipa de suport, de exemplu după restaurarea unei copii de rezervă.",
       definitionVersion: "Versiunea definiției",
       definitionOutdated: "Stocată {stored}, curentă {current}",
       lastBuilt: "Ultima generare",
       lastVerified: "Ultima reconciliere",
-      nextReconcile: "Următoarea reconciliere",
       invalidated: "Invalidat",
       limits: "Limite de reconstruire",
       limitsValue:

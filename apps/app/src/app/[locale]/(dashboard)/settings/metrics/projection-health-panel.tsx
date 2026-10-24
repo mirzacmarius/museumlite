@@ -122,11 +122,6 @@ function StatusCard({ health, action }: { health: Health; action: JobAction }) {
         <Row label={t("page.lastVerified")}>
           <RelativeTime timestamp={health.lastVerifiedAt} />
         </Row>
-        {health.nextReconcileAt ? (
-          <Row label={t("page.nextReconcile")}>
-            <RelativeTime timestamp={health.nextReconcileAt} />
-          </Row>
-        ) : null}
         {health.invalidatedAt ? (
           <Row label={t("page.invalidated")}>
             <RelativeTime timestamp={health.invalidatedAt} />

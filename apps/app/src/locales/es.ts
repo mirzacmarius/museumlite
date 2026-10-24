@@ -11065,19 +11065,18 @@ export default {
     page: {
       title: "Estado de métricas",
       description:
-        "Disponibilidad de las métricas del panel, informes y uso. Las reconstrucciones y conciliaciones se inician solas cuando cambian los registros.",
+        "Disponibilidad de las métricas del panel, informes y uso. Se actualizan con cada cambio en los registros.",
       selectOrganization:
         "Seleccione una organización para ver el estado de las métricas.",
       noPermission:
         "Necesita permiso para gestionar la configuración de la organización para ver el estado de las métricas.",
       statusTitle: "Estado",
       automatic:
-        "Las métricas se reconstruyen cuando dejan de estar disponibles y se concilian tras los cambios en los registros, como máximo una vez por hora.",
+        "Las métricas se reconstruyen solas cuando dejan de estar disponibles. Una conciliación vuelve a contar todos los registros y solo se ejecuta cuando la inicia el equipo de soporte, por ejemplo tras recuperar una copia de seguridad.",
       definitionVersion: "Versión de definición",
       definitionOutdated: "Almacenada {stored}, actual {current}",
       lastBuilt: "Última generación",
       lastVerified: "Última conciliación",
-      nextReconcile: "Próxima conciliación",
       invalidated: "Invalidada",
       limits: "Límites de reconstrucción",
       limitsValue:
