@@ -1,12 +1,13 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import schema from "../convex/schema";
 
-import { modules } from "./testSetup";
+import {
+  type ConvexTest,
+  createConvexTestWithRateLimiter,
+} from "./testHarness";
 
-function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
+function authedForUser(t: ConvexTest, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -22,9 +23,7 @@ type TestSetup = {
   storageId: Id<"_storage">;
 };
 
-async function createTestSetup(
-  t: ReturnType<typeof convexTest>,
-): Promise<TestSetup> {
+async function createTestSetup(t: ConvexTest): Promise<TestSetup> {
   const [
     organizationId,
     userId,
@@ -130,10 +129,7 @@ async function createTestSetup(
   };
 }
 
-async function uploadVersion(
-  t: ReturnType<typeof convexTest>,
-  setup: TestSetup,
-) {
+async function uploadVersion(t: ConvexTest, setup: TestSetup) {
   const url = await authedForUser(t, setup.userId).mutation(
     api.users.generateUploadUrl,
     { organizationId: setup.organizationId, mimeType: "image/jpeg" },
@@ -153,7 +149,7 @@ afterEach(() => vi.useRealTimers());
 
 describe("mediaVersions", () => {
   test("should create first version of media file", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const setup = await createTestSetup(t);
 
     const authed = authedForUser(t, setup.userId);
@@ -176,7 +172,7 @@ describe("mediaVersions", () => {
   });
 
   test("the object shows its image's saved edit, and the watermark is remembered", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const setup = await createTestSetup(t);
     const authed = authedForUser(t, setup.userId);
     const versionStorageId = await uploadVersion(t, setup);
@@ -221,7 +217,7 @@ describe("mediaVersions", () => {
   });
 
   test("should increment version number correctly", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const setup = await createTestSetup(t);
     const authed = authedForUser(t, setup.userId);
 
@@ -247,7 +243,7 @@ describe("mediaVersions", () => {
   });
 
   test("should increment usage counters when creating a version", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const setup = await createTestSetup(t);
     const authed = authedForUser(t, setup.userId);
 
@@ -271,7 +267,7 @@ describe("mediaVersions", () => {
   });
 
   test("should list versions sorted by version number", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const setup = await createTestSetup(t);
     const authed = authedForUser(t, setup.userId);
 
@@ -305,7 +301,7 @@ describe("mediaVersions", () => {
   });
 
   test("should revert to previous version", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const setup = await createTestSetup(t);
     const authed = authedForUser(t, setup.userId);
 
@@ -335,7 +331,7 @@ describe("mediaVersions", () => {
   });
 
   test("should require media.upload permission", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const [setup, unauthorizedUserId] = await Promise.all([
       createTestSetup(t),
       t.run(async (ctx) => {
@@ -378,7 +374,7 @@ describe("mediaVersions", () => {
   });
 
   test("should enforce organization isolation", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const [setup, otherOrgId] = await Promise.all([
       createTestSetup(t),
       t.run(async (ctx) => {

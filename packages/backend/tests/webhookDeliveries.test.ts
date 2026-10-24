@@ -822,6 +822,34 @@ describe("durable webhook deliveries", () => {
     );
   });
 
+  test("an endpoint saved earlier on a private address is never called", async () => {
+    const t = createConvexTest();
+    const { organizationId, admin, webhookId } = await setupIntegration(t, [
+      "collection.created",
+    ]);
+    // Saved before private addresses were refused when an endpoint is saved.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(webhookId, { url: "https://10.0.0.5/hooks" });
+    });
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    await createObject(admin, organizationId);
+    await drain(t);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    const { page } = await admin.query(api.webhookDeliveries.list, {
+      organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(page).toHaveLength(1);
+    expect(page[0]).toMatchObject({
+      status: "failed_permanent",
+      lastErrorCode: "endpoint_insecure",
+    });
+  });
+
   test("a redirect is not followed and fails the delivery permanently", async () => {
     const t = createConvexTest();
     const { organizationId, admin } = await setupIntegration(t, [

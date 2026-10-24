@@ -864,19 +864,31 @@ export default defineSchema({
     token: v.string(),
     uploadedBy: v.id("users"),
     organizationId: v.optional(v.id("organizations")),
+    // Set when the issuing flow validated the type; the upload must match it.
+    mimeType: v.optional(v.string()),
     createdAt: v.number(),
     expiresAt: v.number(),
     usedAt: v.optional(v.number()),
-  }).index("by_token", ["token"]),
+  })
+    .index("by_token", ["token"])
+    .index("by_expiresAt", ["expiresAt"]),
 
   storageOwnership: defineTable({
     storageId: v.id("_storage"),
     uploadedBy: v.id("users"),
     organizationId: v.optional(v.id("organizations")),
+    // The Content-Type the upload arrived with, when it had one.
+    contentType: v.optional(v.string()),
     uploadedAt: v.number(),
     ownerType: v.optional(v.string()),
     ownerId: v.optional(v.string()),
-  }).index("by_storageId", ["storageId"]),
+    // Set when an owned upload completes and cleared when a record claims
+    // it; the cleanup cron deletes uploads left unclaimed for a week. Rows
+    // from before the field existed never carry it, so they are kept.
+    unclaimedSince: v.optional(v.number()),
+  })
+    .index("by_storageId", ["storageId"])
+    .index("by_unclaimedSince", ["unclaimedSince"]),
 
   // Media attachments for objects
   mediaFiles: defineTable({

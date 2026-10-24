@@ -95,4 +95,12 @@ crons.interval(
   {},
 );
 
+// Uploads never attached to a record, and expired upload sessions, go after a week
+crons.interval(
+  "delete-abandoned-uploads",
+  { hours: 1 },
+  internal.users.deleteAbandonedUploads,
+  {},
+);
+
 export default crons;

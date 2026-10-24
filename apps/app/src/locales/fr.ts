@@ -204,6 +204,10 @@ export default {
       uploadHint:
         "Cliquez sur l'avatar pour en télécharger un personnalisé depuis vos fichiers.",
       resetButton: "Réinitialiser",
+      uploadFailed:
+        "Votre avatar n'a pas pu être téléversé. Utilisez une image JPEG, PNG ou WebP et réessayez.",
+      uploadRateLimited:
+        "Trop de téléversements à la fois. Attendez une minute, puis réessayez.",
     },
     name: {
       title: "Votre Nom",
@@ -1435,7 +1439,8 @@ export default {
       event_expired: "L'événement n'est plus conservé",
       endpoint_deleted: "Le point de terminaison a été supprimé",
       endpoint_disabled: "Le point de terminaison a été désactivé",
-      endpoint_insecure: "L'URL du point de terminaison n'utilise pas HTTPS",
+      endpoint_insecure:
+        "L'URL du point de terminaison n'est pas une adresse HTTPS publique",
       endpoint_unsubscribed:
         "Le point de terminaison n'est plus abonné à cet événement",
     },
@@ -1491,7 +1496,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Saisissez un nom pour le point de terminaison.",
-      WEBHOOK_URL_INVALID: "Saisissez une URL HTTPS valide.",
+      WEBHOOK_URL_INVALID: "Saisissez une URL HTTPS publique.",
       WEBHOOK_EVENT_UNSUPPORTED:
         "L'un des événements sélectionnés n'est pas disponible.",
       WEBHOOK_LIMIT_REACHED:
@@ -2988,6 +2993,8 @@ export default {
       },
       imageUploadFailed:
         "La photo de l'emplacement n'a pas pu être téléversée. Réessayez.",
+      imageUploadRateLimited:
+        "Trop de téléversements à la fois. Attendez une minute, puis réessayez.",
     },
     move: {
       title: "Déplacer l'Emplacement",

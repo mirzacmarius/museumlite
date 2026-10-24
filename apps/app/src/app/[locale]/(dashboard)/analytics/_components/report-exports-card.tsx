@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { protectSpreadsheetText } from "@v1/backend/convex/utils/exportEncoding";
+import { protectSpreadsheetText } from "@v1/backend/convex/utils/spreadsheetText";
 import { Button } from "@v1/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {

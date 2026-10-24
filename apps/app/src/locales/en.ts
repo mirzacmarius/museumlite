@@ -198,6 +198,10 @@ export default {
       description: "This is your avatar. It will be displayed on your profile.",
       uploadHint: "Click on the avatar to upload a custom one from your files.",
       resetButton: "Reset",
+      uploadFailed:
+        "Your avatar could not be uploaded. Use a JPEG, PNG or WebP image and try again.",
+      uploadRateLimited:
+        "Too many uploads at once. Wait a minute, then try again.",
     },
     name: {
       title: "Your Name",
@@ -1396,7 +1400,7 @@ export default {
       event_expired: "The event is no longer stored",
       endpoint_deleted: "The endpoint was deleted",
       endpoint_disabled: "The endpoint was disabled",
-      endpoint_insecure: "The endpoint URL is not HTTPS",
+      endpoint_insecure: "The endpoint URL is not a public HTTPS address",
       endpoint_unsubscribed: "The endpoint no longer subscribes to this event",
     },
     detail: {
@@ -1450,7 +1454,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Enter a name for the endpoint.",
-      WEBHOOK_URL_INVALID: "Enter a valid HTTPS URL.",
+      WEBHOOK_URL_INVALID: "Enter a public HTTPS URL.",
       WEBHOOK_EVENT_UNSUPPORTED: "One of the selected events is not available.",
       WEBHOOK_LIMIT_REACHED:
         "This organization already has the maximum number of webhook endpoints.",
@@ -2270,6 +2274,8 @@ export default {
         createFailed: "Failed to create location",
       },
       imageUploadFailed: "The location photo could not be uploaded. Try again.",
+      imageUploadRateLimited:
+        "Too many uploads at once. Wait a minute, then try again.",
     },
     move: {
       title: "Move Location",

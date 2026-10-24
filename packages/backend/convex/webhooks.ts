@@ -7,7 +7,7 @@ import { type MutationCtx, query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
 import {
-  isHttpsWebhookUrl,
+  isPublicHttpsWebhookUrl,
   isSupportedWebhookEvent,
   MAX_WEBHOOKS_PER_ORGANIZATION,
   WEBHOOK_EVENT_TYPES,
@@ -27,8 +27,11 @@ function validName(name: string) {
 
 function validUrl(url: string) {
   const trimmed = url.trim();
-  if (trimmed.length > MAX_URL_LENGTH || !isHttpsWebhookUrl(trimmed)) {
-    throw webhookError("WEBHOOK_URL_INVALID", "Webhook URL must use HTTPS");
+  if (trimmed.length > MAX_URL_LENGTH || !isPublicHttpsWebhookUrl(trimmed)) {
+    throw webhookError(
+      "WEBHOOK_URL_INVALID",
+      "Webhook URL must be a public HTTPS address",
+    );
   }
   return trimmed;
 }

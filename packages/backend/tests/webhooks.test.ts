@@ -108,14 +108,22 @@ describe("webhook endpoint configuration", () => {
     ).toBe("WEBHOOK_EVENT_UNSUPPORTED");
   });
 
-  test("endpoints need a name and an https URL", async () => {
+  test("endpoints need a name and a public https URL", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createOrgUserWithPermissions(t, [
       "organization.manage_settings",
     ]);
     const authed = authedForUser(t, userId, "session-webhook-validation");
 
-    for (const url of ["http://example.com/hook", "not a url", "https://"]) {
+    for (const url of [
+      "http://example.com/hook",
+      "not a url",
+      "https://",
+      "https://localhost:3210/hook",
+      "https://10.0.0.5/hook",
+      "https://169.254.169.254/latest/meta-data",
+      "https://[::1]/hook",
+    ]) {
       expect(
         await errorCodeOf(
           authed.mutation(api.webhooks.create, {

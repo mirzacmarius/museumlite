@@ -15,10 +15,15 @@ export function validateOwnedUploadSize(fileSize: number) {
 
 const UPLOAD_INTENT_LIFETIME_MS = 10 * 60 * 1000;
 
+/**
+ * A one-time upload URL. When the caller validated a `mimeType`, the upload
+ * must arrive with exactly that Content-Type.
+ */
 export async function createAuthorizedUploadUrl(
   ctx: MutationCtx,
   uploadedBy: Id<"users">,
   organizationId?: Id<"organizations">,
+  mimeType?: string,
 ): Promise<string> {
   if (!env.CONVEX_SITE_URL) throw new Error("Upload service URL unavailable");
   const token = crypto.randomUUID();
@@ -27,6 +32,7 @@ export async function createAuthorizedUploadUrl(
     token,
     uploadedBy,
     organizationId,
+    mimeType,
     createdAt,
     expiresAt: createdAt + UPLOAD_INTENT_LIFETIME_MS,
   });
@@ -78,6 +84,7 @@ export async function claimStorageOwnership(
     organizationId: args.organizationId,
     ownerType: args.ownerType,
     ownerId: args.ownerId,
+    unclaimedSince: undefined,
   });
 }
 

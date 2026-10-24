@@ -3,12 +3,13 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import { openDecodableImage } from "./utils/imageDecoding";
 
 async function renderPublicJpeg(source: ArrayBuffer) {
-  const sharp = (await import("sharp")).default;
-  const rendition = await sharp(Buffer.from(source), {
+  const image = await openDecodableImage(source, {
     limitInputPixels: 100_000_000,
-  })
+  });
+  const rendition = await image
     .rotate()
     .flatten({ background: "#ffffff" })
     .resize({

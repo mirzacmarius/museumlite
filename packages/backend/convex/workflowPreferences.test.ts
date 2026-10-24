@@ -1,16 +1,14 @@
-import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
 
-import { modules } from "../tests/testSetup";
+import { createConvexTestWithRateLimiter } from "../tests/testHarness";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import schema from "./schema";
 
 async function createCollectionsCreatorContext(settings: {
   accessionWorkflowEnabled?: boolean;
   deaccessionWorkflowEnabled?: boolean;
 }) {
-  const t = convexTest(schema, modules);
+  const t = createConvexTestWithRateLimiter();
 
   const context = await t.run(async (ctx) => {
     const [userId, organizationId, createPermissionId] = await Promise.all([

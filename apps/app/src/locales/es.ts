@@ -205,6 +205,10 @@ export default {
       uploadHint:
         "Haz clic en el avatar para subir uno personalizado desde tus archivos.",
       resetButton: "Restablecer",
+      uploadFailed:
+        "No se pudo subir tu avatar. Usa una imagen JPEG, PNG o WebP e inténtalo de nuevo.",
+      uploadRateLimited:
+        "Demasiadas subidas a la vez. Espera un minuto e inténtalo de nuevo.",
     },
     name: {
       title: "Tu Nombre",
@@ -1432,7 +1436,8 @@ export default {
       event_expired: "El evento ya no está almacenado",
       endpoint_deleted: "El endpoint se eliminó",
       endpoint_disabled: "El endpoint se desactivó",
-      endpoint_insecure: "La URL del endpoint no usa HTTPS",
+      endpoint_insecure:
+        "La URL del endpoint no es una dirección HTTPS pública",
       endpoint_unsubscribed: "El endpoint ya no está suscrito a este evento",
     },
     detail: {
@@ -1486,7 +1491,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Introduce un nombre para el endpoint.",
-      WEBHOOK_URL_INVALID: "Introduce una URL HTTPS válida.",
+      WEBHOOK_URL_INVALID: "Introduce una URL HTTPS pública.",
       WEBHOOK_EVENT_UNSUPPORTED:
         "Uno de los eventos seleccionados no está disponible.",
       WEBHOOK_LIMIT_REACHED:
@@ -2980,6 +2985,8 @@ export default {
       },
       imageUploadFailed:
         "No se pudo subir la foto de la ubicación. Inténtelo de nuevo.",
+      imageUploadRateLimited:
+        "Demasiadas subidas a la vez. Espere un minuto e inténtelo de nuevo.",
     },
     move: {
       title: "Mover Ubicación",

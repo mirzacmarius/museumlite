@@ -235,7 +235,10 @@ const INELIGIBLE_ENDPOINT_ERRORS = {
     "WEBHOOK_NOT_SUBSCRIBED",
     "Webhook endpoint no longer subscribes to this event",
   ],
-  endpoint_insecure: ["WEBHOOK_URL_INVALID", "Webhook URL must use HTTPS"],
+  endpoint_insecure: [
+    "WEBHOOK_URL_INVALID",
+    "Webhook URL must be a public HTTPS address",
+  ],
 } as const satisfies Record<
   EndpointIneligibility,
   readonly [WebhookErrorCode, string]

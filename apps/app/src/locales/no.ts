@@ -202,6 +202,10 @@ export default {
       uploadHint:
         "Klikk på avataren for å laste opp en tilpasset fra filene dine.",
       resetButton: "Tilbakestill",
+      uploadFailed:
+        "Avataren kunne ikke lastes opp. Bruk et JPEG-, PNG- eller WebP-bilde og prøv igjen.",
+      uploadRateLimited:
+        "For mange opplastinger samtidig. Vent et minutt, og prøv igjen.",
     },
     name: {
       title: "Ditt navn",
@@ -1405,7 +1409,7 @@ export default {
       event_expired: "Hendelsen er ikke lenger lagret",
       endpoint_deleted: "Endepunktet ble slettet",
       endpoint_disabled: "Endepunktet ble deaktivert",
-      endpoint_insecure: "Endepunktets URL bruker ikke HTTPS",
+      endpoint_insecure: "Endepunktets URL er ikke en offentlig HTTPS-adresse",
       endpoint_unsubscribed:
         "Endepunktet abonnerer ikke lenger på denne hendelsen",
     },
@@ -1461,7 +1465,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Skriv inn et navn på endepunktet.",
-      WEBHOOK_URL_INVALID: "Skriv inn en gyldig HTTPS-URL.",
+      WEBHOOK_URL_INVALID: "Skriv inn en offentlig HTTPS-URL.",
       WEBHOOK_EVENT_UNSUPPORTED:
         "En av de valgte hendelsene er ikke tilgjengelig.",
       WEBHOOK_LIMIT_REACHED:
@@ -2949,6 +2953,8 @@ export default {
       },
       imageUploadFailed:
         "Bildet av plasseringen kunne ikke lastes opp. Prøv igjen.",
+      imageUploadRateLimited:
+        "For mange opplastinger samtidig. Vent et minutt, og prøv igjen.",
     },
     move: {
       title: "Flytt Plassering",

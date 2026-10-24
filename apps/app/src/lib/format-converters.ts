@@ -1,4 +1,4 @@
-import { protectSpreadsheetText } from "@v1/backend/convex/utils/exportEncoding";
+import { protectSpreadsheetText } from "@v1/backend/convex/utils/spreadsheetText";
 
 const CSV_QUOTE_CHARS = new Set([",", '"', "\n", "\r"]);
 
