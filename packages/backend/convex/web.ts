@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import { action } from "./_generated/server";
 import { env } from "./env";
+import { tourRequestRateLimited } from "./utils/marketingFormErrors";
 import {
   isEmailAddress,
   NEWSLETTER_USER_GROUP_MAX_LENGTH,
@@ -49,9 +50,12 @@ const FORM_LIMITS = {
   tourRequest: { perEmail: "tourRequestsPerEmail", overall: "tourRequests" },
 } as const;
 
+// A per-address bucket is full again this long after its last use.
+const PER_EMAIL_REFILL_MS = HOUR;
+
 /**
- * Whether one more submission of a form may go through. The address is
- * checked first, so repeating one address never spends the overall budget.
+ * Whether one more submission of a form may go through. Both limits are
+ * checked before either is spent, so a refusal costs the sender nothing.
  */
 export const admitMarketingSubmission = internalMutation({
   args: {
@@ -61,12 +65,42 @@ export const admitMarketingSubmission = internalMutation({
   returns: v.boolean(),
   handler: async (ctx, args) => {
     const limits = FORM_LIMITS[args.form];
-    const perEmail = await marketingLimiter.limit(ctx, limits.perEmail, {
-      key: args.email,
-    });
-    if (!perEmail.ok) return false;
-    const overall = await marketingLimiter.limit(ctx, limits.overall);
-    return overall.ok;
+    const key = args.email;
+    const [perEmail, overall] = await Promise.all([
+      marketingLimiter.check(ctx, limits.perEmail, { key }),
+      marketingLimiter.check(ctx, limits.overall),
+    ]);
+    if (!perEmail.ok || !overall.ok) return false;
+
+    await Promise.all([
+      marketingLimiter.limit(ctx, limits.perEmail, { key }),
+      marketingLimiter.limit(ctx, limits.overall),
+    ]);
+    await ctx.scheduler.runAfter(
+      PER_EMAIL_REFILL_MS,
+      internal.web.expireMarketingBucket,
+      { name: limits.perEmail, key },
+    );
+    return true;
+  },
+});
+
+/** Delete an idle per-address bucket only after it would have fully refilled anyway. */
+export const expireMarketingBucket = internalMutation({
+  args: {
+    name: v.union(
+      v.literal("newsletterSignupsPerEmail"),
+      v.literal("tourRequestsPerEmail"),
+    ),
+    key: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { name, key }) => {
+    // Compare against the limiter's own timestamp; a later use reschedules.
+    const state = await marketingLimiter.getValue(ctx, name, { key });
+    if (Date.now() - state.ts >= PER_EMAIL_REFILL_MS)
+      await marketingLimiter.reset(ctx, name, { key });
+    return null;
   },
 });
 
@@ -189,7 +223,7 @@ export const submitTourRequest = action({
       { form: "tourRequest", email },
     );
     if (!admitted) {
-      throw new Error("Too many requests. Please try again later.");
+      throw tourRequestRateLimited();
     }
 
     await ctx.runMutation(internal.web.insertTourRequest, {

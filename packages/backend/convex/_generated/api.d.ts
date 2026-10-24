@@ -258,6 +258,7 @@ import type * as utils_loanOccupancy from "../utils/loanOccupancy.js";
 import type * as utils_loanStatusTransitions from "../utils/loanStatusTransitions.js";
 import type * as utils_loanWorkflow from "../utils/loanWorkflow.js";
 import type * as utils_locationIntegrity from "../utils/locationIntegrity.js";
+import type * as utils_marketingFormErrors from "../utils/marketingFormErrors.js";
 import type * as utils_marketingForms from "../utils/marketingForms.js";
 import type * as utils_mediaAssets from "../utils/mediaAssets.js";
 import type * as utils_memberPermissions from "../utils/memberPermissions.js";
@@ -625,6 +626,7 @@ declare const fullApi: ApiFromModules<{
   "utils/loanStatusTransitions": typeof utils_loanStatusTransitions;
   "utils/loanWorkflow": typeof utils_loanWorkflow;
   "utils/locationIntegrity": typeof utils_locationIntegrity;
+  "utils/marketingFormErrors": typeof utils_marketingFormErrors;
   "utils/marketingForms": typeof utils_marketingForms;
   "utils/mediaAssets": typeof utils_mediaAssets;
   "utils/memberPermissions": typeof utils_memberPermissions;

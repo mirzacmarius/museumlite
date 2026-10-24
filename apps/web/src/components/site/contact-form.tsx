@@ -45,9 +45,9 @@ export function ContactForm() {
             setSent(true);
           } else {
             setError(
-              result.error === "submission_failed"
-                ? t("marketing.contact.genericError")
-                : t("marketing.contact.fieldError"),
+              result.error === "rate_limited"
+                ? t("marketing.contact.rateLimited")
+                : t("marketing.contact.genericError"),
             );
           }
         } catch {

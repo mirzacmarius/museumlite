@@ -4,7 +4,11 @@ import { createConvexTestWithRateLimiter } from "../tests/testHarness";
 import { modules } from "../tests/testSetup";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { SUGGESTION_REQUEST_BURST } from "./onboardingAi";
+import {
+  collectionSuggestionRequest,
+  SUGGESTION_MAX_OUTPUT_TOKENS,
+  SUGGESTION_REQUEST_BURST,
+} from "./onboardingAi";
 import schema from "./schema";
 import { isSuggestionsRateLimited } from "./utils/collectionSuggestionErrors";
 import {
@@ -113,7 +117,7 @@ describe("onboarding collection suggestions", () => {
     expect(result.collectionGroups.length).toBeGreaterThan(0);
   });
 
-  test("the model sees a trimmed, capped request", () => {
+  test("boundedSuggestionInput trims and caps the name and description", () => {
     const input = boundedSuggestionInput({
       organizationName: `  ${"N".repeat(300)}  `,
       organizationType: "library",
@@ -123,6 +127,43 @@ describe("onboarding collection suggestions", () => {
     expect(input.organizationName).toHaveLength(200);
     expect(input.description).toHaveLength(COLLECTION_DESCRIPTION_MAX_LENGTH);
     expect(input.organizationType).toBe("library");
+  });
+
+  test("the model request caps the reply and carries the bounded description", () => {
+    const request = collectionSuggestionRequest(
+      boundedSuggestionInput({
+        organizationName: "Harbor Gallery",
+        organizationType: "gallery",
+        description: "d".repeat(COLLECTION_DESCRIPTION_MAX_LENGTH + 500),
+      }),
+    );
+
+    expect(request.max_completion_tokens).toBe(SUGGESTION_MAX_OUTPUT_TOKENS);
+    const prompt = String(request.messages.at(-1)?.content);
+    expect(prompt).toContain("d".repeat(COLLECTION_DESCRIPTION_MAX_LENGTH));
+    expect(prompt).not.toContain(
+      "d".repeat(COLLECTION_DESCRIPTION_MAX_LENGTH + 1),
+    );
+  });
+
+  test("generateCollectionSuggestions works from the capped organization name", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const userId = await t.run(async (ctx) =>
+      ctx.db.insert("users", { name: "Cap", email: "cap@test.dev" }),
+    );
+
+    const result = await authedForUser(t, userId).action(
+      api.onboardingAi.generateCollectionSuggestions,
+      {
+        organizationName: `  ${"N".repeat(300)}  `,
+        organizationType: "library",
+        description: "",
+      },
+    );
+
+    // With no description the template summary ends with the name.
+    expect(result.summary).toContain(`${"N".repeat(200)}.`);
+    expect(result.summary).not.toContain("N".repeat(201));
   });
 
   test("one user's suggestion requests are limited, then recover", async () => {

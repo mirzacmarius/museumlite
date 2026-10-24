@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
+import { isTourRequestRateLimited } from "../convex/utils/marketingFormErrors";
 import { SUBMISSIONS_PER_EMAIL_PER_HOUR } from "../convex/web";
 import { createConvexTestWithRateLimiter } from "./testHarness";
 
@@ -14,7 +15,8 @@ afterEach(() => {
   mockEnv.LOOPS_FORM_ID = "form 1";
 });
 
-const HOUR = 60 * 60 * 1000;
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
 
 function tourRequest(email: string) {
   return {
@@ -93,18 +95,23 @@ describe("web", () => {
     for (let sent = 0; sent < SUBMISSIONS_PER_EMAIL_PER_HOUR; sent++) {
       await t.action(api.web.submitTourRequest, request);
     }
-    await expect(
-      t.action(api.web.submitTourRequest, {
+    const refusal = await t
+      .action(api.web.submitTourRequest, {
         ...request,
         email: "jane@citymuseum.org",
-      }),
-    ).rejects.toThrow("Too many requests");
+      })
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+    expect(isTourRequestRateLimited(refusal)).toBe(true);
     await t.action(
       api.web.submitTourRequest,
       tourRequest("someone@citymuseum.org"),
     );
 
-    vi.advanceTimersByTime(HOUR);
+    // Runs the hour-later bucket expiry too.
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
     await t.action(api.web.submitTourRequest, request);
 
     const inquiries = await t.run(async (ctx) =>
@@ -134,6 +141,69 @@ describe("web", () => {
     );
     expect(inquiries).toHaveLength(20);
     expect(refused).toBe(5);
+
+    vi.advanceTimersByTime(MINUTE);
+    await t.action(api.web.submitTourRequest, tourRequest("later@example.org"));
+    const afterRefill = await t.run(async (ctx) =>
+      ctx.db.query("marketingInquiries").collect(),
+    );
+    expect(afterRefill).toHaveLength(21);
+  });
+
+  test("a request refused while the form is busy leaves the sender's allowance", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    for (let sender = 0; sender < 20; sender++) {
+      await t.action(
+        api.web.submitTourRequest,
+        tourRequest(`visitor${sender}@example.org`),
+      );
+    }
+    for (let attempt = 0; attempt < SUBMISSIONS_PER_EMAIL_PER_HOUR; attempt++) {
+      await expect(
+        t.action(api.web.submitTourRequest, tourRequest("jane@citymuseum.org")),
+      ).rejects.toThrow();
+    }
+
+    vi.advanceTimersByTime(MINUTE);
+    for (let sent = 0; sent < SUBMISSIONS_PER_EMAIL_PER_HOUR; sent++) {
+      await t.action(
+        api.web.submitTourRequest,
+        tourRequest("jane@citymuseum.org"),
+      );
+    }
+    const fromJane = await t.run(async (ctx) =>
+      (await ctx.db.query("marketingInquiries").collect()).filter(
+        (inquiry) => inquiry.email === "jane@citymuseum.org",
+      ),
+    );
+    expect(fromJane).toHaveLength(SUBMISSIONS_PER_EMAIL_PER_HOUR);
+  });
+
+  test("an address's bucket is cleared once it has refilled", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    await t.action(
+      api.web.submitTourRequest,
+      tourRequest("jane@citymuseum.org"),
+    );
+
+    const scheduled = await t.run(async (ctx) =>
+      ctx.db.system.query("_scheduled_functions").collect(),
+    );
+    expect(scheduled).toHaveLength(1);
+    expect(scheduled[0]?.name).toBe("web:expireMarketingBucket");
+    expect(scheduled[0]?.args[0]).toEqual({
+      name: "tourRequestsPerEmail",
+      key: "jane@citymuseum.org",
+    });
+    expect(scheduled[0]!.scheduledTime - Date.now()).toBe(HOUR);
+
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const done = await t.run(async (ctx) =>
+      ctx.db.system.query("_scheduled_functions").collect(),
+    );
+    expect(done[0]?.state.kind).toBe("success");
   });
 
   test("insertTourRequest trims fields", async () => {
@@ -227,6 +297,7 @@ describe("web", () => {
   });
 
   test("one address is signed up a few times an hour at most", async () => {
+    vi.useFakeTimers();
     const t = createConvexTestWithRateLimiter();
     const provider = stubLoops(() => Response.json({ success: true }));
 
@@ -245,5 +316,40 @@ describe("web", () => {
       }),
     ).toEqual({ ok: false, error: "rate_limited" });
     expect(provider).toHaveBeenCalledTimes(SUBMISSIONS_PER_EMAIL_PER_HOUR);
+
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(
+      await t.action(api.web.subscribe, {
+        email: "reader@example.org",
+        userGroup: "",
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  test("sign-ups from many addresses stop after a burst, then resume", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const provider = stubLoops(() => Response.json({ success: true }));
+
+    const results = [];
+    for (let reader = 0; reader < 61; reader++) {
+      results.push(
+        await t.action(api.web.subscribe, {
+          email: `reader${reader}@example.org`,
+          userGroup: "",
+        }),
+      );
+    }
+    expect(results.filter((result) => result.ok)).toHaveLength(60);
+    expect(results[60]).toEqual({ ok: false, error: "rate_limited" });
+    expect(provider).toHaveBeenCalledTimes(60);
+
+    vi.advanceTimersByTime(MINUTE);
+    expect(
+      await t.action(api.web.subscribe, {
+        email: "later@example.org",
+        userGroup: "",
+      }),
+    ).toEqual({ ok: true });
   });
 });

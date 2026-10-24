@@ -3,6 +3,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
 import { v } from "convex/values";
+import type { ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
 import { components } from "./_generated/api";
 import { action } from "./_generated/server";
 import { suggestionsRateLimited } from "./utils/collectionSuggestionErrors";
@@ -45,19 +46,19 @@ const collectionSetupSuggestionValidator = v.object({
   source: v.union(v.literal("ai"), v.literal("template")),
 });
 
-async function generateWithOpenAi(args: {
+/** Room for a summary, 8 groups and 12 object types; a longer reply is cut off. */
+export const SUGGESTION_MAX_OUTPUT_TOKENS = 1500;
+
+/** The model request for one set of suggestions, built from bounded input. */
+export function collectionSuggestionRequest(args: {
   organizationName: string;
   organizationType: OrganizationType;
   description: string;
-}): Promise<CollectionSetupSuggestion | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-
-  const OpenAI = (await import("openai")).default;
-  const openai = new OpenAI({ apiKey });
-  const response = await openai.chat.completions.create({
+}): ChatCompletionCreateParamsNonStreaming {
+  return {
     model: "gpt-4o-mini",
     temperature: 0.4,
+    max_completion_tokens: SUGGESTION_MAX_OUTPUT_TOKENS,
     response_format: { type: "json_object" },
     messages: [
       {
@@ -80,9 +81,27 @@ async function generateWithOpenAi(args: {
         ].join("\n"),
       },
     ],
-  });
+  };
+}
 
-  const content = response.choices[0]?.message?.content;
+async function generateWithOpenAi(args: {
+  organizationName: string;
+  organizationType: OrganizationType;
+  description: string;
+}): Promise<CollectionSetupSuggestion | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+
+  const OpenAI = (await import("openai")).default;
+  const openai = new OpenAI({ apiKey });
+  const response = await openai.chat.completions.create(
+    collectionSuggestionRequest(args),
+  );
+
+  // A reply cut off at the token cap is incomplete JSON; use the template.
+  const choice = response.choices[0];
+  if (!choice || choice.finish_reason === "length") return null;
+  const content = choice.message?.content;
   if (!content) return null;
 
   return parseCollectionSetupSuggestionJson(content);
