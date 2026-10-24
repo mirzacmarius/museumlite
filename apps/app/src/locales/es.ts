@@ -8324,14 +8324,15 @@ export default {
           technique: "Técnica de producción",
           dimensions: "Dimensiones físicas",
           dimensionMeasuredPart:
-            "Parte de la que se tomaron las dimensiones: overall, framed, unframed, image, sight, sheet, plate, mount, base u other",
+            "Parte de la que se tomaron las dimensiones: overall, framed, unframed, image, sight, sheet, plate, mount, base u other, o su nombre tal como aparece en la aplicación",
           measurementSets:
             "Lista JSON de otras partes medidas, tal como la escribe la exportación de datos. Cada una lleva un código de parte y al menos un valor entre height, width, depth, diameter o weight",
           description: "Descripción detallada",
           subjects:
             "Lo que el objeto representa o de lo que trata; separe los términos con punto y coma",
           condition: "Estado actual",
-          completeness: "Uno de complete, incomplete o fragment",
+          completeness:
+            "Uno de complete, incomplete o fragment, o su nombre tal como aparece en la aplicación",
           completenessNote: "Lo que falta o lo que incluye",
           provenance: "Historial de propiedad",
           rightsStatement:
@@ -11201,7 +11202,8 @@ export default {
       measurementSetsInvalid:
         "Dé a cada parte medida al menos una medida mayor que 0. Las notas y unidades admiten hasta {length} caracteres, y se pueden añadir hasta {max} partes.",
       rightsStatementInvalid: "Elija una declaración de derechos de la lista.",
-      textTooLong: "{field} es demasiado largo. Acórtelo e inténtelo de nuevo.",
+      textTooLong:
+        "El campo «{field}» es demasiado largo. Acórtelo e inténtelo de nuevo.",
     },
     notices: {
       recoveredTitle: "Se encontraron cambios sin guardar",
@@ -11273,7 +11275,7 @@ export default {
         "Cuántas cosas describe este registro, por ejemplo 2 para un par o 12 para un juego de té.",
       subjects: "Tema",
       subjectsHint:
-        "Lo que el objeto representa o de lo que trata, aparte de las etiquetas. Pulse Intro o Tab después de cada término.",
+        "Lo que el objeto representa o de lo que trata, aparte de las etiquetas. Pulse Intro o Tab después de cada término, o separe los términos con punto y coma (;).",
       measuredPart: "Parte medida",
       choosePart: "Elija una parte",
       notStated: "Sin indicar",
@@ -11732,7 +11734,7 @@ export default {
       framed: "Con marco",
       unframed: "Sin marco",
       image: "Imagen",
-      sight: "Vista",
+      sight: "A la vista",
       sheet: "Hoja",
       plate: "Plancha",
       mount: "Montaje",

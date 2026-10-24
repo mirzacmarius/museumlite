@@ -690,3 +690,75 @@ test("object CSVs carry the description and rights as entered, and a re-import r
   for (const failed of ["I-2", "I-3", "I-4", "I-5", "I-6", "I-7"])
     expect(byNumber.has(failed)).toBe(false);
 });
+
+test("the objects import reads completeness and measured parts as the labels the app shows in any of its languages", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create"],
+    { subscriptionTier: "pro" },
+  );
+  const authed = authedForUser(t, userId);
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    entityType: "objects",
+    totalItems: 3,
+  });
+
+  const imported = await authed.mutation(api.imports.importObjectsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        // A Norwegian file.
+        rowNumber: 2,
+        accessionNumber: "L-1",
+        title: "Maleri",
+        completeness: "Ufullstendig",
+        dimensionMeasuredPart: "med ramme",
+        measurementSets: '[{"part":"Uten ramme","height":40}]',
+      },
+      {
+        // A French one.
+        rowNumber: 3,
+        accessionNumber: "L-2",
+        title: "Estampe",
+        completeness: "COMPLET",
+        dimensionMeasuredPart: "À vue",
+      },
+      {
+        rowNumber: 4,
+        accessionNumber: "L-3",
+        title: "Vase",
+        dimensionMeasuredPart: "Lokk",
+      },
+    ],
+  });
+
+  expect(imported.results.map((result) => result.status)).toEqual([
+    "accepted",
+    "accepted",
+    "failed",
+  ]);
+  expect(imported.errors[0]).toContain("dimensionMeasuredPart must be one of");
+  const stored = await t.run((ctx) =>
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  );
+  const byNumber = new Map(stored.map((row) => [row.accessionNumber, row]));
+  expect(byNumber.get("L-1")).toMatchObject({
+    completeness: "incomplete",
+    dimensionMeasuredPart: "framed",
+    measurementSets: [{ part: "unframed", height: 40 }],
+  });
+  expect(byNumber.get("L-2")).toMatchObject({
+    completeness: "complete",
+    dimensionMeasuredPart: "sight",
+  });
+});

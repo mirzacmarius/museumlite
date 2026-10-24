@@ -92,7 +92,7 @@ describe("objectIdCategoryValues", () => {
           { label: "Verso", description: "Stamp of the Durand gallery" },
           { label: "Frame", description: "   " },
         ],
-        subjects: ["Portrait", "Merchant"],
+        subjects: ["Portraits, single figures", "Merchant"],
         dateCreated: "1652",
         period: "Dutch Golden Age",
         creator: "Unknown Dutch painter",
@@ -117,7 +117,7 @@ describe("objectIdCategoryValues", () => {
       "Lower left corner: old tear, repaired",
     ]);
     expect(lines.title).toEqual(["Portrait of a man", "The merchant"]);
-    expect(lines.subject).toEqual(["Portrait, Merchant"]);
+    expect(lines.subject).toEqual(["Portraits, single figures; Merchant"]);
     expect(lines.date_or_period).toEqual(["1652", "Dutch Golden Age"]);
     expect(lines.maker).toEqual(["Unknown Dutch painter"]);
   });
@@ -146,7 +146,17 @@ describe("objectIdCategoryValues", () => {
         dimensions: "approx. 30 cm across",
         dimensionDiameter: "30",
       }).measurements,
-    ).toEqual(["Ø 30", "approx. 30 cm across"]);
+    ).toEqual(["approx. 30 cm across", "Ø 30"]);
+  });
+
+  test("names the measured part on free-text dimensions", () => {
+    expect(
+      linesOf({
+        title: "Portrait",
+        dimensions: "24 x 18 in",
+        dimensionMeasuredPart: "framed",
+      }).measurements,
+    ).toEqual(["Framed: 24 x 18 in"]);
   });
 
   test("prints measurements with the app language's labels and number format", () => {

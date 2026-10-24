@@ -8154,14 +8154,15 @@ export default {
           technique: "Production technique",
           dimensions: "Physical dimensions",
           dimensionMeasuredPart:
-            "Part the dimensions were taken from: overall, framed, unframed, image, sight, sheet, plate, mount, base or other",
+            "Part the dimensions were taken from: overall, framed, unframed, image, sight, sheet, plate, mount, base or other, or its name as shown in the app",
           measurementSets:
             "JSON list of further measured parts, the way the data export writes it. Each has a part code and at least one of height, width, depth, diameter or weight",
           description: "Detailed description",
           subjects:
             "What the object depicts or is about; separate terms with semicolons",
           condition: "Current condition",
-          completeness: "One of complete, incomplete or fragment",
+          completeness:
+            "One of complete, incomplete or fragment, or its name as shown in the app",
           completenessNote: "What is missing or included",
           provenance: "Ownership history",
           rightsStatement:
@@ -11006,7 +11007,7 @@ export default {
         "How many things this record describes, such as 2 for a pair or 12 for a tea set.",
       subjects: "Subject",
       subjectsHint:
-        "What the object depicts or is about, kept apart from tags. Press Enter or Tab after each term.",
+        "What the object depicts or is about, kept apart from tags. Press Enter or Tab after each term, or separate terms with a semicolon (;).",
       measuredPart: "Measured part",
       choosePart: "Choose a part",
       notStated: "Not stated",

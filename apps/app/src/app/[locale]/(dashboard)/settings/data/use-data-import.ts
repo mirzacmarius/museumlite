@@ -65,7 +65,9 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   completenessNote: ["merknad om fullstendighet"],
   dimensionMeasuredPart: ["målt del"],
   measurementSets: ["andre målte deler"],
-  rightsStatement: ["rettighetserklæring", "rettigheter", "lisens"],
+  // Not "rettigheter" or "lisens": catalogues use those for free-text
+  // licence notes, which no statement matches, so every row would fail.
+  rightsStatement: ["rettighetserklæring"],
   collectionGroup: ["samlingsgruppe"],
 };
 

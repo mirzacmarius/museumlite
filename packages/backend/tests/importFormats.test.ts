@@ -839,4 +839,70 @@ describe("Import E2E Verification (manual)", () => {
     });
     expect(imported?.tags).toBeUndefined();
   });
+
+  test("a Dublin Core import keeps subject terms an Object cannot hold as tags, and legal restrictions apart from the credit line", async () => {
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
+    const subjects = Array.from({ length: 10 }, (_, i) => `Subject ${i}`);
+    const tags = Array.from({ length: 45 }, (_, i) => `Tag ${i}`);
+    const long = "a".repeat(201);
+    const records = [
+      toDublinCore({
+        title: "Album",
+        accessionNumber: "DC-2024-003",
+        subjects,
+        tags,
+        creditLine: "Gift of X",
+        legalRestrictions: true,
+      }),
+      { title: "Print", identifier: "DC-2024-004", subject: [long, "Harbour"] },
+    ];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<dublincore:records xmlns:dublincore="http://purl.org/dc/elements/1.1/">
+${records.map((record) => toDublinCoreXML(record)).join("\n")}
+</dublincore:records>`;
+    const jobId = await asUser.mutation(api.imports.createImportJob, {
+      organizationId: orgId,
+      type: "csv",
+      totalItems: 2,
+    });
+
+    const result = await asUser.mutation(api.imports.importObjectsDublinCore, {
+      organizationId: orgId,
+      jobId,
+      xml,
+    });
+
+    expect(result.results.map((row) => row.status)).toEqual([
+      "accepted",
+      "accepted",
+    ]);
+    const stored = await t.run((ctx) =>
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect(),
+    );
+    const byNumber = new Map(stored.map((row) => [row.accessionNumber, row]));
+    // oai_dc cannot tell subjects from tags: the first 50 terms are
+    // subjects, and none is lost.
+    const album = byNumber.get("DC-2024-003");
+    expect(album).toMatchObject({
+      subjects: [...subjects, ...tags.slice(0, 40)],
+      tags: tags.slice(40),
+      creditLine: "Gift of X",
+      legalRestrictions: true,
+    });
+    expect([...(album?.subjects ?? []), ...(album?.tags ?? [])]).toEqual([
+      ...subjects,
+      ...tags,
+    ]);
+    expect(byNumber.get("DC-2024-004")).toMatchObject({
+      subjects: ["Harbour"],
+      tags: [long],
+    });
+  });
 });

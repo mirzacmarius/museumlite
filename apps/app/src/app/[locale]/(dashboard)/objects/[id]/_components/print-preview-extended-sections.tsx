@@ -205,15 +205,16 @@ function PrintRightsStatement({ collection }: { collection: CollectionData }) {
     collection.rightsStatement,
     defaults?.objectRightsStatement,
   );
+  // Until the Organization's default loads, it is not known to be unstated.
+  const notStated =
+    defaults === undefined ? null : tRoot("rightsStatements.notStated");
   return (
     <div className="col-span-2">
       <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
         {tRoot("recordForm.objectFields.rightsStatement")}
       </p>
       <p className="text-black">
-        {rights
-          ? name(rights.statement.uri)
-          : tRoot("rightsStatements.notStated")}
+        {rights ? name(rights.statement.uri) : notStated}
       </p>
       {rights ? (
         <p className="break-all text-[10px] text-zinc-500">

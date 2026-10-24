@@ -592,6 +592,38 @@ describe("SPECTRUM description and rights", () => {
     expect(xml).not.toContain("productionPlace");
   });
 
+  it("writes the main set's part with its weight when nothing else was measured, and the weight alone without a part", () => {
+    const coin = toSpectrumXML(
+      collectionToSpectrum({
+        accessionNumber: "2024.011",
+        title: "Coin",
+        dimensionWeight: 2,
+        weightUnit: "g",
+        dimensionMeasuredPart: "overall",
+      }),
+    );
+    expect(coin).toContain(
+      [
+        "  <dimensions>",
+        "    <measuredPart>overall</measuredPart>",
+        '    <weight unit="g">2</weight>',
+        "  </dimensions>",
+      ].join("\n"),
+    );
+    expect(coin.match(/<weight /g)).toHaveLength(1);
+
+    const unstated = toSpectrumXML(
+      collectionToSpectrum({
+        accessionNumber: "2024.012",
+        title: "Coin",
+        dimensionWeight: 2,
+        weightUnit: "g",
+      }),
+    );
+    expect(unstated).toContain('\n  <weight unit="g">2</weight>');
+    expect(unstated).not.toContain("<dimensions>");
+  });
+
   it("prefers the Object's own statement and writes none when neither is set", () => {
     expect(
       collectionToSpectrum(

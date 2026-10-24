@@ -376,15 +376,20 @@ export function toSpectrumXML(
       lines.push(`${nested}<partNote>${escapeXml(partNote)}</partNote>`);
   };
 
-  // Structured dimensions
+  // Structured dimensions; the weight goes with them when their part is
+  // stated, so the part names what was weighed too
+  const mainPart = record.dimensionMeasuredPart;
+  const mainWeight = record.weight
+    ? `<weight unit="${escapeXml(record.weightUnit || "kg")}">${record.weight}</weight>`
+    : undefined;
   if (
     record.dimensionHeight ||
     record.dimensionWidth ||
-    record.dimensionDepth
+    record.dimensionDepth ||
+    mainPart
   ) {
     lines.push(`${indent}<dimensions>`);
-    if (record.dimensionMeasuredPart)
-      measuredPartLines(record.dimensionMeasuredPart);
+    if (mainPart) measuredPartLines(mainPart);
     if (record.dimensionHeight) {
       lines.push(
         `${indent}${indent}<height unit="${escapeXml(record.dimensionUnit || "cm")}">${record.dimensionHeight}</height>`,
@@ -400,14 +405,11 @@ export function toSpectrumXML(
         `${indent}${indent}<depth unit="${escapeXml(record.dimensionUnit || "cm")}">${record.dimensionDepth}</depth>`,
       );
     }
+    if (mainPart && mainWeight) lines.push(`${nested}${mainWeight}`);
     lines.push(`${indent}</dimensions>`);
   }
 
-  if (record.weight) {
-    lines.push(
-      `${indent}<weight unit="${escapeXml(record.weightUnit || "kg")}">${record.weight}</weight>`,
-    );
-  }
+  if (!mainPart && mainWeight) lines.push(`${indent}${mainWeight}`);
 
   // One block per further set; a unit is written only when recorded
   for (const set of record.measurementSets ?? []) {

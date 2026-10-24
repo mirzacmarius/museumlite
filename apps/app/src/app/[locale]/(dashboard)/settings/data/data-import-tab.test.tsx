@@ -57,10 +57,13 @@ test("the Objects template says what its subject, completeness, measured part, f
       "subjects",
       "What the object depicts or is about; separate terms with semicolons",
     ],
-    ["completeness", "One of complete, incomplete or fragment"],
+    [
+      "completeness",
+      "One of complete, incomplete or fragment, or its name as shown in the app",
+    ],
     [
       "dimensionMeasuredPart",
-      "Part the dimensions were taken from: overall, framed, unframed, image, sight, sheet, plate, mount, base or other",
+      "Part the dimensions were taken from: overall, framed, unframed, image, sight, sheet, plate, mount, base or other, or its name as shown in the app",
     ],
     ["measurementSets", "JSON list of further measured parts"],
     ["rightsStatement", "as its URI or a code such as InC, CC0 or CC BY 4.0"],

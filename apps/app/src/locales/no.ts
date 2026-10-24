@@ -3627,7 +3627,7 @@ export default {
       ownershipHistory: "Eierskapshistorikk",
       exhibitionHistory: "Utstillingshistorikk",
       currentLocation: "Nåværende Plassering",
-      tags: "Tagger",
+      tags: "Stikkord",
       objectType: "Objekttype",
       objectName: "Objektnavn",
       creatorArtist: "Skaper/Kunstner",
@@ -3687,7 +3687,7 @@ export default {
       present: "Nåtid",
       exhibitionHistory: "Utstillingshistorikk",
       currentLocation: "Nåværende Plassering",
-      tags: "Merkelapper",
+      tags: "Stikkord",
       legalAndVisibility: "Juridisk og Synlighet",
       publicVisibility: "Offentlig Synlighet",
       legalRestrictions: "Juridiske Begrensninger",
@@ -3724,7 +3724,7 @@ export default {
         inscriptions_and_markings: "Innskrifter og merker",
         distinguishing_features: "Særtrekk",
         title: "Tittel",
-        subject: "Motiv",
+        subject: "Emne",
         date_or_period: "Datering eller periode",
         maker: "Produsent",
       },
@@ -8252,14 +8252,15 @@ export default {
           technique: "Produksjonsteknikk",
           dimensions: "Fysiske mål",
           dimensionMeasuredPart:
-            "Delen målene er tatt av: overall, framed, unframed, image, sight, sheet, plate, mount, base eller other",
+            "Delen målene er tatt av: overall, framed, unframed, image, sight, sheet, plate, mount, base eller other, eller navnet slik det vises i appen",
           measurementSets:
             "JSON-liste med andre målte deler, slik dataeksporten skriver den. Hver har en delkode og minst én av height, width, depth, diameter eller weight",
           description: "Detaljert beskrivelse",
           subjects:
             "Hva objektet viser eller handler om; skill termene med semikolon",
           condition: "Nåværende tilstand",
-          completeness: "Én av complete, incomplete eller fragment",
+          completeness:
+            "Én av complete, incomplete eller fragment, eller navnet slik det vises i appen",
           completenessNote: "Hva som mangler eller er med",
           provenance: "Eierskapshistorikk",
           rightsStatement:
@@ -11055,7 +11056,7 @@ export default {
         "Skriv inn opptil {max} emnetermer på opptil {length} tegn hver.",
       measurementSetPartRequired: "Velg delen hver rad med mål ble tatt av.",
       measurementSetsInvalid:
-        "Gi hver målte del minst ett mål over 0. Notater og enheter kan ha opptil {length} tegn, og opptil {max} deler kan legges til.",
+        "Gi hver målte del minst ett mål over 0. Merknader og enheter kan ha opptil {length} tegn, og opptil {max} deler kan legges til.",
       rightsStatementInvalid: "Velg en rettighetserklæring fra listen.",
       textTooLong: "{field} er for lang. Forkort teksten og prøv igjen.",
     },
@@ -11129,7 +11130,7 @@ export default {
         "Hvor mange ting denne posten beskriver, for eksempel 2 for et par eller 12 for et teservise.",
       subjects: "Emne",
       subjectsHint:
-        "Hva objektet viser eller handler om, adskilt fra stikkord. Trykk Enter eller Tab etter hver term.",
+        "Hva objektet viser eller handler om, adskilt fra stikkord. Trykk Enter eller Tab etter hver term, eller skill termene med semikolon (;).",
       measuredPart: "Målt del",
       choosePart: "Velg en del",
       notStated: "Ikke oppgitt",

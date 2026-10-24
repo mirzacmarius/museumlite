@@ -149,8 +149,6 @@ test.each([
   ["Målt del", "dimensionMeasuredPart", "overall"],
   ["Andre målte deler", "measurementSets", '[{"part":"base","height":5}]'],
   ["Rettighetserklæring", "rightsStatement", "InC"],
-  ["Rettigheter", "rightsStatement", "InC"],
-  ["Lisens", "rightsStatement", "CC BY 4.0"],
 ])("a Norwegian %s column imports as %s (MUS-865)", (column, field, value) => {
   expect(
     toTemplateRows(
@@ -163,7 +161,7 @@ test.each([
 test("the template's own column names win over the Norwegian ones for the new fields (MUS-865)", () => {
   expect(
     toTemplateRows(
-      "Rettigheter;rightsStatement;Antall;numberOfObjects;Tittel\nInC;CC0;3;1;Vase\n",
+      "Rettighetserklæring;rightsStatement;Antall;numberOfObjects;Tittel\nInC;CC0;3;1;Vase\n",
       DESCRIBED_OBJECTS,
     ),
   ).toEqual({
@@ -176,6 +174,15 @@ test("the template's own column names win over the Norwegian ones for the new fi
       },
     ],
   });
+});
+
+test("a free-text licence column is not read as the rights statement (MUS-865)", () => {
+  expect(
+    toTemplateRows(
+      "Tittel;Rettigheter;Lisens\nVase;Museet eier rettighetene;Fri bruk med kreditering\n",
+      DESCRIBED_OBJECTS,
+    ),
+  ).toEqual({ rows: [{ rowNumber: 2, title: "Vase" }] });
 });
 
 test("the downloaded template reads back cell for cell, commas and JSON included (MUS-865)", () => {

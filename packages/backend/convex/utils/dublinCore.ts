@@ -9,7 +9,7 @@
  */
 
 import type { Doc } from "../_generated/dataModel";
-import { distinctSubjectTerms } from "./objectDescription";
+import { distinctSubjectTerms, subjectsThatFit } from "./objectDescription";
 import { formatEdtf, parseEdtf, readDateText } from "./productionDates";
 import {
   normalizeRightsStatement,
@@ -52,6 +52,10 @@ export interface DublinCoreMetadata {
   /** Information about rights held in and over the resource (dc:rights) */
   rights?: string | string[];
 }
+
+/** dc:rights text for an Object's legal restrictions, after its credit line. */
+const LEGAL_RESTRICTIONS = "Legal restrictions apply";
+const LEGAL_RESTRICTIONS_SUFFIX = `; ${LEGAL_RESTRICTIONS}`;
 
 /** One value as itself, several as a list, none as undefined. */
 function oneOrMany(values: string[]): string | string[] | undefined {
@@ -177,8 +181,8 @@ export function toDublinCore(
   let creditText = collection.creditLine;
   if (collection.legalRestrictions) {
     creditText = creditText
-      ? `${creditText}; Legal restrictions apply`
-      : "Legal restrictions apply";
+      ? `${creditText}${LEGAL_RESTRICTIONS_SUFFIX}`
+      : LEGAL_RESTRICTIONS;
   }
   const statement = rightsStatementInEffect(
     collection.rightsStatement,
@@ -215,16 +219,30 @@ export function toDublinCore(
 export function fromDublinCore(
   metadata: DublinCoreMetadata,
 ): Partial<Doc<"collections">> {
-  // dc:subject holds subject terms; an export writes tags there too
-  const subjects = distinctSubjectTerms(valuesOf(metadata.subject));
+  // dc:subject holds subject terms, and an export writes tags after them:
+  // the terms an Object can keep as subjects are its subjects, the rest tags
+  const { subjects, rest: tags } = subjectsThatFit(valuesOf(metadata.subject));
 
   // A dc:rights value naming a rights statement is kept as one, as entered;
-  // the rest is the credit line
+  // the rest is the credit line, less the marker an export adds for legal
+  // restrictions
   const rightsValues = valuesOf(metadata.rights);
   const statementValue = rightsValues.find(
     (value) => normalizeRightsStatement(value) !== undefined,
   );
-  const creditValues = rightsValues.filter((value) => value !== statementValue);
+  let legalRestrictions = false;
+  const creditValues: string[] = [];
+  for (const value of rightsValues) {
+    if (value === statementValue) continue;
+    if (value === LEGAL_RESTRICTIONS) {
+      legalRestrictions = true;
+    } else if (value.endsWith(LEGAL_RESTRICTIONS_SUFFIX)) {
+      legalRestrictions = true;
+      creditValues.push(value.slice(0, -LEGAL_RESTRICTIONS_SUFFIX.length));
+    } else {
+      creditValues.push(value);
+    }
+  }
 
   // Parse contributor back to donated_by
   const donated_by = metadata.contributor
@@ -273,6 +291,7 @@ export function fromDublinCore(
     title: metadata.title,
     creator: metadata.creator,
     subjects: subjects.length > 0 ? subjects : undefined,
+    tags: tags.length > 0 ? tags : undefined,
     description: metadata.description,
     donated_by,
     ...datesFromDublinCore(metadata.date),
@@ -287,6 +306,7 @@ export function fromDublinCore(
     period,
     links,
     creditLine: creditValues.length > 0 ? creditValues.join("; ") : undefined,
+    legalRestrictions: legalRestrictions || undefined,
     rightsStatement: normalizeRightsStatement(statementValue),
   };
 }

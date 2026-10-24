@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  COMPLETENESS_LABELS,
+  completenessFromText,
   distinctSubjectTerms,
   isNumberOfObjects,
+  MEASURED_PART_LABELS,
+  measuredPartFromText,
   measurementSetsFromJson,
   normalizeMeasurementSet,
   normalizeMeasurementSets,
   normalizeSubjects,
+  subjectsThatFit,
 } from "./objectDescription";
 
 describe("object description values", () => {
@@ -28,6 +33,48 @@ describe("object description values", () => {
     expect(normalizeSubjects([...terms.slice(0, 50), "term 0"])).toHaveLength(
       50,
     );
+  });
+
+  it("keeps the first subject terms that fit and returns the rest whole", () => {
+    const long = "a".repeat(201);
+    const terms = Array.from({ length: 52 }, (_, index) => `Term ${index}`);
+    const { subjects, rest } = subjectsThatFit([
+      long,
+      ...terms.slice(0, 2),
+      "term 0",
+      ...terms.slice(2),
+    ]);
+
+    expect(subjects).toEqual(terms.slice(0, 50));
+    expect(rest).toEqual([long, "Term 50", "Term 51"]);
+    expect(subjectsThatFit([" Harbour ", "harbour"])).toEqual({
+      subjects: ["Harbour"],
+      rest: [],
+    });
+  });
+
+  it("reads completeness and measured parts as codes or as the labels the app shows, in any letter case", () => {
+    for (const [code, labels] of Object.entries(COMPLETENESS_LABELS)) {
+      expect(completenessFromText(code.toUpperCase())).toBe(code);
+      for (const label of labels) {
+        expect(completenessFromText(label)).toBe(code);
+        expect(completenessFromText(` ${label.toUpperCase()} `)).toBe(code);
+      }
+    }
+    for (const [code, labels] of Object.entries(MEASURED_PART_LABELS)) {
+      expect(measuredPartFromText(code)).toBe(code);
+      for (const label of labels) {
+        expect(measuredPartFromText(label)).toBe(code);
+        expect(measuredPartFromText(label.toLowerCase())).toBe(code);
+      }
+    }
+    expect(completenessFromText("Ufullstendig")).toBe("incomplete");
+    expect(measuredPartFromText("med ramme")).toBe("framed");
+    // A decomposed accent, as some spreadsheets write it.
+    expect(measuredPartFromText("A\u0300 vue")).toBe("sight");
+    expect(measuredPartFromText("lid")).toBeUndefined();
+    expect(completenessFromText("broken")).toBeUndefined();
+    expect(completenessFromText(undefined)).toBeUndefined();
   });
 
   it("stores a set of measurements with at least one value above 0", () => {
@@ -67,6 +114,9 @@ describe("object description values", () => {
         '[{"part":"Unframed","height":20,"width":32,"unit":"in"}]',
       ),
     ).toEqual([{ part: "unframed", height: 20, width: 32, unit: "in" }]);
+    expect(
+      measurementSetsFromJson('[{"part":"Sokkel","diameter":12}]'),
+    ).toEqual([{ part: "base", diameter: 12 }]);
     expect(measurementSetsFromJson("[]")).toEqual([]);
     for (const text of [
       "not json",

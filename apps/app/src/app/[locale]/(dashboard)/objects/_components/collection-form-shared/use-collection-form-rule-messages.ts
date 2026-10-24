@@ -26,8 +26,9 @@ export function useCollectionFormRuleMessages(): CollectionFormRuleMessages {
       measurementInvalid: tErrors("measurementInvalid"),
       productionDateInvalid: t("form.productionDate.invalid"),
       productionDateOpenInRange: t("form.productionDate.openInRange"),
+      // Digits only: the field refuses the grouping a formatted number has.
       numberOfObjectsInvalid: tErrors("objectCountInvalid", {
-        max: number(NUMBER_OF_OBJECTS_MAX),
+        max: String(NUMBER_OF_OBJECTS_MAX),
       }),
       subjectsInvalid: tErrors("subjectsInvalid", {
         max: number(SUBJECTS_MAX),

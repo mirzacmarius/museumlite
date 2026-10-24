@@ -100,6 +100,22 @@ export function distinctSubjectTerms(terms: readonly string[]) {
 }
 
 /**
+ * Subject terms from a source that may hold more, or longer, terms than an
+ * Object keeps: the first distinct terms that fit become `subjects`, and
+ * the rest are returned whole in `rest`.
+ */
+export function subjectsThatFit(terms: readonly string[]) {
+  const subjects: string[] = [];
+  const rest: string[] = [];
+  for (const term of distinctSubjectTerms(terms)) {
+    const fits =
+      subjects.length < SUBJECTS_MAX && term.length <= SUBJECT_TERM_MAX_LENGTH;
+    (fits ? subjects : rest).push(term);
+  }
+  return { subjects, rest };
+}
+
+/**
  * Subject terms as stored (see `distinctSubjectTerms`). Null when a term is
  * too long or too many remain.
  */
@@ -157,15 +173,73 @@ export function normalizeMeasurementSets(
   return normalized;
 }
 
-/** A completeness or measured part from its code, in any letter case. */
+/**
+ * The labels the app shows for each code (`objectDescription.completeness`
+ * and `objectDescription.parts` in apps/app/src/locales), in the order en,
+ * es, fr, no, ro, so an import can read a file written in any of them.
+ * Keep them in step with the locales; no label may name another code.
+ */
+export const COMPLETENESS_LABELS: Record<Completeness, readonly string[]> = {
+  complete: ["Complete", "Completo", "Complet", "Komplett", "Complet"],
+  incomplete: [
+    "Incomplete",
+    "Incompleto",
+    "Incomplet",
+    "Ufullstendig",
+    "Incomplet",
+  ],
+  fragment: ["Fragment", "Fragmento", "Fragment", "Fragment", "Fragment"],
+};
+
+export const MEASURED_PART_LABELS: Record<MeasuredPart, readonly string[]> = {
+  overall: ["Overall", "Total", "Hors tout", "Totalt", "Total"],
+  framed: ["Framed", "Con marco", "Encadré", "Med ramme", "Cu ramă"],
+  unframed: ["Unframed", "Sin marco", "Sans cadre", "Uten ramme", "Fără ramă"],
+  image: ["Image", "Imagen", "Image", "Bilde", "Imagine"],
+  sight: ["Sight", "A la vista", "À vue", "Lysmål", "Dimensiune vizibilă"],
+  sheet: ["Sheet", "Hoja", "Feuille", "Ark", "Foaie"],
+  plate: ["Plate", "Plancha", "Cuvette", "Plate", "Placă"],
+  mount: ["Mount", "Montaje", "Montage", "Montering", "Montaj"],
+  base: ["Base", "Base", "Socle", "Sokkel", "Soclu"],
+  other: ["Other", "Otra", "Autre", "Annet", "Altă parte"],
+};
+
+function lookupKey(text: string) {
+  return text.trim().normalize("NFC").toLowerCase();
+}
+
+function codesByText<Code extends string>(
+  codes: readonly Code[],
+  labels: Record<Code, readonly string[]>,
+) {
+  const byText = new Map<string, Code>();
+  for (const code of codes) {
+    byText.set(code, code);
+    for (const label of labels[code]) byText.set(lookupKey(label), code);
+  }
+  return byText;
+}
+
+const COMPLETENESS_BY_TEXT = codesByText(
+  COMPLETENESS_VALUES,
+  COMPLETENESS_LABELS,
+);
+const MEASURED_PART_BY_TEXT = codesByText(MEASURED_PARTS, MEASURED_PART_LABELS);
+
+/**
+ * A completeness or measured part from its code or its label in any of the
+ * app's languages, in any letter case.
+ */
 export function completenessFromText(text: string | undefined) {
-  const code = text?.trim().toLowerCase();
-  return COMPLETENESS_VALUES.find((value) => value === code);
+  return text === undefined
+    ? undefined
+    : COMPLETENESS_BY_TEXT.get(lookupKey(text));
 }
 
 export function measuredPartFromText(text: string | undefined) {
-  const code = text?.trim().toLowerCase();
-  return MEASURED_PARTS.find((part) => part === code);
+  return text === undefined
+    ? undefined
+    : MEASURED_PART_BY_TEXT.get(lookupKey(text));
 }
 
 function measurementSetFromJson(item: unknown): MeasurementSet | null {

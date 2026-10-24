@@ -33,9 +33,9 @@ test("columns named like the app's Norwegian fields map to number of objects, su
   );
 
   for (const description of [
-    "Én av complete, incomplete eller fragment",
+    "Én av complete, incomplete eller fragment, eller navnet slik det vises i appen",
     "Hva objektet viser eller handler om; skill termene med semikolon",
-    "Delen målene er tatt av: overall, framed, unframed, image, sight, sheet, plate, mount, base eller other",
+    "Delen målene er tatt av: overall, framed, unframed, image, sight, sheet, plate, mount, base eller other, eller navnet slik det vises i appen",
   ]) {
     expect(screen.getByText(description)).toBeTruthy();
   }

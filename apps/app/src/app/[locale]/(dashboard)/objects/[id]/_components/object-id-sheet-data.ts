@@ -95,7 +95,9 @@ function clipText(text: string, limit: number) {
 
 /**
  * The main measurements, the first line naming the part they were taken
- * from when stated, then one line for each further part.
+ * from when stated, then one line for each further part. Free-text
+ * dimensions, from imports and older records, stand in for unmeasured
+ * height, width and depth, as on the Physical tab.
  */
 function measurementLines(
   collection: ObjectIdSheetCollection,
@@ -113,7 +115,7 @@ function measurementLines(
     format,
   );
   const [first, ...rest] = present([
-    measured,
+    measured ?? collection.dimensions,
     collection.dimensionDiameter
       ? `Ø ${collection.dimensionDiameter}`
       : undefined,
@@ -127,8 +129,6 @@ function measurementLines(
     : [];
   return [
     ...main,
-    // Free-text dimensions come from imports and older records.
-    ...present([measured ? undefined : collection.dimensions]),
     ...(collection.measurementSets ?? []).map((set) =>
       formatMeasurementSet(set, format),
     ),
@@ -166,7 +166,7 @@ function categoryLines(
     case "subject":
       return present([
         collection.subjects?.length
-          ? collection.subjects.join(", ")
+          ? collection.subjects.join("; ")
           : undefined,
       ]);
     case "date_or_period":

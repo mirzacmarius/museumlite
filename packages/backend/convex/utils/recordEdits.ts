@@ -4,7 +4,6 @@ import type { QueryCtx } from "../_generated/server";
 import { convexErrorData } from "./convexErrorData";
 import {
   COMPLETENESS_NOTE_MAX_LENGTH,
-  distinctSubjectTerms,
   isNumberOfObjects,
   MEASUREMENT_SETS_MAX,
   type MeasurementSet,
@@ -14,6 +13,7 @@ import {
   normalizeSubjects,
   SUBJECT_TERM_MAX_LENGTH,
   SUBJECTS_MAX,
+  subjectsThatFit,
 } from "./objectDescription";
 import { formatEdtf, parseEdtf } from "./productionDates";
 import { isRightsStatementUri } from "./rightsStatements";
@@ -260,9 +260,7 @@ export function publishedObjectDescription(draft: {
   measurementSets?: MeasurementSet[];
   rightsStatement?: string;
 }) {
-  const subjects = distinctSubjectTerms(draft.subjects ?? [])
-    .filter((term) => term.length <= SUBJECT_TERM_MAX_LENGTH)
-    .slice(0, SUBJECTS_MAX);
+  const { subjects } = subjectsThatFit(draft.subjects ?? []);
   const measurementSets = (draft.measurementSets ?? [])
     .flatMap((set) => normalizeMeasurementSet(set) ?? [])
     .slice(0, MEASUREMENT_SETS_MAX);

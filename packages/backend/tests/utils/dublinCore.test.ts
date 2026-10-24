@@ -338,6 +338,20 @@ describe("fromDublinCore", () => {
     expect(collection.tags).toBeUndefined();
   });
 
+  test("should keep the first subject terms that fit and the rest as tags", () => {
+    const terms = Array.from({ length: 52 }, (_, index) => `Term ${index}`);
+    const long = "a".repeat(201);
+
+    const collection = fromDublinCore({
+      title: "Test",
+      identifier: "2024.1.1",
+      subject: [...terms.slice(0, 10), long, ...terms.slice(10)],
+    });
+
+    expect(collection.subjects).toEqual(terms.slice(0, 50));
+    expect(collection.tags).toEqual([long, "Term 50", "Term 51"]);
+  });
+
   test("should convert subject string to subject terms", () => {
     const metadata: DublinCoreMetadata = {
       title: "Test",
@@ -772,6 +786,53 @@ describe("round-trip conversions", () => {
     expect(converted.subjects).toEqual(original.subjects);
     expect(converted.donated_by).toEqual(original.donated_by);
     expect(converted.links).toEqual(original.links);
+  });
+});
+
+describe("legal restrictions in dc:rights", () => {
+  function roundTrip(original: Partial<Doc<"collections">>) {
+    const [metadata] = fromDublinCoreXML(
+      toDublinCoreXML(toDublinCore(original)),
+    );
+    if (!metadata) throw new Error("Expected a record");
+    return fromDublinCore(metadata);
+  }
+
+  test("come back as legal restrictions, not as credit line text", () => {
+    const withCredit = roundTrip({
+      title: "Test",
+      accessionNumber: "2024.1.1",
+      creditLine: "Gift of X",
+      legalRestrictions: true,
+    });
+    expect(withCredit.creditLine).toBe("Gift of X");
+    expect(withCredit.legalRestrictions).toBe(true);
+
+    const alone = roundTrip({
+      title: "Test",
+      accessionNumber: "2024.1.1",
+      legalRestrictions: true,
+    });
+    expect(alone.creditLine).toBeUndefined();
+    expect(alone.legalRestrictions).toBe(true);
+
+    expect(
+      roundTrip({ title: "Test", accessionNumber: "2024.1.1" })
+        .legalRestrictions,
+    ).toBeUndefined();
+  });
+
+  test("are not read into a credit line that only mentions them", () => {
+    const collection = fromDublinCore({
+      title: "Test",
+      identifier: "2024.1.1",
+      rights: "Legal restrictions apply to reproductions",
+    });
+
+    expect(collection.creditLine).toBe(
+      "Legal restrictions apply to reproductions",
+    );
+    expect(collection.legalRestrictions).toBeUndefined();
   });
 });
 

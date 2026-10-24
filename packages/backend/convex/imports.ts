@@ -203,7 +203,10 @@ function importedSubjects(value: string | undefined) {
   return value?.trim() ? checkedSubjects(value.split(";")) : undefined;
 }
 
-/** A completeness or measured part by its code (its English name), any case. */
+/**
+ * A completeness or measured part by its code or the label the app shows in
+ * any of its languages, in any letter case.
+ */
 function importedCompleteness(value: string | undefined) {
   if (!value?.trim()) return undefined;
   const completeness = completenessFromText(value);
@@ -1588,7 +1591,9 @@ export const importObjectsDublinCore = mutation({
           description: collection.description,
           provenance: collection.provenance,
           subjects: collection.subjects,
+          tags: collection.tags,
           creditLine: collection.creditLine,
+          legalRestrictions: collection.legalRestrictions,
           rightsStatement: collection.rightsStatement,
         },
       };
@@ -1605,10 +1610,7 @@ export const importObjectsDublinCore = mutation({
           organizationId: args.organizationId,
           userId,
           accessionNumber: row.accessionNumber,
-          fields: {
-            ...row.fields,
-            subjects: checkedSubjects(row.fields.subjects),
-          },
+          fields: row.fields,
           sourceLabel: `Dublin Core import (job ${job._id}, record ${rowNumber})`,
         });
         return {

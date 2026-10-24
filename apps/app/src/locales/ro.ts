@@ -8313,14 +8313,15 @@ export default {
           technique: "Tehnică de producție",
           dimensions: "Dimensiuni fizice",
           dimensionMeasuredPart:
-            "Partea de pe care s-au luat dimensiunile: overall, framed, unframed, image, sight, sheet, plate, mount, base sau other",
+            "Partea de pe care s-au luat dimensiunile: overall, framed, unframed, image, sight, sheet, plate, mount, base sau other, ori denumirea afișată în aplicație",
           measurementSets:
             "Listă JSON cu alte părți măsurate, așa cum o scrie exportul de date. Fiecare are un cod de parte și cel puțin una dintre height, width, depth, diameter sau weight",
           description: "Descriere detaliată",
           subjects:
             "Ce reprezintă obiectul sau despre ce este; separați termenii cu punct și virgulă",
           condition: "Starea actuală",
-          completeness: "Una dintre complete, incomplete sau fragment",
+          completeness:
+            "Una dintre complete, incomplete sau fragment, ori denumirea afișată în aplicație",
           completenessNote: "Ce lipsește sau ce include",
           provenance: "Istoric de proprietate",
           rightsStatement:
@@ -11169,14 +11170,15 @@ export default {
       objectCountInvalid:
         "Introduceți numărul de obiecte ca număr întreg de la 1 la {max}.",
       subjectsInvalid:
-        "Introduceți cel mult {max} termeni de subiect, fiecare de cel mult {length} caractere.",
+        "Introduceți cel mult {max} de termeni de subiect, fiecare de cel mult {length} de caractere.",
       measurementSetPartRequired:
         "Alegeți partea de pe care a fost luat fiecare rând de măsurători.",
       measurementSetsInvalid:
-        "Dați fiecărei părți măsurate cel puțin o măsurătoare mai mare de 0. Notele și unitățile au cel mult {length} caractere și se pot adăuga cel mult {max} părți.",
+        "Dați fiecărei părți măsurate cel puțin o măsurătoare mai mare de 0. Notele și unitățile au cel mult {length} de caractere și se pot adăuga cel mult {max} de părți.",
       rightsStatementInvalid:
         "Alegeți o declarație privind drepturile din listă.",
-      textTooLong: "{field} este prea lung. Scurtați-l și încercați din nou.",
+      textTooLong:
+        "Câmpul „{field}” este prea lung. Scurtați-l și încercați din nou.",
     },
     notices: {
       recoveredTitle: "Au fost găsite modificări nesalvate",
@@ -11248,7 +11250,7 @@ export default {
         "Câte lucruri descrie această înregistrare, de exemplu 2 pentru o pereche sau 12 pentru un serviciu de ceai.",
       subjects: "Subiect",
       subjectsHint:
-        "Ce reprezintă obiectul sau despre ce este, separat de etichete. Apăsați Enter sau Tab după fiecare termen.",
+        "Ce reprezintă obiectul sau despre ce este, separat de etichete. Apăsați Enter sau Tab după fiecare termen sau separați termenii cu punct și virgulă (;).",
       measuredPart: "Parte măsurată",
       choosePart: "Alegeți o parte",
       notStated: "Nespecificat",
@@ -11713,7 +11715,7 @@ export default {
       framed: "Cu ramă",
       unframed: "Fără ramă",
       image: "Imagine",
-      sight: "Vizibil în paspartu",
+      sight: "Dimensiune vizibilă",
       sheet: "Foaie",
       plate: "Placă",
       mount: "Montaj",

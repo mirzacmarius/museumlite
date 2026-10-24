@@ -178,6 +178,8 @@ export interface ImportedObjectFields {
   condition?: string;
   provenance?: string;
   creditLine?: string;
+  legalRestrictions?: boolean;
+  tags?: string[];
   /**
    * Checked and stored canonical by the importer first, so a bad value fails
    * one row: see `imports.ts` and `utils/objectDescription.ts`.
@@ -262,6 +264,8 @@ export async function createImportedCatalogObject(
       : undefined,
     provenance: trimmed(args.fields.provenance),
     creditLine: trimmed(args.fields.creditLine),
+    legalRestrictions: args.fields.legalRestrictions || undefined,
+    tags: args.fields.tags?.length ? args.fields.tags : undefined,
     numberOfObjects: args.fields.numberOfObjects,
     subjects: args.fields.subjects?.length ? args.fields.subjects : undefined,
     completeness: args.fields.completeness,

@@ -144,7 +144,7 @@ export function PrintPreviewCoreSections({
           )}
           {collection.subjects && collection.subjects.length > 0 && (
             <PrintField label={tRoot("recordForm.objectFields.subjects")} wide>
-              {collection.subjects.join(", ")}
+              {collection.subjects.join("; ")}
             </PrintField>
           )}
         </div>

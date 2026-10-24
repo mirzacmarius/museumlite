@@ -107,8 +107,9 @@ export function useRecordSaveFailure({
             return {
               kind: "field",
               field,
+              // Digits only, as the field takes it.
               message: t("objectCountInvalid", {
-                max: formatNumber(NUMBER_OF_OBJECTS_MAX, locale),
+                max: String(NUMBER_OF_OBJECTS_MAX),
               }),
             };
           case "SUBJECTS_INVALID":

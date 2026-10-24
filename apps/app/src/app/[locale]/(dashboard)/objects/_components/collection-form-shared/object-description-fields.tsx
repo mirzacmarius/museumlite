@@ -89,6 +89,9 @@ export function SubjectsField({
             ),
           )
         }
+        // Headings such as "Portraits, Group" keep their comma; terms are
+        // separated by ";" as in the import and the exports.
+        delimiter=";"
         addOnPaste
         addOnTab
         blurBehavior="add"

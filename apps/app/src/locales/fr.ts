@@ -8351,14 +8351,15 @@ export default {
           technique: "Technique de fabrication",
           dimensions: "Dimensions physiques",
           dimensionMeasuredPart:
-            "Partie sur laquelle les dimensions ont été prises : overall, framed, unframed, image, sight, sheet, plate, mount, base ou other",
+            "Partie sur laquelle les dimensions ont été prises : overall, framed, unframed, image, sight, sheet, plate, mount, base ou other, ou son nom tel qu’il apparaît dans l’application",
           measurementSets:
             "Liste JSON d’autres parties mesurées, telle que l’export des données l’écrit. Chacune a un code de partie et au moins une valeur parmi height, width, depth, diameter ou weight",
           description: "Description détaillée",
           subjects:
             "Ce que l’objet représente ou ce dont il traite ; séparez les termes par des points-virgules",
           condition: "État actuel",
-          completeness: "Une valeur parmi complete, incomplete ou fragment",
+          completeness:
+            "Une valeur parmi complete, incomplete ou fragment, ou son nom tel qu’il apparaît dans l’application",
           completenessNote: "Ce qui manque ou ce qui est inclus",
           provenance: "Historique de propriété",
           rightsStatement:
@@ -11241,7 +11242,8 @@ export default {
         "Donnez à chaque partie mesurée au moins une mesure supérieure à 0. Les notes et unités comptent au plus {length} caractères, et vous pouvez ajouter jusqu’à {max} parties.",
       rightsStatementInvalid:
         "Choisissez une déclaration des droits dans la liste.",
-      textTooLong: "{field} est trop long. Raccourcissez-le et réessayez.",
+      textTooLong:
+        "Le champ « {field} » est trop long. Raccourcissez-le et réessayez.",
     },
     notices: {
       recoveredTitle: "Modifications non enregistrées trouvées",
@@ -11315,7 +11317,7 @@ export default {
         "Combien de choses cette fiche décrit, par exemple 2 pour une paire ou 12 pour un service à thé.",
       subjects: "Sujet",
       subjectsHint:
-        "Ce que l’objet représente ou ce dont il traite, distinct des mots-clés. Appuyez sur Entrée ou Tab après chaque terme.",
+        "Ce que l’objet représente ou ce dont il traite, distinct des mots-clés. Appuyez sur Entrée ou Tab après chaque terme, ou séparez les termes par un point-virgule (;).",
       measuredPart: "Partie mesurée",
       choosePart: "Choisissez une partie",
       notStated: "Non précisé",
