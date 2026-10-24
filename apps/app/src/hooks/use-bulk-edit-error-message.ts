@@ -2,22 +2,26 @@ import {
   type BulkEditErrorCode,
   bulkEditErrorFromError,
 } from "@v1/backend/convex/utils/bulkFieldEditErrors";
-import { useScopedI18n } from "@/locales/client";
+import {
+  BULK_EDIT_MAX_SELECTION,
+  BULK_EDIT_VALUE_LIMIT,
+} from "@v1/backend/convex/utils/bulkFieldEdits";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { useCapabilityErrorMessage } from "./use-capability-error-message";
 
-/**
- * Translates refused bulk field edits and capability refusals. Any other
- * failure gets the translated fallback; server text is never shown.
- */
-export function useBulkEditErrorMessage() {
+/** The translated copy for a refused bulk field edit's code. */
+export function useBulkEditCodeMessage() {
   const t = useScopedI18n("objects.bulkEdit.errors");
-  const capabilityMessage = useCapabilityErrorMessage();
-  function codeMessage(code: BulkEditErrorCode) {
+  const locale = useCurrentLocale();
+  return (code: BulkEditErrorCode) => {
     switch (code) {
       case "VALUE_REQUIRED":
         return t("valueRequired");
       case "VALUE_TOO_LONG":
-        return t("valueTooLong");
+        return t("valueTooLong", {
+          limit: formatNumber(BULK_EDIT_VALUE_LIMIT, locale),
+        });
       case "FIND_REQUIRED":
         return t("findRequired");
       case "TITLE_REQUIRED":
@@ -25,7 +29,9 @@ export function useBulkEditErrorMessage() {
       case "SELECTION_EMPTY":
         return t("selectionEmpty");
       case "SELECTION_TOO_LARGE":
-        return t("selectionTooLarge");
+        return t("selectionTooLarge", {
+          limit: formatNumber(BULK_EDIT_MAX_SELECTION, locale),
+        });
       case "SELECTION_OUTSIDE_ORGANIZATION":
         return t("selectionOutsideOrganization");
       case "EDIT_RUNNING":
@@ -35,11 +41,23 @@ export function useBulkEditErrorMessage() {
       case "EDIT_NOT_RESUMABLE":
         return t("editNotResumable");
     }
-  }
+  };
+}
 
+/**
+ * Translates refused bulk field edits and capability refusals. Any other
+ * failure gets the given fallback; server text is never shown.
+ */
+export function useBulkEditErrorMessage(fallback: "start" | "action") {
+  const t = useScopedI18n("objects.bulkEdit.errors");
+  const codeMessage = useBulkEditCodeMessage();
+  const capabilityMessage = useCapabilityErrorMessage();
   return (error: unknown) => {
     const data = bulkEditErrorFromError(error);
     if (data) return codeMessage(data.code);
-    return capabilityMessage(error) ?? t("fallback");
+    return (
+      capabilityMessage(error) ??
+      (fallback === "start" ? t("fallback") : t("actionFailed"))
+    );
   };
 }

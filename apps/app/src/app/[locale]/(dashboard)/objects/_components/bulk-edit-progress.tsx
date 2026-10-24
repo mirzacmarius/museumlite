@@ -2,27 +2,54 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { BULK_EDIT_STALE_AFTER_MS } from "@v1/backend/convex/utils/bulkFieldEdits";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionRefusal, type Refusal } from "@/components/action-refusal";
 import { PermissionGate } from "@/components/permission-gate";
 import { useBulkEditErrorMessage } from "@/hooks/use-bulk-edit-error-message";
-import { useScopedI18n } from "@/locales/client";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type BulkEditView = NonNullable<
   FunctionReturnType<typeof api.bulkFieldEdits.get>
 >;
 
-/** What a bulk edit has done so far, with Stop while it runs and Resume after a failure. */
+const STALE_CHECK_INTERVAL_MS = 30 * 1000;
+
+/** Whether a running edit has stopped reporting long enough to be resumed. */
+function useStalled(job: BulkEditView) {
+  const [now, setNow] = useState(() => Date.now());
+  const running = job.status === "running";
+  useEffect(() => {
+    if (!running) return;
+    const timer = setInterval(
+      () => setNow(Date.now()),
+      STALE_CHECK_INTERVAL_MS,
+    );
+    return () => clearInterval(timer);
+  }, [running]);
+  return running && job.updatedAt < now - BULK_EDIT_STALE_AFTER_MS;
+}
+
+/**
+ * What a bulk edit has done so far, with Stop while it runs and Resume after
+ * a failure or once a running edit stops reporting.
+ */
 export function BulkEditStatus({ job }: { job: BulkEditView }) {
   const t = useScopedI18n("objects.bulkEdit");
-  const errorMessage = useBulkEditErrorMessage();
+  const errorMessage = useBulkEditErrorMessage("action");
+  const stalled = useStalled(job);
   const cancel = useMutation(api.bulkFieldEdits.cancel);
   const resume = useMutation(api.bulkFieldEdits.resume);
   const [refusal, setRefusal] = useState<Refusal | null>(null);
-  const counts = { checked: job.checked, changed: job.changed };
+  const locale = useCurrentLocale();
+  const counts = {
+    checked: formatNumber(job.checked, locale),
+    changed: formatNumber(job.changed, locale),
+  };
 
   const act = async (action: () => Promise<null>) => {
     setRefusal(null);
@@ -47,29 +74,35 @@ export function BulkEditStatus({ job }: { job: BulkEditView }) {
               ? t("progressFailed", counts)
               : t("progressCancelled", counts)}
       </p>
+      {stalled ? (
+        <p className="text-muted-foreground">{t("progressStalled")}</p>
+      ) : null}
       {job.skipped > 0 ? (
         <p className="text-muted-foreground">
-          {t("progressSkipped", { count: job.skipped })}
+          {t("progressSkipped", { count: formatNumber(job.skipped, locale) })}
         </p>
       ) : null}
       <PermissionGate permission="collections.update">
-        {job.status === "running" ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => act(() => cancel({ jobId: job._id }))}
-          >
-            {t("stop")}
-          </Button>
-        ) : job.status === "failed" ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => act(() => resume({ jobId: job._id }))}
-          >
-            {t("resume")}
-          </Button>
-        ) : null}
+        <div className="flex gap-2">
+          {job.status === "running" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => act(() => cancel({ jobId: job._id }))}
+            >
+              {t("stop")}
+            </Button>
+          ) : null}
+          {job.status === "failed" || stalled ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => act(() => resume({ jobId: job._id }))}
+            >
+              {t("resume")}
+            </Button>
+          ) : null}
+        </div>
       </PermissionGate>
       <ActionRefusal refusal={refusal} />
     </div>

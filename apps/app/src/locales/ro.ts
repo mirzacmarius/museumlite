@@ -1261,6 +1261,7 @@ export default {
         alternativeTitle: "Titlu alternativ",
         creator: "Autor",
         objectName: "Denumirea obiectului",
+        objectType: "Tipul obiectului",
         description: "Descriere",
         tags: "Etichete de subiect",
         inscriptions: "Inscripții",
@@ -1268,6 +1269,7 @@ export default {
         technique: "Tehnică",
         culture: "Cultură",
         period: "Perioadă",
+        provenance: "Proveniență",
         customFields: "Câmpuri personalizate",
       },
     },
@@ -1318,23 +1320,27 @@ export default {
       preview:
         "Obiecte potrivite: {matching}. Obiecte care se modifică: {changing}.",
       previewCapped:
-        "Numărat pe primele {matching} obiecte potrivite. Modificarea se aplică tuturor potrivirilor.",
+        "Obiecte potrivite numărate până acum: {matching}. Obiecte dintre ele care se modifică: {changing}. Editarea verifică fiecare obiect potrivit, deci se pot modifica mai multe.",
       nothingChanges: "Niciun obiect nu s-ar modifica.",
       overwriteWarning:
         "Obiecte la care o valoare înregistrată este înlocuită: {count}",
+      overwriteWarningCapped:
+        "Obiecte numărate până acum la care o valoare înregistrată este înlocuită: {count}",
       start: "Aplicați modificarea",
       starting: "Se pornește…",
       progressRunning:
-        "Se editează {field}: {checked} verificate, {changed} modificate",
+        "Se editează {field}. Obiecte verificate: {checked}. Obiecte modificate: {changed}",
       progressCompleted:
-        "Modificare încheiată: {checked} verificate, {changed} modificate",
+        "Modificare încheiată. Obiecte verificate: {checked}. Obiecte modificate: {changed}",
       progressFailed:
-        "Modificare oprită de o eroare: {checked} verificate, {changed} modificate",
+        "Modificare oprită de o eroare. Obiecte verificate: {checked}. Obiecte modificate: {changed}",
       progressCancelled:
-        "Modificare oprită: {checked} verificate, {changed} modificate",
+        "Modificare oprită. Obiecte verificate: {checked}. Obiecte modificate: {changed}",
       progressSkipped: "Nemodificate deoarece titlul ar rămâne gol: {count}",
       stop: "Opriți",
       resume: "Reluați",
+      progressStalled:
+        "Această editare nu mai raportează progresul. Reluați-o pentru a continua de unde s-a oprit.",
       fields: {
         title: "Titlu",
         alternativeTitle: "Titlu alternativ",
@@ -1355,13 +1361,13 @@ export default {
       },
       errors: {
         valueRequired: "Introduceți valoarea nouă.",
-        valueTooLong: "Valorile pot avea cel mult 4.000 de caractere.",
+        valueTooLong: "Valorile pot avea cel mult {limit} de caractere.",
         findRequired: "Introduceți textul de căutat.",
         titleRequired:
           "Fiecare obiect are nevoie de un titlu, deci titlurile nu pot fi golite.",
         selectionEmpty: "Selectați cel puțin un obiect.",
         selectionTooLarge:
-          "Selectați cel mult 500 de obiecte sau editați toate obiectele care corespund căutării și filtrelor.",
+          "Selectați cel mult {limit} de obiecte sau editați toate obiectele care corespund căutării și filtrelor.",
         selectionOutsideOrganization:
           "Unele obiecte selectate aparțin altei organizații. Reîncărcați pagina și selectați-le din nou.",
         editRunning:
@@ -1369,6 +1375,7 @@ export default {
         editNotFound: "Această editare nu mai există.",
         editNotResumable: "Această editare nu poate fi reluată.",
         fallback: "Editarea nu a putut porni. Încercați din nou.",
+        actionFailed: "Acțiunea nu a putut fi finalizată. Încercați din nou.",
       },
     },
     emptyState: {
@@ -9859,7 +9866,6 @@ export default {
       buildComplexFilterCombinationsToSearchYourCollectionAddMultipleFilterGroupsAndCombineThemWithANDORLogic:
         "Construiește combinații complexe de filtre pentru a căuta în colecție. Adaugă mai multe grupuri de filtre și combină-le cu logica ȘI/SAU.",
       addFilterGroup: "Adaugă un grup de filtre",
-      defined: "definit",
       clearAll: "Șterge tot",
       applyFilters: "Aplică filtrele",
       organizations: "Organizații",
@@ -10201,8 +10207,6 @@ export default {
       noObjectsFound: "Nu s-au găsit obiecte",
       selectOrAddTypes: "Selectează sau adaugă tipuri",
       qrCodeForAccession: "Cod QR pentru accesiunea {accession}",
-      filter: "Filtrează",
-      filters: "Filtre",
       uploading: "Se încarcă",
       dropFilesHereOrClickToUpload:
         "Lasă fișierele aici sau apasă pentru a le încărca",

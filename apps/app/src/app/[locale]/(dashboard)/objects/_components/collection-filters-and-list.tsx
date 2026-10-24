@@ -60,7 +60,12 @@ export function CollectionFiltersAndList({
                 variant="outline"
                 size="sm"
                 className="self-start"
-                onClick={() => catalog.setBulkEditScope("filters")}
+                onClick={() =>
+                  catalog.setBulkEditScope({
+                    kind: "filters",
+                    filters: catalog.exportFilters,
+                  })
+                }
               >
                 <PenLine className="mr-2 size-4" aria-hidden="true" />
                 {tBulkEdit("editAllMatching")}
@@ -97,7 +102,12 @@ export function CollectionFiltersAndList({
         onMoveLocation={() => catalog.setShowMoveLocationDialog(true)}
         onPrintLabels={() => catalog.setShowBulkPrintLabelsDialog(true)}
         onDeaccession={() => catalog.setShowBulkDeaccessionDialog(true)}
-        onEditField={() => catalog.setBulkEditScope("selection")}
+        onEditField={() =>
+          catalog.setBulkEditScope({
+            kind: "selection",
+            collectionIds: selectedIds,
+          })
+        }
         returnFocusRef={listRef}
       />
 
@@ -108,13 +118,9 @@ export function CollectionFiltersAndList({
             if (!open) catalog.setBulkEditScope(null);
           }}
           organizationId={organizationId}
-          scope={
-            catalog.bulkEditScope === "selection"
-              ? { kind: "selection", collectionIds: selectedIds }
-              : { kind: "filters", filters: catalog.exportFilters }
-          }
+          scope={catalog.bulkEditScope}
           onStarted={
-            catalog.bulkEditScope === "selection"
+            catalog.bulkEditScope.kind === "selection"
               ? catalog.handleBulkSuccess
               : undefined
           }

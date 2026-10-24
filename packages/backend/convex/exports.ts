@@ -10,7 +10,7 @@ import {
 } from "./_generated/server";
 import { AUDIT_READ_PERMISSION } from "./auditLog";
 import schema from "./schema";
-import { filterCollectionListPage } from "./utils/collectionListHelpers";
+import { filterCatalogRows } from "./utils/catalogListing";
 import { requireExportAccess } from "./utils/exportAccess";
 import {
   exportFormat,
@@ -25,7 +25,6 @@ import {
   hasFeatureAccess,
   recordExportUsage,
 } from "./utils/featureGates";
-import { getPageInventoryEvidence } from "./utils/indexedCounts";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
 import { readRegisterPage } from "./utils/registerPages";
@@ -577,19 +576,16 @@ export const sourcePage = internalQuery({
         q.eq("organizationId", job.organizationId),
       )
       .paginate(opts);
-    const inventoryEvidence = job.source.filters.inventoryMetricScope
-      ? await getPageInventoryEvidence(ctx, job.organizationId, page.page)
-      : {};
-    const filtered = await filterCollectionListPage(
+    // The same filters and search rule as the catalog list it exports.
+    const filtered = await filterCatalogRows(
       ctx,
+      { organizationId: job.organizationId, ...job.source.filters },
       page.page.filter((row) => row._creationTime <= job.asOf),
-      {
-        organizationId: job.organizationId,
-        ...job.source.filters,
-        ...inventoryEvidence,
-      },
     );
-    const rows = filtered.map((row) => ({ ...row, capturedAt }));
+    const rows = filtered.map(({ matchedField: _matchedField, ...row }) => ({
+      ...row,
+      capturedAt,
+    }));
     return {
       rows,
       cursor: page.continueCursor,

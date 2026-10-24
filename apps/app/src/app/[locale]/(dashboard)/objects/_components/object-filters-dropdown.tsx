@@ -171,34 +171,6 @@ export function ObjectFiltersDropdown({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const displaySwitchId = useId();
-  const catalogedFromId = useId();
-  const catalogedToId = useId();
-  const culture = facetOptions(
-    t("filters.anyCulture"),
-    facets?.cultures,
-    filters.culture,
-  );
-  const period = facetOptions(
-    t("filters.anyPeriod"),
-    facets?.periods,
-    filters.period,
-  );
-  const materials = facetOptions(
-    t("filters.anyMaterial"),
-    facets?.materials,
-    filters.materials,
-  );
-  const condition = facetOptions(
-    t("filters.anyCondition"),
-    facets?.conditions,
-    filters.condition,
-  );
-  const photographOptions: { value: ObjectPhotographFilter; label: string }[] =
-    [
-      { value: "", label: t("filters.anyPhotograph") },
-      { value: "with", label: t("filters.withPhotograph") },
-      { value: "without", label: t("filters.withoutPhotograph") },
-    ];
   const statusOptions: { value: ObjectStatus; label: string }[] = [
     { value: "any", label: statusLabel(t, "any") },
     { value: "all", label: statusLabel(t, "all") },
@@ -263,37 +235,7 @@ export function ObjectFiltersDropdown({
         className="flex max-h-[var(--available-height)] w-80 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0"
       >
         <div className="min-h-0 overflow-y-auto overscroll-contain">
-          <fieldset
-            className="grid grid-cols-2 gap-2 px-4 py-3"
-            aria-label={t("title")}
-          >
-            {(
-              [
-                { value: "list", label: common("listView"), icon: List },
-                { value: "grid", label: common("gridView"), icon: LayoutGrid },
-              ] satisfies {
-                value: ViewMode;
-                label: string;
-                icon: typeof List;
-              }[]
-            ).map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={viewMode === value}
-                onClick={() => onViewModeChange(value)}
-                className={cn(
-                  "flex h-7 items-center justify-center gap-2 rounded-md border px-2 py-1 text-xs font-medium shadow-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
-                  viewMode === value
-                    ? "border-border bg-accent text-foreground dark:border-white/20 dark:bg-white/15"
-                    : "border-border/60 bg-muted/40 text-muted-foreground hover:text-foreground dark:border-white/10 dark:bg-white/5",
-                )}
-              >
-                <Icon className="size-4" aria-hidden="true" />
-                {label}
-              </button>
-            ))}
-          </fieldset>
+          <ViewModePicker viewMode={viewMode} onChange={onViewModeChange} />
           <div className="space-y-2 px-4 pb-3">
             <CatalogFilterSelect
               label={t("filters.status")}
@@ -334,71 +276,16 @@ export function ObjectFiltersDropdown({
                 }
               />
             ) : null}
-            <CatalogFilterSelect
-              label={t("filters.materials")}
-              value={materials.value}
-              options={materials.options}
-              onChange={(value) => onChange({ materials: value })}
+            <FacetFilters
+              filters={filters}
+              facets={facets}
+              onChange={onChange}
             />
-            <CatalogFilterSelect
-              label={t("filters.culture")}
-              value={culture.value}
-              options={culture.options}
-              onChange={(value) => onChange({ culture: value })}
+            <CatalogedRangeFilter
+              from={filters.catalogedFrom}
+              to={filters.catalogedTo}
+              onChange={onChange}
             />
-            <CatalogFilterSelect
-              label={t("filters.period")}
-              value={period.value}
-              options={period.options}
-              onChange={(value) => onChange({ period: value })}
-            />
-            <CatalogFilterSelect
-              label={t("filters.condition")}
-              value={condition.value}
-              options={condition.options}
-              onChange={(value) => onChange({ condition: value })}
-            />
-            <CatalogFilterSelect
-              label={t("filters.photograph")}
-              value={filters.photograph}
-              options={photographOptions}
-              onChange={(photograph) => onChange({ photograph })}
-            />
-            <fieldset className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-center gap-2">
-              <legend className="sr-only">{t("filters.catalogedRange")}</legend>
-              <label
-                htmlFor={catalogedFromId}
-                className="text-xs text-muted-foreground"
-              >
-                {t("filters.catalogedFrom")}
-              </label>
-              <Input
-                id={catalogedFromId}
-                type="date"
-                value={filters.catalogedFrom}
-                max={filters.catalogedTo || undefined}
-                onChange={(event) =>
-                  onChange({ catalogedFrom: event.target.value })
-                }
-                className="h-7 px-2 text-xs"
-              />
-              <label
-                htmlFor={catalogedToId}
-                className="text-xs text-muted-foreground"
-              >
-                {t("filters.catalogedTo")}
-              </label>
-              <Input
-                id={catalogedToId}
-                type="date"
-                value={filters.catalogedTo}
-                min={filters.catalogedFrom || undefined}
-                onChange={(event) =>
-                  onChange({ catalogedTo: event.target.value })
-                }
-                className="h-7 px-2 text-xs"
-              />
-            </fieldset>
             <Button
               variant="outline"
               size="sm"
@@ -430,35 +317,7 @@ export function ObjectFiltersDropdown({
             />
           </div>
           {viewMode === "list" ? (
-            <div className="border-t border-border/60 px-4 py-2 dark:border-white/10">
-              <p className="mb-2 text-xs text-muted-foreground">
-                {t("columnConfig.visibleColumns")}
-              </p>
-              <fieldset
-                className="flex flex-wrap gap-2"
-                aria-label={t("columnConfig.visibleColumns")}
-              >
-                {columns.map((column) =>
-                  column.id === "checkbox" ? null : (
-                    <button
-                      key={column.id}
-                      type="button"
-                      aria-pressed={column.visible}
-                      disabled={column.required}
-                      onClick={() => onColumnToggle(column.id, !column.visible)}
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-default",
-                        column.visible
-                          ? "border-border bg-accent text-foreground dark:border-white/10 dark:bg-white/15"
-                          : "border-border/60 bg-muted/30 text-muted-foreground hover:text-foreground dark:border-white/10 dark:bg-white/5",
-                      )}
-                    >
-                      {column.label}
-                    </button>
-                  ),
-                )}
-              </fieldset>
-            </div>
+            <VisibleColumnsPicker columns={columns} onToggle={onColumnToggle} />
           ) : null}
         </div>
         <div className="flex shrink-0 justify-end border-t border-border/60 px-4 py-2 dark:border-white/10">
@@ -492,5 +351,205 @@ export function ObjectFiltersDropdown({
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function ViewModePicker({
+  viewMode,
+  onChange,
+}: {
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}) {
+  const t = useScopedI18n("objects");
+  const common = useScopedI18n("common");
+  return (
+    <fieldset
+      className="grid grid-cols-2 gap-2 px-4 py-3"
+      aria-label={t("title")}
+    >
+      {(
+        [
+          { value: "list", label: common("listView"), icon: List },
+          { value: "grid", label: common("gridView"), icon: LayoutGrid },
+        ] satisfies {
+          value: ViewMode;
+          label: string;
+          icon: typeof List;
+        }[]
+      ).map(({ value, label, icon: Icon }) => (
+        <button
+          key={value}
+          type="button"
+          aria-pressed={viewMode === value}
+          onClick={() => onChange(value)}
+          className={cn(
+            "flex h-7 items-center justify-center gap-2 rounded-md border px-2 py-1 text-xs font-medium shadow-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
+            viewMode === value
+              ? "border-border bg-accent text-foreground dark:border-white/20 dark:bg-white/15"
+              : "border-border/60 bg-muted/40 text-muted-foreground hover:text-foreground dark:border-white/10 dark:bg-white/5",
+          )}
+        >
+          <Icon className="size-4" aria-hidden="true" />
+          {label}
+        </button>
+      ))}
+    </fieldset>
+  );
+}
+
+/** The recorded-value facets and the photograph filter. */
+function FacetFilters({
+  filters,
+  facets,
+  onChange,
+}: {
+  filters: ObjectFiltersDropdownValue;
+  facets: ObjectFacetValues | undefined;
+  onChange: (filters: Partial<ObjectFiltersDropdownValue>) => void;
+}) {
+  const t = useScopedI18n("objects");
+  const culture = facetOptions(
+    t("filters.anyCulture"),
+    facets?.cultures,
+    filters.culture,
+  );
+  const period = facetOptions(
+    t("filters.anyPeriod"),
+    facets?.periods,
+    filters.period,
+  );
+  const materials = facetOptions(
+    t("filters.anyMaterial"),
+    facets?.materials,
+    filters.materials,
+  );
+  const condition = facetOptions(
+    t("filters.anyCondition"),
+    facets?.conditions,
+    filters.condition,
+  );
+  const photographOptions: { value: ObjectPhotographFilter; label: string }[] =
+    [
+      { value: "", label: t("filters.anyPhotograph") },
+      { value: "with", label: t("filters.withPhotograph") },
+      { value: "without", label: t("filters.withoutPhotograph") },
+    ];
+  return (
+    <>
+      <CatalogFilterSelect
+        label={t("filters.materials")}
+        value={materials.value}
+        options={materials.options}
+        onChange={(value) => onChange({ materials: value })}
+      />
+      <CatalogFilterSelect
+        label={t("filters.culture")}
+        value={culture.value}
+        options={culture.options}
+        onChange={(value) => onChange({ culture: value })}
+      />
+      <CatalogFilterSelect
+        label={t("filters.period")}
+        value={period.value}
+        options={period.options}
+        onChange={(value) => onChange({ period: value })}
+      />
+      <CatalogFilterSelect
+        label={t("filters.condition")}
+        value={condition.value}
+        options={condition.options}
+        onChange={(value) => onChange({ condition: value })}
+      />
+      <CatalogFilterSelect
+        label={t("filters.photograph")}
+        value={filters.photograph}
+        options={photographOptions}
+        onChange={(photograph) => onChange({ photograph })}
+      />
+    </>
+  );
+}
+
+/** When objects were cataloged, as an inclusive date range. */
+function CatalogedRangeFilter({
+  from,
+  to,
+  onChange,
+}: {
+  from: string;
+  to: string;
+  onChange: (filters: Partial<ObjectFiltersDropdownValue>) => void;
+}) {
+  const t = useScopedI18n("objects");
+  const fromId = useId();
+  const toId = useId();
+  return (
+    <fieldset className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-center gap-2">
+      <legend className="sr-only">{t("filters.catalogedRange")}</legend>
+      <label htmlFor={fromId} className="text-xs text-muted-foreground">
+        {t("filters.catalogedFrom")}
+      </label>
+      <Input
+        id={fromId}
+        type="date"
+        value={from}
+        max={to || undefined}
+        onChange={(event) => onChange({ catalogedFrom: event.target.value })}
+        className="h-7 px-2 text-xs"
+      />
+      <label htmlFor={toId} className="text-xs text-muted-foreground">
+        {t("filters.catalogedTo")}
+      </label>
+      <Input
+        id={toId}
+        type="date"
+        value={to}
+        min={from || undefined}
+        onChange={(event) => onChange({ catalogedTo: event.target.value })}
+        className="h-7 px-2 text-xs"
+      />
+    </fieldset>
+  );
+}
+
+function VisibleColumnsPicker({
+  columns,
+  onToggle,
+}: {
+  columns: ColumnConfig[];
+  onToggle: (columnId: string, visible: boolean) => void;
+}) {
+  const t = useScopedI18n("objects");
+  return (
+    <div className="border-t border-border/60 px-4 py-2 dark:border-white/10">
+      <p className="mb-2 text-xs text-muted-foreground">
+        {t("columnConfig.visibleColumns")}
+      </p>
+      <fieldset
+        className="flex flex-wrap gap-2"
+        aria-label={t("columnConfig.visibleColumns")}
+      >
+        {columns.map((column) =>
+          column.id === "checkbox" ? null : (
+            <button
+              key={column.id}
+              type="button"
+              aria-pressed={column.visible}
+              disabled={column.required}
+              onClick={() => onToggle(column.id, !column.visible)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-default",
+                column.visible
+                  ? "border-border bg-accent text-foreground dark:border-white/10 dark:bg-white/15"
+                  : "border-border/60 bg-muted/30 text-muted-foreground hover:text-foreground dark:border-white/10 dark:bg-white/5",
+              )}
+            >
+              {column.label}
+            </button>
+          ),
+        )}
+      </fieldset>
+    </div>
   );
 }

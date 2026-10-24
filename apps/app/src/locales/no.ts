@@ -3198,6 +3198,7 @@ export default {
         alternativeTitle: "Alternativ tittel",
         creator: "Skaper",
         objectName: "Objektnavn",
+        objectType: "Objekttype",
         description: "Beskrivelse",
         tags: "Emneord",
         inscriptions: "Innskrifter",
@@ -3205,6 +3206,7 @@ export default {
         technique: "Teknikk",
         culture: "Kultur",
         period: "Periode",
+        provenance: "Proveniens",
         customFields: "Egendefinerte felt",
       },
     },
@@ -3254,9 +3256,11 @@ export default {
       preview:
         "Samsvarende objekter: {matching}. Objekter som endres: {changing}.",
       previewCapped:
-        "Telt over de første {matching} samsvarende objektene. Endringen gjelder alle treff.",
+        "Samsvarende objekter telt så langt: {matching}. Objekter blant dem som endres: {changing}. Endringen sjekker alle samsvarende objekter, så flere kan bli endret.",
       nothingChanges: "Ingen objekter ville blitt endret.",
       overwriteWarning: "Objekter der en registrert verdi erstattes: {count}",
+      overwriteWarningCapped:
+        "Objekter telt så langt der en registrert verdi erstattes: {count}",
       start: "Utfør endringen",
       starting: "Starter…",
       progressRunning: "Redigerer {field}: {checked} sjekket, {changed} endret",
@@ -3269,6 +3273,8 @@ export default {
       progressSkipped: "Uendret fordi tittelen ville blitt tom: {count}",
       stop: "Stopp",
       resume: "Fortsett",
+      progressStalled:
+        "Denne endringen har sluttet å rapportere fremdrift. Fortsett den for å gå videre der den stoppet.",
       fields: {
         title: "Tittel",
         alternativeTitle: "Alternativ tittel",
@@ -3289,13 +3295,13 @@ export default {
       },
       errors: {
         valueRequired: "Skriv inn den nye verdien.",
-        valueTooLong: "Verdier kan ha høyst 4000 tegn.",
+        valueTooLong: "Verdier kan ha høyst {limit} tegn.",
         findRequired: "Skriv inn teksten du vil søke etter.",
         titleRequired:
           "Alle objekter må ha en tittel, så titler kan ikke tømmes.",
         selectionEmpty: "Velg minst ett objekt.",
         selectionTooLarge:
-          "Velg høyst 500 objekter, eller rediger alle objekter som samsvarer med søket og filtrene.",
+          "Velg høyst {limit} objekter, eller rediger alle objekter som samsvarer med søket og filtrene.",
         selectionOutsideOrganization:
           "Noen av de valgte objektene tilhører en annen organisasjon. Last inn siden på nytt og velg dem igjen.",
         editRunning:
@@ -3303,6 +3309,7 @@ export default {
         editNotFound: "Denne endringen finnes ikke lenger.",
         editNotResumable: "Denne endringen kan ikke fortsettes.",
         fallback: "Endringen kunne ikke startes. Prøv igjen.",
+        actionFailed: "Handlingen kunne ikke fullføres. Prøv igjen.",
       },
     },
     emptyState: {
@@ -9776,7 +9783,6 @@ export default {
       buildComplexFilterCombinationsToSearchYourCollectionAddMultipleFilterGroupsAndCombineThemWithANDORLogic:
         "Lag komplekse filterkombinasjoner for å søke i samlingen din. Legg til flere filtergrupper og kombiner dem med OG/ELLER-logikk.",
       addFilterGroup: "Legg til filtergruppe",
-      defined: "definert",
       clearAll: "Fjern alt",
       applyFilters: "Bruk filtre",
       organizations: "Organisasjoner",
@@ -10114,8 +10120,6 @@ export default {
       noObjectsFound: "Fant ingen objekter",
       selectOrAddTypes: "Velg eller legg til typer",
       qrCodeForAccession: "QR-kode for tilvekst {accession}",
-      filter: "Filtrer",
-      filters: "Filtre",
       uploading: "Laster opp",
       dropFilesHereOrClickToUpload:
         "Slipp filer her eller klikk for å laste opp",

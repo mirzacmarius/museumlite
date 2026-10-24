@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -13,8 +13,8 @@ import { requirePermission } from "./utils/permissions";
 
 /** Objects written per backfill page. */
 const BACKFILL_PAGE_SIZE = 50;
-/** Organizations considered per cron run. */
-const ORGANIZATIONS_PER_RUN = 500;
+/** Organizations considered per page of a cron run. */
+const ORGANIZATIONS_PER_PAGE = 200;
 /** A backfill that reported nothing for this long is started again. */
 const BACKFILL_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 /** Distinct values offered per facet; each costs one indexed read. */
@@ -29,7 +29,7 @@ const facetValueValidator = v.object({
   label: v.string(),
 });
 
-export type FacetValue = { value: string; label: string };
+type FacetValue = Infer<typeof facetValueValidator>;
 
 /**
  * The distinct values of an indexed field, one indexed read per value: each
@@ -154,6 +154,23 @@ export const backfillPage = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const state = await backfillState(ctx, args.organizationId);
+    const now = Date.now();
+    if (state && state.version !== OBJECT_SEARCH_DOCUMENT_VERSION) {
+      // Begun under an older document version, so its earlier pages hold old
+      // documents: the run starts again from the first page.
+      await ctx.db.replace(state._id, {
+        organizationId: args.organizationId,
+        version: OBJECT_SEARCH_DOCUMENT_VERSION,
+        startedAt: now,
+        completedAt: undefined,
+      });
+      await ctx.scheduler.runAfter(0, internal.objectSearch.backfillPage, {
+        organizationId: args.organizationId,
+        cursor: null,
+      });
+      return null;
+    }
     const page = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -163,8 +180,6 @@ export const backfillPage = internalMutation({
     for (const collection of page.page) {
       await syncObjectSearchDocument(ctx, collection);
     }
-    const state = await backfillState(ctx, args.organizationId);
-    const now = Date.now();
     if (page.isDone) {
       const completed = {
         organizationId: args.organizationId,
@@ -193,26 +208,36 @@ function needsBackfill(
   now: number,
 ) {
   if (!state) return true;
-  if (
-    state.completedAt !== undefined &&
-    state.version === OBJECT_SEARCH_DOCUMENT_VERSION
-  )
-    return false;
-  // A run in progress reports on every page; a silent one was lost.
+  // Complete documents of an older version are rebuilt at once.
+  if (state.completedAt !== undefined)
+    return state.version !== OBJECT_SEARCH_DOCUMENT_VERSION;
+  // A run in progress reports on every page; a silent one was lost. A run
+  // begun under an older version restarts itself (see `backfillPage`).
   return state.startedAt < now - BACKFILL_STALE_AFTER_MS;
 }
 
-/** Starts a backfill for every Organization without complete, current documents. */
+/**
+ * Starts a backfill for every Organization without complete, current
+ * documents, a page of Organizations at a time until all are seen.
+ */
 export const startOutdatedBackfills = internalMutation({
-  args: {},
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
   returns: v.number(),
-  handler: async (ctx) => {
-    const organizations = await ctx.db
-      .query("organizations")
-      .take(ORGANIZATIONS_PER_RUN);
+  handler: async (ctx, args) => {
+    const organizations = await ctx.db.query("organizations").paginate({
+      numItems: ORGANIZATIONS_PER_PAGE,
+      cursor: args.cursor ?? null,
+    });
+    if (!organizations.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.objectSearch.startOutdatedBackfills,
+        { cursor: organizations.continueCursor },
+      );
+    }
     const now = Date.now();
     let started = 0;
-    for (const organization of organizations) {
+    for (const organization of organizations.page) {
       const state = await backfillState(ctx, organization._id);
       if (!needsBackfill(state, now)) continue;
       const running = {

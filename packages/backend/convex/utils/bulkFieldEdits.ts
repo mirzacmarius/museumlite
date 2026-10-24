@@ -28,8 +28,11 @@ export type BulkEditField = (typeof BULK_EDIT_FIELDS)[number];
 /** Fields stored as text or as a JSON list; a replace runs on each entry. */
 const LIST_FIELDS: readonly BulkEditField[] = ["objectType", "materials"];
 
-/** Characters a set value may have. */
+/** Characters a set value, a find text or its replacement may have. */
 export const BULK_EDIT_VALUE_LIMIT = 4000;
+
+/** A running edit silent for this long is treated as lost and can be resumed. */
+export const BULK_EDIT_STALE_AFTER_MS = 5 * 60 * 1000;
 
 /** Objects a selection may hold; larger edits run over the catalog filters. */
 export const BULK_EDIT_MAX_SELECTION = 500;
@@ -75,6 +78,14 @@ export function validateBulkEdit(edit: BulkEdit) {
     case "replace":
       if (!edit.find)
         throw bulkEditError("FIND_REQUIRED", "Enter the text to find");
+      if (
+        edit.find.length > BULK_EDIT_VALUE_LIMIT ||
+        (edit.replaceWith ?? "").length > BULK_EDIT_VALUE_LIMIT
+      )
+        throw bulkEditError(
+          "VALUE_TOO_LONG",
+          `Find and replace texts have at most ${BULK_EDIT_VALUE_LIMIT} characters`,
+        );
       return;
   }
 }
@@ -87,7 +98,8 @@ function replaceIn(text: string, edit: BulkEdit) {
   const find = edit.find ?? "";
   const replaceWith = edit.replaceWith ?? "";
   if (edit.matchCase) return text.split(find).join(replaceWith);
-  return text.replace(new RegExp(escapeRegExp(find), "gi"), replaceWith);
+  // A function replacer writes "$&" and "$$" as typed, as match-case does.
+  return text.replace(new RegExp(escapeRegExp(find), "gi"), () => replaceWith);
 }
 
 /** A list keeps its stored shape: a JSON list stays one, a bare text stays text. */

@@ -15,6 +15,7 @@ export const OBJECT_SEARCH_FIELDS = [
   "alternativeTitle",
   "creator",
   "objectName",
+  "objectType",
   "description",
   "tags",
   "inscriptions",
@@ -22,6 +23,7 @@ export const OBJECT_SEARCH_FIELDS = [
   "technique",
   "culture",
   "period",
+  "provenance",
   "customFields",
 ] as const;
 

@@ -103,7 +103,7 @@ function matchesCondition(
 /**
  * Whether an Object passes the advanced filters: conditions combine within
  * a group by the group's operator, groups by the combination. Empty groups
- * and unknown fields never match, so a mistyped filter hides nothing by accident.
+ * are left out; a condition on an unknown field never matches.
  */
 export function matchesAdvancedFilters(
   collection: Doc<"collections">,

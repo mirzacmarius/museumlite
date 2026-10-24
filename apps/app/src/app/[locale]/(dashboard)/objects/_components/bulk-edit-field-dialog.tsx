@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   BULK_EDIT_FIELDS,
   BULK_EDIT_MAX_SELECTION,
+  BULK_EDIT_VALUE_LIMIT,
   type BulkEdit,
   type BulkEditField,
 } from "@v1/backend/convex/utils/bulkFieldEdits";
@@ -30,11 +31,22 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { AlertTriangle } from "lucide-react";
-import { type RefObject, useDeferredValue, useId, useState } from "react";
+import {
+  type RefObject,
+  useDeferredValue,
+  useId,
+  useReducer,
+  useState,
+} from "react";
 import { ActionRefusal, type Refusal } from "@/components/action-refusal";
-import { useBulkEditErrorMessage } from "@/hooks/use-bulk-edit-error-message";
-import { useScopedI18n } from "@/locales/client";
+import {
+  useBulkEditCodeMessage,
+  useBulkEditErrorMessage,
+} from "@/hooks/use-bulk-edit-error-message";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { BulkEditProgress } from "./bulk-edit-progress";
 
 export type BulkEditScope =
@@ -45,15 +57,70 @@ type Operation = BulkEdit["operation"];
 
 const OPERATIONS: readonly Operation[] = ["set", "clear", "replace"];
 
+/** The edit as staff fill it in, before it is shaped for the server. */
+interface EditDraft {
+  field: BulkEditField;
+  operation: Operation;
+  value: string;
+  find: string;
+  replaceWith: string;
+  matchCase: boolean;
+}
+
+const EMPTY_DRAFT: EditDraft = {
+  field: "culture",
+  operation: "set",
+  value: "",
+  find: "",
+  replaceWith: "",
+  matchCase: false,
+};
+
+function updateDraft(draft: EditDraft, change: Partial<EditDraft>): EditDraft {
+  const next = { ...draft, ...change };
+  // Titles are required, so they can only be set or replaced.
+  return next.field === "title" && next.operation === "clear"
+    ? { ...next, operation: "set" }
+    : next;
+}
+
+function editFromDraft(draft: EditDraft): BulkEdit {
+  const { field, operation } = draft;
+  switch (operation) {
+    case "set":
+      return { field, operation, value: draft.value };
+    case "replace":
+      return {
+        field,
+        operation,
+        find: draft.find,
+        replaceWith: draft.replaceWith,
+        matchCase: draft.matchCase,
+      };
+    case "clear":
+      return { field, operation };
+  }
+}
+
+type BulkEditPreviewResult = FunctionReturnType<
+  typeof api.bulkFieldEdits.preview
+>;
+
 /** Whether the server would accept the edit, so a preview can be asked for. */
 function isComplete(edit: BulkEdit) {
   switch (edit.operation) {
-    case "set":
-      return (edit.value ?? "").trim() !== "";
+    case "set": {
+      const value = (edit.value ?? "").trim();
+      return value !== "" && value.length <= BULK_EDIT_VALUE_LIMIT;
+    }
     case "clear":
       return edit.field !== "title";
     case "replace":
-      return (edit.find ?? "") !== "";
+      return (
+        (edit.find ?? "") !== "" &&
+        (edit.find ?? "").length <= BULK_EDIT_VALUE_LIMIT &&
+        (edit.replaceWith ?? "").length <= BULK_EDIT_VALUE_LIMIT
+      );
   }
 }
 
@@ -61,11 +128,12 @@ interface BulkEditFieldDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: Id<"organizations">;
-  scope: BulkEditScope;
   /**
-   * Called once the edit is running, for example to clear the selection.
-   * Mount the dialog anew for each opening: it keeps the scope it opened with.
+   * The objects the edit covers, fixed when the dialog opens: clearing the
+   * selection once the edit starts leaves its description as it was.
    */
+  scope: BulkEditScope;
+  /** Called once the edit is running, for example to clear the selection. */
   onStarted?: () => void;
   /** Takes focus on close when the control that opened it is gone. */
   fallbackFocusRef?: RefObject<HTMLElement | null>;
@@ -81,39 +149,28 @@ export function BulkEditFieldDialog({
   open,
   onOpenChange,
   organizationId,
-  scope: openedScope,
+  scope,
   onStarted,
   fallbackFocusRef,
 }: BulkEditFieldDialogProps) {
-  // The scope as the dialog opened; clearing the selection once the edit
-  // starts leaves the running edit's description as it was.
-  const [scope] = useState(openedScope);
   const t = useScopedI18n("objects.bulkEdit");
   const tCommon = useScopedI18n("common");
-  const errorMessage = useBulkEditErrorMessage();
+  const locale = useCurrentLocale();
+  const errorMessage = useBulkEditErrorMessage("start");
   const fieldId = useId();
   const valueId = useId();
   const findId = useId();
   const replaceId = useId();
   const matchCaseId = useId();
   const refusalId = useId();
-  const [field, setField] = useState<BulkEditField>("culture");
-  const [operation, setOperation] = useState<Operation>("set");
-  const [value, setValue] = useState("");
-  const [find, setFind] = useState("");
-  const [replaceWith, setReplaceWith] = useState("");
-  const [matchCase, setMatchCase] = useState(false);
+  const [draft, changeDraft] = useReducer(updateDraft, EMPTY_DRAFT);
+  const { field, operation } = draft;
   const [jobId, setJobId] = useState<Id<"bulkFieldEdits"> | null>(null);
   const [refusal, setRefusal] = useState<Refusal | null>(null);
   const [isStarting, setStarting] = useState(false);
   const start = useMutation(api.bulkFieldEdits.start);
 
-  const edit: BulkEdit =
-    operation === "set"
-      ? { field, operation, value }
-      : operation === "replace"
-        ? { field, operation, find, replaceWith, matchCase }
-        : { field, operation };
+  const edit = editFromDraft(draft);
   // Typing settles before the preview counts again.
   const previewEdit = useDeferredValue(edit);
   const selectionTooLarge =
@@ -129,11 +186,7 @@ export function BulkEditFieldDialog({
   const reset = () => {
     setJobId(null);
     setRefusal(null);
-    setValue("");
-    setFind("");
-    setReplaceWith("");
-    setMatchCase(false);
-    setOperation("set");
+    changeDraft({ ...EMPTY_DRAFT, field });
   };
   const handleOpenChange = (next: boolean) => {
     if (!next) reset();
@@ -158,8 +211,9 @@ export function BulkEditFieldDialog({
     !isStarting &&
     !selectionTooLarge &&
     isComplete(edit) &&
-    preview !== undefined &&
-    preview.changing > 0;
+    preview?.kind === "preview" &&
+    // A capped preview has not seen every match, so more may change.
+    (preview.changing > 0 || preview.capped);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -169,7 +223,7 @@ export function BulkEditFieldDialog({
           <DialogDescription>
             {scope.kind === "selection"
               ? t("descriptionSelection", {
-                  count: scope.collectionIds.length,
+                  count: formatNumber(scope.collectionIds.length, locale),
                 })
               : t("descriptionFilters")}
           </DialogDescription>
@@ -187,12 +241,7 @@ export function BulkEditFieldDialog({
                   const chosen = BULK_EDIT_FIELDS.find(
                     (candidate) => candidate === next,
                   );
-                  if (!chosen) return;
-                  setField(chosen);
-                  // Titles are required, so they can only be set or replaced.
-                  if (chosen === "title" && operation === "clear") {
-                    setOperation("set");
-                  }
+                  if (chosen) changeDraft({ field: chosen });
                 }}
               >
                 <SelectTrigger id={fieldId}>
@@ -216,7 +265,7 @@ export function BulkEditFieldDialog({
                   const chosen = OPERATIONS.find(
                     (candidate) => candidate === next,
                   );
-                  if (chosen) setOperation(chosen);
+                  if (chosen) changeDraft({ operation: chosen });
                 }}
               >
                 {OPERATIONS.map((candidate) => (
@@ -242,8 +291,11 @@ export function BulkEditFieldDialog({
                 <Label htmlFor={valueId}>{t("value")}</Label>
                 <Input
                   id={valueId}
-                  value={value}
-                  onChange={(event) => setValue(event.target.value)}
+                  value={draft.value}
+                  maxLength={BULK_EDIT_VALUE_LIMIT}
+                  onChange={(event) =>
+                    changeDraft({ value: event.target.value })
+                  }
                   aria-describedby={refusal ? refusalId : undefined}
                 />
               </div>
@@ -255,8 +307,11 @@ export function BulkEditFieldDialog({
                   <Label htmlFor={findId}>{t("find")}</Label>
                   <Input
                     id={findId}
-                    value={find}
-                    onChange={(event) => setFind(event.target.value)}
+                    value={draft.find}
+                    maxLength={BULK_EDIT_VALUE_LIMIT}
+                    onChange={(event) =>
+                      changeDraft({ find: event.target.value })
+                    }
                     aria-describedby={refusal ? refusalId : undefined}
                   />
                 </div>
@@ -264,16 +319,19 @@ export function BulkEditFieldDialog({
                   <Label htmlFor={replaceId}>{t("replaceWith")}</Label>
                   <Input
                     id={replaceId}
-                    value={replaceWith}
-                    onChange={(event) => setReplaceWith(event.target.value)}
+                    value={draft.replaceWith}
+                    maxLength={BULK_EDIT_VALUE_LIMIT}
+                    onChange={(event) =>
+                      changeDraft({ replaceWith: event.target.value })
+                    }
                   />
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id={matchCaseId}
-                    checked={matchCase}
+                    checked={draft.matchCase}
                     onCheckedChange={(checked) =>
-                      setMatchCase(checked === true)
+                      changeDraft({ matchCase: checked === true })
                     }
                   />
                   <Label htmlFor={matchCaseId} className="font-normal">
@@ -312,22 +370,17 @@ function BulkEditPreview({
   selectionTooLarge,
   complete,
 }: {
-  preview:
-    | {
-        matching: number;
-        changing: number;
-        overwriting: number;
-        capped: boolean;
-      }
-    | undefined;
+  preview: BulkEditPreviewResult | undefined;
   selectionTooLarge: boolean;
   complete: boolean;
 }) {
   const t = useScopedI18n("objects.bulkEdit");
+  const locale = useCurrentLocale();
+  const codeMessage = useBulkEditCodeMessage();
   if (selectionTooLarge) {
     return (
       <p className="rounded-md border border-border bg-muted/40 p-3 text-sm">
-        {t("errors.selectionTooLarge")}
+        {codeMessage("SELECTION_TOO_LARGE")}
       </p>
     );
   }
@@ -339,20 +392,27 @@ function BulkEditPreview({
       </p>
     );
   }
+  if (preview.kind === "refused") {
+    return (
+      <p
+        className="rounded-md border border-border bg-muted/40 p-3 text-sm"
+        aria-live="polite"
+      >
+        {codeMessage(preview.code)}
+      </p>
+    );
+  }
+  const counts = {
+    matching: formatNumber(preview.matching, locale),
+    changing: formatNumber(preview.changing, locale),
+  };
+  const overwriting = formatNumber(preview.overwriting, locale);
   return (
     <div className="space-y-2 text-sm" aria-live="polite">
       <p>
-        {t("preview", {
-          matching: preview.matching,
-          changing: preview.changing,
-        })}
+        {preview.capped ? t("previewCapped", counts) : t("preview", counts)}
       </p>
-      {preview.capped ? (
-        <p className="text-muted-foreground">
-          {t("previewCapped", { matching: preview.matching })}
-        </p>
-      ) : null}
-      {preview.changing === 0 ? (
+      {preview.changing === 0 && !preview.capped ? (
         <p className="text-muted-foreground">{t("nothingChanges")}</p>
       ) : null}
       {preview.overwriting > 0 ? (
@@ -361,7 +421,9 @@ function BulkEditPreview({
             className="mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
-          {t("overwriteWarning", { count: preview.overwriting })}
+          {preview.capped
+            ? t("overwriteWarningCapped", { count: overwriting })
+            : t("overwriteWarning", { count: overwriting })}
         </p>
       ) : null}
     </div>

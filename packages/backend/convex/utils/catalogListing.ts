@@ -130,9 +130,35 @@ async function searchCatalogPage(
       ...row,
       matchedField: identifierIds.has(row._id)
         ? "accessionNumber"
-        : (matchedObjectSearchField(row, search) ?? "title"),
+        : matchedObjectSearchField(row, search),
     })),
   };
+}
+
+/**
+ * The rows that pass the catalog filters and search. Once an Organization's
+ * search documents are ready, a search keeps the rows its words match (see
+ * `matchedObjectSearchField`) and says where; until then it is the old
+ * substring scan, as the list's own fallback. The list, bulk field edits and
+ * filtered exports all filter this way, so what staff see is what they act on.
+ */
+export async function filterCatalogRows(
+  ctx: Ctx,
+  args: CatalogListingArgs,
+  rows: Doc<"collections">[],
+  searchReady?: boolean,
+): Promise<CatalogListingRow[]> {
+  const search = args.search?.trim() || undefined;
+  const ready =
+    search !== undefined &&
+    (searchReady ?? (await isObjectSearchReady(ctx, args.organizationId)));
+  if (!search || !ready)
+    return await filterPage(ctx, { ...args, search }, rows);
+  const filtered = await filterPage(ctx, { ...args, search: undefined }, rows);
+  return filtered.flatMap((row) => {
+    const matchedField = matchedObjectSearchField(row, search);
+    return matchedField ? [{ ...row, matchedField }] : [];
+  });
 }
 
 /**
@@ -200,22 +226,8 @@ export async function listCatalogPage(
     args.sort === "identifier" ? identifierSource : source
   ).order(args.sort === "newest" || args.sort === undefined ? "desc" : "asc");
   const result = await ordered.paginate(bounded);
-  if (search && options.stableOrder) {
-    const filtered = await filterPage(
-      ctx,
-      { ...args, search: undefined },
-      result.page,
-    );
-    return {
-      ...result,
-      page: filtered.flatMap((row) => {
-        const matchedField = matchedObjectSearchField(row, search);
-        return matchedField ? [{ ...row, matchedField }] : [];
-      }),
-    };
-  }
   return {
     ...result,
-    page: await filterPage(ctx, { ...args, search }, result.page),
+    page: await filterCatalogRows(ctx, args, result.page, searchReady),
   };
 }

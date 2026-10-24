@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -9,10 +9,15 @@ import {
   query,
 } from "./_generated/server";
 import { runCheckpointPage } from "./utils/boundedJobs";
-import { bulkEditError } from "./utils/bulkFieldEditErrors";
+import {
+  BULK_EDIT_ERROR_CODES,
+  bulkEditError,
+  bulkEditErrorFromError,
+} from "./utils/bulkFieldEditErrors";
 import {
   applyBulkEdit,
   BULK_EDIT_MAX_SELECTION,
+  BULK_EDIT_STALE_AFTER_MS,
   type BulkEdit,
   bulkEditValidator,
   overwritesValue,
@@ -26,10 +31,8 @@ import { requirePermission } from "./utils/permissions";
 
 /** Objects written per page; each write also updates its search document and audit entry. */
 const PAGE_SIZE = 25;
-/** Rows a preview considers for a filtered scope before it reports a lower bound. */
+/** Rows a preview reads for a filtered scope before it reports a lower bound. */
 const PREVIEW_ROWS = 1000;
-/** A running edit silent for this long is treated as lost and can be resumed. */
-const STALE_AFTER_MS = 5 * 60 * 1000;
 
 const EDIT_PERMISSION = "collections.update";
 
@@ -124,7 +127,10 @@ async function loadSelection(
 /**
  * What the edit would do: how many Objects match, how many change and how
  * many already hold a value the edit writes over. A filtered scope is
- * previewed over its first rows; `capped` says the counts are a lower bound.
+ * previewed over its newest catalog page; `capped` says more rows follow, so
+ * the counts are a lower bound and the edit may change more.
+ * An edit `start` would refuse comes back as its code rather than thrown,
+ * so the dialog explains it in place.
  */
 export const preview = query({
   args: {
@@ -132,43 +138,69 @@ export const preview = query({
     scope: scopeValidator,
     edit: bulkEditValidator,
   },
-  returns: v.object({
-    matching: v.number(),
-    changing: v.number(),
-    overwriting: v.number(),
-    capped: v.boolean(),
-  }),
+  returns: v.union(
+    v.object({
+      kind: v.literal("preview"),
+      matching: v.number(),
+      changing: v.number(),
+      overwriting: v.number(),
+      capped: v.boolean(),
+    }),
+    v.object({
+      kind: v.literal("refused"),
+      code: v.union(...BULK_EDIT_ERROR_CODES.map((code) => v.literal(code))),
+    }),
+  ),
   handler: async (ctx, args) => {
     await requireEditor(ctx, args.organizationId);
-    validateBulkEdit(args.edit);
-    let rows: Doc<"collections">[];
-    let capped = false;
-    if (args.scope.kind === "selection") {
-      rows = await loadSelection(
-        ctx,
-        args.organizationId,
-        args.scope.collectionIds,
-      );
-    } else {
-      const page = await listCatalogPage(
-        ctx,
-        { ...args.scope.filters, organizationId: args.organizationId },
-        { numItems: PREVIEW_ROWS, cursor: null },
-        { stableOrder: true },
-      );
-      rows = page.page;
-      capped = !page.isDone;
+    try {
+      return { kind: "preview" as const, ...(await previewEdit(ctx, args)) };
+    } catch (error) {
+      const refusal = bulkEditErrorFromError(error);
+      if (refusal) return { kind: "refused" as const, code: refusal.code };
+      throw error;
     }
-    let changing = 0;
-    let overwriting = 0;
-    for (const row of rows) {
-      const outcome = applyBulkEdit(row, args.edit);
-      if (outcome.changed) changing += 1;
-      if (overwritesValue(outcome)) overwriting += 1;
-    }
-    return { matching: rows.length, changing, overwriting, capped };
   },
 });
+
+async function previewEdit(
+  ctx: QueryCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    scope: Infer<typeof scopeValidator>;
+    edit: BulkEdit;
+  },
+) {
+  validateBulkEdit(args.edit);
+  let rows: Doc<"collections">[];
+  let capped = false;
+  if (args.scope.kind === "selection") {
+    rows = await loadSelection(
+      ctx,
+      args.organizationId,
+      args.scope.collectionIds,
+    );
+  } else {
+    // One page only: Convex allows a single built-in .paginate() per query
+    // or mutation, which convex-test does not enforce.
+    const page = await listCatalogPage(
+      ctx,
+      { ...args.scope.filters, organizationId: args.organizationId },
+      { numItems: PREVIEW_ROWS, cursor: null },
+      { stableOrder: true },
+    );
+    rows = page.page;
+    capped = !page.isDone;
+  }
+  let changing = 0;
+  let overwriting = 0;
+  for (const row of rows) {
+    const outcome = applyBulkEdit(row, args.edit);
+    if (outcome.changed) changing += 1;
+    if (overwritesValue(outcome)) overwriting += 1;
+  }
+  return { matching: rows.length, changing, overwriting, capped };
+}
 
 async function scheduleEditPage(
   ctx: MutationCtx,
@@ -293,12 +325,27 @@ export const resume = mutation({
     const { job, userId } = await loadJob(ctx, args.jobId);
     const now = Date.now();
     const stalled =
-      job.status === "running" && job.updatedAt < now - STALE_AFTER_MS;
+      job.status === "running" &&
+      job.updatedAt < now - BULK_EDIT_STALE_AFTER_MS;
     if (job.status !== "failed" && !stalled)
       throw bulkEditError(
         "EDIT_NOT_RESUMABLE",
         "Only a failed or stalled bulk edit can be resumed",
       );
+    // A failed edit waits while another one runs: one at a time per Organization.
+    if (job.status === "failed") {
+      const running = await ctx.db
+        .query("bulkFieldEdits")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", job.organizationId).eq("status", "running"),
+        )
+        .first();
+      if (running)
+        throw bulkEditError(
+          "EDIT_RUNNING",
+          "A bulk edit is already running; wait for it or cancel it",
+        );
+    }
     await ctx.db.patch(job._id, {
       status: "running",
       attempts: job.attempts + 1,
@@ -389,9 +436,11 @@ async function applyEditPage(
       action: "updated_collection",
       entityType: "collection",
       entityId: row._id,
+      // The field, previous and new shape the Object's history shows.
       changes: {
-        [edit.field]: outcome.after ?? null,
-        previous: { [edit.field]: outcome.before ?? null },
+        field: edit.field,
+        ...(outcome.before !== undefined ? { previous: outcome.before } : {}),
+        ...(outcome.after !== undefined ? { new: outcome.after } : {}),
         bulkFieldEditId: job._id,
       },
     });

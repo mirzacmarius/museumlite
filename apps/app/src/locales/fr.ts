@@ -3240,6 +3240,7 @@ export default {
         alternativeTitle: "Titre alternatif",
         creator: "Créateur",
         objectName: "Nom de l’objet",
+        objectType: "Type d’objet",
         description: "Description",
         tags: "Étiquettes de sujet",
         inscriptions: "Inscriptions",
@@ -3247,6 +3248,7 @@ export default {
         technique: "Technique",
         culture: "Culture",
         period: "Période",
+        provenance: "Provenance",
         customFields: "Champs personnalisés",
       },
     },
@@ -3297,23 +3299,27 @@ export default {
       preview:
         "Objets correspondants : {matching}. Objets modifiés : {changing}.",
       previewCapped:
-        "Décompte sur les {matching} premiers objets correspondants. La modification s’applique à toutes les correspondances.",
+        "Objets correspondants comptés jusqu’ici : {matching}. Objets modifiés parmi eux : {changing}. La modification vérifie chaque objet correspondant ; d’autres peuvent donc changer.",
       nothingChanges: "Aucun objet ne serait modifié.",
       overwriteWarning:
         "Objets dont la valeur enregistrée est remplacée : {count}",
+      overwriteWarningCapped:
+        "Objets comptés jusqu’ici dont la valeur enregistrée est remplacée : {count}",
       start: "Appliquer la modification",
       starting: "Démarrage…",
       progressRunning:
-        "Modification de {field} : {checked} vérifiés, {changed} modifiés",
+        "Modification de {field}. Objets vérifiés : {checked}. Objets modifiés : {changed}",
       progressCompleted:
-        "Modification terminée : {checked} vérifiés, {changed} modifiés",
+        "Modification terminée. Objets vérifiés : {checked}. Objets modifiés : {changed}",
       progressFailed:
-        "Modification arrêtée par une erreur : {checked} vérifiés, {changed} modifiés",
+        "Modification arrêtée par une erreur. Objets vérifiés : {checked}. Objets modifiés : {changed}",
       progressCancelled:
-        "Modification arrêtée : {checked} vérifiés, {changed} modifiés",
+        "Modification arrêtée. Objets vérifiés : {checked}. Objets modifiés : {changed}",
       progressSkipped: "Inchangés car le titre serait vide : {count}",
       stop: "Arrêter",
       resume: "Reprendre",
+      progressStalled:
+        "Cette modification ne signale plus sa progression. Reprenez-la pour continuer là où elle s’est arrêtée.",
       fields: {
         title: "Titre",
         alternativeTitle: "Titre alternatif",
@@ -3334,13 +3340,13 @@ export default {
       },
       errors: {
         valueRequired: "Saisissez la nouvelle valeur.",
-        valueTooLong: "Les valeurs comptent au plus 4 000 caractères.",
+        valueTooLong: "Les valeurs comptent au plus {limit} caractères.",
         findRequired: "Saisissez le texte à rechercher.",
         titleRequired:
           "Chaque objet doit avoir un titre ; les titres ne peuvent donc pas être vidés.",
         selectionEmpty: "Sélectionnez au moins un objet.",
         selectionTooLarge:
-          "Sélectionnez au plus 500 objets, ou modifiez tous les objets correspondant à la recherche et aux filtres.",
+          "Sélectionnez au plus {limit} objets, ou modifiez tous les objets correspondant à la recherche et aux filtres.",
         selectionOutsideOrganization:
           "Certains objets sélectionnés appartiennent à une autre organisation. Actualisez la page et sélectionnez-les à nouveau.",
         editRunning:
@@ -3348,6 +3354,7 @@ export default {
         editNotFound: "Cette modification n’existe plus.",
         editNotResumable: "Cette modification ne peut pas être reprise.",
         fallback: "La modification n’a pas pu démarrer. Réessayez.",
+        actionFailed: "L’action n’a pas pu être effectuée. Réessayez.",
       },
     },
     emptyState: {
@@ -9910,7 +9917,6 @@ export default {
       buildComplexFilterCombinationsToSearchYourCollectionAddMultipleFilterGroupsAndCombineThemWithANDORLogic:
         "Créez des combinaisons de filtres complexes pour rechercher dans votre collection. Ajoutez plusieurs groupes de filtres et combinez-les avec la logique ET/OU.",
       addFilterGroup: "Ajouter un groupe de filtres",
-      defined: "défini",
       clearAll: "Tout effacer",
       applyFilters: "Appliquer les filtres",
       organizations: "Organisations",
@@ -10253,8 +10259,6 @@ export default {
       noObjectsFound: "Aucun objet trouvé",
       selectOrAddTypes: "Sélectionner ou ajouter des types",
       qrCodeForAccession: "Code QR de l’accession {accession}",
-      filter: "Filtrer",
-      filters: "Filtres",
       uploading: "Envoi en cours",
       dropFilesHereOrClickToUpload:
         "Déposez les fichiers ici ou cliquez pour en importer",

@@ -12,7 +12,7 @@ export { OBJECT_SEARCH_FIELDS, type ObjectSearchField };
  * Bump when the document's composition changes; the backfill then rewrites
  * every Organization's documents before its search reads them again.
  */
-export const OBJECT_SEARCH_DOCUMENT_VERSION = 1;
+export const OBJECT_SEARCH_DOCUMENT_VERSION = 2;
 
 /** Characters of the description a document indexes. */
 const DESCRIPTION_TEXT_LIMIT = 4000;
@@ -86,6 +86,7 @@ export function objectSearchFieldTexts(
     alternativeTitle: collection.alternativeTitle,
     creator: collection.creator,
     objectName: collection.objectName,
+    objectType: storedListValues(collection.objectType).join(" "),
     description: clip(collection.description ?? "", DESCRIPTION_TEXT_LIMIT),
     tags: (collection.tags ?? []).join(" "),
     inscriptions: [
@@ -100,6 +101,7 @@ export function objectSearchFieldTexts(
     technique: collection.technique,
     culture: collection.culture,
     period: collection.period,
+    provenance: collection.provenance,
     customFields: customFieldText(collection),
   };
   return OBJECT_SEARCH_FIELDS.flatMap((field) => {
@@ -179,7 +181,12 @@ export async function syncObjectSearchDocument(
   ]);
   const document = composeObjectSearchDocument(collection, hasImage);
   if (existing) {
-    await ctx.db.replace(existing._id, document);
+    // Most writes to an Object change nothing searchable; an unchanged
+    // document is left alone so facet and search readers don't re-run.
+    const { _id, _creationTime, ...current } = existing;
+    if (!sameDocument(current, document)) {
+      await ctx.db.replace(existing._id, document);
+    }
   } else {
     await ctx.db.insert("objectSearchDocuments", document);
   }
@@ -228,7 +235,17 @@ export async function isObjectSearchReady(
   );
 }
 
-/** Words of a text, lower-cased; search terms match them by prefix. */
+function sameDocument(
+  current: Record<string, unknown>,
+  next: Record<string, unknown>,
+) {
+  const keys = new Set([...Object.keys(current), ...Object.keys(next)]);
+  return [...keys].every(
+    (key) => JSON.stringify(current[key]) === JSON.stringify(next[key]),
+  );
+}
+
+/** Words of a text, lower-cased, as the search index splits them. */
 export function searchTokens(text: string) {
   return text
     .toLowerCase()
@@ -237,18 +254,24 @@ export function searchTokens(text: string) {
 }
 
 /**
- * The first field, in document order, holding a word one of the search
- * terms begins; what a result row reports as its match.
+ * The first field, in document order, that a search term matches, as the
+ * search index matches: any term may match, each one a whole word except
+ * the last, which may begin one. What a result row reports as its match.
  */
 export function matchedObjectSearchField(
   collection: Doc<"collections">,
   search: string,
 ): ObjectSearchField | undefined {
   const terms = searchTokens(search);
-  if (terms.length === 0) return undefined;
+  const last = terms.pop();
+  if (last === undefined) return undefined;
+  const whole = new Set(terms);
   for (const { field, text } of objectSearchFieldTexts(collection)) {
-    const words = searchTokens(text);
-    if (terms.some((term) => words.some((word) => word.startsWith(term))))
+    if (
+      searchTokens(text).some(
+        (word) => whole.has(word) || word.startsWith(last),
+      )
+    )
       return field;
   }
   return undefined;

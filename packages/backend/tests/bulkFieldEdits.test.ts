@@ -4,10 +4,32 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { bulkEditErrorFromError } from "../convex/utils/bulkFieldEditErrors";
 import {
+  BULK_EDIT_STALE_AFTER_MS,
+  BULK_EDIT_VALUE_LIMIT,
+} from "../convex/utils/bulkFieldEdits";
+import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
 } from "./testHarness";
+
+// Objects whose option usage write fails, to make an edit page fail for real.
+const failingWrites = vi.hoisted(() => new Set<string>());
+vi.mock("../convex/utils/collectionOptionUsages", async (importOriginal) => {
+  const real =
+    await importOriginal<
+      typeof import("../convex/utils/collectionOptionUsages")
+    >();
+  return {
+    ...real,
+    syncCollectionOptionUsages: async (
+      ...args: Parameters<typeof real.syncCollectionOptionUsages>
+    ) => {
+      if (failingWrites.has(args[1])) throw new Error("Write failed");
+      return await real.syncCollectionOptionUsages(...args);
+    },
+  };
+});
 
 async function setup() {
   const t = createConvexTest();
@@ -67,7 +89,16 @@ async function setup() {
     );
   }
 
-  return { t, user, organizationId, create, run, field, auditEntries };
+  return {
+    t,
+    user,
+    organizationId,
+    userId: owner.userId,
+    create,
+    run,
+    field,
+    auditEntries,
+  };
 }
 
 function refusalCode(promise: Promise<unknown>) {
@@ -107,7 +138,13 @@ test("a selection has one field set, with a preview of what the edit writes over
       scope,
       edit,
     }),
-  ).toEqual({ matching: 3, changing: 2, overwriting: 1, capped: false });
+  ).toEqual({
+    kind: "preview",
+    matching: 3,
+    changing: 2,
+    overwriting: 1,
+    capped: false,
+  });
 
   const job = await s.run({ scope, edit });
   expect(job).toMatchObject({
@@ -121,9 +158,16 @@ test("a selection has one field set, with a preview of what the edit writes over
   expect(await s.field(greek, "culture")).toBe("Roman");
   expect(await s.field(untouched, "culture")).toBeUndefined();
   expect(await s.auditEntries(greek)).toHaveLength(1);
-  expect((await s.auditEntries(greek))[0]?.changes).toMatchObject({
-    culture: "Roman",
-    previous: { culture: "Greek" },
+  // The field, previous and new values the Object's history shows.
+  expect((await s.auditEntries(greek))[0]?.changes).toEqual({
+    field: "culture",
+    previous: "Greek",
+    new: "Roman",
+    bulkFieldEditId: job._id,
+  });
+  expect((await s.auditEntries(plain))[0]?.changes).toEqual({
+    field: "culture",
+    new: "Roman",
     bulkFieldEditId: job._id,
   });
   // Unchanged Objects are not audited as changed.
@@ -291,4 +335,216 @@ test("one edit runs at a time per Organization and a selection from another Orga
     }),
   ).toMatchObject({ _id: jobId, status: "cancelled", changed: 0 });
   expect(await s.field(own, "culture")).toBeUndefined();
+});
+
+test("a preview the server would refuse says why instead of throwing", async () => {
+  const s = await setup();
+  const bowl = await s.create({ accessionNumber: "1", title: "Bowl" });
+  const scope = { kind: "selection" as const, collectionIds: [bowl] };
+  const tooLong = "x".repeat(BULK_EDIT_VALUE_LIMIT + 1);
+
+  expect(
+    await s.user.query(api.bulkFieldEdits.preview, {
+      organizationId: s.organizationId,
+      scope,
+      edit: { field: "culture", operation: "set", value: tooLong },
+    }),
+  ).toEqual({ kind: "refused", code: "VALUE_TOO_LONG" });
+  expect(
+    await s.user.query(api.bulkFieldEdits.preview, {
+      organizationId: s.organizationId,
+      scope,
+      edit: {
+        field: "culture",
+        operation: "replace",
+        find: "Roman",
+        replaceWith: tooLong,
+      },
+    }),
+  ).toEqual({ kind: "refused", code: "VALUE_TOO_LONG" });
+  expect(
+    await refusalCode(
+      s.user.mutation(api.bulkFieldEdits.start, {
+        organizationId: s.organizationId,
+        scope,
+        edit: { field: "culture", operation: "replace", find: tooLong },
+      }),
+    ),
+  ).toBe("VALUE_TOO_LONG");
+});
+
+test("replacement text is written as typed, even with dollar signs", async () => {
+  const s = await setup();
+  const coin = await s.create({ accessionNumber: "1", title: "Coin, 5 cents" });
+
+  await s.run({
+    scope: { kind: "selection", collectionIds: [coin] },
+    edit: {
+      field: "title",
+      operation: "replace",
+      find: "5 cents",
+      replaceWith: "$& and $1",
+    },
+  });
+  expect(await s.field(coin, "title")).toBe("Coin, $& and $1");
+});
+
+test("a page that keeps failing stops the edit, which resumes from its last committed page", async () => {
+  const s = await setup();
+  const coins: Id<"collections">[] = [];
+  for (let index = 0; index < 30; index++) {
+    coins.push(
+      await s.create({
+        accessionNumber: `C-${index}`,
+        title: `Coin ${index}`,
+        objectType: "Coin",
+      }),
+    );
+  }
+  const vase = await s.create({
+    accessionNumber: "V-1",
+    title: "Vase",
+    objectType: "Vase",
+  });
+  // The oldest Coin, on the second page newest first, cannot be written.
+  const [oldest] = coins;
+  if (!oldest) throw new Error("No Coins created");
+  failingWrites.add(oldest);
+
+  vi.useFakeTimers();
+  try {
+    const jobId = await s.user.mutation(api.bulkFieldEdits.start, {
+      organizationId: s.organizationId,
+      scope: { kind: "filters", filters: { objectType: "Coin" } },
+      edit: { field: "materials", operation: "set", value: "Silver" },
+    });
+    // A running edit that still reports progress is not resumed twice.
+    expect(
+      await refusalCode(s.user.mutation(api.bulkFieldEdits.resume, { jobId })),
+    ).toBe("EDIT_NOT_RESUMABLE");
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    // Every other Coin was written, page by page, before the edit stopped.
+    expect(await s.user.query(api.bulkFieldEdits.get, { jobId })).toMatchObject(
+      { status: "failed", failure: "Write failed", checked: 29, changed: 29 },
+    );
+    expect(await s.field(oldest, "materials")).toBeUndefined();
+
+    // While another edit runs, the failed one waits.
+    const other = await s.user.mutation(api.bulkFieldEdits.start, {
+      organizationId: s.organizationId,
+      scope: { kind: "selection", collectionIds: [vase] },
+      edit: { field: "culture", operation: "set", value: "Greek" },
+    });
+    expect(
+      await refusalCode(s.user.mutation(api.bulkFieldEdits.resume, { jobId })),
+    ).toBe("EDIT_RUNNING");
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(
+      await s.user.query(api.bulkFieldEdits.get, { jobId: other }),
+    ).toMatchObject({ status: "completed" });
+
+    failingWrites.clear();
+    await s.user.mutation(api.bulkFieldEdits.resume, { jobId });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await s.user.query(api.bulkFieldEdits.get, { jobId })).toMatchObject(
+      { status: "completed", checked: 30, changed: 30 },
+    );
+  } finally {
+    failingWrites.clear();
+    vi.useRealTimers();
+  }
+  for (const coin of coins) {
+    expect(await s.field(coin, "materials")).toBe("Silver");
+  }
+  expect(await s.field(vase, "materials")).toBeUndefined();
+  // Pages written before the failure were not written again on resume.
+  const newest = coins.at(-1);
+  if (!newest) throw new Error("No Coins created");
+  expect(await s.auditEntries(newest)).toHaveLength(1);
+  expect(await s.auditEntries(oldest)).toHaveLength(1);
+});
+
+test("a filtered preview whose newest page holds no match reports a lower bound", async () => {
+  const s = await setup();
+  await s.t.run(async (ctx) => {
+    const fields = {
+      organizationId: s.organizationId,
+      status: "active" as const,
+      catalogedBy: s.userId,
+      catalogedAt: 1,
+    };
+    for (let index = 0; index < 5; index++) {
+      await ctx.db.insert("collections", {
+        ...fields,
+        accessionNumber: `R-${index}`,
+        title: `Lamp ${index}`,
+        culture: "Roman",
+      });
+    }
+    for (let index = 0; index < 1100; index++) {
+      await ctx.db.insert("collections", {
+        ...fields,
+        accessionNumber: `N-${index}`,
+        title: `Plate ${index}`,
+      });
+    }
+  });
+
+  expect(
+    await s.user.query(api.bulkFieldEdits.preview, {
+      organizationId: s.organizationId,
+      scope: { kind: "filters", filters: { culture: "Roman" } },
+      edit: { field: "culture", operation: "set", value: "Greek" },
+    }),
+  ).toEqual({
+    kind: "preview",
+    matching: 0,
+    changing: 0,
+    overwriting: 0,
+    capped: true,
+  });
+});
+
+test("a running edit that stopped reporting resumes without writing a page twice", async () => {
+  const s = await setup();
+  const coins: Id<"collections">[] = [];
+  for (let index = 0; index < 30; index++) {
+    coins.push(
+      await s.create({ accessionNumber: `C-${index}`, title: `Coin ${index}` }),
+    );
+  }
+
+  vi.useFakeTimers();
+  const jobId = await s.user.mutation(api.bulkFieldEdits.start, {
+    organizationId: s.organizationId,
+    scope: { kind: "selection", collectionIds: coins },
+    edit: {
+      field: "title",
+      operation: "replace",
+      find: "coin",
+      replaceWith: "Roman coin",
+    },
+  });
+  await s.t.run((ctx) =>
+    ctx.db.patch(jobId, {
+      updatedAt: Date.now() - BULK_EDIT_STALE_AFTER_MS - 1,
+    }),
+  );
+  // The original page is still queued; both runs race for the same page.
+  await s.user.mutation(api.bulkFieldEdits.resume, { jobId });
+  await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  vi.useRealTimers();
+
+  expect(await s.user.query(api.bulkFieldEdits.get, { jobId })).toMatchObject({
+    status: "completed",
+    checked: 30,
+    changed: 30,
+  });
+  expect(await s.field(coins[0] as Id<"collections">, "title")).toBe(
+    "Roman coin 0",
+  );
+  expect(await s.field(coins[29] as Id<"collections">, "title")).toBe(
+    "Roman coin 29",
+  );
+  expect(await s.auditEntries(coins[29] as Id<"collections">)).toHaveLength(1);
 });

@@ -2,6 +2,7 @@ import type { FunctionArgs } from "convex/server";
 import { expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import { OBJECT_SEARCH_DOCUMENT_VERSION } from "../convex/utils/objectSearchDocuments";
 import {
   authedForUser,
   createConvexTest,
@@ -100,6 +101,12 @@ test("a word in any indexed field finds the Object, identifier prefixes come fir
     tags: ["anchor", "iron"],
     inscriptionMarks: [{ label: "Base", description: "Stamped LOWESTOFT" }],
   });
+  await catalog.create({
+    accessionNumber: "B-12",
+    title: "Storage jar",
+    objectType: "Amphora",
+    provenance: "Ex Tollemache collection",
+  });
   const portrait = await catalog.create({
     accessionNumber: "A-77",
     title: "Portrait",
@@ -137,6 +144,12 @@ test("a word in any indexed field finds the Object, identifier prefixes come fir
   expect(await catalog.numbers({ search: "canvas" })).toEqual(["A-77"]);
   expect(await catalog.numbers({ search: "carnarvon" })).toEqual(["A-77"]);
   expect(await catalog.numbers({ search: "smith" })).toEqual(["2024.2"]);
+  expect(await catalog.list({ search: "amphora" })).toMatchObject([
+    { accessionNumber: "B-12", matchedField: "objectType" },
+  ]);
+  expect(await catalog.list({ search: "tollemache" })).toMatchObject([
+    { accessionNumber: "B-12", matchedField: "provenance" },
+  ]);
   expect(await catalog.numbers({ search: "nothing-here" })).toEqual([]);
 });
 
@@ -179,6 +192,166 @@ test("until an Organization's documents are complete the catalog searches record
   expect(rows.map((row) => row.accessionNumber)).toEqual(["9.1"]);
   expect(rows[0]?.matchedField).toBeUndefined();
   expect(await catalog.numbers({ search: "9.1" })).toEqual(["9.1"]);
+});
+
+test("the backfill pages through every Object and every Organization", async () => {
+  const catalog = await setupCatalog();
+  for (let index = 0; index < 60; index++) {
+    await catalog.create({
+      accessionNumber: `B-${index}`,
+      title: index === 59 ? "Brass lantern" : `Plate ${index}`,
+    });
+  }
+  const others = await catalog.t.run(async (ctx) => {
+    // Documents written before search existed: the backfill writes them all.
+    for (const document of await ctx.db
+      .query("objectSearchDocuments")
+      .collect()) {
+      await ctx.db.delete(document._id);
+    }
+    const ids = [];
+    for (let index = 0; index < 200; index++) {
+      ids.push(
+        await ctx.db.insert("organizations", {
+          name: `Museum ${index}`,
+          slug: `museum-${index}`,
+          type: "museum",
+        }),
+      );
+    }
+    return ids;
+  });
+  await catalog.backfill();
+
+  const rows = await catalog.list({ search: "lantern" });
+  expect(rows.map((row) => row.accessionNumber)).toEqual(["B-59"]);
+  expect(rows[0]?.matchedField).toBe("title");
+  const last = others.at(-1);
+  if (!last) throw new Error("No Organizations inserted");
+  const state = await catalog.t.run((ctx) =>
+    ctx.db
+      .query("objectSearchBackfills")
+      .withIndex("by_organization", (q) => q.eq("organizationId", last))
+      .first(),
+  );
+  expect(state?.completedAt).toBeDefined();
+});
+
+test("documents of an older version are rebuilt, and a run begun under one starts again", async () => {
+  const catalog = await setupCatalog();
+  for (let index = 0; index < 60; index++) {
+    await catalog.create({
+      accessionNumber: `V-${index}`,
+      title: index === 0 ? "Brass lantern" : `Plate ${index}`,
+    });
+  }
+  await catalog.backfill();
+  const complete = async () =>
+    await catalog.t.run((ctx) =>
+      ctx.db
+        .query("objectSearchBackfills")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", catalog.organizationId),
+        )
+        .first(),
+    );
+  const done = await complete();
+  if (!done) throw new Error("No backfill state");
+
+  vi.useFakeTimers();
+  try {
+    // Completed at an older version a moment ago: rebuilt on the next run.
+    await catalog.t.run((ctx) =>
+      ctx.db.patch(done._id, { version: OBJECT_SEARCH_DOCUMENT_VERSION - 1 }),
+    );
+    expect(
+      await catalog.t.mutation(
+        internal.objectSearch.startOutdatedBackfills,
+        {},
+      ),
+    ).toBe(1);
+    await catalog.t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await complete()).toMatchObject({
+      version: OBJECT_SEARCH_DOCUMENT_VERSION,
+      completedAt: expect.any(Number),
+    });
+
+    // A later page of a run begun under the older version starts it again.
+    await catalog.t.run((ctx) =>
+      ctx.db.patch(done._id, {
+        version: OBJECT_SEARCH_DOCUMENT_VERSION - 1,
+        completedAt: undefined,
+      }),
+    );
+    const firstPage = await catalog.t.run((ctx) =>
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", catalog.organizationId),
+        )
+        .paginate({ numItems: 50, cursor: null }),
+    );
+    await catalog.t.mutation(internal.objectSearch.backfillPage, {
+      organizationId: catalog.organizationId,
+      cursor: firstPage.continueCursor,
+    });
+    const restarted = await complete();
+    expect(restarted?.version).toBe(OBJECT_SEARCH_DOCUMENT_VERSION);
+    expect(restarted?.completedAt).toBeUndefined();
+    await catalog.t.finishAllScheduledFunctions(vi.runAllTimers);
+  } finally {
+    vi.useRealTimers();
+  }
+  expect((await complete())?.completedAt).toBeDefined();
+  expect(await catalog.list({ search: "lantern" })).toMatchObject([
+    { accessionNumber: "V-0", matchedField: "title" },
+  ]);
+});
+
+test("a filtered export holds the rows the catalog list shows for the same search", async () => {
+  const catalog = await setupCatalog();
+  await catalog.create({ accessionNumber: "F-1", title: "Fishing boat" });
+  await catalog.create({ accessionNumber: "F-2", title: "Boat hook" });
+  await catalog.create({ accessionNumber: "F-3", title: "Fishing net" });
+  await catalog.create({ accessionNumber: "F-4", title: "Lamp" });
+  await catalog.backfill();
+  // Any word matches, the last as a prefix: not the phrase as a substring.
+  const listed = await catalog.numbers({ search: "fishing boat" });
+  expect(listed).toEqual(["F-1", "F-2", "F-3"]);
+
+  vi.useFakeTimers();
+  try {
+    vi.advanceTimersByTime(1000);
+    const jobId = await catalog.user.mutation(api.exports.create, {
+      organizationId: catalog.organizationId,
+      requestKey: "search",
+      format: "jsonl",
+      source: {
+        kind: "objects",
+        mode: "filtered",
+        filters: { search: "fishing boat" },
+      },
+    });
+    await catalog.t.finishInProgressScheduledFunctions();
+    await catalog.t.finishAllScheduledFunctions(() =>
+      vi.advanceTimersByTime(1),
+    );
+    const response = await catalog.user.fetch(
+      `/exports/download?jobId=${jobId}`,
+    );
+    expect(response.status).toBe(200);
+    const exported = (await response.text())
+      .trim()
+      .split("\n")
+      .map(
+        (line) =>
+          (JSON.parse(line) as { accessionNumber: string }).accessionNumber,
+      )
+      .sort();
+    expect(exported).toEqual(listed);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("facet filters and values come from the records, with photographs and the cataloguing date", async () => {

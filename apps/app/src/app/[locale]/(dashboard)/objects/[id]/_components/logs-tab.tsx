@@ -2,6 +2,11 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  BULK_EDIT_FIELDS,
+  type BulkEditField,
+} from "@v1/backend/convex/utils/bulkFieldEdits";
+import { storedListValues } from "@v1/backend/convex/utils/objectSearchDocuments";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
@@ -57,6 +62,17 @@ function getActionBadgeClasses(action: string): {
   return { bg: "bg-secondary", text: "text-foreground" };
 }
 
+function isBulkEditField(field: unknown): field is BulkEditField {
+  return BULK_EDIT_FIELDS.some((candidate) => candidate === field);
+}
+
+/** A changed value as staff entered it: lists as their entries, not JSON. */
+function changedValue(field: unknown, value: unknown) {
+  return field === "materials" || field === "objectType"
+    ? storedListValues(String(value)).join(", ")
+    : String(value);
+}
+
 /**
  * Format the changes field for display
  */
@@ -66,6 +82,27 @@ function formatChanges(
 ): React.ReactNode {
   if (!changes || typeof changes !== "object") {
     return null;
+  }
+
+  // Handle field changes pattern (e.g., { field: "title", previous: "X", new: "Y" })
+  if ("field" in changes) {
+    return (
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+        {tRoot("untranslatedRecords.objects.logs.fieldChanged", {
+          field: isBulkEditField(changes.field)
+            ? tRoot(`objects.bulkEdit.fields.${changes.field}`)
+            : String(changes.field),
+          previous:
+            changes.previous !== undefined
+              ? ` ${tRoot("untranslatedRecords.objects.logs.fromValue", { value: changedValue(changes.field, changes.previous) })}`
+              : "",
+          next:
+            changes.new !== undefined
+              ? ` ${tRoot("untranslatedRecords.objects.logs.toValue", { value: changedValue(changes.field, changes.new) })}`
+              : "",
+        })}
+      </p>
+    );
   }
 
   // Handle previous/new value pattern
@@ -100,25 +137,6 @@ function formatChanges(
       <p className="mt-0.5 font-mono text-xs text-muted-foreground">
         {tRoot("untranslatedRecords.objects.logs.previousLocation", {
           location: String(previousLocation),
-        })}
-      </p>
-    );
-  }
-
-  // Handle field changes pattern (e.g., { field: "title", previous: "X", new: "Y" })
-  if ("field" in changes) {
-    return (
-      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-        {tRoot("untranslatedRecords.objects.logs.fieldChanged", {
-          field: String(changes.field),
-          previous:
-            changes.previous !== undefined
-              ? ` ${tRoot("untranslatedRecords.objects.logs.fromValue", { value: String(changes.previous) })}`
-              : "",
-          next:
-            changes.new !== undefined
-              ? ` ${tRoot("untranslatedRecords.objects.logs.toValue", { value: String(changes.new) })}`
-              : "",
         })}
       </p>
     );

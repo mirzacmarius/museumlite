@@ -465,11 +465,9 @@ export function AdvancedSearchDialog({
 
         <DialogFooter className="flex items-center justify-between sm:justify-between">
           <div className="text-sm text-muted-foreground">
-            {totalFilters}{" "}
-            {totalFilters === 1
-              ? translate("untranslatedComponents.labels.filter")
-              : translate("untranslatedComponents.labels.filters")}{" "}
-            {translate("untranslatedComponents.labels.defined")}
+            {translate("objects.filters.advancedConditions", {
+              count: totalFilters,
+            })}
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={handleClear}>

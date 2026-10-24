@@ -2581,6 +2581,7 @@ export default {
         alternativeTitle: "Alternative title",
         creator: "Creator",
         objectName: "Object name",
+        objectType: "Object type",
         description: "Description",
         tags: "Subject tags",
         inscriptions: "Inscriptions",
@@ -2588,6 +2589,7 @@ export default {
         technique: "Technique",
         culture: "Culture",
         period: "Period",
+        provenance: "Provenance",
         customFields: "Custom fields",
       },
     },
@@ -2637,9 +2639,11 @@ export default {
       previewLoading: "Checking which objects change…",
       preview: "Matching objects: {matching}. Objects that change: {changing}.",
       previewCapped:
-        "Counted over the first {matching} matching objects. The edit covers every match.",
+        "Matching objects counted so far: {matching}. Objects among them that change: {changing}. The edit checks every matching object, so more may change.",
       nothingChanges: "No object would change.",
       overwriteWarning: "Objects whose recorded value is replaced: {count}",
+      overwriteWarningCapped:
+        "Objects counted so far whose recorded value is replaced: {count}",
       start: "Apply edit",
       starting: "Starting…",
       progressRunning: "Editing {field}: {checked} checked, {changed} changed",
@@ -2651,6 +2655,8 @@ export default {
         "Left unchanged because the title would be empty: {count}",
       stop: "Stop",
       resume: "Resume",
+      progressStalled:
+        "This edit has stopped reporting progress. Resume it to continue from where it stopped.",
       fields: {
         title: "Title",
         alternativeTitle: "Alternative title",
@@ -2671,13 +2677,13 @@ export default {
       },
       errors: {
         valueRequired: "Enter the new value.",
-        valueTooLong: "Values can be at most 4,000 characters long.",
+        valueTooLong: "Values can be at most {limit} characters long.",
         findRequired: "Enter the text to find.",
         titleRequired:
           "Every object needs a title, so titles can't be cleared.",
         selectionEmpty: "Select at least one object.",
         selectionTooLarge:
-          "Select at most 500 objects, or edit all objects that match the search and filters instead.",
+          "Select at most {limit} objects, or edit all objects that match the search and filters instead.",
         selectionOutsideOrganization:
           "Some selected objects belong to another organization. Refresh the page and select them again.",
         editRunning:
@@ -2685,6 +2691,7 @@ export default {
         editNotFound: "This edit no longer exists.",
         editNotResumable: "This edit can't be resumed.",
         fallback: "The edit could not be started. Try again.",
+        actionFailed: "The action could not be completed. Try again.",
       },
     },
     emptyState: {
@@ -9671,7 +9678,6 @@ export default {
       buildComplexFilterCombinationsToSearchYourCollectionAddMultipleFilterGroupsAndCombineThemWithANDORLogic:
         "Build complex filter combinations to search your collection. Add multiple filter groups and combine them with AND/OR logic.",
       addFilterGroup: "Add Filter Group",
-      defined: "defined",
       clearAll: "Clear All",
       applyFilters: "Apply Filters",
       organizations: "Organizations",
@@ -10003,8 +10009,6 @@ export default {
       noObjectsFound: "No Objects Found",
       selectOrAddTypes: "Select Or Add Types",
       qrCodeForAccession: "QR code for accession {accession}",
-      filter: "Filter",
-      filters: "Filters",
       uploading: "Uploading",
       dropFilesHereOrClickToUpload: "Drop Files Here Or Click To Upload",
       upToSizePerFile: "Up to {size} per file",

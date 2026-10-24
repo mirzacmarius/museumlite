@@ -3231,6 +3231,7 @@ export default {
         alternativeTitle: "Título alternativo",
         creator: "Creador",
         objectName: "Nombre del objeto",
+        objectType: "Tipo de objeto",
         description: "Descripción",
         tags: "Etiquetas de tema",
         inscriptions: "Inscripciones",
@@ -3238,6 +3239,7 @@ export default {
         technique: "Técnica",
         culture: "Cultura",
         period: "Período",
+        provenance: "Procedencia",
         customFields: "Campos personalizados",
       },
     },
@@ -3288,22 +3290,26 @@ export default {
       preview:
         "Objetos coincidentes: {matching}. Objetos que cambian: {changing}.",
       previewCapped:
-        "Recuento sobre los primeros {matching} objetos coincidentes. La edición abarca todas las coincidencias.",
+        "Objetos coincidentes contados hasta ahora: {matching}. Objetos entre ellos que cambian: {changing}. La edición revisa todos los objetos coincidentes, así que pueden cambiar más.",
       nothingChanges: "Ningún objeto cambiaría.",
       overwriteWarning: "Objetos cuyo valor registrado se reemplaza: {count}",
+      overwriteWarningCapped:
+        "Objetos contados hasta ahora cuyo valor registrado se reemplaza: {count}",
       start: "Aplicar la edición",
       starting: "Iniciando…",
       progressRunning:
-        "Editando {field}: {checked} revisados, {changed} cambiados",
+        "Editando {field}. Objetos revisados: {checked}. Objetos cambiados: {changed}",
       progressCompleted:
-        "Edición terminada: {checked} revisados, {changed} cambiados",
+        "Edición terminada. Objetos revisados: {checked}. Objetos cambiados: {changed}",
       progressFailed:
-        "Edición detenida por un error: {checked} revisados, {changed} cambiados",
+        "Edición detenida por un error. Objetos revisados: {checked}. Objetos cambiados: {changed}",
       progressCancelled:
-        "Edición detenida: {checked} revisados, {changed} cambiados",
+        "Edición detenida. Objetos revisados: {checked}. Objetos cambiados: {changed}",
       progressSkipped: "Sin cambios porque el título quedaría vacío: {count}",
       stop: "Detener",
       resume: "Reanudar",
+      progressStalled:
+        "Esta edición ha dejado de informar de su progreso. Reanúdela para continuar desde donde se detuvo.",
       fields: {
         title: "Título",
         alternativeTitle: "Título alternativo",
@@ -3324,13 +3330,14 @@ export default {
       },
       errors: {
         valueRequired: "Introduzca el valor nuevo.",
-        valueTooLong: "Los valores pueden tener como máximo 4000 caracteres.",
+        valueTooLong:
+          "Los valores pueden tener como máximo {limit} caracteres.",
         findRequired: "Introduzca el texto que desea buscar.",
         titleRequired:
           "Todo objeto necesita un título, así que los títulos no se pueden vaciar.",
         selectionEmpty: "Seleccione al menos un objeto.",
         selectionTooLarge:
-          "Seleccione como máximo 500 objetos, o edite todos los objetos que coinciden con la búsqueda y los filtros.",
+          "Seleccione como máximo {limit} objetos, o edite todos los objetos que coinciden con la búsqueda y los filtros.",
         selectionOutsideOrganization:
           "Algunos objetos seleccionados pertenecen a otra organización. Actualice la página y vuelva a seleccionarlos.",
         editRunning:
@@ -3338,6 +3345,7 @@ export default {
         editNotFound: "Esta edición ya no existe.",
         editNotResumable: "Esta edición no se puede reanudar.",
         fallback: "No se pudo iniciar la edición. Inténtelo de nuevo.",
+        actionFailed: "No se pudo completar la acción. Inténtelo de nuevo.",
       },
     },
     emptyState: {
@@ -9871,7 +9879,6 @@ export default {
       buildComplexFilterCombinationsToSearchYourCollectionAddMultipleFilterGroupsAndCombineThemWithANDORLogic:
         "Crea combinaciones complejas de filtros para buscar en tu colección. Añade varios grupos de filtros y combínalos con la lógica Y/O.",
       addFilterGroup: "Añadir grupo de filtros",
-      defined: "determinado",
       clearAll: "Borrar todo",
       applyFilters: "Aplicar filtros",
       organizations: "Organizaciones",
@@ -10216,8 +10223,6 @@ export default {
       noObjectsFound: "No se encontraron objetos",
       selectOrAddTypes: "Seleccionar o añadir tipos",
       qrCodeForAccession: "Código QR de la accesión {accession}",
-      filter: "Filtrar",
-      filters: "Filtros",
       uploading: "Subiendo",
       dropFilesHereOrClickToUpload:
         "Suelta los archivos aquí o haz clic para subirlos",

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useListState } from "@/hooks/use-list-state";
 import { useObjectFilters } from "@/hooks/use-url-filters";
 import { defineListState } from "@/lib/list-state";
+import type { BulkEditScope } from "./bulk-edit-field-dialog";
 import {
   INITIAL_OBJECTS_PAGE_SIZE,
   NEXT_OBJECTS_PAGE_SIZE,
@@ -131,6 +132,18 @@ export const OBJECT_LIST_KEYS = [
   ...objectCatalogListState.keys,
 ];
 
+/**
+ * The first or last moment of a date input's day (YYYY-MM-DD) where staff
+ * are, so a cataloguing range covers the days they picked.
+ */
+export function localDayBound(value: string, edge: "start" | "end") {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  return edge === "start"
+    ? new Date(year, month - 1, day).getTime()
+    : new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+}
+
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   const objectFilters = useObjectFilters();
   const { filters, hasActiveFilters } = objectFilters;
@@ -163,10 +176,11 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     useState(false);
   const [showBulkPrintLabelsDialog, setShowBulkPrintLabelsDialog] =
     useState(false);
-  // A bulk field edit runs over the selection or every matching object.
-  const [bulkEditScope, setBulkEditScope] = useState<
-    "selection" | "filters" | null
-  >(null);
+  // A bulk field edit runs over the selection or every matching object, as
+  // they were when its dialog opened.
+  const [bulkEditScope, setBulkEditScope] = useState<BulkEditScope | null>(
+    null,
+  );
 
   const savedViewMode = useQuery(api.userPreferences.get, {
     key: "objects.viewMode",
@@ -271,12 +285,8 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
       filters.locationIds.length > 0
         ? (filters.locationIds as Id<"locations">[])
         : undefined,
-    catalogedFrom: filters.catalogedFrom
-      ? new Date(filters.catalogedFrom).getTime()
-      : undefined,
-    catalogedTo: filters.catalogedTo
-      ? new Date(filters.catalogedTo).setHours(23, 59, 59, 999)
-      : undefined,
+    catalogedFrom: localDayBound(filters.catalogedFrom, "start"),
+    catalogedTo: localDayBound(filters.catalogedTo, "end"),
     ...(advancedFilters.length > 0
       ? { advancedFilters, filterCombinations: filters.filterCombinations }
       : {}),

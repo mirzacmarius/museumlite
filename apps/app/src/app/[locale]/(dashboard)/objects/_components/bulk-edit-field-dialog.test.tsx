@@ -72,7 +72,13 @@ async function openForSelection(
 }
 
 test("the preview counts what changes and warns before recorded values are replaced", async () => {
-  state.preview = { matching: 3, changing: 2, overwriting: 1, capped: false };
+  state.preview = {
+    kind: "preview",
+    matching: 3,
+    changing: 2,
+    overwriting: 1,
+    capped: false,
+  };
   const onStarted = vi.fn();
   state.start.mockResolvedValue("job-1");
   const collectionIds = selection(3);
@@ -98,6 +104,7 @@ test("the preview counts what changes and warns before recorded values are repla
     checked: 1,
     changed: 1,
     skipped: 0,
+    updatedAt: Date.now(),
   };
   await user.click(screen.getByRole("button", { name: "Apply edit" }));
 
@@ -131,8 +138,12 @@ test("titles can be set or replaced, never cleared", async () => {
 });
 
 test("a selection over the limit is refused before anything is counted", async () => {
-  await openForSelection(selection(501));
+  await openForSelection(selection(1200));
   const user = userEvent.setup();
+
+  expect(
+    screen.getByText("Change one field on the selected objects (1,200)."),
+  ).toBeTruthy();
 
   await user.type(screen.getByLabelText("New value"), "Norse");
 
@@ -148,7 +159,13 @@ test("a selection over the limit is refused before anything is counted", async (
 });
 
 test("an edit the server refuses is explained in the dialog", async () => {
-  state.preview = { matching: 2, changing: 2, overwriting: 0, capped: false };
+  state.preview = {
+    kind: "preview",
+    matching: 2,
+    changing: 2,
+    overwriting: 0,
+    capped: false,
+  };
   state.start.mockRejectedValue(
     bulkEditError("EDIT_RUNNING", "Another bulk edit is running"),
   );
@@ -167,4 +184,67 @@ test("an edit the server refuses is explained in the dialog", async () => {
   expect((screen.getByLabelText("New value") as HTMLInputElement).value).toBe(
     "Norse",
   );
+});
+
+test("a capped preview gives its counts as a lower bound and still lets the edit start", async () => {
+  state.preview = {
+    kind: "preview",
+    matching: 1200,
+    changing: 1000,
+    overwriting: 1000,
+    capped: true,
+  };
+  await openForSelection(selection(2));
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText("New value"), "Norse");
+
+  expect(
+    await screen.findByText(
+      "Matching objects counted so far: 1,200. Objects among them that change: 1,000. The edit checks every matching object, so more may change.",
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Objects counted so far whose recorded value is replaced: 1,000",
+    ),
+  ).toBeTruthy();
+  expect(screen.queryByText(/^Matching objects: /)).toBeNull();
+});
+
+test("a capped preview that found no change yet does not block the edit", async () => {
+  state.preview = {
+    kind: "preview",
+    matching: 0,
+    changing: 0,
+    overwriting: 0,
+    capped: true,
+  };
+  await openForSelection(selection(2));
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText("New value"), "Norse");
+
+  expect(
+    await screen.findByText(/^Matching objects counted so far: 0\./),
+  ).toBeTruthy();
+  expect(screen.queryByText("No object would change.")).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Apply edit" }).hasAttribute("disabled"),
+  ).toBe(false);
+});
+
+test("a preview the server refuses shows the reason instead of counts", async () => {
+  state.preview = { kind: "refused", code: "VALUE_TOO_LONG" };
+  await openForSelection(selection(2));
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText("New value"), "Norse");
+
+  expect(
+    await screen.findByText("Values can be at most 4,000 characters long."),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "Apply edit" }).hasAttribute("disabled"),
+  ).toBe(true);
 });

@@ -9,7 +9,7 @@ import type {
   ObjectPhotographFilter,
   ObjectStatus,
 } from "@/hooks/use-url-filters";
-import { formatDate } from "@/lib/format-date";
+import { CALENDAR_DATE_OPTIONS, formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface LocationPathItem {
@@ -52,9 +52,11 @@ export function advancedConditionCount(groups: FilterGroup[]) {
 function dateLabel(value: string, locale: string) {
   const [year, month, day] = value.split("-").map(Number);
   if (!year || !month || !day) return value;
-  return formatDate(new Date(year, month - 1, day), locale, {
-    dateStyle: "medium",
-  });
+  return formatDate(
+    new Date(Date.UTC(year, month - 1, day)),
+    locale,
+    CALENDAR_DATE_OPTIONS,
+  );
 }
 
 interface ObjectAppliedFiltersProps {
