@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { CatalogSort } from "@v1/backend/convex/utils/catalogFilterValidators";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useListState } from "@/hooks/use-list-state";
@@ -94,7 +95,13 @@ function catalogPreferencesReducer(
 
 const INVENTORY_METRIC_SCOPES = ["owned", "incoming", "unclassified"] as const;
 
-export const OBJECT_SORTS = ["newest", "oldest", "identifier"] as const;
+export const OBJECT_SORTS = [
+  "newest",
+  "oldest",
+  "identifier",
+  "madeEarliest",
+  "madeLatest",
+] as const satisfies readonly CatalogSort[];
 export type ObjectSort = (typeof OBJECT_SORTS)[number];
 
 /**
@@ -127,6 +134,8 @@ export const OBJECT_LIST_KEYS = [
   "locationId",
   "catalogedFrom",
   "catalogedTo",
+  "madeFrom",
+  "madeTo",
   "advancedFilters",
   "filterCombinations",
   ...objectCatalogListState.keys,
@@ -142,6 +151,19 @@ export function localDayBound(value: string, edge: "start" | "end") {
   return edge === "start"
     ? new Date(year, month - 1, day).getTime()
     : new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+}
+
+/**
+ * A date made bound from the URL, which holds years as written ("1850", or
+ * "-500" for 500 BC; there is no year 0), as the astronomical year the
+ * catalog filters by (500 BC is -499). Undefined when it is not such a year.
+ */
+export function madeYearBound(value: string) {
+  const text = value.trim();
+  if (!/^-?\d{1,4}$/.test(text)) return undefined;
+  const year = Number(text);
+  if (year === 0) return undefined;
+  return year < 0 ? year + 1 : year;
 }
 
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
@@ -287,6 +309,8 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
         : undefined,
     catalogedFrom: localDayBound(filters.catalogedFrom, "start"),
     catalogedTo: localDayBound(filters.catalogedTo, "end"),
+    madeFrom: madeYearBound(filters.madeFrom),
+    madeTo: madeYearBound(filters.madeTo),
     ...(advancedFilters.length > 0
       ? { advancedFilters, filterCombinations: filters.filterCombinations }
       : {}),

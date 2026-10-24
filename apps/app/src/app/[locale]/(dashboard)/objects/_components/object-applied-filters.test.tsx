@@ -23,6 +23,8 @@ const NO_FILTERS: ObjectAppliedFiltersValue = {
   photograph: "",
   catalogedFrom: "",
   catalogedTo: "",
+  madeFrom: "",
+  madeTo: "",
   advancedFilters: [],
 };
 
@@ -61,6 +63,40 @@ test("facet, photograph, cataloged and advanced filters each show a removable ch
   expect(onChange).toHaveBeenLastCalledWith({ photograph: "" });
   await user.click(screen.getByRole("button", { name: /Advanced/ }));
   expect(onChange).toHaveBeenLastCalledWith({ advancedFilters: [] });
+});
+
+test("each side of a date made range shows its year with the era and is removed alone", async () => {
+  const onChange = vi.fn();
+  await renderOnPage(
+    <ObjectAppliedFilters
+      filters={{ ...NO_FILTERS, madeFrom: "-500", madeTo: "1850" }}
+      onChange={onChange}
+      onClearAll={() => {}}
+    />,
+    "/en/objects",
+  );
+
+  expect(screen.getByText("500 BC")).toBeTruthy();
+  expect(screen.getByText("1850")).toBeTruthy();
+
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: /Made from/ }));
+  expect(onChange).toHaveBeenLastCalledWith({ madeFrom: "" });
+  await user.click(screen.getByRole("button", { name: /Made until/ }));
+  expect(onChange).toHaveBeenLastCalledWith({ madeTo: "" });
+});
+
+test("a date made year shows in the app language", async () => {
+  await renderOnPage(
+    <ObjectAppliedFilters
+      filters={{ ...NO_FILTERS, madeTo: "-1" }}
+      onChange={() => {}}
+      onClearAll={() => {}}
+    />,
+    "/fr/objects",
+  );
+
+  expect(screen.getByText("1 av. J.-C.")).toBeTruthy();
 });
 
 test("no chip bar shows without filters", async () => {

@@ -31,6 +31,30 @@ const entries = vi.hoisted(() => [
       bulkFieldEditId: "job-2",
     },
   },
+  {
+    _id: "log-3",
+    action: "updated_collection",
+    timestamp: Date.UTC(2026, 9, 1, 14),
+    userName: "Ada",
+    changes: {
+      field: "dateCreated",
+      previous: "1850",
+      new: "c. 1850",
+      clearedEdtf: "1860",
+      bulkFieldEditId: "job-3",
+    },
+  },
+  {
+    _id: "log-4",
+    action: "updated_collection",
+    timestamp: Date.UTC(2026, 9, 1, 15),
+    userName: "Ada",
+    changes: {
+      field: "dateCreated",
+      clearedEdtf: "185X",
+      bulkFieldEditId: "job-4",
+    },
+  },
 ]);
 
 vi.mock("convex/react", () => ({
@@ -66,4 +90,15 @@ test("the field name is translated", async () => {
   await renderLogs("no");
 
   expect(screen.getByText(/«Kultur»/)).toBeTruthy();
+});
+
+test("a bulk Date made edit says which structured date it removed", async () => {
+  await renderLogs("en");
+
+  expect(
+    screen.getByText("Changed “Date made” from “1850” to “c. 1850”"),
+  ).toBeTruthy();
+  expect(screen.getByText("Structured date “1860” removed")).toBeTruthy();
+  expect(screen.getByText("Changed “Date made”")).toBeTruthy();
+  expect(screen.getByText("Structured date “1850s” removed")).toBeTruthy();
 });

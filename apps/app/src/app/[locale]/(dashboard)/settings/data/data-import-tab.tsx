@@ -32,6 +32,9 @@ interface DataImportTabProps {
 export function DataImportTab({ organizationId }: DataImportTabProps) {
   const t = useScopedI18n("settings.data");
   const tDashboard = useScopedI18n("untranslatedDashboard.settings");
+  const tObjectFields = useScopedI18n(
+    "untranslatedRecords.collections.import.fieldDescriptions",
+  );
   const [importType, setImportType] = useState<ImportType>("objects");
 
   const template = useQuery(api.imports.getImportTemplateByType, {
@@ -97,6 +100,15 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
                 </span>{" "}
                 {template.requiredFields.join(", ")}
               </p>
+              {importType === "objects" ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  <span className="font-mono text-foreground">
+                    dateCreatedEdtf
+                  </span>
+                  {" – "}
+                  {tObjectFields("dateCreatedEdtf")}
+                </p>
+              ) : null}
             </div>
           )}
 

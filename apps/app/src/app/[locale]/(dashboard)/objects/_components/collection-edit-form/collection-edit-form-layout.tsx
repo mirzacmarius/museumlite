@@ -41,6 +41,7 @@ export function CollectionEditFormLayout({
     pendingMoveRequest,
     session,
     fieldLabel,
+    fieldValue,
     goToField,
     formData,
     activeTab,
@@ -140,6 +141,7 @@ export function CollectionEditFormLayout({
               <RecordFormNotices
                 session={session}
                 fieldLabel={fieldLabel}
+                fieldValue={fieldValue}
                 onGoToField={goToField}
               />
             }

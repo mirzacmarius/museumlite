@@ -133,7 +133,8 @@ async function loadSelection(
 
 /**
  * What the edit would do: how many Objects match, how many change and how
- * many already hold a value the edit writes over. A filtered scope is
+ * many already hold a value the edit writes over, a structured date made it
+ * clears among them. A filtered scope is
  * previewed over its newest catalog page; `capped` says more rows follow, so
  * the counts are a lower bound and the edit may change more.
  * An edit `start` would refuse comes back as its code rather than thrown,
@@ -436,6 +437,9 @@ async function applyEditPage(
     if (!outcome.changed) continue;
     await ctx.db.patch(row._id, {
       [edit.field]: outcome.after,
+      ...(outcome.clearedEdtf !== undefined
+        ? { dateCreatedEdtf: undefined }
+        : {}),
       lastModifiedBy: job.requestedBy,
       lastModifiedAt: now,
     });
@@ -453,6 +457,9 @@ async function applyEditPage(
         field: edit.field,
         ...(outcome.before !== undefined ? { previous: outcome.before } : {}),
         ...(outcome.after !== undefined ? { new: outcome.after } : {}),
+        ...(outcome.clearedEdtf !== undefined
+          ? { clearedEdtf: outcome.clearedEdtf }
+          : {}),
         bulkFieldEditId: job._id,
       },
     });

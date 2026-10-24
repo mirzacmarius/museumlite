@@ -121,6 +121,17 @@ export const create = mutation({
       )
         throw new ConvexError("Invalid catalog date");
       if (
+        [filters.madeFrom, filters.madeTo].some(
+          (year) =>
+            year !== undefined &&
+            (!Number.isInteger(year) || Math.abs(year) > 9999),
+        ) ||
+        (filters.madeFrom !== undefined &&
+          filters.madeTo !== undefined &&
+          filters.madeFrom > filters.madeTo)
+      )
+        throw new ConvexError("Invalid date range");
+      if (
         (filters.search?.length ?? 0) > 200 ||
         (filters.locationIds?.length ?? 0) > 100
       )
@@ -184,7 +195,8 @@ export const create = mutation({
     const jobId = await ctx.db.insert("exportJobs", {
       ...args,
       creatorId,
-      schemaVersion: 1,
+      // Object columns gained the date made at version 2.
+      schemaVersion: args.source.kind === "objects" ? 2 : 1,
       asOf: now,
       captureStartedAt: now,
       expiresAt: now + RETENTION_MS,
@@ -310,7 +322,7 @@ const publicStatus = v.object({
   jobId: v.id("exportJobs"),
   source: exportSource,
   format: exportFormat,
-  schemaVersion: v.literal(1),
+  schemaVersion: v.union(v.literal(1), v.literal(2)),
   asOf: v.number(),
   captureStartedAt: v.number(),
   captureCompletedAt: v.optional(v.number()),

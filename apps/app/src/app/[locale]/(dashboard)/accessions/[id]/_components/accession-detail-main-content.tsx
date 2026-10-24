@@ -1,11 +1,13 @@
 "use client";
 
+import type { ProductionDateSource } from "@v1/backend/convex/utils/productionDates";
 import { Button } from "@v1/ui/button";
 import { CheckCircle, Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AuditCaseHistory } from "@/components/audit-case-history";
 import { CaseTaskPanel } from "@/components/case-tasks/case-task-panel";
 import { PermissionGate } from "@/components/permission-gate";
+import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
 import { TargetPartyLinks } from "@/components/target-party-links";
 import { useI18n } from "@/locales/client";
 import { TypeDetailsSummary } from "../../../objects/_components/object-type-details/type-details-summary";
@@ -89,6 +91,21 @@ function AccessionDraftCard({
         />
       </div>
     </SectionCard>
+  );
+}
+
+/** The proposed Object's date made as written, else its structured date. */
+function ProposedDateMade({ draft }: { draft: ProductionDateSource }) {
+  const tRoot = useI18n();
+  const dates = useProductionDateFormat();
+  return (
+    <DetailField
+      label={tRoot("objects.form.dateCreated")}
+      value={
+        dates.dateMade(draft) ||
+        tRoot("untranslatedRecords.accessions.detail.unknown")
+      }
+    />
   );
 }
 
@@ -248,13 +265,7 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                     tRoot("untranslatedRecords.accessions.detail.notSet")
                   }
                 />
-                <DetailField
-                  label={tRoot("objects.form.dateCreated")}
-                  value={
-                    accession.draftObjectData.dateCreated ||
-                    tRoot("untranslatedRecords.accessions.detail.unknown")
-                  }
-                />
+                <ProposedDateMade draft={accession.draftObjectData} />
                 <DetailField
                   label={tRoot("objects.form.collectionGroup")}
                   value={

@@ -1,0 +1,18 @@
+# Production years are derived into the search document, never stored on the Object
+
+MUS-857. An Object's date made was free text (`collections.dateCreated`), so the catalog could neither sort nor filter by it, and exports carried nothing a machine could read. Staff write dates as "c. 1850", "1850s", "late 19th century", "before 1900" or "500 f.Kr.", and a museum's older records hold thousands of them.
+
+`utils/productionDates.ts` reads dates in EDTF (ISO 8601-2), a subset of levels 0 and 1: dates, decades and centuries (`185X`, `18XX`), unspecified months and days (`1850-XX`, `1850-05-XX`, stored as `1850` and `1850-05`), the `?`, `~` and `%` qualifiers, and intervals, but no times, seasons, fully unspecified years (`XXXX`) or `Y`-prefixed years, and an unknown interval side (`1850/`) is stored as open (`1850/..`). It also reads the text staff write in the five app languages as EDTF. It is pure, so the app's form shows exactly what the catalog will use.
+
+- The Object keeps its text as written and, only when staff structure it (or an import supplies it), `dateCreatedEdtf` in canonical EDTF. The date in effect is the entered EDTF, otherwise what the text reads as; text that does not read stays display only, and the Object is undated for sorting and filters. Nothing is written back into `dateCreatedEdtf` from the text.
+- The earliest and latest years follow from the date in effect: astronomical as in EDTF (0 is 1 BC, -499 is 500 BC), circa widened by 5 years (10 for a decade, 25 for a century), an open side without a year. They are never stored on the Object.
+- The date made sort keys live on the Object's search document (`madeSortEarliest`, `madeSortLatest`), which the collections trigger already rewrites on every write, with indexes by Organization and by Organization and status. Undated Objects get keys that sort them last in both orders. The catalog pages the search documents for a date made order once the Organization's documents are ready, and lists newest first until then, while searching and for bulk edits, which page in creation order.
+- The year range filter reads the years from each row as it filters the page, like the other catalog filters, so the list, filtered exports and bulk edits agree, before and after the backfill. It keeps Objects whose dates overlap the range, open-ended ones included, and leaves undated Objects out. It does not narrow the index: an open-ended date's sort key is the year of its known side, so a range on the key would drop real matches.
+- The search document version became 3, and the existing backfill rebuilt every Organization's documents. Any change to what `productionDates` reads a date as must bump the version again, or the stored sort keys disagree with the filter.
+- Object exports moved to version 2: `dateCreatedEdtf` as entered, `productionDateEdtf` in effect and the two years. Re-importable files carry only the entered value, so a re-import never turns a reading into an entered fact.
+
+Considered and rejected:
+
+- Parsing every Object's text into `dateCreatedEdtf` once, as a migration. Entered EDTF wins over the text, so a frozen reading would silently override every later edit of the text, it would change every dated Object's edit version (ADR 0008) and its history, and it would present a guess as something staff recorded (ADR 0011).
+- Storing the years on the Object. Every write path (forms, imports, intake publication, bulk edits, seeds) would have to keep them in step, or a trigger would have to patch the row it was triggered by.
+- A separate date table with its own version and backfill, so that a parser change does not rebuild the search documents. Another table, trigger and backfill cost more than an occasional rebuild.

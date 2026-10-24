@@ -15,6 +15,7 @@ import {
   IMPORT_TEMPLATES,
   type ImportState,
   MAX_IMPORT_ROWS,
+  OBJECT_IMPORT_TEMPLATE_CSV,
   type ParsedRow,
 } from "./import-objects-types";
 
@@ -34,6 +35,7 @@ const OPTIONAL_FIELDS = [
   "culture",
   "period",
   "dateCreated",
+  "dateCreatedEdtf",
   "materials",
   "technique",
   "dimensions",
@@ -49,7 +51,10 @@ const OPTIONAL_FIELDS = [
  * Maps every source row. Rows without a title are still sent so the server
  * records them as failed rows that can be downloaded and corrected.
  */
-function mapRawRows(rawData: ImportState["rawData"], mappings: FieldMapping[]) {
+export function mapRawRows(
+  rawData: ImportState["rawData"],
+  mappings: FieldMapping[],
+) {
   const mappingMap = new Map(
     mappings.flatMap((m) =>
       m.targetField === null ? [] : [[m.targetField, m.sourceField]],
@@ -199,13 +204,7 @@ export function useImportObjects({
   }, [run, setState]);
 
   const downloadTemplate = useCallback(() => {
-    const headers =
-      "title,accessionNumber,creator,objectType,culture,period,dateCreated,materials,dimensions,condition,location,collectionGroup,collectionGroups";
-    const example =
-      '"Portrait of a Lady","2024.001","Unknown Artist","painting","European","19th Century","c. 1850","Oil on canvas","24 x 18 inches","Good","Main Gallery","European Art","[""European Art""]"';
-    const csv = `${headers}\n${example}`;
-
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob([OBJECT_IMPORT_TEMPLATE_CSV], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

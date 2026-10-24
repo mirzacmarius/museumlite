@@ -11,8 +11,12 @@ import { useState } from "react";
 import { TypeCombobox } from "@/components/type-combobox";
 import { useI18n } from "@/locales/client";
 import { TagsField } from "../../collection-form-shared/catalog-parity-fields";
+import { DateMadeFields } from "../../collection-form-shared/date-made-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type { CollectionFormTabProps } from "../../collection-form-shared/types";
+import {
+  type CollectionFormTabProps,
+  NO_FIELD_ERRORS,
+} from "../../collection-form-shared/types";
 
 type CollectionDoc = NonNullable<
   FunctionReturnType<typeof api.collections.get>
@@ -32,6 +36,7 @@ export function CollectionEditGeneralTab({
   updateField,
   placeholders,
   currentOrganizationId,
+  fieldErrors = NO_FIELD_ERRORS,
   collection,
   typedCollectionId,
   alternateAccessionDraft: providedAlternateAccessionDraft,
@@ -248,19 +253,12 @@ export function CollectionEditGeneralTab({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dateCreated">
-              {tRoot("objects.form.dateCreated")}
-            </Label>
-            <Input
-              id="dateCreated"
-              value={formData.dateCreated || ""}
-              onChange={(event) =>
-                updateField("dateCreated", event.target.value)
-              }
-              placeholder={placeholders("dateCreated")}
-            />
-          </div>
+          <DateMadeFields
+            formData={formData}
+            updateField={updateField}
+            placeholders={placeholders}
+            fieldErrors={fieldErrors}
+          />
 
           <TagsField formData={formData} updateField={updateField} />
         </div>

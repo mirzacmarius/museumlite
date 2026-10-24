@@ -2,6 +2,7 @@ import {
   OBJECT_ID_CATEGORIES,
   type ObjectIdCategory,
 } from "@v1/backend/convex/utils/objectId";
+import type { ProductionDateSource } from "@v1/backend/convex/utils/productionDates";
 import { parseStringListField } from "@/lib/string-list-field";
 import type { CollectionData } from "./types";
 
@@ -28,6 +29,7 @@ export type ObjectIdSheetCollection = Pick<
   | "objectName"
   | "creator"
   | "dateCreated"
+  | "dateCreatedEdtf"
   | "period"
   | "materials"
   | "technique"
@@ -44,12 +46,14 @@ export type ObjectIdSheetCollection = Pick<
   | "tags"
 >;
 
-/** How measurements read in the app language. */
+/** How measurements and dates read in the app language. */
 export interface ObjectIdSheetFormat {
   /** Abbreviations printed before the height, width and depth. */
   measurementLabels: { height: string; width: string; depth: string };
   /** Formats a measured number in the app locale. */
   number: (value: number) => string;
+  /** The date made as written, else its structured date in the locale. */
+  dateMade: (source: ProductionDateSource) => string | undefined;
 }
 
 export interface ObjectIdSheetSource {
@@ -142,7 +146,7 @@ function categoryLines(
         collection.tags?.length ? collection.tags.join(", ") : undefined,
       ]);
     case "date_or_period":
-      return present([collection.dateCreated, collection.period]);
+      return present([format.dateMade(collection), collection.period]);
     case "maker":
       return present([collection.creator]);
   }

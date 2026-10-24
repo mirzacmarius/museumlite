@@ -24,6 +24,11 @@ import {
   hasOpenDeaccession,
   openDeaccessionCollectionIds,
 } from "./openDeaccessions";
+import {
+  effectiveProductionDate,
+  overlapsYears,
+  productionYears,
+} from "./productionDates";
 
 interface CollectionListFilters {
   organizationId: Id<"organizations">;
@@ -47,6 +52,9 @@ interface CollectionListFilters {
   collectionGroupId?: Id<"collectionGroups">;
   catalogedFrom?: number;
   catalogedTo?: number;
+  /** Inclusive astronomical years of the date made range. */
+  madeFrom?: number;
+  madeTo?: number;
   search?: string;
   advancedFilters?: readonly AdvancedFilterGroup[];
   filterCombinations?: "AND" | "OR";
@@ -80,6 +88,20 @@ function matchesObjectType(
     const folded = foldFacetValue(value);
     return folded !== undefined && storedValues.has(folded);
   });
+}
+
+/**
+ * Whether an Object's date made meets the year range. An Object whose date
+ * can't be read has no years to meet it, so a range leaves it out.
+ */
+function madeWithin(
+  collection: Doc<"collections">,
+  from: number | undefined,
+  to: number | undefined,
+) {
+  if (from === undefined && to === undefined) return true;
+  const date = effectiveProductionDate(collection);
+  return date !== null && overlapsYears(productionYears(date), from, to);
 }
 
 /** Filter only the bounded database page; never load an organization's relations. */
@@ -157,6 +179,7 @@ export async function filterCollectionListPage(
         collection.catalogedAt > args.catalogedTo
       )
         return false;
+      if (!madeWithin(collection, args.madeFrom, args.madeTo)) return false;
       // Facet values match as recorded, whatever the case; materials and
       // types are lists, so one entry equal to the value is enough.
       for (const field of ["culture", "period", "condition"] as const) {
@@ -260,6 +283,8 @@ export type CollectionListPageItem = {
   objectType?: string;
   currentLocationId?: Id<"locations">;
   status: Doc<"collections">["status"];
+  dateCreated?: string;
+  dateCreatedEdtf?: string;
   _creationTime: number;
   matchedField?: ObjectSearchField;
 };
@@ -290,6 +315,8 @@ export async function enrichCollectionListPage(
       : undefined,
     primaryImageUrl: primaryImageUrlByCollectionId.get(item._id),
     status: item.status,
+    dateCreated: item.dateCreated,
+    dateCreatedEdtf: item.dateCreatedEdtf,
     _creationTime: item._creationTime,
     matchedField: item.matchedField,
   }));

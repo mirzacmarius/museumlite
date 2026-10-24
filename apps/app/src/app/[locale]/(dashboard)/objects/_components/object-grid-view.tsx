@@ -369,6 +369,8 @@ interface ObjectGridItemProps {
     objectType?: string;
     primaryImageUrl?: string;
     status: string;
+    /** The date made as the catalog lists it. */
+    dateMade?: string;
     matchedField?: ObjectSearchField;
   };
   organizationId: Id<"organizations">;
@@ -469,6 +471,14 @@ function ObjectGridItem({
           <h3 className="truncate text-xs font-medium text-card-foreground">
             {item.title}
           </h3>
+          <p
+            className="mt-0.5 truncate text-[10px] text-muted-foreground"
+            title={item.dateMade}
+          >
+            {item.dateMade ?? (
+              <span className="text-muted-foreground/60">-</span>
+            )}
+          </p>
           <MatchedFieldLabel field={item.matchedField} />
           <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
             <p className="shrink-0 font-mono text-[10px] text-muted-foreground">
@@ -532,6 +542,8 @@ export interface ObjectGridViewProps {
     objectType?: string;
     primaryImageUrl?: string;
     status: string;
+    /** The date made as the catalog lists it. */
+    dateMade?: string;
     matchedField?: ObjectSearchField;
   }>;
   organizationId: Id<"organizations">;

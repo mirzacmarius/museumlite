@@ -1,12 +1,18 @@
 "use client";
 
 import { Calendar, Info, MapPin } from "lucide-react";
+import {
+  edtfFromDraft,
+  type ProductionDateDraft,
+} from "@/components/production-date/production-date-draft";
+import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
 import { useI18n } from "@/locales/client";
 import type { CollectionEditTabId } from "./types";
 
 interface ObjectFormSummaryCardsProps {
   creator?: string;
   dateCreated?: string;
+  dateCreatedEdtf?: ProductionDateDraft;
   locationSummary: string;
   collectionSummary: string;
   isLocationTrackingEnabled: boolean;
@@ -17,6 +23,7 @@ interface ObjectFormSummaryCardsProps {
 export function ObjectFormSummaryCards({
   creator,
   dateCreated,
+  dateCreatedEdtf,
   locationSummary,
   collectionSummary,
   isLocationTrackingEnabled,
@@ -24,6 +31,11 @@ export function ObjectFormSummaryCards({
   onTabSelect,
 }: ObjectFormSummaryCardsProps) {
   const tRoot = useI18n();
+  const dates = useProductionDateFormat();
+  const dateMade = dates.dateMade({
+    dateCreated,
+    dateCreatedEdtf: edtfFromDraft(dateCreatedEdtf) ?? undefined,
+  });
   return (
     <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
       <button
@@ -49,7 +61,7 @@ export function ObjectFormSummaryCards({
           {tRoot("untranslatedRecords.objects.detail.dateCreatedLabel")}
         </div>
         <div className="truncate text-sm text-foreground">
-          {dateCreated || unknownLabel}
+          {dateMade || unknownLabel}
         </div>
       </button>
       {isLocationTrackingEnabled ? (

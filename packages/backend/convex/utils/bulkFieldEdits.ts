@@ -119,10 +119,34 @@ export interface BulkEditOutcome {
   changed: boolean;
   /** The edit would leave a required field empty, so the Object is left as is. */
   skipped: boolean;
+  /** The structured date made the edit clears, so the new text governs. */
+  clearedEdtf?: string;
 }
 
-/** What the edit does to one Object, without writing it. */
+/**
+ * What the edit does to one Object, without writing it. Setting or clearing
+ * the date made also clears a structured date, which would otherwise still
+ * win over the new text; a find and replace only rewords the text.
+ */
 export function applyBulkEdit(
+  collection: Doc<"collections">,
+  edit: BulkEdit,
+): BulkEditOutcome {
+  const outcome = fieldOutcome(collection, edit);
+  if (
+    edit.field === "dateCreated" &&
+    edit.operation !== "replace" &&
+    collection.dateCreatedEdtf !== undefined
+  )
+    return {
+      ...outcome,
+      changed: true,
+      clearedEdtf: collection.dateCreatedEdtf,
+    };
+  return outcome;
+}
+
+function fieldOutcome(
   collection: Doc<"collections">,
   edit: BulkEdit,
 ): BulkEditOutcome {
@@ -154,5 +178,8 @@ export function applyBulkEdit(
 
 /** Whether the edit writes over a value the Object already holds. */
 export function overwritesValue(outcome: BulkEditOutcome) {
-  return outcome.changed && !!outcome.before?.trim();
+  return (
+    outcome.changed &&
+    (!!outcome.before?.trim() || outcome.clearedEdtf !== undefined)
+  );
 }

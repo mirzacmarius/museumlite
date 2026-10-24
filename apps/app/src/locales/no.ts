@@ -3201,6 +3201,15 @@ export default {
       advancedSearchActive: "Avansert søk: {count}",
       advancedChip: "Avansert",
       advancedConditions: "Regler: {count}",
+      madeRange: "Datering",
+      madeFrom: "Datert fra",
+      madeTo: "Datert til",
+      era: "Tidsregning",
+      eraAd: "e.Kr.",
+      eraBc: "f.Kr.",
+      madeYearInvalid: "Skriv inn et helt årstall fra 1 til 9999.",
+      madeRangeReversed:
+        "Skriv inn et startår som er likt med eller før sluttåret.",
     },
     search: {
       matchedIn: "Treff i {field}",
@@ -3276,6 +3285,8 @@ export default {
       overwriteWarning: "Objekter der en registrert verdi erstattes: {count}",
       overwriteWarningCapped:
         "Objekter telt så langt der en registrert verdi erstattes: {count}",
+      clearsStructuredDate:
+        "Når du angir eller tømmer dateringen, fjernes også en eventuell strukturert datering, slik at den nye teksten brukes.",
       start: "Utfør endringen",
       starting: "Starter…",
       progressRunning: "Redigerer {field}: {checked} sjekket, {changed} endret",
@@ -3356,6 +3367,7 @@ export default {
       location: "Plassering",
       objectType: "Objekttype",
       status: "Status",
+      dateMade: "Datering",
     },
     bulkActions: {
       objectsSelected: "Valgte objekter: {count}",
@@ -3441,7 +3453,7 @@ export default {
       creator: "Skaper/Kunstner",
       culture: "Kultur",
       period: "Periode",
-      dateCreated: "Opprettelsesdato",
+      dateCreated: "Datering",
       materials: "Materialer",
       dimensions: "Dimensjoner",
       condition: "Tilstand",
@@ -3461,6 +3473,33 @@ export default {
       publicUrlSlug: "Offentlig URL",
       owner: "Eier",
       to: "Til",
+      productionDate: {
+        legend: "Strukturert datering",
+        description:
+          "Valgfritt. Bestemmer hvordan katalogen sorterer, filtrerer og eksporterer dette objektet. Teksten over vises slik den er skrevet.",
+        from: "Fra",
+        to: "Til",
+        hint: "Fyll ut Fra for én dato, eller Fra og Til for et tidsrom. Senest og Tidligst gjelder bare for Fra alene.",
+        readAs: "Leses som {date}.",
+        years: "Sortering og filtre bruker {years}.",
+        yearsFrom: "Sortering og filtre bruker årene fra og med {start}.",
+        yearsUntil: "Sortering og filtre bruker årene til og med {end}.",
+        onOrAfter: "{date} eller senere",
+        undated: "Udatert for sortering og filtre.",
+        notRead:
+          "Leses ikke som en dato og vises slik den er skrevet. Legg til en strukturert datering for å sortere og filtrere etter den.",
+        useReading: "Bruk som strukturert datering",
+        mismatch:
+          "Teksten leses som {text}, men den strukturerte dateringen er {date}. Sortering, filtre og eksporter bruker den strukturerte dateringen.",
+        edtf: "EDTF {edtf}",
+        fixed:
+          "Denne strukturerte dateringen kan ikke endres her. Fjern den for å legge inn en annen.",
+        clear: "Fjern strukturert datering",
+        invalid:
+          "Sjekk den strukturerte dateringen: fyll ut delene presisjonen krever, og en slutt som er lik eller etter starten.",
+        openInRange:
+          "Senest og Tidligst gjelder bare for Fra alene. Velg Som oppgitt eller Cirka for et tidsrom.",
+      },
       placeholders: {
         title: "Skriv inn objekttittel",
         accessionNumber: "Auto-generert hvis tom",
@@ -3469,7 +3508,7 @@ export default {
         selectTypes: "Velg eller legg til typer...",
         culture: "f.eks., Fransk",
         period: "f.eks., 1800-tallet",
-        dateCreated: "f.eks., 1850",
+        dateCreated: "f.eks., ca. 1850, 1850–1860 eller 1800-tallet",
         creator: "f.eks., Vincent van Gogh",
         dimensions: "f.eks., 50 x 60 cm",
         location: "Velg en plassering (valgfritt)",
@@ -3581,7 +3620,7 @@ export default {
       objectType: "Objekttype",
       objectName: "Objektnavn",
       creatorArtist: "Skaper/Kunstner",
-      dateCreated: "Opprettelsesdato",
+      dateCreated: "Datering",
       culture: "Kultur",
       period: "Periode",
       materials: "Materialer",
@@ -3614,7 +3653,7 @@ export default {
       objectType: "Objekttype",
       objectName: "Objektnavn",
       creatorArtist: "Skaper/Kunstner",
-      dateCreated: "Opprettelsesdato",
+      dateCreated: "Datering",
       culture: "Kultur",
       period: "Periode",
       physicalDescription: "Fysisk Beskrivelse",
@@ -5934,6 +5973,8 @@ export default {
       newest: "Nyeste først",
       oldest: "Eldste først",
       identifier: "Identifikator (A–Å)",
+      madeEarliest: "Datering, eldste først",
+      madeLatest: "Datering, nyeste først",
     },
     allTypes: "Alle typer",
   },
@@ -7445,6 +7486,11 @@ export default {
       },
       uncertain: "Kilden er usikker",
       decadeHint: "Oppgi første år i tiåret, for eksempel 1920.",
+      era: "Tidsregning",
+      eras: {
+        ad: "e.Kr.",
+        bc: "f.Kr.",
+      },
     },
     retract: {
       title: "Trekke tilbake påstanden?",
@@ -8150,7 +8196,8 @@ export default {
           objectName: "Objektnavn",
           culture: "Kultur",
           period: "Periode",
-          dateCreated: "Opprettelsesdato",
+          dateCreated: "Datering",
+          dateCreatedEdtf: "Datering (EDTF)",
           materials: "Materialer",
           technique: "Teknikk",
           dimensions: "Dimensjoner",
@@ -8171,7 +8218,10 @@ export default {
           objectName: "Objektets spesifikke navn",
           culture: "Kulturell opprinnelse",
           period: "Historisk periode",
-          dateCreated: "Opprettelsesdato eller periode",
+          dateCreated:
+            "Datering eller periode slik den er skrevet, for eksempel ca. 1850 eller 1800-tallet",
+          dateCreatedEdtf:
+            "Strukturert datering i EDTF, for eksempel 1850~, 185X eller 1850/1860",
           materials: "Materialer som er brukt",
           technique: "Produksjonsteknikk",
           dimensions: "Fysiske mål",
@@ -8292,7 +8342,7 @@ export default {
         bodyStyle: "Karosseritype",
         caption: "Bildetekst",
         dateAcquired: "Anskaffelsesdato",
-        dateCreatedLabel: "Opprettet dato",
+        dateCreatedLabel: "Datering",
         engineNumber: "Motornr.",
         exterior: "Utvendig",
         fuelType: "Drivstofftype",
@@ -8510,6 +8560,7 @@ export default {
         fieldChanged: "Endret «{field}»{previous}{next}",
         fromValue: "fra «{value}»",
         toValue: "til «{value}»",
+        structuredDateRemoved: "Fjernet strukturert datering «{value}»",
         byUser: "Av {name}",
         actions: {
           created_collection: "Objekt opprettet",
@@ -10959,6 +11010,8 @@ export default {
       invalid: "Noen felt må rettes før du kan lagre.",
       saveFailed:
         "Endringene dine kunne ikke lagres. Sjekk tilkoblingen og prøv igjen.",
+      productionDateInvalid:
+        "Den strukturerte dateringen er ikke en gyldig dato. Sjekk delene og prøv igjen.",
     },
     notices: {
       recoveredTitle: "Ulagrede endringer funnet",

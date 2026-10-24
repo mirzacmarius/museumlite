@@ -135,6 +135,7 @@ export function formatHistoricalPeriod(
 
 export type PartialDatePrecisionChoice = "none" | HistoricalDatePrecision;
 export type PartialDateQualifierChoice = "exact" | HistoricalDateQualifier;
+export type PartialDateEra = "ad" | "bc";
 
 /** Form state for one partial date; every part is text until saved. */
 export interface PartialDateDraft {
@@ -144,6 +145,8 @@ export interface PartialDateDraft {
   day: string;
   qualifier: PartialDateQualifierChoice;
   uncertain: boolean;
+  /** Before Christ, for a year on an Object's date made; absent is AD. */
+  era?: PartialDateEra;
 }
 
 export const EMPTY_PARTIAL_DATE: PartialDateDraft = {
@@ -177,13 +180,15 @@ function wholeNumber(text: string, min: number, max: number) {
 
 /**
  * The date the draft states: `undefined` when not stated, `null` when its
- * parts are incomplete or out of range. Only the parts its precision names
- * are kept; the server checks the calendar.
+ * parts are incomplete or out of range, or before Christ, which a historical
+ * date cannot hold. Only the parts its precision names are kept; the server
+ * checks the calendar.
  */
 export function historicalDateFromDraft(
   draft: PartialDateDraft,
 ): HistoricalDate | undefined | null {
   if (draft.precision === "none") return undefined;
+  if (draft.era === "bc") return null;
   const year = wholeNumber(draft.year, 1, 9999);
   if (year === undefined) return null;
   if (draft.precision === "decade" && year % 10 !== 0) return null;

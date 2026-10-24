@@ -33,6 +33,13 @@ const OBJECTS = {
   requiredFields: ["title"],
 };
 
+const DATED_OBJECTS = {
+  headers: ["title", "dateCreated", "dateCreatedEdtf"],
+  exampleRow: [],
+  description: "",
+  requiredFields: ["title"],
+};
+
 beforeEach(() => {
   for (const toast of Object.values(toasts)) toast.mockReset();
   mutation.mockReset();
@@ -77,6 +84,42 @@ test("the template's own column name wins over a Norwegian alias", () => {
     toTemplateRows("Id;accessionNumber;title\n7;FM-1;Vase\n", OBJECTS),
   ).toEqual({
     rows: [{ rowNumber: 2, accessionNumber: "FM-1", title: "Vase" }],
+  });
+});
+
+test("a Norwegian export's Datering is the date made, and Datering (EDTF) its structured date (MUS-857)", () => {
+  expect(
+    toTemplateRows(
+      "Tittel;Opprettelsesdato;Datering;Datering (EDTF)\nKlubbe;22.11.2016;ca. 1850;1850~\n",
+      DATED_OBJECTS,
+    ),
+  ).toEqual({
+    rows: [
+      {
+        rowNumber: 2,
+        title: "Klubbe",
+        dateCreated: "ca. 1850",
+        dateCreatedEdtf: "1850~",
+      },
+    ],
+  });
+});
+
+test("a column named EDTF is the structured date made (MUS-857)", () => {
+  expect(
+    toTemplateRows(
+      "Tittel;Datering;EDTF\nKlubbe;1850-tallet;185X\n",
+      DATED_OBJECTS,
+    ),
+  ).toEqual({
+    rows: [
+      {
+        rowNumber: 2,
+        title: "Klubbe",
+        dateCreated: "1850-tallet",
+        dateCreatedEdtf: "185X",
+      },
+    ],
   });
 });
 

@@ -3,6 +3,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import type {
   CatalogFilters,
+  CatalogSort,
   ObjectSearchField,
 } from "./catalogFilterValidators";
 import { filterCollectionListPage } from "./collectionListHelpers";
@@ -19,11 +20,12 @@ import {
   searchQueryTerms,
 } from "./objectSearchDocuments";
 
-export type CatalogSort = "newest" | "oldest" | "identifier";
-
 export interface CatalogListingArgs extends CatalogFilters {
   organizationId: Id<"organizations">;
-  /** Newest first unless set; ignored while searching, which ranks by relevance. */
+  /**
+   * Newest first unless set; ignored while searching, which ranks by
+   * relevance. Date made orders list undated Objects last both ways.
+   */
   sort?: CatalogSort;
 }
 
@@ -36,6 +38,12 @@ export type CatalogListingRow = Doc<"collections"> & {
 const IDENTIFIER_MATCHES_FIRST = 20;
 const MAX_ROWS_READ = 1000;
 const MAX_BYTES_READ = 2_000_000;
+/**
+ * Search documents a date made page reads: each costs a read of its Object on
+ * top of the per-row filter reads, and a function may make at most 4,096,
+ * which convex-test does not enforce.
+ */
+const MAX_MADE_SORT_ROWS_READ = 500;
 
 type Ctx = Pick<QueryCtx, "db">;
 
@@ -140,6 +148,76 @@ async function searchCatalogPage(
 }
 
 /**
+ * One page in date made order, from the search documents' sort keys: earliest
+ * first by the first year an Object's date allows, latest first by the last,
+ * undated Objects after the dated ones. The year range is not read from the
+ * index, which would drop dates open on one side; it is filtered per page
+ * like the other filters, so pages can come back short.
+ */
+async function madeSortedCatalogPage(
+  ctx: Ctx,
+  args: CatalogListingArgs,
+  paginationOpts: PaginationOptions,
+): Promise<PaginationResult<CatalogListingRow>> {
+  const status = args.status;
+  const documents =
+    args.sort === "madeLatest"
+      ? status
+        ? ctx.db
+            .query("objectSearchDocuments")
+            .withIndex("by_organization_and_status_and_madeSortLatest", (q) =>
+              q.eq("organizationId", args.organizationId).eq("status", status),
+            )
+        : ctx.db
+            .query("objectSearchDocuments")
+            .withIndex("by_organization_and_madeSortLatest", (q) =>
+              q.eq("organizationId", args.organizationId),
+            )
+      : status
+        ? ctx.db
+            .query("objectSearchDocuments")
+            .withIndex("by_organization_and_status_and_madeSortEarliest", (q) =>
+              q.eq("organizationId", args.organizationId).eq("status", status),
+            )
+        : ctx.db
+            .query("objectSearchDocuments")
+            .withIndex("by_organization_and_madeSortEarliest", (q) =>
+              q.eq("organizationId", args.organizationId),
+            );
+  const result = await documents
+    .order(args.sort === "madeLatest" ? "desc" : "asc")
+    .paginate({
+      ...paginationOpts,
+      maximumRowsRead: Math.min(
+        paginationOpts.maximumRowsRead ?? MAX_MADE_SORT_ROWS_READ,
+        MAX_MADE_SORT_ROWS_READ,
+      ),
+    });
+  // The document says whether the Object has a photograph, so the page
+  // filter need not read it again.
+  const kept =
+    args.hasImage === undefined
+      ? result.page
+      : result.page.filter((document) => document.hasImage === args.hasImage);
+  const loaded = await Promise.all(
+    kept.map((document) => ctx.db.get(document.collectionId)),
+  );
+  const rows = loaded.filter((row): row is Doc<"collections"> => row !== null);
+  return {
+    ...result,
+    page: await filterPage(
+      ctx,
+      { ...args, search: undefined, hasImage: undefined },
+      rows,
+    ),
+  };
+}
+
+function isMadeSort(sort: CatalogSort | undefined) {
+  return sort === "madeEarliest" || sort === "madeLatest";
+}
+
+/**
  * The rows that pass the catalog filters and search. Once an Organization's
  * search documents are ready, a search keeps the rows its words match (see
  * `matchedObjectSearchField`) and says where; until then it is the old
@@ -175,9 +253,11 @@ export async function filterCatalogRows(
  * One page of the Object Catalog under the given filters; the list and bulk
  * field edits read the same pages, so what staff see is what they act on.
  *
- * `stableOrder` pages by creation order even while searching, keeping rows
- * whose words a search term begins: a job that changes the rows it pages
- * through then never meets a row twice, as relevance order could.
+ * `stableOrder` pages by creation order even while searching or under a date
+ * made order, keeping rows whose words a search term begins: a job that
+ * changes the rows it pages through then never meets a row twice, as
+ * relevance or date order could. A date made order also lists newest first
+ * until the Organization's search documents are ready.
  */
 export async function listCatalogPage(
   ctx: Ctx,
@@ -192,6 +272,14 @@ export async function listCatalogPage(
     (await isObjectSearchReady(ctx, args.organizationId));
   if (search && searchReady && !options.stableOrder) {
     return await searchCatalogPage(ctx, args, search, bounded);
+  }
+  if (
+    !search &&
+    isMadeSort(args.sort) &&
+    !options.stableOrder &&
+    (await isObjectSearchReady(ctx, args.organizationId))
+  ) {
+    return await madeSortedCatalogPage(ctx, args, bounded);
   }
 
   const singleLocationId =
@@ -234,7 +322,9 @@ export async function listCatalogPage(
   // and split metadata keeps reactive pages contiguous as records change.
   const ordered = (
     args.sort === "identifier" ? identifierSource : source
-  ).order(args.sort === "newest" || args.sort === undefined ? "desc" : "asc");
+  ).order(
+    args.sort === "oldest" || args.sort === "identifier" ? "asc" : "desc",
+  );
   const result = await ordered.paginate(bounded);
   return {
     ...result,

@@ -17,6 +17,7 @@ export const COLUMN_IDS = [
   "accessionNumber",
   "location",
   "objectType",
+  "dateMade",
   "status",
 ] as const;
 
@@ -32,6 +33,7 @@ export const DEFAULT_COLUMN_CONFIG: Record<
   accessionNumber: { visible: true },
   location: { visible: true },
   objectType: { visible: true },
+  dateMade: { visible: true },
   status: { visible: true },
 };
 
@@ -42,6 +44,7 @@ const COLUMN_LABEL_KEYS = {
   accessionNumber: "accessionNumber",
   location: "location",
   objectType: "objectType",
+  dateMade: "dateMade",
   status: "status",
 } as const;
 

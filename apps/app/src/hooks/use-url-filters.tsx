@@ -139,6 +139,15 @@ export function useObjectFilters() {
     "catalogedTo",
     parseAsString.withDefault(""),
   );
+  // Years as written: "1850", or "-500" for 500 BC; there is no year 0.
+  const [madeFrom, setMadeFrom] = useQueryState(
+    "madeFrom",
+    parseAsString.withDefault(""),
+  );
+  const [madeTo, setMadeTo] = useQueryState(
+    "madeTo",
+    parseAsString.withDefault(""),
+  );
 
   // Advanced filter state using JSON serialization
   const [advancedFilters, setAdvancedFilters] = useQueryState(
@@ -177,6 +186,8 @@ export function useObjectFilters() {
       locationIds,
       catalogedFrom,
       catalogedTo,
+      madeFrom,
+      madeTo,
       advancedFilters,
       filterCombinations: filterCombinations as "AND" | "OR",
     }),
@@ -195,6 +206,8 @@ export function useObjectFilters() {
       locationIds,
       catalogedFrom,
       catalogedTo,
+      madeFrom,
+      madeTo,
       advancedFilters,
       filterCombinations,
     ],
@@ -229,6 +242,9 @@ export function useObjectFilters() {
         setCatalogedFrom(newFilters.catalogedFrom || null);
       if (newFilters.catalogedTo !== undefined)
         setCatalogedTo(newFilters.catalogedTo || null);
+      if (newFilters.madeFrom !== undefined)
+        setMadeFrom(newFilters.madeFrom || null);
+      if (newFilters.madeTo !== undefined) setMadeTo(newFilters.madeTo || null);
       if (newFilters.advancedFilters !== undefined)
         setAdvancedFilters(
           newFilters.advancedFilters.length > 0
@@ -253,6 +269,8 @@ export function useObjectFilters() {
       setLegacyLocationId,
       setCatalogedFrom,
       setCatalogedTo,
+      setMadeFrom,
+      setMadeTo,
       setAdvancedFilters,
       setFilterCombinations,
     ],
@@ -274,6 +292,8 @@ export function useObjectFilters() {
     setLegacyLocationId(null);
     setCatalogedFrom(null);
     setCatalogedTo(null);
+    setMadeFrom(null);
+    setMadeTo(null);
     setAdvancedFilters(null);
     setFilterCombinations(null);
   }, [
@@ -292,6 +312,8 @@ export function useObjectFilters() {
     setLegacyLocationId,
     setCatalogedFrom,
     setCatalogedTo,
+    setMadeFrom,
+    setMadeTo,
     setAdvancedFilters,
     setFilterCombinations,
   ]);
@@ -316,6 +338,8 @@ export function useObjectFilters() {
       locationIds.length > 0 ||
       catalogedFrom !== "" ||
       catalogedTo !== "" ||
+      madeFrom !== "" ||
+      madeTo !== "" ||
       hasAdvancedFilters
     );
   }, [
@@ -333,6 +357,8 @@ export function useObjectFilters() {
     locationIds,
     catalogedFrom,
     catalogedTo,
+    madeFrom,
+    madeTo,
     advancedFilters,
   ]);
 
@@ -354,6 +380,8 @@ export function useObjectFilters() {
     setLocationIds,
     setCatalogedFrom,
     setCatalogedTo,
+    setMadeFrom,
+    setMadeTo,
     setAdvancedFilters,
     setFilterCombinations,
   };

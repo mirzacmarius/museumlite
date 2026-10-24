@@ -67,7 +67,14 @@ async function setup() {
 
   async function field(
     id: Id<"collections">,
-    name: "culture" | "title" | "materials" | "period" | "objectType",
+    name:
+      | "culture"
+      | "title"
+      | "materials"
+      | "period"
+      | "objectType"
+      | "dateCreated"
+      | "dateCreatedEdtf",
   ) {
     const row = await t.run((ctx) => ctx.db.get(id));
     return row?.[name];
@@ -285,6 +292,118 @@ test("a clear empties the field; the title is never cleared and a replace that w
   });
   expect(job).toMatchObject({ status: "completed", changed: 0, skipped: 1 });
   expect(await s.field(dated, "title")).toBe("Draft");
+});
+
+test("setting or clearing the date made clears a structured date so the new text governs; a replace keeps it", async () => {
+  const s = await setup();
+  const structured = await s.create({
+    accessionNumber: "1",
+    title: "Jug",
+    dateCreated: "about 1850",
+    dateCreatedEdtf: "1848/1852",
+  });
+  // Already reads the value set, but its structured date still goes.
+  const sameText = await s.create({
+    accessionNumber: "2",
+    title: "Cup",
+    dateCreated: "1900",
+    dateCreatedEdtf: "1899/1901",
+  });
+  const textOnly = await s.create({
+    accessionNumber: "3",
+    title: "Bowl",
+    dateCreated: "1700",
+  });
+  const undated = await s.create({ accessionNumber: "4", title: "Box" });
+  const scope = {
+    kind: "selection" as const,
+    collectionIds: [structured, sameText, textOnly, undated],
+  };
+  const set = {
+    field: "dateCreated" as const,
+    operation: "set" as const,
+    value: "1900",
+  };
+
+  expect(
+    await s.user.query(api.bulkFieldEdits.preview, {
+      organizationId: s.organizationId,
+      scope,
+      edit: set,
+    }),
+  ).toEqual({
+    kind: "preview",
+    matching: 4,
+    changing: 4,
+    overwriting: 3,
+    capped: false,
+  });
+  const job = await s.run({ scope, edit: set });
+  expect(job).toMatchObject({ status: "completed", changed: 4 });
+  for (const id of [structured, sameText, textOnly, undated]) {
+    expect(await s.field(id, "dateCreated")).toBe("1900");
+    expect(await s.field(id, "dateCreatedEdtf")).toBeUndefined();
+  }
+  // The history keeps its field, previous and new shape and names what went.
+  expect((await s.auditEntries(structured))[0]?.changes).toEqual({
+    field: "dateCreated",
+    previous: "about 1850",
+    new: "1900",
+    clearedEdtf: "1848/1852",
+    bulkFieldEditId: job._id,
+  });
+  expect((await s.auditEntries(textOnly))[0]?.changes).toEqual({
+    field: "dateCreated",
+    previous: "1700",
+    new: "1900",
+    bulkFieldEditId: job._id,
+  });
+
+  const edtfOnly = await s.create({
+    accessionNumber: "5",
+    title: "Plate",
+    dateCreatedEdtf: "185X",
+  });
+  const reworded = await s.create({
+    accessionNumber: "6",
+    title: "Lamp",
+    dateCreated: "ca 1850",
+    dateCreatedEdtf: "1850~",
+  });
+  await s.run({
+    scope: { kind: "selection", collectionIds: [reworded] },
+    edit: {
+      field: "dateCreated",
+      operation: "replace",
+      find: "ca",
+      replaceWith: "c.",
+    },
+  });
+  expect(await s.field(reworded, "dateCreated")).toBe("c. 1850");
+  expect(await s.field(reworded, "dateCreatedEdtf")).toBe("1850~");
+
+  const clear = { field: "dateCreated" as const, operation: "clear" as const };
+  const clearScope = {
+    kind: "selection" as const,
+    collectionIds: [edtfOnly, reworded],
+  };
+  expect(
+    await s.user.query(api.bulkFieldEdits.preview, {
+      organizationId: s.organizationId,
+      scope: clearScope,
+      edit: clear,
+    }),
+  ).toMatchObject({ changing: 2, overwriting: 2 });
+  await s.run({ scope: clearScope, edit: clear });
+  for (const id of [edtfOnly, reworded]) {
+    expect(await s.field(id, "dateCreated")).toBeUndefined();
+    expect(await s.field(id, "dateCreatedEdtf")).toBeUndefined();
+  }
+  expect((await s.auditEntries(edtfOnly))[0]?.changes).toEqual({
+    field: "dateCreated",
+    clearedEdtf: "185X",
+    bulkFieldEditId: expect.any(String),
+  });
 });
 
 test("one edit runs at a time per Organization and a selection from another Organization is refused", async () => {

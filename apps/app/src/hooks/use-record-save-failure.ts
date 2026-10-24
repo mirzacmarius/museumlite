@@ -88,6 +88,12 @@ export function useRecordSaveFailure({
             return { kind: "field", field, message: t("dateOrderInvalid") };
           case "PARTY_MANAGED_FIELD":
             return { kind: "field", field, message: t("partyManagedField") };
+          case "PRODUCTION_DATE_INVALID":
+            return {
+              kind: "field",
+              field,
+              message: t("productionDateInvalid"),
+            };
         }
       }
       const denied = capabilityMessage(error);

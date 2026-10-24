@@ -67,6 +67,7 @@ import {
 import { canReadRecord } from "./utils/recordAccess";
 import {
   assertCurrentEditVersion,
+  enteredProductionDate,
   objectDraftEditVersion,
   recordEditError,
   requireFieldValue,
@@ -503,6 +504,7 @@ async function saveObjectDraftRecord(
   const normalizedObjectData = {
     ...args.objectData,
     title: args.objectData.title.trim(),
+    dateCreatedEdtf: enteredProductionDate(args.objectData.dateCreatedEdtf),
   };
   const submittedDraftMedia =
     args.draftMedia && normalizeDraftMediaPrimary(args.draftMedia);

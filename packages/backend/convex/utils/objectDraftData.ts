@@ -26,6 +26,8 @@ export const objectDraftDataValidator = v.object({
   culture: v.optional(v.string()),
   period: v.optional(v.string()),
   dateCreated: v.optional(v.string()),
+  /** EDTF; stored canonical, refused when it is not EDTF. */
+  dateCreatedEdtf: v.optional(v.string()),
   materials: v.optional(v.array(v.string())),
   technique: v.optional(v.string()),
   dimensions: v.optional(v.string()),

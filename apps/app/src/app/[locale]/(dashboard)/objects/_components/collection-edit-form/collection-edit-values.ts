@@ -2,6 +2,7 @@ import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { z } from "zod";
+import { edtfFromDraft } from "@/components/production-date/production-date-draft";
 import { serializeStringListField } from "@/lib/string-list-field";
 import type { CollectionFormData } from "../collection-form-shared/types";
 import {
@@ -87,6 +88,9 @@ export function collectionUpdatePatch(
   ] as const) {
     if (changed.has(field)) patch[field] = values[field] ?? "";
   }
+  // "" clears the structured date; validation has refused incomplete input.
+  if (changed.has("dateCreatedEdtf"))
+    patch.dateCreatedEdtf = edtfFromDraft(values.dateCreatedEdtf) ?? "";
   if (changed.has("dimensions"))
     patch.dimensions = values.dimensions?.trim() || "";
   if (changed.has("dimensionDiameter"))

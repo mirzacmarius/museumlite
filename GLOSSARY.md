@@ -40,6 +40,10 @@ _Avoid_: Free-text filter
 One change (set, clear, or find and replace) to one field of every Object in a selection or matching the catalogue's search and filters, previewed before it runs and written in bounded pages with an audit entry per Object.
 _Avoid_: Mass update, batch edit
 
+**Date made**:
+When an Object was made, kept as staff wrote it and, when they structure it, as an EDTF date that wins over the text. Text in a recognised form ("c. 1850", "1850s", "before 1900", "500 BC") is read as a date; other text is shown as written and leaves the Object undated. The catalogue sorts and filters by the earliest and latest years of the date in effect, which are worked out and never stored on the Object (ADR 0021).
+_Avoid_: Date created (it reads as when the record was made), production year
+
 ### Intake and permanence
 
 **Entry**:
@@ -81,7 +85,7 @@ A recorded assertion about who held an Object, in what role, when and how, kept 
 _Avoid_: Ownership history (the legacy free-text list), provenance entry
 
 **Partial date**:
-A historical date known only to a day, month, year or decade, optionally circa, not after, not before, or uncertain. It is never stored as a timestamp.
+A historical date known only to a day, month, year or decade, optionally circa, not after, not before, or uncertain. An Object's Date made also takes a year before Christ. It is never stored as a timestamp.
 _Avoid_: Approximate timestamp
 
 ### Access

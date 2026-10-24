@@ -4,6 +4,7 @@ import {
   type exportSource,
   MAX_EXPORT_BYTES,
 } from "./exportContract";
+import { productionDateSummary } from "./productionDates";
 import {
   REGISTER_COLUMNS,
   REGISTER_CONSISTENCY,
@@ -18,39 +19,49 @@ export interface ExportColumn {
   type: Infer<typeof exportColumnType>;
 }
 type ExportSource = Infer<typeof exportSource>;
-export const objectColumns: ExportColumn[] = [
-  ...[
-    "_id",
-    "accessionNumber",
-    "title",
-    "alternativeTitle",
-    "creator",
-    "objectType",
-    "objectName",
-    "culture",
-    "period",
-    "dateCreated",
-    "materials",
-    "technique",
-    "dimensions",
-    "description",
-    "condition",
-    "provenance",
-    "status",
-    "currentLocationId",
-    "collectionGroupId",
-  ].map((name) => ({ name, type: "text" as const })),
-  ...[
-    "dimensionHeight",
-    "dimensionWidth",
-    "dimensionDepth",
-    "dimensionWeight",
-  ].map((name) => ({ name, type: "number" as const })),
-  ...["catalogedAt", "lastModifiedAt", "capturedAt", "_creationTime"].map(
-    (name) => ({ name, type: "utcEpochMs" as const }),
-  ),
-  { name: "record", type: "json" },
-];
+/**
+ * Catalog columns of an export version. Version 2 adds the date made: as
+ * entered, in effect, and the years it spans. A job keeps its version's
+ * columns, so one created before an upgrade is described as it was written.
+ */
+function objectColumns(schemaVersion: number): ExportColumn[] {
+  const dateMade = schemaVersion >= 2;
+  return [
+    ...[
+      "_id",
+      "accessionNumber",
+      "title",
+      "alternativeTitle",
+      "creator",
+      "objectType",
+      "objectName",
+      "culture",
+      "period",
+      "dateCreated",
+      ...(dateMade ? ["dateCreatedEdtf", "productionDateEdtf"] : []),
+      "materials",
+      "technique",
+      "dimensions",
+      "description",
+      "condition",
+      "provenance",
+      "status",
+      "currentLocationId",
+      "collectionGroupId",
+    ].map((name) => ({ name, type: "text" as const })),
+    ...[
+      "dimensionHeight",
+      "dimensionWidth",
+      "dimensionDepth",
+      "dimensionWeight",
+      ...(dateMade ? ["productionEarliestYear", "productionLatestYear"] : []),
+    ].map((name) => ({ name, type: "number" as const })),
+    ...["catalogedAt", "lastModifiedAt", "capturedAt", "_creationTime"].map(
+      (name) => ({ name, type: "utcEpochMs" as const }),
+    ),
+    { name: "record", type: "json" },
+  ];
+}
 export const auditColumns: ExportColumn[] = [
   ...[
     "_id",
@@ -105,9 +116,31 @@ function registerCsvCell(value: unknown, type: ExportColumn["type"]) {
   }
   return csvCell(value, type);
 }
-export function exportColumns(source: ExportSource) {
+export function exportColumns(source: ExportSource, schemaVersion: number) {
   if (source.kind === "register") return REGISTER_COLUMNS[source.profile];
-  return source.kind === "audit" ? auditColumns : objectColumns;
+  return source.kind === "audit" ? auditColumns : objectColumns(schemaVersion);
+}
+
+function text(value: unknown) {
+  return typeof value === "string" ? value : undefined;
+}
+
+/**
+ * A catalog row of export version 2: the EDTF in effect, entered or read from
+ * the date text, and the years it spans. A value the date leaves open, or an
+ * Object with no date, has none, so JSONL leaves it out.
+ */
+export function objectExportRow(row: Record<string, unknown>) {
+  const made = productionDateSummary({
+    dateCreated: text(row.dateCreated),
+    dateCreatedEdtf: text(row.dateCreatedEdtf),
+  });
+  return {
+    ...row,
+    productionDateEdtf: made?.edtf,
+    productionEarliestYear: made?.earliestYear,
+    productionLatestYear: made?.latestYear,
+  };
 }
 function encodeRegisterRows(
   rows: Record<string, unknown>[],
@@ -133,19 +166,29 @@ function encodeRegisterRows(
   );
 }
 export function encodeRows(
-  rows: Record<string, unknown>[],
+  sourceRows: Record<string, unknown>[],
   source: ExportSource,
   format: "csv" | "jsonl",
   first: boolean,
+  schemaVersion: number,
 ) {
   if (source.kind === "register")
-    return encodeRegisterRows(rows, exportColumns(source), format, first);
+    return encodeRegisterRows(
+      sourceRows,
+      exportColumns(source, schemaVersion),
+      format,
+      first,
+    );
+  const rows: Record<string, unknown>[] =
+    source.kind === "objects" && schemaVersion >= 2
+      ? sourceRows.map(objectExportRow)
+      : sourceRows;
   if (format === "jsonl")
     return (
       rows.map((row) => JSON.stringify(row)).join("\n") +
       (rows.length ? "\n" : "")
     );
-  const columns = exportColumns(source);
+  const columns = exportColumns(source, schemaVersion);
   return (
     (first ? `${columns.map((c) => c.name).join(",")}\r\n` : "") +
     rows
@@ -156,6 +199,8 @@ export function encodeRows(
       .join("")
   );
 }
+const DATE_MADE_POLICY =
+  "dateCreated is the date made as written. dateCreatedEdtf is the EDTF (ISO 8601-2, levels 0 and 1) staff entered, absent when none was. productionDateEdtf is the EDTF in effect: the entered one, otherwise what MuseumLite reads dateCreated as, absent when neither states a date; an open interval side is written '..'. productionEarliestYear and productionLatestYear are the years that date spans, astronomical as in EDTF (0 is 1 BC, -499 is 500 BC); circa dates are widened by 5 years, 10 for a decade and 25 for a century, and an open side has no year. In CSV an EDTF value starting with - receives the leading apostrophe like any text; the years are number cells.";
 export function manifest(job: {
   source: ExportSource;
   organizationId: string;
@@ -196,7 +241,7 @@ export function manifest(job: {
       consistency: REGISTER_CONSISTENCY[profile],
       evidencePolicy:
         "evidenceStatus is recorded when the row comes from structured evidence and legacy when it predates or bypassed that evidence. notRecorded lists, separated by semicolons, the columns left empty because MuseumLite holds no record of that fact at asOf. Missing facts are never inferred.",
-      columns: exportColumns(job.source),
+      columns: exportColumns(job.source, job.schemaVersion),
       countPolicy:
         "rows is emitted register rows; scanned counts source records examined (register records, objects and evidence records), not rows. Completion requires an exhausted cursor and equal chunk/emitted counts; failed jobs expose no artifact.",
       maxArtifactBytes: MAX_EXPORT_BYTES,
@@ -205,11 +250,13 @@ export function manifest(job: {
   }
   return {
     ...frozen,
-    compatibility:
-      "MuseumLite export v1; UTF-8; JSONL retains JSON types and null/absent distinctions. CSV uses RFC4180 quoting, UTC epoch milliseconds, unlocalized numbers, empty nulls; text/json formula prefixes receive a leading apostrophe. CSV does not encode spreadsheet cell types: import using this column schema to retain leading zeros and literal text.",
+    compatibility: `MuseumLite export v${job.schemaVersion}; UTF-8; JSONL retains JSON types and null/absent distinctions. CSV uses RFC4180 quoting, UTC epoch milliseconds, unlocalized numbers, empty nulls; text/json formula prefixes receive a leading apostrophe. CSV does not encode spreadsheet cell types: import using this column schema to retain leading zeros and literal text.`,
+    ...(job.source.kind === "objects" && job.schemaVersion >= 2
+      ? { dateMadePolicy: DATE_MADE_POLICY }
+      : {}),
     consistency:
       "Creation cutoff excludes later inserts. Audit evidence is immutable at cutoff. Object values and filter membership are captured at each row's capturedAt during the capture interval; deleted rows before capture are absent. This is a complete bounded traversal, not a historical snapshot of mutable object values. Selected missing rows fail the job.",
-    columns: exportColumns(job.source),
+    columns: exportColumns(job.source, job.schemaVersion),
     countPolicy:
       "rows is emitted/captured records; failedAttempts counts failed worker attempts, not omitted records; selected is sealed explicit manifest rows. scanned counts catalog source rows examined; for audit it counts returned matching entries, not the underlying filtered scan. Completion requires exhausted cursor and equal chunk/emitted counts; failed jobs expose no artifact.",
     maxArtifactBytes: MAX_EXPORT_BYTES,

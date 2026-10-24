@@ -10,7 +10,9 @@ import type {
   ObjectStatus,
 } from "@/hooks/use-url-filters";
 import { CALENDAR_DATE_OPTIONS, formatDate } from "@/lib/format-date";
+import { formatProductionYear } from "@/lib/production-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { madeYearBound } from "./use-collection-catalog-list";
 
 interface LocationPathItem {
   name: string;
@@ -40,6 +42,9 @@ export interface ObjectAppliedFiltersValue {
   photograph: ObjectPhotographFilter;
   catalogedFrom: string;
   catalogedTo: string;
+  /** Years as written: "1850", or "-500" for 500 BC. */
+  madeFrom: string;
+  madeTo: string;
   advancedFilters: FilterGroup[];
 }
 
@@ -57,6 +62,12 @@ function dateLabel(value: string, locale: string) {
     locale,
     CALENDAR_DATE_OPTIONS,
   );
+}
+
+/** A date made year from the URL in the app language: "1850", "500 BC". */
+function yearLabel(value: string, locale: ReturnType<typeof useCurrentLocale>) {
+  const year = madeYearBound(value);
+  return year === undefined ? value : formatProductionYear(year, locale);
 }
 
 interface ObjectAppliedFiltersProps {
@@ -168,6 +179,8 @@ export function ObjectAppliedFilters({
     filters.photograph !== "" ||
     filters.catalogedFrom !== "" ||
     filters.catalogedTo !== "" ||
+    filters.madeFrom !== "" ||
+    filters.madeTo !== "" ||
     advancedCount > 0;
 
   if (!showBar) return null;
@@ -257,6 +270,22 @@ export function ObjectAppliedFilters({
               : t("filters.withoutPhotograph")
           }
           onRemove={() => onChange({ photograph: "" })}
+        />
+      )}
+
+      {filters.madeFrom !== "" && (
+        <AppliedFilterChip
+          label={t("filters.madeFrom")}
+          value={yearLabel(filters.madeFrom, locale)}
+          onRemove={() => onChange({ madeFrom: "" })}
+        />
+      )}
+
+      {filters.madeTo !== "" && (
+        <AppliedFilterChip
+          label={t("filters.madeTo")}
+          value={yearLabel(filters.madeTo, locale)}
+          onRemove={() => onChange({ madeTo: "" })}
         />
       )}
 

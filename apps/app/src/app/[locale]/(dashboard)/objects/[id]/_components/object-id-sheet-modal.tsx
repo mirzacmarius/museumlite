@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { Dialog } from "@v1/ui/dialog";
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
+import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
 import { formatDate } from "@/lib/format-date";
 import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { useScopedI18n } from "@/locales/client";
@@ -34,6 +35,7 @@ export function ObjectIdSheetModal({
 }: ObjectIdSheetModalProps) {
   const t = useScopedI18n("objects.objectIdSheet");
   const tCommon = useScopedI18n("common");
+  const { dateMade } = useProductionDateFormat();
   // Read by the record's pointer, so later drafts never hide the accepted one.
   const accepted = useQuery(
     api.conditionAssessments.getCurrentAccepted,
@@ -60,8 +62,9 @@ export function ObjectIdSheetModal({
         depth: t("measurement.depth"),
       },
       number: (value: number) => formatNumber(value, locale),
+      dateMade,
     }),
-    [t, locale],
+    [t, locale, dateMade],
   );
   const values = useMemo(
     () =>

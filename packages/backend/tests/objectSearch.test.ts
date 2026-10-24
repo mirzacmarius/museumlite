@@ -539,3 +539,172 @@ test("advanced filters combine conditions within a group and groups with each ot
     }),
   ).toEqual(["S-1"]);
 });
+
+test("a date made range keeps overlapping and open-ended dates and drops undated ones alike in the list, a filtered export and a bulk edit", async () => {
+  const catalog = await setupCatalog();
+  await catalog.create({
+    accessionNumber: "Y-1",
+    title: "Jug",
+    dateCreated: "1850",
+  });
+  await catalog.create({
+    accessionNumber: "Y-2",
+    title: "Chest",
+    dateCreated: "before 1700",
+  });
+  await catalog.create({
+    accessionNumber: "Y-3",
+    title: "Clock",
+    dateCreated: "after 1840",
+  });
+  // Circa widens by five years either side: 1790 to 1800.
+  await catalog.create({
+    accessionNumber: "Y-4",
+    title: "Chair",
+    dateCreated: "c. 1795",
+  });
+  await catalog.create({
+    accessionNumber: "Y-5",
+    title: "Vase",
+    dateCreated: "Ming dynasty",
+  });
+  await catalog.create({ accessionNumber: "Y-6", title: "Box" });
+  await catalog.create({
+    accessionNumber: "Y-7",
+    title: "Radio",
+    dateCreated: "1950",
+  });
+  await catalog.create({
+    accessionNumber: "Y-8",
+    title: "Coin",
+    dateCreated: "500 BC",
+  });
+  // The structured date wins: this text alone would not meet the range.
+  await catalog.create({
+    accessionNumber: "Y-9",
+    title: "Print",
+    dateCreated: "1950s reprint",
+    dateCreatedEdtf: "1801/1810",
+  });
+  const range = { madeFrom: 1600, madeTo: 1860 };
+  const expected = ["Y-1", "Y-2", "Y-3", "Y-4", "Y-9"];
+
+  // The range is read from the records, so it holds before the backfill too.
+  expect(await catalog.numbers(range)).toEqual(expected);
+  await catalog.backfill();
+  expect(await catalog.numbers(range)).toEqual(expected);
+  expect(await catalog.numbers({ ...range, sort: "madeEarliest" })).toEqual(
+    expected,
+  );
+  // Astronomical years: 500 BC is -499; an open start meets any range.
+  expect(await catalog.numbers({ madeFrom: -600, madeTo: -400 })).toEqual([
+    "Y-2",
+    "Y-8",
+  ]);
+  expect(await catalog.numbers({ madeFrom: 1900 })).toEqual(["Y-3", "Y-7"]);
+
+  const preview = await catalog.user.query(api.bulkFieldEdits.preview, {
+    organizationId: catalog.organizationId,
+    scope: { kind: "filters", filters: range },
+    edit: { field: "culture", operation: "set", value: "Norwegian" },
+  });
+  expect(preview).toEqual(
+    expect.objectContaining({ kind: "preview", matching: expected.length }),
+  );
+
+  vi.useFakeTimers();
+  try {
+    vi.advanceTimersByTime(1000);
+    const jobId = await catalog.user.mutation(api.exports.create, {
+      organizationId: catalog.organizationId,
+      requestKey: "made-range",
+      format: "jsonl",
+      source: { kind: "objects", mode: "filtered", filters: range },
+    });
+    await catalog.t.finishInProgressScheduledFunctions();
+    await catalog.t.finishAllScheduledFunctions(() =>
+      vi.advanceTimersByTime(1),
+    );
+    const response = await catalog.user.fetch(
+      `/exports/download?jobId=${jobId}`,
+    );
+    expect(response.status).toBe(200);
+    const exported = (await response.text())
+      .trim()
+      .split("\n")
+      .map(
+        (line) =>
+          (JSON.parse(line) as { accessionNumber: string }).accessionNumber,
+      )
+      .sort();
+    expect(exported).toEqual(expected);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("a filtered export refuses a date made range that is not whole years in order", async () => {
+  const catalog = await setupCatalog();
+  for (const filters of [
+    { madeFrom: 1850.5 },
+    { madeTo: 10_000 },
+    { madeFrom: 1900, madeTo: 1800 },
+  ]) {
+    await expect(
+      catalog.user.mutation(api.exports.create, {
+        organizationId: catalog.organizationId,
+        requestKey: `range-${JSON.stringify(filters)}`,
+        format: "csv",
+        source: { kind: "objects", mode: "filtered", filters },
+      }),
+    ).rejects.toThrow("Invalid date range");
+  }
+});
+
+test("advanced filters compare the date made by the years it reads as, and as text when it reads as none", async () => {
+  const catalog = await setupCatalog();
+  // 1845 to 1855.
+  await catalog.create({
+    accessionNumber: "D-1",
+    title: "Jug",
+    dateCreated: "c. 1850",
+  });
+  await catalog.create({
+    accessionNumber: "D-2",
+    title: "Chest",
+    dateCreated: "before 1700",
+  });
+  await catalog.create({
+    accessionNumber: "D-3",
+    title: "Print",
+    dateCreatedEdtf: "1901/1910",
+  });
+  await catalog.create({
+    accessionNumber: "D-4",
+    title: "Vase",
+    dateCreated: "Ming dynasty",
+  });
+  const where = (
+    operator: "lt" | "lte" | "gt" | "gte",
+    value: string,
+  ): ListFilters => ({
+    advancedFilters: [
+      {
+        operator: "AND",
+        filters: [{ field: "dateCreated", operator, value }],
+      },
+    ],
+  });
+
+  // Text that reads as no date is compared as text, as before: "ming
+  // dynasty" sorts after "1855".
+  expect(await catalog.numbers(where("lt", "1848"))).toEqual(["D-1", "D-2"]);
+  expect(await catalog.numbers(where("lte", "1845"))).toEqual(["D-1", "D-2"]);
+  expect(await catalog.numbers(where("gt", "1855"))).toEqual(["D-3", "D-4"]);
+  expect(await catalog.numbers(where("gte", "1855"))).toEqual([
+    "D-1",
+    "D-3",
+    "D-4",
+  ]);
+  expect(await catalog.numbers(where("gt", "Han dynasty"))).toEqual(["D-4"]);
+});

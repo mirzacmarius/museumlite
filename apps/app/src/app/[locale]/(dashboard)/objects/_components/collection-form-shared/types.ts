@@ -3,6 +3,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { CollectionModuleId } from "@v1/backend/convex/utils/moduleCatalog";
 import type { FunctionArgs } from "convex/server";
 import type { CollectionType } from "@/components/collection-type-selector";
+import type { ProductionDateDraft } from "@/components/production-date/production-date-draft";
 import type { ObjectTabId } from "../../[id]/_components/object-tab-config";
 import type { TypeDetailsDraft } from "../object-type-details/type-detail-values";
 
@@ -47,6 +48,8 @@ export interface CollectionFormData {
   culture?: string;
   period?: string;
   dateCreated?: string;
+  /** The structured date made as its inputs hold it, saved as EDTF. */
+  dateCreatedEdtf?: ProductionDateDraft;
   materials?: string | string[];
   technique?: string;
   dimensions?: string;

@@ -64,7 +64,13 @@ export const process = internalAction({
           };
         }
         const bytes = new TextEncoder().encode(
-          encodeRows(page.rows, job.source, job.format, job.checkpoint === 0),
+          encodeRows(
+            page.rows,
+            job.source,
+            job.format,
+            job.checkpoint === 0,
+            job.schemaVersion,
+          ),
         );
         if (bytes.length > MAX_CHUNK_BYTES)
           throw new Error(

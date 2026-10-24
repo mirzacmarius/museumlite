@@ -1,10 +1,13 @@
 import { describe, expect, test } from "vitest";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
+  composeObjectSearchDocument,
   matchedObjectSearchField,
+  OBJECT_SEARCH_DOCUMENT_VERSION,
   searchQueryTerms,
   searchTokens,
 } from "./objectSearchDocuments";
+import { UNDATED_SORT_EARLIEST, UNDATED_SORT_LATEST } from "./productionDates";
 
 describe("search words", () => {
   test("words are split and lower-cased as the search index splits them", () => {
@@ -44,5 +47,50 @@ describe("search words", () => {
 
     expect(matchedObjectSearchField(poster, "donau")).toBeUndefined();
     expect(matchedObjectSearchField(poster, "plak")).toBe("description");
+  });
+});
+
+describe("date made sort keys", () => {
+  function documentOf(fields: Partial<Doc<"collections">>) {
+    return composeObjectSearchDocument(
+      {
+        _id: "collection" as Id<"collections">,
+        _creationTime: 1,
+        organizationId: "organization" as Id<"organizations">,
+        accessionNumber: "1",
+        title: "Jug",
+        status: "active",
+        catalogedBy: "user" as Id<"users">,
+        catalogedAt: 1,
+        ...fields,
+      },
+      false,
+    );
+  }
+
+  test("a document holds the years of the date in effect, written at version 3", () => {
+    expect(OBJECT_SEARCH_DOCUMENT_VERSION).toBe(3);
+    expect(documentOf({ dateCreated: "c. 1850" })).toMatchObject({
+      madeSortEarliest: 1845,
+      madeSortLatest: 1855,
+      version: 3,
+    });
+    expect(documentOf({ dateCreated: "500 BC" })).toMatchObject({
+      madeSortEarliest: -499,
+      madeSortLatest: -499,
+    });
+    // The structured date wins; an open start sorts by its end both ways.
+    expect(
+      documentOf({ dateCreated: "1850", dateCreatedEdtf: "../1900" }),
+    ).toMatchObject({ madeSortEarliest: 1900, madeSortLatest: 1900 });
+  });
+
+  test("an undated Object sorts last both ways", () => {
+    for (const fields of [{}, { dateCreated: "Ming dynasty" }]) {
+      expect(documentOf(fields)).toMatchObject({
+        madeSortEarliest: UNDATED_SORT_EARLIEST,
+        madeSortLatest: UNDATED_SORT_LATEST,
+      });
+    }
   });
 });

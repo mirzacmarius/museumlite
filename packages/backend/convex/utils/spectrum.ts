@@ -14,6 +14,7 @@
  */
 
 import type { Doc } from "../_generated/dataModel";
+import { productionDateSummary } from "./productionDates";
 
 /**
  * SPECTRUM Object Entry record (Accession)
@@ -64,8 +65,13 @@ export interface SpectrumObjectRecord {
   description?: string;
   /** Person or organization who made the object (Production person/organization) */
   maker?: string;
-  /** Date of creation (Production date) */
+  /** Date of creation (Production date), as written */
   dateCreated?: string;
+  /** The production date in effect as EDTF: entered, or read from the text */
+  productionDateEdtf?: string;
+  /** First and last years it spans; astronomical, as in EDTF (0 is 1 BC) */
+  productionDateEarliest?: number;
+  productionDateLatest?: number;
   /** Place of creation (Production place) */
   productionPlace?: string;
   /** Cultural context (Culture) */
@@ -179,6 +185,8 @@ export function collectionToSpectrum(
   // Build keywords from tags
   const keywords = collection.tags;
 
+  const productionDate = productionDateSummary(collection);
+
   return {
     objectNumber: collection.accessionNumber || "",
     otherNumbers,
@@ -187,6 +195,9 @@ export function collectionToSpectrum(
     description: collection.description,
     maker: collection.creator,
     dateCreated: collection.dateCreated,
+    productionDateEdtf: productionDate?.edtf,
+    productionDateEarliest: productionDate?.earliestYear,
+    productionDateLatest: productionDate?.latestYear,
     productionPlace: undefined, // Not in current schema
     culture: collection.culture,
     period: collection.period,
@@ -306,6 +317,9 @@ export function toSpectrumXML(
   addElement("description", record.description);
   addElement("maker", record.maker);
   addElement("dateCreated", record.dateCreated);
+  addElement("productionDateEdtf", record.productionDateEdtf);
+  addElement("productionDateEarliest", record.productionDateEarliest);
+  addElement("productionDateLatest", record.productionDateLatest);
   addElement("productionPlace", record.productionPlace);
   addElement("culture", record.culture);
   addElement("period", record.period);

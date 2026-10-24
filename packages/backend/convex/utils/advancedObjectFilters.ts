@@ -6,6 +6,11 @@ import {
   type AdvancedFilterGroup,
 } from "./catalogFilterValidators";
 import { foldFacetValue, storedListValues } from "./objectSearchDocuments";
+import {
+  effectiveProductionDate,
+  type ProductionYears,
+  productionYears,
+} from "./productionDates";
 
 export {
   ADVANCED_FILTER_FIELDS,
@@ -50,6 +55,54 @@ function compare(left: string, right: string) {
   return left.localeCompare(right, undefined, { sensitivity: "base" });
 }
 
+type OrderOperator = "gt" | "gte" | "lt" | "lte";
+
+/**
+ * A year compared with a date made's years, as the year range filter reads
+ * them: before a year by its first, after it by its last, and an open side
+ * always passes. Years are astronomical, as in EDTF.
+ */
+function yearMatches(
+  years: ProductionYears,
+  operator: OrderOperator,
+  year: number,
+) {
+  switch (operator) {
+    case "lt":
+      return years.earliestYear === undefined || years.earliestYear < year;
+    case "lte":
+      return years.earliestYear === undefined || years.earliestYear <= year;
+    case "gt":
+      return years.latestYear === undefined || years.latestYear > year;
+    case "gte":
+      return years.latestYear === undefined || years.latestYear >= year;
+  }
+}
+
+/** A typed whole year, or undefined for any other text. */
+function typedYear(value: string) {
+  return /^-?\d+$/.test(value) ? Number(value) : undefined;
+}
+
+/**
+ * The date made compared with a year: by the years its date reads as, or as
+ * text when it reads as none. Undefined leaves it to the text comparison.
+ */
+function dateMadeMatches(
+  collection: Doc<"collections">,
+  operator: OrderOperator,
+  wanted: string[],
+) {
+  const years = wanted.map(typedYear);
+  if (years.some((year) => year === undefined)) return undefined;
+  const date = effectiveProductionDate(collection);
+  if (!date) return undefined;
+  const span = productionYears(date);
+  return years.some(
+    (year) => year !== undefined && yearMatches(span, operator, year),
+  );
+}
+
 function matchesCondition(
   collection: Doc<"collections">,
   condition: AdvancedFilterCondition,
@@ -62,6 +115,16 @@ function matchesCondition(
     .map((value) => foldFacetValue(value))
     .filter((value): value is string => value !== undefined);
   const whole = foldFacetValue(values.join(", "));
+  if (
+    condition.field === "dateCreated" &&
+    (condition.operator === "gt" ||
+      condition.operator === "gte" ||
+      condition.operator === "lt" ||
+      condition.operator === "lte")
+  ) {
+    const byYears = dateMadeMatches(collection, condition.operator, wanted);
+    if (byYears !== undefined) return byYears;
+  }
   switch (condition.operator) {
     case "eq":
       return wanted.some((want) => values.includes(want) || whole === want);

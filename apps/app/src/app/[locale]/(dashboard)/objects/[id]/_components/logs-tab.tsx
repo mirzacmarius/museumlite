@@ -13,6 +13,7 @@ import { useQuery } from "convex/react";
 import { ScrollText } from "lucide-react";
 import { useState } from "react";
 import { ClientDate } from "@/components/client-date";
+import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { DetailSection } from "./detail-section";
 
@@ -79,6 +80,7 @@ function changedValue(field: unknown, value: unknown) {
 function formatChanges(
   changes: Record<string, unknown> | undefined,
   tRoot: ReturnType<typeof useI18n>,
+  structuredDate: (edtf: string) => string,
 ): React.ReactNode {
   if (!changes || typeof changes !== "object") {
     return null;
@@ -87,21 +89,31 @@ function formatChanges(
   // Handle field changes pattern (e.g., { field: "title", previous: "X", new: "Y" })
   if ("field" in changes) {
     return (
-      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-        {tRoot("untranslatedRecords.objects.logs.fieldChanged", {
-          field: isBulkEditField(changes.field)
-            ? tRoot(`objects.bulkEdit.fields.${changes.field}`)
-            : String(changes.field),
-          previous:
-            changes.previous !== undefined
-              ? ` ${tRoot("untranslatedRecords.objects.logs.fromValue", { value: changedValue(changes.field, changes.previous) })}`
-              : "",
-          next:
-            changes.new !== undefined
-              ? ` ${tRoot("untranslatedRecords.objects.logs.toValue", { value: changedValue(changes.field, changes.new) })}`
-              : "",
-        })}
-      </p>
+      <>
+        <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+          {tRoot("untranslatedRecords.objects.logs.fieldChanged", {
+            field: isBulkEditField(changes.field)
+              ? tRoot(`objects.bulkEdit.fields.${changes.field}`)
+              : String(changes.field),
+            previous:
+              changes.previous !== undefined
+                ? ` ${tRoot("untranslatedRecords.objects.logs.fromValue", { value: changedValue(changes.field, changes.previous) })}`
+                : "",
+            next:
+              changes.new !== undefined
+                ? ` ${tRoot("untranslatedRecords.objects.logs.toValue", { value: changedValue(changes.field, changes.new) })}`
+                : "",
+          })}
+        </p>
+        {/* A bulk set or clear of Date made also removes the structured date. */}
+        {typeof changes.clearedEdtf === "string" ? (
+          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+            {tRoot("untranslatedRecords.objects.logs.structuredDateRemoved", {
+              value: structuredDate(changes.clearedEdtf),
+            })}
+          </p>
+        ) : null}
+      </>
     );
   }
 
@@ -200,6 +212,7 @@ export function LogsTab({
 }: LogsTabProps) {
   const tRoot = useI18n();
   const tCommon = useScopedI18n("modules.common");
+  const dates = useProductionDateFormat();
   const [limit, setLimit] = useState(LOG_PAGE_SIZE);
   const auditLogs = useQuery(api.auditLog.getByEntity, {
     organizationId,
@@ -295,6 +308,8 @@ export function LogsTab({
                       : formatChanges(
                           log.changes as Record<string, unknown> | undefined,
                           tRoot,
+                          (edtf) =>
+                            dates.dateMade({ dateCreatedEdtf: edtf }) ?? edtf,
                         )}
                   </td>
                 </tr>

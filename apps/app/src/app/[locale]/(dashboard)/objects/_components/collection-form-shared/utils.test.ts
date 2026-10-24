@@ -101,4 +101,25 @@ describe("object draft form serialization", () => {
     });
     expect(payload.inscriptionMarks?.[0]).not.toHaveProperty("localId");
   });
+
+  test("carries the structured date made as EDTF", () => {
+    const formData = createFormDataFromDraftObject({
+      title: "Amphora",
+      dateCreated: "c. 500 BC",
+      dateCreatedEdtf: "-0499~",
+    });
+    expect(formData.dateCreatedEdtf?.from).toMatchObject({
+      year: "500",
+      era: "bc",
+      qualifier: "circa",
+    });
+    expect(buildObjectDraftPayload(formData)).toMatchObject({
+      dateCreated: "c. 500 BC",
+      dateCreatedEdtf: "-0499~",
+    });
+    expect(
+      buildObjectDraftPayload(createFormDataFromDraftObject({ title: "Jar" }))
+        .dateCreatedEdtf,
+    ).toBeUndefined();
+  });
 });
