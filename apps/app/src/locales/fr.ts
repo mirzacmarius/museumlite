@@ -204,6 +204,10 @@ export default {
       uploadHint:
         "Cliquez sur l'avatar pour en télécharger un personnalisé depuis vos fichiers.",
       resetButton: "Réinitialiser",
+      uploadFailed:
+        "Votre avatar n'a pas pu être téléversé. Utilisez une image JPEG, PNG ou WebP et réessayez.",
+      uploadRateLimited:
+        "Trop de téléversements à la fois. Attendez une minute, puis réessayez.",
     },
     name: {
       title: "Votre Nom",
@@ -2988,6 +2992,8 @@ export default {
       },
       imageUploadFailed:
         "La photo de l'emplacement n'a pas pu être téléversée. Réessayez.",
+      imageUploadRateLimited:
+        "Trop de téléversements à la fois. Attendez une minute, puis réessayez.",
     },
     move: {
       title: "Déplacer l'Emplacement",

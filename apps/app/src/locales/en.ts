@@ -198,6 +198,10 @@ export default {
       description: "This is your avatar. It will be displayed on your profile.",
       uploadHint: "Click on the avatar to upload a custom one from your files.",
       resetButton: "Reset",
+      uploadFailed:
+        "Your avatar could not be uploaded. Use a JPEG, PNG or WebP image and try again.",
+      uploadRateLimited:
+        "Too many uploads at once. Wait a minute, then try again.",
     },
     name: {
       title: "Your Name",
@@ -2270,6 +2274,8 @@ export default {
         createFailed: "Failed to create location",
       },
       imageUploadFailed: "The location photo could not be uploaded. Try again.",
+      imageUploadRateLimited:
+        "Too many uploads at once. Wait a minute, then try again.",
     },
     move: {
       title: "Move Location",

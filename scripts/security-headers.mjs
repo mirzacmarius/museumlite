@@ -121,9 +121,11 @@ export function securityHeaders(options = {}) {
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     {
+      // The barcode scanner needs the camera on the app's own pages; every
+      // other powerful feature stays off, including inside frames.
       key: "Permissions-Policy",
       value:
-        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+        "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
     },
     {
       key: "Content-Security-Policy-Report-Only",

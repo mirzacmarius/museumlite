@@ -205,6 +205,10 @@ export default {
       uploadHint:
         "Haz clic en el avatar para subir uno personalizado desde tus archivos.",
       resetButton: "Restablecer",
+      uploadFailed:
+        "No se pudo subir tu avatar. Usa una imagen JPEG, PNG o WebP e inténtalo de nuevo.",
+      uploadRateLimited:
+        "Demasiadas subidas a la vez. Espera un minuto e inténtalo de nuevo.",
     },
     name: {
       title: "Tu Nombre",
@@ -2980,6 +2984,8 @@ export default {
       },
       imageUploadFailed:
         "No se pudo subir la foto de la ubicación. Inténtelo de nuevo.",
+      imageUploadRateLimited:
+        "Demasiadas subidas a la vez. Espere un minuto e inténtelo de nuevo.",
     },
     move: {
       title: "Mover Ubicación",

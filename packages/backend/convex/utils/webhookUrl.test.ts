@@ -13,6 +13,9 @@ describe("isPublicHttpsWebhookUrl", () => {
       "https://11.0.0.1/hook",
       "https://172.32.0.1/hook",
       "https://[2606:4700:4700::1111]/hook",
+      "https://[64:ff9b::808:808]/hook",
+      "https://[2002:808:808::1]/hook",
+      "https://example.com./hook",
     ]) {
       expect(isPublicHttpsWebhookUrl(url), url).toBe(true);
     }
@@ -48,6 +51,18 @@ describe("isPublicHttpsWebhookUrl", () => {
       "https://[fe80::1]/hook",
       "https://[::ffff:10.0.0.1]/hook",
       "https://[::ffff:c0a8:101]/hook",
+      "https://[::127.0.0.1]/hook",
+      "https://[::ffff:0:a00:1]/hook",
+      "https://[64:ff9b::a9fe:a9fe]/hook",
+      "https://[64:ff9b:1::1]/hook",
+      "https://[2002:c0a8:101::1]/hook",
+      "https://[fec0::1]/hook",
+      "https://[ff02::1]/hook",
+      "https://[100::1]/hook",
+      "https://localhost./hook",
+      "https://vault.internal./hook",
+      "https://printer.local../hook",
+      "https://intranet./hook",
     ]) {
       expect(isPublicHttpsWebhookUrl(url), url).toBe(false);
     }
@@ -58,5 +73,9 @@ describe("isPublicHttpsWebhookUrl", () => {
     expect(isPrivateWebhookHost("ip6-localhost")).toBe(true);
     expect(isPrivateWebhookHost("db.home.arpa")).toBe(true);
     expect(isPrivateWebhookHost("[::ffff:808:808]")).toBe(false);
+    expect(isPrivateWebhookHost("::ffff:10.0.0.1")).toBe(true);
+    expect(isPrivateWebhookHost("[1:2:3]")).toBe(true);
+    expect(isPrivateWebhookHost("[1::2::3]")).toBe(true);
+    expect(isPrivateWebhookHost("[2606:4700:4700:0:0:0:0:1111]")).toBe(false);
   });
 });

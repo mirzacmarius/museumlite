@@ -10,6 +10,7 @@ import {
 } from "./accountErrors";
 import { polar } from "./subscriptions";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import { uploadRateLimited } from "./utils/uploadErrors";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
@@ -256,9 +257,7 @@ export const generateUploadUrl = mutation({
     const quota = await uploadLimiter.limit(ctx, "ownedUploadUrls", {
       key: userId,
     });
-    if (!quota.ok) {
-      throw new Error("Too many uploads at once. Try again in a minute.");
-    }
+    if (!quota.ok) throw uploadRateLimited(quota.retryAfter);
     return await createAuthorizedUploadUrl(
       ctx,
       userId,
@@ -270,14 +269,15 @@ export const generateUploadUrl = mutation({
 
 /** The open upload session for `token`, or null. */
 export const checkUploadIntent = internalQuery({
-  args: { token: v.string() },
+  // The caller passes the time: a query never reads the clock.
+  args: { token: v.string(), now: v.number() },
   returns: v.union(v.null(), v.object({ mimeType: v.optional(v.string()) })),
   handler: async (ctx, args) => {
     const intent = await ctx.db
       .query("uploadIntents")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!intent || intent.usedAt || intent.expiresAt <= Date.now()) {
+    if (!intent || intent.usedAt || intent.expiresAt <= args.now) {
       return null;
     }
     return { mimeType: intent.mimeType };

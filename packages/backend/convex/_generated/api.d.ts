@@ -331,6 +331,7 @@ import type * as utils_systemRoleGrants from "../utils/systemRoleGrants.js";
 import type * as utils_systemRoles from "../utils/systemRoles.js";
 import type * as utils_transferStages from "../utils/transferStages.js";
 import type * as utils_transitPhysicalHandoff from "../utils/transitPhysicalHandoff.js";
+import type * as utils_uploadErrors from "../utils/uploadErrors.js";
 import type * as utils_uploadOwnership from "../utils/uploadOwnership.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as utils_valuation from "../utils/valuation.js";
@@ -687,6 +688,7 @@ declare const fullApi: ApiFromModules<{
   "utils/systemRoles": typeof utils_systemRoles;
   "utils/transferStages": typeof utils_transferStages;
   "utils/transitPhysicalHandoff": typeof utils_transitPhysicalHandoff;
+  "utils/uploadErrors": typeof utils_uploadErrors;
   "utils/uploadOwnership": typeof utils_uploadOwnership;
   "utils/validators": typeof utils_validators;
   "utils/valuation": typeof utils_valuation;

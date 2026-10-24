@@ -93,7 +93,10 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const token = new URL(request.url).searchParams.get("intent");
     const intent = token
-      ? await ctx.runQuery(internal.users.checkUploadIntent, { token })
+      ? await ctx.runQuery(internal.users.checkUploadIntent, {
+          token,
+          now: Date.now(),
+        })
       : null;
     if (!token || !intent) {
       return new Response("Upload session expired or invalid", {

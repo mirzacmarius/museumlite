@@ -539,6 +539,10 @@ export default {
       uploadHint:
         "Click pe avatar pentru a încărca unul personalizat din fișierele tale.",
       resetButton: "Resetează",
+      uploadFailed:
+        "Avatarul nu a putut fi încărcat. Folosește o imagine JPEG, PNG sau WebP și încearcă din nou.",
+      uploadRateLimited:
+        "Prea multe încărcări în același timp. Așteaptă un minut, apoi încearcă din nou.",
     },
     name: {
       title: "Numele Tău",
@@ -3507,6 +3511,8 @@ export default {
       },
       imageUploadFailed:
         "Fotografia locației nu a putut fi încărcată. Încercați din nou.",
+      imageUploadRateLimited:
+        "Prea multe încărcări în același timp. Așteptați un minut, apoi încercați din nou.",
     },
 
     timeline: "Istoricul locației",

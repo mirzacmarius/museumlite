@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { ABANDONED_UPLOAD_AGE_MS, UPLOAD_URL_BURST } from "../convex/users";
+import { isUploadRateLimited } from "../convex/utils/uploadErrors";
 import {
   authedForUser,
   type ConvexTest,
@@ -118,6 +119,62 @@ describe("abandoned uploads", () => {
   });
 });
 
+describe("abandoned upload backlog", () => {
+  afterEach(() => vi.useRealTimers());
+
+  test("a backlog larger than one batch is cleared by the follow-up runs", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const userId = await insertUser(t);
+    const backlog = 205;
+    const [abandoned, fresh] = await t.run(async (ctx) => {
+      const old: Id<"_storage">[] = [];
+      for (let index = 0; index < backlog; index++) {
+        const storageId = await ctx.storage.store(
+          new Blob([new Uint8Array([index % 256])], { type: "image/png" }),
+        );
+        await ctx.db.insert("storageOwnership", {
+          storageId,
+          uploadedBy: userId,
+          uploadedAt: Date.now() - DAY - 60_000,
+          unclaimedSince: Date.now() - DAY - 60_000,
+        });
+        await ctx.db.insert("uploadIntents", {
+          token: `spent-${index}`,
+          uploadedBy: userId,
+          createdAt: Date.now() - DAY - 120_000,
+          expiresAt: Date.now() - DAY - 60_000,
+        });
+        old.push(storageId);
+      }
+      const recent = await ctx.storage.store(
+        new Blob([new Uint8Array([1])], { type: "image/png" }),
+      );
+      await ctx.db.insert("storageOwnership", {
+        storageId: recent,
+        uploadedBy: userId,
+        uploadedAt: Date.now(),
+        unclaimedSince: Date.now(),
+      });
+      return [old, recent] as const;
+    });
+
+    await t.mutation(internal.users.deleteAbandonedUploads, {});
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+    const left = await t.run(async (ctx) => ({
+      uploads: await ctx.db.query("storageOwnership").collect(),
+      intents: await ctx.db.query("uploadIntents").collect(),
+      files: await Promise.all(
+        abandoned.map((storageId) => ctx.db.system.get("_storage", storageId)),
+      ),
+    }));
+    expect(left.uploads.map((upload) => upload.storageId)).toEqual([fresh]);
+    expect(left.intents).toEqual([]);
+    expect(left.files.every((file) => file === null)).toBe(true);
+  });
+});
+
 describe("avatars", () => {
   test("an image upload must arrive with the type its session was issued for", async () => {
     const t = createConvexTestWithRateLimiter();
@@ -193,13 +250,25 @@ describe("upload URL rate limit", () => {
         mimeType: "image/jpeg",
       });
     }
-    await expect(
-      authed.mutation(api.users.generateUploadUrl, { mimeType: "image/jpeg" }),
-    ).rejects.toThrow("Too many uploads at once");
+    const refused = await authed
+      .mutation(api.users.generateUploadUrl, { mimeType: "image/jpeg" })
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+    // A coded refusal, so the browser can say to wait.
+    expect(isUploadRateLimited(refused)).toBe(true);
 
     const other = authedForUser(t, await insertUser(t));
     expect(
       await other.mutation(api.users.generateUploadUrl, {
+        mimeType: "image/jpeg",
+      }),
+    ).toContain("/upload-owned-file?intent=");
+
+    vi.advanceTimersByTime(60_000);
+    expect(
+      await authed.mutation(api.users.generateUploadUrl, {
         mimeType: "image/jpeg",
       }),
     ).toContain("/upload-owned-file?intent=");

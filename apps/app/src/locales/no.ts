@@ -202,6 +202,10 @@ export default {
       uploadHint:
         "Klikk på avataren for å laste opp en tilpasset fra filene dine.",
       resetButton: "Tilbakestill",
+      uploadFailed:
+        "Avataren kunne ikke lastes opp. Bruk et JPEG-, PNG- eller WebP-bilde og prøv igjen.",
+      uploadRateLimited:
+        "For mange opplastinger samtidig. Vent et minutt, og prøv igjen.",
     },
     name: {
       title: "Ditt navn",
@@ -2949,6 +2953,8 @@ export default {
       },
       imageUploadFailed:
         "Bildet av plasseringen kunne ikke lastes opp. Prøv igjen.",
+      imageUploadRateLimited:
+        "For mange opplastinger samtidig. Vent et minutt, og prøv igjen.",
     },
     move: {
       title: "Flytt Plassering",

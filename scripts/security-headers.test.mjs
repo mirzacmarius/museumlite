@@ -34,7 +34,11 @@ test("every response forbids framing and sniffing", () => {
     headers.get("Referrer-Policy"),
     "strict-origin-when-cross-origin",
   );
-  assert.match(headers.get("Permissions-Policy"), /camera=\(\)/);
+  const permissions = headers.get("Permissions-Policy");
+  // The barcode scanner uses the camera on the app's own pages.
+  assert.match(permissions, /(^|, )camera=\(self\)(,|$)/);
+  assert.match(permissions, /(^|, )microphone=\(\)(,|$)/);
+  assert.match(permissions, /(^|, )geolocation=\(\)(,|$)/);
   // Report-only until the reports show the policy fits.
   assert.equal(headers.has("Content-Security-Policy"), false);
   assert.ok(headers.has("Content-Security-Policy-Report-Only"));

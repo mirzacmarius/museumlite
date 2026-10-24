@@ -13,8 +13,6 @@ import {
 import { manifestTotals, type RegisterTotals } from "./registerTotals";
 import { protectSpreadsheetText, quotedCsvText } from "./spreadsheetText";
 
-export { protectSpreadsheetText } from "./spreadsheetText";
-
 export interface ExportColumn {
   name: string;
   type: Infer<typeof exportColumnType>;
@@ -84,7 +82,6 @@ export const auditColumns: ExportColumn[] = [
 export function protectRegisterText(raw: string) {
   return raw.startsWith("'") ? `'${raw}` : protectSpreadsheetText(raw);
 }
-const quoted = quotedCsvText;
 function csvCell(value: unknown, type: ExportColumn["type"]) {
   if (value === undefined || value === null) return "";
   if (type === "number" || type === "utcEpochMs") {
@@ -93,7 +90,7 @@ function csvCell(value: unknown, type: ExportColumn["type"]) {
     return String(value);
   }
   const raw = type === "json" ? JSON.stringify(value) : String(value);
-  return quoted(protectSpreadsheetText(raw));
+  return quotedCsvText(protectSpreadsheetText(raw));
 }
 function registerCsvCell(value: unknown, type: ExportColumn["type"]) {
   if (value === undefined || value === null) return "";
@@ -104,7 +101,7 @@ function registerCsvCell(value: unknown, type: ExportColumn["type"]) {
   }
   if (type === "text" || type === "id") {
     if (typeof value !== "string") throw new Error("Invalid text export cell");
-    return quoted(protectRegisterText(value));
+    return quotedCsvText(protectRegisterText(value));
   }
   return csvCell(value, type);
 }
