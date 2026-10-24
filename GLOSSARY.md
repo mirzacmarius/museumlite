@@ -144,6 +144,10 @@ _Avoid_: Audit, scan
 A documentation exception a Quality check detected (a duplicate identifier, missing documentation, an uncertain Party link or a broken reference), kept with the values the check found. It stays open until a later check no longer detects it or a reviewer accepts it as an exception with a reason. Repair work on it is a Task with the Finding as its Case.
 _Avoid_: Issue, error, warning
 
+**Object ID sheet**:
+A one-page printout of an Object following the Object ID checklist (nine categories, photographs and a short description), ready to give the police, an insurer or a stolen-art register if the Object is lost or stolen. Categories the record lacks print as not recorded. The Object ID Documentation profile checks the same categories.
+_Avoid_: Theft report (the sheet feeds one), identity card, passport
+
 ### Inventory
 
 **Inventory session**:

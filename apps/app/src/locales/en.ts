@@ -2644,6 +2644,7 @@ export default {
       printRecord: "Print Record",
       printLabel: "Print QR Label",
       printObjectLabel: "Print Object Label",
+      printObjectIdSheet: "Print Object ID sheet",
       viewFullSize: "View full size image",
       copyObjectLink: "Copy Link",
       linkCopied: "Link Copied!",
@@ -2955,6 +2956,32 @@ export default {
       none: "None",
       printedOn: "Printed on",
       print: "Print",
+    },
+    objectIdSheet: {
+      title: "Object ID sheet",
+      dialogDescription:
+        "A one-page description of this object following the Object ID checklist, ready to share if the object is lost or stolen.",
+      print: "Print",
+      printedOn: "Printed on {date}",
+      accessionNumber: "Accession number",
+      photographs: "Photographs",
+      noPhotograph: "No photograph recorded",
+      notRecorded: "Not recorded",
+      shortDescription: "Short description",
+      fromConditionAssessment: "From the accepted condition assessment",
+      standardNote:
+        "Follows the Object ID checklist, the international standard for describing cultural objects. Keep a copy with the object's file and share it with the police and insurers if the object goes missing.",
+      categories: {
+        type_of_object: "Type of object",
+        materials_and_techniques: "Materials and techniques",
+        measurements: "Measurements",
+        inscriptions_and_markings: "Inscriptions and markings",
+        distinguishing_features: "Distinguishing features",
+        title: "Title",
+        subject: "Subject",
+        date_or_period: "Date or period",
+        maker: "Maker",
+      },
     },
     deaccessionAction: {
       removeOrTransfer: "Remove or transfer",
@@ -5719,11 +5746,13 @@ export default {
       deaccessioned: "Objects removed from the collection; their records stay.",
     },
     requirements: {
+      object_type: "Object type",
       object_name: "Object name",
       maker: "Maker",
       production_date: "Date made",
       materials: "Materials",
       dimensions: "Dimensions",
+      inscriptions: "Inscriptions and markings",
       description: "Description",
       current_location: "Current location",
       condition_assessment: "Accepted condition assessment",
@@ -5860,6 +5889,12 @@ export default {
       archived: "Profile archived",
       restored: "Profile restored",
       archivedBadge: "Archived",
+      objectId: {
+        add: "Add the Object ID profile",
+        hint: "Object ID is the international checklist for describing an object well enough to identify it if it is lost or stolen. The profile requires its categories and a photograph for objects in the collection or borrowed.",
+        added:
+          "Object ID profile added. Run a check to find the objects that lack any of it.",
+      },
     },
     review: {
       title: "Review",

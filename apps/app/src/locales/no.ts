@@ -3269,6 +3269,7 @@ export default {
 
       printLabel: "Skriv ut QR-etikett",
       printObjectLabel: "Skriv ut objektetikett",
+      printObjectIdSheet: "Skriv ut Object ID-ark",
       deleteConfirm:
         "Er du sikker på at du vil slette «{title}»? Objektet blir markert som avhendet.",
     },
@@ -3489,6 +3490,32 @@ export default {
       none: "Ingen",
       printedOn: "Skrevet ut",
       print: "Skriv Ut",
+    },
+    objectIdSheet: {
+      title: "Object ID-ark",
+      dialogDescription:
+        "En beskrivelse av objektet på én side etter Object ID-sjekklisten, klar til å deles hvis objektet går tapt eller blir stjålet.",
+      print: "Skriv ut",
+      printedOn: "Skrevet ut {date}",
+      accessionNumber: "Aksesjonsnummer",
+      photographs: "Fotografier",
+      noPhotograph: "Ingen fotografi registrert",
+      notRecorded: "Ikke registrert",
+      shortDescription: "Kort beskrivelse",
+      fromConditionAssessment: "Fra den godkjente tilstandsvurderingen",
+      standardNote:
+        "Følger Object ID-sjekklisten, den internasjonale standarden for å beskrive kulturgjenstander. Oppbevar en kopi i objektets mappe og del den med politiet og forsikringsselskapet hvis objektet forsvinner.",
+      categories: {
+        type_of_object: "Objekttype",
+        materials_and_techniques: "Materialer og teknikker",
+        measurements: "Mål",
+        inscriptions_and_markings: "Innskrifter og merker",
+        distinguishing_features: "Særtrekk",
+        title: "Tittel",
+        subject: "Motiv",
+        date_or_period: "Datering eller periode",
+        maker: "Produsent",
+      },
     },
 
     tabs: {
@@ -5785,11 +5812,13 @@ export default {
       deaccessioned: "Objekter fjernet fra samlingen; postene deres beholdes.",
     },
     requirements: {
+      object_type: "Objekttype",
       object_name: "Objektnavn",
       maker: "Produsent",
       production_date: "Datering",
       materials: "Materialer",
       dimensions: "Mål",
+      inscriptions: "Innskrifter og merker",
       description: "Beskrivelse",
       current_location: "Nåværende sted",
       condition_assessment: "Godkjent tilstandsvurdering",
@@ -5927,6 +5956,12 @@ export default {
       archived: "Profil arkivert",
       restored: "Profil gjenopprettet",
       archivedBadge: "Arkivert",
+      objectId: {
+        add: "Legg til Object ID-profilen",
+        hint: "Object ID er den internasjonale sjekklisten for å beskrive et objekt godt nok til å identifisere det hvis det går tapt eller blir stjålet. Profilen krever kategoriene og et fotografi for objekter i samlingen eller innlånt.",
+        added:
+          "Object ID-profilen er lagt til. Kjør en kontroll for å finne objektene som mangler noe.",
+      },
     },
     review: {
       title: "Gjennomgang",

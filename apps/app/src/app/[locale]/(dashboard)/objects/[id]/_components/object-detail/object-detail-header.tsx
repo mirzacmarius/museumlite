@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Check,
   ChevronDown,
+  IdCard,
   Link2,
   Pencil,
   Printer,
@@ -33,12 +34,14 @@ interface ObjectDetailHeaderProps {
   linkCopied: boolean;
   onLinkCopiedChange: (copied: boolean) => void;
   onPrintClick: () => void;
+  onObjectIdSheetClick: () => void;
   onObjectLabelClick: () => void;
   onQrLabelClick: () => void;
   collectionsLabel: string;
   copyLinkLabel: string;
   linkCopiedLabel: string;
   printRecordLabel: string;
+  printObjectIdSheetLabel: string;
   printLabel: string;
   printObjectLabel: string;
   printMenuLabel: string;
@@ -55,12 +58,14 @@ export function ObjectDetailHeader({
   linkCopied,
   onLinkCopiedChange,
   onPrintClick,
+  onObjectIdSheetClick,
   onObjectLabelClick,
   onQrLabelClick,
   collectionsLabel,
   copyLinkLabel,
   linkCopiedLabel,
   printRecordLabel,
+  printObjectIdSheetLabel,
   printLabel,
   printObjectLabel,
   printMenuLabel,
@@ -136,6 +141,10 @@ export function ObjectDetailHeader({
             <DropdownMenuItem onSelect={onPrintClick}>
               <Printer className="mr-2 size-4 text-muted-foreground" />
               {printRecordLabel}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onObjectIdSheetClick}>
+              <IdCard className="mr-2 size-4 text-muted-foreground" />
+              {printObjectIdSheetLabel}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={onObjectLabelClick}>
               <Tags className="mr-2 size-4 text-muted-foreground" />

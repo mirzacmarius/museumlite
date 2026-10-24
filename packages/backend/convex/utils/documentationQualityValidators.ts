@@ -22,11 +22,13 @@ export type DocumentationStage = Infer<typeof documentationStageValidator>;
 
 /** What a profile can require of an Object, in display order. */
 export const DOCUMENTATION_REQUIREMENTS = [
+  "object_type",
   "object_name",
   "maker",
   "production_date",
   "materials",
   "dimensions",
+  "inscriptions",
   "description",
   "current_location",
   "condition_assessment",

@@ -3302,6 +3302,7 @@ export default {
 
       printLabel: "Imprimir etiqueta QR",
       printObjectLabel: "Imprimir etiqueta del objeto",
+      printObjectIdSheet: "Imprimir ficha Object ID",
       deleteConfirm:
         "¿Seguro que quieres eliminar «{title}»? El objeto se marcará como dado de baja.",
     },
@@ -3523,6 +3524,32 @@ export default {
       none: "Ninguna",
       printedOn: "Impreso el",
       print: "Imprimir",
+    },
+    objectIdSheet: {
+      title: "Ficha Object ID",
+      dialogDescription:
+        "Una descripción de una página de este objeto según la lista Object ID, lista para compartir si el objeto se pierde o es robado.",
+      print: "Imprimir",
+      printedOn: "Impresa el {date}",
+      accessionNumber: "Número de accesión",
+      photographs: "Fotografías",
+      noPhotograph: "Sin fotografía registrada",
+      notRecorded: "No registrado",
+      shortDescription: "Descripción breve",
+      fromConditionAssessment: "De la evaluación del estado aceptada",
+      standardNote:
+        "Sigue la lista Object ID, el estándar internacional para describir bienes culturales. Guarde una copia en el expediente del objeto y compártala con la policía y las aseguradoras si el objeto desaparece.",
+      categories: {
+        type_of_object: "Tipo de objeto",
+        materials_and_techniques: "Materiales y técnicas",
+        measurements: "Medidas",
+        inscriptions_and_markings: "Inscripciones y marcas",
+        distinguishing_features: "Rasgos distintivos",
+        title: "Título",
+        subject: "Tema",
+        date_or_period: "Fecha o período",
+        maker: "Autor",
+      },
     },
 
     tabs: {
@@ -5839,11 +5866,13 @@ export default {
         "Objetos retirados de la colección; sus registros se conservan.",
     },
     requirements: {
+      object_type: "Tipo de objeto",
       object_name: "Nombre del objeto",
       maker: "Autor",
       production_date: "Fecha de creación",
       materials: "Materiales",
       dimensions: "Dimensiones",
+      inscriptions: "Inscripciones y marcas",
       description: "Descripción",
       current_location: "Ubicación actual",
       condition_assessment: "Evaluación del estado aceptada",
@@ -5982,6 +6011,12 @@ export default {
       archived: "Perfil archivado",
       restored: "Perfil restaurado",
       archivedBadge: "Archivado",
+      objectId: {
+        add: "Añadir el perfil Object ID",
+        hint: "Object ID es la lista internacional para describir un objeto lo bastante bien como para identificarlo si se pierde o es robado. El perfil exige sus categorías y una fotografía para los objetos de la colección o recibidos en préstamo.",
+        added:
+          "Perfil Object ID añadido. Ejecute una comprobación para encontrar los objetos a los que les falta algo.",
+      },
     },
     review: {
       title: "Revisión",
