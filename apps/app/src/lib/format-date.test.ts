@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate } from "./format-date";
+import { formatDate, formatPartialDate } from "./format-date";
 
 const recordedAt = new Date(Date.UTC(2026, 9, 8, 14, 30));
 
@@ -32,5 +32,20 @@ describe("formatDate", () => {
     expect(
       formatDate(recordedAt, "en", { dateStyle: "medium", timeZone: "UTC" }),
     ).toBe("Oct 8, 2026");
+  });
+});
+
+describe("formatPartialDate", () => {
+  it("shows a day, a month or a year in the app language", () => {
+    expect(formatPartialDate("1984-05-14", "en")).toBe("May 14, 1984");
+    expect(formatPartialDate("1984-05-14", "no")).toBe("14. mai 1984");
+    expect(formatPartialDate("1984-05", "en")).toBe("May 1984");
+    expect(formatPartialDate("1984-05", "fr")).toBe("mai 1984");
+    expect(formatPartialDate("1984", "es")).toBe("1984");
+  });
+
+  it("keeps other text as written", () => {
+    expect(formatPartialDate(" Spring 1984 ", "en")).toBe("Spring 1984");
+    expect(formatPartialDate("1984-02-30", "en")).toBe("1984-02-30");
   });
 });

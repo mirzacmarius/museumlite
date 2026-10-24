@@ -1580,11 +1580,6 @@ export default {
       to: "Către",
       productionDate: {
         legend: "Dată structurată",
-        description:
-          "Opțional. Stabilește cum sortează, filtrează și exportă catalogul acest obiect; textul de mai sus se afișează așa cum a fost scris.",
-        from: "De la",
-        to: "Până la",
-        hint: "Completează De la pentru o singură dată sau De la și Până la pentru un interval. Cel târziu și Cel devreme se aplică doar când De la este singur.",
         readAs: "Citit ca {date}.",
         years: "Sortarea și filtrele folosesc {years}.",
         yearsFrom: "Sortarea și filtrele folosesc anii de la {start} încolo.",
@@ -1592,14 +1587,11 @@ export default {
         onOrAfter: "{date} sau mai târziu",
         undated: "Nedatat pentru sortare și filtre.",
         notRead:
-          "Nu este citit ca dată, așa că se afișează așa cum a fost scris. Adaugă o dată structurată pentru a sorta și filtra după ea.",
-        useReading: "Folosește ca dată structurată",
+          "Nu este citit ca dată, deci se afișează așa cum a fost scris. Sortarea și filtrele de dată tratează obiectul ca nedatat.",
         mismatch:
           "Textul se citește ca {text}, dar data structurată este {date}. Sortarea, filtrele și exporturile folosesc data structurată.",
+        useText: "Folosește textul în schimb",
         edtf: "EDTF {edtf}",
-        fixed:
-          "Această dată structurată nu poate fi modificată aici. Șterge-o pentru a introduce alta.",
-        clear: "Șterge data structurată",
         invalid:
           "Verifică data structurată: introdu părțile cerute de precizia ei și un sfârșit egal cu sau după început.",
         openInRange:
@@ -2213,7 +2205,6 @@ export default {
       temperature: "Temperatură",
       activityLog: "Jurnal de activitate",
       overview: "Prezentare generală și {type}",
-      request: "Solicitare",
       pending: "În așteptare",
       locked: "Blocat",
       borrowerDetails: "Detaliile împrumutatului",
@@ -3322,41 +3313,14 @@ export default {
   },
   locations: {
     movements: {
-      title: "Mutări",
-      moveNow: "Mută acum",
-      requestMove: "Solicită mutarea",
-      currentLocation: "Locația curentă",
       noLocation: "Nicio locație înregistrată",
       unknownLocation: "Locație necunoscută",
       unknownUser: "Utilizator necunoscut",
-      loading: "Se încarcă mutările…",
       dialog: {
-        directTitle: "Mută obiectul acum",
-        directDescription:
-          "Ești înregistrat ca autor al mutării, cu locația de mai jos ca sursă observată și destinația.",
-        requestTitle: "Solicită o mutare",
-        requestDescription:
-          "Mutarea este analizată înainte de executare. Locația obiectului este verificată din nou la executare.",
-        observedSource: "Sursa observată",
-        destination: "Destinație",
-        destinationPlaceholder: "Selectează o destinație",
-        reason: "Motiv",
-        reasonPlaceholder: "de ex. rotație, conservare, fotografiere",
-        reasonRequired: "Motivul este obligatoriu pentru o cerere de mutare.",
-        notes: "Note",
-        selectDestinationError: "Selectează o destinație.",
         override: "Ignoră restricțiile de capacitate și de locație",
-        checking: "Se verifică destinația…",
-        submitMove: "Mută obiectul",
-        submitRequest: "Trimite cererea",
-        submitting: "Se salvează…",
-        moved: "Obiectul a fost mutat.",
-        requested: "Cererea de mutare a fost trimisă.",
-        failed: "Mutarea nu a putut fi salvată.",
       },
       requests: {
         title: "Cereri de mutare",
-        empty: "Nu există cereri de mutare pentru acest obiect.",
         requestedBy: "Solicitat de {name}",
         reviewedBy: "Analizat de {name}",
         executedBy: "Executat de {name}",
@@ -3405,9 +3369,6 @@ export default {
         already_at_destination: "Obiectul este deja la destinație.",
       },
       history: {
-        title: "Istoricul mutărilor",
-        empty: "Nicio mutare înregistrată.",
-        movedBy: "Mutat de {name}",
         authorizedBy: "Autorizat de {name}",
         kind: {
           direct: "Mutare directă",
@@ -3419,6 +3380,15 @@ export default {
           legacy: "Mutare înregistrată",
           incident_evacuation: "Evacuare la incident",
           incident_recovery: "Readucere după incident",
+          loan_dispatch: "Expediere împrumut",
+          loan_return: "Returnare împrumut",
+          exhibition_install: "Instalare în expoziție",
+          exhibition_return: "Returnare din expoziție",
+          transit_receipt: "Recepție tranzit",
+          transit_installation: "Instalare după tranzit",
+          institution_transfer: "Recepție transfer",
+          entry_receipt: "Recepție intrare",
+          entry_exit: "Returnare intrare",
         },
       },
     },
@@ -8674,6 +8644,9 @@ export default {
         toValue: "în „{value}”",
         structuredDateRemoved: "S-a eliminat data structurată „{value}”",
         byUser: "De {name}",
+        moved: "Obiect mutat",
+        movedFromTo: "De la {from} la {to}",
+        movedOutOf: "A plecat din {from}",
         actions: {
           created_collection: "Obiect creat",
           updated_collection: "Obiect actualizat",
@@ -8687,6 +8660,8 @@ export default {
           removed_alternate_accession_number:
             "Număr de accesiune alternativ eliminat",
           created_move_request: "Mutare solicitată",
+          approved_move_request: "Cerere de mutare aprobată",
+          reapproved_move_request: "Cerere de mutare aprobată din nou",
           executed_move_request: "Mutare finalizată",
           cancelled_move_request: "Cerere de mutare anulată",
           rejected_move_request: "Cerere de mutare respinsă",

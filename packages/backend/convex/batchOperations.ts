@@ -13,6 +13,7 @@ import {
   moveCollectionToLocation,
   requireUsableLocation,
 } from "./utils/locationIntegrity";
+import { DEFAULT_MOVEMENT_REASONS } from "./utils/movementReasons";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
@@ -742,7 +743,7 @@ async function processBulkEdit(
       collection,
       payload.currentLocationId,
       userId,
-      "Bulk edit location change",
+      DEFAULT_MOVEMENT_REASONS.bulkEdit,
       { kind: "bulk_edit", batchJobId },
     );
   }
@@ -789,7 +790,7 @@ async function processBulkMove(
     collection,
     payload.toLocationId,
     userId,
-    payload.reason?.trim() || "Bulk move operation",
+    payload.reason?.trim() || DEFAULT_MOVEMENT_REASONS.bulkMove,
     {
       kind: "bulk_move",
       batchJobId,

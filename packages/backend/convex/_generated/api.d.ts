@@ -264,6 +264,7 @@ import type * as utils_mediaAssets from "../utils/mediaAssets.js";
 import type * as utils_memberPermissions from "../utils/memberPermissions.js";
 import type * as utils_moduleCatalog from "../utils/moduleCatalog.js";
 import type * as utils_moduleValidators from "../utils/moduleValidators.js";
+import type * as utils_movementReasons from "../utils/movementReasons.js";
 import type * as utils_movementValidators from "../utils/movementValidators.js";
 import type * as utils_mutationBuilders from "../utils/mutationBuilders.js";
 import type * as utils_notificationDigests from "../utils/notificationDigests.js";
@@ -636,6 +637,7 @@ declare const fullApi: ApiFromModules<{
   "utils/memberPermissions": typeof utils_memberPermissions;
   "utils/moduleCatalog": typeof utils_moduleCatalog;
   "utils/moduleValidators": typeof utils_moduleValidators;
+  "utils/movementReasons": typeof utils_movementReasons;
   "utils/movementValidators": typeof utils_movementValidators;
   "utils/mutationBuilders": typeof utils_mutationBuilders;
   "utils/notificationDigests": typeof utils_notificationDigests;

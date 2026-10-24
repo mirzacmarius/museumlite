@@ -30,12 +30,6 @@ export const EMPTY_PRODUCTION_DATE_DRAFT: ProductionDateDraft = {
   to: EMPTY_PARTIAL_DATE,
 };
 
-/** Qualifiers a side of a range takes; By and After are for From alone. */
-export const RANGE_SIDE_QUALIFIERS: readonly PartialDateQualifierChoice[] = [
-  "exact",
-  "circa",
-];
-
 const partialDateDraftSchema = z.object({
   precision: z.enum(["none", "day", "month", "year", "decade"]),
   year: z.string(),

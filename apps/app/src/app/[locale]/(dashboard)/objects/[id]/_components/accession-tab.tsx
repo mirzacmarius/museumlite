@@ -3,8 +3,9 @@
 import { Building2 } from "lucide-react";
 import { RightsStatementValue } from "@/components/rights-statement/rights-statement-value";
 import { useOrganizationRightsDefaults } from "@/components/rights-statement/use-organization-rights-defaults";
+import { formatPartialDate } from "@/lib/format-date";
 import { shownRightsStatement } from "@/lib/rights-statements";
-import { useI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 import type { CollectionData } from "./types";
 
@@ -14,6 +15,7 @@ interface AccessionTabProps {
 
 export function AccessionTab({ collection }: AccessionTabProps) {
   const tRoot = useI18n();
+  const locale = useCurrentLocale();
   const alternateNumbers = collection.alternateAccessionNumbers ?? [];
   const rightsDefaults = useOrganizationRightsDefaults(
     collection.organizationId,
@@ -65,7 +67,11 @@ export function AccessionTab({ collection }: AccessionTabProps) {
         />
         <DetailField
           label={tRoot("objects.form.donatedDate")}
-          value={collection.donated_date}
+          value={
+            collection.donated_date
+              ? formatPartialDate(collection.donated_date, locale)
+              : undefined
+          }
         />
       </DetailGrid>
 

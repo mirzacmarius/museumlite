@@ -968,6 +968,17 @@ export default defineSchema({
       ],
     }),
 
+  /**
+   * One row per run of the public rendition backfill that the repair sweep
+   * starts by itself, one run per version (MUS-870); `completedAt` is set
+   * when its last page is done.
+   */
+  publicRenditionBackfills: defineTable({
+    version: v.number(),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  }).index("by_version", ["version"]),
+
   /** An Organization's search documents are complete at this version once `completedAt` is set. */
   objectSearchBackfills: defineTable({
     organizationId: v.id("organizations"),
@@ -1177,6 +1188,9 @@ export default defineSchema({
         allowOriginalDownload: v.boolean(),
       }),
     ),
+    // `attempts` counts the requests made for this source file and `retryAt`
+    // is when the repair sweep requests it again (MUS-870). Rows from before
+    // either field existed count as one attempt with no retry planned.
     publicRendition: v.optional(
       v.union(
         v.object({
@@ -1184,10 +1198,14 @@ export default defineSchema({
           sourceStorageId: v.id("_storage"),
           requestId: v.string(),
           requestedAt: v.number(),
+          attempts: v.optional(v.number()),
+          retryAt: v.optional(v.number()),
         }),
         v.object({
           status: v.literal("failed"),
           sourceStorageId: v.id("_storage"),
+          attempts: v.optional(v.number()),
+          retryAt: v.optional(v.number()),
         }),
         v.object({
           status: v.literal("ready"),
@@ -1217,6 +1235,7 @@ export default defineSchema({
     .index("by_content_hash", ["organizationId", "contentHash"])
     .index("by_rights_status", ["organizationId", "rightsStatus"])
     .index("by_chunkedUploadId", ["chunkedUploadId"])
+    .index("by_publicRendition_retryAt", ["publicRendition.retryAt"])
     .searchIndex("search_media_files", {
       searchField: "fileName",
       filterFields: ["organizationId", "fileType"],

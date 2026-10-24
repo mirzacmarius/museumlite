@@ -6,12 +6,14 @@ import {
   BULK_EDIT_FIELDS,
   type BulkEditField,
 } from "@v1/backend/convex/utils/bulkFieldEdits";
+import { isDefaultMovementReason } from "@v1/backend/convex/utils/movementReasons";
 import { storedListValues } from "@v1/backend/convex/utils/objectSearchDocuments";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { ScrollText } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ClientDate } from "@/components/client-date";
 import { useObjectDescriptionFormat } from "@/components/object-description/use-object-description-format";
 import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
@@ -166,6 +168,15 @@ function formatChanges(
     );
   }
 
+  // A move request's own entry: its reason, without the record ids
+  if ("requestId" in changes) {
+    return typeof changes.reason === "string" && changes.reason ? (
+      <p className="mt-0.5 break-words text-xs text-muted-foreground">
+        {changes.reason}
+      </p>
+    ) : null;
+  }
+
   // Handle fileName pattern
   if ("fileName" in changes) {
     return (
@@ -225,6 +236,8 @@ const KNOWN_ACTIONS = [
   "added_alternate_accession_number",
   "removed_alternate_accession_number",
   "created_move_request",
+  "approved_move_request",
+  "reapproved_move_request",
   "executed_move_request",
   "cancelled_move_request",
   "rejected_move_request",
@@ -243,8 +256,154 @@ function isKnownAction(
   return (KNOWN_ACTIONS as readonly string[]).includes(action);
 }
 
+type AuditLogEntry = FunctionReturnType<
+  typeof api.auditLog.getByEntity
+>[number];
+type Movement = FunctionReturnType<
+  typeof api.locations.getCollectionLocationHistory
+>[number];
+type LogEntry =
+  | { type: "audit"; at: number; created: number; log: AuditLogEntry }
+  | { type: "movement"; at: number; created: number; movement: Movement };
+
+/**
+ * The Object's audit entries and movements, newest first; what one save
+ * wrote at the same moment is in the order it was written. Movements before
+ * `olderThan` wait until the audit entries around them are loaded. A
+ * completed move request's entry is left out while its movement is listed,
+ * which says the same with the Locations named.
+ */
+function newestEntries(
+  auditLogs: AuditLogEntry[],
+  movements: Movement[],
+  olderThan: number | undefined,
+) {
+  const listed = new Set<string>();
+  const entries: LogEntry[] = [];
+  for (const movement of movements) {
+    if (olderThan !== undefined && movement.movedAt < olderThan) continue;
+    listed.add(movement._id);
+    entries.push({
+      type: "movement",
+      at: movement.movedAt,
+      created: movement._creationTime,
+      movement,
+    });
+  }
+  for (const log of auditLogs) {
+    if (
+      log.action === "executed_move_request" &&
+      listed.has(String(log.changes?.movementId))
+    )
+      continue;
+    entries.push({
+      type: "audit",
+      at: log.timestamp,
+      created: log._creationTime,
+      log,
+    });
+  }
+  return entries.sort((a, b) => b.at - a.at || b.created - a.created);
+}
+
+function LogRow({
+  timestamp,
+  userName,
+  userImage,
+  locale,
+  children,
+}: {
+  timestamp: number;
+  userName: string | undefined;
+  userImage?: string;
+  locale: string;
+  children: ReactNode;
+}) {
+  const tRoot = useI18n();
+  const tCommon = useScopedI18n("modules.common");
+  return (
+    <tr className="group transition-colors hover:bg-secondary/40">
+      <td className="px-4 py-3 align-top">
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          <ClientDate
+            timestamp={timestamp}
+            locale={locale}
+            options={{
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }}
+          />
+        </span>
+      </td>
+      <td className="px-4 py-3 align-top">
+        <div className="flex items-center gap-2">
+          <Avatar className="size-5 border border-border/60">
+            <AvatarImage
+              src={userImage}
+              alt={
+                userName ?? tRoot("untranslatedRecords.objects.comments.user")
+              }
+            />
+            <AvatarFallback className="bg-secondary text-xs text-muted-foreground">
+              {userName?.charAt(0) || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-xs text-foreground">
+            {userName || tCommon("unknown")}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3">{children}</td>
+    </tr>
+  );
+}
+
+/** Where a movement took the Object, how, and why (MUS-868). */
+function MovementDetails({ movement }: { movement: Movement }) {
+  const tRoot = useI18n();
+  const t = useScopedI18n("locations.movements");
+  const from =
+    movement.fromLocationName ??
+    (movement.fromLocationId ? t("unknownLocation") : t("noLocation"));
+  return (
+    <>
+      <p className="text-sm text-foreground">
+        <span className={`font-medium ${getActionBadgeClasses("moved").text}`}>
+          {tRoot("untranslatedRecords.objects.logs.moved")}
+        </span>
+      </p>
+      <p className="mt-0.5 break-words font-mono text-xs text-muted-foreground">
+        {movement.toLocationId
+          ? tRoot("untranslatedRecords.objects.logs.movedFromTo", {
+              from,
+              to: movement.toLocationName || t("unknownLocation"),
+            })
+          : tRoot("untranslatedRecords.objects.logs.movedOutOf", { from })}
+      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {t(`history.kind.${movement.movementKind ?? "legacy"}`)}
+        {movement.authorizedBy &&
+          ` · ${t("history.authorizedBy", { name: movement.authorizedByName ?? t("unknownUser") })}`}
+      </p>
+      {/* A reason the server filled in only repeats the kind, in English. */}
+      {movement.reason && !isDefaultMovementReason(movement.reason) && (
+        <p className="mt-0.5 break-words text-xs text-muted-foreground">
+          {movement.reason}
+        </p>
+      )}
+      {movement.notes && (
+        <p className="mt-0.5 break-words text-xs text-muted-foreground">
+          {movement.notes}
+        </p>
+      )}
+    </>
+  );
+}
+
 interface LogsTabProps {
-  collectionId: string;
+  collectionId: Id<"collections">;
   organizationId: Id<"organizations">;
   locale: string;
 }
@@ -255,7 +414,6 @@ export function LogsTab({
   locale,
 }: LogsTabProps) {
   const tRoot = useI18n();
-  const tCommon = useScopedI18n("modules.common");
   const dates = useProductionDateFormat();
   const description = useObjectDescriptionFormat();
   const [limit, setLimit] = useState(LOG_PAGE_SIZE);
@@ -265,6 +423,21 @@ export function LogsTab({
     entityId: collectionId,
     limit,
   });
+  // Every movement, as the Placement tab listed them before (MUS-868).
+  const movements = useQuery(api.locations.getCollectionLocationHistory, {
+    collectionId,
+  });
+  // A full page may have older audit entries; past the most the query
+  // returns, the remaining movements are listed without them.
+  const hasOlder = auditLogs?.length === limit && limit < LOG_MAX;
+  const entries =
+    auditLogs === undefined || movements === undefined
+      ? undefined
+      : newestEntries(
+          auditLogs,
+          movements,
+          hasOlder ? auditLogs.at(-1)?.timestamp : undefined,
+        );
   const actionLabel = (action: string) =>
     isKnownAction(action)
       ? tRoot(`untranslatedRecords.objects.logs.actions.${action}`)
@@ -292,7 +465,7 @@ export function LogsTab({
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
-            {auditLogs === undefined ? (
+            {entries === undefined ? (
               <tr>
                 <td
                   colSpan={3}
@@ -301,65 +474,46 @@ export function LogsTab({
                   {tRoot("untranslatedRecords.objects.loading.logs")}
                 </td>
               </tr>
-            ) : auditLogs.length > 0 ? (
-              auditLogs.map((log) => (
-                <tr
-                  key={log._id}
-                  className="group transition-colors hover:bg-secondary/40"
-                >
-                  <td className="px-4 py-3 align-top">
-                    <span className="whitespace-nowrap text-xs text-muted-foreground">
-                      <ClientDate
-                        timestamp={log.timestamp}
-                        locale={locale}
-                        options={{
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }}
-                      />
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 align-top">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-5 border border-border/60">
-                        <AvatarImage
-                          src={log.userImage ?? undefined}
-                          alt={
-                            log.userName ??
-                            tRoot("untranslatedRecords.objects.comments.user")
-                          }
-                        />
-                        <AvatarFallback className="bg-secondary text-xs text-muted-foreground">
-                          {log.userName?.charAt(0) || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs text-foreground">
-                        {log.userName || tCommon("unknown")}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
+            ) : entries.length > 0 ? (
+              entries.map((entry) =>
+                entry.type === "movement" ? (
+                  <LogRow
+                    key={entry.movement._id}
+                    timestamp={entry.at}
+                    userName={entry.movement.movedByName}
+                    locale={locale}
+                  >
+                    <MovementDetails movement={entry.movement} />
+                  </LogRow>
+                ) : (
+                  <LogRow
+                    key={entry.log._id}
+                    timestamp={entry.at}
+                    userName={entry.log.userName}
+                    userImage={entry.log.userImage}
+                    locale={locale}
+                  >
                     <p className="text-sm text-foreground">
                       <span
-                        className={`font-medium ${getActionBadgeClasses(log.action).text}`}
+                        className={`font-medium ${getActionBadgeClasses(entry.log.action).text}`}
                       >
-                        {actionLabel(log.action)}
+                        {actionLabel(entry.log.action)}
                       </span>
                     </p>
-                    {log.action === "created_collection"
+                    {entry.log.action === "created_collection"
                       ? null
                       : formatChanges(
-                          log.changes as Record<string, unknown> | undefined,
+                          entry.log.changes as
+                            | Record<string, unknown>
+                            | undefined,
                           tRoot,
                           (edtf) =>
                             dates.dateMade({ dateCreatedEdtf: edtf }) ?? edtf,
                           description,
                         )}
-                  </td>
-                </tr>
-              ))
+                  </LogRow>
+                ),
+              )
             ) : (
               <tr>
                 <td
@@ -373,7 +527,7 @@ export function LogsTab({
           </tbody>
         </table>
       </div>
-      {auditLogs?.length === limit && limit < LOG_MAX ? (
+      {hasOlder ? (
         <div className="border-t border-border/60 px-4 py-2 text-center">
           <Button
             type="button"

@@ -10,6 +10,7 @@ import {
   assessCollectionMovement,
   moveCollectionToLocation,
 } from "./utils/locationIntegrity";
+import { DEFAULT_MOVEMENT_REASONS } from "./utils/movementReasons";
 import {
   movementIssueValidator,
   movementKindValidator,
@@ -1062,7 +1063,7 @@ export const moveObject = mutation({
       collection,
       args.toLocationId,
       userId,
-      trimmedOrUndefined(args.reason) ?? "Direct move",
+      trimmedOrUndefined(args.reason) ?? DEFAULT_MOVEMENT_REASONS.direct,
       {
         kind: "direct",
         notes: trimmedOrUndefined(args.notes),

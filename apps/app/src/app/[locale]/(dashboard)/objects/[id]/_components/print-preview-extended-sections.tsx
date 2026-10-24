@@ -3,6 +3,7 @@
 import { ClientCurrentDate } from "@/components/client-date";
 import { useOrganizationRightsDefaults } from "@/components/rights-statement/use-organization-rights-defaults";
 import { useRightsStatementName } from "@/components/rights-statement/use-rights-statement-name";
+import { formatPartialDate } from "@/lib/format-date";
 import { shownRightsStatement } from "@/lib/rights-statements";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
@@ -62,7 +63,9 @@ export function PrintPreviewExtendedSections({
                 <p className="text-xs font-medium text-zinc-500">
                   {t("donationDate")}
                 </p>
-                <p className="text-black">{collection.donated_date}</p>
+                <p className="text-black">
+                  {formatPartialDate(collection.donated_date, locale)}
+                </p>
               </div>
             )}
             {collection.provenance && (

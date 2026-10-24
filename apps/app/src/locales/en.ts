@@ -1752,7 +1752,6 @@ export default {
       temperature: "Temperature",
       activityLog: "Activity Log",
       overview: "Overview & {type}",
-      request: "Request",
       conservation: "Conservation",
       pending: "Pending",
       locked: "Locked",
@@ -2319,41 +2318,14 @@ export default {
       moveObject: "Move Object",
     },
     movements: {
-      title: "Movements",
-      moveNow: "Move now",
-      requestMove: "Request move",
-      currentLocation: "Current location",
       noLocation: "No recorded location",
       unknownLocation: "Unknown location",
       unknownUser: "Unknown user",
-      loading: "Loading movements…",
       dialog: {
-        directTitle: "Move object now",
-        directDescription:
-          "Records you as the mover, the location shown below as the observed source, and the destination.",
-        requestTitle: "Request a move",
-        requestDescription:
-          "The move is reviewed before execution. The object's location is checked again when it is executed.",
-        observedSource: "Observed source",
-        destination: "Destination",
-        destinationPlaceholder: "Select a destination",
-        reason: "Reason",
-        reasonPlaceholder: "e.g. Rotation, conservation, photography",
-        reasonRequired: "A reason is required for a move request.",
-        notes: "Notes",
-        selectDestinationError: "Select a destination.",
         override: "Override capacity and location restrictions",
-        checking: "Checking destination…",
-        submitMove: "Move object",
-        submitRequest: "Submit request",
-        submitting: "Saving…",
-        moved: "Object moved.",
-        requested: "Move request submitted.",
-        failed: "The move could not be saved.",
       },
       requests: {
         title: "Move requests",
-        empty: "No move requests for this object.",
         requestedBy: "Requested by {name}",
         reviewedBy: "Reviewed by {name}",
         executedBy: "Executed by {name}",
@@ -2402,9 +2374,6 @@ export default {
         already_at_destination: "The object is already at the destination.",
       },
       history: {
-        title: "Movement history",
-        empty: "No recorded movements.",
-        movedBy: "Moved by {name}",
         authorizedBy: "Authorized by {name}",
         kind: {
           direct: "Direct move",
@@ -2416,6 +2385,15 @@ export default {
           legacy: "Recorded movement",
           incident_evacuation: "Incident evacuation",
           incident_recovery: "Incident recovery",
+          loan_dispatch: "Loan dispatch",
+          loan_return: "Loan return",
+          exhibition_install: "Exhibition installation",
+          exhibition_return: "Return from exhibition",
+          transit_receipt: "Transit receipt",
+          transit_installation: "Transit installation",
+          institution_transfer: "Transfer receipt",
+          entry_receipt: "Entry receipt",
+          entry_exit: "Entry return",
         },
       },
     },
@@ -2941,11 +2919,6 @@ export default {
       to: "To",
       productionDate: {
         legend: "Structured date",
-        description:
-          "Optional. Sets how the catalog sorts, filters and exports this Object; the text above is shown as written.",
-        from: "From",
-        to: "To",
-        hint: "Fill in From for one date, or From and To for a range. By and After apply only to From on its own.",
         readAs: "Read as {date}.",
         years: "Sorting and filters use {years}.",
         yearsFrom: "Sorting and filters use {start} onwards.",
@@ -2953,14 +2926,11 @@ export default {
         onOrAfter: "{date} or later",
         undated: "Undated for sorting and filters.",
         notRead:
-          "Not read as a date, so it is shown as written. Add a structured date to sort and filter by it.",
-        useReading: "Use as structured date",
+          "Not read as a date, so it is shown as written. Sorting and date filters treat the Object as undated.",
         mismatch:
           "The text reads as {text}, but the structured date is {date}. Sorting, filters and exports use the structured date.",
+        useText: "Use the text instead",
         edtf: "EDTF {edtf}",
-        fixed:
-          "This structured date cannot be changed here. Clear it to enter another.",
-        clear: "Clear structured date",
         invalid:
           "Check the structured date: enter the parts its precision needs, and an end on or after the start.",
         openInRange:
@@ -8502,6 +8472,9 @@ export default {
         toValue: "to “{value}”",
         structuredDateRemoved: "Structured date “{value}” removed",
         byUser: "By {name}",
+        moved: "Object moved",
+        movedFromTo: "From {from} to {to}",
+        movedOutOf: "Left {from}",
         actions: {
           created_collection: "Object created",
           updated_collection: "Object updated",
@@ -8514,6 +8487,8 @@ export default {
           removed_alternate_accession_number:
             "Alternate accession number removed",
           created_move_request: "Move requested",
+          approved_move_request: "Move request approved",
+          reapproved_move_request: "Move request approved again",
           executed_move_request: "Move completed",
           cancelled_move_request: "Move request cancelled",
           rejected_move_request: "Move request rejected",

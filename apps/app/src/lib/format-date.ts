@@ -81,6 +81,39 @@ export const CALENDAR_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   dateStyle: "medium",
 };
 
+const PARTIAL_MONTH_OPTIONS: Intl.DateTimeFormatOptions = {
+  timeZone: "UTC",
+  month: "long",
+  year: "numeric",
+};
+
+/**
+ * A date a Partial date field stores (`yyyy`, `yyyy-MM` or `yyyy-MM-dd`) in
+ * the app language, to the precision it was entered. Other text is returned
+ * as written.
+ */
+export function formatPartialDate(value: string, locale: string): string {
+  const text = value.trim();
+  const match = text.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/);
+  if (!match) return text;
+  const [, year, month, day] = match;
+  if (month === undefined) return year ?? text;
+  const date = new Date(0);
+  date.setUTCFullYear(Number(year), Number(month) - 1, Number(day ?? 1));
+  // A month or day the calendar does not have is shown as written.
+  if (
+    date.getUTCMonth() !== Number(month) - 1 ||
+    (day !== undefined && date.getUTCDate() !== Number(day))
+  ) {
+    return text;
+  }
+  return formatDate(
+    date,
+    locale,
+    day === undefined ? PARTIAL_MONTH_OPTIONS : CALENDAR_DATE_OPTIONS,
+  );
+}
+
 /**
  * Last month date pickers offer for future dates such as policy expiries,
  * coverage ends and appraisal validity: December, ten years ahead.

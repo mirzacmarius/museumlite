@@ -1813,8 +1813,19 @@ async function staffUnpublishedBeforePublicByDefault(
   return !approved || unpublished._creationTime > approved._creationTime;
 }
 
+/**
+ * Migration: makes public renditions for images from before they were made
+ * on upload, and asks again for failed or stale ones (ADR 0017). The repair
+ * sweep in `mediaPublications` starts it once per version and passes the
+ * `backfillId` whose `completedAt` the last page sets. Rerunnable by hand.
+ *
+ * Run: bunx convex run migrations:backfillPublicRenditions '{"cursor":null}'
+ */
 export const backfillPublicRenditions = internalMutation({
-  args: { cursor: v.union(v.string(), v.null()) },
+  args: {
+    cursor: v.union(v.string(), v.null()),
+    backfillId: v.optional(v.id("publicRenditionBackfills")),
+  },
   returns: v.object({ processed: v.number(), isDone: v.boolean() }),
   handler: async (ctx, args) => {
     const page = await ctx.db
@@ -1833,8 +1844,10 @@ export const backfillPublicRenditions = internalMutation({
       await ctx.scheduler.runAfter(
         0,
         internal.migrations.backfillPublicRenditions,
-        { cursor: page.continueCursor },
+        { cursor: page.continueCursor, backfillId: args.backfillId },
       );
+    } else if (args.backfillId) {
+      await ctx.db.patch(args.backfillId, { completedAt: Date.now() });
     }
     return { processed: page.page.length, isDone: page.isDone };
   },

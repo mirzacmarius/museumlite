@@ -335,7 +335,7 @@ export function RecordLockedNotice({ message }: { message: string }) {
   );
 }
 
-function fieldErrorId(field: string) {
+export function fieldErrorId(field: string) {
   return `${field}-error`;
 }
 

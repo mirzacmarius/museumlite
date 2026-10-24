@@ -54,6 +54,7 @@ import {
   requireUsableLocation,
 } from "./utils/locationIntegrity";
 import { collectionTypeValidator } from "./utils/moduleValidators";
+import { DEFAULT_MOVEMENT_REASONS } from "./utils/movementReasons";
 import { mutation } from "./utils/mutationBuilders";
 import {
   completenessValidator,
@@ -1687,7 +1688,7 @@ export const update = mutation({
         collection,
         args.currentLocationId,
         userId,
-        "Catalog location change",
+        DEFAULT_MOVEMENT_REASONS.catalogEdit,
         { kind: "catalog_edit" },
       );
     }
@@ -2440,7 +2441,7 @@ export const bulkUpdateLocation = mutation({
           collection,
           args.locationId,
           userId,
-          "Bulk catalog location change",
+          DEFAULT_MOVEMENT_REASONS.bulkCatalogEdit,
           { kind: "bulk_edit" },
         );
     }

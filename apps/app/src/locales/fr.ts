@@ -2356,7 +2356,6 @@ export default {
       temperature: "Température",
       activityLog: "Journal d'activité",
       overview: "Aperçu et {type}",
-      request: "Demande",
       conservation: "Conservation",
       pending: "En attente",
       locked: "Verrouillé",
@@ -2580,41 +2579,14 @@ export default {
   },
   locations: {
     movements: {
-      title: "Mouvements",
-      moveNow: "Déplacer maintenant",
-      requestMove: "Demander un déplacement",
-      currentLocation: "Emplacement actuel",
       noLocation: "Aucun emplacement enregistré",
       unknownLocation: "Emplacement inconnu",
       unknownUser: "Utilisateur inconnu",
-      loading: "Chargement des mouvements…",
       dialog: {
-        directTitle: "Déplacer l'objet maintenant",
-        directDescription:
-          "Vous êtes enregistré comme auteur du déplacement, avec l'emplacement ci-dessous comme source observée et la destination.",
-        requestTitle: "Demander un déplacement",
-        requestDescription:
-          "Le déplacement est examiné avant son exécution. L'emplacement de l'objet est de nouveau vérifié lors de l'exécution.",
-        observedSource: "Source observée",
-        destination: "Destination",
-        destinationPlaceholder: "Sélectionnez une destination",
-        reason: "Motif",
-        reasonPlaceholder: "ex. rotation, conservation, photographie",
-        reasonRequired: "Un motif est requis pour une demande de déplacement.",
-        notes: "Notes",
-        selectDestinationError: "Sélectionnez une destination.",
         override: "Ignorer les restrictions de capacité et d'emplacement",
-        checking: "Vérification de la destination…",
-        submitMove: "Déplacer l'objet",
-        submitRequest: "Envoyer la demande",
-        submitting: "Enregistrement…",
-        moved: "Objet déplacé.",
-        requested: "Demande de déplacement envoyée.",
-        failed: "Le déplacement n'a pas pu être enregistré.",
       },
       requests: {
         title: "Demandes de déplacement",
-        empty: "Aucune demande de déplacement pour cet objet.",
         requestedBy: "Demandé par {name}",
         reviewedBy: "Examiné par {name}",
         executedBy: "Exécuté par {name}",
@@ -2664,9 +2636,6 @@ export default {
         already_at_destination: "L'objet se trouve déjà à la destination.",
       },
       history: {
-        title: "Historique des mouvements",
-        empty: "Aucun mouvement enregistré.",
-        movedBy: "Déplacé par {name}",
         authorizedBy: "Autorisé par {name}",
         kind: {
           direct: "Déplacement direct",
@@ -2678,6 +2647,15 @@ export default {
           legacy: "Mouvement enregistré",
           incident_evacuation: "Évacuation (incident)",
           incident_recovery: "Rapatriement (incident)",
+          loan_dispatch: "Envoi en prêt",
+          loan_return: "Retour de prêt",
+          exhibition_install: "Installation en exposition",
+          exhibition_return: "Retour d’exposition",
+          transit_receipt: "Réception de transit",
+          transit_installation: "Installation après transit",
+          institution_transfer: "Réception de transfert",
+          entry_receipt: "Réception d’entrée",
+          entry_exit: "Restitution d’entrée",
         },
       },
     },
@@ -3567,11 +3545,6 @@ export default {
       to: "À",
       productionDate: {
         legend: "Date structurée",
-        description:
-          "Facultatif. Détermine comment le catalogue trie, filtre et exporte cet objet ; le texte ci-dessus s'affiche tel qu'il a été écrit.",
-        from: "De",
-        to: "À",
-        hint: "Remplissez De pour une seule date, ou De et À pour une période. Au plus tard et Pas avant ne s'appliquent qu'à De seul.",
         readAs: "Lu comme {date}.",
         years: "Le tri et les filtres utilisent {years}.",
         yearsFrom:
@@ -3580,14 +3553,11 @@ export default {
         onOrAfter: "{date} ou après",
         undated: "Sans date pour le tri et les filtres.",
         notRead:
-          "Pas lu comme une date : le texte s'affiche tel qu'il a été écrit. Ajoutez une date structurée pour trier et filtrer selon celle-ci.",
-        useReading: "Utiliser comme date structurée",
+          "Non lu comme une date, le texte s'affiche tel qu'il a été écrit. Le tri et les filtres de date traitent l'objet comme non daté.",
         mismatch:
           "Le texte se lit comme {text}, mais la date structurée est {date}. Le tri, les filtres et les exports utilisent la date structurée.",
+        useText: "Utiliser le texte à la place",
         edtf: "EDTF {edtf}",
-        fixed:
-          "Cette date structurée ne peut pas être modifiée ici. Effacez-la pour en saisir une autre.",
-        clear: "Effacer la date structurée",
         invalid:
           "Vérifiez la date structurée : saisissez les parties que demande sa précision, et une fin égale ou postérieure au début.",
         openInRange:
@@ -8714,6 +8684,9 @@ export default {
         toValue: "à « {value} »",
         structuredDateRemoved: "Suppression de la date structurée « {value} »",
         byUser: "Par {name}",
+        moved: "Objet déplacé",
+        movedFromTo: "De {from} à {to}",
+        movedOutOf: "A quitté {from}",
         actions: {
           created_collection: "Objet créé",
           updated_collection: "Objet modifié",
@@ -8727,6 +8700,8 @@ export default {
           removed_alternate_accession_number:
             "Numéro d’accession alternatif supprimé",
           created_move_request: "Déplacement demandé",
+          approved_move_request: "Demande de déplacement approuvée",
+          reapproved_move_request: "Demande de déplacement approuvée à nouveau",
           executed_move_request: "Déplacement effectué",
           cancelled_move_request: "Demande de déplacement annulée",
           rejected_move_request: "Demande de déplacement refusée",
