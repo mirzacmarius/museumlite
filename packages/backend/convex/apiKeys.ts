@@ -1,10 +1,33 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
+
+/** What a key may be granted; the public API reads only `read` today. */
+export const API_KEY_PERMISSIONS = ["read", "write"] as const;
+const apiKeyPermissionValidator = v.union(
+  v.literal("read"),
+  v.literal("write"),
+);
+
+/** Requests one key may make: a steady rate with room for a short burst. */
+export const API_REQUESTS_PER_MINUTE = 60;
+export const API_REQUEST_BURST = 120;
+const apiLimiter = new RateLimiter(components.rateLimiter, {
+  apiKeyRequests: {
+    kind: "token bucket",
+    rate: API_REQUESTS_PER_MINUTE,
+    period: MINUTE,
+    capacity: API_REQUEST_BURST,
+  },
+});
+
+/** `lastUsedAt` is kept to the minute, so most requests write nothing to the key. */
+export const LAST_USED_RESOLUTION_MS = MINUTE;
 
 function generateApiKey(): string {
   const chars =
@@ -126,7 +149,7 @@ export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
     name: v.string(),
-    permissions: v.array(v.string()),
+    permissions: v.array(apiKeyPermissionValidator),
     expiresAt: v.optional(v.number()),
   },
   returns: v.object({
@@ -143,6 +166,13 @@ export const create = mutation({
       "organization.manage_settings",
     );
 
+    const permissions = API_KEY_PERMISSIONS.filter((permission) =>
+      args.permissions.includes(permission),
+    );
+    if (permissions.length === 0) {
+      throw new Error("An API key needs at least one permission");
+    }
+
     const apiKey = generateApiKey();
     const keyHash = await hashKey(apiKey);
     const prefix = apiKey.substring(0, 10);
@@ -152,7 +182,7 @@ export const create = mutation({
       name: args.name,
       prefix,
       keyHash,
-      permissions: args.permissions,
+      permissions,
       expiresAt: args.expiresAt,
       lastUsedAt: undefined,
       isRevoked: false,
@@ -169,7 +199,7 @@ export const create = mutation({
       changes: {
         name: args.name,
         prefix,
-        permissions: args.permissions,
+        permissions,
         expiresAt: args.expiresAt,
       },
     });
@@ -269,8 +299,10 @@ export const validate = internalMutation({
       permissions: v.array(v.string()),
       keyId: v.id("apiKeys"),
     }),
+    // `retryAfter` (ms) is set only when the key is over its request limit.
     v.object({
       valid: v.literal(false),
+      retryAfter: v.optional(v.number()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -298,11 +330,27 @@ export const validate = internalMutation({
       return { valid: false as const };
     }
 
-    if (matchingKey.expiresAt && matchingKey.expiresAt < Date.now()) {
+    const now = Date.now();
+    if (matchingKey.expiresAt && matchingKey.expiresAt < now) {
       return { valid: false as const };
     }
 
-    await ctx.db.patch(matchingKey._id, { lastUsedAt: Date.now() });
+    const quota = await apiLimiter.limit(ctx, "apiKeyRequests", {
+      key: matchingKey._id,
+    });
+    if (!quota.ok) {
+      return {
+        valid: false as const,
+        retryAfter: quota.retryAfter,
+      };
+    }
+
+    if (
+      matchingKey.lastUsedAt === undefined ||
+      now - matchingKey.lastUsedAt >= LAST_USED_RESOLUTION_MS
+    ) {
+      await ctx.db.patch(matchingKey._id, { lastUsedAt: now });
+    }
 
     return {
       valid: true as const,

@@ -5601,6 +5601,8 @@ export default {
         "Por ejemplo: museo de historia regional con pinturas, textiles y fotografías de archivo…",
       generate: "Generar sugerencias",
       generateFailed: "No se pudieron generar sugerencias. Inténtalo de nuevo.",
+      rateLimited:
+        "Has pedido sugerencias varias veces seguidas. Espera unos minutos y vuelve a intentarlo.",
       applyFailed:
         "No se pudieron guardar los grupos de colecciones. Inténtalo de nuevo.",
       objectTypesLabel: "Tipos de objetos sugeridos",

@@ -393,6 +393,16 @@ const listObjects = httpAction(async (ctx, request) => {
     apiKey,
   });
 
+  if (!validation.valid && validation.retryAfter !== undefined) {
+    return new Response(JSON.stringify({ error: "rate_limit_exceeded" }), {
+      status: 429,
+      headers: {
+        "Content-Type": "application/json",
+        "Retry-After": String(Math.ceil(validation.retryAfter / 1000)),
+      },
+    });
+  }
+
   if (!validation.valid || !validation.permissions.includes("read")) {
     return unauthorized();
   }

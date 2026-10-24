@@ -1,5 +1,6 @@
 "use client";
 
+import { TOUR_REQUEST_FIELD_MAX_LENGTH } from "@v1/backend/convex/utils/marketingForms";
 import { useState } from "react";
 import { submitTourRequest } from "@/app/(marketing)/contact/actions";
 import { useWebI18n } from "@/locales/provider";
@@ -44,9 +45,9 @@ export function ContactForm() {
             setSent(true);
           } else {
             setError(
-              result.error === "submission_failed"
-                ? t("marketing.contact.genericError")
-                : t("marketing.contact.fieldError"),
+              result.error === "rate_limited"
+                ? t("marketing.contact.rateLimited")
+                : t("marketing.contact.genericError"),
             );
           }
         } catch {
@@ -57,17 +58,27 @@ export function ContactForm() {
       }}
     >
       <SectionLabel index="✦" title={t("marketing.contact.tellUs")} />
-      <Field label={t("marketing.contact.yourName")} name="name" />
-      <Field label={t("marketing.contact.institution")} name="institution" />
+      <Field
+        label={t("marketing.contact.yourName")}
+        name="name"
+        maxLength={TOUR_REQUEST_FIELD_MAX_LENGTH.name}
+      />
+      <Field
+        label={t("marketing.contact.institution")}
+        name="institution"
+        maxLength={TOUR_REQUEST_FIELD_MAX_LENGTH.institution}
+      />
       <Field
         label={t("marketing.contact.fieldEmail")}
         name="email"
         type="email"
+        maxLength={TOUR_REQUEST_FIELD_MAX_LENGTH.email}
       />
       <Field
         label={t("marketing.contact.collectionSize")}
         name="size"
         placeholder={t("marketing.contact.collectionSizePlaceholder")}
+        maxLength={TOUR_REQUEST_FIELD_MAX_LENGTH.collectionSize}
       />
       <div>
         <label
@@ -81,6 +92,7 @@ export function ContactForm() {
           id="message"
           name="message"
           rows={5}
+          maxLength={TOUR_REQUEST_FIELD_MAX_LENGTH.message}
           aria-labelledby="message-label"
           className="w-full bg-transparent border-b border-border focus:border-gold outline-none text-ivory text-lg py-3 transition-colors resize-none"
         />
@@ -104,11 +116,13 @@ function Field({
   name,
   type = "text",
   placeholder,
+  maxLength,
 }: {
   label: string;
   name: string;
   type?: string;
   placeholder?: string;
+  maxLength: number;
 }) {
   const labelId = `${name}-label`;
 
@@ -126,6 +140,7 @@ function Field({
         name={name}
         type={type}
         placeholder={placeholder}
+        maxLength={maxLength}
         required
         aria-labelledby={labelId}
         className="w-full bg-transparent border-b border-border focus:border-gold outline-none text-ivory text-lg py-3 transition-colors"
