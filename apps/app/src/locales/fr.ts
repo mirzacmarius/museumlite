@@ -3377,6 +3377,8 @@ export default {
           "Sélectionnez au plus {limit} objets, ou modifiez tous les objets correspondant à la recherche et aux filtres.",
         selectionOutsideOrganization:
           "Certains objets sélectionnés appartiennent à une autre organisation. Actualisez la page et sélectionnez-les à nouveau.",
+        filterRequired:
+          "Recherchez ou filtrez d'abord le catalogue, pour que la modification ne change pas tous les objets.",
         editRunning:
           "Une autre modification de champ est en cours dans cette organisation. Attendez qu’elle se termine ou arrêtez-la d’abord.",
         editNotFound: "Cette modification n’existe plus.",

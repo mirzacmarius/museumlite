@@ -138,6 +138,37 @@ export const catalogFiltersValidator = v.object(catalogFilterFields);
 export type CatalogFilters = Infer<typeof catalogFiltersValidator>;
 
 /**
+ * True when a search or filter someone chose narrows the catalog. The
+ * inventory scope a Dashboard link sets is not shown among the filters, and
+ * `includeDeaccessioned` and `filterCombinations` only widen or join them,
+ * so none of these counts. Editing every matching Object needs one that does.
+ */
+export function narrowsCatalog(filters: CatalogFilters) {
+  return (
+    filters.collectionGroupId !== undefined ||
+    filters.status !== undefined ||
+    (filters.locationIds?.length ?? 0) > 0 ||
+    [
+      filters.objectType,
+      filters.displayStatus,
+      filters.culture,
+      filters.period,
+      filters.materials,
+      filters.condition,
+      filters.search?.trim(),
+    ].some(Boolean) ||
+    [
+      filters.hasImage,
+      filters.catalogedFrom,
+      filters.catalogedTo,
+      filters.madeFrom,
+      filters.madeTo,
+    ].some((value) => value !== undefined) ||
+    (filters.advancedFilters ?? []).some((group) => group.filters.length > 0)
+  );
+}
+
+/**
  * Orders of the Object Catalog; newest first is the default. Date made orders
  * list undated Objects last both ways. Kept out of the filters: bulk edits and
  * exports page in creation order.

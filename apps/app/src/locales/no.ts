@@ -3330,6 +3330,8 @@ export default {
           "Velg høyst {limit} objekter, eller rediger alle objekter som samsvarer med søket og filtrene.",
         selectionOutsideOrganization:
           "Noen av de valgte objektene tilhører en annen organisasjon. Last inn siden på nytt og velg dem igjen.",
+        filterRequired:
+          "Søk eller filtrer katalogen først, så endringen ikke gjelder alle objekter.",
         editRunning:
           "En annen feltendring pågår i denne organisasjonen. Vent til den er ferdig, eller stopp den først.",
         editNotFound: "Denne endringen finnes ikke lenger.",

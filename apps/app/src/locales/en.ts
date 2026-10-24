@@ -2711,6 +2711,8 @@ export default {
           "Select at most {limit} objects, or edit all objects that match the search and filters instead.",
         selectionOutsideOrganization:
           "Some selected objects belong to another organization. Refresh the page and select them again.",
+        filterRequired:
+          "Search or filter the catalog first, so the edit doesn't change every object.",
         editRunning:
           "Another field edit is running in this organization. Wait for it to finish or stop it first.",
         editNotFound: "This edit no longer exists.",
