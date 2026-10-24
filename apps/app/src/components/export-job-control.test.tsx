@@ -100,8 +100,8 @@ beforeEach(() => {
 });
 
 test("creating the same export again leaves one row, the newest", async () => {
-  // Newest first, as exports.list returns them. The stored source comes back
-  // with its keys sorted, so key order must not split the two.
+  // Newest first, as exports.list returns them. The same source written in
+  // another key order is still the same results.
   state.jobs = [
     exportJob("job-2", paintings, 98, at(25, 42)),
     exportJob(
@@ -189,6 +189,65 @@ test("exports of other filters, the other format and each selected export stay l
       screen.getByRole("button", { name: `Download ${rows} rows` }),
     ).toBeTruthy();
   }
+});
+
+test("while a repeat export runs, only the newest completed one stays beside it", async () => {
+  state.jobs = [
+    exportJob("job-3", paintings, 0, at(30), {
+      status: "queued",
+      completedAt: undefined,
+      sourceDone: false,
+    }),
+    exportJob("job-2", paintings, 98, at(28)),
+    exportJob("job-1", paintings, 97, at(25)),
+  ];
+
+  await openPanel(paintings);
+
+  expect(screen.getByText(/Queued/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Download 98 rows" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Download 97 rows" })).toBeNull();
+});
+
+test("repeats collapse before the five-row limit, so other exports keep their place", async () => {
+  state.jobs = [
+    ...[96, 95, 94, 93, 92].map((rows, index) =>
+      exportJob(`job-${rows}`, paintings, rows, at(30 - index)),
+    ),
+    exportJob(
+      "job-coin",
+      { kind: "objects", mode: "filtered", filters: { objectType: "Coin" } },
+      12,
+      at(20),
+    ),
+  ];
+
+  await openPanel(paintings);
+
+  expect(screen.getByRole("button", { name: "Download 96 rows" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Download 12 rows" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Download 95 rows" })).toBeNull();
+});
+
+test("an earlier export still running stays listed so it can be cancelled", async () => {
+  const inProgress = {
+    completedAt: undefined,
+    sourceDone: false,
+  } satisfies Partial<ExportJob>;
+  state.jobs = [
+    exportJob("job-2", paintings, 0, at(30), {
+      ...inProgress,
+      status: "queued",
+    }),
+    exportJob("job-1", paintings, 40, at(29), {
+      ...inProgress,
+      status: "running",
+    }),
+  ];
+
+  await openPanel(paintings);
+
+  expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(2);
 });
 
 test("a cancelled export hides no earlier download", async () => {

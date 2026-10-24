@@ -44,8 +44,9 @@ function exportKey(job: ExportJob) {
 /**
  * One row per source and format, newest first. A new export replaces the
  * earlier one of the same results once it completes; until then the earlier
- * download stays listed. Selected-object exports don't record which objects
- * they hold, so none of them replaces another.
+ * download stays listed. Exports still in progress stay listed so they can be
+ * cancelled. Selected-object exports don't record which objects they hold,
+ * so none of them replaces another.
  */
 function latestExports(jobs: ExportJob[]): ExportJob[] {
   const newest = new Map<string, ExportJob>();
@@ -58,7 +59,11 @@ function latestExports(jobs: ExportJob[]): ExportJob[] {
   }
   return jobs.filter((job) => {
     const key = exportKey(job);
-    return newest.get(key) === job || newestCompleted.get(key) === job;
+    return (
+      newest.get(key) === job ||
+      newestCompleted.get(key) === job ||
+      CANCELLABLE_STATUSES.has(job.status)
+    );
   });
 }
 
