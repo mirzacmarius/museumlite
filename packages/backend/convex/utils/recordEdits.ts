@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { convexErrorData } from "./convexErrorData";
+import { formatEdtf, parseEdtf } from "./productionDates";
 
 /**
  * Stable codes for form saves that staff can resolve themselves. Clients map
@@ -19,6 +20,7 @@ export const RECORD_EDIT_ERROR_CODES = [
   "CONDITION_NOTE_REQUIRED",
   "DATE_ORDER_INVALID",
   "PARTY_MANAGED_FIELD",
+  "PRODUCTION_DATE_INVALID",
 ] as const;
 
 export type RecordEditErrorCode = (typeof RECORD_EDIT_ERROR_CODES)[number];
@@ -124,6 +126,29 @@ export function requireFieldValue(field: string, value: string | undefined) {
   }
 }
 
+/** An EDTF date in its canonical form; undefined when empty or not EDTF. */
+export function canonicalEdtf(value: string | null | undefined) {
+  const date = value?.trim() ? parseEdtf(value) : null;
+  return date ? formatEdtf(date) : undefined;
+}
+
+/**
+ * A structured date made as a form saves it: canonical EDTF, or undefined
+ * when the field is empty, which clears it. Refuses text that is not EDTF.
+ */
+export function enteredProductionDate(value: string | null | undefined) {
+  if (!value?.trim()) return undefined;
+  const edtf = canonicalEdtf(value);
+  if (edtf === undefined) {
+    throw recordEditError(
+      "PRODUCTION_DATE_INVALID",
+      "dateCreatedEdtf is not an EDTF date",
+      { field: "dateCreatedEdtf" },
+    );
+  }
+  return edtf;
+}
+
 /** Refuses a save that started from an older version of the record. */
 export function assertCurrentEditVersion(
   currentEditVersion: string,
@@ -151,6 +176,7 @@ const OBJECT_EDIT_FIELDS = [
   "culture",
   "period",
   "dateCreated",
+  "dateCreatedEdtf",
   "materials",
   "technique",
   "dimensions",

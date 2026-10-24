@@ -59,7 +59,7 @@ async function meetsRequirement(
     case "maker":
       return filled(object.creator);
     case "production_date":
-      return filled(object.dateCreated);
+      return filled(object.dateCreated) || filled(object.dateCreatedEdtf);
     case "materials":
       return filled(object.materials);
     case "dimensions":

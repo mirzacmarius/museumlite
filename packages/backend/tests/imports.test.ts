@@ -337,3 +337,120 @@ test("listImportTemplates returns both PastPerfect and TMS templates", async () 
   expect(templateNames).toContain("PastPerfect");
   expect(templateNames).toContain("TMS");
 });
+
+test("object CSVs carry the date made, and a re-import keeps the structured date, BC included, while EDTF that isn't fails its row", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create", "collections.read"],
+    { subscriptionTier: "pro" },
+  );
+  const authed = authedForUser(t, userId);
+  await authed.mutation(api.collections.create, {
+    organizationId,
+    accessionNumber: "E-1",
+    title: "Coin",
+    dateCreated: "Roman Republic",
+    dateCreatedEdtf: "-0499~",
+  });
+  await authed.mutation(api.collections.create, {
+    organizationId,
+    accessionNumber: "E-2",
+    title: "Jug",
+    dateCreated: "c. 1850",
+  });
+
+  // Settings > Data: the stored value only, so a re-import adds no reading.
+  const rows = await authed.mutation(api.imports.exportObjects, {
+    organizationId,
+  });
+  const exported = new Map(rows.map((row) => [row.accessionNumber, row]));
+  expect(exported.get("E-1")?.dateCreatedEdtf).toBe("-0499~");
+  expect(exported.get("E-2")?.dateCreatedEdtf).toBeUndefined();
+  const template = await authed.query(api.imports.getImportTemplateByType, {
+    type: "objects",
+  });
+  const edtfColumn = template.headers.indexOf("dateCreatedEdtf");
+  expect(edtfColumn).toBe(template.headers.indexOf("dateCreated") + 1);
+  expect(template.exampleRow).toHaveLength(template.headers.length);
+
+  // The catalog page's file adds the EDTF in effect and its years.
+  const csv = await authed.mutation(api.imports.exportObjectsWithFormat, {
+    organizationId,
+    format: "csv",
+  });
+  const [header = "", ...lines] = csv.split("\n");
+  expect(header).toContain(
+    "dateCreated,dateCreatedEdtf,productionDateEdtf,productionEarliestYear,productionLatestYear,",
+  );
+  const line = (number: string) =>
+    lines.find((candidate) => candidate.startsWith(`"${number}"`)) ?? "";
+  expect(line("E-1")).toContain(
+    `"Roman Republic","'-0499~","'-0499~",-504,-494,`,
+  );
+  expect(line("E-2")).toContain(`"c. 1850","","1850~",1845,1855,`);
+  const json = JSON.parse(
+    await authed.mutation(api.imports.exportObjectsWithFormat, {
+      organizationId,
+      format: "json",
+    }),
+  ) as Array<Record<string, unknown>>;
+  expect(json.find((row) => row.accessionNumber === "E-2")).toMatchObject({
+    productionDateEdtf: "1850~",
+    productionEarliestYear: 1845,
+    productionLatestYear: 1855,
+  });
+
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    entityType: "objects",
+    totalItems: 3,
+  });
+  const imported = await authed.mutation(api.imports.importObjectsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        rowNumber: 2,
+        accessionNumber: "I-1",
+        title: "Coin",
+        dateCreated: "Roman Republic",
+        dateCreatedEdtf: "'-0499~",
+      },
+      {
+        rowNumber: 3,
+        accessionNumber: "I-2",
+        title: "Bowl",
+        dateCreatedEdtf: "1850s",
+      },
+      {
+        rowNumber: 4,
+        accessionNumber: "I-3",
+        title: "Jar",
+        dateCreatedEdtf: " 185X ",
+      },
+    ],
+  });
+  expect(imported.results).toMatchObject([
+    { status: "accepted" },
+    { status: "failed" },
+    { status: "accepted" },
+  ]);
+  expect(imported.errors).toEqual([
+    "Row 3: dateCreatedEdtf must be an EDTF date, such as 1850, 1850~, 185X or 1848/1852",
+  ]);
+  const stored = await t.run((ctx) =>
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  );
+  const byNumber = new Map(stored.map((row) => [row.accessionNumber, row]));
+  expect(byNumber.get("I-1")?.dateCreatedEdtf).toBe("-0499~");
+  expect(byNumber.get("I-3")?.dateCreatedEdtf).toBe("185X");
+  expect(byNumber.has("I-2")).toBe(false);
+});

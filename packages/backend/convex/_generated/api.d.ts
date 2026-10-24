@@ -304,6 +304,7 @@ import type * as utils_polarComponentSync from "../utils/polarComponentSync.js";
 import type * as utils_preparation from "../utils/preparation.js";
 import type * as utils_preparationValidators from "../utils/preparationValidators.js";
 import type * as utils_primaryMedia from "../utils/primaryMedia.js";
+import type * as utils_productionDates from "../utils/productionDates.js";
 import type * as utils_projectionMaintenance from "../utils/projectionMaintenance.js";
 import type * as utils_projectionReads from "../utils/projectionReads.js";
 import type * as utils_projectionReports from "../utils/projectionReports.js";
@@ -669,6 +670,7 @@ declare const fullApi: ApiFromModules<{
   "utils/preparation": typeof utils_preparation;
   "utils/preparationValidators": typeof utils_preparationValidators;
   "utils/primaryMedia": typeof utils_primaryMedia;
+  "utils/productionDates": typeof utils_productionDates;
   "utils/projectionMaintenance": typeof utils_projectionMaintenance;
   "utils/projectionReads": typeof utils_projectionReads;
   "utils/projectionReports": typeof utils_projectionReports;

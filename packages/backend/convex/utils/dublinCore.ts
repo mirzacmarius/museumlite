@@ -9,6 +9,12 @@
  */
 
 import type { Doc } from "../_generated/dataModel";
+import {
+  formatEdtf,
+  parseEdtf,
+  productionYears,
+  readDateText,
+} from "./productionDates";
 
 /**
  * Dublin Core metadata record with 15 core elements
@@ -27,7 +33,7 @@ export interface DublinCoreMetadata {
   /** An entity responsible for making contributions to the resource (dc:contributor) */
   contributor?: string | string[];
   /** A point or period of time associated with the resource (dc:date) */
-  date?: string;
+  date?: string | string[];
   /** The nature or genre of the resource (dc:type) */
   type?: string;
   /** The file format, physical medium, or dimensions of the resource (dc:format) */
@@ -44,6 +50,49 @@ export interface DublinCoreMetadata {
   coverage?: string;
   /** Information about rights held in and over the resource (dc:rights) */
   rights?: string;
+}
+
+/**
+ * dc:date for the date made: the text as written, followed by the EDTF staff
+ * entered when the text doesn't read as that date; the EDTF alone when there
+ * is no text.
+ */
+function dublinCoreDates(
+  collection: Partial<Doc<"collections">>,
+): string | string[] | undefined {
+  const text = collection.dateCreated?.trim() || undefined;
+  const entered = collection.dateCreatedEdtf
+    ? parseEdtf(collection.dateCreatedEdtf)
+    : null;
+  if (!entered) return text;
+  const edtf = formatEdtf(entered);
+  if (!text) return edtf;
+  const reading = readDateText(text);
+  return reading && formatEdtf(reading) === edtf ? text : [text, edtf];
+}
+
+/**
+ * The date made from dc:date values: the first is the text as written. The
+ * first later value in EDTF becomes the structured date unless the text
+ * already reads as the same years, which is when this export leaves it out.
+ */
+function datesFromDublinCore(date: string | string[] | undefined) {
+  const [text, ...rest] = Array.isArray(date) ? date : date ? [date] : [];
+  const entered = rest
+    .map((value) => parseEdtf(value))
+    .find((value) => value !== null);
+  if (!entered) return { dateCreated: text };
+  const reading = readDateText(text);
+  if (reading) {
+    const read = productionYears(reading);
+    const years = productionYears(entered);
+    if (
+      read.earliestYear === years.earliestYear &&
+      read.latestYear === years.latestYear
+    )
+      return { dateCreated: text };
+  }
+  return { dateCreated: text, dateCreatedEdtf: formatEdtf(entered) };
 }
 
 /**
@@ -129,7 +178,7 @@ export function toDublinCore(
     description: collection.description,
     publisher: organizationName,
     contributor,
-    date: collection.dateCreated,
+    date: dublinCoreDates(collection),
     type: collection.objectType || collection.objectName,
     format,
     identifier,
@@ -205,7 +254,7 @@ export function fromDublinCore(
     tags,
     description: metadata.description,
     donated_by,
-    dateCreated: metadata.date,
+    ...datesFromDublinCore(metadata.date),
     objectType: metadata.type,
     materials,
     technique,
@@ -367,7 +416,7 @@ function parseOaiDcBlock(block: string): DublinCoreMetadata | null {
     description: getScalarField("description"),
     publisher: getScalarField("publisher"),
     contributor: getArrayField("contributor"),
-    date: getScalarField("date"),
+    date: getArrayField("date"),
     type: getScalarField("type"),
     format: getScalarField("format"),
     source: getScalarField("source"),

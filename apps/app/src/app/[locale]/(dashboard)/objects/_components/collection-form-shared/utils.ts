@@ -531,6 +531,7 @@ export function buildObjectDraftPayload(
     culture: formData.culture?.trim() || undefined,
     period: formData.period?.trim() || undefined,
     dateCreated: formData.dateCreated?.trim() || undefined,
+    dateCreatedEdtf: undefined,
     materials: Array.isArray(formData.materials)
       ? formData.materials.filter(Boolean)
       : [],

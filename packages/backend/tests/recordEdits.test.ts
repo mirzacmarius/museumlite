@@ -1,8 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import * as recordEdits from "../convex/recordEdits";
 import {
+  editVersionOf as digestOf,
   type RecordEditErrorData,
   recordEditErrorFromError,
 } from "../convex/utils/recordEdits";
@@ -425,6 +426,116 @@ describe("catalog object edits", () => {
     ).toMatchObject({ title: "Harbour at dusk" });
   });
 
+  test("a structured date made is stored canonical, refused at its field when it is not EDTF, and cleared by an empty value", async () => {
+    const t = createConvexTest();
+    const { collectionId, ana } = await createCataloguedObject(t);
+    const stored = async () =>
+      await ana.query(api.collections.get, { collectionId });
+
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      dateCreated: "about 1850",
+      dateCreatedEdtf: " 1848/1852 ",
+    });
+    expect(await stored()).toMatchObject({
+      dateCreated: "about 1850",
+      dateCreatedEdtf: "1848/1852",
+    });
+
+    for (const invalid of ["1850s", "1850-02-30", "1860/1850"]) {
+      expect(
+        await recordEditErrorOf(
+          ana.mutation(api.collections.update, {
+            collectionId,
+            dateCreatedEdtf: invalid,
+          }),
+        ),
+      ).toMatchObject({
+        code: "PRODUCTION_DATE_INVALID",
+        field: "dateCreatedEdtf",
+      });
+    }
+    expect((await stored())?.dateCreatedEdtf).toBe("1848/1852");
+
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      dateCreatedEdtf: "",
+    });
+    expect((await stored())?.dateCreatedEdtf).toBeUndefined();
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      dateCreatedEdtf: "/-0499~",
+    });
+    expect((await stored())?.dateCreatedEdtf).toBe("../-0499~");
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      dateCreatedEdtf: null,
+    });
+    expect(await stored()).toMatchObject({ dateCreated: "about 1850" });
+    expect((await stored())?.dateCreatedEdtf).toBeUndefined();
+  });
+
+  test("a new Object's structured date made is checked the same way", async () => {
+    const t = createConvexTest();
+    const { organizationId, ana } = await createCataloguedObject(t);
+
+    expect(
+      await recordEditErrorOf(
+        ana.mutation(api.collections.create, {
+          organizationId,
+          accessionNumber: "2026.1",
+          title: "Jug",
+          dateCreatedEdtf: "c. 1850",
+        }),
+      ),
+    ).toMatchObject({
+      code: "PRODUCTION_DATE_INVALID",
+      field: "dateCreatedEdtf",
+    });
+    const collectionId = await ana.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "2026.1",
+      title: "Jug",
+      dateCreatedEdtf: "185X~",
+    });
+    expect(
+      await ana.query(api.collections.get, { collectionId }),
+    ).toMatchObject({ dateCreatedEdtf: "185X~" });
+  });
+
+  test("an Object without a structured date keeps the edit version it had, and entering one outdates open forms", async () => {
+    const t = createConvexTest();
+    const { collectionId, ana, ben } = await createCataloguedObject(t);
+    await t.run((ctx) =>
+      ctx.db.patch(collectionId, { dateCreated: "c. 1850" }),
+    );
+    const target = { type: "object" as const, id: collectionId };
+    const anaOpened = await editVersionOf(ana, target);
+
+    // The fields this Object holds, hashed as before structured dates.
+    expect(anaOpened).toBe(
+      await digestOf({
+        title: "Harbour at dusk",
+        description: "Oil on canvas.",
+        dateCreated: "c. 1850",
+      }),
+    );
+
+    await ben.mutation(api.collections.update, {
+      collectionId,
+      dateCreatedEdtf: "1850~",
+      expectedEditVersion: await editVersionOf(ben, target),
+    });
+    const conflict = await recordEditErrorOf(
+      ana.mutation(api.collections.update, {
+        collectionId,
+        description: "Oil on canvas, relined 1972.",
+        expectedEditVersion: anaOpened,
+      }),
+    );
+    expect(conflict.code).toBe("EDIT_CONFLICT");
+  });
+
   test("outsiders and signed-out callers read no edit state", async () => {
     const t = createConvexTest();
     const { collectionId } = await createCataloguedObject(t);
@@ -624,6 +735,77 @@ describe("intake object drafts", () => {
       ),
     ).toMatchObject({ code: "IDENTIFIER_PERMANENT", field: "accessionNumber" });
     expect(await draftTitleOf(ana, accessionId)).toBe("Fishing net");
+  });
+
+  test("a draft's structured date made is checked at save and copied, canonical, to the Object it becomes", async () => {
+    const t = createConvexTest();
+    const { organizationId, ana, accessionId } = await createIntakeDraft(t);
+
+    expect(
+      await recordEditErrorOf(
+        ana.mutation(api.accessions.saveObjectDraft, {
+          organizationId,
+          accessionId,
+          saveMode: "draft",
+          objectData: {
+            accessionNumber: "2026.4.1",
+            title: "Fishing net",
+            dateCreatedEdtf: "1850s",
+          },
+        }),
+      ),
+    ).toMatchObject({
+      code: "PRODUCTION_DATE_INVALID",
+      field: "dateCreatedEdtf",
+    });
+
+    await ana.mutation(api.accessions.saveObjectDraft, {
+      organizationId,
+      accessionId,
+      saveMode: "submit",
+      objectData: {
+        accessionNumber: "2026.4.1",
+        title: "Fishing net",
+        dateCreated: "about 1850",
+        dateCreatedEdtf: " 1848~/1852 ",
+      },
+    });
+    const accession = await ana.query(api.accessions.get, { accessionId });
+    expect(accession?.draftObjectData?.dateCreatedEdtf).toBe("1848~/1852");
+    const objectId = accession?.collectionId;
+    if (!objectId) throw new Error("Expected the accepted draft's Object");
+    expect(
+      await ana.query(api.collections.get, { collectionId: objectId }),
+    ).toMatchObject({
+      dateCreated: "about 1850",
+      dateCreatedEdtf: "1848~/1852",
+    });
+  });
+
+  test("an approval never fails over a structured date saved before it was checked", async () => {
+    const t = createConvexTest();
+    const { userId, accessionId } = await createIntakeDraft(t);
+    await t.run(async (ctx) => {
+      const accession = await ctx.db.get(accessionId);
+      if (!accession?.draftObjectData) throw new Error("Expected a draft");
+      await ctx.db.patch(accessionId, {
+        status: "approved",
+        approvedBy: userId,
+        approvedAt: Date.now(),
+        draftObjectData: {
+          ...accession.draftObjectData,
+          dateCreatedEdtf: "around 1850",
+        },
+      });
+    });
+
+    const objectId = await t.mutation(
+      internal.accessions.createCollectionFromAccession,
+      { accessionId },
+    );
+    const object = await t.run((ctx) => ctx.db.get(objectId));
+    expect(object?.title).toBe("Fishing net");
+    expect(object?.dateCreatedEdtf).toBeUndefined();
   });
 
   test("a draft that was accepted can no longer be saved as a draft", async () => {

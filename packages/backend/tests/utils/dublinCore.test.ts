@@ -717,3 +717,64 @@ describe("round-trip conversions", () => {
     expect(converted.links).toEqual(original.links);
   });
 });
+
+describe("the date made in dc:date", () => {
+  const object = (fields: Partial<Doc<"collections">>) => ({
+    title: "Jug",
+    accessionNumber: "2024.1.1",
+    ...fields,
+  });
+
+  test("the text comes first; a structured date follows only when the text doesn't read as it", () => {
+    expect(toDublinCore(object({ dateCreated: "c. 1850" })).date).toBe(
+      "c. 1850",
+    );
+    expect(
+      toDublinCore(object({ dateCreated: "c. 1850", dateCreatedEdtf: "1850~" }))
+        .date,
+    ).toBe("c. 1850");
+    expect(
+      toDublinCore(
+        object({ dateCreated: "about 1850", dateCreatedEdtf: "1848/1852" }),
+      ).date,
+    ).toEqual(["about 1850", "1848/1852"]);
+    expect(toDublinCore(object({ dateCreatedEdtf: "-0499~" })).date).toBe(
+      "-0499~",
+    );
+  });
+
+  test("a structured date survives the XML round trip", () => {
+    const original = object({
+      dateCreated: "Ming dynasty",
+      dateCreatedEdtf: "1368/1644",
+    });
+    const xml = toDublinCoreXML(toDublinCore(original));
+    expect(xml).toContain("<dc:date>Ming dynasty</dc:date>");
+    expect(xml).toContain("<dc:date>1368/1644</dc:date>");
+
+    const [metadata] = fromDublinCoreXML(xml);
+    if (!metadata) throw new Error("Expected a record");
+    expect(fromDublinCore(metadata)).toMatchObject({
+      dateCreated: "Ming dynasty",
+      dateCreatedEdtf: "1368/1644",
+    });
+  });
+
+  test("a later EDTF date the text already reads as, or text that is not EDTF, adds no structured date", () => {
+    const sameYears = fromDublinCore({
+      title: "Jug",
+      identifier: "1",
+      date: ["1850s", "185X"],
+    });
+    expect(sameYears.dateCreated).toBe("1850s");
+    expect(sameYears.dateCreatedEdtf).toBeUndefined();
+
+    const notEdtf = fromDublinCore({
+      title: "Jug",
+      identifier: "1",
+      date: ["Ming dynasty", "digitised in spring"],
+    });
+    expect(notEdtf.dateCreated).toBe("Ming dynasty");
+    expect(notEdtf.dateCreatedEdtf).toBeUndefined();
+  });
+});

@@ -15,6 +15,7 @@ import {
 } from "./organizationUsageCounters";
 import { normalizeDraftMediaPrimary } from "./primaryMedia";
 import { syncPublicRendition } from "./publicMedia";
+import { canonicalEdtf } from "./recordEdits";
 import { transferStorageOwnership } from "./uploadOwnership";
 
 function serializeStringList(values?: string[]) {
@@ -90,6 +91,8 @@ export async function publishAccessionObjectDraft(
       culture: draftObjectData?.culture,
       period: draftObjectData?.period,
       dateCreated: draftObjectData?.dateCreated,
+      // Drafts saved before EDTF was checked must not stop an approval.
+      dateCreatedEdtf: canonicalEdtf(draftObjectData?.dateCreatedEdtf),
       materials: serializeStringList(draftObjectData?.materials),
       technique: draftObjectData?.technique,
       dimensions: draftObjectData?.dimensions,

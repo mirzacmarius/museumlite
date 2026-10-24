@@ -15,6 +15,7 @@ import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { capabilityUnavailableFromError } from "./utils/capabilities";
 import {
   catalogFilterFields,
+  catalogSortValidator,
   objectSearchFieldValidator,
 } from "./utils/catalogFilterValidators";
 import { listCatalogPage } from "./utils/catalogListing";
@@ -66,6 +67,7 @@ import { findPublicPortalOrganization } from "./utils/publicPortal";
 import { canReadRecord } from "./utils/recordAccess";
 import {
   assertCurrentEditVersion,
+  enteredProductionDate,
   objectEditVersion,
   recordEditError,
   requireFieldValue,
@@ -324,6 +326,8 @@ export const create = mutation({
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
     dateCreated: v.optional(v.string()),
+    /** EDTF; stored canonical, refused when it is not EDTF. */
+    dateCreatedEdtf: v.optional(v.string()),
     materials: v.optional(v.string()),
     technique: v.optional(v.string()),
     dimensions: v.optional(v.string()),
@@ -402,6 +406,7 @@ export const create = mutation({
       enforceObjectQuota(ctx, args.organizationId),
     ] as const);
     await validateCollectionReferences(ctx, args.organizationId, args);
+    const dateCreatedEdtf = enteredProductionDate(args.dateCreatedEdtf);
     if (args.collectionGroupId) {
       const group = await ctx.db.get(args.collectionGroupId);
       if (!group || group.organizationId !== args.organizationId)
@@ -452,6 +457,7 @@ export const create = mutation({
       culture: args.culture,
       period: args.period,
       dateCreated: args.dateCreated,
+      dateCreatedEdtf,
       materials: args.materials,
       technique: args.technique,
       dimensions: args.dimensions,
@@ -1128,17 +1134,10 @@ export const list = query({
     ...catalogFilterFields,
     /** Older links name one location; `locationIds` replaces it. */
     locationId: v.optional(v.id("locations")),
-    dateCreatedFrom: v.optional(v.number()),
-    dateCreatedTo: v.optional(v.number()),
     // Newest first unless set; identifier order is the normalized identifier,
-    // A to Z. A search ranks by relevance instead.
-    sort: v.optional(
-      v.union(
-        v.literal("newest"),
-        v.literal("oldest"),
-        v.literal("identifier"),
-      ),
-    ),
+    // A to Z; date made orders list undated Objects last. A search ranks by
+    // relevance instead.
+    sort: v.optional(catalogSortValidator),
   },
   returns: v.object({
     page: v.array(
@@ -1158,6 +1157,8 @@ export const list = query({
           v.literal("archived"),
           v.literal("deleted"),
         ),
+        dateCreated: v.optional(v.string()),
+        dateCreatedEdtf: v.optional(v.string()),
         _creationTime: v.number(),
         /** While searching, the field the Object was found in. */
         matchedField: v.optional(objectSearchFieldValidator),
@@ -1366,6 +1367,8 @@ export const update = mutation({
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
     dateCreated: v.optional(v.string()),
+    /** EDTF, stored canonical; "" or null clears it. */
+    dateCreatedEdtf: v.optional(v.union(v.string(), v.null())),
     materials: v.optional(v.string()),
     technique: v.optional(v.string()),
     dimensions: v.optional(v.string()),
@@ -1509,6 +1512,8 @@ export const update = mutation({
     if (args.culture !== undefined) updates.culture = args.culture;
     if (args.period !== undefined) updates.period = args.period;
     if (args.dateCreated !== undefined) updates.dateCreated = args.dateCreated;
+    if (args.dateCreatedEdtf !== undefined)
+      updates.dateCreatedEdtf = enteredProductionDate(args.dateCreatedEdtf);
     if (args.materials !== undefined) updates.materials = args.materials;
     if (args.technique !== undefined) updates.technique = args.technique;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;

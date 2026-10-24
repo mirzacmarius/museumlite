@@ -3,6 +3,11 @@ import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
+import {
+  encodeRows,
+  exportColumns,
+  manifest,
+} from "../convex/utils/exportEncoding";
 import { modules } from "./testSetup";
 
 async function fixture(
@@ -154,7 +159,7 @@ describe("authorized durable exports", () => {
     expect(evidence.entries[0]?.changes).toMatchObject({
       rows: 125,
       sha256: job.sha256,
-      schemaVersion: 1,
+      schemaVersion: 2,
       asOf: job.asOf,
     });
     expect(
@@ -228,6 +233,159 @@ describe("authorized durable exports", () => {
     );
     vi.useRealTimers();
   });
+  test("object exports carry the date made as entered, in effect and as years, in CSV and JSONL", async () => {
+    vi.useFakeTimers();
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      const object = {
+        organizationId: f.organizationId,
+        status: "active" as const,
+        catalogedBy: f.userId,
+        catalogedAt: 1700000000000,
+      };
+      // Text only: the EDTF in effect is its reading, circa widened.
+      await ctx.db.insert("collections", {
+        ...object,
+        accessionNumber: "D-1",
+        title: "Jug",
+        dateCreated: "c. 1850",
+      });
+      await ctx.db.insert("collections", {
+        ...object,
+        accessionNumber: "D-2",
+        title: "Coin",
+        dateCreated: "500 BC",
+      });
+      // Entered EDTF wins; an open start has no earliest year.
+      await ctx.db.insert("collections", {
+        ...object,
+        accessionNumber: "D-3",
+        title: "Vase",
+        dateCreated: "Ming dynasty",
+        dateCreatedEdtf: "../1644",
+      });
+      await ctx.db.insert("collections", {
+        ...object,
+        accessionNumber: "D-4",
+        title: "Box",
+      });
+    });
+    vi.advanceTimersByTime(1000);
+    const exportAs = async (format: "csv" | "jsonl") => {
+      const jobId = await f.user.mutation(api.exports.create, {
+        organizationId: f.organizationId,
+        requestKey: `dates-${format}`,
+        format,
+        source: { kind: "objects", mode: "filtered", filters: {} },
+      });
+      await f.t.finishInProgressScheduledFunctions();
+      await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+      expect(
+        (await f.user.query(api.exports.status, { jobId })).schemaVersion,
+      ).toBe(2);
+      const body = await (
+        await f.user.fetch(`/exports/download?jobId=${jobId}`)
+      ).text();
+      const metadata = await (
+        await f.user.fetch(`/exports/manifest?jobId=${jobId}`)
+      ).json();
+      return { body, metadata };
+    };
+
+    const jsonl = await exportAs("jsonl");
+    const rows = jsonl.body
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const byNumber = new Map(rows.map((row) => [row.accessionNumber, row]));
+    expect(byNumber.get("D-1")).toMatchObject({
+      dateCreated: "c. 1850",
+      productionDateEdtf: "1850~",
+      productionEarliestYear: 1845,
+      productionLatestYear: 1855,
+    });
+    expect(byNumber.get("D-1")).not.toHaveProperty("dateCreatedEdtf");
+    expect(byNumber.get("D-2")).toMatchObject({
+      productionDateEdtf: "-0499",
+      productionEarliestYear: -499,
+      productionLatestYear: -499,
+    });
+    expect(byNumber.get("D-3")).toMatchObject({
+      dateCreatedEdtf: "../1644",
+      productionDateEdtf: "../1644",
+      productionLatestYear: 1644,
+    });
+    expect(byNumber.get("D-3")).not.toHaveProperty("productionEarliestYear");
+    for (const absent of [
+      "productionDateEdtf",
+      "productionEarliestYear",
+      "productionLatestYear",
+    ])
+      expect(byNumber.get("D-4")).not.toHaveProperty(absent);
+    expect(jsonl.metadata.compatibility).toMatch(/^MuseumLite export v2;/);
+    expect(jsonl.metadata.dateMadePolicy).toContain("astronomical");
+
+    const csv = await exportAs("csv");
+    const [header = "", ...lines] = csv.body.trim().split("\r\n");
+    const columns = header.split(",");
+    expect(
+      columns.slice(
+        columns.indexOf("dateCreated"),
+        columns.indexOf("dateCreated") + 3,
+      ),
+    ).toEqual(["dateCreated", "dateCreatedEdtf", "productionDateEdtf"]);
+    expect(csv.metadata.columns).toContainEqual({
+      name: "productionEarliestYear",
+      type: "number",
+    });
+    const coin = lines.find((line) => line.includes('"D-2"')) ?? "";
+    // BC EDTF is disarmed text; its years are bare numbers.
+    expect(coin).toContain('"500 BC",,"\'-0499"');
+    expect(coin).toContain(",-499,-499,");
+    vi.useRealTimers();
+  });
+
+  test("an export of version 1 keeps the columns and manifest it was written with", () => {
+    const source = {
+      kind: "objects" as const,
+      mode: "filtered" as const,
+      filters: {},
+    };
+    const names = (version: number) =>
+      exportColumns(source, version).map((column) => column.name);
+    expect(names(1)).not.toContain("dateCreatedEdtf");
+    expect(names(1)).not.toContain("productionEarliestYear");
+    expect(names(2)).toEqual(
+      expect.arrayContaining([
+        "dateCreatedEdtf",
+        "productionDateEdtf",
+        "productionEarliestYear",
+        "productionLatestYear",
+      ]),
+    );
+    const row = { accessionNumber: "1", dateCreated: "1850" };
+    expect(encodeRows([row], source, "jsonl", true, 1)).toBe(
+      `${JSON.stringify(row)}\n`,
+    );
+    const v1 = manifest({
+      source,
+      organizationId: "org",
+      creatorId: "user",
+      format: "csv",
+      schemaVersion: 1,
+      asOf: 1,
+      captureStartedAt: 1,
+      rows: 0,
+      scanned: 0,
+      selected: 0,
+      bytes: 0,
+      expiresAt: 2,
+    });
+    expect(v1.compatibility).toMatch(/^MuseumLite export v1;/);
+    expect(v1).not.toHaveProperty("dateMadePolicy");
+    expect(v1.columns).toEqual(exportColumns(source, 1));
+  });
+
   test("missing selected rows fail visibly; retry preserves filters and checkpoint", async () => {
     vi.useFakeTimers();
     const f = await fixture();

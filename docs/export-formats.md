@@ -1,4 +1,6 @@
-# Export format version 1
+# Export format versions
+
+Catalog exports are version 2; audit and register exports are version 1. A job keeps the version it was created with, and its manifest describes the columns of that version.
 
 Catalog, audit and register exports run as durable Convex jobs. Filters, format, organization, creator, schema version and creation cutoff are fixed at request creation. A selected export uploads IDs in batches of at most 100, then seals the requested count. Duplicate uploads are harmless. Missing or unauthorized selected objects fail the job; they are never silently omitted.
 
@@ -14,7 +16,22 @@ Limits are 16 MiB per artifact, 512 KiB per encoded page, 1,024 artifact chunks,
 
 Cancellation invalidates in-flight workers. Resume/retry continues from the last committed checkpoint. Stalled workers can be recovered after the two-minute lease expires. Interrupted selection uploads can be retried while the selection remains in the browser; after reload, create a new selection request. Audit jobs also require the Enterprise compliance feature at creation, continuation and download. Status and artifacts are limited to the request creator with current organization read permission; continuations independently recheck that permission. HTTP downloads authenticate and reauthorize each request and never expose persistent storage URLs. Already downloaded bytes cannot be recalled.
 
-Derived files expire after seven days. Bounded cleanup removes artifact/chunk storage, retaining job and manifest metadata. Permanent museum source evidence remains unchanged. Additive schema versions require an explicit new version; existing version 1 parsers should ignore unknown JSON properties and use CSV headers rather than positions.
+Derived files expire after seven days. Bounded cleanup removes artifact/chunk storage, retaining job and manifest metadata. Permanent museum source evidence remains unchanged. Additive schema versions require an explicit new version; parsers should ignore unknown JSON properties and use CSV headers rather than positions.
+
+## Catalog columns and the date made
+
+Version 2 added the date made to catalog exports (ADR 0021). Version 1 jobs keep their columns.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| dateCreated | text | The date made as written |
+| dateCreatedEdtf | text | The EDTF staff entered; empty when none was |
+| productionDateEdtf | text | The EDTF in effect: the entered one, otherwise what MuseumLite reads `dateCreated` as; empty when neither states a date |
+| productionEarliestYear, productionLatestYear | number | The years that date spans |
+
+The text columns follow `dateCreated` and the years follow the dimensions; `record` and JSONL carry the same fields under the same names, absent when empty. EDTF is ISO 8601-2, levels 0 and 1: `1850`, `1850-05-12`, `185X` (the 1850s), `18XX` (the 1800s), `1850~` (circa), `1850?` (uncertain), `1850%` (both), and intervals such as `1850/1860`, with `..` for an open side (`../1900` is before 1900, `1850/..` after 1850). Provenance partial dates write those open sides as `[..1937]` and `[1925..]` instead. Years are astronomical, as in EDTF: 0 is 1 BC and -499 is 500 BC, written `-0499`. A circa date is widened by 5 years, 10 for a decade and 25 for a century, so `c. 1850` spans 1845 to 1855; an open side has no year. Text that does not read as a date (`Ming dynasty`) leaves the three derived values empty. In CSV, EDTF starting with `-` receives the formula apostrophe like any text (`'-0499`); the years are number cells (`-499`). A change to how MuseumLite reads date text can change `productionDateEdtf` and the years of Objects nobody edited.
+
+The catalog filter's date made range (`madeFrom`, `madeTo`) takes inclusive astronomical years, whole numbers up to 9999 either side, with `madeFrom` not after `madeTo`. It keeps Objects whose years overlap it, open-ended dates included, and leaves undated Objects out.
 
 ## Register and report profiles
 
@@ -255,3 +272,10 @@ Register pages read at most 25 register records, or 25 objects and 200 evidence 
 ## Smaller legacy exports
 
 Smaller legacy exports (list CSV buttons, data settings CSV, analytics report summaries and server CSV/XML profile exports) are not durable jobs and do not carry manifests. Their CSV cells follow the same type-based policy: numbers and booleans are unlocalized, Date values are UTC ISO timestamps, and text cells starting with a formula prefix receive a leading apostrophe. Column names never change how a cell is encoded.
+
+The date made in these files:
+
+- The Objects page export (CSV, JSON and XML) carries `dateCreated`, `dateCreatedEdtf`, `productionDateEdtf`, `productionEarliestYear` and `productionLatestYear` as in catalog exports; in its CSV the years are bare numbers.
+- The data settings CSV and the objects import template carry `dateCreated` and `dateCreatedEdtf` only, so a re-import never turns a reading of the text into an entered date. The objects import reads `dateCreatedEdtf` as EDTF after removing one leading apostrophe before `-`, stores it in canonical form, and fails the row when it is not EDTF.
+- Dublin Core (oai_dc) writes the text as the first `dc:date`, followed by the entered EDTF when the text does not read as that date, or the entered EDTF alone when there is no text. Importing it, the first `dc:date` is the text, and the first later one that is EDTF becomes the entered date unless the text reads as the same years.
+- SPECTRUM XML keeps `<dateCreated>` as written and adds `<productionDateEdtf>`, `<productionDateEarliest>` and `<productionDateLatest>`, the EDTF in effect and its years.
