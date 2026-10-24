@@ -304,6 +304,11 @@ describe("POST /v1/environmental-readings", () => {
   });
 
   test("charges known devices for unknown-probe attempts", async () => {
+    // Same frozen clock as above, so a slow run can't refill the bucket.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const t = createTestContext();
     const { token } = await createReceiver(t);
     const submit = (probeId: string, readingId: string) =>
