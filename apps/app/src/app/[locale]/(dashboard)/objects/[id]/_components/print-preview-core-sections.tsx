@@ -2,7 +2,13 @@
 
 import { cn } from "@v1/ui/utils";
 import Image from "next/image";
+import type { ReactNode } from "react";
+import { useObjectDescriptionFormat } from "@/components/object-description/use-object-description-format";
 import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
+import {
+  formatDimensions,
+  measurementSetLines,
+} from "@/lib/object-description-format";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n, useScopedI18n } from "@/locales/client";
@@ -20,7 +26,7 @@ export function PrintPreviewCoreSections({
 }: PrintPreviewCoreSectionsProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("objects.printPreview");
-  const materials = formatStringListField(collection.materials);
+  const { measurements } = useObjectDescriptionFormat();
   const dateMade = useProductionDateFormat().dateMade(collection);
 
   return (
@@ -99,6 +105,13 @@ export function PrintPreviewCoreSections({
               <p className="text-black">{collection.objectName}</p>
             </div>
           )}
+          {collection.numberOfObjects !== undefined && (
+            <PrintField
+              label={tRoot("recordForm.objectFields.numberOfObjects")}
+            >
+              {measurements.number(collection.numberOfObjects)}
+            </PrintField>
+          )}
           {collection.creator && (
             <div>
               <p className="text-xs font-medium text-zinc-500">
@@ -129,99 +142,15 @@ export function PrintPreviewCoreSections({
               <p className="text-black">{collection.period}</p>
             </div>
           )}
+          {collection.subjects && collection.subjects.length > 0 && (
+            <PrintField label={tRoot("recordForm.objectFields.subjects")} wide>
+              {collection.subjects.join(", ")}
+            </PrintField>
+          )}
         </div>
       </div>
 
-      {/* Physical Description */}
-      <div className="print:break-inside-avoid">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
-          {t("physicalDescription")}
-        </h2>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
-          {materials && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500">
-                {t("materials")}
-              </p>
-              <p className="text-black">{materials}</p>
-            </div>
-          )}
-          {collection.technique && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500">
-                {t("technique")}
-              </p>
-              <p className="text-black">{collection.technique}</p>
-            </div>
-          )}
-          {collection.dimensions && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500">
-                {t("dimensions")}
-              </p>
-              <p className="text-black">{collection.dimensions}</p>
-            </div>
-          )}
-          {collection.dimensionDiameter && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500">
-                {t("diameter")}
-              </p>
-              <p className="text-black">{collection.dimensionDiameter}</p>
-            </div>
-          )}
-          {(collection.dimensionHeight ||
-            collection.dimensionWidth ||
-            collection.dimensionDepth) && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500">
-                {t("detailedDimensions")}
-              </p>
-              <p className="text-black">
-                {[
-                  collection.dimensionHeight &&
-                    `H: ${collection.dimensionHeight}`,
-                  collection.dimensionWidth &&
-                    `W: ${collection.dimensionWidth}`,
-                  collection.dimensionDepth &&
-                    `D: ${collection.dimensionDepth}`,
-                ]
-                  .filter(Boolean)
-                  .join(" × ")}{" "}
-                {collection.dimensionUnit || "cm"}
-              </p>
-            </div>
-          )}
-          {collection.dimensionWeight !== undefined && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500">{t("weight")}</p>
-              <p className="text-black">
-                {collection.dimensionWeight} {collection.weightUnit || "kg"}
-              </p>
-            </div>
-          )}
-          {collection.condition && (
-            <div className="col-span-2">
-              <p className="text-xs font-medium text-zinc-500">
-                {t("condition")}
-              </p>
-              <p className="text-black">
-                {formatConditionLabel(collection.condition, tRoot)}
-              </p>
-            </div>
-          )}
-          {collection.inscriptions && (
-            <div className="col-span-2">
-              <p className="text-xs font-medium text-zinc-500">
-                {t("inscriptions")}
-              </p>
-              <p className="text-black whitespace-pre-wrap">
-                {collection.inscriptions}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+      <PrintPhysicalDescription collection={collection} />
 
       {/* Description */}
       {collection.description && (
@@ -234,6 +163,121 @@ export function PrintPreviewCoreSections({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+function PrintField({
+  label,
+  wide = false,
+  children,
+}: {
+  label: string;
+  wide?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className={wide ? "col-span-2" : undefined}>
+      <p className="text-xs font-medium text-zinc-500">{label}</p>
+      <div className="text-black">{children}</div>
+    </div>
+  );
+}
+
+/** Materials, measurements by part, completeness, condition and inscriptions. */
+function PrintPhysicalDescription({
+  collection,
+}: {
+  collection: CollectionData;
+}) {
+  const tRoot = useI18n();
+  const t = useScopedI18n("objects.printPreview");
+  const { measurements, completeness } = useObjectDescriptionFormat();
+  const materials = formatStringListField(collection.materials);
+  const measured = formatDimensions(
+    {
+      height: collection.dimensionHeight,
+      width: collection.dimensionWidth,
+      depth: collection.dimensionDepth,
+    },
+    collection.dimensionUnit,
+    measurements,
+  );
+  const measurementSets = collection.measurementSets ?? [];
+  return (
+    <div className="print:break-inside-avoid">
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+        {t("physicalDescription")}
+      </h2>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+        {materials && (
+          <PrintField label={t("materials")}>{materials}</PrintField>
+        )}
+        {collection.technique && (
+          <PrintField label={t("technique")}>{collection.technique}</PrintField>
+        )}
+        {collection.dimensions && (
+          <PrintField label={t("dimensions")}>
+            {collection.dimensions}
+          </PrintField>
+        )}
+        {collection.dimensionDiameter && (
+          <PrintField label={t("diameter")}>
+            {collection.dimensionDiameter}
+          </PrintField>
+        )}
+        {measured && (
+          <PrintField label={t("detailedDimensions")}>{measured}</PrintField>
+        )}
+        {collection.dimensionWeight !== undefined && (
+          <PrintField label={t("weight")}>
+            {measurements.number(collection.dimensionWeight)}{" "}
+            {collection.weightUnit || "kg"}
+          </PrintField>
+        )}
+        {collection.dimensionMeasuredPart && (
+          <PrintField label={tRoot("recordForm.objectFields.measuredPart")}>
+            {measurements.part(collection.dimensionMeasuredPart)}
+          </PrintField>
+        )}
+        {measurementSets.length > 0 && (
+          <PrintField
+            label={tRoot("recordForm.objectFields.measurementSets")}
+            wide
+          >
+            {measurementSetLines(measurementSets, measurements).map(
+              ({ key, line }) => (
+                <p key={key}>{line}</p>
+              ),
+            )}
+          </PrintField>
+        )}
+        {(collection.completeness || collection.completenessNote) && (
+          <PrintField
+            label={tRoot("recordForm.objectFields.completeness")}
+            wide
+          >
+            {collection.completeness ? (
+              <p>{completeness(collection.completeness)}</p>
+            ) : null}
+            {collection.completenessNote ? (
+              <p className="whitespace-pre-wrap">
+                {collection.completenessNote}
+              </p>
+            ) : null}
+          </PrintField>
+        )}
+        {collection.condition && (
+          <PrintField label={t("condition")} wide>
+            {formatConditionLabel(collection.condition, tRoot)}
+          </PrintField>
+        )}
+        {collection.inscriptions && (
+          <PrintField label={t("inscriptions")} wide>
+            <p className="whitespace-pre-wrap">{collection.inscriptions}</p>
+          </PrintField>
+        )}
+      </div>
     </div>
   );
 }

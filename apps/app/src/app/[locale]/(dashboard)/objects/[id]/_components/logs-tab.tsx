@@ -13,7 +13,12 @@ import { useQuery } from "convex/react";
 import { ScrollText } from "lucide-react";
 import { useState } from "react";
 import { ClientDate } from "@/components/client-date";
+import { useObjectDescriptionFormat } from "@/components/object-description/use-object-description-format";
 import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
+import {
+  describeObjectDescriptionValue,
+  type ObjectDescriptionFormat,
+} from "@/lib/object-description-format";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { DetailSection } from "./detail-section";
 
@@ -74,6 +79,35 @@ function changedValue(field: unknown, value: unknown) {
     : String(value);
 }
 
+/** Names of the description fields a catalog save logs under their keys. */
+const DESCRIPTION_FIELD_LABELS: Readonly<Record<string, string>> = {
+  numberOfObjects: "recordForm.objectFields.numberOfObjects",
+  subjects: "recordForm.objectFields.subjects",
+  dimensionMeasuredPart: "recordForm.objectFields.measuredPart",
+  measurementSets: "recordForm.objectFields.measurementSets",
+  completeness: "recordForm.objectFields.completeness",
+  completenessNote: "recordForm.objectFields.completenessNote",
+  rightsStatement: "recordForm.objectFields.rightsStatement",
+};
+
+/**
+ * A logged value of a description field as "Subject: Horses, Riders", with
+ * names instead of codes and URIs. Null for other fields.
+ */
+function describedChange(
+  key: string,
+  value: unknown,
+  tRoot: ReturnType<typeof useI18n>,
+  format: ObjectDescriptionFormat,
+) {
+  const labelKey = Object.hasOwn(DESCRIPTION_FIELD_LABELS, key)
+    ? DESCRIPTION_FIELD_LABELS[key]
+    : undefined;
+  if (!labelKey) return null;
+  const shown = describeObjectDescriptionValue(key, value, format);
+  return shown === null ? tRoot(labelKey) : `${tRoot(labelKey)}: ${shown}`;
+}
+
 /**
  * Format the changes field for display
  */
@@ -81,6 +115,7 @@ function formatChanges(
   changes: Record<string, unknown> | undefined,
   tRoot: ReturnType<typeof useI18n>,
   structuredDate: (edtf: string) => string,
+  description: ObjectDescriptionFormat,
 ): React.ReactNode {
   if (!changes || typeof changes !== "object") {
     return null;
@@ -154,12 +189,21 @@ function formatChanges(
     );
   }
 
-  // Fallback: show first few key-value pairs
-  const entries = Object.entries(changes).slice(0, 2);
+  // Fallback: show the first few changed fields; who saved and when are
+  // already in their own columns.
+  const entries = Object.entries(changes)
+    .filter(([key]) => key !== "lastModifiedBy" && key !== "lastModifiedAt")
+    .slice(0, 2);
   if (entries.length > 0) {
     return (
       <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-        {entries.map(([key, value]) => `${key}: ${String(value)}`).join(", ")}
+        {entries
+          .map(
+            ([key, value]) =>
+              describedChange(key, value, tRoot, description) ??
+              `${key}: ${String(value)}`,
+          )
+          .join(" · ")}
       </p>
     );
   }
@@ -213,6 +257,7 @@ export function LogsTab({
   const tRoot = useI18n();
   const tCommon = useScopedI18n("modules.common");
   const dates = useProductionDateFormat();
+  const description = useObjectDescriptionFormat();
   const [limit, setLimit] = useState(LOG_PAGE_SIZE);
   const auditLogs = useQuery(api.auditLog.getByEntity, {
     organizationId,
@@ -310,6 +355,7 @@ export function LogsTab({
                           tRoot,
                           (edtf) =>
                             dates.dateMade({ dateCreatedEdtf: edtf }) ?? edtf,
+                          description,
                         )}
                   </td>
                 </tr>

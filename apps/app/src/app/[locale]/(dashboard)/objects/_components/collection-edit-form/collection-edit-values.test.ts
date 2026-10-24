@@ -125,3 +125,119 @@ test("a half-entered structured date counts as a change", () => {
   };
   expect(changedFrom(stored, started)).toEqual(["dateCreatedEdtf"]);
 });
+
+const IN_COPYRIGHT = "http://rightsstatements.org/vocab/InC/1.0/";
+const EMPTY_ROW = {
+  partNote: "",
+  height: "",
+  width: "",
+  depth: "",
+  diameter: "",
+  weight: "",
+  unit: "",
+  weightUnit: "",
+};
+
+test("number of objects, subject, completeness, measured parts and rights statement save as typed", () => {
+  const stored: CollectionEditValues = {
+    ...EMPTY_EDIT_FORM,
+    title: "Tea set",
+    conditionChangeNote: "",
+  };
+  const edited: CollectionEditValues = {
+    ...stored,
+    numberOfObjects: " 12 ",
+    subjects: [" Tea ", " ", "Chinoiserie"],
+    dimensionMeasuredPart: "overall",
+    measurementSets: [
+      { ...EMPTY_ROW, localId: "row-1" },
+      {
+        ...EMPTY_ROW,
+        localId: "row-2",
+        part: "other",
+        partNote: " teapot lid ",
+        diameter: "8,5",
+        unit: "cm",
+      },
+    ],
+    completeness: "incomplete",
+    completenessNote: " One cup missing ",
+    rightsStatement: IN_COPYRIGHT,
+  };
+  const changed = changedFrom(stored, edited);
+  expect(changed.sort()).toEqual(
+    [
+      "completeness",
+      "completenessNote",
+      "dimensionMeasuredPart",
+      "measurementSets",
+      "numberOfObjects",
+      "rightsStatement",
+      "subjects",
+    ].sort(),
+  );
+  expect(collectionUpdatePatch(collectionId, edited, changed)).toEqual({
+    collectionId,
+    numberOfObjects: 12,
+    subjects: ["Tea", "Chinoiserie"],
+    dimensionMeasuredPart: "overall",
+    measurementSets: [
+      { part: "other", partNote: "teapot lid", diameter: 8.5, unit: "cm" },
+    ],
+    completeness: "incomplete",
+    completenessNote: "One cup missing",
+    rightsStatement: IN_COPYRIGHT,
+  });
+});
+
+test("clearing them sends null or an empty list, so the Object's own value goes", () => {
+  const stored: CollectionEditValues = {
+    ...EMPTY_EDIT_FORM,
+    title: "Tea set",
+    conditionChangeNote: "",
+    numberOfObjects: "12",
+    subjects: ["Tea"],
+    dimensionMeasuredPart: "overall",
+    measurementSets: [
+      { ...EMPTY_ROW, localId: "row-1", part: "base", width: "30" },
+    ],
+    completeness: "incomplete",
+    completenessNote: "One cup missing",
+    rightsStatement: IN_COPYRIGHT,
+  };
+  const cleared: CollectionEditValues = {
+    ...stored,
+    numberOfObjects: "",
+    subjects: [],
+    dimensionMeasuredPart: undefined,
+    measurementSets: [],
+    completeness: undefined,
+    completenessNote: "  ",
+    rightsStatement: undefined,
+  };
+  expect(
+    collectionUpdatePatch(collectionId, cleared, changedFrom(stored, cleared)),
+  ).toEqual({
+    collectionId,
+    numberOfObjects: null,
+    subjects: [],
+    dimensionMeasuredPart: null,
+    measurementSets: [],
+    completeness: null,
+    completenessNote: null,
+    rightsStatement: null,
+  });
+});
+
+test("an added row left blank is not a change to the measured parts", () => {
+  const stored: CollectionEditValues = {
+    ...EMPTY_EDIT_FORM,
+    title: "Tea set",
+    conditionChangeNote: "",
+  };
+  const added = {
+    ...stored,
+    measurementSets: [{ ...EMPTY_ROW, localId: "row-1" }],
+  };
+  expect(changedFrom(stored, added)).toEqual([]);
+});

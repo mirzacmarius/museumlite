@@ -11132,6 +11132,17 @@ export default {
         "Modificările dvs. nu au putut fi salvate. Verificați conexiunea și încercați din nou.",
       productionDateInvalid:
         "Data structurată nu este o dată validă. Verificați-i părțile și încercați din nou.",
+      objectCountInvalid:
+        "Introduceți numărul de obiecte ca număr întreg de la 1 la {max}.",
+      subjectsInvalid:
+        "Introduceți cel mult {max} termeni de subiect, fiecare de cel mult {length} caractere.",
+      measurementSetPartRequired:
+        "Alegeți partea de pe care a fost luat fiecare rând de măsurători.",
+      measurementSetsInvalid:
+        "Dați fiecărei părți măsurate cel puțin o măsurătoare mai mare de 0. Notele și unitățile au cel mult {length} caractere și se pot adăuga cel mult {max} părți.",
+      rightsStatementInvalid:
+        "Alegeți o declarație privind drepturile din listă.",
+      textTooLong: "{field} este prea lung. Scurtați-l și încercați din nou.",
     },
     notices: {
       recoveredTitle: "Au fost găsite modificări nesalvate",
@@ -11198,6 +11209,26 @@ export default {
       draftMedia: "Fotografii și documente",
       alternateNumberExists:
         "Acest număr de accesiune alternativ este deja în listă.",
+      numberOfObjects: "Număr de obiecte",
+      numberOfObjectsHint:
+        "Câte lucruri descrie această înregistrare, de exemplu 2 pentru o pereche sau 12 pentru un serviciu de ceai.",
+      subjects: "Subiect",
+      subjectsHint:
+        "Ce reprezintă obiectul sau despre ce este, separat de etichete. Apăsați Enter sau Tab după fiecare termen.",
+      measuredPart: "Parte măsurată",
+      choosePart: "Alegeți o parte",
+      notStated: "Nespecificat",
+      partNote: "Notă despre parte",
+      measurementSets: "Alte părți măsurate",
+      measurementSetsHint:
+        "Măsurătorile altor părți, precum rama sau soclul, câte o parte pe rând. Folosiți nota pentru a preciza partea, de exemplu capac.",
+      addMeasurementSet: "Adaugă parte măsurată",
+      removeMeasurementSet: "Elimină partea măsurată",
+      completeness: "Integritate",
+      completenessNote: "Notă despre integritate",
+      rightsStatement: "Declarație privind drepturile",
+      rightsStatementHint:
+        "Drepturile asupra obiectului însuși. Fiecare imagine are propria declarație.",
     },
   },
   moveRequests: {
@@ -11641,5 +11672,62 @@ export default {
     },
     objectNone:
       "Niciun incident pe care îl puteți vedea nu implică acest obiect.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Total",
+      framed: "Cu ramă",
+      unframed: "Fără ramă",
+      image: "Imagine",
+      sight: "Vizibil în paspartu",
+      sheet: "Foaie",
+      plate: "Placă",
+      mount: "Montaj",
+      base: "Soclu",
+      other: "Altă parte",
+    },
+    completeness: {
+      complete: "Complet",
+      incomplete: "Incomplet",
+      fragment: "Fragment",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "Protejat prin drepturi de autor",
+      InC_OW_EU: "Protejat prin drepturi de autor - Operă orfană în UE",
+      InC_EDU:
+        "Protejat prin drepturi de autor - Utilizare educațională permisă",
+      InC_NC:
+        "Protejat prin drepturi de autor - Utilizare necomercială permisă",
+      InC_RUU:
+        "Protejat prin drepturi de autor - Titularul (titularii) drepturilor nu pot fi găsiți sau identificați",
+      NoC_CR: "Fără drepturi de autor - Restricții contractuale",
+      NoC_NC: "Fără drepturi de autor - Numai utilizare necomercială",
+      NoC_OKLR: "Fără drepturi de autor - Alte restricții legale cunoscute",
+      NoC_US: "Fără drepturi de autor - Statele Unite",
+      CNE: "Drepturi de autor neevaluate",
+      UND: "Drepturi de autor nedeterminate",
+      NKC: "Fără drepturi de autor cunoscute",
+      CC0: "CC0 1.0 Universal",
+      PDM: "Marca domeniului public 1.0",
+      CC_BY: "Creative Commons Atribuire 4.0 Internațional",
+      CC_BY_SA:
+        "Creative Commons Atribuire-Distribuire în condiții identice 4.0 Internațional",
+      CC_BY_NC: "Creative Commons Atribuire-Necomercial 4.0 Internațional",
+      CC_BY_NC_SA:
+        "Creative Commons Atribuire-Necomercial-Distribuire în condiții identice 4.0 Internațional",
+      CC_BY_ND:
+        "Creative Commons Atribuire-Fără opere derivate 4.0 Internațional",
+      CC_BY_NC_ND:
+        "Creative Commons Atribuire-Necomercial-Fără opere derivate 4.0 Internațional",
+    },
+    groups: {
+      rightsstatements: "Declarații RightsStatements.org",
+      creativecommons: "Licențe și instrumente Creative Commons",
+    },
+    organizationDefault: "Implicită pentru organizație ({statement})",
+    notStated: "Nespecificat",
+    inherited: "Implicită pentru organizație",
   },
 };

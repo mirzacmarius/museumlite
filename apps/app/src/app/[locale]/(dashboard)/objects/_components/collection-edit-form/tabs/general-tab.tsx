@@ -14,6 +14,10 @@ import { TagsField } from "../../collection-form-shared/catalog-parity-fields";
 import { DateMadeFields } from "../../collection-form-shared/date-made-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import {
+  NumberOfObjectsField,
+  SubjectsField,
+} from "../../collection-form-shared/object-description-fields";
+import {
   type CollectionFormTabProps,
   NO_FIELD_ERRORS,
 } from "../../collection-form-shared/types";
@@ -204,6 +208,18 @@ export function CollectionEditGeneralTab({
               placeholder={placeholders("objectName")}
             />
           </div>
+
+          <NumberOfObjectsField
+            formData={formData}
+            updateField={updateField}
+            fieldErrors={fieldErrors}
+          />
+
+          <SubjectsField
+            formData={formData}
+            updateField={updateField}
+            fieldErrors={fieldErrors}
+          />
 
           <div className="space-y-2">
             <Label id="objectType-label" htmlFor="objectType">

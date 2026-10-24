@@ -16,6 +16,8 @@ import {
   TechniqueField,
 } from "../../collection-form-shared/catalog-parity-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
+import { MeasurementSetsField } from "../../collection-form-shared/measurement-sets-field";
+import { CompletenessFields } from "../../collection-form-shared/object-description-fields";
 import {
   type CollectionFormTabProps,
   NO_FIELD_ERRORS,
@@ -63,6 +65,12 @@ export function ObjectRequestPhysicalTab({
               onValueChange={(value) => updateField("condition", value)}
             />
           </div>
+
+          <CompletenessFields
+            formData={formData}
+            updateField={updateField}
+            fieldErrors={fieldErrors}
+          />
 
           <div className="space-y-3 md:col-span-2 xl:col-span-3">
             <div className="space-y-1">
@@ -122,6 +130,12 @@ export function ObjectRequestPhysicalTab({
           </div>
 
           <MeasuredDimensionsFields
+            formData={formData}
+            updateField={updateField}
+            fieldErrors={fieldErrors}
+          />
+
+          <MeasurementSetsField
             formData={formData}
             updateField={updateField}
             fieldErrors={fieldErrors}

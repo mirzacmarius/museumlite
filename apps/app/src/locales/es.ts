@@ -11158,6 +11158,16 @@ export default {
         "No se pudieron guardar sus cambios. Compruebe su conexión e inténtelo de nuevo.",
       productionDateInvalid:
         "La fecha estructurada no es una fecha válida. Revise sus partes e inténtelo de nuevo.",
+      objectCountInvalid:
+        "Introduzca el número de objetos como un número entero de 1 a {max}.",
+      subjectsInvalid:
+        "Introduzca hasta {max} términos de tema, de hasta {length} caracteres cada uno.",
+      measurementSetPartRequired:
+        "Elija la parte de la que se tomó cada fila de medidas.",
+      measurementSetsInvalid:
+        "Dé a cada parte medida al menos una medida mayor que 0. Las notas y unidades admiten hasta {length} caracteres, y se pueden añadir hasta {max} partes.",
+      rightsStatementInvalid: "Elija una declaración de derechos de la lista.",
+      textTooLong: "{field} es demasiado largo. Acórtelo e inténtelo de nuevo.",
     },
     notices: {
       recoveredTitle: "Se encontraron cambios sin guardar",
@@ -11224,6 +11234,26 @@ export default {
       draftMedia: "Fotos y documentos",
       alternateNumberExists:
         "Este número de accesión alternativo ya está en la lista.",
+      numberOfObjects: "Número de objetos",
+      numberOfObjectsHint:
+        "Cuántas cosas describe este registro, por ejemplo 2 para un par o 12 para un juego de té.",
+      subjects: "Tema",
+      subjectsHint:
+        "Lo que el objeto representa o de lo que trata, aparte de las etiquetas. Pulse Intro o Tab después de cada término.",
+      measuredPart: "Parte medida",
+      choosePart: "Elija una parte",
+      notStated: "Sin indicar",
+      partNote: "Nota sobre la parte",
+      measurementSets: "Otras partes medidas",
+      measurementSetsHint:
+        "Medidas de otras partes, como el marco o la base, una parte por fila. Use la nota para precisar la parte, por ejemplo tapa.",
+      addMeasurementSet: "Añadir parte medida",
+      removeMeasurementSet: "Quitar parte medida",
+      completeness: "Integridad",
+      completenessNote: "Nota sobre la integridad",
+      rightsStatement: "Declaración de derechos",
+      rightsStatementHint:
+        "Los derechos sobre el propio objeto. Cada imagen tiene su propia declaración.",
     },
   },
   moveRequests: {
@@ -11661,5 +11691,58 @@ export default {
       reopened: "Reabierto",
     },
     objectNone: "Ningún incidente que pueda ver afecta a este objeto.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Total",
+      framed: "Con marco",
+      unframed: "Sin marco",
+      image: "Imagen",
+      sight: "Vista",
+      sheet: "Hoja",
+      plate: "Plancha",
+      mount: "Montaje",
+      base: "Base",
+      other: "Otra",
+    },
+    completeness: {
+      complete: "Completo",
+      incomplete: "Incompleto",
+      fragment: "Fragmento",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "En copyright",
+      InC_OW_EU: "En copyright - Obra huérfana de la UE",
+      InC_EDU: "En copyright - Uso educativo permitido",
+      InC_NC: "En copyright - Uso no comercial permitido",
+      InC_RUU:
+        "En copyright - Titular(es) de derechos no localizable(s) o no identificable(s)",
+      NoC_CR: "Sin copyright - Restricciones contractuales",
+      NoC_NC: "Sin copyright - Solo uso no comercial",
+      NoC_OKLR: "Sin copyright - Otras restricciones legales conocidas",
+      NoC_US: "Sin copyright - Estados Unidos",
+      CNE: "Copyright no evaluado",
+      UND: "Copyright indeterminado",
+      NKC: "Sin copyright conocido",
+      CC0: "CC0 1.0 Universal",
+      PDM: "Marca de dominio público 1.0",
+      CC_BY: "Creative Commons Atribución 4.0 Internacional",
+      CC_BY_SA: "Creative Commons Atribución-CompartirIgual 4.0 Internacional",
+      CC_BY_NC: "Creative Commons Atribución-NoComercial 4.0 Internacional",
+      CC_BY_NC_SA:
+        "Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional",
+      CC_BY_ND: "Creative Commons Atribución-SinDerivadas 4.0 Internacional",
+      CC_BY_NC_ND:
+        "Creative Commons Atribución-NoComercial-SinDerivadas 4.0 Internacional",
+    },
+    groups: {
+      rightsstatements: "Declaraciones de RightsStatements.org",
+      creativecommons: "Licencias y herramientas Creative Commons",
+    },
+    organizationDefault: "Predeterminada de la organización ({statement})",
+    notStated: "Sin indicar",
+    inherited: "Predeterminada de la organización",
   },
 } as const;

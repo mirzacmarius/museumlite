@@ -1,6 +1,11 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { CollectionModuleId } from "@v1/backend/convex/utils/moduleCatalog";
+import type {
+  Completeness,
+  MeasuredPart,
+} from "@v1/backend/convex/utils/objectDescription";
+import type { RightsStatementUri } from "@v1/backend/convex/utils/rightsStatements";
 import type { FunctionArgs } from "convex/server";
 import type { CollectionType } from "@/components/collection-type-selector";
 import type { ProductionDateDraft } from "@/components/production-date/production-date-draft";
@@ -29,6 +34,21 @@ export interface InscriptionMarkEntry {
   description: string;
 }
 
+/** A further set of measurements as its inputs hold it, one part per set. */
+export interface MeasurementSetEntry {
+  localId?: string;
+  /** Undefined until staff choose the part. */
+  part?: MeasuredPart;
+  partNote: string;
+  height: string;
+  width: string;
+  depth: string;
+  diameter: string;
+  weight: string;
+  unit: string;
+  weightUnit: string;
+}
+
 /** An intake object draft as the server stores it. */
 export type ObjectDraftData = FunctionArgs<
   typeof api.accessions.saveObjectDraft
@@ -45,6 +65,8 @@ export interface CollectionFormData {
   creator?: string;
   objectType?: string | string[];
   objectName?: string;
+  /** A whole number as typed; blank when not recorded. */
+  numberOfObjects?: string;
   culture?: string;
   period?: string;
   dateCreated?: string;
@@ -60,11 +82,17 @@ export interface CollectionFormData {
   dimensionDiameter?: string;
   dimensionWeight?: string | number;
   weightUnit?: string;
+  /** The part the measurements above were taken from. */
+  dimensionMeasuredPart?: MeasuredPart;
+  measurementSets?: MeasurementSetEntry[];
   description?: string;
   condition?: string;
+  completeness?: Completeness;
+  completenessNote?: string;
   inscriptions?: string;
   inscriptionMarks?: InscriptionMarkEntry[];
   tags?: string[];
+  subjects?: string[];
   provenance?: string;
   exhibitionHistory?: string;
   donated_by?: string[];
@@ -72,6 +100,8 @@ export interface CollectionFormData {
   donation_info?: string;
   acquisitionMethod?: string;
   creditLine?: string;
+  /** Undefined: the Organization's default applies. */
+  rightsStatement?: RightsStatementUri;
   legalRestrictions?: boolean;
   previous_owners?: string[];
   links?: LinkEntry[];

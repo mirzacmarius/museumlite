@@ -8,7 +8,8 @@ import {
 import { CheckCircle, Tag } from "lucide-react";
 import { EdtfChip } from "@/components/production-date/edtf-chip";
 import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
-import { useI18n, useScopedI18n } from "@/locales/client";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 import type { CollectionData } from "./types";
 
@@ -22,6 +23,7 @@ export function GeneralTab({
   collectionGroupName,
 }: GeneralTabProps) {
   const tRoot = useI18n();
+  const locale = useCurrentLocale();
   const collectionType: string | undefined = collection.collectionType;
   const collectionTypeLabel = collectionType
     ? collectionType === "fine_art"
@@ -56,6 +58,14 @@ export function GeneralTab({
           value={collection.objectName}
         />
         <DetailField
+          label={tRoot("recordForm.objectFields.numberOfObjects")}
+          value={
+            collection.numberOfObjects === undefined
+              ? undefined
+              : formatNumber(collection.numberOfObjects, locale)
+          }
+        />
+        <DetailField
           label={tRoot("objects.form.collectionGroup")}
           value={collectionGroupName}
         />
@@ -73,6 +83,20 @@ export function GeneralTab({
         />
         <DetailField label={tRoot("objects.form.dateCreated")}>
           <DateMadeValue source={collection} />
+        </DetailField>
+        <DetailField label={tRoot("recordForm.objectFields.subjects")}>
+          {collection.subjects?.length ? (
+            <ul className="flex flex-wrap gap-1.5">
+              {collection.subjects.map((term) => (
+                <li
+                  key={term}
+                  className="rounded-md border border-border/60 px-2 py-0.5 text-xs text-foreground"
+                >
+                  {term}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </DetailField>
       </DetailGrid>
       {collection.isHighResDownloadable ? (

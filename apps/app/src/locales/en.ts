@@ -10892,6 +10892,16 @@ export default {
         "Your changes could not be saved. Check your connection and try again.",
       productionDateInvalid:
         "The structured date is not a valid date. Check its parts and try again.",
+      objectCountInvalid:
+        "Enter the number of objects as a whole number from 1 to {max}.",
+      subjectsInvalid:
+        "Enter up to {max} subject terms, each up to {length} characters long.",
+      measurementSetPartRequired:
+        "Choose the part each row of measurements was taken from.",
+      measurementSetsInvalid:
+        "Give each measured part at least one measurement above 0. Notes and units take up to {length} characters, and up to {max} parts can be added.",
+      rightsStatementInvalid: "Choose a rights statement from the list.",
+      textTooLong: "{field} is too long. Shorten it and try again.",
     },
     notices: {
       recoveredTitle: "Unsaved changes found",
@@ -10958,6 +10968,26 @@ export default {
       draftMedia: "Photos and documents",
       alternateNumberExists:
         "This alternate accession number is already listed.",
+      numberOfObjects: "Number of objects",
+      numberOfObjectsHint:
+        "How many things this record describes, such as 2 for a pair or 12 for a tea set.",
+      subjects: "Subject",
+      subjectsHint:
+        "What the object depicts or is about, kept apart from tags. Press Enter or Tab after each term.",
+      measuredPart: "Measured part",
+      choosePart: "Choose a part",
+      notStated: "Not stated",
+      partNote: "Part note",
+      measurementSets: "Further measured parts",
+      measurementSetsHint:
+        "Measurements of other parts, such as the frame or the base, one part per row. Use the note to name a part more closely, such as lid.",
+      addMeasurementSet: "Add measured part",
+      removeMeasurementSet: "Remove measured part",
+      completeness: "Completeness",
+      completenessNote: "Completeness note",
+      rightsStatement: "Rights statement",
+      rightsStatementHint:
+        "The rights in the object itself. Each image has its own statement.",
     },
   },
   moveRequests: {
@@ -11390,5 +11420,57 @@ export default {
       reopened: "Reopened",
     },
     objectNone: "No incidents you can see involve this object.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Overall",
+      framed: "Framed",
+      unframed: "Unframed",
+      image: "Image",
+      sight: "Sight",
+      sheet: "Sheet",
+      plate: "Plate",
+      mount: "Mount",
+      base: "Base",
+      other: "Other",
+    },
+    completeness: {
+      complete: "Complete",
+      incomplete: "Incomplete",
+      fragment: "Fragment",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "In Copyright",
+      InC_OW_EU: "In Copyright - EU Orphan Work",
+      InC_EDU: "In Copyright - Educational Use Permitted",
+      InC_NC: "In Copyright - Non-Commercial Use Permitted",
+      InC_RUU: "In Copyright - Rights-holder(s) Unlocatable or Unidentifiable",
+      NoC_CR: "No Copyright - Contractual Restrictions",
+      NoC_NC: "No Copyright - Non-Commercial Use Only",
+      NoC_OKLR: "No Copyright - Other Known Legal Restrictions",
+      NoC_US: "No Copyright - United States",
+      CNE: "Copyright Not Evaluated",
+      UND: "Copyright Undetermined",
+      NKC: "No Known Copyright",
+      CC0: "CC0 1.0 Universal",
+      PDM: "Public Domain Mark 1.0",
+      CC_BY: "Creative Commons Attribution 4.0 International",
+      CC_BY_SA: "Creative Commons Attribution-ShareAlike 4.0 International",
+      CC_BY_NC: "Creative Commons Attribution-NonCommercial 4.0 International",
+      CC_BY_NC_SA:
+        "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International",
+      CC_BY_ND: "Creative Commons Attribution-NoDerivatives 4.0 International",
+      CC_BY_NC_ND:
+        "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International",
+    },
+    groups: {
+      rightsstatements: "RightsStatements.org statements",
+      creativecommons: "Creative Commons licenses and tools",
+    },
+    organizationDefault: "Organization default ({statement})",
+    notStated: "Not stated",
+    inherited: "Organization default",
   },
 } as const;

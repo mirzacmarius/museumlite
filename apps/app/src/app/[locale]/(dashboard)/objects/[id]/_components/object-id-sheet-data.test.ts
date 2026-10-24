@@ -27,6 +27,7 @@ const englishDates: ProductionDateLabels = {
 const englishFormat: ObjectIdSheetFormat = {
   measurementLabels: { height: "H", width: "W", depth: "D" },
   number: (value) => value.toLocaleString("en-US"),
+  part: (part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`,
   dateMade: (source) => formatDateMade(source, "en", englishDates),
 };
 
@@ -91,7 +92,7 @@ describe("objectIdCategoryValues", () => {
           { label: "Verso", description: "Stamp of the Durand gallery" },
           { label: "Frame", description: "   " },
         ],
-        tags: ["Portrait", "Merchant"],
+        subjects: ["Portrait", "Merchant"],
         dateCreated: "1652",
         period: "Dutch Golden Age",
         creator: "Unknown Dutch painter",
@@ -168,6 +169,34 @@ describe("objectIdCategoryValues", () => {
     expect(
       values.find((value) => value.category === "measurements")?.lines,
     ).toEqual(["H: 210 × L: 1450,5 × P: 60 mm", "120,5 kg"]);
+  });
+
+  test("names the measured part and prints each further part on its own line", () => {
+    expect(
+      linesOf({
+        title: "Portrait",
+        dimensionHeight: 60,
+        dimensionWidth: 45.5,
+        dimensionUnit: "cm",
+        dimensionWeight: 3,
+        dimensionMeasuredPart: "framed",
+        measurementSets: [
+          { part: "image", height: 50, width: 35, unit: "cm" },
+          { part: "other", partNote: "label", width: 8, unit: "cm" },
+        ],
+      }).measurements,
+    ).toEqual([
+      "Framed: H: 60 × W: 45.5 cm",
+      "3 kg",
+      "Image: H: 50 × W: 35 cm",
+      "Other (label): W: 8 cm",
+    ]);
+  });
+
+  test("prints the subject from subject terms, not tags", () => {
+    // A whole record, as the sheet is given one, also holds its tags.
+    const jug = { title: "Jug", tags: ["Storage"] };
+    expect(linesOf(jug).subject).toEqual([]);
   });
 
   test("counts the lines a one-page sheet has no room for and clips long ones", () => {

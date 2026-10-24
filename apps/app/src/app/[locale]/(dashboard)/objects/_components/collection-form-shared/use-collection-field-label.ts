@@ -19,6 +19,8 @@ export function useCollectionFieldLabel() {
           return t("objects.form.alternateAccessionNumbers");
         case "objectName":
           return t("objects.form.objectName");
+        case "numberOfObjects":
+          return t("recordForm.objectFields.numberOfObjects");
         case "objectType":
           return t("objects.printView.objectType");
         case "creator":
@@ -51,18 +53,28 @@ export function useCollectionFieldLabel() {
           return t("objects.printView.weight");
         case "weightUnit":
           return t("recordForm.objectFields.weightUnit");
+        case "dimensionMeasuredPart":
+          return t("recordForm.objectFields.measuredPart");
+        case "measurementSets":
+          return t("recordForm.objectFields.measurementSets");
         case "description":
           return t("objects.form.description");
         case "condition":
           return t("objects.form.condition");
         case "conditionChangeNote":
           return t("untranslatedRecords.objects.form.conditionChangeNote");
+        case "completeness":
+          return t("recordForm.objectFields.completeness");
+        case "completenessNote":
+          return t("recordForm.objectFields.completenessNote");
         case "inscriptions":
           return t("objects.printView.inscriptions");
         case "inscriptionMarks":
           return t("recordForm.objectFields.inscriptionMarks");
         case "tags":
           return t("objects.printView.tags");
+        case "subjects":
+          return t("recordForm.objectFields.subjects");
         case "provenance":
           return t("objects.form.provenance");
         case "exhibitionHistory":
@@ -79,6 +91,8 @@ export function useCollectionFieldLabel() {
           return t("objects.printView.acquisitionMethod");
         case "creditLine":
           return t("objects.printView.creditLine");
+        case "rightsStatement":
+          return t("recordForm.objectFields.rightsStatement");
         case "legalRestrictions":
           return t("recordForm.objectFields.legalRestrictions");
         case "previous_owners":

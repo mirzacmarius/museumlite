@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { ObjectIdCategoryValue } from "./object-id-sheet-data";
 
 /** Photographs the sheet has room for: the primary one and three more. */
@@ -16,6 +16,8 @@ export interface ObjectIdSheetImage {
 interface ObjectIdSheetProps {
   title: string;
   accessionNumber: string;
+  /** How many things the record describes, formatted; absent when not recorded. */
+  numberOfObjects?: string;
   organizationName?: string;
   printedOn: string;
   values: ObjectIdCategoryValue[];
@@ -36,6 +38,7 @@ const headingClass =
 export function ObjectIdSheet({
   title,
   accessionNumber,
+  numberOfObjects,
   organizationName,
   printedOn,
   values,
@@ -43,6 +46,7 @@ export function ObjectIdSheet({
   description,
   images,
 }: ObjectIdSheetProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("objects.objectIdSheet");
   const [primary, ...others] = images.slice(0, SHEET_IMAGES_SHOWN);
 
@@ -59,6 +63,14 @@ export function ObjectIdSheet({
         <div className="shrink-0 text-right">
           <p className={headingClass}>{t("accessionNumber")}</p>
           <p className="font-mono text-base">{accessionNumber}</p>
+          {numberOfObjects ? (
+            <>
+              <p className={`${headingClass} mt-1`}>
+                {tRoot("recordForm.objectFields.numberOfObjects")}
+              </p>
+              <p className="text-base">{numberOfObjects}</p>
+            </>
+          ) : null}
           <p className="mt-1 text-[10px] text-zinc-500">
             {t("printedOn", { date: printedOn })}
           </p>

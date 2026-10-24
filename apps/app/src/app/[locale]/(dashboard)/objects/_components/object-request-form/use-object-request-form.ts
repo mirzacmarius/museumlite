@@ -26,6 +26,7 @@ import type {
 } from "../collection-form-shared/types";
 import { useCollectionFieldLabel } from "../collection-form-shared/use-collection-field-label";
 import { useCollectionFieldValue } from "../collection-form-shared/use-collection-field-value";
+import { useCollectionFormRuleMessages } from "../collection-form-shared/use-collection-form-rule-messages";
 import { useFormTabState } from "../collection-form-shared/use-form-tab-state";
 import {
   buildDraftMediaPayload,
@@ -134,16 +135,11 @@ export function useObjectRequestForm({
       [typeDetailsMessage],
     ),
   });
+  const ruleMessages = useCollectionFormRuleMessages();
   const validate = useCallback(
     (values: ObjectRequestValues) =>
-      validateCollectionFormData(values, {
-        titleRequired: t("form.errors.titleRequired"),
-        weightInvalid: tErrors("weightInvalid"),
-        measurementInvalid: tErrors("measurementInvalid"),
-        productionDateInvalid: t("form.productionDate.invalid"),
-        productionDateOpenInRange: t("form.productionDate.openInRange"),
-      }),
-    [t, tErrors],
+      validateCollectionFormData(values, ruleMessages),
+    [ruleMessages],
   );
   const session = useRecordFormSession({
     latest,

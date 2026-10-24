@@ -11016,6 +11016,15 @@ export default {
         "Endringene dine kunne ikke lagres. Sjekk tilkoblingen og prøv igjen.",
       productionDateInvalid:
         "Den strukturerte dateringen er ikke en gyldig dato. Sjekk delene og prøv igjen.",
+      objectCountInvalid:
+        "Skriv antall objekter som et heltall fra 1 til {max}.",
+      subjectsInvalid:
+        "Skriv inn opptil {max} emnetermer på opptil {length} tegn hver.",
+      measurementSetPartRequired: "Velg delen hver rad med mål ble tatt av.",
+      measurementSetsInvalid:
+        "Gi hver målte del minst ett mål over 0. Notater og enheter kan ha opptil {length} tegn, og opptil {max} deler kan legges til.",
+      rightsStatementInvalid: "Velg en rettighetserklæring fra listen.",
+      textTooLong: "{field} er for lang. Forkort teksten og prøv igjen.",
     },
     notices: {
       recoveredTitle: "Ulagrede endringer funnet",
@@ -11082,6 +11091,26 @@ export default {
       draftMedia: "Bilder og dokumenter",
       alternateNumberExists:
         "Dette alternative aksesjonsnummeret står allerede i listen.",
+      numberOfObjects: "Antall objekter",
+      numberOfObjectsHint:
+        "Hvor mange ting denne posten beskriver, for eksempel 2 for et par eller 12 for et teservise.",
+      subjects: "Emne",
+      subjectsHint:
+        "Hva objektet viser eller handler om, adskilt fra stikkord. Trykk Enter eller Tab etter hver term.",
+      measuredPart: "Målt del",
+      choosePart: "Velg en del",
+      notStated: "Ikke oppgitt",
+      partNote: "Merknad om delen",
+      measurementSets: "Andre målte deler",
+      measurementSetsHint:
+        "Mål av andre deler, som rammen eller sokkelen, én del per rad. Bruk merknaden til å angi delen nærmere, for eksempel lokk.",
+      addMeasurementSet: "Legg til målt del",
+      removeMeasurementSet: "Fjern målt del",
+      completeness: "Fullstendighet",
+      completenessNote: "Merknad om fullstendighet",
+      rightsStatement: "Rettighetserklæring",
+      rightsStatementHint:
+        "Rettighetene til selve objektet. Hvert bilde har sin egen erklæring.",
     },
   },
   moveRequests: {
@@ -11521,5 +11550,62 @@ export default {
       reopened: "Gjenåpnet",
     },
     objectNone: "Ingen hendelser du kan se, gjelder dette objektet.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Totalt",
+      framed: "Med ramme",
+      unframed: "Uten ramme",
+      image: "Bilde",
+      sight: "Lysmål",
+      sheet: "Ark",
+      plate: "Plate",
+      mount: "Montering",
+      base: "Sokkel",
+      other: "Annet",
+    },
+    completeness: {
+      complete: "Komplett",
+      incomplete: "Ufullstendig",
+      fragment: "Fragment",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "Opphavsrettslig beskyttet",
+      InC_OW_EU: "Opphavsrettslig beskyttet - Foreldreløst verk i EU",
+      InC_EDU: "Opphavsrettslig beskyttet - Bruk i undervisning tillatt",
+      InC_NC: "Opphavsrettslig beskyttet - Ikke-kommersiell bruk tillatt",
+      InC_RUU:
+        "Opphavsrettslig beskyttet - Rettighetshaver(e) kan ikke finnes eller identifiseres",
+      NoC_CR: "Ikke opphavsrettslig beskyttet - Avtalebaserte begrensninger",
+      NoC_NC: "Ikke opphavsrettslig beskyttet - Kun ikke-kommersiell bruk",
+      NoC_OKLR:
+        "Ikke opphavsrettslig beskyttet - Andre kjente juridiske begrensninger",
+      NoC_US: "Ikke opphavsrettslig beskyttet - USA",
+      CNE: "Opphavsrett ikke vurdert",
+      UND: "Opphavsrett uavklart",
+      NKC: "Ingen kjent opphavsrett",
+      CC0: "CC0 1.0 Universell",
+      PDM: "Merke for allemannseie 1.0",
+      CC_BY: "Creative Commons Navngivelse 4.0 Internasjonal",
+      CC_BY_SA:
+        "Creative Commons Navngivelse-DelPåSammeVilkår 4.0 Internasjonal",
+      CC_BY_NC:
+        "Creative Commons Navngivelse-IkkeKommersiell 4.0 Internasjonal",
+      CC_BY_NC_SA:
+        "Creative Commons Navngivelse-IkkeKommersiell-DelPåSammeVilkår 4.0 Internasjonal",
+      CC_BY_ND:
+        "Creative Commons Navngivelse-IngenBearbeidelser 4.0 Internasjonal",
+      CC_BY_NC_ND:
+        "Creative Commons Navngivelse-IkkeKommersiell-IngenBearbeidelser 4.0 Internasjonal",
+    },
+    groups: {
+      rightsstatements: "Erklæringer fra RightsStatements.org",
+      creativecommons: "Creative Commons-lisenser og -verktøy",
+    },
+    organizationDefault: "Organisasjonens standard ({statement})",
+    notStated: "Ikke oppgitt",
+    inherited: "Organisasjonens standard",
   },
 } as const;

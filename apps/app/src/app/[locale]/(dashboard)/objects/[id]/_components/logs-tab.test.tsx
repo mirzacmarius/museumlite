@@ -55,6 +55,43 @@ const entries = vi.hoisted(() => [
       bulkFieldEditId: "job-4",
     },
   },
+  {
+    _id: "log-5",
+    action: "updated_collection",
+    timestamp: Date.UTC(2026, 9, 1, 16),
+    userName: "Ada",
+    changes: {
+      subjects: ["Horses", "Riders"],
+      rightsStatement: "http://rightsstatements.org/vocab/InC/1.0/",
+      lastModifiedBy: "user-1",
+      lastModifiedAt: Date.UTC(2026, 9, 1, 16),
+    },
+  },
+  {
+    _id: "log-6",
+    action: "updated_collection",
+    timestamp: Date.UTC(2026, 9, 1, 17),
+    userName: "Ada",
+    changes: {
+      lastModifiedBy: "user-1",
+      dimensionMeasuredPart: "framed",
+      measurementSets: [{ part: "base", width: 30, unit: "cm" }],
+    },
+  },
+  {
+    _id: "log-7",
+    action: "updated_collection",
+    timestamp: Date.UTC(2026, 9, 1, 18),
+    userName: "Ada",
+    changes: { numberOfObjects: 12000, completeness: "fragment" },
+  },
+  {
+    _id: "log-8",
+    action: "updated_collection",
+    timestamp: Date.UTC(2026, 9, 1, 19),
+    userName: "Ada",
+    changes: { subjects: [], culture: "Roman" },
+  },
 ]);
 
 vi.mock("convex/react", () => ({
@@ -101,4 +138,32 @@ test("a bulk Date made edit says which structured date it removed", async () => 
   expect(screen.getByText("Structured date “1860” removed")).toBeTruthy();
   expect(screen.getByText("Changed “Date made”")).toBeTruthy();
   expect(screen.getByText("Structured date “1850s” removed")).toBeTruthy();
+});
+
+test("a catalog save names description fields and shows their values as staff read them", async () => {
+  await renderLogs("en");
+
+  expect(
+    screen.getByText(
+      "Subject: Horses, Riders · Rights statement: In Copyright",
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Measured part: Framed · Further measured parts: Base: W: 30 cm",
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.getByText("Number of objects: 12,000 · Completeness: Fragment"),
+  ).toBeTruthy();
+  expect(screen.getByText("Subject · culture: Roman")).toBeTruthy();
+  expect(screen.queryByText(/lastModified/)).toBeNull();
+});
+
+test("description values in the log are translated", async () => {
+  await renderLogs("no");
+
+  expect(
+    screen.getByText("Antall objekter: 12 000 · Fullstendighet: Fragment"),
+  ).toBeTruthy();
 });

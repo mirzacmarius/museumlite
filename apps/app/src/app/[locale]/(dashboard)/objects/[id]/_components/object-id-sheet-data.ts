@@ -1,8 +1,14 @@
+import type { MeasuredPart } from "@v1/backend/convex/utils/objectDescription";
 import {
   OBJECT_ID_CATEGORIES,
   type ObjectIdCategory,
 } from "@v1/backend/convex/utils/objectId";
 import type { ProductionDateSource } from "@v1/backend/convex/utils/productionDates";
+import {
+  formatDimensions,
+  formatMeasurementSet,
+  type MeasurementFormat,
+} from "@/lib/object-description-format";
 import { parseStringListField } from "@/lib/string-list-field";
 import type { CollectionData } from "./types";
 
@@ -41,9 +47,11 @@ export type ObjectIdSheetCollection = Pick<
   | "dimensionWeight"
   | "dimensionUnit"
   | "weightUnit"
+  | "dimensionMeasuredPart"
+  | "measurementSets"
   | "inscriptions"
   | "inscriptionMarks"
-  | "tags"
+  | "subjects"
 >;
 
 /** How measurements and dates read in the app language. */
@@ -52,6 +60,8 @@ export interface ObjectIdSheetFormat {
   measurementLabels: { height: string; width: string; depth: string };
   /** Formats a measured number in the app locale. */
   number: (value: number) => string;
+  /** A measured part's name in the app language. */
+  part: (part: MeasuredPart) => string;
   /** The date made as written, else its structured date in the locale. */
   dateMade: (source: ProductionDateSource) => string | undefined;
 }
@@ -83,34 +93,46 @@ function clipText(text: string, limit: number) {
   return text.length > limit ? `${text.slice(0, limit - 1).trimEnd()}…` : text;
 }
 
+/**
+ * The main measurements, the first line naming the part they were taken
+ * from when stated, then one line for each further part.
+ */
 function measurementLines(
   collection: ObjectIdSheetCollection,
-  { measurementLabels, number }: ObjectIdSheetFormat,
+  { measurementLabels, number, part }: ObjectIdSheetFormat,
 ) {
+  const format: MeasurementFormat = { labels: measurementLabels, number, part };
   // The unit is printed only when recorded, as on the Physical tab.
-  const unit = collection.dimensionUnit ? ` ${collection.dimensionUnit}` : "";
-  const measured = (
-    [
-      [measurementLabels.height, collection.dimensionHeight],
-      [measurementLabels.width, collection.dimensionWidth],
-      [measurementLabels.depth, collection.dimensionDepth],
-    ] as const
-  )
-    .flatMap(([label, value]) =>
-      value === undefined ? [] : [`${label}: ${number(value)}`],
-    )
-    .join(" × ");
-  return present([
-    measured ? `${measured}${unit}` : undefined,
+  const measured = formatDimensions(
+    {
+      height: collection.dimensionHeight,
+      width: collection.dimensionWidth,
+      depth: collection.dimensionDepth,
+    },
+    collection.dimensionUnit,
+    format,
+  );
+  const [first, ...rest] = present([
+    measured,
     collection.dimensionDiameter
       ? `Ø ${collection.dimensionDiameter}`
       : undefined,
     collection.dimensionWeight !== undefined
       ? `${number(collection.dimensionWeight)} ${collection.weightUnit || "kg"}`
       : undefined,
-    // Free-text dimensions come from imports and older records.
-    measured ? undefined : collection.dimensions,
   ]);
+  const measuredPart = collection.dimensionMeasuredPart;
+  const main = first
+    ? [measuredPart ? `${part(measuredPart)}: ${first}` : first, ...rest]
+    : [];
+  return [
+    ...main,
+    // Free-text dimensions come from imports and older records.
+    ...present([measured ? undefined : collection.dimensions]),
+    ...(collection.measurementSets ?? []).map((set) =>
+      formatMeasurementSet(set, format),
+    ),
+  ];
 }
 
 function inscriptionLines(collection: ObjectIdSheetCollection) {
@@ -143,7 +165,9 @@ function categoryLines(
       return present([collection.title, collection.alternativeTitle]);
     case "subject":
       return present([
-        collection.tags?.length ? collection.tags.join(", ") : undefined,
+        collection.subjects?.length
+          ? collection.subjects.join(", ")
+          : undefined,
       ]);
     case "date_or_period":
       return present([format.dateMade(collection), collection.period]);
