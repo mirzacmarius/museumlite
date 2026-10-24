@@ -150,7 +150,8 @@ describe("Conservation treatment lifecycle", () => {
 
   test("should add before/after attachments to treatment", async () => {
     const t = createConvexTest();
-    const { collectionId, userId } = await setupConservationWorkflow(t);
+    const { collectionId, userId, organizationId } =
+      await setupConservationWorkflow(t);
     const authed = authedForUser(t, userId);
 
     const treatmentId = await authed.mutation(
@@ -164,11 +165,18 @@ describe("Conservation treatment lifecycle", () => {
     );
 
     const storageId = await t.run(async (ctx) => {
-      return await ctx.storage.store(
+      const storageId = await ctx.storage.store(
         new Blob([new Uint8Array([0xff, 0xd8, 0xff])], {
           type: "image/jpeg",
         }),
       );
+      await ctx.db.insert("storageOwnership", {
+        storageId,
+        uploadedBy: userId,
+        organizationId,
+        uploadedAt: Date.now(),
+      });
+      return storageId;
     });
 
     await authed.mutation(api.conservationTreatments.addAttachment, {
@@ -176,7 +184,7 @@ describe("Conservation treatment lifecycle", () => {
       storageId,
       fileName: "before_photo.jpg",
       fileType: "image/jpeg",
-      fileSize: 1024000,
+      fileSize: 3,
       attachmentType: "before_photo",
       caption: "Condition before treatment",
     });

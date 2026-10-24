@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { internalQuery, type QueryCtx, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
@@ -1026,8 +1026,17 @@ const templateStepValidator = v.object({
   requiredDocuments: v.optional(v.array(v.string())),
 });
 
+/** System templates are shared; the rest belong to the organization that saved them. */
+function isTemplateVisibleTo(
+  template: Doc<"workflowTemplates">,
+  organizationId: Id<"organizations">,
+) {
+  return template.isSystem || template.organizationId === organizationId;
+}
+
 export const listTemplates = query({
   args: {
+    organizationId: v.id("organizations"),
     workflowType: v.optional(workflowTypeValidator),
   },
   returns: v.array(
@@ -1041,16 +1050,29 @@ export const listTemplates = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const templates = args.workflowType
-      ? await ctx.db
-          .query("workflowTemplates")
-          .withIndex("by_workflowType", (q) =>
-            q.eq("workflowType", args.workflowType!),
-          )
-          .collect()
-      : await ctx.db.query("workflowTemplates").collect();
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const [systemTemplates, ownTemplates] = await Promise.all([
+      ctx.db
+        .query("workflowTemplates")
+        .withIndex("by_isSystem", (q) => q.eq("isSystem", true))
+        .collect(),
+      ctx.db
+        .query("workflowTemplates")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ]);
+    const visible = [
+      ...systemTemplates,
+      ...ownTemplates.filter((template) => !template.isSystem),
+    ].filter(
+      (template) =>
+        args.workflowType === undefined ||
+        template.workflowType === args.workflowType,
+    );
 
-    return templates.map((t) => ({
+    return visible.map((t) => ({
       _id: t._id,
       name: t.name,
       description: t.description,
@@ -1063,6 +1085,7 @@ export const listTemplates = query({
 
 export const getTemplate = query({
   args: {
+    organizationId: v.id("organizations"),
     templateId: v.id("workflowTemplates"),
   },
   returns: v.union(
@@ -1087,8 +1110,9 @@ export const getTemplate = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
     const template = await ctx.db.get(args.templateId);
-    if (!template) {
+    if (!template || !isTemplateVisibleTo(template, args.organizationId)) {
       return null;
     }
 
@@ -1157,6 +1181,7 @@ export const createTemplateFromConfig = mutation({
     }));
 
     const templateId = await ctx.db.insert("workflowTemplates", {
+      organizationId: args.organizationId,
       name: args.name,
       description: args.description,
       workflowType: args.workflowType,
@@ -1192,7 +1217,7 @@ export const applyTemplateToOrganization = mutation({
       ),
       ctx.db.get(args.templateId),
     ]);
-    if (!template) {
+    if (!template || !isTemplateVisibleTo(template, args.organizationId)) {
       throw new Error("Template not found");
     }
 

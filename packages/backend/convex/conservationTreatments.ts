@@ -23,6 +23,10 @@ import { countIndexedQuery } from "./utils/indexedCounts";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import {
+  requireInOrganization,
+  requireMemberOfOrganization,
+} from "./utils/organizationScope";
+import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
@@ -31,6 +35,7 @@ import {
   resolveCaseApproval,
 } from "./utils/permissions";
 import { canReadRecord } from "./utils/recordAccess";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 import { workflowApprovalError } from "./utils/workflowApprovalErrors";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
@@ -1329,6 +1334,15 @@ export const addAttachment = mutation({
       uploadedBy: userId,
       uploadedAt: Date.now(),
     });
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: treatment.organizationId,
+      uploadedBy: userId,
+      ownerType: "conservationAttachment",
+      ownerId: attachmentId,
+      expectedFileSize: args.fileSize,
+      expectedMimeType: args.fileType,
+    });
 
     return attachmentId;
   },
@@ -1488,6 +1502,23 @@ const priorityValidator = v.union(
   v.literal("critical"),
 );
 
+/** Alert recipients must be roles and members of the rule's organization. */
+async function requireAlertRecipients(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  recipients: {
+    notifyRoles?: Id<"roles">[];
+    notifyUsers?: Id<"users">[];
+  },
+) {
+  for (const roleId of recipients.notifyRoles ?? []) {
+    await requireInOrganization(ctx, roleId, organizationId, "Role");
+  }
+  for (const userId of recipients.notifyUsers ?? []) {
+    await requireMemberOfOrganization(ctx, userId, organizationId, "Recipient");
+  }
+}
+
 export const createAlertRule = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -1518,6 +1549,7 @@ export const createAlertRule = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    await requireAlertRecipients(ctx, args.organizationId, args);
     const ruleId = await ctx.db.insert("conservationAlertRules", {
       organizationId: args.organizationId,
       name: args.name,
@@ -1586,6 +1618,8 @@ export const updateAlertRule = mutation({
         "organization.manage_settings",
       ),
     ]);
+
+    await requireAlertRecipients(ctx, rule.organizationId, args);
 
     const { ruleId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -2642,6 +2676,12 @@ export const completeScheduledAssessment = mutation({
       requireConservationAccess(ctx, schedule.organizationId),
       requirePermission(ctx, schedule.organizationId, "collections.update"),
     ]);
+    await requireInOrganization(
+      ctx,
+      args.treatmentId,
+      schedule.organizationId,
+      "Treatment",
+    );
 
     // Calculate next due date
     const nextDueDate =
@@ -2688,6 +2728,14 @@ export const listAssessmentSchedules = query({
     ]);
 
     const collectionId = args.collectionId;
+    if (collectionId) {
+      await requireInOrganization(
+        ctx,
+        collectionId,
+        args.organizationId,
+        "Object",
+      );
+    }
     const schedules = collectionId
       ? await ctx.db
           .query("assessmentSchedules")

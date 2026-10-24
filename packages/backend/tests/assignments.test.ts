@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
+import { createOrgUserWithPermissions } from "./testHarness";
 import { modules } from "./testSetup";
 
 test("should require authentication for listMyAssignments", async () => {
@@ -26,22 +27,10 @@ test("should require authentication for listMyAssignments", async () => {
 test("should return empty assignments when no data exists", async () => {
   const t = convexTest(schema, modules);
 
-  const [userId, orgId] = await Promise.all([
-    t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    }),
-    t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-        settings: { enabledModules: [] },
-      });
-    }),
-  ]);
+  const { organizationId: orgId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.read"],
+  );
   const authed = t.withIdentity({
     subject: `${userId}|session-empty-assignments`,
     issuer: "https://example.test",

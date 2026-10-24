@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../utils/mutationBuilders";
+import { requireInOrganization } from "../utils/organizationScope";
 import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
@@ -120,6 +121,14 @@ export const create = mutation({
       args.organizationId,
       "collections.create",
     );
+    if (args.collectionId) {
+      await requireInOrganization(
+        ctx,
+        args.collectionId,
+        args.organizationId,
+        "Object",
+      );
+    }
 
     const itemId = await ctx.db.insert("libraryItems", {
       organizationId: args.organizationId,
@@ -638,8 +647,15 @@ export const update = mutation({
     if (args.notes !== undefined) updates.notes = args.notes;
     if (args.internalNotes !== undefined)
       updates.internalNotes = args.internalNotes;
-    if (args.collectionId !== undefined)
+    if (args.collectionId !== undefined) {
+      await requireInOrganization(
+        ctx,
+        args.collectionId,
+        item.organizationId,
+        "Object",
+      );
       updates.collectionId = args.collectionId;
+    }
 
     await ctx.db.patch(args.itemId, updates);
 
