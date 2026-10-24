@@ -443,8 +443,7 @@ export const listValidationReports = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const reports = await ctx.db
       .query("importValidationReports")

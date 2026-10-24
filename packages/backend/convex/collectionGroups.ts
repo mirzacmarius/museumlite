@@ -7,7 +7,12 @@ import { query } from "./_generated/server";
 import { syncCollectionGroupMemberships } from "./utils/catalogObjects";
 import { getDisplayedMediaThumbnailUrl } from "./utils/collectionDisplayHelpers";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
+import {
+  requireInOrganization,
+  requireMemberOfOrganization,
+} from "./utils/organizationScope";
 import { getUserRole, requirePermission } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 
 async function listCollectionMemberships(
   ctx: MutationCtx,
@@ -41,6 +46,33 @@ async function checkGroupAccessControl(
   if (userRole._id !== group.managedByRoleId) {
     throw new Error(
       "You do not have the required role to manage this collection group",
+    );
+  }
+}
+
+/** The curator must be a member and the managing role one of the organization's. */
+async function requireGroupReferences(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  references: {
+    curatorId?: Id<"users"> | null;
+    managedByRoleId?: Id<"roles"> | null;
+  },
+) {
+  if (references.curatorId) {
+    await requireMemberOfOrganization(
+      ctx,
+      references.curatorId,
+      organizationId,
+      "Curator",
+    );
+  }
+  if (references.managedByRoleId) {
+    await requireInOrganization(
+      ctx,
+      references.managedByRoleId,
+      organizationId,
+      "Role",
     );
   }
 }
@@ -205,6 +237,7 @@ export const create = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    await requireGroupReferences(ctx, args.organizationId, args);
 
     const groupId = await ctx.db.insert("collectionGroups", {
       organizationId: args.organizationId,
@@ -217,6 +250,15 @@ export const create = mutation({
       createdBy: userId,
       itemsCount: 0,
     });
+    if (args.imageId) {
+      await claimStorageOwnership(ctx, {
+        storageId: args.imageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "collectionGroup",
+        ownerId: groupId,
+      });
+    }
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -412,6 +454,16 @@ export const update = mutation({
 
     await requirePermission(ctx, group.organizationId, "collections.update");
     await checkGroupAccessControl(ctx, group, userId);
+    // Only a new selection is checked: a stored curator who has since left
+    // the organization must not block unrelated edits of the group.
+    await requireGroupReferences(ctx, group.organizationId, {
+      curatorId:
+        args.curatorId === group.curatorId ? undefined : args.curatorId,
+      managedByRoleId:
+        args.managedByRoleId === group.managedByRoleId
+          ? undefined
+          : args.managedByRoleId,
+    });
 
     const updates: {
       lastModifiedAt: number;
@@ -432,6 +484,15 @@ export const update = mutation({
     if (args.imageId !== undefined) updates.imageId = args.imageId ?? undefined;
     if (args.managedByRoleId !== undefined)
       updates.managedByRoleId = args.managedByRoleId ?? undefined;
+    if (args.imageId) {
+      await claimStorageOwnership(ctx, {
+        storageId: args.imageId,
+        organizationId: group.organizationId,
+        uploadedBy: userId,
+        ownerType: "collectionGroup",
+        ownerId: args.groupId,
+      });
+    }
 
     await Promise.all([
       ctx.db.patch(args.groupId, updates),

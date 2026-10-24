@@ -2922,38 +2922,6 @@ export const seedAllLocations = internalMutation({
 });
 
 /**
- * Get all locations with their environmental data
- */
-export const getLocationsWithEnvironment = query({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  returns: v.array(
-    v.object({
-      _id: v.id("locations"),
-      name: v.string(),
-      type: v.string(),
-      parentLocationId: v.optional(v.id("locations")),
-      sortOrder: v.number(),
-      isActive: v.boolean(),
-      notes: v.optional(v.string()),
-      customFields: v.optional(v.record(v.string(), customFieldValue)),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-
-    return locations.sort((a, b) => a.sortOrder - b.sortOrder);
-  },
-});
-
-/**
  * Seed all locations - internal only, triggered via dashboard or CLI
  */
 export const adminSeedAllLocations = internalMutation({

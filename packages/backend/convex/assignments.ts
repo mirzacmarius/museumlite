@@ -2,6 +2,10 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { getDisplayedMediaThumbnailUrl } from "./utils/collectionDisplayHelpers";
+import {
+  getCurrentUserOrganization,
+  getRolePermissionNames,
+} from "./utils/permissions";
 
 /**
  * The objects the viewer cataloged, and those they changed this week, in the
@@ -49,6 +53,23 @@ export const listMyAssignments = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
+    }
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw new Error("Not a member of this organization");
+    }
+    // The dashboard shows this section to every member; one whose role
+    // cannot read Objects sees it empty rather than an error.
+    const permissions = await getRolePermissionNames(ctx, membership.roleId);
+    if (!permissions.includes("collections.read")) {
+      return {
+        recentlyModified: [],
+        myCatalogedItems: [],
+        stats: { totalCatalogedItems: 0, itemsModifiedThisWeek: 0 },
+      };
     }
 
     // Get items recently modified by the user

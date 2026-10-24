@@ -50,6 +50,7 @@ import {
   requireCapability,
   requireValuationRead,
 } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 import {
   appraisalAgeDays,
   appraisalExpiresAt,
@@ -1218,6 +1219,18 @@ export const createClaim = mutation({
       createdBy: userId,
       createdAt: Date.now(),
     });
+    for (const storageId of [
+      ...(args.documentIds ?? []),
+      ...(args.photoIds ?? []),
+    ]) {
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "insuranceClaim",
+        ownerId: claimId,
+      });
+    }
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -1772,6 +1785,13 @@ export const uploadPolicyDocument = mutation({
       "organization.manage_settings",
     );
 
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: policy.organizationId,
+      uploadedBy: userId,
+      ownerType: "insurancePolicy",
+      ownerId: args.policyId,
+    });
     const documentIds = policy.documentIds ?? [];
     documentIds.push(args.storageId);
 
@@ -1810,6 +1830,13 @@ export const uploadClaimDocument = mutation({
       "organization.manage_settings",
     );
 
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: claim.organizationId,
+      uploadedBy: userId,
+      ownerType: "insuranceClaim",
+      ownerId: args.claimId,
+    });
     if (args.documentType === "document") {
       const documentIds = claim.documentIds ?? [];
       documentIds.push(args.storageId);
@@ -2264,6 +2291,13 @@ export const uploadDisputeDocument = mutation({
       "organization.manage_settings",
     );
 
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: claim.organizationId,
+      uploadedBy: userId,
+      ownerType: "insuranceClaim",
+      ownerId: args.claimId,
+    });
     const documentIds = claim.disputeDocumentIds ?? [];
     documentIds.push(args.storageId);
 

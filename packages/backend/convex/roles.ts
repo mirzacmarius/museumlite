@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import { query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
 import {
+  getCurrentUserOrganization,
   getUserPermissions as getUserPerms,
   hasPermission,
   requirePermission,
@@ -287,6 +288,13 @@ export const listRoles = query({
     }),
   ),
   handler: async (ctx, args) => {
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw new Error("Not a member of this organization");
+    }
     const roles = await ctx.db
       .query("roles")
       .withIndex("by_organization", (q) =>
@@ -363,6 +371,14 @@ export const getRole = query({
   handler: async (ctx, args) => {
     const role = await ctx.db.get(args.roleId);
     if (!role) {
+      return null;
+    }
+    // Another organization's role reads exactly like a missing one.
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      role.organizationId,
+    );
+    if (!membership) {
       return null;
     }
 

@@ -1,9 +1,43 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
-
+import { authedForUser } from "./testHarness";
 import { modules } from "./testSetup";
+
+/** A signed-in member of the organization, holding one of its roles. */
+async function memberOf(
+  t: ReturnType<typeof convexTest>,
+  organizationId: Id<"organizations">,
+) {
+  const userId = await t.run(async (ctx) => {
+    const role = await ctx.db
+      .query("roles")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .first();
+    const roleId =
+      role?._id ??
+      (await ctx.db.insert("roles", {
+        organizationId,
+        name: "Member",
+        isSystemRole: false,
+      }));
+    const userId = await ctx.db.insert("users", {
+      email: `member-${Math.random().toString(36).slice(2, 8)}@example.com`,
+    });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+    return userId;
+  });
+  return authedForUser(t, userId);
+}
 
 describe("roles", () => {
   test('permissions category supports "sites"', async () => {
@@ -37,7 +71,8 @@ describe("roles", () => {
     ]);
     expect(permissions.some((p) => p.category === "sites")).toBe(true);
 
-    const roles = await t.query(api.roles.listRoles, { organizationId });
+    const member = await memberOf(t, organizationId);
+    const roles = await member.query(api.roles.listRoles, { organizationId });
     expect(
       roles.some((role) =>
         role.permissions.some((p) => p.category === "sites"),
@@ -893,7 +928,8 @@ describe("roles", () => {
         return { orgId, roleIds };
       });
 
-      const roles = await t.query(api.roles.listRoles, {
+      const member = await memberOf(t, orgId);
+      const roles = await member.query(api.roles.listRoles, {
         organizationId: orgId,
       });
 
@@ -938,7 +974,8 @@ describe("roles", () => {
         return orgId;
       });
 
-      const roles = await t.query(api.roles.listRoles, {
+      const member = await memberOf(t, orgId);
+      const roles = await member.query(api.roles.listRoles, {
         organizationId: orgId,
       });
 
@@ -954,22 +991,35 @@ describe("roles", () => {
       ]);
     });
 
-    test("should return empty array for organization with no roles", async () => {
+    test("refuses a signed-out caller and a member of another organization", async () => {
       const t = convexTest(schema, modules);
 
-      const orgId = await t.run(async (ctx) => {
-        return await ctx.db.insert("organizations", {
-          name: "Empty Org",
-          slug: "empty-org",
+      const [orgId, otherOrgId] = await t.run(async (ctx) => {
+        const orgId = await ctx.db.insert("organizations", {
+          name: "Org",
+          slug: "org",
           type: "museum",
         });
+        await ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Administrator",
+          isSystemRole: true,
+        });
+        const otherOrgId = await ctx.db.insert("organizations", {
+          name: "Other Org",
+          slug: "other-org",
+          type: "museum",
+        });
+        return [orgId, otherOrgId];
       });
+      const outsider = await memberOf(t, otherOrgId);
 
-      const roles = await t.query(api.roles.listRoles, {
-        organizationId: orgId,
-      });
-
-      expect(roles).toHaveLength(0);
+      await expect(
+        t.query(api.roles.listRoles, { organizationId: orgId }),
+      ).rejects.toThrow("Not a member of this organization");
+      await expect(
+        outsider.query(api.roles.listRoles, { organizationId: orgId }),
+      ).rejects.toThrow("Not a member of this organization");
     });
   });
 
@@ -977,49 +1027,65 @@ describe("roles", () => {
     test("should get a role with its permissions", async () => {
       const t = convexTest(schema, modules);
 
-      const { roleId, permissionIds: _permissionIds } = await t.run(
-        async (ctx) => {
-          const orgId = await ctx.db.insert("organizations", {
-            name: "Test Org",
-            slug: "test-org",
+      const {
+        orgId,
+        roleId,
+        permissionIds: _permissionIds,
+      } = await t.run(async (ctx) => {
+        const orgId = await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+
+        const roleId = await ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Curator",
+          description: "Manages collections",
+          isSystemRole: false,
+        });
+
+        const permissionIds = [
+          await ctx.db.insert("permissions", {
+            name: "collections.read",
+            category: "collections",
+          }),
+          await ctx.db.insert("permissions", {
+            name: "collections.create",
+            category: "collections",
+          }),
+        ];
+
+        await Promise.all(
+          Array.from(permissionIds).map(async (permId) => {
+            await ctx.db.insert("rolePermissions", {
+              roleId,
+              permissionId: permId,
+            });
+          }),
+        );
+
+        return { orgId, roleId, permissionIds };
+      });
+
+      const [member, otherOrgId] = await Promise.all([
+        memberOf(t, orgId),
+        t.run(async (ctx) =>
+          ctx.db.insert("organizations", {
+            name: "Other Org",
+            slug: "other-org",
             type: "museum",
-          });
-
-          const roleId = await ctx.db.insert("roles", {
-            organizationId: orgId,
-            name: "Curator",
-            description: "Manages collections",
-            isSystemRole: false,
-          });
-
-          const permissionIds = [
-            await ctx.db.insert("permissions", {
-              name: "collections.read",
-              category: "collections",
-            }),
-            await ctx.db.insert("permissions", {
-              name: "collections.create",
-              category: "collections",
-            }),
-          ];
-
-          await Promise.all(
-            Array.from(permissionIds).map(async (permId) => {
-              await ctx.db.insert("rolePermissions", {
-                roleId,
-                permissionId: permId,
-              });
-            }),
-          );
-
-          return { roleId, permissionIds };
-        },
-      );
-
-      const role = await t.query(api.roles.getRole, {
+          }),
+        ),
+      ]);
+      const outsider = await memberOf(t, otherOrgId);
+      const role = await member.query(api.roles.getRole, {
         roleId,
       });
 
+      // Another organization's role reads like a missing one.
+      expect(await outsider.query(api.roles.getRole, { roleId })).toBeNull();
+      expect(await t.query(api.roles.getRole, { roleId })).toBeNull();
       expect(role).not.toBeNull();
       expect(role?.name).toBe("Curator");
       expect(role?.description).toBe("Manages collections");

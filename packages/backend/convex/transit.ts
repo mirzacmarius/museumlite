@@ -9,6 +9,7 @@ import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { generateNextTransitNumber } from "./utils/numberGenerator";
+import { requireInOrganization } from "./utils/organizationScope";
 import { requirePermission } from "./utils/permissions";
 import {
   getTransitHandoffSummaryForRecord,
@@ -16,6 +17,7 @@ import {
   recordTransitItemInstallationInternal,
   recordTransitItemReceiptInternal,
 } from "./utils/transitPhysicalHandoff";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 
 const transitTypeValidator = v.union(
   v.literal("outgoing"),
@@ -89,6 +91,42 @@ function assertAllowedTransitTransition(
   const allowed = ALLOWED_TRANSIT_TRANSITIONS[from];
   if (!allowed.includes(to)) {
     throw new Error(`Invalid transit status transition from ${from} to ${to}`);
+  }
+}
+
+/** Linked locations and the insurance policy must belong to the organization. */
+async function requireTransitReferences(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  references: {
+    originLocationId?: Id<"locations">;
+    destinationLocationId?: Id<"locations">;
+    insurancePolicyId?: Id<"insurancePolicies">;
+  },
+) {
+  if (references.originLocationId) {
+    await requireInOrganization(
+      ctx,
+      references.originLocationId,
+      organizationId,
+      "Origin location",
+    );
+  }
+  if (references.destinationLocationId) {
+    await requireInOrganization(
+      ctx,
+      references.destinationLocationId,
+      organizationId,
+      "Destination location",
+    );
+  }
+  if (references.insurancePolicyId) {
+    await requireInOrganization(
+      ctx,
+      references.insurancePolicyId,
+      organizationId,
+      "Insurance policy",
+    );
   }
 }
 
@@ -177,6 +215,8 @@ export const createTransitRecord = mutation({
         }),
       );
     }
+
+    await requireTransitReferences(ctx, args.organizationId, args);
 
     const transitNumber = await generateNextTransitNumber(
       ctx,
@@ -313,6 +353,8 @@ export const updateTransitRecord = mutation({
 
     await requirePermission(ctx, transitRecord.organizationId, "loans.update");
 
+    await requireTransitReferences(ctx, transitRecord.organizationId, args);
+
     const { transitRecordId, ...updates } = args;
 
     const filteredUpdates: Record<string, unknown> = {};
@@ -387,6 +429,18 @@ export const updateTransitStatus = mutation({
       documentIds: args.documentIds,
       notes: args.notes,
     });
+    for (const storageId of [
+      ...(args.photoIds ?? []),
+      ...(args.documentIds ?? []),
+    ]) {
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: transitRecord.organizationId,
+        uploadedBy: userId,
+        ownerType: "transitStatusUpdate",
+        ownerId: statusUpdateId,
+      });
+    }
 
     const statusUpdates: Record<string, unknown> = {
       status: args.status,

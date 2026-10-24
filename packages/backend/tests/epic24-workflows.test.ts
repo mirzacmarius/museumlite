@@ -479,6 +479,13 @@ describe("Epic 24: Workflow Templates", () => {
   test("listTemplates returns templates filtered by workflow type", async () => {
     // #given
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgWithRole(t, [
+      "collections.read",
+    ]);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-templates`,
+      issuer: "https://example.test",
+    });
 
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowTemplates", {
@@ -499,10 +506,12 @@ describe("Epic 24: Workflow Templates", () => {
 
     // #when
     const [accessionTemplates, loanTemplates] = await Promise.all([
-      t.query(api.workflows.listTemplates, {
+      authed.query(api.workflows.listTemplates, {
+        organizationId,
         workflowType: "accession",
       }),
-      t.query(api.workflows.listTemplates, {
+      authed.query(api.workflows.listTemplates, {
+        organizationId,
         workflowType: "loan",
       }),
     ]);

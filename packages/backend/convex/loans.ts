@@ -1323,6 +1323,15 @@ export const updateConditionReport = mutation({
       updates.conditionDescription = args.conditionDescription;
     if (args.damages !== undefined) updates.damages = args.damages;
     if (args.photos !== undefined) updates.photos = args.photos;
+    for (const storageId of args.photos ?? []) {
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: loan.organizationId,
+        uploadedBy: userId,
+        ownerType: "conditionReport",
+        ownerId: args.reportId,
+      });
+    }
 
     await ctx.db.patch(args.reportId, updates);
 
@@ -1940,6 +1949,18 @@ export const createConditionDispute = mutation({
       status: "reported",
       claimAmount: args.claimAmount,
     });
+    for (const storageId of [
+      ...(args.conditionBeforePhotos ?? []),
+      ...(args.conditionAfterPhotos ?? []),
+    ]) {
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: loan.organizationId,
+        uploadedBy: userId,
+        ownerType: "conditionDispute",
+        ownerId: disputeId,
+      });
+    }
 
     const [, orgMembers] = await Promise.all([
       ctx.runMutation(internal.audit.logAction, {
@@ -2070,6 +2091,15 @@ export const updateDisputeInvestigation = mutation({
     }
     if (args.investigationPhotos !== undefined) {
       updates.investigationPhotos = args.investigationPhotos;
+    }
+    for (const storageId of args.investigationPhotos ?? []) {
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: dispute.organizationId,
+        uploadedBy: userId,
+        ownerType: "conditionDispute",
+        ownerId: args.disputeId,
+      });
     }
 
     await ctx.db.patch(args.disputeId, updates);

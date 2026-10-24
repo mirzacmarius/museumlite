@@ -20,6 +20,7 @@ async function requireAutomotiveModule(
 
 export const getByVin = query({
   args: {
+    organizationId: v.id("organizations"),
     vin: v.string(),
   },
   returns: v.union(
@@ -40,19 +41,21 @@ export const getByVin = query({
       throw new Error("Not authenticated");
     }
 
+    await Promise.all([
+      requireAutomotiveModule(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
+
     const details = await ctx.db
       .query("vehicleDetails")
-      .withIndex("by_vin", (q) => q.eq("vin", args.vin))
+      .withIndex("by_organization_and_vin", (q) =>
+        q.eq("organizationId", args.organizationId).eq("vin", args.vin),
+      )
       .unique();
 
     if (!details) {
       return null;
     }
-
-    await Promise.all([
-      requireAutomotiveModule(ctx, details.organizationId),
-      requirePermission(ctx, details.organizationId, "collections.read"),
-    ]);
 
     return {
       _id: details._id,
