@@ -29,6 +29,8 @@ export function useCollectionFieldLabel() {
           return t("objects.form.period");
         case "dateCreated":
           return t("objects.form.dateCreated");
+        case "dateCreatedEdtf":
+          return t("objects.form.productionDate.legend");
         case "materials":
           return t("objects.form.materials");
         case "technique":

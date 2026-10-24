@@ -3442,7 +3442,7 @@ export default {
       creator: "Skaper/Kunstner",
       culture: "Kultur",
       period: "Periode",
-      dateCreated: "Opprettelsesdato",
+      dateCreated: "Datering",
       materials: "Materialer",
       dimensions: "Dimensjoner",
       condition: "Tilstand",
@@ -3462,6 +3462,32 @@ export default {
       publicUrlSlug: "Offentlig URL",
       owner: "Eier",
       to: "Til",
+      productionDate: {
+        legend: "Strukturert datering",
+        description:
+          "Valgfritt. Bestemmer hvordan katalogen sorterer, filtrerer og eksporterer dette objektet. Teksten over vises slik den er skrevet.",
+        from: "Fra",
+        to: "Til",
+        hint: "Fyll ut Fra for én dato, eller Fra og Til for et tidsrom. Senest og Tidligst gjelder bare for Fra alene.",
+        readAs: "Leses som {date}.",
+        years: "Sortering og filtre bruker {years}.",
+        yearsFrom: "Sortering og filtre bruker {start} og senere.",
+        yearsUntil: "Sortering og filtre bruker til og med {end}.",
+        undated: "Udatert for sortering og filtre.",
+        notRead:
+          "Leses ikke som en dato og vises slik den er skrevet. Legg til en strukturert datering for å sortere og filtrere etter den.",
+        useReading: "Bruk som strukturert datering",
+        mismatch:
+          "Teksten leses som {text}, men den strukturerte dateringen er {date}. Sortering, filtre og eksporter bruker den strukturerte dateringen.",
+        edtf: "EDTF {edtf}",
+        fixed:
+          "Denne strukturerte dateringen kan ikke endres her. Fjern den for å legge inn en annen.",
+        clear: "Fjern strukturert datering",
+        invalid:
+          "Sjekk den strukturerte dateringen: fyll ut delene presisjonen krever, og en slutt som er lik eller etter starten.",
+        openInRange:
+          "Senest og Tidligst gjelder bare for Fra alene. Velg Som oppgitt eller Cirka for et tidsrom.",
+      },
       placeholders: {
         title: "Skriv inn objekttittel",
         accessionNumber: "Auto-generert hvis tom",
@@ -3470,7 +3496,7 @@ export default {
         selectTypes: "Velg eller legg til typer...",
         culture: "f.eks., Fransk",
         period: "f.eks., 1800-tallet",
-        dateCreated: "f.eks., 1850",
+        dateCreated: "f.eks., ca. 1850, 1850–1860 eller 1800-tallet",
         creator: "f.eks., Vincent van Gogh",
         dimensions: "f.eks., 50 x 60 cm",
         location: "Velg en plassering (valgfritt)",
@@ -3582,7 +3608,7 @@ export default {
       objectType: "Objekttype",
       objectName: "Objektnavn",
       creatorArtist: "Skaper/Kunstner",
-      dateCreated: "Opprettelsesdato",
+      dateCreated: "Datering",
       culture: "Kultur",
       period: "Periode",
       materials: "Materialer",
@@ -3615,7 +3641,7 @@ export default {
       objectType: "Objekttype",
       objectName: "Objektnavn",
       creatorArtist: "Skaper/Kunstner",
-      dateCreated: "Opprettelsesdato",
+      dateCreated: "Datering",
       culture: "Kultur",
       period: "Periode",
       physicalDescription: "Fysisk Beskrivelse",
@@ -7446,6 +7472,11 @@ export default {
       },
       uncertain: "Kilden er usikker",
       decadeHint: "Oppgi første år i tiåret, for eksempel 1920.",
+      era: "Tidsregning",
+      eras: {
+        ad: "e.Kr.",
+        bc: "f.Kr.",
+      },
     },
     retract: {
       title: "Trekke tilbake påstanden?",
@@ -8293,7 +8324,7 @@ export default {
         bodyStyle: "Karosseritype",
         caption: "Bildetekst",
         dateAcquired: "Anskaffelsesdato",
-        dateCreatedLabel: "Opprettet dato",
+        dateCreatedLabel: "Datering",
         engineNumber: "Motornr.",
         exterior: "Utvendig",
         fuelType: "Drivstofftype",
@@ -10961,6 +10992,8 @@ export default {
       invalid: "Noen felt må rettes før du kan lagre.",
       saveFailed:
         "Endringene dine kunne ikke lagres. Sjekk tilkoblingen og prøv igjen.",
+      productionDateInvalid:
+        "Den strukturerte dateringen er ikke en gyldig dato. Sjekk delene og prøv igjen.",
     },
     notices: {
       recoveredTitle: "Ulagrede endringer funnet",

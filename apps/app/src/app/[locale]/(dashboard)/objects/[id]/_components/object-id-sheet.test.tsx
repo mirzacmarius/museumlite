@@ -11,6 +11,7 @@ import {
 const englishFormat: ObjectIdSheetFormat = {
   measurementLabels: { height: "H", width: "W", depth: "D" },
   number: (value) => String(value),
+  dateMade: (source) => source.dateCreated,
 };
 
 test("every checklist category is printed, recorded or not", async () => {

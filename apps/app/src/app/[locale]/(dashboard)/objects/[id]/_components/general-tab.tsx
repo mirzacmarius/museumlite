@@ -1,7 +1,14 @@
 "use client";
 
+import {
+  type ProductionDateSource,
+  parseEdtf,
+  productionDateSummary,
+} from "@v1/backend/convex/utils/productionDates";
 import { CheckCircle, Tag } from "lucide-react";
-import { useI18n } from "@/locales/client";
+import { EdtfChip } from "@/components/production-date/edtf-chip";
+import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 import type { CollectionData } from "./types";
 
@@ -64,10 +71,9 @@ export function GeneralTab({
           label={tRoot("objects.form.period")}
           value={collection.period}
         />
-        <DetailField
-          label={tRoot("objects.form.dateCreated")}
-          value={collection.dateCreated}
-        />
+        <DetailField label={tRoot("objects.form.dateCreated")}>
+          <DateMadeValue source={collection} />
+        </DetailField>
       </DetailGrid>
       {collection.isHighResDownloadable ? (
         <div className="mt-5 flex items-center gap-2 border-t border-border/60 pt-4">
@@ -78,5 +84,30 @@ export function GeneralTab({
         </div>
       ) : null}
     </DetailSection>
+  );
+}
+
+/**
+ * The date made as written (else its structured date), and the years the
+ * catalog sorts and filters it by, so an unread date stands out.
+ */
+function DateMadeValue({ source }: { source: ProductionDateSource }) {
+  const t = useScopedI18n("objects.form.productionDate");
+  const dates = useProductionDateFormat();
+  const shown = dates.dateMade(source);
+  if (!shown) return <div className="text-sm text-muted-foreground/70">-</div>;
+  const summary = productionDateSummary(source);
+  const entered =
+    source.dateCreatedEdtf && parseEdtf(source.dateCreatedEdtf)
+      ? source.dateCreatedEdtf
+      : undefined;
+  return (
+    <div className="grid gap-1">
+      <div className="break-words text-sm text-foreground">{shown}</div>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <span>{summary ? dates.years(summary) : t("undated")}</span>
+        {entered ? <EdtfChip edtf={entered} /> : null}
+      </div>
+    </div>
   );
 }

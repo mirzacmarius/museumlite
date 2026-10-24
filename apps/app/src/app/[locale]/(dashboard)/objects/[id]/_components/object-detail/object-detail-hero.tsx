@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { useI18n } from "@/locales/client";
 import type { ObjectDetailData } from "../types";
@@ -56,6 +57,7 @@ export function ObjectDetailHero({
   unknownLabel,
 }: ObjectDetailHeroProps) {
   const tRoot = useI18n();
+  const dates = useProductionDateFormat();
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const primaryImageIndex = heroLightboxImages.findIndex(
     (image) => image.id === heroImage?._id,
@@ -246,7 +248,7 @@ export function ObjectDetailHero({
           <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Calendar className="size-4" />
-              <span>{collection.dateCreated || unknownLabel}</span>
+              <span>{dates.dateMade(collection) || unknownLabel}</span>
             </div>
             {locationString ? (
               <div

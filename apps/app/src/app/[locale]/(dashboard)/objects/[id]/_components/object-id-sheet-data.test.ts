@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
 import {
+  formatDateMade,
+  type ProductionDateLabels,
+} from "@/lib/production-date-format";
+import {
   CATEGORY_LINE_LIMIT,
   LINE_LENGTH_LIMIT,
   type ObjectIdSheetCollection,
@@ -11,9 +15,19 @@ import {
 
 const bare: ObjectIdSheetCollection = { title: "Bronze coin" };
 
+const englishDates: ProductionDateLabels = {
+  decade: (year) => `${year}s`,
+  circa: (date) => `c. ${date}`,
+  notAfter: (date) => `by ${date}`,
+  notBefore: (date) => `after ${date}`,
+  uncertain: (date) => `${date}?`,
+  range: (start, end) => `${start} – ${end}`,
+};
+
 const englishFormat: ObjectIdSheetFormat = {
   measurementLabels: { height: "H", width: "W", depth: "D" },
   number: (value) => value.toLocaleString("en-US"),
+  dateMade: (source) => formatDateMade(source, "en", englishDates),
 };
 
 function valuesOf(
@@ -107,6 +121,23 @@ describe("objectIdCategoryValues", () => {
     expect(lines.maker).toEqual(["Unknown Dutch painter"]);
   });
 
+  test("prints the date made as written, else its structured date", () => {
+    expect(
+      linesOf({ title: "Jug", dateCreatedEdtf: "1650~", period: "Baroque" })
+        .date_or_period,
+    ).toEqual(["c. 1650", "Baroque"]);
+    expect(
+      linesOf({
+        title: "Jug",
+        dateCreated: "Ming dynasty",
+        dateCreatedEdtf: "1368/1644",
+      }).date_or_period,
+    ).toEqual(["Ming dynasty"]);
+    expect(
+      linesOf({ title: "Coin", dateCreatedEdtf: "-0499" }).date_or_period,
+    ).toEqual(["500 BC"]);
+  });
+
   test("keeps free-text dimensions and a diameter from older records", () => {
     expect(
       linesOf({
@@ -129,6 +160,7 @@ describe("objectIdCategoryValues", () => {
       },
       [],
       {
+        ...englishFormat,
         measurementLabels: { height: "H", width: "L", depth: "P" },
         number: (value) => String(value).replace(".", ","),
       },

@@ -124,6 +124,7 @@ export function ObjectRequestFormHero({
             <ObjectFormSummaryCards
               creator={formData.creator}
               dateCreated={formData.dateCreated}
+              dateCreatedEdtf={formData.dateCreatedEdtf}
               locationSummary={locationSummary}
               collectionSummary={collectionSummary}
               isLocationTrackingEnabled={isLocationTrackingEnabled}

@@ -3516,7 +3516,7 @@ export default {
       creator: "Créateur",
       culture: "Culture",
       period: "Période",
-      dateCreated: "Date de Création",
+      dateCreated: "Date de production",
       materials: "Matériaux",
       dimensions: "Dimensions",
       condition: "Condition",
@@ -3539,6 +3539,33 @@ export default {
       publicUrlSlug: "Slug d'URL Publique",
       owner: "Propriétaire",
       to: "À",
+      productionDate: {
+        legend: "Date structurée",
+        description:
+          "Facultatif. Détermine comment le catalogue trie, filtre et exporte cet objet ; le texte ci-dessus s'affiche tel qu'il a été écrit.",
+        from: "De",
+        to: "À",
+        hint: "Remplissez De pour une seule date, ou De et À pour une période. Au plus tard et Pas avant ne s'appliquent qu'à De seul.",
+        readAs: "Lu comme {date}.",
+        years: "Le tri et les filtres utilisent {years}.",
+        yearsFrom:
+          "Le tri et les filtres utilisent les années à partir de {start}.",
+        yearsUntil: "Le tri et les filtres utilisent les années jusqu'à {end}.",
+        undated: "Sans date pour le tri et les filtres.",
+        notRead:
+          "Pas lu comme une date : le texte s'affiche tel qu'il a été écrit. Ajoutez une date structurée pour trier et filtrer selon celle-ci.",
+        useReading: "Utiliser comme date structurée",
+        mismatch:
+          "Le texte se lit comme {text}, mais la date structurée est {date}. Le tri, les filtres et les exports utilisent la date structurée.",
+        edtf: "EDTF {edtf}",
+        fixed:
+          "Cette date structurée ne peut pas être modifiée ici. Effacez-la pour en saisir une autre.",
+        clear: "Effacer la date structurée",
+        invalid:
+          "Vérifiez la date structurée : saisissez les parties que demande sa précision, et une fin égale ou postérieure au début.",
+        openInRange:
+          "Au plus tard et Pas avant ne s'appliquent qu'à De seul. Choisissez Telle qu'indiquée ou Vers (circa) pour une période.",
+      },
       placeholders: {
         title: "Entrez le titre de l'objet",
         accessionNumber: "Généré automatiquement si vide",
@@ -3547,7 +3574,7 @@ export default {
         selectTypes: "Sélectionner ou ajouter des types...",
         culture: "par exemple, Français",
         period: "par exemple, 19ème Siècle",
-        dateCreated: "par exemple, 1850",
+        dateCreated: "par exemple, vers 1850, 1850–1860 ou XIXe siècle",
         creator: "par exemple, Vincent van Gogh",
         dimensions: "par exemple, 50 x 60 cm",
         location: "Sélectionner un emplacement (optionnel)",
@@ -3644,7 +3671,7 @@ export default {
       objectType: "Type d'Objet",
       objectName: "Nom de l'Objet",
       creatorArtist: "Créateur/Artiste",
-      dateCreated: "Date de Création",
+      dateCreated: "Date de production",
       culture: "Culture",
       period: "Période",
       materials: "Matériaux",
@@ -3676,7 +3703,7 @@ export default {
       objectType: "Type d'Objet",
       objectName: "Nom de l'Objet",
       creatorArtist: "Créateur/Artiste",
-      dateCreated: "Date de Création",
+      dateCreated: "Date de production",
       culture: "Culture",
       period: "Période",
       physicalDescription: "Description Physique",
@@ -7539,6 +7566,11 @@ export default {
       uncertain: "La source est incertaine",
       decadeHint:
         "Saisissez la première année de la décennie, par exemple 1920.",
+      era: "Ère",
+      eras: {
+        ad: "apr. J.-C.",
+        bc: "av. J.-C.",
+      },
     },
     retract: {
       title: "Rétracter l'assertion ?",
@@ -8391,7 +8423,7 @@ export default {
         bodyStyle: "Type de carrosserie",
         caption: "Légende",
         dateAcquired: "Date d’acquisition",
-        dateCreatedLabel: "Date de création",
+        dateCreatedLabel: "Date de production",
         engineNumber: "N° de moteur",
         exterior: "Extérieur",
         fuelType: "Type de carburant",
@@ -11140,6 +11172,8 @@ export default {
       invalid: "Certains champs doivent être corrigés avant l'enregistrement.",
       saveFailed:
         "Vos modifications n'ont pas pu être enregistrées. Vérifiez votre connexion et réessayez.",
+      productionDateInvalid:
+        "La date structurée n'est pas une date valide. Vérifiez ses parties et réessayez.",
     },
     notices: {
       recoveredTitle: "Modifications non enregistrées trouvées",

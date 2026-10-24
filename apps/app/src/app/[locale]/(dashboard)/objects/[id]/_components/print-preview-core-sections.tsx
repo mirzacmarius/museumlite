@@ -2,6 +2,7 @@
 
 import { cn } from "@v1/ui/utils";
 import Image from "next/image";
+import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n, useScopedI18n } from "@/locales/client";
@@ -20,6 +21,7 @@ export function PrintPreviewCoreSections({
   const tRoot = useI18n();
   const t = useScopedI18n("objects.printPreview");
   const materials = formatStringListField(collection.materials);
+  const dateMade = useProductionDateFormat().dateMade(collection);
 
   return (
     <div className="space-y-5 print:space-y-4">
@@ -105,12 +107,12 @@ export function PrintPreviewCoreSections({
               <p className="text-black">{collection.creator}</p>
             </div>
           )}
-          {collection.dateCreated && (
+          {dateMade && (
             <div>
               <p className="text-xs font-medium text-zinc-500">
                 {t("dateCreated")}
               </p>
-              <p className="text-black">{collection.dateCreated}</p>
+              <p className="text-black">{dateMade}</p>
             </div>
           )}
           {collection.culture && (

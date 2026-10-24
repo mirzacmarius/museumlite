@@ -8,9 +8,20 @@ import {
 } from "@v1/backend/convex/utils/moduleCatalog";
 import type { FunctionReturnType } from "convex/server";
 import { z } from "zod";
+import {
+  comparableProductionDate,
+  draftFromEdtf,
+  EMPTY_PRODUCTION_DATE_DRAFT,
+  edtfFromDraft,
+  hasOpenQualifierInRange,
+  type ProductionDateDraft,
+  productionDateDraftSchema,
+  productionDateFromDraft,
+} from "@/components/production-date/production-date-draft";
 import { fieldErrorsFromZod } from "@/lib/record-form";
 import { parseStringListField } from "../../../../../../lib/string-list-field";
 import { toObjectDraftTypeDetails } from "../object-type-details/type-detail-values";
+import { STRUCTURED_DATE_MADE_ID } from "./constants";
 import type {
   CollectionFormData,
   DraftMediaItem,
@@ -155,6 +166,7 @@ export function createEmptyFormData(
     culture: "",
     period: "",
     dateCreated: "",
+    dateCreatedEdtf: EMPTY_PRODUCTION_DATE_DRAFT,
     materials: [],
     technique: "",
     dimensions: "",
@@ -216,6 +228,7 @@ export function comparableCollectionForm(
     culture: text(formData.culture),
     period: text(formData.period),
     dateCreated: text(formData.dateCreated),
+    dateCreatedEdtf: comparableProductionDate(formData.dateCreatedEdtf),
     materials: asList(formData.materials),
     technique: text(formData.technique),
     dimensions: text(formData.dimensions),
@@ -284,6 +297,7 @@ export const collectionFormDataSchema = z.object({
   culture: z.string().optional(),
   period: z.string().optional(),
   dateCreated: z.string().optional(),
+  dateCreatedEdtf: productionDateDraftSchema.optional(),
   materials: z.union([z.string(), z.array(z.string())]).optional(),
   technique: z.string().optional(),
   dimensions: z.string().optional(),
@@ -358,6 +372,9 @@ export interface CollectionFormRuleMessages {
   titleRequired: string;
   weightInvalid: string;
   measurementInvalid: string;
+  productionDateInvalid: string;
+  /** By or After on From while To is given too. */
+  productionDateOpenInRange: string;
 }
 
 /** Shared catalog rules; the server applies the same ones on save. */
@@ -383,6 +400,18 @@ export function collectionFormRules(messages: CollectionFormRuleMessages) {
     dimensionHeight: measurement,
     dimensionWidth: measurement,
     dimensionDepth: measurement,
+    dateCreatedEdtf: z
+      .custom<ProductionDateDraft>()
+      .optional()
+      .superRefine((draft, context) => {
+        if (productionDateFromDraft(draft) !== null) return;
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: hasOpenQualifierInRange(draft)
+            ? messages.productionDateOpenInRange
+            : messages.productionDateInvalid,
+        });
+      }),
   });
 }
 
@@ -431,6 +460,11 @@ export function collectionFieldLocation(field: string): {
     case "creditLine":
     case "legalRestrictions":
       return { tab: "accession", elementId: field };
+    case "dateCreatedEdtf":
+      return {
+        tab: "general",
+        elementId: `${STRUCTURED_DATE_MADE_ID}-from-precision`,
+      };
     case "parentObjectId":
       return { tab: "placement", elementId: "placementParentObjectId" };
     case "currentLocationId":
@@ -503,6 +537,7 @@ export function createFormDataFromDraftObject(
         : "",
     weightUnit: draftObjectData?.weightUnit || "",
     typeDetails: draftObjectData?.typeDetails,
+    dateCreatedEdtf: draftFromEdtf(draftObjectData?.dateCreatedEdtf),
   };
 }
 
@@ -531,7 +566,7 @@ export function buildObjectDraftPayload(
     culture: formData.culture?.trim() || undefined,
     period: formData.period?.trim() || undefined,
     dateCreated: formData.dateCreated?.trim() || undefined,
-    dateCreatedEdtf: undefined,
+    dateCreatedEdtf: edtfFromDraft(formData.dateCreatedEdtf) ?? undefined,
     materials: Array.isArray(formData.materials)
       ? formData.materials.filter(Boolean)
       : [],
@@ -647,6 +682,7 @@ export function createInitialFormData(
     culture: collection.culture || "",
     period: collection.period || "",
     dateCreated: collection.dateCreated || "",
+    dateCreatedEdtf: draftFromEdtf(collection.dateCreatedEdtf),
     materials: parseStringListField(collection.materials),
     technique: collection.technique || "",
     dimensions: collection.dimensions || "",

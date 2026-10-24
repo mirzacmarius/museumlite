@@ -15,8 +15,12 @@ import { TypeCombobox } from "@/components/type-combobox";
 import type { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useI18n } from "@/locales/client";
 import { TagsField } from "../../collection-form-shared/catalog-parity-fields";
+import { DateMadeFields } from "../../collection-form-shared/date-made-fields";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type { CollectionFormTabProps } from "../../collection-form-shared/types";
+import {
+  type CollectionFormTabProps,
+  NO_FIELD_ERRORS,
+} from "../../collection-form-shared/types";
 export interface ObjectRequestGeneralTabProps extends CollectionFormTabProps {
   identifierAccessionId?: Id<"accessions">;
   enabledModules: ReturnType<typeof useFeatureAccess>["enabledModules"];
@@ -28,6 +32,7 @@ export function ObjectRequestGeneralTab({
   placeholders,
   currentOrganizationId,
   isLocationTrackingEnabled,
+  fieldErrors = NO_FIELD_ERRORS,
   enabledModules,
   identifierAccessionId,
 }: ObjectRequestGeneralTabProps) {
@@ -159,19 +164,12 @@ export function ObjectRequestGeneralTab({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dateCreated">
-              {tRoot("objects.form.dateCreated")}
-            </Label>
-            <Input
-              id="dateCreated"
-              value={formData.dateCreated || ""}
-              onChange={(event) =>
-                updateField("dateCreated", event.target.value)
-              }
-              placeholder={placeholders("dateCreated")}
-            />
-          </div>
+          <DateMadeFields
+            formData={formData}
+            updateField={updateField}
+            placeholders={placeholders}
+            fieldErrors={fieldErrors}
+          />
 
           <TagsField formData={formData} updateField={updateField} />
 

@@ -1527,7 +1527,7 @@ export default {
       creator: "Creator",
       culture: "Cultură",
       period: "Perioadă",
-      dateCreated: "Data creării",
+      dateCreated: "Data realizării",
       materials: "Materiale",
       dimensions: "Dimensiuni",
       condition: "Stare",
@@ -1550,6 +1550,32 @@ export default {
       publicUrlSlug: "Segment URL public",
       owner: "Proprietar",
       to: "Către",
+      productionDate: {
+        legend: "Dată structurată",
+        description:
+          "Opțional. Stabilește cum sortează, filtrează și exportă catalogul acest obiect; textul de mai sus se afișează așa cum a fost scris.",
+        from: "De la",
+        to: "Până la",
+        hint: "Completează De la pentru o singură dată sau De la și Până la pentru un interval. Cel târziu și Cel devreme se aplică doar când De la este singur.",
+        readAs: "Citit ca {date}.",
+        years: "Sortarea și filtrele folosesc {years}.",
+        yearsFrom: "Sortarea și filtrele folosesc anii de la {start} încolo.",
+        yearsUntil: "Sortarea și filtrele folosesc anii până la {end}.",
+        undated: "Nedatat pentru sortare și filtre.",
+        notRead:
+          "Nu este citit ca dată, așa că se afișează așa cum a fost scris. Adaugă o dată structurată pentru a sorta și filtra după ea.",
+        useReading: "Folosește ca dată structurată",
+        mismatch:
+          "Textul se citește ca {text}, dar data structurată este {date}. Sortarea, filtrele și exporturile folosesc data structurată.",
+        edtf: "EDTF {edtf}",
+        fixed:
+          "Această dată structurată nu poate fi modificată aici. Șterge-o pentru a introduce alta.",
+        clear: "Șterge data structurată",
+        invalid:
+          "Verifică data structurată: introdu părțile cerute de precizia ei și un sfârșit egal cu sau după început.",
+        openInRange:
+          "Cel târziu și Cel devreme se aplică doar când De la este singur. Alege Așa cum este dată sau Circa pentru un interval.",
+      },
       placeholders: {
         title: "Introdu titlul obiectului",
         accessionNumber: "Generat automat dacă este lăsat necompletat",
@@ -1558,7 +1584,7 @@ export default {
         selectTypes: "Selectează sau adaugă tipuri...",
         culture: "ex.: franceză",
         period: "ex.: secolul al XIX-lea",
-        dateCreated: "ex.: 1850",
+        dateCreated: "ex.: cca 1850, 1850–1860 sau secolul al XIX-lea",
         creator: "ex.: Vincent van Gogh",
         dimensions: "ex.: 50 x 60 cm",
         location: "Selectează o locație (opțional)",
@@ -1653,7 +1679,7 @@ export default {
       objectType: "Tipul obiectului",
       objectName: "Denumirea obiectului",
       creatorArtist: "Creator/artist",
-      dateCreated: "Data creării",
+      dateCreated: "Data realizării",
       culture: "Cultură",
       period: "Perioadă",
       materials: "Materiale",
@@ -1716,7 +1742,7 @@ export default {
       objectType: "Tipul obiectului",
       objectName: "Denumirea obiectului",
       creatorArtist: "Creator/artist",
-      dateCreated: "Data creării",
+      dateCreated: "Data realizării",
       culture: "Cultură",
       period: "Perioadă",
       physicalDescription: "Descriere fizică",
@@ -6201,6 +6227,11 @@ export default {
       },
       uncertain: "Sursa nu este sigură",
       decadeHint: "Introdu primul an al deceniului, de exemplu 1920.",
+      era: "Eră",
+      eras: {
+        ad: "d.Hr.",
+        bc: "î.Hr.",
+      },
     },
     retract: {
       title: "Retragi afirmația?",
@@ -8352,7 +8383,7 @@ export default {
         bodyStyle: "Tip de caroserie",
         caption: "Legendă",
         dateAcquired: "Data achiziției",
-        dateCreatedLabel: "Data creării",
+        dateCreatedLabel: "Data realizării",
         engineNumber: "Nr. motor",
         exterior: "Exterior",
         fuelType: "Tip de combustibil",
@@ -11076,6 +11107,8 @@ export default {
       invalid: "Unele câmpuri trebuie corectate înainte de salvare.",
       saveFailed:
         "Modificările dvs. nu au putut fi salvate. Verificați conexiunea și încercați din nou.",
+      productionDateInvalid:
+        "Data structurată nu este o dată validă. Verifică-i părțile și încearcă din nou.",
     },
     notices: {
       recoveredTitle: "Au fost găsite modificări nesalvate",

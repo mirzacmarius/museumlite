@@ -130,6 +130,8 @@ export function useCollectionEditForm() {
         titleRequired: t("form.errors.titleRequired"),
         weightInvalid: tErrors("weightInvalid"),
         measurementInvalid: tErrors("measurementInvalid"),
+        productionDateInvalid: t("form.productionDate.invalid"),
+        productionDateOpenInRange: t("form.productionDate.openInRange"),
       }),
     [t, tErrors],
   );
