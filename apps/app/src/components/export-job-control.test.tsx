@@ -115,7 +115,7 @@ test("creating the same export again leaves one row, the newest", async () => {
 
   await openPanel(catalog);
 
-  expect(screen.getAllByText(/^Filtered catalog/)).toHaveLength(1);
+  expect(screen.getAllByText(/^Complete catalog/)).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Download 98 rows" })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Download 97 rows" })).toBeNull();
 });
@@ -148,35 +148,46 @@ test("the earlier download stays listed until the new export completes", async (
     ...state.jobs.slice(1),
   ];
   rerender(panel(catalog));
-  expect(screen.getAllByText(/^Filtered catalog/)).toHaveLength(1);
+  expect(screen.getAllByText(/^Complete catalog/)).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Download 98 rows" })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Download 97 rows" })).toBeNull();
 });
 
-test("exports of other filters, the other format and each selected export stay listed", async () => {
+test("exports of other filters and the other format stay listed", async () => {
+  // Filtered exports made on the Object Catalog stay listed until they expire.
   state.jobs = [
-    exportJob("job-5", catalog, 60, at(29), { format: "jsonl" }),
-    exportJob("job-4", paintings, 12, at(28)),
-    exportJob(
-      "job-3",
-      { kind: "objects", mode: "selected", filters: {} },
-      3,
-      at(27),
-      { selected: 3, selectedCount: 3 },
-    ),
+    exportJob("job-4", catalog, 60, at(29), { format: "jsonl" }),
+    exportJob("job-3", paintings, 12, at(28)),
     exportJob(
       "job-2",
-      { kind: "objects", mode: "selected", filters: {} },
-      5,
-      at(26),
-      { selected: 5, selectedCount: 5 },
+      { kind: "objects", mode: "filtered", filters: { objectType: "Coin" } },
+      8,
+      at(27),
     ),
     exportJob("job-1", catalog, 97, at(25)),
   ];
 
   await openPanel(catalog);
 
-  for (const rows of [60, 12, 3, 5, 97]) {
+  for (const rows of [60, 12, 8, 97]) {
+    expect(
+      screen.getByRole("button", { name: `Download ${rows} rows` }),
+    ).toBeTruthy();
+  }
+  expect(screen.getAllByText(/^Filtered catalog/)).toHaveLength(2);
+  expect(screen.getAllByText(/^Complete catalog/)).toHaveLength(2);
+});
+
+test("each selected export keeps its own row", async () => {
+  const selected = { kind: "objects", mode: "selected", filters: {} } as const;
+  state.jobs = [
+    exportJob("job-2", selected, 3, at(27), { selected: 3, selectedCount: 3 }),
+    exportJob("job-1", selected, 5, at(26), { selected: 5, selectedCount: 5 }),
+  ];
+
+  await openPanel(catalog);
+
+  for (const rows of [3, 5]) {
     expect(
       screen.getByRole("button", { name: `Download ${rows} rows` }),
     ).toBeTruthy();
@@ -235,6 +246,29 @@ test("an earlier export still running stays listed so it can be cancelled", asyn
   await openPanel(catalog);
 
   expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(2);
+});
+
+test("a whole catalog too large for one export says how to export it instead", async () => {
+  const tooLarge = {
+    status: "failed",
+    completedAt: undefined,
+    error:
+      "Export exceeds 16 MiB. Reduce the filter or selection and create a new export.",
+  } satisfies Partial<ExportJob>;
+  state.jobs = [
+    exportJob("job-2", catalog, 0, at(30), tooLarge),
+    exportJob("job-1", paintings, 0, at(25), tooLarge),
+  ];
+
+  await openPanel(catalog);
+
+  const [whole, filtered] = screen.getAllByRole("alert");
+  expect(whole?.textContent).toBe(
+    "The whole catalog is too large for one export. Select objects in the Object Catalog and export them in smaller batches.",
+  );
+  expect(filtered?.textContent).toBe(
+    "This export is too large. Narrow the filters or selection.",
+  );
 });
 
 test("a cancelled export hides no earlier download", async () => {

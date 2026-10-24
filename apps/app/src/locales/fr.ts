@@ -10937,6 +10937,7 @@ export default {
     sourceAudit: "Audit",
     sourceSelected: "Objets sélectionnés",
     sourceCatalog: "Catalogue filtré",
+    sourceCompleteCatalog: "Catalogue complet",
     statusSelecting: "Envoi de la sélection",
     statusQueued: "En file d'attente",
     statusRunning: "En cours",
@@ -10969,6 +10970,8 @@ export default {
       "La sélection n'a pas pu être exportée. Relancez l'envoi ou créez une nouvelle sélection.",
     errorTooLarge:
       "Cet export est trop volumineux. Restreignez les filtres ou la sélection.",
+    errorCatalogTooLarge:
+      "Le catalogue complet est trop volumineux pour un seul export. Sélectionnez des objets dans Objets de Collection et exportez-les par lots plus petits.",
     errorInventoryLinks:
       "Un objet a trop de liens de prêt pour ce filtre d'inventaire. Exportez plutôt les objets sélectionnés.",
     errorInvalidRequest:

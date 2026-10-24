@@ -35,6 +35,23 @@ const RESUMABLE_STATUSES = new Set<ExportStatus>([
   "cancelled",
 ]);
 
+/** A catalog export no filter narrows holds every Object. */
+function exportsWholeCatalog(job: ExportJob) {
+  return (
+    job.source.kind === "objects" &&
+    job.source.mode === "filtered" &&
+    Object.values(job.source.filters).every((value) => value === undefined)
+  );
+}
+
+/** A whole catalog too large for one export can only be split by selection. */
+function jobErrorKey(job: ExportJob) {
+  const key = exportJobErrorKey(job.error);
+  return key === "errorTooLarge" && exportsWholeCatalog(job)
+    ? "errorCatalogTooLarge"
+    : key;
+}
+
 function exportKey(job: ExportJob) {
   return job.source.kind === "objects" && job.source.mode === "selected"
     ? job.jobId
@@ -289,7 +306,9 @@ export function ExportJobControl({
                       })
                     : job.source.mode === "selected"
                       ? t("sourceSelected")
-                      : t("sourceCatalog")}{" "}
+                      : exportsWholeCatalog(job)
+                        ? t("sourceCompleteCatalog")
+                        : t("sourceCatalog")}{" "}
                 · {job.format.toUpperCase()} · {statusLabel(job.status)} ·{" "}
                 {t(
                   job.source.kind === "audit"
@@ -313,9 +332,7 @@ export function ExportJobControl({
                   expiresAt: formatIsoTimestamp(job.expiresAt),
                 })}
               </p>
-              {job.error && (
-                <p role="alert">{t(exportJobErrorKey(job.error))}</p>
-              )}
+              {job.error && <p role="alert">{t(jobErrorKey(job))}</p>}
               {job.status === "completed" &&
                 job.source.kind === "register" &&
                 job.totals && (

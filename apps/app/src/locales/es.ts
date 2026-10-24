@@ -10901,6 +10901,7 @@ export default {
     sourceAudit: "Auditoría",
     sourceSelected: "Objetos seleccionados",
     sourceCatalog: "Catálogo filtrado",
+    sourceCompleteCatalog: "Catálogo completo",
     statusSelecting: "Cargando selección",
     statusQueued: "En cola",
     statusRunning: "En curso",
@@ -10934,6 +10935,8 @@ export default {
       "No se pudo exportar la selección. Reintente la carga o cree una nueva selección.",
     errorTooLarge:
       "Esta exportación es demasiado grande. Acote los filtros o la selección.",
+    errorCatalogTooLarge:
+      "El catálogo completo es demasiado grande para una sola exportación. Seleccione objetos en Objetos de la Colección y expórtelos en lotes más pequeños.",
     errorInventoryLinks:
       "Un objeto tiene demasiados vínculos de préstamo para este filtro de inventario. Exporte los objetos seleccionados en su lugar.",
     errorInvalidRequest:
