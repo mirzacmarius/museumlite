@@ -10757,7 +10757,7 @@ export default {
         "You need permission to manage organization settings to view metrics health.",
       statusTitle: "Status",
       automatic:
-        "Metrics rebuild when they become unavailable, and reconcile after records change, at most once an hour.",
+        "Metrics rebuild when they become unavailable, and reconcile after records change, at most once a day.",
       definitionVersion: "Definition version",
       definitionOutdated: "Stored {stored}, current {current}",
       lastBuilt: "Last built",

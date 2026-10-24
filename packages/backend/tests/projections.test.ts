@@ -2,11 +2,18 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
+  getProjectionState,
   PROJECTION_AUTO_ATTEMPTS,
   RECONCILE_INTERVAL_MS,
   RECONCILE_SETTLE_MS,
 } from "../convex/utils/projectionMaintenance";
-import { metricTree } from "../convex/utils/projectionStore";
+import {
+  claimMetricSlot,
+  getContribution,
+  type MetricGeneration,
+  metricNamespace,
+  metricTree,
+} from "../convex/utils/projectionStore";
 import {
   authedForUser,
   type ConvexTest,
@@ -67,6 +74,42 @@ async function insertObjects(
     }
     return ids;
   });
+}
+
+async function activeGeneration(
+  t: ConvexTest,
+  organizationId: Id<"organizations">,
+) {
+  return await t.run(async (ctx) => {
+    const state = await getProjectionState(ctx, organizationId);
+    const generation = state?.activeGenerationId
+      ? await ctx.db.get(state.activeGenerationId)
+      : null;
+    if (!generation) throw new Error("No active projection generation");
+    return generation;
+  });
+}
+
+/** Entry counts of the metric trees in one generation's slot. */
+async function metricTreeSizes(t: ConvexTest, generation: MetricGeneration) {
+  const prefix = `${generation.organizationId}#${generation.metricSlot}|`;
+  return await t.run(async (ctx) => {
+    const sizes: number[] = [];
+    for await (const namespace of metricTree.iterNamespaces(ctx)) {
+      if (namespace.startsWith(prefix)) {
+        sizes.push(await metricTree.count(ctx, { namespace }));
+      }
+    }
+    return sizes;
+  });
+}
+
+async function metricEntriesInSlot(
+  t: ConvexTest,
+  generation: MetricGeneration,
+) {
+  const sizes = await metricTreeSizes(t, generation);
+  return sizes.reduce((total, size) => total + size, 0);
 }
 
 async function reconcile(
@@ -779,6 +822,54 @@ describe("metric aggregate storage", () => {
     await settle();
     expect(await namespaceCount()).toBeLessThanOrEqual(afterFirst * 2);
   });
+
+  test("collecting a replaced generation empties its trees, and the rebuild that reuses its slot starts clean", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture();
+    await insertObjects(t, organizationId, userId, 3);
+    await rebuildProjection(t, organizationId);
+    const first = await activeGeneration(t, organizationId);
+
+    await rebuildProjection(t, organizationId);
+    const second = await activeGeneration(t, organizationId);
+    const entriesPerBuild = await metricEntriesInSlot(t, second);
+    expect(entriesPerBuild).toBeGreaterThan(0);
+    expect(await metricEntriesInSlot(t, first)).toBe(0);
+
+    await rebuildProjection(t, organizationId);
+    const third = await activeGeneration(t, organizationId);
+    expect(third.metricSlot).toBe(first.metricSlot);
+    expect(await metricEntriesInSlot(t, third)).toBe(entriesPerBuild);
+    expect(await metricEntriesInSlot(t, second)).toBe(0);
+    const { health } = await reconcile(staff, settle, organizationId);
+    expect(health.lastReconciliation).toMatchObject({ mismatchCount: 0 });
+  });
+
+  test("a leftover metric entry is replaced instead of failing the write that projects its row", async () => {
+    const { staff, organizationId, userId, t } = await fixture();
+    const [objectId] = await insertObjects(t, organizationId, userId, 1);
+    if (!objectId) throw new Error("fixture missing");
+    await rebuildProjection(t, organizationId);
+    const generation = await activeGeneration(t, organizationId);
+    // Drop the contribution but keep its tree entries.
+    await t.run(async (ctx) => {
+      const contribution = await getContribution(
+        ctx,
+        generation._id,
+        "collections",
+        objectId,
+      );
+      if (!contribution) throw new Error("fixture missing");
+      await ctx.db.delete(contribution._id);
+    });
+
+    await staff.mutation(api.collections.update, {
+      collectionId: objectId,
+      title: "Renamed",
+    });
+
+    const namespace = metricNamespace(generation, "all", "objects.created");
+    expect(await t.run((ctx) => metricTree.count(ctx, { namespace }))).toBe(1);
+  });
 });
 
 describe("automatic health maintenance", () => {
@@ -1127,6 +1218,88 @@ describe("reconciliation", () => {
         await staff.query(api.dashboard.getAnalytics, { organizationId }),
       ).objects,
     ).toMatchObject({ total: 3, active: 2 });
+  });
+
+  test("reconcile writes no metric tree of its own and still catches a live tree that disagrees with its totals", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture();
+    await insertObjects(t, organizationId, userId, 3);
+    await rebuildProjection(t, organizationId);
+    const live = await activeGeneration(t, organizationId);
+    const namespace = metricNamespace(live, "all", "objects.created");
+    await t.run(async (ctx) => {
+      await metricTree.insert(ctx, {
+        namespace,
+        key: [5_000, 0],
+        id: "planted",
+        sumValue: 1,
+      });
+    });
+    const namespaceCount = () =>
+      t.run(async (ctx) => {
+        let count = 0;
+        for await (const _ of metricTree.iterNamespaces(ctx)) count += 1;
+        return count;
+      });
+    const namespacesBefore = await namespaceCount();
+
+    const { generationId, health, discrepancies } = await reconcile(
+      staff,
+      settle,
+      organizationId,
+    );
+    const job = await t.run((ctx) => ctx.db.get(generationId));
+    expect(job?.skipsMetricTree).toBe(true);
+    expect(job?.metricSlot).toBeUndefined();
+    expect(await namespaceCount()).toBe(namespacesBefore);
+    expect(health.lastReconciliation).toMatchObject({ mismatchCount: 1 });
+    expect(discrepancies).toContainEqual(
+      expect.objectContaining({
+        category: "counter_mismatch",
+        metric: "@objects.created",
+        scope: "all",
+        expected: 3,
+        actual: 4,
+      }),
+    );
+  });
+
+  test("a reconciliation started with its own tree before this change finishes, and its cleanup empties the tree and frees the slot", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture();
+    await insertObjects(t, organizationId, userId, 3);
+    await rebuildProjection(t, organizationId);
+    const generationId = await staff.mutation(api.projections.startReconcile, {
+      organizationId,
+    });
+    // Earlier code gave every reconciliation a metric slot and a tree.
+    const legacy = await t.run(async (ctx) => {
+      const state = await getProjectionState(ctx, organizationId);
+      if (!state) throw new Error("fixture missing");
+      const { slot, slotsInUse } = claimMetricSlot(state.metricSlotsInUse);
+      await ctx.db.patch(state._id, { metricSlotsInUse: slotsInUse });
+      await ctx.db.patch(generationId, {
+        skipsMetricTree: undefined,
+        metricSlot: slot,
+      });
+      const generation = await ctx.db.get(generationId);
+      if (!generation) throw new Error("fixture missing");
+      return generation;
+    });
+
+    await settle();
+
+    const sizes = await metricTreeSizes(t, legacy);
+    expect(sizes.length).toBeGreaterThan(0);
+    expect(sizes.every((size) => size === 0)).toBe(true);
+    const state = await t.run((ctx) => getProjectionState(ctx, organizationId));
+    expect(state?.metricSlotsInUse).not.toContain(legacy.metricSlot);
+    const health = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(health.lastReconciliation).toMatchObject({
+      _id: generationId,
+      status: "completed",
+      mismatchCount: 0,
+    });
   });
 
   test("reconcile requires a ready projection", async () => {

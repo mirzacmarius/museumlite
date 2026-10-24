@@ -38,8 +38,12 @@ const MAX_DEPENDENCY_DEPTH = 4;
 const FAN_OUT_WAIT_MS = 1_000;
 /** Quiet period after a change before the automatic reconciliation starts. */
 export const RECONCILE_SETTLE_MS = 5 * 60 * 1000;
-/** Minimum spacing between automatic reconciliations of one organization. */
-export const RECONCILE_INTERVAL_MS = 60 * 60 * 1000;
+/**
+ * Minimum spacing between automatic reconciliations of one organization. A
+ * reconciliation rescans every source row and only reports differences, so
+ * once a day is enough.
+ */
+export const RECONCILE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 /** Attempts, including the first, before a failed job waits for an administrator. */
 export const PROJECTION_AUTO_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 30_000;
@@ -160,11 +164,16 @@ export async function startGeneration(
 ) {
   const state = await ensureProjectionState(ctx, organizationId);
   const now = Date.now();
-  const { slot, slotsInUse } = claimMetricSlot(state.metricSlotsInUse);
-  await ctx.db.patch(state._id, { metricSlotsInUse: slotsInUse });
+  // A reconciliation checks the live tree's sums against its recomputed
+  // totals, so it builds no tree of its own and needs no metric slot.
+  const metric =
+    mode === "rebuild" ? claimMetricSlot(state.metricSlotsInUse) : null;
+  if (metric) {
+    await ctx.db.patch(state._id, { metricSlotsInUse: metric.slotsInUse });
+  }
   const generationId = await ctx.db.insert("projectionGenerations", {
     ...emptyGeneration(organizationId, mode, state.revision, now),
-    metricSlot: slot,
+    ...(metric ? { metricSlot: metric.slot } : { skipsMetricTree: true }),
     ...(requestedBy ? { requestedBy } : {}),
     ...(mode === "reconcile" && state.activeGenerationId
       ? { baselineGenerationId: state.activeGenerationId }
@@ -1503,6 +1512,36 @@ export async function cancelGeneration(
 }
 
 /**
+ * Empties every metric tree the given contributions wrote to. A retired
+ * generation takes no writes and keeps its slot until it is collected, so its
+ * trees hold only its own entries: clearing a tree once removes them all,
+ * where deleting entry by entry walks the tree again for each. `min` reads one
+ * path, so a tree an earlier page already cleared costs two small reads.
+ */
+async function clearMetricTrees(
+  ctx: Ctx,
+  generation: ProjectionGeneration,
+  contributions: Doc<"projectionContributions">[],
+) {
+  const namespaces = new Set<string>();
+  for (const contribution of contributions) {
+    for (const entry of datedEntries(
+      generation,
+      contribution.sourceTable,
+      contribution.sourceId,
+      contribution.facts,
+    ).values()) {
+      namespaces.add(entry.namespace);
+    }
+  }
+  for (const namespace of namespaces) {
+    if (await metricTree.min(ctx, { namespace })) {
+      await metricTree.clear(ctx, { namespace });
+    }
+  }
+}
+
+/**
  * Deletes one bounded page of a retired generation's projection data. The
  * generation document and its discrepancies remain as review evidence.
  */
@@ -1528,19 +1567,10 @@ export async function collectGenerationPage(
     .query("projectionContributions")
     .withIndex("by_generationId", (q) => q.eq("generationId", generationId))
     .take(PROJECTION_PAGE_SIZE);
+  if (!generation.skipsMetricTree) {
+    await clearMetricTrees(ctx, generation, contributions);
+  }
   for (const contribution of contributions) {
-    for (const entry of datedEntries(
-      generation,
-      contribution.sourceTable,
-      contribution.sourceId,
-      contribution.facts,
-    ).values()) {
-      await metricTree.deleteIfExists(ctx, {
-        namespace: entry.namespace,
-        key: entry.key,
-        id: entry.id,
-      });
-    }
     await ctx.db.delete(contribution._id);
   }
   if (contributions.length > 0) return "continue" as const;

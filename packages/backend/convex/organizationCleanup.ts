@@ -633,7 +633,7 @@ async function deleteDerivedDocuments(
   );
   for (const contribution of derived.projectionContributions) {
     const generation = generations.get(contribution.generationId);
-    if (!generation) continue;
+    if (!generation || generation.skipsMetricTree) continue;
     for (const entry of datedEntries(
       generation,
       contribution.sourceTable,

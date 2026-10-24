@@ -260,28 +260,34 @@ export function sameFacts(left: ProjectionFact[], right: ProjectionFact[]) {
 }
 
 /**
- * Atomically replaces the contribution vector of one source row in one
- * generation. Replaying the same vector is a no-op.
+ * Inserts an entry the tree should not hold yet. A plain insert walks the
+ * tree once, where `insertIfDoesNotExist` first walks it to delete the key; a
+ * leftover entry makes the insert fail and roll back, and is replaced instead.
  */
-export async function replaceContribution(
+async function insertDatedEntry(ctx: WriteCtx, entry: DatedEntry) {
+  const item = {
+    namespace: entry.namespace,
+    key: entry.key,
+    id: entry.id,
+    sumValue: entry.value,
+  };
+  try {
+    await metricTree.insert(ctx, item);
+  } catch {
+    await metricTree.insertIfDoesNotExist(ctx, item);
+  }
+}
+
+/** Moves one source row's dated entries from its previous facts to its new ones. */
+async function replaceDatedEntries(
   ctx: WriteCtx,
   generation: ProjectionGeneration,
   sourceTable: string,
   sourceId: string,
+  previousFacts: ProjectionFact[],
   facts: ProjectionFact[],
 ) {
-  const previous = await getContribution(
-    ctx,
-    generation._id,
-    sourceTable,
-    sourceId,
-  );
-  const previousFacts = previous?.facts ?? [];
-  if (sameFacts(previousFacts, facts)) {
-    return { changed: false, previousFacts, writes: 0 };
-  }
-
-  let writes = 1;
+  let writes = 0;
   const oldEntries = datedEntries(
     generation,
     sourceTable,
@@ -308,13 +314,45 @@ export async function replaceContribution(
     writes += 1;
   }
   for (const entry of newEntries.values()) {
-    await metricTree.insertIfDoesNotExist(ctx, {
-      namespace: entry.namespace,
-      key: entry.key,
-      id: entry.id,
-      sumValue: entry.value,
-    });
+    await insertDatedEntry(ctx, entry);
     writes += 1;
+  }
+  return writes;
+}
+
+/**
+ * Atomically replaces the contribution vector of one source row in one
+ * generation. Replaying the same vector is a no-op. A generation that skips
+ * the metric tree keeps only contributions and totals.
+ */
+export async function replaceContribution(
+  ctx: WriteCtx,
+  generation: ProjectionGeneration,
+  sourceTable: string,
+  sourceId: string,
+  facts: ProjectionFact[],
+) {
+  const previous = await getContribution(
+    ctx,
+    generation._id,
+    sourceTable,
+    sourceId,
+  );
+  const previousFacts = previous?.facts ?? [];
+  if (sameFacts(previousFacts, facts)) {
+    return { changed: false, previousFacts, writes: 0 };
+  }
+
+  let writes = 1;
+  if (!generation.skipsMetricTree) {
+    writes += await replaceDatedEntries(
+      ctx,
+      generation,
+      sourceTable,
+      sourceId,
+      previousFacts,
+      facts,
+    );
   }
 
   const deltas = new Map<string, Record<string, number>>();

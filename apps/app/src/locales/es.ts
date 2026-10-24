@@ -11020,7 +11020,7 @@ export default {
         "Necesita permiso para gestionar la configuración de la organización para ver el estado de las métricas.",
       statusTitle: "Estado",
       automatic:
-        "Las métricas se reconstruyen cuando dejan de estar disponibles y se concilian tras los cambios en los registros, como máximo una vez por hora.",
+        "Las métricas se reconstruyen cuando dejan de estar disponibles y se concilian tras los cambios en los registros, como máximo una vez al día.",
       definitionVersion: "Versión de definición",
       definitionOutdated: "Almacenada {stored}, actual {current}",
       lastBuilt: "Última generación",
