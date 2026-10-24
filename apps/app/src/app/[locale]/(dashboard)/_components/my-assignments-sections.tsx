@@ -301,7 +301,8 @@ export function CatalogedByYouSection({
       title={t("assignmentsPage.sections.catalogedByYou")}
       badge={
         <span className="text-xs tabular-nums text-muted-foreground">
-          {stats.totalCatalogedItems}
+          {/* The count stops at 100, so anything above 99 reads as 99+. */}
+          {stats.totalCatalogedItems > 99 ? "99+" : stats.totalCatalogedItems}
         </span>
       }
       action={

@@ -733,6 +733,11 @@ export default defineSchema({
     ])
     .index("by_organization_and_type", ["organizationId", "collectionType"])
     .index("by_organization_and_publicSlug", ["organizationId", "publicSlug"])
+    .index("by_organizationId_and_catalogedBy_and_catalogedAt", [
+      "organizationId",
+      "catalogedBy",
+      "catalogedAt",
+    ])
     .searchIndex("search_index", {
       searchField: "title",
       filterFields: ["organizationId", "status", "collectionType", "title"],

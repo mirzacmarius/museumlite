@@ -7,9 +7,14 @@ import {
   getRolePermissionNames,
 } from "./utils/permissions";
 
+/** Cataloged by you counts up to this many objects, and shows 99+ beyond. */
+const CATALOGED_COUNT_LIMIT = 100;
+
 /**
- * The objects the viewer cataloged, and those they changed this week, in the
- * organization.
+ * The newest objects the viewer cataloged in the organization (`limit`, at
+ * most 100), and how many they cataloged, up to 100. Both come from the
+ * viewer's own rows of the cataloguer index, so changes to other objects do
+ * not rerun it.
  */
 export const listMyAssignments = query({
   args: {
@@ -17,15 +22,6 @@ export const listMyAssignments = query({
     limit: v.optional(v.number()),
   },
   returns: v.object({
-    recentlyModified: v.array(
-      v.object({
-        _id: v.id("collections"),
-        title: v.string(),
-        accessionNumber: v.string(),
-        lastModifiedAt: v.number(),
-        thumbnailUrl: v.optional(v.string()),
-      }),
-    ),
     myCatalogedItems: v.array(
       v.object({
         _id: v.id("collections"),
@@ -44,12 +40,10 @@ export const listMyAssignments = query({
     ),
     stats: v.object({
       totalCatalogedItems: v.number(),
-      itemsModifiedThisWeek: v.number(),
     }),
   }),
   handler: async (ctx, args) => {
-    const limit = args.limit ?? 10;
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const limit = Math.min(args.limit ?? 10, CATALOGED_COUNT_LIMIT);
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -65,64 +59,19 @@ export const listMyAssignments = query({
     // cannot read Objects sees it empty rather than an error.
     const permissions = await getRolePermissionNames(ctx, membership.roleId);
     if (!permissions.includes("collections.read")) {
-      return {
-        recentlyModified: [],
-        myCatalogedItems: [],
-        stats: { totalCatalogedItems: 0, itemsModifiedThisWeek: 0 },
-      };
+      return { myCatalogedItems: [], stats: { totalCatalogedItems: 0 } };
     }
 
-    // Get items recently modified by the user
-    const allCollections = await ctx.db
+    const cataloged = await ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+      .withIndex("by_organizationId_and_catalogedBy_and_catalogedAt", (q) =>
+        q.eq("organizationId", args.organizationId).eq("catalogedBy", userId),
       )
-      .collect();
-
-    const recentlyModifiedByUser = allCollections
-      .filter(
-        (c) =>
-          c.lastModifiedBy === userId &&
-          c.lastModifiedAt &&
-          c.lastModifiedAt > oneWeekAgo,
-      )
-      .sort((a, b) => (b.lastModifiedAt ?? 0) - (a.lastModifiedAt ?? 0))
-      .slice(0, limit);
-
-    // Get thumbnails for recently modified
-    const recentlyModified = await Promise.all(
-      recentlyModifiedByUser.map(async (c) => {
-        const primaryMedia = await ctx.db
-          .query("mediaFiles")
-          .withIndex("by_collection", (q) => q.eq("collectionId", c._id))
-          .filter((q) => q.eq(q.field("isPrimary"), true))
-          .first();
-
-        let thumbnailUrl: string | undefined;
-        if (primaryMedia?.storageId) {
-          const url = await getDisplayedMediaThumbnailUrl(ctx, primaryMedia);
-          thumbnailUrl = url ?? undefined;
-        }
-
-        return {
-          _id: c._id,
-          title: c.title,
-          accessionNumber: c.accessionNumber,
-          lastModifiedAt: c.lastModifiedAt!,
-          thumbnailUrl,
-        };
-      }),
-    );
-
-    // Get items cataloged by the user
-    const myCatalogedCollections = allCollections
-      .filter((c) => c.catalogedBy === userId)
-      .sort((a, b) => b.catalogedAt - a.catalogedAt)
-      .slice(0, limit);
+      .order("desc")
+      .take(CATALOGED_COUNT_LIMIT);
 
     const myCatalogedItems = await Promise.all(
-      myCatalogedCollections.map(async (c) => {
+      cataloged.slice(0, limit).map(async (c) => {
         const primaryMedia = await ctx.db
           .query("mediaFiles")
           .withIndex("by_collection", (q) => q.eq("collectionId", c._id))
@@ -146,24 +95,10 @@ export const listMyAssignments = query({
       }),
     );
 
-    // Calculate stats
-    const itemsModifiedThisWeek = allCollections.filter(
-      (c) =>
-        c.lastModifiedBy === userId &&
-        c.lastModifiedAt &&
-        c.lastModifiedAt > oneWeekAgo,
-    ).length;
-
-    const totalCatalogedItems = allCollections.filter(
-      (c) => c.catalogedBy === userId,
-    ).length;
-
     return {
-      recentlyModified,
       myCatalogedItems,
       stats: {
-        totalCatalogedItems,
-        itemsModifiedThisWeek,
+        totalCatalogedItems: cataloged.length,
       },
     };
   },

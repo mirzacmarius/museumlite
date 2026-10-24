@@ -43,6 +43,33 @@ export interface DispatchResult {
   duplicate: boolean;
 }
 
+async function findIntent(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  idempotencyKey: string,
+) {
+  return await ctx.db
+    .query("notificationIntents")
+    .withIndex("by_organizationId_and_idempotencyKey", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("idempotencyKey", idempotencyKey),
+    )
+    .first();
+}
+
+/**
+ * Whether an event with this idempotency key was already dispatched, so a
+ * caller can skip working out its recipients.
+ */
+export async function wasDispatched(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  idempotencyKey: string,
+) {
+  return (await findIntent(ctx, organizationId, idempotencyKey)) !== null;
+}
+
 /**
  * The only way to notify staff (ADR 0007). Records the intent, checks every
  * recipient's membership and read access to the related entity, then applies
@@ -56,14 +83,11 @@ export async function dispatchNotification(
 ): Promise<DispatchResult> {
   const { idempotencyKey } = dispatch;
   if (idempotencyKey !== undefined) {
-    const existing = await ctx.db
-      .query("notificationIntents")
-      .withIndex("by_organizationId_and_idempotencyKey", (q) =>
-        q
-          .eq("organizationId", dispatch.organizationId)
-          .eq("idempotencyKey", idempotencyKey),
-      )
-      .first();
+    const existing = await findIntent(
+      ctx,
+      dispatch.organizationId,
+      idempotencyKey,
+    );
     if (existing) {
       return { intentId: existing._id, duplicate: true };
     }

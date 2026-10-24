@@ -230,6 +230,55 @@ describe("notification queries with indexes", () => {
     ).toBe(1);
   });
 
+  test("the bell's unread count stops at ten, while the notification center still counts them all", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await t.run(async (ctx) => {
+      const [organizationId, userId] = await Promise.all([
+        ctx.db.insert("organizations", {
+          name: "Busy Museum",
+          slug: "busy-museum",
+          type: "museum",
+        }),
+        ctx.db.insert("users", {
+          name: "Busy Reader",
+          email: "busy-reader@example.com",
+        }),
+      ]);
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId,
+        roleId: await ctx.db.insert("roles", {
+          organizationId,
+          name: "Reader",
+          isSystemRole: false,
+        }),
+        joinedAt: Date.now(),
+      });
+      for (let index = 0; index < 12; index++) {
+        await ctx.db.insert("notifications", {
+          organizationId,
+          userId,
+          type: "task_assigned",
+          title: `Task ${index}`,
+          message: "Unread",
+          read: false,
+          createdAt: Date.now() + index,
+        });
+      }
+      return { organizationId, userId };
+    });
+    const authed = authedForUser(t, userId);
+
+    expect(
+      await authed.query(api.notifications.getUnreadCount, { organizationId }),
+    ).toBe(10);
+    expect(
+      await authed.query(api.notifications.getNotificationCenter, {
+        organizationId,
+      }),
+    ).toMatchObject({ unreadCount: 12 });
+  });
+
   test("should query notifications by user", async () => {
     const t = convexTest(schema, modules);
 
