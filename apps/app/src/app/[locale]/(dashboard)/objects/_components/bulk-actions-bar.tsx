@@ -4,7 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { useQuery } from "convex/react";
-import { Archive, FolderPlus, MapPin, Printer } from "lucide-react";
+import { Archive, FolderPlus, MapPin, PenLine, Printer } from "lucide-react";
 import type { RefObject } from "react";
 import { toast } from "sonner";
 import { useOrganization } from "@/components/organization-provider";
@@ -20,6 +20,7 @@ interface BulkActionsBarProps {
   onAddToGroup: () => void;
   onPrintLabels: () => void;
   onDeaccession: () => void;
+  onEditField: () => void;
   /** The object list, which takes focus back when the bar closes. */
   returnFocusRef: RefObject<HTMLElement | null>;
 }
@@ -31,6 +32,7 @@ export function BulkActionsBar({
   onAddToGroup,
   onPrintLabels,
   onDeaccession,
+  onEditField,
   returnFocusRef,
 }: BulkActionsBarProps) {
   const tRoot = useI18n();
@@ -48,6 +50,13 @@ export function BulkActionsBar({
       onClear={onClearSelection}
       returnFocusRef={returnFocusRef}
     >
+      <PermissionGate permission="collections.update">
+        <Button variant="outline" size="sm" onClick={onEditField}>
+          <PenLine className="mr-2 size-4" aria-hidden="true" />
+          {tRoot("objects.bulkEdit.open")}
+        </Button>
+      </PermissionGate>
+
       <PermissionGate permission="collections.update">
         <Button variant="outline" size="sm" onClick={onAddToGroup}>
           <FolderPlus className="mr-2 size-4" aria-hidden="true" />

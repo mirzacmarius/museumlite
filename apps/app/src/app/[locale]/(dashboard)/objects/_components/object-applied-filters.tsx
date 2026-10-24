@@ -4,10 +4,13 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
 import { type RefObject, useMemo } from "react";
 import type {
+  FilterGroup,
   ObjectDisplayStatus,
+  ObjectPhotographFilter,
   ObjectStatus,
 } from "@/hooks/use-url-filters";
-import { useScopedI18n } from "@/locales/client";
+import { CALENDAR_DATE_OPTIONS, formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface LocationPathItem {
   name: string;
@@ -30,6 +33,30 @@ export interface ObjectAppliedFiltersValue {
   displayStatus: ObjectDisplayStatus;
   locationIds: string[];
   collectionGroupId: string;
+  culture: string;
+  period: string;
+  materials: string;
+  condition: string;
+  photograph: ObjectPhotographFilter;
+  catalogedFrom: string;
+  catalogedTo: string;
+  advancedFilters: FilterGroup[];
+}
+
+/** Conditions the advanced search applies. */
+export function advancedConditionCount(groups: FilterGroup[]) {
+  return groups.reduce((count, group) => count + group.filters.length, 0);
+}
+
+/** A date input's value (YYYY-MM-DD) in the app language. */
+function dateLabel(value: string, locale: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return formatDate(
+    new Date(Date.UTC(year, month - 1, day)),
+    locale,
+    CALENDAR_DATE_OPTIONS,
+  );
 }
 
 interface ObjectAppliedFiltersProps {
@@ -95,6 +122,20 @@ export function ObjectAppliedFilters({
 }: ObjectAppliedFiltersProps) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
+  const locale = useCurrentLocale();
+  const advancedCount = advancedConditionCount(filters.advancedFilters);
+  const catalogedFrom = filters.catalogedFrom
+    ? dateLabel(filters.catalogedFrom, locale)
+    : "";
+  const catalogedTo = filters.catalogedTo
+    ? dateLabel(filters.catalogedTo, locale)
+    : "";
+  const facetChips = [
+    { key: "materials", label: t("filters.materials") },
+    { key: "culture", label: t("filters.culture") },
+    { key: "period", label: t("filters.period") },
+    { key: "condition", label: t("filters.condition") },
+  ] as const;
 
   const locationLabels = useMemo(() => {
     if (filters.locationIds.length === 0) return [];
@@ -122,7 +163,12 @@ export function ObjectAppliedFilters({
     filters.objectType !== "" ||
     filters.displayStatus !== "" ||
     filters.locationIds.length > 0 ||
-    (!hideCollectionGroupFilter && filters.collectionGroupId !== "");
+    (!hideCollectionGroupFilter && filters.collectionGroupId !== "") ||
+    facetChips.some(({ key }) => filters[key] !== "") ||
+    filters.photograph !== "" ||
+    filters.catalogedFrom !== "" ||
+    filters.catalogedTo !== "" ||
+    advancedCount > 0;
 
   if (!showBar) return null;
 
@@ -188,6 +234,53 @@ export function ObjectAppliedFilters({
           label={t("filters.collectionGroup")}
           value={groupLabel ?? filters.collectionGroupId}
           onRemove={() => onChange({ collectionGroupId: "" })}
+        />
+      )}
+
+      {facetChips.map(({ key, label }) =>
+        filters[key] !== "" ? (
+          <AppliedFilterChip
+            key={key}
+            label={label}
+            value={filters[key]}
+            onRemove={() => onChange({ [key]: "" })}
+          />
+        ) : null,
+      )}
+
+      {filters.photograph !== "" && (
+        <AppliedFilterChip
+          label={t("filters.photograph")}
+          value={
+            filters.photograph === "with"
+              ? t("filters.withPhotograph")
+              : t("filters.withoutPhotograph")
+          }
+          onRemove={() => onChange({ photograph: "" })}
+        />
+      )}
+
+      {filters.catalogedFrom !== "" && (
+        <AppliedFilterChip
+          label={t("filters.catalogedFrom")}
+          value={catalogedFrom}
+          onRemove={() => onChange({ catalogedFrom: "" })}
+        />
+      )}
+
+      {filters.catalogedTo !== "" && (
+        <AppliedFilterChip
+          label={t("filters.catalogedTo")}
+          value={catalogedTo}
+          onRemove={() => onChange({ catalogedTo: "" })}
+        />
+      )}
+
+      {advancedCount > 0 && (
+        <AppliedFilterChip
+          label={t("filters.advancedChip")}
+          value={t("filters.advancedConditions", { count: advancedCount })}
+          onRemove={() => onChange({ advancedFilters: [] })}
         />
       )}
     </AppliedFiltersBar>

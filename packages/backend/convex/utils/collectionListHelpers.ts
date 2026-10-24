@@ -2,6 +2,11 @@ import type { PaginationResult } from "convex/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import {
+  type AdvancedFilterGroup,
+  matchesAdvancedFilters,
+} from "./advancedObjectFilters";
+import type { ObjectSearchField } from "./catalogFilterValidators";
+import {
   getCollectionPrimaryImageUrls,
   getLocationPathStrings,
 } from "./collectionDisplayHelpers";
@@ -9,6 +14,12 @@ import {
   classifyInventoryRecord,
   isCountedOnDisplay,
 } from "./collectionMetrics";
+import {
+  collectionHasImage,
+  foldFacetValue,
+  getObjectSearchDocument,
+  storedListValues,
+} from "./objectSearchDocuments";
 import {
   hasOpenDeaccession,
   openDeaccessionCollectionIds,
@@ -31,28 +42,14 @@ interface CollectionListFilters {
   culture?: string;
   period?: string;
   materials?: string;
+  condition?: string;
+  hasImage?: boolean;
   collectionGroupId?: Id<"collectionGroups">;
   catalogedFrom?: number;
   catalogedTo?: number;
   search?: string;
-}
-
-function parseStoredStringList(value: string): string[] {
-  const trimmed = value.trim();
-  if (!trimmed) return [];
-  if (trimmed.startsWith("[")) {
-    try {
-      const parsed: unknown = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        return parsed.flatMap((item) =>
-          typeof item === "string" ? parseStoredStringList(item) : [],
-        );
-      }
-    } catch {
-      // Keep the raw value when it is not valid JSON.
-    }
-  }
-  return [trimmed];
+  advancedFilters?: readonly AdvancedFilterGroup[];
+  filterCombinations?: "AND" | "OR";
 }
 
 /** Filter value for objects the dashboard does not count as on display. */
@@ -68,15 +65,21 @@ function matchesDisplayStatus(
   return collection.displayStatus === filter;
 }
 
+/** Types match as recorded whatever the case, like the facets they come from. */
 function matchesObjectType(
   stored: string | undefined,
   filter: string,
 ): boolean {
-  if (!stored) return false;
-  if (stored === filter) return true;
-  const storedValues = parseStoredStringList(stored);
-  const filterValues = parseStoredStringList(filter);
-  return filterValues.some((value) => storedValues.includes(value));
+  const storedValues = new Set(
+    storedListValues(stored).flatMap((value) => foldFacetValue(value) ?? []),
+  );
+  if (storedValues.size === 0) return false;
+  const whole = foldFacetValue(stored);
+  if (whole !== undefined && whole === foldFacetValue(filter)) return true;
+  return storedListValues(filter).some((value) => {
+    const folded = foldFacetValue(value);
+    return folded !== undefined && storedValues.has(folded);
+  });
 }
 
 /** Filter only the bounded database page; never load an organization's relations. */
@@ -154,14 +157,29 @@ export async function filterCollectionListPage(
         collection.catalogedAt > args.catalogedTo
       )
         return false;
-      for (const field of ["culture", "period", "materials"] as const) {
-        const value = args[field];
-        if (
-          value &&
-          !collection[field]?.toLowerCase().includes(value.toLowerCase())
-        )
-          return false;
+      // Facet values match as recorded, whatever the case; materials and
+      // types are lists, so one entry equal to the value is enough.
+      for (const field of ["culture", "period", "condition"] as const) {
+        const value = foldFacetValue(args[field]);
+        if (value && foldFacetValue(collection[field]) !== value) return false;
       }
+      const materials = foldFacetValue(args.materials);
+      if (
+        materials &&
+        !storedListValues(collection.materials).some(
+          (entry) => foldFacetValue(entry) === materials,
+        )
+      )
+        return false;
+      if (
+        args.advancedFilters &&
+        !matchesAdvancedFilters(
+          collection,
+          args.advancedFilters,
+          args.filterCombinations,
+        )
+      )
+        return false;
       if (search && searchLower) {
         const substringMatch = [
           collection.accessionNumber,
@@ -208,6 +226,13 @@ export async function filterCollectionListPage(
           .first();
         if (!membership) return false;
       }
+      if (args.hasImage !== undefined) {
+        const document = await getObjectSearchDocument(ctx, collection._id);
+        const hasImage = document
+          ? document.hasImage
+          : await collectionHasImage(ctx, collection);
+        if (hasImage !== args.hasImage) return false;
+      }
       if (
         args.status !== "deleted" &&
         collection.status !== "deaccessioned" &&
@@ -236,6 +261,7 @@ export type CollectionListPageItem = {
   currentLocationId?: Id<"locations">;
   status: Doc<"collections">["status"];
   _creationTime: number;
+  matchedField?: ObjectSearchField;
 };
 
 export async function enrichCollectionListPage(
@@ -265,6 +291,7 @@ export async function enrichCollectionListPage(
     primaryImageUrl: primaryImageUrlByCollectionId.get(item._id),
     status: item.status,
     _creationTime: item._creationTime,
+    matchedField: item.matchedField,
   }));
 }
 

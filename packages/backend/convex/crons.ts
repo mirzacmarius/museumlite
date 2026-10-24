@@ -103,4 +103,13 @@ crons.interval(
   {},
 );
 
+// Search documents for records from before the search index, or an older
+// document version, are written in pages until every Organization is complete
+crons.interval(
+  "backfill-object-search-documents",
+  { minutes: 10 },
+  internal.objectSearch.startOutdatedBackfills,
+  {},
+);
+
 export default crons;

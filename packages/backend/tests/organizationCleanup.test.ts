@@ -498,6 +498,53 @@ describe("organizationCleanup", () => {
     });
   });
 
+  test("purging a library removes its search backfill state and bulk field edits", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createAdminOrganization(
+      t,
+      "Cleanup Bulk Edit Org",
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+      await ctx.db.insert("objectSearchBackfills", {
+        organizationId,
+        version: 1,
+        startedAt: 1,
+        completedAt: 2,
+      });
+      await ctx.db.insert("bulkFieldEdits", {
+        organizationId,
+        requestedBy: userId,
+        status: "completed",
+        scope: { kind: "filters", filters: { search: "vase" } },
+        edit: { field: "culture", operation: "set", value: "Roman" },
+        cursor: null,
+        position: 0,
+        checkpoint: 1,
+        attempts: 0,
+        checked: 0,
+        changed: 0,
+        skipped: 0,
+        startedAt: 1,
+        updatedAt: 2,
+        finishedAt: 2,
+      });
+    });
+
+    await t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+      organizationIds: [organizationId],
+      dryRun: false,
+    });
+    const remaining = await t.run(async (ctx) => ({
+      objectSearchBackfills: (
+        await ctx.db.query("objectSearchBackfills").collect()
+      ).length,
+      bulkFieldEdits: (await ctx.db.query("bulkFieldEdits").collect()).length,
+    }));
+
+    expect(remaining).toEqual({ objectSearchBackfills: 0, bulkFieldEdits: 0 });
+  });
+
   test("purging a library removes its export jobs, projection data and metric aggregate entries", async () => {
     vi.useFakeTimers();
     const t = convexTest(schema, modules);

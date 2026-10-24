@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useListState } from "@/hooks/use-list-state";
 import { useObjectFilters } from "@/hooks/use-url-filters";
 import { defineListState } from "@/lib/list-state";
+import type { BulkEditScope } from "./bulk-edit-field-dialog";
 import {
   INITIAL_OBJECTS_PAGE_SIZE,
   NEXT_OBJECTS_PAGE_SIZE,
@@ -119,6 +120,8 @@ export const OBJECT_LIST_KEYS = [
   "culture",
   "period",
   "materials",
+  "condition",
+  "photograph",
   "collectionGroupId",
   "locationIds",
   "locationId",
@@ -128,6 +131,18 @@ export const OBJECT_LIST_KEYS = [
   "filterCombinations",
   ...objectCatalogListState.keys,
 ];
+
+/**
+ * The first or last moment of a date input's day (YYYY-MM-DD) where staff
+ * are, so a cataloguing range covers the days they picked.
+ */
+export function localDayBound(value: string, edge: "start" | "end") {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  return edge === "start"
+    ? new Date(year, month - 1, day).getTime()
+    : new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+}
 
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   const objectFilters = useObjectFilters();
@@ -161,6 +176,11 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     useState(false);
   const [showBulkPrintLabelsDialog, setShowBulkPrintLabelsDialog] =
     useState(false);
+  // A bulk field edit runs over the selection or every matching object, as
+  // they were when its dialog opened.
+  const [bulkEditScope, setBulkEditScope] = useState<BulkEditScope | null>(
+    null,
+  );
 
   const savedViewMode = useQuery(api.userPreferences.get, {
     key: "objects.viewMode",
@@ -228,6 +248,11 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     });
   };
 
+  // Groups without a condition match everything, so they are not sent.
+  const advancedFilters = filters.advancedFilters.filter(
+    (group) => group.filters.length > 0,
+  );
+
   const statusFilter =
     filters.status !== "any" &&
     filters.status !== "all" &&
@@ -246,6 +271,13 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     culture: filters.culture || undefined,
     period: filters.period || undefined,
     materials: filters.materials || undefined,
+    condition: filters.condition || undefined,
+    hasImage:
+      filters.photograph === "with"
+        ? true
+        : filters.photograph === "without"
+          ? false
+          : undefined,
     collectionGroupId: filters.collectionGroupId
       ? (filters.collectionGroupId as Id<"collectionGroups">)
       : undefined,
@@ -253,13 +285,13 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
       filters.locationIds.length > 0
         ? (filters.locationIds as Id<"locations">[])
         : undefined,
-    catalogedFrom: filters.catalogedFrom
-      ? new Date(filters.catalogedFrom).getTime()
-      : undefined,
-    catalogedTo: filters.catalogedTo
-      ? new Date(filters.catalogedTo).setHours(23, 59, 59, 999)
-      : undefined,
+    catalogedFrom: localDayBound(filters.catalogedFrom, "start"),
+    catalogedTo: localDayBound(filters.catalogedTo, "end"),
+    ...(advancedFilters.length > 0
+      ? { advancedFilters, filterCombinations: filters.filterCombinations }
+      : {}),
   };
+  const isSearching = filters.search.trim() !== "";
 
   const {
     results: collections,
@@ -288,6 +320,10 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     api.typeOptions.list,
     shouldLoadFilterMetadata ? { organizationId } : "skip",
   );
+  const facetValues = useQuery(
+    api.objectSearch.facetValues,
+    shouldLoadFilterMetadata ? { organizationId } : "skip",
+  );
 
   const activeCollectionGroup = useMemo(() => {
     if (!filters.collectionGroupId || !collectionGroups) {
@@ -313,11 +349,16 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     typeOptions?.forEach((option: TypeOption) => {
       if (option.name) addObjectType(option.name);
     });
+    // Types recorded on objects, whether or not the option list has them.
+    const listed = new Set(Array.from(types, (type) => type.toLowerCase()));
+    facetValues?.objectTypes.forEach((facet) => {
+      if (!listed.has(facet.value)) addObjectType(facet.label);
+    });
     collections.forEach((item: CollectionListItem) => {
       if (item.objectType) addObjectType(item.objectType);
     });
     return Array.from(types).sort((left, right) => left.localeCompare(right));
-  }, [collections, typeOptions]);
+  }, [collections, facetValues, typeOptions]);
 
   const handleSelectItem = (id: Id<"collections">, selected: boolean) => {
     setSelectedIds((prev) => {
@@ -355,6 +396,10 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     isFiltered: hasActiveFilters,
     sort: catalogView.state.sort,
     setSort: (sort: ObjectSort) => catalogView.update({ sort }),
+    isSearching,
+    facetValues,
+    bulkEditScope,
+    setBulkEditScope,
     searchInput,
     setSearchInput,
     selectedIds,

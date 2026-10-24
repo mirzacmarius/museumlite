@@ -32,6 +32,14 @@ _Avoid_: Collection (ambiguous with the whole holdings)
 A person or institution in a contextual relationship to the museum, such as donor, lender, depositor or staff member.
 _Avoid_: Contact, donor (as an identity)
 
+**Facet**:
+A catalogue filter whose choices are the values recorded on the Organization's Objects (culture, period, condition, materials). A facet matches a whole recorded value, whatever its case.
+_Avoid_: Free-text filter
+
+**Bulk field edit**:
+One change (set, clear, or find and replace) to one field of every Object in a selection or matching the catalogue's search and filters, previewed before it runs and written in bounded pages with an audit entry per Object.
+_Avoid_: Mass update, batch edit
+
 ### Intake and permanence
 
 **Entry**:

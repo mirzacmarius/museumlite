@@ -10,10 +10,14 @@ import {
 } from "@v1/ui/select";
 import { ArrowUpDown, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { AdvancedSearchDialog } from "@/components/advanced-search-dialog";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
-import { ObjectAppliedFilters } from "./object-applied-filters";
+import {
+  advancedConditionCount,
+  ObjectAppliedFilters,
+} from "./object-applied-filters";
 import { ObjectFiltersDropdown } from "./object-filters-dropdown";
 import {
   OBJECT_SORTS,
@@ -45,6 +49,8 @@ export function CollectionCatalogToolbar({
     collectionGroups,
     locations,
     objectTypeOptions,
+    facetValues,
+    isSearching,
     activeCollectionGroup,
     handleViewModeChange,
     handleColumnToggle,
@@ -53,6 +59,8 @@ export function CollectionCatalogToolbar({
 
   const isCollectionGroupView = Boolean(activeCollectionGroup);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isAdvancedSearchOpen, setAdvancedSearchOpen] = useState(false);
+  const advancedCount = advancedConditionCount(filters.advancedFilters);
 
   const hasActiveFilters =
     filters.search !== "" ||
@@ -60,7 +68,25 @@ export function CollectionCatalogToolbar({
     filters.objectType !== "" ||
     filters.displayStatus !== "" ||
     filters.locationIds.length > 0 ||
-    (!isCollectionGroupView && filters.collectionGroupId !== "");
+    (!isCollectionGroupView && filters.collectionGroupId !== "") ||
+    filters.culture !== "" ||
+    filters.period !== "" ||
+    filters.materials !== "" ||
+    filters.condition !== "" ||
+    filters.photograph !== "" ||
+    filters.catalogedFrom !== "" ||
+    filters.catalogedTo !== "" ||
+    advancedCount > 0;
+
+  const facetFilters = {
+    culture: filters.culture,
+    period: filters.period,
+    materials: filters.materials,
+    condition: filters.condition,
+    photograph: filters.photograph,
+    catalogedFrom: filters.catalogedFrom,
+    catalogedTo: filters.catalogedTo,
+  };
 
   const secondaryFilters = {
     search: filters.search,
@@ -69,6 +95,8 @@ export function CollectionCatalogToolbar({
     displayStatus: filters.displayStatus,
     locationIds: filters.locationIds,
     collectionGroupId: isCollectionGroupView ? "" : filters.collectionGroupId,
+    ...facetFilters,
+    advancedFilters: filters.advancedFilters,
   };
 
   return (
@@ -116,28 +144,39 @@ export function CollectionCatalogToolbar({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <Select
-            value={sort}
-            onValueChange={(value) => {
-              const next = OBJECT_SORTS.find((option) => option === value);
-              if (next) setSort(next);
-            }}
-          >
-            <SelectTrigger
-              aria-label={tList("sort.label")}
-              className="h-8 w-auto gap-1.5 text-xs"
+          {isSearching ? (
+            // A search ranks its results; the chosen order returns after it.
+            <span
+              title={t("search.rankedByRelevance")}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input px-3 text-xs text-muted-foreground"
             >
-              <ArrowUpDown className="size-3.5 text-muted-foreground" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {OBJECT_SORTS.map((option) => (
-                <SelectItem key={option} value={option} className="text-xs">
-                  {tList(`sort.${option}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <ArrowUpDown className="size-3.5" aria-hidden="true" />
+              {t("search.relevance")}
+            </span>
+          ) : (
+            <Select
+              value={sort}
+              onValueChange={(value) => {
+                const next = OBJECT_SORTS.find((option) => option === value);
+                if (next) setSort(next);
+              }}
+            >
+              <SelectTrigger
+                aria-label={tList("sort.label")}
+                className="h-8 w-auto gap-1.5 text-xs"
+              >
+                <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OBJECT_SORTS.map((option) => (
+                  <SelectItem key={option} value={option} className="text-xs">
+                    {tList(`sort.${option}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <ObjectFiltersDropdown
             filters={{
               status: filters.status,
@@ -145,6 +184,7 @@ export function CollectionCatalogToolbar({
               displayStatus: filters.displayStatus,
               locationIds: filters.locationIds,
               collectionGroupId: filters.collectionGroupId,
+              ...facetFilters,
             }}
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
@@ -152,9 +192,13 @@ export function CollectionCatalogToolbar({
             onColumnToggle={handleColumnToggle}
             onChange={setFilters}
             objectTypes={objectTypeOptions}
+            facets={facetValues}
             locations={locations}
             collectionGroups={collectionGroups}
             hideCollectionGroupFilter={isCollectionGroupView}
+            advancedConditionCount={advancedCount}
+            onOpenAdvancedSearch={() => setAdvancedSearchOpen(true)}
+            onClearAdvancedSearch={() => setFilters({ advancedFilters: [] })}
           />
 
           {isCollectionGroupView ? (
@@ -182,6 +226,18 @@ export function CollectionCatalogToolbar({
           )}
         </div>
       </div>
+
+      {isAdvancedSearchOpen ? (
+        <AdvancedSearchDialog
+          open
+          onOpenChange={setAdvancedSearchOpen}
+          initialFilterGroups={filters.advancedFilters}
+          initialGroupOperator={filters.filterCombinations}
+          onApply={(advancedFilters, filterCombinations) =>
+            setFilters({ advancedFilters, filterCombinations })
+          }
+        />
+      ) : null}
 
       {hasActiveFilters && (
         <div className="px-6 pb-4">

@@ -14,6 +14,11 @@ import schema, { customFieldValue } from "./schema";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { capabilityUnavailableFromError } from "./utils/capabilities";
 import {
+  catalogFilterFields,
+  objectSearchFieldValidator,
+} from "./utils/catalogFilterValidators";
+import { listCatalogPage } from "./utils/catalogListing";
+import {
   buildConditionHistoryEntry,
   getCollectionGroupMembershipIds,
   syncCollectionGroupMemberships,
@@ -29,7 +34,6 @@ import {
   restoreCollectionHandler,
 } from "./utils/collectionDisposition";
 import {
-  filterCollectionListPage,
   getCollectionsWithOpenDeaccessions,
   toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
@@ -43,7 +47,6 @@ import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
-import { getPageInventoryEvidence } from "./utils/indexedCounts";
 import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
   moveCollectionToLocation,
@@ -1122,37 +1125,13 @@ export const list = query({
   args: {
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
-    collectionGroupId: v.optional(v.id("collectionGroups")),
-    includeDeaccessioned: v.optional(v.boolean()),
-    inventoryMetricScope: v.optional(
-      v.union(
-        v.literal("owned"),
-        v.literal("incoming"),
-        v.literal("unclassified"),
-      ),
-    ),
-    status: v.optional(
-      v.union(
-        v.literal("active"),
-        v.literal("loaned"),
-        v.literal("deaccessioned"),
-        v.literal("archived"),
-        v.literal("deleted"),
-      ),
-    ),
+    ...catalogFilterFields,
+    /** Older links name one location; `locationIds` replaces it. */
     locationId: v.optional(v.id("locations")),
-    locationIds: v.optional(v.array(v.id("locations"))),
-    objectType: v.optional(v.string()),
-    displayStatus: v.optional(v.string()),
-    culture: v.optional(v.string()),
-    period: v.optional(v.string()),
-    materials: v.optional(v.string()),
-    search: v.optional(v.string()),
     dateCreatedFrom: v.optional(v.number()),
     dateCreatedTo: v.optional(v.number()),
-    catalogedFrom: v.optional(v.number()),
-    catalogedTo: v.optional(v.number()),
-    // Newest first unless set; identifier order is the normalized identifier, A to Z.
+    // Newest first unless set; identifier order is the normalized identifier,
+    // A to Z. A search ranks by relevance instead.
     sort: v.optional(
       v.union(
         v.literal("newest"),
@@ -1180,6 +1159,8 @@ export const list = query({
           v.literal("deleted"),
         ),
         _creationTime: v.number(),
+        /** While searching, the field the Object was found in. */
+        matchedField: v.optional(objectSearchFieldValidator),
       }),
     ),
     isDone: v.boolean(),
@@ -1194,86 +1175,21 @@ export const list = query({
     ),
   }),
   handler: async (ctx, args) => {
-    // Check permission
     await requirePermission(ctx, args.organizationId, "collections.read");
 
+    const { paginationOpts, locationId, ...filters } = args;
     const locationIds =
-      args.locationIds && args.locationIds.length > 0
-        ? args.locationIds
-        : args.locationId
-          ? [args.locationId]
+      filters.locationIds && filters.locationIds.length > 0
+        ? filters.locationIds
+        : locationId
+          ? [locationId]
           : undefined;
-    const singleLocationId =
-      locationIds?.length === 1 ? locationIds[0] : undefined;
-
-    // Equality indexes preserve creation-time order within the selected range.
-    const source = args.status
-      ? ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("status", args.status!),
-          )
-      : singleLocationId
-        ? ctx.db
-            .query("collections")
-            .withIndex("by_organization_and_location", (q) =>
-              q
-                .eq("organizationId", args.organizationId)
-                .eq("currentLocationId", singleLocationId),
-            )
-        : ctx.db
-            .query("collections")
-            .withIndex("by_organization", (q) =>
-              q.eq("organizationId", args.organizationId),
-            );
-    // Identifier order reads its own index; the page filter applies locations.
-    const status = args.status;
-    const identifierSource = status
-      ? ctx.db
-          .query("collections")
-          .withIndex(
-            "by_organization_and_status_and_normalizedIdentifier",
-            (q) =>
-              q.eq("organizationId", args.organizationId).eq("status", status),
-          )
-      : ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_normalizedIdentifier", (q) =>
-            q.eq("organizationId", args.organizationId),
-          );
-
-    // Filters may yield short or empty pages. The native cursor still advances,
-    // and split metadata keeps reactive pages contiguous as records change.
-    const ordered = (
-      args.sort === "identifier" ? identifierSource : source
-    ).order(args.sort === "newest" || args.sort === undefined ? "desc" : "asc");
-    const result = await ordered.paginate({
-      ...args.paginationOpts,
-      maximumRowsRead: Math.min(
-        args.paginationOpts.maximumRowsRead ?? 1000,
-        1000,
-      ),
-      maximumBytesRead: Math.min(
-        args.paginationOpts.maximumBytesRead ?? 2_000_000,
-        2_000_000,
-      ),
-    });
-    return await toCollectionListPaginationResult(ctx, {
-      ...result,
-      page: await filterCollectionListPage(ctx, result.page, {
-        ...args,
-        locationIds,
-        ...(args.inventoryMetricScope
-          ? await getPageInventoryEvidence(
-              ctx,
-              args.organizationId,
-              result.page,
-            )
-          : {}),
-      }),
-    });
+    const result = await listCatalogPage(
+      ctx,
+      { ...filters, locationIds },
+      paginationOpts,
+    );
+    return await toCollectionListPaginationResult(ctx, result);
   },
 });
 

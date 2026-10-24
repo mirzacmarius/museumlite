@@ -12,6 +12,7 @@ import {
   caseTaskEvidenceReferenceValidator,
   caseTaskStatusValidator,
 } from "./utils/caseTaskValidators";
+import { catalogFiltersValidator } from "./utils/catalogFilterValidators";
 import {
   archiveDetailFields,
   coinsStampsDetailFields,
@@ -859,6 +860,109 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     completedAt: v.number(),
   }).index("by_organization", ["organizationId"]),
+
+  /**
+   * One row per Object with every searchable field joined, kept by the
+   * write path in the same transaction (see `utils/objectSearchDocuments.ts`)
+   * and backfilled for older records. The Object Catalog's search reads it.
+   */
+  objectSearchDocuments: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    status: v.union(
+      v.literal("active"),
+      v.literal("loaned"),
+      v.literal("deaccessioned"),
+      v.literal("archived"),
+      v.literal("deleted"),
+    ),
+    text: v.string(),
+    hasImage: v.boolean(),
+    // Facet values, folded for filtering, with the spelling first recorded.
+    culture: v.optional(v.string()),
+    cultureLabel: v.optional(v.string()),
+    period: v.optional(v.string()),
+    periodLabel: v.optional(v.string()),
+    condition: v.optional(v.string()),
+    objectTypes: v.array(v.string()),
+    materials: v.array(v.string()),
+    catalogedAt: v.number(),
+    version: v.number(),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization_and_culture", ["organizationId", "culture"])
+    .index("by_organization_and_period", ["organizationId", "period"])
+    .searchIndex("search_text", {
+      searchField: "text",
+      filterFields: [
+        "organizationId",
+        "status",
+        "hasImage",
+        "culture",
+        "period",
+        "condition",
+      ],
+    }),
+
+  /** An Organization's search documents are complete at this version once `completedAt` is set. */
+  objectSearchBackfills: defineTable({
+    organizationId: v.id("organizations"),
+    version: v.number(),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  }).index("by_organization", ["organizationId"]),
+
+  /**
+   * A field edit over a selection or over every Object matching the catalog
+   * filters, run in bounded pages that can be resumed (see `bulkFieldEdits.ts`).
+   */
+  bulkFieldEdits: defineTable({
+    organizationId: v.id("organizations"),
+    requestedBy: v.id("users"),
+    status: v.union(
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+    scope: v.union(
+      v.object({
+        kind: v.literal("selection"),
+        collectionIds: v.array(v.id("collections")),
+      }),
+      v.object({
+        kind: v.literal("filters"),
+        filters: catalogFiltersValidator,
+      }),
+    ),
+    edit: v.object({
+      field: v.string(),
+      operation: v.union(
+        v.literal("set"),
+        v.literal("clear"),
+        v.literal("replace"),
+      ),
+      value: v.optional(v.string()),
+      find: v.optional(v.string()),
+      replaceWith: v.optional(v.string()),
+      matchCase: v.optional(v.boolean()),
+    }),
+    /** Next page: a database cursor for a filtered scope, a position for a selection. */
+    cursor: v.union(v.string(), v.null()),
+    position: v.number(),
+    checkpoint: v.number(),
+    attempts: v.number(),
+    checked: v.number(),
+    changed: v.number(),
+    skipped: v.number(),
+    failure: v.optional(v.string()),
+    startedAt: v.number(),
+    updatedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    cancelledBy: v.optional(v.id("users")),
+  })
+    .index("by_organization_and_startedAt", ["organizationId", "startedAt"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   uploadIntents: defineTable({
     token: v.string(),
