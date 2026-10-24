@@ -72,50 +72,80 @@ function contactDetailsOf(organization: {
   };
 }
 
-/** Save Changes sends the name and contact details; the watermark card its settings. */
-interface OrganizationForm {
-  name: string;
-  contactDetails: ContactDetails;
-  watermarkSettings: WatermarkSettings;
-}
-
-type StoredOrganization = Pick<
-  Doc<"organizations">,
-  "name" | "address" | "phone" | "settings"
->;
-
-type OrganizationFormAction =
-  | { type: "setName"; value: string }
-  | { type: "setContactDetails"; value: ContactDetails }
-  | { type: "setWatermarkSettings"; value: WatermarkSettings };
-
-function organizationFormOf(
-  organization: StoredOrganization,
-): OrganizationForm {
+function watermarkSettingsOf(
+  organization: Pick<Doc<"organizations">, "settings">,
+): WatermarkSettings {
   const watermark = organization.settings?.watermarkSettings;
   return {
-    name: organization.name,
-    contactDetails: contactDetailsOf(organization),
-    watermarkSettings: {
-      isEnabled: watermark?.isEnabled ?? false,
-      text: watermark?.text || "",
-      opacity: watermark?.opacity ?? 0.5,
-      position: watermark?.position || "bottom-right",
-    },
+    isEnabled: watermark?.isEnabled ?? false,
+    text: watermark?.text || "",
+    opacity: watermark?.opacity ?? 0.5,
+    position: watermark?.position || "bottom-right",
   };
 }
 
+/**
+ * What the user changed and has not saved yet. The form shows the stored
+ * Organization with these on top, so a change made elsewhere shows up in the
+ * fields left alone, and a save sends only what was edited.
+ */
+interface OrganizationFormEdits {
+  name: string | null;
+  contactDetails: Partial<ContactDetails>;
+  watermarkSettings: Partial<WatermarkSettings>;
+}
+
+const NO_EDITS: OrganizationFormEdits = {
+  name: null,
+  contactDetails: {},
+  watermarkSettings: {},
+};
+
+type OrganizationFormAction =
+  | { type: "editName"; value: string }
+  | { type: "editContactDetail"; field: ContactField; value: string }
+  | { type: "editWatermarkSettings"; value: Partial<WatermarkSettings> }
+  | { type: "detailsSaved"; saved: OrganizationFormEdits }
+  | { type: "watermarkSaved"; saved: OrganizationFormEdits };
+
 function organizationFormReducer(
-  state: OrganizationForm,
+  state: OrganizationFormEdits,
   action: OrganizationFormAction,
-): OrganizationForm {
+): OrganizationFormEdits {
   switch (action.type) {
-    case "setName":
+    case "editName":
       return { ...state, name: action.value };
-    case "setContactDetails":
-      return { ...state, contactDetails: action.value };
-    case "setWatermarkSettings":
-      return { ...state, watermarkSettings: action.value };
+    case "editContactDetail":
+      return {
+        ...state,
+        contactDetails: {
+          ...state.contactDetails,
+          [action.field]: action.value,
+        },
+      };
+    case "editWatermarkSettings":
+      return {
+        ...state,
+        watermarkSettings: { ...state.watermarkSettings, ...action.value },
+      };
+    // A save clears the edits it sent; any edit made while it ran stays.
+    case "detailsSaved":
+      return {
+        ...state,
+        name: state.name === action.saved.name ? null : state.name,
+        contactDetails:
+          state.contactDetails === action.saved.contactDetails
+            ? {}
+            : state.contactDetails,
+      };
+    case "watermarkSaved":
+      return {
+        ...state,
+        watermarkSettings:
+          state.watermarkSettings === action.saved.watermarkSettings
+            ? {}
+            : state.watermarkSettings,
+      };
   }
 }
 
@@ -243,11 +273,11 @@ function BasicInformationCard({
 function ContactDetailsCard({
   details,
   disabled,
-  onDetailsChange,
+  onDetailChange,
 }: {
   details: ContactDetails;
   disabled: boolean;
-  onDetailsChange: (details: ContactDetails) => void;
+  onDetailChange: (field: ContactField, value: string) => void;
 }) {
   const t = useScopedI18n("settings.organization");
   return (
@@ -272,9 +302,7 @@ function ContactDetailsCard({
                 maxLength={isPhone ? MAX_PHONE_LENGTH : MAX_ADDRESS_LINE_LENGTH}
                 value={details[name]}
                 disabled={disabled}
-                onChange={(event) =>
-                  onDetailsChange({ ...details, [name]: event.target.value })
-                }
+                onChange={(event) => onDetailChange(name, event.target.value)}
               />
             </div>
           );
@@ -320,7 +348,7 @@ function WatermarkSettingsCard({
 }: {
   isSubmitting: boolean;
   onSave: () => void;
-  onSettingsChange: (settings: WatermarkSettings) => void;
+  onSettingsChange: (change: Partial<WatermarkSettings>) => void;
   settings: WatermarkSettings;
 }) {
   const t = useScopedI18n("untranslatedDashboard.settings");
@@ -339,7 +367,6 @@ function WatermarkSettingsCard({
           appliesOnSave
           onConfirmedChange={(checked) =>
             onSettingsChange({
-              ...settings,
               isEnabled: checked,
             })
           }
@@ -354,7 +381,6 @@ function WatermarkSettingsCard({
                 value={settings.text}
                 onChange={(event) =>
                   onSettingsChange({
-                    ...settings,
                     text: event.target.value,
                   })
                 }
@@ -368,7 +394,6 @@ function WatermarkSettingsCard({
                 value={settings.position}
                 onValueChange={(value) =>
                   onSettingsChange({
-                    ...settings,
                     position: value as WatermarkPosition,
                   })
                 }
@@ -404,7 +429,6 @@ function WatermarkSettingsCard({
                 value={settings.opacity}
                 onChange={(event) =>
                   onSettingsChange({
-                    ...settings,
                     opacity: Number.parseFloat(event.target.value),
                   })
                 }
@@ -513,10 +537,6 @@ export default function OrganizationSettingsPage() {
   );
 }
 
-/**
- * Takes its values from the Organization once, so a watermark save or a
- * change made elsewhere never discards edits not yet saved.
- */
 function OrganizationSettingsForm({
   organization,
 }: {
@@ -528,15 +548,21 @@ function OrganizationSettingsForm({
   const contactErrorMessage = useOrganizationContactErrorMessage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [{ name, contactDetails, watermarkSettings }, dispatch] = useReducer(
-    organizationFormReducer,
-    organization,
-    organizationFormOf,
-  );
+  const [edits, dispatch] = useReducer(organizationFormReducer, NO_EDITS);
   const updateOrganization = useMutation(api.organizations.update);
   const updateWatermarkSettings = useMutation(
     api.organizations.updateWatermarkSettings,
   );
+
+  const name = edits.name ?? organization.name;
+  const contactDetails = {
+    ...contactDetailsOf(organization),
+    ...edits.contactDetails,
+  };
+  const watermarkSettings = {
+    ...watermarkSettingsOf(organization),
+    ...edits.watermarkSettings,
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -547,15 +573,24 @@ function OrganizationSettingsForm({
       return;
     }
 
+    const { phone: phoneEdit, ...addressEdits } = edits.contactDetails;
+    const { phone, ...address } = contactDetails;
+    const changes = {
+      ...(edits.name !== null && { name: name.trim() }),
+      ...(Object.keys(addressEdits).length > 0 && { address }),
+      ...(phoneEdit !== undefined && { phone }),
+    };
+    if (Object.keys(changes).length === 0) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const { phone, ...address } = contactDetails;
       await updateOrganization({
         organizationId: organization._id,
-        name: name.trim(),
-        address,
-        phone,
+        ...changes,
       });
+      dispatch({ type: "detailsSaved", saved: edits });
     } catch (saveError) {
       setError(contactErrorMessage(saveError) ?? t("organization.updateError"));
     } finally {
@@ -577,6 +612,7 @@ function OrganizationSettingsForm({
           position: watermarkSettings.position,
         },
       });
+      dispatch({ type: "watermarkSaved", saved: edits });
     } catch {
       setError(tDashboard("failedToUpdateWatermarkSettings"));
     } finally {
@@ -602,7 +638,7 @@ function OrganizationSettingsForm({
           typeLabel: t("organization.typeLabel"),
         }}
         name={name}
-        onNameChange={(value) => dispatch({ type: "setName", value })}
+        onNameChange={(value) => dispatch({ type: "editName", value })}
         organization={organization}
         customerNumber={organization.customerNumber ?? null}
       />
@@ -610,8 +646,8 @@ function OrganizationSettingsForm({
       <ContactDetailsCard
         details={contactDetails}
         disabled={!hasPermission("organization.manage_settings")}
-        onDetailsChange={(value) =>
-          dispatch({ type: "setContactDetails", value })
+        onDetailChange={(field, value) =>
+          dispatch({ type: "editContactDetail", field, value })
         }
       />
 
@@ -620,7 +656,7 @@ function OrganizationSettingsForm({
           isSubmitting={isSubmitting}
           onSave={handleSaveWatermarkSettings}
           onSettingsChange={(value) =>
-            dispatch({ type: "setWatermarkSettings", value })
+            dispatch({ type: "editWatermarkSettings", value })
           }
           settings={watermarkSettings}
         />

@@ -81,7 +81,7 @@ beforeEach(() => {
   updateWatermarkSettings.mockResolvedValue(null);
 });
 
-test("staff edit the address and phone and Save Changes sends every line", async () => {
+test("staff edit the address and phone and Save Changes sends the whole address", async () => {
   const user = userEvent.setup();
   await renderOnPage(<OrganizationSettingsPage />, "/en/settings/organization");
 
@@ -97,11 +97,12 @@ test("staff edit the address and phone and Save Changes sends every line", async
 
   await user.type(screen.getByLabelText("Postal code"), "6413");
   await user.type(screen.getByLabelText("Country"), "Norway");
+  await user.clear(screen.getByLabelText("Phone"));
+  await user.type(screen.getByLabelText("Phone"), "+47 71 20 00 01");
   await user.click(screen.getByRole("button", { name: "Save Changes" }));
 
   expect(updateOrganization).toHaveBeenCalledWith({
     organizationId: "org-1",
-    name: "112 St. Magnus",
     address: {
       street: "Strandgata 12",
       street2: "",
@@ -110,7 +111,48 @@ test("staff edit the address and phone and Save Changes sends every line", async
       region: "",
       country: "Norway",
     },
-    phone: "+47 71 20 00 00",
+    phone: "+47 71 20 00 01",
+  });
+});
+
+test("fields left alone show a change made elsewhere, and Save Changes leaves it in place", async () => {
+  const user = userEvent.setup();
+  const { rerender } = await renderOnPage(
+    <OrganizationSettingsPage />,
+    "/en/settings/organization",
+  );
+
+  await user.type(screen.getByLabelText("Postal code"), "6413");
+  // Another administrator renames the Organization and changes its phone.
+  organization = {
+    ...organization,
+    name: "Romsdal Museum",
+    phone: "+47 99 99 99 99",
+  };
+  rerender(<OrganizationSettingsPage />);
+
+  expect(screen.getByLabelText("Organization Name *")).toHaveProperty(
+    "value",
+    "Romsdal Museum",
+  );
+  expect(screen.getByLabelText("Phone")).toHaveProperty(
+    "value",
+    "+47 99 99 99 99",
+  );
+  expect(screen.getByLabelText("Postal code")).toHaveProperty("value", "6413");
+
+  await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+  expect(updateOrganization).toHaveBeenCalledWith({
+    organizationId: "org-1",
+    address: {
+      street: "Strandgata 12",
+      street2: "",
+      postalCode: "6413",
+      city: "Molde",
+      region: "",
+      country: "",
+    },
   });
 });
 
@@ -138,6 +180,7 @@ test("a refused line says which field to shorten", async () => {
   const user = userEvent.setup();
   await renderOnPage(<OrganizationSettingsPage />, "/en/settings/organization");
 
+  await user.type(screen.getByLabelText("City"), " sentrum");
   await user.click(screen.getByRole("button", { name: "Save Changes" }));
 
   expect(
