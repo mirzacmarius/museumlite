@@ -2318,7 +2318,6 @@ export default {
       temperature: "Temperatur",
       activityLog: "Aktivitetslogg",
       overview: "Oversikt og {type}",
-      request: "Forespørsel",
       conservation: "Konservering",
       pending: "Ventende",
       locked: "Låst",
@@ -2542,41 +2541,14 @@ export default {
   },
   locations: {
     movements: {
-      title: "Flyttinger",
-      moveNow: "Flytt nå",
-      requestMove: "Be om flytting",
-      currentLocation: "Nåværende plassering",
       noLocation: "Ingen registrert plassering",
       unknownLocation: "Ukjent plassering",
       unknownUser: "Ukjent bruker",
-      loading: "Laster flyttinger…",
       dialog: {
-        directTitle: "Flytt objektet nå",
-        directDescription:
-          "Du registreres som den som flytter, plasseringen nedenfor som observert kilde, og destinasjonen.",
-        requestTitle: "Be om flytting",
-        requestDescription:
-          "Flyttingen vurderes før den utføres. Objektets plassering kontrolleres på nytt når den utføres.",
-        observedSource: "Observert kilde",
-        destination: "Destinasjon",
-        destinationPlaceholder: "Velg en destinasjon",
-        reason: "Begrunnelse",
-        reasonPlaceholder: "f.eks. rotasjon, konservering, fotografering",
-        reasonRequired: "En begrunnelse er påkrevd for en flytteforespørsel.",
-        notes: "Notater",
-        selectDestinationError: "Velg en destinasjon.",
         override: "Overstyr kapasitets- og plasseringsbegrensninger",
-        checking: "Kontrollerer destinasjonen…",
-        submitMove: "Flytt objekt",
-        submitRequest: "Send forespørsel",
-        submitting: "Lagrer…",
-        moved: "Objektet er flyttet.",
-        requested: "Flytteforespørselen er sendt.",
-        failed: "Flyttingen kunne ikke lagres.",
       },
       requests: {
         title: "Flytteforespørsler",
-        empty: "Ingen flytteforespørsler for dette objektet.",
         requestedBy: "Forespurt av {name}",
         reviewedBy: "Vurdert av {name}",
         executedBy: "Utført av {name}",
@@ -2626,9 +2598,6 @@ export default {
         already_at_destination: "Objektet er allerede ved destinasjonen.",
       },
       history: {
-        title: "Flyttehistorikk",
-        empty: "Ingen registrerte flyttinger.",
-        movedBy: "Flyttet av {name}",
         authorizedBy: "Godkjent av {name}",
         kind: {
           direct: "Direkte flytting",
@@ -2640,6 +2609,15 @@ export default {
           legacy: "Registrert flytting",
           incident_evacuation: "Evakuering ved hendelse",
           incident_recovery: "Tilbakeføring etter hendelse",
+          loan_dispatch: "Utsendelse av lån",
+          loan_return: "Retur av lån",
+          exhibition_install: "Montering i utstilling",
+          exhibition_return: "Retur fra utstilling",
+          transit_receipt: "Mottak etter transport",
+          transit_installation: "Montering etter transport",
+          institution_transfer: "Mottak av overføring",
+          entry_receipt: "Mottak av innlevering",
+          entry_exit: "Retur av innlevering",
         },
       },
     },
@@ -3488,11 +3466,6 @@ export default {
       to: "Til",
       productionDate: {
         legend: "Strukturert datering",
-        description:
-          "Valgfritt. Bestemmer hvordan katalogen sorterer, filtrerer og eksporterer dette objektet. Teksten over vises slik den er skrevet.",
-        from: "Fra",
-        to: "Til",
-        hint: "Fyll ut Fra for én dato, eller Fra og Til for et tidsrom. Senest og Tidligst gjelder bare for Fra alene.",
         readAs: "Leses som {date}.",
         years: "Sortering og filtre bruker {years}.",
         yearsFrom: "Sortering og filtre bruker årene fra og med {start}.",
@@ -3500,14 +3473,11 @@ export default {
         onOrAfter: "{date} eller senere",
         undated: "Udatert for sortering og filtre.",
         notRead:
-          "Leses ikke som en dato og vises slik den er skrevet. Legg til en strukturert datering for å sortere og filtrere etter den.",
-        useReading: "Bruk som strukturert datering",
+          "Ikke lest som en dato, så den vises slik den er skrevet. Sortering og datofiltre behandler objektet som udatert.",
         mismatch:
           "Teksten leses som {text}, men den strukturerte dateringen er {date}. Sortering, filtre og eksporter bruker den strukturerte dateringen.",
+        useText: "Bruk teksten i stedet",
         edtf: "EDTF {edtf}",
-        fixed:
-          "Denne strukturerte dateringen kan ikke endres her. Fjern den for å legge inn en annen.",
-        clear: "Fjern strukturert datering",
         invalid:
           "Sjekk den strukturerte dateringen: fyll ut delene presisjonen krever, og en slutt som er lik eller etter starten.",
         openInRange:
@@ -8601,6 +8571,9 @@ export default {
         toValue: "til «{value}»",
         structuredDateRemoved: "Fjernet strukturert datering «{value}»",
         byUser: "Av {name}",
+        moved: "Objekt flyttet",
+        movedFromTo: "Fra {from} til {to}",
+        movedOutOf: "Forlot {from}",
         actions: {
           created_collection: "Objekt opprettet",
           updated_collection: "Objekt oppdatert",
@@ -8614,6 +8587,8 @@ export default {
           removed_alternate_accession_number:
             "Alternativt aksesjonsnummer fjernet",
           created_move_request: "Flytting forespurt",
+          approved_move_request: "Flytteforespørsel godkjent",
+          reapproved_move_request: "Flytteforespørsel godkjent på nytt",
           executed_move_request: "Flytting fullført",
           cancelled_move_request: "Flytteforespørsel avbrutt",
           rejected_move_request: "Flytteforespørsel avvist",

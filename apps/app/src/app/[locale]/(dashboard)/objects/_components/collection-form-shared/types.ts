@@ -70,7 +70,7 @@ export interface CollectionFormData {
   culture?: string;
   period?: string;
   dateCreated?: string;
-  /** The structured date made as its inputs hold it, saved as EDTF. */
+  /** A structured date made saved earlier or imported; shown, not edited (MUS-867). */
   dateCreatedEdtf?: ProductionDateDraft;
   materials?: string | string[];
   technique?: string;

@@ -200,6 +200,26 @@ async function createPortal() {
     await drain();
   }
 
+  /** Runs the repair cron `minutesLater` after the clock's current time. */
+  async function sweep(minutesLater = 0) {
+    vi.setSystemTime(Date.now() + minutesLater * 60 * 1000);
+    await t.mutation(internal.mediaPublications.repairPublicRenditions, {});
+    await drain();
+  }
+
+  async function attempts(mediaId: Id<"mediaFiles">) {
+    return await t.run(async (ctx) => {
+      const rendition = (await ctx.db.get(mediaId))?.publicRendition;
+      return rendition && rendition.status !== "ready"
+        ? {
+            status: rendition.status,
+            attempts: rendition.attempts,
+            retryPlanned: rendition.retryAt !== undefined,
+          }
+        : { status: rendition?.status ?? null };
+    });
+  }
+
   async function portalStatus(mediaId: Id<"mediaFiles">) {
     return (await staff.query(api.mediaPublications.getReview, { mediaId }))
       ?.portal;
@@ -219,6 +239,8 @@ async function createPortal() {
     isStored,
     drain,
     backfill,
+    sweep,
+    attempts,
     portalStatus,
     list: () =>
       t.query(api.collections.listPublic, {
@@ -823,6 +845,121 @@ test("the rendition backfill continues past its first page", async () => {
   await portal.drain();
 
   expect(((await portal.detail())?.images ?? []).length).toBe(51);
+});
+
+test("the repair cron runs the rendition backfill once by itself, so older images show without a manual step", async () => {
+  const portal = await createPortal();
+  await portal.insertLegacyImages(["front.jpg", "back.jpg"]);
+  expect((await portal.detail())?.images).toEqual([]);
+
+  await portal.sweep();
+
+  expect((await portal.renditionStatuses()).sort()).toEqual([
+    ["back.jpg", "ready"],
+    ["front.jpg", "ready"],
+  ]);
+  expect(((await portal.detail())?.images ?? []).length).toBe(2);
+  expect(
+    await portal.t.run(async (ctx) =>
+      (await ctx.db.query("publicRenditionBackfills").collect()).map((run) => ({
+        version: run.version,
+        done: run.completedAt !== undefined,
+      })),
+    ),
+  ).toEqual([{ version: 1, done: true }]);
+
+  // Later runs leave the backfill alone rather than read every image again.
+  await portal.insertLegacyImages(["side.jpg"]);
+  await portal.sweep(10);
+  expect(
+    (await portal.renditionStatuses()).find(([name]) => name === "side.jpg"),
+  ).toEqual(["side.jpg", null]);
+  expect(
+    await portal.t.run(
+      async (ctx) =>
+        (await ctx.db.query("publicRenditionBackfills").collect()).length,
+    ),
+  ).toBe(1);
+});
+
+test("a rendition that failed is asked for again after 5 minutes and after an hour, then left for staff", async () => {
+  const portal = await createPortal();
+  await portal.sweep();
+  const mediaId = await portal.upload(
+    "damaged.jpg",
+    new TextEncoder().encode("not a decodable jpeg"),
+    "image/jpeg",
+  );
+  await portal.drain();
+  expect(await portal.attempts(mediaId)).toEqual({
+    status: "failed",
+    attempts: 1,
+    retryPlanned: true,
+  });
+
+  await portal.sweep(4);
+  expect((await portal.attempts(mediaId)).attempts).toBe(1);
+  await portal.sweep(1);
+  expect(await portal.attempts(mediaId)).toEqual({
+    status: "failed",
+    attempts: 2,
+    retryPlanned: true,
+  });
+
+  await portal.sweep(59);
+  expect((await portal.attempts(mediaId)).attempts).toBe(2);
+  await portal.sweep(1);
+  expect(await portal.attempts(mediaId)).toEqual({
+    status: "failed",
+    attempts: 3,
+    retryPlanned: false,
+  });
+
+  await portal.sweep(24 * 60);
+  expect((await portal.attempts(mediaId)).attempts).toBe(3);
+  expect(await portal.portalStatus(mediaId)).toBe("failed");
+});
+
+test("a rendition request that never reports back is asked for again, and recorded as failed after the last attempt", async () => {
+  const portal = await createPortal();
+  await portal.sweep();
+  const [front, back] = await portal.insertLegacyImages([
+    "front.jpg",
+    "back.jpg",
+  ]);
+  if (!front || !back) throw new Error("Missing test media");
+  await portal.t.run(async (ctx) => {
+    for (const [mediaId, attempts] of [
+      [front, 2],
+      [back, 3],
+    ] as const) {
+      const media = await ctx.db.get(mediaId);
+      if (!media) throw new Error("Missing test media");
+      await ctx.db.patch(mediaId, {
+        publicRendition: {
+          status: "processing",
+          sourceStorageId: media.storageId,
+          requestId: "lost-action",
+          requestedAt: Date.now(),
+          attempts,
+          retryAt: Date.now() + 15 * 60 * 1000,
+        },
+      });
+    }
+  });
+
+  await portal.sweep(14);
+  expect((await portal.attempts(front)).status).toBe("processing");
+  expect((await portal.attempts(back)).status).toBe("processing");
+
+  await portal.sweep(1);
+  expect(await portal.portalStatus(front)).toBe("shown");
+  expect(await portal.attempts(back)).toEqual({
+    status: "failed",
+    attempts: 3,
+    retryPlanned: false,
+  });
+  expect(await portal.portalStatus(back)).toBe("failed");
 });
 
 test("hiding an image deletes its rendition after its object moved to another organization", async () => {

@@ -103,6 +103,15 @@ crons.interval(
   {},
 );
 
+// Public renditions: the backfill starts once per version, and failed or
+// stuck renditions are requested again until their attempts run out
+crons.interval(
+  "repair-public-renditions",
+  { minutes: 10 },
+  internal.mediaPublications.repairPublicRenditions,
+  {},
+);
+
 // Search documents for records from before the search index, or an older
 // document version, are written in pages until every Organization is complete
 crons.interval(

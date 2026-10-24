@@ -33,7 +33,6 @@ import {
 import { fieldErrorsFromZod } from "@/lib/record-form";
 import { parseStringListField } from "../../../../../../lib/string-list-field";
 import { toObjectDraftTypeDetails } from "../object-type-details/type-detail-values";
-import { STRUCTURED_DATE_MADE_ID } from "./constants";
 import {
   filledMeasurementSetEntries,
   measurementSetEntry,
@@ -589,11 +588,9 @@ export function collectionFieldLocation(field: string): {
     case "rightsStatement":
     case "legalRestrictions":
       return { tab: "accession", elementId: field };
+    // The form no longer edits a structured date: its errors land on Date made.
     case "dateCreatedEdtf":
-      return {
-        tab: "general",
-        elementId: `${STRUCTURED_DATE_MADE_ID}-from-precision`,
-      };
+      return { tab: "general", elementId: "dateCreated" };
     case "parentObjectId":
       return { tab: "placement", elementId: "placementParentObjectId" };
     case "currentLocationId":

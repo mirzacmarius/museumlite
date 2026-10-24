@@ -13,7 +13,7 @@ import {
   DetailLabel,
   DetailSection,
 } from "./detail-section";
-import { ObjectMovementsSection } from "./movements/object-movements-section";
+import { OpenMoveRequests } from "./movements/open-move-requests";
 import type { CollectionData, LocationPathItem } from "./types";
 
 interface PlacementRelationshipsTabProps {
@@ -92,11 +92,9 @@ export function PlacementRelationshipsTab({
         </DetailGrid>
       </DetailSection>
 
-      <ObjectMovementsSection
+      <OpenMoveRequests
         collectionId={collectionId}
         organizationId={collection.organizationId}
-        currentLocationId={collection.currentLocationId}
-        currentLocationLabel={location}
       />
 
       <DetailSection

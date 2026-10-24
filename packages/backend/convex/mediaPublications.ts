@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { query } from "./_generated/server";
+import { type MutationCtx, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { hasPermission, requirePermission } from "./utils/permissions";
@@ -11,6 +11,8 @@ import {
   getPortalImage,
   getPublicationBlocker,
   getPublicationSource,
+  MAX_RENDITION_ATTEMPTS,
+  renditionRetryAt,
   revokePublicRendition,
   syncPublicRendition as syncMediaPublicRendition,
 } from "./utils/publicMedia";
@@ -307,10 +309,13 @@ export const failPublicRendition = internalMutation({
       request?.status === "processing" &&
       request.requestId === args.requestId
     ) {
+      const attempts = request.attempts ?? 1;
       await ctx.db.patch(media._id, {
         publicRendition: {
           status: "failed",
           sourceStorageId: request.sourceStorageId,
+          attempts,
+          retryAt: renditionRetryAt(attempts, Date.now()),
         },
       });
     }
@@ -323,6 +328,72 @@ export const syncPublicRendition = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await syncMediaPublicRendition(ctx, args.mediaId);
+    return null;
+  },
+});
+
+/**
+ * Raising it makes the repair sweep run the rendition backfill once more.
+ * Version 1 makes renditions for images from before they were made on upload
+ * (MUS-870).
+ */
+const PUBLIC_RENDITION_BACKFILL_VERSION = 1;
+const RENDITION_REPAIRS_PER_RUN = 25;
+
+async function startPublicRenditionBackfill(ctx: MutationCtx, now: number) {
+  const run = await ctx.db
+    .query("publicRenditionBackfills")
+    .withIndex("by_version", (q) =>
+      q.eq("version", PUBLIC_RENDITION_BACKFILL_VERSION),
+    )
+    .first();
+  if (run) return;
+  const backfillId = await ctx.db.insert("publicRenditionBackfills", {
+    version: PUBLIC_RENDITION_BACKFILL_VERSION,
+    startedAt: now,
+  });
+  await ctx.scheduler.runAfter(
+    0,
+    internal.migrations.backfillPublicRenditions,
+    { cursor: null, backfillId },
+  );
+}
+
+/**
+ * Run by a cron. Starts the rendition backfill once per version, then asks
+ * again for renditions that failed or never reported back, at the time each
+ * one set (MUS-870). A request still stuck after the last attempt is recorded
+ * as failed, so staff see it.
+ */
+export const repairPublicRenditions = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const now = Date.now();
+    await startPublicRenditionBackfill(ctx, now);
+    const due = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_publicRendition_retryAt", (q) =>
+        q.gte("publicRendition.retryAt", 0).lte("publicRendition.retryAt", now),
+      )
+      .take(RENDITION_REPAIRS_PER_RUN);
+    for (const media of due) {
+      const rendition = media.publicRendition;
+      if (
+        rendition?.status === "processing" &&
+        (rendition.attempts ?? 1) >= MAX_RENDITION_ATTEMPTS
+      ) {
+        await ctx.db.patch(media._id, {
+          publicRendition: {
+            status: "failed",
+            sourceStorageId: rendition.sourceStorageId,
+            attempts: rendition.attempts,
+          },
+        });
+      } else {
+        await syncMediaPublicRendition(ctx, media._id);
+      }
+    }
     return null;
   },
 });

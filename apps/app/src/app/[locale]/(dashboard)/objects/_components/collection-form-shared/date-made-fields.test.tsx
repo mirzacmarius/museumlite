@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, type Mock, test, vi } from "vitest";
@@ -42,60 +42,50 @@ function Form({
 
 type OnChange = (formData: CollectionFormData) => void;
 
-function savedEdtf(onChange: Mock<OnChange>) {
-  return edtfFromDraft(onChange.mock.lastCall?.[0].dateCreatedEdtf);
-}
-
 function readBack() {
   return document.getElementById("dateCreated-reading")?.textContent ?? "";
 }
 
-function fromPrecision() {
-  return document.getElementById("dateCreatedEdtf-from-precision");
-}
-
-test("text the catalog reads shows its years and can become the structured date", async () => {
-  const onChange = vi.fn<OnChange>();
-  await renderOnPage(
-    <Form initial={{ dateCreated: "c. 1850" }} onChange={onChange} />,
-  );
-  const user = userEvent.setup();
+test("the form has no structured date field, only Date made and how it reads", async () => {
+  await renderOnPage(<Form initial={{ dateCreated: "c. 1850" }} />);
 
   expect(readBack()).toContain(
     "Read as c. 1850. Sorting and filters use 1845 – 1855.",
   );
   expect(readBack()).toContain("EDTF 1850~");
-
-  await user.click(
-    screen.getByRole("button", { name: "Use as structured date" }),
-  );
-  expect(savedEdtf(onChange)).toBe("1850~");
-  expect(onChange.mock.lastCall?.[0]).toMatchObject({ dateCreated: "c. 1850" });
-  expect(readBack()).toBe("");
-  await waitFor(() => expect(document.activeElement).toBe(fromPrecision()));
+  expect(screen.getAllByRole("textbox")).toHaveLength(1);
+  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(screen.queryByRole("button")).toBeNull();
 });
 
-test("a reading the From and To fields cannot show keeps focus on its Clear button", async () => {
-  await renderOnPage(<Form initial={{ dateCreated: "c. 19th century" }} />);
-  const user = userEvent.setup();
-
-  await user.click(
-    screen.getByRole("button", { name: "Use as structured date" }),
-  );
-
-  const clear = screen.getByRole("button", { name: "Clear structured date" });
-  await waitFor(() => expect(document.activeElement).toBe(clear));
-});
-
-test("text the catalog cannot read is kept as written", async () => {
+test("text the catalog cannot read is kept as written and sorts as undated", async () => {
   await renderOnPage(<Form initial={{ dateCreated: "Ming dynasty" }} />);
 
   expect(readBack()).toBe(
-    "Not read as a date, so it is shown as written. Add a structured date to sort and filter by it.",
+    "Not read as a date, so it is shown as written. Sorting and date filters treat the Object as undated.",
   );
-  expect(
-    screen.queryByRole("button", { name: "Use as structured date" }),
-  ).toBeNull();
+});
+
+test("a structured date saved earlier is kept when Date made is edited, and counts instead", async () => {
+  const onChange = vi.fn<OnChange>();
+  await renderOnPage(
+    <Form
+      initial={{
+        dateCreated: "Ming dynasty",
+        dateCreatedEdtf: draftFromEdtf("1368/1644"),
+      }}
+      onChange={onChange}
+    />,
+  );
+
+  expect(readBack()).toContain("Sorting and filters use 1368 – 1644.");
+  expect(readBack()).toContain("EDTF 1368/1644");
+
+  await userEvent.type(screen.getByRole("textbox"), ", Jiajing");
+
+  const saved: Mock<OnChange>["mock"]["lastCall"] = onChange.mock.lastCall;
+  expect(saved?.[0].dateCreated).toBe("Ming dynasty, Jiajing");
+  expect(edtfFromDraft(saved?.[0].dateCreatedEdtf)).toBe("1368/1644");
 });
 
 test("a structured date that disagrees with the text says which one counts", async () => {
@@ -109,34 +99,38 @@ test("a structured date that disagrees with the text says which one counts", asy
   );
 
   expect(readBack()).toBe(
-    "The text reads as 1850, but the structured date is 1860. Sorting, filters and exports use the structured date.",
+    "The text reads as 1850, but the structured date is 1860. Sorting, filters and exports use the structured date.Use the text insteadSorting and filters use 1860.EDTF 1860",
   );
-  expect(screen.getByText("Sorting and filters use 1860.")).toBeTruthy();
 });
 
-test("a date the From and To fields cannot show stays until cleared", async () => {
+test("staff can drop a structured date that disagrees with the text, so the text counts", async () => {
   const onChange = vi.fn<OnChange>();
   await renderOnPage(
     <Form
-      initial={{ dateCreatedEdtf: draftFromEdtf("-185X") }}
+      initial={{
+        dateCreated: "1850",
+        dateCreatedEdtf: draftFromEdtf("1860"),
+      }}
       onChange={onChange}
     />,
   );
-  const user = userEvent.setup();
 
-  expect(screen.getByText("1860 BC – 1851 BC")).toBeTruthy();
-  expect(screen.queryByRole("combobox", { name: "Known to" })).toBeNull();
-
-  await user.click(
-    screen.getByRole("button", { name: "Clear structured date" }),
+  await userEvent.click(
+    screen.getByRole("button", { name: "Use the text instead" }),
   );
-  expect(savedEdtf(onChange)).toBeUndefined();
-  expect(onChange).toHaveBeenCalledTimes(1);
-  expect(screen.getAllByRole("combobox", { name: "Known to" })).toHaveLength(2);
-  await waitFor(() => expect(document.activeElement).toBe(fromPrecision()));
+
+  expect(readBack()).toBe(
+    "Read as 1850. Sorting and filters use 1850.EDTF 1850",
+  );
+  expect(
+    edtfFromDraft(onChange.mock.lastCall?.[0].dateCreatedEdtf),
+  ).toBeUndefined();
+  expect(document.activeElement).toBe(
+    screen.getByRole("textbox", { name: "Date made" }),
+  );
 });
 
-test("the structured date's controls are described by its error", async () => {
+test("an error on the structured date is announced on Date made", async () => {
   const message = "Check the structured date.";
   await renderOnPage(
     <Form
@@ -146,13 +140,10 @@ test("the structured date's controls are described by its error", async () => {
   );
 
   const error = screen.getByText(message);
-  for (const control of [
-    fromPrecision(),
-    document.getElementById("dateCreatedEdtf-from-year"),
-    document.getElementById("dateCreatedEdtf-to-qualifier"),
-  ]) {
-    expect(control?.getAttribute("aria-invalid")).toBe("true");
-    expect(control?.getAttribute("aria-describedby")).toBe(error.id);
-  }
+  const dateMade = screen.getByRole("textbox", { name: "Date made" });
+  expect(dateMade.getAttribute("aria-invalid")).toBe("true");
+  expect(dateMade.getAttribute("aria-describedby")).toBe(
+    `dateCreated-reading ${error.id}`,
+  );
   expect(error.id).toBe("dateCreatedEdtf-error");
 });

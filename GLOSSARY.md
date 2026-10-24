@@ -41,7 +41,7 @@ One change (set, clear, or find and replace) to one field of every Object in a s
 _Avoid_: Mass update, batch edit
 
 **Date made**:
-When an Object was made, kept as staff wrote it and, when they structure it, as an EDTF date that wins over the text. Text in a recognised form ("c. 1850", "1850s", "before 1900", "500 BC") is read as a date; other text is shown as written and leaves the Object undated. The catalogue sorts and filters by the earliest and latest years of the date in effect, which are worked out and never stored on the Object (ADR 0021).
+When an Object was made, kept as staff wrote it and, when an import supplies one (or staff structured it before MUS-867), as an EDTF date that wins over the text until staff drop it in favour of the text. Text in a recognised form ("c. 1850", "1850s", "before 1900", "500 BC") is read as a date; other text is shown as written and leaves the Object undated. The catalogue sorts and filters by the earliest and latest years of the date in effect, which are worked out and never stored on the Object (ADR 0021).
 _Avoid_: Date created (it reads as when the record was made), production year
 
 **Number of objects**:

@@ -149,6 +149,19 @@ export async function getPortalImage(
 }
 
 const STALE_RENDITION_MS = 15 * 60 * 1000;
+/**
+ * How long the repair sweep waits before requesting a failed rendition again,
+ * one entry per retry (MUS-870). A file that fails every attempt is left for
+ * staff.
+ */
+const RENDITION_RETRY_DELAYS_MS = [5 * 60 * 1000, 60 * 60 * 1000];
+export const MAX_RENDITION_ATTEMPTS = RENDITION_RETRY_DELAYS_MS.length + 1;
+
+/** When to request a rendition again after attempt `attempts` failed, if ever. */
+export function renditionRetryAt(attempts: number, failedAt: number) {
+  const delay = RENDITION_RETRY_DELAYS_MS[attempts - 1];
+  return delay === undefined ? undefined : failedAt + delay;
+}
 
 export async function syncPublicRendition(
   ctx: MutationCtx,
@@ -187,6 +200,13 @@ export async function syncPublicRendition(
   if (rendition?.status === "ready") {
     await deleteRendition(ctx, media, rendition.renditionStorageId);
   }
+  // Asking again for the same file is another attempt; a new file starts over.
+  const attempts =
+    rendition &&
+    rendition.status !== "ready" &&
+    rendition.sourceStorageId === sourceStorageId
+      ? (rendition.attempts ?? 1) + 1
+      : 1;
   const requestId = crypto.randomUUID();
   await ctx.db.patch(media._id, {
     publicRendition: {
@@ -194,6 +214,9 @@ export async function syncPublicRendition(
       sourceStorageId,
       requestId,
       requestedAt: now,
+      attempts,
+      // A request that has not reported back by then is stale.
+      retryAt: now + STALE_RENDITION_MS,
     },
   });
   await ctx.scheduler.runAfter(

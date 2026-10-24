@@ -543,6 +543,7 @@ export const getByEntity = query({
   returns: v.array(
     v.object({
       _id: v.id("auditLog"),
+      _creationTime: v.number(),
       action: v.string(),
       timestamp: v.number(),
       userName: v.optional(v.string()),
@@ -572,6 +573,7 @@ export const getByEntity = query({
       entries.map(async (entry) => {
         return {
           _id: entry._id,
+          _creationTime: entry._creationTime,
           action: entry.action,
           timestamp: entry.timestamp,
           userName: entry.actorSnapshot?.name,

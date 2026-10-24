@@ -12,38 +12,20 @@ import { Label } from "@v1/ui/label";
 import { useMemo } from "react";
 import { EdtfChip } from "@/components/production-date/edtf-chip";
 import {
-  draftFromProductionDate,
   EMPTY_PRODUCTION_DATE_DRAFT,
   type ProductionDateDraft,
   productionDateFromDraft,
-  RANGE_SIDE_QUALIFIERS,
   sameProductionYears,
 } from "@/components/production-date/production-date-draft";
 import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
-import { PartialDateFields } from "@/components/provenance/partial-date-fields";
 import {
   FieldError,
-  fieldErrorProps,
+  fieldErrorId,
 } from "@/components/record-form/record-form-notices";
 import { useI18n, useScopedI18n } from "@/locales/client";
-import { STRUCTURED_DATE_MADE_ID } from "./constants";
 import { type CollectionFormTabProps, NO_FIELD_ERRORS } from "./types";
 
 const READING_ID = "dateCreated-reading";
-const CLEAR_ID = `${STRUCTURED_DATE_MADE_ID}-clear`;
-
-/**
- * Keeps keyboard focus on the structured date after a button that removes
- * itself sets or clears it: From's precision, or Clear for a fixed date.
- */
-function focusStructuredDate() {
-  requestAnimationFrame(() =>
-    (
-      document.getElementById(`${STRUCTURED_DATE_MADE_ID}-from-precision`) ??
-      document.getElementById(CLEAR_ID)
-    )?.focus(),
-  );
-}
 
 type DateMadeFieldsProps = Pick<
   CollectionFormTabProps,
@@ -51,8 +33,11 @@ type DateMadeFieldsProps = Pick<
 >;
 
 /**
- * The date made as staff write it, what the catalog reads it as, and an
- * optional structured date that sorting, filters and exports use instead.
+ * The date made as staff write it, and what the catalog reads it as for
+ * sorting, filters and exports. The form has no structured date field any
+ * more (MUS-867): a structured date saved earlier or imported is kept as it
+ * is and counts instead of the text, as shown here. Where the text reads as
+ * another date, staff can drop the structured date so the text counts.
  */
 export function DateMadeFields({
   formData,
@@ -61,47 +46,49 @@ export function DateMadeFields({
   fieldErrors = NO_FIELD_ERRORS,
 }: DateMadeFieldsProps) {
   const tRoot = useI18n();
-  const draft = formData.dateCreatedEdtf ?? EMPTY_PRODUCTION_DATE_DRAFT;
-  const setDraft = (next: ProductionDateDraft) =>
-    updateField("dateCreatedEdtf", next);
+  const error = fieldErrors.dateCreatedEdtf;
   return (
-    <div className="space-y-3 md:col-span-2 xl:col-span-3">
-      <div className="space-y-2">
-        <Label htmlFor="dateCreated">{tRoot("objects.form.dateCreated")}</Label>
-        <Input
-          id="dateCreated"
-          value={formData.dateCreated || ""}
-          onChange={(event) => updateField("dateCreated", event.target.value)}
-          placeholder={placeholders("dateCreated")}
-          aria-describedby={READING_ID}
-        />
-        <DateTextReading
-          text={formData.dateCreated}
-          draft={draft}
-          onUseReading={setDraft}
-        />
-      </div>
-      <StructuredDateFields
-        draft={draft}
-        onChange={setDraft}
-        error={fieldErrors.dateCreatedEdtf}
+    <div className="space-y-2 md:col-span-2 xl:col-span-3">
+      <Label htmlFor="dateCreated">{tRoot("objects.form.dateCreated")}</Label>
+      <Input
+        id="dateCreated"
+        value={formData.dateCreated || ""}
+        onChange={(event) => updateField("dateCreated", event.target.value)}
+        placeholder={placeholders("dateCreated")}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={
+          error
+            ? `${READING_ID} ${fieldErrorId("dateCreatedEdtf")}`
+            : READING_ID
+        }
       />
+      <DateTextReading
+        text={formData.dateCreated}
+        draft={formData.dateCreatedEdtf}
+        onUseText={() => {
+          updateField("dateCreatedEdtf", EMPTY_PRODUCTION_DATE_DRAFT);
+          // The button goes with the notice; keep focus on the date.
+          document.getElementById("dateCreated")?.focus();
+        }}
+      />
+      <FieldError field="dateCreatedEdtf" message={error} />
     </div>
   );
 }
 
 /**
  * What the text reads as, with the parser the catalog sorts and filters by,
- * so staff see the years before they save.
+ * so staff see the years before they save; or the structured date that
+ * counts instead.
  */
 function DateTextReading({
   text,
   draft,
-  onUseReading,
+  onUseText,
 }: {
   text: string | undefined;
-  draft: ProductionDateDraft;
-  onUseReading: (draft: ProductionDateDraft) => void;
+  draft: ProductionDateDraft | undefined;
+  onUseText: () => void;
 }) {
   const reading = useMemo(() => readDateText(text), [text]);
   const structured = productionDateFromDraft(draft);
@@ -109,49 +96,45 @@ function DateTextReading({
     <div
       id={READING_ID}
       aria-live="polite"
-      className="text-xs text-muted-foreground"
+      className="space-y-1 text-xs text-muted-foreground"
     >
-      {reading && structured === undefined ? (
-        <ReadAs reading={reading} onUseReading={onUseReading} />
-      ) : null}
-      {reading && structured && !sameProductionYears(reading, structured) ? (
-        <ReadingMismatch reading={reading} structured={structured} />
-      ) : null}
-      {!reading && text?.trim() && structured === undefined ? (
+      {structured ? (
+        <>
+          {reading && !sameProductionYears(reading, structured) ? (
+            <ReadingMismatch
+              reading={reading}
+              structured={structured}
+              onUseText={onUseText}
+            />
+          ) : null}
+          <SortedBy date={structured} />
+        </>
+      ) : reading ? (
+        <SortedBy date={reading} readAs />
+      ) : text?.trim() ? (
         <NotRead />
       ) : null}
     </div>
   );
 }
 
-function ReadAs({
-  reading,
-  onUseReading,
+/** The years a date sorts and filters by, and its EDTF. */
+function SortedBy({
+  date,
+  readAs = false,
 }: {
-  reading: ProductionDate;
-  onUseReading: (draft: ProductionDateDraft) => void;
+  date: ProductionDate;
+  readAs?: boolean;
 }) {
   const t = useScopedI18n("objects.form.productionDate");
   const dates = useProductionDateFormat();
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span>
-        {t("readAs", { date: dates.date(reading) })}{" "}
-        {dates.years(productionYears(reading))}
+        {readAs ? `${t("readAs", { date: dates.date(date) })} ` : null}
+        {dates.years(productionYears(date))}
       </span>
-      <EdtfChip edtf={formatEdtf(reading)} />
-      <Button
-        type="button"
-        variant="outline"
-        size="xs"
-        className="h-auto min-h-6 whitespace-normal py-1 text-left"
-        onClick={() => {
-          onUseReading(draftFromProductionDate(reading));
-          focusStructuredDate();
-        }}
-      >
-        {t("useReading")}
-      </Button>
+      <EdtfChip edtf={formatEdtf(date)} />
     </div>
   );
 }
@@ -159,126 +142,30 @@ function ReadAs({
 function ReadingMismatch({
   reading,
   structured,
+  onUseText,
 }: {
   reading: ProductionDate;
   structured: ProductionDate;
+  onUseText: () => void;
 }) {
   const t = useScopedI18n("objects.form.productionDate");
   const dates = useProductionDateFormat();
   return (
-    <p className="text-status-warning-foreground">
-      {t("mismatch", {
-        text: dates.date(reading),
-        date: dates.date(structured),
-      })}
-    </p>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <p className="text-status-warning-foreground">
+        {t("mismatch", {
+          text: dates.date(reading),
+          date: dates.date(structured),
+        })}
+      </p>
+      <Button type="button" variant="outline" size="sm" onClick={onUseText}>
+        {t("useText")}
+      </Button>
+    </div>
   );
 }
 
 function NotRead() {
   const t = useScopedI18n("objects.form.productionDate");
   return <p>{t("notRead")}</p>;
-}
-
-/** The From and To dates, or a fixed EDTF date they cannot show. */
-function StructuredDateFields({
-  draft,
-  onChange,
-  error,
-}: {
-  draft: ProductionDateDraft;
-  onChange: (draft: ProductionDateDraft) => void;
-  error: string | undefined;
-}) {
-  const t = useScopedI18n("objects.form.productionDate");
-  const dates = useProductionDateFormat();
-  const date = productionDateFromDraft(draft);
-  const errorProps = fieldErrorProps("dateCreatedEdtf", error);
-  return (
-    <fieldset className="space-y-3 rounded-lg border border-border/60 p-3 sm:p-4">
-      <legend className="px-1 text-sm font-medium">{t("legend")}</legend>
-      <p className="text-xs text-muted-foreground">{t("description")}</p>
-      {draft.fixedEdtf === undefined ? (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <PartialDateFields
-              id={`${STRUCTURED_DATE_MADE_ID}-from`}
-              label={t("from")}
-              value={draft.from}
-              onChange={(from) => onChange({ ...draft, from })}
-              allowBc
-              errorProps={errorProps}
-            />
-            <PartialDateFields
-              id={`${STRUCTURED_DATE_MADE_ID}-to`}
-              label={t("to")}
-              value={draft.to}
-              onChange={(to) => onChange({ ...draft, to })}
-              qualifiers={RANGE_SIDE_QUALIFIERS}
-              allowBc
-              errorProps={errorProps}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">{t("hint")}</p>
-        </>
-      ) : (
-        <div className="space-y-1">
-          <p className="text-sm text-foreground">
-            {date ? dates.date(date) : draft.fixedEdtf}
-          </p>
-          <p className="text-xs text-muted-foreground">{t("fixed")}</p>
-        </div>
-      )}
-      <StructuredDateSummary
-        date={date ?? undefined}
-        canClear={
-          draft.fixedEdtf !== undefined ||
-          draft.from.precision !== "none" ||
-          draft.to.precision !== "none"
-        }
-        onClear={() => {
-          onChange(EMPTY_PRODUCTION_DATE_DRAFT);
-          focusStructuredDate();
-        }}
-      />
-      <FieldError field="dateCreatedEdtf" message={error} />
-    </fieldset>
-  );
-}
-
-/** The years the structured date sorts by, its EDTF, and a way to clear it. */
-function StructuredDateSummary({
-  date,
-  canClear,
-  onClear,
-}: {
-  date: ProductionDate | undefined;
-  canClear: boolean;
-  onClear: () => void;
-}) {
-  const t = useScopedI18n("objects.form.productionDate");
-  const dates = useProductionDateFormat();
-  if (!date && !canClear) return null;
-  return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-      {date ? (
-        <>
-          <span>{dates.years(productionYears(date))}</span>
-          <EdtfChip edtf={formatEdtf(date)} />
-        </>
-      ) : null}
-      {canClear ? (
-        <Button
-          id={CLEAR_ID}
-          type="button"
-          variant="outline"
-          size="xs"
-          className="h-auto min-h-6 whitespace-normal py-1 text-left"
-          onClick={onClear}
-        >
-          {t("clear")}
-        </Button>
-      ) : null}
-    </div>
-  );
 }
