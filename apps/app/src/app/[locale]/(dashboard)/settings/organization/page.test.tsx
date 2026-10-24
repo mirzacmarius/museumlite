@@ -9,6 +9,7 @@ import OrganizationSettingsPage from "./page";
 
 const updateOrganization = vi.fn();
 const updateWatermarkSettings = vi.fn();
+const updateRightsDefaults = vi.fn();
 let canManageSettings = true;
 let organization: {
   _id: string;
@@ -18,14 +19,21 @@ let organization: {
   address?: Record<string, string>;
   phone?: string;
   settings?: {
-    watermarkSettings: {
+    watermarkSettings?: {
       isEnabled: boolean;
       text: string;
       opacity: number;
       position: "bottom-right";
     };
+    rightsDefaults?: {
+      objectRightsStatement?: string;
+      mediaRightsStatement?: string;
+    };
   };
 };
+
+const IN_COPYRIGHT = "http://rightsstatements.org/vocab/InC/1.0/";
+const CC_BY = "https://creativecommons.org/licenses/by/4.0/";
 
 vi.mock("convex/react", () => ({
   useQuery: (reference: unknown, args: unknown) => {
@@ -40,6 +48,8 @@ vi.mock("convex/react", () => ({
         return updateOrganization;
       case "organizations:updateWatermarkSettings":
         return updateWatermarkSettings;
+      case "organizations:updateRightsDefaults":
+        return updateRightsDefaults;
       default:
         return vi.fn();
     }
@@ -79,6 +89,8 @@ beforeEach(() => {
   updateOrganization.mockResolvedValue(null);
   updateWatermarkSettings.mockReset();
   updateWatermarkSettings.mockResolvedValue(null);
+  updateRightsDefaults.mockReset();
+  updateRightsDefaults.mockResolvedValue(null);
 });
 
 test("staff edit the address and phone and Save Changes sends the whole address", async () => {
@@ -217,4 +229,82 @@ test("saving the watermark keeps address edits that are not saved yet", async ()
     "value",
     "Storgata 1",
   );
+});
+
+test("the rights statements card shows each default and saves only the one changed", async () => {
+  organization.settings = {
+    rightsDefaults: { objectRightsStatement: IN_COPYRIGHT },
+  };
+  const user = userEvent.setup();
+  await renderOnPage(<OrganizationSettingsPage />, "/en/settings/organization");
+
+  const objects = screen.getByRole("combobox", { name: "Objects" });
+  const images = screen.getByRole("combobox", { name: "Images" });
+  const save = screen.getByRole("button", { name: "Save rights statements" });
+  expect(objects.textContent).toBe("In Copyright");
+  expect(images.textContent).toBe("No default");
+  expect(save).toHaveProperty("disabled", true);
+
+  await user.click(images);
+  await user.click(
+    screen.getByRole("option", {
+      name: "Creative Commons Attribution 4.0 International",
+    }),
+  );
+  await user.click(save);
+
+  expect(updateRightsDefaults).toHaveBeenCalledWith({
+    organizationId: "org-1",
+    rightsDefaults: { mediaRightsStatement: CC_BY },
+  });
+});
+
+test("choosing No default removes the default for Objects", async () => {
+  organization.settings = {
+    rightsDefaults: {
+      objectRightsStatement: IN_COPYRIGHT,
+      mediaRightsStatement: CC_BY,
+    },
+  };
+  const user = userEvent.setup();
+  await renderOnPage(<OrganizationSettingsPage />, "/en/settings/organization");
+
+  await user.click(screen.getByRole("combobox", { name: "Objects" }));
+  await user.click(screen.getByRole("option", { name: "No default" }));
+  await user.click(
+    screen.getByRole("button", { name: "Save rights statements" }),
+  );
+
+  expect(updateRightsDefaults).toHaveBeenCalledWith({
+    organizationId: "org-1",
+    rightsDefaults: { objectRightsStatement: null },
+  });
+});
+
+test("a refused save of the rights statements says so and keeps the choice", async () => {
+  updateRightsDefaults.mockRejectedValue(new Error("Permission denied"));
+  const user = userEvent.setup();
+  await renderOnPage(<OrganizationSettingsPage />, "/en/settings/organization");
+
+  const objects = screen.getByRole("combobox", { name: "Objects" });
+  await user.click(objects);
+  await user.click(screen.getByRole("option", { name: "In Copyright" }));
+  await user.click(
+    screen.getByRole("button", { name: "Save rights statements" }),
+  );
+
+  expect(
+    await screen.findByText("Could not save the rights statements. Try again."),
+  ).toBeTruthy();
+  expect(objects.textContent).toBe("In Copyright");
+});
+
+test("members who cannot manage settings do not see the rights statements", async () => {
+  canManageSettings = false;
+  await renderOnPage(<OrganizationSettingsPage />, "/en/settings/organization");
+
+  expect(
+    screen.queryByRole("heading", { name: "Rights statements" }),
+  ).toBeNull();
+  expect(screen.queryByRole("combobox", { name: "Objects" })).toBeNull();
 });

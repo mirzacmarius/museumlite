@@ -761,6 +761,17 @@ export default {
         cancelError: "Anularea ștergerii a eșuat. Încearcă din nou.",
         transferError: "Transferul proprietății a eșuat. Încearcă din nou.",
       },
+      rightsDefaults: {
+        title: "Declarații privind drepturile",
+        description:
+          "Declarația afișată de un obiect sau de o imagine care nu are una proprie. O modificare se aplică imediat tuturor acestor înregistrări.",
+        objects: "Obiecte",
+        images: "Imagini",
+        noDefault: "Fără valoare implicită",
+        save: "Salvează declarațiile privind drepturile",
+        saveError:
+          "Declarațiile privind drepturile nu au putut fi salvate. Încearcă din nou.",
+      },
     },
     developer: {
       selectOrganization:
@@ -7884,6 +7895,9 @@ export default {
       invalidExpiry: "Introdu o dată validă.",
       failed: "Actualizarea a eșuat. Încearcă din nou.",
       unavailable: "Imagine indisponibilă",
+      rightsStatement: "Declarație privind drepturile",
+      rightsStatementHint:
+        "Se afișează împreună cu imaginea în portalul public. Dacă modifici doar declarația, aprobarea pentru descărcarea originalului se păstrează.",
     },
     title: "Bibliotecă media",
     description: "Toate fișierele media din colecția ta.",
@@ -7922,6 +7936,7 @@ export default {
       save: "Salvează",
       saving: "Se salvează...",
       cancel: "Anulează",
+      rightsStatement: "Declarație privind drepturile",
     },
   },
   organizationDeletionCancelPage: {

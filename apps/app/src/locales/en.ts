@@ -412,6 +412,16 @@ export default {
         cancelError: "Failed to cancel deletion. Please try again.",
         transferError: "Failed to transfer ownership. Please try again.",
       },
+      rightsDefaults: {
+        title: "Rights statements",
+        description:
+          "The statement an Object or image shows when it records none of its own. A change applies at once to every such record.",
+        objects: "Objects",
+        images: "Images",
+        noDefault: "No default",
+        save: "Save rights statements",
+        saveError: "Could not save the rights statements. Try again.",
+      },
     },
     developer: {
       selectOrganization:
@@ -5417,6 +5427,9 @@ export default {
       invalidExpiry: "Enter a valid expiry date.",
       failed: "Could not update publication. Try again.",
       unavailable: "Image unavailable",
+      rightsStatement: "Rights statement",
+      rightsStatementHint:
+        "Shown with the image in the public portal. Changing only the statement keeps its approval for original download.",
     },
     title: "Media Library",
     description: "All media files across your collection.",
@@ -5454,6 +5467,7 @@ export default {
       save: "Save",
       saving: "Saving...",
       cancel: "Cancel",
+      rightsStatement: "Rights statement",
     },
   },
   organizationsOverview: {

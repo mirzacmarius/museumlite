@@ -33,6 +33,7 @@ import {
 } from "@/hooks/use-organization-contact-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { OrganizationDeletionZone } from "./organization-deletion-zone";
+import { RightsDefaultsCard } from "./rights-defaults-card";
 
 type WatermarkPosition =
   | "center"
@@ -659,6 +660,11 @@ function OrganizationSettingsForm({
             dispatch({ type: "editWatermarkSettings", value })
           }
           settings={watermarkSettings}
+        />
+
+        <RightsDefaultsCard
+          organizationId={organization._id}
+          rightsDefaults={organization.settings?.rightsDefaults}
         />
 
         <OrganizationSaveActions

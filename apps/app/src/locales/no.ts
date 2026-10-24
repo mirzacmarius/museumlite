@@ -416,6 +416,16 @@ export default {
       },
 
       addOrganization: "Legg til organisasjon",
+      rightsDefaults: {
+        title: "Rettighetserklæringer",
+        description:
+          "Erklæringen et objekt eller bilde viser når det ikke har en egen. En endring gjelder straks for alle slike poster.",
+        objects: "Objekter",
+        images: "Bilder",
+        noDefault: "Ingen standard",
+        save: "Lagre rettighetserklæringer",
+        saveError: "Kunne ikke lagre rettighetserklæringene. Prøv igjen.",
+      },
     },
     developer: {
       selectOrganization:
@@ -5475,6 +5485,9 @@ export default {
       invalidExpiry: "Angi en gyldig dato.",
       failed: "Kunne ikke oppdatere. Prøv igjen.",
       unavailable: "Bildet er utilgjengelig",
+      rightsStatement: "Rettighetserklæring",
+      rightsStatementHint:
+        "Vises med bildet i den offentlige portalen. Endrer du bare erklæringen, beholder bildet godkjenningen for nedlasting av originalen.",
     },
     title: "Mediebibliotek",
     description: "Alle mediefiler på tvers av samlingen din.",
@@ -5512,6 +5525,7 @@ export default {
       save: "Lagre",
       saving: "Lagrer...",
       cancel: "Avbryt",
+      rightsStatement: "Rettighetserklæring",
     },
   },
   organizationsOverview: {

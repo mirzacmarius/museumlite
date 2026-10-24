@@ -425,6 +425,17 @@ export default {
         transferError:
           "No se pudo transferir la propiedad. Inténtalo de nuevo.",
       },
+      rightsDefaults: {
+        title: "Declaraciones de derechos",
+        description:
+          "La declaración que muestra un objeto o una imagen cuando no registra una propia. Un cambio se aplica de inmediato a todos esos registros.",
+        objects: "Objetos",
+        images: "Imágenes",
+        noDefault: "Sin valor predeterminado",
+        save: "Guardar declaraciones de derechos",
+        saveError:
+          "No se pudieron guardar las declaraciones de derechos. Inténtalo de nuevo.",
+      },
     },
     developer: {
       selectOrganization:
@@ -5531,6 +5542,9 @@ export default {
       invalidExpiry: "Introduce una fecha válida.",
       failed: "No se pudo actualizar. Inténtalo de nuevo.",
       unavailable: "Imagen no disponible",
+      rightsStatement: "Declaración de derechos",
+      rightsStatementHint:
+        "Se muestra con la imagen en el portal público. Cambiar solo la declaración mantiene su aprobación para la descarga del original.",
     },
     title: "Biblioteca de Medios",
     description: "Todos los archivos multimedia de su colección.",
@@ -5568,6 +5582,7 @@ export default {
       save: "Guardar",
       saving: "Guardando...",
       cancel: "Cancelar",
+      rightsStatement: "Declaración de derechos",
     },
   },
   organizationsOverview: {

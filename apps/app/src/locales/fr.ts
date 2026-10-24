@@ -424,6 +424,17 @@ export default {
         transferError:
           "Impossible de transférer la propriété. Veuillez réessayer.",
       },
+      rightsDefaults: {
+        title: "Déclarations des droits",
+        description:
+          "La déclaration qu’affiche un objet ou une image qui n’en indique aucune. Une modification s’applique aussitôt à tous ces enregistrements.",
+        objects: "Objets",
+        images: "Images",
+        noDefault: "Aucune valeur par défaut",
+        save: "Enregistrer les déclarations des droits",
+        saveError:
+          "Impossible d’enregistrer les déclarations des droits. Réessayez.",
+      },
     },
     developer: {
       selectOrganization:
@@ -5545,6 +5556,9 @@ export default {
       invalidExpiry: "Saisissez une date valide.",
       failed: "Mise à jour impossible. Réessayez.",
       unavailable: "Image indisponible",
+      rightsStatement: "Déclaration des droits",
+      rightsStatementHint:
+        "Affichée avec l’image dans le portail public. Modifier uniquement la déclaration conserve son approbation pour le téléchargement de l’original.",
     },
     title: "Bibliothèque Multimédia",
     description: "Tous les fichiers multimédias de votre collection.",
@@ -5583,6 +5597,7 @@ export default {
       save: "Enregistrer",
       saving: "Enregistrement...",
       cancel: "Annuler",
+      rightsStatement: "Déclaration des droits",
     },
   },
   organizationsOverview: {

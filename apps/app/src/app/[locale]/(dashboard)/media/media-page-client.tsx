@@ -317,6 +317,7 @@ export function MediaPageClient({
       {selectedMediaId && (
         <MediaDetailModal
           mediaId={selectedMediaId}
+          organizationId={organizationId}
           onClose={() => setSelectedMediaId(null)}
         />
       )}

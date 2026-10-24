@@ -73,3 +73,19 @@ test("statements are offered by name, grouped by publisher, and the default clea
   );
   expect(onValueChange).toHaveBeenLastCalledWith(undefined);
 });
+
+test("a picker that sets the default itself names its empty choice as told", async () => {
+  await renderOnPage(
+    <>
+      <label htmlFor="rights">Rights statement</label>
+      <RightsStatementSelect
+        id="rights"
+        value={undefined}
+        onValueChange={() => {}}
+        organizationDefault={null}
+        emptyLabel="No default"
+      />
+    </>,
+  );
+  expect(trigger().textContent).toBe("No default");
+});

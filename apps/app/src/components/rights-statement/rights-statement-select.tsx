@@ -29,6 +29,8 @@ interface RightsStatementSelectProps {
    * the Organization sets none, undefined while it loads.
    */
   organizationDefault: RightsStatementUri | null | undefined;
+  /** What the empty choice reads where it sets no default at all. */
+  emptyLabel?: string;
 }
 
 /**
@@ -40,17 +42,19 @@ export function RightsStatementSelect({
   value,
   onValueChange,
   organizationDefault,
+  emptyLabel: ownEmptyLabel,
 }: RightsStatementSelectProps) {
   const tRoot = useI18n();
   const name = useRightsStatementName();
   const emptyLabel =
-    organizationDefault === undefined
+    ownEmptyLabel ??
+    (organizationDefault === undefined
       ? tRoot("rightsStatements.inherited")
       : organizationDefault === null
         ? tRoot("rightsStatements.notStated")
         : tRoot("rightsStatements.organizationDefault", {
             statement: name(organizationDefault),
-          });
+          }));
   return (
     <Select
       value={value ?? NO_OWN_STATEMENT}
