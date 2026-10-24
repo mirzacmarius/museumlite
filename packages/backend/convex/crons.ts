@@ -95,6 +95,14 @@ crons.interval(
   {},
 );
 
+// Uploads never attached to a record, and expired upload sessions, go after a week
+crons.interval(
+  "delete-abandoned-uploads",
+  { hours: 1 },
+  internal.users.deleteAbandonedUploads,
+  {},
+);
+
 // Search documents for records from before the search index, or an older
 // document version, are written in pages until every Organization is complete
 crons.interval(

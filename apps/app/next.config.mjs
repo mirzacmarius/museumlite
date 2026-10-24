@@ -2,6 +2,8 @@
 import { convexImageConfig } from "../../scripts/convex-image-config.mjs";
 // @boundaries-ignore Shared Next.js config helpers live in the root scripts folder
 import { loadMonorepoEnv } from "../../scripts/load-monorepo-env.mjs";
+// @boundaries-ignore Shared Next.js config helpers live in the root scripts folder
+import { securityHeaders } from "../../scripts/security-headers.mjs";
 
 loadMonorepoEnv(import.meta.url);
 
@@ -31,6 +33,9 @@ const nextConfig = {
   // Type checking runs in CI for faster deployments
   typescript: {
     ignoreBuildErrors: skipTypeCheck,
+  },
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders() }];
   },
   // Note: Test files are excluded via tsconfig.json exclude patterns
   // This ensures they don't consume memory during TypeScript type checking

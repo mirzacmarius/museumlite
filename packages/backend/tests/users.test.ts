@@ -1,17 +1,18 @@
-import { convexTest } from "convex-test";
 import { beforeEach, describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import schema from "../convex/schema";
 
-import { modules } from "./testSetup";
+import {
+  type ConvexTest,
+  createConvexTestWithRateLimiter,
+} from "./testHarness";
 
 describe("user avatar upload validation", () => {
-  let t: ReturnType<typeof convexTest>;
+  let t: ConvexTest;
   let userId: Id<"users">;
 
   beforeEach(async () => {
-    t = convexTest(schema, modules);
+    t = createConvexTestWithRateLimiter();
 
     userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {

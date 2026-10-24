@@ -2,13 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { csvTextCell } from "@v1/backend/convex/utils/spreadsheetText";
 import { useConvex } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useCallback } from "react";
-
-function csvCell(value: string) {
-  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-}
 
 type ImportRowResultsPage = FunctionReturnType<
   typeof api.imports.listImportRowResults
@@ -31,7 +28,7 @@ export function useDownloadImportFailures() {
           },
         );
         for (const row of page.page) {
-          lines.push(`${row.rowNumber},${csvCell(row.errors.join("; "))}`);
+          lines.push(`${row.rowNumber},${csvTextCell(row.errors.join("; "))}`);
         }
         if (page.isDone) break;
         cursor = page.continueCursor;

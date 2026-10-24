@@ -3,6 +3,7 @@
 import { useForm } from "@tanstack/react-form";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { isUploadRateLimited } from "@v1/backend/convex/utils/uploadErrors";
 import * as validators from "@v1/backend/convex/utils/validators";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -32,8 +33,11 @@ export function AccountProfileSettings({ children }: { children?: ReactNode }) {
   const [nameSaveState, setNameSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [avatarError, setAvatarError] = useState<
+    "uploadFailed" | "uploadRateLimited" | null
+  >(null);
 
-  const handleUpdateUserImage = (uploaded: UploadFileResponse[]) => {
+  const handleUpdateUserImage = async (uploaded: UploadFileResponse[]) => {
     const response = uploaded[0]?.response;
     if (
       typeof response !== "object" ||
@@ -41,11 +45,17 @@ export function AccountProfileSettings({ children }: { children?: ReactNode }) {
       !("storageId" in response) ||
       typeof response.storageId !== "string"
     ) {
-      return Promise.resolve();
+      throw new Error("Upload returned no file");
     }
-    return updateUserImage({
+    await updateUserImage({
       imageId: response.storageId as Id<"_storage">,
     });
+  };
+
+  const handleAvatarUploadError = (error: unknown) => {
+    setAvatarError(
+      isUploadRateLimited(error) ? "uploadRateLimited" : "uploadFailed",
+    );
   };
 
   const handleDeleteAccount = async () => {
@@ -54,6 +64,7 @@ export function AccountProfileSettings({ children }: { children?: ReactNode }) {
   };
 
   const handleGenerateUploadUrl = async (mimeType: string) => {
+    setAvatarError(null);
     return await generateUploadUrl({ mimeType });
   };
 
@@ -143,12 +154,21 @@ export function AccountProfileSettings({ children }: { children?: ReactNode }) {
             tabIndex={user ? -1 : 0}
             generateUploadUrl={handleGenerateUploadUrl}
             onUploadComplete={handleUpdateUserImage}
+            onUploadError={handleAvatarUploadError}
           />
         </div>
         <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
-          <p className="text-sm font-normal text-muted-foreground">
-            {t("avatar.uploadHint")}
-          </p>
+          {avatarError ? (
+            <p role="alert" className="text-sm font-normal text-destructive">
+              {avatarError === "uploadRateLimited"
+                ? t("avatar.uploadRateLimited")
+                : t("avatar.uploadFailed")}
+            </p>
+          ) : (
+            <p className="text-sm font-normal text-muted-foreground">
+              {t("avatar.uploadHint")}
+            </p>
+          )}
           {hasCustomAvatar && (
             <Button
               type="button"

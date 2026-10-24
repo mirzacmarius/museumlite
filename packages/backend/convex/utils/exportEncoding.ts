@@ -11,6 +11,7 @@ import {
   REGISTER_PROFILE_VERSIONS,
 } from "./registerProfiles";
 import { manifestTotals, type RegisterTotals } from "./registerTotals";
+import { protectSpreadsheetText, quotedCsvText } from "./spreadsheetText";
 
 export interface ExportColumn {
   name: string;
@@ -74,21 +75,12 @@ export const auditColumns: ExportColumn[] = [
     type: "json" as const,
   })),
 ];
-export function protectSpreadsheetText(raw: string) {
-  let candidate = raw.trimStart();
-  while (candidate.length && candidate.charCodeAt(0) < 32)
-    candidate = candidate.slice(1).trimStart();
-  return /^[=+@-]/.test(candidate) || /^[\t\r\n]/.test(raw) ? `'${raw}` : raw;
-}
 /**
  * Register text is reversible: a leading apostrophe is added when the value
  * starts with a formula prefix or an apostrophe, so parsers strip exactly one.
  */
 export function protectRegisterText(raw: string) {
   return raw.startsWith("'") ? `'${raw}` : protectSpreadsheetText(raw);
-}
-function quoted(text: string) {
-  return `"${text.replace(/"/g, '""')}"`;
 }
 function csvCell(value: unknown, type: ExportColumn["type"]) {
   if (value === undefined || value === null) return "";
@@ -98,7 +90,7 @@ function csvCell(value: unknown, type: ExportColumn["type"]) {
     return String(value);
   }
   const raw = type === "json" ? JSON.stringify(value) : String(value);
-  return quoted(protectSpreadsheetText(raw));
+  return quotedCsvText(protectSpreadsheetText(raw));
 }
 function registerCsvCell(value: unknown, type: ExportColumn["type"]) {
   if (value === undefined || value === null) return "";
@@ -109,7 +101,7 @@ function registerCsvCell(value: unknown, type: ExportColumn["type"]) {
   }
   if (type === "text" || type === "id") {
     if (typeof value !== "string") throw new Error("Invalid text export cell");
-    return quoted(protectRegisterText(value));
+    return quotedCsvText(protectRegisterText(value));
   }
   return csvCell(value, type);
 }

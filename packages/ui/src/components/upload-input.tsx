@@ -9,10 +9,13 @@ import { type InputHTMLAttributes, useRef } from "react";
 export function UploadInput({
   generateUploadUrl,
   onUploadComplete,
+  onUploadError,
   ...props
 }: {
   generateUploadUrl: (mimeType: string) => Promise<string>;
-  onUploadComplete: (uploaded: UploadFileResponse[]) => void;
+  onUploadComplete: (uploaded: UploadFileResponse[]) => void | Promise<void>;
+  /** Called when the upload URL, the upload or `onUploadComplete` fails. */
+  onUploadError?: (error: unknown) => void;
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
   "accept" | "id" | "type" | "className" | "required" | "tabIndex"
@@ -37,7 +40,13 @@ export function UploadInput({
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
-        onUploadComplete(uploaded);
+        await onUploadComplete(uploaded);
+      },
+      onUploadError: (error) => {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        onUploadError?.(error);
       },
     },
   );

@@ -15,7 +15,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@auth/core": "0.41.1",
+    "@auth/core": "0.41.3",
     "@convex-dev/auth": "^0.0.95",
     "@convex-dev/polar": "npm:@erquhart/convex-polar@0.2.0-alpha.5",
     "@dagrejs/dagre": "^3.1.1",
@@ -70,7 +70,7 @@
   "devDependencies": {
     "@next/playwright": "16.4.2",
     "@playwright/test": "^1.64.1",
-    "@sentry/nextjs": "^10.50.0",
+    "@sentry/nextjs": "^10.75.2",
     "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

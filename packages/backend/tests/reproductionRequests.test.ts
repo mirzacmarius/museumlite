@@ -327,6 +327,41 @@ test("a Licensed copy is a bounded JPEG made from the verified image, never the 
   ).toBe("IMAGE_SOURCE_UNVERIFIED");
 });
 
+test("a source that is not a JPEG, PNG, WebP or TIFF is never decoded for a derivative", async () => {
+  const t = createConvexTestWithRateLimiter();
+  const museum = await createMuseum(t);
+  const { requestId } = await openRequest(museum);
+  // The image library would render this SVG if it were ever opened.
+  const svgId = await t.run((ctx) =>
+    ctx.storage.store(
+      new Blob(
+        [
+          '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="red"/></svg>',
+        ],
+        { type: "image/png" },
+      ),
+    ),
+  );
+  await t.run(async (ctx) => {
+    await ctx.db.patch(museum.mediaId, { storageId: svgId });
+    const ownership = await ctx.db
+      .query("storageOwnership")
+      .withIndex("by_storageId", (q) => q.eq("storageId", museum.storageId))
+      .unique();
+    if (ownership) await ctx.db.patch(ownership._id, { storageId: svgId });
+  });
+
+  await museum.staff.mutation(api.reproductionRequests.prepareDerivative, {
+    requestId,
+    maxDimension: 1200,
+  });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  expect(
+    (await museum.staff.query(api.reproductionRequests.get, { requestId }))
+      ?.derivatives,
+  ).toEqual([expect.objectContaining({ status: "failed" })]);
+});
+
 test("a derivative that cannot be made is reported failed and can be prepared again", async () => {
   const t = createConvexTestWithRateLimiter();
   const museum = await createMuseum(t);

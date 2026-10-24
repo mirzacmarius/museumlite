@@ -92,10 +92,13 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const token = new URL(request.url).searchParams.get("intent");
-    if (
-      !token ||
-      !(await ctx.runQuery(internal.users.checkUploadIntent, { token }))
-    ) {
+    const intent = token
+      ? await ctx.runQuery(internal.users.checkUploadIntent, {
+          token,
+          now: Date.now(),
+        })
+      : null;
+    if (!token || !intent) {
       return new Response("Upload session expired or invalid", {
         status: 403,
         headers: uploadCorsHeaders,
@@ -108,11 +111,18 @@ http.route({
         headers: uploadCorsHeaders,
       });
     }
+    if (intent.mimeType && blob.type !== intent.mimeType) {
+      return new Response("File type does not match the upload session", {
+        status: 415,
+        headers: uploadCorsHeaders,
+      });
+    }
     const storageId = await ctx.storage.store(blob);
     try {
       await ctx.runMutation(internal.users.completeOwnedUpload, {
         token,
         storageId,
+        contentType: blob.type || undefined,
       });
     } catch {
       await ctx.storage.delete(storageId);

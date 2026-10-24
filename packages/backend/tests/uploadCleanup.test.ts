@@ -1,0 +1,295 @@
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { api, internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import { ABANDONED_UPLOAD_AGE_MS, UPLOAD_URL_BURST } from "../convex/users";
+import { isUploadRateLimited } from "../convex/utils/uploadErrors";
+import {
+  authedForUser,
+  type ConvexTest,
+  createConvexTestWithRateLimiter,
+} from "./testHarness";
+
+const AGE = ABANDONED_UPLOAD_AGE_MS;
+const DAY = 24 * 60 * 60 * 1000;
+
+async function insertUser(t: ConvexTest) {
+  return await t.run(async (ctx) =>
+    ctx.db.insert("users", { name: "Uploader", email: "uploader@example.com" }),
+  );
+}
+
+/**
+ * A file that went through the owned-upload flow `ageMs` ago. A `legacy`
+ * row predates the cleanup and carries no unclaimed marker.
+ */
+async function storeUpload(
+  t: ConvexTest,
+  options: {
+    uploadedBy: Id<"users">;
+    ageMs: number;
+    contentType?: string;
+    ownerId?: string;
+    legacy?: boolean;
+    /** An attached row that still carries the unclaimed marker. */
+    staleMarker?: boolean;
+  },
+) {
+  return await t.run(async (ctx) => {
+    const storageId = await ctx.storage.store(
+      new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], {
+        type: options.contentType ?? "image/png",
+      }),
+    );
+    await ctx.db.insert("storageOwnership", {
+      storageId,
+      uploadedBy: options.uploadedBy,
+      contentType: options.contentType ?? "image/png",
+      uploadedAt: Date.now() - options.ageMs,
+      ...(options.ownerId
+        ? { ownerType: "userAvatar", ownerId: options.ownerId }
+        : {}),
+      ...((!options.ownerId && !options.legacy) || options.staleMarker
+        ? { unclaimedSince: Date.now() - options.ageMs }
+        : {}),
+    });
+    return storageId;
+  });
+}
+
+async function ownershipRow(t: ConvexTest, storageId: Id<"_storage">) {
+  return await t.run(async (ctx) =>
+    ctx.db
+      .query("storageOwnership")
+      .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+      .unique(),
+  );
+}
+
+async function storedFile(t: ConvexTest, storageId: Id<"_storage">) {
+  return await t.run(async (ctx) => ctx.db.system.get("_storage", storageId));
+}
+
+describe("abandoned uploads", () => {
+  test("an upload nobody attached for a week goes with its file; fresh, attached and older ones stay", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const userId = await insertUser(t);
+    const [abandoned, fresh, attached, legacy, sixDaysOld, staleMarker] =
+      await Promise.all([
+        storeUpload(t, { uploadedBy: userId, ageMs: AGE + 60_000 }),
+        storeUpload(t, { uploadedBy: userId, ageMs: 60_000 }),
+        storeUpload(t, {
+          uploadedBy: userId,
+          ageMs: AGE + 60_000,
+          ownerId: userId,
+        }),
+        // Records once stored uploads without claiming them; those files may
+        // still be in use, so the cleanup never reads rows without the marker.
+        storeUpload(t, {
+          uploadedBy: userId,
+          ageMs: 30 * AGE,
+          legacy: true,
+        }),
+        // A form left open over a long weekend can still save its upload.
+        storeUpload(t, { uploadedBy: userId, ageMs: 6 * DAY }),
+        // A record holds it even though the marker was never cleared.
+        storeUpload(t, {
+          uploadedBy: userId,
+          ageMs: AGE + 60_000,
+          ownerId: userId,
+          staleMarker: true,
+        }),
+      ]);
+    const [expiredIntent, liveIntent] = await t.run(async (ctx) => [
+      await ctx.db.insert("uploadIntents", {
+        token: "spent",
+        uploadedBy: userId,
+        createdAt: Date.now() - AGE - 120_000,
+        expiresAt: Date.now() - AGE - 60_000,
+      }),
+      await ctx.db.insert("uploadIntents", {
+        token: "live",
+        uploadedBy: userId,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 600_000,
+      }),
+    ]);
+
+    await t.mutation(internal.users.deleteAbandonedUploads, {});
+
+    expect(await storedFile(t, abandoned)).toBeNull();
+    expect(await ownershipRow(t, abandoned)).toBeNull();
+    expect(await storedFile(t, fresh)).not.toBeNull();
+    expect(await ownershipRow(t, fresh)).not.toBeNull();
+    expect(await storedFile(t, attached)).not.toBeNull();
+    expect(await ownershipRow(t, attached)).not.toBeNull();
+    expect(await storedFile(t, legacy)).not.toBeNull();
+    expect(await ownershipRow(t, legacy)).not.toBeNull();
+    expect(await storedFile(t, sixDaysOld)).not.toBeNull();
+    expect(await storedFile(t, staleMarker)).not.toBeNull();
+    const held = await ownershipRow(t, staleMarker);
+    expect(held?.ownerId).toBe(userId);
+    expect(held?.unclaimedSince).toBeUndefined();
+    const intents = await t.run(async (ctx) => [
+      await ctx.db.get(expiredIntent),
+      await ctx.db.get(liveIntent),
+    ]);
+    expect(intents[0]).toBeNull();
+    expect(intents[1]).not.toBeNull();
+  });
+});
+
+describe("abandoned upload backlog", () => {
+  afterEach(() => vi.useRealTimers());
+
+  test("a backlog larger than one batch is cleared by the follow-up runs", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const userId = await insertUser(t);
+    const backlog = 205;
+    const [abandoned, fresh] = await t.run(async (ctx) => {
+      const old: Id<"_storage">[] = [];
+      for (let index = 0; index < backlog; index++) {
+        const storageId = await ctx.storage.store(
+          new Blob([new Uint8Array([index % 256])], { type: "image/png" }),
+        );
+        await ctx.db.insert("storageOwnership", {
+          storageId,
+          uploadedBy: userId,
+          uploadedAt: Date.now() - AGE - 60_000,
+          unclaimedSince: Date.now() - AGE - 60_000,
+        });
+        await ctx.db.insert("uploadIntents", {
+          token: `spent-${index}`,
+          uploadedBy: userId,
+          createdAt: Date.now() - AGE - 120_000,
+          expiresAt: Date.now() - AGE - 60_000,
+        });
+        old.push(storageId);
+      }
+      const recent = await ctx.storage.store(
+        new Blob([new Uint8Array([1])], { type: "image/png" }),
+      );
+      await ctx.db.insert("storageOwnership", {
+        storageId: recent,
+        uploadedBy: userId,
+        uploadedAt: Date.now(),
+        unclaimedSince: Date.now(),
+      });
+      return [old, recent] as const;
+    });
+
+    await t.mutation(internal.users.deleteAbandonedUploads, {});
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+
+    const left = await t.run(async (ctx) => ({
+      uploads: await ctx.db.query("storageOwnership").collect(),
+      intents: await ctx.db.query("uploadIntents").collect(),
+      files: await Promise.all(
+        abandoned.map((storageId) => ctx.db.system.get("_storage", storageId)),
+      ),
+    }));
+    expect(left.uploads.map((upload) => upload.storageId)).toEqual([fresh]);
+    expect(left.intents).toEqual([]);
+    expect(left.files.every((file) => file === null)).toBe(true);
+  });
+});
+
+describe("avatars", () => {
+  test("an image upload must arrive with the type its session was issued for", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const userId = await insertUser(t);
+    const authed = authedForUser(t, userId);
+    const url = new URL(
+      await authed.mutation(api.users.generateUploadUrl, {
+        mimeType: "image/png",
+      }),
+    );
+    const upload = (type: string) =>
+      t.fetch(url.pathname + url.search, {
+        method: "POST",
+        headers: { "Content-Type": type },
+        body: new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type }),
+      });
+
+    expect((await upload("text/html")).status).toBe(415);
+    const accepted = await upload("image/png");
+    expect(accepted.status).toBe(200);
+    const { storageId } = (await accepted.json()) as {
+      storageId: Id<"_storage">;
+    };
+    const pending = await ownershipRow(t, storageId);
+    expect(pending?.contentType).toBe("image/png");
+    expect(pending?.unclaimedSince).toEqual(expect.any(Number));
+    await authed.mutation(api.users.updateUserImage, { imageId: storageId });
+    // Claimed uploads leave the cleanup's reach.
+    expect((await ownershipRow(t, storageId))?.unclaimedSince).toBeUndefined();
+    expect((await t.run(async (ctx) => ctx.db.get(userId)))?.imageId).toBe(
+      storageId,
+    );
+  });
+
+  test("only an image upload becomes the avatar", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const userId = await insertUser(t);
+    const authed = authedForUser(t, userId);
+    const [page, photo] = await Promise.all([
+      storeUpload(t, {
+        uploadedBy: userId,
+        ageMs: 0,
+        contentType: "text/html",
+      }),
+      storeUpload(t, {
+        uploadedBy: userId,
+        ageMs: 0,
+        contentType: "image/png",
+      }),
+    ]);
+
+    await expect(
+      authed.mutation(api.users.updateUserImage, { imageId: page }),
+    ).rejects.toThrow("Avatar must be a JPEG, PNG or WebP image");
+    await authed.mutation(api.users.updateUserImage, { imageId: photo });
+    expect((await t.run(async (ctx) => ctx.db.get(userId)))?.imageId).toBe(
+      photo,
+    );
+  });
+});
+
+describe("upload URL rate limit", () => {
+  afterEach(() => vi.useRealTimers());
+
+  test("a user gets a burst of upload URLs, then must wait", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const userId = await insertUser(t);
+    const authed = authedForUser(t, userId);
+
+    for (let index = 0; index < UPLOAD_URL_BURST; index++) {
+      await authed.mutation(api.users.generateUploadUrl, {
+        mimeType: "image/jpeg",
+      });
+    }
+    const refused = await authed
+      .mutation(api.users.generateUploadUrl, { mimeType: "image/jpeg" })
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+    // A coded refusal, so the browser can say to wait.
+    expect(isUploadRateLimited(refused)).toBe(true);
+
+    const other = authedForUser(t, await insertUser(t));
+    expect(
+      await other.mutation(api.users.generateUploadUrl, {
+        mimeType: "image/jpeg",
+      }),
+    ).toContain("/upload-owned-file?intent=");
+
+    vi.advanceTimersByTime(60_000);
+    expect(
+      await authed.mutation(api.users.generateUploadUrl, {
+        mimeType: "image/jpeg",
+      }),
+    ).toContain("/upload-owned-file?intent=");
+  });
+});

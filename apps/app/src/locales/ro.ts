@@ -539,6 +539,10 @@ export default {
       uploadHint:
         "Click pe avatar pentru a încărca unul personalizat din fișierele tale.",
       resetButton: "Resetează",
+      uploadFailed:
+        "Avatarul nu a putut fi încărcat. Folosește o imagine JPEG, PNG sau WebP și încearcă din nou.",
+      uploadRateLimited:
+        "Prea multe încărcări în același timp. Așteaptă un minut, apoi încearcă din nou.",
     },
     name: {
       title: "Numele Tău",
@@ -3651,6 +3655,8 @@ export default {
       },
       imageUploadFailed:
         "Fotografia locației nu a putut fi încărcată. Încercați din nou.",
+      imageUploadRateLimited:
+        "Prea multe încărcări în același timp. Așteptați un minut, apoi încercați din nou.",
     },
 
     timeline: "Istoricul locației",
@@ -6591,7 +6597,7 @@ export default {
       event_expired: "Evenimentul nu mai este stocat",
       endpoint_deleted: "Endpoint-ul a fost șters",
       endpoint_disabled: "Endpoint-ul a fost dezactivat",
-      endpoint_insecure: "URL-ul endpoint-ului nu folosește HTTPS",
+      endpoint_insecure: "URL-ul endpoint-ului nu este o adresă HTTPS publică",
       endpoint_unsubscribed:
         "Endpoint-ul nu mai este abonat la acest eveniment",
     },
@@ -6647,7 +6653,7 @@ export default {
     },
     errors: {
       WEBHOOK_NAME_REQUIRED: "Introdu un nume pentru endpoint.",
-      WEBHOOK_URL_INVALID: "Introdu un URL HTTPS valid.",
+      WEBHOOK_URL_INVALID: "Introdu un URL HTTPS public.",
       WEBHOOK_EVENT_UNSUPPORTED:
         "Unul dintre evenimentele selectate nu este disponibil.",
       WEBHOOK_LIMIT_REACHED:

@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { isUploadRateLimited } from "@v1/backend/convex/utils/uploadErrors";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { useActionErrorMessage } from "@/hooks/use-action-error-message";
@@ -198,8 +199,12 @@ export function useAddChildLocationForm({
       }
 
       setLocationImageId(storageId);
-    } catch {
-      setError(t("imageUploadFailed"));
+    } catch (error) {
+      setError(
+        isUploadRateLimited(error)
+          ? t("imageUploadRateLimited")
+          : t("imageUploadFailed"),
+      );
       URL.revokeObjectURL(nextPreviewUrl);
       setLocationImagePreviewUrl(null);
     } finally {
