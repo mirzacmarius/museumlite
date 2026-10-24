@@ -624,6 +624,20 @@ describe("SPECTRUM description and rights", () => {
     expect(unstated).not.toContain("<dimensions>");
   });
 
+  it("writes no part without a measurement it names", () => {
+    const xml = toSpectrumXML(
+      collectionToSpectrum({
+        accessionNumber: "2024.013",
+        title: "Plate",
+        dimensions: "about 30 cm across",
+        dimensionMeasuredPart: "base",
+      }),
+    );
+    expect(xml).toContain("<dimension>about 30 cm across</dimension>");
+    expect(xml).not.toContain("<dimensions>");
+    expect(xml).not.toContain("<measuredPart>");
+  });
+
   it("prefers the Object's own statement and writes none when neither is set", () => {
     expect(
       collectionToSpectrum(

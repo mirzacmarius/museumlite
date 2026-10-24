@@ -377,7 +377,8 @@ export function toSpectrumXML(
   };
 
   // Structured dimensions; the weight goes with them when their part is
-  // stated, so the part names what was weighed too
+  // stated, so the part names what was weighed too. A part is written only
+  // beside a measurement it names.
   const mainPart = record.dimensionMeasuredPart;
   const mainWeight = record.weight
     ? `<weight unit="${escapeXml(record.weightUnit || "kg")}">${record.weight}</weight>`
@@ -386,7 +387,7 @@ export function toSpectrumXML(
     record.dimensionHeight ||
     record.dimensionWidth ||
     record.dimensionDepth ||
-    mainPart
+    (mainPart && mainWeight)
   ) {
     lines.push(`${indent}<dimensions>`);
     if (mainPart) measuredPartLines(mainPart);
