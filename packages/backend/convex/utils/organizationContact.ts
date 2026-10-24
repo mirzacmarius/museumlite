@@ -31,7 +31,6 @@ export const MAX_PHONE_LENGTH = 50;
 export type OrganizationContactErrorData = {
   code: "CONTACT_FIELD_TOO_LONG";
   message: string;
-  /** An address line, or "phone". */
   field: OrganizationAddressLine | "phone";
   limit: number;
 };

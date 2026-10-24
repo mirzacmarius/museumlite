@@ -8,7 +8,6 @@ import {
   ORGANIZATION_ADDRESS_LINES,
   type OrganizationAddress,
   type OrganizationAddressLine,
-  organizationContactErrorFromError,
 } from "@v1/backend/convex/utils/organizationContact";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -24,10 +23,14 @@ import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Droplet, Plus, Save } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useEffect, useReducer, useState } from "react";
+import { type FormEvent, useReducer, useState } from "react";
 import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import {
+  CONTACT_FIELD_LABELS,
+  useOrganizationContactErrorMessage,
+} from "@/hooks/use-organization-contact-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { OrganizationDeletionZone } from "./organization-deletion-zone";
 
@@ -47,16 +50,6 @@ interface WatermarkSettings {
 
 type ContactField = OrganizationAddressLine | "phone";
 type ContactDetails = Record<ContactField, string>;
-
-const CONTACT_FIELD_LABELS = {
-  street: "organization.streetAddressLabel",
-  street2: "organization.addressLine2Label",
-  postalCode: "organization.postalCodeLabel",
-  city: "organization.cityLabel",
-  region: "organization.regionLabel",
-  country: "organization.countryLabel",
-  phone: "organization.phoneLabel",
-} as const satisfies Record<ContactField, string>;
 
 const CONTACT_FIELDS: ContactField[] = [...ORGANIZATION_ADDRESS_LINES, "phone"];
 
@@ -92,21 +85,9 @@ type StoredOrganization = Pick<
 >;
 
 type OrganizationFormAction =
-  | { type: "load"; organization: StoredOrganization }
   | { type: "setName"; value: string }
   | { type: "setContactDetails"; value: ContactDetails }
   | { type: "setWatermarkSettings"; value: WatermarkSettings };
-
-const EMPTY_ORGANIZATION_FORM: OrganizationForm = {
-  name: "",
-  contactDetails: contactDetailsOf({}),
-  watermarkSettings: {
-    isEnabled: false,
-    text: "",
-    opacity: 0.5,
-    position: "bottom-right",
-  },
-};
 
 function organizationFormOf(
   organization: StoredOrganization,
@@ -129,8 +110,6 @@ function organizationFormReducer(
   action: OrganizationFormAction,
 ): OrganizationForm {
   switch (action.type) {
-    case "load":
-      return organizationFormOf(action.organization);
     case "setName":
       return { ...state, name: action.value };
     case "setContactDetails":
@@ -270,12 +249,10 @@ function ContactDetailsCard({
   disabled: boolean;
   onDetailsChange: (details: ContactDetails) => void;
 }) {
-  const t = useScopedI18n("settings");
+  const t = useScopedI18n("settings.organization");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <h2 className="mb-4 text-lg font-medium">
-        {t("organization.addressAndPhone")}
-      </h2>
+      <h2 className="mb-4 text-lg font-medium">{t("addressAndPhone")}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         {CONTACT_FIELDS.map((name) => {
           const id = `organization-${name}`;
@@ -479,14 +456,6 @@ export default function OrganizationSettingsPage() {
   const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
-  const { hasPermission } = usePermissions();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [form, dispatch] = useReducer(
-    organizationFormReducer,
-    EMPTY_ORGANIZATION_FORM,
-  );
-  const { name, contactDetails, watermarkSettings } = form;
 
   const organization = useQuery(
     api.organizations.get,
@@ -494,14 +463,6 @@ export default function OrganizationSettingsPage() {
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
-  const updateOrganization = useMutation(api.organizations.update);
-  const updateWatermarkSettings = useMutation(
-    api.organizations.updateWatermarkSettings,
-  );
-
-  useEffect(() => {
-    if (organization) dispatch({ type: "load", organization });
-  }, [organization]);
 
   const pageHeader = (
     <OrganizationSettingsHeader
@@ -540,6 +501,43 @@ export default function OrganizationSettingsPage() {
     );
   }
 
+  return (
+    <div className="flex w-full flex-col gap-6">
+      {pageHeader}
+      {/* Keyed so a switch of Organization starts a fresh form. */}
+      <OrganizationSettingsForm
+        key={organization._id}
+        organization={organization}
+      />
+    </div>
+  );
+}
+
+/**
+ * Takes its values from the Organization once, so a watermark save or a
+ * change made elsewhere never discards edits not yet saved.
+ */
+function OrganizationSettingsForm({
+  organization,
+}: {
+  organization: Doc<"organizations">;
+}) {
+  const t = useScopedI18n("settings");
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
+  const { hasPermission } = usePermissions();
+  const contactErrorMessage = useOrganizationContactErrorMessage();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [{ name, contactDetails, watermarkSettings }, dispatch] = useReducer(
+    organizationFormReducer,
+    organization,
+    organizationFormOf,
+  );
+  const updateOrganization = useMutation(api.organizations.update);
+  const updateWatermarkSettings = useMutation(
+    api.organizations.updateWatermarkSettings,
+  );
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -553,21 +551,13 @@ export default function OrganizationSettingsPage() {
     try {
       const { phone, ...address } = contactDetails;
       await updateOrganization({
-        organizationId: currentOrganizationId as Id<"organizations">,
+        organizationId: organization._id,
         name: name.trim(),
         address,
         phone,
       });
     } catch (saveError) {
-      const contactError = organizationContactErrorFromError(saveError);
-      setError(
-        contactError
-          ? t("organization.contactFieldTooLong", {
-              field: t(CONTACT_FIELD_LABELS[contactError.field]),
-              limit: contactError.limit,
-            })
-          : t("organization.updateError"),
-      );
+      setError(contactErrorMessage(saveError) ?? t("organization.updateError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -579,7 +569,7 @@ export default function OrganizationSettingsPage() {
 
     try {
       await updateWatermarkSettings({
-        organizationId: currentOrganizationId as Id<"organizations">,
+        organizationId: organization._id,
         watermarkSettings: {
           isEnabled: watermarkSettings.isEnabled,
           text: watermarkSettings.text.trim() || undefined,
@@ -595,62 +585,59 @@ export default function OrganizationSettingsPage() {
   };
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      {pageHeader}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <OrganizationSettingsError error={error} />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <OrganizationSettingsError error={error} />
 
-        <BasicInformationCard
-          labels={{
-            accountNumberCannotChange: t(
-              "organization.accountNumberCannotChange",
-            ),
-            accountNumberLabel: t("organization.accountNumberLabel"),
-            basicInformation: t("organization.basicInformation"),
-            nameLabel: t("organization.nameLabel"),
-            slugCannotChange: t("organization.slugCannotChange"),
-            slugLabel: t("organization.slugLabel"),
-            typeCannotChange: t("organization.typeCannotChange"),
-            typeLabel: t("organization.typeLabel"),
-          }}
-          name={name}
-          onNameChange={(value) => dispatch({ type: "setName", value })}
-          organization={organization}
-          customerNumber={organization.customerNumber ?? null}
-        />
+      <BasicInformationCard
+        labels={{
+          accountNumberCannotChange: t(
+            "organization.accountNumberCannotChange",
+          ),
+          accountNumberLabel: t("organization.accountNumberLabel"),
+          basicInformation: t("organization.basicInformation"),
+          nameLabel: t("organization.nameLabel"),
+          slugCannotChange: t("organization.slugCannotChange"),
+          slugLabel: t("organization.slugLabel"),
+          typeCannotChange: t("organization.typeCannotChange"),
+          typeLabel: t("organization.typeLabel"),
+        }}
+        name={name}
+        onNameChange={(value) => dispatch({ type: "setName", value })}
+        organization={organization}
+        customerNumber={organization.customerNumber ?? null}
+      />
 
-        <ContactDetailsCard
-          details={contactDetails}
-          disabled={!hasPermission("organization.manage_settings")}
-          onDetailsChange={(value) =>
-            dispatch({ type: "setContactDetails", value })
+      <ContactDetailsCard
+        details={contactDetails}
+        disabled={!hasPermission("organization.manage_settings")}
+        onDetailsChange={(value) =>
+          dispatch({ type: "setContactDetails", value })
+        }
+      />
+
+      <PermissionGate permission="organization.manage_settings">
+        <WatermarkSettingsCard
+          isSubmitting={isSubmitting}
+          onSave={handleSaveWatermarkSettings}
+          onSettingsChange={(value) =>
+            dispatch({ type: "setWatermarkSettings", value })
           }
+          settings={watermarkSettings}
         />
 
-        <PermissionGate permission="organization.manage_settings">
-          <WatermarkSettingsCard
-            isSubmitting={isSubmitting}
-            onSave={handleSaveWatermarkSettings}
-            onSettingsChange={(value) =>
-              dispatch({ type: "setWatermarkSettings", value })
-            }
-            settings={watermarkSettings}
-          />
+        <OrganizationSaveActions
+          isSubmitting={isSubmitting}
+          labels={{
+            saveChanges: t("organization.saveChanges"),
+            saving: t("organization.saving"),
+          }}
+        />
 
-          <OrganizationSaveActions
-            isSubmitting={isSubmitting}
-            labels={{
-              saveChanges: t("organization.saveChanges"),
-              saving: t("organization.saving"),
-            }}
-          />
-
-          <OrganizationDeletionZone
-            organizationId={currentOrganizationId as Id<"organizations">}
-            isSubOrganization={Boolean(organization.parentOrganizationId)}
-          />
-        </PermissionGate>
-      </form>
-    </div>
+        <OrganizationDeletionZone
+          organizationId={organization._id}
+          isSubOrganization={Boolean(organization.parentOrganizationId)}
+        />
+      </PermissionGate>
+    </form>
   );
 }
