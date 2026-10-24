@@ -10879,7 +10879,7 @@ export default {
         "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å se målingsstatus.",
       statusTitle: "Status",
       automatic:
-        "Målingene bygges på nytt når de blir utilgjengelige, og avstemmes etter endringer i postene, høyst én gang i døgnet.",
+        "Målingene bygges på nytt når de blir utilgjengelige, og avstemmes etter endringer i postene, høyst én gang i uken.",
       definitionVersion: "Definisjonsversjon",
       definitionOutdated: "Lagret {stored}, gjeldende {current}",
       lastBuilt: "Sist bygget",

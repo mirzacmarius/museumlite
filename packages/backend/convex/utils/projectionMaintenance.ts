@@ -41,9 +41,9 @@ export const RECONCILE_SETTLE_MS = 5 * 60 * 1000;
 /**
  * Minimum spacing between automatic reconciliations of one organization. A
  * reconciliation rescans every source row and only reports differences, so
- * once a day is enough.
+ * once a week is enough.
  */
-export const RECONCILE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+export const RECONCILE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Attempts, including the first, before a failed job waits for an administrator. */
 export const PROJECTION_AUTO_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 30_000;

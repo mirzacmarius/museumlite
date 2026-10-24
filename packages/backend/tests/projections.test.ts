@@ -4,7 +4,6 @@ import type { Id } from "../convex/_generated/dataModel";
 import {
   getProjectionState,
   PROJECTION_AUTO_ATTEMPTS,
-  RECONCILE_INTERVAL_MS,
   RECONCILE_SETTLE_MS,
 } from "../convex/utils/projectionMaintenance";
 import {
@@ -911,9 +910,8 @@ describe("automatic health maintenance", () => {
 
     await createObject(staff, organizationId, "AUTO-3");
     const finishedAt = reconciled.lastReconciliation?.finishedAt ?? 0;
-    expect((await health()).nextReconcileAt).toBe(
-      finishedAt + RECONCILE_INTERVAL_MS,
-    );
+    const week = 7 * 24 * 60 * 60 * 1000;
+    expect((await health()).nextReconcileAt).toBe(finishedAt + week);
   });
 
   test("a change to an unavailable projection starts a rebuild without an administrator", async () => {

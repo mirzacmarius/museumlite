@@ -10995,7 +10995,7 @@ export default {
         "Aveți nevoie de permisiunea de a gestiona setările organizației pentru a vedea starea indicatorilor.",
       statusTitle: "Stare",
       automatic:
-        "Indicatorii se reconstruiesc când devin indisponibili și se reconciliază după modificarea înregistrărilor, cel mult o dată pe zi.",
+        "Indicatorii se reconstruiesc când devin indisponibili și se reconciliază după modificarea înregistrărilor, cel mult o dată pe săptămână.",
       definitionVersion: "Versiunea definiției",
       definitionOutdated: "Stocată {stored}, curentă {current}",
       lastBuilt: "Ultima generare",

@@ -11057,7 +11057,7 @@ export default {
         "Vous devez pouvoir gérer les paramètres de l'organisation pour voir l'état des indicateurs.",
       statusTitle: "Statut",
       automatic:
-        "Les indicateurs se reconstruisent lorsqu'ils deviennent indisponibles et sont rapprochés après les modifications des enregistrements, au plus une fois par jour.",
+        "Les indicateurs se reconstruisent lorsqu'ils deviennent indisponibles et sont rapprochés après les modifications des enregistrements, au plus une fois par semaine.",
       definitionVersion: "Version de définition",
       definitionOutdated: "Enregistrée {stored}, actuelle {current}",
       lastBuilt: "Dernière génération",
