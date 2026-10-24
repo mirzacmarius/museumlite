@@ -6,15 +6,16 @@ import { getFunctionName } from "convex/server";
 import type { ReactNode } from "react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
-import { BulkEditStatus } from "./bulk-edit-progress";
+import { BulkEditNotice, BulkEditStatus } from "./bulk-edit-progress";
 
 const state = vi.hoisted(() => ({
   cancel: vi.fn(),
   resume: vi.fn(),
+  latest: undefined as unknown,
 }));
 
 vi.mock("convex/react", () => ({
-  useQuery: () => undefined,
+  useQuery: () => state.latest,
   useMutation: (mutation: never) =>
     getFunctionName(mutation) === "bulkFieldEdits:resume"
       ? state.resume
@@ -27,6 +28,7 @@ vi.mock("@/components/permission-gate", () => ({
 beforeEach(() => {
   state.cancel = vi.fn();
   state.resume = vi.fn();
+  state.latest = undefined;
 });
 
 const MINUTE = 60 * 1000;
@@ -75,7 +77,7 @@ test("a running edit that stopped reporting can be resumed", async () => {
   expect(state.resume).toHaveBeenCalledWith({ jobId: "job-1" });
 });
 
-test("a failed edit can be stopped as well as resumed, which clears its notice", async () => {
+test("a failed edit can be stopped as well as resumed", async () => {
   state.cancel.mockResolvedValue(null);
   await renderOnPage(<BulkEditStatus job={job("failed", MINUTE)} />, "/en");
 
@@ -114,4 +116,22 @@ test("counts are written in the app language's number format", async () => {
   expect(
     screen.getByText("Left unchanged because the title would be empty: 1,000"),
   ).toBeTruthy();
+});
+
+test("the catalog notice shows a failed edit and hides it once stopped", async () => {
+  state.latest = job("failed", MINUTE);
+  const { unmount } = await renderOnPage(
+    <BulkEditNotice organizationId={"org-1" as never} />,
+    "/en",
+  );
+  expect(screen.getByRole("button", { name: "Resume" })).toBeTruthy();
+  unmount();
+
+  state.latest = job("cancelled", MINUTE);
+  await renderOnPage(
+    <BulkEditNotice organizationId={"org-1" as never} />,
+    "/en",
+  );
+  expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Stop" })).toBeNull();
 });

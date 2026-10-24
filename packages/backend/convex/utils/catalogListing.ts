@@ -7,6 +7,7 @@ import type {
 } from "./catalogFilterValidators";
 import { filterCollectionListPage } from "./collectionListHelpers";
 import {
+  normalizeIdentifier,
   searchCatalogIdentifierPrefixByStatus,
   searchIdentifierPrefix,
 } from "./identifiers";
@@ -158,8 +159,14 @@ export async function filterCatalogRows(
   if (!search || !ready)
     return await filterPage(ctx, { ...args, search }, rows);
   const filtered = await filterPage(ctx, { ...args, search: undefined }, rows);
+  // Identifier prefixes match as the list's first page lists them.
+  const identifierKey = normalizeIdentifier(search);
   return filtered.flatMap((row) => {
-    const matchedField = matchedObjectSearchField(row, search);
+    const matchedField = (
+      row.normalizedIdentifier ?? normalizeIdentifier(row.accessionNumber)
+    ).startsWith(identifierKey)
+      ? "accessionNumber"
+      : matchedObjectSearchField(row, search);
     return matchedField ? [{ ...row, matchedField }] : [];
   });
 }

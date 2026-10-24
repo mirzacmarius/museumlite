@@ -464,6 +464,44 @@ test("a page that keeps failing stops the edit, which resumes from its last comm
   expect(await s.auditEntries(oldest)).toHaveLength(1);
 });
 
+test("an edit stopped by an error can be stopped for good instead of resumed", async () => {
+  const s = await setup();
+  const coin = await s.create({
+    accessionNumber: "C-1",
+    title: "Coin",
+    objectType: "Coin",
+  });
+  failingWrites.add(coin);
+
+  vi.useFakeTimers();
+  try {
+    const jobId = await s.user.mutation(api.bulkFieldEdits.start, {
+      organizationId: s.organizationId,
+      scope: { kind: "selection", collectionIds: [coin] },
+      edit: { field: "materials", operation: "set", value: "Silver" },
+    });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await s.user.query(api.bulkFieldEdits.get, { jobId })).toMatchObject(
+      { status: "failed" },
+    );
+
+    await s.user.mutation(api.bulkFieldEdits.cancel, { jobId });
+
+    // The catalog notice shows only running and failed edits.
+    expect(
+      await s.user.query(api.bulkFieldEdits.latest, {
+        organizationId: s.organizationId,
+      }),
+    ).toMatchObject({ status: "cancelled" });
+    expect(
+      await refusalCode(s.user.mutation(api.bulkFieldEdits.resume, { jobId })),
+    ).toBe("EDIT_NOT_RESUMABLE");
+  } finally {
+    failingWrites.clear();
+    vi.useRealTimers();
+  }
+});
+
 test("a filtered preview whose newest page holds no match reports a lower bound", async () => {
   const s = await setup();
   await s.t.run(async (ctx) => {

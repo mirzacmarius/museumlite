@@ -354,6 +354,32 @@ test("a filtered export holds the rows the catalog list shows for the same searc
   }
 });
 
+test("an identifier too long to index as a word is still found by its beginning in the list and in bulk edits", async () => {
+  const catalog = await setupCatalog();
+  await catalog.create({
+    accessionNumber: "INV2024ETNOGRAFISKSAMLINGOBJEKT0001",
+    title: "Drum",
+  });
+  await catalog.create({ accessionNumber: "B-1", title: "Basket" });
+  await catalog.backfill();
+  const search = "inv2024etnografisksamling";
+
+  expect(await catalog.list({ search })).toEqual([
+    expect.objectContaining({
+      accessionNumber: "INV2024ETNOGRAFISKSAMLINGOBJEKT0001",
+      matchedField: "accessionNumber",
+    }),
+  ]);
+  const preview = await catalog.user.query(api.bulkFieldEdits.preview, {
+    organizationId: catalog.organizationId,
+    scope: { kind: "filters", filters: { search } },
+    edit: { field: "culture", operation: "set", value: "Sámi" },
+  });
+  expect(preview).toEqual(
+    expect.objectContaining({ kind: "preview", matching: 1, changing: 1 }),
+  );
+});
+
 test("facet filters and values come from the records, with photographs and the cataloguing date", async () => {
   const catalog = await setupCatalog();
   const roman = await catalog.create({

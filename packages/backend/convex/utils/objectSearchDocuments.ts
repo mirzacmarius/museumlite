@@ -245,27 +245,34 @@ function sameDocument(
   );
 }
 
-/** Words of a text, lower-cased, as the search index splits them. */
+/** Words of this many UTF-8 bytes or more are left out of the search index. */
+const MAX_INDEXED_WORD_BYTES = 32;
+const utf8 = new TextEncoder();
+
+/**
+ * Words of a text as the search index keeps them, in documents and queries
+ * alike: split on anything but letters and digits, words too long to index
+ * left out, lower-cased.
+ */
 export function searchTokens(text: string) {
   return text
-    .toLowerCase()
     .split(/[^\p{L}\p{N}]+/u)
-    .filter((token) => token.length > 0);
+    .filter(
+      (token) =>
+        token.length > 0 && utf8.encode(token).length < MAX_INDEXED_WORD_BYTES,
+    )
+    .map((token) => token.toLowerCase());
 }
 
 /** Terms the search index reads from a query; it drops the rest unannounced. */
 const MAX_SEARCH_TERMS = 16;
-/** Longer words are left out of a search index query. */
-const MAX_SEARCH_TERM_LENGTH = 32;
 
 /**
  * The words of a search the search index uses, so listing, bulk edits and
  * exports all match on the same terms.
  */
 export function searchQueryTerms(search: string) {
-  return searchTokens(search)
-    .filter((token) => token.length <= MAX_SEARCH_TERM_LENGTH)
-    .slice(0, MAX_SEARCH_TERMS);
+  return searchTokens(search).slice(0, MAX_SEARCH_TERMS);
 }
 
 /**

@@ -1,7 +1,12 @@
 import { describe, expect, test } from "vitest";
-import { searchQueryTerms } from "./objectSearchDocuments";
+import type { Doc } from "../_generated/dataModel";
+import {
+  matchedObjectSearchField,
+  searchQueryTerms,
+  searchTokens,
+} from "./objectSearchDocuments";
 
-describe("search query terms", () => {
+describe("search words", () => {
   test("words are split and lower-cased as the search index splits them", () => {
     expect(searchQueryTerms("Fishing-boat, Oslo")).toEqual([
       "fishing",
@@ -10,13 +15,28 @@ describe("search query terms", () => {
     ]);
   });
 
-  test("words longer than the search index reads are left out", () => {
-    expect(searchQueryTerms(`amphora ${"a".repeat(33)}`)).toEqual(["amphora"]);
-    expect(searchQueryTerms("a".repeat(32))).toEqual(["a".repeat(32)]);
+  test("words of 32 UTF-8 bytes or more are left out, as the index leaves them out", () => {
+    expect(searchTokens(`amphora ${"a".repeat(32)}`)).toEqual(["amphora"]);
+    expect(searchTokens("a".repeat(31))).toEqual(["a".repeat(31)]);
+    // 32 characters, 33 bytes.
+    expect(searchTokens("sølvsmedarbeidsverkstedsutstyret amfora")).toEqual([
+      "amfora",
+    ]);
   });
 
-  test("only the first 16 words count, so the 16th is the one matched as a prefix", () => {
+  test("only the first 16 words of a search count, so the 16th is the one matched as a prefix", () => {
     const words = Array.from({ length: 18 }, (_, index) => `w${index + 1}`);
     expect(searchQueryTerms(words.join(" "))).toEqual(words.slice(0, 16));
+  });
+
+  test("a word too long to index is not found by its beginning", () => {
+    const poster = {
+      accessionNumber: "P-1",
+      title: "Poster",
+      description: "Plakat der Donaudampfschifffahrtsgesellschaft",
+    } as Doc<"collections">;
+
+    expect(matchedObjectSearchField(poster, "donau")).toBeUndefined();
+    expect(matchedObjectSearchField(poster, "plak")).toBe("description");
   });
 });
