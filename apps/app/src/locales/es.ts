@@ -298,6 +298,16 @@ export default {
       accountNumberLabel: "Número de cuenta",
       accountNumberCannotChange:
         "El número de cuenta no se puede cambiar. Indíquelo cuando contacte con soporte.",
+      addressAndPhone: "Dirección y teléfono",
+      streetAddressLabel: "Dirección",
+      addressLine2Label: "Dirección, línea 2",
+      postalCodeLabel: "Código postal",
+      cityLabel: "Ciudad",
+      regionLabel: "Estado, provincia o región",
+      countryLabel: "País",
+      phoneLabel: "Teléfono",
+      contactFieldTooLong:
+        "El campo «{field}» admite como máximo {limit} caracteres.",
       accessionNumberSettings: "Configuración del Número de Accesión",
       formatTemplate: "Plantilla de Formato",
       chooseTemplate: "Elige una plantilla...",
@@ -3144,7 +3154,7 @@ export default {
         "Elige un tamaño de etiqueta, revisa la vista previa e imprime.",
       labelSize: "Tamaño de etiqueta",
       size2x2: "Cuadrado",
-      size1x3: "Rectángulo",
+      size3x1: "Rectángulo",
       printInstructions: "Instrucciones de impresión",
       instructionPaperSize: "Usa papel tamaño carta o A4",
       instructionOrientation: "Selecciona la orientación vertical",
@@ -5641,6 +5651,8 @@ export default {
         "Por ejemplo: museo de historia regional con pinturas, textiles y fotografías de archivo…",
       generate: "Generar sugerencias",
       generateFailed: "No se pudieron generar sugerencias. Inténtalo de nuevo.",
+      rateLimited:
+        "Has pedido sugerencias varias veces seguidas. Espera unos minutos y vuelve a intentarlo.",
       applyFailed:
         "No se pudieron guardar los grupos de colecciones. Inténtalo de nuevo.",
       objectTypesLabel: "Tipos de objetos sugeridos",

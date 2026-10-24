@@ -74,6 +74,7 @@ import {
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
 import { objectEntryFields } from "./utils/objectEntryValidators";
+import { organizationAddressValidator } from "./utils/organizationContact";
 import {
   partyDuplicateReviewDocumentValidator,
   partyLinkDocumentValidator,
@@ -274,6 +275,8 @@ export default defineSchema({
     customerNumber: v.optional(v.string()),
     allowsIncomingTransferRequests: v.optional(v.boolean()),
     logoId: v.optional(v.id("_storage")),
+    address: v.optional(organizationAddressValidator),
+    phone: v.optional(v.string()),
     type: v.union(
       v.literal("museum"),
       v.literal("gallery"),

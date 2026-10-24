@@ -297,6 +297,16 @@ export default {
       accountNumberLabel: "Numéro de compte",
       accountNumberCannotChange:
         "Le numéro de compte ne peut pas être modifié. Indiquez-le lorsque vous contactez le support.",
+      addressAndPhone: "Adresse et téléphone",
+      streetAddressLabel: "Adresse",
+      addressLine2Label: "Complément d'adresse",
+      postalCodeLabel: "Code postal",
+      cityLabel: "Ville",
+      regionLabel: "État, province ou région",
+      countryLabel: "Pays",
+      phoneLabel: "Téléphone",
+      contactFieldTooLong:
+        "Le champ « {field} » accepte au maximum {limit} caractères.",
       accessionNumberSettings: "Paramètres du Numéro d'Accession",
       formatTemplate: "Modèle de Format",
       chooseTemplate: "Choisir un modèle...",
@@ -3152,7 +3162,7 @@ export default {
         "Choisissez une taille d'étiquette, vérifiez l'aperçu, puis imprimez.",
       labelSize: "Taille de l'étiquette",
       size2x2: "Carré",
-      size1x3: "Rectangle",
+      size3x1: "Rectangle",
       printInstructions: "Instructions d'impression",
       instructionPaperSize: "Utilisez du papier au format Letter ou A4",
       instructionOrientation: "Choisissez l'orientation portrait",
@@ -5657,6 +5667,8 @@ export default {
       generate: "Générer des suggestions",
       generateFailed:
         "Impossible de générer des suggestions. Veuillez réessayer.",
+      rateLimited:
+        "Vous avez demandé des suggestions plusieurs fois de suite. Patientez quelques minutes, puis réessayez.",
       applyFailed:
         "Impossible d'enregistrer les groupes de collections. Veuillez réessayer.",
       objectTypesLabel: "Types d'objets suggérés",

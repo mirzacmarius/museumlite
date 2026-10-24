@@ -3,6 +3,7 @@
 /* oxlint-disable react-doctor/server-auth-actions -- Public marketing tour request; no session required. */
 
 import { api } from "@v1/backend/convex/_generated/api";
+import { isTourRequestRateLimited } from "@v1/backend/convex/utils/marketingFormErrors";
 import { fetchAction } from "convex/nextjs";
 
 export interface SubmitTourRequestInput {
@@ -15,7 +16,7 @@ export interface SubmitTourRequestInput {
 
 export type SubmitTourRequestResult =
   | { ok: true }
-  | { ok: false; error: string };
+  | { ok: false; error: "rate_limited" | "submission_failed" };
 
 export async function submitTourRequest(
   input: SubmitTourRequestInput,
@@ -29,10 +30,12 @@ export async function submitTourRequest(
       message: input.message,
     });
     return { ok: true };
-  } catch {
+  } catch (error) {
     return {
       ok: false,
-      error: "submission_failed",
+      error: isTourRequestRateLimited(error)
+        ? "rate_limited"
+        : "submission_failed",
     };
   }
 }

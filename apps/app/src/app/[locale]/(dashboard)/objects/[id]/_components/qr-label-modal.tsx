@@ -18,10 +18,10 @@ import type { CollectionData } from "./types";
 const QR_LABEL_SIZES = [
   { value: "1x1", key: "size1x1", dimensions: '1" × 1"' },
   { value: "2x2", key: "size2x2", dimensions: '2" × 2"' },
-  { value: "1x3", key: "size1x3", dimensions: '1" × 3"' },
+  { value: "3x1", key: "size3x1", dimensions: '3" × 1"' },
 ] as const satisfies readonly {
   value: LabelSize;
-  key: "size1x1" | "size2x2" | "size1x3";
+  key: "size1x1" | "size2x2" | "size3x1";
   dimensions: string;
 }[];
 

@@ -4,6 +4,11 @@ import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import {
+  MAX_ADDRESS_LINE_LENGTH,
+  MAX_PHONE_LENGTH,
+  organizationContactErrorFromError,
+} from "../convex/utils/organizationContact";
+import {
   accessionFormatRefusalOf,
   authedForUser,
   capabilityFailureOf,
@@ -794,5 +799,119 @@ describe("saving the accession number format", () => {
     expect(
       (await storedSettings(t, organizationId))?.accessionNumberFormat,
     ).toBe("NAT-{YYYY}-{###}");
+  });
+});
+
+describe("organization address and phone", () => {
+  async function setup(permissionNames = ["organization.manage_settings"]) {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      permissionNames,
+    );
+    const caller = authedForUser(t, userId);
+    const stored = () =>
+      caller.query(api.organizations.get, { organizationId });
+    return { organizationId, caller, stored };
+  }
+
+  test("saves trimmed lines without the blank ones, keeps them when only the name changes, and a blank form removes them", async () => {
+    const { organizationId, caller, stored } = await setup();
+
+    await caller.mutation(api.organizations.update, {
+      organizationId,
+      address: {
+        street: "  Strandgata 12 ",
+        street2: " ",
+        postalCode: "6413",
+        city: "Molde",
+        region: "",
+        country: "Norge",
+      },
+      phone: " +47 71 20 00 00 ",
+    });
+    expect(await stored()).toMatchObject({
+      address: {
+        street: "Strandgata 12",
+        postalCode: "6413",
+        city: "Molde",
+        country: "Norge",
+      },
+      phone: "+47 71 20 00 00",
+    });
+    expect((await stored())?.address).not.toHaveProperty("street2");
+
+    await caller.mutation(api.organizations.update, {
+      organizationId,
+      name: "Romsdal Museum",
+    });
+    expect(await stored()).toMatchObject({
+      name: "Romsdal Museum",
+      address: { city: "Molde" },
+      phone: "+47 71 20 00 00",
+    });
+
+    await caller.mutation(api.organizations.update, {
+      organizationId,
+      address: { street: "", city: "  ", country: "" },
+      phone: " ",
+    });
+    const cleared = await stored();
+    expect(cleared).not.toHaveProperty("address");
+    expect(cleared).not.toHaveProperty("phone");
+  });
+
+  test.each([
+    {
+      field: "city",
+      limit: MAX_ADDRESS_LINE_LENGTH,
+      change: { address: { city: "x".repeat(MAX_ADDRESS_LINE_LENGTH + 1) } },
+    },
+    {
+      field: "phone",
+      limit: MAX_PHONE_LENGTH,
+      change: { phone: "1".repeat(MAX_PHONE_LENGTH + 1) },
+    },
+  ])("a $field over $limit characters is refused with a coded error and nothing is saved", async ({
+    field,
+    limit,
+    change,
+  }) => {
+    const { organizationId, caller, stored } = await setup();
+
+    const refusal = await caller
+      .mutation(api.organizations.update, {
+        organizationId,
+        name: "Renamed",
+        ...change,
+      })
+      .then(
+        () => null,
+        (error: unknown) => organizationContactErrorFromError(error),
+      );
+
+    expect(refusal).toMatchObject({
+      code: "CONTACT_FIELD_TOO_LONG",
+      field,
+      limit,
+    });
+    const organization = await stored();
+    expect(organization?.name).toBe("Test Museum");
+    expect(organization).not.toHaveProperty("address");
+    expect(organization).not.toHaveProperty("phone");
+  });
+
+  test("a member without organization.manage_settings cannot change them", async () => {
+    const { organizationId, caller, stored } = await setup([]);
+
+    const failure = await capabilityFailureOf(
+      caller.mutation(api.organizations.update, {
+        organizationId,
+        phone: "+47 71 20 00 00",
+      }),
+    );
+
+    expect(failure).toMatchObject({ reason: "permission_missing" });
+    expect(await stored()).not.toHaveProperty("phone");
   });
 });

@@ -1,10 +1,13 @@
-import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import type { convexTest } from "convex-test";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import schema from "../convex/schema";
+import { API_REQUEST_BURST, LAST_USED_RESOLUTION_MS } from "../convex/apiKeys";
+import { createConvexTestWithRateLimiter } from "./testHarness";
 
-import { modules } from "./testSetup";
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 type TestSetup = {
   organizationId: Id<"organizations">;
@@ -66,7 +69,7 @@ async function createTestSetup(
 
 describe("API Key Generation Security", () => {
   test("should generate keys with correct format (ml_ prefix + 37 chars)", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -87,7 +90,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should generate keys using only allowed characters (A-Za-z0-9)", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -117,7 +120,7 @@ describe("API Key Generation Security", () => {
   // A thousand mutations take over 5s on slow CI runners, and a timed-out run
   // keeps writing into the tests after it.
   test("should generate unique keys (no collisions in 1000+ generations)", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -145,7 +148,7 @@ describe("API Key Generation Security", () => {
   }, 20_000);
 
   test("should generate keys with sufficient entropy (no predictable patterns)", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -223,7 +226,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should create API key end-to-end with proper database storage", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -254,7 +257,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should reject a wrong key with the same prefix", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -278,7 +281,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should validate generated keys successfully", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -307,7 +310,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should not validate keys with incorrect format", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     await createTestSetup(t);
 
     // Try to validate a fake key
@@ -319,7 +322,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should not validate revoked keys", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -348,7 +351,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should not validate expired keys", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -373,7 +376,7 @@ describe("API Key Generation Security", () => {
   });
 
   test("should generate different keys for different organizations", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId: org1Id, userId } = await createTestSetup(t);
 
     // Create second organization
@@ -441,7 +444,7 @@ describe("API Key Generation Security", () => {
 
 describe("GET /v1/objects", () => {
   test("returns 401 without auth header", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
 
     const response = await t.fetch("/v1/objects");
     expect(response.status).toBe(401);
@@ -451,7 +454,7 @@ describe("GET /v1/objects", () => {
   });
 
   test("returns 401 for revoked key", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId, userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
@@ -477,7 +480,7 @@ describe("GET /v1/objects", () => {
   });
 
   test("returns only objects for the authenticated organization", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTestWithRateLimiter();
     const { organizationId: org1Id, userId } = await createTestSetup(t);
 
     const org2Id = await t.run(async (ctx) => {
@@ -528,5 +531,139 @@ describe("GET /v1/objects", () => {
     };
     expect(body.data).toHaveLength(1);
     expect(body.data[0]?.title).toBe("Org One Object");
+  });
+});
+
+describe("API key permissions", () => {
+  test("a key keeps only known permissions, once each", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-permission-list`,
+      issuer: "https://example.test",
+    });
+
+    const result = await authed.mutation(api.apiKeys.create, {
+      organizationId,
+      name: "Repeated Permissions",
+      permissions: ["write", "read", "write"],
+    });
+
+    const key = await t.run(async (ctx) => ctx.db.get(result.id));
+    expect(key?.permissions).toEqual(["read", "write"]);
+  });
+
+  test("a permission outside the list is refused", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-permission-unknown`,
+      issuer: "https://example.test",
+    });
+
+    await expect(
+      authed.mutation(api.apiKeys.create, {
+        organizationId,
+        name: "Unknown Permission",
+        // A caller outside the app can send any string.
+        permissions: ["admin" as "read"],
+      }),
+    ).rejects.toThrow();
+    await expect(
+      authed.mutation(api.apiKeys.create, {
+        organizationId,
+        name: "No Permission",
+        permissions: [],
+      }),
+    ).rejects.toThrow("at least one permission");
+
+    const keys = await t.run(async (ctx) => ctx.db.query("apiKeys").collect());
+    expect(keys).toHaveLength(0);
+  });
+});
+
+describe("API key requests", () => {
+  async function createReadKey(
+    t: ReturnType<typeof convexTest>,
+    label: string,
+  ) {
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-${label}`,
+      issuer: "https://example.test",
+    });
+    return await authed.mutation(api.apiKeys.create, {
+      organizationId,
+      name: `${label} key`,
+      permissions: ["read"],
+    });
+  }
+
+  test("lastUsedAt is written at most once a minute", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const created = await createReadKey(t, "last-used");
+    const lastUsedAt = async () =>
+      (await t.run(async (ctx) => ctx.db.get(created.id)))?.lastUsedAt;
+
+    await t.mutation(internal.apiKeys.validate, { apiKey: created.key });
+    const firstUse = await lastUsedAt();
+    expect(firstUse).toBe(Date.now());
+
+    vi.advanceTimersByTime(LAST_USED_RESOLUTION_MS - 1000);
+    await t.mutation(internal.apiKeys.validate, { apiKey: created.key });
+    expect(await lastUsedAt()).toBe(firstUse);
+
+    vi.advanceTimersByTime(1000);
+    await t.mutation(internal.apiKeys.validate, { apiKey: created.key });
+    expect(await lastUsedAt()).toBe(Date.now());
+  });
+
+  test("a key past its burst is refused until it refills, other keys are not", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const busy = await createReadKey(t, "busy");
+    const quiet = await createReadKey(t, "quiet");
+
+    for (let request = 0; request < API_REQUEST_BURST; request++) {
+      const validation = await t.mutation(internal.apiKeys.validate, {
+        apiKey: busy.key,
+      });
+      expect(validation.valid).toBe(true);
+    }
+
+    const refused = await t.mutation(internal.apiKeys.validate, {
+      apiKey: busy.key,
+    });
+    if (refused.valid) throw new Error("Expected the busy key to be refused");
+    expect(refused.retryAfter).toBeGreaterThan(0);
+
+    const other = await t.mutation(internal.apiKeys.validate, {
+      apiKey: quiet.key,
+    });
+    expect(other.valid).toBe(true);
+
+    vi.advanceTimersByTime(60_000);
+    const recovered = await t.mutation(internal.apiKeys.validate, {
+      apiKey: busy.key,
+    });
+    expect(recovered.valid).toBe(true);
+  });
+
+  test("GET /v1/objects answers 429 with Retry-After once a key is over its limit", async () => {
+    vi.useFakeTimers();
+    const t = createConvexTestWithRateLimiter();
+    const created = await createReadKey(t, "http-limit");
+
+    for (let request = 0; request < API_REQUEST_BURST; request++) {
+      await t.mutation(internal.apiKeys.validate, { apiKey: created.key });
+    }
+
+    const response = await t.fetch("/v1/objects", {
+      headers: { Authorization: `Bearer ${created.key}` },
+    });
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(0);
+    expect(await response.json()).toEqual({ error: "rate_limit_exceeded" });
   });
 });

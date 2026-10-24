@@ -184,6 +184,7 @@ import type * as utils_collectionLifecycle from "../utils/collectionLifecycle.js
 import type * as utils_collectionListHelpers from "../utils/collectionListHelpers.js";
 import type * as utils_collectionMetrics from "../utils/collectionMetrics.js";
 import type * as utils_collectionOptionUsages from "../utils/collectionOptionUsages.js";
+import type * as utils_collectionSuggestionErrors from "../utils/collectionSuggestionErrors.js";
 import type * as utils_collectionTypeDetailFields from "../utils/collectionTypeDetailFields.js";
 import type * as utils_conditionAssessmentErrors from "../utils/conditionAssessmentErrors.js";
 import type * as utils_conditionAssessmentStatus from "../utils/conditionAssessmentStatus.js";
@@ -257,6 +258,8 @@ import type * as utils_loanOccupancy from "../utils/loanOccupancy.js";
 import type * as utils_loanStatusTransitions from "../utils/loanStatusTransitions.js";
 import type * as utils_loanWorkflow from "../utils/loanWorkflow.js";
 import type * as utils_locationIntegrity from "../utils/locationIntegrity.js";
+import type * as utils_marketingFormErrors from "../utils/marketingFormErrors.js";
+import type * as utils_marketingForms from "../utils/marketingForms.js";
 import type * as utils_mediaAssets from "../utils/mediaAssets.js";
 import type * as utils_memberPermissions from "../utils/memberPermissions.js";
 import type * as utils_moduleCatalog from "../utils/moduleCatalog.js";
@@ -287,6 +290,7 @@ import type * as utils_onboardingCollectionSuggestions from "../utils/onboarding
 import type * as utils_openDeaccessions from "../utils/openDeaccessions.js";
 import type * as utils_operationalKpis from "../utils/operationalKpis.js";
 import type * as utils_organizationAudit from "../utils/organizationAudit.js";
+import type * as utils_organizationContact from "../utils/organizationContact.js";
 import type * as utils_organizationDeletionErrors from "../utils/organizationDeletionErrors.js";
 import type * as utils_organizationDeletionTimings from "../utils/organizationDeletionTimings.js";
 import type * as utils_organizationScope from "../utils/organizationScope.js";
@@ -550,6 +554,7 @@ declare const fullApi: ApiFromModules<{
   "utils/collectionListHelpers": typeof utils_collectionListHelpers;
   "utils/collectionMetrics": typeof utils_collectionMetrics;
   "utils/collectionOptionUsages": typeof utils_collectionOptionUsages;
+  "utils/collectionSuggestionErrors": typeof utils_collectionSuggestionErrors;
   "utils/collectionTypeDetailFields": typeof utils_collectionTypeDetailFields;
   "utils/conditionAssessmentErrors": typeof utils_conditionAssessmentErrors;
   "utils/conditionAssessmentStatus": typeof utils_conditionAssessmentStatus;
@@ -623,6 +628,8 @@ declare const fullApi: ApiFromModules<{
   "utils/loanStatusTransitions": typeof utils_loanStatusTransitions;
   "utils/loanWorkflow": typeof utils_loanWorkflow;
   "utils/locationIntegrity": typeof utils_locationIntegrity;
+  "utils/marketingFormErrors": typeof utils_marketingFormErrors;
+  "utils/marketingForms": typeof utils_marketingForms;
   "utils/mediaAssets": typeof utils_mediaAssets;
   "utils/memberPermissions": typeof utils_memberPermissions;
   "utils/moduleCatalog": typeof utils_moduleCatalog;
@@ -653,6 +660,7 @@ declare const fullApi: ApiFromModules<{
   "utils/openDeaccessions": typeof utils_openDeaccessions;
   "utils/operationalKpis": typeof utils_operationalKpis;
   "utils/organizationAudit": typeof utils_organizationAudit;
+  "utils/organizationContact": typeof utils_organizationContact;
   "utils/organizationDeletionErrors": typeof utils_organizationDeletionErrors;
   "utils/organizationDeletionTimings": typeof utils_organizationDeletionTimings;
   "utils/organizationScope": typeof utils_organizationScope;

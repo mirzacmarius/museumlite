@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { expect, test } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
@@ -79,4 +80,32 @@ test("only the printed label keeps fixed colors in Print QR Label", async () => 
     (element) => !paper.contains(element),
   );
   expect(fixedColorClasses(chrome)).toEqual([]);
+});
+
+test("the Rectangle QR label is 3 inches wide and 1 inch tall", async () => {
+  const user = userEvent.setup();
+  await renderOnPage(
+    <QRLabelModal
+      isOpen
+      onClose={() => {}}
+      qrCodeUrl="https://app.museumlite.com/en/objects/object-1"
+      collection={
+        {
+          _id: "object-1" as Id<"collections">,
+          title: "Bronze coin",
+          accessionNumber: "112-2026-0003",
+        } as CollectionData
+      }
+    />,
+  );
+
+  const rectangle = screen.getByRole("radio", { name: /Rectangle/ });
+  expect(rectangle.closest("label")?.textContent).toContain('3" × 1"');
+  await user.click(rectangle);
+
+  const paper = screen
+    .getByText("112-2026-0003")
+    .closest<HTMLElement>('[class~="bg-white"]');
+  expect(paper?.style.width).toBe("3in");
+  expect(paper?.style.height).toBe("1in");
 });

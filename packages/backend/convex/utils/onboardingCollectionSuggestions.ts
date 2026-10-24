@@ -123,6 +123,31 @@ function personalizeSummary(
   return `${baseSummary} Based on your note: ${trimDescription(detail, 160)}`;
 }
 
+/** The onboarding description field allows this much; the model sees no more. */
+export const COLLECTION_DESCRIPTION_MAX_LENGTH = 2000;
+const ORGANIZATION_NAME_MAX_LENGTH = 200;
+
+/** Trims the request and caps what reaches the model's prompt. */
+export function boundedSuggestionInput(args: {
+  organizationName: string;
+  organizationType: OrganizationType;
+  description: string;
+}): {
+  organizationName: string;
+  organizationType: OrganizationType;
+  description: string;
+} {
+  return {
+    organizationName: args.organizationName
+      .trim()
+      .slice(0, ORGANIZATION_NAME_MAX_LENGTH),
+    organizationType: args.organizationType,
+    description: args.description
+      .trim()
+      .slice(0, COLLECTION_DESCRIPTION_MAX_LENGTH),
+  };
+}
+
 export function buildTemplateCollectionSuggestions(args: {
   organizationName: string;
   organizationType: OrganizationType;

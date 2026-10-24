@@ -439,6 +439,8 @@ export default {
         "de ex., muzeu de istorie regională cu picturi, textile și fotografii de arhivă…",
       generate: "Generează sugestii",
       generateFailed: "Nu s-au putut genera sugestii. Încearcă din nou.",
+      rateLimited:
+        "Ai cerut sugestii de mai multe ori la rând. Așteaptă câteva minute, apoi încearcă din nou.",
       applyFailed:
         "Nu s-au putut salva grupurile de colecții. Încearcă din nou.",
       objectTypesLabel: "Tipuri de obiecte sugerate",
@@ -632,6 +634,16 @@ export default {
       accountNumberLabel: "Număr de cont",
       accountNumberCannotChange:
         "Numărul de cont nu poate fi schimbat. Menționați-l când contactați suportul.",
+      addressAndPhone: "Adresă și telefon",
+      streetAddressLabel: "Stradă și număr",
+      addressLine2Label: "Adresă, rândul 2",
+      postalCodeLabel: "Cod poștal",
+      cityLabel: "Localitate",
+      regionLabel: "Județ sau regiune",
+      countryLabel: "Țară",
+      phoneLabel: "Telefon",
+      contactFieldTooLong:
+        "Câmpul „{field}” acceptă cel mult {limit} de caractere.",
       accessionNumberSettings: "Setări Număr Accesiune",
       formatTemplate: "Format Șablon",
       chooseTemplate: "Alege șablonul...",
@@ -1154,7 +1166,7 @@ export default {
         "Alegeți dimensiunea etichetei, verificați previzualizarea, apoi tipăriți.",
       labelSize: "Dimensiunea etichetei",
       size2x2: "Pătrat",
-      size1x3: "Dreptunghi",
+      size3x1: "Dreptunghi",
       print: "Printează",
       printInstructions: "Instrucțiuni de imprimare",
       instructionPaperSize: "Folosește hârtie Letter/A4",
