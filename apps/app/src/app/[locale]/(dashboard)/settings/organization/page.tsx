@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   MAX_ADDRESS_LINE_LENGTH,
   MAX_PHONE_LENGTH,
@@ -24,7 +24,7 @@ import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Droplet, Plus, Save } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useReducer, useState } from "react";
 import { ConfirmedSwitchRow } from "@/components/confirmed-switch";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
@@ -77,6 +77,67 @@ function contactDetailsOf(organization: {
     country: address.country ?? "",
     phone: organization.phone ?? "",
   };
+}
+
+/** Save Changes sends the name and contact details; the watermark card its settings. */
+interface OrganizationForm {
+  name: string;
+  contactDetails: ContactDetails;
+  watermarkSettings: WatermarkSettings;
+}
+
+type StoredOrganization = Pick<
+  Doc<"organizations">,
+  "name" | "address" | "phone" | "settings"
+>;
+
+type OrganizationFormAction =
+  | { type: "load"; organization: StoredOrganization }
+  | { type: "setName"; value: string }
+  | { type: "setContactDetails"; value: ContactDetails }
+  | { type: "setWatermarkSettings"; value: WatermarkSettings };
+
+const EMPTY_ORGANIZATION_FORM: OrganizationForm = {
+  name: "",
+  contactDetails: contactDetailsOf({}),
+  watermarkSettings: {
+    isEnabled: false,
+    text: "",
+    opacity: 0.5,
+    position: "bottom-right",
+  },
+};
+
+function organizationFormOf(
+  organization: StoredOrganization,
+): OrganizationForm {
+  const watermark = organization.settings?.watermarkSettings;
+  return {
+    name: organization.name,
+    contactDetails: contactDetailsOf(organization),
+    watermarkSettings: {
+      isEnabled: watermark?.isEnabled ?? false,
+      text: watermark?.text || "",
+      opacity: watermark?.opacity ?? 0.5,
+      position: watermark?.position || "bottom-right",
+    },
+  };
+}
+
+function organizationFormReducer(
+  state: OrganizationForm,
+  action: OrganizationFormAction,
+): OrganizationForm {
+  switch (action.type) {
+    case "load":
+      return organizationFormOf(action.organization);
+    case "setName":
+      return { ...state, name: action.value };
+    case "setContactDetails":
+      return { ...state, contactDetails: action.value };
+    case "setWatermarkSettings":
+      return { ...state, watermarkSettings: action.value };
+  }
 }
 
 function OrganizationSettingsHeader({
@@ -421,18 +482,11 @@ export default function OrganizationSettingsPage() {
   const { hasPermission } = usePermissions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [contactDetails, setContactDetails] = useState<ContactDetails>(() =>
-    contactDetailsOf({}),
+  const [form, dispatch] = useReducer(
+    organizationFormReducer,
+    EMPTY_ORGANIZATION_FORM,
   );
-  const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>(
-    {
-      isEnabled: false,
-      text: "",
-      opacity: 0.5,
-      position: "bottom-right" as WatermarkPosition,
-    },
-  );
+  const { name, contactDetails, watermarkSettings } = form;
 
   const organization = useQuery(
     api.organizations.get,
@@ -446,16 +500,7 @@ export default function OrganizationSettingsPage() {
   );
 
   useEffect(() => {
-    if (!organization) return;
-    setName(organization.name);
-    setContactDetails(contactDetailsOf(organization));
-    setWatermarkSettings({
-      isEnabled: organization.settings?.watermarkSettings?.isEnabled ?? false,
-      text: organization.settings?.watermarkSettings?.text || "",
-      opacity: organization.settings?.watermarkSettings?.opacity ?? 0.5,
-      position:
-        organization.settings?.watermarkSettings?.position || "bottom-right",
-    });
+    if (organization) dispatch({ type: "load", organization });
   }, [organization]);
 
   const pageHeader = (
@@ -569,7 +614,7 @@ export default function OrganizationSettingsPage() {
             typeLabel: t("organization.typeLabel"),
           }}
           name={name}
-          onNameChange={setName}
+          onNameChange={(value) => dispatch({ type: "setName", value })}
           organization={organization}
           customerNumber={organization.customerNumber ?? null}
         />
@@ -577,14 +622,18 @@ export default function OrganizationSettingsPage() {
         <ContactDetailsCard
           details={contactDetails}
           disabled={!hasPermission("organization.manage_settings")}
-          onDetailsChange={setContactDetails}
+          onDetailsChange={(value) =>
+            dispatch({ type: "setContactDetails", value })
+          }
         />
 
         <PermissionGate permission="organization.manage_settings">
           <WatermarkSettingsCard
             isSubmitting={isSubmitting}
             onSave={handleSaveWatermarkSettings}
-            onSettingsChange={setWatermarkSettings}
+            onSettingsChange={(value) =>
+              dispatch({ type: "setWatermarkSettings", value })
+            }
             settings={watermarkSettings}
           />
 
