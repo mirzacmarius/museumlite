@@ -27,6 +27,8 @@ interface NeutralPasswordConfig {
   id: string;
   profile: (params: Params) => { email: string };
   reset?: EmailConfig;
+  /** `false` refuses new accounts; existing ones keep sign-in and verification. */
+  signUp?: boolean;
   verify?: EmailConfig;
 }
 
@@ -73,6 +75,18 @@ function requirePasswordParam(params: Params, key: string): string {
   return value;
 }
 
+/** Where an emailed code or link sends the person: this site only. */
+function codeDestination(params: Params): URL {
+  const baseUrl = env.SITE_URL.replace(/\/$/, "");
+  const destination =
+    typeof params.redirectTo === "string"
+      ? new URL(params.redirectTo, `${baseUrl}/`)
+      : new URL(baseUrl);
+  if (destination.origin !== new URL(baseUrl).origin)
+    throw new Error("Invalid redirectTo");
+  return destination;
+}
+
 async function findPasswordAccount(
   ctx: Ctx,
   provider: string,
@@ -111,10 +125,12 @@ async function verifyCode<T>(check: () => Promise<T | null>): Promise<T> {
  *   only email an address that has a matching account;
  * - sign-up for a registered email answers like a new sign-up and emails the
  *   owner a verification code instead of reporting a conflict. It never sets
- *   a password; see `releaseUnverifiedSecret` for unverified accounts.
+ *   a password; see `releaseUnverifiedSecret` for unverified accounts and
+ *   `createCode` for emails that already belong to a verified user.
  *
  * Providers without email verification cannot make sign-up neutral, so they
- * refuse sign-up for every email and only keep legacy sign-in.
+ * refuse sign-up for every email and only keep legacy sign-in. Providers
+ * configured with `signUp: false` refuse it the same way.
  */
 export function NeutralPassword(config: NeutralPasswordConfig) {
   const { id: provider, reset, verify } = config;
@@ -130,13 +146,7 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       : Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) =>
           byte.toString(16).padStart(2, "0"),
         ).join("");
-    const baseUrl = env.SITE_URL.replace(/\/$/, "");
-    const destination =
-      typeof params.redirectTo === "string"
-        ? new URL(params.redirectTo, `${baseUrl}/`)
-        : new URL(baseUrl);
-    if (destination.origin !== new URL(baseUrl).origin)
-      throw new Error("Invalid redirectTo");
+    const destination = codeDestination(params);
     destination.searchParams.set("code", code);
     const expires = new Date(Date.now() + (verify.maxAge ?? 86400) * 1000);
     await ctx.runMutation(internal.passwordRecovery.verification.createCode, {
@@ -165,6 +175,14 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     params: Params,
   ) {
     if (!verify) return { userId: account.userId };
+    // Without sign-up, no password on an unverified account was ever proven,
+    // and the emailed link signs in whoever opens it. Drop it first.
+    if (config.signUp === false && !account.emailVerified) {
+      await ctx.runMutation(
+        internal.passwordRecovery.verification.releaseUnverifiedSecret,
+        { accountId: account._id },
+      );
+    }
     return await sendEmailCode(ctx, account, params, verify);
   }
 
@@ -191,8 +209,10 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
   }
 
   async function signUp(ctx: Ctx, params: Params, email: string) {
-    if (!verify) throw authRecoveryError("SignUpUnavailable");
+    if (!verify || config.signUp === false)
+      throw authRecoveryError("SignUpUnavailable");
     const secret = requirePasswordParam(params, "password");
+    codeDestination(params);
     const existing = await findPasswordAccount(ctx, provider, email);
     if (existing)
       return await signUpExisting(ctx, existing, params, email, secret);

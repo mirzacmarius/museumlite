@@ -1,8 +1,10 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../utils/mutationBuilders";
+import { releaseUnprovenSecret } from "./unprovenSecrets";
 
-// Runs inside a mutation so the quota charge and the code replacement commit together.
+// Runs inside a mutation so the quota charge, the code replacement and the
+// release of an unproven linked password commit together.
 export const createCode = internalMutation({
   args: {
     accountId: v.id("authAccounts"),
@@ -14,6 +16,8 @@ export const createCode = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, { isReserved, ...args }) => {
+    const account = await ctx.db.get(args.accountId);
+    if (account) await releaseUnprovenSecret(ctx, account);
     await ctx.runMutation(internal.auth.store, {
       args: {
         type: "createVerificationCode",

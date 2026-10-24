@@ -1,10 +1,12 @@
-import { generateKeyPairSync } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
 import { anyApi, type FunctionArgs } from "convex/server";
 import { ConvexError } from "convex/values";
 import { Scrypt } from "lucia";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import {
+  authedForUser,
   type ConvexTest,
   createConvexTestWithRateLimiter,
 } from "./testHarness";
@@ -27,6 +29,7 @@ const { privateKey } = generateKeyPairSync("rsa", {
 const provider = "password-with-reset";
 const ownerEmail = "owner@example.test";
 const strangerEmail = "nobody@example.test";
+const ownerNewEmail = "owner-new@example.test";
 const ownerPassword = "original-password-123";
 
 interface SentEmail {
@@ -134,6 +137,79 @@ async function createVerifiedPasswordOwner(t: ConvexTest) {
     },
   });
   sentEmails = [];
+}
+
+async function createVerifiedOtpUser(t: ConvexTest): Promise<Id<"users">> {
+  await authRequest(t, {
+    provider: "resend-otp",
+    params: { email: ownerEmail },
+  });
+  await authRequest(t, {
+    provider: "resend-otp",
+    params: { email: ownerEmail, code: latestCode(ownerEmail) },
+  });
+  sentEmails = [];
+  return await t.run(async (ctx) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", ownerEmail))
+      .unique();
+    if (!user?.emailVerificationTime) throw new Error("No verified OTP user");
+    return user._id;
+  });
+}
+
+/** Stores an unverified account as earlier sign-up rules could leave one. */
+async function seedUnverifiedPasswordAccount(
+  t: ConvexTest,
+  accountProvider: string,
+  password: string,
+  userId?: Id<"users">,
+) {
+  const secret = await new Scrypt().hash(password);
+  await t.run(async (ctx) => {
+    await ctx.db.insert("authAccounts", {
+      userId: userId ?? (await ctx.db.insert("users", { email: ownerEmail })),
+      provider: accountProvider,
+      providerAccountId: ownerEmail,
+      secret,
+    });
+  });
+}
+
+async function passwordAccount(
+  t: ConvexTest,
+  accountProvider: string,
+  email: string,
+) {
+  return await t.run((ctx) =>
+    ctx.db
+      .query("authAccounts")
+      .withIndex("providerAndAccountId", (q) =>
+        q.eq("provider", accountProvider).eq("providerAccountId", email),
+      )
+      .unique(),
+  );
+}
+
+/** The owner moves their account to `ownerNewEmail` from the Account page. */
+async function ownerChangesEmail(t: ConvexTest, userId: Id<"users">) {
+  const owner = authedForUser(t, userId);
+  await owner.mutation(internal.accountMutations.prepareEmailChange, {
+    email: ownerNewEmail,
+    codeHash: "owner-code-hash",
+  });
+  return await owner.mutation(internal.accountMutations.confirmEmailChange, {
+    codeHash: "owner-code-hash",
+  });
+}
+
+function emailedLinkCode(email: string): string {
+  const code = emailsTo(email)
+    .at(-1)
+    ?.html.match(/code=([^"&\s]+)/)?.[1];
+  if (!code) throw new Error(`No link sent to ${email}`);
+  return code;
 }
 
 describe("account recovery without existence disclosure", () => {
@@ -346,18 +422,15 @@ describe("account recovery without existence disclosure", () => {
     );
   });
 
-  test.each([
-    "password-with-reset",
-    "password-link",
-  ])("%s preserves /fr on existing-account sign-up and verification resend", async (passwordProvider) => {
+  test("password-with-reset preserves /fr on existing-account sign-up and verification resend", async () => {
     const t = createConvexTestWithRateLimiter();
     await authRequest(t, {
-      provider: passwordProvider,
+      provider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
     });
     for (const flow of ["signUp", "email-verification"]) {
       await authRequest(t, {
-        provider: passwordProvider,
+        provider,
         params: {
           email: ownerEmail,
           password: ownerPassword,
@@ -366,11 +439,24 @@ describe("account recovery without existence disclosure", () => {
         },
       });
       expect(emailsTo(ownerEmail).at(-1)?.html).toContain('lang="fr"');
-      if (passwordProvider === "password-link")
-        expect(emailsTo(ownerEmail).at(-1)?.html).toContain(
-          "https://museum.example.test/fr?code=",
-        );
     }
+  });
+
+  test("password-link preserves /fr on an existing account's verification resend", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await seedUnverifiedPasswordAccount(t, "password-link", ownerPassword);
+    await authRequest(t, {
+      provider: "password-link",
+      params: {
+        email: ownerEmail,
+        flow: "email-verification",
+        redirectTo: "/fr",
+      },
+    });
+    expect(emailsTo(ownerEmail).at(-1)?.html).toContain('lang="fr"');
+    expect(emailsTo(ownerEmail).at(-1)?.html).toContain(
+      "https://museum.example.test/fr?code=",
+    );
   });
 
   test("sign-up for a registered email looks like a new sign-up and cannot replace the password before verification", async () => {
@@ -417,11 +503,12 @@ describe("account recovery without existence disclosure", () => {
     t: ConvexTest,
     password: string,
     signInProvider = provider,
+    email = ownerEmail,
   ) {
     try {
       const result = await authRequest(t, {
         provider: signInProvider,
-        params: { email: ownerEmail, password, flow: "signIn" },
+        params: { email, password, flow: "signIn" },
       });
       return result.tokens ? "signed-in" : "verification-required";
     } catch (error) {
@@ -430,13 +517,9 @@ describe("account recovery without existence disclosure", () => {
     }
   }
 
-  async function signUp(
-    t: ConvexTest,
-    password: string,
-    signUpProvider = provider,
-  ) {
+  async function signUp(t: ConvexTest, password: string) {
     return await authRequest(t, {
-      provider: signUpProvider,
+      provider,
       params: { email: ownerEmail, password, flow: "signUp" },
     });
   }
@@ -542,21 +625,173 @@ describe("account recovery without existence disclosure", () => {
     expect(await signInResult(t, replacement)).toBe("rejected");
   });
 
-  test("a code-only password-link callback signs in without activating either sign-up password", async () => {
+  test("a sign-up on an email with a verified user cannot set a password through the owner's code", async () => {
     const t = createConvexTestWithRateLimiter();
-    const linkProvider = "password-link";
-    await signUp(t, attackerPassword, linkProvider);
-    await signUp(t, ownerPassword, linkProvider);
-    const code = emailsTo(ownerEmail)
-      .at(-1)
-      ?.html.match(/code=([^"&\s]+)/)?.[1];
-    if (!code) throw new Error("No password link sent");
-    expect((await authRequest(t, { params: { code } })).tokens?.token).toEqual(
+    const userId = await createVerifiedOtpUser(t);
+    expect(await signUp(t, attackerPassword)).toEqual({ tokens: null });
+    const linked = await passwordAccount(t, provider, ownerEmail);
+    expect(linked?.userId).toBe(userId);
+    expect(linked?.secret).toBeUndefined();
+    expect((await verifyLatestCode(t)).tokens?.token).toEqual(
       expect.any(String),
     );
+    expect(await signInResult(t, attackerPassword)).toBe("rejected");
+
+    // The mailbox owner sets a password through reset.
+    await authRequest(t, {
+      provider,
+      params: { email: ownerEmail, flow: "reset" },
+    });
+    const reset = await authRequest(t, {
+      provider,
+      params: {
+        email: ownerEmail,
+        code: latestCode(ownerEmail),
+        newPassword: ownerPassword,
+        flow: "reset-verification",
+      },
+    });
+    expect(reset.tokens?.token).toEqual(expect.any(String));
+    expect(await signInResult(t, attackerPassword)).toBe("rejected");
+    expect(await signInResult(t, ownerPassword)).toBe("signed-in");
+  });
+
+  test("an owner's password-link click cannot activate a password stored on their verified user", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const linkProvider = "password-link";
+    const userId = await createVerifiedOtpUser(t);
+    await seedUnverifiedPasswordAccount(
+      t,
+      linkProvider,
+      attackerPassword,
+      userId,
+    );
+    expect(await signInResult(t, attackerPassword, linkProvider)).toBe(
+      "verification-required",
+    );
+    const opened = await authRequest(t, {
+      params: { code: emailedLinkCode(ownerEmail) },
+    });
+    expect(opened.tokens?.token).toEqual(expect.any(String));
     expect(await signInResult(t, attackerPassword, linkProvider)).toBe(
       "rejected",
     );
+  });
+
+  test("a sign-up with a redirect to another site is refused before any account exists", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await createVerifiedOtpUser(t);
+    await rejection(
+      authRequest(t, {
+        provider,
+        params: {
+          email: ownerEmail,
+          password: attackerPassword,
+          flow: "signUp",
+          redirectTo: "https://evil.example.test/",
+        },
+      }),
+    );
+    expect(await passwordAccount(t, provider, ownerEmail)).toBeNull();
+    expect(sentEmails).toHaveLength(0);
+  });
+
+  test("a sign-up refused by the code quota stores no password, and an email change cannot activate one", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const userId = await createVerifiedOtpUser(t);
+    for (let request = 0; request < 10; request += 1) {
+      await authRequest(t, {
+        provider,
+        params: { email: ownerEmail, flow: "email-verification" },
+      });
+    }
+    expect(await publicErrorCode(signUp(t, attackerPassword))).toEqual({
+      code: "TooManyCodeRequests",
+    });
+    const linked = await passwordAccount(t, provider, ownerEmail);
+    expect(linked?.userId).toBe(userId);
+    expect(linked?.secret).toBeUndefined();
+
+    expect(await ownerChangesEmail(t, userId)).toBe("changed");
+    expect(
+      await signInResult(t, attackerPassword, provider, ownerNewEmail),
+    ).toBe("rejected");
+  });
+
+  test("an email change drops a password planted on a verified user instead of activating it", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const userId = await createVerifiedOtpUser(t);
+    await seedUnverifiedPasswordAccount(t, provider, attackerPassword, userId);
+
+    expect(await ownerChangesEmail(t, userId)).toBe("changed");
+    expect(
+      await signInResult(t, attackerPassword, provider, ownerNewEmail),
+    ).toBe("rejected");
+
+    // The owner sets a password through reset on the new address.
+    await authRequest(t, {
+      provider,
+      params: { email: ownerNewEmail, flow: "reset" },
+    });
+    const reset = await authRequest(t, {
+      provider,
+      params: {
+        email: ownerNewEmail,
+        code: latestCode(ownerNewEmail),
+        newPassword: ownerPassword,
+        flow: "reset-verification",
+      },
+    });
+    expect(reset.tokens?.token).toEqual(expect.any(String));
+    expect(await signInResult(t, ownerPassword, provider, ownerNewEmail)).toBe(
+      "signed-in",
+    );
+  });
+
+  test("a code issued before the planted password was dropped cannot activate it", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const userId = await createVerifiedOtpUser(t);
+    await seedUnverifiedPasswordAccount(t, provider, attackerPassword, userId);
+    const code = "13572468";
+    await t.run(async (ctx) => {
+      const account = await ctx.db
+        .query("authAccounts")
+        .withIndex("providerAndAccountId", (q) =>
+          q.eq("provider", provider).eq("providerAccountId", ownerEmail),
+        )
+        .unique();
+      if (!account) throw new Error("No planted account");
+      await ctx.db.insert("authVerificationCodes", {
+        accountId: account._id,
+        provider: "resend-otp",
+        code: createHash("sha256").update(code).digest("hex"),
+        expirationTime: Date.now() + 60 * 60 * 1000,
+        emailVerified: ownerEmail,
+      });
+    });
+
+    const redeemed = await authRequest(t, {
+      provider,
+      params: { email: ownerEmail, code, flow: "email-verification" },
+    });
+    expect(redeemed.tokens?.token).toEqual(expect.any(String));
+    expect(await signInResult(t, attackerPassword)).toBe("rejected");
+  });
+
+  test("an unverified password-link account loses its unproven password once a link is sent", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const linkProvider = "password-link";
+    await seedUnverifiedPasswordAccount(t, linkProvider, ownerPassword);
+    expect(await signInResult(t, ownerPassword, linkProvider)).toBe(
+      "verification-required",
+    );
+    expect(
+      (await passwordAccount(t, linkProvider, ownerEmail))?.secret,
+    ).toBeUndefined();
+    const opened = await authRequest(t, {
+      params: { code: emailedLinkCode(ownerEmail) },
+    });
+    expect(opened.tokens?.token).toEqual(expect.any(String));
     expect(await signInResult(t, ownerPassword, linkProvider)).toBe("rejected");
   });
 
@@ -693,8 +928,6 @@ describe("account recovery without existence disclosure", () => {
     ).toEqual({ tokens: null });
   });
 
-  // password-link hashes a password on each of its 12 requests, which takes
-  // over 5s on slow CI runners.
   test.each([
     "resend-otp",
     "magic-link",
@@ -702,55 +935,35 @@ describe("account recovery without existence disclosure", () => {
   ])("%s counts every request and preserves the final code on throttle", async (codeProvider) => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const t = createConvexTestWithRateLimiter();
-    for (let request = 0; request < 10; request += 1) {
-      await authRequest(t, {
-        provider: codeProvider,
-        params: {
-          email: ownerEmail,
-          ...(codeProvider === "password-link"
-            ? { password: ownerPassword, flow: "signUp" }
-            : {}),
-        },
-      });
+    const request = {
+      provider: codeProvider,
+      params:
+        codeProvider === "password-link"
+          ? { email: ownerEmail, flow: "email-verification" }
+          : { email: ownerEmail },
+    };
+    if (codeProvider === "password-link")
+      await seedUnverifiedPasswordAccount(t, codeProvider, ownerPassword);
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await authRequest(t, request);
     }
     expect(emailsTo(ownerEmail)).toHaveLength(10);
     const code =
       codeProvider === "resend-otp"
         ? latestCode(ownerEmail)
-        : emailsTo(ownerEmail)
-            .at(-1)
-            ?.html.match(/code=([^"&\s]+)/)?.[1];
-    if (!code) throw new Error("No sign-in code sent");
-    expect(
-      await publicErrorCode(
-        authRequest(t, {
-          provider: codeProvider,
-          params: {
-            email: ownerEmail,
-            ...(codeProvider === "password-link"
-              ? { password: ownerPassword, flow: "signUp" }
-              : {}),
-          },
-        }),
-      ),
-    ).toEqual({ code: "TooManyCodeRequests" });
+        : emailedLinkCode(ownerEmail);
+    expect(await publicErrorCode(authRequest(t, request))).toEqual({
+      code: "TooManyCodeRequests",
+    });
     expect(emailsTo(ownerEmail)).toHaveLength(10);
     expect(
       (await authRequest(t, { params: { email: ownerEmail, code } })).tokens
         ?.token,
     ).toEqual(expect.any(String));
     vi.setSystemTime(Date.now() + 3 * 60 * 1000);
-    await authRequest(t, {
-      provider: codeProvider,
-      params: {
-        email: ownerEmail,
-        ...(codeProvider === "password-link"
-          ? { password: ownerPassword, flow: "signUp" }
-          : {}),
-      },
-    });
+    await authRequest(t, request);
     expect(emailsTo(ownerEmail)).toHaveLength(11);
-  }, 20_000);
+  });
 
   test("expiry of an older request does not reset an active email's quota", async () => {
     vi.useFakeTimers();
@@ -789,16 +1002,7 @@ describe("account recovery without existence disclosure", () => {
 
   test("legacy unverified password accounts retain password sign-in after verification", async () => {
     const t = createConvexTestWithRateLimiter();
-    const secret = await new Scrypt().hash(ownerPassword);
-    await t.run(async (ctx) => {
-      const userId = await ctx.db.insert("users", { email: ownerEmail });
-      await ctx.db.insert("authAccounts", {
-        userId,
-        provider,
-        providerAccountId: ownerEmail,
-        secret,
-      });
-    });
+    await seedUnverifiedPasswordAccount(t, provider, ownerPassword);
     expect(
       await authRequest(t, {
         provider,
@@ -831,17 +1035,33 @@ describe("account recovery without existence disclosure", () => {
     ).toEqual(expect.any(String));
   });
 
-  test("password providers without email verification refuse sign-up uniformly", async () => {
+  test.each([
+    "password",
+    "password-link",
+  ])("%s refuses sign-up for existing and unknown emails alike", async (passwordProvider) => {
     const t = createConvexTestWithRateLimiter();
+    await seedUnverifiedPasswordAccount(t, passwordProvider, ownerPassword);
     for (const email of [ownerEmail, strangerEmail]) {
       expect(
         await publicErrorCode(
           authRequest(t, {
-            provider: "password",
+            provider: passwordProvider,
             params: { email, password: ownerPassword, flow: "signUp" },
           }),
         ),
       ).toEqual({ code: "SignUpUnavailable" });
     }
+    expect(sentEmails).toHaveLength(0);
+    const strangerAccount = await t.run((ctx) =>
+      ctx.db
+        .query("authAccounts")
+        .withIndex("providerAndAccountId", (q) =>
+          q
+            .eq("provider", passwordProvider)
+            .eq("providerAccountId", strangerEmail),
+        )
+        .unique(),
+    );
+    expect(strangerAccount).toBeNull();
   });
 });

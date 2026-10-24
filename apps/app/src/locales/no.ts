@@ -1128,6 +1128,7 @@ export default {
     role: "Rolle",
     emailRequired: "E-postadresse er påkrevd",
     roleRequired: "Rolle er påkrevd",
+    superAdminRequired: "Bare en SuperAdmin kan gi noen rollen SuperAdmin.",
     inviteFailed: "Kunne ikke invitere bruker. Prøv igjen.",
     removeConfirm:
       "Er du sikker på at du vil fjerne denne brukeren fra organisasjonen?",

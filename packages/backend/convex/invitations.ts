@@ -1,10 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { type MutationCtx, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { requirePermission } from "./utils/permissions";
+import { getSuperAdminRole, isUserSuperAdmin } from "./utils/superAdmins";
 
 /**
  * Generate a secure random token for invitation links
@@ -28,6 +29,28 @@ function isInvitationExpired(expiresAt: number): boolean {
 
 function shouldScheduleInvitationEmail(): boolean {
   return process.env.NODE_ENV !== "test" && process.env.VITEST !== "true";
+}
+
+/**
+ * Accepting grants the invitation's role, so the role must still belong to
+ * the organization and the super admin role needs an inviter who is still a
+ * super admin.
+ */
+async function canGrantInvitedRole(
+  ctx: MutationCtx,
+  invitation: Doc<"organizationInvitations">,
+): Promise<boolean> {
+  const [role, superAdminRole] = await Promise.all([
+    ctx.db.get(invitation.roleId),
+    getSuperAdminRole(ctx, invitation.organizationId),
+  ]);
+  if (!role || role.organizationId !== invitation.organizationId) return false;
+  if (role._id !== superAdminRole?._id) return true;
+  return await isUserSuperAdmin(
+    ctx,
+    invitation.organizationId,
+    invitation.invitedBy,
+  );
 }
 
 /**
@@ -226,6 +249,10 @@ export const acceptInvitation = mutation({
         success: false,
         error: "This invitation is for a different email address",
       };
+    }
+
+    if (!(await canGrantInvitedRole(ctx, invitation))) {
+      return { success: false, error: "Invitation not found" };
     }
 
     // Check if user is already in organization
@@ -555,53 +582,5 @@ export const createInvitationInternal = internalMutation({
     });
 
     return { invitationId, token };
-  },
-});
-
-/**
- * Create an invitation (used by organizations.inviteUser)
- */
-export const createInvitation = mutation({
-  args: {
-    organizationId: v.id("organizations"),
-    email: v.string(),
-    roleId: v.id("roles"),
-  },
-  returns: v.object({
-    invitationId: v.id("organizationInvitations"),
-    token: v.string(),
-  }),
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{
-    invitationId: Id<"organizationInvitations">;
-    token: string;
-  }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    // Check permission
-    await Promise.all([
-      requirePermission(
-        ctx,
-        args.organizationId,
-        "organization.manage_settings",
-      ),
-      requirePermission(ctx, args.organizationId, "users.invite"),
-    ]);
-
-    // Call internal mutation
-    return await ctx.runMutation(
-      internal.invitations.createInvitationInternal,
-      {
-        organizationId: args.organizationId,
-        email: args.email,
-        roleId: args.roleId,
-        invitedBy: userId,
-      },
-    );
   },
 });

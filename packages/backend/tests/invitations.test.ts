@@ -1,8 +1,14 @@
+import { anyApi } from "convex/server";
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
-
+import {
+  authedForUser,
+  type ConvexTest,
+  createConvexTest,
+} from "./testHarness";
 import { modules } from "./testSetup";
 
 describe("invitations", () => {
@@ -66,23 +72,23 @@ describe("invitations", () => {
     });
 
     // Create invitation
-    const result = await authed.mutation(api.invitations.createInvitation, {
+    await authed.mutation(api.organizations.inviteUser, {
       organizationId: orgId,
       email: "newuser@test.com",
       roleId,
     });
 
-    expect(result).toBeDefined();
-    expect(result.invitationId).toBeDefined();
-    expect(result.token).toBeDefined();
-
     // Verify invitation was created
     const invitation = await t.run(async (ctx) => {
-      return await ctx.db.get(result.invitationId);
+      return await ctx.db
+        .query("organizationInvitations")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .unique();
     });
 
-    expect(invitation).toBeDefined();
     expect(invitation?.email).toBe("newuser@test.com");
+    expect(invitation?.roleId).toBe(roleId);
+    expect(invitation?.token).toEqual(expect.any(String));
     expect(invitation?.status).toBe("pending");
   });
 
@@ -543,5 +549,252 @@ describe("invitations", () => {
       expect(result.token).not.toBe(oldToken);
       expect(result.token).toBeDefined();
     }
+  });
+});
+
+async function createOrganizationWithSuperAdmin(t: ConvexTest) {
+  return await t.run(async (ctx) => {
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Test Org",
+      slug: "super-admin-org",
+      type: "museum",
+      subscriptionTier: "pro",
+    });
+    const [
+      ownerId,
+      administratorId,
+      superAdminRoleId,
+      adminRoleId,
+      viewerRoleId,
+    ] = await Promise.all([
+      ctx.db.insert("users", { email: "owner@test.com", name: "Owner" }),
+      ctx.db.insert("users", {
+        email: "administrator@test.com",
+        name: "Administrator",
+      }),
+      ctx.db.insert("roles", {
+        organizationId,
+        name: "super_admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId,
+        name: "admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId,
+        name: "viewer",
+        isSystemRole: true,
+      }),
+    ]);
+    for (const [name, category] of [
+      ["organization.manage_settings", "organization"],
+      ["users.invite", "users"],
+    ] as const) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name,
+        category,
+      });
+      for (const roleId of [superAdminRoleId, adminRoleId]) {
+        await ctx.db.insert("rolePermissions", { roleId, permissionId });
+      }
+    }
+    for (const [userId, roleId] of [
+      [ownerId, superAdminRoleId],
+      [administratorId, adminRoleId],
+    ] as const) {
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+    }
+    return {
+      organizationId,
+      ownerId,
+      administratorId,
+      superAdminRoleId,
+      viewerRoleId,
+    };
+  });
+}
+
+/** Stores a pending invitation directly, as older invitation paths could. */
+async function seedInvitation(
+  t: ConvexTest,
+  invitation: {
+    organizationId: Id<"organizations">;
+    roleId: Id<"roles">;
+    invitedBy: Id<"users">;
+  },
+) {
+  return await t.run(async (ctx) => {
+    await ctx.db.insert("organizationInvitations", {
+      ...invitation,
+      email: "invitee@test.com",
+      token: "seeded-token",
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      status: "pending",
+      createdAt: Date.now(),
+    });
+    return await ctx.db.insert("users", {
+      email: "invitee@test.com",
+      name: "Invitee",
+    });
+  });
+}
+
+async function membershipOf(
+  t: ConvexTest,
+  organizationId: Id<"organizations">,
+  userId: Id<"users">,
+) {
+  return await t.run((ctx) =>
+    ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user_and_organization", (q) =>
+        q.eq("userId", userId).eq("organizationId", organizationId),
+      )
+      .unique(),
+  );
+}
+
+describe("super admin invitations", () => {
+  test("only a super admin can invite someone as super admin", async () => {
+    const t = createConvexTest();
+    const org = await createOrganizationWithSuperAdmin(t);
+    const administrator = authedForUser(t, org.administratorId);
+    await expect(
+      administrator.mutation(api.organizations.inviteUser, {
+        organizationId: org.organizationId,
+        email: "invitee@test.com",
+        roleId: org.superAdminRoleId,
+      }),
+    ).rejects.toThrow(/Only a SuperAdmin/);
+    await administrator.mutation(api.organizations.inviteUser, {
+      organizationId: org.organizationId,
+      email: "viewer@test.com",
+      roleId: org.viewerRoleId,
+    });
+    await authedForUser(t, org.ownerId).mutation(api.organizations.inviteUser, {
+      organizationId: org.organizationId,
+      email: "invitee@test.com",
+      roleId: org.superAdminRoleId,
+    });
+
+    const invitations = await t.run((ctx) =>
+      ctx.db
+        .query("organizationInvitations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", org.organizationId),
+        )
+        .collect(),
+    );
+    expect(
+      invitations.map(({ email, roleId, invitedBy }) => ({
+        email,
+        roleId,
+        invitedBy,
+      })),
+    ).toEqual([
+      {
+        email: "viewer@test.com",
+        roleId: org.viewerRoleId,
+        invitedBy: org.administratorId,
+      },
+      {
+        email: "invitee@test.com",
+        roleId: org.superAdminRoleId,
+        invitedBy: org.ownerId,
+      },
+    ]);
+  });
+
+  test("a super admin's invitation makes the invitee a super admin", async () => {
+    const t = createConvexTest();
+    const org = await createOrganizationWithSuperAdmin(t);
+    const inviteeId = await seedInvitation(t, {
+      organizationId: org.organizationId,
+      roleId: org.superAdminRoleId,
+      invitedBy: org.ownerId,
+    });
+
+    const result = await authedForUser(t, inviteeId).mutation(
+      api.invitations.acceptInvitation,
+      { token: "seeded-token" },
+    );
+
+    expect(result).toEqual({
+      success: true,
+      organizationId: org.organizationId,
+    });
+    expect((await membershipOf(t, org.organizationId, inviteeId))?.roleId).toBe(
+      org.superAdminRoleId,
+    );
+  });
+
+  test("acceptance refuses a super admin invitation from someone who is not a super admin", async () => {
+    const t = createConvexTest();
+    const org = await createOrganizationWithSuperAdmin(t);
+    const inviteeId = await seedInvitation(t, {
+      organizationId: org.organizationId,
+      roleId: org.superAdminRoleId,
+      invitedBy: org.administratorId,
+    });
+
+    const result = await authedForUser(t, inviteeId).mutation(
+      api.invitations.acceptInvitation,
+      { token: "seeded-token" },
+    );
+
+    expect(result).toEqual({ success: false, error: "Invitation not found" });
+    expect(await membershipOf(t, org.organizationId, inviteeId)).toBeNull();
+  });
+
+  test("acceptance refuses an invitation whose role belongs to another organization", async () => {
+    const t = createConvexTest();
+    const org = await createOrganizationWithSuperAdmin(t);
+    const foreignRoleId = await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Other Org",
+        slug: "other-org",
+        type: "museum",
+      });
+      return await ctx.db.insert("roles", {
+        organizationId,
+        name: "Everything",
+        isSystemRole: false,
+      });
+    });
+    const inviteeId = await seedInvitation(t, {
+      organizationId: org.organizationId,
+      roleId: foreignRoleId,
+      invitedBy: org.ownerId,
+    });
+
+    const result = await authedForUser(t, inviteeId).mutation(
+      api.invitations.acceptInvitation,
+      { token: "seeded-token" },
+    );
+
+    expect(result).toEqual({ success: false, error: "Invitation not found" });
+    expect(await membershipOf(t, org.organizationId, inviteeId)).toBeNull();
+  });
+
+  test("invitations can no longer be created outside organizations.inviteUser", async () => {
+    const t = createConvexTest();
+    const org = await createOrganizationWithSuperAdmin(t);
+    await expect(
+      authedForUser(t, org.administratorId).mutation(
+        anyApi.invitations?.createInvitation,
+        {
+          organizationId: org.organizationId,
+          email: "invitee@test.com",
+          roleId: org.superAdminRoleId,
+        },
+      ),
+    ).rejects.toThrow();
   });
 });
