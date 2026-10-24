@@ -8,6 +8,10 @@ import {
   BULK_EDIT_VALUE_LIMIT,
 } from "../convex/utils/bulkFieldEdits";
 import {
+  type CatalogFilters,
+  narrowsCatalog,
+} from "../convex/utils/catalogFilterValidators";
+import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
@@ -490,6 +494,148 @@ test("a preview the server would refuse says why instead of throwing", async () 
       }),
     ),
   ).toBe("VALUE_TOO_LONG");
+});
+
+test("filters that narrow nothing are refused, so an edit never takes every Object", async () => {
+  const s = await setup();
+  const bowl = await s.create({ accessionNumber: "1", title: "Bowl" });
+  const edit = {
+    field: "culture" as const,
+    operation: "set" as const,
+    value: "Roman",
+  };
+  // What a Dashboard link, a cleared or blank field or an empty advanced
+  // group leaves. "Is not" a blank value would otherwise match everything.
+  const narrowNothing: CatalogFilters[] = [
+    {},
+    { inventoryMetricScope: "owned" },
+    { includeDeaccessioned: true },
+    { search: "   " },
+    { objectType: "", culture: "" },
+    { culture: " ", period: " ", materials: "\t", condition: " " },
+    { locationIds: [] },
+    {
+      advancedFilters: [{ operator: "AND", filters: [] }],
+      filterCombinations: "OR",
+    },
+    {
+      advancedFilters: [
+        {
+          operator: "AND",
+          filters: [
+            { field: "title", operator: "ne", value: " " },
+            { field: "culture", operator: "ne", value: [" ", ""] },
+          ],
+        },
+      ],
+    },
+  ];
+  for (const filters of narrowNothing) {
+    const args = {
+      organizationId: s.organizationId,
+      scope: { kind: "filters" as const, filters },
+      edit,
+    };
+    expect(
+      await s.user.query(api.bulkFieldEdits.preview, args),
+      JSON.stringify(filters),
+    ).toEqual({ kind: "refused", code: "FILTER_REQUIRED" });
+    expect(
+      await refusalCode(s.user.mutation(api.bulkFieldEdits.start, args)),
+      JSON.stringify(filters),
+    ).toBe("FILTER_REQUIRED");
+  }
+  expect(
+    await s.user.query(api.bulkFieldEdits.latest, {
+      organizationId: s.organizationId,
+    }),
+  ).toBeNull();
+  expect(await s.field(bowl, "culture")).toBeUndefined();
+
+  const job = await s.run({
+    scope: { kind: "filters", filters: { search: "Bowl" } },
+    edit,
+  });
+  expect(job).toMatchObject({ status: "completed", checked: 1, changed: 1 });
+  expect(await s.field(bowl, "culture")).toBe("Roman");
+});
+
+test("every catalog filter narrows it except the inventory scope and the options that widen or join filters", () => {
+  // Typed per field, so a filter added to the catalog has to be placed here.
+  const oneOfEach: {
+    [Field in keyof CatalogFilters]-?: {
+      value: NonNullable<CatalogFilters[Field]>;
+      narrows: boolean;
+    };
+  } = {
+    collectionGroupId: {
+      value: "group" as Id<"collectionGroups">,
+      narrows: true,
+    },
+    includeDeaccessioned: { value: true, narrows: false },
+    inventoryMetricScope: { value: "owned", narrows: false },
+    status: { value: "active", narrows: true },
+    locationIds: { value: ["location" as Id<"locations">], narrows: true },
+    objectType: { value: "Painting", narrows: true },
+    displayStatus: { value: "on_display", narrows: true },
+    culture: { value: "Roman", narrows: true },
+    period: { value: "Imperial", narrows: true },
+    materials: { value: "Bronze", narrows: true },
+    condition: { value: "Good", narrows: true },
+    hasImage: { value: false, narrows: true },
+    search: { value: "Bowl", narrows: true },
+    catalogedFrom: { value: 0, narrows: true },
+    catalogedTo: { value: 0, narrows: true },
+    madeFrom: { value: 0, narrows: true },
+    madeTo: { value: 0, narrows: true },
+    advancedFilters: {
+      value: [
+        {
+          operator: "AND",
+          filters: [{ field: "title", operator: "contains", value: "Bowl" }],
+        },
+      ],
+      narrows: true,
+    },
+    filterCombinations: { value: "OR", narrows: false },
+  };
+  for (const [field, { value, narrows }] of Object.entries(oneOfEach)) {
+    expect(narrowsCatalog({ [field]: value }), field).toBe(narrows);
+  }
+});
+
+test("an edit started before its filters had to narrow the catalog can be stopped but not resumed", async () => {
+  const s = await setup();
+  const bowl = await s.create({ accessionNumber: "1", title: "Bowl" });
+  const jobId = await s.t.run((ctx) =>
+    ctx.db.insert("bulkFieldEdits", {
+      organizationId: s.organizationId,
+      requestedBy: s.userId,
+      status: "failed",
+      scope: { kind: "filters", filters: { inventoryMetricScope: "owned" } },
+      edit: { field: "culture", operation: "set", value: "Roman" },
+      cursor: null,
+      position: 0,
+      checkpoint: 0,
+      attempts: 1,
+      checked: 0,
+      changed: 0,
+      skipped: 0,
+      failure: "Write failed",
+      startedAt: 1,
+      updatedAt: 1,
+      finishedAt: 1,
+    }),
+  );
+
+  expect(
+    await refusalCode(s.user.mutation(api.bulkFieldEdits.resume, { jobId })),
+  ).toBe("FILTER_REQUIRED");
+  await s.user.mutation(api.bulkFieldEdits.cancel, { jobId });
+  expect(await s.user.query(api.bulkFieldEdits.get, { jobId })).toMatchObject({
+    status: "cancelled",
+  });
+  expect(await s.field(bowl, "culture")).toBeUndefined();
 });
 
 test("replacement text is written as typed, even with dollar signs", async () => {

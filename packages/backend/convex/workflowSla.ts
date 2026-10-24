@@ -4,7 +4,10 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalQuery, query } from "./_generated/server";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
-import { dispatchNotification } from "./utils/notificationDispatch";
+import {
+  dispatchNotification,
+  wasDispatched,
+} from "./utils/notificationDispatch";
 import { slaNotificationType } from "./utils/notificationTypes";
 import {
   getUserIdsWithPermission,
@@ -396,43 +399,60 @@ export const checkSlaBreaches = internalMutation({
           items = pending.map((p) => ({ id: p._id, createdAt: p.performedAt }));
         }
 
+        // Looking up approvers reads every member's role permissions, so it
+        // happens at most once per workflow type, and only for an item whose
+        // breach or warning was not dispatched yet.
+        let approvers: Promise<Array<Id<"users">>> | undefined;
+        const approverIds = () => {
+          approvers ??= getUserIdsWithPermission(
+            ctx,
+            args.organizationId,
+            `${config.workflowType}s.approve`,
+          );
+          return approvers;
+        };
+        const notDispatched = async (idempotencyKey: string) =>
+          !(await wasDispatched(ctx, args.organizationId, idempotencyKey));
+
         return Promise.all(
           Array.from(items).map(async (item) => {
             if (item.createdAt < slaDueThreshold) {
-              if (config.escalateToRoleId) {
+              const idempotencyKey = `sla_breach:${config.workflowType}:${item.id}`;
+              if (
+                config.escalateToRoleId &&
+                (await notDispatched(idempotencyKey))
+              ) {
                 await dispatchNotification(ctx, {
                   organizationId: args.organizationId,
                   type: slaNotificationType("breach", config.workflowType),
-                  recipients: await getUserIdsWithPermission(
-                    ctx,
-                    args.organizationId,
-                    `${config.workflowType}s.approve`,
-                  ),
+                  recipients: await approverIds(),
                   title: `SLA Breach: ${config.workflowType} pending over ${config.slaDays} days`,
                   message: `A ${config.workflowType} has exceeded its SLA of ${config.slaDays} days and requires immediate attention.`,
                   related: {
                     entityType: config.workflowType,
                     entityId: item.id,
                   },
-                  idempotencyKey: `sla_breach:${config.workflowType}:${item.id}`,
+                  idempotencyKey,
                 });
               }
               return "breach" as const;
             }
             if (warningThreshold && item.createdAt < warningThreshold) {
-              await dispatchNotification(ctx, {
-                organizationId: args.organizationId,
-                type: slaNotificationType("warning", config.workflowType),
-                recipients: await getUserIdsWithPermission(
-                  ctx,
-                  args.organizationId,
-                  `${config.workflowType}s.approve`,
-                ),
-                title: `SLA Warning: ${config.workflowType} due in ${config.warningDays} days`,
-                message: `A ${config.workflowType} is approaching its SLA deadline. Please review soon.`,
-                related: { entityType: config.workflowType, entityId: item.id },
-                idempotencyKey: `sla_warning:${config.workflowType}:${item.id}`,
-              });
+              const idempotencyKey = `sla_warning:${config.workflowType}:${item.id}`;
+              if (await notDispatched(idempotencyKey)) {
+                await dispatchNotification(ctx, {
+                  organizationId: args.organizationId,
+                  type: slaNotificationType("warning", config.workflowType),
+                  recipients: await approverIds(),
+                  title: `SLA Warning: ${config.workflowType} due in ${config.warningDays} days`,
+                  message: `A ${config.workflowType} is approaching its SLA deadline. Please review soon.`,
+                  related: {
+                    entityType: config.workflowType,
+                    entityId: item.id,
+                  },
+                  idempotencyKey,
+                });
+              }
               return "warning" as const;
             }
             return "none" as const;

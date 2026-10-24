@@ -23,7 +23,11 @@ import {
   overwritesValue,
   validateBulkEdit,
 } from "./utils/bulkFieldEdits";
-import { catalogFiltersValidator } from "./utils/catalogFilterValidators";
+import {
+  type CatalogFilters,
+  catalogFiltersValidator,
+  narrowsCatalog,
+} from "./utils/catalogFilterValidators";
 import { listCatalogPage } from "./utils/catalogListing";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
@@ -131,6 +135,15 @@ async function loadSelection(
   return own;
 }
 
+/** A filtered scope must narrow the catalog: an edit never takes every Object at once. */
+function requireNarrowingFilters(filters: CatalogFilters) {
+  if (!narrowsCatalog(filters))
+    throw bulkEditError(
+      "FILTER_REQUIRED",
+      "Search or filter the catalog first; a bulk edit never changes every Object",
+    );
+}
+
 /**
  * What the edit would do: how many Objects match, how many change and how
  * many already hold a value the edit writes over, a structured date made it
@@ -189,6 +202,7 @@ async function previewEdit(
       args.scope.collectionIds,
     );
   } else {
+    requireNarrowingFilters(args.scope.filters);
     // One page only: Convex allows a single built-in .paginate() per query
     // or mutation, which convex-test does not enforce.
     const page = await listCatalogPage(
@@ -242,6 +256,8 @@ export const start = mutation({
     validateBulkEdit(args.edit);
     if (args.scope.kind === "selection") {
       await loadSelection(ctx, args.organizationId, args.scope.collectionIds);
+    } else {
+      requireNarrowingFilters(args.scope.filters);
     }
     const running = await ctx.db
       .query("bulkFieldEdits")
@@ -345,6 +361,9 @@ export const resume = mutation({
         "EDIT_NOT_RESUMABLE",
         "Only a failed or stalled bulk edit can be resumed",
       );
+    // An edit started before its filters had to narrow the catalog can only be stopped.
+    if (job.scope.kind === "filters")
+      requireNarrowingFilters(job.scope.filters);
     // A failed edit waits while another one runs: one at a time per Organization.
     if (job.status === "failed") {
       const running = await ctx.db

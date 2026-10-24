@@ -1409,6 +1409,8 @@ export default {
           "Selectați cel mult {limit} de obiecte sau editați toate obiectele care corespund căutării și filtrelor.",
         selectionOutsideOrganization:
           "Unele obiecte selectate aparțin altei organizații. Reîncărcați pagina și selectați-le din nou.",
+        filterRequired:
+          "Căutați sau filtrați mai întâi catalogul, ca modificarea să nu schimbe toate obiectele.",
         editRunning:
           "O altă editare de câmp rulează în această organizație. Așteptați să se termine sau opriți-o mai întâi.",
         editNotFound: "Această editare nu mai există.",
@@ -10899,7 +10901,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Exportă toate rezultatele filtrate",
     catalogComplete: "Exportă catalogul complet",
     auditComplete: "Exportă istoricul de audit complet",
     auditFiltered: "Exportă istoricul de audit filtrat complet",
@@ -10914,6 +10915,7 @@ export default {
     sourceAudit: "Audit",
     sourceSelected: "Obiecte selectate",
     sourceCatalog: "Catalog filtrat",
+    sourceCompleteCatalog: "Catalog complet",
     statusSelecting: "Se încarcă selecția",
     statusQueued: "În coadă",
     statusRunning: "În curs",
@@ -10946,6 +10948,8 @@ export default {
       "Selecția nu a putut fi exportată. Reîncercați încărcarea sau creați o selecție nouă.",
     errorTooLarge:
       "Acest export este prea mare. Restrângeți filtrele sau selecția.",
+    errorCatalogTooLarge:
+      "Catalogul complet este prea mare pentru un singur export. Selectați obiecte în Catalogul obiectelor și exportați-le în loturi mai mici.",
     errorInventoryLinks:
       "Un obiect are prea multe legături de împrumut pentru acest filtru de inventar. Exportați în schimb obiectele selectate.",
     errorInvalidRequest:
@@ -11077,19 +11081,18 @@ export default {
     page: {
       title: "Starea indicatorilor",
       description:
-        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare. Reconstruirile și reconcilierile pornesc singure când se modifică înregistrările.",
+        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare. Se actualizează la fiecare modificare a înregistrărilor.",
       selectOrganization:
         "Selectați o organizație pentru a vedea starea indicatorilor.",
       noPermission:
         "Aveți nevoie de permisiunea de a gestiona setările organizației pentru a vedea starea indicatorilor.",
       statusTitle: "Stare",
       automatic:
-        "Indicatorii se reconstruiesc când devin indisponibili și se reconciliază după modificarea înregistrărilor, cel mult o dată pe oră.",
+        "Indicatorii se reconstruiesc singuri când devin indisponibili. O reconciliere renumără toate înregistrările și rulează doar când o pornește echipa de suport, de exemplu după restaurarea unei copii de rezervă.",
       definitionVersion: "Versiunea definiției",
       definitionOutdated: "Stocată {stored}, curentă {current}",
       lastBuilt: "Ultima generare",
       lastVerified: "Ultima reconciliere",
-      nextReconcile: "Următoarea reconciliere",
       invalidated: "Invalidat",
       limits: "Limite de reconstruire",
       limitsValue:

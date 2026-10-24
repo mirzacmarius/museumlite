@@ -569,6 +569,25 @@ test("advanced filters combine conditions within a group and groups with each ot
       ],
     }),
   ).toEqual(["S-1"]);
+
+  // A condition left blank tests nothing: "is not" blank does not let every
+  // Object through, and "is" blank does not keep every Object out.
+  for (const operator of ["ne", "eq"] as const) {
+    expect(
+      await catalog.numbers({
+        advancedFilters: [
+          {
+            operator: operator === "ne" ? "OR" : "AND",
+            filters: [
+              { field: "objectType", operator: "eq", value: "Sculpture" },
+              { field: "title", operator, value: "  " },
+            ],
+          },
+        ],
+      }),
+      operator,
+    ).toEqual(["S-1"]);
+  }
 });
 
 test("a date made range keeps overlapping and open-ended dates and drops undated ones alike in the list, a filtered export and a bulk edit", async () => {

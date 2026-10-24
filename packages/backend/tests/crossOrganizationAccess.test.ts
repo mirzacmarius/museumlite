@@ -359,9 +359,8 @@ describe("members of another organization", () => {
         { organizationId },
       ),
     ).toEqual({
-      recentlyModified: [],
       myCatalogedItems: [],
-      stats: { totalCatalogedItems: 0, itemsModifiedThisWeek: 0 },
+      stats: { totalCatalogedItems: 0 },
     });
   });
 

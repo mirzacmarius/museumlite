@@ -3341,6 +3341,8 @@ export default {
           "Velg høyst {limit} objekter, eller rediger alle objekter som samsvarer med søket og filtrene.",
         selectionOutsideOrganization:
           "Noen av de valgte objektene tilhører en annen organisasjon. Last inn siden på nytt og velg dem igjen.",
+        filterRequired:
+          "Søk eller filtrer katalogen først, så endringen ikke gjelder alle objekter.",
         editRunning:
           "En annen feltendring pågår i denne organisasjonen. Vent til den er ferdig, eller stopp den først.",
         editNotFound: "Denne endringen finnes ikke lenger.",
@@ -10787,7 +10789,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Eksporter alle filtrerte resultater",
     catalogComplete: "Eksporter hele katalogen",
     auditComplete: "Eksporter hele revisjonsloggen",
     auditFiltered: "Eksporter hele den filtrerte revisjonsloggen",
@@ -10802,6 +10803,7 @@ export default {
     sourceAudit: "Revisjon",
     sourceSelected: "Valgte objekter",
     sourceCatalog: "Filtrert katalog",
+    sourceCompleteCatalog: "Hele katalogen",
     statusSelecting: "Laster opp utvalg",
     statusQueued: "I kø",
     statusRunning: "Kjører",
@@ -10833,6 +10835,8 @@ export default {
       "Utvalget kunne ikke eksporteres. Prøv opplastingen på nytt eller opprett et nytt utvalg.",
     errorTooLarge:
       "Denne eksporten er for stor. Begrens filtrene eller utvalget.",
+    errorCatalogTooLarge:
+      "Hele katalogen er for stor for én eksport. Velg objekter under Objektkatalog og eksporter dem i mindre omganger.",
     errorInventoryLinks:
       "Et objekt har for mange lånekoblinger for dette beholdningsfilteret. Eksporter valgte objekter i stedet.",
     errorInvalidRequest:
@@ -10961,18 +10965,17 @@ export default {
     page: {
       title: "Målingsstatus",
       description:
-        "Tilgjengelighet for målinger i oversikt, rapporter og bruk. Gjenoppbygging og avstemming starter av seg selv når poster endres.",
+        "Tilgjengelighet for målinger i oversikt, rapporter og bruk. De oppdateres ved hver endring i postene.",
       selectOrganization: "Velg en organisasjon for å se målingsstatus.",
       noPermission:
         "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å se målingsstatus.",
       statusTitle: "Status",
       automatic:
-        "Målingene bygges på nytt når de blir utilgjengelige, og avstemmes etter endringer i postene, høyst én gang i timen.",
+        "Målingene bygges på nytt av seg selv når de blir utilgjengelige. En avstemming teller alle postene på nytt og kjøres bare når kundestøtte starter den, for eksempel etter gjenoppretting fra sikkerhetskopi.",
       definitionVersion: "Definisjonsversjon",
       definitionOutdated: "Lagret {stored}, gjeldende {current}",
       lastBuilt: "Sist bygget",
       lastVerified: "Sist avstemt",
-      nextReconcile: "Neste avstemming",
       invalidated: "Ugyldiggjort",
       limits: "Grenser for gjenoppbygging",
       limitsValue:

@@ -3380,6 +3380,8 @@ export default {
           "Seleccione como máximo {limit} objetos, o edite todos los objetos que coinciden con la búsqueda y los filtros.",
         selectionOutsideOrganization:
           "Algunos objetos seleccionados pertenecen a otra organización. Actualice la página y vuelva a seleccionarlos.",
+        filterRequired:
+          "Primero busque o filtre el catálogo, para que la edición no cambie todos los objetos.",
         editRunning:
           "Ya hay otra edición de campo en curso en esta organización. Espere a que termine o deténgala primero.",
         editNotFound: "Esta edición ya no existe.",
@@ -10925,7 +10927,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Exportar todos los resultados filtrados",
     catalogComplete: "Exportar catálogo completo",
     auditComplete: "Exportar historial de auditoría completo",
     auditFiltered: "Exportar historial de auditoría filtrado completo",
@@ -10940,6 +10941,7 @@ export default {
     sourceAudit: "Auditoría",
     sourceSelected: "Objetos seleccionados",
     sourceCatalog: "Catálogo filtrado",
+    sourceCompleteCatalog: "Catálogo completo",
     statusSelecting: "Cargando selección",
     statusQueued: "En cola",
     statusRunning: "En curso",
@@ -10973,6 +10975,8 @@ export default {
       "No se pudo exportar la selección. Reintente la carga o cree una nueva selección.",
     errorTooLarge:
       "Esta exportación es demasiado grande. Acote los filtros o la selección.",
+    errorCatalogTooLarge:
+      "El catálogo completo es demasiado grande para una sola exportación. Seleccione objetos en el Catálogo de objetos y expórtelos en lotes más pequeños.",
     errorInventoryLinks:
       "Un objeto tiene demasiados vínculos de préstamo para este filtro de inventario. Exporte los objetos seleccionados en su lugar.",
     errorInvalidRequest:
@@ -11103,19 +11107,18 @@ export default {
     page: {
       title: "Estado de métricas",
       description:
-        "Disponibilidad de las métricas del panel, informes y uso. Las reconstrucciones y conciliaciones se inician solas cuando cambian los registros.",
+        "Disponibilidad de las métricas del panel, informes y uso. Se actualizan con cada cambio en los registros.",
       selectOrganization:
         "Seleccione una organización para ver el estado de las métricas.",
       noPermission:
         "Necesita permiso para gestionar la configuración de la organización para ver el estado de las métricas.",
       statusTitle: "Estado",
       automatic:
-        "Las métricas se reconstruyen cuando dejan de estar disponibles y se concilian tras los cambios en los registros, como máximo una vez por hora.",
+        "Las métricas se reconstruyen solas cuando dejan de estar disponibles. Una conciliación vuelve a contar todos los registros y solo se ejecuta cuando la inicia el equipo de soporte, por ejemplo tras recuperar una copia de seguridad.",
       definitionVersion: "Versión de definición",
       definitionOutdated: "Almacenada {stored}, actual {current}",
       lastBuilt: "Última generación",
       lastVerified: "Última conciliación",
-      nextReconcile: "Próxima conciliación",
       invalidated: "Invalidada",
       limits: "Límites de reconstrucción",
       limitsValue:

@@ -193,8 +193,12 @@ export const getNotificationCenter = query({
   },
 });
 
+/** The bell shows up to nine unread notifications, and 9+ beyond. */
+const BELL_UNREAD_LIMIT = 10;
+
 /**
- * Get unread notification count (lightweight)
+ * Counts the viewer's unread notifications for the bell, up to 10. The bell
+ * is on every page, so it never reads more notifications than it can show.
  */
 export const getUnreadCount = query({
   args: {
@@ -215,7 +219,7 @@ export const getUnreadCount = query({
           .eq("organizationId", args.organizationId)
           .eq("read", false),
       )
-      .collect();
+      .take(BELL_UNREAD_LIMIT);
 
     return unreadNotifications.length;
   },

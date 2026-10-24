@@ -2722,6 +2722,8 @@ export default {
           "Select at most {limit} objects, or edit all objects that match the search and filters instead.",
         selectionOutsideOrganization:
           "Some selected objects belong to another organization. Refresh the page and select them again.",
+        filterRequired:
+          "Search or filter the catalog first, so the edit doesn't change every object.",
         editRunning:
           "Another field edit is running in this organization. Wait for it to finish or stop it first.",
         editNotFound: "This edit no longer exists.",
@@ -10666,7 +10668,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Export full filtered results",
     catalogComplete: "Export complete catalog",
     auditComplete: "Export complete audit history",
     auditFiltered: "Export complete filtered audit history",
@@ -10681,6 +10682,7 @@ export default {
     sourceAudit: "Audit",
     sourceSelected: "Selected objects",
     sourceCatalog: "Filtered catalog",
+    sourceCompleteCatalog: "Complete catalog",
     statusSelecting: "Uploading selection",
     statusQueued: "Queued",
     statusRunning: "Running",
@@ -10710,6 +10712,8 @@ export default {
     errorSelection:
       "The selection could not be exported. Retry the upload or create a new selection.",
     errorTooLarge: "This export is too large. Narrow the filters or selection.",
+    errorCatalogTooLarge:
+      "The whole catalog is too large for one export. Select objects in the Object Catalog and export them in smaller batches.",
     errorInventoryLinks:
       "An object has too many loan links for this inventory filter. Export selected objects instead.",
     errorInvalidRequest:
@@ -10838,18 +10842,17 @@ export default {
     page: {
       title: "Metrics health",
       description:
-        "Readiness of dashboard, report and usage metrics. Rebuilds and reconciliations start on their own as records change.",
+        "Readiness of dashboard, report and usage metrics. They update with every record change.",
       selectOrganization: "Select an organization to view metrics health.",
       noPermission:
         "You need permission to manage organization settings to view metrics health.",
       statusTitle: "Status",
       automatic:
-        "Metrics rebuild when they become unavailable, and reconcile after records change, at most once an hour.",
+        "Metrics rebuild on their own when they become unavailable. A reconciliation recounts every record and runs only when support starts one, for example after restoring a backup.",
       definitionVersion: "Definition version",
       definitionOutdated: "Stored {stored}, current {current}",
       lastBuilt: "Last built",
       lastVerified: "Last reconciled",
-      nextReconcile: "Next reconciliation",
       invalidated: "Invalidated",
       limits: "Rebuild limits",
       limitsValue:

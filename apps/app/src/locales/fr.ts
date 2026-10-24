@@ -3389,6 +3389,8 @@ export default {
           "Sélectionnez au plus {limit} objets, ou modifiez tous les objets correspondant à la recherche et aux filtres.",
         selectionOutsideOrganization:
           "Certains objets sélectionnés appartiennent à une autre organisation. Actualisez la page et sélectionnez-les à nouveau.",
+        filterRequired:
+          "Recherchez ou filtrez d'abord le catalogue, pour que la modification ne change pas tous les objets.",
         editRunning:
           "Une autre modification de champ est en cours dans cette organisation. Attendez qu’elle se termine ou arrêtez-la d’abord.",
         editNotFound: "Cette modification n’existe plus.",
@@ -10961,7 +10963,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Exporter tous les résultats filtrés",
     catalogComplete: "Exporter le catalogue complet",
     auditComplete: "Exporter l'historique d'audit complet",
     auditFiltered: "Exporter l'historique d'audit filtré complet",
@@ -10976,6 +10977,7 @@ export default {
     sourceAudit: "Audit",
     sourceSelected: "Objets sélectionnés",
     sourceCatalog: "Catalogue filtré",
+    sourceCompleteCatalog: "Catalogue complet",
     statusSelecting: "Envoi de la sélection",
     statusQueued: "En file d'attente",
     statusRunning: "En cours",
@@ -11008,6 +11010,8 @@ export default {
       "La sélection n'a pas pu être exportée. Relancez l'envoi ou créez une nouvelle sélection.",
     errorTooLarge:
       "Cet export est trop volumineux. Restreignez les filtres ou la sélection.",
+    errorCatalogTooLarge:
+      "Le catalogue complet est trop volumineux pour un seul export. Sélectionnez des objets dans le Catalogue des objets et exportez-les par lots plus petits.",
     errorInventoryLinks:
       "Un objet a trop de liens de prêt pour ce filtre d'inventaire. Exportez plutôt les objets sélectionnés.",
     errorInvalidRequest:
@@ -11140,19 +11144,18 @@ export default {
     page: {
       title: "État des indicateurs",
       description:
-        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation. Les reconstructions et rapprochements démarrent d'eux-mêmes quand les enregistrements changent.",
+        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation. Ils se mettent à jour à chaque modification d'un enregistrement.",
       selectOrganization:
         "Sélectionnez une organisation pour voir l'état des indicateurs.",
       noPermission:
         "Vous devez pouvoir gérer les paramètres de l'organisation pour voir l'état des indicateurs.",
       statusTitle: "Statut",
       automatic:
-        "Les indicateurs se reconstruisent lorsqu'ils deviennent indisponibles et sont rapprochés après les modifications des enregistrements, au plus une fois par heure.",
+        "Les indicateurs se reconstruisent d'eux-mêmes lorsqu'ils deviennent indisponibles. Un rapprochement recompte tous les enregistrements et ne démarre que lorsque le support le lance, par exemple après la restauration d'une sauvegarde.",
       definitionVersion: "Version de définition",
       definitionOutdated: "Enregistrée {stored}, actuelle {current}",
       lastBuilt: "Dernière génération",
       lastVerified: "Dernier rapprochement",
-      nextReconcile: "Prochain rapprochement",
       invalidated: "Invalidé",
       limits: "Limites de reconstruction",
       limitsValue:
