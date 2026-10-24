@@ -14,7 +14,16 @@
  */
 
 import type { Doc } from "../_generated/dataModel";
+import type {
+  Completeness,
+  MeasuredPart,
+  MeasurementSet,
+} from "./objectDescription";
 import { productionDateSummary } from "./productionDates";
+import {
+  type RightsStatementUri,
+  rightsStatementInEffect,
+} from "./rightsStatements";
 
 /**
  * SPECTRUM Object Entry record (Accession)
@@ -59,6 +68,8 @@ export interface SpectrumObjectRecord {
   otherNumbers?: string[];
   /** Simple name or classification (Object name) */
   objectName?: string;
+  /** How many things the record describes (Number of objects) */
+  numberOfObjects?: number;
   /** Title or descriptive name (Title) */
   title: string;
   /** Full description (Description) */
@@ -89,6 +100,10 @@ export interface SpectrumObjectRecord {
   dimensionWidth?: number;
   dimensionDepth?: number;
   dimensionUnit?: string;
+  /** The part they were taken from (Dimension measured part) */
+  dimensionMeasuredPart?: MeasuredPart;
+  /** Further measurements, one set per part */
+  measurementSets?: MeasurementSet[];
   /** Weight */
   weight?: number;
   weightUnit?: string;
@@ -96,6 +111,9 @@ export interface SpectrumObjectRecord {
   inscription?: string;
   /** Current condition (Condition) */
   condition?: string;
+  /** Completeness and Completeness note */
+  completeness?: Completeness;
+  completenessNote?: string;
   /** Current location (Current location) */
   currentLocation?: string;
   /** Acquisition method */
@@ -106,8 +124,12 @@ export interface SpectrumObjectRecord {
   exhibitionHistory?: string;
   /** Credit line */
   creditLine?: string;
+  /** The rights statement URI in effect: the Object's own or the default */
+  rightsStatement?: RightsStatementUri;
   /** Object type classification */
   objectType?: string;
+  /** What the Object depicts or is about (Content - concept) */
+  subjects?: string[];
   /** Tags/keywords for categorization */
   keywords?: string[];
   /** Legal restrictions flag */
@@ -173,9 +195,11 @@ export function collectionToSpectrum(
   collection: Partial<Doc<"collections">>,
   options: {
     includeAlternateNumbers?: boolean;
+    /** The Organization's statement for Objects without their own. */
+    defaultRightsStatement?: RightsStatementUri;
   } = {},
 ): SpectrumObjectRecord {
-  const { includeAlternateNumbers = false } = options;
+  const { includeAlternateNumbers = false, defaultRightsStatement } = options;
 
   // Build other numbers from alternate accession numbers
   const otherNumbers = includeAlternateNumbers
@@ -191,6 +215,7 @@ export function collectionToSpectrum(
     objectNumber: collection.accessionNumber || "",
     otherNumbers,
     objectName: collection.objectName,
+    numberOfObjects: collection.numberOfObjects,
     title: collection.title || "Untitled",
     description: collection.description,
     maker: collection.creator,
@@ -208,16 +233,25 @@ export function collectionToSpectrum(
     dimensionWidth: collection.dimensionWidth,
     dimensionDepth: collection.dimensionDepth,
     dimensionUnit: collection.dimensionUnit,
+    dimensionMeasuredPart: collection.dimensionMeasuredPart,
+    measurementSets: collection.measurementSets,
     weight: collection.dimensionWeight,
     weightUnit: collection.weightUnit,
     inscription: collection.inscriptions,
     condition: collection.condition,
+    completeness: collection.completeness,
+    completenessNote: collection.completenessNote,
     currentLocation: undefined, // Would need to resolve location ID
     acquisitionMethod: collection.acquisitionMethod,
     provenance: collection.provenance,
     exhibitionHistory: collection.exhibitionHistory,
     creditLine: collection.creditLine,
+    rightsStatement: rightsStatementInEffect(
+      collection.rightsStatement,
+      defaultRightsStatement,
+    ),
     objectType: collection.objectType,
+    subjects: collection.subjects,
     keywords,
     legalRestrictions: collection.legalRestrictions,
     publiclyVisible: collection.isPubliclyVisible,
@@ -242,6 +276,7 @@ export function spectrumToCollection(
     accessionNumber: record.objectNumber,
     alternateAccessionNumbers,
     objectName: record.objectName,
+    numberOfObjects: record.numberOfObjects,
     title: record.title,
     description: record.description,
     creator: record.maker,
@@ -255,15 +290,21 @@ export function spectrumToCollection(
     dimensionWidth: record.dimensionWidth,
     dimensionDepth: record.dimensionDepth,
     dimensionUnit: record.dimensionUnit,
+    dimensionMeasuredPart: record.dimensionMeasuredPart,
+    measurementSets: record.measurementSets,
     dimensionWeight: record.weight,
     weightUnit: record.weightUnit,
     inscriptions: record.inscription,
     condition: record.condition,
+    completeness: record.completeness,
+    completenessNote: record.completenessNote,
     acquisitionMethod: record.acquisitionMethod,
     provenance: record.provenance,
     exhibitionHistory: record.exhibitionHistory,
     creditLine: record.creditLine,
+    rightsStatement: record.rightsStatement,
     objectType: record.objectType,
+    subjects: record.subjects,
     tags: record.keywords,
     legalRestrictions: record.legalRestrictions,
     isPubliclyVisible: record.publiclyVisible,
@@ -313,6 +354,7 @@ export function toSpectrumXML(
   addElement("objectNumber", record.objectNumber);
   addArrayElement("otherNumber", record.otherNumbers);
   addElement("objectName", record.objectName);
+  addElement("numberOfObjects", record.numberOfObjects);
   addElement("title", record.title);
   addElement("description", record.description);
   addElement("maker", record.maker);
@@ -327,13 +369,28 @@ export function toSpectrumXML(
   addElement("technique", record.technique);
   addElement("dimension", record.dimension);
 
-  // Structured dimensions
+  const nested = `${indent}${indent}`;
+  const measuredPartLines = (part: MeasuredPart, partNote?: string) => {
+    lines.push(`${nested}<measuredPart>${escapeXml(part)}</measuredPart>`);
+    if (partNote)
+      lines.push(`${nested}<partNote>${escapeXml(partNote)}</partNote>`);
+  };
+
+  // Structured dimensions; the weight goes with them when their part is
+  // stated, so the part names what was weighed too. A part is written only
+  // beside a measurement it names.
+  const mainPart = record.dimensionMeasuredPart;
+  const mainWeight = record.weight
+    ? `<weight unit="${escapeXml(record.weightUnit || "kg")}">${record.weight}</weight>`
+    : undefined;
   if (
     record.dimensionHeight ||
     record.dimensionWidth ||
-    record.dimensionDepth
+    record.dimensionDepth ||
+    (mainPart && mainWeight)
   ) {
     lines.push(`${indent}<dimensions>`);
+    if (mainPart) measuredPartLines(mainPart);
     if (record.dimensionHeight) {
       lines.push(
         `${indent}${indent}<height unit="${escapeXml(record.dimensionUnit || "cm")}">${record.dimensionHeight}</height>`,
@@ -349,23 +406,41 @@ export function toSpectrumXML(
         `${indent}${indent}<depth unit="${escapeXml(record.dimensionUnit || "cm")}">${record.dimensionDepth}</depth>`,
       );
     }
+    if (mainPart && mainWeight) lines.push(`${nested}${mainWeight}`);
     lines.push(`${indent}</dimensions>`);
   }
 
-  if (record.weight) {
-    lines.push(
-      `${indent}<weight unit="${escapeXml(record.weightUnit || "kg")}">${record.weight}</weight>`,
-    );
+  if (!mainPart && mainWeight) lines.push(`${indent}${mainWeight}`);
+
+  // One block per further set; a unit is written only when recorded
+  for (const set of record.measurementSets ?? []) {
+    lines.push(`${indent}<dimensions>`);
+    measuredPartLines(set.part, set.partNote);
+    for (const name of ["height", "width", "depth", "diameter"] as const) {
+      const value = set[name];
+      if (value === undefined) continue;
+      const unit = set.unit ? ` unit="${escapeXml(set.unit)}"` : "";
+      lines.push(`${nested}<${name}${unit}>${value}</${name}>`);
+    }
+    if (set.weight !== undefined) {
+      const unit = set.weightUnit ? ` unit="${escapeXml(set.weightUnit)}"` : "";
+      lines.push(`${nested}<weight${unit}>${set.weight}</weight>`);
+    }
+    lines.push(`${indent}</dimensions>`);
   }
 
   addElement("inscription", record.inscription);
   addElement("condition", record.condition);
+  addElement("completeness", record.completeness);
+  addElement("completenessNote", record.completenessNote);
   addElement("currentLocation", record.currentLocation);
   addElement("acquisitionMethod", record.acquisitionMethod);
   addElement("provenance", record.provenance);
   addElement("exhibitionHistory", record.exhibitionHistory);
   addElement("creditLine", record.creditLine);
+  addElement("rightsStatement", record.rightsStatement);
   addElement("objectType", record.objectType);
+  addArrayElement("subject", record.subjects);
   addArrayElement("keyword", record.keywords);
   addElement("legalRestrictions", record.legalRestrictions);
   addElement("publiclyVisible", record.publiclyVisible);
@@ -443,6 +518,7 @@ export function collectionsToSpectrum(
   collections: Partial<Doc<"collections">>[],
   options: {
     includeAlternateNumbers?: boolean;
+    defaultRightsStatement?: RightsStatementUri;
   } = {},
 ): SpectrumObjectRecord[] {
   return collections.map((collection) =>

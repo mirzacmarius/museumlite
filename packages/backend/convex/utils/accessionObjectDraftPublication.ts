@@ -15,7 +15,7 @@ import {
 } from "./organizationUsageCounters";
 import { normalizeDraftMediaPrimary } from "./primaryMedia";
 import { syncPublicRendition } from "./publicMedia";
-import { canonicalEdtf } from "./recordEdits";
+import { canonicalEdtf, publishedObjectDescription } from "./recordEdits";
 import { transferStorageOwnership } from "./uploadOwnership";
 
 function serializeStringList(values?: string[]) {
@@ -70,6 +70,7 @@ export async function publishAccessionObjectDraft(
       : []);
   const uniqueCollectionGroupIds = [...new Set(collectionGroupIds)];
   const condition = draftObjectData?.condition?.trim() || undefined;
+  const described = publishedObjectDescription(draftObjectData ?? {});
   const conditionHistory = condition
     ? [await buildConditionHistoryEntry(ctx, catalogedBy, condition, undefined)]
     : undefined;
@@ -88,6 +89,7 @@ export async function publishAccessionObjectDraft(
       creator: draftObjectData?.creator,
       objectType: serializeStringList(draftObjectData?.objectType),
       objectName: draftObjectData?.objectName,
+      numberOfObjects: described.numberOfObjects,
       culture: draftObjectData?.culture,
       period: draftObjectData?.period,
       dateCreated: draftObjectData?.dateCreated,
@@ -103,13 +105,19 @@ export async function publishAccessionObjectDraft(
       dimensionDiameter: draftObjectData?.dimensionDiameter,
       dimensionWeight: draftObjectData?.dimensionWeight,
       weightUnit: draftObjectData?.weightUnit,
+      dimensionMeasuredPart: draftObjectData?.dimensionMeasuredPart,
+      measurementSets: described.measurementSets,
       description: draftObjectData?.description,
       condition,
       conditionHistory,
+      completeness: draftObjectData?.completeness,
+      completenessNote: described.completenessNote,
       inscriptions: draftObjectData?.inscriptions,
       inscriptionMarks: draftObjectData?.inscriptionMarks,
       tags: draftObjectData?.tags,
+      subjects: described.subjects,
       creditLine: draftObjectData?.creditLine,
+      rightsStatement: described.rightsStatement,
       legalRestrictions: draftObjectData?.legalRestrictions,
       provenance: draftObjectData?.provenance,
       exhibitionHistory: draftObjectData?.exhibitionHistory,

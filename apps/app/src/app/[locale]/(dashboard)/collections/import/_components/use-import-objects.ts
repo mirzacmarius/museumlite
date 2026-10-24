@@ -16,6 +16,7 @@ import {
   type ImportState,
   MAX_IMPORT_ROWS,
   OBJECT_IMPORT_TEMPLATE_CSV,
+  OPTIONAL_COLUMNS,
   type ParsedRow,
 } from "./import-objects-types";
 
@@ -25,27 +26,6 @@ interface UseImportObjectsOptions {
   setState: React.Dispatch<React.SetStateAction<ImportState>>;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
-
-const OPTIONAL_FIELDS = [
-  "accessionNumber",
-  "alternativeTitle",
-  "creator",
-  "objectType",
-  "objectName",
-  "culture",
-  "period",
-  "dateCreated",
-  "dateCreatedEdtf",
-  "materials",
-  "technique",
-  "dimensions",
-  "description",
-  "condition",
-  "provenance",
-  "location",
-  "collectionGroup",
-  "collectionGroups",
-] as const;
 
 /**
  * Maps every source row. Rows without a title are still sent so the server
@@ -70,7 +50,7 @@ export function mapRawRows(
       rowNumber,
       title: getValue(values, "title") ?? "",
     };
-    for (const field of OPTIONAL_FIELDS) {
+    for (const field of OPTIONAL_COLUMNS) {
       row[field] = getValue(values, field);
     }
     if (!row.title) {

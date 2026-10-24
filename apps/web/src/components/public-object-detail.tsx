@@ -1,7 +1,11 @@
 "use client";
 
+import {
+  type RightsStatement,
+  rightsStatementByUri,
+} from "@v1/backend/convex/utils/rightsStatements";
 import { Button } from "@v1/ui/button";
-import { Download, Tag } from "lucide-react";
+import { Download, ExternalLink, Tag } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { ClientDate } from "@/components/client-date";
@@ -42,6 +46,8 @@ interface PublicObjectImage {
   isPrimary: boolean;
   caption?: string;
   originalDownloadUrl?: string;
+  /** The image's rights statement URI: its own or its Organization's default. */
+  rightsStatement?: string | null;
 }
 
 interface PublicObjectValuation {
@@ -70,6 +76,8 @@ export interface PublicObjectDetailData {
   exhibitionHistory?: string | null;
   valuation?: PublicObjectValuation | null;
   creditLine?: string | null;
+  /** The Object's rights statement URI: its own or its Organization's default. */
+  rightsStatement?: string | null;
   tags?: string[] | null;
   organizationName: string;
   images: PublicObjectImage[];
@@ -78,6 +86,56 @@ export interface PublicObjectDetailData {
 
 interface PublicObjectDetailProps {
   object: PublicObjectDetailData;
+}
+
+/** A rights statement's name in the page language, linked to its URI. */
+function RightsStatementLink({ statement }: { statement: RightsStatement }) {
+  const { t } = useWebI18n();
+  return (
+    <a
+      href={statement.uri}
+      target="_blank"
+      rel="license noopener noreferrer"
+      className="inline-flex items-start gap-1 break-words text-white/80 underline-offset-4 hover:text-white hover:underline"
+    >
+      {t(`public.rightsStatements.${statement.code}`)}
+      <ExternalLink className="mt-1 size-3 shrink-0" aria-hidden />
+    </a>
+  );
+}
+
+function PublicImageRights({ uri }: { uri?: string | null }) {
+  const { t } = useWebI18n();
+  const statement = rightsStatementByUri(uri);
+  if (!statement) {
+    return null;
+  }
+
+  return (
+    <p className="text-sm">
+      <span className="mr-2 text-xs uppercase tracking-wider text-white/40">
+        {t("public.imageRights")}
+      </span>
+      <RightsStatementLink statement={statement} />
+    </p>
+  );
+}
+
+function PublicObjectRights({ uri }: { uri?: string | null }) {
+  const { t } = useWebI18n();
+  const statement = rightsStatementByUri(uri);
+  if (!statement) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h2 className="mb-2 text-xs uppercase tracking-wider text-white/40">
+        {t("public.rights")}
+      </h2>
+      <RightsStatementLink statement={statement} />
+    </div>
+  );
 }
 
 function PublicObjectGallery({ object }: PublicObjectDetailProps) {
@@ -107,6 +165,8 @@ function PublicObjectGallery({ object }: PublicObjectDetailProps) {
           {t("common.noImageAvailable")}
         </div>
       )}
+
+      <PublicImageRights uri={currentImage?.rightsStatement} />
 
       {sortedImages.length > 1 ? (
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -328,6 +388,7 @@ function PublicObjectInformation({ object }: PublicObjectDetailProps) {
           <p className="text-white/60 italic">{object.creditLine}</p>
         </div>
       ) : null}
+      <PublicObjectRights uri={object.rightsStatement} />
       <PublicObjectTags tags={object.tags} />
       <div className="border-white/10 border-t pt-4">
         <p className="text-sm text-white/40">

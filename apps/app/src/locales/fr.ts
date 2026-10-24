@@ -424,6 +424,17 @@ export default {
         transferError:
           "Impossible de transférer la propriété. Veuillez réessayer.",
       },
+      rightsDefaults: {
+        title: "Déclarations des droits",
+        description:
+          "La déclaration qu’affiche un objet ou une image qui n’en indique aucune. Une modification s’applique aussitôt à tous ces enregistrements.",
+        objects: "Objets",
+        images: "Images",
+        noDefault: "Aucune valeur par défaut",
+        save: "Enregistrer les déclarations des droits",
+        saveError:
+          "Impossible d’enregistrer les déclarations des droits. Réessayez.",
+      },
     },
     developer: {
       selectOrganization:
@@ -3268,7 +3279,8 @@ export default {
         objectName: "Nom de l’objet",
         objectType: "Type d’objet",
         description: "Description",
-        tags: "Étiquettes de sujet",
+        subjects: "Sujet",
+        tags: "Étiquettes",
         inscriptions: "Inscriptions",
         materials: "Matériaux",
         technique: "Technique",
@@ -5546,6 +5558,9 @@ export default {
       invalidExpiry: "Saisissez une date valide.",
       failed: "Mise à jour impossible. Réessayez.",
       unavailable: "Image indisponible",
+      rightsStatement: "Déclaration des droits",
+      rightsStatementHint:
+        "Affichée avec l’image dans le portail public. Modifier uniquement la déclaration conserve son approbation pour le téléchargement de l’original.",
     },
     title: "Bibliothèque Multimédia",
     description: "Tous les fichiers multimédias de votre collection.",
@@ -5584,6 +5599,7 @@ export default {
       save: "Enregistrer",
       saving: "Enregistrement...",
       cancel: "Annuler",
+      rightsStatement: "Déclaration des droits",
     },
   },
   organizationsOverview: {
@@ -6103,19 +6119,21 @@ export default {
     requirements: {
       object_type: "Type d’objet",
       object_name: "Dénomination",
+      number_of_objects: "Nombre d’objets",
       maker: "Auteur",
       production_date: "Date de production",
       materials: "Matériaux",
       dimensions: "Dimensions",
       inscriptions: "Inscriptions et marques",
       description: "Description",
-      subject: "Étiquettes de sujet",
+      subject: "Sujet",
       current_location: "Emplacement actuel",
       condition_assessment: "Constat d’état accepté",
       image: "Photographie",
       supporting_document: "Document justificatif",
       accession_record: "Inscription à l’inventaire approuvée",
       provenance_claim: "Assertion de provenance",
+      rights_statement: "Déclaration des droits",
     },
     orphanFields: {
       parentObject: "Objet parent",
@@ -8294,6 +8312,7 @@ export default {
           creator: "Créateur",
           objectType: "Type d’objet",
           objectName: "Nom de l’objet",
+          numberOfObjects: "Nombre d’objets",
           culture: "Culture",
           period: "Période",
           dateCreated: "Date de production",
@@ -8301,9 +8320,15 @@ export default {
           materials: "Matériaux",
           technique: "Technique",
           dimensions: "Dimensions",
+          dimensionMeasuredPart: "Partie mesurée",
+          measurementSets: "Autres parties mesurées",
           description: "Description",
+          subjects: "Sujet",
           condition: "État",
+          completeness: "Intégrité",
+          completenessNote: "Note sur l’intégrité",
           provenance: "Provenance",
+          rightsStatement: "Déclaration des droits",
           location: "Emplacement",
           collectionGroup: "Groupe de collection",
           collectionGroups: "Tous les groupes de collection",
@@ -8316,6 +8341,8 @@ export default {
           creator: "Artiste, fabricant ou créateur",
           objectType: "Type ou catégorie d’objet",
           objectName: "Nom spécifique de l’objet",
+          numberOfObjects:
+            "Nombre entier de choses que décrit la fiche, par exemple 2 pour une paire",
           culture: "Origine culturelle",
           period: "Période historique",
           dateCreated:
@@ -8325,9 +8352,20 @@ export default {
           materials: "Matériaux utilisés",
           technique: "Technique de fabrication",
           dimensions: "Dimensions physiques",
+          dimensionMeasuredPart:
+            "Partie sur laquelle les dimensions ont été prises : overall, framed, unframed, image, sight, sheet, plate, mount, base ou other, ou son nom tel qu’il apparaît dans l’application",
+          measurementSets:
+            "Liste JSON d’autres parties mesurées, telle que l’export des données l’écrit. Chacune a un code de partie et au moins une valeur parmi height, width, depth, diameter ou weight",
           description: "Description détaillée",
+          subjects:
+            "Ce que l’objet représente ou ce dont il traite ; séparez les termes par des points-virgules",
           condition: "État actuel",
+          completeness:
+            "Une valeur parmi complete, incomplete ou fragment, ou son nom tel qu’il apparaît dans l’application",
+          completenessNote: "Ce qui manque ou ce qui est inclus",
           provenance: "Historique de propriété",
+          rightsStatement:
+            "Une déclaration RightsStatements.org, CC0, la Marque du domaine public ou une licence Creative Commons 4.0, sous forme d’URI ou de code comme InC, CC0 ou CC BY 4.0",
           location: "Emplacement actuel",
           collectionGroup: "Nom de la collection ou du groupe",
           collectionGroups:
@@ -11197,6 +11235,18 @@ export default {
         "Vos modifications n'ont pas pu être enregistrées. Vérifiez votre connexion et réessayez.",
       productionDateInvalid:
         "La date structurée n'est pas une date valide. Vérifiez ses parties et réessayez.",
+      objectCountInvalid:
+        "Saisissez le nombre d’objets sous forme de nombre entier de 1 à {max}.",
+      subjectsInvalid:
+        "Saisissez au plus {max} termes de sujet, de {length} caractères au plus chacun.",
+      measurementSetPartRequired:
+        "Choisissez la partie sur laquelle chaque ligne de mesures a été prise.",
+      measurementSetsInvalid:
+        "Donnez à chaque partie mesurée au moins une mesure supérieure à 0. Les notes et unités comptent au plus {length} caractères, et vous pouvez ajouter jusqu’à {max} parties.",
+      rightsStatementInvalid:
+        "Choisissez une déclaration des droits dans la liste.",
+      textTooLong:
+        "Le champ « {field} » est trop long. Raccourcissez-le et réessayez.",
     },
     notices: {
       recoveredTitle: "Modifications non enregistrées trouvées",
@@ -11265,6 +11315,26 @@ export default {
       draftMedia: "Photos et documents",
       alternateNumberExists:
         "Ce numéro d'accession alternatif figure déjà dans la liste.",
+      numberOfObjects: "Nombre d’objets",
+      numberOfObjectsHint:
+        "Combien de choses cette fiche décrit, par exemple 2 pour une paire ou 12 pour un service à thé.",
+      subjects: "Sujet",
+      subjectsHint:
+        "Ce que l’objet représente ou ce dont il traite, distinct des mots-clés. Appuyez sur Entrée ou Tab après chaque terme, ou séparez les termes par un point-virgule (;).",
+      measuredPart: "Partie mesurée",
+      choosePart: "Choisissez une partie",
+      notStated: "Non précisé",
+      partNote: "Note sur la partie",
+      measurementSets: "Autres parties mesurées",
+      measurementSetsHint:
+        "Mesures d’autres parties, comme le cadre ou le socle, une partie par ligne. Précisez la partie dans la note, par exemple couvercle.",
+      addMeasurementSet: "Ajouter une partie mesurée",
+      removeMeasurementSet: "Retirer la partie mesurée",
+      completeness: "Intégrité",
+      completenessNote: "Note sur l’intégrité",
+      rightsStatement: "Déclaration des droits",
+      rightsStatementHint:
+        "Les droits sur l’objet lui-même. Chaque image a sa propre déclaration.",
     },
   },
   moveRequests: {
@@ -11711,5 +11781,64 @@ export default {
       reopened: "Rouvert",
     },
     objectNone: "Aucun incident visible pour vous ne concerne cet objet.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Hors tout",
+      framed: "Encadré",
+      unframed: "Sans cadre",
+      image: "Image",
+      sight: "À vue",
+      sheet: "Feuille",
+      plate: "Cuvette",
+      mount: "Montage",
+      base: "Socle",
+      other: "Autre",
+    },
+    completeness: {
+      complete: "Complet",
+      incomplete: "Incomplet",
+      fragment: "Fragment",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "Protégé par le droit d’auteur",
+      InC_OW_EU: "Protégé par le droit d’auteur - Œuvre orpheline de l’UE",
+      InC_EDU:
+        "Protégé par le droit d’auteur - Utilisation à des fins éducatives autorisée",
+      InC_NC:
+        "Protégé par le droit d’auteur - Utilisation non commerciale autorisée",
+      InC_RUU:
+        "Protégé par le droit d’auteur - Titulaire(s) des droits introuvable(s) ou non identifiable(s)",
+      NoC_CR: "Pas de droit d’auteur - Restrictions contractuelles",
+      NoC_NC: "Pas de droit d’auteur - Utilisation non commerciale uniquement",
+      NoC_OKLR:
+        "Pas de droit d’auteur - Autres restrictions juridiques connues",
+      NoC_US: "Pas de droit d’auteur - États-Unis",
+      CNE: "Droit d’auteur non évalué",
+      UND: "Droit d’auteur indéterminé",
+      NKC: "Pas de droit d’auteur connu",
+      CC0: "CC0 1.0 Universel",
+      PDM: "Marque du domaine public 1.0",
+      CC_BY: "Licence Creative Commons Attribution 4.0 International",
+      CC_BY_SA:
+        "Licence Creative Commons Attribution - Partage dans les mêmes conditions 4.0 International",
+      CC_BY_NC:
+        "Licence Creative Commons Attribution - Pas d’utilisation commerciale 4.0 International",
+      CC_BY_NC_SA:
+        "Licence Creative Commons Attribution - Pas d’utilisation commerciale - Partage dans les mêmes conditions 4.0 International",
+      CC_BY_ND:
+        "Licence Creative Commons Attribution - Pas de modification 4.0 International",
+      CC_BY_NC_ND:
+        "Licence Creative Commons Attribution - Pas d’utilisation commerciale - Pas de modification 4.0 International",
+    },
+    groups: {
+      rightsstatements: "Déclarations RightsStatements.org",
+      creativecommons: "Licences et outils Creative Commons",
+    },
+    organizationDefault: "Valeur par défaut de l’organisation ({statement})",
+    notStated: "Non précisé",
+    inherited: "Valeur par défaut de l’organisation",
   },
 } as const;

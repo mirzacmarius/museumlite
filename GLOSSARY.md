@@ -44,6 +44,26 @@ _Avoid_: Mass update, batch edit
 When an Object was made, kept as staff wrote it and, when they structure it, as an EDTF date that wins over the text. Text in a recognised form ("c. 1850", "1850s", "before 1900", "500 BC") is read as a date; other text is shown as written and leaves the Object undated. The catalogue sorts and filters by the earliest and latest years of the date in effect, which are worked out and never stored on the Object (ADR 0021).
 _Avoid_: Date created (it reads as when the record was made), production year
 
+**Number of objects**:
+How many physical things one Object record describes: 1 for a single item, 2 for a pair of gloves, 12 for a tea set catalogued as one Object. A whole number from 1; absent means not recorded. It never feeds usage counts, quotas, loans or inventory counts.
+_Avoid_: Object count (the Organization's usage counter and a Location's occupancy), quantity
+
+**Subject**:
+What an Object depicts or is about, as a list of terms ("Hudson River", "farmhouse"). Object ID's Subject and Spectrum's content concept. It is kept apart from tags.
+_Avoid_: Tag, keyword
+
+**Tags**:
+Free keywords staff attach to an Object to find and group it. They say nothing about what the Object depicts; that is its Subject.
+_Avoid_: Subject tags, subject
+
+**Completeness**:
+Whether an Object is complete, incomplete or a fragment, with an optional note on what is missing. It is a fact about the Object, not its condition.
+_Avoid_: Condition (how well the Object has survived)
+
+**Measured part**:
+The part of an Object a set of measurements was taken from, such as overall, framed, image or base. The Object's main measurements may name their part, and further sets record one part each.
+_Avoid_: Dimension type, measurement type
+
 ### Intake and permanence
 
 **Entry**:
@@ -239,6 +259,14 @@ _Avoid_: Derivative (in staff copy), original, public rendition
 **Terms of use**:
 An Organization's published conditions for Licensed copies. Each publication is a new version, and every approval keeps the version it was granted under.
 _Avoid_: License (the rights status recorded on an image)
+
+**Rights statement**:
+The standard statement of the copyright status of an Object (the work itself) or of one of its images: one of the twelve RightsStatements.org statements, CC0, the Public Domain Mark or a Creative Commons 4.0 licence, stored as its URI. It describes the rights and is shown and exported; it never decides whether the portal shows an image, which the recorded rights do (ADR 0017, ADR 0022).
+_Avoid_: License (the rights status recorded on an image), copyright
+
+**Default rights statement**:
+The rights statement an Organization sets for its Objects, and the one it sets for its images. A record without its own statement takes the default when it is read, so changing the default changes every such record at once and a transferred Object follows its new Organization's default. Child Organizations do not inherit a parent's defaults.
+_Avoid_: Fallback license, inherited rights
 
 ## Translations
 

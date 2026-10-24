@@ -425,6 +425,17 @@ export default {
         transferError:
           "No se pudo transferir la propiedad. Inténtalo de nuevo.",
       },
+      rightsDefaults: {
+        title: "Declaraciones de derechos",
+        description:
+          "La declaración que muestra un objeto o una imagen cuando no registra una propia. Un cambio se aplica de inmediato a todos esos registros.",
+        objects: "Objetos",
+        images: "Imágenes",
+        noDefault: "Sin valor predeterminado",
+        save: "Guardar declaraciones de derechos",
+        saveError:
+          "No se pudieron guardar las declaraciones de derechos. Inténtalo de nuevo.",
+      },
     },
     developer: {
       selectOrganization:
@@ -3259,7 +3270,8 @@ export default {
         objectName: "Nombre del objeto",
         objectType: "Tipo de objeto",
         description: "Descripción",
-        tags: "Etiquetas de tema",
+        subjects: "Tema",
+        tags: "Etiquetas",
         inscriptions: "Inscripciones",
         materials: "Materiales",
         technique: "Técnica",
@@ -5532,6 +5544,9 @@ export default {
       invalidExpiry: "Introduce una fecha válida.",
       failed: "No se pudo actualizar. Inténtalo de nuevo.",
       unavailable: "Imagen no disponible",
+      rightsStatement: "Declaración de derechos",
+      rightsStatementHint:
+        "Se muestra con la imagen en el portal público. Cambiar solo la declaración mantiene su aprobación para la descarga del original.",
     },
     title: "Biblioteca de Medios",
     description: "Todos los archivos multimedia de su colección.",
@@ -5569,6 +5584,7 @@ export default {
       save: "Guardar",
       saving: "Guardando...",
       cancel: "Cancelar",
+      rightsStatement: "Declaración de derechos",
     },
   },
   organizationsOverview: {
@@ -6081,19 +6097,21 @@ export default {
     requirements: {
       object_type: "Tipo de objeto",
       object_name: "Nombre del objeto",
+      number_of_objects: "Número de objetos",
       maker: "Autor",
       production_date: "Fecha de producción",
       materials: "Materiales",
       dimensions: "Dimensiones",
       inscriptions: "Inscripciones y marcas",
       description: "Descripción",
-      subject: "Etiquetas de tema",
+      subject: "Tema",
       current_location: "Ubicación actual",
       condition_assessment: "Evaluación del estado aceptada",
       image: "Fotografía",
       supporting_document: "Documento justificativo",
       accession_record: "Registro de accesión aprobado",
       provenance_claim: "Afirmación de procedencia",
+      rights_statement: "Declaración de derechos",
     },
     orphanFields: {
       parentObject: "Objeto principal",
@@ -8267,6 +8285,7 @@ export default {
           creator: "Creador",
           objectType: "Tipo de objeto",
           objectName: "Nombre del objeto",
+          numberOfObjects: "Número de objetos",
           culture: "Cultura",
           period: "Período",
           dateCreated: "Fecha de producción",
@@ -8274,9 +8293,15 @@ export default {
           materials: "Materiales",
           technique: "Técnica",
           dimensions: "Dimensiones",
+          dimensionMeasuredPart: "Parte medida",
+          measurementSets: "Otras partes medidas",
           description: "Descripción",
+          subjects: "Tema",
           condition: "Estado",
+          completeness: "Integridad",
+          completenessNote: "Nota sobre la integridad",
           provenance: "Procedencia",
+          rightsStatement: "Declaración de derechos",
           location: "Ubicación",
           collectionGroup: "Grupo de colección",
           collectionGroups: "Todos los grupos de colección",
@@ -8289,6 +8314,8 @@ export default {
           creator: "Artista, fabricante o creador",
           objectType: "Tipo o categoría de objeto",
           objectName: "Nombre específico del objeto",
+          numberOfObjects:
+            "Número entero de cosas que describe el registro, por ejemplo 2 para un par",
           culture: "Origen cultural",
           period: "Período histórico",
           dateCreated:
@@ -8298,9 +8325,20 @@ export default {
           materials: "Materiales utilizados",
           technique: "Técnica de producción",
           dimensions: "Dimensiones físicas",
+          dimensionMeasuredPart:
+            "Parte de la que se tomaron las dimensiones: overall, framed, unframed, image, sight, sheet, plate, mount, base u other, o su nombre tal como aparece en la aplicación",
+          measurementSets:
+            "Lista JSON de otras partes medidas, tal como la escribe la exportación de datos. Cada una lleva un código de parte y al menos un valor entre height, width, depth, diameter o weight",
           description: "Descripción detallada",
+          subjects:
+            "Lo que el objeto representa o de lo que trata; separe los términos con punto y coma",
           condition: "Estado actual",
+          completeness:
+            "Uno de complete, incomplete o fragment, o su nombre tal como aparece en la aplicación",
+          completenessNote: "Lo que falta o lo que incluye",
           provenance: "Historial de propiedad",
+          rightsStatement:
+            "Una declaración de RightsStatements.org, CC0, la Marca de dominio público o una licencia Creative Commons 4.0, como su URI o un código como InC, CC0 o CC BY 4.0",
           location: "Ubicación actual",
           collectionGroup: "Nombre de la colección o del grupo",
           collectionGroups:
@@ -11158,6 +11196,17 @@ export default {
         "No se pudieron guardar sus cambios. Compruebe su conexión e inténtelo de nuevo.",
       productionDateInvalid:
         "La fecha estructurada no es una fecha válida. Revise sus partes e inténtelo de nuevo.",
+      objectCountInvalid:
+        "Introduzca el número de objetos como un número entero de 1 a {max}.",
+      subjectsInvalid:
+        "Introduzca hasta {max} términos de tema, de hasta {length} caracteres cada uno.",
+      measurementSetPartRequired:
+        "Elija la parte de la que se tomó cada fila de medidas.",
+      measurementSetsInvalid:
+        "Dé a cada parte medida al menos una medida mayor que 0. Las notas y unidades admiten hasta {length} caracteres, y se pueden añadir hasta {max} partes.",
+      rightsStatementInvalid: "Elija una declaración de derechos de la lista.",
+      textTooLong:
+        "El campo «{field}» es demasiado largo. Acórtelo e inténtelo de nuevo.",
     },
     notices: {
       recoveredTitle: "Se encontraron cambios sin guardar",
@@ -11224,6 +11273,26 @@ export default {
       draftMedia: "Fotos y documentos",
       alternateNumberExists:
         "Este número de accesión alternativo ya está en la lista.",
+      numberOfObjects: "Número de objetos",
+      numberOfObjectsHint:
+        "Cuántas cosas describe este registro, por ejemplo 2 para un par o 12 para un juego de té.",
+      subjects: "Tema",
+      subjectsHint:
+        "Lo que el objeto representa o de lo que trata, aparte de las etiquetas. Pulse Intro o Tab después de cada término, o separe los términos con punto y coma (;).",
+      measuredPart: "Parte medida",
+      choosePart: "Elija una parte",
+      notStated: "Sin indicar",
+      partNote: "Nota sobre la parte",
+      measurementSets: "Otras partes medidas",
+      measurementSetsHint:
+        "Medidas de otras partes, como el marco o la base, una parte por fila. Use la nota para precisar la parte, por ejemplo tapa.",
+      addMeasurementSet: "Añadir parte medida",
+      removeMeasurementSet: "Quitar parte medida",
+      completeness: "Integridad",
+      completenessNote: "Nota sobre la integridad",
+      rightsStatement: "Declaración de derechos",
+      rightsStatementHint:
+        "Los derechos sobre el propio objeto. Cada imagen tiene su propia declaración.",
     },
   },
   moveRequests: {
@@ -11661,5 +11730,58 @@ export default {
       reopened: "Reabierto",
     },
     objectNone: "Ningún incidente que pueda ver afecta a este objeto.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Total",
+      framed: "Con marco",
+      unframed: "Sin marco",
+      image: "Imagen",
+      sight: "A la vista",
+      sheet: "Hoja",
+      plate: "Plancha",
+      mount: "Montaje",
+      base: "Base",
+      other: "Otra",
+    },
+    completeness: {
+      complete: "Completo",
+      incomplete: "Incompleto",
+      fragment: "Fragmento",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "En copyright",
+      InC_OW_EU: "En copyright - Obra huérfana de la UE",
+      InC_EDU: "En copyright - Uso educativo permitido",
+      InC_NC: "En copyright - Uso no comercial permitido",
+      InC_RUU:
+        "En copyright - Titular(es) de derechos no localizable(s) o no identificable(s)",
+      NoC_CR: "Sin copyright - Restricciones contractuales",
+      NoC_NC: "Sin copyright - Solo uso no comercial",
+      NoC_OKLR: "Sin copyright - Otras restricciones legales conocidas",
+      NoC_US: "Sin copyright - Estados Unidos",
+      CNE: "Copyright no evaluado",
+      UND: "Copyright indeterminado",
+      NKC: "Sin copyright conocido",
+      CC0: "CC0 1.0 Universal",
+      PDM: "Marca de dominio público 1.0",
+      CC_BY: "Creative Commons Atribución 4.0 Internacional",
+      CC_BY_SA: "Creative Commons Atribución-CompartirIgual 4.0 Internacional",
+      CC_BY_NC: "Creative Commons Atribución-NoComercial 4.0 Internacional",
+      CC_BY_NC_SA:
+        "Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional",
+      CC_BY_ND: "Creative Commons Atribución-SinDerivadas 4.0 Internacional",
+      CC_BY_NC_ND:
+        "Creative Commons Atribución-NoComercial-SinDerivadas 4.0 Internacional",
+    },
+    groups: {
+      rightsstatements: "Declaraciones de RightsStatements.org",
+      creativecommons: "Licencias y herramientas Creative Commons",
+    },
+    organizationDefault: "Predeterminada de la organización ({statement})",
+    notStated: "Sin indicar",
+    inherited: "Predeterminada de la organización",
   },
 } as const;

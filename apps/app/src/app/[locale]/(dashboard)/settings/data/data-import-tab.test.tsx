@@ -46,3 +46,39 @@ test("the Objects template explains its structured date column", async () => {
   await user.click(await screen.findByRole("option", { name: "Locations" }));
   expect(screen.queryByText(EDTF_HINT, { exact: false })).toBeNull();
 });
+
+test("the Objects template says what its subject, completeness, measured part, further parts and rights statement columns accept (MUS-865)", async () => {
+  await renderOnPage(
+    <DataImportTab organizationId={"org" as Id<"organizations">} />,
+    "/en/settings/data",
+  );
+  const hints = [
+    [
+      "subjects",
+      "What the object depicts or is about; separate terms with semicolons",
+    ],
+    [
+      "completeness",
+      "One of complete, incomplete or fragment, or its name as shown in the app",
+    ],
+    [
+      "dimensionMeasuredPart",
+      "Part the dimensions were taken from: overall, framed, unframed, image, sight, sheet, plate, mount, base or other, or its name as shown in the app",
+    ],
+    ["measurementSets", "JSON list of further measured parts"],
+    ["rightsStatement", "as its URI or a code such as InC, CC0 or CC BY 4.0"],
+  ];
+
+  for (const [column, hint] of hints) {
+    expect(
+      screen
+        .getByText(String(hint), { exact: false })
+        .textContent?.split(" – ")[0],
+    ).toBe(column);
+  }
+
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("combobox"));
+  await user.click(await screen.findByRole("option", { name: "Locations" }));
+  expect(screen.queryByText("rightsStatement")).toBeNull();
+});

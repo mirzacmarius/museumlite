@@ -1,6 +1,6 @@
 # Export format versions
 
-Catalog exports are version 2; audit and register exports are version 1. A job keeps the version it was created with, and its manifest describes the columns of that version.
+Catalog exports are version 3; audit and register exports are version 1. A job keeps the version it was created with, and its manifest describes the columns of that version.
 
 Catalog, audit and register exports run as durable Convex jobs. Filters, format, organization, creator, schema version and creation cutoff are fixed at request creation. A selected export uploads IDs in batches of at most 100, then seals the requested count. Duplicate uploads are harmless. Missing or unauthorized selected objects fail the job; they are never silently omitted.
 
@@ -263,6 +263,24 @@ Claims are immutable assertions (ADR 0006). A claim corrected or retracted after
 | legacyStartYear, legacyEndYear | text | A legacy entry's years as recorded |
 | legacyVerified | boolean | A legacy entry was marked verified |
 
+## Catalog columns for the description and rights
+
+Version 3 added the number of objects, subject, completeness, measured parts and rights statements to catalog exports (ADR 0022). Version 1 and 2 jobs keep their columns.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| dimensionUnit, weightUnit | text | The units of the main set of measurements, as entered |
+| dimensionMeasuredPart | text | The part the main set was taken from: `overall`, `framed`, `unframed`, `image`, `sight`, `sheet`, `plate`, `mount`, `base` or `other`; empty when not stated |
+| measurementSets | json | Further sets of measurements, one per part: `part`, an optional `partNote` ("lid"), any of `height`, `width`, `depth`, `diameter` and `weight` (numbers above 0), and optional `unit` and `weightUnit` |
+| numberOfObjects | number | How many things the record describes (2 for a pair); empty when not recorded |
+| subjects | text | What the Object depicts or is about, apart from `tags`; CSV joins the terms with `; ` and JSONL keeps the list |
+| completeness | text | `complete`, `incomplete` or `fragment`; empty when not recorded |
+| completenessNote | text | What is missing, as written |
+| rightsStatement | text | The rights statement URI recorded on the Object; empty when none was |
+| rightsStatementInEffect | text | The recorded URI, otherwise the Organization's default for Objects when the row was captured; empty when neither is set |
+
+The columns follow the four measurement numbers and come before the production years; `record` and JSONL carry the same fields under the same names, absent when empty. A statement URI is one of the twelve RightsStatements.org statements (`http://rightsstatements.org/vocab/InC/1.0/`), CC0 or the Public Domain Mark (`https://creativecommons.org/publicdomain/zero/1.0/`, `.../mark/1.0/`) or a Creative Commons 4.0 licence (`https://creativecommons.org/licenses/by-sa/4.0/`). A change to the Organization's default changes `rightsStatementInEffect` of Objects nobody edited. Images carry their own statements, which catalog exports do not include.
+
 `recordedAt` is when a claim was recorded or an evidence item linked.
 
 ### Limits
@@ -279,3 +297,10 @@ The date made in these files:
 - The data settings CSV and the objects import template carry `dateCreated` and `dateCreatedEdtf` only, so a re-import never turns a reading of the text into an entered date. The objects import reads `dateCreatedEdtf` as EDTF after removing one leading apostrophe before `-`, stores it in canonical form, and fails the row when it is not EDTF MuseumLite reads (see above).
 - Dublin Core (oai_dc) writes the text as the first `dc:date` (the entered EDTF when there is no text), followed by the entered EDTF when that first value does not read as it: EDTF `1910-11` is November 1910, but as text it reads as 1910 to 1911, so it is written twice. Importing it, the first `dc:date` is the text, and the first later one that is EDTF becomes the entered date unless the text reads as that same EDTF.
 - SPECTRUM XML keeps `<dateCreated>` as written and adds `<productionDateEdtf>`, `<productionDateEarliest>` and `<productionDateLatest>`, the EDTF in effect and its years.
+
+The description and rights in these files:
+
+- The Objects page export carries `dimensionMeasuredPart`, `measurementSets`, `numberOfObjects`, `subjects`, `completeness`, `completenessNote`, `rightsStatement` and `rightsStatementInEffect` as in catalog exports. Its CSV writes the sets as JSON text, the subject terms joined with `; ` and the number as a bare number; its XML repeats a `subjects` element per term and a `measurementSets` element per set.
+- The data settings CSV and the objects import template carry the entered values only: `numberOfObjects`, `subjects` (joined with `; `), `completeness`, `completenessNote`, `dimensionMeasuredPart`, `measurementSets` (JSON) and `rightsStatement`, never the statement in effect, so a re-import never turns the Organization's default into the Object's own statement. The objects import reads a whole number from 1 to 100000, at most 50 subject terms of at most 200 characters (blank terms and repeats in any letter case are dropped), completeness and measured parts as the codes above or as the labels the app shows in any of its languages ("Ufullstendig", "Med ramme", "Encadré"), in any letter case, at most 20 further sets each with at least one value above 0, and a statement written as either URI scheme, without its trailing slash, as a RightsStatements.org or Creative Commons web page, or as a code such as `InC-EDU`, `CC0`, `PDM` or `CC BY-SA 4.0`. Other Creative Commons versions, such as 3.0, are refused, not upgraded. A value it cannot read fails the row.
+- Dublin Core (oai_dc) writes the subject terms and then the tags as `dc:subject`, each term once, and the statement in effect as the first `dc:rights`, followed by the credit line, which ends in `; Legal restrictions apply` (or is only `Legal restrictions apply`) when the Object has legal restrictions. Importing it, the first 50 `dc:subject` terms of at most 200 characters become subject terms and the others, longer ones included, become tags, so no record fails for its subjects. The first `dc:rights` that names a statement becomes the Object's own statement; the other `dc:rights` values become the credit line, less the legal restrictions text, which marks the Object as having legal restrictions.
+- SPECTRUM XML adds `<numberOfObjects>`, `<subject>` per term, `<completeness>`, `<completenessNote>`, `<measuredPart>` (and `<partNote>`) inside the main `<dimensions>`, which also holds the main `<weight>` when a part is stated (otherwise `<weight>` stays on its own; a part with no height, width, depth or weight is not written), a further `<dimensions>` element per set, and `<rightsStatement>`, the statement in effect.

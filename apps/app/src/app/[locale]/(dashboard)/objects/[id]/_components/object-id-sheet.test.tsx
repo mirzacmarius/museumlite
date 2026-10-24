@@ -11,6 +11,7 @@ import {
 const englishFormat: ObjectIdSheetFormat = {
   measurementLabels: { height: "H", width: "W", depth: "D" },
   number: (value) => String(value),
+  part: (part) => part,
   dateMade: (source) => source.dateCreated,
 };
 
@@ -58,6 +59,33 @@ test("every checklist category is printed, recorded or not", async () => {
   // Six categories plus the short description are not recorded.
   expect(within(sheet).getAllByText("Not recorded")).toHaveLength(7);
   expect(within(sheet).getByText("No photograph recorded")).toBeTruthy();
+  expect(within(sheet).queryByText("Number of objects")).toBeNull();
+});
+
+test("the number of objects prints beside the accession number when recorded", async () => {
+  await renderOnPage(
+    <ObjectIdSheet
+      title="Tea set"
+      accessionNumber="112-2026-0004"
+      numberOfObjects="12"
+      printedOn="24 October 2026"
+      values={objectIdCategoryValues({
+        collection: { title: "Tea set", subjects: ["Tea"] },
+        distinguishingFeatures: [],
+        format: englishFormat,
+      })}
+      featuresFromAssessment={false}
+      description={undefined}
+      images={[]}
+    />,
+  );
+
+  const sheet = screen.getByRole("article");
+  expect(
+    within(sheet).getByText("Number of objects").nextElementSibling
+      ?.textContent,
+  ).toBe("12");
+  expect(within(sheet).getByText("Tea")).toBeTruthy();
 });
 
 test("the primary photograph prints large and up to three more as thumbnails", async () => {

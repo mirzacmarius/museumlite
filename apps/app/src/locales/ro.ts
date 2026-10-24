@@ -761,6 +761,17 @@ export default {
         cancelError: "Anularea ștergerii a eșuat. Încearcă din nou.",
         transferError: "Transferul proprietății a eșuat. Încearcă din nou.",
       },
+      rightsDefaults: {
+        title: "Declarații privind drepturile",
+        description:
+          "Declarația afișată de un obiect sau de o imagine care nu are una proprie. O modificare se aplică imediat tuturor acestor înregistrări.",
+        objects: "Obiecte",
+        images: "Imagini",
+        noDefault: "Fără valoare implicită",
+        save: "Salvează declarațiile privind drepturile",
+        saveError:
+          "Declarațiile privind drepturile nu au putut fi salvate. Încearcă din nou.",
+      },
     },
     developer: {
       selectOrganization:
@@ -1288,7 +1299,8 @@ export default {
         objectName: "Denumirea obiectului",
         objectType: "Tipul obiectului",
         description: "Descriere",
-        tags: "Etichete de subiect",
+        subjects: "Subiect",
+        tags: "Etichete",
         inscriptions: "Inscripții",
         materials: "Materiale",
         technique: "Tehnică",
@@ -2490,19 +2502,21 @@ export default {
     requirements: {
       object_type: "Tipul obiectului",
       object_name: "Denumirea obiectului",
+      number_of_objects: "Număr de obiecte",
       maker: "Autor",
       production_date: "Data realizării",
       materials: "Materiale",
       dimensions: "Dimensiuni",
       inscriptions: "Inscripții și marcaje",
       description: "Descriere",
-      subject: "Etichete de subiect",
+      subject: "Subiect",
       current_location: "Locația actuală",
       condition_assessment: "Evaluare a stării acceptată",
       image: "Fotografie",
       supporting_document: "Document justificativ",
       accession_record: "Înregistrare în inventar aprobată",
       provenance_claim: "Afirmație de proveniență",
+      rights_statement: "Declarație privind drepturile",
     },
     orphanFields: {
       parentObject: "Obiect părinte",
@@ -7883,6 +7897,9 @@ export default {
       invalidExpiry: "Introdu o dată validă.",
       failed: "Actualizarea a eșuat. Încearcă din nou.",
       unavailable: "Imagine indisponibilă",
+      rightsStatement: "Declarație privind drepturile",
+      rightsStatementHint:
+        "Se afișează împreună cu imaginea în portalul public. Dacă modifici doar declarația, aprobarea pentru descărcarea originalului se păstrează.",
     },
     title: "Bibliotecă media",
     description: "Toate fișierele media din colecția ta.",
@@ -7921,6 +7938,7 @@ export default {
       save: "Salvează",
       saving: "Se salvează...",
       cancel: "Anulează",
+      rightsStatement: "Declarație privind drepturile",
     },
   },
   organizationDeletionCancelPage: {
@@ -8257,6 +8275,7 @@ export default {
           creator: "Creator",
           objectType: "Tip de obiect",
           objectName: "Denumirea obiectului",
+          numberOfObjects: "Număr de obiecte",
           culture: "Cultură",
           period: "Perioadă",
           dateCreated: "Data realizării",
@@ -8264,9 +8283,15 @@ export default {
           materials: "Materiale",
           technique: "Tehnică",
           dimensions: "Dimensiuni",
+          dimensionMeasuredPart: "Parte măsurată",
+          measurementSets: "Alte părți măsurate",
           description: "Descriere",
+          subjects: "Subiect",
           condition: "Stare",
+          completeness: "Integritate",
+          completenessNote: "Notă despre integritate",
           provenance: "Proveniență",
+          rightsStatement: "Declarație privind drepturile",
           location: "Locație",
           collectionGroup: "Grup de colecții",
           collectionGroups: "Toate grupurile de colecții",
@@ -8278,6 +8303,8 @@ export default {
           creator: "Artist, fabricant sau creator",
           objectType: "Tipul sau categoria obiectului",
           objectName: "Denumirea specifică a obiectului",
+          numberOfObjects:
+            "Număr întreg de lucruri descrise de înregistrare, de exemplu 2 pentru o pereche",
           culture: "Origine culturală",
           period: "Perioadă istorică",
           dateCreated:
@@ -8287,9 +8314,20 @@ export default {
           materials: "Materiale folosite",
           technique: "Tehnică de producție",
           dimensions: "Dimensiuni fizice",
+          dimensionMeasuredPart:
+            "Partea de pe care s-au luat dimensiunile: overall, framed, unframed, image, sight, sheet, plate, mount, base sau other, ori denumirea afișată în aplicație",
+          measurementSets:
+            "Listă JSON cu alte părți măsurate, așa cum o scrie exportul de date. Fiecare are un cod de parte și cel puțin una dintre height, width, depth, diameter sau weight",
           description: "Descriere detaliată",
+          subjects:
+            "Ce reprezintă obiectul sau despre ce este; separați termenii cu punct și virgulă",
           condition: "Starea actuală",
+          completeness:
+            "Una dintre complete, incomplete sau fragment, ori denumirea afișată în aplicație",
+          completenessNote: "Ce lipsește sau ce include",
           provenance: "Istoric de proprietate",
+          rightsStatement:
+            "O declarație RightsStatements.org, CC0, Marca domeniului public sau o licență Creative Commons 4.0, ca URI sau cod precum InC, CC0 sau CC BY 4.0",
           location: "Locația actuală",
           collectionGroup: "Numele colecției sau grupului",
           collectionGroups:
@@ -11132,6 +11170,18 @@ export default {
         "Modificările dvs. nu au putut fi salvate. Verificați conexiunea și încercați din nou.",
       productionDateInvalid:
         "Data structurată nu este o dată validă. Verificați-i părțile și încercați din nou.",
+      objectCountInvalid:
+        "Introduceți numărul de obiecte ca număr întreg de la 1 la {max}.",
+      subjectsInvalid:
+        "Introduceți cel mult {max} de termeni de subiect, fiecare de cel mult {length} de caractere.",
+      measurementSetPartRequired:
+        "Alegeți partea de pe care a fost luat fiecare rând de măsurători.",
+      measurementSetsInvalid:
+        "Dați fiecărei părți măsurate cel puțin o măsurătoare mai mare de 0. Notele și unitățile au cel mult {length} de caractere și se pot adăuga cel mult {max} de părți.",
+      rightsStatementInvalid:
+        "Alegeți o declarație privind drepturile din listă.",
+      textTooLong:
+        "Câmpul „{field}” este prea lung. Scurtați-l și încercați din nou.",
     },
     notices: {
       recoveredTitle: "Au fost găsite modificări nesalvate",
@@ -11198,6 +11248,26 @@ export default {
       draftMedia: "Fotografii și documente",
       alternateNumberExists:
         "Acest număr de accesiune alternativ este deja în listă.",
+      numberOfObjects: "Număr de obiecte",
+      numberOfObjectsHint:
+        "Câte lucruri descrie această înregistrare, de exemplu 2 pentru o pereche sau 12 pentru un serviciu de ceai.",
+      subjects: "Subiect",
+      subjectsHint:
+        "Ce reprezintă obiectul sau despre ce este, separat de etichete. Apăsați Enter sau Tab după fiecare termen sau separați termenii cu punct și virgulă (;).",
+      measuredPart: "Parte măsurată",
+      choosePart: "Alegeți o parte",
+      notStated: "Nespecificat",
+      partNote: "Notă despre parte",
+      measurementSets: "Alte părți măsurate",
+      measurementSetsHint:
+        "Măsurătorile altor părți, precum rama sau soclul, câte o parte pe rând. Folosiți nota pentru a preciza partea, de exemplu capac.",
+      addMeasurementSet: "Adaugă parte măsurată",
+      removeMeasurementSet: "Elimină partea măsurată",
+      completeness: "Integritate",
+      completenessNote: "Notă despre integritate",
+      rightsStatement: "Declarație privind drepturile",
+      rightsStatementHint:
+        "Drepturile asupra obiectului însuși. Fiecare imagine are propria declarație.",
     },
   },
   moveRequests: {
@@ -11641,5 +11711,62 @@ export default {
     },
     objectNone:
       "Niciun incident pe care îl puteți vedea nu implică acest obiect.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Total",
+      framed: "Cu ramă",
+      unframed: "Fără ramă",
+      image: "Imagine",
+      sight: "Dimensiune vizibilă",
+      sheet: "Foaie",
+      plate: "Placă",
+      mount: "Montaj",
+      base: "Soclu",
+      other: "Altă parte",
+    },
+    completeness: {
+      complete: "Complet",
+      incomplete: "Incomplet",
+      fragment: "Fragment",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "Protejat prin drepturi de autor",
+      InC_OW_EU: "Protejat prin drepturi de autor - Operă orfană în UE",
+      InC_EDU:
+        "Protejat prin drepturi de autor - Utilizare educațională permisă",
+      InC_NC:
+        "Protejat prin drepturi de autor - Utilizare necomercială permisă",
+      InC_RUU:
+        "Protejat prin drepturi de autor - Titularul (titularii) drepturilor nu pot fi găsiți sau identificați",
+      NoC_CR: "Fără drepturi de autor - Restricții contractuale",
+      NoC_NC: "Fără drepturi de autor - Numai utilizare necomercială",
+      NoC_OKLR: "Fără drepturi de autor - Alte restricții legale cunoscute",
+      NoC_US: "Fără drepturi de autor - Statele Unite",
+      CNE: "Drepturi de autor neevaluate",
+      UND: "Drepturi de autor nedeterminate",
+      NKC: "Fără drepturi de autor cunoscute",
+      CC0: "CC0 1.0 Universal",
+      PDM: "Marca domeniului public 1.0",
+      CC_BY: "Creative Commons Atribuire 4.0 Internațional",
+      CC_BY_SA:
+        "Creative Commons Atribuire-Distribuire în condiții identice 4.0 Internațional",
+      CC_BY_NC: "Creative Commons Atribuire-Necomercial 4.0 Internațional",
+      CC_BY_NC_SA:
+        "Creative Commons Atribuire-Necomercial-Distribuire în condiții identice 4.0 Internațional",
+      CC_BY_ND:
+        "Creative Commons Atribuire-Fără opere derivate 4.0 Internațional",
+      CC_BY_NC_ND:
+        "Creative Commons Atribuire-Necomercial-Fără opere derivate 4.0 Internațional",
+    },
+    groups: {
+      rightsstatements: "Declarații RightsStatements.org",
+      creativecommons: "Licențe și instrumente Creative Commons",
+    },
+    organizationDefault: "Implicită pentru organizație ({statement})",
+    notStated: "Nespecificat",
+    inherited: "Implicită pentru organizație",
   },
 };

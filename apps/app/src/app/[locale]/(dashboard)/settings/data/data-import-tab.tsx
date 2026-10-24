@@ -29,6 +29,16 @@ interface DataImportTabProps {
   organizationId: Id<"organizations">;
 }
 
+/** Objects columns whose values take a set form or come from a closed list. */
+const OBJECT_COLUMN_HINTS = [
+  "dateCreatedEdtf",
+  "subjects",
+  "completeness",
+  "dimensionMeasuredPart",
+  "measurementSets",
+  "rightsStatement",
+] as const;
+
 export function DataImportTab({ organizationId }: DataImportTabProps) {
   const t = useScopedI18n("settings.data");
   const tDashboard = useScopedI18n("untranslatedDashboard.settings");
@@ -101,13 +111,17 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
                 {template.requiredFields.join(", ")}
               </p>
               {importType === "objects" ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  <span className="font-mono text-foreground">
-                    dateCreatedEdtf
-                  </span>
-                  {" – "}
-                  {tObjectFields("dateCreatedEdtf")}
-                </p>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {OBJECT_COLUMN_HINTS.map((column) => (
+                    <li key={column}>
+                      <span className="font-mono text-foreground">
+                        {column}
+                      </span>
+                      {" – "}
+                      {tObjectFields(column)}
+                    </li>
+                  ))}
+                </ul>
               ) : null}
             </div>
           )}

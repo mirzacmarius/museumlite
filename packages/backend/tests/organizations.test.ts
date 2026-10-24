@@ -1,3 +1,4 @@
+import type { FunctionArgs } from "convex/server";
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api, internal } from "../convex/_generated/api";
@@ -552,6 +553,136 @@ describe("watermark settings", () => {
     expect(org?.settings?.watermarkSettings?.text).toBe("© 2026 Test Museum");
     expect(org?.settings?.watermarkSettings?.opacity).toBe(0.7);
     expect(org?.settings?.watermarkSettings?.position).toBe("bottom-right");
+  });
+});
+
+describe("rights defaults", () => {
+  const inCopyright = "http://rightsstatements.org/vocab/InC/1.0/";
+  const ccBy = "https://creativecommons.org/licenses/by/4.0/";
+
+  test("an administrator sets, keeps and removes each default, and the Organization reads them back", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    await t.run((ctx) =>
+      ctx.db.patch(organizationId, {
+        settings: { accessionWorkflowEnabled: false },
+      }),
+    );
+    const admin = authedForUser(t, userId);
+    const update = (rightsDefaults: {
+      objectRightsStatement?: typeof inCopyright | null;
+      mediaRightsStatement?: typeof ccBy | null;
+    }) =>
+      admin.mutation(api.organizations.updateRightsDefaults, {
+        organizationId,
+        rightsDefaults,
+      });
+
+    await update({
+      objectRightsStatement: inCopyright,
+      mediaRightsStatement: ccBy,
+    });
+    expect(
+      (await admin.query(api.organizations.get, { organizationId }))?.settings,
+    ).toMatchObject({
+      accessionWorkflowEnabled: false,
+      rightsDefaults: {
+        objectRightsStatement: inCopyright,
+        mediaRightsStatement: ccBy,
+      },
+    });
+    expect(
+      (await admin.query(api.organizations.getSettings, { organizationId }))
+        ?.rightsDefaults,
+    ).toEqual({
+      objectRightsStatement: inCopyright,
+      mediaRightsStatement: ccBy,
+    });
+    const [membership] = await admin.query(
+      api.organizations.listUserOrganizations,
+      {},
+    );
+    expect(membership?.settings?.rightsDefaults).toEqual({
+      objectRightsStatement: inCopyright,
+      mediaRightsStatement: ccBy,
+    });
+
+    // A default left out keeps its value; null removes it.
+    await update({ mediaRightsStatement: null });
+    const stored = await t.run((ctx) => ctx.db.get(organizationId));
+    expect(stored?.settings?.rightsDefaults).toEqual({
+      objectRightsStatement: inCopyright,
+    });
+    expect(stored?.settings?.accessionWorkflowEnabled).toBe(false);
+
+    const audit = await t.run((ctx) =>
+      ctx.db
+        .query("auditLog")
+        .filter((q) => q.eq(q.field("action"), "updated_rights_defaults"))
+        .collect(),
+    );
+    expect(audit).toHaveLength(2);
+    expect(audit[1]).toMatchObject({
+      organizationId,
+      entityType: "organization",
+      entityId: organizationId,
+    });
+  });
+
+  test("a member without the settings permission, or a statement not on the list, changes nothing", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    const admin = authedForUser(t, userId);
+    const readerId = await t.run(async (ctx) => {
+      const readerId = await ctx.db.insert("users", {
+        name: "Reader",
+        email: "reader@example.com",
+      });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Reader",
+        isSystemRole: false,
+      });
+      await ctx.db.insert("userOrganizations", {
+        userId: readerId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+      return readerId;
+    });
+    const reader = authedForUser(t, readerId);
+
+    expect(
+      await capabilityFailureOf(
+        reader.mutation(api.organizations.updateRightsDefaults, {
+          organizationId,
+          rightsDefaults: { objectRightsStatement: inCopyright },
+        }),
+      ),
+    ).toMatchObject({ reason: "permission_missing" });
+    const unlisted = {
+      organizationId,
+      rightsDefaults: {
+        objectRightsStatement: "https://creativecommons.org/licenses/by/3.0/",
+      },
+    };
+    await expect(
+      admin.mutation(
+        api.organizations.updateRightsDefaults,
+        unlisted as unknown as FunctionArgs<
+          typeof api.organizations.updateRightsDefaults
+        >,
+      ),
+    ).rejects.toThrow(/Validator error/);
+    expect(
+      (await t.run((ctx) => ctx.db.get(organizationId)))?.settings
+        ?.rightsDefaults,
+    ).toBeUndefined();
   });
 });
 

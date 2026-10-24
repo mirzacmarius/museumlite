@@ -29,7 +29,8 @@ export const OBJECT_ID_PROFILE_NAME = "Object ID";
  * Objects in the collection or borrowed are the ones a theft report would
  * concern. Every checklist category has a requirement except the title, which
  * is always recorded: distinguishing features come from the accepted
- * condition assessment and the subject from the tags, as on the sheet.
+ * condition assessment and the subject from the subject terms, not the
+ * tags, as on the sheet.
  */
 export const OBJECT_ID_PROFILE_STAGES: readonly DocumentationStage[] = [
   "collection",

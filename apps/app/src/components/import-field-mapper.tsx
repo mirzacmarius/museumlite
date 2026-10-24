@@ -163,6 +163,9 @@ export function ImportFieldMapper({
           {sourceFields.map((sourceField) => {
             const mapping = getMappingForSource(sourceField);
             const usedTargetFields = getUsedTargetFields();
+            const mappedDescription = targetFields.find(
+              (field) => field.id === mapping?.targetField,
+            )?.description;
 
             return (
               <div
@@ -178,74 +181,81 @@ export function ImportFieldMapper({
 
                 <ArrowRight className="size-4 text-muted-foreground" />
 
-                <div className="flex flex-1 items-center gap-2">
-                  <Select
-                    value={mapping?.targetField || DO_NOT_IMPORT}
-                    onValueChange={(value) =>
-                      handleMappingChange(
-                        sourceField,
-                        value === DO_NOT_IMPORT ? null : value,
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={translate(
-                          "untranslatedComponents.labels.selectTargetField",
-                        )}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={DO_NOT_IMPORT}>
-                        <span className="text-muted-foreground">
-                          {translate(
-                            "untranslatedComponents.labels.doNotImport",
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={mapping?.targetField || DO_NOT_IMPORT}
+                      onValueChange={(value) =>
+                        handleMappingChange(
+                          sourceField,
+                          value === DO_NOT_IMPORT ? null : value,
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={translate(
+                            "untranslatedComponents.labels.selectTargetField",
                           )}
-                        </span>
-                      </SelectItem>
-                      {targetFields.map((field) => {
-                        const isUsed =
-                          usedTargetFields.has(field.id) &&
-                          mapping?.targetField !== field.id;
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={DO_NOT_IMPORT}>
+                          <span className="text-muted-foreground">
+                            {translate(
+                              "untranslatedComponents.labels.doNotImport",
+                            )}
+                          </span>
+                        </SelectItem>
+                        {targetFields.map((field) => {
+                          const isUsed =
+                            usedTargetFields.has(field.id) &&
+                            mapping?.targetField !== field.id;
 
-                        return (
-                          <SelectItem
-                            key={field.id}
-                            value={field.id}
-                            disabled={isUsed}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span>
-                                {field.label}
-                                {field.required && (
-                                  <span className="ml-1 text-destructive">
-                                    *
-                                  </span>
-                                )}
-                              </span>
-                              {isUsed && (
-                                <span className="text-xs text-muted-foreground">
-                                  {translate(
-                                    "untranslatedComponents.labels.alreadyMapped",
+                          return (
+                            <SelectItem
+                              key={field.id}
+                              value={field.id}
+                              disabled={isUsed}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>
+                                  {field.label}
+                                  {field.required && (
+                                    <span className="ml-1 text-destructive">
+                                      *
+                                    </span>
                                   )}
                                 </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                                {isUsed && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {translate(
+                                      "untranslatedComponents.labels.alreadyMapped",
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
 
-                  {mapping?.targetField && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleClearMapping(sourceField)}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  )}
+                    {mapping?.targetField && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleClearMapping(sourceField)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                  {mappedDescription ? (
+                    <p className="text-xs text-muted-foreground">
+                      {mappedDescription}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             );

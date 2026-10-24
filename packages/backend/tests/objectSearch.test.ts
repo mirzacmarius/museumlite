@@ -153,6 +153,37 @@ test("a word in any indexed field finds the Object, identifier prefixes come fir
   expect(await catalog.numbers({ search: "nothing-here" })).toEqual([]);
 });
 
+test("a subject term finds the Object and the row says it matched in the subject, apart from tags", async () => {
+  const catalog = await setupCatalog();
+  await catalog.create({
+    accessionNumber: "S-1",
+    title: "Quay at noon",
+    subjects: ["Harbour pilots"],
+    tags: ["Featured"],
+  });
+  await catalog.create({
+    accessionNumber: "S-2",
+    title: "Weight",
+    tags: ["pilots"],
+  });
+  await catalog.backfill();
+  const document = await catalog.t.run((ctx) =>
+    ctx.db.query("objectSearchDocuments").first(),
+  );
+  expect(document?.version).toBe(OBJECT_SEARCH_DOCUMENT_VERSION);
+  expect(OBJECT_SEARCH_DOCUMENT_VERSION).toBe(4);
+
+  expect(await catalog.list({ search: "harbour" })).toMatchObject([
+    { accessionNumber: "S-1", matchedField: "subjects" },
+  ]);
+  const pilots = await catalog.list({ search: "pilots" });
+  expect(
+    Object.fromEntries(
+      pilots.map((row) => [row.accessionNumber, row.matchedField]),
+    ),
+  ).toEqual({ "S-1": "subjects", "S-2": "tags" });
+});
+
 test("a record change updates its search document in the same transaction", async () => {
   const catalog = await setupCatalog();
   const id = await catalog.create({

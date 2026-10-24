@@ -35,6 +35,7 @@ import {
   type RemovalType,
 } from "@/components/deaccession-dialog";
 import { PermissionGate } from "@/components/permission-gate";
+import { useOrganizationRightsDefaults } from "@/components/rights-statement/use-organization-rights-defaults";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
@@ -157,6 +158,12 @@ export function ObjectActionsMenu({
   const objectDetail = useQuery(
     api.collections.getObjectDetail,
     state.isPrintModalOpen ? { collectionId: item._id } : "skip",
+  );
+  // Export to PDF prints the moment the preview opens, so it waits for the
+  // default rights statement the preview prints. The preview reads the same
+  // subscription.
+  const rightsDefaults = useOrganizationRightsDefaults(
+    state.isPrintModalOpen ? objectDetail?.collection.organizationId : null,
   );
   const heroImageForPrint = objectDetail?.heroImage?.url
     ? {
@@ -351,7 +358,9 @@ export function ObjectActionsMenu({
           heroImage={heroImageForPrint}
           locationPath={objectDetail.locationPath}
           locale={locale}
-          printOnOpen={state.shouldPrintWhenReady}
+          printOnOpen={
+            state.shouldPrintWhenReady && rightsDefaults !== undefined
+          }
           onPrintOnOpenComplete={() =>
             dispatch({ type: "clearPrintWhenReady" })
           }

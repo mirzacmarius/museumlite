@@ -16,6 +16,7 @@ import {
   fieldErrorProps,
 } from "@/components/record-form/record-form-notices";
 import { useI18n, useScopedI18n } from "@/locales/client";
+import { MeasuredPartSelect } from "./object-description-fields";
 import { type CollectionFormTabProps, NO_FIELD_ERRORS } from "./types";
 import { withInscriptionMarkLocalIds } from "./utils";
 
@@ -96,7 +97,16 @@ export function MeasuredDimensionsFields({
           {t("measuredDimensionsHint")}
         </p>
       </div>
-      <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        <div className="space-y-2">
+          <Label htmlFor="dimensionMeasuredPart">{t("measuredPart")}</Label>
+          <MeasuredPartSelect
+            id="dimensionMeasuredPart"
+            value={formData.dimensionMeasuredPart}
+            onValueChange={(part) => updateField("dimensionMeasuredPart", part)}
+            optional
+          />
+        </div>
         {measurements.map(({ field, label }) => (
           <div key={field} className="space-y-2">
             <Label htmlFor={field}>{label}</Label>

@@ -15,7 +15,9 @@ import { useQuery } from "convex/react";
 import { Download, File, Loader2 } from "lucide-react";
 import NextImage from "next/image";
 import Link from "next/link";
+import { RightsStatementValue } from "@/components/rights-statement/rights-statement-value";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { shownRightsStatement } from "@/lib/rights-statements";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { MediaPublicationPanel } from "./media-publication-panel";
 
@@ -69,14 +71,21 @@ const isWatermarkMetadata = (
 
 export function MediaDetailModal({
   mediaId,
+  organizationId,
   onClose,
 }: {
   mediaId: Id<"mediaFiles">;
+  organizationId: Id<"organizations">;
   onClose: () => void;
 }) {
   const t = useI18n();
   const item = useQuery(api.media.getWithMetadata, { mediaId });
   const versions = useQuery(api.mediaVersions.listVersions, { mediaId });
+  // Without a statement of its own, the one in effect is the Organization's
+  // media default, which the server has already resolved.
+  const rights =
+    item &&
+    shownRightsStatement(item.rightsStatement, item.rightsStatementInEffect);
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -169,6 +178,14 @@ export function MediaDetailModal({
                     <p className="text-sm text-zinc-300">{item.copyright}</p>
                   </div>
                 )}
+                {rights && (
+                  <div>
+                    <p className="text-xs text-zinc-500">
+                      {t("mediaPage.details.rightsStatement")}
+                    </p>
+                    <RightsStatementValue shown={rights} />
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
@@ -200,7 +217,11 @@ export function MediaDetailModal({
                 )}
               </div>
 
-              <MediaPublicationPanel mediaId={mediaId} item={item} />
+              <MediaPublicationPanel
+                mediaId={mediaId}
+                organizationId={organizationId}
+                item={item}
+              />
 
               <div className="space-y-2 border-t border-zinc-800 pt-4">
                 <p className="text-sm font-medium text-zinc-200">

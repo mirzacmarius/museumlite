@@ -19,10 +19,27 @@ export interface ExportColumn {
   type: Infer<typeof exportColumnType>;
 }
 type ExportSource = Infer<typeof exportSource>;
+/** Columns version 3 adds after the measurements, in this order. */
+const DESCRIPTION_COLUMNS: ExportColumn[] = [
+  { name: "dimensionUnit", type: "text" },
+  { name: "weightUnit", type: "text" },
+  { name: "dimensionMeasuredPart", type: "text" },
+  { name: "measurementSets", type: "json" },
+  { name: "numberOfObjects", type: "number" },
+  { name: "subjects", type: "text" },
+  { name: "completeness", type: "text" },
+  { name: "completenessNote", type: "text" },
+  { name: "rightsStatement", type: "text" },
+  { name: "rightsStatementInEffect", type: "text" },
+];
+/** Text columns that hold a list: CSV writes it "; "-joined, JSONL as a list. */
+const TEXT_LIST_COLUMNS = new Set(["subjects"]);
 /**
  * Catalog columns of an export version. Version 2 adds the date made: as
- * entered, in effect, and the years it spans. A job keeps its version's
- * columns, so one created before an upgrade is described as it was written.
+ * entered, in effect, and the years it spans. Version 3 adds the number of
+ * objects, subject, completeness, measured parts and rights statements. A
+ * job keeps its version's columns, so one created before an upgrade is
+ * described as it was written.
  */
 function objectColumns(schemaVersion: number): ExportColumn[] {
   const dateMade = schemaVersion >= 2;
@@ -54,8 +71,11 @@ function objectColumns(schemaVersion: number): ExportColumn[] {
       "dimensionWidth",
       "dimensionDepth",
       "dimensionWeight",
-      ...(dateMade ? ["productionEarliestYear", "productionLatestYear"] : []),
     ].map((name) => ({ name, type: "number" as const })),
+    ...(schemaVersion >= 3 ? DESCRIPTION_COLUMNS : []),
+    ...(dateMade ? ["productionEarliestYear", "productionLatestYear"] : []).map(
+      (name) => ({ name, type: "number" as const }),
+    ),
     ...["catalogedAt", "lastModifiedAt", "capturedAt", "_creationTime"].map(
       (name) => ({ name, type: "utcEpochMs" as const }),
     ),
@@ -165,6 +185,13 @@ function encodeRegisterRows(
       .join("")
   );
 }
+function csvValue(row: Record<string, unknown>, name: string) {
+  if (name === "record") return row;
+  const value = row[name];
+  return TEXT_LIST_COLUMNS.has(name) && Array.isArray(value)
+    ? value.join("; ")
+    : value;
+}
 export function encodeRows(
   sourceRows: Record<string, unknown>[],
   source: ExportSource,
@@ -194,13 +221,15 @@ export function encodeRows(
     rows
       .map(
         (row) =>
-          `${columns.map((c) => csvCell(c.name === "record" ? row : row[c.name], c.type)).join(",")}\r\n`,
+          `${columns.map((c) => csvCell(csvValue(row, c.name), c.type)).join(",")}\r\n`,
       )
       .join("")
   );
 }
 const DATE_MADE_POLICY =
   "dateCreated is the date made as written. dateCreatedEdtf is the EDTF (ISO 8601-2, levels 0 and 1) staff entered, absent when none was. productionDateEdtf is the EDTF in effect: the entered one, otherwise what MuseumLite reads dateCreated as, absent when neither states a date; an open interval side is written '..'. productionEarliestYear and productionLatestYear are the years that date spans, astronomical as in EDTF (0 is 1 BC, -499 is 500 BC); circa dates are widened by 5 years, 10 for a decade and 25 for a century, and an open side has no year. In CSV an EDTF value starting with - receives the leading apostrophe like any text; the years are number cells.";
+const DESCRIPTION_POLICY =
+  "numberOfObjects is how many things the record describes, absent when not recorded. subjects are what the Object depicts or is about, apart from tags; CSV joins them with '; ', JSONL keeps the list. completeness is complete, incomplete or fragment, with completenessNote. dimensionHeight, dimensionWidth, dimensionDepth and dimensionWeight are the main set of measurements in dimensionUnit and weightUnit, taken from dimensionMeasuredPart; measurementSets lists further sets, each with its part (overall, framed, unframed, image, sight, sheet, plate, mount, base or other), an optional partNote, its values and units, as JSON text in CSV and a list in JSONL. rightsStatement is the RightsStatements.org or Creative Commons URI recorded on the Object, absent when none was; rightsStatementInEffect is that URI, otherwise the Organization's default for Objects at capturedAt, absent when neither is set.";
 export function manifest(job: {
   source: ExportSource;
   organizationId: string;
@@ -253,6 +282,9 @@ export function manifest(job: {
     compatibility: `MuseumLite export v${job.schemaVersion}; UTF-8; JSONL retains JSON types and null/absent distinctions. CSV uses RFC4180 quoting, UTC epoch milliseconds, unlocalized numbers, empty nulls; text/json formula prefixes receive a leading apostrophe. CSV does not encode spreadsheet cell types: import using this column schema to retain leading zeros and literal text.`,
     ...(job.source.kind === "objects" && job.schemaVersion >= 2
       ? { dateMadePolicy: DATE_MADE_POLICY }
+      : {}),
+    ...(job.source.kind === "objects" && job.schemaVersion >= 3
+      ? { descriptionPolicy: DESCRIPTION_POLICY }
       : {}),
     consistency:
       "Creation cutoff excludes later inserts. Audit evidence is immutable at cutoff. Object values and filter membership are captured at each row's capturedAt during the capture interval; deleted rows before capture are absent. This is a complete bounded traversal, not a historical snapshot of mutable object values. Selected missing rows fail the job.",

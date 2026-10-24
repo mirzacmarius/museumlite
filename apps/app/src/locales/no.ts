@@ -416,6 +416,16 @@ export default {
       },
 
       addOrganization: "Legg til organisasjon",
+      rightsDefaults: {
+        title: "Rettighetserklæringer",
+        description:
+          "Erklæringen et objekt eller bilde viser når det ikke har en egen. En endring gjelder straks for alle slike poster.",
+        objects: "Objekter",
+        images: "Bilder",
+        noDefault: "Ingen standard",
+        save: "Lagre rettighetserklæringer",
+        saveError: "Kunne ikke lagre rettighetserklæringene. Prøv igjen.",
+      },
     },
     developer: {
       selectOrganization:
@@ -3224,7 +3234,8 @@ export default {
         objectName: "Objektnavn",
         objectType: "Objekttype",
         description: "Beskrivelse",
-        tags: "Emneord",
+        subjects: "Emne",
+        tags: "Stikkord",
         inscriptions: "Innskrifter",
         materials: "Materialer",
         technique: "Teknikk",
@@ -3618,7 +3629,7 @@ export default {
       ownershipHistory: "Eierskapshistorikk",
       exhibitionHistory: "Utstillingshistorikk",
       currentLocation: "Nåværende Plassering",
-      tags: "Tagger",
+      tags: "Stikkord",
       objectType: "Objekttype",
       objectName: "Objektnavn",
       creatorArtist: "Skaper/Kunstner",
@@ -3678,7 +3689,7 @@ export default {
       present: "Nåtid",
       exhibitionHistory: "Utstillingshistorikk",
       currentLocation: "Nåværende Plassering",
-      tags: "Merkelapper",
+      tags: "Stikkord",
       legalAndVisibility: "Juridisk og Synlighet",
       publicVisibility: "Offentlig Synlighet",
       legalRestrictions: "Juridiske Begrensninger",
@@ -3715,7 +3726,7 @@ export default {
         inscriptions_and_markings: "Innskrifter og merker",
         distinguishing_features: "Særtrekk",
         title: "Tittel",
-        subject: "Motiv",
+        subject: "Emne",
         date_or_period: "Datering eller periode",
         maker: "Produsent",
       },
@@ -5476,6 +5487,9 @@ export default {
       invalidExpiry: "Angi en gyldig dato.",
       failed: "Kunne ikke oppdatere. Prøv igjen.",
       unavailable: "Bildet er utilgjengelig",
+      rightsStatement: "Rettighetserklæring",
+      rightsStatementHint:
+        "Vises med bildet i den offentlige portalen. Endrer du bare erklæringen, beholder bildet godkjenningen for nedlasting av originalen.",
     },
     title: "Mediebibliotek",
     description: "Alle mediefiler på tvers av samlingen din.",
@@ -5513,6 +5527,7 @@ export default {
       save: "Lagre",
       saving: "Lagrer...",
       cancel: "Avbryt",
+      rightsStatement: "Rettighetserklæring",
     },
   },
   organizationsOverview: {
@@ -6021,19 +6036,21 @@ export default {
     requirements: {
       object_type: "Objekttype",
       object_name: "Objektnavn",
+      number_of_objects: "Antall objekter",
       maker: "Produsent",
       production_date: "Datering",
       materials: "Materialer",
       dimensions: "Mål",
       inscriptions: "Innskrifter og merker",
       description: "Beskrivelse",
-      subject: "Emne (merkelapper)",
+      subject: "Emne",
       current_location: "Nåværende sted",
       condition_assessment: "Godkjent tilstandsvurdering",
       image: "Fotografi",
       supporting_document: "Støttedokument",
       accession_record: "Godkjent aksesjon",
       provenance_claim: "Provenienspåstand",
+      rights_statement: "Rettighetserklæring",
     },
     orphanFields: {
       parentObject: "Overordnet objekt",
@@ -8196,6 +8213,7 @@ export default {
           creator: "Skaper",
           objectType: "Objekttype",
           objectName: "Objektnavn",
+          numberOfObjects: "Antall objekter",
           culture: "Kultur",
           period: "Periode",
           dateCreated: "Datering",
@@ -8203,9 +8221,15 @@ export default {
           materials: "Materialer",
           technique: "Teknikk",
           dimensions: "Dimensjoner",
+          dimensionMeasuredPart: "Målt del",
+          measurementSets: "Andre målte deler",
           description: "Beskrivelse",
+          subjects: "Emne",
           condition: "Tilstand",
+          completeness: "Fullstendighet",
+          completenessNote: "Merknad om fullstendighet",
           provenance: "Proveniens",
+          rightsStatement: "Rettighetserklæring",
           location: "Plassering",
           collectionGroup: "Samlingsgruppe",
           collectionGroups: "Alle samlingsgrupper",
@@ -8218,6 +8242,8 @@ export default {
           creator: "Kunstner, håndverker eller skaper",
           objectType: "Objekttype eller kategori",
           objectName: "Objektets spesifikke navn",
+          numberOfObjects:
+            "Helt tall for hvor mange ting posten beskriver, for eksempel 2 for et par",
           culture: "Kulturell opprinnelse",
           period: "Historisk periode",
           dateCreated:
@@ -8227,9 +8253,20 @@ export default {
           materials: "Materialer som er brukt",
           technique: "Produksjonsteknikk",
           dimensions: "Fysiske mål",
+          dimensionMeasuredPart:
+            "Delen målene er tatt av: overall, framed, unframed, image, sight, sheet, plate, mount, base eller other, eller navnet slik det vises i appen",
+          measurementSets:
+            "JSON-liste med andre målte deler, slik dataeksporten skriver den. Hver har en delkode og minst én av height, width, depth, diameter eller weight",
           description: "Detaljert beskrivelse",
+          subjects:
+            "Hva objektet viser eller handler om; skill termene med semikolon",
           condition: "Nåværende tilstand",
+          completeness:
+            "Én av complete, incomplete eller fragment, eller navnet slik det vises i appen",
+          completenessNote: "Hva som mangler eller er med",
           provenance: "Eierskapshistorikk",
+          rightsStatement:
+            "En erklæring fra RightsStatements.org, CC0, Merke for allemannseie eller en Creative Commons 4.0-lisens, som URI eller en kode som InC, CC0 eller CC BY 4.0",
           location: "Nåværende plassering",
           collectionGroup: "Navn på samling eller gruppe",
           collectionGroups: "JSON-liste med gruppenavn; inkluder hovedgruppen",
@@ -11016,6 +11053,15 @@ export default {
         "Endringene dine kunne ikke lagres. Sjekk tilkoblingen og prøv igjen.",
       productionDateInvalid:
         "Den strukturerte dateringen er ikke en gyldig dato. Sjekk delene og prøv igjen.",
+      objectCountInvalid:
+        "Skriv antall objekter som et heltall fra 1 til {max}.",
+      subjectsInvalid:
+        "Skriv inn opptil {max} emnetermer på opptil {length} tegn hver.",
+      measurementSetPartRequired: "Velg delen hver rad med mål ble tatt av.",
+      measurementSetsInvalid:
+        "Gi hver målte del minst ett mål over 0. Merknader og enheter kan ha opptil {length} tegn, og opptil {max} deler kan legges til.",
+      rightsStatementInvalid: "Velg en rettighetserklæring fra listen.",
+      textTooLong: "{field} er for lang. Forkort teksten og prøv igjen.",
     },
     notices: {
       recoveredTitle: "Ulagrede endringer funnet",
@@ -11082,6 +11128,26 @@ export default {
       draftMedia: "Bilder og dokumenter",
       alternateNumberExists:
         "Dette alternative aksesjonsnummeret står allerede i listen.",
+      numberOfObjects: "Antall objekter",
+      numberOfObjectsHint:
+        "Hvor mange ting denne posten beskriver, for eksempel 2 for et par eller 12 for et teservise.",
+      subjects: "Emne",
+      subjectsHint:
+        "Hva objektet viser eller handler om, adskilt fra stikkord. Trykk Enter eller Tab etter hver term, eller skill termene med semikolon (;).",
+      measuredPart: "Målt del",
+      choosePart: "Velg en del",
+      notStated: "Ikke oppgitt",
+      partNote: "Merknad om delen",
+      measurementSets: "Andre målte deler",
+      measurementSetsHint:
+        "Mål av andre deler, som rammen eller sokkelen, én del per rad. Bruk merknaden til å angi delen nærmere, for eksempel lokk.",
+      addMeasurementSet: "Legg til målt del",
+      removeMeasurementSet: "Fjern målt del",
+      completeness: "Fullstendighet",
+      completenessNote: "Merknad om fullstendighet",
+      rightsStatement: "Rettighetserklæring",
+      rightsStatementHint:
+        "Rettighetene til selve objektet. Hvert bilde har sin egen erklæring.",
     },
   },
   moveRequests: {
@@ -11521,5 +11587,62 @@ export default {
       reopened: "Gjenåpnet",
     },
     objectNone: "Ingen hendelser du kan se, gjelder dette objektet.",
+  },
+  objectDescription: {
+    parts: {
+      overall: "Totalt",
+      framed: "Med ramme",
+      unframed: "Uten ramme",
+      image: "Bilde",
+      sight: "Lysmål",
+      sheet: "Ark",
+      plate: "Plate",
+      mount: "Montering",
+      base: "Sokkel",
+      other: "Annet",
+    },
+    completeness: {
+      complete: "Komplett",
+      incomplete: "Ufullstendig",
+      fragment: "Fragment",
+    },
+  },
+  rightsStatements: {
+    names: {
+      InC: "Opphavsrettslig beskyttet",
+      InC_OW_EU: "Opphavsrettslig beskyttet - Foreldreløst verk i EU",
+      InC_EDU: "Opphavsrettslig beskyttet - Bruk i undervisning tillatt",
+      InC_NC: "Opphavsrettslig beskyttet - Ikke-kommersiell bruk tillatt",
+      InC_RUU:
+        "Opphavsrettslig beskyttet - Rettighetshaver(e) kan ikke finnes eller identifiseres",
+      NoC_CR: "Ikke opphavsrettslig beskyttet - Avtalebaserte begrensninger",
+      NoC_NC: "Ikke opphavsrettslig beskyttet - Kun ikke-kommersiell bruk",
+      NoC_OKLR:
+        "Ikke opphavsrettslig beskyttet - Andre kjente juridiske begrensninger",
+      NoC_US: "Ikke opphavsrettslig beskyttet - USA",
+      CNE: "Opphavsrett ikke vurdert",
+      UND: "Opphavsrett uavklart",
+      NKC: "Ingen kjent opphavsrett",
+      CC0: "CC0 1.0 Universell",
+      PDM: "Merke for allemannseie 1.0",
+      CC_BY: "Creative Commons Navngivelse 4.0 Internasjonal",
+      CC_BY_SA:
+        "Creative Commons Navngivelse-DelPåSammeVilkår 4.0 Internasjonal",
+      CC_BY_NC:
+        "Creative Commons Navngivelse-IkkeKommersiell 4.0 Internasjonal",
+      CC_BY_NC_SA:
+        "Creative Commons Navngivelse-IkkeKommersiell-DelPåSammeVilkår 4.0 Internasjonal",
+      CC_BY_ND:
+        "Creative Commons Navngivelse-IngenBearbeidelser 4.0 Internasjonal",
+      CC_BY_NC_ND:
+        "Creative Commons Navngivelse-IkkeKommersiell-IngenBearbeidelser 4.0 Internasjonal",
+    },
+    groups: {
+      rightsstatements: "Erklæringer fra RightsStatements.org",
+      creativecommons: "Creative Commons-lisenser og -verktøy",
+    },
+    organizationDefault: "Organisasjonens standard ({statement})",
+    notStated: "Ikke oppgitt",
+    inherited: "Organisasjonens standard",
   },
 } as const;

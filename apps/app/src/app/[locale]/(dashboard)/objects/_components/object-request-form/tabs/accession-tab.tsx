@@ -17,6 +17,7 @@ import {
 } from "../../collection-form-shared/catalog-parity-fields";
 import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
 import { EditSection } from "../../collection-form-shared/edit-section";
+import { RightsStatementField } from "../../collection-form-shared/object-description-fields";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 export function ObjectRequestAccessionTab({
   formData,
@@ -74,6 +75,11 @@ export function ObjectRequestAccessionTab({
           />
 
           <CreditLineField formData={formData} updateField={updateField} />
+          <RightsStatementField
+            formData={formData}
+            updateField={updateField}
+            currentOrganizationId={currentOrganizationId}
+          />
           <LegalRestrictionsField
             formData={formData}
             updateField={updateField}

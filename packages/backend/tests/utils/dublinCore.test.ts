@@ -190,6 +190,39 @@ describe("toDublinCore", () => {
     expect(dc.rights).toBe("Legal restrictions apply");
   });
 
+  test("should write the rights statement in effect as the first rights value", () => {
+    const inCopyright = "http://rightsstatements.org/vocab/InC/1.0/";
+    const cc0 = "https://creativecommons.org/publicdomain/zero/1.0/";
+    const object: Partial<Doc<"collections">> = {
+      title: "Test",
+      accessionNumber: "2024.1.1",
+      creditLine: "Gift of John Doe, 1990",
+    };
+
+    expect(
+      toDublinCore(
+        { ...object, rightsStatement: cc0 },
+        { defaultRightsStatement: inCopyright },
+      ).rights,
+    ).toEqual([cc0, "Gift of John Doe, 1990"]);
+    expect(
+      toDublinCore(object, { defaultRightsStatement: inCopyright }).rights,
+    ).toEqual([inCopyright, "Gift of John Doe, 1990"]);
+    expect(toDublinCore({ title: "Test", rightsStatement: cc0 }).rights).toBe(
+      cc0,
+    );
+  });
+
+  test("should write subject terms, then tags, as subject, each term once", () => {
+    const dc = toDublinCore({
+      title: "Test",
+      subjects: ["Harbour", "Pilots"],
+      tags: ["harbour", "Featured"],
+    });
+
+    expect(dc.subject).toEqual(["Harbour", "Pilots", "Featured"]);
+  });
+
   test("should include organization name as publisher", () => {
     const collection: Partial<Doc<"collections">> = {
       title: "Test",
@@ -292,19 +325,34 @@ describe("fromDublinCore", () => {
     expect(collection.description).toBe("A beautiful painting");
   });
 
-  test("should convert subject array to tags", () => {
+  test("should convert subject array to subject terms, not tags", () => {
     const metadata: DublinCoreMetadata = {
       title: "Test",
       identifier: "2024.1.1",
-      subject: ["painting", "modern art"],
+      subject: ["painting", "modern art", " Painting "],
     };
 
     const collection = fromDublinCore(metadata);
 
-    expect(collection.tags).toEqual(["painting", "modern art"]);
+    expect(collection.subjects).toEqual(["painting", "modern art"]);
+    expect(collection.tags).toBeUndefined();
   });
 
-  test("should convert subject string to tags array", () => {
+  test("should keep the first subject terms that fit and the rest as tags", () => {
+    const terms = Array.from({ length: 52 }, (_, index) => `Term ${index}`);
+    const long = "a".repeat(201);
+
+    const collection = fromDublinCore({
+      title: "Test",
+      identifier: "2024.1.1",
+      subject: [...terms.slice(0, 10), long, ...terms.slice(10)],
+    });
+
+    expect(collection.subjects).toEqual(terms.slice(0, 50));
+    expect(collection.tags).toEqual([long, "Term 50", "Term 51"]);
+  });
+
+  test("should convert subject string to subject terms", () => {
     const metadata: DublinCoreMetadata = {
       title: "Test",
       identifier: "2024.1.1",
@@ -313,7 +361,7 @@ describe("fromDublinCore", () => {
 
     const collection = fromDublinCore(metadata);
 
-    expect(collection.tags).toEqual(["painting"]);
+    expect(collection.subjects).toEqual(["painting"]);
   });
 
   test("should convert contributor array to donated_by", () => {
@@ -469,6 +517,25 @@ describe("fromDublinCore", () => {
     const collection = fromDublinCore(metadata);
 
     expect(collection.creditLine).toBe("Gift of John Doe, 1990");
+    expect(collection.rightsStatement).toBeUndefined();
+  });
+
+  test("should keep the first rights value naming a statement as the rights statement, the rest as the credit line", () => {
+    const collection = fromDublinCore({
+      title: "Test",
+      identifier: "2024.1.1",
+      rights: [
+        "Gift of John Doe, 1990",
+        "https://creativecommons.org/licenses/by/4.0/deed.fr",
+        "CC BY 3.0",
+      ],
+    });
+
+    expect(collection.rightsStatement).toBe(
+      "https://creativecommons.org/licenses/by/4.0/",
+    );
+    // An older licence version is not a statement MuseumLite offers.
+    expect(collection.creditLine).toBe("Gift of John Doe, 1990; CC BY 3.0");
   });
 });
 
@@ -621,7 +688,9 @@ describe("fromDublinCoreXML", () => {
       accessionNumber: "2024.1.1",
       creator: "John Artist",
       description: "A beautiful painting",
-      tags: ["painting", "modern art"],
+      subjects: ["painting", "modern art"],
+      rightsStatement: "http://rightsstatements.org/vocab/NoC-US/1.0/",
+      creditLine: "Gift of John Doe, 1990",
     };
 
     const dc = toDublinCore(original);
@@ -634,7 +703,9 @@ describe("fromDublinCoreXML", () => {
     expect(converted.accessionNumber).toBe(original.accessionNumber);
     expect(converted.creator).toBe(original.creator);
     expect(converted.description).toBe(original.description);
-    expect(converted.tags).toEqual(original.tags);
+    expect(converted.subjects).toEqual(original.subjects);
+    expect(converted.rightsStatement).toBe(original.rightsStatement);
+    expect(converted.creditLine).toBe(original.creditLine);
   });
 
   test("should decode XML entities in titles", () => {
@@ -704,7 +775,7 @@ describe("round-trip conversions", () => {
     const original: Partial<Doc<"collections">> = {
       title: "Test",
       accessionNumber: "2024.1.1",
-      tags: ["painting", "modern"],
+      subjects: ["painting", "modern"],
       donated_by: ["John Doe"],
       links: [{ url: "http://example.com" }],
     };
@@ -712,9 +783,56 @@ describe("round-trip conversions", () => {
     const dc = toDublinCore(original);
     const converted = fromDublinCore(dc);
 
-    expect(converted.tags).toEqual(original.tags);
+    expect(converted.subjects).toEqual(original.subjects);
     expect(converted.donated_by).toEqual(original.donated_by);
     expect(converted.links).toEqual(original.links);
+  });
+});
+
+describe("legal restrictions in dc:rights", () => {
+  function roundTrip(original: Partial<Doc<"collections">>) {
+    const [metadata] = fromDublinCoreXML(
+      toDublinCoreXML(toDublinCore(original)),
+    );
+    if (!metadata) throw new Error("Expected a record");
+    return fromDublinCore(metadata);
+  }
+
+  test("come back as legal restrictions, not as credit line text", () => {
+    const withCredit = roundTrip({
+      title: "Test",
+      accessionNumber: "2024.1.1",
+      creditLine: "Gift of X",
+      legalRestrictions: true,
+    });
+    expect(withCredit.creditLine).toBe("Gift of X");
+    expect(withCredit.legalRestrictions).toBe(true);
+
+    const alone = roundTrip({
+      title: "Test",
+      accessionNumber: "2024.1.1",
+      legalRestrictions: true,
+    });
+    expect(alone.creditLine).toBeUndefined();
+    expect(alone.legalRestrictions).toBe(true);
+
+    expect(
+      roundTrip({ title: "Test", accessionNumber: "2024.1.1" })
+        .legalRestrictions,
+    ).toBeUndefined();
+  });
+
+  test("are not read into a credit line that only mentions them", () => {
+    const collection = fromDublinCore({
+      title: "Test",
+      identifier: "2024.1.1",
+      rights: "Legal restrictions apply to reproductions",
+    });
+
+    expect(collection.creditLine).toBe(
+      "Legal restrictions apply to reproductions",
+    );
+    expect(collection.legalRestrictions).toBeUndefined();
   });
 });
 

@@ -1,66 +1,36 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import NextImage from "next/image";
 import { useState } from "react";
-import { z } from "zod";
 import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { useI18n } from "@/locales/client";
-
-type RightsStatus = NonNullable<Doc<"mediaFiles">["rightsStatus"]>;
-type LicenseType = NonNullable<Doc<"mediaFiles">["licenseType"]>;
-
-const rightsStatuses: RightsStatus[] = [
-  "unknown",
-  "owned",
-  "public_domain",
-  "licensed",
-  "restricted",
-  "orphan_work",
-];
-const licenseTypes: LicenseType[] = [
-  "creative_commons_by",
-  "creative_commons_by_sa",
-  "creative_commons_by_nc",
-  "creative_commons_by_nd",
-  "creative_commons_zero",
-  "editorial_only",
-  "commercial",
-  "internal_only",
-  "custom",
-];
-const expirySchema = z.union([
-  z.literal(""),
-  z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-]);
+import {
+  isLicenseExpiryValid,
+  type MediaRightsValues,
+  mediaRightsUpdate,
+  mediaRightsValuesOf,
+  type StoredMediaRights,
+} from "./media-rights";
+import { MediaRightsFields } from "./media-rights-fields";
 
 interface MediaPublicationPanelProps {
   mediaId: Id<"mediaFiles">;
-  item: Pick<
-    Doc<"mediaFiles">,
-    | "rightsStatus"
-    | "licenseType"
-    | "licenseExpiry"
-    | "usageRestrictions"
-    | "requiresAcknowledgment"
-  >;
+  organizationId: Id<"organizations">;
+  item: StoredMediaRights;
 }
 
-interface MediaPublicationPanelState {
-  rightsStatus: RightsStatus;
-  licenseType: LicenseType | "";
-  licenseExpiry: string;
-  usageRestrictions: string;
-  requiresAcknowledgment: boolean;
+interface MediaPublicationPanelState extends MediaRightsValues {
   isSaving: boolean;
   error: string | null;
 }
 
 export function MediaPublicationPanel({
   mediaId,
+  organizationId,
   item,
 }: MediaPublicationPanelProps) {
   const t = useI18n();
@@ -75,16 +45,11 @@ export function MediaPublicationPanel({
     api.mediaPublications.setOriginalDownload,
   );
   const [state, setState] = useState<MediaPublicationPanelState>(() => ({
-    rightsStatus: item.rightsStatus ?? "unknown",
-    licenseType: item.licenseType ?? "",
-    licenseExpiry: item.licenseExpiry
-      ? new Date(item.licenseExpiry).toISOString().slice(0, 10)
-      : "",
-    usageRestrictions: item.usageRestrictions ?? "",
-    requiresAcknowledgment: item.requiresAcknowledgment ?? false,
+    ...mediaRightsValuesOf(item),
     isSaving: false,
     error: null,
   }));
+  const rightsUpdate = mediaRightsUpdate(state, mediaRightsValuesOf(item));
 
   function updateState<Key extends keyof MediaPublicationPanelState>(
     key: Key,
@@ -109,27 +74,11 @@ export function MediaPublicationPanel({
   }
 
   function saveRights() {
-    const parsed = expirySchema.safeParse(state.licenseExpiry);
-    if (
-      !parsed.success ||
-      (state.licenseExpiry &&
-        Number.isNaN(Date.parse(`${state.licenseExpiry}T23:59:59.999Z`)))
-    ) {
+    if (!isLicenseExpiryValid(state.licenseExpiry)) {
       updateState("error", t("mediaPage.publication.invalidExpiry"));
       return;
     }
-    void run(() =>
-      updateRights({
-        mediaId,
-        rightsStatus: state.rightsStatus,
-        licenseType: state.licenseType || null,
-        licenseExpiry: state.licenseExpiry
-          ? Date.parse(`${state.licenseExpiry}T23:59:59.999Z`)
-          : null,
-        usageRestrictions: state.usageRestrictions.trim() || null,
-        requiresAcknowledgment: state.requiresAcknowledgment,
-      }),
-    );
+    void run(() => updateRights({ mediaId, ...rightsUpdate }));
   }
 
   return (
@@ -191,90 +140,20 @@ export function MediaPublicationPanel({
           )}
           {review.canManage && (
             <div className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1 text-xs text-zinc-300">
-                  <span>{t("mediaPage.publication.rightsStatus")}</span>
-                  <select
-                    value={state.rightsStatus}
-                    onChange={(event) =>
-                      updateState(
-                        "rightsStatus",
-                        rightsStatuses.find(
-                          (status) => status === event.target.value,
-                        ) ?? "unknown",
-                      )
-                    }
-                    className="w-full rounded border border-white/10 bg-zinc-950 p-2"
-                  >
-                    {rightsStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="space-y-1 text-xs text-zinc-300">
-                  <span>{t("mediaPage.publication.licenseType")}</span>
-                  <select
-                    value={state.licenseType}
-                    onChange={(event) =>
-                      updateState(
-                        "licenseType",
-                        licenseTypes.find(
-                          (license) => license === event.target.value,
-                        ) ?? "",
-                      )
-                    }
-                    className="w-full rounded border border-white/10 bg-zinc-950 p-2"
-                  >
-                    <option value="">
-                      {t("mediaPage.publication.noLicense")}
-                    </option>
-                    {licenseTypes.map((license) => (
-                      <option key={license} value={license}>
-                        {license.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="space-y-1 text-xs text-zinc-300">
-                  <span>{t("mediaPage.publication.expiry")}</span>
-                  <input
-                    type="date"
-                    value={state.licenseExpiry}
-                    onChange={(event) =>
-                      updateState("licenseExpiry", event.target.value)
-                    }
-                    className="w-full rounded border border-white/10 bg-zinc-950 p-2"
-                  />
-                </label>
-                <label className="space-y-1 text-xs text-zinc-300">
-                  <span>{t("mediaPage.publication.restrictions")}</span>
-                  <input
-                    type="text"
-                    value={state.usageRestrictions}
-                    onChange={(event) =>
-                      updateState("usageRestrictions", event.target.value)
-                    }
-                    className="w-full rounded border border-white/10 bg-zinc-950 p-2"
-                  />
-                </label>
-              </div>
-              <label className="flex items-center gap-2 text-xs text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={state.requiresAcknowledgment}
-                  onChange={(event) =>
-                    updateState("requiresAcknowledgment", event.target.checked)
-                  }
-                />
-                {t("mediaPage.publication.acknowledgment")}
-              </label>
+              <MediaRightsFields
+                organizationId={organizationId}
+                values={state}
+                onChange={(change) =>
+                  setState((current) => ({ ...current, ...change }))
+                }
+              />
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={state.isSaving}
+                disabled={
+                  state.isSaving || Object.keys(rightsUpdate).length === 0
+                }
                 onClick={saveRights}
               >
                 {t("mediaPage.publication.saveRights")}

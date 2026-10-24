@@ -454,3 +454,311 @@ test("object CSVs carry the date made, and a re-import keeps the structured date
   expect(byNumber.get("I-3")?.dateCreatedEdtf).toBe("185X");
   expect(byNumber.has("I-2")).toBe(false);
 });
+
+test("object CSVs carry the description and rights as entered, and a re-import reads codes, URIs and lists, while a value it cannot read fails its row", async () => {
+  const inCopyright = "http://rightsstatements.org/vocab/InC/1.0/";
+  const cc0 = "https://creativecommons.org/publicdomain/zero/1.0/";
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create", "collections.read"],
+    { subscriptionTier: "pro" },
+  );
+  await t.run((ctx) =>
+    ctx.db.patch(organizationId, {
+      settings: { rightsDefaults: { objectRightsStatement: inCopyright } },
+    }),
+  );
+  const authed = authedForUser(t, userId);
+  await authed.mutation(api.collections.create, {
+    organizationId,
+    accessionNumber: "D-1",
+    title: "Tea set",
+    numberOfObjects: 12,
+    subjects: ["Willow pattern", "Bridge"],
+    completeness: "incomplete",
+    completenessNote: "One cup missing",
+    dimensionMeasuredPart: "overall",
+    measurementSets: [{ part: "base", diameter: 12, unit: "cm" }],
+    rightsStatement: cc0,
+  });
+  await authed.mutation(api.collections.create, {
+    organizationId,
+    accessionNumber: "D-2",
+    title: "Cup",
+  });
+
+  // Settings > Data: entered values only, never the default in effect.
+  const rows = await authed.mutation(api.imports.exportObjects, {
+    organizationId,
+  });
+  const exported = new Map(rows.map((row) => [row.accessionNumber, row]));
+  const teaSet = exported.get("D-1");
+  expect(teaSet).toMatchObject({
+    numberOfObjects: 12,
+    subjects: "Willow pattern; Bridge",
+    completeness: "incomplete",
+    completenessNote: "One cup missing",
+    dimensionMeasuredPart: "overall",
+    rightsStatement: cc0,
+  });
+  expect(JSON.parse(teaSet?.measurementSets ?? "")).toEqual([
+    { part: "base", diameter: 12, unit: "cm" },
+  ]);
+  expect(exported.get("D-2")?.rightsStatement).toBeUndefined();
+  const template = await authed.query(api.imports.getImportTemplateByType, {
+    type: "objects",
+  });
+  expect(template.headers).toEqual(
+    expect.arrayContaining([
+      "numberOfObjects",
+      "subjects",
+      "completeness",
+      "completenessNote",
+      "dimensionMeasuredPart",
+      "measurementSets",
+      "rightsStatement",
+    ]),
+  );
+  expect(template.headers).not.toContain("rightsStatementInEffect");
+  expect(template.exampleRow).toHaveLength(template.headers.length);
+
+  // The catalog page's files add the statement in effect.
+  const csv = await authed.mutation(api.imports.exportObjectsWithFormat, {
+    organizationId,
+    format: "csv",
+  });
+  const [header = "", ...lines] = csv.split("\n");
+  expect(header).toContain(
+    "dimensions,dimensionMeasuredPart,measurementSets,numberOfObjects,description,subjects,condition,completeness,completenessNote,provenance,rightsStatement,rightsStatementInEffect,",
+  );
+  const line = (number: string) =>
+    lines.find((candidate) => candidate.startsWith(`"${number}"`)) ?? "";
+  expect(line("D-1")).toContain(
+    `"overall","[{""diameter"":12,""part"":""base"",""unit"":""cm""}]",12,"","Willow pattern; Bridge","","incomplete","One cup missing","","${cc0}","${cc0}",`,
+  );
+  expect(line("D-2")).toContain(`,"","${inCopyright}",`);
+  const json = JSON.parse(
+    await authed.mutation(api.imports.exportObjectsWithFormat, {
+      organizationId,
+      format: "json",
+    }),
+  ) as Array<Record<string, unknown>>;
+  expect(json.find((row) => row.accessionNumber === "D-2")).toMatchObject({
+    rightsStatementInEffect: inCopyright,
+  });
+  expect(json.find((row) => row.accessionNumber === "D-1")).toMatchObject({
+    subjects: ["Willow pattern", "Bridge"],
+    rightsStatementInEffect: cc0,
+  });
+  const dublinCore = await authed.mutation(
+    api.imports.exportObjectsWithFormat,
+    { organizationId, format: "dublincore" },
+  );
+  expect(dublinCore).toContain(`<dc:rights>${cc0}</dc:rights>`);
+  expect(dublinCore).toContain(`<dc:rights>${inCopyright}</dc:rights>`);
+  expect(dublinCore).toContain("<dc:subject>Willow pattern</dc:subject>");
+  const spectrum = await authed.mutation(api.imports.exportObjectsWithFormat, {
+    organizationId,
+    format: "spectrum",
+  });
+  expect(spectrum).toContain(
+    `<rightsStatement>${inCopyright}</rightsStatement>`,
+  );
+  expect(spectrum).toContain("<numberOfObjects>12</numberOfObjects>");
+
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    entityType: "objects",
+    totalItems: 8,
+  });
+  const imported = await authed.mutation(api.imports.importObjectsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        rowNumber: 2,
+        accessionNumber: "I-1",
+        title: "Net",
+        numberOfObjects: " 2 ",
+        subjects: "Harbour; harbour;; Pilots",
+        completeness: "Fragment",
+        completenessNote: " Rim only ",
+        dimensionMeasuredPart: "FRAMED",
+        measurementSets: '[{"part":"Other","partNote":"Float","diameter":9}]',
+        rightsStatement: "CC BY-SA 4.0",
+      },
+      {
+        rowNumber: 3,
+        accessionNumber: "I-2",
+        title: "A",
+        numberOfObjects: "1.5",
+      },
+      {
+        rowNumber: 4,
+        accessionNumber: "I-3",
+        title: "B",
+        completeness: "broken",
+      },
+      {
+        rowNumber: 5,
+        accessionNumber: "I-4",
+        title: "C",
+        measurementSets: '[{"part":"lid","width":1}]',
+      },
+      {
+        rowNumber: 6,
+        accessionNumber: "I-5",
+        title: "D",
+        rightsStatement: "CC BY 3.0",
+      },
+      {
+        rowNumber: 7,
+        accessionNumber: "I-6",
+        title: "E",
+        dimensionMeasuredPart: "lid",
+      },
+      {
+        rowNumber: 8,
+        accessionNumber: "I-7",
+        title: "F",
+        subjects: "a".repeat(201),
+      },
+      {
+        // The Settings export of D-1, read back.
+        rowNumber: 9,
+        accessionNumber: "I-8",
+        title: "Tea set",
+        numberOfObjects: String(teaSet?.numberOfObjects),
+        subjects: teaSet?.subjects,
+        completeness: teaSet?.completeness,
+        completenessNote: teaSet?.completenessNote,
+        dimensionMeasuredPart: teaSet?.dimensionMeasuredPart,
+        measurementSets: teaSet?.measurementSets,
+        rightsStatement: teaSet?.rightsStatement,
+      },
+    ],
+  });
+  expect(imported.results.map((result) => result.status)).toEqual([
+    "accepted",
+    "failed",
+    "failed",
+    "failed",
+    "failed",
+    "failed",
+    "failed",
+    "accepted",
+  ]);
+  expect(imported.errors.map((error) => error.split(":")[0])).toEqual([
+    "Row 3",
+    "Row 4",
+    "Row 5",
+    "Row 6",
+    "Row 7",
+    "Row 8",
+  ]);
+  expect(imported.errors[3]).toContain("rightsStatement must be");
+  const stored = await t.run((ctx) =>
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  );
+  const byNumber = new Map(stored.map((row) => [row.accessionNumber, row]));
+  expect(byNumber.get("I-1")).toMatchObject({
+    numberOfObjects: 2,
+    subjects: ["Harbour", "Pilots"],
+    completeness: "fragment",
+    completenessNote: "Rim only",
+    dimensionMeasuredPart: "framed",
+    measurementSets: [{ part: "other", partNote: "Float", diameter: 9 }],
+    rightsStatement: "https://creativecommons.org/licenses/by-sa/4.0/",
+  });
+  expect(byNumber.get("I-8")).toMatchObject({
+    numberOfObjects: 12,
+    subjects: ["Willow pattern", "Bridge"],
+    completeness: "incomplete",
+    completenessNote: "One cup missing",
+    dimensionMeasuredPart: "overall",
+    measurementSets: [{ part: "base", diameter: 12, unit: "cm" }],
+    rightsStatement: cc0,
+  });
+  for (const failed of ["I-2", "I-3", "I-4", "I-5", "I-6", "I-7"])
+    expect(byNumber.has(failed)).toBe(false);
+});
+
+test("the objects import reads completeness and measured parts as the labels the app shows in any of its languages", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create"],
+    { subscriptionTier: "pro" },
+  );
+  const authed = authedForUser(t, userId);
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    entityType: "objects",
+    totalItems: 3,
+  });
+
+  const imported = await authed.mutation(api.imports.importObjectsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        // A Norwegian file.
+        rowNumber: 2,
+        accessionNumber: "L-1",
+        title: "Maleri",
+        completeness: "Ufullstendig",
+        dimensionMeasuredPart: "med ramme",
+        measurementSets: '[{"part":"Uten ramme","height":40}]',
+      },
+      {
+        // A French one.
+        rowNumber: 3,
+        accessionNumber: "L-2",
+        title: "Estampe",
+        completeness: "COMPLET",
+        dimensionMeasuredPart: "À vue",
+      },
+      {
+        rowNumber: 4,
+        accessionNumber: "L-3",
+        title: "Vase",
+        dimensionMeasuredPart: "Lokk",
+      },
+    ],
+  });
+
+  expect(imported.results.map((result) => result.status)).toEqual([
+    "accepted",
+    "accepted",
+    "failed",
+  ]);
+  expect(imported.errors[0]).toContain("dimensionMeasuredPart must be one of");
+  const stored = await t.run((ctx) =>
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  );
+  const byNumber = new Map(stored.map((row) => [row.accessionNumber, row]));
+  expect(byNumber.get("L-1")).toMatchObject({
+    completeness: "incomplete",
+    dimensionMeasuredPart: "framed",
+    measurementSets: [{ part: "unframed", height: 40 }],
+  });
+  expect(byNumber.get("L-2")).toMatchObject({
+    completeness: "complete",
+    dimensionMeasuredPart: "sight",
+  });
+});

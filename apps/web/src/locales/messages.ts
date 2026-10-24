@@ -327,6 +327,37 @@ const en = {
   "public.portalTitle": "{name} Portal",
   "public.fromCollectionOf": "From the collection of {name}",
   "public.imageAlt": "{title} — image {index}",
+  "public.rights": "Rights",
+  "public.imageRights": "Image rights",
+  "public.rightsStatements.InC": "In Copyright",
+  "public.rightsStatements.InC_OW_EU": "In Copyright - EU Orphan Work",
+  "public.rightsStatements.InC_EDU": "In Copyright - Educational Use Permitted",
+  "public.rightsStatements.InC_NC":
+    "In Copyright - Non-Commercial Use Permitted",
+  "public.rightsStatements.InC_RUU":
+    "In Copyright - Rights-holder(s) Unlocatable or Unidentifiable",
+  "public.rightsStatements.NoC_CR": "No Copyright - Contractual Restrictions",
+  "public.rightsStatements.NoC_NC": "No Copyright - Non-Commercial Use Only",
+  "public.rightsStatements.NoC_OKLR":
+    "No Copyright - Other Known Legal Restrictions",
+  "public.rightsStatements.NoC_US": "No Copyright - United States",
+  "public.rightsStatements.CNE": "Copyright Not Evaluated",
+  "public.rightsStatements.UND": "Copyright Undetermined",
+  "public.rightsStatements.NKC": "No Known Copyright",
+  "public.rightsStatements.CC0": "CC0 1.0 Universal",
+  "public.rightsStatements.PDM": "Public Domain Mark 1.0",
+  "public.rightsStatements.CC_BY":
+    "Creative Commons Attribution 4.0 International",
+  "public.rightsStatements.CC_BY_SA":
+    "Creative Commons Attribution-ShareAlike 4.0 International",
+  "public.rightsStatements.CC_BY_NC":
+    "Creative Commons Attribution-NonCommercial 4.0 International",
+  "public.rightsStatements.CC_BY_NC_SA":
+    "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International",
+  "public.rightsStatements.CC_BY_ND":
+    "Creative Commons Attribution-NoDerivatives 4.0 International",
+  "public.rightsStatements.CC_BY_NC_ND":
+    "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International",
   "marketing.pricing.getStarted": "Get started",
   "marketing.pricing.unlimited": "Unlimited {feature}",
   "marketing.pricing.upTo": "Up to {count} {feature}",
@@ -716,6 +747,41 @@ const fr: WebMessages = {
   "public.portalTitle": "Portail {name}",
   "public.fromCollectionOf": "De la collection de {name}",
   "public.imageAlt": "{title} — image {index}",
+  "public.rights": "Droits",
+  "public.imageRights": "Droits de l’image",
+  "public.rightsStatements.InC": "Protégé par le droit d’auteur",
+  "public.rightsStatements.InC_OW_EU":
+    "Protégé par le droit d’auteur - Œuvre orpheline de l’UE",
+  "public.rightsStatements.InC_EDU":
+    "Protégé par le droit d’auteur - Utilisation à des fins éducatives autorisée",
+  "public.rightsStatements.InC_NC":
+    "Protégé par le droit d’auteur - Utilisation non commerciale autorisée",
+  "public.rightsStatements.InC_RUU":
+    "Protégé par le droit d’auteur - Titulaire(s) des droits introuvable(s) ou non identifiable(s)",
+  "public.rightsStatements.NoC_CR":
+    "Pas de droit d’auteur - Restrictions contractuelles",
+  "public.rightsStatements.NoC_NC":
+    "Pas de droit d’auteur - Utilisation non commerciale uniquement",
+  "public.rightsStatements.NoC_OKLR":
+    "Pas de droit d’auteur - Autres restrictions juridiques connues",
+  "public.rightsStatements.NoC_US": "Pas de droit d’auteur - États-Unis",
+  "public.rightsStatements.CNE": "Droit d’auteur non évalué",
+  "public.rightsStatements.UND": "Droit d’auteur indéterminé",
+  "public.rightsStatements.NKC": "Pas de droit d’auteur connu",
+  "public.rightsStatements.CC0": "CC0 1.0 Universel",
+  "public.rightsStatements.PDM": "Marque du domaine public 1.0",
+  "public.rightsStatements.CC_BY":
+    "Licence Creative Commons Attribution 4.0 International",
+  "public.rightsStatements.CC_BY_SA":
+    "Licence Creative Commons Attribution - Partage dans les mêmes conditions 4.0 International",
+  "public.rightsStatements.CC_BY_NC":
+    "Licence Creative Commons Attribution - Pas d’utilisation commerciale 4.0 International",
+  "public.rightsStatements.CC_BY_NC_SA":
+    "Licence Creative Commons Attribution - Pas d’utilisation commerciale - Partage dans les mêmes conditions 4.0 International",
+  "public.rightsStatements.CC_BY_ND":
+    "Licence Creative Commons Attribution - Pas de modification 4.0 International",
+  "public.rightsStatements.CC_BY_NC_ND":
+    "Licence Creative Commons Attribution - Pas d’utilisation commerciale - Pas de modification 4.0 International",
   "marketing.pricing.getStarted": "Commencer",
   "marketing.pricing.unlimited": "{feature} illimité",
   "marketing.pricing.upTo": "Jusqu’à {count} {feature}",
@@ -1101,6 +1167,37 @@ const es: WebMessages = {
   "public.portalTitle": "Portal {name}",
   "public.fromCollectionOf": "De la colección de {name}",
   "public.imageAlt": "{title} — imagen {index}",
+  "public.rights": "Derechos",
+  "public.imageRights": "Derechos de la imagen",
+  "public.rightsStatements.InC": "En copyright",
+  "public.rightsStatements.InC_OW_EU": "En copyright - Obra huérfana de la UE",
+  "public.rightsStatements.InC_EDU": "En copyright - Uso educativo permitido",
+  "public.rightsStatements.InC_NC": "En copyright - Uso no comercial permitido",
+  "public.rightsStatements.InC_RUU":
+    "En copyright - Titular(es) de derechos no localizable(s) o no identificable(s)",
+  "public.rightsStatements.NoC_CR":
+    "Sin copyright - Restricciones contractuales",
+  "public.rightsStatements.NoC_NC": "Sin copyright - Solo uso no comercial",
+  "public.rightsStatements.NoC_OKLR":
+    "Sin copyright - Otras restricciones legales conocidas",
+  "public.rightsStatements.NoC_US": "Sin copyright - Estados Unidos",
+  "public.rightsStatements.CNE": "Copyright no evaluado",
+  "public.rightsStatements.UND": "Copyright indeterminado",
+  "public.rightsStatements.NKC": "Sin copyright conocido",
+  "public.rightsStatements.CC0": "CC0 1.0 Universal",
+  "public.rightsStatements.PDM": "Marca de dominio público 1.0",
+  "public.rightsStatements.CC_BY":
+    "Creative Commons Atribución 4.0 Internacional",
+  "public.rightsStatements.CC_BY_SA":
+    "Creative Commons Atribución-CompartirIgual 4.0 Internacional",
+  "public.rightsStatements.CC_BY_NC":
+    "Creative Commons Atribución-NoComercial 4.0 Internacional",
+  "public.rightsStatements.CC_BY_NC_SA":
+    "Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional",
+  "public.rightsStatements.CC_BY_ND":
+    "Creative Commons Atribución-SinDerivadas 4.0 Internacional",
+  "public.rightsStatements.CC_BY_NC_ND":
+    "Creative Commons Atribución-NoComercial-SinDerivadas 4.0 Internacional",
   "marketing.pricing.getStarted": "Empezar",
   "marketing.pricing.unlimited": "{feature} ilimitado",
   "marketing.pricing.upTo": "Hasta {count} {feature}",
@@ -1482,6 +1579,41 @@ const no: WebMessages = {
   "public.portalTitle": "Portalen {name}",
   "public.fromCollectionOf": "Fra samlingen til {name}",
   "public.imageAlt": "{title} — bilde {index}",
+  "public.rights": "Rettigheter",
+  "public.imageRights": "Bilderettigheter",
+  "public.rightsStatements.InC": "Opphavsrettslig beskyttet",
+  "public.rightsStatements.InC_OW_EU":
+    "Opphavsrettslig beskyttet - Foreldreløst verk i EU",
+  "public.rightsStatements.InC_EDU":
+    "Opphavsrettslig beskyttet - Bruk i undervisning tillatt",
+  "public.rightsStatements.InC_NC":
+    "Opphavsrettslig beskyttet - Ikke-kommersiell bruk tillatt",
+  "public.rightsStatements.InC_RUU":
+    "Opphavsrettslig beskyttet - Rettighetshaver(e) kan ikke finnes eller identifiseres",
+  "public.rightsStatements.NoC_CR":
+    "Ikke opphavsrettslig beskyttet - Avtalebaserte begrensninger",
+  "public.rightsStatements.NoC_NC":
+    "Ikke opphavsrettslig beskyttet - Kun ikke-kommersiell bruk",
+  "public.rightsStatements.NoC_OKLR":
+    "Ikke opphavsrettslig beskyttet - Andre kjente juridiske begrensninger",
+  "public.rightsStatements.NoC_US": "Ikke opphavsrettslig beskyttet - USA",
+  "public.rightsStatements.CNE": "Opphavsrett ikke vurdert",
+  "public.rightsStatements.UND": "Opphavsrett uavklart",
+  "public.rightsStatements.NKC": "Ingen kjent opphavsrett",
+  "public.rightsStatements.CC0": "CC0 1.0 Universell",
+  "public.rightsStatements.PDM": "Merke for allemannseie 1.0",
+  "public.rightsStatements.CC_BY":
+    "Creative Commons Navngivelse 4.0 Internasjonal",
+  "public.rightsStatements.CC_BY_SA":
+    "Creative Commons Navngivelse-DelPåSammeVilkår 4.0 Internasjonal",
+  "public.rightsStatements.CC_BY_NC":
+    "Creative Commons Navngivelse-IkkeKommersiell 4.0 Internasjonal",
+  "public.rightsStatements.CC_BY_NC_SA":
+    "Creative Commons Navngivelse-IkkeKommersiell-DelPåSammeVilkår 4.0 Internasjonal",
+  "public.rightsStatements.CC_BY_ND":
+    "Creative Commons Navngivelse-IngenBearbeidelser 4.0 Internasjonal",
+  "public.rightsStatements.CC_BY_NC_ND":
+    "Creative Commons Navngivelse-IkkeKommersiell-IngenBearbeidelser 4.0 Internasjonal",
   "marketing.pricing.getStarted": "Kom i gang",
   "marketing.pricing.unlimited": "Ubegrenset {feature}",
   "marketing.pricing.upTo": "Opptil {count} {feature}",
@@ -1863,6 +1995,41 @@ const ro: WebMessages = {
   "public.portalTitle": "Portalul {name}",
   "public.fromCollectionOf": "Din colecția {name}",
   "public.imageAlt": "{title} — imaginea {index}",
+  "public.rights": "Drepturi",
+  "public.imageRights": "Drepturile imaginii",
+  "public.rightsStatements.InC": "Protejat prin drepturi de autor",
+  "public.rightsStatements.InC_OW_EU":
+    "Protejat prin drepturi de autor - Operă orfană în UE",
+  "public.rightsStatements.InC_EDU":
+    "Protejat prin drepturi de autor - Utilizare educațională permisă",
+  "public.rightsStatements.InC_NC":
+    "Protejat prin drepturi de autor - Utilizare necomercială permisă",
+  "public.rightsStatements.InC_RUU":
+    "Protejat prin drepturi de autor - Titularul (titularii) drepturilor nu pot fi găsiți sau identificați",
+  "public.rightsStatements.NoC_CR":
+    "Fără drepturi de autor - Restricții contractuale",
+  "public.rightsStatements.NoC_NC":
+    "Fără drepturi de autor - Numai utilizare necomercială",
+  "public.rightsStatements.NoC_OKLR":
+    "Fără drepturi de autor - Alte restricții legale cunoscute",
+  "public.rightsStatements.NoC_US": "Fără drepturi de autor - Statele Unite",
+  "public.rightsStatements.CNE": "Drepturi de autor neevaluate",
+  "public.rightsStatements.UND": "Drepturi de autor nedeterminate",
+  "public.rightsStatements.NKC": "Fără drepturi de autor cunoscute",
+  "public.rightsStatements.CC0": "CC0 1.0 Universal",
+  "public.rightsStatements.PDM": "Marca domeniului public 1.0",
+  "public.rightsStatements.CC_BY":
+    "Creative Commons Atribuire 4.0 Internațional",
+  "public.rightsStatements.CC_BY_SA":
+    "Creative Commons Atribuire-Distribuire în condiții identice 4.0 Internațional",
+  "public.rightsStatements.CC_BY_NC":
+    "Creative Commons Atribuire-Necomercial 4.0 Internațional",
+  "public.rightsStatements.CC_BY_NC_SA":
+    "Creative Commons Atribuire-Necomercial-Distribuire în condiții identice 4.0 Internațional",
+  "public.rightsStatements.CC_BY_ND":
+    "Creative Commons Atribuire-Fără opere derivate 4.0 Internațional",
+  "public.rightsStatements.CC_BY_NC_ND":
+    "Creative Commons Atribuire-Necomercial-Fără opere derivate 4.0 Internațional",
   "marketing.pricing.getStarted": "Începe",
   "marketing.pricing.unlimited": "{feature} nelimitat",
   "marketing.pricing.upTo": "Până la {count} {feature}",

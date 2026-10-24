@@ -7,6 +7,7 @@ export type {
   DraftMediaItem,
   InscriptionMarkEntry,
   LinkEntry,
+  MeasurementSetEntry,
   ObjectDraftData,
   OwnershipEntry,
   UpdateCollectionFormField,

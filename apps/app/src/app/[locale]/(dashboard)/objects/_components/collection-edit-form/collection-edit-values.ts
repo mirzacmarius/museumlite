@@ -4,11 +4,13 @@ import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { z } from "zod";
 import { edtfFromDraft } from "@/components/production-date/production-date-draft";
 import { serializeStringListField } from "@/lib/string-list-field";
+import { measurementSetsFromEntries } from "../collection-form-shared/measurement-sets";
 import type { CollectionFormData } from "../collection-form-shared/types";
 import {
   collectionFormDataSchema,
   comparableCollectionForm,
   createInitialFormData,
+  parseNumberOfObjects,
   parseOptionalMeasurement,
   parseOptionalWeight,
 } from "../collection-form-shared/utils";
@@ -130,6 +132,25 @@ export function collectionUpdatePatch(
     patch.tags = (values.tags ?? []).flatMap((tag) =>
       tag.trim() ? [tag.trim()] : [],
     );
+  // Null, and an empty list, clear a field; validation has refused the rest.
+  if (changed.has("numberOfObjects"))
+    patch.numberOfObjects =
+      parseNumberOfObjects(values.numberOfObjects).value ?? null;
+  if (changed.has("subjects"))
+    patch.subjects = (values.subjects ?? []).flatMap((term) =>
+      term.trim() ? [term.trim()] : [],
+    );
+  if (changed.has("dimensionMeasuredPart"))
+    patch.dimensionMeasuredPart = values.dimensionMeasuredPart ?? null;
+  if (changed.has("measurementSets"))
+    patch.measurementSets = measurementSetsFromEntries(values.measurementSets);
+  if (changed.has("completeness"))
+    patch.completeness = values.completeness ?? null;
+  if (changed.has("completenessNote"))
+    patch.completenessNote = values.completenessNote?.trim() || null;
+  // Null clears the Object's own statement, so its Organization's applies.
+  if (changed.has("rightsStatement"))
+    patch.rightsStatement = values.rightsStatement ?? null;
   if (changed.has("links"))
     patch.links = (values.links ?? []).flatMap(
       ({ localId: _localId, ...link }) => (link.url.trim() ? [link] : []),

@@ -66,3 +66,64 @@ test("a colleague who cleared the structured date made is named without a value"
     screen.getByText("Structured date was also changed by someone else."),
   ).toBeTruthy();
 });
+
+test("a colleague's description values show as names, numbers and lists", async () => {
+  await renderOnPage(
+    <Notices
+      overlaps={{
+        numberOfObjects: "12000",
+        subjects: ["Tea", "Chinoiserie"],
+        completeness: "fragment",
+        completenessNote: "Shards only",
+        dimensionMeasuredPart: "framed",
+        measurementSets: [
+          {
+            localId: "row-1",
+            part: "other",
+            partNote: "lid",
+            height: "",
+            width: "",
+            depth: "",
+            diameter: "8,5",
+            weight: "",
+            unit: "cm",
+            weightUnit: "",
+          },
+        ],
+        rightsStatement: "http://rightsstatements.org/vocab/InC/1.0/",
+      }}
+    />,
+  );
+
+  for (const notice of [
+    "Number of objects was also changed by someone else, to “12,000”",
+    "Subject was also changed by someone else, to “Tea, Chinoiserie”",
+    "Completeness was also changed by someone else, to “Fragment”",
+    "Completeness note was also changed by someone else, to “Shards only”",
+    "Measured part was also changed by someone else, to “Framed”",
+    "Further measured parts was also changed by someone else, to “Other (lid): Ø 8.5 cm”",
+    "Rights statement was also changed by someone else, to “In Copyright”",
+  ]) {
+    expect(screen.getByText(notice)).toBeTruthy();
+  }
+});
+
+test("a colleague who cleared a description field is named without a value", async () => {
+  await renderOnPage(
+    <Notices
+      overlaps={{
+        numberOfObjects: "",
+        rightsStatement: undefined,
+        measurementSets: [],
+      }}
+    />,
+  );
+
+  for (const notice of [
+    "Number of objects was also changed by someone else.",
+    "Rights statement was also changed by someone else.",
+    "Further measured parts was also changed by someone else.",
+  ]) {
+    expect(screen.getByText(notice)).toBeTruthy();
+  }
+});

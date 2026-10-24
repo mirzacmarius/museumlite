@@ -9,7 +9,13 @@
  */
 
 import type { Doc } from "../_generated/dataModel";
+import { distinctSubjectTerms, subjectsThatFit } from "./objectDescription";
 import { formatEdtf, parseEdtf, readDateText } from "./productionDates";
+import {
+  normalizeRightsStatement,
+  type RightsStatementUri,
+  rightsStatementInEffect,
+} from "./rightsStatements";
 
 /**
  * Dublin Core metadata record with 15 core elements
@@ -44,7 +50,21 @@ export interface DublinCoreMetadata {
   /** The spatial or temporal topic of the resource (dc:coverage) */
   coverage?: string;
   /** Information about rights held in and over the resource (dc:rights) */
-  rights?: string;
+  rights?: string | string[];
+}
+
+/** dc:rights text for an Object's legal restrictions, after its credit line. */
+const LEGAL_RESTRICTIONS = "Legal restrictions apply";
+const LEGAL_RESTRICTIONS_SUFFIX = `; ${LEGAL_RESTRICTIONS}`;
+
+/** One value as itself, several as a list, none as undefined. */
+function oneOrMany(values: string[]): string | string[] | undefined {
+  if (values.length === 0) return undefined;
+  return values.length === 1 ? values[0] : values;
+}
+
+function valuesOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value : value ? [value] : [];
 }
 
 /**
@@ -96,12 +116,15 @@ export function toDublinCore(
     organizationName?: string;
     includeAlternateIdentifiers?: boolean;
     language?: string;
+    /** The Organization's statement for Objects without their own. */
+    defaultRightsStatement?: RightsStatementUri;
   } = {},
 ): DublinCoreMetadata {
   const {
     organizationName,
     includeAlternateIdentifiers = false,
     language,
+    defaultRightsStatement,
   } = options;
 
   // Build identifier (primary accession number)
@@ -117,12 +140,13 @@ export function toDublinCore(
     );
   }
 
-  // Build subject from tags
-  const subject = collection.tags?.length
-    ? collection.tags.length === 1
-      ? collection.tags[0]
-      : collection.tags
-    : undefined;
+  // Subject terms first, then tags, each term once
+  const subject = oneOrMany(
+    distinctSubjectTerms([
+      ...(collection.subjects ?? []),
+      ...(collection.tags ?? []),
+    ]),
+  );
 
   // Build contributor from donors
   const contributor = collection.donated_by?.length
@@ -152,13 +176,21 @@ export function toDublinCore(
       : collection.links.map((link) => link.url)
     : undefined;
 
-  // Build rights from credit line and legal restrictions
-  let rights = collection.creditLine;
+  // The statement in effect as a URI first, then the credit line and legal
+  // restrictions as text
+  let creditText = collection.creditLine;
   if (collection.legalRestrictions) {
-    rights = rights
-      ? `${rights}; Legal restrictions apply`
-      : "Legal restrictions apply";
+    creditText = creditText
+      ? `${creditText}${LEGAL_RESTRICTIONS_SUFFIX}`
+      : LEGAL_RESTRICTIONS;
   }
+  const statement = rightsStatementInEffect(
+    collection.rightsStatement,
+    defaultRightsStatement,
+  );
+  const rights = oneOrMany(
+    [statement, creditText].filter((value): value is string => !!value),
+  );
 
   return {
     title: collection.title || "Untitled",
@@ -187,12 +219,30 @@ export function toDublinCore(
 export function fromDublinCore(
   metadata: DublinCoreMetadata,
 ): Partial<Doc<"collections">> {
-  // Parse subject back to tags
-  const tags = metadata.subject
-    ? Array.isArray(metadata.subject)
-      ? metadata.subject
-      : [metadata.subject]
-    : undefined;
+  // dc:subject holds subject terms, and an export writes tags after them:
+  // the terms an Object can keep as subjects are its subjects, the rest tags
+  const { subjects, rest: tags } = subjectsThatFit(valuesOf(metadata.subject));
+
+  // A dc:rights value naming a rights statement is kept as one, as entered;
+  // the rest is the credit line, less the marker an export adds for legal
+  // restrictions
+  const rightsValues = valuesOf(metadata.rights);
+  const statementValue = rightsValues.find(
+    (value) => normalizeRightsStatement(value) !== undefined,
+  );
+  let legalRestrictions = false;
+  const creditValues: string[] = [];
+  for (const value of rightsValues) {
+    if (value === statementValue) continue;
+    if (value === LEGAL_RESTRICTIONS) {
+      legalRestrictions = true;
+    } else if (value.endsWith(LEGAL_RESTRICTIONS_SUFFIX)) {
+      legalRestrictions = true;
+      creditValues.push(value.slice(0, -LEGAL_RESTRICTIONS_SUFFIX.length));
+    } else {
+      creditValues.push(value);
+    }
+  }
 
   // Parse contributor back to donated_by
   const donated_by = metadata.contributor
@@ -240,7 +290,8 @@ export function fromDublinCore(
   return {
     title: metadata.title,
     creator: metadata.creator,
-    tags,
+    subjects: subjects.length > 0 ? subjects : undefined,
+    tags: tags.length > 0 ? tags : undefined,
     description: metadata.description,
     donated_by,
     ...datesFromDublinCore(metadata.date),
@@ -254,7 +305,9 @@ export function fromDublinCore(
     culture,
     period,
     links,
-    creditLine: metadata.rights,
+    creditLine: creditValues.length > 0 ? creditValues.join("; ") : undefined,
+    legalRestrictions: legalRestrictions || undefined,
+    rightsStatement: normalizeRightsStatement(statementValue),
   };
 }
 
@@ -412,7 +465,7 @@ function parseOaiDcBlock(block: string): DublinCoreMetadata | null {
     language: getScalarField("language"),
     relation: getArrayField("relation"),
     coverage: getScalarField("coverage"),
-    rights: getScalarField("rights"),
+    rights: getArrayField("rights"),
   };
 }
 
@@ -455,6 +508,7 @@ export function collectionsToDublinCore(
     organizationName?: string;
     includeAlternateIdentifiers?: boolean;
     language?: string;
+    defaultRightsStatement?: RightsStatementUri;
   } = {},
 ): DublinCoreMetadata[] {
   return collections.map((collection) => toDublinCore(collection, options));

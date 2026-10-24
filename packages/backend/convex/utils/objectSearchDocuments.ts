@@ -20,7 +20,7 @@ export { OBJECT_SEARCH_FIELDS, type ObjectSearchField };
  * date made sort keys would otherwise disagree with the year filter, which
  * reads the records directly.
  */
-export const OBJECT_SEARCH_DOCUMENT_VERSION = 3;
+export const OBJECT_SEARCH_DOCUMENT_VERSION = 4;
 
 /** Characters of the description a document indexes. */
 const DESCRIPTION_TEXT_LIMIT = 4000;
@@ -96,6 +96,7 @@ export function objectSearchFieldTexts(
     objectName: collection.objectName,
     objectType: storedListValues(collection.objectType).join(" "),
     description: clip(collection.description ?? "", DESCRIPTION_TEXT_LIMIT),
+    subjects: (collection.subjects ?? []).join(" "),
     tags: (collection.tags ?? []).join(" "),
     inscriptions: [
       collection.inscriptions,

@@ -1,7 +1,10 @@
 "use client";
 
 import { ClientCurrentDate } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
+import { useOrganizationRightsDefaults } from "@/components/rights-statement/use-organization-rights-defaults";
+import { useRightsStatementName } from "@/components/rights-statement/use-rights-statement-name";
+import { shownRightsStatement } from "@/lib/rights-statements";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 import type { CollectionData, LocationPathItem } from "./types";
 
@@ -175,6 +178,7 @@ export function PrintPreviewExtendedSections({
               {collection.legalRestrictions ? t("yes") : t("none")}
             </p>
           </div>
+          <PrintRightsStatement collection={collection} />
         </div>
       </div>
 
@@ -188,6 +192,36 @@ export function PrintPreviewExtendedSections({
           />
         </p>
       </div>
+    </div>
+  );
+}
+
+/** The statement in effect, its URI, and whether it is the default. */
+function PrintRightsStatement({ collection }: { collection: CollectionData }) {
+  const tRoot = useI18n();
+  const name = useRightsStatementName();
+  const defaults = useOrganizationRightsDefaults(collection.organizationId);
+  const rights = shownRightsStatement(
+    collection.rightsStatement,
+    defaults?.objectRightsStatement,
+  );
+  // Until the Organization's default loads, it is not known to be unstated.
+  const notStated =
+    defaults === undefined ? null : tRoot("rightsStatements.notStated");
+  return (
+    <div className="col-span-2">
+      <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
+        {tRoot("recordForm.objectFields.rightsStatement")}
+      </p>
+      <p className="text-black">
+        {rights ? name(rights.statement.uri) : notStated}
+      </p>
+      {rights ? (
+        <p className="break-all text-[10px] text-zinc-500">
+          {rights.statement.uri}
+          {rights.inherited ? ` · ${tRoot("rightsStatements.inherited")}` : ""}
+        </p>
+      ) : null}
     </div>
   );
 }

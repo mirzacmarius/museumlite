@@ -1,12 +1,20 @@
 "use client";
 
+import {
+  MEASUREMENT_SETS_MAX,
+  MEASUREMENT_TEXT_MAX_LENGTH,
+  NUMBER_OF_OBJECTS_MAX,
+  SUBJECT_TERM_MAX_LENGTH,
+  SUBJECTS_MAX,
+} from "@v1/backend/convex/utils/objectDescription";
 import { recordEditErrorFromError } from "@v1/backend/convex/utils/recordEdits";
 import { ConvexError } from "convex/values";
 import { useCallback } from "react";
 import { useCapabilityErrorMessage } from "@/hooks/use-capability-error-message";
 import { useIdentifierErrorMessage } from "@/hooks/use-identifier-error-message";
+import { formatNumber } from "@/lib/format-number";
 import type { RecordSaveFailure } from "@/lib/record-form";
-import { useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 /** A plain-text explanation the server sent on purpose, if any. */
 function serverExplanation(error: unknown): string | null {
@@ -38,6 +46,7 @@ export function useRecordSaveFailure({
   describe?: DescribeFormError;
 }) {
   const t = useScopedI18n("recordForm.errors");
+  const locale = useCurrentLocale();
   const capabilityMessage = useCapabilityErrorMessage();
   const identifierMessage = useIdentifierErrorMessage();
 
@@ -94,6 +103,45 @@ export function useRecordSaveFailure({
               field,
               message: t("productionDateInvalid"),
             };
+          case "OBJECT_COUNT_INVALID":
+            return {
+              kind: "field",
+              field,
+              // Digits only, as the field takes it.
+              message: t("objectCountInvalid", {
+                max: String(NUMBER_OF_OBJECTS_MAX),
+              }),
+            };
+          case "SUBJECTS_INVALID":
+            return {
+              kind: "field",
+              field,
+              message: t("subjectsInvalid", {
+                max: formatNumber(SUBJECTS_MAX, locale),
+                length: formatNumber(SUBJECT_TERM_MAX_LENGTH, locale),
+              }),
+            };
+          case "MEASUREMENT_SETS_INVALID":
+            return {
+              kind: "field",
+              field,
+              message: t("measurementSetsInvalid", {
+                max: formatNumber(MEASUREMENT_SETS_MAX, locale),
+                length: formatNumber(MEASUREMENT_TEXT_MAX_LENGTH, locale),
+              }),
+            };
+          case "RIGHTS_STATEMENT_INVALID":
+            return {
+              kind: "field",
+              field,
+              message: t("rightsStatementInvalid"),
+            };
+          case "TEXT_TOO_LONG":
+            return {
+              kind: "field",
+              field,
+              message: t("textTooLong", { field: label }),
+            };
         }
       }
       const denied = capabilityMessage(error);
@@ -114,6 +162,6 @@ export function useRecordSaveFailure({
       if (explanation) return { kind: "rejected", message: explanation };
       return { kind: "failed", message: t("saveFailed") };
     },
-    [capabilityMessage, describe, fieldLabel, identifierMessage, t],
+    [capabilityMessage, describe, fieldLabel, identifierMessage, locale, t],
   );
 }

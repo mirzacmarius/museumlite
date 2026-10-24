@@ -1,6 +1,9 @@
 "use client";
 
 import { Building2 } from "lucide-react";
+import { RightsStatementValue } from "@/components/rights-statement/rights-statement-value";
+import { useOrganizationRightsDefaults } from "@/components/rights-statement/use-organization-rights-defaults";
+import { shownRightsStatement } from "@/lib/rights-statements";
 import { useI18n } from "@/locales/client";
 import { DetailField, DetailGrid, DetailSection } from "./detail-section";
 import type { CollectionData } from "./types";
@@ -12,6 +15,14 @@ interface AccessionTabProps {
 export function AccessionTab({ collection }: AccessionTabProps) {
   const tRoot = useI18n();
   const alternateNumbers = collection.alternateAccessionNumbers ?? [];
+  const rightsDefaults = useOrganizationRightsDefaults(
+    collection.organizationId,
+  );
+  // Until the Organization's default loads, only the Object's own is known.
+  const rights = shownRightsStatement(
+    collection.rightsStatement,
+    rightsDefaults?.objectRightsStatement,
+  );
   return (
     <DetailSection
       title={tRoot("untranslatedRecords.objects.detail.acquisitionInformation")}
@@ -45,6 +56,9 @@ export function AccessionTab({ collection }: AccessionTabProps) {
           label={tRoot("objects.printView.creditLine")}
           value={collection.creditLine}
         />
+        <DetailField label={tRoot("recordForm.objectFields.rightsStatement")}>
+          {rights ? <RightsStatementValue shown={rights} /> : null}
+        </DetailField>
         <DetailField
           label={tRoot("objects.form.donatedBy")}
           value={collection.donated_by?.join(", ")}

@@ -55,6 +55,11 @@ import {
 } from "./utils/locationIntegrity";
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { mutation } from "./utils/mutationBuilders";
+import {
+  completenessValidator,
+  measuredPartValidator,
+  measurementSetValidator,
+} from "./utils/objectDescription";
 import { searchObjects } from "./utils/objectSearch";
 import {
   getObjectTypeDetails,
@@ -67,11 +72,20 @@ import { findPublicPortalOrganization } from "./utils/publicPortal";
 import { canReadRecord } from "./utils/recordAccess";
 import {
   assertCurrentEditVersion,
+  enteredCompletenessNote,
+  enteredMeasurementSets,
+  enteredNumberOfObjects,
   enteredProductionDate,
+  enteredRightsStatement,
+  enteredSubjects,
   objectEditVersion,
   recordEditError,
   requireFieldValue,
 } from "./utils/recordEdits";
+import {
+  rightsStatementInEffect,
+  rightsStatementValidator,
+} from "./utils/rightsStatements";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 import { workflowApprovalErrorFromError } from "./utils/workflowApprovalErrors";
 
@@ -323,6 +337,8 @@ export const create = mutation({
     creator: v.optional(v.string()),
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
+    /** A whole number from 1; refused otherwise. */
+    numberOfObjects: v.optional(v.number()),
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
     dateCreated: v.optional(v.string()),
@@ -338,8 +354,12 @@ export const create = mutation({
     dimensionWeight: v.optional(v.number()),
     dimensionUnit: v.optional(v.string()),
     weightUnit: v.optional(v.string()),
+    dimensionMeasuredPart: v.optional(measuredPartValidator),
+    measurementSets: v.optional(v.array(measurementSetValidator)),
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    completeness: v.optional(completenessValidator),
+    completenessNote: v.optional(v.string()),
     inscriptions: v.optional(v.string()),
     inscriptionMarks: v.optional(
       v.array(
@@ -350,6 +370,8 @@ export const create = mutation({
       ),
     ),
     tags: v.optional(v.array(v.string())),
+    /** Trimmed, repeats dropped; refused when too long or too many. */
+    subjects: v.optional(v.array(v.string())),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
     ownershipHistory: v.optional(
@@ -368,6 +390,8 @@ export const create = mutation({
     donated_date: v.optional(v.string()),
     donation_info: v.optional(v.string()),
     creditLine: v.optional(v.string()),
+    /** Absent: the Organization's default applies when read. */
+    rightsStatement: v.optional(rightsStatementValidator),
     previous_owners: v.optional(v.array(v.string())),
     links: v.optional(
       v.array(
@@ -407,6 +431,13 @@ export const create = mutation({
     ] as const);
     await validateCollectionReferences(ctx, args.organizationId, args);
     const dateCreatedEdtf = enteredProductionDate(args.dateCreatedEdtf);
+    const described = {
+      numberOfObjects: enteredNumberOfObjects(args.numberOfObjects),
+      subjects: enteredSubjects(args.subjects),
+      completenessNote: enteredCompletenessNote(args.completenessNote),
+      measurementSets: enteredMeasurementSets(args.measurementSets),
+      rightsStatement: enteredRightsStatement(args.rightsStatement),
+    };
     if (args.collectionGroupId) {
       const group = await ctx.db.get(args.collectionGroupId);
       if (!group || group.organizationId !== args.organizationId)
@@ -454,6 +485,7 @@ export const create = mutation({
       creator: args.creator,
       objectType: args.objectType,
       objectName: args.objectName,
+      numberOfObjects: described.numberOfObjects,
       culture: args.culture,
       period: args.period,
       dateCreated: args.dateCreated,
@@ -468,12 +500,17 @@ export const create = mutation({
       dimensionWeight: args.dimensionWeight,
       dimensionUnit: args.dimensionUnit,
       weightUnit: args.weightUnit,
+      dimensionMeasuredPart: args.dimensionMeasuredPart,
+      measurementSets: described.measurementSets,
       description: args.description,
       condition: normalizedCondition,
       conditionHistory,
+      completeness: args.completeness,
+      completenessNote: described.completenessNote,
       inscriptions: args.inscriptions,
       inscriptionMarks: args.inscriptionMarks,
       tags: args.tags,
+      subjects: described.subjects,
       provenance: args.provenance,
       exhibitionHistory: args.exhibitionHistory,
       ownershipHistory: args.ownershipHistory,
@@ -481,6 +518,7 @@ export const create = mutation({
       donated_date: args.donated_date,
       donation_info: args.donation_info,
       creditLine: args.creditLine,
+      rightsStatement: described.rightsStatement,
       previous_owners: args.previous_owners,
       links: args.links,
       parentObjectId: args.parentObjectId,
@@ -1364,6 +1402,8 @@ export const update = mutation({
     creator: v.optional(v.string()),
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
+    /** Null clears it. */
+    numberOfObjects: v.optional(v.union(v.number(), v.null())),
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
     dateCreated: v.optional(v.string()),
@@ -1380,9 +1420,17 @@ export const update = mutation({
     dimensionWeight: v.optional(v.union(v.number(), v.null())),
     dimensionUnit: v.optional(v.string()),
     weightUnit: v.optional(v.string()),
+    /** Null clears the main set's part; null or [] clears further sets. */
+    dimensionMeasuredPart: v.optional(v.union(measuredPartValidator, v.null())),
+    measurementSets: v.optional(
+      v.union(v.array(measurementSetValidator), v.null()),
+    ),
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
     conditionChangeNote: v.optional(v.string()),
+    /** Null clears it; "" or null clears the note. */
+    completeness: v.optional(v.union(completenessValidator, v.null())),
+    completenessNote: v.optional(v.union(v.string(), v.null())),
     inscriptions: v.optional(v.string()),
     inscriptionMarks: v.optional(
       v.array(
@@ -1393,6 +1441,8 @@ export const update = mutation({
       ),
     ),
     tags: v.optional(v.array(v.string())),
+    /** Null or [] clears them. */
+    subjects: v.optional(v.union(v.array(v.string()), v.null())),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
     ownershipHistory: v.optional(
@@ -1411,6 +1461,8 @@ export const update = mutation({
     donated_date: v.optional(v.string()),
     donation_info: v.optional(v.string()),
     creditLine: v.optional(v.string()),
+    /** Null clears it, so the Organization's default applies. */
+    rightsStatement: v.optional(v.union(rightsStatementValidator, v.null())),
     previous_owners: v.optional(v.array(v.string())),
     links: v.optional(
       v.array(
@@ -1509,6 +1561,8 @@ export const update = mutation({
     if (args.creator !== undefined) updates.creator = args.creator;
     if (args.objectType !== undefined) updates.objectType = args.objectType;
     if (args.objectName !== undefined) updates.objectName = args.objectName;
+    if (args.numberOfObjects !== undefined)
+      updates.numberOfObjects = enteredNumberOfObjects(args.numberOfObjects);
     if (args.culture !== undefined) updates.culture = args.culture;
     if (args.period !== undefined) updates.period = args.period;
     if (args.dateCreated !== undefined) updates.dateCreated = args.dateCreated;
@@ -1530,6 +1584,14 @@ export const update = mutation({
     if (args.dimensionUnit !== undefined)
       updates.dimensionUnit = args.dimensionUnit;
     if (args.weightUnit !== undefined) updates.weightUnit = args.weightUnit;
+    if (args.dimensionMeasuredPart !== undefined)
+      updates.dimensionMeasuredPart = args.dimensionMeasuredPart ?? undefined;
+    if (args.measurementSets !== undefined)
+      updates.measurementSets = enteredMeasurementSets(args.measurementSets);
+    if (args.completeness !== undefined)
+      updates.completeness = args.completeness ?? undefined;
+    if (args.completenessNote !== undefined)
+      updates.completenessNote = enteredCompletenessNote(args.completenessNote);
     if (args.description !== undefined) updates.description = args.description;
     if (args.condition !== undefined) {
       const previousCondition = normalizeOptionalString(collection.condition);
@@ -1570,6 +1632,8 @@ export const update = mutation({
     if (args.inscriptionMarks !== undefined)
       updates.inscriptionMarks = args.inscriptionMarks;
     if (args.tags !== undefined) updates.tags = args.tags;
+    if (args.subjects !== undefined)
+      updates.subjects = enteredSubjects(args.subjects);
     if (args.provenance !== undefined) updates.provenance = args.provenance;
     if (args.exhibitionHistory !== undefined)
       updates.exhibitionHistory = args.exhibitionHistory;
@@ -1581,6 +1645,8 @@ export const update = mutation({
     if (args.donation_info !== undefined)
       updates.donation_info = args.donation_info;
     if (args.creditLine !== undefined) updates.creditLine = args.creditLine;
+    if (args.rightsStatement !== undefined)
+      updates.rightsStatement = enteredRightsStatement(args.rightsStatement);
     if (args.previous_owners !== undefined)
       updates.previous_owners = args.previous_owners;
     if (args.links !== undefined) updates.links = args.links;
@@ -2486,6 +2552,15 @@ export const bulkExport = query({
       description: v.optional(v.string()),
       condition: v.optional(v.string()),
       provenance: v.optional(v.string()),
+      numberOfObjects: v.optional(v.number()),
+      subjects: v.optional(v.array(v.string())),
+      completeness: v.optional(completenessValidator),
+      completenessNote: v.optional(v.string()),
+      dimensionMeasuredPart: v.optional(measuredPartValidator),
+      measurementSets: v.optional(v.array(measurementSetValidator)),
+      rightsStatement: v.optional(rightsStatementValidator),
+      /** The Object's own statement, otherwise its Organization's default. */
+      rightsStatementInEffect: v.optional(rightsStatementValidator),
       status: v.string(),
       locationPath: v.optional(v.string()),
       collectionGroup: v.optional(v.string()),
@@ -2513,6 +2588,9 @@ export const bulkExport = query({
       organizationIds.map((organizationId) =>
         requirePermission(ctx, organizationId, "collections.read"),
       ),
+    );
+    const organizationMap = createLookupMap<"organizations">(
+      await batchGetByIds(ctx, organizationIds, "organizations"),
     );
 
     const memberships = await Promise.all(
@@ -2550,6 +2628,18 @@ export const bulkExport = query({
       description: collection.description,
       condition: collection.condition,
       provenance: collection.provenance,
+      numberOfObjects: collection.numberOfObjects,
+      subjects: collection.subjects,
+      completeness: collection.completeness,
+      completenessNote: collection.completenessNote,
+      dimensionMeasuredPart: collection.dimensionMeasuredPart,
+      measurementSets: collection.measurementSets,
+      rightsStatement: collection.rightsStatement,
+      rightsStatementInEffect: rightsStatementInEffect(
+        collection.rightsStatement,
+        organizationMap.get(collection.organizationId)?.settings?.rightsDefaults
+          ?.objectRightsStatement,
+      ),
       status: collection.status,
       locationPath: collection.currentLocationId
         ? locationPathMap.get(collection.currentLocationId)
@@ -2595,7 +2685,11 @@ export const listPublic = query({
         dimensions: v.optional(v.string()),
         description: v.optional(v.string()),
         creditLine: v.optional(v.string()),
+        /** The Object's statement in effect: its own or the default. */
+        rightsStatement: v.optional(rightsStatementValidator),
         primaryImageUrl: v.optional(v.string()),
+        /** The statement in effect for the image shown. */
+        primaryImageRightsStatement: v.optional(rightsStatementValidator),
       }),
     ),
     nextCursor: v.optional(v.string()),
@@ -2638,6 +2732,7 @@ export const listPublic = query({
     }
 
     const pageSize = args.paginationOpts?.numItems ?? args.limit ?? 24;
+    const rightsDefaults = organization.settings?.rightsDefaults;
     const [allCollections, allLibraryItems] = await Promise.all([
       getPublicCatalogCollections(ctx, organization._id),
       getPublicLibraryCatalogItems(ctx, organization),
@@ -2745,9 +2840,11 @@ export const listPublic = query({
             getPortalImage(ctx, media, organization._id, c._id),
           ),
         );
-        const primaryImageUrl = (
-          approved.find((image) => image?.isPrimary) ?? approved.find(Boolean)
-        )?.url;
+        const primaryImage =
+          approved.find((image) => image?.isPrimary) ?? approved.find(Boolean);
+        const primaryImageMedia = mediaFiles.find(
+          (media) => media._id === primaryImage?._id,
+        );
 
         return {
           _id: c._id,
@@ -2763,7 +2860,17 @@ export const listPublic = query({
           dimensions: c.dimensions,
           description: c.description,
           creditLine: c.creditLine,
-          primaryImageUrl,
+          rightsStatement: rightsStatementInEffect(
+            c.rightsStatement,
+            rightsDefaults?.objectRightsStatement,
+          ),
+          primaryImageUrl: primaryImage?.url,
+          primaryImageRightsStatement: primaryImageMedia
+            ? rightsStatementInEffect(
+                primaryImageMedia.rightsStatement,
+                rightsDefaults?.mediaRightsStatement,
+              )
+            : undefined,
         };
       }),
     );
@@ -2803,6 +2910,8 @@ export const getPublic = query({
       provenance: v.optional(v.string()),
       exhibitionHistory: v.optional(v.string()),
       creditLine: v.optional(v.string()),
+      /** The Object's statement in effect: its own or the default. */
+      rightsStatement: v.optional(rightsStatementValidator),
       tags: v.optional(v.array(v.string())),
       isHighResDownloadable: v.optional(v.boolean()),
       valuation: v.optional(
@@ -2820,6 +2929,8 @@ export const getPublic = query({
           isPrimary: v.boolean(),
           caption: v.optional(v.string()),
           originalDownloadUrl: v.optional(v.string()),
+          /** The image's statement in effect: its own or the default. */
+          rightsStatement: v.optional(rightsStatementValidator),
         }),
       ),
       organizationName: v.string(),
@@ -2925,10 +3036,25 @@ export const getPublic = query({
       .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
       .collect();
 
+    const rightsDefaults = organization.settings?.rightsDefaults;
     const images = await Promise.all(
-      mediaFiles.map((media) =>
-        getPortalImage(ctx, media, organization._id, collection._id),
-      ),
+      mediaFiles.map(async (media) => {
+        const image = await getPortalImage(
+          ctx,
+          media,
+          organization._id,
+          collection._id,
+        );
+        return (
+          image && {
+            ...image,
+            rightsStatement: rightsStatementInEffect(
+              media.rightsStatement,
+              rightsDefaults?.mediaRightsStatement,
+            ),
+          }
+        );
+      }),
     );
 
     let valuation:
@@ -2975,6 +3101,10 @@ export const getPublic = query({
       provenance: collection.provenance,
       exhibitionHistory: collection.exhibitionHistory,
       creditLine: collection.creditLine,
+      rightsStatement: rightsStatementInEffect(
+        collection.rightsStatement,
+        rightsDefaults?.objectRightsStatement,
+      ),
       tags: collection.tags,
       isHighResDownloadable: images.some((image) => image?.originalDownloadUrl),
       valuation,

@@ -49,6 +49,7 @@ import { initializeEmptyProjection } from "./utils/projectionMaintenance";
 import { loadProjectedUsage } from "./utils/projectionReports";
 import { projectionUnavailableResult } from "./utils/projectionValidators";
 import { findPublicPortalOrganization } from "./utils/publicPortal";
+import { rightsStatementValidator } from "./utils/rightsStatements";
 import {
   assertCanRemoveSuperAdminMember,
   assertCanRemoveSuperAdminStatus,
@@ -817,6 +818,12 @@ export const getSettings = query({
           ),
         }),
       ),
+      rightsDefaults: v.optional(
+        v.object({
+          objectRightsStatement: v.optional(rightsStatementValidator),
+          mediaRightsStatement: v.optional(rightsStatementValidator),
+        }),
+      ),
     }),
     v.null(),
   ),
@@ -1248,6 +1255,73 @@ export const updateWatermarkSettings = mutation({
 });
 
 /**
+ * Sets the rights statements that apply to Objects and to their images that
+ * record none of their own. A statement left out keeps its value; null
+ * removes it. Records are not rewritten: the default is read with them.
+ */
+export const updateRightsDefaults = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    rightsDefaults: v.object({
+      objectRightsStatement: v.optional(
+        v.union(rightsStatementValidator, v.null()),
+      ),
+      mediaRightsStatement: v.optional(
+        v.union(rightsStatementValidator, v.null()),
+      ),
+    }),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    const current = org.settings?.rightsDefaults;
+    const objectRightsStatement =
+      args.rightsDefaults.objectRightsStatement === undefined
+        ? current?.objectRightsStatement
+        : (args.rightsDefaults.objectRightsStatement ?? undefined);
+    const mediaRightsStatement =
+      args.rightsDefaults.mediaRightsStatement === undefined
+        ? current?.mediaRightsStatement
+        : (args.rightsDefaults.mediaRightsStatement ?? undefined);
+    await ctx.db.patch(args.organizationId, {
+      settings: {
+        ...org.settings,
+        rightsDefaults: {
+          ...(objectRightsStatement ? { objectRightsStatement } : {}),
+          ...(mediaRightsStatement ? { mediaRightsStatement } : {}),
+        },
+      },
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "updated_rights_defaults",
+      entityType: "organization",
+      entityId: args.organizationId,
+      changes: args.rightsDefaults,
+    });
+
+    return null;
+  },
+});
+
+/**
  * Get portal settings for an organization
  */
 export const getPortalSettings = query({
@@ -1324,6 +1398,12 @@ export const listUserOrganizations = query({
           enabledIntegrations: v.optional(v.array(v.string())),
           enabledModules: v.optional(v.array(enabledModuleValidator)),
           disabledModules: v.optional(v.array(disabledModuleValidator)),
+          rightsDefaults: v.optional(
+            v.object({
+              objectRightsStatement: v.optional(rightsStatementValidator),
+              mediaRightsStatement: v.optional(rightsStatementValidator),
+            }),
+          ),
         }),
       ),
       subscriptionTier: v.optional(
@@ -1372,6 +1452,7 @@ export const listUserOrganizations = query({
                 enabledIntegrations: org.settings.enabledIntegrations,
                 enabledModules: org.settings.enabledModules,
                 disabledModules: org.settings.disabledModules,
+                rightsDefaults: org.settings.rightsDefaults,
               }
             : undefined,
           subscriptionTier: org.subscriptionTier,

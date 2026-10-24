@@ -19,6 +19,7 @@ type ObjectTab =
 /** The object tab where staff record each kind of documentation. */
 const REQUIREMENT_TABS: Record<DocumentationRequirement, ObjectTab> = {
   object_name: "general",
+  number_of_objects: "general",
   maker: "general",
   production_date: "general",
   description: "general",
@@ -32,6 +33,7 @@ const REQUIREMENT_TABS: Record<DocumentationRequirement, ObjectTab> = {
   supporting_document: "media",
   current_location: "placement",
   accession_record: "accession",
+  rights_statement: "accession",
   provenance_claim: "provenance",
 };
 

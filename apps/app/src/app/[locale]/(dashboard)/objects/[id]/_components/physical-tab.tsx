@@ -2,6 +2,11 @@
 
 import { Ruler, Search } from "lucide-react";
 import { useId, useState } from "react";
+import { useObjectDescriptionFormat } from "@/components/object-description/use-object-description-format";
+import {
+  formatDimensions,
+  measurementSetLines,
+} from "@/lib/object-description-format";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useI18n } from "@/locales/client";
 import { ConditionAssessmentPanel } from "./condition-assessment-panel";
@@ -35,33 +40,35 @@ function formatObjectType(
 
 export function PhysicalTab({ collection }: PhysicalTabProps) {
   const tRoot = useI18n();
+  const { measurements, completeness } = useObjectDescriptionFormat();
   const historyId = useId();
   const [showHistory, setShowHistory] = useState(false);
   const notSpecified = tRoot("untranslatedRecords.objects.status.notSpecified");
   const unit = collection.dimensionUnit ? ` ${collection.dimensionUnit}` : "";
-  const measuredDimensions = [
-    collection.dimensionHeight && `H: ${collection.dimensionHeight}`,
-    collection.dimensionWidth && `W: ${collection.dimensionWidth}`,
-    collection.dimensionDepth && `D: ${collection.dimensionDepth}`,
-  ]
-    .filter(Boolean)
-    .join(" × ");
   // Free-text dimensions are no longer entered in the form; imported and
   // older records still show theirs until height, width or depth is measured.
-  const dimensions = measuredDimensions
-    ? `${measuredDimensions}${unit}`
-    : collection.dimensions;
+  const dimensions =
+    formatDimensions(
+      {
+        height: collection.dimensionHeight,
+        width: collection.dimensionWidth,
+        depth: collection.dimensionDepth,
+      },
+      collection.dimensionUnit,
+      measurements,
+    ) ?? collection.dimensions;
   const diameter =
     collection.dimensionDiameter ||
     (!collection.dimensionHeight &&
     !collection.dimensionDepth &&
     collection.dimensionWidth !== undefined
-      ? `${collection.dimensionWidth}${unit}`
+      ? `${measurements.number(collection.dimensionWidth)}${unit}`
       : undefined);
   const weight =
     collection.dimensionWeight !== undefined
-      ? `${collection.dimensionWeight} ${collection.weightUnit || "kg"}`
+      ? `${measurements.number(collection.dimensionWeight)} ${collection.weightUnit || "kg"}`
       : undefined;
+  const measurementSets = collection.measurementSets ?? [];
 
   return (
     <div className="space-y-8">
@@ -95,6 +102,14 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               value={dimensions}
             />
             <DetailField
+              label={tRoot("recordForm.objectFields.measuredPart")}
+              value={
+                collection.dimensionMeasuredPart
+                  ? measurements.part(collection.dimensionMeasuredPart)
+                  : undefined
+              }
+            />
+            <DetailField
               label={tRoot("objects.printView.diameter")}
               value={diameter}
             />
@@ -102,6 +117,41 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               label={tRoot("objects.printView.weight")}
               value={weight}
             />
+            {measurementSets.length > 0 ? (
+              <DetailField
+                className="sm:col-span-2"
+                label={tRoot("recordForm.objectFields.measurementSets")}
+              >
+                <ul className="grid gap-1 text-sm text-foreground">
+                  {measurementSetLines(measurementSets, measurements).map(
+                    ({ key, line }) => (
+                      <li key={key} className="break-words">
+                        {line}
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </DetailField>
+            ) : null}
+            <DetailField
+              className="sm:col-span-2"
+              label={tRoot("recordForm.objectFields.completeness")}
+            >
+              {collection.completeness || collection.completenessNote ? (
+                <div className="grid gap-1">
+                  {collection.completeness ? (
+                    <div className="text-sm text-foreground">
+                      {completeness(collection.completeness)}
+                    </div>
+                  ) : null}
+                  {collection.completenessNote ? (
+                    <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                      {collection.completenessNote}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </DetailField>
           </DetailGrid>
         </DetailSection>
 

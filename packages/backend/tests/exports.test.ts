@@ -159,7 +159,7 @@ describe("authorized durable exports", () => {
     expect(evidence.entries[0]?.changes).toMatchObject({
       rows: 125,
       sha256: job.sha256,
-      schemaVersion: 2,
+      schemaVersion: 3,
       asOf: job.asOf,
     });
     expect(
@@ -282,7 +282,7 @@ describe("authorized durable exports", () => {
       await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
       expect(
         (await f.user.query(api.exports.status, { jobId })).schemaVersion,
-      ).toBe(2);
+      ).toBe(3);
       const body = await (
         await f.user.fetch(`/exports/download?jobId=${jobId}`)
       ).text();
@@ -322,7 +322,7 @@ describe("authorized durable exports", () => {
       "productionLatestYear",
     ])
       expect(byNumber.get("D-4")).not.toHaveProperty(absent);
-    expect(jsonl.metadata.compatibility).toMatch(/^MuseumLite export v2;/);
+    expect(jsonl.metadata.compatibility).toMatch(/^MuseumLite export v3;/);
     expect(jsonl.metadata.dateMadePolicy).toContain("astronomical");
 
     const csv = await exportAs("csv");
@@ -342,6 +342,140 @@ describe("authorized durable exports", () => {
     // BC EDTF is disarmed text; its years are bare numbers.
     expect(coin).toContain('"500 BC",,"\'-0499"');
     expect(coin).toContain(",-499,-499,");
+    vi.useRealTimers();
+  });
+
+  test("object exports carry the description and rights statements in CSV and JSONL, and version 2 jobs keep their columns", async () => {
+    vi.useFakeTimers();
+    const f = await fixture();
+    const inCopyright = "http://rightsstatements.org/vocab/InC/1.0/";
+    const cc0 = "https://creativecommons.org/publicdomain/zero/1.0/";
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.organizationId, {
+        settings: { rightsDefaults: { objectRightsStatement: inCopyright } },
+      });
+      const object = {
+        organizationId: f.organizationId,
+        status: "active" as const,
+        catalogedBy: f.userId,
+        catalogedAt: 1700000000000,
+      };
+      await ctx.db.insert("collections", {
+        ...object,
+        accessionNumber: "R-1",
+        title: "Tea set",
+        numberOfObjects: 12,
+        subjects: ["Harbour", "Pilots"],
+        completeness: "incomplete",
+        completenessNote: "One cup missing",
+        dimensionHeight: 30,
+        dimensionUnit: "cm",
+        dimensionMeasuredPart: "overall",
+        measurementSets: [{ part: "base", diameter: 12, unit: "cm" }],
+        rightsStatement: cc0,
+      });
+      // Without its own statement the Organization's default is in effect.
+      await ctx.db.insert("collections", {
+        ...object,
+        accessionNumber: "R-2",
+        title: "Cup",
+      });
+    });
+    vi.advanceTimersByTime(1000);
+    const exportAs = async (format: "csv" | "jsonl", schemaVersion?: 2) => {
+      const jobId = await f.user.mutation(api.exports.create, {
+        organizationId: f.organizationId,
+        requestKey: `rights-${format}-${schemaVersion ?? 3}`,
+        format,
+        source: { kind: "objects", mode: "filtered", filters: {} },
+      });
+      // A job created before the upgrade keeps version 2.
+      if (schemaVersion)
+        await f.t.run((ctx) => ctx.db.patch(jobId, { schemaVersion }));
+      await f.t.finishInProgressScheduledFunctions();
+      await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+      const status = await f.user.query(api.exports.status, { jobId });
+      expect(status.status).toBe("completed");
+      expect(status.schemaVersion).toBe(schemaVersion ?? 3);
+      const body = await (
+        await f.user.fetch(`/exports/download?jobId=${jobId}`)
+      ).text();
+      const metadata = await (
+        await f.user.fetch(`/exports/manifest?jobId=${jobId}`)
+      ).json();
+      return { body, metadata };
+    };
+
+    const jsonl = await exportAs("jsonl");
+    const rows = jsonl.body
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const byNumber = new Map(rows.map((row) => [row.accessionNumber, row]));
+    expect(byNumber.get("R-1")).toMatchObject({
+      numberOfObjects: 12,
+      subjects: ["Harbour", "Pilots"],
+      completeness: "incomplete",
+      completenessNote: "One cup missing",
+      dimensionMeasuredPart: "overall",
+      measurementSets: [{ part: "base", diameter: 12, unit: "cm" }],
+      rightsStatement: cc0,
+      rightsStatementInEffect: cc0,
+    });
+    expect(byNumber.get("R-2")).toMatchObject({
+      rightsStatementInEffect: inCopyright,
+    });
+    expect(byNumber.get("R-2")).not.toHaveProperty("rightsStatement");
+    expect(jsonl.metadata.compatibility).toMatch(/^MuseumLite export v3;/);
+    expect(jsonl.metadata.descriptionPolicy).toContain(
+      "rightsStatementInEffect",
+    );
+
+    const csv = await exportAs("csv");
+    const [header = "", ...lines] = csv.body.trim().split("\r\n");
+    const columns = header.split(",");
+    const start = columns.indexOf("dimensionWeight") + 1;
+    expect(columns.slice(start, start + 12)).toEqual([
+      "dimensionUnit",
+      "weightUnit",
+      "dimensionMeasuredPart",
+      "measurementSets",
+      "numberOfObjects",
+      "subjects",
+      "completeness",
+      "completenessNote",
+      "rightsStatement",
+      "rightsStatementInEffect",
+      "productionEarliestYear",
+      "productionLatestYear",
+    ]);
+    expect(csv.metadata.columns).toContainEqual({
+      name: "measurementSets",
+      type: "json",
+    });
+    const teaSet = lines.find((line) => line.includes('"R-1"')) ?? "";
+    expect(teaSet).toContain(
+      `"cm",,"overall","[{""diameter"":12,""part"":""base"",""unit"":""cm""}]",12,"Harbour; Pilots","incomplete","One cup missing","${cc0}","${cc0}"`,
+    );
+    const cup = lines.find((line) => line.includes('"R-2"')) ?? "";
+    expect(cup).toContain(`,,,"${inCopyright}"`);
+
+    const v2 = await exportAs("csv", 2);
+    const v2Columns = (v2.body.split("\r\n")[0] ?? "").split(",");
+    for (const added of [
+      "numberOfObjects",
+      "subjects",
+      "measurementSets",
+      "rightsStatement",
+      "rightsStatementInEffect",
+    ])
+      expect(v2Columns).not.toContain(added);
+    expect(v2Columns).toContain("productionDateEdtf");
+    expect(v2.metadata.compatibility).toMatch(/^MuseumLite export v2;/);
+    expect(v2.metadata).not.toHaveProperty("descriptionPolicy");
+    const v2Jsonl = await exportAs("jsonl", 2);
+    for (const line of v2Jsonl.body.trim().split("\n"))
+      expect(JSON.parse(line)).not.toHaveProperty("rightsStatementInEffect");
     vi.useRealTimers();
   });
 
