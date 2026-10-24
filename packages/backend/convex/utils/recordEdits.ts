@@ -2,7 +2,21 @@ import { ConvexError } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { convexErrorData } from "./convexErrorData";
+import {
+  COMPLETENESS_NOTE_MAX_LENGTH,
+  distinctSubjectTerms,
+  isNumberOfObjects,
+  MEASUREMENT_SETS_MAX,
+  type MeasurementSet,
+  NUMBER_OF_OBJECTS_MAX,
+  normalizeMeasurementSet,
+  normalizeMeasurementSets,
+  normalizeSubjects,
+  SUBJECT_TERM_MAX_LENGTH,
+  SUBJECTS_MAX,
+} from "./objectDescription";
 import { formatEdtf, parseEdtf } from "./productionDates";
+import { isRightsStatementUri } from "./rightsStatements";
 
 /**
  * Stable codes for form saves that staff can resolve themselves. Clients map
@@ -21,6 +35,11 @@ export const RECORD_EDIT_ERROR_CODES = [
   "DATE_ORDER_INVALID",
   "PARTY_MANAGED_FIELD",
   "PRODUCTION_DATE_INVALID",
+  "OBJECT_COUNT_INVALID",
+  "SUBJECTS_INVALID",
+  "MEASUREMENT_SETS_INVALID",
+  "RIGHTS_STATEMENT_INVALID",
+  "TEXT_TOO_LONG",
 ] as const;
 
 export type RecordEditErrorCode = (typeof RECORD_EDIT_ERROR_CODES)[number];
@@ -149,6 +168,124 @@ export function enteredProductionDate(value: string | null | undefined) {
   return edtf;
 }
 
+/** A number of objects as a form saves it; null or undefined clears it. */
+export function enteredNumberOfObjects(value: number | null | undefined) {
+  if (value === null || value === undefined) return undefined;
+  if (!isNumberOfObjects(value)) {
+    throw recordEditError(
+      "OBJECT_COUNT_INVALID",
+      `numberOfObjects must be a whole number from 1 to ${NUMBER_OF_OBJECTS_MAX}`,
+      { field: "numberOfObjects" },
+    );
+  }
+  return value;
+}
+
+/**
+ * Subject terms as a form saves them (see `normalizeSubjects`); no terms
+ * clear the field. Refuses a term too long or too many terms.
+ */
+export function enteredSubjects(terms: readonly string[] | null | undefined) {
+  if (!terms) return undefined;
+  const subjects = normalizeSubjects(terms);
+  if (!subjects) {
+    throw recordEditError(
+      "SUBJECTS_INVALID",
+      `subjects holds at most ${SUBJECTS_MAX} terms of at most ${SUBJECT_TERM_MAX_LENGTH} characters`,
+      { field: "subjects" },
+    );
+  }
+  return subjects.length > 0 ? subjects : undefined;
+}
+
+/**
+ * Further sets of measurements as a form saves them; no sets clear the
+ * field. Refuses too many sets, a set without a value, a value that is not
+ * above 0, or a text too long.
+ */
+export function enteredMeasurementSets(
+  sets: readonly MeasurementSet[] | null | undefined,
+) {
+  if (!sets) return undefined;
+  const stored = normalizeMeasurementSets(sets);
+  if (!stored) {
+    throw recordEditError(
+      "MEASUREMENT_SETS_INVALID",
+      `measurementSets holds at most ${MEASUREMENT_SETS_MAX} sets, each with at least one value above 0`,
+      { field: "measurementSets" },
+    );
+  }
+  return stored.length > 0 ? stored : undefined;
+}
+
+/** A completeness note, trimmed; empty clears it. */
+export function enteredCompletenessNote(value: string | null | undefined) {
+  const note = value?.trim();
+  if (!note) return undefined;
+  if (note.length > COMPLETENESS_NOTE_MAX_LENGTH) {
+    throw recordEditError(
+      "TEXT_TOO_LONG",
+      `completenessNote has at most ${COMPLETENESS_NOTE_MAX_LENGTH} characters`,
+      { field: "completenessNote" },
+    );
+  }
+  return note;
+}
+
+/**
+ * A rights statement as a form saves it; empty clears it, so the
+ * Organization's default applies. Typed callers can only send a listed URI;
+ * this refuses anything else that reaches it.
+ */
+export function enteredRightsStatement(value: string | null | undefined) {
+  if (!value) return undefined;
+  if (!isRightsStatementUri(value)) {
+    throw recordEditError(
+      "RIGHTS_STATEMENT_INVALID",
+      "rightsStatement is not a listed rights statement URI",
+      { field: "rightsStatement" },
+    );
+  }
+  return value;
+}
+
+/**
+ * The new description fields of a draft as an approval copies them: a value
+ * a save would refuse today is left out, never a reason to stop approval.
+ */
+export function publishedObjectDescription(draft: {
+  numberOfObjects?: number;
+  subjects?: string[];
+  completenessNote?: string;
+  measurementSets?: MeasurementSet[];
+  rightsStatement?: string;
+}) {
+  const subjects = distinctSubjectTerms(draft.subjects ?? [])
+    .filter((term) => term.length <= SUBJECT_TERM_MAX_LENGTH)
+    .slice(0, SUBJECTS_MAX);
+  const measurementSets = (draft.measurementSets ?? [])
+    .flatMap((set) => normalizeMeasurementSet(set) ?? [])
+    .slice(0, MEASUREMENT_SETS_MAX);
+  const completenessNote = draft.completenessNote?.trim();
+  return {
+    numberOfObjects:
+      draft.numberOfObjects !== undefined &&
+      isNumberOfObjects(draft.numberOfObjects)
+        ? draft.numberOfObjects
+        : undefined,
+    subjects: subjects.length ? subjects : undefined,
+    completenessNote:
+      completenessNote &&
+      completenessNote.length <= COMPLETENESS_NOTE_MAX_LENGTH
+        ? completenessNote
+        : undefined,
+    measurementSets: measurementSets.length ? measurementSets : undefined,
+    rightsStatement: isRightsStatementUri(draft.rightsStatement)
+      ? draft.rightsStatement
+      : undefined,
+  };
+}
+
 /** Refuses a save that started from an older version of the record. */
 export function assertCurrentEditVersion(
   currentEditVersion: string,
@@ -173,6 +310,7 @@ const OBJECT_EDIT_FIELDS = [
   "creator",
   "objectType",
   "objectName",
+  "numberOfObjects",
   "culture",
   "period",
   "dateCreated",
@@ -187,11 +325,16 @@ const OBJECT_EDIT_FIELDS = [
   "dimensionWeight",
   "dimensionUnit",
   "weightUnit",
+  "dimensionMeasuredPart",
+  "measurementSets",
   "description",
   "condition",
+  "completeness",
+  "completenessNote",
   "inscriptions",
   "inscriptionMarks",
   "tags",
+  "subjects",
   "provenance",
   "exhibitionHistory",
   "ownershipHistory",
@@ -199,6 +342,7 @@ const OBJECT_EDIT_FIELDS = [
   "donated_date",
   "donation_info",
   "creditLine",
+  "rightsStatement",
   "previous_owners",
   "links",
   "parentObjectId",

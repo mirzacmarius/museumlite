@@ -34,6 +34,7 @@ import {
 } from "./utils/registerProfiles";
 import { validateRegisterCriteria } from "./utils/registerSources";
 import { mergeRegisterTotals } from "./utils/registerTotals";
+import { rightsStatementInEffect } from "./utils/rightsStatements";
 
 const exportJobDoc = v.object({
   ...schema.tables.exportJobs.validator.fields,
@@ -195,8 +196,9 @@ export const create = mutation({
     const jobId = await ctx.db.insert("exportJobs", {
       ...args,
       creatorId,
-      // Object columns gained the date made at version 2.
-      schemaVersion: args.source.kind === "objects" ? 2 : 1,
+      // Object columns gained the date made at version 2, and the number of
+      // objects, subject, completeness, measured parts and rights at 3.
+      schemaVersion: args.source.kind === "objects" ? 3 : 1,
       asOf: now,
       captureStartedAt: now,
       expiresAt: now + RETENTION_MS,
@@ -322,7 +324,7 @@ const publicStatus = v.object({
   jobId: v.id("exportJobs"),
   source: exportSource,
   format: exportFormat,
-  schemaVersion: v.union(v.literal(1), v.literal(2)),
+  schemaVersion: v.union(v.literal(1), v.literal(2), v.literal(3)),
   asOf: v.number(),
   captureStartedAt: v.number(),
   captureCompletedAt: v.optional(v.number()),
@@ -561,19 +563,37 @@ export const sourcePage = internalQuery({
       maximumBytesRead: 512 * 1024,
     };
     const capturedAt = args.capturedAt;
+    // Version 3 rows carry the rights statement in effect, read once a page.
+    const objectRightsDefault =
+      job.schemaVersion >= 3
+        ? (await ctx.db.get(job.organizationId))?.settings?.rightsDefaults
+            ?.objectRightsStatement
+        : undefined;
+    const captured = (row: Doc<"collections">) => ({
+      ...row,
+      capturedAt,
+      ...(job.schemaVersion >= 3
+        ? {
+            rightsStatementInEffect: rightsStatementInEffect(
+              row.rightsStatement,
+              objectRightsDefault,
+            ),
+          }
+        : {}),
+    });
     if (job.source.mode === "selected") {
       const page = await ctx.db
         .query("exportSelections")
         .withIndex("by_jobId", (q) => q.eq("jobId", job._id))
         .paginate(opts);
-      const rows: Array<Doc<"collections"> & { capturedAt: number }> = [];
+      const rows: Array<ReturnType<typeof captured>> = [];
       for (const item of page.page) {
         const row = await ctx.db.get(item.objectId);
         if (!row || row.organizationId !== job.organizationId)
           throw new ConvexError(
             "Selected object missing or outside authorized scope; create a new selection",
           );
-        rows.push({ ...row, capturedAt });
+        rows.push(captured(row));
       }
       return {
         rows,
@@ -594,10 +614,9 @@ export const sourcePage = internalQuery({
       { organizationId: job.organizationId, ...job.source.filters },
       page.page.filter((row) => row._creationTime <= job.asOf),
     );
-    const rows = filtered.map(({ matchedField: _matchedField, ...row }) => ({
-      ...row,
-      capturedAt,
-    }));
+    const rows = filtered.map(({ matchedField: _matchedField, ...row }) =>
+      captured(row),
+    );
     return {
       rows,
       cursor: page.continueCursor,

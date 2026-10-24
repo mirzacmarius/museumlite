@@ -24,6 +24,7 @@ export type DocumentationStage = Infer<typeof documentationStageValidator>;
 export const DOCUMENTATION_REQUIREMENTS = [
   "object_type",
   "object_name",
+  "number_of_objects",
   "maker",
   "production_date",
   "materials",
@@ -37,6 +38,7 @@ export const DOCUMENTATION_REQUIREMENTS = [
   "supporting_document",
   "accession_record",
   "provenance_claim",
+  "rights_statement",
 ] as const;
 
 export const documentationRequirementValidator = v.union(

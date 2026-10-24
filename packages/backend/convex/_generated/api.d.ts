@@ -276,6 +276,7 @@ import type * as utils_notificationRecipients from "../utils/notificationRecipie
 import type * as utils_notificationTypes from "../utils/notificationTypes.js";
 import type * as utils_notificationValidators from "../utils/notificationValidators.js";
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
+import type * as utils_objectDescription from "../utils/objectDescription.js";
 import type * as utils_objectDraftData from "../utils/objectDraftData.js";
 import type * as utils_objectDraftTypeDetails from "../utils/objectDraftTypeDetails.js";
 import type * as utils_objectEntryErrors from "../utils/objectEntryErrors.js";
@@ -335,6 +336,7 @@ import type * as utils_reproductionDeliveryViews from "../utils/reproductionDeli
 import type * as utils_reproductionRequestAccess from "../utils/reproductionRequestAccess.js";
 import type * as utils_reproductionRequestErrors from "../utils/reproductionRequestErrors.js";
 import type * as utils_reproductionRequestValidators from "../utils/reproductionRequestValidators.js";
+import type * as utils_rightsStatements from "../utils/rightsStatements.js";
 import type * as utils_siteUsage from "../utils/siteUsage.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_spreadsheetText from "../utils/spreadsheetText.js";
@@ -646,6 +648,7 @@ declare const fullApi: ApiFromModules<{
   "utils/notificationTypes": typeof utils_notificationTypes;
   "utils/notificationValidators": typeof utils_notificationValidators;
   "utils/numberGenerator": typeof utils_numberGenerator;
+  "utils/objectDescription": typeof utils_objectDescription;
   "utils/objectDraftData": typeof utils_objectDraftData;
   "utils/objectDraftTypeDetails": typeof utils_objectDraftTypeDetails;
   "utils/objectEntryErrors": typeof utils_objectEntryErrors;
@@ -705,6 +708,7 @@ declare const fullApi: ApiFromModules<{
   "utils/reproductionRequestAccess": typeof utils_reproductionRequestAccess;
   "utils/reproductionRequestErrors": typeof utils_reproductionRequestErrors;
   "utils/reproductionRequestValidators": typeof utils_reproductionRequestValidators;
+  "utils/rightsStatements": typeof utils_rightsStatements;
   "utils/siteUsage": typeof utils_siteUsage;
   "utils/spectrum": typeof utils_spectrum;
   "utils/spreadsheetText": typeof utils_spreadsheetText;

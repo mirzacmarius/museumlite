@@ -523,3 +523,101 @@ describe("SPECTRUM production date", () => {
     ).toBeUndefined();
   });
 });
+
+describe("SPECTRUM description and rights", () => {
+  const inCopyright = "http://rightsstatements.org/vocab/InC/1.0/";
+  const cc0 = "https://creativecommons.org/publicdomain/zero/1.0/";
+  const teaSet: Partial<Doc<"collections">> = {
+    accessionNumber: "2024.010",
+    title: "Tea set",
+    objectName: "Tea set",
+    numberOfObjects: 12,
+    subjects: ["Willow pattern", "Bridge"],
+    tags: ["Featured"],
+    completeness: "incomplete",
+    completenessNote: "One cup missing",
+    dimensionHeight: 30,
+    dimensionUnit: "cm",
+    dimensionMeasuredPart: "overall",
+    measurementSets: [
+      { part: "base", diameter: 12, unit: "cm" },
+      { part: "other", partNote: "Lid", weight: 0.4, weightUnit: "kg" },
+    ],
+  };
+
+  it("writes the number of objects, subject, completeness, measured parts and rights statement in effect", () => {
+    const record = collectionToSpectrum(teaSet, {
+      defaultRightsStatement: inCopyright,
+    });
+
+    expect(record).toMatchObject({
+      numberOfObjects: 12,
+      subjects: ["Willow pattern", "Bridge"],
+      keywords: ["Featured"],
+      completeness: "incomplete",
+      dimensionMeasuredPart: "overall",
+      rightsStatement: inCopyright,
+    });
+    const xml = toSpectrumXML(record);
+    expect(xml).toContain(
+      "  <objectName>Tea set</objectName>\n  <numberOfObjects>12</numberOfObjects>",
+    );
+    expect(xml).toContain(
+      [
+        "  <dimensions>",
+        "    <measuredPart>overall</measuredPart>",
+        '    <height unit="cm">30</height>',
+        "  </dimensions>",
+        "  <dimensions>",
+        "    <measuredPart>base</measuredPart>",
+        '    <diameter unit="cm">12</diameter>',
+        "  </dimensions>",
+        "  <dimensions>",
+        "    <measuredPart>other</measuredPart>",
+        "    <partNote>Lid</partNote>",
+        '    <weight unit="kg">0.4</weight>',
+        "  </dimensions>",
+      ].join("\n"),
+    );
+    expect(xml).toContain("  <completeness>incomplete</completeness>");
+    expect(xml).toContain(
+      "  <completenessNote>One cup missing</completenessNote>",
+    );
+    expect(xml).toContain(
+      `  <rightsStatement>${inCopyright}</rightsStatement>`,
+    );
+    expect(xml).toContain(
+      "  <subject>Willow pattern</subject>\n  <subject>Bridge</subject>\n  <keyword>Featured</keyword>",
+    );
+    expect(xml).not.toContain("productionPlace");
+  });
+
+  it("prefers the Object's own statement and writes none when neither is set", () => {
+    expect(
+      collectionToSpectrum(
+        { ...teaSet, rightsStatement: cc0 },
+        { defaultRightsStatement: inCopyright },
+      ).rightsStatement,
+    ).toBe(cc0);
+    const unstated = collectionToSpectrum({ title: "Cup" });
+    expect(unstated.rightsStatement).toBeUndefined();
+    expect(toSpectrumXML(unstated)).not.toContain("<rightsStatement>");
+  });
+
+  it("maps the new units back to the Object", () => {
+    const collection = spectrumToCollection(
+      collectionToSpectrum({ ...teaSet, rightsStatement: cc0 }),
+    );
+
+    expect(collection).toMatchObject({
+      numberOfObjects: 12,
+      subjects: ["Willow pattern", "Bridge"],
+      tags: ["Featured"],
+      completeness: "incomplete",
+      completenessNote: "One cup missing",
+      dimensionMeasuredPart: "overall",
+      measurementSets: teaSet.measurementSets,
+      rightsStatement: cc0,
+    });
+  });
+});

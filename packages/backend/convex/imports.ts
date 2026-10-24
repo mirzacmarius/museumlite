@@ -55,6 +55,22 @@ import {
   generateNextLoanNumber,
 } from "./utils/numberGenerator";
 import {
+  COMPLETENESS_NOTE_MAX_LENGTH,
+  COMPLETENESS_VALUES,
+  completenessFromText,
+  completenessValidator,
+  isNumberOfObjects,
+  MEASURED_PARTS,
+  MEASUREMENT_SETS_MAX,
+  measuredPartFromText,
+  measuredPartValidator,
+  measurementSetsFromJson,
+  NUMBER_OF_OBJECTS_MAX,
+  normalizeSubjects,
+  SUBJECT_TERM_MAX_LENGTH,
+  SUBJECTS_MAX,
+} from "./utils/objectDescription";
+import {
   hasPermission,
   requireLocationAdminPermission,
   requirePermission,
@@ -62,6 +78,11 @@ import {
 import { productionDateSummary } from "./utils/productionDates";
 import { canReadRecord } from "./utils/recordAccess";
 import { canonicalEdtf } from "./utils/recordEdits";
+import {
+  normalizeRightsStatement,
+  rightsStatementInEffect,
+  rightsStatementValidator,
+} from "./utils/rightsStatements";
 import {
   accessionsToSpectrumEntries,
   collectionsToSpectrum,
@@ -150,6 +171,98 @@ function importedEdtf(value: string | undefined) {
     );
   }
   return edtf;
+}
+
+/** A CSV row's number of objects: a whole number from 1. */
+function importedNumberOfObjects(value: string | undefined) {
+  const text = value?.trim();
+  if (!text) return undefined;
+  const count = /^\d+$/.test(text) ? Number(text) : Number.NaN;
+  if (!isNumberOfObjects(count)) {
+    throw new Error(
+      `numberOfObjects must be a whole number from 1 to ${NUMBER_OF_OBJECTS_MAX}`,
+    );
+  }
+  return count;
+}
+
+/** Imported subject terms as stored; too many or too long fails the row. */
+function checkedSubjects(terms: readonly string[] | undefined) {
+  if (!terms) return undefined;
+  const subjects = normalizeSubjects(terms);
+  if (!subjects) {
+    throw new Error(
+      `subjects holds at most ${SUBJECTS_MAX} terms of at most ${SUBJECT_TERM_MAX_LENGTH} characters each`,
+    );
+  }
+  return subjects.length > 0 ? subjects : undefined;
+}
+
+/** A CSV row's subject terms, separated by semicolons. */
+function importedSubjects(value: string | undefined) {
+  return value?.trim() ? checkedSubjects(value.split(";")) : undefined;
+}
+
+/** A completeness or measured part by its code (its English name), any case. */
+function importedCompleteness(value: string | undefined) {
+  if (!value?.trim()) return undefined;
+  const completeness = completenessFromText(value);
+  if (!completeness) {
+    throw new Error(
+      `completeness must be one of: ${COMPLETENESS_VALUES.join(", ")}`,
+    );
+  }
+  return completeness;
+}
+
+function importedMeasuredPart(value: string | undefined) {
+  if (!value?.trim()) return undefined;
+  const part = measuredPartFromText(value);
+  if (!part) {
+    throw new Error(
+      `dimensionMeasuredPart must be one of: ${MEASURED_PARTS.join(", ")}`,
+    );
+  }
+  return part;
+}
+
+function importedCompletenessNote(value: string | undefined) {
+  const note = value?.trim();
+  if (!note) return undefined;
+  if (note.length > COMPLETENESS_NOTE_MAX_LENGTH) {
+    throw new Error(
+      `completenessNote has at most ${COMPLETENESS_NOTE_MAX_LENGTH} characters`,
+    );
+  }
+  return note;
+}
+
+/** Further sets of measurements as JSON, the way an export writes them. */
+function importedMeasurementSets(value: string | undefined) {
+  if (!value?.trim()) return undefined;
+  const sets = measurementSetsFromJson(value);
+  if (!sets) {
+    throw new Error(
+      `measurementSets must be a JSON list of at most ${MEASUREMENT_SETS_MAX} sets, each with a part (${MEASURED_PARTS.join(", ")}) and at least one of height, width, depth, diameter or weight above 0`,
+    );
+  }
+  return sets.length > 0 ? sets : undefined;
+}
+
+/**
+ * A rights statement as stored: its canonical URI, written in any form
+ * `normalizeRightsStatement` reads. Stored as entered, never compared with
+ * the Organization's default.
+ */
+function importedRightsStatement(value: string | undefined) {
+  if (!value?.trim()) return undefined;
+  const statement = normalizeRightsStatement(value);
+  if (!statement) {
+    throw new Error(
+      "rightsStatement must be a RightsStatements.org statement, CC0, the Public Domain Mark or a Creative Commons 4.0 licence, as a URI or a code such as InC, CC0 or CC BY 4.0",
+    );
+  }
+  return statement;
 }
 
 const importBatchResultValidator = v.object({
@@ -819,6 +932,17 @@ export const exportObjects = mutation({
       description: v.optional(v.string()),
       condition: v.optional(v.string()),
       provenance: v.optional(v.string()),
+      // Entered values only, written as the import reads them: a default
+      // statement never becomes the Object's own on re-import.
+      numberOfObjects: v.optional(v.number()),
+      /** Subject terms joined with "; ". */
+      subjects: v.optional(v.string()),
+      completeness: v.optional(completenessValidator),
+      completenessNote: v.optional(v.string()),
+      dimensionMeasuredPart: v.optional(measuredPartValidator),
+      /** Further sets of measurements as JSON text. */
+      measurementSets: v.optional(v.string()),
+      rightsStatement: v.optional(rightsStatementValidator),
       location: v.optional(v.string()),
       collectionGroup: v.optional(v.string()),
       collectionGroups: v.array(v.string()),
@@ -891,6 +1015,15 @@ export const exportObjects = mutation({
           description: o.description,
           condition: o.condition,
           provenance: o.provenance,
+          numberOfObjects: o.numberOfObjects,
+          subjects: o.subjects?.length ? o.subjects.join("; ") : undefined,
+          completeness: o.completeness,
+          completenessNote: o.completenessNote,
+          dimensionMeasuredPart: o.dimensionMeasuredPart,
+          measurementSets: o.measurementSets?.length
+            ? JSON.stringify(o.measurementSets)
+            : undefined,
+          rightsStatement: o.rightsStatement,
           location: o.currentLocationId
             ? locationMap.get(o.currentLocationId)
             : undefined,
@@ -1252,6 +1385,17 @@ export const importObjectsBatch = mutation({
         description: v.optional(v.string()),
         condition: v.optional(v.string()),
         provenance: v.optional(v.string()),
+        numberOfObjects: v.optional(v.string()),
+        /** Terms separated by semicolons. */
+        subjects: v.optional(v.string()),
+        /** A code or its English name, in any letter case. */
+        completeness: v.optional(v.string()),
+        completenessNote: v.optional(v.string()),
+        dimensionMeasuredPart: v.optional(v.string()),
+        /** A JSON list of sets, as the data export writes it. */
+        measurementSets: v.optional(v.string()),
+        /** A statement URI in any common form, or its code. */
+        rightsStatement: v.optional(v.string()),
         location: v.optional(v.string()),
         collectionGroup: v.optional(v.string()),
         collectionGroups: v.optional(v.string()),
@@ -1299,6 +1443,17 @@ export const importObjectsBatch = mutation({
       async (row, rowNumber) => {
         if (!row.title.trim()) throw new Error("Title is required");
         const dateCreatedEdtf = importedEdtf(row.dateCreatedEdtf);
+        const described = {
+          numberOfObjects: importedNumberOfObjects(row.numberOfObjects),
+          subjects: importedSubjects(row.subjects),
+          completeness: importedCompleteness(row.completeness),
+          completenessNote: importedCompletenessNote(row.completenessNote),
+          dimensionMeasuredPart: importedMeasuredPart(
+            row.dimensionMeasuredPart,
+          ),
+          measurementSets: importedMeasurementSets(row.measurementSets),
+          rightsStatement: importedRightsStatement(row.rightsStatement),
+        };
         const locationId = row.location?.trim()
           ? resolveUniqueName(locationsByName, row.location, "location")._id
           : undefined;
@@ -1355,7 +1510,7 @@ export const importObjectsBatch = mutation({
           organizationId: args.organizationId,
           userId,
           accessionNumber: row.accessionNumber,
-          fields: { ...fields, dateCreatedEdtf },
+          fields: { ...fields, dateCreatedEdtf, ...described },
           locationId,
           collectionGroupId,
           collectionGroupIds,
@@ -1432,6 +1587,9 @@ export const importObjectsDublinCore = mutation({
           dimensions: collection.dimensions,
           description: collection.description,
           provenance: collection.provenance,
+          subjects: collection.subjects,
+          creditLine: collection.creditLine,
+          rightsStatement: collection.rightsStatement,
         },
       };
     });
@@ -1447,7 +1605,10 @@ export const importObjectsDublinCore = mutation({
           organizationId: args.organizationId,
           userId,
           accessionNumber: row.accessionNumber,
-          fields: row.fields,
+          fields: {
+            ...row.fields,
+            subjects: checkedSubjects(row.fields.subjects),
+          },
           sourceLabel: `Dublin Core import (job ${job._id}, record ${rowNumber})`,
         });
         return {
@@ -1740,6 +1901,8 @@ export const exportObjectsWithFormat = mutation({
       )
       .collect();
     const groupMap = new Map(groups.map((g) => [g._id, g.name]));
+    const defaultRightsStatement = (await ctx.db.get(args.organizationId))
+      ?.settings?.rightsDefaults?.objectRightsStatement;
 
     const exportRows = await Promise.all(
       filtered.map(async (o) => {
@@ -1762,9 +1925,20 @@ export const exportObjectsWithFormat = mutation({
           materials: o.materials,
           technique: o.technique,
           dimensions: o.dimensions,
+          dimensionMeasuredPart: o.dimensionMeasuredPart,
+          measurementSets: o.measurementSets,
+          numberOfObjects: o.numberOfObjects,
           description: o.description,
+          subjects: o.subjects,
           condition: o.condition,
+          completeness: o.completeness,
+          completenessNote: o.completenessNote,
           provenance: o.provenance,
+          rightsStatement: o.rightsStatement,
+          rightsStatementInEffect: rightsStatementInEffect(
+            o.rightsStatement,
+            defaultRightsStatement,
+          ),
           location: o.currentLocationId
             ? locationMap.get(o.currentLocationId)
             : undefined,
@@ -1797,7 +1971,9 @@ export const exportObjectsWithFormat = mutation({
     }
 
     if (args.format === "dublincore") {
-      const dcRecords = collectionsToDublinCore(filtered);
+      const dcRecords = collectionsToDublinCore(filtered, {
+        defaultRightsStatement,
+      });
       // Return as XML array
       const xmlRecords = dcRecords
         .map((record) => toDublinCoreXML(record))
@@ -1806,7 +1982,9 @@ export const exportObjectsWithFormat = mutation({
     }
 
     if (args.format === "spectrum") {
-      const spectrumRecords = collectionsToSpectrum(filtered);
+      const spectrumRecords = collectionsToSpectrum(filtered, {
+        defaultRightsStatement,
+      });
       // Return as XML array
       const xmlRecords = spectrumRecords
         .map((record) => toSpectrumXML(record))
@@ -1832,18 +2010,27 @@ export const exportObjectsWithFormat = mutation({
       "materials",
       "technique",
       "dimensions",
+      "dimensionMeasuredPart",
+      "measurementSets",
+      "numberOfObjects",
       "description",
+      "subjects",
       "condition",
+      "completeness",
+      "completenessNote",
       "provenance",
+      "rightsStatement",
+      "rightsStatementInEffect",
       "location",
       "collectionGroup",
       "collectionGroups",
       "status",
       "createdAt",
     ];
-    // Years are bare numbers: a text cell would turn -499 into '-499.
-    const yearCell = (year: number | undefined) =>
-      year === undefined ? "" : String(year);
+    // Years and counts are bare numbers: a text cell would turn -499 into
+    // '-499.
+    const numberCell = (value: number | undefined) =>
+      value === undefined ? "" : String(value);
     const csvRows = [headers.join(",")];
     for (const row of exportRows) {
       const cells = [
@@ -1860,15 +2047,25 @@ export const exportObjectsWithFormat = mutation({
           row.dateCreatedEdtf || "",
           row.productionDateEdtf || "",
         ].map(csvTextCell),
-        yearCell(row.productionEarliestYear),
-        yearCell(row.productionLatestYear),
+        numberCell(row.productionEarliestYear),
+        numberCell(row.productionLatestYear),
         ...[
           row.materials || "",
           row.technique || "",
           row.dimensions || "",
+          row.dimensionMeasuredPart || "",
+          row.measurementSets ? JSON.stringify(row.measurementSets) : "",
+        ].map(csvTextCell),
+        numberCell(row.numberOfObjects),
+        ...[
           row.description || "",
+          row.subjects?.join("; ") || "",
           row.condition || "",
+          row.completeness || "",
+          row.completenessNote || "",
           row.provenance || "",
+          row.rightsStatement || "",
+          row.rightsStatementInEffect || "",
           row.location || "",
           row.collectionGroup || "",
           JSON.stringify(row.collectionGroups),
@@ -2247,6 +2444,13 @@ export const getImportTemplateByType = query({
           "description",
           "condition",
           "provenance",
+          "numberOfObjects",
+          "subjects",
+          "completeness",
+          "completenessNote",
+          "dimensionMeasuredPart",
+          "measurementSets",
+          "rightsStatement",
           "location",
           "collectionGroup",
         ],
@@ -2267,12 +2471,19 @@ export const getImportTemplateByType = query({
           "A landscape painting depicting...",
           "Good",
           "Gift from the Smith Estate",
+          "1",
+          "Hudson River; Farmhouse",
+          "complete",
+          "",
+          "framed",
+          '[{"part":"unframed","height":20,"width":32,"unit":"in"}]',
+          "https://creativecommons.org/publicdomain/mark/1.0/",
           "Gallery A",
           "American Art",
         ],
         requiredFields: ["title"],
         description:
-          "Import collection objects. Location and collectionGroup must match existing names.",
+          "Import collection objects. Location and collectionGroup must match existing names. Separate subjects with semicolons. completeness is complete, incomplete or fragment; dimensionMeasuredPart is overall, framed, unframed, image, sight, sheet, plate, mount, base or other; measurementSets is a JSON list of further sets; rightsStatement is a RightsStatements.org statement, CC0, the Public Domain Mark or a Creative Commons 4.0 licence, as a URI or a code such as InC or CC BY 4.0.",
       },
       accessions: {
         headers: [

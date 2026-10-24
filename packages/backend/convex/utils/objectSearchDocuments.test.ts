@@ -38,6 +38,18 @@ describe("search words", () => {
     expect(searchQueryTerms(words.join(" "))).toEqual(words.slice(0, 16));
   });
 
+  test("a subject term is searched and reported as the subject, ahead of tags", () => {
+    const portrait = {
+      accessionNumber: "P-2",
+      title: "Portrait",
+      subjects: ["Harbour pilots"],
+      tags: ["Harbour"],
+    } as Doc<"collections">;
+
+    expect(matchedObjectSearchField(portrait, "pilots")).toBe("subjects");
+    expect(matchedObjectSearchField(portrait, "harbour")).toBe("subjects");
+  });
+
   test("a word too long to index is not found by its beginning", () => {
     const poster = {
       accessionNumber: "P-1",
@@ -68,12 +80,12 @@ describe("date made sort keys", () => {
     );
   }
 
-  test("a document holds the years of the date in effect, written at version 3", () => {
-    expect(OBJECT_SEARCH_DOCUMENT_VERSION).toBe(3);
+  test("a document holds the years of the date in effect, written at version 4", () => {
+    expect(OBJECT_SEARCH_DOCUMENT_VERSION).toBe(4);
     expect(documentOf({ dateCreated: "c. 1850" })).toMatchObject({
       madeSortEarliest: 1845,
       madeSortLatest: 1855,
-      version: 3,
+      version: 4,
     });
     expect(documentOf({ dateCreated: "500 BC" })).toMatchObject({
       madeSortEarliest: -499,

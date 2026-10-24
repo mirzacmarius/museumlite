@@ -799,4 +799,44 @@ describe("Import E2E Verification (manual)", () => {
 
     expect(otherOrgCollections).toHaveLength(0);
   });
+
+  test("a Dublin Core import keeps subject terms, the rights statement as entered and the credit line", async () => {
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
+    const dc = toDublinCore({
+      title: "Harbour at dusk",
+      accessionNumber: "DC-2024-002",
+      subjects: ["Harbour", "Pilots"],
+      tags: ["pilots", "Featured"],
+      creditLine: "Gift of the Smith Estate",
+      rightsStatement: "http://rightsstatements.org/vocab/NoC-US/1.0/",
+    });
+    const jobId = await asUser.mutation(api.imports.createImportJob, {
+      organizationId: orgId,
+      type: "csv",
+      totalItems: 1,
+    });
+
+    await asUser.mutation(api.imports.importObjectsDublinCore, {
+      organizationId: orgId,
+      jobId,
+      xml: toDublinCoreXML(dc),
+    });
+
+    const [imported] = await t.run((ctx) =>
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect(),
+    );
+    expect(imported).toMatchObject({
+      subjects: ["Harbour", "Pilots", "Featured"],
+      creditLine: "Gift of the Smith Estate",
+      rightsStatement: "http://rightsstatements.org/vocab/NoC-US/1.0/",
+    });
+    expect(imported?.tags).toBeUndefined();
+  });
 });

@@ -4,6 +4,7 @@ import type { Id } from "../convex/_generated/dataModel";
 import * as recordEdits from "../convex/recordEdits";
 import {
   editVersionOf as digestOf,
+  enteredRightsStatement,
   type RecordEditErrorData,
   recordEditErrorFromError,
 } from "../convex/utils/recordEdits";
@@ -18,6 +19,8 @@ import {
 
 type Client = ReturnType<typeof authedForUser>;
 type EditTarget = Parameters<typeof api.recordEdits.getEditState>[0]["target"];
+
+const CC0 = "https://creativecommons.org/publicdomain/zero/1.0/";
 
 const CATALOGUER_PERMISSIONS = [
   "collections.create",
@@ -536,6 +539,231 @@ describe("catalog object edits", () => {
     expect(conflict.code).toBe("EDIT_CONFLICT");
   });
 
+  test("the number of objects, subject, completeness, measured parts and rights statement are stored canonical and refused at their fields", async () => {
+    const t = createConvexTest();
+    const { collectionId, ana } = await createCataloguedObject(t);
+    const stored = async () =>
+      await ana.query(api.collections.get, { collectionId });
+
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      numberOfObjects: 2,
+      subjects: [" Harbour ", "harbour", "", "Pilots"],
+      completeness: "incomplete",
+      completenessNote: "  Lid missing ",
+      dimensionMeasuredPart: "framed",
+      measurementSets: [
+        {
+          part: "unframed",
+          partNote: " ",
+          height: 20,
+          width: 32,
+          unit: " in ",
+        },
+      ],
+      rightsStatement: CC0,
+    });
+    const described = {
+      numberOfObjects: 2,
+      subjects: ["Harbour", "Pilots"],
+      completeness: "incomplete",
+      completenessNote: "Lid missing",
+      dimensionMeasuredPart: "framed",
+      measurementSets: [
+        { part: "unframed", height: 20, width: 32, unit: "in" },
+      ],
+      rightsStatement: CC0,
+    };
+    expect(await stored()).toMatchObject(described);
+
+    const refusals = [
+      [{ numberOfObjects: 0 }, "OBJECT_COUNT_INVALID", "numberOfObjects"],
+      [{ numberOfObjects: 1.5 }, "OBJECT_COUNT_INVALID", "numberOfObjects"],
+      [{ numberOfObjects: 100_001 }, "OBJECT_COUNT_INVALID", "numberOfObjects"],
+      [
+        { subjects: Array.from({ length: 51 }, (_, index) => `Term ${index}`) },
+        "SUBJECTS_INVALID",
+        "subjects",
+      ],
+      [{ subjects: ["a".repeat(201)] }, "SUBJECTS_INVALID", "subjects"],
+      [
+        { measurementSets: [{ part: "base" as const }] },
+        "MEASUREMENT_SETS_INVALID",
+        "measurementSets",
+      ],
+      [
+        { measurementSets: [{ part: "base" as const, width: 0 }] },
+        "MEASUREMENT_SETS_INVALID",
+        "measurementSets",
+      ],
+      [
+        {
+          measurementSets: Array.from({ length: 21 }, () => ({
+            part: "base" as const,
+            width: 1,
+          })),
+        },
+        "MEASUREMENT_SETS_INVALID",
+        "measurementSets",
+      ],
+      [
+        { completenessNote: "a".repeat(4001) },
+        "TEXT_TOO_LONG",
+        "completenessNote",
+      ],
+    ] as const;
+    for (const [fields, code, field] of refusals) {
+      expect(
+        await recordEditErrorOf(
+          ana.mutation(api.collections.update, { collectionId, ...fields }),
+        ),
+      ).toMatchObject({ code, field });
+    }
+    expect(await stored()).toMatchObject(described);
+
+    // A statement typed callers cannot send is refused at its field too.
+    expect(
+      await recordEditErrorOf(
+        (async () =>
+          enteredRightsStatement(
+            "https://creativecommons.org/licenses/by/3.0/",
+          ))(),
+      ),
+    ).toMatchObject({
+      code: "RIGHTS_STATEMENT_INVALID",
+      field: "rightsStatement",
+    });
+  });
+
+  test("null, no terms and no sets clear the description fields, so the Organization's default rights statement applies", async () => {
+    const t = createConvexTest();
+    const { collectionId, ana } = await createCataloguedObject(t);
+    const stored = async () =>
+      await ana.query(api.collections.get, { collectionId });
+    const fill = () =>
+      ana.mutation(api.collections.update, {
+        collectionId,
+        numberOfObjects: 3,
+        subjects: ["Harbour"],
+        completeness: "fragment",
+        completenessNote: "Rim only",
+        dimensionMeasuredPart: "overall",
+        measurementSets: [{ part: "base", diameter: 12 }],
+        rightsStatement: CC0,
+      });
+    const cleared = [
+      "numberOfObjects",
+      "subjects",
+      "completeness",
+      "completenessNote",
+      "dimensionMeasuredPart",
+      "measurementSets",
+      "rightsStatement",
+    ];
+
+    await fill();
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      numberOfObjects: null,
+      subjects: [],
+      completeness: null,
+      completenessNote: "  ",
+      dimensionMeasuredPart: null,
+      measurementSets: [],
+      rightsStatement: null,
+    });
+    for (const field of cleared)
+      expect(await stored()).not.toHaveProperty(field);
+
+    await fill();
+    await ana.mutation(api.collections.update, {
+      collectionId,
+      subjects: null,
+      measurementSets: null,
+      completenessNote: null,
+    });
+    const object = await stored();
+    expect(object).not.toHaveProperty("subjects");
+    expect(object).not.toHaveProperty("measurementSets");
+    expect(object).not.toHaveProperty("completenessNote");
+    expect(object).toMatchObject({ numberOfObjects: 3, rightsStatement: CC0 });
+  });
+
+  test("a new Object's description fields are checked and stored the same way", async () => {
+    const t = createConvexTest();
+    const { organizationId, ana } = await createCataloguedObject(t);
+    const create = (fields: {
+      numberOfObjects?: number;
+      subjects?: string[];
+    }) =>
+      ana.mutation(api.collections.create, {
+        organizationId,
+        accessionNumber: "2026.2",
+        title: "Tea set",
+        ...fields,
+      });
+
+    expect(
+      await recordEditErrorOf(create({ numberOfObjects: 0 })),
+    ).toMatchObject({ code: "OBJECT_COUNT_INVALID", field: "numberOfObjects" });
+    expect(
+      await recordEditErrorOf(create({ subjects: ["a".repeat(201)] })),
+    ).toMatchObject({ code: "SUBJECTS_INVALID", field: "subjects" });
+    const collectionId = await ana.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "2026.2",
+      title: "Tea set",
+      numberOfObjects: 12,
+      subjects: ["Willow pattern", " willow pattern "],
+      completeness: "complete",
+      dimensionMeasuredPart: "overall",
+      measurementSets: [{ part: "base", diameter: 12, unit: "cm" }],
+      rightsStatement: CC0,
+    });
+    expect(
+      await ana.query(api.collections.get, { collectionId }),
+    ).toMatchObject({
+      numberOfObjects: 12,
+      subjects: ["Willow pattern"],
+      completeness: "complete",
+      dimensionMeasuredPart: "overall",
+      measurementSets: [{ part: "base", diameter: 12, unit: "cm" }],
+      rightsStatement: CC0,
+    });
+  });
+
+  test("an Object without the description fields keeps the edit version it had, and entering a subject outdates open forms", async () => {
+    const t = createConvexTest();
+    const { collectionId, ana, ben } = await createCataloguedObject(t);
+    // Empty lists hash like absent fields.
+    await t.run((ctx) =>
+      ctx.db.patch(collectionId, { subjects: [], measurementSets: [] }),
+    );
+    const target = { type: "object" as const, id: collectionId };
+    const anaOpened = await editVersionOf(ana, target);
+
+    expect(anaOpened).toBe(
+      await digestOf({
+        title: "Harbour at dusk",
+        description: "Oil on canvas.",
+      }),
+    );
+
+    await ben.mutation(api.collections.update, {
+      collectionId,
+      subjects: ["Harbour"],
+      expectedEditVersion: await editVersionOf(ben, target),
+    });
+    const conflict = await recordEditErrorOf(
+      ana.mutation(api.collections.update, {
+        collectionId,
+        description: "Oil on canvas, relined 1972.",
+        expectedEditVersion: anaOpened,
+      }),
+    );
+    expect(conflict.code).toBe("EDIT_CONFLICT");
+  });
+
   test("outsiders and signed-out callers read no edit state", async () => {
     const t = createConvexTest();
     const { collectionId } = await createCataloguedObject(t);
@@ -806,6 +1034,110 @@ describe("intake object drafts", () => {
     const object = await t.run((ctx) => ctx.db.get(objectId));
     expect(object?.title).toBe("Fishing net");
     expect(object?.dateCreatedEdtf).toBeUndefined();
+  });
+
+  test("a draft's description fields are checked at save and copied to the Object it becomes", async () => {
+    const t = createConvexTest();
+    const { organizationId, ana, accessionId } = await createIntakeDraft(t);
+    const save = (
+      saveMode: "draft" | "submit",
+      fields: {
+        numberOfObjects?: number;
+        subjects?: string[];
+        measurementSets?: Array<{ part: "base"; width?: number }>;
+      } = {},
+    ) =>
+      ana.mutation(api.accessions.saveObjectDraft, {
+        organizationId,
+        accessionId,
+        saveMode,
+        objectData: {
+          accessionNumber: "2026.4.1",
+          title: "Fishing net",
+          ...fields,
+        },
+      });
+
+    expect(
+      await recordEditErrorOf(save("draft", { numberOfObjects: 0 })),
+    ).toMatchObject({ code: "OBJECT_COUNT_INVALID", field: "numberOfObjects" });
+    expect(
+      await recordEditErrorOf(save("draft", { subjects: ["a".repeat(201)] })),
+    ).toMatchObject({ code: "SUBJECTS_INVALID", field: "subjects" });
+    expect(
+      await recordEditErrorOf(
+        save("draft", { measurementSets: [{ part: "base" }] }),
+      ),
+    ).toMatchObject({
+      code: "MEASUREMENT_SETS_INVALID",
+      field: "measurementSets",
+    });
+
+    await ana.mutation(api.accessions.saveObjectDraft, {
+      organizationId,
+      accessionId,
+      saveMode: "submit",
+      objectData: {
+        accessionNumber: "2026.4.1",
+        title: "Fishing net",
+        numberOfObjects: 2,
+        subjects: [" Fishing ", "fishing", "Coast"],
+        completeness: "incomplete",
+        completenessNote: " Floats missing ",
+        dimensionMeasuredPart: "overall",
+        measurementSets: [{ part: "other", partNote: "Float", diameter: 9 }],
+        rightsStatement: CC0,
+      },
+    });
+    const accession = await ana.query(api.accessions.get, { accessionId });
+    expect(accession?.draftObjectData?.subjects).toEqual(["Fishing", "Coast"]);
+    const objectId = accession?.collectionId;
+    if (!objectId) throw new Error("Expected the accepted draft's Object");
+    expect(
+      await ana.query(api.collections.get, { collectionId: objectId }),
+    ).toMatchObject({
+      numberOfObjects: 2,
+      subjects: ["Fishing", "Coast"],
+      completeness: "incomplete",
+      completenessNote: "Floats missing",
+      dimensionMeasuredPart: "overall",
+      measurementSets: [{ part: "other", partNote: "Float", diameter: 9 }],
+      rightsStatement: CC0,
+    });
+  });
+
+  test("an approval never fails over description values saved before they were checked", async () => {
+    const t = createConvexTest();
+    const { userId, accessionId } = await createIntakeDraft(t);
+    await t.run(async (ctx) => {
+      const accession = await ctx.db.get(accessionId);
+      if (!accession?.draftObjectData) throw new Error("Expected a draft");
+      await ctx.db.patch(accessionId, {
+        status: "approved",
+        approvedBy: userId,
+        approvedAt: Date.now(),
+        draftObjectData: {
+          ...accession.draftObjectData,
+          numberOfObjects: 0,
+          subjects: ["a".repeat(201), "Coast"],
+          completenessNote: "a".repeat(4001),
+          measurementSets: [{ part: "base" }, { part: "base", width: 2 }],
+        },
+      });
+    });
+
+    const objectId = await t.mutation(
+      internal.accessions.createCollectionFromAccession,
+      { accessionId },
+    );
+    const object = await t.run((ctx) => ctx.db.get(objectId));
+    expect(object).toMatchObject({
+      title: "Fishing net",
+      subjects: ["Coast"],
+      measurementSets: [{ part: "base", width: 2 }],
+    });
+    expect(object?.numberOfObjects).toBeUndefined();
+    expect(object?.completenessNote).toBeUndefined();
   });
 
   test("a draft that was accepted can no longer be saved as a draft", async () => {

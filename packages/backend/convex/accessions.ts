@@ -67,7 +67,12 @@ import {
 import { canReadRecord } from "./utils/recordAccess";
 import {
   assertCurrentEditVersion,
+  enteredCompletenessNote,
+  enteredMeasurementSets,
+  enteredNumberOfObjects,
   enteredProductionDate,
+  enteredRightsStatement,
+  enteredSubjects,
   objectDraftEditVersion,
   recordEditError,
   requireFieldValue,
@@ -505,6 +510,11 @@ async function saveObjectDraftRecord(
     ...args.objectData,
     title: args.objectData.title.trim(),
     dateCreatedEdtf: enteredProductionDate(args.objectData.dateCreatedEdtf),
+    numberOfObjects: enteredNumberOfObjects(args.objectData.numberOfObjects),
+    subjects: enteredSubjects(args.objectData.subjects),
+    completenessNote: enteredCompletenessNote(args.objectData.completenessNote),
+    measurementSets: enteredMeasurementSets(args.objectData.measurementSets),
+    rightsStatement: enteredRightsStatement(args.objectData.rightsStatement),
   };
   const submittedDraftMedia =
     args.draftMedia && normalizeDraftMediaPrimary(args.draftMedia);

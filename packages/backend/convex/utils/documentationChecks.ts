@@ -329,6 +329,15 @@ async function scanObjects(
     ...profile,
     stageSet: new Set(profile.stages),
   }));
+  // Read once a page, and only when a profile asks for a rights statement.
+  const organizationEvidence = checkedProfiles.some((profile) =>
+    profile.requirements.includes("rights_statement"),
+  )
+    ? {
+        objectRightsStatement: (await ctx.db.get(check.organizationId))
+          ?.settings?.rightsDefaults?.objectRightsStatement,
+      }
+    : {};
   for (const object of result.page) {
     stats.rows++;
     for (const problem of await objectReferenceProblems(ctx, object))
@@ -350,7 +359,7 @@ async function scanObjects(
     );
     if (profiles.length === 0) continue;
     const stage = await objectStage(ctx, object);
-    const missingOf = objectEvidence(ctx, object);
+    const missingOf = objectEvidence(ctx, object, organizationEvidence);
     for (const profile of profiles) {
       if (!profile.stageSet.has(stage)) continue;
       const missing = await missingOf(profile.requirements);

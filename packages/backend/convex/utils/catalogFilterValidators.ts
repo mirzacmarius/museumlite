@@ -17,6 +17,7 @@ export const OBJECT_SEARCH_FIELDS = [
   "objectName",
   "objectType",
   "description",
+  "subjects",
   "tags",
   "inscriptions",
   "materials",

@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { objectDraftTypeDetailsValidator } from "./collectionTypeDetailFields";
 import { collectionTypeValidator } from "./moduleValidators";
+import {
+  completenessValidator,
+  measuredPartValidator,
+  measurementSetValidator,
+} from "./objectDescription";
+import { rightsStatementValidator } from "./rightsStatements";
 
 export const objectDraftLinkValidator = v.object({
   url: v.string(),
@@ -23,6 +29,7 @@ export const objectDraftDataValidator = v.object({
   creator: v.optional(v.string()),
   objectType: v.optional(v.array(v.string())),
   objectName: v.optional(v.string()),
+  numberOfObjects: v.optional(v.number()),
   culture: v.optional(v.string()),
   period: v.optional(v.string()),
   dateCreated: v.optional(v.string()),
@@ -38,14 +45,21 @@ export const objectDraftDataValidator = v.object({
   dimensionDiameter: v.optional(v.string()),
   dimensionWeight: v.optional(v.number()),
   weightUnit: v.optional(v.string()),
+  dimensionMeasuredPart: v.optional(measuredPartValidator),
+  measurementSets: v.optional(v.array(measurementSetValidator)),
   description: v.optional(v.string()),
   condition: v.optional(v.string()),
+  completeness: v.optional(completenessValidator),
+  completenessNote: v.optional(v.string()),
   inscriptions: v.optional(v.string()),
   inscriptionMarks: v.optional(
     v.array(v.object({ label: v.string(), description: v.string() })),
   ),
   tags: v.optional(v.array(v.string())),
+  subjects: v.optional(v.array(v.string())),
   creditLine: v.optional(v.string()),
+  /** Absent: the Organization's default applies once it is an Object. */
+  rightsStatement: v.optional(rightsStatementValidator),
   legalRestrictions: v.optional(v.boolean()),
   provenance: v.optional(v.string()),
   exhibitionHistory: v.optional(v.string()),

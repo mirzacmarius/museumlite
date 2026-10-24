@@ -630,6 +630,13 @@ export function buildObjectDraftPayload(
     isSearchable: formData.isSearchable ?? true,
     isValuationVisible: formData.isValuationVisible ?? false,
     publicSlug: formData.publicSlug?.trim() || undefined,
+    numberOfObjects: undefined,
+    subjects: undefined,
+    completeness: undefined,
+    completenessNote: undefined,
+    dimensionMeasuredPart: undefined,
+    measurementSets: undefined,
+    rightsStatement: undefined,
   };
   return payload;
 }

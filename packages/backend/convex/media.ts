@@ -45,6 +45,10 @@ import {
 } from "./utils/recordReferences";
 import { getRelatedEntityOrganization } from "./utils/relatedEntityIntegrity";
 import {
+  rightsStatementInEffect,
+  rightsStatementValidator,
+} from "./utils/rightsStatements";
+import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
   validateOwnedUploadSize,
@@ -247,6 +251,8 @@ export const list = query({
       caption: v.optional(v.string()),
       photographer: v.optional(v.string()),
       copyright: v.optional(v.string()),
+      /** The file's own statement; absent when its Organization's applies. */
+      rightsStatement: v.optional(rightsStatementValidator),
       url: v.union(v.string(), v.null()),
       thumbnailUrl: v.union(v.string(), v.null()),
       uploadStatus: v.union(
@@ -295,6 +301,7 @@ export const list = query({
           caption: media.caption,
           photographer: media.photographer,
           copyright: media.copyright,
+          rightsStatement: media.rightsStatement,
           url,
           thumbnailUrl,
           uploadStatus: media.uploadStatus,
@@ -688,6 +695,7 @@ export const listByOrganization = query({
         caption: v.optional(v.string()),
         photographer: v.optional(v.string()),
         copyright: v.optional(v.string()),
+        rightsStatement: v.optional(rightsStatementValidator),
         uploadedAt: v.number(),
         uploaderName: v.optional(v.string()),
         currentVersionId: v.optional(v.id("mediaVersions")),
@@ -760,6 +768,7 @@ export const listByOrganization = query({
         caption: media.caption,
         photographer: media.photographer,
         copyright: media.copyright,
+        rightsStatement: media.rightsStatement,
         uploadedAt: media.uploadedAt,
         uploaderName: uploader?.name ?? uploader?.username,
         currentVersionId: media.currentVersionId,
@@ -1090,6 +1099,10 @@ export const getWithMetadata = query({
       usageRestrictions: v.optional(v.string()),
       requiresAcknowledgment: v.optional(v.boolean()),
       acknowledgmentText: v.optional(v.string()),
+      /** The file's own statement, absent when none was recorded. */
+      rightsStatement: v.optional(rightsStatementValidator),
+      /** Its own, otherwise the Organization's media default. */
+      rightsStatementInEffect: v.optional(rightsStatementValidator),
     }),
     v.null(),
   ),
@@ -1101,9 +1114,10 @@ export const getWithMetadata = query({
 
     await requirePermission(ctx, media.organizationId, "media.read");
 
-    const [collection, shown] = await Promise.all([
+    const [collection, shown, organization] = await Promise.all([
       ctx.db.get(media.collectionId),
       getDisplayedMediaFiles(ctx, media),
+      ctx.db.get(media.organizationId),
     ]);
     const [url, thumbnailUrl, originalUrl] = await Promise.all([
       ctx.storage.getUrl(shown.storageId),
@@ -1141,6 +1155,11 @@ export const getWithMetadata = query({
       usageRestrictions: media.usageRestrictions,
       requiresAcknowledgment: media.requiresAcknowledgment,
       acknowledgmentText: media.acknowledgmentText,
+      rightsStatement: media.rightsStatement,
+      rightsStatementInEffect: rightsStatementInEffect(
+        media.rightsStatement,
+        organization?.settings?.rightsDefaults?.mediaRightsStatement,
+      ),
     };
   },
 });
@@ -1401,6 +1420,11 @@ export const updateRights = mutation({
     usageRestrictions: v.optional(v.union(v.string(), v.null())),
     requiresAcknowledgment: v.optional(v.boolean()),
     acknowledgmentText: v.optional(v.string()),
+    /**
+     * Null clears it, so the Organization's media default applies. The
+     * statement is descriptive: changing only it keeps the approval.
+     */
+    rightsStatement: v.optional(v.union(rightsStatementValidator, v.null())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1432,10 +1456,14 @@ export const updateRights = mutation({
       updates.requiresAcknowledgment = args.requiresAcknowledgment;
     if (args.acknowledgmentText !== undefined)
       updates.acknowledgmentText = args.acknowledgmentText;
+    // Recorded rights gate the portal (ADR 0017), so changing them revokes
+    // the approval; the statement does not (ADR 0022).
     if (Object.keys(updates).length > 0) {
       await revokePublicRendition(ctx, media);
       updates.publicApproval = undefined;
     }
+    if (args.rightsStatement !== undefined)
+      updates.rightsStatement = args.rightsStatement ?? undefined;
 
     await Promise.all([
       ctx.db.patch(args.mediaId, updates),
@@ -1634,6 +1662,7 @@ export const listByRightsStatus = query({
       licenseType: v.optional(licenseTypeValidator),
       licenseExpiry: v.optional(v.number()),
       rightsHolder: v.optional(v.string()),
+      rightsStatement: v.optional(rightsStatementValidator),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1661,6 +1690,7 @@ export const listByRightsStatus = query({
           licenseType: m.licenseType,
           licenseExpiry: m.licenseExpiry,
           rightsHolder: m.rightsHolder,
+          rightsStatement: m.rightsStatement,
         };
       }),
     );

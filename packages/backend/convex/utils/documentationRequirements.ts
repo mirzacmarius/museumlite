@@ -5,6 +5,10 @@ import type {
   DocumentationStage,
 } from "./documentationQualityValidators";
 import { isUnaccessionedEntryObject } from "./objectEntryLifecycle";
+import {
+  type RightsStatementUri,
+  rightsStatementInEffect,
+} from "./rightsStatements";
 
 type Ctx = Pick<QueryCtx, "db">;
 
@@ -44,10 +48,17 @@ function filled(value: string | undefined) {
   return !!value?.trim();
 }
 
+/** What the Object's Organization holds that a requirement can rely on. */
+export interface OrganizationEvidence {
+  /** The statement that applies to Objects without one of their own. */
+  objectRightsStatement?: RightsStatementUri;
+}
+
 async function meetsRequirement(
   ctx: Ctx,
   object: Doc<"collections">,
   requirement: DocumentationRequirement,
+  organization: OrganizationEvidence,
 ): Promise<boolean> {
   const own = (row: { organizationId: Doc<"collections">["organizationId"] }) =>
     row.organizationId === object.organizationId;
@@ -56,6 +67,8 @@ async function meetsRequirement(
       return filled(object.objectType);
     case "object_name":
       return filled(object.objectName);
+    case "number_of_objects":
+      return object.numberOfObjects !== undefined;
     case "maker":
       return filled(object.creator);
     case "production_date":
@@ -81,7 +94,7 @@ async function meetsRequirement(
     case "description":
       return filled(object.description);
     case "subject":
-      return (object.tags ?? []).some(filled);
+      return (object.subjects ?? []).some(filled);
     case "current_location":
       return object.currentLocationId !== undefined;
     case "condition_assessment":
@@ -130,21 +143,33 @@ async function meetsRequirement(
           )
           .first()) !== null
       );
+    case "rights_statement":
+      return (
+        rightsStatementInEffect(
+          object.rightsStatement,
+          organization.objectRightsStatement,
+        ) !== undefined
+      );
   }
 }
 
 /**
  * The requirements an Object does not meet, in the order given. Each kind
  * of evidence is read at most once per Object, whatever the profile count.
+ * A rights statement is met by the Organization's default too.
  */
-export function objectEvidence(ctx: Ctx, object: Doc<"collections">) {
+export function objectEvidence(
+  ctx: Ctx,
+  object: Doc<"collections">,
+  organization: OrganizationEvidence = {},
+) {
   const answers = new Map<DocumentationRequirement, Promise<boolean>>();
   return async (requirements: readonly DocumentationRequirement[]) => {
     const missing: DocumentationRequirement[] = [];
     for (const requirement of requirements) {
       let answer = answers.get(requirement);
       if (!answer) {
-        answer = meetsRequirement(ctx, object, requirement);
+        answer = meetsRequirement(ctx, object, requirement, organization);
         answers.set(requirement, answer);
       }
       if (!(await answer)) missing.push(requirement);

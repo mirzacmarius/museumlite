@@ -11,7 +11,13 @@ import {
   moveCollectionToLocation,
   requireUsableLocation,
 } from "./locationIntegrity";
+import type {
+  Completeness,
+  MeasuredPart,
+  MeasurementSet,
+} from "./objectDescription";
 import { applyUsageCounterDelta } from "./organizationUsageCounters";
+import type { RightsStatementUri } from "./rightsStatements";
 import { emitWebhookEvent } from "./webhookEvents";
 
 export async function buildConditionHistoryEntry(
@@ -171,6 +177,18 @@ export interface ImportedObjectFields {
   description?: string;
   condition?: string;
   provenance?: string;
+  creditLine?: string;
+  /**
+   * Checked and stored canonical by the importer first, so a bad value fails
+   * one row: see `imports.ts` and `utils/objectDescription.ts`.
+   */
+  numberOfObjects?: number;
+  subjects?: string[];
+  completeness?: Completeness;
+  completenessNote?: string;
+  dimensionMeasuredPart?: MeasuredPart;
+  measurementSets?: MeasurementSet[];
+  rightsStatement?: RightsStatementUri;
 }
 
 function trimmed(value: string | undefined) {
@@ -243,6 +261,16 @@ export async function createImportedCatalogObject(
         ]
       : undefined,
     provenance: trimmed(args.fields.provenance),
+    creditLine: trimmed(args.fields.creditLine),
+    numberOfObjects: args.fields.numberOfObjects,
+    subjects: args.fields.subjects?.length ? args.fields.subjects : undefined,
+    completeness: args.fields.completeness,
+    completenessNote: trimmed(args.fields.completenessNote),
+    dimensionMeasuredPart: args.fields.dimensionMeasuredPart,
+    measurementSets: args.fields.measurementSets?.length
+      ? args.fields.measurementSets
+      : undefined,
+    rightsStatement: args.fields.rightsStatement,
     collectionGroupId: args.collectionGroupId,
     status: "active",
     catalogedBy: userId,

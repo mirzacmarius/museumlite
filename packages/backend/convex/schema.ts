@@ -70,6 +70,11 @@ import {
   notificationIntentFields,
 } from "./utils/notificationValidators";
 import {
+  completenessValidator,
+  measuredPartValidator,
+  measurementSetValidator,
+} from "./utils/objectDescription";
+import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
@@ -100,6 +105,7 @@ import {
   provenanceReviewDocumentValidator,
 } from "./utils/provenanceValidators";
 import { reproductionRequestTables } from "./utils/reproductionRequestValidators";
+import { rightsStatementValidator } from "./utils/rightsStatements";
 import {
   webhookDeliveryAttemptFields,
   webhookDeliveryFields,
@@ -328,6 +334,14 @@ export default defineSchema({
                 v.literal("bottom-right"),
               ),
             ),
+          }),
+        ),
+        // Statements that apply to Objects and to their images that have
+        // none of their own; a child Organization has its own (ADR 0022).
+        rightsDefaults: v.optional(
+          v.object({
+            objectRightsStatement: v.optional(rightsStatementValidator),
+            mediaRightsStatement: v.optional(rightsStatementValidator),
           }),
         ),
       }),
@@ -595,6 +609,9 @@ export default defineSchema({
     creator: v.optional(v.string()), // Artist/maker name
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
+    // How many things this record describes (Spectrum "Number of objects");
+    // absent when not recorded. Never feeds usage, quota or inventory counts.
+    numberOfObjects: v.optional(v.number()),
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
     // Date made, as written; shown as entered.
@@ -613,10 +630,16 @@ export default defineSchema({
     dimensionWeight: v.optional(v.number()), // in kg
     dimensionUnit: v.optional(v.string()), // "cm", "in", etc.
     weightUnit: v.optional(v.string()), // "kg", "lb", etc.
+    // The part the measurements above were taken from; absent when not stated.
+    dimensionMeasuredPart: v.optional(measuredPartValidator),
+    // Further sets of measurements, one per part (see utils/objectDescription.ts).
+    measurementSets: v.optional(v.array(measurementSetValidator)),
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
     currentConditionAssessmentId: v.optional(v.id("conditionAssessments")),
     legacyConditionSnapshot: v.optional(v.string()),
+    completeness: v.optional(completenessValidator),
+    completenessNote: v.optional(v.string()),
     conditionHistory: v.optional(
       v.array(
         v.object({
@@ -638,6 +661,9 @@ export default defineSchema({
       ),
     ),
     tags: v.optional(v.array(v.string())), // e.g., ["Imperial Portraiture", "Bearded", "Antonine"]
+    // What the Object depicts or is about (Object ID "Subject"), kept apart
+    // from tags, which are free keywords.
+    subjects: v.optional(v.array(v.string())),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
     // Structured provenance/ownership history
@@ -657,6 +683,9 @@ export default defineSchema({
     donated_date: v.optional(v.string()), // Date of donation (ISO format or partial)
     donation_info: v.optional(v.string()), // Free-text info about the donation
     creditLine: v.optional(v.string()), // e.g., "Gift of the Estate of Lord Carnarvon, 1924"
+    // The rights in the work itself; absent means the Organization's default
+    // applies when read (ADR 0022).
+    rightsStatement: v.optional(rightsStatementValidator),
     previous_owners: v.optional(v.array(v.string())), // List of previous owners
     links: v.optional(
       v.array(
@@ -1118,6 +1147,10 @@ export default defineSchema({
     usageRestrictions: v.optional(v.string()),
     requiresAcknowledgment: v.optional(v.boolean()),
     acknowledgmentText: v.optional(v.string()),
+    // The rights in this file (edm:rights); absent means the Organization's
+    // media default applies when read. Descriptive: the portal gate above
+    // does not read it (ADR 0022).
+    rightsStatement: v.optional(rightsStatementValidator),
 
     // Version Tracking
     currentVersionId: v.optional(v.id("mediaVersions")),
@@ -5364,8 +5397,9 @@ export default defineSchema({
     requestKey: v.string(),
     source: exportSource,
     format: exportFormat,
-    // Object jobs are version 2 (date made columns); others stay version 1.
-    schemaVersion: v.union(v.literal(1), v.literal(2)),
+    // Object jobs are version 3 (date made, then description and rights
+    // columns); others stay version 1. A job keeps the version it began with.
+    schemaVersion: v.union(v.literal(1), v.literal(2), v.literal(3)),
     asOf: v.number(),
     captureStartedAt: v.number(),
     captureCompletedAt: v.optional(v.number()),

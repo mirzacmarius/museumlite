@@ -1,11 +1,14 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 import {
   type QualityErrorData,
   qualityErrorFromError,
 } from "../convex/utils/documentationQualityErrors";
-import { objectEvidence } from "../convex/utils/documentationRequirements";
+import {
+  type OrganizationEvidence,
+  objectEvidence,
+} from "../convex/utils/documentationRequirements";
 import { normalizeIdentifier } from "../convex/utils/identifiers";
 import { notificationEntityHref } from "../convex/utils/notificationLinks";
 import {
@@ -586,7 +589,7 @@ test("the Object ID profile reports the checklist categories an object lacks", a
       dimensionDiameter: "27 mm",
       inscriptionMarks: [{ label: "Obverse", description: "ANTONINVS AVG" }],
       description: "Sestertius with a laureate bust.",
-      tags: ["Antonine", "Imperial portraiture"],
+      subjects: ["Antonine", "Imperial portraiture"],
     });
   });
   await addImage(t, organizationId, adminId, described);
@@ -646,6 +649,81 @@ test("a production date is recorded by its text, even text that reads as no date
   expect(await missing({})).toEqual(["production_date"]);
   expect(await missing({ dateCreated: "Ming dynasty" })).toEqual([]);
   expect(await missing({ dateCreatedEdtf: "1850~" })).toEqual([]);
+});
+
+test("the subject is met by subject terms, not tags, and the number of objects and rights statement by their values", async () => {
+  const { t, adminId, organizationId } = await setup();
+  const objectId = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "2001.10",
+  });
+  const missing = (
+    fields: Partial<Doc<"collections">>,
+    organization: OrganizationEvidence = {},
+  ) =>
+    t.run(async (ctx) => {
+      const object = await ctx.db.get(objectId);
+      if (!object) throw new Error("Expected the object");
+      return await objectEvidence(
+        ctx,
+        { ...object, ...fields },
+        organization,
+      )(["subject", "number_of_objects", "rights_statement"]);
+    });
+
+  expect(await missing({ tags: ["Harbour"] })).toEqual([
+    "subject",
+    "number_of_objects",
+    "rights_statement",
+  ]);
+  expect(
+    await missing({
+      subjects: ["Harbour"],
+      numberOfObjects: 1,
+      rightsStatement: "https://creativecommons.org/publicdomain/zero/1.0/",
+    }),
+  ).toEqual([]);
+  // The Organization's default is the statement in effect.
+  expect(
+    await missing(
+      {},
+      { objectRightsStatement: "http://rightsstatements.org/vocab/InC/1.0/" },
+    ),
+  ).toEqual(["subject", "number_of_objects"]);
+});
+
+test("a check counts the Organization's default rights statement for Objects without their own", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    name: "Rights",
+    stages: ["collection"],
+    requirements: ["rights_statement"],
+  });
+  const unstated = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "2002.1",
+  });
+
+  const before = await runCheck(t, officer, organizationId);
+  expect(before).toMatchObject({ status: "completed", detected: 1 });
+  expect(await findings(officer, organizationId)).toEqual([
+    expect.objectContaining({
+      objectId: unstated,
+      missing: ["rights_statement"],
+    }),
+  ]);
+
+  await admin.mutation(api.organizations.updateRightsDefaults, {
+    organizationId,
+    rightsDefaults: {
+      objectRightsStatement: "http://rightsstatements.org/vocab/InC/1.0/",
+    },
+  });
+  const after = await runCheck(t, officer, organizationId);
+  expect(after).toMatchObject({
+    status: "completed",
+    detected: 0,
+    resolved: 1,
+  });
 });
 
 test("duplicate identifiers are surfaced without renumbering and reviewed through the identifier register", async () => {
