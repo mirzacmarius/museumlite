@@ -43,7 +43,8 @@ const uploadLimiter = new RateLimiter(components.rateLimiter, {
 });
 
 /** Uploads never attached to a record, and spent upload sessions, go after this. */
-export const ABANDONED_UPLOAD_AGE_MS = 24 * 60 * 60 * 1000;
+// A week, so a form left open over a weekend or holiday can still be saved.
+export const ABANDONED_UPLOAD_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const ABANDONED_UPLOAD_BATCH = 100;
 
 export const getUser = query({
@@ -320,7 +321,7 @@ export const completeOwnedUpload = internalMutation({
 
 /**
  * Deletes uploads that were never attached to a record, with their files,
- * and upload sessions that expired, once they are a day old. Runs hourly
+ * and upload sessions that expired, once they are a week old. Runs hourly
  * from crons.ts and reschedules itself while a full batch remains.
  */
 export const deleteAbandonedUploads = internalMutation({

@@ -95,7 +95,7 @@ crons.interval(
   {},
 );
 
-// Uploads never attached to a record, and expired upload sessions, go after a day
+// Uploads never attached to a record, and expired upload sessions, go after a week
 crons.interval(
   "delete-abandoned-uploads",
   { hours: 1 },

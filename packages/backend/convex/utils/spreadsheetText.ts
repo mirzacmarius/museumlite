@@ -1,7 +1,9 @@
 /**
  * Text cells shared by every CSV the product writes, server or browser.
  * A spreadsheet runs a cell that starts with =, +, - or @ as a formula, so
- * such text gets a leading apostrophe; parsers strip exactly one.
+ * such text gets a leading apostrophe. This protects people opening the file
+ * and is not reversible on its own: register exports use
+ * `protectRegisterText`, which also escapes a leading apostrophe.
  */
 export function protectSpreadsheetText(raw: string) {
   let candidate = raw.trimStart();

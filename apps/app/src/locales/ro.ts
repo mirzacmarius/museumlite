@@ -6453,7 +6453,7 @@ export default {
       event_expired: "Evenimentul nu mai este stocat",
       endpoint_deleted: "Endpoint-ul a fost șters",
       endpoint_disabled: "Endpoint-ul a fost dezactivat",
-      endpoint_insecure: "URL-ul endpoint-ului nu folosește HTTPS",
+      endpoint_insecure: "URL-ul endpoint-ului nu este o adresă HTTPS publică",
       endpoint_unsubscribed:
         "Endpoint-ul nu mai este abonat la acest eveniment",
     },

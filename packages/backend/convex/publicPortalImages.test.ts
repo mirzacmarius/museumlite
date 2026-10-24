@@ -773,6 +773,25 @@ test("an image whose rendition cannot be made is reported as failed and not show
   ).toBe("failed");
 });
 
+test("an upload that is not a JPEG, PNG, WebP or TIFF is never decoded for the portal", async () => {
+  const portal = await createPortal();
+  // The image library would render this SVG if it were ever opened.
+  const mediaId = await portal.upload(
+    "drawing.jpg",
+    new TextEncoder().encode(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="red"/></svg>',
+    ),
+    "image/jpeg",
+  );
+  await portal.drain();
+
+  expect((await portal.detail())?.images).toEqual([]);
+  expect(
+    (await portal.staff.query(api.mediaPublications.getReview, { mediaId }))
+      ?.portal,
+  ).toBe("failed");
+});
+
 test("the rendition backfill continues past its first page", async () => {
   const portal = await createPortal();
   const pixel = new Uint8Array(await photo(20));

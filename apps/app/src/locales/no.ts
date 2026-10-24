@@ -1409,7 +1409,7 @@ export default {
       event_expired: "Hendelsen er ikke lenger lagret",
       endpoint_deleted: "Endepunktet ble slettet",
       endpoint_disabled: "Endepunktet ble deaktivert",
-      endpoint_insecure: "Endepunktets URL bruker ikke HTTPS",
+      endpoint_insecure: "Endepunktets URL er ikke en offentlig HTTPS-adresse",
       endpoint_unsubscribed:
         "Endepunktet abonnerer ikke lenger på denne hendelsen",
     },

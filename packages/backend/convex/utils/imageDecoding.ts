@@ -1,3 +1,5 @@
+"use node";
+
 import type { Sharp, SharpOptions } from "sharp";
 
 /** Image formats the backend decodes; anything else is refused unread. */

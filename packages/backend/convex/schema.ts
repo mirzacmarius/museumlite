@@ -883,7 +883,7 @@ export default defineSchema({
     ownerType: v.optional(v.string()),
     ownerId: v.optional(v.string()),
     // Set when an owned upload completes and cleared when a record claims
-    // it; the cleanup cron deletes uploads left unclaimed for a day. Rows
+    // it; the cleanup cron deletes uploads left unclaimed for a week. Rows
     // from before the field existed never carry it, so they are kept.
     unclaimedSince: v.optional(v.number()),
   })

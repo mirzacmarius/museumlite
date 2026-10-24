@@ -1439,7 +1439,8 @@ export default {
       event_expired: "L'événement n'est plus conservé",
       endpoint_deleted: "Le point de terminaison a été supprimé",
       endpoint_disabled: "Le point de terminaison a été désactivé",
-      endpoint_insecure: "L'URL du point de terminaison n'utilise pas HTTPS",
+      endpoint_insecure:
+        "L'URL du point de terminaison n'est pas une adresse HTTPS publique",
       endpoint_unsubscribed:
         "Le point de terminaison n'est plus abonné à cet événement",
     },

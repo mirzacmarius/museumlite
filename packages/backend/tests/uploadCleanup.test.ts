@@ -9,7 +9,8 @@ import {
   createConvexTestWithRateLimiter,
 } from "./testHarness";
 
-const DAY = ABANDONED_UPLOAD_AGE_MS;
+const AGE = ABANDONED_UPLOAD_AGE_MS;
+const DAY = 24 * 60 * 60 * 1000;
 
 async function insertUser(t: ConvexTest) {
   return await t.run(async (ctx) =>
@@ -29,6 +30,8 @@ async function storeUpload(
     contentType?: string;
     ownerId?: string;
     legacy?: boolean;
+    /** An attached row that still carries the unclaimed marker. */
+    staleMarker?: boolean;
   },
 ) {
   return await t.run(async (ctx) => {
@@ -44,9 +47,10 @@ async function storeUpload(
       uploadedAt: Date.now() - options.ageMs,
       ...(options.ownerId
         ? { ownerType: "userAvatar", ownerId: options.ownerId }
-        : options.legacy
-          ? {}
-          : { unclaimedSince: Date.now() - options.ageMs }),
+        : {}),
+      ...((!options.ownerId && !options.legacy) || options.staleMarker
+        ? { unclaimedSince: Date.now() - options.ageMs }
+        : {}),
     });
     return storageId;
   });
@@ -66,31 +70,41 @@ async function storedFile(t: ConvexTest, storageId: Id<"_storage">) {
 }
 
 describe("abandoned uploads", () => {
-  test("a day-old upload nobody attached goes with its file; fresh, attached and older ones stay", async () => {
+  test("an upload nobody attached for a week goes with its file; fresh, attached and older ones stay", async () => {
     const t = createConvexTestWithRateLimiter();
     const userId = await insertUser(t);
-    const [abandoned, fresh, attached, legacy] = await Promise.all([
-      storeUpload(t, { uploadedBy: userId, ageMs: DAY + 60_000 }),
-      storeUpload(t, { uploadedBy: userId, ageMs: 60_000 }),
-      storeUpload(t, {
-        uploadedBy: userId,
-        ageMs: DAY + 60_000,
-        ownerId: userId,
-      }),
-      // Records once stored uploads without claiming them; those files may
-      // still be in use, so the cleanup never reads rows without the marker.
-      storeUpload(t, {
-        uploadedBy: userId,
-        ageMs: 30 * DAY,
-        legacy: true,
-      }),
-    ]);
+    const [abandoned, fresh, attached, legacy, sixDaysOld, staleMarker] =
+      await Promise.all([
+        storeUpload(t, { uploadedBy: userId, ageMs: AGE + 60_000 }),
+        storeUpload(t, { uploadedBy: userId, ageMs: 60_000 }),
+        storeUpload(t, {
+          uploadedBy: userId,
+          ageMs: AGE + 60_000,
+          ownerId: userId,
+        }),
+        // Records once stored uploads without claiming them; those files may
+        // still be in use, so the cleanup never reads rows without the marker.
+        storeUpload(t, {
+          uploadedBy: userId,
+          ageMs: 30 * AGE,
+          legacy: true,
+        }),
+        // A form left open over a long weekend can still save its upload.
+        storeUpload(t, { uploadedBy: userId, ageMs: 6 * DAY }),
+        // A record holds it even though the marker was never cleared.
+        storeUpload(t, {
+          uploadedBy: userId,
+          ageMs: AGE + 60_000,
+          ownerId: userId,
+          staleMarker: true,
+        }),
+      ]);
     const [expiredIntent, liveIntent] = await t.run(async (ctx) => [
       await ctx.db.insert("uploadIntents", {
         token: "spent",
         uploadedBy: userId,
-        createdAt: Date.now() - DAY - 120_000,
-        expiresAt: Date.now() - DAY - 60_000,
+        createdAt: Date.now() - AGE - 120_000,
+        expiresAt: Date.now() - AGE - 60_000,
       }),
       await ctx.db.insert("uploadIntents", {
         token: "live",
@@ -110,6 +124,11 @@ describe("abandoned uploads", () => {
     expect(await ownershipRow(t, attached)).not.toBeNull();
     expect(await storedFile(t, legacy)).not.toBeNull();
     expect(await ownershipRow(t, legacy)).not.toBeNull();
+    expect(await storedFile(t, sixDaysOld)).not.toBeNull();
+    expect(await storedFile(t, staleMarker)).not.toBeNull();
+    const held = await ownershipRow(t, staleMarker);
+    expect(held?.ownerId).toBe(userId);
+    expect(held?.unclaimedSince).toBeUndefined();
     const intents = await t.run(async (ctx) => [
       await ctx.db.get(expiredIntent),
       await ctx.db.get(liveIntent),
@@ -136,14 +155,14 @@ describe("abandoned upload backlog", () => {
         await ctx.db.insert("storageOwnership", {
           storageId,
           uploadedBy: userId,
-          uploadedAt: Date.now() - DAY - 60_000,
-          unclaimedSince: Date.now() - DAY - 60_000,
+          uploadedAt: Date.now() - AGE - 60_000,
+          unclaimedSince: Date.now() - AGE - 60_000,
         });
         await ctx.db.insert("uploadIntents", {
           token: `spent-${index}`,
           uploadedBy: userId,
-          createdAt: Date.now() - DAY - 120_000,
-          expiresAt: Date.now() - DAY - 60_000,
+          createdAt: Date.now() - AGE - 120_000,
+          expiresAt: Date.now() - AGE - 60_000,
         });
         old.push(storageId);
       }

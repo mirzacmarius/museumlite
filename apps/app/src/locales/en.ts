@@ -1400,7 +1400,7 @@ export default {
       event_expired: "The event is no longer stored",
       endpoint_deleted: "The endpoint was deleted",
       endpoint_disabled: "The endpoint was disabled",
-      endpoint_insecure: "The endpoint URL is not HTTPS",
+      endpoint_insecure: "The endpoint URL is not a public HTTPS address",
       endpoint_unsubscribed: "The endpoint no longer subscribes to this event",
     },
     detail: {
