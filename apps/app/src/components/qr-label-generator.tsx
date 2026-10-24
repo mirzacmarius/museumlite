@@ -7,7 +7,7 @@ import type * as React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "@/locales/client";
 
-export type LabelSize = "2x2" | "1x3" | "1x1";
+export type LabelSize = "2x2" | "3x1" | "1x1";
 
 export interface LabelData {
   accessionNumber: string;
@@ -28,9 +28,9 @@ interface QRLabelGeneratorProps {
  * QR Label Generator Component
  *
  * Generates printable labels with QR codes for collection objects.
- * Supports standard label sizes:
+ * Supports standard label sizes, width by height:
  * - 2x2 inches: Square format with large QR code
- * - 1x3 inches: Vertical format with smaller QR code
+ * - 3x1 inches: Wide format with the QR code beside the text
  * - 1x1 inches: Compact square format
  *
  * @example
@@ -62,7 +62,7 @@ export function QRLabelGenerator({
       try {
         // Generate QR code as data URL
         const dataUrl = await QRCode.toDataURL(data.qrCodeUrl, {
-          width: size === "2x2" ? 180 : size === "1x3" ? 120 : 150,
+          width: size === "1x1" ? 150 : 180,
           margin: 1,
           errorCorrectionLevel: "M",
           color: {
@@ -83,8 +83,8 @@ export function QRLabelGenerator({
     const title = titleRef.current;
     if (!title || !showObjectName) return;
 
-    const baseFontSize = size === "2x2" ? 8 : size === "1x3" ? 6 : 5.5;
-    const minimumFontSize = size === "2x2" ? 5.5 : size === "1x3" ? 4.5 : 4;
+    const baseFontSize = size === "2x2" ? 8 : size === "3x1" ? 7 : 5.5;
+    const minimumFontSize = size === "2x2" ? 5.5 : size === "3x1" ? 5 : 4;
 
     const fitTitle = () => {
       let fittedFontSize = baseFontSize;
@@ -113,11 +113,11 @@ export function QRLabelGenerator({
       padding: "0.1in",
       qrSize: "1in",
     },
-    "1x3": {
-      width: "1in",
-      height: "3in",
+    "3x1": {
+      width: "3in",
+      height: "1in",
       padding: "0.1in",
-      qrSize: "0.75in",
+      qrSize: "0.8in",
     },
     "1x1": {
       width: "1in",
@@ -128,12 +128,15 @@ export function QRLabelGenerator({
   };
 
   const labelStyle = dimensions[size];
+  const isWide = size === "3x1";
+  const textAlign = isWide ? "text-left" : "text-center";
 
   return (
     <div
       ref={ref}
       className={cn(
-        "relative flex flex-col items-center bg-white text-black border border-zinc-300 overflow-hidden break-inside-avoid",
+        "relative flex items-center bg-white text-black border border-zinc-300 overflow-hidden break-inside-avoid",
+        isWide ? "flex-row gap-[0.1in]" : "flex-col",
         "print:border-none print:break-inside-avoid print:page-break-inside-avoid",
         className,
       )}
@@ -150,7 +153,7 @@ export function QRLabelGenerator({
           style={{
             width: labelStyle.qrSize,
             height: labelStyle.qrSize,
-            marginBottom: size === "1x1" ? "0.015in" : "0.04in",
+            marginBottom: isWide ? 0 : size === "1x1" ? "0.015in" : "0.04in",
           }}
         >
           <Image
@@ -167,62 +170,75 @@ export function QRLabelGenerator({
         </div>
       )}
 
-      {/* Accession Number */}
+      {/* Text: under the QR code, or beside it on a wide label */}
       <div
         className={cn(
-          "w-full shrink-0 text-center font-mono font-bold text-black leading-tight",
-          size === "2x2"
-            ? "mb-[0.04in] text-[10pt]"
-            : size === "1x3"
-              ? "mb-[0.04in] text-[7pt]"
-              : "mb-[0.015in] text-[4.5pt]",
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          isWide ? "justify-center self-stretch" : "w-full",
         )}
-        style={{ wordBreak: "break-all" }}
       >
-        {data.accessionNumber}
-      </div>
-
-      {/* Title */}
-      {showObjectName ? (
-        <div
-          ref={titleRef}
-          className="w-full min-h-0 flex-1 overflow-hidden text-center text-black leading-tight"
-          style={{
-            fontSize: `${size === "2x2" ? 8 : size === "1x3" ? 6 : 5}pt`,
-            wordBreak: "break-word",
-            hyphens: "auto",
-          }}
-        >
-          {data.title}
-        </div>
-      ) : null}
-
-      {/* Organization Name (optional, bottom) */}
-      {data.organizationName && (
+        {/* Accession Number */}
         <div
           className={cn(
-            "w-full shrink-0 text-center text-zinc-600 leading-tight",
-            size === "1x1" ? "mt-[0.015in]" : "mt-[0.04in]",
+            "w-full shrink-0 font-mono font-bold text-black leading-tight",
+            textAlign,
             size === "2x2"
-              ? "text-[6pt]"
-              : size === "1x3"
-                ? "text-[5pt]"
-                : "text-[3.5pt]",
+              ? "mb-[0.04in] text-[10pt]"
+              : size === "3x1"
+                ? "mb-[0.04in] text-[9pt]"
+                : "mb-[0.015in] text-[4.5pt]",
           )}
-          style={{
-            wordBreak: "break-word",
-            ...(size === "1x1"
-              ? {
-                  lineHeight: 1,
-                  maxHeight: "0.12in",
-                  overflow: "hidden",
-                }
-              : {}),
-          }}
+          style={{ wordBreak: "break-all" }}
         >
-          {data.organizationName}
+          {data.accessionNumber}
         </div>
-      )}
+
+        {/* Title */}
+        {showObjectName ? (
+          <div
+            ref={titleRef}
+            className={cn(
+              "w-full min-h-0 flex-1 overflow-hidden text-black leading-tight",
+              textAlign,
+            )}
+            style={{
+              fontSize: `${size === "2x2" ? 8 : size === "3x1" ? 7 : 5}pt`,
+              wordBreak: "break-word",
+              hyphens: "auto",
+            }}
+          >
+            {data.title}
+          </div>
+        ) : null}
+
+        {/* Organization Name (optional, bottom) */}
+        {data.organizationName && (
+          <div
+            className={cn(
+              "w-full shrink-0 text-zinc-600 leading-tight",
+              textAlign,
+              size === "1x1" ? "mt-[0.015in]" : "mt-[0.04in]",
+              size === "2x2"
+                ? "text-[6pt]"
+                : size === "3x1"
+                  ? "text-[5.5pt]"
+                  : "text-[3.5pt]",
+            )}
+            style={{
+              wordBreak: "break-word",
+              ...(size === "1x1"
+                ? {
+                    lineHeight: 1,
+                    maxHeight: "0.12in",
+                    overflow: "hidden",
+                  }
+                : {}),
+            }}
+          >
+            {data.organizationName}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -248,10 +264,9 @@ export function QRLabelSheet({
   className,
   ref,
 }: QRLabelSheetProps) {
-  // Calculate grid layout based on label size
-  // For 2x2 labels: 4 per row (8.5in / 2in = 4.25)
-  // For 1x3 labels: 8 per row (8.5in / 1in = 8.5)
-  const gridCols = size === "2x2" ? 4 : 8;
+  // Labels per row across an 8.5in sheet: 1in labels 8, 2in labels 4,
+  // 3in labels 2.
+  const gridCols = size === "2x2" ? 4 : size === "3x1" ? 2 : 8;
 
   return (
     <div

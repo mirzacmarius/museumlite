@@ -33,6 +33,12 @@ import {
 } from "./utils/moduleValidators";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
+import {
+  normalizeOrganizationAddress,
+  normalizeOrganizationPhone,
+  type OrganizationAddress,
+  organizationAddressValidator,
+} from "./utils/organizationContact";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { createEmptyUsageCounter } from "./utils/organizationUsageCounters";
 import {
@@ -568,6 +574,10 @@ export const update = mutation({
     subscriptionTier: v.optional(
       v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     ),
+    /** Replaces the stored address; blank lines are dropped. */
+    address: v.optional(organizationAddressValidator),
+    /** Replaces the stored phone number; blank removes it. */
+    phone: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -610,6 +620,8 @@ export const update = mutation({
       };
       allowsIncomingTransferRequests?: boolean;
       subscriptionTier?: "free" | "pro" | "enterprise";
+      address?: OrganizationAddress;
+      phone?: string;
     } = {};
 
     if (args.name !== undefined) {
@@ -629,6 +641,13 @@ export const update = mutation({
     if (args.subscriptionTier !== undefined) {
       updates.subscriptionTier = args.subscriptionTier;
     }
+    // An undefined address or phone removes the stored one on patch.
+    if (args.address !== undefined) {
+      updates.address = normalizeOrganizationAddress(args.address);
+    }
+    if (args.phone !== undefined) {
+      updates.phone = normalizeOrganizationPhone(args.phone);
+    }
 
     await Promise.all([
       ctx.db.patch(args.organizationId, updates),
@@ -638,7 +657,14 @@ export const update = mutation({
         action: "updated_organization",
         entityType: "organization",
         entityId: args.organizationId,
-        changes: updates,
+        // The log keeps a removal as null, since undefined fields drop out.
+        changes: {
+          ...updates,
+          ...(args.address !== undefined && {
+            address: updates.address ?? null,
+          }),
+          ...(args.phone !== undefined && { phone: updates.phone ?? null }),
+        },
       }),
     ]);
 
