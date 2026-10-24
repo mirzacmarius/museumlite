@@ -10971,7 +10971,7 @@ export default {
     errorTooLarge:
       "Cet export est trop volumineux. Restreignez les filtres ou la sélection.",
     errorCatalogTooLarge:
-      "Le catalogue complet est trop volumineux pour un seul export. Sélectionnez des objets dans Objets de Collection et exportez-les par lots plus petits.",
+      "Le catalogue complet est trop volumineux pour un seul export. Sélectionnez des objets dans le Catalogue des objets et exportez-les par lots plus petits.",
     errorInventoryLinks:
       "Un objet a trop de liens de prêt pour ce filtre d'inventaire. Exportez plutôt les objets sélectionnés.",
     errorInvalidRequest:

@@ -10909,7 +10909,7 @@ export default {
     errorTooLarge:
       "Acest export este prea mare. Restrângeți filtrele sau selecția.",
     errorCatalogTooLarge:
-      "Catalogul complet este prea mare pentru un singur export. Selectați obiecte în Obiecte Colecție și exportați-le în loturi mai mici.",
+      "Catalogul complet este prea mare pentru un singur export. Selectați obiecte în Catalogul obiectelor și exportați-le în loturi mai mici.",
     errorInventoryLinks:
       "Un obiect are prea multe legături de împrumut pentru acest filtru de inventar. Exportați în schimb obiectele selectate.",
     errorInvalidRequest:

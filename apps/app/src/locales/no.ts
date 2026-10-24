@@ -10797,7 +10797,7 @@ export default {
     errorTooLarge:
       "Denne eksporten er for stor. Begrens filtrene eller utvalget.",
     errorCatalogTooLarge:
-      "Hele katalogen er for stor for én eksport. Velg objekter i Samlingsobjekter og eksporter dem i mindre omganger.",
+      "Hele katalogen er for stor for én eksport. Velg objekter under Objektkatalog og eksporter dem i mindre omganger.",
     errorInventoryLinks:
       "Et objekt har for mange lånekoblinger for dette beholdningsfilteret. Eksporter valgte objekter i stedet.",
     errorInvalidRequest:

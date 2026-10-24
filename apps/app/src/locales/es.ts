@@ -10936,7 +10936,7 @@ export default {
     errorTooLarge:
       "Esta exportación es demasiado grande. Acote los filtros o la selección.",
     errorCatalogTooLarge:
-      "El catálogo completo es demasiado grande para una sola exportación. Seleccione objetos en Objetos de la Colección y expórtelos en lotes más pequeños.",
+      "El catálogo completo es demasiado grande para una sola exportación. Seleccione objetos en el Catálogo de objetos y expórtelos en lotes más pequeños.",
     errorInventoryLinks:
       "Un objeto tiene demasiados vínculos de préstamo para este filtro de inventario. Exporte los objetos seleccionados en su lugar.",
     errorInvalidRequest:

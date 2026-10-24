@@ -154,7 +154,7 @@ test("the earlier download stays listed until the new export completes", async (
 });
 
 test("exports of other filters and the other format stay listed", async () => {
-  // Filtered exports made on the Object Catalog stay listed until they expire.
+  // Filtered exports made earlier on the Object Catalog keep their own rows.
   state.jobs = [
     exportJob("job-4", catalog, 60, at(29), { format: "jsonl" }),
     exportJob("job-3", paintings, 12, at(28)),
@@ -249,26 +249,41 @@ test("an earlier export still running stays listed so it can be cancelled", asyn
 });
 
 test("a whole catalog too large for one export says how to export it instead", async () => {
-  const tooLarge = {
-    status: "failed",
-    completedAt: undefined,
-    error:
-      "Export exceeds 16 MiB. Reduce the filter or selection and create a new export.",
-  } satisfies Partial<ExportJob>;
+  const failed = (error: string) =>
+    ({
+      status: "failed",
+      completedAt: undefined,
+      error,
+    }) satisfies Partial<ExportJob>;
+  const tooLarge = failed(
+    "Export exceeds 16 MiB. Reduce the filter or selection and create a new export.",
+  );
   state.jobs = [
-    exportJob("job-2", catalog, 0, at(30), tooLarge),
-    exportJob("job-1", paintings, 0, at(25), tooLarge),
+    exportJob("job-4", catalog, 0, at(30), tooLarge),
+    exportJob("job-3", catalog, 0, at(29), {
+      ...failed("Export interrupted"),
+      format: "jsonl",
+    }),
+    exportJob("job-2", paintings, 0, at(28), tooLarge),
+    exportJob(
+      "job-1",
+      { kind: "objects", mode: "selected", filters: {} },
+      0,
+      at(27),
+      { ...tooLarge, selected: 3, selectedCount: 3 },
+    ),
   ];
 
   await openPanel(catalog);
 
-  const [whole, filtered] = screen.getAllByRole("alert");
-  expect(whole?.textContent).toBe(
+  expect(
+    screen.getAllByRole("alert").map((alert) => alert.textContent),
+  ).toEqual([
     "The whole catalog is too large for one export. Select objects in the Object Catalog and export them in smaller batches.",
-  );
-  expect(filtered?.textContent).toBe(
+    "The export was interrupted. Retry from the checkpoint.",
     "This export is too large. Narrow the filters or selection.",
-  );
+    "This export is too large. Narrow the filters or selection.",
+  ]);
 });
 
 test("a cancelled export hides no earlier download", async () => {
