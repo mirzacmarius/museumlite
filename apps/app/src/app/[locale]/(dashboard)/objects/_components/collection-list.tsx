@@ -24,6 +24,7 @@ import {
   DEFAULT_COLUMN_CONFIG,
 } from "./column-config";
 import { IntentPrefetchLink } from "./intent-prefetch-link";
+import { MatchedFieldLabel } from "./matched-field-label";
 import { ObjectActionsMenu, ObjectGridView } from "./object-grid-view";
 import { OBJECT_LIST_KEYS } from "./use-collection-catalog-list";
 import type { ViewMode } from "./view-toggle";
@@ -44,6 +45,7 @@ interface CollectionListProps {
     currentLocationId?: Id<"locations">;
     status: string;
     _creationTime: number;
+    matchedField?: CollectionListItem["matchedField"];
   }>;
   collectionsStatus:
     | "LoadingFirstPage"
@@ -245,6 +247,7 @@ export function CollectionList({
                   objectType: item.objectType,
                   primaryImageUrl: item.primaryImageUrl,
                   status: item.status,
+                  matchedField: item.matchedField,
                 }))}
                 organizationId={organizationId}
                 returnPath={returnPath}
@@ -436,6 +439,7 @@ function CollectionTableRow({
               {item.accessionNumber}
             </span>
           ) : null}
+          <MatchedFieldLabel field={item.matchedField} />
         </IntentPrefetchLink>
       </td>
       {isColumnVisible(columns, "objectType") ? (

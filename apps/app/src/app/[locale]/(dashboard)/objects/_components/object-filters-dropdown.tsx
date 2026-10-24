@@ -2,14 +2,16 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { Switch } from "@v1/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
-import { LayoutGrid, List, SlidersHorizontal } from "lucide-react";
+import { Filter, LayoutGrid, List, SlidersHorizontal } from "lucide-react";
 import { useId } from "react";
 import type {
   ObjectDisplayStatus,
+  ObjectPhotographFilter,
   ObjectStatus,
 } from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
@@ -40,15 +42,69 @@ export interface ObjectFiltersDropdownValue {
   displayStatus: ObjectDisplayStatus;
   locationIds: string[];
   collectionGroupId: string;
+  culture: string;
+  period: string;
+  materials: string;
+  condition: string;
+  photograph: ObjectPhotographFilter;
+  catalogedFrom: string;
+  catalogedTo: string;
+}
+
+interface FacetValue {
+  value: string;
+  label: string;
+}
+
+/** Values recorded on objects, for the facet filters. */
+export interface ObjectFacetValues {
+  cultures: FacetValue[];
+  periods: FacetValue[];
+  conditions: FacetValue[];
+  materials: FacetValue[];
+}
+
+/**
+ * A facet's options: any value, then each recorded value as staff spelled it.
+ * A value from the URL that no record holds any more stays selectable.
+ */
+function facetOptions(
+  anyLabel: string,
+  facets: FacetValue[] | undefined,
+  current: string,
+) {
+  const options = (facets ?? []).map((facet) => ({
+    value: facet.label,
+    label: facet.label,
+  }));
+  const folded = current.trim().toLowerCase();
+  if (
+    current &&
+    !options.some((option) => option.value.toLowerCase() === folded)
+  ) {
+    options.push({ value: current, label: current });
+  }
+  const selected = options.find(
+    (option) => option.value.toLowerCase() === folded,
+  );
+  return {
+    value: selected?.value ?? "",
+    options: [{ value: "", label: anyLabel }, ...options],
+  };
 }
 
 interface ObjectFiltersDropdownProps {
   filters: ObjectFiltersDropdownValue;
   onChange: (filters: Partial<ObjectFiltersDropdownValue>) => void;
   objectTypes: string[];
+  facets?: ObjectFacetValues;
   locations?: LocationOption[];
   collectionGroups?: CollectionGroupOption[];
   hideCollectionGroupFilter?: boolean;
+  /** Conditions in the advanced search; opens its dialog. */
+  advancedConditionCount: number;
+  onOpenAdvancedSearch: () => void;
+  onClearAdvancedSearch: () => void;
   className?: string;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
@@ -99,9 +155,13 @@ export function ObjectFiltersDropdown({
   filters,
   onChange,
   objectTypes,
+  facets,
   locations,
   collectionGroups,
   hideCollectionGroupFilter = false,
+  advancedConditionCount,
+  onOpenAdvancedSearch,
+  onClearAdvancedSearch,
   className,
   viewMode,
   onViewModeChange,
@@ -111,6 +171,34 @@ export function ObjectFiltersDropdown({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const displaySwitchId = useId();
+  const catalogedFromId = useId();
+  const catalogedToId = useId();
+  const culture = facetOptions(
+    t("filters.anyCulture"),
+    facets?.cultures,
+    filters.culture,
+  );
+  const period = facetOptions(
+    t("filters.anyPeriod"),
+    facets?.periods,
+    filters.period,
+  );
+  const materials = facetOptions(
+    t("filters.anyMaterial"),
+    facets?.materials,
+    filters.materials,
+  );
+  const condition = facetOptions(
+    t("filters.anyCondition"),
+    facets?.conditions,
+    filters.condition,
+  );
+  const photographOptions: { value: ObjectPhotographFilter; label: string }[] =
+    [
+      { value: "", label: t("filters.anyPhotograph") },
+      { value: "with", label: t("filters.withPhotograph") },
+      { value: "without", label: t("filters.withoutPhotograph") },
+    ];
   const statusOptions: { value: ObjectStatus; label: string }[] = [
     { value: "any", label: statusLabel(t, "any") },
     { value: "all", label: statusLabel(t, "all") },
@@ -124,7 +212,17 @@ export function ObjectFiltersDropdown({
     (filters.objectType !== "" ? 1 : 0) +
     (filters.displayStatus !== "" ? 1 : 0) +
     (filters.locationIds.length > 0 ? 1 : 0) +
-    (!hideCollectionGroupFilter && filters.collectionGroupId !== "" ? 1 : 0);
+    (!hideCollectionGroupFilter && filters.collectionGroupId !== "" ? 1 : 0) +
+    [
+      filters.culture,
+      filters.period,
+      filters.materials,
+      filters.condition,
+      filters.photograph,
+      filters.catalogedFrom,
+      filters.catalogedTo,
+    ].filter((value) => value !== "").length +
+    (advancedConditionCount > 0 ? 1 : 0);
 
   return (
     <Popover>
@@ -236,6 +334,84 @@ export function ObjectFiltersDropdown({
                 }
               />
             ) : null}
+            <CatalogFilterSelect
+              label={t("filters.materials")}
+              value={materials.value}
+              options={materials.options}
+              onChange={(value) => onChange({ materials: value })}
+            />
+            <CatalogFilterSelect
+              label={t("filters.culture")}
+              value={culture.value}
+              options={culture.options}
+              onChange={(value) => onChange({ culture: value })}
+            />
+            <CatalogFilterSelect
+              label={t("filters.period")}
+              value={period.value}
+              options={period.options}
+              onChange={(value) => onChange({ period: value })}
+            />
+            <CatalogFilterSelect
+              label={t("filters.condition")}
+              value={condition.value}
+              options={condition.options}
+              onChange={(value) => onChange({ condition: value })}
+            />
+            <CatalogFilterSelect
+              label={t("filters.photograph")}
+              value={filters.photograph}
+              options={photographOptions}
+              onChange={(photograph) => onChange({ photograph })}
+            />
+            <fieldset className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-center gap-2">
+              <legend className="sr-only">{t("filters.catalogedRange")}</legend>
+              <label
+                htmlFor={catalogedFromId}
+                className="text-xs text-muted-foreground"
+              >
+                {t("filters.catalogedFrom")}
+              </label>
+              <Input
+                id={catalogedFromId}
+                type="date"
+                value={filters.catalogedFrom}
+                max={filters.catalogedTo || undefined}
+                onChange={(event) =>
+                  onChange({ catalogedFrom: event.target.value })
+                }
+                className="h-7 px-2 text-xs"
+              />
+              <label
+                htmlFor={catalogedToId}
+                className="text-xs text-muted-foreground"
+              >
+                {t("filters.catalogedTo")}
+              </label>
+              <Input
+                id={catalogedToId}
+                type="date"
+                value={filters.catalogedTo}
+                min={filters.catalogedFrom || undefined}
+                onChange={(event) =>
+                  onChange({ catalogedTo: event.target.value })
+                }
+                className="h-7 px-2 text-xs"
+              />
+            </fieldset>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenAdvancedSearch}
+              className="h-7 w-full justify-start gap-2 text-xs"
+            >
+              <Filter className="size-3.5" aria-hidden="true" />
+              {advancedConditionCount > 0
+                ? t("filters.advancedSearchActive", {
+                    count: advancedConditionCount,
+                  })
+                : t("filters.advancedSearch")}
+            </Button>
           </div>
           <div className="flex items-center justify-between gap-4 border-t border-border/60 px-4 py-2 dark:border-white/10">
             <label
@@ -290,17 +466,25 @@ export function ObjectFiltersDropdown({
             variant="ghost"
             size="sm"
             disabled={activeFilterCount === 0}
-            onClick={() =>
+            onClick={() => {
+              onClearAdvancedSearch();
               onChange({
                 status: "any",
                 objectType: "",
                 displayStatus: "",
                 locationIds: [],
+                culture: "",
+                period: "",
+                materials: "",
+                condition: "",
+                photograph: "",
+                catalogedFrom: "",
+                catalogedTo: "",
                 ...(!hideCollectionGroupFilter
                   ? { collectionGroupId: "" }
                   : {}),
-              })
-            }
+              });
+            }}
             className="h-7 rounded-md text-xs text-muted-foreground hover:text-foreground"
           >
             {common("clearAll")}

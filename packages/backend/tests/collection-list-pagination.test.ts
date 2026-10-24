@@ -54,8 +54,10 @@ async function setup() {
 describe("bounded collection pagination", () => {
   test("rare filters advance through empty pages and return all matches newest first", async () => {
     const f = await setup();
-    const older = await f.insert({ culture: "Ancient Roman" });
-    const newer = await f.insert({ culture: "Roman" });
+    const older = await f.insert({ culture: "Roman" });
+    // Facet values match whole, whatever the case or spacing.
+    await f.insert({ culture: "Ancient Roman" });
+    const newer = await f.insert({ culture: " roman " });
     for (let i = 0; i < 8; i++) await f.insert({ culture: "Greek" });
     const first = await f.asUser.query(api.collections.list, {
       organizationId: f.owner.organizationId,
@@ -84,7 +86,7 @@ describe("bounded collection pagination", () => {
       displayStatus: "on_display",
       culture: "Roman",
       period: "Early Imperial",
-      materials: "Clay and bronze",
+      materials: JSON.stringify(["Clay", "Bronze"]),
       catalogedAt: 0,
     };
     const match = await f.insert(fields);
@@ -98,8 +100,8 @@ describe("bounded collection pagination", () => {
         locationId,
         objectType: "Vase",
         displayStatus: "on_display",
-        culture: "rom",
-        period: "imperial",
+        culture: "ROMAN",
+        period: "early imperial",
         materials: "BRONZE",
         catalogedFrom: 0,
         catalogedTo: 0,

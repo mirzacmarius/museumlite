@@ -2,6 +2,11 @@ import type { PaginationResult } from "convex/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import {
+  type AdvancedFilterGroup,
+  matchesAdvancedFilters,
+} from "./advancedObjectFilters";
+import type { ObjectSearchField } from "./catalogFilterValidators";
+import {
   getCollectionPrimaryImageUrls,
   getLocationPathStrings,
 } from "./collectionDisplayHelpers";
@@ -9,6 +14,12 @@ import {
   classifyInventoryRecord,
   isCountedOnDisplay,
 } from "./collectionMetrics";
+import {
+  collectionHasImage,
+  foldFacetValue,
+  getObjectSearchDocument,
+  storedListValues,
+} from "./objectSearchDocuments";
 import {
   hasOpenDeaccession,
   openDeaccessionCollectionIds,
@@ -31,10 +42,14 @@ interface CollectionListFilters {
   culture?: string;
   period?: string;
   materials?: string;
+  condition?: string;
+  hasImage?: boolean;
   collectionGroupId?: Id<"collectionGroups">;
   catalogedFrom?: number;
   catalogedTo?: number;
   search?: string;
+  advancedFilters?: readonly AdvancedFilterGroup[];
+  filterCombinations?: "AND" | "OR";
 }
 
 function parseStoredStringList(value: string): string[] {
@@ -154,14 +169,29 @@ export async function filterCollectionListPage(
         collection.catalogedAt > args.catalogedTo
       )
         return false;
-      for (const field of ["culture", "period", "materials"] as const) {
-        const value = args[field];
-        if (
-          value &&
-          !collection[field]?.toLowerCase().includes(value.toLowerCase())
-        )
-          return false;
+      // Facet values match as recorded, whatever the case; materials and
+      // types are lists, so one entry equal to the value is enough.
+      for (const field of ["culture", "period", "condition"] as const) {
+        const value = foldFacetValue(args[field]);
+        if (value && foldFacetValue(collection[field]) !== value) return false;
       }
+      const materials = foldFacetValue(args.materials);
+      if (
+        materials &&
+        !storedListValues(collection.materials).some(
+          (entry) => foldFacetValue(entry) === materials,
+        )
+      )
+        return false;
+      if (
+        args.advancedFilters &&
+        !matchesAdvancedFilters(
+          collection,
+          args.advancedFilters,
+          args.filterCombinations,
+        )
+      )
+        return false;
       if (search && searchLower) {
         const substringMatch = [
           collection.accessionNumber,
@@ -208,6 +238,13 @@ export async function filterCollectionListPage(
           .first();
         if (!membership) return false;
       }
+      if (args.hasImage !== undefined) {
+        const document = await getObjectSearchDocument(ctx, collection._id);
+        const hasImage = document
+          ? document.hasImage
+          : await collectionHasImage(ctx, collection);
+        if (hasImage !== args.hasImage) return false;
+      }
       if (
         args.status !== "deleted" &&
         collection.status !== "deaccessioned" &&
@@ -236,6 +273,7 @@ export type CollectionListPageItem = {
   currentLocationId?: Id<"locations">;
   status: Doc<"collections">["status"];
   _creationTime: number;
+  matchedField?: ObjectSearchField;
 };
 
 export async function enrichCollectionListPage(
@@ -265,6 +303,7 @@ export async function enrichCollectionListPage(
     primaryImageUrl: primaryImageUrlByCollectionId.get(item._id),
     status: item.status,
     _creationTime: item._creationTime,
+    matchedField: item.matchedField,
   }));
 }
 

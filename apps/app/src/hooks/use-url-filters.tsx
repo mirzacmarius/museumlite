@@ -22,6 +22,10 @@ export type ObjectStatus =
 const OBJECT_DISPLAY_STATUSES = ["", "on_display", "not_on_display"] as const;
 export type ObjectDisplayStatus = (typeof OBJECT_DISPLAY_STATUSES)[number];
 
+const OBJECT_PHOTOGRAPH_FILTERS = ["", "with", "without"] as const;
+/** Objects with a photograph, without one, or either. */
+export type ObjectPhotographFilter = (typeof OBJECT_PHOTOGRAPH_FILTERS)[number];
+
 // Advanced filter types matching AdvancedSearchDialog
 export type FilterOperator =
   | "eq"
@@ -107,6 +111,14 @@ export function useObjectFilters() {
     "materials",
     parseAsString.withDefault(""),
   );
+  const [condition, setCondition] = useQueryState(
+    "condition",
+    parseAsString.withDefault(""),
+  );
+  const [photograph, setPhotograph] = useQueryState(
+    "photograph",
+    parseAsStringLiteral(OBJECT_PHOTOGRAPH_FILTERS).withDefault(""),
+  );
   const [collectionGroupId, setCollectionGroupId] = useQueryState(
     "collectionGroupId",
     parseAsString.withDefault(""),
@@ -159,6 +171,8 @@ export function useObjectFilters() {
       culture,
       period,
       materials,
+      condition,
+      photograph,
       collectionGroupId,
       locationIds,
       catalogedFrom,
@@ -175,6 +189,8 @@ export function useObjectFilters() {
       culture,
       period,
       materials,
+      condition,
+      photograph,
       collectionGroupId,
       locationIds,
       catalogedFrom,
@@ -197,6 +213,10 @@ export function useObjectFilters() {
       if (newFilters.period !== undefined) setPeriod(newFilters.period || null);
       if (newFilters.materials !== undefined)
         setMaterials(newFilters.materials || null);
+      if (newFilters.condition !== undefined)
+        setCondition(newFilters.condition || null);
+      if (newFilters.photograph !== undefined)
+        setPhotograph(newFilters.photograph || null);
       if (newFilters.collectionGroupId !== undefined)
         setCollectionGroupId(newFilters.collectionGroupId || null);
       if (newFilters.locationIds !== undefined) {
@@ -226,6 +246,8 @@ export function useObjectFilters() {
       setCulture,
       setPeriod,
       setMaterials,
+      setCondition,
+      setPhotograph,
       setCollectionGroupId,
       setLocationIds,
       setLegacyLocationId,
@@ -245,6 +267,8 @@ export function useObjectFilters() {
     setCulture(null);
     setPeriod(null);
     setMaterials(null);
+    setCondition(null);
+    setPhotograph(null);
     setCollectionGroupId(null);
     setLocationIds(null);
     setLegacyLocationId(null);
@@ -261,6 +285,8 @@ export function useObjectFilters() {
     setCulture,
     setPeriod,
     setMaterials,
+    setCondition,
+    setPhotograph,
     setCollectionGroupId,
     setLocationIds,
     setLegacyLocationId,
@@ -284,6 +310,8 @@ export function useObjectFilters() {
       culture !== "" ||
       period !== "" ||
       materials !== "" ||
+      condition !== "" ||
+      photograph !== "" ||
       collectionGroupId !== "" ||
       locationIds.length > 0 ||
       catalogedFrom !== "" ||
@@ -299,6 +327,8 @@ export function useObjectFilters() {
     culture,
     period,
     materials,
+    condition,
+    photograph,
     collectionGroupId,
     locationIds,
     catalogedFrom,
@@ -318,6 +348,8 @@ export function useObjectFilters() {
     setCulture,
     setPeriod,
     setMaterials,
+    setCondition,
+    setPhotograph,
     setCollectionGroupId,
     setLocationIds,
     setCatalogedFrom,

@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  ADVANCED_FILTER_FIELDS,
+  ADVANCED_FILTER_OPERATORS,
+} from "@v1/backend/convex/utils/catalogFilterValidators";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -35,32 +39,9 @@ interface AdvancedSearchDialogProps {
   initialGroupOperator?: "AND" | "OR";
 }
 
-// Available fields for filtering
-const FILTER_FIELDS = [
-  { value: "title" },
-  { value: "accessionNumber" },
-  { value: "creator" },
-  { value: "objectType" },
-  { value: "objectName" },
-  { value: "culture" },
-  { value: "period" },
-  { value: "dateCreated" },
-  { value: "materials" },
-  { value: "technique" },
-  { value: "condition" },
-  { value: "description" },
-];
-
-const FILTER_OPERATORS = [
-  { value: "eq" },
-  { value: "ne" },
-  { value: "contains" },
-  { value: "in" },
-  { value: "gt" },
-  { value: "lt" },
-  { value: "gte" },
-  { value: "lte" },
-];
+// The object fields and tests the catalog query understands.
+const FILTER_FIELDS = ADVANCED_FILTER_FIELDS.map((value) => ({ value }));
+const FILTER_OPERATORS = ADVANCED_FILTER_OPERATORS.map((value) => ({ value }));
 
 type FilterConditionWithId = FilterCondition & { id: string };
 type FilterGroupWithId = Omit<FilterGroup, "filters"> & {
@@ -134,9 +115,7 @@ function FilterConditionRow({
           <SelectContent>
             {FILTER_FIELDS.map((field) => (
               <SelectItem key={field.value} value={field.value}>
-                {translate(
-                  `untranslatedComponents.searchFields.${field.value}`,
-                )}
+                {translate(`objects.advancedSearch.fields.${field.value}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -162,7 +141,7 @@ function FilterConditionRow({
             {FILTER_OPERATORS.map((operator) => (
               <SelectItem key={operator.value} value={operator.value}>
                 {translate(
-                  `untranslatedComponents.filterOperators.${operator.value}`,
+                  `objects.advancedSearch.operators.${operator.value}`,
                 )}
               </SelectItem>
             ))}

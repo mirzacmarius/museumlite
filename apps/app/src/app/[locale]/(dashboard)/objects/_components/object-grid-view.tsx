@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { ObjectSearchField } from "@v1/backend/convex/utils/catalogFilterValidators";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import {
@@ -40,6 +41,7 @@ import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { withReturnPath } from "@/lib/return-path";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { IntentPrefetchLink } from "./intent-prefetch-link";
+import { MatchedFieldLabel } from "./matched-field-label";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -367,6 +369,7 @@ interface ObjectGridItemProps {
     objectType?: string;
     primaryImageUrl?: string;
     status: string;
+    matchedField?: ObjectSearchField;
   };
   organizationId: Id<"organizations">;
   /** The catalog view to return to from the object. */
@@ -466,6 +469,7 @@ function ObjectGridItem({
           <h3 className="truncate text-xs font-medium text-card-foreground">
             {item.title}
           </h3>
+          <MatchedFieldLabel field={item.matchedField} />
           <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
             <p className="shrink-0 font-mono text-[10px] text-muted-foreground">
               {item.accessionNumber}
@@ -528,6 +532,7 @@ export interface ObjectGridViewProps {
     objectType?: string;
     primaryImageUrl?: string;
     status: string;
+    matchedField?: ObjectSearchField;
   }>;
   organizationId: Id<"organizations">;
   returnPath: string;

@@ -43,6 +43,7 @@ function SelectedObjects({ onDeaccession }: { onDeaccession: () => void }) {
         onAddToGroup={() => {}}
         onPrintLabels={() => {}}
         onDeaccession={onDeaccession}
+        onEditField={() => {}}
         returnFocusRef={listRef}
       />
     </TooltipProvider>

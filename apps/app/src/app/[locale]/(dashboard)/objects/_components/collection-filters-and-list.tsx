@@ -1,6 +1,8 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import { PenLine } from "lucide-react";
 import { useRef } from "react";
 import { ExportJobControl } from "@/components/export-job-control";
 import { PermissionGate } from "@/components/permission-gate";
@@ -9,6 +11,8 @@ import { AddObjectsToCollectionDialog } from "./add-objects-to-collection-dialog
 import { BulkActionsBar } from "./bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./bulk-add-to-group-dialog";
 import { BulkDeaccessionDialog } from "./bulk-deaccession-dialog";
+import { BulkEditFieldDialog } from "./bulk-edit-field-dialog";
+import { BulkEditNotice } from "./bulk-edit-progress";
 import { BulkMoveLocationDialog } from "./bulk-move-location-dialog";
 import { BulkPrintLabelsDialog } from "./bulk-print-labels-dialog";
 import { CollectionCatalogToolbar } from "./collection-catalog-toolbar";
@@ -22,6 +26,8 @@ export function CollectionFiltersAndList({
 }) {
   const catalog = useCollectionCatalogList(organizationId);
   const tExport = useScopedI18n("exportJobs");
+  const tBulkEdit = useScopedI18n("objects.bulkEdit");
+  const selectedIds = Array.from(catalog.selectedIds);
   // Where focus goes when the selection bar, or a dialog it opened, closes.
   const listRef = useRef<HTMLElement>(null);
 
@@ -48,6 +54,20 @@ export function CollectionFiltersAndList({
               label={tExport("selected", { count: catalog.selectedIds.size })}
             />
           )}
+          {catalog.isFiltered ? (
+            <PermissionGate permission="collections.update">
+              <Button
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => catalog.setBulkEditScope("filters")}
+              >
+                <PenLine className="mr-2 size-4" aria-hidden="true" />
+                {tBulkEdit("editAllMatching")}
+              </Button>
+            </PermissionGate>
+          ) : null}
+          <BulkEditNotice organizationId={organizationId} />
         </div>
       </PermissionGate>
 
@@ -77,8 +97,30 @@ export function CollectionFiltersAndList({
         onMoveLocation={() => catalog.setShowMoveLocationDialog(true)}
         onPrintLabels={() => catalog.setShowBulkPrintLabelsDialog(true)}
         onDeaccession={() => catalog.setShowBulkDeaccessionDialog(true)}
+        onEditField={() => catalog.setBulkEditScope("selection")}
         returnFocusRef={listRef}
       />
+
+      {catalog.bulkEditScope ? (
+        <BulkEditFieldDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) catalog.setBulkEditScope(null);
+          }}
+          organizationId={organizationId}
+          scope={
+            catalog.bulkEditScope === "selection"
+              ? { kind: "selection", collectionIds: selectedIds }
+              : { kind: "filters", filters: catalog.exportFilters }
+          }
+          onStarted={
+            catalog.bulkEditScope === "selection"
+              ? catalog.handleBulkSuccess
+              : undefined
+          }
+          fallbackFocusRef={listRef}
+        />
+      ) : null}
 
       <BulkMoveLocationDialog
         open={catalog.showMoveLocationDialog}

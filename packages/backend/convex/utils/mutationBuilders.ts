@@ -9,6 +9,11 @@ import {
   internalMutation as rawInternalMutation,
   mutation as rawMutation,
 } from "../_generated/server";
+import {
+  refreshObjectSearchDocumentImage,
+  removeObjectSearchDocument,
+  syncObjectSearchDocument,
+} from "./objectSearchDocuments";
 import { handleSourceChange } from "./projectionMaintenance";
 import {
   PROJECTION_PHASES,
@@ -33,6 +38,26 @@ for (const table of PROJECTION_PHASES) {
     );
   });
 }
+
+// Each Object's search document follows its record and its photographs.
+projectionTriggers.register("collections", async (ctx, change) => {
+  if (change.newDoc) {
+    await syncObjectSearchDocument(ctx, change.newDoc);
+  } else {
+    await removeObjectSearchDocument(ctx, change.id);
+  }
+});
+
+projectionTriggers.register("mediaFiles", async (ctx, change) => {
+  const collectionIds = new Set(
+    [change.oldDoc?.collectionId, change.newDoc?.collectionId].filter(
+      (id) => id !== undefined,
+    ),
+  );
+  for (const collectionId of collectionIds) {
+    await refreshObjectSearchDocumentImage(ctx, collectionId);
+  }
+});
 
 export const withProjectionTriggers = <C extends MutationCtx>(ctx: C): C =>
   projectionTriggers.wrapDB(ctx);

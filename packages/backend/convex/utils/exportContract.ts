@@ -1,4 +1,8 @@
 import { v } from "convex/values";
+import {
+  advancedFilterGroupValidator,
+  filterCombinationValidator,
+} from "./catalogFilterValidators";
 import { appraisalPurposeValidator } from "./valuation";
 
 export const objectExportFilters = v.object({
@@ -24,11 +28,15 @@ export const objectExportFilters = v.object({
   culture: v.optional(v.string()),
   period: v.optional(v.string()),
   materials: v.optional(v.string()),
+  condition: v.optional(v.string()),
+  hasImage: v.optional(v.boolean()),
   catalogedFrom: v.optional(v.number()),
   catalogedTo: v.optional(v.number()),
   includeDeaccessioned: v.optional(v.boolean()),
   locationIds: v.optional(v.array(v.id("locations"))),
   collectionGroupId: v.optional(v.id("collectionGroups")),
+  advancedFilters: v.optional(v.array(advancedFilterGroupValidator)),
+  filterCombinations: v.optional(filterCombinationValidator),
 });
 export const auditExportFilters = v.object({
   userId: v.optional(v.id("users")),
