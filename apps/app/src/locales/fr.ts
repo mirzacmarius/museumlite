@@ -10923,7 +10923,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Exporter tous les résultats filtrés",
     catalogComplete: "Exporter le catalogue complet",
     auditComplete: "Exporter l'historique d'audit complet",
     auditFiltered: "Exporter l'historique d'audit filtré complet",

@@ -36,16 +36,7 @@ export function CollectionFiltersAndList({
       <CollectionCatalogToolbar catalog={catalog} />
 
       <PermissionGate permission="collections.read">
-        <div className="flex flex-col gap-2 px-4 py-2">
-          <ExportJobControl
-            organizationId={organizationId}
-            source={{
-              kind: "objects",
-              mode: "filtered",
-              filters: catalog.exportFilters,
-            }}
-            label={tExport("catalogFiltered")}
-          />
+        <div className="flex flex-col gap-2 px-4 py-2 empty:hidden">
           {catalog.selectedIds.size > 0 && (
             <ExportJobControl
               organizationId={organizationId}

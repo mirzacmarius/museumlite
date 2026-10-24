@@ -10629,7 +10629,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Export full filtered results",
     catalogComplete: "Export complete catalog",
     auditComplete: "Export complete audit history",
     auditFiltered: "Export complete filtered audit history",

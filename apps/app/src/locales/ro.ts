@@ -10861,7 +10861,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Exportă toate rezultatele filtrate",
     catalogComplete: "Exportă catalogul complet",
     auditComplete: "Exportă istoricul de audit complet",
     auditFiltered: "Exportă istoricul de audit filtrat complet",

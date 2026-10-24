@@ -10750,7 +10750,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Eksporter alle filtrerte resultater",
     catalogComplete: "Eksporter hele katalogen",
     auditComplete: "Eksporter hele revisjonsloggen",
     auditFiltered: "Eksporter hele den filtrerte revisjonsloggen",

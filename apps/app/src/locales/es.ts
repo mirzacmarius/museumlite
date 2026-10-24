@@ -10887,7 +10887,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Exportar todos los resultados filtrados",
     catalogComplete: "Exportar catálogo completo",
     auditComplete: "Exportar historial de auditoría completo",
     auditFiltered: "Exportar historial de auditoría filtrado completo",

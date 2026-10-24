@@ -33,7 +33,7 @@ vi.mock("@/hooks/use-feature-access", () => ({
 }));
 
 const organizationId = "org-1" as Id<"organizations">;
-const FILTERED_PANEL = "Export full filtered results";
+const CATALOG_PANEL = "Export complete catalog";
 
 function exportJob(
   jobId: string,
@@ -70,6 +70,7 @@ function exportJob(
   };
 }
 
+const catalog = { kind: "objects", mode: "filtered", filters: {} } as const;
 const paintings = {
   kind: "objects",
   mode: "filtered",
@@ -78,7 +79,7 @@ const paintings = {
 const at = (minute: number, second = 0) =>
   Date.UTC(2026, 9, 24, 11, minute, second);
 
-function panel(source: ExportJob["source"], label = FILTERED_PANEL) {
+function panel(source: ExportJob["source"], label = CATALOG_PANEL) {
   return (
     <ExportJobControl
       organizationId={organizationId}
@@ -88,8 +89,8 @@ function panel(source: ExportJob["source"], label = FILTERED_PANEL) {
   );
 }
 
-async function openPanel(source: ExportJob["source"], label = FILTERED_PANEL) {
-  const view = await renderOnPage(panel(source, label), "/en/objects");
+async function openPanel(source: ExportJob["source"], label = CATALOG_PANEL) {
+  const view = await renderOnPage(panel(source, label), "/en/analytics");
   await userEvent.click(screen.getByText(label));
   return view;
 }
@@ -103,20 +104,16 @@ test("creating the same export again leaves one row, the newest", async () => {
   // Newest first, as exports.list returns them. The same source written in
   // another key order is still the same results.
   state.jobs = [
-    exportJob("job-2", paintings, 98, at(25, 42)),
+    exportJob("job-2", catalog, 98, at(25, 42)),
     exportJob(
       "job-1",
-      {
-        filters: { objectType: "Painting" },
-        kind: "objects",
-        mode: "filtered",
-      },
+      { filters: {}, kind: "objects", mode: "filtered" },
       97,
       at(25, 35),
     ),
   ];
 
-  await openPanel(paintings);
+  await openPanel(catalog);
 
   expect(screen.getAllByText(/^Filtered catalog/)).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Download 98 rows" })).toBeTruthy();
@@ -124,33 +121,33 @@ test("creating the same export again leaves one row, the newest", async () => {
 });
 
 test("the earlier download stays listed until the new export completes", async () => {
-  state.jobs = [exportJob("job-1", paintings, 97, at(25, 35))];
-  const { rerender } = await openPanel(paintings);
+  state.jobs = [exportJob("job-1", catalog, 97, at(25, 35))];
+  const { rerender } = await openPanel(catalog);
 
   await userEvent.click(screen.getByRole("button", { name: "Create export" }));
   expect(state.create).toHaveBeenCalledWith(
     expect.objectContaining({
       organizationId,
-      source: paintings,
+      source: catalog,
       format: "csv",
     }),
   );
 
-  const running = exportJob("job-new", paintings, 0, at(25, 42), {
+  const running = exportJob("job-new", catalog, 0, at(25, 42), {
     status: "queued",
     completedAt: undefined,
     sourceDone: false,
   });
   state.jobs = [running, ...state.jobs];
-  rerender(panel(paintings));
+  rerender(panel(catalog));
   expect(screen.getByText(/Queued/)).toBeTruthy();
   expect(screen.getByRole("button", { name: "Download 97 rows" })).toBeTruthy();
 
   state.jobs = [
-    exportJob("job-new", paintings, 98, at(25, 42)),
+    exportJob("job-new", catalog, 98, at(25, 42)),
     ...state.jobs.slice(1),
   ];
-  rerender(panel(paintings));
+  rerender(panel(catalog));
   expect(screen.getAllByText(/^Filtered catalog/)).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Download 98 rows" })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Download 97 rows" })).toBeNull();
@@ -158,13 +155,8 @@ test("the earlier download stays listed until the new export completes", async (
 
 test("exports of other filters, the other format and each selected export stay listed", async () => {
   state.jobs = [
-    exportJob("job-5", paintings, 60, at(29), { format: "jsonl" }),
-    exportJob(
-      "job-4",
-      { kind: "objects", mode: "filtered", filters: { objectType: "Coin" } },
-      12,
-      at(28),
-    ),
+    exportJob("job-5", catalog, 60, at(29), { format: "jsonl" }),
+    exportJob("job-4", paintings, 12, at(28)),
     exportJob(
       "job-3",
       { kind: "objects", mode: "selected", filters: {} },
@@ -179,10 +171,10 @@ test("exports of other filters, the other format and each selected export stay l
       at(26),
       { selected: 5, selectedCount: 5 },
     ),
-    exportJob("job-1", paintings, 97, at(25)),
+    exportJob("job-1", catalog, 97, at(25)),
   ];
 
-  await openPanel(paintings);
+  await openPanel(catalog);
 
   for (const rows of [60, 12, 3, 5, 97]) {
     expect(
@@ -193,16 +185,16 @@ test("exports of other filters, the other format and each selected export stay l
 
 test("while a repeat export runs, only the newest completed one stays beside it", async () => {
   state.jobs = [
-    exportJob("job-3", paintings, 0, at(30), {
+    exportJob("job-3", catalog, 0, at(30), {
       status: "queued",
       completedAt: undefined,
       sourceDone: false,
     }),
-    exportJob("job-2", paintings, 98, at(28)),
-    exportJob("job-1", paintings, 97, at(25)),
+    exportJob("job-2", catalog, 98, at(28)),
+    exportJob("job-1", catalog, 97, at(25)),
   ];
 
-  await openPanel(paintings);
+  await openPanel(catalog);
 
   expect(screen.getByText(/Queued/)).toBeTruthy();
   expect(screen.getByRole("button", { name: "Download 98 rows" })).toBeTruthy();
@@ -212,17 +204,12 @@ test("while a repeat export runs, only the newest completed one stays beside it"
 test("repeats collapse before the five-row limit, so other exports keep their place", async () => {
   state.jobs = [
     ...[96, 95, 94, 93, 92].map((rows, index) =>
-      exportJob(`job-${rows}`, paintings, rows, at(30 - index)),
+      exportJob(`job-${rows}`, catalog, rows, at(30 - index)),
     ),
-    exportJob(
-      "job-coin",
-      { kind: "objects", mode: "filtered", filters: { objectType: "Coin" } },
-      12,
-      at(20),
-    ),
+    exportJob("job-paintings", paintings, 12, at(20)),
   ];
 
-  await openPanel(paintings);
+  await openPanel(catalog);
 
   expect(screen.getByRole("button", { name: "Download 96 rows" })).toBeTruthy();
   expect(screen.getByRole("button", { name: "Download 12 rows" })).toBeTruthy();
@@ -235,28 +222,28 @@ test("an earlier export still running stays listed so it can be cancelled", asyn
     sourceDone: false,
   } satisfies Partial<ExportJob>;
   state.jobs = [
-    exportJob("job-2", paintings, 0, at(30), {
+    exportJob("job-2", catalog, 0, at(30), {
       ...inProgress,
       status: "queued",
     }),
-    exportJob("job-1", paintings, 40, at(29), {
+    exportJob("job-1", catalog, 40, at(29), {
       ...inProgress,
       status: "running",
     }),
   ];
 
-  await openPanel(paintings);
+  await openPanel(catalog);
 
   expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(2);
 });
 
 test("a cancelled export hides no earlier download", async () => {
   state.jobs = [
-    exportJob("job-2", paintings, 0, at(30), { status: "cancelled" }),
-    exportJob("job-1", paintings, 97, at(25)),
+    exportJob("job-2", catalog, 0, at(30), { status: "cancelled" }),
+    exportJob("job-1", catalog, 97, at(25)),
   ];
 
-  await openPanel(paintings);
+  await openPanel(catalog);
 
   expect(screen.getByRole("button", { name: "Resume" })).toBeTruthy();
   expect(screen.getByRole("button", { name: "Download 97 rows" })).toBeTruthy();
