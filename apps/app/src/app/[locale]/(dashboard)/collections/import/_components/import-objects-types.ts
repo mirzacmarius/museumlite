@@ -1,6 +1,12 @@
+import type { api } from "@v1/backend/convex/_generated/api";
+import type { FunctionArgs } from "convex/server";
 import type { FieldMapping } from "@/components/import-field-mapper";
 import type { CsvObjectRow } from "@/lib/csv-parser";
 import { convertToCSV } from "@/lib/format-converters";
+
+type ImportObjectsBatchRow = FunctionArgs<
+  typeof api.imports.importObjectsBatch
+>["rows"][number];
 
 export interface ParsedRow {
   /** Line in the source file, used as the row's stable identity on the job. */
@@ -11,6 +17,7 @@ export interface ParsedRow {
   creator?: string;
   objectType?: string;
   objectName?: string;
+  numberOfObjects?: string;
   culture?: string;
   period?: string;
   dateCreated?: string;
@@ -18,9 +25,20 @@ export interface ParsedRow {
   materials?: string;
   technique?: string;
   dimensions?: string;
+  /** A part code, such as framed. */
+  dimensionMeasuredPart?: string;
+  /** Further measured parts as a JSON list, the way the data export writes them. */
+  measurementSets?: string;
   description?: string;
+  /** Terms separated by semicolons. */
+  subjects?: string;
   condition?: string;
+  /** complete, incomplete or fragment. */
+  completeness?: string;
+  completenessNote?: string;
   provenance?: string;
+  /** A statement URI, or a code such as InC or CC BY 4.0. */
+  rightsStatement?: string;
   location?: string;
   collectionGroup?: string;
   collectionGroups?: string;
@@ -57,12 +75,14 @@ export const EMPTY_IMPORT_STATE: ImportState = {
 };
 
 export const REQUIRED_COLUMNS = ["title"];
+/** Every optional column the wizard maps, each one the server's row reads. */
 export const OPTIONAL_COLUMNS = [
   "accessionNumber",
   "alternativeTitle",
   "creator",
   "objectType",
   "objectName",
+  "numberOfObjects",
   "culture",
   "period",
   "dateCreated",
@@ -70,13 +90,19 @@ export const OPTIONAL_COLUMNS = [
   "materials",
   "technique",
   "dimensions",
+  "dimensionMeasuredPart",
+  "measurementSets",
   "description",
+  "subjects",
   "condition",
+  "completeness",
+  "completenessNote",
   "provenance",
+  "rightsStatement",
   "location",
   "collectionGroup",
   "collectionGroups",
-];
+] as const satisfies readonly (keyof ParsedRow & keyof ImportObjectsBatchRow)[];
 export const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
 /** The downloadable template: its columns, with one example row. */
@@ -86,13 +112,20 @@ export const OBJECT_IMPORT_TEMPLATE_CSV = convertToCSV([
     accessionNumber: "2024.001",
     creator: "Unknown Artist",
     objectType: "painting",
+    numberOfObjects: "1",
     culture: "European",
     period: "19th Century",
     dateCreated: "c. 1850",
     dateCreatedEdtf: "1850~",
     materials: "Oil on canvas",
     dimensions: "24 x 18 inches",
+    dimensionMeasuredPart: "unframed",
+    measurementSets: '[{"part":"framed","height":30,"width":24,"unit":"in"}]',
+    subjects: "Portraits; Women",
     condition: "Good",
+    completeness: "complete",
+    completenessNote: "With its original frame",
+    rightsStatement: "https://creativecommons.org/publicdomain/mark/1.0/",
     location: "Main Gallery",
     collectionGroup: "European Art",
     collectionGroups: '["European Art"]',
@@ -141,6 +174,13 @@ export const TARGET_FIELDS = [
     required: false,
     description:
       "untranslatedRecords.collections.import.fieldDescriptions.objectName",
+  },
+  {
+    id: "numberOfObjects",
+    label: "untranslatedRecords.collections.import.fields.numberOfObjects",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.numberOfObjects",
   },
   {
     id: "culture",
@@ -192,11 +232,33 @@ export const TARGET_FIELDS = [
       "untranslatedRecords.collections.import.fieldDescriptions.dimensions",
   },
   {
+    id: "dimensionMeasuredPart",
+    label:
+      "untranslatedRecords.collections.import.fields.dimensionMeasuredPart",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.dimensionMeasuredPart",
+  },
+  {
+    id: "measurementSets",
+    label: "untranslatedRecords.collections.import.fields.measurementSets",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.measurementSets",
+  },
+  {
     id: "description",
     label: "untranslatedRecords.collections.import.fields.description",
     required: false,
     description:
       "untranslatedRecords.collections.import.fieldDescriptions.description",
+  },
+  {
+    id: "subjects",
+    label: "untranslatedRecords.collections.import.fields.subjects",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.subjects",
   },
   {
     id: "condition",
@@ -206,11 +268,32 @@ export const TARGET_FIELDS = [
       "untranslatedRecords.collections.import.fieldDescriptions.condition",
   },
   {
+    id: "completeness",
+    label: "untranslatedRecords.collections.import.fields.completeness",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.completeness",
+  },
+  {
+    id: "completenessNote",
+    label: "untranslatedRecords.collections.import.fields.completenessNote",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.completenessNote",
+  },
+  {
     id: "provenance",
     label: "untranslatedRecords.collections.import.fields.provenance",
     required: false,
     description:
       "untranslatedRecords.collections.import.fieldDescriptions.provenance",
+  },
+  {
+    id: "rightsStatement",
+    label: "untranslatedRecords.collections.import.fields.rightsStatement",
+    required: false,
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.rightsStatement",
   },
   {
     id: "location",

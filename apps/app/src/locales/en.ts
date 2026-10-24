@@ -8114,6 +8114,7 @@ export default {
           creator: "Creator",
           objectType: "Object Type",
           objectName: "Object Name",
+          numberOfObjects: "Number of objects",
           culture: "Culture",
           period: "Period",
           dateCreated: "Date made",
@@ -8121,9 +8122,15 @@ export default {
           materials: "Materials",
           technique: "Technique",
           dimensions: "Dimensions",
+          dimensionMeasuredPart: "Measured part",
+          measurementSets: "Further measured parts",
           description: "Description",
+          subjects: "Subject",
           condition: "Condition",
+          completeness: "Completeness",
+          completenessNote: "Completeness note",
           provenance: "Provenance",
+          rightsStatement: "Rights statement",
           location: "Location",
           collectionGroup: "Collection Group",
           collectionGroups: "All collection groups",
@@ -8135,6 +8142,8 @@ export default {
           creator: "Artist, maker, or creator",
           objectType: "Type or category of object",
           objectName: "Specific name of the object",
+          numberOfObjects:
+            "Whole number of things the record describes, such as 2 for a pair",
           culture: "Cultural origin",
           period: "Historical period",
           dateCreated:
@@ -8144,9 +8153,19 @@ export default {
           materials: "Materials used",
           technique: "Production technique",
           dimensions: "Physical dimensions",
+          dimensionMeasuredPart:
+            "Part the dimensions were taken from: overall, framed, unframed, image, sight, sheet, plate, mount, base or other",
+          measurementSets:
+            "JSON list of further measured parts, the way the data export writes it. Each has a part code and at least one of height, width, depth, diameter or weight",
           description: "Detailed description",
+          subjects:
+            "What the object depicts or is about; separate terms with semicolons",
           condition: "Current condition",
+          completeness: "One of complete, incomplete or fragment",
+          completenessNote: "What is missing or included",
           provenance: "Ownership history",
+          rightsStatement:
+            "A RightsStatements.org statement, CC0, the Public Domain Mark or a Creative Commons 4.0 license, as its URI or a code such as InC, CC0 or CC BY 4.0",
           location: "Current location",
           collectionGroup: "Collection or group name",
           collectionGroups:

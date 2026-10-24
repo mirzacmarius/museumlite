@@ -8211,6 +8211,7 @@ export default {
           creator: "Skaper",
           objectType: "Objekttype",
           objectName: "Objektnavn",
+          numberOfObjects: "Antall objekter",
           culture: "Kultur",
           period: "Periode",
           dateCreated: "Datering",
@@ -8218,9 +8219,15 @@ export default {
           materials: "Materialer",
           technique: "Teknikk",
           dimensions: "Dimensjoner",
+          dimensionMeasuredPart: "Målt del",
+          measurementSets: "Andre målte deler",
           description: "Beskrivelse",
+          subjects: "Emne",
           condition: "Tilstand",
+          completeness: "Fullstendighet",
+          completenessNote: "Merknad om fullstendighet",
           provenance: "Proveniens",
+          rightsStatement: "Rettighetserklæring",
           location: "Plassering",
           collectionGroup: "Samlingsgruppe",
           collectionGroups: "Alle samlingsgrupper",
@@ -8233,6 +8240,8 @@ export default {
           creator: "Kunstner, håndverker eller skaper",
           objectType: "Objekttype eller kategori",
           objectName: "Objektets spesifikke navn",
+          numberOfObjects:
+            "Helt tall for hvor mange ting posten beskriver, for eksempel 2 for et par",
           culture: "Kulturell opprinnelse",
           period: "Historisk periode",
           dateCreated:
@@ -8242,9 +8251,19 @@ export default {
           materials: "Materialer som er brukt",
           technique: "Produksjonsteknikk",
           dimensions: "Fysiske mål",
+          dimensionMeasuredPart:
+            "Delen målene er tatt av: overall, framed, unframed, image, sight, sheet, plate, mount, base eller other",
+          measurementSets:
+            "JSON-liste med andre målte deler, slik dataeksporten skriver den. Hver har en delkode og minst én av height, width, depth, diameter eller weight",
           description: "Detaljert beskrivelse",
+          subjects:
+            "Hva objektet viser eller handler om; skill termene med semikolon",
           condition: "Nåværende tilstand",
+          completeness: "Én av complete, incomplete eller fragment",
+          completenessNote: "Hva som mangler eller er med",
           provenance: "Eierskapshistorikk",
+          rightsStatement:
+            "En erklæring fra RightsStatements.org, CC0, Merke for allemannseie eller en Creative Commons 4.0-lisens, som URI eller en kode som InC, CC0 eller CC BY 4.0",
           location: "Nåværende plassering",
           collectionGroup: "Navn på samling eller gruppe",
           collectionGroups: "JSON-liste med gruppenavn; inkluder hovedgruppen",

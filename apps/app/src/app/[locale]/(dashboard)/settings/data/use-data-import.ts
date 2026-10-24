@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useActionErrorMessage } from "@/hooks/use-action-error-message";
 import { readCsvTable, sha256Hex } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
-import { downloadCsv, type ImportType } from "./data-csv-utils";
+import { convertToCSV, downloadCsv, type ImportType } from "./data-csv-utils";
 
 interface ImportTemplate {
   headers: string[];
@@ -59,6 +59,13 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   description: ["beskrivelse"],
   condition: ["tilstand"],
   provenance: ["proveniens"],
+  numberOfObjects: ["antall objekter", "antall"],
+  subjects: ["emne", "emneord"],
+  completeness: ["fullstendighet"],
+  completenessNote: ["merknad om fullstendighet"],
+  dimensionMeasuredPart: ["målt del"],
+  measurementSets: ["andre målte deler"],
+  rightsStatement: ["rettighetserklæring", "rettigheter", "lisens"],
   collectionGroup: ["samlingsgruppe"],
 };
 
@@ -134,6 +141,22 @@ export function toTemplateRows(
     return row;
   });
   return { rows };
+}
+
+/**
+ * The template's columns and example row as CSV. Example cells such as a
+ * JSON list of measured parts hold commas and quotation marks, so each cell
+ * is quoted as an export writes it.
+ */
+export function templateCsv(template: ImportTemplate) {
+  return convertToCSV(template.headers, [
+    Object.fromEntries(
+      template.headers.map((header, index) => [
+        header,
+        template.exampleRow[index],
+      ]),
+    ),
+  ]);
 }
 
 export function useDataImport(
@@ -268,11 +291,7 @@ export function useDataImport(
 
   const downloadTemplate = useCallback(() => {
     if (!template) return;
-    const csv = [
-      template.headers.join(","),
-      template.exampleRow.join(","),
-    ].join("\n");
-    downloadCsv(`${importType}_template.csv`, csv);
+    downloadCsv(`${importType}_template.csv`, templateCsv(template));
   }, [template, importType]);
 
   const refusalMessage = useCallback(

@@ -8273,6 +8273,7 @@ export default {
           creator: "Creator",
           objectType: "Tip de obiect",
           objectName: "Denumirea obiectului",
+          numberOfObjects: "Număr de obiecte",
           culture: "Cultură",
           period: "Perioadă",
           dateCreated: "Data realizării",
@@ -8280,9 +8281,15 @@ export default {
           materials: "Materiale",
           technique: "Tehnică",
           dimensions: "Dimensiuni",
+          dimensionMeasuredPart: "Parte măsurată",
+          measurementSets: "Alte părți măsurate",
           description: "Descriere",
+          subjects: "Subiect",
           condition: "Stare",
+          completeness: "Integritate",
+          completenessNote: "Notă despre integritate",
           provenance: "Proveniență",
+          rightsStatement: "Declarație privind drepturile",
           location: "Locație",
           collectionGroup: "Grup de colecții",
           collectionGroups: "Toate grupurile de colecții",
@@ -8294,6 +8301,8 @@ export default {
           creator: "Artist, fabricant sau creator",
           objectType: "Tipul sau categoria obiectului",
           objectName: "Denumirea specifică a obiectului",
+          numberOfObjects:
+            "Număr întreg de lucruri descrise de înregistrare, de exemplu 2 pentru o pereche",
           culture: "Origine culturală",
           period: "Perioadă istorică",
           dateCreated:
@@ -8303,9 +8312,19 @@ export default {
           materials: "Materiale folosite",
           technique: "Tehnică de producție",
           dimensions: "Dimensiuni fizice",
+          dimensionMeasuredPart:
+            "Partea de pe care s-au luat dimensiunile: overall, framed, unframed, image, sight, sheet, plate, mount, base sau other",
+          measurementSets:
+            "Listă JSON cu alte părți măsurate, așa cum o scrie exportul de date. Fiecare are un cod de parte și cel puțin una dintre height, width, depth, diameter sau weight",
           description: "Descriere detaliată",
+          subjects:
+            "Ce reprezintă obiectul sau despre ce este; separați termenii cu punct și virgulă",
           condition: "Starea actuală",
+          completeness: "Una dintre complete, incomplete sau fragment",
+          completenessNote: "Ce lipsește sau ce include",
           provenance: "Istoric de proprietate",
+          rightsStatement:
+            "O declarație RightsStatements.org, CC0, Marca domeniului public sau o licență Creative Commons 4.0, ca URI sau cod precum InC, CC0 sau CC BY 4.0",
           location: "Locația actuală",
           collectionGroup: "Numele colecției sau grupului",
           collectionGroups:

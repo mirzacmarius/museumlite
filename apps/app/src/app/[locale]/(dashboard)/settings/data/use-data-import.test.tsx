@@ -7,7 +7,7 @@ import { importRefusal } from "@v1/backend/convex/utils/importErrors";
 import { beforeEach, expect, test, vi } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import type { ImportType } from "./data-csv-utils";
-import { toTemplateRows, useDataImport } from "./use-data-import";
+import { templateCsv, toTemplateRows, useDataImport } from "./use-data-import";
 
 const toasts = vi.hoisted(() => ({
   success: vi.fn(),
@@ -35,6 +35,22 @@ const OBJECTS = {
 
 const DATED_OBJECTS = {
   headers: ["title", "dateCreated", "dateCreatedEdtf"],
+  exampleRow: [],
+  description: "",
+  requiredFields: ["title"],
+};
+
+const DESCRIBED_OBJECTS = {
+  headers: [
+    "title",
+    "numberOfObjects",
+    "subjects",
+    "completeness",
+    "completenessNote",
+    "dimensionMeasuredPart",
+    "measurementSets",
+    "rightsStatement",
+  ],
   exampleRow: [],
   description: "",
   requiredFields: ["title"],
@@ -118,6 +134,80 @@ test("a column named EDTF is the structured date made (MUS-857)", () => {
         title: "Klubbe",
         dateCreated: "1850-tallet",
         dateCreatedEdtf: "185X",
+      },
+    ],
+  });
+});
+
+test.each([
+  ["Antall objekter", "numberOfObjects", "12"],
+  ["Antall", "numberOfObjects", "12"],
+  ["Emne", "subjects", "Te; Porselen"],
+  ["Emneord", "subjects", "Te; Porselen"],
+  ["Fullstendighet", "completeness", "incomplete"],
+  ["Merknad om fullstendighet", "completenessNote", "Ett fat mangler"],
+  ["Målt del", "dimensionMeasuredPart", "overall"],
+  ["Andre målte deler", "measurementSets", '[{"part":"base","height":5}]'],
+  ["Rettighetserklæring", "rightsStatement", "InC"],
+  ["Rettigheter", "rightsStatement", "InC"],
+  ["Lisens", "rightsStatement", "CC BY 4.0"],
+])("a Norwegian %s column imports as %s (MUS-865)", (column, field, value) => {
+  expect(
+    toTemplateRows(
+      `Tittel,${column}\nTeservise,"${value.replace(/"/g, '""')}"\n`,
+      DESCRIBED_OBJECTS,
+    ),
+  ).toEqual({ rows: [{ rowNumber: 2, title: "Teservise", [field]: value }] });
+});
+
+test("the template's own column names win over the Norwegian ones for the new fields (MUS-865)", () => {
+  expect(
+    toTemplateRows(
+      "Rettigheter;rightsStatement;Antall;numberOfObjects;Tittel\nInC;CC0;3;1;Vase\n",
+      DESCRIBED_OBJECTS,
+    ),
+  ).toEqual({
+    rows: [
+      {
+        rowNumber: 2,
+        title: "Vase",
+        numberOfObjects: "1",
+        rightsStatement: "CC0",
+      },
+    ],
+  });
+});
+
+test("the downloaded template reads back cell for cell, commas and JSON included (MUS-865)", () => {
+  const template = {
+    ...DESCRIBED_OBJECTS,
+    headers: ["title", "materials", ...DESCRIBED_OBJECTS.headers.slice(1)],
+    exampleRow: [
+      "Untitled Landscape",
+      "Oil, Canvas",
+      "1",
+      "Hudson River; Farmhouse",
+      "complete",
+      "",
+      "framed",
+      '[{"part":"unframed","height":20,"width":32,"unit":"in"}]',
+      "https://creativecommons.org/publicdomain/mark/1.0/",
+    ],
+  };
+
+  expect(toTemplateRows(templateCsv(template), template)).toEqual({
+    rows: [
+      {
+        rowNumber: 2,
+        title: "Untitled Landscape",
+        materials: "Oil, Canvas",
+        numberOfObjects: "1",
+        subjects: "Hudson River; Farmhouse",
+        completeness: "complete",
+        dimensionMeasuredPart: "framed",
+        measurementSets:
+          '[{"part":"unframed","height":20,"width":32,"unit":"in"}]',
+        rightsStatement: "https://creativecommons.org/publicdomain/mark/1.0/",
       },
     ],
   });

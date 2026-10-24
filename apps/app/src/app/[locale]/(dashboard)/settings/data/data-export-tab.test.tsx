@@ -60,3 +60,65 @@ test("an objects export carries the structured date made, and re-imports it (MUS
     ],
   });
 });
+
+test("an objects export carries number of objects, subject, completeness, measured parts and rights statement, and re-imports them (MUS-865)", async () => {
+  downloadCsv.mockClear();
+  const measurementSets = JSON.stringify([
+    { part: "other", partNote: "lid", diameter: 8.5, unit: "cm" },
+  ]);
+  exportRows.mockResolvedValue([
+    {
+      title: "Teapot",
+      numberOfObjects: 2,
+      subjects: "Tea; Ceramics",
+      completeness: "incomplete",
+      completenessNote: "Lid chipped, saucer missing",
+      dimensionMeasuredPart: "overall",
+      measurementSets,
+      rightsStatement: "http://rightsstatements.org/vocab/InC/1.0/",
+    },
+  ]);
+  await renderOnPage(
+    <DataExportTab organizationId={"org-1" as Id<"organizations">} />,
+    "/en/settings/data",
+  );
+
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Export to CSV" }));
+
+  await waitFor(() => expect(downloadCsv).toHaveBeenCalledTimes(1));
+  const csv = String(downloadCsv.mock.calls[0]?.[1]);
+  const described = [
+    "numberOfObjects",
+    "subjects",
+    "completeness",
+    "completenessNote",
+    "dimensionMeasuredPart",
+    "measurementSets",
+    "rightsStatement",
+  ];
+  expect(csv.split("\n")[0]).toContain(`,provenance,${described.join(",")},`);
+  expect(
+    toTemplateRows(csv, {
+      headers: ["title", ...described],
+      exampleRow: [],
+      description: "",
+      requiredFields: ["title"],
+    }),
+  ).toEqual({
+    rows: [
+      {
+        rowNumber: 2,
+        title: "Teapot",
+        numberOfObjects: "2",
+        subjects: "Tea; Ceramics",
+        completeness: "incomplete",
+        completenessNote: "Lid chipped, saucer missing",
+        dimensionMeasuredPart: "overall",
+        measurementSets,
+        rightsStatement: "http://rightsstatements.org/vocab/InC/1.0/",
+      },
+    ],
+  });
+});

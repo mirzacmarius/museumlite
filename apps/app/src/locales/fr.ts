@@ -8310,6 +8310,7 @@ export default {
           creator: "Créateur",
           objectType: "Type d’objet",
           objectName: "Nom de l’objet",
+          numberOfObjects: "Nombre d’objets",
           culture: "Culture",
           period: "Période",
           dateCreated: "Date de production",
@@ -8317,9 +8318,15 @@ export default {
           materials: "Matériaux",
           technique: "Technique",
           dimensions: "Dimensions",
+          dimensionMeasuredPart: "Partie mesurée",
+          measurementSets: "Autres parties mesurées",
           description: "Description",
+          subjects: "Sujet",
           condition: "État",
+          completeness: "Intégrité",
+          completenessNote: "Note sur l’intégrité",
           provenance: "Provenance",
+          rightsStatement: "Déclaration des droits",
           location: "Emplacement",
           collectionGroup: "Groupe de collection",
           collectionGroups: "Tous les groupes de collection",
@@ -8332,6 +8339,8 @@ export default {
           creator: "Artiste, fabricant ou créateur",
           objectType: "Type ou catégorie d’objet",
           objectName: "Nom spécifique de l’objet",
+          numberOfObjects:
+            "Nombre entier de choses que décrit la fiche, par exemple 2 pour une paire",
           culture: "Origine culturelle",
           period: "Période historique",
           dateCreated:
@@ -8341,9 +8350,19 @@ export default {
           materials: "Matériaux utilisés",
           technique: "Technique de fabrication",
           dimensions: "Dimensions physiques",
+          dimensionMeasuredPart:
+            "Partie sur laquelle les dimensions ont été prises : overall, framed, unframed, image, sight, sheet, plate, mount, base ou other",
+          measurementSets:
+            "Liste JSON d’autres parties mesurées, telle que l’export des données l’écrit. Chacune a un code de partie et au moins une valeur parmi height, width, depth, diameter ou weight",
           description: "Description détaillée",
+          subjects:
+            "Ce que l’objet représente ou ce dont il traite ; séparez les termes par des points-virgules",
           condition: "État actuel",
+          completeness: "Une valeur parmi complete, incomplete ou fragment",
+          completenessNote: "Ce qui manque ou ce qui est inclus",
           provenance: "Historique de propriété",
+          rightsStatement:
+            "Une déclaration RightsStatements.org, CC0, la Marque du domaine public ou une licence Creative Commons 4.0, sous forme d’URI ou de code comme InC, CC0 ou CC BY 4.0",
           location: "Emplacement actuel",
           collectionGroup: "Nom de la collection ou du groupe",
           collectionGroups:
