@@ -8242,7 +8242,8 @@ export default {
           objectName: "Denumirea obiectului",
           culture: "Cultură",
           period: "Perioadă",
-          dateCreated: "Data creării",
+          dateCreated: "Data realizării",
+          dateCreatedEdtf: "Data realizării (EDTF)",
           materials: "Materiale",
           technique: "Tehnică",
           dimensions: "Dimensiuni",
@@ -8262,7 +8263,10 @@ export default {
           objectName: "Denumirea specifică a obiectului",
           culture: "Origine culturală",
           period: "Perioadă istorică",
-          dateCreated: "Data sau perioada creării",
+          dateCreated:
+            "Data sau perioada așa cum a fost scrisă, de exemplu cca 1850 sau secolul al XIX-lea",
+          dateCreatedEdtf:
+            "Dată structurată în EDTF, de exemplu 1850~, 185X sau 1850/1860",
           materials: "Materiale folosite",
           technique: "Tehnică de producție",
           dimensions: "Dimensiuni fizice",

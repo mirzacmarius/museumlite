@@ -8182,7 +8182,8 @@ export default {
           objectName: "Objektnavn",
           culture: "Kultur",
           period: "Periode",
-          dateCreated: "Opprettelsesdato",
+          dateCreated: "Datering",
+          dateCreatedEdtf: "Datering (EDTF)",
           materials: "Materialer",
           technique: "Teknikk",
           dimensions: "Dimensjoner",
@@ -8203,7 +8204,10 @@ export default {
           objectName: "Objektets spesifikke navn",
           culture: "Kulturell opprinnelse",
           period: "Historisk periode",
-          dateCreated: "Opprettelsesdato eller periode",
+          dateCreated:
+            "Datering eller periode slik den er skrevet, for eksempel ca. 1850 eller 1800-tallet",
+          dateCreatedEdtf:
+            "Strukturert datering i EDTF, for eksempel 1850~, 185X eller 1850/1860",
           materials: "Materialer som er brukt",
           technique: "Produksjonsteknikk",
           dimensions: "Fysiske mål",

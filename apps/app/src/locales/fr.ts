@@ -8279,7 +8279,8 @@ export default {
           objectName: "Nom de l’objet",
           culture: "Culture",
           period: "Période",
-          dateCreated: "Date de création",
+          dateCreated: "Date de production",
+          dateCreatedEdtf: "Date de production (EDTF)",
           materials: "Matériaux",
           technique: "Technique",
           dimensions: "Dimensions",
@@ -8300,7 +8301,10 @@ export default {
           objectName: "Nom spécifique de l’objet",
           culture: "Origine culturelle",
           period: "Période historique",
-          dateCreated: "Date ou période de création",
+          dateCreated:
+            "Date ou période telle qu’écrite, par exemple vers 1850 ou XIXe siècle",
+          dateCreatedEdtf:
+            "Date structurée en EDTF, par exemple 1850~, 185X ou 1850/1860",
           materials: "Matériaux utilisés",
           technique: "Technique de fabrication",
           dimensions: "Dimensions physiques",
