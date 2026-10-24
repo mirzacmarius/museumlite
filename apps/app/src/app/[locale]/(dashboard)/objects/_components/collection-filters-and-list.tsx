@@ -45,7 +45,7 @@ export function CollectionFiltersAndList({
               label={tExport("selected", { count: catalog.selectedIds.size })}
             />
           )}
-          {catalog.isFiltered ? (
+          {catalog.canEditAllMatching ? (
             <PermissionGate permission="collections.update">
               <Button
                 variant="outline"

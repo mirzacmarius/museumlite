@@ -138,6 +138,53 @@ export const catalogFiltersValidator = v.object(catalogFilterFields);
 export type CatalogFilters = Infer<typeof catalogFiltersValidator>;
 
 /**
+ * Whether a condition tests anything. One left blank does not, so the catalog
+ * leaves it out, as it does a group without conditions.
+ */
+export function conditionHasValue(
+  condition: Pick<AdvancedFilterCondition, "value">,
+) {
+  const values: unknown[] = Array.isArray(condition.value)
+    ? condition.value
+    : [condition.value];
+  return values.some((value) => value !== null && String(value).trim() !== "");
+}
+
+/**
+ * True when a search or filter someone chose narrows the catalog. A blank
+ * value narrows nothing. The inventory scope a Dashboard link sets is not
+ * shown among the filters, and `includeDeaccessioned` and
+ * `filterCombinations` only widen or join them, so none of these counts.
+ * Editing every matching Object needs one that does.
+ */
+export function narrowsCatalog(filters: CatalogFilters) {
+  return (
+    filters.collectionGroupId !== undefined ||
+    filters.status !== undefined ||
+    (filters.locationIds?.length ?? 0) > 0 ||
+    [
+      filters.objectType,
+      filters.displayStatus,
+      filters.culture,
+      filters.period,
+      filters.materials,
+      filters.condition,
+      filters.search,
+    ].some((value) => Boolean(value?.trim())) ||
+    [
+      filters.hasImage,
+      filters.catalogedFrom,
+      filters.catalogedTo,
+      filters.madeFrom,
+      filters.madeTo,
+    ].some((value) => value !== undefined) ||
+    (filters.advancedFilters ?? []).some((group) =>
+      group.filters.some(conditionHasValue),
+    )
+  );
+}
+
+/**
  * Orders of the Object Catalog; newest first is the default. Date made orders
  * list undated Objects last both ways. Kept out of the filters: bulk edits and
  * exports page in creation order.

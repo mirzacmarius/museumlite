@@ -34,6 +34,8 @@ export function useBulkEditCodeMessage() {
         });
       case "SELECTION_OUTSIDE_ORGANIZATION":
         return t("selectionOutsideOrganization");
+      case "FILTER_REQUIRED":
+        return t("filterRequired");
       case "EDIT_RUNNING":
         return t("editRunning");
       case "EDIT_NOT_FOUND":

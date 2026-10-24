@@ -4,6 +4,7 @@ import {
   type AdvancedFilterCondition,
   type AdvancedFilterField,
   type AdvancedFilterGroup,
+  conditionHasValue,
 } from "./catalogFilterValidators";
 import { foldFacetValue, storedListValues } from "./objectSearchDocuments";
 import {
@@ -165,15 +166,19 @@ function matchesCondition(
 
 /**
  * Whether an Object passes the advanced filters: conditions combine within
- * a group by the group's operator, groups by the combination. Empty groups
- * are left out; a condition on an unknown field never matches.
+ * a group by the group's operator, groups by the combination. Conditions
+ * left blank and groups without a condition are left out; a condition on an
+ * unknown field never matches.
  */
 export function matchesAdvancedFilters(
   collection: Doc<"collections">,
   groups: readonly AdvancedFilterGroup[],
   combination: "AND" | "OR" = "AND",
 ): boolean {
-  const considered = groups.filter((group) => group.filters.length > 0);
+  const considered = groups.flatMap((group) => {
+    const filters = group.filters.filter(conditionHasValue);
+    return filters.length > 0 ? [{ ...group, filters }] : [];
+  });
   if (considered.length === 0) return true;
   const results = considered.map((group) =>
     group.operator === "OR"

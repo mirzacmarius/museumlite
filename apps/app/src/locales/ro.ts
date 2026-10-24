@@ -1397,6 +1397,8 @@ export default {
           "Selectați cel mult {limit} de obiecte sau editați toate obiectele care corespund căutării și filtrelor.",
         selectionOutsideOrganization:
           "Unele obiecte selectate aparțin altei organizații. Reîncărcați pagina și selectați-le din nou.",
+        filterRequired:
+          "Căutați sau filtrați mai întâi catalogul, ca modificarea să nu schimbe toate obiectele.",
         editRunning:
           "O altă editare de câmp rulează în această organizație. Așteptați să se termine sau opriți-o mai întâi.",
         editNotFound: "Această editare nu mai există.",

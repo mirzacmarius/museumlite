@@ -3368,6 +3368,8 @@ export default {
           "Seleccione como máximo {limit} objetos, o edite todos los objetos que coinciden con la búsqueda y los filtros.",
         selectionOutsideOrganization:
           "Algunos objetos seleccionados pertenecen a otra organización. Actualice la página y vuelva a seleccionarlos.",
+        filterRequired:
+          "Primero busque o filtre el catálogo, para que la edición no cambie todos los objetos.",
         editRunning:
           "Ya hay otra edición de campo en curso en esta organización. Espere a que termine o deténgala primero.",
         editNotFound: "Esta edición ya no existe.",

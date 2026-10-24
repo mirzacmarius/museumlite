@@ -2,7 +2,10 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import type { CatalogSort } from "@v1/backend/convex/utils/catalogFilterValidators";
+import {
+  type CatalogSort,
+  narrowsCatalog,
+} from "@v1/backend/convex/utils/catalogFilterValidators";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useListState } from "@/hooks/use-list-state";
@@ -166,6 +169,60 @@ export function madeYearBound(value: string) {
   return year < 0 ? year + 1 : year;
 }
 
+type ObjectFilters = ReturnType<typeof useObjectFilters>["filters"];
+
+/**
+ * The catalog filters the URL's search and filters stand for, as the list,
+ * exports and bulk edits take them; unset ones stay undefined.
+ */
+export function catalogFilters(filters: ObjectFilters) {
+  // Groups without a condition match everything, so they are not sent.
+  const advancedFilters = filters.advancedFilters.filter(
+    (group) => group.filters.length > 0,
+  );
+
+  const status =
+    filters.status !== "any" &&
+    filters.status !== "all" &&
+    filters.status !== "deaccessioned"
+      ? filters.status
+      : undefined;
+
+  return {
+    inventoryMetricScope: INVENTORY_METRIC_SCOPES.find(
+      (scope) => scope === filters.inventoryScope,
+    ),
+    search: filters.search || undefined,
+    status,
+    objectType: filters.objectType || undefined,
+    displayStatus: filters.displayStatus || undefined,
+    culture: filters.culture || undefined,
+    period: filters.period || undefined,
+    materials: filters.materials || undefined,
+    condition: filters.condition || undefined,
+    hasImage:
+      filters.photograph === "with"
+        ? true
+        : filters.photograph === "without"
+          ? false
+          : undefined,
+    collectionGroupId: filters.collectionGroupId
+      ? (filters.collectionGroupId as Id<"collectionGroups">)
+      : undefined,
+    locationIds:
+      filters.locationIds.length > 0
+        ? (filters.locationIds as Id<"locations">[])
+        : undefined,
+    catalogedFrom: localDayBound(filters.catalogedFrom, "start"),
+    catalogedTo: localDayBound(filters.catalogedTo, "end"),
+    madeFrom: madeYearBound(filters.madeFrom),
+    madeTo: madeYearBound(filters.madeTo),
+    ...(advancedFilters.length > 0
+      ? { advancedFilters, filterCombinations: filters.filterCombinations }
+      : {}),
+  };
+}
+
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   const objectFilters = useObjectFilters();
   const { filters, hasActiveFilters } = objectFilters;
@@ -270,51 +327,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     });
   };
 
-  // Groups without a condition match everything, so they are not sent.
-  const advancedFilters = filters.advancedFilters.filter(
-    (group) => group.filters.length > 0,
-  );
-
-  const statusFilter =
-    filters.status !== "any" &&
-    filters.status !== "all" &&
-    filters.status !== "deaccessioned"
-      ? filters.status
-      : undefined;
-
-  const exportFilters = {
-    inventoryMetricScope: INVENTORY_METRIC_SCOPES.find(
-      (scope) => scope === filters.inventoryScope,
-    ),
-    search: filters.search || undefined,
-    status: statusFilter,
-    objectType: filters.objectType || undefined,
-    displayStatus: filters.displayStatus || undefined,
-    culture: filters.culture || undefined,
-    period: filters.period || undefined,
-    materials: filters.materials || undefined,
-    condition: filters.condition || undefined,
-    hasImage:
-      filters.photograph === "with"
-        ? true
-        : filters.photograph === "without"
-          ? false
-          : undefined,
-    collectionGroupId: filters.collectionGroupId
-      ? (filters.collectionGroupId as Id<"collectionGroups">)
-      : undefined,
-    locationIds:
-      filters.locationIds.length > 0
-        ? (filters.locationIds as Id<"locations">[])
-        : undefined,
-    catalogedFrom: localDayBound(filters.catalogedFrom, "start"),
-    catalogedTo: localDayBound(filters.catalogedTo, "end"),
-    madeFrom: madeYearBound(filters.madeFrom),
-    madeTo: madeYearBound(filters.madeTo),
-    ...(advancedFilters.length > 0
-      ? { advancedFilters, filterCombinations: filters.filterCombinations }
-      : {}),
-  };
+  const exportFilters = catalogFilters(filters);
   const isSearching = filters.search.trim() !== "";
 
   const {
@@ -418,6 +431,10 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     setFilters,
     resetFilters,
     isFiltered: hasActiveFilters,
+    // Editing every matching Object needs a search or filter staff can see:
+    // a Dashboard link's inventory scope has no chip, "All statuses" and
+    // blank values narrow nothing.
+    canEditAllMatching: narrowsCatalog(exportFilters),
     sort: catalogView.state.sort,
     setSort: (sort: ObjectSort) => catalogView.update({ sort }),
     isSearching,

@@ -3,6 +3,7 @@
 import {
   ADVANCED_FILTER_FIELDS,
   ADVANCED_FILTER_OPERATORS,
+  conditionHasValue,
 } from "@v1/backend/convex/utils/catalogFilterValidators";
 import { Button } from "@v1/ui/button";
 import {
@@ -385,11 +386,9 @@ export function AdvancedSearchDialog({
   };
 
   const handleApply = () => {
-    // Filter out empty filter groups
+    // Conditions left blank, even with spaces, and groups without one test nothing.
     const validFilterGroups = filterGroups.flatMap((group) => {
-      const filters = group.filters.filter(
-        (filter) => filter.value !== "" && filter.value !== null,
-      );
+      const filters = group.filters.filter(conditionHasValue);
       return filters.length > 0 ? [{ operator: group.operator, filters }] : [];
     });
 
