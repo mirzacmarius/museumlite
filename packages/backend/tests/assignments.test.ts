@@ -51,7 +51,7 @@ test("should return empty assignments when no data exists", async () => {
   });
 });
 
-test("Cataloged by you lists the viewer's newest objects first, skips objects others cataloged and counts up to 100", async () => {
+test("Cataloged by you lists the viewer's newest objects first, skips objects others cataloged, and lists and counts at most 100", async () => {
   const t = createConvexTest();
   const { organizationId, userId } = await createOrgUserWithPermissions(t, [
     "collections.read",
@@ -102,4 +102,10 @@ test("Cataloged by you lists the viewer's newest objects first, skips objects ot
   expect(many.myCatalogedItems).toHaveLength(10);
   expect(many.myCatalogedItems[0]?.accessionNumber).toBe("MINE-119");
   expect(many.stats.totalCatalogedItems).toBe(100);
+
+  const asked = await viewer.query(api.assignments.listMyAssignments, {
+    organizationId,
+    limit: 500,
+  });
+  expect(asked.myCatalogedItems).toHaveLength(100);
 });

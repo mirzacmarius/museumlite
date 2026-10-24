@@ -11,9 +11,10 @@ import {
 const CATALOGED_COUNT_LIMIT = 100;
 
 /**
- * The newest objects the viewer cataloged in the organization, and how many
- * they cataloged, up to 100. Both come from the viewer's own rows of the
- * cataloguer index, so changes to other objects do not rerun it.
+ * The newest objects the viewer cataloged in the organization (`limit`, at
+ * most 100), and how many they cataloged, up to 100. Both come from the
+ * viewer's own rows of the cataloguer index, so changes to other objects do
+ * not rerun it.
  */
 export const listMyAssignments = query({
   args: {
@@ -42,7 +43,7 @@ export const listMyAssignments = query({
     }),
   }),
   handler: async (ctx, args) => {
-    const limit = args.limit ?? 10;
+    const limit = Math.min(args.limit ?? 10, CATALOGED_COUNT_LIMIT);
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -67,7 +68,7 @@ export const listMyAssignments = query({
         q.eq("organizationId", args.organizationId).eq("catalogedBy", userId),
       )
       .order("desc")
-      .take(Math.max(limit, CATALOGED_COUNT_LIMIT));
+      .take(CATALOGED_COUNT_LIMIT);
 
     const myCatalogedItems = await Promise.all(
       cataloged.slice(0, limit).map(async (c) => {
@@ -97,7 +98,7 @@ export const listMyAssignments = query({
     return {
       myCatalogedItems,
       stats: {
-        totalCatalogedItems: Math.min(cataloged.length, CATALOGED_COUNT_LIMIT),
+        totalCatalogedItems: cataloged.length,
       },
     };
   },
