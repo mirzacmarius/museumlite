@@ -10629,7 +10629,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Export full filtered results",
     catalogComplete: "Export complete catalog",
     auditComplete: "Export complete audit history",
     auditFiltered: "Export complete filtered audit history",
@@ -10644,6 +10643,7 @@ export default {
     sourceAudit: "Audit",
     sourceSelected: "Selected objects",
     sourceCatalog: "Filtered catalog",
+    sourceCompleteCatalog: "Complete catalog",
     statusSelecting: "Uploading selection",
     statusQueued: "Queued",
     statusRunning: "Running",
@@ -10673,6 +10673,8 @@ export default {
     errorSelection:
       "The selection could not be exported. Retry the upload or create a new selection.",
     errorTooLarge: "This export is too large. Narrow the filters or selection.",
+    errorCatalogTooLarge:
+      "The whole catalog is too large for one export. Select objects in the Object Catalog and export them in smaller batches.",
     errorInventoryLinks:
       "An object has too many loan links for this inventory filter. Export selected objects instead.",
     errorInvalidRequest:

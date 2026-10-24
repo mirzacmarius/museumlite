@@ -10750,7 +10750,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Eksporter alle filtrerte resultater",
     catalogComplete: "Eksporter hele katalogen",
     auditComplete: "Eksporter hele revisjonsloggen",
     auditFiltered: "Eksporter hele den filtrerte revisjonsloggen",
@@ -10765,6 +10764,7 @@ export default {
     sourceAudit: "Revisjon",
     sourceSelected: "Valgte objekter",
     sourceCatalog: "Filtrert katalog",
+    sourceCompleteCatalog: "Hele katalogen",
     statusSelecting: "Laster opp utvalg",
     statusQueued: "I kø",
     statusRunning: "Kjører",
@@ -10796,6 +10796,8 @@ export default {
       "Utvalget kunne ikke eksporteres. Prøv opplastingen på nytt eller opprett et nytt utvalg.",
     errorTooLarge:
       "Denne eksporten er for stor. Begrens filtrene eller utvalget.",
+    errorCatalogTooLarge:
+      "Hele katalogen er for stor for én eksport. Velg objekter under Objektkatalog og eksporter dem i mindre omganger.",
     errorInventoryLinks:
       "Et objekt har for mange lånekoblinger for dette beholdningsfilteret. Eksporter valgte objekter i stedet.",
     errorInvalidRequest:

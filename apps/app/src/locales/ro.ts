@@ -10861,7 +10861,6 @@ export default {
     },
   },
   exportJobs: {
-    catalogFiltered: "Exportă toate rezultatele filtrate",
     catalogComplete: "Exportă catalogul complet",
     auditComplete: "Exportă istoricul de audit complet",
     auditFiltered: "Exportă istoricul de audit filtrat complet",
@@ -10876,6 +10875,7 @@ export default {
     sourceAudit: "Audit",
     sourceSelected: "Obiecte selectate",
     sourceCatalog: "Catalog filtrat",
+    sourceCompleteCatalog: "Catalog complet",
     statusSelecting: "Se încarcă selecția",
     statusQueued: "În coadă",
     statusRunning: "În curs",
@@ -10908,6 +10908,8 @@ export default {
       "Selecția nu a putut fi exportată. Reîncercați încărcarea sau creați o selecție nouă.",
     errorTooLarge:
       "Acest export este prea mare. Restrângeți filtrele sau selecția.",
+    errorCatalogTooLarge:
+      "Catalogul complet este prea mare pentru un singur export. Selectați obiecte în Catalogul obiectelor și exportați-le în loturi mai mici.",
     errorInventoryLinks:
       "Un obiect are prea multe legături de împrumut pentru acest filtru de inventar. Exportați în schimb obiectele selectate.",
     errorInvalidRequest:
