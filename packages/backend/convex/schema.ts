@@ -1158,7 +1158,7 @@ export default defineSchema({
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
-    .index("by_vin", ["vin"])
+    .index("by_organization_and_vin", ["organizationId", "vin"])
     .index("by_organization_and_make", ["organizationId", "make"]),
 
   // Natural History & Science module details
@@ -3027,6 +3027,9 @@ export default defineSchema({
 
   // Epic 24: Predefined workflow templates
   workflowTemplates: defineTable({
+    // System templates have no organization; the rest belong to the one
+    // that saved them and are visible only there.
+    organizationId: v.optional(v.id("organizations")),
     name: v.string(),
     description: v.optional(v.string()),
     workflowType: v.union(
@@ -3070,7 +3073,8 @@ export default defineSchema({
     createdBy: v.optional(v.id("users")),
   })
     .index("by_workflowType", ["workflowType"])
-    .index("by_isSystem", ["isSystem"]),
+    .index("by_isSystem", ["isSystem"])
+    .index("by_organization", ["organizationId"]),
 
   // Epic 24: Step approvals tracking (for multi-approver workflows)
   workflowStepApprovals: defineTable({

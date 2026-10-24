@@ -9,6 +9,7 @@ import { memberPermissionNames } from "./utils/memberPermissions";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { dispatchNotification } from "./utils/notificationDispatch";
 import { requirePermission } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 import { workError } from "./utils/workErrors";
 
 const taskTypeValidator = v.union(
@@ -1108,6 +1109,15 @@ export const addComment = mutation({
       attachmentIds: args.attachmentIds,
       createdAt: Date.now(),
     });
+    for (const storageId of args.attachmentIds ?? []) {
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: task.organizationId,
+        uploadedBy: userId,
+        ownerType: "installationTaskComment",
+        ownerId: commentId,
+      });
+    }
 
     return commentId;
   },
@@ -1277,9 +1287,13 @@ export const reorderChecklist = mutation({
       Promise.all(
         Array.from({ length: args.itemIds.length }, async (_, i) => {
           const itemId = args.itemIds[i];
-          if (itemId) {
-            await ctx.db.patch(itemId, { sortOrder: i });
+          if (!itemId) return;
+          // Only this task's own rows move; another task's read as missing.
+          const item = await ctx.db.get(itemId);
+          if (!item || item.taskId !== args.taskId) {
+            throw new Error("Checklist item not found");
           }
+          await ctx.db.patch(itemId, { sortOrder: i });
         }),
       ),
     ] as const);

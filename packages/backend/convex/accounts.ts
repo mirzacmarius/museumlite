@@ -2,8 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
-import { query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { type MutationCtx, query } from "./_generated/server";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
   buildAccountCreateDocument,
@@ -17,6 +17,7 @@ import {
 import { requireModuleEnabled } from "./utils/featureGates";
 import { mutation } from "./utils/mutationBuilders";
 import { generateNextAccountNumber } from "./utils/numberGenerator";
+import { requireInOrganization } from "./utils/organizationScope";
 import { hasPermission, requirePermission } from "./utils/permissions";
 
 const accountTypeValidator = v.union(
@@ -229,6 +230,40 @@ const structuredAddressValidator = v.object({
 });
 
 /**
+ * The roles, membership type and preferred branch of an account must belong
+ * to the account's organization.
+ */
+async function requireAccountReferences(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  references: {
+    roleIds?: Id<"roles">[];
+    membershipTypeId?: Id<"membershipTypes">;
+    preferredBranch?: Id<"locations">;
+  },
+) {
+  for (const roleId of references.roleIds ?? []) {
+    await requireInOrganization(ctx, roleId, organizationId, "Role");
+  }
+  if (references.membershipTypeId) {
+    await requireInOrganization(
+      ctx,
+      references.membershipTypeId,
+      organizationId,
+      "Membership type",
+    );
+  }
+  if (references.preferredBranch) {
+    await requireInOrganization(
+      ctx,
+      references.preferredBranch,
+      organizationId,
+      "Branch",
+    );
+  }
+}
+
+/**
  * Create a new account
  */
 export const create = mutation({
@@ -292,6 +327,7 @@ export const create = mutation({
     await requireAccountAdministration(ctx, args);
 
     validateAccountProfileForCreate(args);
+    await requireAccountReferences(ctx, args.organizationId, args);
 
     const accountNumber = await generateNextAccountNumber(
       ctx,
@@ -410,6 +446,20 @@ export const update = mutation({
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.write"),
     ]);
+
+    // Only a changed reference is checked, so a membership type or branch
+    // deleted since the account was saved does not block unrelated edits.
+    await requireAccountReferences(ctx, account.organizationId, {
+      roleIds: args.roleIds,
+      membershipTypeId:
+        args.membershipTypeId === account.membershipTypeId
+          ? undefined
+          : args.membershipTypeId,
+      preferredBranch:
+        args.preferredBranch === account.preferredBranch
+          ? undefined
+          : args.preferredBranch,
+    });
 
     const now = Date.now();
     const updates = buildAccountUpdatePatch(args, {

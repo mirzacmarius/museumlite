@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
+import { getCurrentUserOrganization } from "./utils/permissions";
 
 const moduleValidator = v.union(
   v.literal("objects"),
@@ -110,9 +111,15 @@ export const create = mutation({
   },
   returns: v.id("savedViews"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, membership] = await Promise.all([
+      getAuthUserId(ctx),
+      getCurrentUserOrganization(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
+    }
+    if (!membership) {
+      throw new Error("Not a member of this organization");
     }
 
     if (args.isDefault) {

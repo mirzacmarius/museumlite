@@ -280,6 +280,7 @@ import type * as utils_operationalKpis from "../utils/operationalKpis.js";
 import type * as utils_organizationAudit from "../utils/organizationAudit.js";
 import type * as utils_organizationDeletionErrors from "../utils/organizationDeletionErrors.js";
 import type * as utils_organizationDeletionTimings from "../utils/organizationDeletionTimings.js";
+import type * as utils_organizationScope from "../utils/organizationScope.js";
 import type * as utils_organizationTransferRegistry from "../utils/organizationTransferRegistry.js";
 import type * as utils_organizationUsageCounters from "../utils/organizationUsageCounters.js";
 import type * as utils_parties from "../utils/parties.js";
@@ -633,6 +634,7 @@ declare const fullApi: ApiFromModules<{
   "utils/organizationAudit": typeof utils_organizationAudit;
   "utils/organizationDeletionErrors": typeof utils_organizationDeletionErrors;
   "utils/organizationDeletionTimings": typeof utils_organizationDeletionTimings;
+  "utils/organizationScope": typeof utils_organizationScope;
   "utils/organizationTransferRegistry": typeof utils_organizationTransferRegistry;
   "utils/organizationUsageCounters": typeof utils_organizationUsageCounters;
   "utils/parties": typeof utils_parties;

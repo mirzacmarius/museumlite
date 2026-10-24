@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { mutation } from "./utils/mutationBuilders";
+import { requireInOrganization } from "./utils/organizationScope";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -36,10 +37,15 @@ export const trackEdit = mutation({
     // Check permission
     await requirePermission(ctx, media.organizationId, "media.upload");
 
-    // If versionId is provided, verify it exists
+    // The version must be one of this media file's own.
     if (args.versionId) {
-      const version = await ctx.db.get(args.versionId);
-      if (!version) {
+      const version = await requireInOrganization(
+        ctx,
+        args.versionId,
+        media.organizationId,
+        "Version",
+      );
+      if (version.originalMediaId !== args.mediaId) {
         throw new Error("Version not found");
       }
     }

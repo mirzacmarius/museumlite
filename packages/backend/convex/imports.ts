@@ -60,6 +60,7 @@ import {
   requireLocationAdminPermission,
   requirePermission,
 } from "./utils/permissions";
+import { canReadRecord } from "./utils/recordAccess";
 import {
   accessionsToSpectrumEntries,
   collectionsToSpectrum,
@@ -2548,11 +2549,13 @@ export const getFieldMapping = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
-
     const mapping = await ctx.db.get(args.mappingId);
-    if (!mapping) return null;
+    if (
+      !mapping ||
+      !(await canReadRecord(ctx, mapping.organizationId, "collections.create"))
+    ) {
+      return null;
+    }
 
     return mapping;
   },
@@ -2608,8 +2611,7 @@ export const listFieldMappings = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const query = ctx.db
       .query("importFieldMappings")

@@ -120,6 +120,7 @@ const organizationScopedTables = [
   "workflowHistory",
   "workflowStepApprovals",
   "workflowSlaConfigs",
+  "workflowTemplates",
   "webhooks",
   "apiKeys",
   "importJobs",
