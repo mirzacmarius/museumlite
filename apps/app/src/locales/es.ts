@@ -3311,6 +3311,8 @@ export default {
       overwriteWarning: "Objetos cuyo valor registrado se reemplaza: {count}",
       overwriteWarningCapped:
         "Objetos contados hasta ahora cuyo valor registrado se reemplaza: {count}",
+      clearsStructuredDate:
+        "Al establecer o vaciar la fecha de producción también se elimina cualquier fecha estructurada, de modo que se use el texto nuevo.",
       start: "Aplicar la edición",
       starting: "Iniciando…",
       progressRunning:
@@ -3508,8 +3510,10 @@ export default {
         hint: "Rellena Desde para una sola fecha, o Desde y Hasta para un intervalo. A más tardar y No antes de solo se aplican a Desde por sí sola.",
         readAs: "Se lee como {date}.",
         years: "La ordenación y los filtros usan {years}.",
-        yearsFrom: "La ordenación y los filtros usan de {start} en adelante.",
-        yearsUntil: "La ordenación y los filtros usan hasta {end}.",
+        yearsFrom:
+          "La ordenación y los filtros usan los años desde {start} en adelante.",
+        yearsUntil: "La ordenación y los filtros usan los años hasta {end}.",
+        onOrAfter: "{date} o posterior",
         undated: "Sin fecha para la ordenación y los filtros.",
         notRead:
           "No se lee como fecha, así que se muestra tal como se escribió. Añade una fecha estructurada para ordenar y filtrar por ella.",
@@ -6064,7 +6068,7 @@ export default {
       object_type: "Tipo de objeto",
       object_name: "Nombre del objeto",
       maker: "Autor",
-      production_date: "Fecha de creación",
+      production_date: "Fecha de producción",
       materials: "Materiales",
       dimensions: "Dimensiones",
       inscriptions: "Inscripciones y marcas",
@@ -8627,6 +8631,7 @@ export default {
         fieldChanged: "Se cambió «{field}»{previous}{next}",
         fromValue: "de «{value}»",
         toValue: "a «{value}»",
+        structuredDateRemoved: "Se eliminó la fecha estructurada «{value}»",
         byUser: "Por {name}",
         actions: {
           created_collection: "Objeto creado",
@@ -11137,7 +11142,7 @@ export default {
       saveFailed:
         "No se pudieron guardar sus cambios. Compruebe su conexión e inténtelo de nuevo.",
       productionDateInvalid:
-        "La fecha estructurada no es una fecha válida. Revisa sus partes e inténtalo de nuevo.",
+        "La fecha estructurada no es una fecha válida. Revise sus partes e inténtelo de nuevo.",
     },
     notices: {
       recoveredTitle: "Se encontraron cambios sin guardar",

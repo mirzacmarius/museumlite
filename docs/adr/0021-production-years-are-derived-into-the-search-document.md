@@ -2,7 +2,7 @@
 
 MUS-857. An Object's date made was free text (`collections.dateCreated`), so the catalog could neither sort nor filter by it, and exports carried nothing a machine could read. Staff write dates as "c. 1850", "1850s", "late 19th century", "before 1900" or "500 f.Kr.", and a museum's older records hold thousands of them.
 
-`utils/productionDates.ts` reads dates in EDTF (ISO 8601-2, levels 0 and 1) and reads the text staff write in the five app languages as EDTF. It is pure, so the app's form shows exactly what the catalog will use.
+`utils/productionDates.ts` reads dates in EDTF (ISO 8601-2), a subset of levels 0 and 1: dates, decades and centuries (`185X`, `18XX`), unspecified months and days (`1850-XX`, `1850-05-XX`, stored as `1850` and `1850-05`), the `?`, `~` and `%` qualifiers, and intervals, but no times, seasons, fully unspecified years (`XXXX`) or `Y`-prefixed years, and an unknown interval side (`1850/`) is stored as open (`1850/..`). It also reads the text staff write in the five app languages as EDTF. It is pure, so the app's form shows exactly what the catalog will use.
 
 - The Object keeps its text as written and, only when staff structure it (or an import supplies it), `dateCreatedEdtf` in canonical EDTF. The date in effect is the entered EDTF, otherwise what the text reads as; text that does not read stays display only, and the Object is undated for sorting and filters. Nothing is written back into `dateCreatedEdtf` from the text.
 - The earliest and latest years follow from the date in effect: astronomical as in EDTF (0 is 1 BC, -499 is 500 BC), circa widened by 5 years (10 for a decade, 25 for a century), an open side without a year. They are never stored on the Object.

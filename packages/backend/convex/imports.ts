@@ -138,7 +138,7 @@ function resolveUniqueName<Id extends string>(
 /**
  * A CSV row's structured date made as stored. CSVs write EDTF that starts
  * with "-" behind an apostrophe, so exactly one is dropped; text that is not
- * EDTF fails the row.
+ * EDTF the parser reads (see utils/productionDates.ts) fails the row.
  */
 function importedEdtf(value: string | undefined) {
   const text = value?.trim().replace(/^'(?=-)/, "");
@@ -146,7 +146,7 @@ function importedEdtf(value: string | undefined) {
   const edtf = canonicalEdtf(text);
   if (edtf === undefined) {
     throw new Error(
-      "dateCreatedEdtf must be an EDTF date, such as 1850, 1850~, 185X or 1848/1852",
+      "dateCreatedEdtf must be an EDTF date MuseumLite reads, such as 1850, 1850~, 185X or 1848/1852, without seasons or times, and an interval cannot end before it starts",
     );
   }
   return edtf;
@@ -2260,7 +2260,7 @@ export const getImportTemplateByType = query({
           "American",
           "19th Century",
           "c. 1850",
-          "1848/1852",
+          "1850~",
           "Oil, Canvas",
           "Oil painting",
           "24 x 36 inches",
@@ -2272,7 +2272,7 @@ export const getImportTemplateByType = query({
         ],
         requiredFields: ["title"],
         description:
-          "Import collection objects. Location and collectionGroup must match existing names. dateCreatedEdtf is optional EDTF, such as 1850, 1850~, 185X or 1848/1852.",
+          "Import collection objects. Location and collectionGroup must match existing names.",
       },
       accessions: {
         headers: [

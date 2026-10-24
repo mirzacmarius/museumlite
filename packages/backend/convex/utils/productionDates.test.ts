@@ -26,6 +26,7 @@ describe("EDTF", () => {
     "18XX",
     "-0499",
     "-04XX",
+    "0000",
     "0079",
     "1850~",
     "1850?",
@@ -48,6 +49,27 @@ describe("EDTF", () => {
   });
 
   test.each([
+    ["1850-XX", "1850"],
+    ["1850-XX-XX", "1850"],
+    ["1850-05-XX", "1850-05"],
+    ["1850-XX?", "1850?"],
+    ["1850-XX-XX%", "1850%"],
+    ["1850-05-XX~", "1850-05~"],
+    ["-1850-XX", "-1850"],
+  ])("an unspecified month or day: %s states %s", (text, edtf) => {
+    expect(formatEdtf(parseEdtf(text) ?? fail())).toBe(edtf);
+  });
+
+  test.each([
+    "185X/1850",
+    "1855/185X",
+    "18XX/1850",
+    "1850/1850-05",
+  ])("%s has sides that overlap, which is still an interval", (text) => {
+    expect(formatEdtf(parseEdtf(text) ?? fail())).toBe(text);
+  });
+
+  test.each([
     "",
     "1850-13",
     "1850-02-30",
@@ -55,9 +77,22 @@ describe("EDTF", () => {
     "185X-05",
     "1850-1860",
     "1850/1840",
+    // Ends before it starts, to the day and without the circa margin.
+    "1850-06/1850-05",
+    "1850-05-12/1850-05-01",
+    "1850-05/1850-03",
+    "1860~/1858",
+    "1850~/1849",
     "../..",
     "1850/1860/1870",
     "18",
+    // EDTF left out: a fully unspecified year, other unspecified digits,
+    // seasons and times.
+    "XXXX",
+    "185X-XX",
+    "1850-XX-12",
+    "2001-21",
+    "1985-04-12T10:00:00",
     "Ming dynasty",
     `1850${"~".repeat(64)}`,
   ])("%j is not EDTF", (text) => {
@@ -208,10 +243,97 @@ describe("dates written as text", () => {
     "unknown",
     "1850-1840",
     "30 February 1850",
-    "0 BC",
+    "May 1850 - March 1850",
     "sometime",
+    "constructor 1850",
+    "12 constructor 1850",
+    // There is no year 0.
+    "0 BC",
+    "0",
+    "00",
+    "0 AD",
+    "AD 0",
+    "0 CE",
+    "c. 0",
   ])("%j is not read as a date", (text) => {
     expect(edtfOf(text)).toBeNull();
+  });
+
+  test.each([
+    ["1800s", "18XX"],
+    ["the 1900s", "19XX"],
+    ["1900's", "19XX"],
+    ["c. 1800s", "18XX~"],
+    ["1800s?", "18XX?"],
+    ["1800s-1900s", "18XX/19XX"],
+    ["1800-årene", "18XX"],
+    ["800s", "08XX"],
+    ["the 900s", "09XX"],
+    ["1810s", "181X"],
+    ["2000s", "200X"],
+    ["the 2000s", "200X"],
+    ["2000-årene", "200X"],
+    ["années 1900", "190X"],
+    ["década de 1900", "190X"],
+    ["anii 1900", "190X"],
+  ])('%j reads as %s: "1800s" is a century, "2000s" and "années 1900" a decade', (text, edtf) => {
+    expect(edtfOf(text)).toBe(edtf);
+  });
+
+  test.each([
+    ["before 19th century", "../1799"],
+    ["before the 1850s", "../1849"],
+    ["after 18th century", "1800/.."],
+    ["after the 1850s", "1860/.."],
+    ["after 5th century BC", "-0399/.."],
+    ["before 5th century BC", "../-0500"],
+    ["antes de siglo XIX", "../1799"],
+    ["avant XIXe siècle", "../1799"],
+    ["før 1800-tallet", "../1799"],
+    ["etter 1850-årene", "1860/.."],
+    ["înainte de secolul al XIX-lea", "../1799"],
+    ["după secolul al XVIII-lea", "1800/.."],
+    ["c. after the 1850s", "1860~/.."],
+    // By and not before keep the span they name.
+    ["by 19th century", "../18XX"],
+    ["not after the 1850s", "../185X"],
+    ["innen 1900", "../1900"],
+    ["not before the 1850s", "185X/.."],
+  ])("%j reads as %s: before and after leave out the decade or century, by and not before keep it", (text, edtf) => {
+    expect(edtfOf(text)).toBe(edtf);
+  });
+
+  test("after the last decade there is no year to start from", () => {
+    expect(edtfOf("after 9990s")).toBeNull();
+  });
+
+  test.each([
+    ["1910-11", "1910/1911"],
+    ["1905-10", "1905/1910"],
+    ["1900-01", "1900/1901"],
+    ["1910-11?", "1910?/1911?"],
+    ["1850-05", "1850-05"],
+    ["1850-05?", "1850-05?"],
+    ["1912-12", "1912-12"],
+  ])("%j reads as %s: a range when its end can be a later year, otherwise a month", (text, edtf) => {
+    expect(edtfOf(text)).toBe(edtf);
+    // As EDTF it stays a month.
+    expect(formatEdtf(parseEdtf(text) ?? fail())).toBe(text);
+  });
+
+  test.each([
+    ["100-50 BC", "-0099/-0049"],
+    ["50-25 BC", "-0049/-0024"],
+    ["500-400 BC", "-0499/-0399"],
+    ["480-70 BC", null],
+    ["450-25 BC", null],
+    ["250-25 BC", null],
+    ["1860-50 BC", null],
+    ["c. 480-70 BC", null],
+    ["480-70 a.C.", null],
+    ["480-70 av. J.-C.", null],
+  ])("%j reads as %s: a BC range that could be shorthand for a shorter one is not read", (text, edtf) => {
+    expect(edtfOf(text)).toBe(edtf);
   });
 });
 

@@ -743,6 +743,44 @@ describe("the date made in dc:date", () => {
     );
   });
 
+  function roundTrip(original: Partial<Doc<"collections">>) {
+    const [metadata] = fromDublinCoreXML(
+      toDublinCoreXML(toDublinCore(original)),
+    );
+    if (!metadata) throw new Error("Expected a record");
+    return fromDublinCore(metadata);
+  }
+
+  test.each([
+    ["1850", "1850?"],
+    ["1850", "1850-05-12"],
+    ["c. 1850", "1850%"],
+    ["1850s", "1850/1859"],
+  ])("text %j with a structured date %s that only differs in precision or qualifier keeps it", (dateCreated, dateCreatedEdtf) => {
+    expect(roundTrip(object({ dateCreated, dateCreatedEdtf }))).toMatchObject({
+      dateCreated,
+      dateCreatedEdtf,
+    });
+  });
+
+  test("EDTF that reads otherwise as text is written twice, so it stays a structured date", () => {
+    expect(toDublinCore(object({ dateCreatedEdtf: "1910-11" })).date).toEqual([
+      "1910-11",
+      "1910-11",
+    ]);
+    expect(roundTrip(object({ dateCreatedEdtf: "1910-11" }))).toMatchObject({
+      dateCreated: "1910-11",
+      dateCreatedEdtf: "1910-11",
+    });
+    // As text "1910-11" is 1910 to 1911, and stays text.
+    const text = roundTrip(object({ dateCreated: "1910-11" }));
+    expect(text.dateCreated).toBe("1910-11");
+    expect(text.dateCreatedEdtf).toBeUndefined();
+    const plain = roundTrip(object({ dateCreatedEdtf: "1850" }));
+    expect(plain.dateCreated).toBe("1850");
+    expect(plain.dateCreatedEdtf).toBeUndefined();
+  });
+
   test("a structured date survives the XML round trip", () => {
     const original = object({
       dateCreated: "Ming dynasty",

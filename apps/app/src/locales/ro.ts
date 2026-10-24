@@ -1339,6 +1339,8 @@ export default {
         "Obiecte la care o valoare înregistrată este înlocuită: {count}",
       overwriteWarningCapped:
         "Obiecte numărate până acum la care o valoare înregistrată este înlocuită: {count}",
+      clearsStructuredDate:
+        "Setarea sau golirea datei realizării elimină și orice dată structurată, astfel încât să fie folosit textul nou.",
       start: "Aplicați modificarea",
       starting: "Se pornește…",
       progressRunning:
@@ -1561,6 +1563,7 @@ export default {
         years: "Sortarea și filtrele folosesc {years}.",
         yearsFrom: "Sortarea și filtrele folosesc anii de la {start} încolo.",
         yearsUntil: "Sortarea și filtrele folosesc anii până la {end}.",
+        onOrAfter: "{date} sau mai târziu",
         undated: "Nedatat pentru sortare și filtre.",
         notRead:
           "Nu este citit ca dată, așa că se afișează așa cum a fost scris. Adaugă o dată structurată pentru a sorta și filtra după ea.",
@@ -2474,7 +2477,7 @@ export default {
       object_type: "Tipul obiectului",
       object_name: "Denumirea obiectului",
       maker: "Autor",
-      production_date: "Datare",
+      production_date: "Data realizării",
       materials: "Materiale",
       dimensions: "Dimensiuni",
       inscriptions: "Inscripții și marcaje",
@@ -8617,6 +8620,7 @@ export default {
         fieldChanged: "S-a modificat „{field}”{previous}{next}",
         fromValue: "din „{value}”",
         toValue: "în „{value}”",
+        structuredDateRemoved: "S-a eliminat data structurată „{value}”",
         byUser: "De {name}",
         actions: {
           created_collection: "Obiect creat",
@@ -11112,7 +11116,7 @@ export default {
       saveFailed:
         "Modificările dvs. nu au putut fi salvate. Verificați conexiunea și încercați din nou.",
       productionDateInvalid:
-        "Data structurată nu este o dată validă. Verifică-i părțile și încearcă din nou.",
+        "Data structurată nu este o dată validă. Verificați-i părțile și încercați din nou.",
     },
     notices: {
       recoveredTitle: "Au fost găsite modificări nesalvate",

@@ -22,7 +22,8 @@ export function useProductionDateFormat() {
       decade: (year) => t("decade", { year }),
       circa: (date) => t("circa", { date }),
       notAfter: (date) => t("notAfter", { date }),
-      notBefore: (date) => t("notBefore", { date }),
+      // "after 1850s" would read as 1860 on; an open start includes its date.
+      notBefore: (date) => tDate("onOrAfter", { date }),
       uncertain: (date) => t("uncertain", { date }),
       range: (start, end) => t("range", { start, end }),
     };

@@ -25,6 +25,7 @@ import type {
   ObjectDraftData,
 } from "../collection-form-shared/types";
 import { useCollectionFieldLabel } from "../collection-form-shared/use-collection-field-label";
+import { useCollectionFieldValue } from "../collection-form-shared/use-collection-field-value";
 import { useFormTabState } from "../collection-form-shared/use-form-tab-state";
 import {
   buildDraftMediaPayload,
@@ -121,6 +122,7 @@ export function useObjectRequestForm({
     useState<CollectionType | null>(null);
 
   const fieldLabel = useCollectionFieldLabel();
+  const fieldValue = useCollectionFieldValue();
   const typeDetailsMessage = useObjectDraftErrorMessage();
   const describeFailure = useRecordSaveFailure({
     fieldLabel,
@@ -393,6 +395,7 @@ export function useObjectRequestForm({
     organizationPrompt,
     session,
     fieldLabel,
+    fieldValue,
     goToField,
     formData,
     activeTab,

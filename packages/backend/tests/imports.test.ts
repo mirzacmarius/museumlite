@@ -439,7 +439,7 @@ test("object CSVs carry the date made, and a re-import keeps the structured date
     { status: "accepted" },
   ]);
   expect(imported.errors).toEqual([
-    "Row 3: dateCreatedEdtf must be an EDTF date, such as 1850, 1850~, 185X or 1848/1852",
+    "Row 3: dateCreatedEdtf must be an EDTF date MuseumLite reads, such as 1850, 1850~, 185X or 1848/1852, without seasons or times, and an interval cannot end before it starts",
   ]);
   const stored = await t.run((ctx) =>
     ctx.db

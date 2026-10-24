@@ -9,12 +9,7 @@
  */
 
 import type { Doc } from "../_generated/dataModel";
-import {
-  formatEdtf,
-  parseEdtf,
-  productionYears,
-  readDateText,
-} from "./productionDates";
+import { formatEdtf, parseEdtf, readDateText } from "./productionDates";
 
 /**
  * Dublin Core metadata record with 15 core elements
@@ -53,9 +48,10 @@ export interface DublinCoreMetadata {
 }
 
 /**
- * dc:date for the date made: the text as written, followed by the EDTF staff
- * entered when the text doesn't read as that date; the EDTF alone when there
- * is no text.
+ * dc:date for the date made: the text as written (the EDTF staff entered when
+ * there is no text), followed by that EDTF when the first value doesn't read
+ * as it. EDTF "1910-11" is November 1910, but read as text it is 1910 to
+ * 1911, so it is written twice.
  */
 function dublinCoreDates(
   collection: Partial<Doc<"collections">>,
@@ -66,15 +62,15 @@ function dublinCoreDates(
     : null;
   if (!entered) return text;
   const edtf = formatEdtf(entered);
-  if (!text) return edtf;
-  const reading = readDateText(text);
-  return reading && formatEdtf(reading) === edtf ? text : [text, edtf];
+  const first = text ?? edtf;
+  const reading = readDateText(first);
+  return reading && formatEdtf(reading) === edtf ? first : [first, edtf];
 }
 
 /**
  * The date made from dc:date values: the first is the text as written. The
  * first later value in EDTF becomes the structured date unless the text
- * already reads as the same years, which is when this export leaves it out.
+ * already reads as that same EDTF, which is when this export leaves it out.
  */
 function datesFromDublinCore(date: string | string[] | undefined) {
   const [text, ...rest] = Array.isArray(date) ? date : date ? [date] : [];
@@ -82,17 +78,10 @@ function datesFromDublinCore(date: string | string[] | undefined) {
     .map((value) => parseEdtf(value))
     .find((value) => value !== null);
   if (!entered) return { dateCreated: text };
+  const edtf = formatEdtf(entered);
   const reading = readDateText(text);
-  if (reading) {
-    const read = productionYears(reading);
-    const years = productionYears(entered);
-    if (
-      read.earliestYear === years.earliestYear &&
-      read.latestYear === years.latestYear
-    )
-      return { dateCreated: text };
-  }
-  return { dateCreated: text, dateCreatedEdtf: formatEdtf(entered) };
+  if (reading && formatEdtf(reading) === edtf) return { dateCreated: text };
+  return { dateCreated: text, dateCreatedEdtf: edtf };
 }
 
 /**

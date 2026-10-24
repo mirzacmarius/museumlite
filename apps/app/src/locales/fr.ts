@@ -3321,6 +3321,8 @@ export default {
         "Objets dont la valeur enregistrée est remplacée : {count}",
       overwriteWarningCapped:
         "Objets comptés jusqu’ici dont la valeur enregistrée est remplacée : {count}",
+      clearsStructuredDate:
+        "Définir ou vider la date de production supprime aussi toute date structurée, afin que le nouveau texte soit utilisé.",
       start: "Appliquer la modification",
       starting: "Démarrage…",
       progressRunning:
@@ -3551,6 +3553,7 @@ export default {
         yearsFrom:
           "Le tri et les filtres utilisent les années à partir de {start}.",
         yearsUntil: "Le tri et les filtres utilisent les années jusqu'à {end}.",
+        onOrAfter: "{date} ou après",
         undated: "Sans date pour le tri et les filtres.",
         notRead:
           "Pas lu comme une date : le texte s'affiche tel qu'il a été écrit. Ajoutez une date structurée pour trier et filtrer selon celle-ci.",
@@ -6087,7 +6090,7 @@ export default {
       object_type: "Type d’objet",
       object_name: "Dénomination",
       maker: "Auteur",
-      production_date: "Date de réalisation",
+      production_date: "Date de production",
       materials: "Matériaux",
       dimensions: "Dimensions",
       inscriptions: "Inscriptions et marques",
@@ -8657,6 +8660,7 @@ export default {
         fieldChanged: "Modification de « {field} »{previous}{next}",
         fromValue: "de « {value} »",
         toValue: "à « {value} »",
+        structuredDateRemoved: "Suppression de la date structurée « {value} »",
         byUser: "Par {name}",
         actions: {
           created_collection: "Objet créé",

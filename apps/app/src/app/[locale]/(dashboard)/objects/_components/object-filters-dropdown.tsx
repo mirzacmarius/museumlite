@@ -175,6 +175,8 @@ export function ObjectFiltersDropdown({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const displaySwitchId = useId();
+  // Clear all also drops a year typed but not applied, which the URL lacks.
+  const [madeRangeResets, setMadeRangeResets] = useState(0);
   const statusOptions: { value: ObjectStatus; label: string }[] = [
     { value: "any", label: statusLabel(t, "any") },
     { value: "all", label: statusLabel(t, "all") },
@@ -288,6 +290,7 @@ export function ObjectFiltersDropdown({
               onChange={onChange}
             />
             <MadeRangeFilter
+              key={madeRangeResets}
               madeFrom={filters.madeFrom}
               madeTo={filters.madeTo}
               onChange={onChange}
@@ -338,6 +341,7 @@ export function ObjectFiltersDropdown({
             disabled={activeFilterCount === 0}
             onClick={() => {
               onClearAdvancedSearch();
+              setMadeRangeResets((resets) => resets + 1);
               onChange({
                 status: "any",
                 objectType: "",
@@ -542,8 +546,8 @@ function MadeRangeFilter({
   const t = useScopedI18n("objects");
   const id = useId();
   const [edited, setEdited] = useState<MadeRangeDraft | null>(null);
-  // An edit stands while the URL holds the range it last applied; Clear all
-  // starts again from the URL.
+  // An edit stands while the URL holds the range it last applied; a range
+  // changed elsewhere starts again from the URL.
   const draft: MadeRangeDraft =
     edited?.base.madeFrom === madeFrom && edited.base.madeTo === madeTo
       ? edited

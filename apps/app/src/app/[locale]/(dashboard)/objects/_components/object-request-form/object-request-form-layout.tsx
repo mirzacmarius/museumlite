@@ -31,6 +31,7 @@ export function ObjectRequestFormLayout({
     placeholders,
     session,
     fieldLabel,
+    fieldValue,
     goToField,
     formData,
     activeTab,
@@ -161,6 +162,7 @@ export function ObjectRequestFormLayout({
                 <RecordFormNotices
                   session={session}
                   fieldLabel={fieldLabel}
+                  fieldValue={fieldValue}
                   onGoToField={goToField}
                 />
               </div>

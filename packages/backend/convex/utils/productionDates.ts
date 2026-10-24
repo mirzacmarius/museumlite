@@ -1,7 +1,10 @@
 /**
- * Production dates in EDTF (Extended Date/Time Format, ISO 8601-2, levels 0
- * and 1): the date an Object's EDTF states, the years it spans, and how a
- * date written as text in one of the app languages reads as EDTF.
+ * Production dates in EDTF (Extended Date/Time Format, ISO 8601-2): the date
+ * an Object's EDTF states, the years it spans, and how a date written as text
+ * in one of the app languages reads as EDTF. EDTF here is a subset of levels
+ * 0 and 1: no times, seasons, fully unspecified years ("XXXX") or years
+ * beyond four digits ("Y" prefix), and an unknown interval side ("1850/")
+ * reads as open.
  *
  * Years are astronomical, as in EDTF: 0 is 1 BC and -499 is 500 BC.
  */
@@ -87,14 +90,15 @@ function validPoint(point: ProductionDatePoint) {
   if (!Number.isInteger(point.year) || Math.abs(point.year) > 9999) {
     return false;
   }
+  const { month = 0, day = 0 } = point;
   if (point.precision === "day" || point.precision === "month") {
-    if (!point.month || point.month < 1 || point.month > 12) return false;
+    if (!Number.isInteger(month) || month < 1 || month > 12) return false;
   }
   if (point.precision === "day") {
     if (
-      !point.day ||
-      point.day < 1 ||
-      point.day > daysInMonth(point.year, point.month ?? 1)
+      !Number.isInteger(day) ||
+      day < 1 ||
+      day > daysInMonth(point.year, month)
     ) {
       return false;
     }
@@ -102,11 +106,30 @@ function validPoint(point: ProductionDatePoint) {
   return true;
 }
 
+/**
+ * Whether a start begins after an end finishes, compared as written: to the
+ * day, without the circa margin.
+ */
+function startsAfter(start: ProductionDatePoint, end: ProductionDatePoint) {
+  const first =
+    start.year * 10_000 + (start.month ?? 1) * 100 + (start.day ?? 1);
+  const last =
+    (end.year + SPAN[end.precision] - 1) * 10_000 +
+    (end.month ?? 12) * 100 +
+    (end.day ?? 31);
+  return first > last;
+}
+
 const POINT_PATTERN =
   /^(-)?(\d{4}|\d{3}X|\d{2}XX)(?:-(\d{2}))?(?:-(\d{2}))?([?~%])?$/;
 
 function parsePoint(text: string): ProductionDatePoint | null {
-  const match = POINT_PATTERN.exec(text);
+  // An unspecified month or day ("1850-XX", "1850-05-XX") states the year or
+  // the month.
+  const stated = text
+    .replace(/^(-?\d{4})-XX(?:-XX)?(?=[?~%]?$)/, "$1")
+    .replace(/^(-?\d{4}-\d{2})-XX(?=[?~%]?$)/, "$1");
+  const match = POINT_PATTERN.exec(stated);
   if (!match) return null;
   const [, minus, digits = "", monthText, dayText, qualifier] = match;
   const unspecified = digits.indexOf("X");
@@ -138,9 +161,9 @@ function parsePoint(text: string): ProductionDatePoint | null {
 
 /**
  * Reads an EDTF date: "1850", "1850-05", "1850-05-12", "185X", "18XX",
- * "-0499", qualified with "?", "~" or "%", or an interval of two of them
- * with ".." (or nothing) for an open side. Null when it is not one, or an
- * interval ends before it starts.
+ * "-0499", "1850-XX", "1850-05-XX", qualified with "?", "~" or "%", or an
+ * interval of two of them with ".." (or nothing, an unknown side) for an
+ * open side. Null when it is not one, or an interval ends before it starts.
  */
 export function parseEdtf(text: string): ProductionDate | null {
   const trimmed = text.trim();
@@ -157,9 +180,7 @@ export function parseEdtf(text: string): ProductionDate | null {
   const end = open(endText) ? undefined : parsePoint(endText);
   if (start === null || end === null) return null;
   if (!start && !end) return null;
-  if (start && end && pointYears(start).first > pointYears(end).last) {
-    return null;
-  }
+  if (start && end && startsAfter(start, end)) return null;
   return { kind: "interval", start, end };
 }
 
@@ -244,10 +265,26 @@ export function overlapsYears(
 
 const CIRCA =
   /^(?:circa|cca|ca|c|approx|approximately|about|around|aprox|aproximadamente|hacia|vers|environ|env|omkring|cirka|aproximativ)(?:\.\s*|\s+)/;
-const BEFORE =
-  /^(?:before|by|not after|antes de|avant|før|innan|înainte de|inainte de)\s+/;
-const AFTER =
-  /^(?:after|not before|después de|despues de|après|apres|etter|după|dupa)\s+/;
+// "By" and "not before" include the date they name; "before" and "after"
+// leave it out, which matters for a decade or century.
+const OPEN_WORDS = [
+  {
+    pattern: /^(?:by|not after|innan|innen)\s+/,
+    side: "end",
+    exclusive: false,
+  },
+  { pattern: /^not before\s+/, side: "start", exclusive: false },
+  {
+    pattern: /^(?:before|antes de|avant|før|înainte de|inainte de)\s+/,
+    side: "end",
+    exclusive: true,
+  },
+  {
+    pattern: /^(?:after|después de|despues de|après|apres|etter|după|dupa)\s+/,
+    side: "start",
+    exclusive: true,
+  },
+] as const;
 const BETWEEN =
   /^(?:between|entre|mellom|între|intre)\s+(.+?)\s+(?:and|y|et|og|și|si)\s+(.+)$/;
 const FROM_TO =
@@ -262,7 +299,7 @@ const AD_ERA =
   /(?:(?<=\d)\s*|\s+)(?:a\.?\s?d\.?|c\.?\s?e\.?|e\.?\s?kr\.?|d\.?\s?c\.?|apr\.?\s?j\.?-?\s?c\.?|d\.?\s?hr\.?|e\.?\s?n\.?)$/;
 const AD_PREFIX = /^(?:a\.?\s?d\.?)\s*/;
 
-const MONTHS: Record<string, number> = {};
+const MONTHS = new Map<string, number>();
 for (const [index, names] of [
   "january jan enero janvier januar ianuarie ian",
   "february feb febrero février fevrier februar februarie",
@@ -277,7 +314,7 @@ for (const [index, names] of [
   "november nov noviembre novembre november noiembrie noi",
   "december dec diciembre décembre decembre desember decembrie",
 ].entries()) {
-  for (const name of names.split(" ")) MONTHS[name] = index + 1;
+  for (const name of names.split(" ")) MONTHS.set(name, index + 1);
 }
 
 const ROMAN: Record<string, number> = {
@@ -374,12 +411,19 @@ const CENTURY_PATTERNS = [
 const NORWEGIAN_HUNDREDS =
   /^(?:(?<part>tidlig|begynnelsen av|midten av|sent|slutten av)\s+)?(?<hundreds>\d{1,2})00-tallet$/;
 
+// "1800s", "the 800s" and "1800-årene" name the century, but "2000s" the
+// decade, as that century has not ended; "années 1900", "década de 1900" and
+// "anii 1900" name the decade.
 const DECADE_PATTERNS = [
-  /^(?:the\s+)?(?<decade>\d{2,3}0)\s*'?s$/,
-  /^(?:la\s+)?(?:década de|decada de|los años|años)\s+(?<decade>\d{2,3}0)$/,
-  /^(?:les\s+)?années\s+(?<decade>\d{2,3}0)$/,
-  /^(?<decade>\d{2,3}0)-(?:tallet|årene|arene)$/,
-  /^anii\s+(?<decade>\d{2,3}0)$/,
+  { pattern: /^(?:the\s+)?(?<decade>\d{2,3}0)\s*'?s$/, century: true },
+  {
+    pattern:
+      /^(?:la\s+)?(?:década de|decada de|los años|años)\s+(?<decade>\d{2,3}0)$/,
+    century: false,
+  },
+  { pattern: /^(?:les\s+)?années\s+(?<decade>\d{2,3}0)$/, century: false },
+  { pattern: /^(?<decade>\d{2,3}0)-(?:tallet|årene|arene)$/, century: true },
+  { pattern: /^anii\s+(?<decade>\d{2,3}0)$/, century: false },
 ];
 
 function centuryPoint(
@@ -421,9 +465,14 @@ function readCentury(text: string): ProductionDate | null {
 function readDecade(text: string): ProductionDatePoint | null {
   const { rest, era } = readEra(text);
   if (era === "bc") return null;
-  for (const pattern of DECADE_PATTERNS) {
+  for (const { pattern, century } of DECADE_PATTERNS) {
     const decade = pattern.exec(rest)?.groups?.decade;
-    if (decade) return { precision: "decade", year: Number(decade) };
+    if (!decade) continue;
+    const precision =
+      century && /^[1-9]\d?00$/.test(decade) && Number(decade) < 2000
+        ? "century"
+        : "decade";
+    return { precision, year: Number(decade) };
   }
   return null;
 }
@@ -438,7 +487,7 @@ function readCalendarDate(text: string): ProductionDatePoint | null {
     .trim();
   let match = /^(\d{1,2}) ([a-zéèûîâșțăáíóúñ]+)\.? (\d{3,4})$/.exec(words);
   if (match) {
-    const month = MONTHS[match[2] ?? ""];
+    const month = MONTHS.get(match[2] ?? "");
     if (month) {
       return {
         precision: "day",
@@ -450,7 +499,7 @@ function readCalendarDate(text: string): ProductionDatePoint | null {
   }
   match = /^([a-zéèûîâșțăáíóúñ]+)\.? (\d{1,2}) (\d{3,4})$/.exec(words);
   if (match) {
-    const month = MONTHS[match[1] ?? ""];
+    const month = MONTHS.get(match[1] ?? "");
     if (month) {
       return {
         precision: "day",
@@ -462,7 +511,7 @@ function readCalendarDate(text: string): ProductionDatePoint | null {
   }
   match = /^([a-zéèûîâșțăáíóúñ]+)\.? (\d{3,4})$/.exec(words);
   if (match) {
-    const month = MONTHS[match[1] ?? ""];
+    const month = MONTHS.get(match[1] ?? "");
     if (month) {
       return { precision: "month", year: Number(match[2]), month };
     }
@@ -501,8 +550,9 @@ function readOne(text: string): ProductionDate | null {
   }
   const { rest, era } = readEra(text);
   if (/^\d{1,4}$/.test(rest)) {
+    // Years as written have no year 0.
     const year = Number(rest);
-    if (era === "bc" && year === 0) return null;
+    if (year === 0) return null;
     return {
       kind: "date",
       date: { precision: "year", year: astronomical(year, era) },
@@ -519,7 +569,16 @@ function onePoint(text: string): ProductionDatePoint | null {
 
 /** "1850-60" ends in 1860; "500-400 BC" is BC on both sides. */
 function readRange(left: string, right: string): ProductionDate | null {
-  const rightEra = readEra(right).era;
+  const { rest: rightRest, era: rightEra } = readEra(right);
+  // "480-70 BC" could be 480 to 470 BC or 480 to 70 BC.
+  if (
+    rightEra === "bc" &&
+    /^\d{3,4}$/.test(left) &&
+    /^\d{1,2}$/.test(rightRest) &&
+    Number(left.slice(0, -rightRest.length) + rightRest) < Number(left)
+  ) {
+    return null;
+  }
   let start = onePoint(
     rightEra === "bc" && !readEra(left).era ? `${left} bc` : left,
   );
@@ -540,13 +599,38 @@ function readRange(left: string, right: string): ProductionDate | null {
     end = onePoint(right);
   }
   if (!start || !end) return null;
-  if (pointYears(start).first > pointYears(end).last) {
+  if (startsAfter(start, end)) {
     // A BC range reads downwards: "500-400 BC".
     if (rightEra !== "bc") return null;
     [start, end] = [end, start];
-    if (pointYears(start).first > pointYears(end).last) return null;
+    if (startsAfter(start, end)) return null;
   }
   return { kind: "interval", start, end };
+}
+
+/**
+ * "before 1900", "after 1850": a date open on one side, or undefined when the
+ * text starts with no such word. Before or after a decade or century starts
+ * outside it: "after the 1850s" is from 1860.
+ */
+function openDate(text: string): ProductionDate | null | undefined {
+  for (const { pattern, side, exclusive } of OPEN_WORDS) {
+    const word = pattern.exec(text);
+    if (!word) continue;
+    const named = onePoint(text.slice(word[0].length));
+    if (!named) return null;
+    const outside = exclusive && SPAN[named.precision] > 1;
+    const point: ProductionDatePoint = !outside
+      ? named
+      : side === "end"
+        ? { precision: "year", year: named.year - 1 }
+        : { precision: "year", year: named.year + SPAN[named.precision] };
+    if (!validPoint(point)) return null;
+    return side === "end"
+      ? { kind: "interval", end: point }
+      : { kind: "interval", start: point };
+  }
+  return undefined;
 }
 
 function qualify(
@@ -576,7 +660,11 @@ function qualify(
  */
 export function readDateText(text: string | undefined): ProductionDate | null {
   if (!text) return null;
-  const edtf = parseEdtf(text);
+  // Text "1910-11" means 1910 to 1911, though EDTF reads it as November 1910.
+  const yearMonth = /^(\d{4})-(\d{2})\??$/.exec(text.trim());
+  const twoYears =
+    yearMonth && Number(yearMonth[2]) > Number(yearMonth[1]) % 100;
+  const edtf = twoYears ? null : parseEdtf(text);
   if (edtf) return edtf;
   let rest = text
     .toLowerCase()
@@ -602,16 +690,8 @@ export function readDateText(text: string | undefined): ProductionDate | null {
   }
   const flags = { approximate, uncertain };
 
-  const before = BEFORE.exec(rest);
-  if (before) {
-    const end = onePoint(rest.slice(before[0].length));
-    return end ? qualify({ kind: "interval", end }, flags) : null;
-  }
-  const after = AFTER.exec(rest);
-  if (after) {
-    const start = onePoint(rest.slice(after[0].length));
-    return start ? qualify({ kind: "interval", start }, flags) : null;
-  }
+  const open = openDate(rest);
+  if (open !== undefined) return open && qualify(open, flags);
   const one = readOne(rest);
   if (one) return qualify(one, flags);
   for (const pattern of [BETWEEN, FROM_TO, RANGE]) {

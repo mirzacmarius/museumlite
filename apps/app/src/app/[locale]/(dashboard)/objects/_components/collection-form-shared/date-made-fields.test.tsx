@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, type Mock, test, vi } from "vitest";
@@ -16,9 +16,11 @@ import { createEmptyFormData } from "./utils";
 function Form({
   initial,
   onChange = () => {},
+  fieldErrors,
 }: {
   initial: Partial<CollectionFormData>;
   onChange?: OnChange;
+  fieldErrors?: Record<string, string>;
 }) {
   const [formData, setFormData] = useState<CollectionFormData>({
     ...createEmptyFormData(),
@@ -33,6 +35,7 @@ function Form({
         setFormData(next);
       }}
       placeholders={(key) => key}
+      fieldErrors={fieldErrors}
     />
   );
 }
@@ -45,6 +48,10 @@ function savedEdtf(onChange: Mock<OnChange>) {
 
 function readBack() {
   return document.getElementById("dateCreated-reading")?.textContent ?? "";
+}
+
+function fromPrecision() {
+  return document.getElementById("dateCreatedEdtf-from-precision");
 }
 
 test("text the catalog reads shows its years and can become the structured date", async () => {
@@ -65,6 +72,19 @@ test("text the catalog reads shows its years and can become the structured date"
   expect(savedEdtf(onChange)).toBe("1850~");
   expect(onChange.mock.lastCall?.[0]).toMatchObject({ dateCreated: "c. 1850" });
   expect(readBack()).toBe("");
+  await waitFor(() => expect(document.activeElement).toBe(fromPrecision()));
+});
+
+test("a reading the From and To fields cannot show keeps focus on its Clear button", async () => {
+  await renderOnPage(<Form initial={{ dateCreated: "c. 19th century" }} />);
+  const user = userEvent.setup();
+
+  await user.click(
+    screen.getByRole("button", { name: "Use as structured date" }),
+  );
+
+  const clear = screen.getByRole("button", { name: "Clear structured date" });
+  await waitFor(() => expect(document.activeElement).toBe(clear));
 });
 
 test("text the catalog cannot read is kept as written", async () => {
@@ -113,4 +133,26 @@ test("a date the From and To fields cannot show stays until cleared", async () =
   expect(savedEdtf(onChange)).toBeUndefined();
   expect(onChange).toHaveBeenCalledTimes(1);
   expect(screen.getAllByRole("combobox", { name: "Known to" })).toHaveLength(2);
+  await waitFor(() => expect(document.activeElement).toBe(fromPrecision()));
+});
+
+test("the structured date's controls are described by its error", async () => {
+  const message = "Check the structured date.";
+  await renderOnPage(
+    <Form
+      initial={{ dateCreatedEdtf: draftFromEdtf("1850/1860") }}
+      fieldErrors={{ dateCreatedEdtf: message }}
+    />,
+  );
+
+  const error = screen.getByText(message);
+  for (const control of [
+    fromPrecision(),
+    document.getElementById("dateCreatedEdtf-from-year"),
+    document.getElementById("dateCreatedEdtf-to-qualifier"),
+  ]) {
+    expect(control?.getAttribute("aria-invalid")).toBe("true");
+    expect(control?.getAttribute("aria-describedby")).toBe(error.id);
+  }
+  expect(error.id).toBe("dateCreatedEdtf-error");
 });

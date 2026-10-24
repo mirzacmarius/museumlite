@@ -136,3 +136,19 @@ test("Clear all empties the date made range", async () => {
     "",
   );
 });
+
+test("Clear all also drops a year that was never applied", async () => {
+  const { user } = await openFilters();
+  await user.click(screen.getByRole("switch", { name: "On display" }));
+  const from = screen.getByRole("textbox", { name: "Made from" });
+  await user.type(from, "0");
+  expect(screen.getByText("Enter a whole year from 1 to 9999.")).toBeTruthy();
+
+  await user.click(screen.getByRole("button", { name: "Clear all" }));
+
+  expect(screen.getByRole("textbox", { name: "Made from" })).toHaveProperty(
+    "value",
+    "",
+  );
+  expect(screen.queryByText(/Enter a/)).toBeNull();
+});

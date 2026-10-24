@@ -21,12 +21,29 @@ import {
 } from "@/components/production-date/production-date-draft";
 import { useProductionDateFormat } from "@/components/production-date/use-production-date-format";
 import { PartialDateFields } from "@/components/provenance/partial-date-fields";
-import { FieldError } from "@/components/record-form/record-form-notices";
+import {
+  FieldError,
+  fieldErrorProps,
+} from "@/components/record-form/record-form-notices";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { STRUCTURED_DATE_MADE_ID } from "./constants";
 import { type CollectionFormTabProps, NO_FIELD_ERRORS } from "./types";
 
 const READING_ID = "dateCreated-reading";
+const CLEAR_ID = `${STRUCTURED_DATE_MADE_ID}-clear`;
+
+/**
+ * Keeps keyboard focus on the structured date after a button that removes
+ * itself sets or clears it: From's precision, or Clear for a fixed date.
+ */
+function focusStructuredDate() {
+  requestAnimationFrame(() =>
+    (
+      document.getElementById(`${STRUCTURED_DATE_MADE_ID}-from-precision`) ??
+      document.getElementById(CLEAR_ID)
+    )?.focus(),
+  );
+}
 
 type DateMadeFieldsProps = Pick<
   CollectionFormTabProps,
@@ -128,7 +145,10 @@ function ReadAs({
         variant="outline"
         size="xs"
         className="h-auto min-h-6 whitespace-normal py-1 text-left"
-        onClick={() => onUseReading(draftFromProductionDate(reading))}
+        onClick={() => {
+          onUseReading(draftFromProductionDate(reading));
+          focusStructuredDate();
+        }}
       >
         {t("useReading")}
       </Button>
@@ -173,6 +193,7 @@ function StructuredDateFields({
   const t = useScopedI18n("objects.form.productionDate");
   const dates = useProductionDateFormat();
   const date = productionDateFromDraft(draft);
+  const errorProps = fieldErrorProps("dateCreatedEdtf", error);
   return (
     <fieldset className="space-y-3 rounded-lg border border-border/60 p-3 sm:p-4">
       <legend className="px-1 text-sm font-medium">{t("legend")}</legend>
@@ -186,6 +207,7 @@ function StructuredDateFields({
               value={draft.from}
               onChange={(from) => onChange({ ...draft, from })}
               allowBc
+              errorProps={errorProps}
             />
             <PartialDateFields
               id={`${STRUCTURED_DATE_MADE_ID}-to`}
@@ -194,6 +216,7 @@ function StructuredDateFields({
               onChange={(to) => onChange({ ...draft, to })}
               qualifiers={RANGE_SIDE_QUALIFIERS}
               allowBc
+              errorProps={errorProps}
             />
           </div>
           <p className="text-xs text-muted-foreground">{t("hint")}</p>
@@ -213,7 +236,10 @@ function StructuredDateFields({
           draft.from.precision !== "none" ||
           draft.to.precision !== "none"
         }
-        onClear={() => onChange(EMPTY_PRODUCTION_DATE_DRAFT)}
+        onClear={() => {
+          onChange(EMPTY_PRODUCTION_DATE_DRAFT);
+          focusStructuredDate();
+        }}
       />
       <FieldError field="dateCreatedEdtf" message={error} />
     </fieldset>
@@ -243,6 +269,7 @@ function StructuredDateSummary({
       ) : null}
       {canClear ? (
         <Button
+          id={CLEAR_ID}
           type="button"
           variant="outline"
           size="xs"

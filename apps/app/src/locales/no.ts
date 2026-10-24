@@ -3276,6 +3276,8 @@ export default {
       overwriteWarning: "Objekter der en registrert verdi erstattes: {count}",
       overwriteWarningCapped:
         "Objekter telt så langt der en registrert verdi erstattes: {count}",
+      clearsStructuredDate:
+        "Når du angir eller tømmer dateringen, fjernes også en eventuell strukturert datering, slik at den nye teksten brukes.",
       start: "Utfør endringen",
       starting: "Starter…",
       progressRunning: "Redigerer {field}: {checked} sjekket, {changed} endret",
@@ -3471,8 +3473,9 @@ export default {
         hint: "Fyll ut Fra for én dato, eller Fra og Til for et tidsrom. Senest og Tidligst gjelder bare for Fra alene.",
         readAs: "Leses som {date}.",
         years: "Sortering og filtre bruker {years}.",
-        yearsFrom: "Sortering og filtre bruker {start} og senere.",
-        yearsUntil: "Sortering og filtre bruker til og med {end}.",
+        yearsFrom: "Sortering og filtre bruker årene fra og med {start}.",
+        yearsUntil: "Sortering og filtre bruker årene til og med {end}.",
+        onOrAfter: "{date} eller senere",
         undated: "Udatert for sortering og filtre.",
         notRead:
           "Leses ikke som en dato og vises slik den er skrevet. Legg til en strukturert datering for å sortere og filtrere etter den.",
@@ -8546,6 +8549,7 @@ export default {
         fieldChanged: "Endret «{field}»{previous}{next}",
         fromValue: "fra «{value}»",
         toValue: "til «{value}»",
+        structuredDateRemoved: "Fjernet strukturert datering «{value}»",
         byUser: "Av {name}",
         actions: {
           created_collection: "Objekt opprettet",

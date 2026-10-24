@@ -2658,6 +2658,8 @@ export default {
       overwriteWarning: "Objects whose recorded value is replaced: {count}",
       overwriteWarningCapped:
         "Objects counted so far whose recorded value is replaced: {count}",
+      clearsStructuredDate:
+        "Setting or clearing Date made also removes any structured date, so the new text is used.",
       start: "Apply edit",
       starting: "Starting…",
       progressRunning: "Editing {field}: {checked} checked, {changed} changed",
@@ -2926,6 +2928,7 @@ export default {
         years: "Sorting and filters use {years}.",
         yearsFrom: "Sorting and filters use {start} onwards.",
         yearsUntil: "Sorting and filters use up to {end}.",
+        onOrAfter: "{date} or later",
         undated: "Undated for sorting and filters.",
         notRead:
           "Not read as a date, so it is shown as written. Add a structured date to sort and filter by it.",
@@ -8447,6 +8450,7 @@ export default {
         fieldChanged: "Changed “{field}”{previous}{next}",
         fromValue: "from “{value}”",
         toValue: "to “{value}”",
+        structuredDateRemoved: "Structured date “{value}” removed",
         byUser: "By {name}",
         actions: {
           created_collection: "Object created",

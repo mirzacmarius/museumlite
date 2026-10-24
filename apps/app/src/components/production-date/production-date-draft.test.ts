@@ -18,6 +18,7 @@ import {
   hasOpenQualifierInRange,
   type ProductionDateDraft,
   productionDateDraftSchema,
+  productionDateFromDraft,
 } from "./production-date-draft";
 
 function year(
@@ -65,6 +66,7 @@ describe("dates read from text become From and To", () => {
 
   test.each([
     ["19th century", "1800/1899"],
+    ["1800s", "1800/1899"],
     ["siglo XIX", "1800/1899"],
     ["5th century BC", "-0499/-0400"],
   ])("%j becomes the century's first and last year", (text, edtf) => {
@@ -188,6 +190,27 @@ describe("incomplete and impossible dates", () => {
     ]) {
       expect(edtfFromDraft(draft)).toBeNull();
     }
+  });
+
+  test("a range that ends before it starts within a month, or before a circa start, is refused", () => {
+    const mayDay = (day: string): PartialDateDraft => ({
+      ...EMPTY_PARTIAL_DATE,
+      precision: "day",
+      year: "1850",
+      month: "5",
+      day,
+    });
+    const reversed = draftOf(mayDay("12"), mayDay("1"));
+    expect(productionDateFromDraft(reversed)).toBeNull();
+    expect(edtfFromDraft(reversed)).toBeNull();
+    expect(
+      edtfFromDraft(
+        draftOf(year("1850", { qualifier: "circa" }), year("1849")),
+      ),
+    ).toBeNull();
+    expect(edtfFromDraft(draftOf(mayDay("1"), mayDay("12")))).toBe(
+      "1850-05-01/1850-05-12",
+    );
   });
 
   test("hidden parts are no date, and partial input is a change", () => {

@@ -196,13 +196,18 @@ test("date made orders list earliest or latest first across pages, mixing BC, ci
   ]);
 });
 
-test("a date made order keeps the status filter on its own index", async () => {
+test("a date made order with a status filter pages that status's own index", async () => {
   const catalog = await setupDatedCatalog();
   const archivedLate = await catalog.create("A-1", { dateCreated: "1920" });
   await catalog.create("B-1", { dateCreated: "1700" });
   const archivedEarly = await catalog.create("A-2", { dateCreated: "1650" });
   const archivedUndated = await catalog.create("A-3");
   await catalog.create("B-2", { dateCreated: "1800s" });
+  // Active Objects ahead of every archived one in both orders.
+  await catalog.create("B-3", { dateCreated: "500 BC" });
+  await catalog.create("B-4", { dateCreated: "100 BC" });
+  await catalog.create("B-5", { dateCreated: "1990" });
+  await catalog.create("B-6", { dateCreated: "2000" });
   await catalog.t.run(async (ctx) => {
     for (const id of [archivedLate, archivedEarly, archivedUndated])
       await ctx.db.patch(id, { status: "archived" });
@@ -210,6 +215,20 @@ test("a date made order keeps the status filter on its own index", async () => {
   // Raw patches skip the write path; the backfill brings the documents in line.
   await catalog.backfill();
 
+  // A full first page: read from all statuses, the active Objects ahead
+  // would fill it and be filtered away.
+  for (const [sort, expected] of [
+    ["madeEarliest", ["A-2", "A-1"]],
+    ["madeLatest", ["A-1", "A-2"]],
+  ] as const) {
+    const first = await catalog.user.query(api.collections.list, {
+      organizationId: catalog.organizationId,
+      paginationOpts: { cursor: null, numItems: 2 },
+      sort,
+      status: "archived",
+    });
+    expect(first.page.map((row) => row.accessionNumber)).toEqual(expected);
+  }
   expect(
     await catalog.listedNumbers({ sort: "madeEarliest", status: "archived" }),
   ).toEqual(["A-2", "A-1", "A-3"]);
@@ -218,10 +237,14 @@ test("a date made order keeps the status filter on its own index", async () => {
   ).toEqual(["A-1", "A-2", "A-3"]);
   expect(
     await catalog.listedNumbers({ sort: "madeEarliest", status: "active" }),
-  ).toEqual(["B-1", "B-2"]);
+  ).toEqual(["B-3", "B-4", "B-1", "B-2", "B-5", "B-6"]);
   expect(await catalog.listedNumbers({ sort: "madeLatest" })).toEqual([
+    "B-6",
+    "B-5",
     "B-2",
     "B-1",
+    "B-4",
+    "B-3",
   ]);
 });
 

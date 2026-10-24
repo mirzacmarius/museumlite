@@ -33,6 +33,14 @@ const QUALIFIERS: readonly PartialDateQualifierChoice[] = [
 ];
 const ERAS: readonly PartialDateEra[] = ["ad", "bc"];
 
+/** Links each control to an error message shown outside the fields. */
+interface PartialDateErrorProps {
+  "aria-invalid"?: true;
+  "aria-describedby"?: string;
+}
+
+const NO_ERROR_PROPS: PartialDateErrorProps = {};
+
 interface PartialDateFieldsProps {
   id: string;
   label: string;
@@ -43,6 +51,7 @@ interface PartialDateFieldsProps {
   qualifiers?: readonly PartialDateQualifierChoice[];
   /** Offers an AD/BC era for a year. Off for provenance claims. */
   allowBc?: boolean;
+  errorProps?: PartialDateErrorProps;
 }
 
 /**
@@ -57,6 +66,7 @@ export function PartialDateFields({
   disabled = false,
   qualifiers = QUALIFIERS,
   allowBc = false,
+  errorProps = NO_ERROR_PROPS,
 }: PartialDateFieldsProps) {
   const t = useScopedI18n("provenance.dateInput");
   const update = (patch: Partial<PartialDateDraft>) =>
@@ -78,7 +88,7 @@ export function PartialDateFields({
               update({ precision: precision as PartialDatePrecisionChoice })
             }
           >
-            <SelectTrigger id={`${id}-precision`}>
+            <SelectTrigger id={`${id}-precision`} {...errorProps}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -102,7 +112,7 @@ export function PartialDateFields({
                 update({ qualifier: qualifier as PartialDateQualifierChoice })
               }
             >
-              <SelectTrigger id={`${id}-qualifier`}>
+              <SelectTrigger id={`${id}-qualifier`} {...errorProps}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -124,6 +134,7 @@ export function PartialDateFields({
             update={update}
             disabled={disabled}
             showEra={allowBc && value.precision === "year"}
+            errorProps={errorProps}
           />
           {value.precision === "decade" ? (
             <p className="text-xs text-muted-foreground">{t("decadeHint")}</p>
@@ -154,12 +165,14 @@ function PartialDateParts({
   update,
   disabled,
   showEra,
+  errorProps,
 }: {
   id: string;
   value: PartialDateDraft;
   update: (patch: Partial<PartialDateDraft>) => void;
   disabled: boolean;
   showEra: boolean;
+  errorProps: PartialDateErrorProps;
 }) {
   const t = useScopedI18n("provenance.dateInput");
   const showMonth = value.precision === "day" || value.precision === "month";
@@ -175,6 +188,7 @@ function PartialDateParts({
           value={value.year}
           disabled={disabled}
           onChange={(event) => update({ year: event.target.value })}
+          {...errorProps}
         />
       </div>
       {showEra ? (
@@ -187,7 +201,7 @@ function PartialDateParts({
             disabled={disabled}
             onValueChange={(era) => update({ era: era === "bc" ? "bc" : "ad" })}
           >
-            <SelectTrigger id={`${id}-era`}>
+            <SelectTrigger id={`${id}-era`} {...errorProps}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -211,6 +225,7 @@ function PartialDateParts({
             value={value.month}
             disabled={disabled}
             onChange={(event) => update({ month: event.target.value })}
+            {...errorProps}
           />
         </div>
       ) : null}
@@ -225,6 +240,7 @@ function PartialDateParts({
             value={value.day}
             disabled={disabled}
             onChange={(event) => update({ day: event.target.value })}
+            {...errorProps}
           />
         </div>
       ) : null}

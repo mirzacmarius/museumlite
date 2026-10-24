@@ -21,6 +21,7 @@ import type {
   OwnershipEntry,
 } from "../collection-form-shared/types";
 import { useCollectionFieldLabel } from "../collection-form-shared/use-collection-field-label";
+import { useCollectionFieldValue } from "../collection-form-shared/use-collection-field-value";
 import { useFormTabState } from "../collection-form-shared/use-form-tab-state";
 import {
   collectionFieldLocation,
@@ -98,6 +99,7 @@ export function useCollectionEditForm() {
   );
 
   const fieldLabel = useCollectionFieldLabel();
+  const fieldValue = useCollectionFieldValue();
   const custodyMessage = useCustodyConflictMessage();
   const describeFailure = useRecordSaveFailure({
     fieldLabel,
@@ -335,6 +337,7 @@ export function useCollectionEditForm() {
     pendingMoveRequest,
     session,
     fieldLabel,
+    fieldValue,
     goToField,
     formData,
     activeTab,

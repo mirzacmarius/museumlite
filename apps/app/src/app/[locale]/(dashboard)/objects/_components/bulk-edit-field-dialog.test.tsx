@@ -137,6 +137,26 @@ test("titles can be set or replaced, never cleared", async () => {
   ).toBe("true");
 });
 
+test("setting or clearing Date made says the structured date goes too", async () => {
+  await openForSelection(selection(2));
+  const user = userEvent.setup();
+  const note =
+    "Setting or clearing Date made also removes any structured date, so the new text is used.";
+
+  expect(screen.queryByText(note)).toBeNull();
+  await user.click(screen.getByRole("combobox", { name: "Field" }));
+  await user.click(await screen.findByRole("option", { name: "Date made" }));
+  expect(screen.getByText(note)).toBeTruthy();
+
+  await user.click(screen.getByRole("radio", { name: "Clear the field" }));
+  expect(screen.getByText(note)).toBeTruthy();
+
+  await user.click(
+    screen.getByRole("radio", { name: "Find and replace text" }),
+  );
+  expect(screen.queryByText(note)).toBeNull();
+});
+
 test("a selection over the limit is refused before anything is counted", async () => {
   await openForSelection(selection(1200));
   const user = userEvent.setup();
