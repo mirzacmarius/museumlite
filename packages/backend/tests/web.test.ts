@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { api, internal } from "../convex/_generated/api";
+import { api, components, internal } from "../convex/_generated/api";
 import { isTourRequestRateLimited } from "../convex/utils/marketingFormErrors";
+import { TOUR_REQUEST_FIELD_MAX_LENGTH } from "../convex/utils/marketingForms";
 import { SUBMISSIONS_PER_EMAIL_PER_HOUR } from "../convex/web";
 import { createConvexTestWithRateLimiter } from "./testHarness";
 
@@ -24,6 +25,27 @@ function tourRequest(email: string) {
     institution: "City Museum",
     email,
   };
+}
+
+/** When the address's tour request bucket was last used; 0 means no stored bucket. */
+function tourBucketUsedAt(
+  t: ReturnType<typeof createConvexTestWithRateLimiter>,
+  key: string,
+) {
+  return t.run(
+    async (ctx) =>
+      (
+        await ctx.runQuery(components.rateLimiter.lib.getValue, {
+          name: "tourRequestsPerEmail",
+          key,
+          config: {
+            kind: "token bucket",
+            rate: SUBMISSIONS_PER_EMAIL_PER_HOUR,
+            period: HOUR,
+          },
+        })
+      ).ts,
+  );
 }
 
 function stubLoops(response: () => Response | Promise<Response>) {
@@ -65,15 +87,34 @@ describe("web", () => {
     ).rejects.toThrow("valid email");
   });
 
-  test("submitTourRequest refuses fields longer than the form allows", async () => {
+  test.each([
+    ["name", TOUR_REQUEST_FIELD_MAX_LENGTH.name],
+    ["institution", TOUR_REQUEST_FIELD_MAX_LENGTH.institution],
+    ["collectionSize", TOUR_REQUEST_FIELD_MAX_LENGTH.collectionSize],
+    ["message", TOUR_REQUEST_FIELD_MAX_LENGTH.message],
+  ] as const)("submitTourRequest caps %s at %i characters", async (field, max) => {
     const t = createConvexTestWithRateLimiter();
 
     await expect(
       t.action(api.web.submitTourRequest, {
         ...tourRequest("jane@citymuseum.org"),
-        message: "x".repeat(5001),
+        [field]: "x".repeat(max + 1),
       }),
     ).rejects.toThrow("too long");
+    await t.action(api.web.submitTourRequest, {
+      ...tourRequest("jane@citymuseum.org"),
+      [field]: "x".repeat(max),
+    });
+
+    const inquiries = await t.run(async (ctx) =>
+      ctx.db.query("marketingInquiries").collect(),
+    );
+    expect(inquiries).toHaveLength(1);
+  });
+
+  test("submitTourRequest refuses an address longer than a mailbox allows", async () => {
+    const t = createConvexTestWithRateLimiter();
+
     await expect(
       t.action(
         api.web.submitTourRequest,
@@ -198,12 +239,39 @@ describe("web", () => {
       key: "jane@citymuseum.org",
     });
     expect(scheduled[0]!.scheduledTime - Date.now()).toBe(HOUR);
+    expect(await tourBucketUsedAt(t, "jane@citymuseum.org")).toBe(Date.now());
 
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-    const done = await t.run(async (ctx) =>
-      ctx.db.system.query("_scheduled_functions").collect(),
-    );
-    expect(done[0]?.state.kind).toBe("success");
+    expect(await tourBucketUsedAt(t, "jane@citymuseum.org")).toBe(0);
+  });
+
+  test("an address still sending keeps its bucket when an older expiry runs", async () => {
+    // Only the clock is faked, so the scheduled expiry runs when called below.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const t = createConvexTestWithRateLimiter();
+    const key = "jane@citymuseum.org";
+    const start = Date.now();
+    await t.action(api.web.submitTourRequest, tourRequest(key));
+    vi.setSystemTime(start + 59 * MINUTE);
+    for (let sent = 0; sent < SUBMISSIONS_PER_EMAIL_PER_HOUR; sent++) {
+      await t.action(api.web.submitTourRequest, tourRequest(key));
+    }
+
+    // The expiry the first request scheduled, at its due time.
+    vi.setSystemTime(start + HOUR);
+    await t.mutation(internal.web.expireMarketingBucket, {
+      name: "tourRequestsPerEmail",
+      key,
+    });
+
+    expect(await tourBucketUsedAt(t, key)).toBe(start + 59 * MINUTE);
+    const refusal = await t
+      .action(api.web.submitTourRequest, tourRequest(key))
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+    expect(isTourRequestRateLimited(refusal)).toBe(true);
   });
 
   test("insertTourRequest trims fields", async () => {
