@@ -11050,19 +11050,18 @@ export default {
     page: {
       title: "État des indicateurs",
       description:
-        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation. Les reconstructions et rapprochements démarrent d'eux-mêmes quand les enregistrements changent.",
+        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation. Ils se mettent à jour à chaque modification d'un enregistrement.",
       selectOrganization:
         "Sélectionnez une organisation pour voir l'état des indicateurs.",
       noPermission:
         "Vous devez pouvoir gérer les paramètres de l'organisation pour voir l'état des indicateurs.",
       statusTitle: "Statut",
       automatic:
-        "Les indicateurs se reconstruisent lorsqu'ils deviennent indisponibles et sont rapprochés après les modifications des enregistrements, au plus une fois par semaine.",
+        "Les indicateurs se reconstruisent d'eux-mêmes lorsqu'ils deviennent indisponibles. Un rapprochement recompte tous les enregistrements et ne démarre que lorsque le support le lance, par exemple après la restauration d'une sauvegarde.",
       definitionVersion: "Version de définition",
       definitionOutdated: "Enregistrée {stored}, actuelle {current}",
       lastBuilt: "Dernière génération",
       lastVerified: "Dernier rapprochement",
-      nextReconcile: "Prochain rapprochement",
       invalidated: "Invalidé",
       limits: "Limites de reconstruction",
       limitsValue:

@@ -13,6 +13,7 @@ import { requirePermission } from "./utils/permissions";
 import {
   applyGenerationPage as applyPage,
   cancelGeneration,
+  clearScheduledReconcile,
   collectGenerationPage,
   continueFanOutPage,
   getProjectionState,
@@ -24,7 +25,6 @@ import {
   PROJECTION_STEPS,
   retryGeneration,
   startGeneration,
-  runScheduledReconcile as startScheduledReconcile,
 } from "./utils/projectionMaintenance";
 import { outdatedProjectionReason } from "./utils/projectionReads";
 import { PROJECTION_PHASES } from "./utils/projectionSources";
@@ -74,7 +74,6 @@ const healthValidator = v.object({
   lastBuiltAt: v.optional(v.number()),
   lastVerifiedAt: v.optional(v.number()),
   invalidatedAt: v.optional(v.number()),
-  nextReconcileAt: v.optional(v.number()),
   active: v.union(generationSummary, v.null()),
   building: v.union(generationSummary, v.null()),
   reconciling: v.union(generationSummary, v.null()),
@@ -188,7 +187,6 @@ export const getHealth = query({
       lastBuiltAt: state?.lastBuiltAt,
       lastVerifiedAt: state?.lastVerifiedAt,
       invalidatedAt: state?.invalidatedAt,
-      nextReconcileAt: state?.reconcileScheduledAt,
       active: await summarize(ctx, active),
       building: await summarize(ctx, building),
       reconciling: await summarize(ctx, reconciling),
@@ -428,12 +426,17 @@ export const autoRetryGeneration = internalMutation({
   },
 });
 
-/** Starts the reconciliation a record change scheduled. */
+/**
+ * Runs for reconciliations that record changes scheduled before automatic
+ * reconciliation was turned off, and only clears their mark.
+ */
 export const runScheduledReconcile = internalMutation({
   args: { organizationId: v.id("organizations") },
-  returns: v.union(v.id("projectionGenerations"), v.null()),
-  handler: async (ctx, args) =>
-    await startScheduledReconcile(ctx, args.organizationId),
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await clearScheduledReconcile(ctx, args.organizationId);
+    return null;
+  },
 });
 
 export const continueFanOut = internalMutation({

@@ -10873,18 +10873,17 @@ export default {
     page: {
       title: "Målingsstatus",
       description:
-        "Tilgjengelighet for målinger i oversikt, rapporter og bruk. Gjenoppbygging og avstemming starter av seg selv når poster endres.",
+        "Tilgjengelighet for målinger i oversikt, rapporter og bruk. De oppdateres ved hver endring i postene.",
       selectOrganization: "Velg en organisasjon for å se målingsstatus.",
       noPermission:
         "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å se målingsstatus.",
       statusTitle: "Status",
       automatic:
-        "Målingene bygges på nytt når de blir utilgjengelige, og avstemmes etter endringer i postene, høyst én gang i uken.",
+        "Målingene bygges på nytt av seg selv når de blir utilgjengelige. En avstemming teller alle postene på nytt og kjøres bare når kundestøtte starter den, for eksempel etter gjenoppretting fra sikkerhetskopi.",
       definitionVersion: "Definisjonsversjon",
       definitionOutdated: "Lagret {stored}, gjeldende {current}",
       lastBuilt: "Sist bygget",
       lastVerified: "Sist avstemt",
-      nextReconcile: "Neste avstemming",
       invalidated: "Ugyldiggjort",
       limits: "Grenser for gjenoppbygging",
       limitsValue:

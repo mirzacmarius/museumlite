@@ -10751,18 +10751,17 @@ export default {
     page: {
       title: "Metrics health",
       description:
-        "Readiness of dashboard, report and usage metrics. Rebuilds and reconciliations start on their own as records change.",
+        "Readiness of dashboard, report and usage metrics. They update with every record change.",
       selectOrganization: "Select an organization to view metrics health.",
       noPermission:
         "You need permission to manage organization settings to view metrics health.",
       statusTitle: "Status",
       automatic:
-        "Metrics rebuild when they become unavailable, and reconcile after records change, at most once a week.",
+        "Metrics rebuild on their own when they become unavailable. A reconciliation recounts every record and runs only when support starts one, for example after restoring a backup.",
       definitionVersion: "Definition version",
       definitionOutdated: "Stored {stored}, current {current}",
       lastBuilt: "Last built",
       lastVerified: "Last reconciled",
-      nextReconcile: "Next reconciliation",
       invalidated: "Invalidated",
       limits: "Rebuild limits",
       limitsValue:

@@ -4,7 +4,6 @@ import type { Id } from "../convex/_generated/dataModel";
 import {
   getProjectionState,
   PROJECTION_AUTO_ATTEMPTS,
-  RECONCILE_SETTLE_MS,
 } from "../convex/utils/projectionMaintenance";
 import {
   claimMetricSlot,
@@ -709,8 +708,8 @@ describe("wide fan-out", () => {
     const rebuilds = (health: typeof before) =>
       health.recentGenerations.filter((job) => job.mode === "rebuild");
     expect(rebuilds(settled)).toHaveLength(rebuilds(before).length);
-    // The change scheduled a reconciliation, which ran once refreshes settled.
-    expect(settled.lastReconciliation).toMatchObject({
+    const { health } = await reconcile(staff, settle, organizationId);
+    expect(health.lastReconciliation).toMatchObject({
       status: "completed",
       mismatchCount: 0,
     });
@@ -883,35 +882,47 @@ describe("automatic health maintenance", () => {
       title: accessionNumber,
     });
 
-  test("a change schedules one reconciliation after a quiet period and spaces the next by the interval", async () => {
-    const { t, staff, organizationId } = await fixture();
+  test("a record change updates ready metrics and starts no reconciliation", async () => {
+    const { t, staff, settle, organizationId } = await fixture();
     await rebuildProjection(t, organizationId);
-    const health = () =>
-      staff.query(api.projections.getHealth, { organizationId });
-    expect((await health()).nextReconcileAt).toBeUndefined();
-
-    const changedAt = Date.now();
     await createObject(staff, organizationId, "AUTO-1");
     await createObject(staff, organizationId, "AUTO-2");
-    const scheduled = await health();
-    expect(scheduled.nextReconcileAt).toBe(changedAt + RECONCILE_SETTLE_MS);
-    expect(scheduled.lastReconciliation).toBeNull();
+    await settle();
 
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
-    const reconciled = await health();
-    expect(reconciled.nextReconcileAt).toBeUndefined();
-    expect(reconciled.lastReconciliation).toMatchObject({
-      status: "completed",
-      mismatchCount: 0,
-    });
     expect(
-      reconciled.recentGenerations.filter((job) => job.mode === "reconcile"),
-    ).toHaveLength(1);
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 2 });
+    const health = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(health.lastReconciliation).toBeNull();
+    expect(
+      health.recentGenerations.filter((job) => job.mode === "reconcile"),
+    ).toEqual([]);
+  });
 
-    await createObject(staff, organizationId, "AUTO-3");
-    const finishedAt = reconciled.lastReconciliation?.finishedAt ?? 0;
-    const week = 7 * 24 * 60 * 60 * 1000;
-    expect((await health()).nextReconcileAt).toBe(finishedAt + week);
+  test("a reconciliation scheduled before automatic reconciliation was turned off clears its mark without starting", async () => {
+    const { t, staff, settle, organizationId } = await fixture();
+    await rebuildProjection(t, organizationId);
+    const state = await t.run((ctx) => getProjectionState(ctx, organizationId));
+    if (!state) throw new Error("projection state missing");
+    await t.run((ctx) =>
+      ctx.db.patch(state._id, { reconcileScheduledAt: Date.now() }),
+    );
+
+    await t.mutation(internal.projections.runScheduledReconcile, {
+      organizationId,
+    });
+    await settle();
+
+    const cleared = await t.run((ctx) => ctx.db.get(state._id));
+    expect(cleared?.reconcileScheduledAt).toBeUndefined();
+    expect(
+      (await staff.query(api.projections.getHealth, { organizationId }))
+        .lastReconciliation,
+    ).toBeNull();
   });
 
   test("a change to an unavailable projection starts a rebuild without an administrator", async () => {

@@ -36,14 +36,6 @@ export const PROJECTION_DISCREPANCY_ROW_LIMIT = 200;
 const MAX_DEPENDENCY_DEPTH = 4;
 /** Delay before a reconcile re-checks for pending wide refreshes. */
 const FAN_OUT_WAIT_MS = 1_000;
-/** Quiet period after a change before the automatic reconciliation starts. */
-export const RECONCILE_SETTLE_MS = 5 * 60 * 1000;
-/**
- * Minimum spacing between automatic reconciliations of one organization. A
- * reconciliation rescans every source row and only reports differences, so
- * once a week is enough.
- */
-export const RECONCILE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Attempts, including the first, before a failed job waits for an administrator. */
 export const PROJECTION_AUTO_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 30_000;
@@ -568,10 +560,11 @@ export async function handleSourceChange(
 }
 
 /**
- * Keeps metrics health current as records change, so nobody has to start
- * jobs by hand: an unavailable or outdated projection starts a rebuild unless
- * one is already running or awaiting retry, and a ready one schedules a
- * reconciliation.
+ * Keeps metrics available as records change, so nobody has to start a
+ * rebuild by hand: an unavailable or outdated projection starts one unless
+ * one is already running or awaiting retry. A ready projection needs nothing
+ * more, since the change already updated it; reconciliations start only by
+ * hand.
  */
 async function maintainHealth(ctx: Ctx, organizationId: Id<"organizations">) {
   const state = await getProjectionState(ctx, organizationId);
@@ -582,54 +575,21 @@ async function maintainHealth(ctx: Ctx, organizationId: Id<"organizations">) {
     state.definitionVersion !== PROJECTION_DEFINITION_VERSION
   ) {
     await startGeneration(ctx, organizationId, "rebuild");
-    return;
   }
-  await scheduleReconcile(ctx, state);
 }
 
 /**
- * Schedules one automatic reconciliation after a quiet period, and no sooner
- * than `RECONCILE_INTERVAL_MS` after the previous one finished. Changes made
- * while one is scheduled or running are covered by it.
+ * Clears the mark of a reconciliation that a record change scheduled before
+ * automatic reconciliation was turned off. It no longer starts one.
  */
-async function scheduleReconcile(
-  ctx: Ctx,
-  state: Doc<"organizationProjectionStates">,
-) {
-  if (state.reconcilingGenerationId || state.reconcileScheduledAt) return;
-  const last = state.lastReconciliationId
-    ? await ctx.db.get(state.lastReconciliationId)
-    : null;
-  const now = Date.now();
-  const due = Math.max(
-    now + RECONCILE_SETTLE_MS,
-    (last?.finishedAt ?? 0) + RECONCILE_INTERVAL_MS,
-  );
-  await ctx.db.patch(state._id, { reconcileScheduledAt: due });
-  await ctx.scheduler.runAfter(
-    due - now,
-    internal.projections.runScheduledReconcile,
-    { organizationId: state.organizationId },
-  );
-}
-
-/** Starts the scheduled reconciliation when the projection is still ready. */
-export async function runScheduledReconcile(
+export async function clearScheduledReconcile(
   ctx: Ctx,
   organizationId: Id<"organizations">,
 ) {
   const state = await getProjectionState(ctx, organizationId);
-  if (!state?.reconcileScheduledAt) return null;
-  const blocked =
-    !state.activeGenerationId ||
-    state.availability !== "ready" ||
-    state.definitionVersion !== PROJECTION_DEFINITION_VERSION ||
-    state.buildingGenerationId !== undefined ||
-    state.reconcilingGenerationId !== undefined;
-  await ctx.db.patch(state._id, { reconcileScheduledAt: undefined });
-  return blocked
-    ? null
-    : await startGeneration(ctx, organizationId, "reconcile");
+  if (state?.reconcileScheduledAt) {
+    await ctx.db.patch(state._id, { reconcileScheduledAt: undefined });
+  }
 }
 
 type FanOutKind = Doc<"projectionFanOuts">["kind"];
