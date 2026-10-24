@@ -2969,6 +2969,12 @@ export default {
       notRecorded: "Not recorded",
       shortDescription: "Short description",
       fromConditionAssessment: "From the accepted condition assessment",
+      moreLines: "and {count} more",
+      measurement: {
+        height: "H",
+        width: "W",
+        depth: "D",
+      },
       standardNote:
         "Follows the Object ID checklist, the international standard for describing cultural objects. Keep a copy with the object's file and share it with the police and insurers if the object goes missing.",
       categories: {
@@ -5754,6 +5760,7 @@ export default {
       dimensions: "Dimensions",
       inscriptions: "Inscriptions and markings",
       description: "Description",
+      subject: "Subject tags",
       current_location: "Current location",
       condition_assessment: "Accepted condition assessment",
       image: "Photograph",

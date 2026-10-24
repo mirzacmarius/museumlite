@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useScopedI18n } from "@/locales/client";
 import type { ObjectIdCategoryValue } from "./object-id-sheet-data";
 
-/** Photographs shown first on the sheet, after the primary one. */
+/** Photographs the sheet has room for: the primary one and three more. */
 export const SHEET_IMAGES_SHOWN = 4;
 
 export interface ObjectIdSheetImage {
@@ -103,7 +103,7 @@ export function ObjectIdSheet({
       </section>
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
-        {values.map(({ category, lines }) => (
+        {values.map(({ category, lines, omitted }) => (
           <div key={category} className="print:break-inside-avoid">
             <dt className={headingClass}>{t(`categories.${category}`)}</dt>
             <dd>
@@ -114,6 +114,11 @@ export function ObjectIdSheet({
                   {lines.join("\n")}
                 </p>
               )}
+              {omitted > 0 ? (
+                <p className="text-[10px] text-zinc-500">
+                  {t("moreLines", { count: omitted })}
+                </p>
+              ) : null}
               {category === "distinguishing_features" &&
               featuresFromAssessment &&
               lines.length > 0 ? (

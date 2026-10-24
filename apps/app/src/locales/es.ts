@@ -3537,6 +3537,12 @@ export default {
       notRecorded: "No registrado",
       shortDescription: "Descripción breve",
       fromConditionAssessment: "De la evaluación del estado aceptada",
+      moreLines: "y {count} más",
+      measurement: {
+        height: "Al",
+        width: "An",
+        depth: "Pr",
+      },
       standardNote:
         "Sigue la lista Object ID, el estándar internacional para describir bienes culturales. Guarde una copia en el expediente del objeto y compártala con la policía y las aseguradoras si el objeto desaparece.",
       categories: {
@@ -5874,6 +5880,7 @@ export default {
       dimensions: "Dimensiones",
       inscriptions: "Inscripciones y marcas",
       description: "Descripción",
+      subject: "Etiquetas de tema",
       current_location: "Ubicación actual",
       condition_assessment: "Evaluación del estado aceptada",
       image: "Fotografía",

@@ -27,7 +27,9 @@ export const OBJECT_ID_PROFILE_NAME = "Object ID";
 
 /**
  * Objects in the collection or borrowed are the ones a theft report would
- * concern; the title is always recorded, so it is not a requirement.
+ * concern. Every checklist category has a requirement except the title, which
+ * is always recorded: distinguishing features come from the accepted
+ * condition assessment and the subject from the tags, as on the sheet.
  */
 export const OBJECT_ID_PROFILE_STAGES: readonly DocumentationStage[] = [
   "collection",
@@ -40,6 +42,8 @@ export const OBJECT_ID_PROFILE_REQUIREMENTS: readonly DocumentationRequirement[]
     "materials",
     "dimensions",
     "inscriptions",
+    "condition_assessment",
+    "subject",
     "production_date",
     "maker",
     "description",

@@ -30,6 +30,7 @@ export const DOCUMENTATION_REQUIREMENTS = [
   "dimensions",
   "inscriptions",
   "description",
+  "subject",
   "current_location",
   "condition_assessment",
   "image",

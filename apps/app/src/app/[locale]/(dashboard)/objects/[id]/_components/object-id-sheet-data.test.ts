@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 import {
+  CATEGORY_LINE_LIMIT,
+  LINE_LENGTH_LIMIT,
   type ObjectIdSheetCollection,
+  type ObjectIdSheetFormat,
   objectIdCategoryValues,
   SHORT_DESCRIPTION_LIMIT,
   shortDescription,
@@ -8,23 +11,38 @@ import {
 
 const bare: ObjectIdSheetCollection = { title: "Bronze coin" };
 
+const englishFormat: ObjectIdSheetFormat = {
+  measurementLabels: { height: "H", width: "W", depth: "D" },
+  number: (value) => value.toLocaleString("en-US"),
+};
+
+function valuesOf(
+  collection: ObjectIdSheetCollection,
+  distinguishingFeatures: string[] = [],
+  format: ObjectIdSheetFormat = englishFormat,
+) {
+  return objectIdCategoryValues({
+    collection,
+    distinguishingFeatures,
+    format,
+  });
+}
+
 function linesOf(
   collection: ObjectIdSheetCollection,
   distinguishingFeatures: string[] = [],
 ) {
   return Object.fromEntries(
-    objectIdCategoryValues({ collection, distinguishingFeatures }).map(
-      (value) => [value.category, value.lines],
-    ),
+    valuesOf(collection, distinguishingFeatures).map((value) => [
+      value.category,
+      value.lines,
+    ]),
   );
 }
 
 describe("objectIdCategoryValues", () => {
   test("prints the nine checklist categories in order, empty when not recorded", () => {
-    const values = objectIdCategoryValues({
-      collection: bare,
-      distinguishingFeatures: [],
-    });
+    const values = valuesOf(bare);
     expect(values.map((value) => value.category)).toEqual([
       "type_of_object",
       "materials_and_techniques",
@@ -97,6 +115,42 @@ describe("objectIdCategoryValues", () => {
         dimensionDiameter: "30",
       }).measurements,
     ).toEqual(["Ø 30", "approx. 30 cm across"]);
+  });
+
+  test("prints measurements with the app language's labels and number format", () => {
+    const values = valuesOf(
+      {
+        title: "Armoire",
+        dimensionHeight: 210,
+        dimensionWidth: 1450.5,
+        dimensionDepth: 60,
+        dimensionWeight: 120.5,
+        dimensionUnit: "mm",
+      },
+      [],
+      {
+        measurementLabels: { height: "H", width: "L", depth: "P" },
+        number: (value) => String(value).replace(".", ","),
+      },
+    );
+    expect(
+      values.find((value) => value.category === "measurements")?.lines,
+    ).toEqual(["H: 210 × L: 1450,5 × P: 60 mm", "120,5 kg"]);
+  });
+
+  test("counts the lines a one-page sheet has no room for and clips long ones", () => {
+    const observations = Array.from(
+      { length: CATEGORY_LINE_LIMIT + 3 },
+      (_, index) => `Area ${index + 1}: ${"x".repeat(LINE_LENGTH_LIMIT + 20)}`,
+    );
+    const features = valuesOf(bare, observations).find(
+      (value) => value.category === "distinguishing_features",
+    );
+    expect(features?.lines).toHaveLength(CATEGORY_LINE_LIMIT);
+    expect(features?.omitted).toBe(3);
+    expect(features?.lines[0]).toHaveLength(LINE_LENGTH_LIMIT);
+    expect(features?.lines[0]?.endsWith("…")).toBe(true);
+    expect(valuesOf(bare).every((value) => value.omitted === 0)).toBe(true);
   });
 });
 

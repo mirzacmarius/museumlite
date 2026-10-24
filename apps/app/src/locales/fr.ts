@@ -3560,6 +3560,12 @@ export default {
       notRecorded: "Non renseigné",
       shortDescription: "Description courte",
       fromConditionAssessment: "D’après le constat d’état accepté",
+      moreLines: "et {count} de plus",
+      measurement: {
+        height: "H",
+        width: "L",
+        depth: "P",
+      },
       standardNote:
         "Suit la liste Object ID, la norme internationale de description des biens culturels. Conservez une copie dans le dossier de l’objet et transmettez-la à la police et aux assureurs si l’objet disparaît.",
       categories: {
@@ -5896,6 +5902,7 @@ export default {
       dimensions: "Dimensions",
       inscriptions: "Inscriptions et marques",
       description: "Description",
+      subject: "Étiquettes de sujet",
       current_location: "Emplacement actuel",
       condition_assessment: "Constat d’état accepté",
       image: "Photographie",

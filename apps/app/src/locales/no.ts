@@ -3503,6 +3503,12 @@ export default {
       notRecorded: "Ikke registrert",
       shortDescription: "Kort beskrivelse",
       fromConditionAssessment: "Fra den godkjente tilstandsvurderingen",
+      moreLines: "og {count} til",
+      measurement: {
+        height: "H",
+        width: "B",
+        depth: "D",
+      },
       standardNote:
         "Følger Object ID-sjekklisten, den internasjonale standarden for å beskrive kulturgjenstander. Oppbevar en kopi i objektets mappe og del den med politiet og forsikringsselskapet hvis objektet forsvinner.",
       categories: {
@@ -5820,6 +5826,7 @@ export default {
       dimensions: "Mål",
       inscriptions: "Innskrifter og merker",
       description: "Beskrivelse",
+      subject: "Emne (merkelapper)",
       current_location: "Nåværende sted",
       condition_assessment: "Godkjent tilstandsvurdering",
       image: "Fotografi",

@@ -1603,6 +1603,12 @@ export default {
       notRecorded: "Neînregistrat",
       shortDescription: "Descriere scurtă",
       fromConditionAssessment: "Din evaluarea stării acceptată",
+      moreLines: "și încă {count}",
+      measurement: {
+        height: "Î",
+        width: "L",
+        depth: "A",
+      },
       standardNote:
         "Urmează lista Object ID, standardul internațional pentru descrierea bunurilor culturale. Păstrați o copie în dosarul obiectului și transmiteți-o poliției și asigurătorilor dacă obiectul dispare.",
       categories: {
@@ -2287,6 +2293,7 @@ export default {
       dimensions: "Dimensiuni",
       inscriptions: "Inscripții și marcaje",
       description: "Descriere",
+      subject: "Etichete de subiect",
       current_location: "Locația actuală",
       condition_assessment: "Evaluare a stării acceptată",
       image: "Fotografie",

@@ -80,6 +80,8 @@ async function meetsRequirement(
       );
     case "description":
       return filled(object.description);
+    case "subject":
+      return (object.tags ?? []).some(filled);
     case "current_location":
       return object.currentLocationId !== undefined;
     case "condition_assessment":

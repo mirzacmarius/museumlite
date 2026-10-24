@@ -3,7 +3,15 @@ import { screen, within } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { renderOnPage } from "@/testing/render-on-page";
 import { ObjectIdSheet } from "./object-id-sheet";
-import { objectIdCategoryValues } from "./object-id-sheet-data";
+import {
+  type ObjectIdSheetFormat,
+  objectIdCategoryValues,
+} from "./object-id-sheet-data";
+
+const englishFormat: ObjectIdSheetFormat = {
+  measurementLabels: { height: "H", width: "W", depth: "D" },
+  number: (value) => String(value),
+};
 
 test("every checklist category is printed, recorded or not", async () => {
   await renderOnPage(
@@ -19,6 +27,7 @@ test("every checklist category is printed, recorded or not", async () => {
           creator: "Mint of Rome",
         },
         distinguishingFeatures: [],
+        format: englishFormat,
       })}
       featuresFromAssessment={false}
       description={undefined}
@@ -59,6 +68,7 @@ test("the primary photograph prints large and up to three more as thumbnails", a
       values={objectIdCategoryValues({
         collection: { title: "Bronze coin" },
         distinguishingFeatures: ["Chip on the rim"],
+        format: englishFormat,
       })}
       featuresFromAssessment
       description="A worn bronze coin."

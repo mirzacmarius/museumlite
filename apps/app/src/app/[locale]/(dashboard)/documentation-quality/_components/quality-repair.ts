@@ -18,11 +18,12 @@ type ObjectTab =
 
 /** The object tab where staff record each kind of documentation. */
 const REQUIREMENT_TABS: Record<DocumentationRequirement, ObjectTab> = {
-  object_type: "general",
   object_name: "general",
   maker: "general",
   production_date: "general",
   description: "general",
+  subject: "general",
+  object_type: "physical",
   materials: "physical",
   dimensions: "physical",
   inscriptions: "physical",

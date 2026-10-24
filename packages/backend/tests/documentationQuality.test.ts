@@ -585,9 +585,11 @@ test("the Object ID profile reports the checklist categories an object lacks", a
       dimensionDiameter: "27 mm",
       inscriptionMarks: [{ label: "Obverse", description: "ANTONINVS AVG" }],
       description: "Sestertius with a laureate bust.",
+      tags: ["Antonine", "Imperial portraiture"],
     });
   });
   await addImage(t, organizationId, adminId, described);
+  await addAcceptedAssessment(t, organizationId, adminId, described);
   const deaccessioned = await insertObject(t, organizationId, adminId, {
     accessionNumber: "2001.3",
     objectType: "Coin",
@@ -611,6 +613,8 @@ test("the Object ID profile reports the checklist categories an object lacks", a
       "dimensions",
       "inscriptions",
       "description",
+      "subject",
+      "condition_assessment",
       "image",
     ],
   });

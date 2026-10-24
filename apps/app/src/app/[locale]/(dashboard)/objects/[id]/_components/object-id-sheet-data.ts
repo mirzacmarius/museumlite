@@ -7,11 +7,17 @@ import type { CollectionData } from "./types";
 
 /** Characters of the description a one-page sheet has room for. */
 export const SHORT_DESCRIPTION_LIMIT = 700;
+/** Lines a category prints before the rest is counted, so the sheet stays one page. */
+export const CATEGORY_LINE_LIMIT = 6;
+/** Characters a single line prints before it is clipped. */
+export const LINE_LENGTH_LIMIT = 240;
 
 export interface ObjectIdCategoryValue {
   category: ObjectIdCategory;
   /** What the record says, one statement per line; none means not recorded. */
   lines: string[];
+  /** Statements left off the sheet for room. */
+  omitted: number;
 }
 
 export type ObjectIdSheetCollection = Pick<
@@ -38,6 +44,14 @@ export type ObjectIdSheetCollection = Pick<
   | "tags"
 >;
 
+/** How measurements read in the app language. */
+export interface ObjectIdSheetFormat {
+  /** Abbreviations printed before the height, width and depth. */
+  measurementLabels: { height: string; width: string; depth: string };
+  /** Formats a measured number in the app locale. */
+  number: (value: number) => string;
+}
+
 export interface ObjectIdSheetSource {
   collection: ObjectIdSheetCollection;
   /**
@@ -45,6 +59,7 @@ export interface ObjectIdSheetSource {
    * condition assessment records them (its summary and observations).
    */
   distinguishingFeatures: readonly string[];
+  format: ObjectIdSheetFormat;
 }
 
 function present(values: ReadonlyArray<string | undefined | null>) {
@@ -60,25 +75,34 @@ function listed(value: string | undefined) {
   return items.length > 0 ? items.join(", ") : undefined;
 }
 
-function measurementLines(collection: ObjectIdSheetCollection) {
-  const unit = collection.dimensionUnit || "cm";
-  const measured = [
-    collection.dimensionHeight !== undefined &&
-      `H: ${collection.dimensionHeight}`,
-    collection.dimensionWidth !== undefined &&
-      `W: ${collection.dimensionWidth}`,
-    collection.dimensionDepth !== undefined &&
-      `D: ${collection.dimensionDepth}`,
-  ]
-    .filter(Boolean)
+function clipText(text: string, limit: number) {
+  return text.length > limit ? `${text.slice(0, limit - 1).trimEnd()}…` : text;
+}
+
+function measurementLines(
+  collection: ObjectIdSheetCollection,
+  { measurementLabels, number }: ObjectIdSheetFormat,
+) {
+  // The unit is printed only when recorded, as on the Physical tab.
+  const unit = collection.dimensionUnit ? ` ${collection.dimensionUnit}` : "";
+  const measured = (
+    [
+      [measurementLabels.height, collection.dimensionHeight],
+      [measurementLabels.width, collection.dimensionWidth],
+      [measurementLabels.depth, collection.dimensionDepth],
+    ] as const
+  )
+    .flatMap(([label, value]) =>
+      value === undefined ? [] : [`${label}: ${number(value)}`],
+    )
     .join(" × ");
   return present([
-    measured ? `${measured} ${unit}` : undefined,
+    measured ? `${measured}${unit}` : undefined,
     collection.dimensionDiameter
       ? `Ø ${collection.dimensionDiameter}`
       : undefined,
     collection.dimensionWeight !== undefined
-      ? `${collection.dimensionWeight} ${collection.weightUnit || "kg"}`
+      ? `${number(collection.dimensionWeight)} ${collection.weightUnit || "kg"}`
       : undefined,
     // Free-text dimensions come from imports and older records.
     measured ? undefined : collection.dimensions,
@@ -98,7 +122,7 @@ function inscriptionLines(collection: ObjectIdSheetCollection) {
 
 function categoryLines(
   category: ObjectIdCategory,
-  { collection, distinguishingFeatures }: ObjectIdSheetSource,
+  { collection, distinguishingFeatures, format }: ObjectIdSheetSource,
 ): string[] {
   switch (category) {
     case "type_of_object":
@@ -106,7 +130,7 @@ function categoryLines(
     case "materials_and_techniques":
       return present([listed(collection.materials), collection.technique]);
     case "measurements":
-      return measurementLines(collection);
+      return measurementLines(collection, format);
     case "inscriptions_and_markings":
       return inscriptionLines(collection);
     case "distinguishing_features":
@@ -124,13 +148,23 @@ function categoryLines(
   }
 }
 
+/** Keeps the first lines, clipped, and counts the rest. */
+function fitLines(
+  lines: string[],
+): Pick<ObjectIdCategoryValue, "lines" | "omitted"> {
+  const kept = lines
+    .slice(0, CATEGORY_LINE_LIMIT)
+    .map((line) => clipText(line, LINE_LENGTH_LIMIT));
+  return { lines: kept, omitted: lines.length - kept.length };
+}
+
 /** The nine Object ID categories with what the record says for each. */
 export function objectIdCategoryValues(
   source: ObjectIdSheetSource,
 ): ObjectIdCategoryValue[] {
   return OBJECT_ID_CATEGORIES.map((category) => ({
     category,
-    lines: categoryLines(category, source),
+    ...fitLines(categoryLines(category, source)),
   }));
 }
 
@@ -138,7 +172,5 @@ export function objectIdCategoryValues(
 export function shortDescription(description: string | undefined) {
   const text = description?.trim();
   if (!text) return undefined;
-  return text.length > SHORT_DESCRIPTION_LIMIT
-    ? `${text.slice(0, SHORT_DESCRIPTION_LIMIT - 1).trimEnd()}…`
-    : text;
+  return clipText(text, SHORT_DESCRIPTION_LIMIT);
 }
