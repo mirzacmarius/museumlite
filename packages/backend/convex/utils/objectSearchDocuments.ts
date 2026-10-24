@@ -250,6 +250,18 @@ const MAX_INDEXED_WORD_BYTES = 32;
 const utf8 = new TextEncoder();
 
 /**
+ * A UTF-16 unit takes one to three UTF-8 bytes, so only words of 11 to 31
+ * units need encoding; record text is long and is matched on every row.
+ */
+function isIndexedWord(token: string) {
+  if (token.length === 0 || token.length >= MAX_INDEXED_WORD_BYTES)
+    return false;
+  return (
+    token.length <= 10 || utf8.encode(token).length < MAX_INDEXED_WORD_BYTES
+  );
+}
+
+/**
  * Words of a text as the search index keeps them, in documents and queries
  * alike: split on anything but letters and digits, words too long to index
  * left out, lower-cased.
@@ -257,10 +269,7 @@ const utf8 = new TextEncoder();
 export function searchTokens(text: string) {
   return text
     .split(/[^\p{L}\p{N}]+/u)
-    .filter(
-      (token) =>
-        token.length > 0 && utf8.encode(token).length < MAX_INDEXED_WORD_BYTES,
-    )
+    .filter(isIndexedWord)
     .map((token) => token.toLowerCase());
 }
 

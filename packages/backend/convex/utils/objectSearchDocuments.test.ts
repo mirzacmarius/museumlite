@@ -22,6 +22,12 @@ describe("search words", () => {
     expect(searchTokens("sølvsmedarbeidsverkstedsutstyret amfora")).toEqual([
       "amfora",
     ]);
+    // 12 characters, 36 bytes.
+    expect(searchTokens("東京国立博物館所蔵品目録 vase")).toEqual(["vase"]);
+    // 10 characters, 30 bytes.
+    expect(searchTokens("東京国立博物館所蔵品")).toEqual([
+      "東京国立博物館所蔵品",
+    ]);
   });
 
   test("only the first 16 words of a search count, so the 16th is the one matched as a prefix", () => {
