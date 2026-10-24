@@ -16,9 +16,11 @@ import {
   exportJobErrorKey,
 } from "@/lib/export-job-error-copy";
 import { formatIsoTimestamp } from "@/lib/format-date";
+import { stableStringify } from "@/lib/record-form";
 import { useScopedI18n } from "@/locales/client";
 
 type ExportStatus = FunctionReturnType<typeof api.exports.status>["status"];
+type ExportJob = FunctionReturnType<typeof api.exports.list>[number];
 const CANCELLABLE_STATUSES = new Set<ExportStatus>([
   "selecting",
   "queued",
@@ -32,6 +34,38 @@ const RESUMABLE_STATUSES = new Set<ExportStatus>([
   "failed",
   "cancelled",
 ]);
+
+function exportKey(job: ExportJob) {
+  return job.source.kind === "objects" && job.source.mode === "selected"
+    ? job.jobId
+    : `${job.format}:${stableStringify(job.source)}`;
+}
+
+/**
+ * One row per source and format, newest first. A new export replaces the
+ * earlier one of the same results once it completes; until then the earlier
+ * download stays listed. Exports still in progress stay listed so they can be
+ * cancelled. Selected-object exports don't record which objects they hold,
+ * so none of them replaces another.
+ */
+function latestExports(jobs: ExportJob[]): ExportJob[] {
+  const newest = new Map<string, ExportJob>();
+  const newestCompleted = new Map<string, ExportJob>();
+  for (const job of jobs) {
+    const key = exportKey(job);
+    if (!newest.has(key)) newest.set(key, job);
+    if (job.status === "completed" && !newestCompleted.has(key))
+      newestCompleted.set(key, job);
+  }
+  return jobs.filter((job) => {
+    const key = exportKey(job);
+    return (
+      newest.get(key) === job ||
+      newestCompleted.get(key) === job ||
+      CANCELLABLE_STATUSES.has(job.status)
+    );
+  });
+}
 
 /** Translated label of an export job's status. */
 function useExportStatusLabel() {
@@ -234,14 +268,15 @@ export function ExportJobControl({
         </p>
       )}
       <ul className="space-y-3 mt-3">
-        {jobs
-          ?.filter(
+        {latestExports(
+          jobs?.filter(
             (job) =>
               job.source.kind === source.kind &&
               (job.source.kind !== "register" ||
                 source.kind !== "register" ||
                 job.source.profile === source.profile),
-          )
+          ) ?? [],
+        )
           .slice(0, 5)
           .map((job) => (
             <li key={job.jobId} className="border-t py-2">
