@@ -3314,6 +3314,7 @@ export default {
 
       printLabel: "Imprimer une étiquette QR",
       printObjectLabel: "Imprimer une étiquette d'objet",
+      printObjectIdSheet: "Imprimer la fiche Object ID",
     },
     pagination: {
       loadMore: "Charger Plus",
@@ -3546,6 +3547,38 @@ export default {
       none: "Aucune",
       printedOn: "Imprimé le",
       print: "Imprimer",
+    },
+    objectIdSheet: {
+      title: "Fiche Object ID",
+      dialogDescription:
+        "Une description d’une page de cet objet selon la liste Object ID, prête à transmettre si l’objet est perdu ou volé.",
+      print: "Imprimer",
+      printedOn: "Imprimée le {date}",
+      accessionNumber: "Numéro d’accession",
+      photographs: "Photographies",
+      noPhotograph: "Aucune photographie enregistrée",
+      notRecorded: "Non renseigné",
+      shortDescription: "Description courte",
+      fromConditionAssessment: "D’après le constat d’état accepté",
+      moreLines: "et {count} de plus",
+      measurement: {
+        height: "H",
+        width: "L",
+        depth: "P",
+      },
+      standardNote:
+        "Suit la liste Object ID, la norme internationale de description des biens culturels. Conservez une copie dans le dossier de l’objet et transmettez-la à la police et aux assureurs si l’objet disparaît.",
+      categories: {
+        type_of_object: "Type d’objet",
+        materials_and_techniques: "Matériaux et techniques",
+        measurements: "Dimensions",
+        inscriptions_and_markings: "Inscriptions et marques",
+        distinguishing_features: "Signes particuliers",
+        title: "Titre",
+        subject: "Sujet",
+        date_or_period: "Date ou période",
+        maker: "Auteur",
+      },
     },
 
     mediaGallery: {
@@ -5861,12 +5894,15 @@ export default {
         "Objets sortis de la collection ; leurs fiches sont conservées.",
     },
     requirements: {
+      object_type: "Type d’objet",
       object_name: "Dénomination",
       maker: "Auteur",
       production_date: "Date de réalisation",
       materials: "Matériaux",
       dimensions: "Dimensions",
+      inscriptions: "Inscriptions et marques",
       description: "Description",
+      subject: "Étiquettes de sujet",
       current_location: "Emplacement actuel",
       condition_assessment: "Constat d’état accepté",
       image: "Photographie",
@@ -6004,6 +6040,12 @@ export default {
       archived: "Profil archivé",
       restored: "Profil restauré",
       archivedBadge: "Archivé",
+      objectId: {
+        add: "Ajouter le profil Object ID",
+        hint: "Object ID est la liste internationale qui décrit un objet assez précisément pour l’identifier en cas de perte ou de vol. Le profil exige ses catégories et une photographie pour les objets de la collection ou empruntés.",
+        added:
+          "Profil Object ID ajouté. Lancez une vérification pour trouver les objets auxquels il manque une catégorie.",
+      },
     },
     review: {
       title: "Examen",

@@ -549,6 +549,45 @@ async function userNames(ctx: QueryCtx, ids: (Id<"users"> | undefined)[]) {
     id === undefined ? undefined : displayName(users.get(id) ?? null);
 }
 
+/**
+ * The accepted assessment the Object points to, read by that pointer so it is
+ * found however many later drafts and rejections the Object has.
+ */
+export const getCurrentAccepted = query({
+  args: { collectionId: v.id("collections") },
+  returns: v.union(
+    v.object({
+      assessmentId: v.id("conditionAssessments"),
+      condition: v.string(),
+      assessedAt: v.number(),
+      summary: v.string(),
+      observations: v.array(observation),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) throw new Error("Object not found");
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+    const current = collection.currentConditionAssessmentId
+      ? await ctx.db.get(collection.currentConditionAssessmentId)
+      : null;
+    if (
+      !current ||
+      current.status !== "accepted" ||
+      current.organizationId !== collection.organizationId
+    )
+      return null;
+    return {
+      assessmentId: current._id,
+      condition: current.condition,
+      assessedAt: current.assessedAt,
+      summary: current.summary,
+      observations: current.observations,
+    };
+  },
+});
+
 export const listForObject = query({
   args: {
     collectionId: v.id("collections"),

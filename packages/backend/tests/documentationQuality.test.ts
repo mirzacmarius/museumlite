@@ -7,6 +7,11 @@ import {
 } from "../convex/utils/documentationQualityErrors";
 import { normalizeIdentifier } from "../convex/utils/identifiers";
 import { notificationEntityHref } from "../convex/utils/notificationLinks";
+import {
+  OBJECT_ID_PROFILE_NAME,
+  OBJECT_ID_PROFILE_REQUIREMENTS,
+  OBJECT_ID_PROFILE_STAGES,
+} from "../convex/utils/objectId";
 import { workErrorFromError } from "../convex/utils/workErrors";
 import {
   authedForUser,
@@ -552,6 +557,72 @@ test("a check reports missing evidence for objects of the profile's type and sta
       collectionId: undocumented,
     }),
   ).toEqual(before);
+});
+
+test("the Object ID profile reports the checklist categories an object lacks", async () => {
+  const { t, admin, officer, adminId, organizationId } = await setup();
+  await admin.mutation(api.documentationQuality.createProfile, {
+    organizationId,
+    name: OBJECT_ID_PROFILE_NAME,
+    stages: [...OBJECT_ID_PROFILE_STAGES],
+    requirements: [...OBJECT_ID_PROFILE_REQUIREMENTS],
+  });
+  const bare = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "2001.1",
+    title: "Unknown coin",
+    objectType: "Coin",
+  });
+  const described = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "2001.2",
+    objectType: "Coin",
+    status: "loaned",
+  });
+  await t.run(async (ctx) => {
+    await ctx.db.patch(described, {
+      creator: "Mint of Rome",
+      dateCreated: "AD 140",
+      materials: "Bronze",
+      dimensionDiameter: "27 mm",
+      inscriptionMarks: [{ label: "Obverse", description: "ANTONINVS AVG" }],
+      description: "Sestertius with a laureate bust.",
+      tags: ["Antonine", "Imperial portraiture"],
+    });
+  });
+  await addImage(t, organizationId, adminId, described);
+  await addAcceptedAssessment(t, organizationId, adminId, described);
+  const deaccessioned = await insertObject(t, organizationId, adminId, {
+    accessionNumber: "2001.3",
+    objectType: "Coin",
+    status: "deaccessioned",
+  });
+
+  const check = await runCheck(t, officer, organizationId);
+
+  expect(check).toMatchObject({ status: "completed", detected: 1, opened: 1 });
+  const open = await findings(officer, organizationId);
+  expect(open).toHaveLength(1);
+  expect(open[0]).toMatchObject({
+    kind: "missing_evidence",
+    objectId: bare,
+    profileName: "Object ID",
+    stage: "collection",
+    missing: [
+      "maker",
+      "production_date",
+      "materials",
+      "dimensions",
+      "inscriptions",
+      "description",
+      "subject",
+      "condition_assessment",
+      "image",
+    ],
+  });
+  expect(
+    open.some(
+      (finding) => "objectId" in finding && finding.objectId === deaccessioned,
+    ),
+  ).toBe(false);
 });
 
 test("duplicate identifiers are surfaced without renumbering and reviewed through the identifier register", async () => {

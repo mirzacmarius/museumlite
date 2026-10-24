@@ -2,11 +2,17 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  isObjectIdProfileName,
+  OBJECT_ID_PROFILE_NAME,
+  OBJECT_ID_PROFILE_REQUIREMENTS,
+  OBJECT_ID_PROFILE_STAGES,
+} from "@v1/backend/convex/utils/objectId";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Archive, Pencil, Plus, RotateCcw } from "lucide-react";
+import { Archive, IdCard, Pencil, Plus, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useQualityErrorMessage } from "@/hooks/use-quality-error-message";
@@ -108,6 +114,56 @@ function ProfileCard({
   );
 }
 
+/**
+ * Offers the Object ID profile until the institution has one: the checklist
+ * categories and a photograph, for objects in the collection or borrowed.
+ */
+function ObjectIdProfileOffer({
+  organizationId,
+}: {
+  organizationId: Id<"organizations">;
+}) {
+  const t = useScopedI18n("documentationQuality.profiles");
+  const errorMessage = useQualityErrorMessage();
+  const createProfile = useMutation(api.documentationQuality.createProfile);
+  const [isAdding, setIsAdding] = useState(false);
+
+  async function addProfile() {
+    setIsAdding(true);
+    try {
+      await createProfile({
+        organizationId,
+        name: OBJECT_ID_PROFILE_NAME,
+        stages: [...OBJECT_ID_PROFILE_STAGES],
+        requirements: [...OBJECT_ID_PROFILE_REQUIREMENTS],
+      });
+      toast.success(t("objectId.added"));
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="max-w-2xl text-sm text-muted-foreground">
+        {t("objectId.hint")}
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="shrink-0"
+        onClick={addProfile}
+        disabled={isAdding}
+      >
+        <IdCard className="mr-1 size-4" />
+        {t("objectId.add")}
+      </Button>
+    </div>
+  );
+}
+
 /** The institution's documentation profiles; administrators change them. */
 export function ProfilesPanel({
   organizationId,
@@ -119,6 +175,11 @@ export function ProfilesPanel({
     organizationId,
   });
   const [editing, setEditing] = useState<Editing>(null);
+  const hasObjectIdProfile =
+    result?.profiles.some(
+      (profile) =>
+        profile.status === "active" && isObjectIdProfileName(profile.name),
+    ) ?? true;
 
   if (result === undefined)
     return (
@@ -143,6 +204,9 @@ export function ProfilesPanel({
       {result.canManage ? null : (
         <p className="text-xs text-muted-foreground">{t("readOnly")}</p>
       )}
+      {result.canManage && !hasObjectIdProfile ? (
+        <ObjectIdProfileOffer organizationId={organizationId} />
+      ) : null}
       {result.profiles.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           {t("empty")}

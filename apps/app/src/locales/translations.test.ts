@@ -116,8 +116,14 @@ const GLOSSARY_TERMS: Array<{
   {
     english: /(?<!\p{L})objects?(?!\p{L})/iu,
     accepted: { es: /objeto/iu, fr: /objet/iu, no: /objekt/iu, ro: /obiect/iu },
-    // French collection records call an object's name its "dénomination".
-    exceptions: new Set(["documentationQuality.requirements.object_name"]),
+    exceptions: new Set([
+      // French collection records call an object's name its "dénomination".
+      "documentationQuality.requirements.object_name",
+      // "Object ID" names the checklist, not an Object.
+      "documentationQuality.profiles.objectId.add",
+      "objects.detail.printObjectIdSheet",
+      "objects.objectIdSheet.title",
+    ]),
   },
   {
     english: /(?<!\p{L})locations?(?!\p{L})/iu,

@@ -31,6 +31,13 @@ const PrintPreviewModal = dynamic(
     ),
   { ssr: false },
 );
+const ObjectIdSheetModal = dynamic(
+  () =>
+    import("./_components/object-id-sheet-modal").then(
+      (mod) => mod.ObjectIdSheetModal,
+    ),
+  { ssr: false },
+);
 const QRLabelModal = dynamic(
   () => import("./_components/qr-label-modal").then((mod) => mod.QRLabelModal),
   { ssr: false },
@@ -70,6 +77,7 @@ export function ObjectDetailClient(props: ObjectDetailClientProps) {
 interface ObjectDetailViewState {
   isHeroLightboxOpen: boolean;
   isPrintModalOpen: boolean;
+  isObjectIdSheetOpen: boolean;
   isObjectLabelModalOpen: boolean;
   isQrLabelModalOpen: boolean;
   linkCopied: boolean;
@@ -79,6 +87,7 @@ interface ObjectDetailViewState {
 type ObjectDetailViewAction =
   | { type: "setHeroLightboxOpen"; value: boolean }
   | { type: "setPrintModalOpen"; value: boolean }
+  | { type: "setObjectIdSheetOpen"; value: boolean }
   | { type: "setObjectLabelModalOpen"; value: boolean }
   | { type: "setQrLabelModalOpen"; value: boolean }
   | { type: "setLinkCopied"; value: boolean }
@@ -87,6 +96,7 @@ type ObjectDetailViewAction =
 const initialObjectDetailViewState: ObjectDetailViewState = {
   isHeroLightboxOpen: false,
   isPrintModalOpen: false,
+  isObjectIdSheetOpen: false,
   isObjectLabelModalOpen: false,
   isQrLabelModalOpen: false,
   linkCopied: false,
@@ -102,6 +112,8 @@ function objectDetailViewReducer(
       return { ...state, isHeroLightboxOpen: action.value };
     case "setPrintModalOpen":
       return { ...state, isPrintModalOpen: action.value };
+    case "setObjectIdSheetOpen":
+      return { ...state, isObjectIdSheetOpen: action.value };
     case "setObjectLabelModalOpen":
       return { ...state, isObjectLabelModalOpen: action.value };
     case "setQrLabelModalOpen":
@@ -289,6 +301,9 @@ function ObjectDetailView({
           onPrintClick={() =>
             dispatch({ type: "setPrintModalOpen", value: true })
           }
+          onObjectIdSheetClick={() =>
+            dispatch({ type: "setObjectIdSheetOpen", value: true })
+          }
           onObjectLabelClick={() =>
             dispatch({ type: "setObjectLabelModalOpen", value: true })
           }
@@ -299,6 +314,7 @@ function ObjectDetailView({
           copyLinkLabel={t("detail.copyObjectLink")}
           linkCopiedLabel={t("detail.linkCopied")}
           printRecordLabel={t("detail.printRecord")}
+          printObjectIdSheetLabel={t("detail.printObjectIdSheet")}
           printLabel={t("detail.printLabel")}
           printObjectLabel={t("detail.printObjectLabel")}
           printMenuLabel={t("qrLabel.print")}
@@ -371,6 +387,14 @@ function ObjectDetailView({
         onClose={() => dispatch({ type: "setPrintModalOpen", value: false })}
         heroImage={heroImageForPrint}
         locationPath={locationPath ?? undefined}
+        locale={locale}
+      />
+      <ObjectIdSheetModal
+        collection={collection}
+        isOpen={state.isObjectIdSheetOpen}
+        onClose={() => dispatch({ type: "setObjectIdSheetOpen", value: false })}
+        images={heroLightboxImages}
+        organizationName={currentOrganization?.name}
         locale={locale}
       />
       <ObjectLabelModal

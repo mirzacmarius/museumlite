@@ -52,6 +52,8 @@ async function meetsRequirement(
   const own = (row: { organizationId: Doc<"collections">["organizationId"] }) =>
     row.organizationId === object.organizationId;
   switch (requirement) {
+    case "object_type":
+      return filled(object.objectType);
     case "object_name":
       return filled(object.objectName);
     case "maker":
@@ -71,8 +73,15 @@ async function meetsRequirement(
           object.dimensionWeight,
         ].some((value) => value !== undefined)
       );
+    case "inscriptions":
+      return (
+        filled(object.inscriptions) ||
+        (object.inscriptionMarks ?? []).some((mark) => filled(mark.description))
+      );
     case "description":
       return filled(object.description);
+    case "subject":
+      return (object.tags ?? []).some(filled);
     case "current_location":
       return object.currentLocationId !== undefined;
     case "condition_assessment":
